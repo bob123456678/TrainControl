@@ -200,6 +200,59 @@ public class testThePresetSpeedSurvivesTheSetupDoors
         train.setSpeed(0);
     }
 
+    /**
+     * An old-format setup keeps the whole standing train, speed included, in the store until a fold rewrites it to the
+     * name.  Untouched, a load still reads that speed; a speed saved in the window wins over the stale copy at a load
+     * that does not fold and at the rebuild from the setup.
+     *
+     * MUTATION: leave `ui.recordPresetSpeedInTheSetup` out of `LocomotiveSettingsFrame.write`, and this fails.
+     */
+    @Test
+    public void testAnOldSetupsStoredSpeedDoesNotUndoTheWindowsSave() throws Exception
+    {
+        final String configuration = ui.getActiveDiagramConfiguration();
+        final TileKey square = squareNamed("BottomMainB");
+
+        SwingUtilities.invokeAndWait(() -> session.setPointProperty(square, "loc",
+            new org.json.JSONObject().put("name", TRAIN).put("speed", 20)));
+
+        // What a file read does is unchanged: the stored speed is the train's after a load that does not fold
+        train.setPreferredSpeed(50);
+
+        reloadWithoutFolding(configuration);
+
+        assertEquals(train.getPreferredSpeed(), 20, "an untouched old setup no longer loads the speed it stores");
+
+        saveInTheWindow(66);
+
+        reloadWithoutFolding(configuration);
+
+        assertEquals(train.getPreferredSpeed(), 66, "a load without a fold put the old setup's speed over the one saved in the window");
+
+        saveInTheWindow(71);
+
+        try (Answering answering = Answering.start(message -> Answering.press(I18n.t("ui.yes"))))
+        {
+            SwingUtilities.invokeAndWait(() -> ui.rebuildRunningLayoutFromSetup());
+
+            Components.settle();
+            Components.settle();
+        }
+
+        assertEquals(train.getPreferredSpeed(), 71, "the rebuild from the setup put the old setup's speed over the one saved in the window");
+    }
+
+    private static void reloadWithoutFolding(String configuration) throws Exception
+    {
+        try (Answering answering = Answering.start(message -> Answering.press(I18n.t("ui.yes"))))
+        {
+            SwingUtilities.invokeAndWait(() -> ui.getAutonomyViewerPanel().load(configuration, false, false));
+
+            Components.settle();
+            Components.settle();
+        }
+    }
+
     private static void reload(String configuration) throws Exception
     {
         try (Answering answering = Answering.start(message -> Answering.press(I18n.t("ui.yes"))))

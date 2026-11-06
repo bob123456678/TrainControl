@@ -7697,6 +7697,35 @@ public class AutonomySession
         deriveStationIndex();
     }
 
+    /**
+     * Puts a speed saved in the Locomotive Settings window over the stale copy an old-format setup keeps of a standing
+     * train, which a load would otherwise read back; a setup that stores no speed for the train is left alone.
+     *
+     * @return true when a stored speed was changed
+     */
+    public boolean updateStoredSpeed(String locomotive, int speed)
+    {
+        boolean changed = false;
+
+        for (Map.Entry<TileKey, String> placed : placedLocomotives().entrySet())
+        {
+            Object stored = locomotive.equals(placed.getValue()) ? getPointProperty(placed.getKey(), "loc") : null;
+
+            if (!(stored instanceof org.json.JSONObject) || !((org.json.JSONObject) stored).has("speed")) continue;
+
+            org.json.JSONObject copy = new org.json.JSONObject(stored.toString());
+
+            if (speed > 0) copy.put("speed", speed);
+            else copy.remove("speed");
+
+            setPointProperty(placed.getKey(), "loc", copy);
+
+            changed = true;
+        }
+
+        return changed;
+    }
+
     /** The write alone, for a caller making several and re-deriving once. */
     private void writePointProperty(TileKey tile, String key, Object value)
     {

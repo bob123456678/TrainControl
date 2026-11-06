@@ -541,7 +541,7 @@ public class testTheLocomotiveSettingsFunctions
 
             JTable table = table();
 
-            for (int i = 0; i < 6; i++)
+            Runnable paint = () ->
             {
                 Components.onTheEventThread(() ->
                 {
@@ -552,7 +552,20 @@ public class testTheLocomotiveSettingsFunctions
                 });
 
                 Components.settle();
-            }
+            };
+
+            for (int i = 0; i < 3; i++) paint.run();
+
+            // The image is fetched off the event thread: wait for the one failure, then paint again
+            assertTrue(Components.waitFor(() ->
+            {
+                synchronized (logged)
+                {
+                    return logged.stream().anyMatch(m -> m.contains(I18n.f("loc.ui.errorInvalidIconPath", missing)));
+                }
+            }, WAIT), "the missing image was never tried");
+
+            for (int i = 0; i < 4; i++) paint.run();
         }
         finally
         {
@@ -579,7 +592,7 @@ public class testTheLocomotiveSettingsFunctions
     {
         String icons = support.SourceOf.declaration("private void loadStandardIcons()");
 
-        assertTrue(icons.contains("getImageLoader().submit"), "the standard icons are not fetched by the image loader");
+        assertTrue(icons.contains("ICON_LOADER.submit"), "the standard icons are not fetched on their own thread");
         assertFalse(icons.contains("invokeLater(() ->\n        {\n            for"), "the icons are loaded in one pass on the event thread");
 
         String picture = support.SourceOf.declaration("void refreshPicture()");

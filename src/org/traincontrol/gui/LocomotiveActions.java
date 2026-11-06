@@ -162,6 +162,8 @@ final class LocomotiveActions
                 }
             }
 
+            if (RunGates.refuseWhileAutonomyRunning(this.ui, source)) return false;
+
             if (this.ui.refuseWhileARouteDrivesIt(source, l.getName())) return false;
 
             if (newAddress != null && !"".equals(newAddress.trim()))

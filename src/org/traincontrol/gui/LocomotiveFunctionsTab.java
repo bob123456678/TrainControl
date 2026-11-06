@@ -292,17 +292,27 @@ final class LocomotiveFunctionsTab extends JPanel
             : I18n.f("loc.ui.copyIconsFromLocomotive", from.getName()));
     }
 
-    /** Shows the standard icons as they load, the first at once and the rest after the window is up. */
+    /** The standard icons are fetched on a thread of their own, so they do not hold up the main window's pictures. */
+    private static final java.util.concurrent.ExecutorService ICON_LOADER =
+        java.util.concurrent.Executors.newSingleThreadExecutor(r ->
+        {
+            Thread t = new Thread(r, "function-icons");
+
+            t.setDaemon(true);
+
+            return t;
+        });
+
+    /** Shows each standard icon as it arrives. */
     private void loadStandardIcons()
     {
-        // Each icon is fetched once, off the event thread; the table repaints as they arrive
         boolean active = ui.getModel().isCS3() || !ui.getModel().getNetworkCommState();
 
         for (int i = 0; i < standardIcons.length; i++)
         {
             final int which = i;
 
-            ui.getImageLoader().submit(() ->
+            ICON_LOADER.submit(() ->
             {
                 ImageIcon loaded = null;
 
@@ -322,6 +332,7 @@ final class LocomotiveFunctionsTab extends JPanel
                 {
                     standardIcons[which] = shown;
                     table.repaint();
+                    iconEditor.combo.repaint();
                 });
             });
         }
@@ -479,31 +490,44 @@ final class LocomotiveFunctionsTab extends JPanel
         loc.setPreferredFunctions(preset);
     }
 
-    /** Each custom image as it was loaded, by path; a file that would not load is held as null so it is tried once. */
-    private final Map<String, ImageIcon> customPictures = new java.util.HashMap<>();
+    /** Each custom image by path: loaded off the event thread, and a file that would not load is held as null, tried once. */
+    private final Map<String, ImageIcon> customPictures = new java.util.concurrent.ConcurrentHashMap<>();
 
-    /** The picture for a row: its own image when it has one, else its standard icon. */
+    private final java.util.Set<String> customRequested = java.util.concurrent.ConcurrentHashMap.newKeySet();
+
+    /** The picture for a row: its own image once it has loaded, else its standard icon. */
     private ImageIcon pictureOf(Row r)
     {
         if (r.custom != null)
         {
-            if (!customPictures.containsKey(r.custom))
+            final String path = r.custom;
+
+            if (customRequested.add(path))
             {
-                ImageIcon loaded = null;
-
-                try
+                ui.getImageLoader().submit(() ->
                 {
-                    loaded = new ImageIcon(ui.getLocImage(r.custom, TrainControlUI.BUTTON_ICON_WIDTH));
-                }
-                catch (Exception ex)
-                {
-                    ui.getModel().logf("loc.ui.errorInvalidIconPath", r.custom);
-                }
+                    ImageIcon loaded = null;
 
-                customPictures.put(r.custom, loaded);
+                    try
+                    {
+                        loaded = new ImageIcon(ui.getLocImage(path, TrainControlUI.BUTTON_ICON_WIDTH));
+                    }
+                    catch (Exception ex)
+                    {
+                        ui.getModel().logf("loc.ui.errorInvalidIconPath", path);
+                    }
+
+                    if (loaded != null) customPictures.put(path, loaded);
+
+                    SwingUtilities.invokeLater(() ->
+                    {
+                        table.repaint();
+                        iconEditor.combo.repaint();
+                    });
+                });
             }
 
-            return customPictures.get(r.custom);
+            return customPictures.get(path);
         }
 
         return r.icon >= 0 && r.icon < standardIcons.length ? standardIcons[r.icon] : null;

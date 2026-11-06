@@ -351,7 +351,7 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
         // Only what the operator changed from the loaded values: another door may have changed the rest since
         if (identity && !main.locomotiveActions.writeNameAndAddress(this, loc,
             locomotiveTab.nameChanged() ? locomotiveTab.name.getText() : null,
-            locomotiveTab.addressOrDecoderChanged() ? locomotiveTab.address.getText() : "",
+            locomotiveTab.addressText(),
             (decoderType) locomotiveTab.decoder.getSelectedItem()))
         {
             return false;
@@ -359,7 +359,12 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
 
         setTitle(I18n.f("loc.ui.settingsTitle", loc.getName()));
 
-        if (locomotiveTab.speedChanged()) loc.setPreferredSpeed(locomotiveTab.speedValue());
+        if (locomotiveTab.speedChanged())
+        {
+            loc.setPreferredSpeed(locomotiveTab.speedValue());
+
+            main.recordPresetSpeedInTheSetup(loc);
+        }
 
         if (functionsTab.isDirty())
         {
@@ -611,9 +616,15 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
             return !name.getText().equals(loadedName);
         }
 
-        boolean addressOrDecoderChanged()
+        /**
+         * The address to write: the typed one when it was changed; the locomotive's own when only the decoder was, since
+         * the write needs an address and a sync may have changed it since; none otherwise.
+         */
+        String addressText()
         {
-            return !address.getText().equals(loadedAddress) || decoder.getSelectedItem() != loadedDecoder;
+            if (!address.getText().equals(loadedAddress)) return address.getText();
+
+            return decoder.getSelectedItem() != loadedDecoder ? Integer.toString(loc.getAddress()) : "";
         }
 
         boolean identityChanged()

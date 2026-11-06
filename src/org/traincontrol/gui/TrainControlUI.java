@@ -543,6 +543,23 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         return true;
     }
 
+    /** Writes a preset speed saved in the Locomotive Settings window into the loaded setup's copy of the train, if it keeps one. */
+    void recordPresetSpeedInTheSetup(Locomotive l)
+    {
+        org.traincontrol.automationui.AutonomySession session = this.autonomySession;
+
+        if (session == null || !session.updateStoredSpeed(l.getName(), l.getPreferredSpeed())) return;
+
+        try
+        {
+            session.saveWithoutReconciling();
+        }
+        catch (java.io.IOException e)
+        {
+            this.model.log(e);
+        }
+    }
+
     /** Closes the Locomotive Settings window if it is showing this locomotive, which has left the database. */
     void locomotiveSettingsClosedFor(Locomotive l)
     {

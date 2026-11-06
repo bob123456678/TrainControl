@@ -664,6 +664,78 @@ public class testTheLocomotiveSettingsWindow
     }
 
     /**
+     * A decoder-only Save keeps the address another door changed meanwhile: the write is given the locomotive's own
+     * address, not the typed one.
+     *
+     * MUTATION: give `writeNameAndAddress` the typed address for a decoder change, in `LocomotiveTab.addressText`, and
+     * this fails.
+     */
+    @Test
+    public void testADecoderOnlySaveKeepsAnAddressASyncChanged() throws Exception
+    {
+        open(0);
+
+        model.changeLocAddress(NAME, 1500, Locomotive.decoderType.MFX);
+
+        Components.onTheEventThread(() ->
+        {
+            SettingsWindow.part("settings.decoder", JComboBox.class).setSelectedItem(Locomotive.decoderType.DCC);
+
+            return null;
+        });
+
+        SettingsWindow.press(SettingsWindow.save());
+
+        assertTrue(Components.waitFor(() -> SettingsWindow.showing() == null, WAIT), "the decoder-only Save did not go through");
+        assertEquals(loc.getDecoderType(), Locomotive.decoderType.DCC);
+        assertEquals(loc.getAddress(), 1500, "the decoder-only Save put the old typed address back");
+    }
+
+    /**
+     * The name and address write asks again whether autonomy runs, for the old dialogs that reach it without the
+     * window's rule.
+     *
+     * MUTATION: leave the autonomy question out of `LocomotiveActions.writeNameAndAddress`, and this fails.
+     */
+    @Test
+    public void testTheNameAndAddressWriteAsksAboutAutonomy() throws Exception
+    {
+        java.lang.reflect.Field field = TrainControlUI.class.getDeclaredField("locomotiveActions");
+
+        field.setAccessible(true);
+
+        Object actions = field.get(ui);
+
+        java.lang.reflect.Method write = actions.getClass().getDeclaredMethod("writeNameAndAddress", Component.class,
+            Locomotive.class, String.class, String.class, Locomotive.decoderType.class);
+
+        write.setAccessible(true);
+
+        model.getAutoLayout().setStagingInProgress(true);
+
+        try
+        {
+            assertEquals(SettingsWindow.asked(() -> Components.onTheEventThread(() ->
+            {
+                try
+                {
+                    return write.invoke(actions, ui, loc, "LS renamed", "", Locomotive.decoderType.MFX);
+                }
+                catch (ReflectiveOperationException e)
+                {
+                    throw new IllegalStateException(e);
+                }
+            })), Arrays.asList(I18n.t("autolayout.ui.errorCannotEditLocomotivesWhileRunning")));
+
+            assertEquals(loc.getName(), NAME, "the write renamed a locomotive while autonomy runs");
+        }
+        finally
+        {
+            model.getAutoLayout().setStagingInProgress(false);
+        }
+    }
+
+    /**
      * The X and Escape ask what to do with typing that is not saved; Cancel stays, Discard closes and writes nothing,
      * Save writes; with nothing typed they close without asking.
      *
