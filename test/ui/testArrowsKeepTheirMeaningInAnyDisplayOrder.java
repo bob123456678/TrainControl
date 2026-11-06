@@ -12,6 +12,7 @@ import java.util.Map;
 import java.util.TreeMap;
 import javax.swing.SwingUtilities;
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotEquals;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertTrue;
@@ -270,6 +271,13 @@ public class testArrowsKeepTheirMeaningInAnyDisplayOrder extends support.PageWin
         });
 
         Components.settle();
+
+        // The popup draws its page in a posted task: given time to move, if it is going to
+        final LayoutPopupUI refreshed = popup;
+        final String stays = page;
+
+        assertFalse(Components.waitFor(() -> !stays.equals(popupPage(refreshed)), 1500), "a refresh moved the popup to"
+            + " another page");
 
         assertEquals(popupPage(popup), page, "a refresh moved the popup to another page");
 
