@@ -135,7 +135,9 @@ public class testTheEditorPageStrip
 
             List<AbstractButton> strip = strip(editor);
 
-            assertEquals(strip.size(), 6, "the strip has the wrong number of icons (autonomy " + autonomy + ")");
+            assertEquals(strip.size(), 6, "the strip has the wrong number of icons (autonomy " + autonomy + "): "
+                + strip.stream().map(b -> b.getToolTipText() + "@" + bounds(b, editor)).collect(
+                    java.util.stream.Collectors.toList()));
 
             List<String> tips = new ArrayList<>();
 
@@ -161,7 +163,8 @@ public class testTheEditorPageStrip
 
             int ordinary = at[1].x - (at[0].x + at[0].width);
 
-            assertTrue(at[5].x - (at[4].x + at[4].width) > ordinary + 8, "delete is not set apart from the rest");
+            assertTrue(at[5].x - (at[4].x + at[4].width) > ordinary + 8, "delete is not set apart from the rest: "
+                + Arrays.asList(at));
 
             javax.swing.JPanel sidebar = (javax.swing.JPanel) strip.get(0).getParent().getParent();
 
@@ -267,7 +270,7 @@ public class testTheEditorPageStrip
     {
         List<AbstractButton> found = Components.all(editor, AbstractButton.class,
             b -> "toolBarButton".equals(b.getClientProperty("JButton.buttonType")) && b.getToolTipText() != null
-                && bounds(b, editor).x < 160);
+                && bounds(b, editor).x < 160 && bounds(b, editor).y > 60 && bounds(b, editor).y < 120);
 
         found.sort((a, b) -> Integer.compare(bounds(a, editor).x, bounds(b, editor).x));
 

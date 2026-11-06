@@ -4264,20 +4264,20 @@ public class LayoutEditor extends PositionAwareJFrame
         strip.setOpaque(false);
         strip.setAlignmentX(java.awt.Component.LEFT_ALIGNMENT);
 
-        strip.add(pageIcon(RowIcons.plus(16), RowIcons.plus(16, gray), I18n.t("ui.main.toolbar.addBlackPage"), true,
+        strip.add(pageIcon(RowIcons.plus(14), RowIcons.plus(14, gray), I18n.t("ui.main.toolbar.addBlackPage"), true,
             () -> parent.addBlankPageFromTheEditor(this)));
-        strip.add(pageIcon(RowIcons.pencil(16), RowIcons.pencil(16, gray), I18n.t("ui.main.toolbar.renameCurrentPage"),
+        strip.add(pageIcon(RowIcons.pencil(14), RowIcons.pencil(14, gray), I18n.t("ui.main.toolbar.renameCurrentPage"),
             true, () -> parent.renamePageFromTheEditor(this)));
-        strip.add(pageIcon(RowIcons.copy(16), RowIcons.copy(16, gray), I18n.t("ui.main.toolbar.duplicateCurrentPage"),
+        strip.add(pageIcon(RowIcons.copy(14), RowIcons.copy(14, gray), I18n.t("ui.main.toolbar.duplicateCurrentPage"),
             true, () -> parent.duplicatePageFromTheEditor(this)));
 
         boolean first = at <= 0;
         boolean last = at < 0 || at >= pages.size() - 1;
 
-        strip.add(pageIcon(RowIcons.arrow(16, true), RowIcons.arrow(16, true, gray),
+        strip.add(pageIcon(RowIcons.arrow(14, true), RowIcons.arrow(14, true, gray),
             I18n.t(first ? "layout.ui.tooltipPageIsFirst" : "layout.ui.tooltipMovePageUp"), !first,
             () -> parent.movePageFromTheEditor(this, -1)));
-        strip.add(pageIcon(RowIcons.arrow(16, false), RowIcons.arrow(16, false, gray),
+        strip.add(pageIcon(RowIcons.arrow(14, false), RowIcons.arrow(14, false, gray),
             I18n.t(last ? "layout.ui.tooltipPageIsLast" : "layout.ui.tooltipMovePageDown"), !last,
             () -> parent.movePageFromTheEditor(this, 1)));
 
@@ -4286,7 +4286,7 @@ public class LayoutEditor extends PositionAwareJFrame
         // The handler refuses the last page on the same count
         boolean onlyOne = pages.size() <= 1;
 
-        strip.add(pageIcon(RowIcons.trash(16), RowIcons.trash(16, gray),
+        strip.add(pageIcon(RowIcons.trash(14), RowIcons.trash(14, gray),
             I18n.t(onlyOne ? "layout.ui.errorCannotDeleteOnlyRemainingPage" : "ui.main.toolbar.deleteCurrentPage"),
             !onlyOne, () -> parent.deletePageFromTheEditor(this)));
 
@@ -4302,6 +4302,7 @@ public class LayoutEditor extends PositionAwareJFrame
         button.setDisabledIcon(grayed);
         button.putClientProperty("JButton.buttonType", "toolBarButton");
         button.setFocusable(false);
+        button.setMargin(new java.awt.Insets(0, 0, 0, 0));
         button.setToolTipText(tip);
         button.setEnabled(enabled);
         button.addActionListener(e -> runPageAction(action));
