@@ -407,10 +407,11 @@ public class testATrainDragsFromStationToStation
     }
 
     /**
-     * While a run holds the setup the train is not offered: pressed and carried, nothing moves.
+     * While a run holds the setup the train is not offered, and one already carried is not let go: pressed with a run
+     * holding the setup, or with the run beginning mid-drag, nothing moves.
      *
-     * MUTATION: dropping the `setupIsHeldByARun` tests from `AutonomyEditorPanel.canDropTrain` and
-     * `LayoutEditorTrainDrag.press` lets the train go.
+     * MUTATION: dropping the `setupIsHeldByARun` test from `AutonomyEditorPanel.canDropTrain` leaves the station
+     * reading green with a run holding the setup.
      */
     @Test(timeOut = 120000)
     public void testNothingDragsWhileARunHoldsTheSetup() throws Exception
@@ -425,9 +426,32 @@ public class testATrainDragsFromStationToStation
 
         try
         {
+            // A run beginning while the train is carried
+            Mouse.press(f.fromLabel, MouseEvent.BUTTON1);
+
+            carryTo(f.fromLabel, f.toLabel);
+
+            assertNotNull(ghost(), "precondition: the train was not being carried before the run began");
+
             staging.setBoolean(ui, true);
 
             assertTrue(ui.aRunHoldsTheSetup(), "precondition: the staging flag does not hold the setup");
+
+            carryTo(f.fromLabel, f.toLabel);
+
+            assertEquals(markOf(f.toLabel), Color.RED, "with a run holding the setup, the station still reads as taking the train");
+
+            Mouse.release(f.fromLabel, MouseEvent.BUTTON1);
+            settle();
+
+            assertUnchanged(asFound, "a train carried when a run began landed");
+
+            // A run already holding the setup: the train is still drawn there, and is not picked up
+            final boolean[] drawn = new boolean[1];
+
+            SwingUtilities.invokeAndWait(() -> drawn[0] = f.fromLabel.trainDrawnAt(center(f.fromLabel)));
+
+            assertTrue(drawn[0], "precondition: the train is no longer drawn under the press, so nothing is tested");
 
             Mouse.press(f.fromLabel, MouseEvent.BUTTON1);
 
