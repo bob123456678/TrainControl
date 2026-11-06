@@ -81,7 +81,7 @@ public class testArrowsKeepTheirMeaningInAnyDisplayOrder extends support.PageWin
 
     private void checkTheDoors() throws Exception
     {
-        final List<String> byName = model.getLayoutListByName();
+        final List<String> byName = sortedByName();
 
         assertNotEquals(model.getLayoutList(), byName, "precondition: the layout is shown in name order");
 
@@ -245,7 +245,7 @@ public class testArrowsKeepTheirMeaningInAnyDisplayOrder extends support.PageWin
 
         startTheWindow(5);
 
-        final List<String> byName = model.getLayoutListByName();
+        final List<String> byName = sortedByName();
 
         LayoutDiagramComponent arrow = null;
         String onPage = null;
@@ -299,6 +299,16 @@ public class testArrowsKeepTheirMeaningInAnyDisplayOrder extends support.PageWin
     }
 
     // ------------------------------------------------------------------------------------------------
+
+    /** The shown pages sorted here, not by the model, so a model that sorts wrongly cannot agree with itself. */
+    private List<String> sortedByName()
+    {
+        List<String> sorted = new ArrayList<>(model.getLayoutList());
+
+        Collections.sort(sorted);
+
+        return sorted;
+    }
 
     private static String popupPage(LayoutPopupUI popup)
     {
