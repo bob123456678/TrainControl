@@ -442,6 +442,9 @@ public class MarklinControlStation implements ViewListener, ModelListener
         {
             this.logf("log.csDataImported", network.getIP());
 
+            // Connected, so a second try would meet the same answer: the operator is told instead, and can sync again
+            if (this.lastSyncPartial && view != null && !GraphicsEnvironment.isHeadless()) view.showSyncPartial();
+
             // Turn on network communication and turn on the power
             this.on = true;
             
@@ -1439,6 +1442,16 @@ public class MarklinControlStation implements ViewListener, ModelListener
         return this.lastSyncError;
     }
 
+    /** Whether the last sync left part of the Central Station's data as it was because it could not be read (FR-169). */
+    private volatile boolean lastSyncPartial = false;
+
+    /** Whether the last sync could not read part of what the Central Station sent, and left that part as it was. */
+    @Override
+    public boolean wasLastSyncPartial()
+    {
+        return this.lastSyncPartial;
+    }
+
     /**
      * Syncs, and while the sync fails asks whether to try again (OB-338).  The first sync is the only thing that brings
      * communication up, so a failure would leave no way to connect.  With nobody to ask the sync is made once.
@@ -1550,6 +1563,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
     public final int syncWithCS2()
     {        
         this.lastSyncError = null;
+        this.lastSyncPartial = false;
 
         // Read remote config files
         this.fileParser = new CS2File(cs2Address(), this);
@@ -1603,6 +1617,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
                 catch (UnreadableAnswerException e)
                 {
                     this.logf("route.importSkippedUnreadable");
+                    this.lastSyncPartial = true;
                     parsedRoutes = null;
                 }
 
@@ -1615,7 +1630,10 @@ public class MarklinControlStation implements ViewListener, ModelListener
             
             // Unlock all routes in case they have been deleted; one the Central Station has but that would not read stays
             // as it is
-            for (MarklinRoute r : parsedRoutes == null ? Collections.<MarklinRoute>emptyList() : this.getRoutes())
+            // With a route that would not read and has no id to keep it by, none can be told from a deleted one
+            boolean canTellDeleted = !this.isCS3 || !fileParser.hasUnreadableRouteWithoutId();
+
+            for (MarklinRoute r : parsedRoutes == null || !canTellDeleted ? Collections.<MarklinRoute>emptyList() : this.getRoutes())
             {
                 if (!this.isCS3 || !fileParser.getUnreadableRouteIds().contains(r.getId())) r.setLocked(false);
             }
@@ -1638,8 +1656,12 @@ public class MarklinControlStation implements ViewListener, ModelListener
                 catch (UnreadableAnswerException e)
                 {
                     this.logf("loc.importSkippedUnreadable");
+                    this.lastSyncPartial = true;
                     parsedLocs = new ArrayList<>();
                 }
+
+                // Records of either list that would not read were skipped, each with a warning of its own
+                this.lastSyncPartial |= fileParser.getUnreadableRecords() > 0;
             }
             else
             {

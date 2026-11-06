@@ -552,24 +552,27 @@ public final class CS2File
 
     public List<MarklinLocomotive> parseLocomotivesCS3() throws Exception
     {
-        return parseLocomotivesCS3(namedList(readList(fetchCS3LocDB(), null)));
+        return parseLocomotivesCS3(readList(fetchCS3LocDB(), null));
     }
 
     /**
-     * The locomotive list if every record can be matched by its internal name, which a multi-unit's members and a route's
-     * locomotives are named by; otherwise it cannot be used, and the import is left alone (FR-169).
+     * Whether some record of the locomotive list cannot be told by its internal name and name, which the members of a
+     * multi-unit and the locomotives of a route are named by: then a member or a locomotive that is not found may be
+     * that record, and what names it is left as it is (FR-169).
      */
-    private static JSONArray namedList(JSONArray locomotives) throws UnreadableAnswerException
+    private static boolean hasUnnameableRecord(JSONArray locomotives)
     {
         for (int i = 0; i < locomotives.length(); i++)
         {
-            if (locomotives.optJSONObject(i) != null && text(locomotives.optJSONObject(i), "internname") == null)
+            JSONObject loc = locomotives.optJSONObject(i);
+
+            if (loc == null || text(loc, "internname") == null || text(loc, "name") == null)
             {
-                throw new UnreadableAnswerException("a locomotive has no internal name");
+                return true;
             }
         }
 
-        return locomotives;
+        return false;
     }
 
     /**
@@ -578,7 +581,7 @@ public final class CS2File
      */
     public List<MarklinLocomotive> parseLocomotivesCS3(boolean is260) throws Exception
     {
-        return parseLocomotivesCS3(namedList(readList(openCS3Locos(is260), null)));
+        return parseLocomotivesCS3(readList(openCS3Locos(is260), null));
     }
     
     // The accessory list the route import read, for the positions read after it in the same sync
@@ -725,7 +728,8 @@ public final class CS2File
             JSONArray locs = readList(locBR, null);
 
             requireUsable(routes, mags, "mag", o -> o.optInt("id", Integer.MIN_VALUE) != Integer.MIN_VALUE, "accessories");
-            requireUsable(routes, locs, "lok", o -> text(o, "internname") != null, "locomotives");
+            requireUsable(routes, locs, "lok", o -> true, "locomotives");
+            requireRouteKeys(routes);
 
             return parseRoutesCS3(routes, mags, locs);
         }
@@ -768,6 +772,49 @@ public final class CS2File
         if (referred && !any)
         {
             throw new UnreadableAnswerException("the routes use " + what + ", and there are none");
+        }
+    }
+
+    /**
+     * The keys that are legitimately absent from some items (a switch in its default position has no "stellung") but
+     * not from all: if the route list has items that need one and none carries it, or every route is empty, the key has
+     * gone from the station's answer and the routes cannot be read (FR-169).
+     */
+    private static void requireRouteKeys(JSONArray routes) throws UnreadableAnswerException
+    {
+        int switches = 0, withPosition = 0, withArticle = 0, speeds = 0, withValue = 0, withItems = 0;
+
+        for (int i = 0; i < routes.length(); i++)
+        {
+            JSONArray items = routes.optJSONObject(i) == null ? null : routes.optJSONObject(i).optJSONArray("items");
+            withItems += items != null && items.length() > 0 ? 1 : 0;
+
+            for (int j = 0; items != null && j < items.length(); j++)
+            {
+                JSONObject item = items.optJSONObject(j);
+
+                if (item != null && "mag".equals(item.opt("typ")))
+                {
+                    switches++;
+                    withPosition += item.has("stellung") ? 1 : 0;
+                    withArticle += item.has("magnetartikel") ? 1 : 0;
+                }
+                else if (item != null && "speed".equals(item.opt("typ")))
+                {
+                    speeds++;
+                    withValue += item.has("wert") ? 1 : 0;
+                }
+            }
+        }
+
+        if (routes.length() > 0 && withItems == 0)
+        {
+            throw new UnreadableAnswerException("no route has any items");
+        }
+
+        if (switches > 0 && (withPosition == 0 || withArticle == 0) || speeds > 0 && withValue == 0)
+        {
+            throw new UnreadableAnswerException("a key every route item had has gone");
         }
     }
 
@@ -1205,10 +1252,52 @@ public final class CS2File
         return new ArrayList<>(this.unreadableRouteIds);
     }
 
+    // Whether a route of the last parse that would not read has no id to keep it by, and how many records of routes and
+    // locomotives would not read
+    private boolean unreadableRouteWithoutId;
+
+    private int unreadableRecords;
+
+    /** Whether a route that would not read had no readable id: then the routes held cannot be told apart from deleted ones. */
+    public boolean hasUnreadableRouteWithoutId()
+    {
+        return this.unreadableRouteWithoutId;
+    }
+
+    /** How many route and locomotive records the parsers had to skip. */
+    public int getUnreadableRecords()
+    {
+        return this.unreadableRecords;
+    }
+
+    /**
+     * The name of the locomotive a route item names, or null with a warning if the list has none by that name; if some
+     * record of the list would not read, it may be that one, and the route is skipped instead (FR-169).
+     */
+    private String routeLocomotiveName(JSONObject item, JSONArray locs, boolean unnameable)
+    {
+        JSONObject found = this.getCS3LocById(item.getString("lok"), locs);
+
+        if (found != null)
+        {
+            return found.getString("name");
+        }
+
+        if (unnameable)
+        {
+            throw new JSONException("the locomotive may be a record that would not read");
+        }
+
+        logMessage(I18n.f("route.warningLocomotiveNotExistInDb", item.getString("lok")));
+        return null;
+    }
+
     public List<MarklinRoute> parseRoutesCS3(JSONArray routeList, JSONArray mags, JSONArray locs)
     {
         this.cs3Mags = mags;
         this.unreadableRouteIds.clear();
+        this.unreadableRouteWithoutId = false;
+        boolean unnameable = hasUnnameableRecord(locs);
 
         if (locs.isEmpty())
         {
@@ -1233,14 +1322,17 @@ public final class CS2File
                     {
                         JSONObject item = items.getJSONObject(j);
 
+                        // An item says what it is, and a train command names its locomotive
+                        String itemType = item.getString("typ");
+
+                        if (("speed".equals(itemType) || "dir".equals(itemType)) && !item.has("lok"))
+                        {
+                            throw new JSONException("a train command names no locomotive");
+                        }
+
                         if (item.has("lok") && "speed".equals(item.getString("typ")) && item.has("lok"))
                         {
-                            String locName = null;
-
-                            if (this.getCS3LocById(item.getString("lok"), locs) != null)
-                            {
-                                locName = this.getCS3LocById(item.getString("lok"), locs).getString("name");
-                            }
+                            String locName = routeLocomotiveName(item, locs, unnameable);
 
                             if (locName != null)
                             {
@@ -1261,10 +1353,6 @@ public final class CS2File
                                 }
 
                                 r.addItem(rc);
-                            }
-                            else
-                            {
-                                logMessage(I18n.f("route.warningLocomotiveNotExistInDb", item.getString("lok")));
                             }
                         }
 
@@ -1312,12 +1400,7 @@ public final class CS2File
                         } */
                         else if (item.has("lok") && "dir".equals(item.getString("typ")) && item.has("lok"))
                         {
-                            String locName = null;
-
-                            if (this.getCS3LocById(item.getString("lok"), locs) != null)
-                            {
-                                locName = this.getCS3LocById(item.getString("lok"), locs).getString("name");
-                            }
+                            String locName = routeLocomotiveName(item, locs, unnameable);
 
                             if (locName != null)
                             {
@@ -1339,10 +1422,6 @@ public final class CS2File
                                 }
 
                                 r.addItem(rc);
-                            }
-                            else
-                            {
-                                logMessage(I18n.f("route.warningLocomotiveNotExistInDb", item.getString("lok")));
                             }
                         }
                         else if (item.has("typ") && "mag".equals(item.getString("typ")) && item.has("magnetartikel"))
@@ -1524,10 +1603,15 @@ public final class CS2File
                 catch (NumberFormatException | JSONException | ClassCastException e)
                 {
                     JSONObject skipped = routeList.optJSONObject(i);
+                    this.unreadableRecords++;
 
                     if (skipped != null && skipped.optInt("id", Integer.MIN_VALUE) != Integer.MIN_VALUE)
                     {
                         this.unreadableRouteIds.add(skipped.optInt("id"));
+                    }
+                    else
+                    {
+                        this.unreadableRouteWithoutId = true;
                     }
 
                     logMessage(
@@ -1579,30 +1663,28 @@ public final class CS2File
         
         Map<String, String> internalNames = new HashMap<>();
         
-        // For multi-units, we need to parse the internal CS3 locomotive names.  A record with no name is warned of in the
-        // loop below.
+        // For multi-units, we need to parse the internal CS3 locomotive names.  A record with no name or internal name is
+        // warned of in the loop below.
         for (int i = 0 ; i < locomotiveList.length(); i++)
         {
             JSONObject loc = locomotiveList.optJSONObject(i);
 
-            if (loc != null && text(loc, "name") != null)
+            if (loc != null && text(loc, "name") != null && text(loc, "internname") != null)
             {
-                if (text(loc, "internname") != null)
-                {
-                    internalNames.put(text(loc, "internname"), text(loc, "name"));
-                }
-                else
-                {
-                    logMessage(I18n.f("loc.errorPreParsingLocomotives"), null, false);
-                }
+                internalNames.put(text(loc, "internname"), text(loc, "name"));
             }
         }
+
+        boolean unnameable = hasUnnameableRecord(locomotiveList);
         
         for (int i = 0 ; i < locomotiveList.length(); i++)
         {
             try
             {
                 JSONObject loc = locomotiveList.getJSONObject(i);
+
+                // What names it for a multi-unit and a route: a record without it is skipped, as one without a uid is
+                loc.getString("internname");
 
                 Integer uid = Integer.decode(loc.getString("uid"));
 
@@ -1642,6 +1724,9 @@ public final class CS2File
                             }
                             else
                             {
+                                // Not found because its record would not read: the unit is skipped, keeping its members
+                                if (unnameable) throw new JSONException("a member may be a record that would not read");
+
                                 logMessage(
                                     I18n.f("loc.warningUnmatchedMultiUnitIdentifier", identifier)
                                 );
@@ -1661,6 +1746,9 @@ public final class CS2File
                             }
                             else
                             {
+                                // Not found because its record would not read: the unit is skipped, keeping its members
+                                if (unnameable) throw new JSONException("a member may be a record that would not read");
+
                                 logMessage(
                                     I18n.f("loc.warningUnmatchedMultiUnitIdentifier", identifier)
                                 );                        
@@ -1744,6 +1832,8 @@ public final class CS2File
             }
             catch (NumberFormatException | JSONException | ClassCastException e)
             {
+                this.unreadableRecords++;
+
                 logMessage(
                     I18n.f("loc.invalidCs3Locomotive",
                         describeCS3Field(locomotiveList, i, "name"),

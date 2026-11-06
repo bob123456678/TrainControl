@@ -35,6 +35,13 @@ import support.StationRig;
  * optJSONArray, and testALocomotiveThatCannotBeReadIsSkippedAndTheHeldOneKept finds its functions overwritten.  Read a
  * multi-unit's `lokname` with optString, and the same test finds the members gone.  Read `dectyp` with optString and a
  * default, and testAnEmptyDatabaseIsNotFilledWithGuesses finds every locomotive stored as MM2.
+ * Skip the record-level answer ("boolean unnameable = false" in parseLocomotivesCS3), and
+ * testOneLocomotiveWithoutAnInternalNameCostsOnlyWhatNamesIt finds the units that name it with fewer members; the same in
+ * parseRoutesCS3, and it finds the route that names it rewritten without that locomotive.  Drop requireRouteKeys from
+ * parseRoutesCS3(boolean), a `typ` read with optString, or the missing-`lok` check, and testARouteItemThatCannotBeReadKeepsTheHeldRoute
+ * finds routes emptied or a train command dropped.  Unlock the routes whatever skipped (canTellDeleted), and
+ * testARouteWithNoIdLeavesTheLocksAlone finds the deleted route unlocked.  Drop the partial flag that records set, and
+ * the tests find the sync not saying part was unread.
  *
  * @author Adam
  */
@@ -178,6 +185,31 @@ public class testACS3ReadersSurviveFirmwareChanges
         return new StationRig(Files.createTempDirectory("tc-cs3-held").toFile(), station(replaced));
     }
 
+    /** What a test does with a good sync made, its routes armed, and what is held. */
+    private interface OnHeld
+    {
+        void run(StationRig rig, Map<String, byte[]> replaced, String held) throws Exception;
+    }
+
+    private static void onHeld(OnHeld test) throws Exception
+    {
+        Map<String, byte[]> replaced = new ConcurrentHashMap<>();
+
+        try (StationRig rig = rig(replaced))
+        {
+            String held = held(rig, "start");
+
+            try
+            {
+                test.run(rig, replaced, held);
+            }
+            finally
+            {
+                disarm(rig);
+            }
+        }
+    }
+
     /** Syncs well, arms the routes that can be, and returns what is held. */
     private static String held(StationRig rig, String what) throws Exception
     {
@@ -212,15 +244,23 @@ public class testACS3ReadersSurviveFirmwareChanges
         return result;
     }
 
-    /** The sync succeeds, what is held is as it was, and a good sync gives the same again. */
+    /** The sync succeeds and says part could not be read, what is held is as it was, and a good sync gives the same again. */
     private static void assertHeldUnchanged(StationRig rig, Map<String, byte[]> replaced, String held, String what,
         Map<String, byte[]> answers) throws Exception
+    {
+        assertHeldUnchanged(rig, replaced, held, what, answers, true);
+    }
+
+    private static void assertHeldUnchanged(StationRig rig, Map<String, byte[]> replaced, String held, String what,
+        Map<String, byte[]> answers, boolean partial) throws Exception
     {
         int result = syncWith(rig, replaced, answers);
 
         assertTrue(result >= 0, "the sync goes on (" + what + "): " + rig.model.getLastSyncError());
+        assertEquals(rig.model.wasLastSyncPartial(), partial, "the sync says whether part could not be read (" + what + ")");
         assertEquals(state(rig), held, "what is held is unchanged (" + what + ")");
         assertTrue(rig.model.syncWithCS2() >= 0, "a good sync after it (" + what + ")");
+        assertFalse(rig.model.wasLastSyncPartial(), "and a good sync reads all (" + what + ")");
         assertEquals(state(rig), held, "a good sync after it gives the same (" + what + ")");
     }
 
@@ -235,99 +275,221 @@ public class testACS3ReadersSurviveFirmwareChanges
     @Test
     public void testAnAnswerThatCannotBeReadChangesNothingHeld() throws Exception
     {
-        Map<String, byte[]> replaced = new ConcurrentHashMap<>();
-
-        try (StationRig rig = rig(replaced))
+        onHeld((rig, replaced, held) ->
         {
-            String held = held(rig, "start");
+            int commands = rig.model.getRoutes().stream().mapToInt(r -> r.getRoute().size()).sum();
+            assertTrue(commands > 100, "the routes hold many commands: " + commands);
+            assertTrue(rig.model.getRoutes().stream().anyMatch(r -> r.isEnabled()), "some route is armed");
 
-            try
+            String[] paths = {ROUTES, ACCESSORIES, LOCOS};
+            String[] files = {AUTOMATICS[0], MAGS[0], LOCS[1]};
+
+            for (int p = 0; p < paths.length; p++)
             {
-                int commands = rig.model.getRoutes().stream().mapToInt(r -> r.getRoute().size()).sum();
-                assertTrue(commands > 100, "the routes hold many commands: " + commands);
-                assertTrue(rig.model.getRoutes().stream().anyMatch(r -> r.isEnabled()), "some route is armed");
+                String good = read(files[p]);
+                Object[] answers = {"", "<html>not json</html>", good.substring(0, good.length() / 2), "{}", "7", "null",
+                    "\"text\"", "{\"automatics\":7}"};
 
-                String[] paths = {ROUTES, ACCESSORIES, LOCOS};
-                String[] files = {AUTOMATICS[0], MAGS[0], LOCS[1]};
-
-                for (int p = 0; p < paths.length; p++)
+                for (Object answer : answers)
                 {
-                    String good = read(files[p]);
-                    Object[] answers = {"", "<html>not json</html>", good.substring(0, good.length() / 2), "{}", "7", "null",
-                        "\"text\"", "{\"automatics\":7}"};
-
-                    for (Object answer : answers)
-                    {
-                        assertHeldUnchanged(rig, replaced, held, paths[p] + " answering " + answer.toString().substring(0,
-                            Math.min(20, answer.toString().length())), only(paths[p], answer));
-                    }
-                }
-
-                // Empty lists, while the routes use accessories and locomotives
-                assertHeldUnchanged(rig, replaced, held, "no accessories", only(ACCESSORIES, "[]"));
-                assertHeldUnchanged(rig, replaced, held, "no locomotives", only(LOCOS, "[]"));
-
-                // Lists whose records cannot be matched: the key that names them renamed, or not what it was
-                for (int mode : new int[] {0, 1, 2})
-                {
-                    assertHeldUnchanged(rig, replaced, held, "accessory id, mode " + mode,
-                        only(ACCESSORIES, mutated(read(MAGS[0]), "id", mode)));
-                    assertHeldUnchanged(rig, replaced, held, "locomotive internname, mode " + mode,
-                        only(LOCOS, mutated(read(LOCS[1]), "internname", mode)));
+                    assertHeldUnchanged(rig, replaced, held, paths[p] + " answering " + answer.toString().substring(0,
+                        Math.min(20, answer.toString().length())), only(paths[p], answer));
                 }
             }
-            finally
+
+            // Empty lists, while the routes use accessories and locomotives
+            assertHeldUnchanged(rig, replaced, held, "no accessories", only(ACCESSORIES, "[]"));
+            assertHeldUnchanged(rig, replaced, held, "no locomotives", only(LOCOS, "[]"));
+
+            // Lists whose records cannot be matched: the key that names them renamed, or not what it was
+            for (int mode : new int[] {0, 1, 2})
             {
-                disarm(rig);
+                assertHeldUnchanged(rig, replaced, held, "accessory id, mode " + mode,
+                    only(ACCESSORIES, mutated(read(MAGS[0]), "id", mode)));
+                assertHeldUnchanged(rig, replaced, held, "locomotive internname, mode " + mode,
+                    only(LOCOS, mutated(read(LOCS[1]), "internname", mode)));
             }
-        }
+        });
     }
 
     /** A record missing what it needs is skipped, with one warning, and the one held is not touched. */
     @Test
     public void testALocomotiveThatCannotBeReadIsSkippedAndTheHeldOneKept() throws Exception
     {
-        Map<String, byte[]> replaced = new ConcurrentHashMap<>();
-
-        try (StationRig rig = rig(replaced))
+        onHeld((rig, replaced, held) ->
         {
-            String held = held(rig, "start");
+            String[] keys = {"uid", "name", "dectyp", "funktionen", "typ", "typ2", "isMoment", "dauer", "lokname"};
 
-            try
+            for (String key : keys)
             {
-                String[] keys = {"uid", "name", "dectyp", "funktionen", "typ", "typ2", "isMoment", "dauer", "lokname"};
-
-                for (String key : keys)
+                for (int mode : new int[] {0, 1, 2})
                 {
-                    for (int mode : new int[] {0, 1, 2})
+                    assertHeldUnchanged(rig, replaced, held, key + ", mode " + mode,
+                        only(LOCOS, mutated(read(LOCS[1]), key, mode)));
+                }
+            }
+
+            // A multi-unit's members are the whole of its entry: one entry that will not read skips the unit
+            assertHeldUnchanged(rig, replaced, held, "traktion retyped", only(LOCOS, mutated(read(LOCS[1]), "traktion", 2)));
+
+            // An icon is not needed: a locomotive without one keeps the one it holds
+            assertHeldUnchanged(rig, replaced, held, "icon removed", only(LOCOS, mutated(read(LOCS[1]), "icon", 0)), false);
+
+            // One record only, and one warning
+            JSONArray one = new JSONArray(read(LOCS[1]));
+            one.getJSONObject(5).remove("funktionen");
+            rig.takeLog();
+            replaced.put(LOCOS, bytes(one));
+            assertTrue(rig.model.syncWithCS2() >= 0);
+            replaced.clear();
+
+            assertEquals(state(rig), held, "the others are read as they were, and the held one is kept");
+            assertEquals(rig.takeLog().stream().filter(l -> l.contains("could not be parsed")).count(), 1, "one warning");
+        });
+    }
+
+    /** A route item that lacks what it needs, or a key every item had, leaves the held routes as they are. */
+    @Test
+    public void testARouteItemThatCannotBeReadKeepsTheHeldRoute() throws Exception
+    {
+        onHeld((rig, replaced, held) ->
+        {
+            String routes = new String(StandInStation.cs3("260", INFO).apply(ROUTES, 1), StandardCharsets.UTF_8);
+
+            // A key renamed, removed or retyped (not to another valid article number: that is another article)
+            for (String key : new String[] {"stellung", "magnetartikel", "typ", "lok", "wert", "items"})
+            {
+                for (int mode = 0; mode < MODES; mode++)
+                {
+                    if (!("magnetartikel".equals(key) && mode == 2))
                     {
-                        assertHeldUnchanged(rig, replaced, held, key + ", mode " + mode,
-                            only(LOCOS, mutated(read(LOCS[1]), key, mode)));
+                        assertHeldUnchanged(rig, replaced, held, key + ", mode " + mode, only(ROUTES, mutated(routes, key, mode)));
                     }
                 }
+            }
 
-                // A multi-unit's members are the whole of its entry: one entry that will not read skips the unit
-                assertHeldUnchanged(rig, replaced, held, "traktion retyped", only(LOCOS, mutated(read(LOCS[1]), "traktion", 2)));
+            // Every route emptied
+            assertHeldUnchanged(rig, replaced, held, "no route has items", only(ROUTES, mutated(routes, "items", 5)));
 
-                // An icon is not needed: a locomotive without one keeps the one it holds
-                assertHeldUnchanged(rig, replaced, held, "icon removed", only(LOCOS, mutated(read(LOCS[1]), "icon", 0)));
+            // A key that is truly absent from some items (a switch in its default position) is an ordinary answer
+            JSONArray some = listOf(routes);
 
-                // One record only, and one warning
-                JSONArray one = new JSONArray(read(LOCS[1]));
-                one.getJSONObject(5).remove("funktionen");
-                rig.takeLog();
-                replaced.put(LOCOS, bytes(one));
+            for (int i = 0; i < some.length(); i++)
+            {
+                JSONArray items = some.getJSONObject(i).getJSONArray("items");
+
+                for (int j = 1; j < items.length(); j++) items.getJSONObject(j).remove("stellung");
+            }
+
+            int before = rig.model.getRoutes().size();
+            replaced.put(ROUTES, bytes(some));
+            assertTrue(rig.model.syncWithCS2() >= 0);
+            replaced.clear();
+
+            assertFalse(rig.model.wasLastSyncPartial(), "a station whose switches mostly stand in their default position is read");
+            assertEquals(rig.model.getRoutes().size(), before, "and its routes are imported");
+        });
+    }
+
+    /** A route record with no id to keep it by makes a deleted route indistinguishable, so no route is unlocked. */
+    @Test
+    public void testARouteWithNoIdLeavesTheLocksAlone() throws Exception
+    {
+        onHeld((rig, replaced, held) ->
+        {
+            JSONArray routes = listOf(new String(StandInStation.cs3("260", INFO).apply(ROUTES, 1), StandardCharsets.UTF_8));
+            String gone = routes.getJSONObject(3).getString("name");
+            routes.remove(3);
+
+            // A route the station deleted is unlocked, as always
+            replaced.put(ROUTES, bytes(routes));
+            assertTrue(rig.model.syncWithCS2() >= 0);
+            replaced.clear();
+            assertFalse(rig.model.wasLastSyncPartial(), "nothing to say about an ordinary deletion");
+            assertFalse(rig.model.getRoute(gone).isLocked(), "the deleted route is unlocked");
+
+            // With a record that is no route, or has no id, nothing can be said to be deleted
+            assertTrue(rig.model.syncWithCS2() >= 0);
+            assertEquals(state(rig), held, "the full list gives the full state");
+
+            for (Object junk : new Object[] {7, new JSONObject().put("name", "no id").put("items", new JSONArray()),
+                new JSONObject().put("id", "x")})
+            {
+                JSONArray withJunk = new JSONArray(routes.toString());
+                withJunk.put(junk);
+                replaced.put(ROUTES, bytes(withJunk));
                 assertTrue(rig.model.syncWithCS2() >= 0);
                 replaced.clear();
 
-                assertEquals(state(rig), held, "the others are read as they were, and the held one is kept");
-                assertEquals(rig.takeLog().stream().filter(l -> l.contains("could not be parsed")).count(), 1, "one warning");
+                assertTrue(rig.model.wasLastSyncPartial(), "the sync says part could not be read (" + junk + ")");
+                assertTrue(rig.model.getRoute(gone).isLocked(), "the route the station may or may not have is left locked (" + junk + ")");
+                assertTrue(rig.model.syncWithCS2() >= 0);
             }
-            finally
-            {
-                disarm(rig);
-            }
+        });
+    }
+
+    /** One locomotive record without its internal name is skipped alone: its unit and the routes naming it wait, the rest is read. */
+    @Test
+    public void testOneLocomotiveWithoutAnInternalNameCostsOnlyWhatNamesIt() throws Exception
+    {
+        JSONArray locs = new JSONArray(read(LOCS[1]));
+        String internname = "02#200314-1#20DDR";
+        int at = -1;
+
+        for (int i = 0; i < locs.length(); i++)
+        {
+            if (internname.equals(locs.getJSONObject(i).optString("internname"))) at = i;
         }
+
+        assertTrue(at >= 0, "the fixture has the locomotive the probe route names");
+        locs.getJSONObject(at).remove("internname");
+
+        Map<String, byte[]> served = new ConcurrentHashMap<>();
+        int goodLocomotives;
+        int goodRoutes;
+
+        try (StationRig rig = rig(new ConcurrentHashMap<>()))
+        {
+            rig.model.syncWithCS2();
+            goodLocomotives = rig.model.getLocomotives().size();
+            goodRoutes = rig.model.getRoutes().size();
+            assertTrue(goodLocomotives > 100 && goodRoutes > 40, "the fixtures give " + goodLocomotives + ", " + goodRoutes);
+        }
+
+        // An empty database: everything else is imported, and the route that names it waits
+        served.put(LOCOS, bytes(locs));
+
+        try (StationRig rig = rig(served))
+        {
+            assertTrue(rig.model.syncWithCS2() >= 0);
+            assertEquals(rig.model.getLocomotives().size(), goodLocomotives - 1, "every other locomotive is imported");
+            assertEquals(rig.model.getRoutes().size(), goodRoutes - 1, "and every other route, but the one naming it");
+            assertTrue(rig.model.wasLastSyncPartial());
+            assertEquals(rig.takeLog().stream().filter(l -> l.contains("could not be parsed")).count(), 2, "a warning for the locomotive and one for the route");
+        }
+
+        // A database holding them all: the held locomotive, the unit that may name it, and the route are as they were
+        onHeld((rig, replaced, held) ->
+        {
+            assertHeldUnchanged(rig, replaced, held, "one locomotive without an internal name", only(LOCOS, bytes(locs)));
+
+            // A unit's member without one: the units that name it keep their members, the others are read
+            JSONArray members = new JSONArray(read(LOCS[1]));
+            String member = null;
+
+            for (int i = 0; i < members.length() && member == null; i++)
+            {
+                JSONObject unit = members.getJSONObject(i).optJSONObject("traktion");
+                member = unit == null ? null : unit.getJSONObject(unit.keys().next()).getString("lokname");
+            }
+
+            for (int i = 0; i < members.length(); i++)
+            {
+                if (member.equals(members.getJSONObject(i).optString("internname"))) members.getJSONObject(i).remove("internname");
+            }
+
+            assertHeldUnchanged(rig, replaced, held, "a unit's member without an internal name", only(LOCOS, bytes(members)));
+        });
     }
 
     /** A first sync with locomotives missing their decoder type guesses nothing: the database stays empty, and a good sync fills it. */
@@ -392,49 +554,39 @@ public class testACS3ReadersSurviveFirmwareChanges
     public void testASyncSurvivesAStationThatAnswersWithOtherThingsAndKeepsEveryPage() throws Exception
     {
         String[] served = {LOCOS, ROUTES, ACCESSORIES, "/app/api/mags/state", "/app/api/gbs"};
-        Map<String, byte[]> replaced = new ConcurrentHashMap<>();
         BiFunction<String, Integer, byte[]> base = station(new ConcurrentHashMap<>());
 
-        try (StationRig rig = rig(replaced))
+        onHeld((rig, replaced, held) ->
         {
-            String held = held(rig, "start");
+            List<String> pages = new ArrayList<>(rig.model.getLayoutList());
+            assertTrue(pages.size() >= 3, "the pages of the fixture: " + pages);
 
-            try
+            // Every answer mutated at once, in each way
+            for (int mode = 0; mode < MODES; mode++)
             {
-                List<String> pages = new ArrayList<>(rig.model.getLayoutList());
-                assertTrue(pages.size() >= 3, "the pages of the fixture: " + pages);
-
-                // Every answer mutated at once, in each way
-                for (int mode = 0; mode < MODES; mode++)
+                for (String p : served)
                 {
-                    for (String p : served)
-                    {
-                        replaced.put(p, bytes(mutated(new String(base.apply(p, 1), StandardCharsets.UTF_8), null, mode)));
-                    }
-
-                    syncKeepingThePages(rig, replaced, pages, "all answers, mode " + mode);
+                    replaced.put(p, bytes(mutated(new String(base.apply(p, 1), StandardCharsets.UTF_8), null, mode)));
                 }
 
-                // And each answer in turn something else altogether
-                for (String path : served)
-                {
-                    for (String other : new String[] {"", "{}", "[]", "null", "7", "\"text\"", "<html>", "[[],{},7]"})
-                    {
-                        replaced.put(path, other.getBytes(StandardCharsets.UTF_8));
-                        syncKeepingThePages(rig, replaced, pages, path + " answering " + other);
-                    }
-                }
+                syncKeepingThePages(rig, replaced, pages, "all answers, mode " + mode);
+            }
 
-                // As a start-up does: the pages are built from what the station gives
-                rig.model.clearLayouts();
-                assertTrue(rig.model.syncWithCS2() >= 0, "a good sync after them all");
-                assertEquals(state(rig), held, "and it gives the right result");
-            }
-            finally
+            // And each answer in turn something else altogether
+            for (String path : served)
             {
-                disarm(rig);
+                for (String other : new String[] {"", "{}", "[]", "null", "7", "\"text\"", "<html>", "[[],{},7]"})
+                {
+                    replaced.put(path, other.getBytes(StandardCharsets.UTF_8));
+                    syncKeepingThePages(rig, replaced, pages, path + " answering " + other);
+                }
             }
-        }
+
+            // As a start-up does: the pages are built from what the station gives
+            rig.model.clearLayouts();
+            assertTrue(rig.model.syncWithCS2() >= 0, "a good sync after them all");
+            assertEquals(state(rig), held, "and it gives the right result");
+        });
     }
 
     private static void syncKeepingThePages(StationRig rig, Map<String, byte[]> replaced, List<String> pages, String what)
