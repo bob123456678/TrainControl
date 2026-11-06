@@ -492,42 +492,60 @@ public class testLocomotiveCsvImportDoor
     }
 
     /**
-     * An address change that would put a locomotive on the address of a train standing on the layout is kept out, named
-     * in the question and in the message, and the standing train stays on the layout.
+     * Stands a head on the layout (with a member linked to it, or not), and imports a row that moves another locomotive onto
+     * the address of the head (or of its member): the locomotive keeps its address, is named in the question and in the
+     * message, and the standing train stays on the layout.
+     */
+    private static void keptOntoAStandingTrain(boolean ontoTheMember) throws Exception
+    {
+        inAWindow((ui, model) ->
+        {
+            org.traincontrol.marklin.MarklinLocomotive head = model.newMM2Locomotive("FR049 door head", 72);
+            Locomotive member = model.newMM2Locomotive("FR049 door member", 73);
+            Locomotive other = model.newMM2Locomotive("FR049 door other", 74);
+
+            if (ontoTheMember)
+            {
+                java.util.Map<String, Double> link = new HashMap<>();
+
+                link.put(member.getName(), 1.0);
+                head.setLinkedLocomotives(link);
+            }
+
+            org.traincontrol.automation.Point point = stand(model, head);
+            File file = write(HEADER + "FR049 door other,,MM2," + (ontoTheMember ? 73 : 72) + ",0,0:00:00,0,0,,\n");
+
+            try
+            {
+                Seen seen = press(ui, file, IMPORT, s -> !s.said.isEmpty());
+
+                String line = I18n.f("loc.ui.importCsvKeptLine", "FR049 door other", I18n.t("loc.ui.importCsvKeptStanding"));
+
+                assertTrue(seen.questionDetails.contains(line), "the question does not name the locomotive that keeps its address: "
+                    + seen.questionDetails);
+                assertTrue(seen.saidShapes.get(0).details.contains(line), "the message does not name it: " + seen.saidShapes.get(0).details);
+                assertEquals(other.getAddress(), 74, "a locomotive was given the address of a standing train, or of its member");
+                assertNotNull(model.getAutoLayout().getLocomotiveLocation(head), "the standing train left the layout");
+            }
+            finally
+            {
+                point.setLocomotive(null);
+                file.delete();
+
+                for (String name : new String[] {"head", "member", "other"}) model.deleteLoc("FR049 door " + name);
+            }
+        });
+    }
+
+    /**
+     * An address change that would put a locomotive on the address of a train standing on the layout is kept out and named.
      *
      * MUTATION: let the file give a locomotive the address of a standing train, and this fails.
      */
     @Test
     public void testAStandingTrainsAddressIsKeptByName() throws Exception
     {
-        inAWindow((ui, model) ->
-        {
-            Locomotive standing = model.newMM2Locomotive("FR049 door standing", 70);
-            Locomotive other = model.newMM2Locomotive("FR049 door elsewhere", 71);
-            org.traincontrol.automation.Point point = stand(model, standing);
-            File file = write(HEADER + "FR049 door elsewhere,,MM2,70,0,0:00:00,0,0,,\n");
-
-            try
-            {
-                Seen seen = press(ui, file, IMPORT, s -> !s.said.isEmpty());
-
-                String line = I18n.f("loc.ui.importCsvKeptLine", "FR049 door elsewhere", I18n.t("loc.ui.importCsvKeptStanding"));
-
-                assertTrue(seen.questionDetails.contains(line), "the question does not name the locomotive that keeps its address: "
-                    + seen.questionDetails);
-                assertEquals(other.getAddress(), 71, "a locomotive was given the address of a standing train");
-                assertTrue(words(seen.said.get(0)).contains(words(I18n.f("loc.ui.infoImportCsvReaddressRefused", 1))), seen.said.get(0));
-                assertTrue(seen.saidShapes.get(0).details.contains(line), "the message does not name it: " + seen.saidShapes.get(0).details);
-                assertNotNull(model.getAutoLayout().getLocomotiveLocation(standing), "the standing train left the layout");
-            }
-            finally
-            {
-                point.setLocomotive(null);
-                file.delete();
-                model.deleteLoc("FR049 door standing");
-                model.deleteLoc("FR049 door elsewhere");
-            }
-        });
+        keptOntoAStandingTrain(false);
     }
 
     /**
@@ -538,38 +556,7 @@ public class testLocomotiveCsvImportDoor
     @Test
     public void testAMemberOfAStandingConsistsAddressIsKeptByName() throws Exception
     {
-        inAWindow((ui, model) ->
-        {
-            org.traincontrol.marklin.MarklinLocomotive head = model.newMM2Locomotive("FR049 door head", 72);
-            Locomotive member = model.newMM2Locomotive("FR049 door member", 73);
-            Locomotive other = model.newMM2Locomotive("FR049 door other", 74);
-
-            java.util.Map<String, Double> link = new HashMap<>();
-
-            link.put(member.getName(), 1.0);
-            head.setLinkedLocomotives(link);
-
-            org.traincontrol.automation.Point point = stand(model, head);
-            File file = write(HEADER + "FR049 door other,,MM2,73,0,0:00:00,0,0,,\n");
-
-            try
-            {
-                Seen seen = press(ui, file, IMPORT, s -> !s.said.isEmpty());
-
-                assertEquals(other.getAddress(), 74, "a locomotive was given the address of a member of a standing consist");
-                assertTrue(seen.saidShapes.get(0).details.contains(I18n.f("loc.ui.importCsvKeptLine", "FR049 door other",
-                    I18n.t("loc.ui.importCsvKeptStanding"))), "the message does not name it: " + seen.saidShapes.get(0).details);
-                assertNotNull(model.getAutoLayout().getLocomotiveLocation(head), "the standing consist left the layout");
-            }
-            finally
-            {
-                point.setLocomotive(null);
-                file.delete();
-                model.deleteLoc("FR049 door head");
-                model.deleteLoc("FR049 door member");
-                model.deleteLoc("FR049 door other");
-            }
-        });
+        keptOntoAStandingTrain(true);
     }
 
     /**

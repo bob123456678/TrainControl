@@ -228,53 +228,49 @@ public class testLocomotiveCsvImport
         assertEquals(l.getStructuredNotes().getRailway(), "Rail");
     }
 
+    /** A file saved in `codePage` and read with that fallback is the locomotive that is here, not a new one. */
+    private static void assertTheCodePageMatches(String codePage, String name, int address)
+    {
+        make(name, decoderType.MM2, address);
+        int before = model.getLocomotives().size();
+
+        byte[] ansi = (OLD + name + ",,MM2," + address + ",0,0:00:00,0,0,Rail,Note\n").getBytes(Charset.forName(codePage));
+
+        MarklinLocomotiveCsv.Result result = importText(MarklinLocomotiveCsv.decode(ansi, Charset.forName(codePage)));
+
+        assertEquals(result.merged, 1, "the file's " + name + " was not the locomotive that is here");
+        assertEquals(result.added, 0, "the file added a locomotive for a name that is here");
+        assertEquals(model.getLocomotives().size(), before);
+        assertEquals(model.getLocByName(name).getStructuredNotes().getRailway(), "Rail");
+    }
+
     /**
      * A file Excel saved in the Windows code page matches the locomotive it names: a name with a letter outside ASCII is
-     * not read as junk and added beside it.
+     * not read as junk and added beside it; a UTF-8 file is still read as UTF-8.
      *
      * MUTATION: decode every file as UTF-8 whatever it holds, and this fails.
      */
     @Test
     public void testAFileSavedInTheWindowsCodePageMatchesTheLocomotive() throws Exception
     {
-        String name = "FR049 K\u00f6f";
-        MarklinLocomotive l = make(name, decoderType.MM2, 15);
-        int before = model.getLocomotives().size();
+        assertTheCodePageMatches("windows-1252", "FR049 Köf", 15);
 
-        byte[] ansi = (OLD + name + ",,MM2,15,0,0:00:00,0,0,Rail,Note\n").getBytes(Charset.forName("windows-1252"));
+        byte[] utf8 = (OLD + "FR049 Köf" + ",,MM2,15,0,0:00:00,0,0,Rail2,Note\n").getBytes("UTF-8");
 
-        MarklinLocomotiveCsv.Result result = importText(MarklinLocomotiveCsv.decode(ansi, Charset.forName("windows-1252")));
-
-        assertEquals(result.merged, 1, "the file's Koef was not the locomotive that is here");
-        assertEquals(result.added, 0, "the file added a locomotive for a name that is here");
-        assertEquals(model.getLocomotives().size(), before);
-        assertEquals(l.getStructuredNotes().getRailway(), "Rail");
-
-        byte[] utf8 = (OLD + name + ",,MM2,15,0,0:00:00,0,0,Rail2,Note\n").getBytes("UTF-8");
-
-        assertEquals(MarklinLocomotiveCsv.read(MarklinLocomotiveCsv.decode(utf8)).getRows().get(0).name, name,
+        assertEquals(MarklinLocomotiveCsv.read(MarklinLocomotiveCsv.decode(utf8)).getRows().get(0).name, "FR049 Köf",
             "a UTF-8 file was not read as UTF-8");
     }
 
     /**
-     * A Polish file Excel saved in Windows-1250 matches the locomotive it names when the machine's own code page is read
-     * after UTF-8 fails: read as Windows-1252 the letters become others and a junk locomotive is added.
+     * A Polish file Excel saved in Windows-1250 matches the locomotive it names when the machine's own code page is the
+     * fallback: read as Windows-1252 the letters become others and a junk locomotive is added.
      *
      * MUTATION: read the fallback as Windows-1252 whatever it is given, and this fails.
      */
     @Test
-    public void testAFileSavedInThePolishCodePageMatchesTheLocomotive() throws Exception
+    public void testAFileSavedInThePolishCodePageMatchesTheLocomotive()
     {
-        String name = "FR049 Łódź";
-        make(name, decoderType.MM2, 28);
-        int before = model.getLocomotives().size();
-
-        byte[] ansi = (OLD + name + ",,MM2,28,0,0:00:00,0,0,Rail,Note\n").getBytes(Charset.forName("windows-1250"));
-
-        MarklinLocomotiveCsv.Result result = importText(MarklinLocomotiveCsv.decode(ansi, Charset.forName("windows-1250")));
-
-        assertEquals(result.merged, 1, "the Polish name was not the locomotive that is here");
-        assertEquals(model.getLocomotives().size(), before);
+        assertTheCodePageMatches("windows-1250", "FR049 Łódź", 28);
     }
 
     /**
@@ -781,7 +777,7 @@ public class testLocomotiveCsvImport
             + ok1 + ",,MFX,41,0,0:00:00,0,0,,\"a\nb\nc\",\n"                          // line 2, to line 4
             + "FR049 bad address,,MFX,abc,0,0:00:00,0,0,,,\n"                         // line 5
             + "FR049 no such address,,MFX,0,0,0:00:00,0,0,,,\n"                       // line 6
-            + "FR049 bad runtime,,MFX,42,0,xx,0,0,,,\n"                               // line 7
+            + "FR049 bad runtime,,MFX,42,0,xx,0,0,,,\n"                               // line 7, kept: only the runtime is bad
             + "FR049 short row,,MFX,43\n"                                             // line 8
             + "FR049 multi,,Multi-Unit,44,0,0:00:00,0,0,,,\n"                         // line 9
             + ",,MFX,45,0,0:00:00,0,0,,,\n"                                           // line 10
@@ -795,20 +791,23 @@ public class testLocomotiveCsvImport
 
         assertTrue(csv0.isLocomotiveFile());
 
-        List<Integer> expected = Arrays.asList(5, 6, 7, 8, 9, 10, 11, 12, 15);
+        List<Integer> expected = Arrays.asList(5, 6, 8, 9, 10, 11, 12, 15);
 
         assertEquals(new ArrayList<>(csv0.skipped(model).keySet()), expected, "the lines the preview names are not the unusable ones");
-        assertEquals(csv0.countNew(model), 2);
+        assertEquals(csv0.countNew(model), 3);
 
         int locsBefore = model.getLocomotives().size();
 
         MarklinLocomotiveCsv.Result result = csv0.apply(model, csv0.plan(model));
 
+        made.add("FR049 bad runtime");
+
         assertEquals(new ArrayList<>(result.skipped.keySet()), expected, "the lines the result names are not the unusable ones");
         assertEquals(result.skipped.get(6), Why.ADDRESS);
         assertEquals(result.skipped.get(9), Why.MULTI_UNIT);
-        assertEquals(result.added, 2);
-        assertEquals(model.getLocomotives().size(), locsBefore + 2, "a skipped row added a locomotive");
+        assertEquals(result.added, 3);
+        assertEquals(result.badRuntime, 1);
+        assertEquals(model.getLocomotives().size(), locsBefore + 3, "a skipped row added a locomotive");
         assertNull(model.getLocByName("FR049 bad address"));
         assertNull(model.getLocByName("FR049 no such address"));
         assertNull(model.getLocByName("FR049 multi"));
