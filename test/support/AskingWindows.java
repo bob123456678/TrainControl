@@ -72,15 +72,27 @@ public final class AskingWindows
     {
         if (java.awt.GraphicsEnvironment.isHeadless()) throw new org.testng.SkipException("these claims need a display");
 
-        LayoutSandbox opened = LayoutSandbox.open(Scenario.folderFor(scenario));
+        LayoutSandbox opened = null;
 
-        if (inTheSandbox != null) inTheSandbox.accept(opened.getFolder());
+        try
+        {
+            opened = LayoutSandbox.open(Scenario.folderFor(scenario));
 
-        MarklinControlStation station = TestStation.simulatedWithWindowInDebug();
+            if (inTheSandbox != null) inTheSandbox.accept(opened.getFolder());
 
-        station.setNetworkCommState(false);
+            MarklinControlStation station = TestStation.simulatedWithWindowInDebug();
 
-        return new Railway(opened, station);
+            station.setNetworkCommState(false);
+
+            return new Railway(opened, station);
+        }
+        catch (Exception | Error failed)
+        {
+            // Closing puts the layout preference back
+            if (opened != null) opened.close();
+
+            throw failed;
+        }
     }
 
     /** The station a setup calls by this name. */
@@ -279,12 +291,26 @@ public final class AskingWindows
      */
     public static void pressKey(final Component on, final int key, final int modifiers)
     {
+        hearKey(on, KeyEvent.KEY_PRESSED, key, modifiers);
+    }
+
+    /** {@link #pressKey} for a component that hears a key as it is let go. */
+    public static void releaseKey(final Component on, final int key, final int modifiers)
+    {
+        hearKey(on, KeyEvent.KEY_RELEASED, key, modifiers);
+    }
+
+    private static void hearKey(final Component on, final int id, final int key, final int modifiers)
+    {
         SwingUtilities.invokeLater(() ->
         {
-            final KeyEvent pressed = new KeyEvent(on, KeyEvent.KEY_PRESSED, System.currentTimeMillis(), modifiers, key,
-                KeyEvent.CHAR_UNDEFINED);
+            final KeyEvent event = new KeyEvent(on, id, System.currentTimeMillis(), modifiers, key, KeyEvent.CHAR_UNDEFINED);
 
-            for (KeyListener each : on.getKeyListeners()) each.keyPressed(pressed);
+            for (KeyListener each : on.getKeyListeners())
+            {
+                if (id == KeyEvent.KEY_PRESSED) each.keyPressed(event);
+                else each.keyReleased(event);
+            }
         });
 
         Components.settle();

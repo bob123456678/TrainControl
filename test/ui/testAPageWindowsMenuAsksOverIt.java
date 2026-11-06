@@ -1112,6 +1112,44 @@ public class testAPageWindowsMenuAsksOverIt
         });
     }
 
+    private static void assertTheTidyingIsReportedOver(Answering answering, Window over)
+    {
+        assertTrue(Components.waitFor(() -> answering.questions().stream()
+            .anyMatch(each -> I18n.t("autosetup.ui.titleSetupTidied").equals(each.title)), PATIENCE_MS),
+            "no report of what the save tidied: " + answering.asked());
+
+        for (Answering.Question each : answering.questions())
+        {
+            assertSame(each.owner, over, "\"" + each.message + "\" hangs off the wrong window");
+        }
+    }
+
+    /**
+     * What the save before the tail question tidied is reported after it, over the window of the door: the wait in between
+     * hands the window back.
+     *
+     * MUTATION: `askedFrom = null` for `askedFrom = before` in `pressFromWindow`, and it hangs off the main window.
+     */
+    @Test
+    public void testAReportAfterTheTailQuestionIsOverTheWindow() throws Exception
+    {
+        onTunnelsPage((tunnel, there) ->
+        {
+            session.setTileLength(new TileKey(tunnel.getPage(), 900, 900), 5);
+
+            JDialog pick = placeOnTunnel(there, tunnel);
+
+            try (Answering answering = Answering.start(message -> Answering.pressAt(0)))
+            {
+                cancelThe(pick);
+
+                assertTheTidyingIsReportedOver(answering, there);
+            }
+
+            takeHimOff();
+        });
+    }
+
     /**
      * A click on a lit sensor in the page's window answers it, and the train has that road.
      *
@@ -1336,14 +1374,7 @@ public class testAPageWindowsMenuAsksOverIt
             {
                 Mouse.choose(AskingWindows.itemOf(menuOn(window, mainA), I18n.f("layout.ui.menuPlaceLocomotive", HIS_TRAIN)));
 
-                assertTrue(Components.waitFor(() -> answering.questions().stream()
-                    .anyMatch(each -> I18n.t("autosetup.ui.titleSetupTidied").equals(each.title)), PATIENCE_MS),
-                    "no report of what the save tidied: " + answering.asked());
-
-                for (Answering.Question each : answering.questions())
-                {
-                    assertSame(each.owner, window, "\"" + each.message + "\" hangs off the wrong window");
-                }
+                assertTheTidyingIsReportedOver(answering, window);
             }
 
             Components.settle();

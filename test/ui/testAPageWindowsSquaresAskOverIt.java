@@ -371,13 +371,7 @@ public class testAPageWindowsSquaresAskOverIt
 
         try (Answering answering = Answering.start(message -> Answering.press(I18n.t("ui.cancel"))))
         {
-            SwingUtilities.invokeLater(() ->
-            {
-                square.dispatchEvent(new java.awt.event.MouseEvent(square, java.awt.event.MouseEvent.MOUSE_CLICKED,
-                    System.currentTimeMillis(), 0, 1, 1, 1, false, java.awt.event.MouseEvent.BUTTON1));
-
-                page.setExtendedState(page.getExtendedState() | java.awt.Frame.ICONIFIED);
-            });
+            clickThen(square, () -> page.setExtendedState(page.getExtendedState() | java.awt.Frame.ICONIFIED));
 
             Answering.Question question = AskingWindows.onlyQuestion(answering, "nothing was asked");
 
@@ -478,18 +472,179 @@ public class testAPageWindowsSquaresAskOverIt
     {
         Accessory signal = protectingTheOccupiedPlatform();
 
-        if (model.getRoute(ROUTE) == null)
+        theRouteDoes(commandFor(signal));
+
+        return signal;
+    }
+
+    private static RouteCommand commandFor(Accessory accessory)
+    {
+        return RouteCommand.RouteCommandAccessory(((MarklinAccessory) accessory).getAddress() + 1,
+            accessory.getDecoderType(), false);
+    }
+
+    /** The tile's route, made anew with these commands. */
+    private static void theRouteDoes(RouteCommand... commands)
+    {
+        if (model.getRoute(ROUTE) != null) model.deleteRoute(ROUTE);
+
+        assertTrue(model.newRoute(ROUTE, ROUTE_ID, new java.util.ArrayList<>(java.util.Arrays.asList(commands)), 0,
+            MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED, false, null), "precondition: the route was not made");
+    }
+
+    /**
+     * A route clicked in this window, which meets the protection only on its way: nothing stands at the platform until it
+     * has started, and it sets the turnout and waits before it comes to the signal.  Answers with this button; the question
+     * it parks on.
+     */
+    private static Accessory aRouteMeetsTheProtectionOnItsWay(java.awt.Window over, String answer) throws Exception
+    {
+        Accessory signal = AskingWindows.tileIn(ui, page, SIGNAL).getComponent().getAccessory();
+
+        Layout layout = model.getAutoLayout();
+
+        Point platform = layout.getPoint(PLATFORM);
+
+        platform.setProtectingSignal(signal.getName());
+
+        signal.setSwitched(true);
+
+        layout.runLocomotives();
+
+        assertTrue(model.isAutonomyRunning(), "precondition: autonomy is running");
+
+        RouteCommand first = commandFor(AskingWindows.tileIn(ui, page, TURNOUT).getComponent().getAccessory());
+
+        first.setDelay(3000);
+
+        theRouteDoes(first, commandFor(signal));
+
+        try (Answering answering = Answering.start(message -> Answering.press(answer)))
         {
-            java.util.List<RouteCommand> commands = new java.util.ArrayList<>();
+            Mouse.click(AskingWindows.awaitTileIn(ui, over, ROUTE_TILE));
 
-            commands.add(RouteCommand.RouteCommandAccessory(((MarklinAccessory) signal).getAddress() + 1,
-                signal.getDecoderType(), false));
+            assertTrue(Components.waitFor(() -> model.getRoute(ROUTE).isExecuting(), PATIENCE_MS), "the route did not start");
 
-            assertTrue(model.newRoute(ROUTE, ROUTE_ID, commands, 0, MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED, false,
-                null), "precondition: the route was not made");
+            platform.setLocomotive(model.getLocByName(model.getLocList().get(0)));
+
+            AskingWindows.assertAsked(AskingWindows.onlyQuestion(answering, "nothing was asked on the route's way"), over,
+                I18n.t("layout.ui.dialogPleaseConfirm"),
+                I18n.f("layout.ui.confirmRouteProtectingSignal", ROUTE, signal.getName()),
+                JOptionPane.QUESTION_MESSAGE, I18n.t("ui.cancel"), I18n.t("ui.ok"), I18n.t("ui.cancel"));
         }
 
         return signal;
+    }
+
+    /**
+     * The question a route started from the page parks on, when the railway changes under it, hangs off the page, and Cancel
+     * leaves the signal as it was.
+     *
+     * MUTATION: `this` for `stillShowing(routeStartedFrom.get())` in `confirmRouteConflictMidway`, and it hangs off the
+     * main window.
+     */
+    @Test
+    public void testAQuestionOnARoutesWayHangsOffThePageWindow() throws Exception
+    {
+        Accessory signal = aRouteMeetsTheProtectionOnItsWay(page, I18n.t("ui.cancel"));
+
+        assertTrue(Components.waitFor(() -> !model.getRoute(ROUTE).isExecuting(), PATIENCE_MS), "Cancel did not end the route");
+
+        assertTrue(signal.isSwitched(), "Cancel set the signal green");
+    }
+
+    /**
+     * And OK over it goes on, and sets the signal green.
+     *
+     * MUTATION: `this` for `stillShowing(routeStartedFrom.get())` in `confirmRouteConflictMidway`, and it hangs off the
+     * main window.
+     */
+    @Test
+    public void testOKOnARoutesWayGoesOn() throws Exception
+    {
+        Accessory signal = aRouteMeetsTheProtectionOnItsWay(page, I18n.t("ui.ok"));
+
+        assertTrue(Components.waitFor(() -> !signal.isSwitched(), PATIENCE_MS), "OK did not set the signal green");
+    }
+
+    /**
+     * With the main window minimized the route's question still shows, over the page, while the route waits.
+     *
+     * MUTATION: `this` for `stillShowing(routeStartedFrom.get())` in `confirmRouteConflictMidway`, and it is hidden with the
+     * main window.
+     */
+    @Test
+    public void testWithTheMainWindowMinimizedARoutesQuestionShowsOverThePage() throws Exception
+    {
+        AskingWindows.minimize(ui, true);
+
+        aRouteMeetsTheProtectionOnItsWay(page, I18n.t("ui.cancel"));
+    }
+
+    /**
+     * Started from the main window's own diagram, it hangs off the main window.
+     *
+     * MUTATION: `routeStartedFrom.get()` is the open page whichever door started the route, and it hangs off the page.
+     */
+    @Test
+    public void testAQuestionOnARoutesWayFromTheMainWindowHangsOffTheMainWindow() throws Exception
+    {
+        aRouteMeetsTheProtectionOnItsWay(ui, I18n.t("ui.cancel"));
+    }
+
+    /**
+     * A page that closes between the question being asked for and its being put gives way to the main window: the event
+     * thread is held until the asking thread waits on it, and the window goes in between.
+     *
+     * MUTATION: `over == null ? this : over` for the window in `askAboutRouteConflict`, and it hangs off a window that is
+     * not there.
+     */
+    @Test
+    public void testAPageGoneAsTheConflictIsPutGivesWayToTheMainWindow() throws Exception
+    {
+        aRouteOverTheProtection();
+
+        final LayoutLabel tile = AskingWindows.awaitTileIn(ui, page, ROUTE_TILE);
+
+        try (Answering answering = Answering.start(message -> Answering.press(I18n.t("ui.cancel"))))
+        {
+            clickThen(tile, () -> SwingUtilities.invokeLater(() ->
+            {
+                long until = System.currentTimeMillis() + PATIENCE_MS;
+
+                while (!aThreadIsAsking() && System.currentTimeMillis() < until) Thread.yield();
+
+                page.setVisible(false);
+            }));
+
+            assertSame(AskingWindows.onlyQuestion(answering, "nothing was asked").owner, ui,
+                "the question hangs off a window that has gone");
+        }
+    }
+
+    /** Clicks the square, and does this on the event thread in the same breath: nothing posted since comes between. */
+    private static void clickThen(LayoutLabel square, Runnable then)
+    {
+        SwingUtilities.invokeLater(() ->
+        {
+            square.dispatchEvent(new java.awt.event.MouseEvent(square, java.awt.event.MouseEvent.MOUSE_CLICKED,
+                System.currentTimeMillis(), 0, 1, 1, 1, false, java.awt.event.MouseEvent.BUTTON1));
+
+            then.run();
+        });
+    }
+
+    private static boolean aThreadIsAsking()
+    {
+        for (StackTraceElement[] frames : Thread.getAllStackTraces().values())
+        {
+            for (StackTraceElement frame : frames)
+            {
+                if (frame.getMethodName().equals("askAboutRouteConflict")) return true;
+            }
+        }
+
+        return false;
     }
 
     /** Clicks the route's tile in this window and reads the conflict question; answers with this button. */

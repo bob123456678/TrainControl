@@ -172,11 +172,12 @@ public class testTheLocomotiveDoorsAskOverTheirWindow
     /** Right-clicks a locomotive in the database, or the active one's button in the main window, for its Multi-Unit. */
     private static void chooseMultiUnit(Window window, String name) throws Exception
     {
-        JPopupMenu menu;
+        JPopupMenu menu = null;
 
         if (window == database)
         {
-            menu = Mouse.rightClick(tile(name), PATIENCE_MS);
+            // A window just opened can still be settling into place, which closes a menu as it opens
+            for (int tries = 0; menu == null && tries < 3; tries++) menu = Mouse.rightClick(tile(name), PATIENCE_MS / 3);
         }
         else
         {
@@ -496,6 +497,36 @@ public class testTheLocomotiveDoorsAskOverTheirWindow
             "the question is not the page's");
 
         assertTrue(Components.waitFor(() -> ui.getActiveLoc() == one, PATIENCE_MS), "the answer did not jump to " + ONE);
+    }
+
+    /** A part of the database's window, which its keys really arrive at. */
+    private static Component inTheDatabase(String field) throws Exception
+    {
+        Field part = LocomotiveSelector.class.getDeclaredField(field);
+
+        part.setAccessible(true);
+
+        return (Component) part.get(database);
+    }
+
+    /**
+     * Control+F in the database's list and in its filter box asks over the database: a key there comes from a component
+     * inside the window, not the window.
+     *
+     * MUTATION: `this` for `SwingUtilities.getWindowAncestor(on)` in `childWindowKeyEvent`, and it hangs off the main
+     * window.
+     */
+    @Test
+    public void testAKeyInsideTheDatabaseAsksOverTheDatabase() throws Exception
+    {
+        Component list = inTheDatabase("MainLocList");
+        Component filter = inTheDatabase("LocFilterBox");
+
+        assertSame(asked(message -> cancel(), () -> AskingWindows.pressKey(list, KeyEvent.VK_F, CTRL),
+            "Control+F in the list asked nothing").owner, database, "the list's question is not the database's");
+
+        assertSame(asked(message -> cancel(), () -> AskingWindows.releaseKey(filter, KeyEvent.VK_F, CTRL),
+            "Control+F in the filter box asked nothing").owner, database, "the filter box's question is not the database's");
     }
 
     /**

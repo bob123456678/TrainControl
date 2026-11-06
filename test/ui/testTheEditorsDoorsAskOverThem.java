@@ -8,6 +8,7 @@ import java.util.ArrayList;
 import java.util.List;
 import javax.swing.AbstractButton;
 import javax.swing.JPopupMenu;
+import javax.swing.SwingUtilities;
 import static org.testng.Assert.*;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
@@ -225,6 +226,18 @@ public class testTheEditorsDoorsAskOverThem
         }
     }
 
+    /** A page door on the strip under the Page heading, by what its icon says. */
+    private AbstractButton onTheStrip(String key)
+    {
+        AbstractButton door = Components.find(editor, AbstractButton.class,
+            each -> "toolBarButton".equals(each.getClientProperty("JButton.buttonType"))
+                && I18n.t(key).equals(each.getToolTipText()));
+
+        assertNotNull(door, "the strip has no " + key);
+
+        return door;
+    }
+
     /** Holds the layout index locked from a JVM of its own, as a sync client's lock does, so that reading it fails. */
     private void lockTheIndex() throws Exception
     {
@@ -258,6 +271,19 @@ public class testTheEditorsDoorsAskOverThem
      */
     private static void assertTheIndexMessageOver(Answering answering, Window over) throws Exception
     {
+        Answering.Question said = awaitTheIndexMessage(answering);
+
+        for (Answering.Question each : answering.questions())
+        {
+            assertSame(each.owner, over, "\"" + each.message + "\" hangs off the wrong window");
+        }
+
+        assertIsTheIndexMessage(said, over);
+    }
+
+    /** The door's last word, once it has said what it says of the locked index. */
+    private static Answering.Question awaitTheIndexMessage(Answering answering)
+    {
         final String saving = I18n.f("layout.ui.errorSavingLayoutWithMessage", "").trim();
 
         final String notLocal = I18n.t("layout.ui.errorEditingOnlySupportedForLocalFiles");
@@ -270,12 +296,12 @@ public class testTheEditorsDoorsAskOverThem
 
         List<Answering.Question> all = answering.questions();
 
-        for (Answering.Question each : all)
-        {
-            assertSame(each.owner, over, "\"" + each.message + "\" hangs off the wrong window");
-        }
+        return all.get(all.size() - 1);
+    }
 
-        Answering.Question said = all.get(all.size() - 1);
+    private static void assertIsTheIndexMessage(Answering.Question said, Window over)
+    {
+        final String notLocal = I18n.t("layout.ui.errorEditingOnlySupportedForLocalFiles");
 
         IOException why = LayoutDiagram.getUnreadableIndex();
 
@@ -314,7 +340,7 @@ public class testTheEditorsDoorsAskOverThem
     {
         openTheEditor();
 
-        assertDeleteMeetsTheIndex(Components.withText(editor, I18n.t("ui.main.toolbar.deleteCurrentPage")), editor);
+        assertDeleteMeetsTheIndex(onTheStrip("ui.main.toolbar.deleteCurrentPage"), editor);
     }
 
     /**
@@ -360,7 +386,7 @@ public class testTheEditorsDoorsAskOverThem
 
         try (Answering answering = Answering.start(message -> null))
         {
-            Components.press(Components.withText(editor, I18n.t("ui.main.toolbar.duplicateCurrentPage")));
+            Components.press(onTheStrip("ui.main.toolbar.duplicateCurrentPage"));
 
             assertTheIndexMessageOver(answering, editor);
         }
@@ -394,5 +420,58 @@ public class testTheEditorsDoorsAskOverThem
 
         assertFalse(model.getLayoutList().contains("OB-324 combined"),
             "the page was made though the index could not be read");
+    }
+
+    /**
+     * Moving a page from the track editor, with the index unreadable, says so over the editor.
+     *
+     * MUTATION: `this.ui` for `from == null ? this.ui : from` at `settleTheAbsentPages` in `reorder`, and it hangs off the
+     * main window.
+     */
+    @Test
+    public void testAnUnreadableIndexAtAPageMoveIsSaidOverTheEditor() throws Exception
+    {
+        openTheEditor();
+
+        lockTheIndex();
+
+        try (Answering answering = Answering.start(message -> null))
+        {
+            Components.press(onTheStrip("layout.ui.tooltipMovePageDown"));
+
+            assertTheIndexMessageOver(answering, editor);
+        }
+    }
+
+    /**
+     * An editor gone by the time its worker has something to say gives way to the main window: the window goes as the name
+     * is answered, ahead of whatever the door posts next.
+     *
+     * MUTATION: `over` for `over.isShowing() ? over : this` in `showOnTheEventThread`, and it hangs off a window that is
+     * not there.
+     */
+    @Test
+    public void testAnEditorGoneBeforeItsMessageGivesWayToTheMainWindow() throws Exception
+    {
+        openTheEditor();
+
+        lockTheIndex();
+
+        final String prompt = I18n.t("layout.ui.promptCombinedPageName");
+
+        try (Answering answering = Answering.start(message ->
+        {
+            if (!message.startsWith(prompt)) return Answering.pressAt(0);
+
+            // Posted from a post, so that it lands behind the press of OK this answer posts
+            SwingUtilities.invokeLater(() -> SwingUtilities.invokeLater(() -> editor.setVisible(false)));
+
+            return Answering.type("OB-324 combined");
+        }))
+        {
+            Components.press(Components.withText(editor, I18n.t("layout.ui.menuCombineLinkedPages")));
+
+            assertIsTheIndexMessage(awaitTheIndexMessage(answering), ui);
+        }
     }
 }

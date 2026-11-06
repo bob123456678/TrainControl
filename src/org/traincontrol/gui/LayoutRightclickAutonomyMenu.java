@@ -383,7 +383,7 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
                                     }
                                     catch (Exception e)
                                     {
-                                        JOptionPane.showMessageDialog(ui, e.getMessage());
+                                        JOptionPane.showMessageDialog(ui.dialogParent(), e.getMessage());
                                     }
                                 });    
 

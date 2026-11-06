@@ -505,6 +505,8 @@ public final class LayoutLabel extends JLabel
                                             // freeze them all.
                                             new Thread(() ->
                                             {
+                                                tcUI.routesStartHereFrom(asked);
+
                                                 // One question, three answers: a conflict that cleared between the
                                                 // check and the dialog must not come back as "override", which would
                                                 // run the route with every guard off unasked.

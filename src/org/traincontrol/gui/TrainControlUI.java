@@ -20121,6 +20121,15 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         resortAutoLocList();
     }
 
+    /** The window a route was started from, inherited by its thread and the routes it fires; null for none. */
+    private final InheritableThreadLocal<java.awt.Window> routeStartedFrom = new InheritableThreadLocal<>();
+
+    /** Says which window a route this thread goes on to start was started from (OB-324). */
+    void routesStartHereFrom(java.awt.Window from)
+    {
+        routeStartedFrom.set(from);
+    }
+
     @Override
     public boolean confirmRouteConflictMidway(Route r, String accessory, String reason)
     {
@@ -20130,7 +20139,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         if (!(r instanceof org.traincontrol.marklin.MarklinRoute)) return false;
 
         // known != null, so NOTHING_TO_CONFIRM cannot come back here.
-        return askAboutRouteConflict((org.traincontrol.marklin.MarklinRoute) r, this,
+        return askAboutRouteConflict((org.traincontrol.marklin.MarklinRoute) r, stillShowing(routeStartedFrom.get()),
             new String[] {accessory, reason}) == RouteConflict.OVERRIDE;
     }
 
