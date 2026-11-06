@@ -652,7 +652,7 @@ public class testEditorSurfaceRules
         // AND THE THIRD DOOR: the switch keyboard has to ask the same questions, and is the door most likely to be
         // forgotten, having never had a guard.
         String keyboard = codeOf(
-            "private boolean keyboardAutonomyAllows(int address, javax.swing.JToggleButton button)");
+            "private boolean keyboardAutonomyAllows(int address, boolean red)");
 
         assertTrue(keyboard.contains("clearsProtection") && keyboard.contains("getActiveAccs"),
             "the switch keyboard asks fewer than both halves of the question the other two doors ask.  "
@@ -662,7 +662,7 @@ public class testEditorSurfaceRules
         // the power off does nothing, and the keyboard must not send it into the dark leaving the button looking as
         // though it worked.
         String asks = codeOf(
-            "private KeyboardSwitch keyboardSwitchAllowed(int address, javax.swing.JToggleButton button)");
+            "private KeyboardSwitch keyboardSwitchAllowed(int address, boolean red)");
 
         assertTrue(asks.contains("getPowerState") && asks.contains("confirmAccessorySwitchPowerOff"),
             "the switch keyboard no longer asks about the track power, so a click with the power off "
@@ -672,7 +672,7 @@ public class testEditorSurfaceRules
             "the power question is asked and the two autonomy ones are not, which is one guard where "
             + "there should be three.  Body: " + asks);
 
-        assertTrue(SourceOf.allCode().contains("keyboardSwitchAllowed(switchId, b)"),
+        assertTrue(SourceOf.allCode().contains("keyboardSwitchAllowed(address, red)"),
             "the switch keyboard's guard exists and nothing calls it, which is the shape of a fix that "
             + "was written and not wired");
     }
