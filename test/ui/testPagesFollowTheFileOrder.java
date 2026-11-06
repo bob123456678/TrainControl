@@ -43,9 +43,11 @@ public class testPagesFollowTheFileOrder
     private TrainControlUI ui;
 
     @BeforeMethod
-    public void skipHeadless()
+    public void openTheSandbox() throws Exception
     {
         if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the main window needs a display");
+
+        sandbox = support.LayoutSandbox.open();
     }
 
     @AfterMethod(alwaysRun = true)
@@ -75,11 +77,9 @@ public class testPagesFollowTheFileOrder
         }
     }
 
-    /** Opens the window over a copy of the test layout whose index lists the pages in this order. */
+    /** Opens the window over the sandbox, whose index first lists the pages in this order (null: as it is). */
     private void open(List<String> fileOrder) throws Exception
     {
-        sandbox = support.LayoutSandbox.open();
-
         if (fileOrder != null) writeIndex(fileOrder);
 
         start();
@@ -101,12 +101,7 @@ public class testPagesFollowTheFileOrder
 
     private void closeEditors() throws Exception
     {
-        for (LayoutEditor editor : editors())
-        {
-            final LayoutEditor closing = editor;
-
-            SwingUtilities.invokeAndWait(closing::dispose);
-        }
+        support.EditorsOpen.closeAll();
     }
 
     /**
@@ -153,8 +148,6 @@ public class testPagesFollowTheFileOrder
     @Test
     public void testALayoutAlreadyInNameOrderShowsNoChange() throws Exception
     {
-        sandbox = support.LayoutSandbox.open();
-
         byte[] before = Files.readAllBytes(indexFile().toPath());
 
         start();
@@ -623,33 +616,16 @@ public class testPagesFollowTheFileOrder
 
     private static List<LayoutEditor> editors()
     {
-        List<LayoutEditor> found = new ArrayList<>();
-
-        for (java.awt.Frame frame : java.awt.Frame.getFrames())
-        {
-            if (frame instanceof LayoutEditor && frame.isDisplayable()) found.add((LayoutEditor) frame);
-        }
-
-        return found;
+        return support.EditorsOpen.editors();
     }
 
     private static List<String> titles()
     {
-        List<String> titles = new ArrayList<>();
-
-        for (LayoutEditor editor : editors()) titles.add(editor.getTitle());
-
-        return titles;
+        return support.EditorsOpen.titles();
     }
 
     private static LayoutEditor editorOn(String page)
     {
-        for (LayoutEditor editor : editors())
-        {
-            if (editor.isShowing() && (editor.getTitle().startsWith(I18n.f("app.ui.windowLayoutEditorTitle", page))
-                || editor.getTitle().startsWith(I18n.f("autosetup.ui.windowTitle", page)))) return editor;
-        }
-
-        return null;
+        return support.EditorsOpen.editorOn(page);
     }
 }

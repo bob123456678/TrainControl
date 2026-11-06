@@ -14,6 +14,7 @@ import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertTrue;
 import org.testng.SkipException;
 import org.testng.annotations.AfterMethod;
+import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.gui.layouteditor.LayoutEditor;
@@ -31,6 +32,14 @@ public class testTheEditorPageStrip
     private support.LayoutSandbox sandbox;
     private MarklinControlStation model;
     private TrainControlUI ui;
+
+    @BeforeMethod
+    public void openTheSandbox() throws Exception
+    {
+        if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the main window needs a display");
+
+        sandbox = support.LayoutSandbox.open();
+    }
 
     @AfterMethod(alwaysRun = true)
     public void closeTheWindow() throws Exception
@@ -66,10 +75,6 @@ public class testTheEditorPageStrip
 
     private void open(int pages) throws Exception
     {
-        if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the main window needs a display");
-
-        sandbox = support.LayoutSandbox.open();
-
         if (pages == 1)
         {
             // One page, "1 - Main", and no others: the index names it alone
@@ -285,13 +290,6 @@ public class testTheEditorPageStrip
 
     private static List<LayoutEditor> editors()
     {
-        List<LayoutEditor> found = new ArrayList<>();
-
-        for (java.awt.Frame frame : java.awt.Frame.getFrames())
-        {
-            if (frame instanceof LayoutEditor && frame.isDisplayable()) found.add((LayoutEditor) frame);
-        }
-
-        return found;
+        return support.EditorsOpen.editors();
     }
 }
