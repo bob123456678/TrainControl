@@ -643,6 +643,7 @@
         <test-one-class class="testASystemFrameSaysWhetherItIsForAll"/>
         <test-one-class class="testLocomotiveCsvImport"/>
         <test-one-class class="testLocomotiveCsvImportDoor"/>
+        <test-one-class class="testASyncKeepsAnImportedLocomotive"/>
     </target>
     <target name="package-for-store" depends="jar">
         <property name="store.jar.name" value="TrainControl"/>

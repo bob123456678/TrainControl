@@ -189,6 +189,41 @@ public class testLocomotiveCsvImport
     }
 
     /**
+     * The marker day is no day anything ran: the first and last run dates and the count of days leave it out, while the total
+     * keeps its time.
+     *
+     * MUTATION: count or sort the marker day among the days, and this fails.
+     */
+    @Test
+    public void testTheMarkerDayIsNotShownAsADayRun()
+    {
+        String bare = "FR049 marker bare";
+        made.add(bare);
+
+        MarklinLocomotiveCsv.read(HEADER + bare + ",,MFX,71,0,3:00:00,0,0,,\n").apply(model);
+
+        Locomotive l = model.getLocByName(bare);
+
+        assertEquals(l.getTotalRuntime(), 10800000L);
+        assertEquals(l.getNumDaysRun(), 0, "the marker day was counted as a day run");
+        assertEquals(l.getOperatingDate(false), org.traincontrol.util.I18n.f("loc.neverOperated"));
+        assertEquals(l.getOperatingDate(true), org.traincontrol.util.I18n.f("loc.neverOperated"));
+
+        String name = "FR049 marker days";
+        MarklinLocomotive m = make(name, decoderType.MFX, 72);
+
+        m.getHistoricalOperatingTime().put("2024-05-02", 1000L);
+        m.getHistoricalOperatingTime().put("2024-05-09", 2000L);
+
+        MarklinLocomotiveCsv.read(HEADER + name + ",,MFX,72,0,3:00:00,0,0,,\n").apply(model);
+
+        assertEquals(m.getTotalRuntime(), 10800000L);
+        assertEquals(m.getNumDaysRun(), 2);
+        assertEquals(m.getOperatingDate(false), "2024-05-02", "the marker day was shown as the first run");
+        assertEquals(m.getOperatingDate(true), "2024-05-09");
+    }
+
+    /**
      * An existing name's runtime becomes the larger of the two, in both directions, and the days already recorded are not
      * touched; its decoder and address stay whatever the file says.
      *

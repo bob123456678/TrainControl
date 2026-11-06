@@ -429,6 +429,9 @@ public class LocomotiveStats extends javax.swing.JPanel
                 {
                     for (Entry<String, Long> e : l.getHistoricalOperatingTime().entrySet())
                     {
+                        // Not a day anything ran (FR-049)
+                        if (Locomotive.IMPORTED_RUNTIME_DAY.equals(e.getKey())) continue;
+
                         data += "\"" + l.getName() + "\"," + e.getKey() + "," + e.getValue() + "\n";
                     }
                 }

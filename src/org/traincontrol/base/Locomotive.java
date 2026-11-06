@@ -1480,7 +1480,7 @@ public abstract class Locomotive
      */
     public int getNumDaysRun()
     {
-        return this.historicalOperatingTime.keySet().size();
+        return (int) this.historicalOperatingTime.keySet().stream().filter(d -> !IMPORTED_RUNTIME_DAY.equals(d)).count();
     }
     
     /**
@@ -1490,9 +1490,13 @@ public abstract class Locomotive
      */
     public String getOperatingDate(boolean mostRecent)
     {
-        if (!this.historicalOperatingTime.isEmpty())
+        List<String> sortedList = new ArrayList<>(this.historicalOperatingTime.keySet());
+
+        // The imported-runtime marker is not a day anything ran (FR-049)
+        sortedList.remove(IMPORTED_RUNTIME_DAY);
+
+        if (!sortedList.isEmpty())
         {
-            List<String> sortedList = new ArrayList<>(this.historicalOperatingTime.keySet());
             Collections.sort(sortedList);
 
             return sortedList.get(mostRecent ? sortedList.size() - 1 : 0);
