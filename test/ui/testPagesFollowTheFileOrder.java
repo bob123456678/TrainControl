@@ -450,6 +450,11 @@ public class testPagesFollowTheFileOrder extends support.PageWindowTest
                 else if (line.startsWith(" .name=")) ids.put(line.substring(7).trim(), id);
             }
         }
+        catch (java.nio.file.NoSuchFileException replacedJustNow)
+        {
+            // The writer swaps the file in; asked again by the wait
+            return new LinkedHashMap<>();
+        }
         catch (java.io.IOException e)
         {
             throw new IllegalStateException(e);

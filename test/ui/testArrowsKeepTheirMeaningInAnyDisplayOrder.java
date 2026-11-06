@@ -682,6 +682,11 @@ public class testArrowsKeepTheirMeaningInAnyDisplayOrder extends support.PageWin
                 if (line.startsWith(" .name=")) names.add(line.substring(7).trim());
             }
         }
+        catch (java.nio.file.NoSuchFileException replacedJustNow)
+        {
+            // The writer swaps the file in; asked again by the wait
+            return new ArrayList<>();
+        }
         catch (java.io.IOException e)
         {
             throw new IllegalStateException(e);
