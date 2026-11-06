@@ -371,21 +371,9 @@ public class testTheKeyboardAsksDuringAnAutonomyRun
 
     // ---------------------------------------------------------------- the keyboard
 
-    @SuppressWarnings("unchecked")
     private static <T> T window(String name)
     {
-        try
-        {
-            java.lang.reflect.Field f = TrainControlUI.class.getDeclaredField(name);
-
-            f.setAccessible(true);
-
-            return (T) f.get(ui);
-        }
-        catch (ReflectiveOperationException missing)
-        {
-            throw new AssertionError(name + " is not on the window: " + missing, missing);
-        }
+        return support.WindowField.of(ui, name);
     }
 
     private static void click(int address, boolean red)

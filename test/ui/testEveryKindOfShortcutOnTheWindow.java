@@ -2,7 +2,6 @@ package ui;
 
 import java.awt.event.InputEvent;
 import java.awt.event.KeyEvent;
-import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.List;
@@ -713,21 +712,9 @@ public class testEveryKindOfShortcutOnTheWindow
         return tabs();
     }
 
-    @SuppressWarnings("unchecked")
     private static <T> T field(String name)
     {
-        try
-        {
-            Field f = TrainControlUI.class.getDeclaredField(name);
-
-            f.setAccessible(true);
-
-            return (T) f.get(ui);
-        }
-        catch (ReflectiveOperationException unreadable)
-        {
-            throw new AssertionError(name, unreadable);
-        }
+        return support.WindowField.of(ui, name);
     }
 
     private static boolean waitFor(BooleanSupplier condition)
