@@ -16,3 +16,4 @@ regression.testTheKeyMapReachesTheWholeWindow  # posts key events, which go to w
 regression.testTheWindowTakesTheKeyboard     # asks which component has the keyboard focus
 ui.testTheKeyboardDrag                       # reads the system clipboard back after a drag
 ui.testTheLengthPromptHasTheKeyboard         # brings its window to the front and asks for the keyboard focus
+ui.testTheEditorsFindingsCanBeFiltered       # reads and sets the system clipboard, and asks whether a box can take the keyboard

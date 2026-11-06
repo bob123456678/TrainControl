@@ -4083,6 +4083,12 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         this.editorWindows.openCarryingTheClick(clicked, open);
     }
 
+    /** Delegates to `EditorWindows.openCarryingTheClick`. */
+    public void openCarryingTheClick(boolean clicked, String findingFilter, Runnable open)
+    {
+        this.editorWindows.openCarryingTheClick(clicked, findingFilter, open);
+    }
+
     /** Delegates to `EditorWindows.autonomyEditorClosedFromTheEditor`. */
     public void autonomyEditorClosedFromTheEditor(final Runnable then)
     {

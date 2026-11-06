@@ -643,6 +643,7 @@
         <test-one-class class="testASystemFrameSaysWhetherItIsForAll"/>
         <test-one-class class="testTheShortcutTableIsTheOldChain"/>
         <test-one-class class="testEveryKindOfShortcutOnTheWindow"/>
+        <test-one-class class="testTheEditorsFindingsCanBeFiltered"/>
     </target>
     <target name="package-for-store" depends="jar">
         <property name="store.jar.name" value="TrainControl"/>
