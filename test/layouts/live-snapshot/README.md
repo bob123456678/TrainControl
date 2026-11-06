@@ -185,3 +185,4 @@ not fix it. Name the square.
 - `ui.testTheEditorsFindingsCanBeFiltered`
 - `ui.testAPageWindowsMenuAsksOverIt`
 - `ui.testAPageWindowsSetupMenuAsksOverIt`
+- `ui.testFindAPoint`

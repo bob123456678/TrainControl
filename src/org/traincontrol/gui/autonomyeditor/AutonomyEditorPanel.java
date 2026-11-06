@@ -1030,22 +1030,7 @@ public class AutonomyEditorPanel extends JPanel
                 List<TileKey> related = row < findingRelated.size() && findingRelated.get(row) != null
                     ? findingRelated.get(row) : java.util.Collections.<TileKey>emptyList();
 
-                // A finding on another page goes to the main window, which opens an editor there.
-                if (!onThisPage(at))
-                {
-                    if (onJumpToNotice != null)
-                    {
-                        onJumpToNotice.accept(at, related);
-                    }
-                    else if (onJumpToPage != null)
-                    {
-                        onJumpToPage.accept(at);
-                    }
-
-                    return;
-                }
-
-                outlineTheNotice(at, related);
+                goToNotice(at, related);
             }
         });
 
@@ -6418,6 +6403,44 @@ public class AutonomyEditorPanel extends JPanel
         {
             // Not copied; the click still works
         }
+    }
+
+    /**
+     * The door a finding and Find a Point (FR-055) share: a square on another page goes to the main window, which opens
+     * an editor there that outlines it; one on this page is outlined and shown.
+     */
+    public void goToNotice(TileKey at, List<TileKey> related)
+    {
+        if (!onThisPage(at))
+        {
+            if (onJumpToNotice != null)
+            {
+                onJumpToNotice.accept(at, related);
+            }
+            else if (onJumpToPage != null)
+            {
+                onJumpToPage.accept(at);
+            }
+
+            return;
+        }
+
+        outlineTheNotice(at, related);
+    }
+
+    /** Every square with a name, on any page, with that name, for Find a Point (FR-055). */
+    public java.util.Map<TileKey, String> namedPoints()
+    {
+        java.util.Map<TileKey, String> out = new java.util.LinkedHashMap<>();
+
+        for (TileKey tile : session.getStore().getNamedTiles())
+        {
+            String name = session.getStore().getPointName(tile);
+
+            if (name != null && !name.trim().isEmpty()) out.put(tile, name);
+        }
+
+        return out;
     }
 
     /**

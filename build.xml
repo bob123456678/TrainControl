@@ -653,6 +653,7 @@
         <test-one-class class="testAPageWindowsSetupMenuAsksOverIt"/>
         <test-one-class class="testTheLocomotiveDoorsAskOverTheirWindow"/>
         <test-one-class class="testTheEditorsDoorsAskOverThem"/>
+        <test-one-class class="testFindAPoint"/>
     </target>
     <target name="package-for-store" depends="jar">
         <property name="store.jar.name" value="TrainControl"/>

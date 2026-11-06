@@ -47,6 +47,16 @@ public final class SandboxedWindow
         return opened;
     }
 
+    /** Builds the main window on a station, as every window test does, holds it for {@link #close}, and returns it. */
+    public TrainControlUI openWindow(org.traincontrol.marklin.MarklinControlStation station) throws java.io.IOException
+    {
+        TrainControlUI opened = Components.onTheEventThread(TrainControlUI::new);
+
+        opened.setViewListener(station, new java.util.concurrent.CountDownLatch(1));
+
+        return hold(opened);
+    }
+
     /** The sandbox held, or null before one is. */
     public LayoutSandbox sandbox()
     {
