@@ -44,7 +44,7 @@ final class LayoutFileActions
      * position in the name-sorted page list.  Delete and Combine go through here; Add, Duplicate and Rename go through
      * `LayoutPageEdit`.  The order is taken from the pages this session holds, not the index file (FR-018).
      *
-     * @param layoutList the new page list, name-sorted, as writeLayoutIndex takes it
+     * @param layoutList the new page list, as writeLayoutIndex takes it
      * @param renamed old name -&gt; new name, or null - which both callers pass; a rename goes through `LayoutPageEdit`
      * @param keepAbsent pages to hold in the index though they are not loaded (FR-018), or null
      * @throws java.io.IOException if the index cannot be written, which is the caller's to report
@@ -412,6 +412,184 @@ final class LayoutFileActions
     }
 
     /**
+     * Moves the selected page one place up or down the page list and saves at once (FR-175).  Silent at either end,
+     * where the editor grays the arrow.
+     *
+     * @param by -1 for up, 1 for down
+     * @param from the layout editor that asked, or null
+     */
+    void movePage(final int by, final LayoutEditor from)
+    {
+        final String page = String.valueOf(this.ui.layoutList().getSelectedItem());
+
+        if (moved(this.ui.getModel().getLayoutList(), page, by) == null) return;
+
+        reorder(pages -> moved(pages, page, by), page, page, from);
+    }
+
+    /** The pages with this one moved by `by` places, or null at either end. */
+    private static List<String> moved(List<String> pages, String page, int by)
+    {
+        int at = pages.indexOf(page);
+        int to = at + by;
+
+        if (at < 0 || to < 0 || to >= pages.size()) return null;
+
+        List<String> out = new ArrayList<>(pages);
+
+        java.util.Collections.swap(out, at, to);
+
+        return out;
+    }
+
+    /** The pages in name order, or null when they already are. */
+    private static List<String> sorted(List<String> pages)
+    {
+        List<String> out = new ArrayList<>(pages);
+
+        java.util.Collections.sort(out);
+
+        return out.equals(pages) ? null : out;
+    }
+
+    /**
+     * Writes the pages in name order once (FR-175); nothing is written when they already are.
+     *
+     * @param from the layout editor that asked, or null
+     */
+    void sortPagesByName(final LayoutEditor from)
+    {
+        if (sorted(this.ui.getModel().getLayoutList()) == null) return;
+
+        // The layout editor arrives on its own page, and the main window is put back on the page it showed
+        reorder(LayoutFileActions::sorted, String.valueOf(this.ui.layoutList().getSelectedItem()), null, from);
+    }
+
+    /**
+     * Writes the index in a new page order: every page keeps its id, and no page file and not the setup is touched.  Refused as the other page edits are.
+     *
+     * @param order the pages in the order to write, worked out from the pages as they are when the write goes ahead
+     *        (a page may have been added meanwhile); null when there is nothing to change
+     * @param page the page the main window shows afterwards
+     * @param editorPage the page the layout editor that asked arrives on, or null for the one it left
+     * @param from the layout editor that asked (FR-109), or null for the Layouts menu
+     */
+    private void reorder(final java.util.function.Function<List<String>, List<String>> order, final String page,
+        final String editorPage, final LayoutEditor from)
+    {
+        if (refusedAsAPageEdit(from)) return;
+
+        runPageEdit(from, page, editorPage, () ->
+        {
+            List<String> next = order.apply(this.ui.getModel().getLayoutList());
+
+            if (next == null) return false;
+
+            this.ui.captureRunningLayout();
+
+            java.util.Collection<String> keepAbsent = this.ui.settleTheAbsentPages(
+                this.ui.getModel().getLayoutList(), null, null);
+
+            if (keepAbsent == null) return false;
+
+            // Only the order of the index changes: an arrow's number indexes the name-sorted list, which does not move,
+            // and each page keeps its id.
+            LayoutDiagram.writeLayoutIndex(this.ui.localLayoutPath(), next, null, this.ui.pageIdFloor(), keepAbsent);
+
+            return true;
+        });
+    }
+
+    /**
+     * The refusals every page edit that rewrites the index shares, in the order they are asked: an open editor (the
+     * Layouts menu's edits only; the editor that asked steps aside), a running railway, and a Central Station layout.
+     *
+     * @param from the layout editor that asked, or null for the Layouts menu
+     * @return true when the edit is refused, the user told why
+     */
+    private boolean refusedAsAPageEdit(LayoutEditor from)
+    {
+        final java.awt.Component over = from == null ? this.ui : from;
+
+        // Not while an editor holds the diagram: the edit ends in layoutEditingComplete, which rebuilds the autonomy
+        // session from pages just replaced, so under an open editor a second editor opens on the same diagram.
+        if (from == null && this.ui.refuseWhileEditorOpen()) return true;
+
+        // And not while trains are running (MT-141): the session is rebuilt underneath whatever is moving.
+        if (this.ui.refuseWhileARunHoldsTheSetup(over)) return true;
+
+        if (!this.ui.isLocalLayout())
+        {
+            JOptionPane.showMessageDialog(over, I18n.t("layout.ui.errorCannotManipulateRemoteLayouts"));
+
+            return true;
+        }
+
+        return false;
+    }
+
+    /** What a page edit does once it is allowed: true when it wrote the layout, false when the user stopped it. */
+    private interface PageEdit
+    {
+        boolean write() throws Exception;
+    }
+
+    /**
+     * Runs a page edit where the Layouts menu or the layout editor that asked (which steps aside first) runs it, then
+     * refreshes the layout and shows `show`; a failure is reported over the asker and the editor told to arrive back.
+     */
+    private void runPageEdit(final LayoutEditor from, final String show, final PageEdit edit)
+    {
+        runPageEdit(from, show, show, edit);
+    }
+
+    /** The same, with the layout editor arriving on `editorShows` (null: the page it left) and the main window on `show`. */
+    private void runPageEdit(final LayoutEditor from, final String show, final String editorShows, final PageEdit edit)
+    {
+        final java.awt.Component over = from == null ? this.ui : from;
+
+        final Runnable work = () ->
+        {
+            boolean arriving = false;
+
+            try
+            {
+                if (edit.write())
+                {
+                    this.ui.layoutEditingComplete(() ->
+                    {
+                        // Posted, so it lands after the two below
+                        if (from != null) from.arriveOn(editorShows);
+
+                        this.ui.layoutList().setSelectedItem(show);
+                        this.ui.repaintLayout();
+
+                        // The editor's arrival selects its page in the main window; this lands after it
+                        if (from != null)
+                        {
+                            javax.swing.SwingUtilities.invokeLater(() -> this.ui.layoutList().setSelectedItem(show));
+                        }
+                    });
+
+                    arriving = true;
+                }
+            }
+            catch (Exception ex)
+            {
+                JOptionPane.showMessageDialog(over, I18n.f("layout.ui.errorSavingLayoutWithMessage", ex.getMessage()));
+                this.ui.getModel().log(ex);
+            }
+            finally
+            {
+                if (from != null && !arriving) from.arriveOn(null);
+            }
+        };
+
+        if (from == null) javax.swing.SwingUtilities.invokeLater(work);
+        else from.stepOutFor(work);
+    }
+
+    /**
      * Duplicates or renames the current layout page, optionally clearing it
      * @param newLayoutName - name of the new layout
      * @param rename - true if renaming
@@ -424,23 +602,8 @@ final class LayoutFileActions
     {
         final java.awt.Component over = from == null ? this.ui : from;
 
-        // Not while an editor holds the diagram: both finish by calling layoutEditingComplete, which rebuilds the
-        // autonomy session from pages just replaced, so under an open editor a second editor opens on the same diagram.
         // Refused at the entry, as by the end the page is written.
-        if (from == null && this.ui.refuseWhileEditorOpen()) return;
-
-        // And not while trains are running (MT-141): renaming a page rebuilds the session underneath whatever is
-        // moving.
-        if (this.ui.refuseWhileARunHoldsTheSetup(over)) return;
-
-        if (!this.ui.isLocalLayout())
-        {
-            JOptionPane.showMessageDialog(
-                over,
-                I18n.t("layout.ui.errorCannotManipulateRemoteLayouts")
-            );
-            return;
-        }
+        if (refusedAsAPageEdit(from)) return;
 
         if (this.ui.getModel().getLayoutList().contains(newLayoutName))
         {
@@ -466,64 +629,35 @@ final class LayoutFileActions
             return;
         }
 
-        final Runnable work = () ->
+        runPageEdit(from, newLayoutName, () ->
         {
-            boolean arriving = false;
+            // The sequence lives in LayoutPageEdit, handed the session already built; what is above is about
+            // whether to ask at all and puts dialogs on screen.  The ORDER of a rename is where every rename
+            // defect lived, and a test could not reach it in here.
+            String currentLayout = this.ui.layoutList().getSelectedItem().toString();
 
-            try
-            {
-                // The sequence lives in LayoutPageEdit, handed the session already built; what is above is about
-                // whether to ask at all and puts dialogs on screen.  The ORDER of a rename is where every rename
-                // defect lived, and a test could not reach it in here.
-                String currentLayout = this.ui.layoutList().getSelectedItem().toString();
+            // What the last run did, folded in while the naming still agrees with the store: after the rename the
+            // store is rekeyed and this session's pages are not.
+            this.ui.captureRunningLayout();
 
-                // What the last run did, folded in while the naming still agrees with the store: after the rename the
-                // store is rekeyed and this session's pages are not.
-                this.ui.captureRunningLayout();
+            // A rename makes the old name absent by construction, so it is told about that and
+            // asks only about the rest (FR-018).
+            java.util.Map<String, String> renaming = new java.util.LinkedHashMap<>();
 
-                // A rename makes the old name absent by construction, so it is told about that and
-                // asks only about the rest (FR-018).
-                java.util.Map<String, String> renaming = new java.util.LinkedHashMap<>();
+            if (rename) renaming.put(currentLayout, newLayoutName);
 
-                if (rename) renaming.put(currentLayout, newLayoutName);
+            java.util.Collection<String> keepAbsent = this.ui.settleTheAbsentPages(
+                this.ui.getModel().getLayoutList(), renaming, null);
 
-                java.util.Collection<String> keepAbsent = this.ui.settleTheAbsentPages(
-                    this.ui.getModel().getLayoutList(), renaming, null);
+            if (keepAbsent == null) return false;
 
-                if (keepAbsent == null) return;
+            org.traincontrol.automationui.LayoutPageEdit.renameOrDuplicate(
+                this.ui.getModel().getLayoutList(), this.ui.getModel().getLayout(currentLayout),
+                this.ui.localLayoutPath(), currentLayout, newLayoutName,
+                rename, duplicate, blank, this.ui.autonomySession(), this.ui.getModel(), keepAbsent);
 
-                org.traincontrol.automationui.LayoutPageEdit.renameOrDuplicate(
-                    this.ui.getModel().getLayoutList(), this.ui.getModel().getLayout(currentLayout),
-                    this.ui.localLayoutPath(), currentLayout, newLayoutName,
-                    rename, duplicate, blank, this.ui.autonomySession(), this.ui.getModel(), keepAbsent);
-
-                this.ui.layoutEditingComplete(() ->
-                {
-                    // Posted, so it lands after the two below
-                    if (from != null) from.arriveOn(newLayoutName);
-
-                    this.ui.layoutList().setSelectedItem(newLayoutName);
-                    this.ui.repaintLayout();
-                });
-
-                arriving = true;
-            }
-            catch (Exception ex)
-            {
-                JOptionPane.showMessageDialog(
-                    over,
-                    I18n.f("layout.ui.errorSavingLayoutWithMessage", ex.getMessage())
-                );
-                this.ui.getModel().log(ex);
-            }
-            finally
-            {
-                if (from != null && !arriving) from.arriveOn(null);
-            }
-        };
-
-        if (from == null) javax.swing.SwingUtilities.invokeLater(work);
-        else from.stepOutFor(work);
+            return true;
+        });
     }
 
     /**
@@ -631,7 +765,7 @@ final class LayoutFileActions
 
         if (page == null) return out;
 
-        List<String> all = this.ui.getModel().getLayoutList();
+        List<String> all = this.ui.getModel().getLayoutListByName();
 
         // Left to right, top to bottom, so the same diagram always produces the same page
         for (int y = 0; y < page.getSy(); y++)

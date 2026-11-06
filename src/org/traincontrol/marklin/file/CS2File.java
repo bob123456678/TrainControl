@@ -2355,7 +2355,7 @@ public final class CS2File
                 logMessage(I18n.f("layout.warningPageCouldNotBeRead", name, String.valueOf(bad)),
                     null, false);
 
-                // The page keeps its place in the list (a link tile holds a position in it) as a blank page with a
+                // The page keeps its place in the name-sorted list (a link tile holds a position in it) as a blank page with a
                 // label saying it could not be loaded, carrying the page's id so its autonomy setup stays attached.
                 // Marked unreadable so nothing saves the blank over the file being recovered (OB-408).
                 try

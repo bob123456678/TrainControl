@@ -19,6 +19,7 @@ import javax.swing.SwingUtilities;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
+import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
 import org.testng.SkipException;
 import org.testng.annotations.AfterMethod;
@@ -36,9 +37,9 @@ import support.Answering;
 import support.Components;
 
 /**
- * FR-109: the layout editor's Manage Pages menu adds, renames, duplicates, combines and deletes pages with the main
- * window's own actions, on the page being edited, in the same window; FR-146: Layouts > Manage Pages... opens it.  The
- * user opens the editor, picks the item and answers the real dialogs; what comes of it is the layout's folder and the
+ * FR-109: the layout editor's page icons (FR-174) and Tools menu add, rename, duplicate, combine and delete pages with the
+ * main window's own actions, on the page being edited, in the same window; FR-146: Layouts > Manage Pages... opens the
+ * editor.  The user opens the editor, presses the icon or item and answers the real dialogs; what comes of it is the layout's folder and the
  * window, which stays the same throughout and unchanged when the action is refused or canceled.  Unsaved work is asked
  * about only once nothing can refuse the action.
  *
@@ -436,7 +437,7 @@ public class testTheLayoutEditorManagesPages
      * name is asked for and nothing about unsaved work; the pages and the folder are as they were and the same window
      * is on the same page.
      *
-     * MUTATION: the editor's own run refusal dropped (`pageMenuItem`), so Add and Rename ask for a name first, and
+     * MUTATION: the editor's own run refusal dropped (`runPageAction`), so Add and Rename ask for a name first, and
      * this fails.
      */
     @Test
@@ -750,7 +751,7 @@ public class testTheLayoutEditorManagesPages
      * nothing about unsaved work or a name is asked; the pages and the folder are as they were and the same window is
      * on the same page.
      *
-     * MUTATION: the editor's own run refusal dropped (`pageMenuItem`) and Combine's asked over the main window
+     * MUTATION: the editor's own run refusal dropped (`runPageAction`) and Combine's asked over the main window
      * (`refuseWhileARunHoldsTheSetup(this.ui)` in `combineLinkedPages`), and this fails.
      *
      * @throws Exception from the window
@@ -866,14 +867,15 @@ public class testTheLayoutEditorManagesPages
 
     /**
      * Layouts > Manage Pages... stands where the Manage Pages menu was, which is hidden, and opens the layout editor
-     * on the main window's page with the editor's own Manage Pages menu open, its five items showing.
+     * on the main window's page, with no menu open: the page actions are the icons in its sidebar (FR-174).
      *
-     * MUTATION: the editor's menu left shut (`openPageMenu` does nothing), and this fails.
+     * MUTATION: the editor opens its Tools menu after Manage Pages... (a `doClick` on the menu from
+     * `LayoutMenus.openManagePages`), and this fails.
      *
      * @throws Exception from the window
      */
     @Test
-    public void testManagePagesOpensTheEditorWithItsMenuOpen() throws Exception
+    public void testManagePagesOpensTheEditorWithNoMenuOpen() throws Exception
     {
         final String page = "2 - Bottom";
 
@@ -913,31 +915,24 @@ public class testTheLayoutEditorManagesPages
             assertTrue(Components.waitFor(() -> editorOn(page) != null, 15000), "Manage Pages... opened no editor on "
                 + page + ": " + titles());
 
-            assertTrue(Components.waitFor(() -> pageMenuOpenIn(editorOn(page)), 10000), "the editor's Manage Pages"
-                + " menu is not open");
+            Components.settle();
+
+            assertFalse(pageMenuOpenIn(editorOn(page)), "Manage Pages... popped the editor's Tools menu open");
 
             assertEquals(answering.asked(), Collections.emptyList(), "Manage Pages... asked something");
         }
 
         assertEquals(editors().size(), 1, "more than one editor is open: " + titles());
 
-        javax.swing.JPopupMenu popup = Components.popupShowing();
+        assertNull(Components.popupShowing(), "a menu is showing");
 
-        assertNotNull(popup, "no menu is showing");
-
-        for (String key : new String[] {"ui.main.toolbar.addBlackPage", "ui.main.toolbar.renameCurrentPage",
-            "ui.main.toolbar.duplicateCurrentPage", "layout.ui.menuCombineLinkedPages",
-            "ui.main.toolbar.deleteCurrentPage"})
-        {
-            assertNotNull(Components.withText(popup, I18n.t(key)), "the open menu has no " + I18n.t(key));
-        }
-
-        SwingUtilities.invokeAndWait(javax.swing.MenuSelectionManager.defaultManager()::clearSelectedPath);
+        assertNotNull(iconsOf(editorOn(page)).get(I18n.t("ui.main.toolbar.addBlackPage")),
+            "the editor Manage Pages... opened has no Add icon");
     }
 
     /**
      * With an editor already open on one page and the main window on another, Manage Pages... is lit, brings that
-     * editor forward with its Manage Pages menu open, and opens no second editor nor moves it off its page.
+     * editor forward, and opens no second editor nor moves it off its page, nor opens a menu.
      *
      * MUTATION: Manage Pages... grayed with an editor open (`setEnabled(live)` in `applyLayoutEditingAvailability`),
      * and this fails.
@@ -945,7 +940,7 @@ public class testTheLayoutEditorManagesPages
      * @throws Exception from the window
      */
     @Test
-    public void testManagePagesBringsTheOpenEditorForwardWithItsMenuOpen() throws Exception
+    public void testManagePagesBringsTheOpenEditorForward() throws Exception
     {
         final String page = "5 - Test";
 
@@ -963,13 +958,12 @@ public class testTheLayoutEditorManagesPages
         {
             Components.press(item);
 
-            assertTrue(Components.waitFor(() -> pageMenuOpenIn(editor.window), 10000), "the open editor's Manage"
-                + " Pages menu is not open");
+            Components.settle();
+
+            assertFalse(pageMenuOpenIn(editor.window), "the open editor's Tools menu was opened");
 
             assertEquals(answering.asked(), Collections.emptyList(), "Manage Pages... asked something");
         }
-
-        SwingUtilities.invokeAndWait(javax.swing.MenuSelectionManager.defaultManager()::clearSelectedPath);
 
         editor.wasNeverClosed();
 
@@ -1045,44 +1039,23 @@ public class testTheLayoutEditorManagesPages
     }
 
     /**
-     * Sort Pages... in the Manage Pages menu says once, over the editor, that pages are listed in the order of their
-     * names and that renaming changes it (FR-149), and changes nothing: pages, folder, window, unsaved work, shown
-     * page.
+     * FR-174: the editor's menu is called Tools, and holds only what has no icon: Sort Pages by Name, a separator, and
+     * Combine Linked Pages.  The page actions with icons are not in it.
      *
-     * MUTATION: leave Sort Pages... out of `mountPageMenu`, and the menu has no such item.
+     * MUTATION: put Add Blank Page back in `mountPageMenu`, or the title back to Manage Pages, and this fails.
      */
     @Test
-    public void testSortPagesSaysToRenameAndChangesNothing() throws Exception
-    {
-        sortPagesSaysToRenameAndChangesNothing(false);
-    }
-
-    /**
-     * Sort Pages... is not refused while a route runs, as it changes nothing.
-     *
-     * MUTATION: build Sort Pages... with `pageMenuItem`, and the run refuses it.
-     */
-    @Test
-    public void testSortPagesIsNotRefusedWhileARouteRuns() throws Exception
-    {
-        sortPagesSaysToRenameAndChangesNothing(true);
-    }
-
-    /**
-     * FR-154: the Manage Pages menu lists Sort Pages... before Combine Linked Pages..., with a separator directly above
-     * Combine; the rest of the menu is as it was.
-     *
-     * MUTATION: in `mountPageMenu`, add Combine before Sort again, and the order is wrong.
-     */
-    @Test
-    public void testCombineComesAfterSortBelowASeparator() throws Exception
+    public void testTheToolsMenuHoldsOnlySortAndCombine() throws Exception
     {
         Watched editor = editPage("1 - Main", false);
 
         javax.swing.JMenu menu = Components.find(editor.window, javax.swing.JMenu.class,
-            m -> I18n.t("ui.main.toolbar.modifyLayout").equals(m.getText()));
+            m -> I18n.t("layout.ui.menuTools").equals(m.getText()));
 
-        assertNotNull(menu, "the layout editor has no Manage Pages menu");
+        assertNotNull(menu, "the layout editor has no Tools menu");
+
+        assertNull(Components.find(editor.window, javax.swing.JMenu.class,
+            m -> I18n.t("ui.main.toolbar.modifyLayout").equals(m.getText())), "the editor still has a Manage Pages menu");
 
         String[] keys = {"ui.main.toolbar.addBlackPage", "ui.main.toolbar.renameCurrentPage",
             "ui.main.toolbar.duplicateCurrentPage", "ui.main.toolbar.sortPages", "layout.ui.menuCombineLinkedPages",
@@ -1105,12 +1078,35 @@ public class testTheLayoutEditorManagesPages
             return out;
         });
 
-        assertEquals(String.join(" ", items), "ui.main.toolbar.addBlackPage ui.main.toolbar.renameCurrentPage"
-            + " ui.main.toolbar.duplicateCurrentPage ui.main.toolbar.sortPages | layout.ui.menuCombineLinkedPages"
-            + " | ui.main.toolbar.deleteCurrentPage", "the Manage Pages menu's items, | for a separator");
+        assertEquals(String.join(" ", items), "ui.main.toolbar.sortPages | layout.ui.menuCombineLinkedPages",
+            "the Tools menu's items, | for a separator");
     }
 
-    private void sortPagesSaysToRenameAndChangesNothing(boolean routeRuns) throws Exception
+    /**
+     * Sort Pages by Name on a layout already in name order changes nothing and says nothing: no dialog, no write, the
+     * same window on the same page with its unsaved work.
+     *
+     * MUTATION: `sortPagesByName` writes without comparing (the `sorted.equals(order)` return dropped), and the
+     * folder's index is rewritten.
+     */
+    @Test
+    public void testSortPagesByNameOnAnOrderedLayoutChangesNothing() throws Exception
+    {
+        sortPagesByName(false);
+    }
+
+    /**
+     * Sort Pages by Name writes, so a running route refuses it in the run's one dialog, as the other page actions are.
+     *
+     * MUTATION: build Sort Pages by Name outside `pageMenuItem`, and the run does not refuse it.
+     */
+    @Test
+    public void testSortPagesByNameIsRefusedWhileARouteRuns() throws Exception
+    {
+        sortPagesByName(true);
+    }
+
+    private void sortPagesByName(boolean routeRuns) throws Exception
     {
         final String page = "2 - Bottom";
 
@@ -1127,14 +1123,14 @@ public class testTheLayoutEditorManagesPages
         Map<String, String> before = fingerprint();
 
         javax.swing.JMenu menu = Components.find(editor.window, javax.swing.JMenu.class,
-            m -> I18n.t("ui.main.toolbar.modifyLayout").equals(m.getText()));
+            m -> I18n.t("layout.ui.menuTools").equals(m.getText()));
 
-        assertNotNull(menu, "the layout editor has no Manage Pages menu");
+        assertNotNull(menu, "the layout editor has no Tools menu");
 
         Components.press(menu);
 
-        assertTrue(Components.waitFor(() -> pageMenuOpenIn(editor.window), 10000), "the editor's Manage Pages menu did"
-            + " not open");
+        assertTrue(Components.waitFor(() -> pageMenuOpenIn(editor.window), 10000), "the editor's Tools menu did not"
+            + " open");
 
         try (Owners owners = new Owners())
         {
@@ -1142,26 +1138,33 @@ public class testTheLayoutEditorManagesPages
             {
                 click(editor, "ui.main.toolbar.sortPages");
 
-                assertTrue(answering.awaitAsked(1, 10000), "Sort Pages... said nothing");
+                if (routeRuns)
+                {
+                    assertTrue(answering.awaitAsked(1, 10000), "Sort Pages by Name said nothing while a route runs");
+
+                    assertEquals(answering.asked(), Collections.singletonList(I18n.t("ui.main.errorNoEditsWhileRunning")),
+                        "Sort Pages by Name did not refuse in the run's one dialog");
+                }
 
                 Components.settle();
 
-                assertEquals(answering.asked(), Collections.singletonList(I18n.t("layout.ui.infoSortPages")),
-                    "Sort Pages... did not say once that pages are listed by name and are renamed to reorder them");
+                if (!routeRuns) assertEquals(answering.asked(), Collections.emptyList(), "Sort Pages by Name said"
+                    + " something on a layout already in name order");
             }
 
-            assertEquals(owners.count(), 1, "Sort Pages... opened more than one dialog");
+            assertEquals(owners.count(), routeRuns ? 1 : 0, "Sort Pages by Name opened the wrong number of dialogs");
 
             owners.allAre(editor.window);
         }
 
         editor.isAsItWas(page);
 
-        assertEquals(model.getLayoutList(), pages, "Sort Pages... changed the pages");
+        assertEquals(model.getLayoutList(), pages, "Sort Pages by Name changed the pages");
 
-        assertEquals(fingerprint(), before, "Sort Pages... changed the layout's folder");
+        assertEquals(fingerprint(), before, "Sort Pages by Name changed the layout's folder");
 
-        assertEquals(String.valueOf(pageList().getSelectedItem()), "1 - Main", "Sort Pages... moved the main"
+        // Refused, or nothing to write: either way the main window is where it was
+        assertEquals(String.valueOf(pageList().getSelectedItem()), "1 - Main", "Sort Pages by Name moved the main"
             + " window's page");
     }
 
@@ -1363,7 +1366,7 @@ public class testTheLayoutEditorManagesPages
         if (editor == null) return false;
 
         javax.swing.JMenu menu = Components.find(editor, javax.swing.JMenu.class,
-            m -> I18n.t("ui.main.toolbar.modifyLayout").equals(m.getText()));
+            m -> I18n.t("layout.ui.menuTools").equals(m.getText()));
 
         return menu != null && Components.onTheEventThread(menu::isPopupMenuVisible);
     }
@@ -1380,11 +1383,41 @@ public class testTheLayoutEditorManagesPages
     /** Presses the editor's own item for this action. */
     private static void click(Watched editor, String key)
     {
-        AbstractButton item = Components.withText(editor.window, I18n.t(key));
+        AbstractButton item = iconsOf(editor.window).get(I18n.t(key));
+
+        if (item == null) item = Components.withText(editor.window, I18n.t(key));
 
         assertNotNull(item, "the layout editor has no " + I18n.t(key));
 
         Components.press(item);
+    }
+
+    /** The sidebar's strip icons by tooltip (FR-174): they have no text. */
+    private static Map<String, AbstractButton> iconsOf(LayoutEditor editor)
+    {
+        return Components.onTheEventThread(() ->
+        {
+            Map<String, AbstractButton> found = new java.util.HashMap<>();
+
+            collectIcons(editor, found);
+
+            return found;
+        });
+    }
+
+    private static void collectIcons(java.awt.Component part, Map<String, AbstractButton> found)
+    {
+        if (part instanceof javax.swing.JButton && !(part instanceof javax.swing.JMenuItem)
+            && "toolBarButton".equals(((javax.swing.JButton) part).getClientProperty("JButton.buttonType"))
+            && ((javax.swing.JButton) part).getToolTipText() != null)
+        {
+            found.put(((javax.swing.JButton) part).getToolTipText(), (javax.swing.JButton) part);
+        }
+
+        if (part instanceof java.awt.Container)
+        {
+            for (java.awt.Component child : ((java.awt.Container) part).getComponents()) collectIcons(child, found);
+        }
     }
 
     /** Turns a track square, so the editor has unsaved work; returns its x, y and new orientation. */
@@ -1423,38 +1456,20 @@ public class testTheLayoutEditorManagesPages
         assertTrue(model.getRoute(PROBE).setExecuting(), "precondition: the probe route would not run");
     }
 
-    /** Every editor window that is still there. */
     private static List<LayoutEditor> editors()
     {
-        List<LayoutEditor> found = new ArrayList<>();
-
-        for (Frame frame : Frame.getFrames())
-        {
-            if (frame instanceof LayoutEditor && frame.isDisplayable()) found.add((LayoutEditor) frame);
-        }
-
-        return found;
+        return support.EditorsOpen.editors();
     }
 
     private static List<String> titles()
     {
-        List<String> titles = new ArrayList<>();
-
-        for (LayoutEditor editor : editors()) titles.add(editor.getTitle());
-
-        return titles;
+        return support.EditorsOpen.titles();
     }
 
     /** The editor that is showing this page, or null. */
     private static LayoutEditor editorOn(String page)
     {
-        for (LayoutEditor editor : editors())
-        {
-            if (editor.isShowing() && (editor.getTitle().startsWith(I18n.f("app.ui.windowLayoutEditorTitle", page))
-                || editor.getTitle().startsWith(I18n.f("autosetup.ui.windowTitle", page)))) return editor;
-        }
-
-        return null;
+        return support.EditorsOpen.editorOn(page);
     }
 
     private File pageFile(String page)

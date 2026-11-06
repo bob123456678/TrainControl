@@ -468,7 +468,7 @@ public class LayoutDiagram
      * holds, not the index file.
      *
      * @param path the layout folder
-     * @param layoutList the new page list, name-sorted
+     * @param layoutList the new page list, in the order to write; the arrows are re-aimed against its name-sorted copy
      * @param renamed old name -&gt; new name, or null
      * @param floor the id floor, as `writeLayoutIndex` takes it
      * @param keepAbsent pages to hold in the index though they are not loaded (FR-018), or null
@@ -602,8 +602,8 @@ public class LayoutDiagram
     private boolean unreadable = false;
 
     /**
-     * Marks this page as standing in for one whose file would not read: it holds the place in the list so every link
-     * after it resolves, and must never be written (it is blank, and the file it would go over is the one being
+     * Marks this page as standing in for one whose file would not read: it holds the place in the name-sorted list so every
+     * link after it resolves, and must never be written (it is blank, and the file it would go over is the one being
      * recovered).
      */
     public void markUnreadable()

@@ -14207,13 +14207,15 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         int page = index + 1;
 
-        if (this.LayoutList.getModel().getSize() > index && index >= 0)
+        List<String> byName = this.model.getLayoutListByName();
+
+        if (byName.size() > index && index >= 0 && this.LayoutList.getModel().getSize() > index)
         {
             this.model.logf(
                 "layout.ui.infoJumpingToLayoutPage",
                 page
             );
-            this.LayoutList.setSelectedIndex(index);
+            this.LayoutList.setSelectedItem(byName.get(index));
             this.repaintLayout();
         }
         else
@@ -17827,6 +17829,18 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     public void duplicatePageFromTheEditor(LayoutEditor editor)
     {
         pressFromTheEditor(editor, this::duplicateLayoutMenuItemActionPerformed);
+    }
+
+    /** Move Page Up (-1) or Down (1) from the layout editor, on the main window's selected page (FR-175). */
+    public void movePageFromTheEditor(LayoutEditor editor, int by)
+    {
+        this.layoutFileActions.movePage(by, editor);
+    }
+
+    /** Sort Pages by Name from the layout editor (FR-175). */
+    public void sortPagesFromTheEditor(LayoutEditor editor)
+    {
+        this.layoutFileActions.sortPagesByName(editor);
     }
 
     /** Combine Linked Pages from the layout editor, from the main window's selected page. */

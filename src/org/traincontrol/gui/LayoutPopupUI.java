@@ -158,7 +158,18 @@ public class LayoutPopupUI extends PositionAwareJFrame
      */
     public void refreshDiagram()
     {
-        this.goToLayoutPage(this.pageIndex);
+        this.goToLayoutPage(shownPlace(), true);
+    }
+
+    /**
+     * This window's page in the shown list, by name: a place saved earlier is stale once pages have moved, and an
+     * arrow's number is a place in another list.
+     */
+    private int shownPlace()
+    {
+        int at = this.parent.getModel().getLayoutList().indexOf(this.layout.getName());
+
+        return at >= 0 ? at : this.pageIndex;
     }
 
     /**
@@ -167,16 +178,22 @@ public class LayoutPopupUI extends PositionAwareJFrame
      */
     void refreshCaptions()
     {
-        this.goToLayoutPage(this.pageIndex, false);
+        this.goToLayoutPage(shownPlace(), false);
     }
     
     /**
      * Updates the layout page
-     * @param index
+     * @param index the page's place in the name-sorted list, as an arrow holds it
      */
     public void goToLayoutPage(int index)
     {
-        this.goToLayoutPage(index, true);
+        // An arrow's number is a place in the name-sorted list; the window keeps its own place in the shown list.
+        java.util.List<String> byName = this.parent.getModel().getLayoutListByName();
+
+        int shown = index >= 0 && index < byName.size()
+            ? this.parent.getModel().getLayoutList().indexOf(byName.get(index)) : index;
+
+        this.goToLayoutPage(shown, true);
     }
 
     /**

@@ -6,12 +6,31 @@ Part of the behavior reference: [`../behaviour.md`](../behaviour.md) is the inde
 
 ### Pages and links
 
-**Pages are ordered by name, not by the number the Central Station orders them with.** Adam:
-*"the `.id` field is what the Central Station uses to order the pages. We still order by
-name, which is the simpler behavior."* `getLayoutList` sorts, and that sort is what the window and every menu show. An id
-is still an identity (the autonomy setup is keyed by it, which is why `writeLayoutIndex` keeps each page's id rather than
-renumbering), but not a position. The `page=N` line at the top of a page file is preserved exactly as the station wrote
-it, and neither number decides where the page appears.
+**Pages are SHOWN in the order of the `seite` entries in `gleisbild.cs2`, not by name and not by `.id`** (FR-175). This
+replaces Adam's earlier ruling, *"We still order by name"*; his FR-175 answer was *"OK, go for file order."*
+`MarklinControlStation.getLayoutList` returns the order the last import read from the index (`layoutOrder`, set where
+`syncLayouts` fills the page database, which holds no order of its own), a page the import did not list after those, and
+that list is what the window and every menu show, for a Central Station layout too. An id is an identity, not a
+position (the autonomy setup is keyed by it, which is why `writeLayoutIndex` keeps each page's id and writes the pages
+in the order it is given). The `page=N` line at the top of a page file is preserved exactly as the station wrote it.
+
+**An arrow's meaning is a separate matter, and does not follow the display order.** Adam: *"as far as autonomy configs,
+and file reads go, make sure behavior is unchanged"* and *"make sure there are no cs2 regressions either"*. An arrow's
+number stays a position in the NAME-SORTED list (`getLayoutListByName`), in the file, in memory and in the autonomy
+graph, as 3.0.8 reads it; a Central Station index is not in name order, so reading it as file order would send every
+arrow elsewhere. Anything that turns an arrow's number into a page, or a page into a number, uses
+`getLayoutListByName`; anything shown uses `getLayoutList`.
+
+- **The editor's up and down arrows move the selected page** and save at once, as a rename does
+  (`LayoutFileActions.movePage`); at the top or bottom the arrow is grayed. **Sort Pages by Name** writes name order
+  once, and writes nothing when the pages already are. Both rewrite `gleisbild.cs2` and nothing else, with the writer
+  every page edit uses (`writeLayoutIndex`): the order changes, every id and the lines the writer keeps stay, and the
+  header block is regenerated, so a `groesse` width a station wrote is dropped, as at every other page edit. Every
+  page file and `setup.json` stay byte for byte as they were, and no arrow is re-aimed, because the name-sorted list
+  does not move. A new page, a copy and a combined page go at the end. A Central Station layout cannot be edited, so its
+  arrows are refused as other edits are.
+- **A layout in name order shows no change**, and 3.0.8, which sorts by name, reads a rearranged layout with every id
+  and every arrow as before.
 
 **A page that states no `.id` has id 0.** Adam: *"no .id means id 0 implicitly."* That is the CS2 convention (a key the
 station omits carries the zero value) and what the files say: of the index files here, four have a first page with no

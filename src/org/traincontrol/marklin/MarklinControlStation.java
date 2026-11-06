@@ -218,7 +218,10 @@ public class MarklinControlStation implements ViewListener, ModelListener
     
     // Layouts
     private final RemoteDeviceCollection<LayoutDiagram, String> layoutDB;
-    
+
+    // The pages in the order the index file lists them (FR-175); layoutDB holds no order.  Replaced whole by each import.
+    private volatile List<String> layoutOrder = new ArrayList<>();
+
     // Mapping for int UID -> string UID
     // volatile: written by rebuildLocIdCache() (synchronized) but read unsynchronized on the
     // message-processor thread in receiveMessage().  The volatile store/load gives the reader a
@@ -777,15 +780,21 @@ public class MarklinControlStation implements ViewListener, ModelListener
 
         this.mixedAddresses = kinds.keySet().stream().filter(uid -> kinds.get(uid).size() > 1).collect(Collectors.toSet());
 
+        List<String> fileOrder = new ArrayList<>();
+
         for (LayoutDiagram l : parsed)
         {
             this.layoutDB.add(l, l.getName(), l.getName());
+
+            fileOrder.add(l.getName());
 
             this.logf("layout.imported", l.getName());
 
             // Each component wired to what it stands for (parsing does not wire anything); see wireComponents.
             this.wireComponents(l, feedbackAddresses);
         }
+
+        this.layoutOrder = fileOrder;
         
         // Prune stale feedback, but only when the whole railway was read: a page that failed to load would take the
         // sensors seen only on it, and the autonomy points watching them, out of LocDB.data for good.
@@ -4134,15 +4143,40 @@ public class MarklinControlStation implements ViewListener, ModelListener
     }
     
     /**
-     * Gets all the available layout names
-     * @return 
+     * Gets all the available layout names for display, in the order the index file (gleisbild.cs2) lists them (FR-175),
+     * a page the import did not list after those, by name.  Not what an arrow's number indexes: that is
+     * `getLayoutListByName`.  A fresh list each call.
+     * @return
      */
     @Override
     public List<String> getLayoutList()
     {
+        List<String> held = this.layoutDB.getItemNames();
+        List<String> l = new ArrayList<>();
+
+        for (String name : this.layoutOrder)
+        {
+            if (held.remove(name)) l.add(name);
+        }
+
+        Collections.sort(held);
+
+        l.addAll(held);
+
+        return l;
+    }
+
+    /**
+     * The layout names sorted by name: the list an arrow's number indexes into, whatever order the pages are shown in
+     * (`getLayoutList`).  A fresh list each call.
+     * @return the names, sorted
+     */
+    @Override
+    public List<String> getLayoutListByName()
+    {
         List<String> l = this.layoutDB.getItemNames();
         Collections.sort(l);
-                
+
         return l;
     }
 
