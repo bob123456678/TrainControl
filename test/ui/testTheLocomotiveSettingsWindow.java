@@ -611,12 +611,7 @@ public class testTheLocomotiveSettingsWindow
 
         SettingsWindow.selectTab(0);
 
-        Components.onTheEventThread(() ->
-        {
-            SettingsWindow.part("settings.decoder", JComboBox.class).setSelectedItem(Locomotive.decoderType.MM2);
-
-            return null;
-        });
+        decoder(Locomotive.decoderType.MM2);
 
         SettingsWindow.type("settings.address", "40");
 
@@ -677,12 +672,7 @@ public class testTheLocomotiveSettingsWindow
 
         model.changeLocAddress(NAME, 1500, Locomotive.decoderType.MFX);
 
-        Components.onTheEventThread(() ->
-        {
-            SettingsWindow.part("settings.decoder", JComboBox.class).setSelectedItem(Locomotive.decoderType.DCC);
-
-            return null;
-        });
+        decoder(Locomotive.decoderType.DCC);
 
         SettingsWindow.press(SettingsWindow.save());
 
@@ -713,22 +703,12 @@ public class testTheLocomotiveSettingsWindow
 
         SettingsWindow.type("settings.address", "3401");
 
-        Components.onTheEventThread(() ->
-        {
-            SettingsWindow.part("settings.decoder", JComboBox.class).setSelectedItem(Locomotive.decoderType.DCC);
-
-            return null;
-        });
+        decoder(Locomotive.decoderType.DCC);
 
         assertEquals(saveAndAnswer(), Arrays.asList(stop), "a decoder change was not refused under a stored speed");
         assertEquals(loc.getDecoderType(), Locomotive.decoderType.MFX);
 
-        Components.onTheEventThread(() ->
-        {
-            SettingsWindow.part("settings.decoder", JComboBox.class).setSelectedItem(Locomotive.decoderType.MFX);
-
-            return null;
-        });
+        decoder(Locomotive.decoderType.MFX);
 
         SettingsWindow.type("settings.name", "LS renamed");
 
@@ -909,6 +889,16 @@ public class testTheLocomotiveSettingsWindow
     }
 
     // Helpers
+
+    private static void decoder(Locomotive.decoderType type)
+    {
+        Components.onTheEventThread(() ->
+        {
+            SettingsWindow.part("settings.decoder", JComboBox.class).setSelectedItem(type);
+
+            return null;
+        });
+    }
 
     private static Object invoke(java.lang.reflect.Method m, Object on)
     {

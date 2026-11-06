@@ -262,6 +262,14 @@ public class testThePresetSpeedSurvivesTheSetupDoors
         return out;
     }
 
+    /** The old-format setup the claims start from: the train stands with a speed of 20 on its square. */
+    private static String oldSetupStoringSpeed20() throws Exception
+    {
+        storeEverywhere(squareNamed("BottomMainB"), new org.json.JSONObject().put("name", TRAIN).put("speed", 20));
+
+        return ui.getActiveDiagramConfiguration();
+    }
+
     /** The square's record of the train, set to this, in every configuration there is. */
     private static void storeEverywhere(TileKey square, org.json.JSONObject record) throws Exception
     {
@@ -308,10 +316,8 @@ public class testThePresetSpeedSurvivesTheSetupDoors
     @Test
     public void testATrainOnAnExcludedPageDoesNotBringTheStaleSpeedBack() throws Exception
     {
-        final String configuration = ui.getActiveDiagramConfiguration();
+        final String configuration = oldSetupStoringSpeed20();
         final TileKey square = squareNamed("BottomMainB");
-
-        storeEverywhere(square, new org.json.JSONObject().put("name", TRAIN).put("speed", 20));
 
         SwingUtilities.invokeAndWait(() -> session.setPageExcluded(square.getPage(), true));
 
@@ -387,10 +393,8 @@ public class testThePresetSpeedSurvivesTheSetupDoors
     @Test
     public void testASavedZeroLoadsTheDefaultSpeed() throws Exception
     {
-        final String configuration = ui.getActiveDiagramConfiguration();
+        final String configuration = oldSetupStoringSpeed20();
         final TileKey square = squareNamed("BottomMainB");
-
-        storeEverywhere(square, new org.json.JSONObject().put("name", TRAIN).put("speed", 20));
 
         saveInTheWindow(0);
 
