@@ -62,19 +62,15 @@ public class testTheKeyboardAsksDuringAnAutonomyRun
         {
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("single-switch"));
 
-            model = support.TestStation.simulatedWithWindowInDebug();
-
-            model.setNetworkCommState(false);
-
             echoWas = MarklinControlStation.DEBUG_SIMULATE_PACKETS;
-
-            MarklinControlStation.DEBUG_SIMULATE_PACKETS = true;
-
+            model = support.TestStation.simulatedWithWindowInDebug();
             ui = (TrainControlUI) model.getGUI();
 
             Components.settle();
 
             model.setSentMessageObserver(sent::add);
+            model.setNetworkCommState(false);
+            MarklinControlStation.DEBUG_SIMULATE_PACKETS = true;
 
             Layout layout = model.getAutoLayout();
 
@@ -95,8 +91,8 @@ public class testTheKeyboardAsksDuringAnAutonomyRun
 
             layout.getPoint(PLATFORM).setProtectingSignal(accessory(PROTECTING).getName());
 
-            press((AbstractButton) field("MM2"));
-            press(keys().tab(1));
+            press(window("MM2"));
+            press(((AccessoryKeyboard) window("keyboardKeys")).tab(1));
         }
         catch (Throwable failed)
         {
@@ -111,17 +107,16 @@ public class testTheKeyboardAsksDuringAnAutonomyRun
     {
         try
         {
-            MarklinControlStation.DEBUG_SIMULATE_PACKETS = echoWas;
-
             if (model != null)
             {
                 model.setSentMessageObserver(null);
-
                 model.clearAutoLayout();
             }
         }
         finally
         {
+            MarklinControlStation.DEBUG_SIMULATE_PACKETS = echoWas;
+
             if (sandbox != null) sandbox.close();
         }
     }
@@ -132,10 +127,8 @@ public class testTheKeyboardAsksDuringAnAutonomyRun
     {
         Components.onTheEventThread(() ->
         {
-            for (java.awt.Window window : java.awt.Window.getWindows())
-            {
-                if (window instanceof JDialog && window.isShowing()) window.dispose();
-            }
+            java.util.Arrays.stream(java.awt.Window.getWindows())
+                .filter(w -> w instanceof JDialog && w.isShowing()).forEach(java.awt.Window::dispose);
 
             return null;
         });
@@ -366,24 +359,9 @@ public class testTheKeyboardAsksDuringAnAutonomyRun
 
     private static List<Integer> commandsTo(int address, int mark)
     {
-        List<Integer> positions = new ArrayList<>();
         int uid = MarklinAccessory.UIDfromAddress(address - 1, Accessory.accessoryDecoderType.MM2);
 
-        synchronized (sent)
-        {
-            for (CS2Message m : sent.subList(Math.min(mark, sent.size()), sent.size()))
-            {
-                byte[] d = m.getData();
-
-                if (m.getCommand() == CS2Message.CMD_ACC_SWITCH && d.length > 4
-                    && CS2Message.mergeBytes(new byte[] {d[0], d[1], d[2], d[3]}) == uid)
-                {
-                    positions.add((int) d[4]);
-                }
-            }
-        }
-
-        return positions;
+        return support.AccessoryCommands.positionsTo(new ArrayList<>(sent.subList(Math.min(mark, sent.size()), sent.size())), uid);
     }
 
     private static MarklinAccessory accessory(int address)
@@ -393,9 +371,26 @@ public class testTheKeyboardAsksDuringAnAutonomyRun
 
     // ---------------------------------------------------------------- the keyboard
 
-    private static void click(int address, boolean red) throws Exception
+    @SuppressWarnings("unchecked")
+    private static <T> T window(String name)
     {
-        AccessoryKeyboard keys = keys();
+        try
+        {
+            java.lang.reflect.Field f = TrainControlUI.class.getDeclaredField(name);
+
+            f.setAccessible(true);
+
+            return (T) f.get(ui);
+        }
+        catch (ReflectiveOperationException missing)
+        {
+            throw new AssertionError(name + " is not on the window: " + missing, missing);
+        }
+    }
+
+    private static void click(int address, boolean red)
+    {
+        AccessoryKeyboard keys = window("keyboardKeys");
         int key = Components.onTheEventThread(() -> keys.keyOf(address));
 
         press(keys.half(key, red));
@@ -403,7 +398,7 @@ public class testTheKeyboardAsksDuringAnAutonomyRun
 
     private static boolean lit(int address, boolean red)
     {
-        AccessoryKeyboard keys = (AccessoryKeyboard) field0("keyboardKeys");
+        AccessoryKeyboard keys = window("keyboardKeys");
 
         return Components.onTheEventThread(() -> keys.isLit(keys.keyOf(address), red));
     }
@@ -412,31 +407,5 @@ public class testTheKeyboardAsksDuringAnAutonomyRun
     {
         Components.press(button);
         Components.settle();
-    }
-
-    private static AccessoryKeyboard keys() throws Exception
-    {
-        return (AccessoryKeyboard) field("keyboardKeys");
-    }
-
-    private static Object field(String name) throws Exception
-    {
-        java.lang.reflect.Field f = TrainControlUI.class.getDeclaredField(name);
-
-        f.setAccessible(true);
-
-        return f.get(ui);
-    }
-
-    private static Object field0(String name)
-    {
-        try
-        {
-            return field(name);
-        }
-        catch (Exception e)
-        {
-            throw new IllegalStateException(e);
-        }
     }
 }

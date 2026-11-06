@@ -1236,25 +1236,15 @@ public class testDrivingFromTheKeyboard
      */
     private static List<Integer> sentWhile(int address, ThrowingRunnable action) throws Exception
     {
-        final int uid = uidOf(address);
-        final List<Integer> positions = java.util.Collections.synchronizedList(new java.util.ArrayList<>());
+        final List<CS2Message> seen = java.util.Collections.synchronizedList(new java.util.ArrayList<>());
 
-        model.setSentMessageObserver(m ->
-        {
-            byte[] d = m.getData();
-
-            if (m.getCommand() == CS2Message.CMD_ACC_SWITCH && d.length > 4
-                && CS2Message.mergeBytes(new byte[] {d[0], d[1], d[2], d[3]}) == uid)
-            {
-                positions.add((int) d[4]);
-            }
-        });
+        model.setSentMessageObserver(seen::add);
 
         try
         {
             action.run();
 
-            waitFor(() -> !positions.isEmpty());
+            waitFor(() -> !support.AccessoryCommands.positionsTo(seen, uidOf(address)).isEmpty());
 
             Thread.sleep(300);
         }
@@ -1263,7 +1253,7 @@ public class testDrivingFromTheKeyboard
             model.setSentMessageObserver(null);
         }
 
-        return new java.util.ArrayList<>(positions);
+        return support.AccessoryCommands.positionsTo(seen, uidOf(address));
     }
 
     private interface ThrowingRunnable
