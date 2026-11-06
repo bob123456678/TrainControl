@@ -641,6 +641,9 @@
         <test-one-class class="testACS3SyncTakesTheStationsPositions"/>
         <test-one-class class="testACS3IconFollowsTheWebAppsRule"/>
         <test-one-class class="testASystemFrameSaysWhetherItIsForAll"/>
+        <test-one-class class="testTheLocomotiveSettingsWindow"/>
+        <test-one-class class="testTheLocomotiveSettingsMovingRule"/>
+        <test-one-class class="testTheLocomotiveSettingsFunctions"/>
     </target>
     <target name="package-for-store" depends="jar">
         <property name="store.jar.name" value="TrainControl"/>
