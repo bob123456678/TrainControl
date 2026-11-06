@@ -25,7 +25,7 @@ import support.SourceOf;
  * asserts a floor on how many it found: a regex that silently stopped matching would otherwise report a clean bill of
  * health.  It does NOT require the two windows to agree, only that neither has two answers to one key.
  *
- * The main window's chain must keep filtering Control (OB-197, `testTheFallThroughStillFiltersControl`), because
+ * The main window's table must keep filtering Control (OB-197, `testTheFallThroughStillFiltersControl`), because
  * everything this class prints about free keys rests on it.
  *
  * @author Adam
@@ -92,7 +92,7 @@ public class testNoTwoShortcutsShareAKey
     /**
      * How many Control shortcuts each file is known to bind: a floor rather than a count, so adding one is ordinary
      * while a regex that stopped matching drops towards nothing and fails.  Measured by running the regexes (20 in the
-     * editor, 16 in the main window) and set a little below; floors of 8 and 12 had let half the editor's handlers go
+     * editor, 15 in the main window) and set a little below; floors of 8 and 12 had let half the editor's handlers go
      * invisible.
      */
     private static final int EDITOR_FLOOR = 17;

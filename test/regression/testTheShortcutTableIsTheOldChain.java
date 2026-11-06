@@ -32,6 +32,9 @@ import support.SourceOf;
  *
  * Arm and row are paired by what they run (`testEveryRowRunsItsArmsBody`), so a row bound to another arm's keys fails
  * the exhaustive claim.  No window: `ui.testEveryKindOfShortcutOnTheWindow` presses the real keys.
+ *
+ * This pins the refactor only.  The first shortcut changed on purpose turns it red: then delete this class, its chain
+ * file and its `build.xml` line, and keep the window class.
  */
 public class testTheShortcutTableIsTheOldChain
 {
