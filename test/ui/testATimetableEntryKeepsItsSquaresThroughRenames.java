@@ -274,7 +274,7 @@ public class testATimetableEntryKeepsItsSquaresThroughRenames
     /**
      * No chain: a plain rename and Cancel, as before.  The entry keeps its squares and the setup its names.
      *
-     * MUTATION: in `rebuildAndCarryTheLegsTaken`, carry by empty maps instead of the memory given, and this fails.
+     * MUTATION: in `putBackWhatTheRailwayChangedAlone`, leave the timetable out of what Cancel puts back, and this fails.
      */
     @Test
     public void testAPlainRenameThenCancel() throws Exception
