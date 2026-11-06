@@ -1294,6 +1294,18 @@ public class LayoutEditor extends PositionAwareJFrame
      */
     public void setAutonomyMode(org.traincontrol.automationui.AutonomySession session)
     {
+        try
+        {
+            setAutonomyModeNow(session);
+        }
+        finally
+        {
+            refreshFindPointItem();
+        }
+    }
+
+    private void setAutonomyModeNow(org.traincontrol.automationui.AutonomySession session)
+    {
         // Resizing the page is editing the diagram, so its buttons go with the palette; Toggle Visibility stays.
         if (this.diagramSize != null) this.diagramSize.setVisible(session == null);
         if (this.plusButton != null) this.plusButton.setVisible(session == null);
@@ -1707,13 +1719,33 @@ public class LayoutEditor extends PositionAwareJFrame
     /** Scrolls a square into view and flashes it, for a finding or a prompt. */
     public void reveal(org.traincontrol.automationui.TileGraph.TileKey tile)
     {
+        reveal(tile, 0);
+    }
+
+    /** How many times a reveal waits for a freshly opened editor to draw the square, and how long between tries. */
+    private static final int REVEAL_TRIES = 20;
+    private static final int REVEAL_WAIT_MS = 50;
+
+    /** A square of a window that has just opened has no picture yet, and a flash needs one: wait for it (FR-055). */
+    private void reveal(final org.traincontrol.automationui.TileGraph.TileKey tile, final int tried)
+    {
         if (grid == null || tile == null || !layout.getName().equals(tile.getPage())) return;
 
-        LayoutLabel label = grid.getValueAt(tile.getX(), tile.getY());
+        final LayoutLabel label = grid.getValueAt(tile.getX(), tile.getY());
 
         if (label == null) return;
 
         label.scrollRectToVisible(new java.awt.Rectangle(0, 0, label.getWidth(), label.getHeight()));
+
+        if (label.getIcon() == null && tried < REVEAL_TRIES && isDisplayable())
+        {
+            javax.swing.Timer wait = new javax.swing.Timer(REVEAL_WAIT_MS, e -> reveal(tile, tried + 1));
+
+            wait.setRepeats(false);
+            wait.start();
+
+            return;
+        }
 
         // One flash at a time (MT-454), or a walk leaves a trail of yellow squares.
         if (lastRevealed != null && lastRevealed != label) lastRevealed.endFlash();
@@ -1751,6 +1783,7 @@ public class LayoutEditor extends PositionAwareJFrame
     {
         squareClicked = true;
     }
+
 
     private LayoutLabel lastRevealed;
 
@@ -4244,6 +4277,17 @@ public class LayoutEditor extends PositionAwareJFrame
         combine.setToolTipText(I18n.t("layout.ui.tooltipCombineLinkedPages"));
 
         menu.add(combine);
+        menu.addSeparator();
+
+        // Beside the page actions, as Adam asked: not in the sidebar (FR-055)
+        findPointItem = new javax.swing.JMenuItem(I18n.t("layout.ui.menuFindAPoint"));
+
+        findPointItem.setFocusable(false);
+        findPointItem.addActionListener(e -> findAPoint());
+
+        menu.add(findPointItem);
+
+        refreshFindPointItem();
 
         javax.swing.JMenuBar bar = new javax.swing.JMenuBar();
 
@@ -4254,6 +4298,54 @@ public class LayoutEditor extends PositionAwareJFrame
         menu.setFocusable(false);
 
         setJMenuBar(bar);
+    }
+
+    private javax.swing.JMenuItem findPointItem;
+
+    /** Find a Point... is the autonomy editor's: grayed in Track Diagram mode, with the reason as its tooltip. */
+    private void refreshFindPointItem()
+    {
+        if (findPointItem == null) return;
+
+        boolean autonomy = isAutonomyMode();
+
+        findPointItem.setEnabled(autonomy);
+        findPointItem.setToolTipText(I18n.t(autonomy ? "layout.ui.tooltipFindAPoint" : "layout.ui.tooltipFindAPointTrackMode"));
+    }
+
+    /** Control+F and the Tools menu: asks for a point's name, then goes through the finding's door to its square. */
+    private void findAPoint()
+    {
+        if (!isAutonomyMode() || switching || changingPage || parent == null || parent.getModel() == null) return;
+
+        // One prompt at a time
+        for (java.awt.Window owned : getOwnedWindows())
+        {
+            if (owned instanceof FindAPointPrompt && owned.isShowing())
+            {
+                owned.toFront();
+
+                return;
+            }
+        }
+
+        java.util.List<String> pages = parent.getModel().getLayoutList();
+        java.util.List<FindAPointPrompt.Entry> points = new java.util.ArrayList<>();
+
+        // A point on a page that is not there to open is left out
+        for (java.util.Map.Entry<org.traincontrol.automationui.TileGraph.TileKey, String> named
+            : autonomyPanel.namedPoints().entrySet())
+        {
+            if (pages.contains(named.getKey().getPage()))
+            {
+                points.add(new FindAPointPrompt.Entry(named.getKey(), named.getValue()));
+            }
+        }
+
+        new FindAPointPrompt(this, points, tile ->
+        {
+            if (isAutonomyMode()) autonomyPanel.goToNotice(tile, new java.util.ArrayList<>());
+        }).setVisible(true);
     }
 
     private javax.swing.JMenuItem pageMenuItem(String key, Runnable action)
@@ -4910,6 +5002,14 @@ public class LayoutEditor extends PositionAwareJFrame
             if (evt.isControlDown() && evt.getKeyCode() == KeyEvent.VK_D)
             {
                 toggleAddresses();
+
+                return;
+            }
+
+            // Control+F finds a point by name, in the autonomy editor only (FR-055)
+            if (evt.isControlDown() && evt.getKeyCode() == KeyEvent.VK_F)
+            {
+                findAPoint();
 
                 return;
             }

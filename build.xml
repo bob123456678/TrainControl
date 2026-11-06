@@ -648,6 +648,7 @@
         <test-one-class class="testPagesFollowTheFileOrder"/>
         <test-one-class class="testTheEditorPageStrip"/>
         <test-one-class class="testArrowsKeepTheirMeaningInAnyDisplayOrder"/>
+        <test-one-class class="testFindAPoint"/>
     </target>
     <target name="package-for-store" depends="jar">
         <property name="store.jar.name" value="TrainControl"/>
