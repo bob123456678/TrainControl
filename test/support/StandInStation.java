@@ -17,7 +17,8 @@ import org.traincontrol.marklin.MarklinControlStation;
 /**
  * A loopback HTTP server standing in for a Central Station's web server, counting the requests by path.  Each request
  * is answered with what the given function returns for its path and its count so far (1 for the first): null is a 404
- * with the CS3's own "Not Found" body, an empty array an empty 200.
+ * with the CS3's own "Not Found" body, an empty array an empty 200.  The requests are also kept in the order they
+ * came, query string and all (`log`).
  *
  * @author Adam
  */
@@ -31,6 +32,8 @@ public final class StandInStation implements AutoCloseable
 
     private final Map<String, AtomicInteger> requests = new ConcurrentHashMap<>();
 
+    private final java.util.List<String> log = java.util.Collections.synchronizedList(new java.util.ArrayList<>());
+
     public StandInStation(BiFunction<String, Integer, byte[]> answer) throws IOException
     {
         this.server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
@@ -38,6 +41,8 @@ public final class StandInStation implements AutoCloseable
         this.server.createContext("/", exchange ->
         {
             String path = exchange.getRequestURI().getPath();
+            String query = exchange.getRequestURI().getRawQuery();
+            this.log.add(path + (query == null ? "" : "?" + query));
             byte[] body = answer.apply(path, requests.computeIfAbsent(path, k -> new AtomicInteger()).incrementAndGet());
             int status = body == null ? 404 : 200;
 
@@ -76,9 +81,35 @@ public final class StandInStation implements AutoCloseable
         return new java.util.TreeMap<>(this.requests).toString();
     }
 
+    /** Every request since the last forget, in the order it came: the path, and the query string when it has one. */
+    public java.util.List<String> log()
+    {
+        synchronized (this.log)
+        {
+            return new java.util.ArrayList<>(this.log);
+        }
+    }
+
+    /** Forgets, runs the action, and lists what it returned and the requests it made, in order, one to a line. */
+    public String recorded(String title, java.util.concurrent.Callable<Object> action) throws Exception
+    {
+        forget();
+
+        Object result = action.call();
+        StringBuilder out = new StringBuilder("## " + title + " -> " + result + "\n");
+
+        for (String request : log())
+        {
+            out.append("  ").append(request).append("\n");
+        }
+
+        return out.toString();
+    }
+
     public void forget()
     {
         this.requests.clear();
+        this.log.clear();
     }
 
     /** Runs a sync of the model with this station, putting the station address back after. */

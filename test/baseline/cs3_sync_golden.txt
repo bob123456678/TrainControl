@@ -1,0 +1,1320 @@
+######## firmware 260
+## sync -> 204
+  /config/geraet.vrs
+  /config/magnetartikel.cs2
+  /config/gleisbild.cs2
+  /config/gleisbilder/Startpackung.cs2
+  /app/api/gbs
+  /config/gleisbilder/Main.cs2
+  /config/gleisbilder/Something.cs2
+  /config/gleisbilder/Main Layout.cs2
+  /app/api/locos
+  /app/api/automatics
+  /app/api/mags
+  /app/api/locos
+  /app/api/mags/state
+  /app/api/locos
+## resync -> 0
+  /config/geraet.vrs
+  /app/api/locos
+  /app/api/automatics
+  /app/api/mags
+  /app/api/locos
+  /app/api/mags/state
+  /app/api/locos
+## rename proposals -> 0
+  /app/api/locos
+  /app/api/locos
+## download -> [CS3_automatics.json, CS3_locos.json, CS3_mags.json, gleisbild.cs2, gleisbilder, magnetartikel.cs2]
+  /config/gleisbild.cs2
+  /config/gleisbild.cs2
+  /config/gleisbilder/Startpackung.cs2
+  /config/gleisbilder/Main.cs2
+  /config/gleisbilder/Something.cs2
+  /config/gleisbilder/Main Layout.cs2
+  /config/magnetartikel.cs2
+  /config/fahrstrassen.cs2
+  /app/api/mags
+  /app/api/automatics
+  /app/api/locos
+  /app/api/locos
+## sync from an emptied railway -> 0
+  /config/geraet.vrs
+  /config/magnetartikel.cs2
+  /config/gleisbild.cs2
+  /config/gleisbilder/Startpackung.cs2
+  /app/api/gbs
+  /config/gleisbilder/Main.cs2
+  /config/gleisbilder/Something.cs2
+  /config/gleisbilder/Main Layout.cs2
+  /app/api/locos
+  /app/api/automatics
+  /app/api/mags
+  /app/api/locos
+  /app/api/mags/state
+  /app/api/locos
+## sync with a local folder -> 0
+  /config/geraet.vrs
+  /app/api/locos
+  /app/api/automatics
+  /app/api/mags
+  /app/api/locos
+  /app/api/mags/state
+  /app/api/locos
+## rename proposals with a local folder -> 0
+  /app/api/locos
+  /app/api/locos
+## download with a local folder -> [CS3_automatics.json, CS3_locos.json, CS3_mags.json, gleisbild.cs2, gleisbilder, magnetartikel.cs2]
+  /config/magnetartikel.cs2
+  /config/fahrstrassen.cs2
+  /app/api/mags
+  /app/api/automatics
+  /app/api/locos
+  /app/api/locos
+-- accessories 24
+  acc uid=3000 name=Switch 1 SWITCH MM2 switched=true
+  acc uid=3001 name=Switch 2 SWITCH MM2 switched=true
+  acc uid=3002 name=Switch 3 SWITCH MM2 switched=true
+  acc uid=3003 name=Signal 4 SIGNAL MM2 switched=true
+  acc uid=3005 name=Signal 6 SIGNAL MM2 switched=true
+  acc uid=3007 name=Switch 8 SWITCH MM2 switched=false
+  acc uid=3008 name=Switch 9 SWITCH MM2 switched=true
+  acc uid=3009 name=Switch 10 SWITCH MM2 switched=true
+  acc uid=300a name=Switch 11 SWITCH MM2 switched=false
+  acc uid=300b name=Switch 12 SWITCH MM2 switched=false
+  acc uid=300c name=Switch 13 SWITCH MM2 switched=false
+  acc uid=300d name=Switch 14 SWITCH MM2 switched=true
+  acc uid=300e name=Switch 15 SWITCH MM2 switched=false
+  acc uid=3016 name=Signal 23 SIGNAL MM2 switched=true
+  acc uid=3017 name=Switch 24 SWITCH MM2 switched=false
+  acc uid=3018 name=Switch 25 SWITCH MM2 switched=false
+  acc uid=304f name=Switch 80 SWITCH MM2 switched=false
+  acc uid=3052 name=Switch 83 SWITCH MM2 switched=false
+  acc uid=3058 name=Signal 89 SIGNAL MM2 switched=true
+  acc uid=3800 name=Switch 1 DCC SWITCH DCC switched=true
+  acc uid=3818 name=Switch 25 DCC SWITCH DCC switched=false
+  acc uid=3be7 name=Switch 1000 DCC SWITCH DCC switched=true
+  acc uid=3ffe name=Switch 2047 DCC SWITCH DCC switched=true
+  acc uid=3fff name=Switch 2048 DCC SWITCH DCC switched=false
+-- pages [Main, Main Layout, Something, Startpackung]
+page Main id=2 unreadable=false
+  (13,8) STRAIGHT addr=-1 prot=MM2
+page Main Layout id=4 unreadable=false
+  (4,1) CUSTOM_PERM_RIGHT addr=-1 prot=MM2
+  (4,2) CUSTOM_PERM_Y addr=-1 prot=MM2
+  (4,3) CUSTOM_PERM_LEFT addr=-1 prot=MM2
+  (4,4) LAMP addr=23 prot=MM2 acc=Signal 23/true
+  (4,7) SWITCH_LEFT addr=25 prot=DCC acc=Switch 25 DCC/false
+  (5,1) CUSTOM_PERM_LEFT addr=-1 prot=MM2
+  (5,2) CUSTOM_PERM_Y addr=-1 prot=MM2
+  (5,3) CUSTOM_PERM_RIGHT addr=-1 prot=MM2
+  (5,5) SWITCH_Y addr=80 prot=MM2 acc=Switch 80/false
+  (5,9) SWITCH_LEFT addr=25 prot=DCC acc=Switch 25 DCC/false
+  (6,7) SWITCH_RIGHT addr=2047 prot=DCC acc=Switch 2047 DCC/true
+  (6,8) SIGNAL addr=89 prot=MM2 acc=Signal 89/true
+  (7,5) CUSTOM_PERM_LEFT addr=-1 prot=MM2
+  (7,7) SWITCH_RIGHT addr=2047 prot=DCC acc=Switch 2047 DCC/true
+  (8,1) SWITCH_RIGHT addr=10 prot=MM2 acc=Switch 10/true
+  (8,2) DOUBLE_CURVE addr=-1 prot=MM2
+  (8,3) CUSTOM_PERM_LEFT addr=-1 prot=MM2
+  (8,4) SWITCH_RIGHT addr=9 prot=MM2 acc=Switch 9/true
+  (8,5) CUSTOM_PERM_LEFT addr=-1 prot=MM2
+  (8,7) CUSTOM_PERM_RIGHT addr=-1 prot=MM2
+  (8,8) CURVE addr=-1 prot=MM2
+  (9,1) SWITCH_LEFT addr=12 prot=MM2 acc=Switch 12/false
+  (9,2) DOUBLE_CURVE addr=-1 prot=MM2
+  (9,3) CUSTOM_PERM_THREEWAY addr=-1 prot=MM2
+  (9,4) STRAIGHT addr=-1 prot=MM2
+  (9,5) CUSTOM_PERM_RIGHT addr=-1 prot=MM2
+  (9,7) CUSTOM_PERM_RIGHT addr=-1 prot=MM2
+  (9,8) DOUBLE_CURVE addr=-1 prot=MM2
+  (9,9) CUSTOM_PERM_RIGHT addr=-1 prot=MM2
+  (10,4) STRAIGHT addr=-1 prot=MM2
+  (10,5) CUSTOM_PERM_RIGHT addr=-1 prot=MM2
+  (10,8) CURVE addr=-1 prot=MM2
+  (10,9) CUSTOM_PERM_RIGHT addr=-1 prot=MM2
+  (11,4) STRAIGHT addr=-1 prot=MM2
+  (11,5) STRAIGHT addr=-1 prot=MM2
+  (11,7) SWITCH_RIGHT addr=1000 prot=DCC acc=Switch 1000 DCC/true
+  (12,2) CUSTOM_PERM_RIGHT addr=-1 prot=MM2
+  (12,4) SWITCH_RIGHT addr=8 prot=MM2 acc=Switch 8/false
+  (12,5) SWITCH_THREE addr=14 prot=MM2 acc=Switch 14/true
+  (13,2) CUSTOM_PERM_RIGHT addr=-1 prot=MM2
+  (13,4) STRAIGHT addr=-1 prot=MM2
+  (13,7) CUSTOM_PERM_RIGHT addr=-1 prot=MM2
+  (13,8) SWITCH_RIGHT addr=2048 prot=DCC acc=Switch 2048 DCC/false
+  (14,4) FEEDBACK addr=0 prot=MM2
+  (14,7) CUSTOM_PERM_RIGHT addr=-1 prot=MM2
+  (14,8) SWITCH_RIGHT addr=2048 prot=DCC acc=Switch 2048 DCC/false
+  (15,1) SWITCH_RIGHT addr=13 prot=MM2 acc=Switch 13/false
+  (15,3) SWITCH_RIGHT addr=24 prot=MM2 acc=Switch 24/false
+  (15,4) CUSTOM_SCISSORS addr=83 prot=MM2 acc=Switch 83/false
+  (15,5) CUSTOM_SCISSORS addr=83 prot=MM2 acc=Switch 83/false
+  (15,7) CUSTOM_PERM_RIGHT addr=-1 prot=MM2
+  (15,8) SIGNAL addr=2048 prot=DCC acc=Switch 2048 DCC/false
+  (16,1) CUSTOM_PERM_RIGHT addr=-1 prot=MM2
+  (16,3) SWITCH_RIGHT addr=24 prot=MM2 acc=Switch 24/false
+  (16,4) STRAIGHT addr=-1 prot=MM2
+  (16,6) SWITCH_RIGHT addr=1 prot=DCC acc=Switch 1 DCC/true
+  (16,7) CUSTOM_PERM_RIGHT addr=-1 prot=MM2
+  (17,3) CUSTOM_PERM_Y addr=-1 prot=MM2
+  (17,4) CUSTOM_PERM_SCISSORS addr=-1 prot=MM2
+  (17,5) CUSTOM_PERM_SCISSORS addr=-1 prot=MM2
+  (17,6) SWITCH_RIGHT addr=1 prot=DCC acc=Switch 1 DCC/true
+page Something id=3 unreadable=false
+  (10,8) SWITCH_RIGHT addr=9 prot=MM2 acc=Switch 9/true
+  (11,8) SWITCH_RIGHT addr=11 prot=MM2 acc=Switch 11/false
+page Startpackung id=1 unreadable=false
+  (7,5) CURVE addr=-1 prot=MM2
+  (7,6) STRAIGHT addr=-1 prot=MM2
+  (7,7) CURVE addr=-1 prot=MM2
+  (8,4) CURVE addr=-1 prot=MM2
+  (8,5) CURVE addr=-1 prot=MM2
+  (8,7) CURVE addr=-1 prot=MM2
+  (8,8) CURVE addr=-1 prot=MM2
+  (9,4) STRAIGHT addr=-1 prot=MM2
+  (9,7) CURVE addr=-1 prot=MM2
+  (9,8) SWITCH_LEFT addr=2 prot=MM2 acc=Switch 2/true
+  (10,4) SWITCH_RIGHT addr=1 prot=DCC acc=Switch 1 DCC/true
+  (10,7) STRAIGHT addr=-1 prot=MM2
+  (10,8) STRAIGHT addr=-1 prot=MM2
+  (11,4) STRAIGHT addr=-1 prot=MM2
+  (11,7) STRAIGHT addr=-1 prot=MM2
+  (11,8) STRAIGHT addr=-1 prot=MM2
+  (12,4) STRAIGHT addr=-1 prot=MM2
+  (12,7) SIGNAL addr=4 prot=MM2 acc=Signal 4/true
+  (12,8) STRAIGHT addr=-1 prot=MM2
+  (13,4) STRAIGHT addr=-1 prot=MM2
+  (13,7) STRAIGHT addr=-1 prot=MM2
+  (13,8) STRAIGHT addr=-1 prot=MM2
+  (14,4) STRAIGHT addr=-1 prot=MM2
+  (14,7) STRAIGHT addr=-1 prot=MM2
+  (14,8) STRAIGHT addr=-1 prot=MM2
+  (15,4) STRAIGHT addr=-1 prot=MM2
+  (15,7) STRAIGHT addr=-1 prot=MM2
+  (15,8) CURVE addr=-1 prot=MM2
+  (15,9) CURVE addr=-1 prot=MM2
+  (16,4) STRAIGHT addr=-1 prot=MM2
+  (16,5) END addr=-1 prot=MM2
+  (16,7) CURVE addr=-1 prot=MM2
+  (16,8) SWITCH_RIGHT addr=3 prot=MM2 acc=Switch 3/true
+  (16,9) SIGNAL addr=6 prot=MM2 acc=Signal 6/true
+  (17,4) STRAIGHT addr=-1 prot=MM2
+  (17,7) CURVE addr=-1 prot=MM2
+  (17,8) CURVE addr=-1 prot=MM2
+  (18,4) CURVE addr=-1 prot=MM2
+  (18,5) CURVE addr=-1 prot=MM2
+  (18,7) STRAIGHT addr=-1 prot=MM2
+  (19,5) CURVE addr=-1 prot=MM2
+  (19,6) STRAIGHT addr=-1 prot=MM2
+  (19,7) CURVE addr=-1 prot=MM2
+-- routes 50
+  route Route 01-21> | [Accessory: {ADDRESS=8, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=17, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=18, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=16, SETTING=false, PROTOCOL=MM2}] (ID: 57 | Auto: No) | [Accessory: {ADDRESS=8, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=17, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=18, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=16, SETTING=false, PROTOCOL=MM2}]
+  route Route 01-22> | [Accessory: {ADDRESS=8, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=17, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=18, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=16, SETTING=false, PROTOCOL=MM2}] (ID: 58 | Auto: No) | [Accessory: {ADDRESS=8, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=17, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=18, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=16, SETTING=false, PROTOCOL=MM2}]
+  route Route 01-23> | [Accessory: {ADDRESS=8, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=17, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=18, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=16, SETTING=false, PROTOCOL=MM2}] (ID: 59 | Auto: No) | [Accessory: {ADDRESS=8, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=17, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=18, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=16, SETTING=false, PROTOCOL=MM2}]
+  route Route 01-24> | [Accessory: {ADDRESS=8, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=17, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=18, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=80, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=16, SETTING=false, PROTOCOL=MM2}] (ID: 60 | Auto: No) | [Accessory: {ADDRESS=8, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=17, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=18, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=80, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=16, SETTING=false, PROTOCOL=MM2}]
+  route Route 01-32> | [Accessory: {ADDRESS=8, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=17, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=18, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=16, SETTING=false, PROTOCOL=MM2}] (ID: 125 | Auto: No) | [Accessory: {ADDRESS=8, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=17, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=18, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=16, SETTING=false, PROTOCOL=MM2}]
+  route Route 01a-05> | [Accessory: {ADDRESS=16, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=10, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=8, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=18, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=2, SETTING=true, PROTOCOL=MM2}] (ID: 91 | Auto: No) | [Accessory: {ADDRESS=16, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=10, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=8, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=18, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=2, SETTING=true, PROTOCOL=MM2}]
+  route Route 02-04> | [Accessory: {ADDRESS=13, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=11, SETTING=true, PROTOCOL=MM2}] (ID: 119 | Auto: No) | [Accessory: {ADDRESS=13, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=11, SETTING=true, PROTOCOL=MM2}]
+  route Route 02-21> | [Accessory: {ADDRESS=8, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=17, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=18, SETTING=false, PROTOCOL=MM2}] (ID: 49 | Auto: No) | [Accessory: {ADDRESS=8, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=17, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=18, SETTING=false, PROTOCOL=MM2}]
+  route Route 02-22> | [Accessory: {ADDRESS=8, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=17, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=18, SETTING=false, PROTOCOL=MM2}] (ID: 50 | Auto: No) | [Accessory: {ADDRESS=8, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=17, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=18, SETTING=false, PROTOCOL=MM2}]
+  route Route 02-23> | [Accessory: {ADDRESS=8, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=17, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=18, SETTING=false, PROTOCOL=MM2}] (ID: 51 | Auto: No) | [Accessory: {ADDRESS=8, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=17, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=18, SETTING=false, PROTOCOL=MM2}]
+  route Route 02-24> | [Accessory: {ADDRESS=8, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=17, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=18, SETTING=false, PROTOCOL=MM2}] (ID: 52 | Auto: No) | [Accessory: {ADDRESS=8, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=17, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=18, SETTING=false, PROTOCOL=MM2}]
+  route Route 02-32> | [Accessory: {ADDRESS=8, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=18, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=17, SETTING=false, PROTOCOL=MM2}] (ID: 117 | Auto: No) | [Accessory: {ADDRESS=8, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=18, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=17, SETTING=false, PROTOCOL=MM2}]
+  route Route 0203p> | [Accessory: {ADDRESS=17, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=12, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=8, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=18, SETTING=false, PROTOCOL=MM2}] (ID: 113 | Auto: No) | [Accessory: {ADDRESS=17, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=12, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=8, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=18, SETTING=false, PROTOCOL=MM2}]
+  route Route 03-23< | [Accessory: {ADDRESS=83, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=11, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=12, SETTING=false, PROTOCOL=MM2}] (ID: 41 | Auto: No) | [Accessory: {ADDRESS=83, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=11, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=12, SETTING=false, PROTOCOL=MM2}]
+  route Route 03-24< | [Accessory: {ADDRESS=83, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=12, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=80, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=11, SETTING=true, PROTOCOL=MM2}] (ID: 42 | Auto: No) | [Accessory: {ADDRESS=83, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=12, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=80, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=11, SETTING=true, PROTOCOL=MM2}]
+  route Route 03-30< | [Accessory: {ADDRESS=12, SETTING=false, PROTOCOL=MM2}] (ID: 43 | Auto: No) | [Accessory: {ADDRESS=12, SETTING=false, PROTOCOL=MM2}]
+  route Route 03-31< | [Accessory: {ADDRESS=83, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=12, SETTING=false, PROTOCOL=MM2}] (ID: 44 | Auto: No) | [Accessory: {ADDRESS=83, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=12, SETTING=false, PROTOCOL=MM2}]
+  route Route 03-32> | [Accessory: {ADDRESS=17, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=12, SETTING=false, PROTOCOL=MM2}] (ID: 109 | Auto: No) | [Accessory: {ADDRESS=17, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=12, SETTING=false, PROTOCOL=MM2}]
+  route Route 04-23< | [Accessory: {ADDRESS=83, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=12, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=11, SETTING=false, PROTOCOL=MM2}] (ID: 33 | Auto: No) | [Accessory: {ADDRESS=83, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=12, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=11, SETTING=false, PROTOCOL=MM2}]
+  route Route 04-24< | [Accessory: {ADDRESS=83, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=12, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=11, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=80, SETTING=true, PROTOCOL=MM2}] (ID: 34 | Auto: No) | [Accessory: {ADDRESS=83, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=12, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=11, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=80, SETTING=true, PROTOCOL=MM2}]
+  route Route 04-30< | [Accessory: {ADDRESS=11, SETTING=false, PROTOCOL=MM2}] (ID: 35 | Auto: No) | [Accessory: {ADDRESS=11, SETTING=false, PROTOCOL=MM2}]
+  route Route 04-31< | [Accessory: {ADDRESS=83, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=11, SETTING=false, PROTOCOL=MM2}] (ID: 36 | Auto: No) | [Accessory: {ADDRESS=83, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=11, SETTING=false, PROTOCOL=MM2}]
+  route Route 05-01a> | [Accessory: {ADDRESS=18, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=8, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=16, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=3, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=17, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=2, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=10, SETTING=true, PROTOCOL=MM2}] (ID: 101 | Auto: No) | [Accessory: {ADDRESS=18, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=8, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=16, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=3, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=17, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=2, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=10, SETTING=true, PROTOCOL=MM2}]
+  route Route 06-01> | [Accessory: {ADDRESS=17, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=18, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=8, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=16, SETTING=false, PROTOCOL=MM2}] (ID: 103 | Auto: No) | [Accessory: {ADDRESS=17, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=18, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=8, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=16, SETTING=false, PROTOCOL=MM2}]
+  route Route 06-02> | [Accessory: {ADDRESS=17, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=18, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=8, SETTING=false, PROTOCOL=MM2}] (ID: 104 | Auto: No) | [Accessory: {ADDRESS=17, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=18, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=8, SETTING=false, PROTOCOL=MM2}]
+  route Route 21-01< | [Accessory: {ADDRESS=2, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=3, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=16, SETTING=true, PROTOCOL=MM2}] (ID: 37 | Auto: No) | [Accessory: {ADDRESS=2, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=3, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=16, SETTING=true, PROTOCOL=MM2}]
+  route Route 21-02< | [Accessory: {ADDRESS=2, SETTING=true, PROTOCOL=MM2}] (ID: 38 | Auto: No) | [Accessory: {ADDRESS=2, SETTING=true, PROTOCOL=MM2}]
+  route Route 22-01< | [Accessory: {ADDRESS=2, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=16, SETTING=true, PROTOCOL=MM2}] (ID: 45 | Auto: No) | [Accessory: {ADDRESS=2, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=16, SETTING=true, PROTOCOL=MM2}]
+  route Route 22-02< | [Accessory: {ADDRESS=2, SETTING=true, PROTOCOL=MM2}] (ID: 46 | Auto: No) | [Accessory: {ADDRESS=2, SETTING=true, PROTOCOL=MM2}]
+  route Route 2223p< | [Accessory: {ADDRESS=2, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=83, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=12, SETTING=false, PROTOCOL=MM2}] (ID: 105 | Auto: No) | [Accessory: {ADDRESS=2, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=83, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=12, SETTING=false, PROTOCOL=MM2}]
+  route Route 23-01> | [Accessory: {ADDRESS=17, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=18, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=8, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=16, SETTING=false, PROTOCOL=MM2}] (ID: 55 | Auto: No) | [Accessory: {ADDRESS=17, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=18, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=8, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=16, SETTING=false, PROTOCOL=MM2}]
+  route Route 23-03> | [Accessory: {ADDRESS=17, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=18, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=12, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=80, SETTING=true, PROTOCOL=MM2}] (ID: 53 | Auto: No) | [Accessory: {ADDRESS=17, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=18, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=12, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=80, SETTING=true, PROTOCOL=MM2}]
+  route Route 23-04> | [Accessory: {ADDRESS=17, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=13, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=18, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=11, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=80, SETTING=true, PROTOCOL=MM2}] (ID: 54 | Auto: No) | [Accessory: {ADDRESS=17, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=13, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=18, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=11, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=80, SETTING=true, PROTOCOL=MM2}]
+  route Route 24-03> | [Accessory: {ADDRESS=17, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=18, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=12, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=80, SETTING=false, PROTOCOL=MM2}] (ID: 61 | Auto: No) | [Accessory: {ADDRESS=17, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=18, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=12, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=80, SETTING=false, PROTOCOL=MM2}]
+  route Route 24-04> | [Accessory: {ADDRESS=13, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=11, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=17, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=18, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=80, SETTING=false, PROTOCOL=MM2}] (ID: 62 | Auto: No) | [Accessory: {ADDRESS=13, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=11, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=17, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=18, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=80, SETTING=false, PROTOCOL=MM2}]
+  route Route 24-4-21< | [Accessory: {ADDRESS=83, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=11, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=13, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=17, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=18, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=80, SETTING=false, PROTOCOL=MM2}] (ID: 63 | Auto: No) | [Accessory: {ADDRESS=83, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=11, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=13, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=17, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=18, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=80, SETTING=false, PROTOCOL=MM2}]
+  route Route 31-21> | [Accessory: {ADDRESS=17, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=18, SETTING=true, PROTOCOL=MM2}] (ID: 121 | Auto: No) | [Accessory: {ADDRESS=17, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=18, SETTING=true, PROTOCOL=MM2}]
+  route Route 31-22> | [Accessory: {ADDRESS=17, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=18, SETTING=true, PROTOCOL=MM2}] (ID: 122 | Auto: No) | [Accessory: {ADDRESS=17, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=18, SETTING=true, PROTOCOL=MM2}]
+  route Route 31-23> | [Accessory: {ADDRESS=17, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=18, SETTING=false, PROTOCOL=MM2}] (ID: 123 | Auto: No) | [Accessory: {ADDRESS=17, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=18, SETTING=false, PROTOCOL=MM2}]
+  route Route 31-24> | [Accessory: {ADDRESS=17, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=18, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=80, SETTING=false, PROTOCOL=MM2}] (ID: 124 | Auto: No) | [Accessory: {ADDRESS=17, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=18, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=80, SETTING=false, PROTOCOL=MM2}]
+  route Route 31-32> | [Accessory: {ADDRESS=17, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=18, SETTING=false, PROTOCOL=MM2}] (ID: 126 | Auto: No) | [Accessory: {ADDRESS=17, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=18, SETTING=false, PROTOCOL=MM2}]
+  route Route 32-04< | [Accessory: {ADDRESS=13, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=11, SETTING=true, PROTOCOL=MM2}] (ID: 116 | Auto: No) | [Accessory: {ADDRESS=13, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=11, SETTING=true, PROTOCOL=MM2}]
+  route Route 32-31< | [Accessory: {ADDRESS=13, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=11, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=83, SETTING=true, PROTOCOL=MM2}] (ID: 118 | Auto: No) | [Accessory: {ADDRESS=13, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=11, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=83, SETTING=true, PROTOCOL=MM2}]
+  route Route si g dvaerg | [Accessory: {ADDRESS=13, SETTING=false, PROTOCOL=MM2}] (ID: 13 | Auto: No) | [Accessory: {ADDRESS=13, SETTING=false, PROTOCOL=MM2}]
+  route Route si r dvaerg | [Accessory: {ADDRESS=13, SETTING=true, PROTOCOL=MM2}] (ID: 5 | Auto: No) | [Accessory: {ADDRESS=13, SETTING=true, PROTOCOL=MM2}]
+  route Route si r indk | [] (ID: 4 | Auto: No) | []
+  route Route si r udk | [Accessory: {ADDRESS=11, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=12, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=16, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=10, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=9, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=80, SETTING=true, PROTOCOL=MM2}] (ID: 3 | Auto: No) | [Accessory: {ADDRESS=11, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=12, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=16, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=10, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=9, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=80, SETTING=true, PROTOCOL=MM2}]
+  route Route si r | [Accessory: {ADDRESS=10, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=9, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=11, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=12, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=13, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=16, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=80, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=15, SETTING=false, PROTOCOL=MM2, DELAY=300}, Accessory: {ADDRESS=14, SETTING=true, PROTOCOL=MM2}] (ID: 2 | Auto: No) | [Accessory: {ADDRESS=10, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=9, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=11, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=12, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=13, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=16, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=80, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=15, SETTING=false, PROTOCOL=MM2, DELAY=300}, Accessory: {ADDRESS=14, SETTING=true, PROTOCOL=MM2}]
+  route Route sk reset | [Accessory: {ADDRESS=3, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=2, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=84, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=8, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=83, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=18, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=17, SETTING=false, PROTOCOL=MM2}] (ID: 1 | Auto: No) | [Accessory: {ADDRESS=3, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=2, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=84, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=8, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=83, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=18, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=17, SETTING=false, PROTOCOL=MM2}]
+  route Route xTEE | [] (ID: 168 | Auto: No) | []
+-- locomotives 154
+  loc 02 0314-1 DDR addr=39 MFX uid=02 0314-1 DDR_16423 image=http://STATION/app/assets/lok/DR%20DDR%20BR%2002%200314-1.png f=32
+  loc 06 001 DRG addr=43 MFX uid=06 001 DRG_16427 image=http://STATION/app/assets/lok/DRG%20BR%2006%20001.png f=32
+  loc 065 001-0 DB addr=11 MFX uid=065 001-0 DB_16395 image=http://STATION/app/assets/lok/DB%20BR%2065%20001-0.png f=32
+  loc 1047 005-2 addr=16 MM2 uid=1047 005-2_16 image=http://STATION/app/assets/lok/MAV%201047%20005-2.png f=5
+  loc 1116 228railjet addr=29 MFX uid=1116 228railjet_16413 image=http://STATION/app/assets/lok/%C3%96BB%201116%20228-8.png f=32
+  loc 118 028-0 DB addr=7 MFX uid=118 028-0 DB_16391 image=http://STATION/app/assets/lok/DB%20BR%20118%20028-0.png f=32
+  loc 140 024-1 DB AG addr=10 MFX uid=140 024-1 DB AG_16394 image=http://STATION/app/assets/lok/DB%20BR%20140%20024-1%20MHI.png f=32
+  loc 141-R 1244 SNCF addr=91 MFX uid=141-R 1244 SNCF_16475 image=http://STATION/app/assets/lok/141.png f=32
+  loc 218 497-6 DB AG addr=32 MFX uid=218 497-6 DB AG_16416 image=http://STATION/app/assets/lok/DB%20BR%20BR%20218%20497-6.png f=32
+  loc 220 023-6 DB addr=8 MFX uid=220 023-6 DB_16392 image=http://STATION/app/assets/lok/DB%20BR%20220%20023-6.png f=32
+  loc 241-A-65 SNCF addr=20 MFX uid=241-A-65 SNCF_16404 image=http://STATION/app/assets/lok/SNCF%20241.A%2065.png f=32
+  loc 26199 SNCF addr=126 DCC uid=26199 SNCF_49278 image=http://STATION/app/assets/lok/SNCF%20BB%2026%20010.png f=29
+  loc 3E/1-045 addr=61 MFX uid=3E/1-045_16445 image=http://STATION/app/assets/lok/Piko_51608.png f=32
+  loc 460 067-2 SBB addr=78 MFX uid=460 067-2 SBB_16462 image=http://STATION/app/assets/lok/SBB%20Re%20460%20106-8.png f=32
+  loc 498 104 ZSR addr=31 MFX uid=498 104 ZSR_16415 image=http://STATION/app/assets/lok/albatros.png f=32
+  loc 648 113-2 Lokal addr=49 MFX uid=648 113-2 Lokal_16433 image=http://STATION/app/assets/lok/DSB%20648%20213-0.png f=32
+  loc 75 407 DB addr=27 MFX uid=75 407 DB_16411 image=http://STATION/app/assets/lok/DB%20BR%2075%20407.png f=32
+  loc 86 234 DB addr=53 MFX uid=86 234 DB_16437 image=http://STATION/app/assets/lok/DB%20BR%2086%20234.png f=32
+  loc ALCO UP addr=60 MM2 uid=ALCO UP_60 image=http://STATION/app/assets/lok/UP%20PA%201%20600.png f=5
+  loc BDymf 457 DB addr=25 MFX uid=BDymf 457 DB_16409 image=http://STATION/app/assets/lok/DB%20Soundwagen%20Diesel.png f=32
+  loc BR 03 1022 addr=21 MFX uid=BR 03 1022_16405 image=http://STATION/app/assets/lok/DB%20BR%2003%201022.png f=32
+  loc BR 05 003 addr=40 MFX uid=BR 05 003_16424 image=http://STATION/app/assets/lok/DB%20BR%2005%20Schwarz.png f=32
+  loc BR 10 001 addr=10 MM2 uid=BR 10 001_10 image=http://STATION/app/assets/lok/DB%20BR%2010%20001.png f=5
+  loc BR 103 137-6 addr=3 MM2 uid=BR 103 137-6_3 image=http://STATION/app/assets/lok/DB%20E%2003%20001.png f=5
+  loc BR 143 606-2 addr=43 MM2 uid=BR 143 606-2_43 image=http://STATION/app/assets/lok/DB%20BR%20143%20007-3.png f=5
+  loc BR 152 002-2 addr=52 MM2 uid=BR 152 002-2_52 image=http://STATION/app/assets/lok/DB%20Cargo%20BR%20152%20015-4.png f=5
+  loc BR 182 005-9 addr=17 MM2 uid=BR 182 005-9_17 image=http://STATION/app/assets/lok/DB%20BR%20182%20012-5.png f=5
+  loc BR 23 001 addr=42 MFX uid=BR 23 001_16426 image=http://STATION/app/assets/lok/DB%20BR%2023%20001.png f=32
+  loc BR 232 241-0 addr=5 MFX uid=BR 232 241-0_16389 image=http://STATION/app/assets/lok/DB%20BR%20232%20241-0.png f=32
+  loc BR 42 9000 addr=42 MM2 uid=BR 42 9000_42 image=http://STATION/app/assets/lok/DB%20BR%2042%209000%20Foto.png f=5
+  loc BR 610 addr=63 MM2 uid=BR 610_63 image=http://STATION/app/assets/lok/DB%20BR%20610%20015-0.png f=5
+  loc BR 628 2 addr=28 MM2 uid=BR 628 2_28 image=http://STATION/app/assets/lok/DB%20BR%20628%20350-8.png f=5
+  loc BR 85 003 DB addr=88 MFX uid=BR 85 003 DB_16472 image=http://STATION/app/assets/lok/DB%20BR%2085%20003.png f=32
+  loc BR 86 123 fx addr=53 MM2 uid=BR 86 123 fx_53 image=http://STATION/app/assets/lok/DB%20BR%20086%20182-3.png f=5
+  loc BR 89 7339 II addr=56 MFX uid=BR 89 7339 II_16440 image=http://STATION/app/assets/lok/DB%20BR%2089%207339.png f=32
+  loc BR101 addr=34 MFX uid=BR101_16418 image=http://STATION/app/assets/lok/DB%20BR%20101%20109-7.png f=32
+  loc BR120 addr=72 MFX uid=BR120_16456 image=http://STATION/app/assets/lok/DB%20BR%20120-145%20Widmer.png f=32
+  loc BR232-275 addr=30 MFX uid=BR232-275_16414 image=http://STATION/app/assets/lok/PCCR%20232%20275.png f=32
+  loc Big Boy 4019 UP addr=26 MFX uid=Big Boy 4019 UP_16410 image=http://STATION/app/assets/lok/UP%204019%20Big%20Boy.png f=32
+  loc Challenger 3969 addr=17 MFX uid=Challenger 3969_16401 image=http://STATION/app/assets/lok/UP%203969%20Challenger.png f=32
+  loc DSB MY 1126 ATCS addr=98 MFX uid=DSB MY 1126 ATCS_16482 image=http://STATION/app/assets/lok/DSB%20MY%201125%20blau.png f=32
+  loc EA 3005 DSB addr=62 MFX uid=EA 3005 DSB_16446 image=http://STATION/app/assets/lok/ea.png f=32
+  loc EB 3203 DSB addr=22 MFX uid=EB 3203 DSB_16406 image=http://STATION/app/assets/lok/DSB%20003%20204-4.png f=32
+  loc EB 3240 DSB addr=84 MFX uid=EB 3240 DSB_16468 image=http://STATION/app/assets/lok/900_PK-59737.png f=32
+  loc EG 3101 DSB addr=115 MFX uid=EG 3101 DSB_16499 image=http://STATION/app/assets/lok/dsb_eg.png f=32
+  loc EN57-1000 addr=66 MFX uid=EN57-1000_16450 image=http://STATION/app/assets/lok/en57_1000_%281%29.png f=32
+  loc EN57-1022 addr=18 MFX uid=EN57-1022_16402 image=http://STATION/app/assets/lok/piko-51456_%281%29.png f=32
+  loc EN57-1079 addr=70 MFX uid=EN57-1079_16454 image=http://STATION/app/assets/lok/en57-1079.png f=32
+  loc EN57-203 addr=106 MFX uid=EN57-203_16490 image=http://STATION/app/assets/lok/en57_203.png f=32
+  loc EN57-925 addr=46 MFX uid=EN57-925_16430 image=http://STATION/app/assets/lok/41582_51450.png f=32
+  loc EN57-947 addr=92 MFX uid=EN57-947_16476 image=http://STATION/app/assets/lok/en57_947_2.png f=32
+  loc EN71-010 addr=71 DCC uid=EN71-010_49223 image=http://STATION/app/assets/lok/41582_51450.png f=29
+  loc EP08-001 addr=100 MFX uid=EP08-001_16484 image=http://STATION/app/assets/lok/ep08_001_%281%29.png f=32
+  loc EP08-006 addr=95 MFX uid=EP08-006_16479 image=http://STATION/app/assets/lok/ep08_006.png f=32
+  loc EP08-009 addr=109 DCC uid=EP08-009_49261 image=http://STATION/app/assets/lok/EP08.png f=29
+  loc EP08-010 addr=113 MFX uid=EP08-010_16497 image=http://STATION/app/assets/lok/ep08_010.png f=32
+  loc EP08-013 addr=68 MFX uid=EP08-013_16452 image=http://STATION/app/assets/lok/ep08-013.png f=32
+  loc EP09-001 addr=110 MFX uid=EP09-001_16494 image=http://STATION/app/assets/lok/ep09_001.png f=32
+  loc EP09-015 addr=114 MFX uid=EP09-015_16498 image=http://STATION/app/assets/lok/ep09_042.png f=32
+  loc EP09-042 addr=107 MFX uid=EP09-042_16491 image=http://STATION/app/assets/lok/ep09_042.png f=32
+  loc EP09-045 addr=86 MFX uid=EP09-045_16470 image=http://STATION/app/assets/lok/piko_ep09.png f=32
+  loc EP09-046 addr=102 MFX uid=EP09-046_16486 image=http://STATION/app/assets/lok/ep09_46.png f=32
+  loc ER 2035 DSB addr=97 MFX uid=ER 2035 DSB_16481 image=http://STATION/app/assets/lok/dsb_er.png f=32
+  loc ES44 x2 addr=3 MULTI_UNIT uid=ES44 x2_11267 image=http://STATION/app/assets/lok/UP%207495.png f=32
+  loc ES44AC 4848 KCS addr=65 MFX uid=ES44AC 4848 KCS_16449 image=http://STATION/app/assets/lok/leere%20Lok.png f=32
+  loc ES44AC 5736 BNSF addr=104 MFX uid=ES44AC 5736 BNSF_16488 image=http://STATION/app/assets/lok/BNSF%205736.png f=32
+  loc ES44AC 6259 BNSF addr=105 MFX uid=ES44AC 6259 BNSF_16489 image=http://STATION/app/assets/lok/BNSF%206259.png f=32
+  loc ES44AC 7495 UP addr=57 MFX uid=ES44AC 7495 UP_16441 image=http://STATION/app/assets/lok/UP%207495.png f=32
+  loc ES44AC 7912 UP addr=64 MFX uid=ES44AC 7912 UP_16448 image=http://STATION/app/assets/lok/UP%207912.png f=32
+  loc ET21-157 addr=45 MFX uid=ET21-157_16429 image=http://STATION/app/assets/lok/900_PK-51602.png f=32
+  loc ET21-375 addr=74 MFX uid=ET21-375_16458 image=http://STATION/app/assets/lok/et21_375.png f=32
+  loc ET21-442 addr=33 MFX uid=ET21-442_16417 image=http://STATION/app/assets/lok/et212_%281%29.png f=32
+  loc ET22-1118 addr=99 MFX uid=ET22-1118_16483 image=http://STATION/app/assets/lok/et22_1118.png f=32
+  loc ET22-243 addr=55 MFX uid=ET22-243_16439 image=http://STATION/app/assets/lok/et22-243.png f=32
+  loc ET22-245 addr=111 MFX uid=ET22-245_16495 image=http://STATION/app/assets/lok/et22_245.png f=32
+  loc ET22-273 addr=51 MFX uid=ET22-273_16435 image=http://STATION/app/assets/lok/et22_%281%29.png f=32
+  loc ET22-678 addr=48 MFX uid=ET22-678_16432 image=http://STATION/app/assets/lok/et22_678.png f=32
+  loc ET22-951 addr=22 DCC uid=ET22-951_49174 image=http://STATION/app/assets/lok/et22.png f=29
+  loc ET41-149 addr=60 MFX uid=ET41-149_16444 image=http://STATION/app/assets/lok/et41.png f=32
+  loc ET41-166 addr=76 MFX uid=ET41-166_16460 image=http://STATION/app/assets/lok/et41-166.png f=32
+  loc EU07-076 addr=93 MFX uid=EU07-076_16477 image=http://STATION/app/assets/lok/eu07_076.png f=32
+  loc EU07-123 addr=58 MFX uid=EU07-123_16442 image=http://STATION/app/assets/lok/eu07.png f=32
+  loc EU07-205 addr=75 MFX uid=EU07-205_16459 image=http://STATION/app/assets/lok/pk96389.png f=32
+  loc EU07-314 addr=47 MFX uid=EU07-314_16431 image=http://STATION/app/assets/lok/eu07_314.png f=32
+  loc EU07-336 addr=50 MFX uid=EU07-336_16434 image=http://STATION/app/assets/lok/eu07336.png f=32
+  loc EU07-359 addr=109 MFX uid=EU07-359_16493 image=http://STATION/app/assets/lok/eu07_359.png f=32
+  loc EU44-003 addr=71 MFX uid=EU44-003_16455 image=http://STATION/app/assets/lok/eu44.png f=32
+  loc EU46-520 addr=47 DCC uid=EU46-520_49199 image=http://STATION/app/assets/lok/Roco-71799_EU46.png f=29
+  loc EU46-523 addr=152 DCC uid=EU46-523_49304 image=http://STATION/app/assets/lok/eu46-523.png f=29
+  loc Flying Scotsman addr=59 MFX uid=Flying Scotsman_16443 image=http://STATION/app/assets/lok/Flying%20Scotsman.png f=32
+  loc GLASKASTEN addr=36 MM2 uid=GLASKASTEN_36 image=http://STATION/app/assets/lok/KBayStB%20PtL%202_2%204511.png f=5
+  loc GT 2X4/4 addr=13 MFX uid=GT 2X4/4_16397 image=http://STATION/app/assets/lok/KBayStB%20Gt%202x4_4%205752.png f=32
+  loc ICE 3 406 addr=1 MM2 uid=ICE 3 406_1 image=http://STATION/app/assets/lok/DB%20BR%20403%20005-2%20ICE3.png f=5
+  loc ICE TD DSB addr=60 DCC uid=ICE TD DSB_49212 image=http://STATION/app/assets/lok/DB%20ICE%203%20Ger%C3%A4uschwagen.png f=29
+  loc ICE4 9010 DB AG addr=9 MFX uid=ICE4 9010 DB AG_16393 image=http://STATION/app/assets/lok/DB%20BR%20812%20005-8%20ICE4.png f=32
+  loc Litra E 991 DSB addr=19 MFX uid=Litra E 991 DSB_16403 image=http://STATION/app/assets/lok/litra_e.png f=32
+  loc ME 1522 addr=112 MFX uid=ME 1522_16496 image=http://STATION/app/assets/lok/ME_1522.png f=32
+  loc ME 1529 DSB addr=14 MFX uid=ME 1529 DSB_16398 image=http://STATION/app/assets/lok/ME.png f=32
+  loc MF 5028 DSB addr=96 MFX uid=MF 5028 DSB_16480 image=http://STATION/app/assets/lok/dsb_mf.png f=32
+  loc MF+ER addr=4 MULTI_UNIT uid=MF+ER_11268 image=http://STATION/app/assets/lok/dsb_mf.png f=32
+  loc MIKADO UP addr=40 MM2 uid=MIKADO UP_40 image=http://STATION/app/assets/lok/UP%202494.png f=5
+  loc ML 4000 addr=73 MFX uid=ML 4000_16457 image=http://STATION/app/assets/lok/DB%20V%20140%20001.png f=32
+  loc MQ DSB addr=65 DCC uid=MQ DSB_49217 image=http://STATION/app/assets/lok/mq.png f=29
+  loc MV 1102 DSB addr=101 MFX uid=MV 1102 DSB_16485 image=http://STATION/app/assets/lok/DSB%20MV%201102.png f=32
+  loc MY 1135 DSB addr=12 MFX uid=MY 1135 DSB_16396 image=http://STATION/app/assets/lok/DSB%20MY%201135%20alt.png f=32
+  loc MY 1147 DSB addr=54 MFX uid=MY 1147 DSB_16438 image=http://STATION/app/assets/lok/DSB%20MY%201142.png f=32
+  loc MY 1150 DSB addr=94 MFX uid=MY 1150 DSB_16478 image=http://STATION/app/assets/lok/DSB%20MY%201103.png f=32
+  loc MY Gul DSB addr=108 DCC uid=MY Gul DSB_49260 image=http://STATION/app/assets/lok/DSB%20MY%2021%20108-4.png f=29
+  loc MY Nohab-GM addr=8 MM2 uid=MY Nohab-GM_8 image=http://STATION/app/assets/lok/SJ%20NOHAB-GM.png f=5
+  loc MZ 1425 DSB addr=81 MFX uid=MZ 1425 DSB_16465 image=http://STATION/app/assets/lok/mz_1425.png f=32
+  loc McK MT addr=108 MFX uid=McK MT_16492 image=http://STATION/app/assets/lok/leere%20Lok.png f=32
+  loc Mx M9 Skagen addr=82 MFX uid=Mx M9 Skagen_16466 image=http://STATION/app/assets/lok/m9.png f=32
+  loc OBB 2016 addr=26 MM2 uid=OBB 2016_26 image=http://STATION/app/assets/lok/%C3%96BB%202016%20021-5.png f=5
+  loc PKP OkO1 addr=78 DCC uid=PKP OkO1_49230 image=http://STATION/app/assets/lok/oko1.png f=29
+  loc Pm2 PKP addr=79 MFX uid=Pm2 PKP_16463 image=http://STATION/app/assets/lok/pm2.png f=32
+  loc Re 620 054-7 SBB addr=38 MFX uid=Re 620 054-7 SBB_16422 image=http://STATION/app/assets/lok/SBB%20Re%206_6%2011666.png f=32
+  loc Re4/4II 11229SBB addr=35 MFX uid=Re4/4II 11229SBB_16419 image=http://STATION/app/assets/lok/SBB%20Re%204_4%2011229.png f=32
+  loc S 2-6 3201 addr=26 DCC uid=S 2-6 3201_49178 image=http://STATION/app/assets/lok/KBayStB%20S%202_6%203201.png f=29
+  loc S 2/6 Pfalz addr=83 MFX uid=S 2/6 Pfalz_16467 image=http://STATION/app/assets/lok/KBayStB%20S%202_6%203201%20Pfalz.png f=32
+  loc S 3/6 3629 addr=16 MFX uid=S 3/6 3629_16400 image=http://STATION/app/assets/lok/KBayStB%20S%203_6%203629.png f=32
+  loc S. 122 addr=22 MM2 uid=S. 122_22 image=http://STATION/app/assets/lok/SNCB%202338.png f=5
+  loc SBB RE 4_4 II addr=76 MM2 uid=SBB RE 4_4 II_76 image=http://STATION/app/assets/lok/SBB%20Re%204_4%2011332.png f=5
+  loc SBB420  Red/Cargo addr=2 MULTI_UNIT uid=SBB420  Red/Cargo_11266 image=http://STATION/app/assets/lok/SBB%20Re%204_4%2011229.png f=32
+  loc SBB460 Milleu d addr=6 MFX uid=SBB460 Milleu d_16390 image=http://STATION/app/assets/lok/SBB%20Re%20460%20006-0.png f=32
+  loc SBBC 421 378-1 addr=36 MFX uid=SBBC 421 378-1_16420 image=http://STATION/app/assets/lok/SBB%20Re%20421%20378-1%20Cargo.png f=32
+  loc SM31-012 addr=90 MFX uid=SM31-012_16474 image=http://STATION/app/assets/lok/sm42_dark.png f=32
+  loc SM31-108 addr=87 MFX uid=SM31-108_16471 image=http://STATION/app/assets/lok/sm31_light.png f=32
+  loc SM31-118 addr=77 MFX uid=SM31-118_16461 image=http://STATION/app/assets/lok/sm31.png f=32
+  loc SM42-926 addr=4 DCC uid=SM42-926_49156 image=http://STATION/app/assets/lok/sm42.png f=29
+  loc SP45-090 addr=52 MFX uid=SP45-090_16436 image=http://STATION/app/assets/lok/sp45090.png f=32
+  loc SP45-155 addr=67 MFX uid=SP45-155_16451 image=http://STATION/app/assets/lok/sp45-155.png f=32
+  loc SP45-204 addr=63 MFX uid=SP45-204_16447 image=http://STATION/app/assets/lok/spalinowoz-sp45-204-piko-96300.png f=32
+  loc ST44-613 addr=44 DCC uid=ST44-613_49196 image=http://STATION/app/assets/lok/st44.png f=29
+  loc SU45-070 addr=80 MFX uid=SU45-070_16464 image=http://STATION/app/assets/lok/su45_070.png f=32
+  loc SU45-098 addr=85 MFX uid=SU45-098_16469 image=http://STATION/app/assets/lok/451314177_1291985725099172_527684296369278187_n.png f=32
+  loc SU45-118 addr=138 DCC uid=SU45-118_49290 image=http://STATION/app/assets/lok/su45.png f=29
+  loc SU46-012 addr=120 DCC uid=SU46-012_49272 image=http://STATION/app/assets/lok/su462.png f=29
+  loc SU46-018 addr=103 MFX uid=SU46-018_16487 image=http://STATION/app/assets/lok/su46_018.png f=32
+  loc SU46-035 addr=89 MFX uid=SU46-035_16473 image=http://STATION/app/assets/lok/su46_piko_pkp.png f=32
+  loc SU46-039 addr=69 MFX uid=SU46-039_16453 image=http://STATION/app/assets/lok/su46_039.png f=32
+  loc SU46-043 addr=46 DCC uid=SU46-043_49198 image=http://STATION/app/assets/lok/SU46043.png f=29
+  loc Simplon-Orient addr=15 MFX uid=Simplon-Orient_16399 image=http://STATION/app/assets/lok/CIWL%20Packwagen%20blau.png f=32
+  loc TKt 63 PKP addr=44 MFX uid=TKt 63 PKP_16428 image=http://STATION/app/assets/lok/tkt63.png f=32
+  loc TKt48-93 PKP addr=116 MFX uid=TKt48-93 PKP_16500 image=http://STATION/app/assets/lok/tkt48_pkp.png f=32
+  loc Test TC addr=1 MULTI_UNIT uid=Test TC_11265 image=http://STATION/app/assets/lok/DB%20BR%20118%20028-0.png f=32
+  loc Ty2 697 PKP addr=97 DCC uid=Ty2 697 PKP_49249 image=http://STATION/app/assets/lok/ty2.png f=29
+  loc UP 844 addr=28 MFX uid=UP 844_16412 image=http://STATION/app/assets/lok/UP%20844.png f=32
+  loc V 160 029 addr=29 MM2 uid=V 160 029_29 image=http://STATION/app/assets/lok/DB%20BR%20218%20151-9.png f=5
+  loc V 200 150 addr=21 MM2 uid=V 200 150_21 image=http://STATION/app/assets/lok/DB%20V%20200%20150.png f=5
+  loc V 30.0 MHI 2020 addr=23 MFX uid=V 30.0 MHI 2020_16407 image=http://STATION/app/assets/lok/DB%20V%20300%20001%20MHI.png f=32
+  loc V 320 001 WIEBE addr=24 MFX uid=V 320 001 WIEBE_16408 image=http://STATION/app/assets/lok/HFW%20Lok%207.png f=32
+  loc V 60 706 addr=60 MM2 uid=V 60 706_60 image=http://STATION/app/assets/lok/DB%20V%2060%20107.png f=5
+  loc WGmh 824#DB addr=37 MFX uid=WGmh 824#DB_16421 image=http://STATION/app/assets/lok/DB%20WGmh%20824%20DB.png f=32
+  loc WÜRTT.K addr=41 MFX uid=WÜRTT.K_16425 image=http://STATION/app/assets/lok/KWStE%20K%201802.png f=32
+-- log
+  Starting Central Station database sync...
+  Station type detection result: CS3
+  Imported layout Startpackung
+  Adding Switch 2
+  Adding Switch 1
+  Adding Signal 4
+  Adding Switch 3
+  Adding Signal 6
+  Imported layout Main
+  Imported layout Something
+  Adding Switch 9
+  Adding Switch 11
+  Imported layout Main Layout
+  Adding Signal 23
+  Adding Switch 25 DCC
+  Adding Switch 80
+  Adding Switch 25
+  Adding Switch 2047 DCC
+  Adding Signal 89
+  Adding Switch 10
+  Adding Switch 12
+  Adding Switch 1000 DCC
+  Adding Switch 8
+  Adding Switch 14
+  Adding Switch 2048 DCC
+  Adding Switch 13
+  Adding Switch 24
+  Adding Switch 83
+  Adding Switch 1 DCC
+  Added route sk reset
+  Added route si r
+  Added route si r udk
+  Added route si r indk
+  Added route si r dvaerg
+  Added route si g dvaerg
+  Added route 04-23<
+  Added route 04-24<
+  Added route 04-30<
+  Added route 04-31<
+  Added route 21-01<
+  Added route 21-02<
+  Added route 03-23<
+  Added route 03-24<
+  Added route 03-30<
+  Added route 03-31<
+  Added route 22-01<
+  Added route 22-02<
+  Added route 02-21>
+  Added route 02-22>
+  Added route 02-23>
+  Added route 02-24>
+  Added route 23-03>
+  Added route 23-04>
+  Added route 23-01>
+  Added route 01-21>
+  Added route 01-22>
+  Added route 01-23>
+  Added route 01-24>
+  Added route 24-03>
+  Added route 24-04>
+  Added route 24-4-21<
+  Added route 01a-05>
+  Added route 05-01a>
+  Added route 06-01>
+  Added route 06-02>
+  Added route 2223p<
+  Added route 03-32>
+  Added route 0203p>
+  Added route 32-04<
+  Added route 02-32>
+  Added route 32-31<
+  Added route 02-04>
+  Added route 31-21>
+  Added route 31-22>
+  Added route 31-23>
+  Added route 31-24>
+  Added route 01-32>
+  Added route 31-32>
+  Added route xTEE
+  Added MFX locomotive 02 0314-1 DDR with address 39 (0x4027) from Central Station
+  Added MFX locomotive 06 001 DRG with address 43 (0x402b) from Central Station
+  Added MFX locomotive 065 001-0 DB with address 11 (0x400b) from Central Station
+  Added MM2 locomotive 1047 005-2 with address 16 (0x10) from Central Station
+  Added MFX locomotive 1116 228railjet with address 29 (0x401d) from Central Station
+  Added MFX locomotive 118 028-0 DB with address 7 (0x4007) from Central Station
+  Added MFX locomotive 140 024-1 DB AG with address 10 (0x400a) from Central Station
+  Added MFX locomotive 141-R 1244 SNCF with address 91 (0x405b) from Central Station
+  Added MFX locomotive 218 497-6 DB AG with address 32 (0x4020) from Central Station
+  Added MFX locomotive 220 023-6 DB with address 8 (0x4008) from Central Station
+  Added MFX locomotive 241-A-65 SNCF with address 20 (0x4014) from Central Station
+  Added DCC locomotive 26199 SNCF with address 126 (0xc07e) from Central Station
+  Added MFX locomotive 3E/1-045 with address 61 (0x403d) from Central Station
+  Added MFX locomotive 460 067-2 SBB with address 78 (0x404e) from Central Station
+  Added MFX locomotive 498 104 ZSR with address 31 (0x401f) from Central Station
+  Added MFX locomotive 648 113-2 Lokal with address 49 (0x4031) from Central Station
+  Added MFX locomotive 75 407 DB with address 27 (0x401b) from Central Station
+  Added MFX locomotive 86 234 DB with address 53 (0x4035) from Central Station
+  Added MM2 locomotive ALCO UP with address 60 (0x3c) from Central Station
+  Added MFX locomotive BDymf 457 DB with address 25 (0x4019) from Central Station
+  Added MFX locomotive BR 03 1022 with address 21 (0x4015) from Central Station
+  Added MFX locomotive BR 05 003 with address 40 (0x4028) from Central Station
+  Added MM2 locomotive BR 10 001 with address 10 (0xa) from Central Station
+  Added MM2 locomotive BR 103 137-6 with address 3 (0x3) from Central Station
+  Added MM2 locomotive BR 143 606-2 with address 43 (0x2b) from Central Station
+  Added MM2 locomotive BR 152 002-2 with address 52 (0x34) from Central Station
+  Added MM2 locomotive BR 182 005-9 with address 17 (0x11) from Central Station
+  Added MFX locomotive BR 23 001 with address 42 (0x402a) from Central Station
+  Added MFX locomotive BR 232 241-0 with address 5 (0x4005) from Central Station
+  Added MM2 locomotive BR 42 9000 with address 42 (0x2a) from Central Station
+  Added MM2 locomotive BR 610 with address 63 (0x3f) from Central Station
+  Added MM2 locomotive BR 628 2 with address 28 (0x1c) from Central Station
+  Added MFX locomotive BR 85 003 DB with address 88 (0x4058) from Central Station
+  Added MM2 locomotive BR 86 123 fx with address 53 (0x35) from Central Station
+  Added MFX locomotive BR 89 7339 II with address 56 (0x4038) from Central Station
+  Added MFX locomotive BR101 with address 34 (0x4022) from Central Station
+  Added MFX locomotive BR120 with address 72 (0x4048) from Central Station
+  Added MFX locomotive BR232-275 with address 30 (0x401e) from Central Station
+  Added MFX locomotive Big Boy 4019 UP with address 26 (0x401a) from Central Station
+  Added MFX locomotive Challenger 3969 with address 17 (0x4011) from Central Station
+  Added MFX locomotive DSB MY 1126 ATCS with address 98 (0x4062) from Central Station
+  Added MFX locomotive EA 3005 DSB with address 62 (0x403e) from Central Station
+  Added MFX locomotive EB 3203 DSB with address 22 (0x4016) from Central Station
+  Added MFX locomotive EB 3240 DSB with address 84 (0x4054) from Central Station
+  Added MFX locomotive EG 3101 DSB with address 115 (0x4073) from Central Station
+  Added MFX locomotive EN57-1000 with address 66 (0x4042) from Central Station
+  Added MFX locomotive EN57-1022 with address 18 (0x4012) from Central Station
+  Added MFX locomotive EN57-1079 with address 70 (0x4046) from Central Station
+  Added MFX locomotive EN57-203 with address 106 (0x406a) from Central Station
+  Added MFX locomotive EN57-925 with address 46 (0x402e) from Central Station
+  Added MFX locomotive EN57-947 with address 92 (0x405c) from Central Station
+  Added DCC locomotive EN71-010 with address 71 (0xc047) from Central Station
+  Added MFX locomotive EP08-001 with address 100 (0x4064) from Central Station
+  Added MFX locomotive EP08-006 with address 95 (0x405f) from Central Station
+  Added DCC locomotive EP08-009 with address 109 (0xc06d) from Central Station
+  Added MFX locomotive EP08-010 with address 113 (0x4071) from Central Station
+  Added MFX locomotive EP08-013 with address 68 (0x4044) from Central Station
+  Added MFX locomotive EP09-001 with address 110 (0x406e) from Central Station
+  Added MFX locomotive EP09-015 with address 114 (0x4072) from Central Station
+  Added MFX locomotive EP09-042 with address 107 (0x406b) from Central Station
+  Added MFX locomotive EP09-045 with address 86 (0x4056) from Central Station
+  Added MFX locomotive EP09-046 with address 102 (0x4066) from Central Station
+  Added MFX locomotive ER 2035 DSB with address 97 (0x4061) from Central Station
+  Added Multi-Unit locomotive ES44 x2 with address 3 (0x2c03) from Central Station
+  Added MFX locomotive ES44AC 4848 KCS with address 65 (0x4041) from Central Station
+  Added MFX locomotive ES44AC 5736 BNSF with address 104 (0x4068) from Central Station
+  Added MFX locomotive ES44AC 6259 BNSF with address 105 (0x4069) from Central Station
+  Added MFX locomotive ES44AC 7495 UP with address 57 (0x4039) from Central Station
+  Added MFX locomotive ES44AC 7912 UP with address 64 (0x4040) from Central Station
+  Added MFX locomotive ET21-157 with address 45 (0x402d) from Central Station
+  Added MFX locomotive ET21-375 with address 74 (0x404a) from Central Station
+  Added MFX locomotive ET21-442 with address 33 (0x4021) from Central Station
+  Added MFX locomotive ET22-1118 with address 99 (0x4063) from Central Station
+  Added MFX locomotive ET22-243 with address 55 (0x4037) from Central Station
+  Added MFX locomotive ET22-245 with address 111 (0x406f) from Central Station
+  Added MFX locomotive ET22-273 with address 51 (0x4033) from Central Station
+  Added MFX locomotive ET22-678 with address 48 (0x4030) from Central Station
+  Added DCC locomotive ET22-951 with address 22 (0xc016) from Central Station
+  Added MFX locomotive ET41-149 with address 60 (0x403c) from Central Station
+  Added MFX locomotive ET41-166 with address 76 (0x404c) from Central Station
+  Added MFX locomotive EU07-076 with address 93 (0x405d) from Central Station
+  Added MFX locomotive EU07-123 with address 58 (0x403a) from Central Station
+  Added MFX locomotive EU07-205 with address 75 (0x404b) from Central Station
+  Added MFX locomotive EU07-314 with address 47 (0x402f) from Central Station
+  Added MFX locomotive EU07-336 with address 50 (0x4032) from Central Station
+  Added MFX locomotive EU07-359 with address 109 (0x406d) from Central Station
+  Added MFX locomotive EU44-003 with address 71 (0x4047) from Central Station
+  Added DCC locomotive EU46-520 with address 47 (0xc02f) from Central Station
+  Added DCC locomotive EU46-523 with address 152 (0xc098) from Central Station
+  Added MFX locomotive Flying Scotsman with address 59 (0x403b) from Central Station
+  Added MM2 locomotive GLASKASTEN with address 36 (0x24) from Central Station
+  Added MFX locomotive GT 2X4/4 with address 13 (0x400d) from Central Station
+  Added MM2 locomotive ICE 3 406 with address 1 (0x1) from Central Station
+  Added DCC locomotive ICE TD DSB with address 60 (0xc03c) from Central Station
+  Added MFX locomotive ICE4 9010 DB AG with address 9 (0x4009) from Central Station
+  Added MFX locomotive Litra E 991 DSB with address 19 (0x4013) from Central Station
+  Added MFX locomotive ME 1522 with address 112 (0x4070) from Central Station
+  Added MFX locomotive ME 1529 DSB with address 14 (0x400e) from Central Station
+  Added MFX locomotive MF 5028 DSB with address 96 (0x4060) from Central Station
+  Added Multi-Unit locomotive MF+ER with address 4 (0x2c04) from Central Station
+  Added MM2 locomotive MIKADO UP with address 40 (0x28) from Central Station
+  Added MFX locomotive ML 4000 with address 73 (0x4049) from Central Station
+  Added DCC locomotive MQ DSB with address 65 (0xc041) from Central Station
+  Added MFX locomotive MV 1102 DSB with address 101 (0x4065) from Central Station
+  Added MFX locomotive MY 1135 DSB with address 12 (0x400c) from Central Station
+  Added MFX locomotive MY 1147 DSB with address 54 (0x4036) from Central Station
+  Added MFX locomotive MY 1150 DSB with address 94 (0x405e) from Central Station
+  Added DCC locomotive MY Gul DSB with address 108 (0xc06c) from Central Station
+  Added MM2 locomotive MY Nohab-GM with address 8 (0x8) from Central Station
+  Added MFX locomotive MZ 1425 DSB with address 81 (0x4051) from Central Station
+  Added MFX locomotive McK MT with address 108 (0x406c) from Central Station
+  Added MFX locomotive Mx M9 Skagen with address 82 (0x4052) from Central Station
+  Added MM2 locomotive OBB 2016 with address 26 (0x1a) from Central Station
+  Added DCC locomotive PKP OkO1 with address 78 (0xc04e) from Central Station
+  Added MFX locomotive Pm2 PKP with address 79 (0x404f) from Central Station
+  Added MFX locomotive Re 620 054-7 SBB with address 38 (0x4026) from Central Station
+  Added MFX locomotive Re4/4II 11229SBB with address 35 (0x4023) from Central Station
+  Added MFX locomotive S 2/6 Pfalz with address 83 (0x4053) from Central Station
+  Added DCC locomotive S 2-6 3201 with address 26 (0xc01a) from Central Station
+  Added MFX locomotive S 3/6 3629 with address 16 (0x4010) from Central Station
+  Added MM2 locomotive S. 122 with address 22 (0x16) from Central Station
+  Added MM2 locomotive SBB RE 4_4 II with address 76 (0x4c) from Central Station
+  Added Multi-Unit locomotive SBB420  Red/Cargo with address 2 (0x2c02) from Central Station
+  Added MFX locomotive SBB460 Milleu d with address 6 (0x4006) from Central Station
+  Added MFX locomotive SBBC 421 378-1 with address 36 (0x4024) from Central Station
+  Added MFX locomotive SM31-012 with address 90 (0x405a) from Central Station
+  Added MFX locomotive SM31-108 with address 87 (0x4057) from Central Station
+  Added MFX locomotive SM31-118 with address 77 (0x404d) from Central Station
+  Added DCC locomotive SM42-926 with address 4 (0xc004) from Central Station
+  Added MFX locomotive SP45-090 with address 52 (0x4034) from Central Station
+  Added MFX locomotive SP45-155 with address 67 (0x4043) from Central Station
+  Added MFX locomotive SP45-204 with address 63 (0x403f) from Central Station
+  Added DCC locomotive ST44-613 with address 44 (0xc02c) from Central Station
+  Added MFX locomotive SU45-070 with address 80 (0x4050) from Central Station
+  Added MFX locomotive SU45-098 with address 85 (0x4055) from Central Station
+  Added DCC locomotive SU45-118 with address 138 (0xc08a) from Central Station
+  Added DCC locomotive SU46-012 with address 120 (0xc078) from Central Station
+  Added MFX locomotive SU46-018 with address 103 (0x4067) from Central Station
+  Added MFX locomotive SU46-035 with address 89 (0x4059) from Central Station
+  Added MFX locomotive SU46-039 with address 69 (0x4045) from Central Station
+  Added DCC locomotive SU46-043 with address 46 (0xc02e) from Central Station
+  Added MFX locomotive Simplon-Orient with address 15 (0x400f) from Central Station
+  Added MFX locomotive TKt 63 PKP with address 44 (0x402c) from Central Station
+  Added MFX locomotive TKt48-93 PKP with address 116 (0x4074) from Central Station
+  Added Multi-Unit locomotive Test TC with address 1 (0x2c01) from Central Station
+  Added DCC locomotive Ty2 697 PKP with address 97 (0xc061) from Central Station
+  Added MFX locomotive UP 844 with address 28 (0x401c) from Central Station
+  Added MM2 locomotive V 160 029 with address 29 (0x1d) from Central Station
+  Added MM2 locomotive V 200 150 with address 21 (0x15) from Central Station
+  Added MFX locomotive V 30.0 MHI 2020 with address 23 (0x4017) from Central Station
+  Added MFX locomotive V 320 001 WIEBE with address 24 (0x4018) from Central Station
+  Added MM2 locomotive V 60 706 with address 60 (0x3c) from Central Station
+  Added MFX locomotive WÜRTT.K with address 41 (0x4029) from Central Station
+  Added MFX locomotive WGmh 824#DB with address 37 (0x4025) from Central Station
+  Sync complete.
+  Starting Central Station database sync...
+  Station type detection result: CS3
+  Sync complete.
+  Not suggesting a rename to "ALCO UP": the Central Station has 2 locomotives at that address, so it is unclear which name is meant.  Remove the duplicates there first.
+  Not suggesting a rename to "V 60 706": the Central Station has 2 locomotives at that address, so it is unclear which name is meant.  Remove the duplicates there first.
+  No routes were downloaded from the Central Station.
+  Starting Central Station database sync...
+  Station type detection result: CS3
+  Imported layout Startpackung
+  Imported layout Main
+  Imported layout Something
+  Imported layout Main Layout
+  Sync complete.
+  Starting Central Station database sync...
+  Station type detection result: CS3
+  Loading static layout files from: ROOT\260\local
+  Layout: W 11 DCC, W 1R MM2 share address 1.  This local copy is not checked against the Central Station, so the squares at 10,4 on page Startpackung use DCC unless their protocol is set in the editor.
+  Layout: W 11 DCC, W 1R MM2 share address 1.  This local copy is not checked against the Central Station, so the squares at 16,6 17,6 on page Main Layout use DCC unless their protocol is set in the editor.
+  Layout: W 14 DCC, W 15 MM2 share address 25.  This local copy is not checked against the Central Station, so the squares at 4,7 5,9 on page Main Layout use DCC unless their protocol is set in the editor.
+  Imported layout Startpackung
+  Imported layout Main
+  Imported layout Something
+  Imported layout Main Layout
+  Sync complete.
+  Not suggesting a rename to "ALCO UP": the Central Station has 2 locomotives at that address, so it is unclear which name is meant.  Remove the duplicates there first.
+  Not suggesting a rename to "V 60 706": the Central Station has 2 locomotives at that address, so it is unclear which name is meant.  Remove the duplicates there first.
+  No routes were downloaded from the Central Station.
+######## firmware 250
+## sync -> 186
+  /config/geraet.vrs
+  /config/magnetartikel.cs2
+  /config/gleisbild.cs2
+  /config/gleisbilder/Startpackung.cs2
+  /app/api/gbs
+  /config/gleisbilder/Main.cs2
+  /config/gleisbilder/Something.cs2
+  /config/gleisbilder/Main Layout.cs2
+  /app/api/locos
+  /app/api/automatics
+  /app/api/mags
+  /app/api/loks
+  /app/api/mags/state
+  /app/api/loks
+## resync -> 0
+  /config/geraet.vrs
+  /app/api/locos
+  /app/api/automatics
+  /app/api/mags
+  /app/api/loks
+  /app/api/mags/state
+  /app/api/loks
+## rename proposals -> 0
+  /app/api/locos
+  /app/api/loks
+## download -> [CS3_automatics.json, CS3_locos.json, CS3_mags.json, gleisbild.cs2, gleisbilder, magnetartikel.cs2]
+  /config/gleisbild.cs2
+  /config/gleisbild.cs2
+  /config/gleisbilder/Startpackung.cs2
+  /config/gleisbilder/Main.cs2
+  /config/gleisbilder/Something.cs2
+  /config/gleisbilder/Main Layout.cs2
+  /config/magnetartikel.cs2
+  /config/fahrstrassen.cs2
+  /app/api/mags
+  /app/api/automatics
+  /app/api/locos
+  /app/api/loks
+## sync from an emptied railway -> 0
+  /config/geraet.vrs
+  /config/magnetartikel.cs2
+  /config/gleisbild.cs2
+  /config/gleisbilder/Startpackung.cs2
+  /app/api/gbs
+  /config/gleisbilder/Main.cs2
+  /config/gleisbilder/Something.cs2
+  /config/gleisbilder/Main Layout.cs2
+  /app/api/locos
+  /app/api/automatics
+  /app/api/mags
+  /app/api/loks
+  /app/api/mags/state
+  /app/api/loks
+## sync with a local folder -> 0
+  /config/geraet.vrs
+  /app/api/locos
+  /app/api/automatics
+  /app/api/mags
+  /app/api/loks
+  /app/api/mags/state
+  /app/api/loks
+## rename proposals with a local folder -> 0
+  /app/api/locos
+  /app/api/loks
+## download with a local folder -> [CS3_automatics.json, CS3_locos.json, CS3_mags.json, gleisbild.cs2, gleisbilder, magnetartikel.cs2]
+  /config/magnetartikel.cs2
+  /config/fahrstrassen.cs2
+  /app/api/mags
+  /app/api/automatics
+  /app/api/locos
+  /app/api/loks
+-- accessories 24
+  acc uid=3000 name=Switch 1 SWITCH MM2 switched=true
+  acc uid=3001 name=Switch 2 SWITCH MM2 switched=true
+  acc uid=3002 name=Switch 3 SWITCH MM2 switched=true
+  acc uid=3003 name=Signal 4 SIGNAL MM2 switched=true
+  acc uid=3005 name=Signal 6 SIGNAL MM2 switched=true
+  acc uid=3007 name=Switch 8 SWITCH MM2 switched=false
+  acc uid=3008 name=Switch 9 SWITCH MM2 switched=true
+  acc uid=3009 name=Switch 10 SWITCH MM2 switched=true
+  acc uid=300a name=Switch 11 SWITCH MM2 switched=false
+  acc uid=300b name=Switch 12 SWITCH MM2 switched=false
+  acc uid=300c name=Switch 13 SWITCH MM2 switched=false
+  acc uid=300d name=Switch 14 SWITCH MM2 switched=false
+  acc uid=300e name=Switch 15 SWITCH MM2 switched=false
+  acc uid=3016 name=Signal 23 SIGNAL MM2 switched=true
+  acc uid=3017 name=Switch 24 SWITCH MM2 switched=false
+  acc uid=3018 name=Switch 25 SWITCH MM2 switched=false
+  acc uid=304f name=Switch 80 SWITCH MM2 switched=false
+  acc uid=3052 name=Switch 83 SWITCH MM2 switched=false
+  acc uid=3058 name=Signal 89 SIGNAL MM2 switched=true
+  acc uid=3800 name=Switch 1 DCC SWITCH DCC switched=true
+  acc uid=3818 name=Switch 25 DCC SWITCH DCC switched=true
+  acc uid=3be7 name=Switch 1000 DCC SWITCH DCC switched=true
+  acc uid=3ffe name=Switch 2047 DCC SWITCH DCC switched=true
+  acc uid=3fff name=Switch 2048 DCC SWITCH DCC switched=true
+-- pages [Main, Main Layout, Something, Startpackung]
+page Main id=2 unreadable=false
+  (13,8) STRAIGHT addr=-1 prot=MM2
+page Main Layout id=4 unreadable=false
+  (4,1) CUSTOM_PERM_RIGHT addr=-1 prot=MM2
+  (4,2) CUSTOM_PERM_Y addr=-1 prot=MM2
+  (4,3) CUSTOM_PERM_LEFT addr=-1 prot=MM2
+  (4,4) LAMP addr=23 prot=MM2 acc=Signal 23/true
+  (4,7) SWITCH_LEFT addr=25 prot=DCC acc=Switch 25 DCC/true
+  (5,1) CUSTOM_PERM_LEFT addr=-1 prot=MM2
+  (5,2) CUSTOM_PERM_Y addr=-1 prot=MM2
+  (5,3) CUSTOM_PERM_RIGHT addr=-1 prot=MM2
+  (5,5) SWITCH_Y addr=80 prot=MM2 acc=Switch 80/false
+  (5,9) SWITCH_LEFT addr=25 prot=DCC acc=Switch 25 DCC/true
+  (6,7) SWITCH_RIGHT addr=2047 prot=DCC acc=Switch 2047 DCC/true
+  (6,8) SIGNAL addr=89 prot=MM2 acc=Signal 89/true
+  (7,5) CUSTOM_PERM_LEFT addr=-1 prot=MM2
+  (7,7) SWITCH_RIGHT addr=2047 prot=DCC acc=Switch 2047 DCC/true
+  (8,1) SWITCH_RIGHT addr=10 prot=MM2 acc=Switch 10/true
+  (8,2) DOUBLE_CURVE addr=-1 prot=MM2
+  (8,3) CUSTOM_PERM_LEFT addr=-1 prot=MM2
+  (8,4) SWITCH_RIGHT addr=9 prot=MM2 acc=Switch 9/true
+  (8,5) CUSTOM_PERM_LEFT addr=-1 prot=MM2
+  (8,7) CUSTOM_PERM_RIGHT addr=-1 prot=MM2
+  (8,8) CURVE addr=-1 prot=MM2
+  (9,1) SWITCH_LEFT addr=12 prot=MM2 acc=Switch 12/false
+  (9,2) DOUBLE_CURVE addr=-1 prot=MM2
+  (9,3) CUSTOM_PERM_THREEWAY addr=-1 prot=MM2
+  (9,4) STRAIGHT addr=-1 prot=MM2
+  (9,5) CUSTOM_PERM_RIGHT addr=-1 prot=MM2
+  (9,7) CUSTOM_PERM_RIGHT addr=-1 prot=MM2
+  (9,8) DOUBLE_CURVE addr=-1 prot=MM2
+  (9,9) CUSTOM_PERM_RIGHT addr=-1 prot=MM2
+  (10,4) STRAIGHT addr=-1 prot=MM2
+  (10,5) CUSTOM_PERM_RIGHT addr=-1 prot=MM2
+  (10,8) CURVE addr=-1 prot=MM2
+  (10,9) CUSTOM_PERM_RIGHT addr=-1 prot=MM2
+  (11,4) STRAIGHT addr=-1 prot=MM2
+  (11,5) STRAIGHT addr=-1 prot=MM2
+  (11,7) SWITCH_RIGHT addr=1000 prot=DCC acc=Switch 1000 DCC/true
+  (12,2) CUSTOM_PERM_RIGHT addr=-1 prot=MM2
+  (12,4) SWITCH_RIGHT addr=8 prot=MM2 acc=Switch 8/false
+  (12,5) SWITCH_THREE addr=14 prot=MM2 acc=Switch 14/false
+  (13,2) CUSTOM_PERM_RIGHT addr=-1 prot=MM2
+  (13,4) STRAIGHT addr=-1 prot=MM2
+  (13,7) CUSTOM_PERM_RIGHT addr=-1 prot=MM2
+  (13,8) SWITCH_RIGHT addr=2048 prot=DCC acc=Switch 2048 DCC/true
+  (14,4) FEEDBACK addr=0 prot=MM2
+  (14,7) CUSTOM_PERM_RIGHT addr=-1 prot=MM2
+  (14,8) SWITCH_RIGHT addr=2048 prot=DCC acc=Switch 2048 DCC/true
+  (15,1) SWITCH_RIGHT addr=13 prot=MM2 acc=Switch 13/false
+  (15,3) SWITCH_RIGHT addr=24 prot=MM2 acc=Switch 24/false
+  (15,4) CUSTOM_SCISSORS addr=83 prot=MM2 acc=Switch 83/false
+  (15,5) CUSTOM_SCISSORS addr=83 prot=MM2 acc=Switch 83/false
+  (15,7) CUSTOM_PERM_RIGHT addr=-1 prot=MM2
+  (15,8) SIGNAL addr=2048 prot=DCC acc=Switch 2048 DCC/true
+  (16,1) CUSTOM_PERM_RIGHT addr=-1 prot=MM2
+  (16,3) SWITCH_RIGHT addr=24 prot=MM2 acc=Switch 24/false
+  (16,4) STRAIGHT addr=-1 prot=MM2
+  (16,6) SWITCH_RIGHT addr=1 prot=DCC acc=Switch 1 DCC/true
+  (16,7) CUSTOM_PERM_RIGHT addr=-1 prot=MM2
+  (17,3) CUSTOM_PERM_Y addr=-1 prot=MM2
+  (17,4) CUSTOM_PERM_SCISSORS addr=-1 prot=MM2
+  (17,5) CUSTOM_PERM_SCISSORS addr=-1 prot=MM2
+  (17,6) SWITCH_RIGHT addr=1 prot=DCC acc=Switch 1 DCC/true
+page Something id=3 unreadable=false
+  (10,8) SWITCH_RIGHT addr=9 prot=MM2 acc=Switch 9/true
+  (11,8) SWITCH_RIGHT addr=11 prot=MM2 acc=Switch 11/false
+page Startpackung id=1 unreadable=false
+  (7,5) CURVE addr=-1 prot=MM2
+  (7,6) STRAIGHT addr=-1 prot=MM2
+  (7,7) CURVE addr=-1 prot=MM2
+  (8,4) CURVE addr=-1 prot=MM2
+  (8,5) CURVE addr=-1 prot=MM2
+  (8,7) CURVE addr=-1 prot=MM2
+  (8,8) CURVE addr=-1 prot=MM2
+  (9,4) STRAIGHT addr=-1 prot=MM2
+  (9,7) CURVE addr=-1 prot=MM2
+  (9,8) SWITCH_LEFT addr=2 prot=MM2 acc=Switch 2/true
+  (10,4) SWITCH_RIGHT addr=1 prot=DCC acc=Switch 1 DCC/true
+  (10,7) STRAIGHT addr=-1 prot=MM2
+  (10,8) STRAIGHT addr=-1 prot=MM2
+  (11,4) STRAIGHT addr=-1 prot=MM2
+  (11,7) STRAIGHT addr=-1 prot=MM2
+  (11,8) STRAIGHT addr=-1 prot=MM2
+  (12,4) STRAIGHT addr=-1 prot=MM2
+  (12,7) SIGNAL addr=4 prot=MM2 acc=Signal 4/true
+  (12,8) STRAIGHT addr=-1 prot=MM2
+  (13,4) STRAIGHT addr=-1 prot=MM2
+  (13,7) STRAIGHT addr=-1 prot=MM2
+  (13,8) STRAIGHT addr=-1 prot=MM2
+  (14,4) STRAIGHT addr=-1 prot=MM2
+  (14,7) STRAIGHT addr=-1 prot=MM2
+  (14,8) STRAIGHT addr=-1 prot=MM2
+  (15,4) STRAIGHT addr=-1 prot=MM2
+  (15,7) STRAIGHT addr=-1 prot=MM2
+  (15,8) CURVE addr=-1 prot=MM2
+  (15,9) CURVE addr=-1 prot=MM2
+  (16,4) STRAIGHT addr=-1 prot=MM2
+  (16,5) END addr=-1 prot=MM2
+  (16,7) CURVE addr=-1 prot=MM2
+  (16,8) SWITCH_RIGHT addr=3 prot=MM2 acc=Switch 3/true
+  (16,9) SIGNAL addr=6 prot=MM2 acc=Signal 6/true
+  (17,4) STRAIGHT addr=-1 prot=MM2
+  (17,7) CURVE addr=-1 prot=MM2
+  (17,8) CURVE addr=-1 prot=MM2
+  (18,4) CURVE addr=-1 prot=MM2
+  (18,5) CURVE addr=-1 prot=MM2
+  (18,7) STRAIGHT addr=-1 prot=MM2
+  (19,5) CURVE addr=-1 prot=MM2
+  (19,6) STRAIGHT addr=-1 prot=MM2
+  (19,7) CURVE addr=-1 prot=MM2
+-- routes 50
+  route Route 01-21> | [Accessory: {ADDRESS=33, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=8, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=17, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=18, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=34, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=99, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=94, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=88, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=106, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=77, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=45, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=16, SETTING=false, PROTOCOL=MM2}] (ID: 57 | Auto: No) | [Accessory: {ADDRESS=33, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=8, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=17, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=18, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=34, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=99, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=94, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=88, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=106, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=77, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=45, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=16, SETTING=false, PROTOCOL=MM2}]
+  route Route 01-22> | [Accessory: {ADDRESS=33, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=8, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=17, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=18, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=34, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=99, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=94, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=88, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=78, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=46, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=16, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=72, SETTING=false, PROTOCOL=MM2}] (ID: 58 | Auto: No) | [Accessory: {ADDRESS=33, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=8, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=17, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=18, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=34, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=99, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=94, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=88, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=78, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=46, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=16, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=72, SETTING=false, PROTOCOL=MM2}]
+  route Route 01-23> | [Accessory: {ADDRESS=33, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=8, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=82, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=34, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=88, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=17, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=18, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=40, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=93, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=47, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=79, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=16, SETTING=false, PROTOCOL=MM2}] (ID: 59 | Auto: No) | [Accessory: {ADDRESS=33, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=8, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=82, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=34, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=88, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=17, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=18, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=40, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=93, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=47, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=79, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=16, SETTING=false, PROTOCOL=MM2}]
+  route Route 01-24> | [Accessory: {ADDRESS=33, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=8, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=82, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=34, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=88, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=17, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=18, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=40, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=93, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=80, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=48, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=16, SETTING=false, PROTOCOL=MM2}] (ID: 60 | Auto: No) | [Accessory: {ADDRESS=33, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=8, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=82, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=34, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=88, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=17, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=18, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=40, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=93, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=80, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=48, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=16, SETTING=false, PROTOCOL=MM2}]
+  route Route 01-32> | [Accessory: {ADDRESS=33, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=8, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=17, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=18, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=82, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=34, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=88, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=98, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=40, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=109, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=16, SETTING=false, PROTOCOL=MM2}] (ID: 125 | Auto: No) | [Accessory: {ADDRESS=33, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=8, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=17, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=18, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=82, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=34, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=88, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=98, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=40, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=109, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=16, SETTING=false, PROTOCOL=MM2}]
+  route Route 01a-05> | [Accessory: {ADDRESS=109, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=110, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=107, SETTING=true, PROTOCOL=DCC}, Accessory: {ADDRESS=96, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=72, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=16, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=64, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=10, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=33, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=8, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=18, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=82, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=34, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=88, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=40, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=26, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=2, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=15, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=55, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=118, SETTING=false, PROTOCOL=MM2}] (ID: 91 | Auto: No) | [Accessory: {ADDRESS=109, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=110, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=107, SETTING=true, PROTOCOL=DCC}, Accessory: {ADDRESS=96, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=72, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=16, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=64, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=10, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=33, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=8, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=18, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=82, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=34, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=88, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=40, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=26, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=2, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=15, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=55, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=118, SETTING=false, PROTOCOL=MM2}]
+  route Route 02-04> | [Accessory: {ADDRESS=15, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=34, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=40, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=109, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=110, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=26, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=55, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=49, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=13, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=11, SETTING=true, PROTOCOL=MM2}] (ID: 119 | Auto: No) | [Accessory: {ADDRESS=15, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=34, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=40, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=109, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=110, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=26, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=55, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=49, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=13, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=11, SETTING=true, PROTOCOL=MM2}]
+  route Route 02-21> | [Accessory: {ADDRESS=8, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=45, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=17, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=18, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=34, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=99, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=106, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=88, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=94, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=77, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=15, SETTING=false, PROTOCOL=MM2}] (ID: 49 | Auto: No) | [Accessory: {ADDRESS=8, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=45, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=17, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=18, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=34, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=99, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=106, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=88, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=94, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=77, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=15, SETTING=false, PROTOCOL=MM2}]
+  route Route 02-22> | [Accessory: {ADDRESS=8, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=17, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=18, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=34, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=99, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=94, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=88, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=78, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=46, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=15, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=71, SETTING=false, PROTOCOL=MM2}] (ID: 50 | Auto: No) | [Accessory: {ADDRESS=8, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=17, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=18, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=34, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=99, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=94, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=88, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=78, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=46, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=15, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=71, SETTING=false, PROTOCOL=MM2}]
+  route Route 02-23> | [Accessory: {ADDRESS=8, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=17, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=18, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=82, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=34, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=88, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=40, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=93, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=79, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=47, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=15, SETTING=false, PROTOCOL=MM2}] (ID: 51 | Auto: No) | [Accessory: {ADDRESS=8, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=17, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=18, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=82, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=34, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=88, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=40, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=93, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=79, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=47, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=15, SETTING=false, PROTOCOL=MM2}]
+  route Route 02-24> | [Accessory: {ADDRESS=8, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=17, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=18, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=82, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=34, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=88, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=40, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=93, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=48, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=15, SETTING=false, PROTOCOL=MM2}] (ID: 52 | Auto: No) | [Accessory: {ADDRESS=8, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=17, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=18, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=82, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=34, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=88, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=40, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=93, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=48, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=15, SETTING=false, PROTOCOL=MM2}]
+  route Route 02-32> | [Accessory: {ADDRESS=8, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=18, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=82, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=34, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=88, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=98, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=40, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=17, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=109, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=15, SETTING=false, PROTOCOL=MM2}] (ID: 117 | Auto: No) | [Accessory: {ADDRESS=8, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=18, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=82, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=34, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=88, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=98, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=40, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=17, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=109, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=15, SETTING=false, PROTOCOL=MM2}]
+  route Route 0203p> | [Accessory: {ADDRESS=7, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=17, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=98, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=88, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=40, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=93, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=79, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=48, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=47, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=70, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=12, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=8, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=82, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=18, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=34, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=99, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=94, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=78, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=46, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=15, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=71, SETTING=false, PROTOCOL=MM2}] (ID: 113 | Auto: No) | [Accessory: {ADDRESS=7, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=17, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=98, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=88, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=40, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=93, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=79, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=48, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=47, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=70, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=12, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=8, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=82, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=18, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=34, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=99, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=94, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=78, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=46, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=15, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=71, SETTING=false, PROTOCOL=MM2}]
+  route Route 03-23< | [Accessory: {ADDRESS=50, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=83, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=97, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=54, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=47, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=79, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=70, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=11, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=12, SETTING=false, PROTOCOL=MM2}] (ID: 41 | Auto: No) | [Accessory: {ADDRESS=50, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=83, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=97, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=54, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=47, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=79, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=70, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=11, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=12, SETTING=false, PROTOCOL=MM2}]
+  route Route 03-24< | [Accessory: {ADDRESS=50, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=83, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=97, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=54, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=21, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=48, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=12, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=80, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=11, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=70, SETTING=false, PROTOCOL=MM2}] (ID: 42 | Auto: No) | [Accessory: {ADDRESS=50, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=83, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=97, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=54, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=21, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=48, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=12, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=80, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=11, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=70, SETTING=false, PROTOCOL=MM2}]
+  route Route 03-30< | [Accessory: {ADDRESS=50, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=61, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=12, SETTING=false, PROTOCOL=MM2}] (ID: 43 | Auto: No) | [Accessory: {ADDRESS=50, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=61, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=12, SETTING=false, PROTOCOL=MM2}]
+  route Route 03-31< | [Accessory: {ADDRESS=50, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=83, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=107, SETTING=true, PROTOCOL=DCC}, Accessory: {ADDRESS=12, SETTING=false, PROTOCOL=MM2}] (ID: 44 | Auto: No) | [Accessory: {ADDRESS=50, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=83, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=107, SETTING=true, PROTOCOL=DCC}, Accessory: {ADDRESS=12, SETTING=false, PROTOCOL=MM2}]
+  route Route 03-32> | [Accessory: {ADDRESS=7, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=40, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=17, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=88, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=109, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=98, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=70, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=12, SETTING=false, PROTOCOL=MM2}] (ID: 109 | Auto: No) | [Accessory: {ADDRESS=7, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=40, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=17, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=88, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=109, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=98, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=70, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=12, SETTING=false, PROTOCOL=MM2}]
+  route Route 04-23< | [Accessory: {ADDRESS=50, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=83, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=97, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=54, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=47, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=79, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=12, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=11, SETTING=false, PROTOCOL=MM2}] (ID: 33 | Auto: No) | [Accessory: {ADDRESS=50, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=83, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=97, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=54, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=47, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=79, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=12, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=11, SETTING=false, PROTOCOL=MM2}]
+  route Route 04-24< | [Accessory: {ADDRESS=50, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=83, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=97, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=54, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=21, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=48, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=12, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=11, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=80, SETTING=true, PROTOCOL=MM2}] (ID: 34 | Auto: No) | [Accessory: {ADDRESS=50, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=83, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=97, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=54, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=21, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=48, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=12, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=11, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=80, SETTING=true, PROTOCOL=MM2}]
+  route Route 04-30< | [Accessory: {ADDRESS=50, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=61, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=11, SETTING=false, PROTOCOL=MM2}] (ID: 35 | Auto: No) | [Accessory: {ADDRESS=50, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=61, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=11, SETTING=false, PROTOCOL=MM2}]
+  route Route 04-31< | [Accessory: {ADDRESS=50, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=83, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=107, SETTING=true, PROTOCOL=DCC}, Accessory: {ADDRESS=11, SETTING=false, PROTOCOL=MM2}] (ID: 36 | Auto: No) | [Accessory: {ADDRESS=50, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=83, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=107, SETTING=true, PROTOCOL=DCC}, Accessory: {ADDRESS=11, SETTING=false, PROTOCOL=MM2}]
+  route Route 05-01a> | [Accessory: {ADDRESS=55, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=26, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=40, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=109, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=88, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=107, SETTING=true, PROTOCOL=DCC}, Accessory: {ADDRESS=34, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=82, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=18, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=8, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=33, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=16, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=72, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=3, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=96, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=15, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=17, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=2, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=10, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=64, SETTING=false, PROTOCOL=MM2}] (ID: 101 | Auto: No) | [Accessory: {ADDRESS=55, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=26, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=40, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=109, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=88, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=107, SETTING=true, PROTOCOL=DCC}, Accessory: {ADDRESS=34, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=82, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=18, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=8, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=33, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=16, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=72, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=3, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=96, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=15, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=17, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=2, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=10, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=64, SETTING=false, PROTOCOL=MM2}]
+  route Route 06-01> | [Accessory: {ADDRESS=26, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=109, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=110, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=40, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=88, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=34, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=82, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=17, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=18, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=8, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=33, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=72, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=16, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=118, SETTING=false, PROTOCOL=MM2}] (ID: 103 | Auto: No) | [Accessory: {ADDRESS=26, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=109, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=110, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=40, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=88, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=34, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=82, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=17, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=18, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=8, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=33, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=72, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=16, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=118, SETTING=false, PROTOCOL=MM2}]
+  route Route 06-02> | [Accessory: {ADDRESS=26, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=109, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=110, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=88, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=34, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=17, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=82, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=18, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=8, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=71, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=40, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=15, SETTING=false, PROTOCOL=MM2}] (ID: 104 | Auto: No) | [Accessory: {ADDRESS=26, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=109, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=110, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=88, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=34, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=17, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=82, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=18, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=8, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=71, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=40, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=15, SETTING=false, PROTOCOL=MM2}]
+  route Route 21-01< | [Accessory: {ADDRESS=86, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=81, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=95, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=2, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=72, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=3, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=118, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=16, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=77, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=46, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=45, SETTING=false, PROTOCOL=MM2}] (ID: 37 | Auto: No) | [Accessory: {ADDRESS=86, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=81, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=95, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=2, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=72, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=3, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=118, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=16, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=77, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=46, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=45, SETTING=false, PROTOCOL=MM2}]
+  route Route 21-02< | [Accessory: {ADDRESS=86, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=81, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=95, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=2, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=71, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=15, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=46, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=45, SETTING=false, PROTOCOL=MM2}] (ID: 38 | Auto: No) | [Accessory: {ADDRESS=86, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=81, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=95, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=2, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=71, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=15, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=46, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=45, SETTING=false, PROTOCOL=MM2}]
+  route Route 22-01< | [Accessory: {ADDRESS=81, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=95, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=2, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=118, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=72, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=16, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=45, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=78, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=46, SETTING=false, PROTOCOL=MM2}] (ID: 45 | Auto: No) | [Accessory: {ADDRESS=81, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=95, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=2, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=118, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=72, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=16, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=45, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=78, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=46, SETTING=false, PROTOCOL=MM2}]
+  route Route 22-02< | [Accessory: {ADDRESS=81, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=95, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=2, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=71, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=15, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=45, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=46, SETTING=false, PROTOCOL=MM2}] (ID: 46 | Auto: No) | [Accessory: {ADDRESS=81, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=95, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=2, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=71, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=15, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=45, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=46, SETTING=false, PROTOCOL=MM2}]
+  route Route 2223p< | [Accessory: {ADDRESS=81, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=95, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=2, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=71, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=15, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=46, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=54, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=79, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=83, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=50, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=12, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=70, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=97, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=47, SETTING=false, PROTOCOL=MM2}] (ID: 105 | Auto: No) | [Accessory: {ADDRESS=81, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=95, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=2, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=71, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=15, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=46, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=54, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=79, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=83, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=50, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=12, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=70, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=97, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=47, SETTING=false, PROTOCOL=MM2}]
+  route Route 23-01> | [Accessory: {ADDRESS=93, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=40, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=88, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=34, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=82, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=17, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=18, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=8, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=33, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=16, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=72, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=79, SETTING=false, PROTOCOL=MM2}] (ID: 55 | Auto: No) | [Accessory: {ADDRESS=93, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=40, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=88, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=34, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=82, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=17, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=18, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=8, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=33, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=16, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=72, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=79, SETTING=false, PROTOCOL=MM2}]
+  route Route 23-03> | [Accessory: {ADDRESS=93, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=88, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=34, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=98, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=17, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=7, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=40, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=18, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=82, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=70, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=12, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=47, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=80, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=79, SETTING=false, PROTOCOL=MM2}] (ID: 53 | Auto: No) | [Accessory: {ADDRESS=93, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=88, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=34, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=98, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=17, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=7, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=40, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=18, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=82, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=70, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=12, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=47, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=80, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=79, SETTING=false, PROTOCOL=MM2}]
+  route Route 23-04> | [Accessory: {ADDRESS=93, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=40, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=88, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=98, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=17, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=7, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=51, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=49, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=34, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=13, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=18, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=11, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=47, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=80, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=79, SETTING=false, PROTOCOL=MM2}] (ID: 54 | Auto: No) | [Accessory: {ADDRESS=93, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=40, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=88, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=98, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=17, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=7, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=51, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=49, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=34, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=13, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=18, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=11, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=47, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=80, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=79, SETTING=false, PROTOCOL=MM2}]
+  route Route 24-03> | [Accessory: {ADDRESS=93, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=40, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=88, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=17, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=7, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=34, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=18, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=82, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=98, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=70, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=12, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=80, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=79, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=48, SETTING=false, PROTOCOL=MM2}] (ID: 61 | Auto: No) | [Accessory: {ADDRESS=93, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=40, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=88, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=17, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=7, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=34, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=18, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=82, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=98, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=70, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=12, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=80, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=79, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=48, SETTING=false, PROTOCOL=MM2}]
+  route Route 24-04> | [Accessory: {ADDRESS=93, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=40, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=88, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=98, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=7, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=51, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=49, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=13, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=11, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=48, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=82, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=17, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=18, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=34, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=79, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=80, SETTING=false, PROTOCOL=MM2}] (ID: 62 | Auto: No) | [Accessory: {ADDRESS=93, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=40, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=88, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=98, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=7, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=51, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=49, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=13, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=11, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=48, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=82, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=17, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=18, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=34, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=79, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=80, SETTING=false, PROTOCOL=MM2}]
+  route Route 24-4-21< | [Accessory: {ADDRESS=21, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=54, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=48, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=83, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=50, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=11, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=13, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=49, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=7, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=98, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=51, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=7, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=17, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=18, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=82, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=34, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=99, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=94, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=106, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=77, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=45, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=48, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=80, SETTING=false, PROTOCOL=MM2}] (ID: 63 | Auto: No) | [Accessory: {ADDRESS=21, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=54, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=48, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=83, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=50, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=11, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=13, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=49, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=7, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=98, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=51, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=7, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=17, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=18, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=82, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=34, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=99, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=94, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=106, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=77, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=45, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=48, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=80, SETTING=false, PROTOCOL=MM2}]
+  route Route 31-21> | [Accessory: {ADDRESS=82, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=34, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=99, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=94, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=106, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=17, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=18, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=77, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=45, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=107, SETTING=false, PROTOCOL=DCC}] (ID: 121 | Auto: No) | [Accessory: {ADDRESS=82, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=34, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=99, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=94, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=106, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=17, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=18, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=77, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=45, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=107, SETTING=false, PROTOCOL=DCC}]
+  route Route 31-22> | [Accessory: {ADDRESS=82, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=34, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=99, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=94, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=17, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=18, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=78, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=46, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=107, SETTING=false, PROTOCOL=DCC}] (ID: 122 | Auto: No) | [Accessory: {ADDRESS=82, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=34, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=99, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=94, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=17, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=18, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=78, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=46, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=107, SETTING=false, PROTOCOL=DCC}]
+  route Route 31-23> | [Accessory: {ADDRESS=82, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=40, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=93, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=17, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=18, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=79, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=47, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=107, SETTING=false, PROTOCOL=DCC}] (ID: 123 | Auto: No) | [Accessory: {ADDRESS=82, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=40, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=93, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=17, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=18, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=79, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=47, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=107, SETTING=false, PROTOCOL=DCC}]
+  route Route 31-24> | [Accessory: {ADDRESS=82, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=40, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=93, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=17, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=18, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=80, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=48, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=107, SETTING=false, PROTOCOL=DCC}] (ID: 124 | Auto: No) | [Accessory: {ADDRESS=82, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=40, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=93, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=17, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=18, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=80, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=48, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=107, SETTING=false, PROTOCOL=DCC}]
+  route Route 31-32> | [Accessory: {ADDRESS=82, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=40, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=17, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=18, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=109, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=107, SETTING=false, PROTOCOL=DCC}] (ID: 126 | Auto: No) | [Accessory: {ADDRESS=82, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=40, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=17, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=18, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=109, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=107, SETTING=false, PROTOCOL=DCC}]
+  route Route 32-04< | [Accessory: {ADDRESS=26, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=55, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=49, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=13, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=11, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=109, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=110, SETTING=true, PROTOCOL=MM2}] (ID: 116 | Auto: No) | [Accessory: {ADDRESS=26, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=55, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=49, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=13, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=11, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=109, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=110, SETTING=true, PROTOCOL=MM2}]
+  route Route 32-31< | [Accessory: {ADDRESS=26, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=55, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=49, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=13, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=11, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=50, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=83, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=107, SETTING=true, PROTOCOL=DCC}, Accessory: {ADDRESS=109, SETTING=false, PROTOCOL=MM2}] (ID: 118 | Auto: No) | [Accessory: {ADDRESS=26, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=55, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=49, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=13, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=11, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=50, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=83, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=107, SETTING=true, PROTOCOL=DCC}, Accessory: {ADDRESS=109, SETTING=false, PROTOCOL=MM2}]
+  route Route si g dvaerg | [Accessory: {ADDRESS=72, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=71, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=70, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=13, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=77, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=78, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=47, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=48, SETTING=false, PROTOCOL=MM2}] (ID: 13 | Auto: No) | [Accessory: {ADDRESS=72, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=71, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=70, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=13, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=77, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=78, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=47, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=48, SETTING=false, PROTOCOL=MM2}]
+  route Route si r dvaerg | [Accessory: {ADDRESS=70, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=13, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=72, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=71, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=77, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=78, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=47, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=48, SETTING=true, PROTOCOL=MM2}] (ID: 5 | Auto: No) | [Accessory: {ADDRESS=70, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=13, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=72, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=71, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=77, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=78, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=47, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=48, SETTING=true, PROTOCOL=MM2}]
+  route Route si r indk | [Accessory: {ADDRESS=96, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=95, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=99, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=107, SETTING=true, PROTOCOL=DCC}, Accessory: {ADDRESS=109, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=112, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=97, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=98, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=41, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=100, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=111, SETTING=true, PROTOCOL=MM2}] (ID: 4 | Auto: No) | [Accessory: {ADDRESS=96, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=95, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=99, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=107, SETTING=true, PROTOCOL=DCC}, Accessory: {ADDRESS=109, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=112, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=97, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=98, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=41, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=100, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=111, SETTING=true, PROTOCOL=MM2}]
+  route Route si r udk | [Accessory: {ADDRESS=11, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=12, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=15, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=16, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=96, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=10, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=9, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=45, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=46, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=79, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=80, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=112, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=61, SETTING=true, PROTOCOL=MM2}] (ID: 3 | Auto: No) | [Accessory: {ADDRESS=11, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=12, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=15, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=16, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=96, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=10, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=9, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=45, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=46, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=79, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=80, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=112, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=61, SETTING=true, PROTOCOL=MM2}]
+  route Route si r | [Accessory: {ADDRESS=10, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=9, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=11, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=12, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=13, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=15, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=16, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=57, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=58, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=59, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=61, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=64, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=69, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=70, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=71, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=72, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=77, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=78, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=79, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=80, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=95, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=96, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=97, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=45, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=46, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=47, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=73, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=74, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=41, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=42, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=98, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=99, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=100, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=43, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=101, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=102, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=103, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=104, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=75, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=14, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=63, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=48, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=107, SETTING=true, PROTOCOL=DCC}, Accessory: {ADDRESS=113, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=76, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=111, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=109, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=44, SETTING=true, PROTOCOL=MM2}] (ID: 2 | Auto: No) | [Accessory: {ADDRESS=10, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=9, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=11, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=12, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=13, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=15, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=16, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=57, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=58, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=59, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=61, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=64, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=69, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=70, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=71, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=72, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=77, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=78, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=79, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=80, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=95, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=96, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=97, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=45, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=46, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=47, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=73, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=74, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=41, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=42, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=98, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=99, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=100, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=43, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=101, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=102, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=103, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=104, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=75, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=14, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=63, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=48, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=107, SETTING=true, PROTOCOL=DCC}, Accessory: {ADDRESS=113, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=76, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=111, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=109, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=44, SETTING=true, PROTOCOL=MM2}]
+  route Route sk reset | [Accessory: {ADDRESS=3, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=2, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=84, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=33, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=8, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=7, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=49, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=55, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=26, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=82, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=34, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=88, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=40, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=93, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=21, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=54, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=94, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=106, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=86, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=81, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=83, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=18, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=56, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=114, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=51, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=17, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=115, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=116, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=117, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=52, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=19, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=53, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=27, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=68, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=118, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=119, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=39, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=105, SETTING=false, PROTOCOL=MM2}] (ID: 1 | Auto: No) | [Accessory: {ADDRESS=3, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=2, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=84, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=33, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=8, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=7, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=49, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=55, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=26, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=82, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=34, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=88, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=40, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=93, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=21, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=54, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=94, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=106, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=86, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=81, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=83, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=18, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=56, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=114, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=51, SETTING=true, PROTOCOL=MM2}, Accessory: {ADDRESS=17, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=115, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=116, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=117, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=52, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=19, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=53, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=27, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=68, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=118, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=119, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=39, SETTING=false, PROTOCOL=MM2}, Accessory: {ADDRESS=105, SETTING=false, PROTOCOL=MM2}]
+  route Route xTEE | [Accessory: {ADDRESS=86, SETTING=true, PROTOCOL=MM2}] (ID: 168 | Auto: No) | [Accessory: {ADDRESS=86, SETTING=true, PROTOCOL=MM2}]
+-- locomotives 136
+  loc 02 0314-1 DDR addr=39 MFX uid=02 0314-1 DDR_16423 image=http://STATION/app/assets/lok/DR%20DDR%20BR%2002%200314-1.png f=32
+  loc 06 001 DRG addr=43 MFX uid=06 001 DRG_16427 image=http://STATION/app/assets/lok/DRG%20BR%2006%20001.png f=32
+  loc 065 001-0 DB addr=11 MFX uid=065 001-0 DB_16395 image=http://STATION/app/assets/lok/DB%20BR%2065%20001-0.png f=32
+  loc 1047 005-2 addr=16 MM2 uid=1047 005-2_16 image=http://STATION/app/assets/lok/MAV%201047%20005-2.png f=5
+  loc 1116 228railjet addr=29 MFX uid=1116 228railjet_16413 image=http://STATION/app/assets/lok/%C3%96BB%201116%20228-8.png f=32
+  loc 118 028-0 DB addr=7 MFX uid=118 028-0 DB_16391 image=http://STATION/app/assets/lok/DB%20BR%20118%20028-0.png f=32
+  loc 140 024-1 DB AG addr=10 MFX uid=140 024-1 DB AG_16394 image=http://STATION/app/assets/lok/DB%20BR%20140%20024-1%20MHI.png f=32
+  loc 141-R 1244 SNCF addr=91 MFX uid=141-R 1244 SNCF_16475 image=http://STATION/app/assets/lok/141.png f=32
+  loc 218 497-6 DB AG addr=32 MFX uid=218 497-6 DB AG_16416 image=http://STATION/app/assets/lok/DB%20BR%20BR%20218%20497-6.png f=32
+  loc 220 023-6 DB addr=8 MFX uid=220 023-6 DB_16392 image=http://STATION/app/assets/lok/DB%20BR%20220%20023-6.png f=32
+  loc 241-A-65 SNCF addr=20 MFX uid=241-A-65 SNCF_16404 image=http://STATION/app/assets/lok/SNCF%20241.A%2065.png f=32
+  loc 26199 SNCF addr=126 DCC uid=26199 SNCF_49278 image=http://STATION/app/assets/lok/SNCF%20BB%2026%20010.png f=29
+  loc 3E/1-045 addr=61 MFX uid=3E/1-045_16445 image=http://STATION/app/assets/lok/Piko_51608.png f=32
+  loc 460 067-2 SBB addr=78 MFX uid=460 067-2 SBB_16462 image=http://STATION/app/assets/lok/SBB%20Re%20460%20106-8.png f=32
+  loc 498 104 ZSR addr=31 MFX uid=498 104 ZSR_16415 image=http://STATION/app/assets/lok/albatros.png f=32
+  loc 648 113-2 Lokal addr=49 MFX uid=648 113-2 Lokal_16433 image=http://STATION/app/assets/lok/DSB%20648%20213-0.png f=32
+  loc 75 407 DB addr=27 MFX uid=75 407 DB_16411 image=http://STATION/app/assets/lok/DB%20BR%2075%20407.png f=32
+  loc 86 234 DB addr=53 MFX uid=86 234 DB_16437 image=http://STATION/app/assets/lok/DB%20BR%2086%20234.png f=32
+  loc ALCO UP addr=60 MM2 uid=ALCO UP_60 image=http://STATION/app/assets/lok/UP%20PA%201%20600.png f=5
+  loc BDymf 457 DB addr=25 MFX uid=BDymf 457 DB_16409 image=http://STATION/app/assets/lok/DB%20Soundwagen%20Diesel.png f=32
+  loc BR 03 1022 addr=21 MFX uid=BR 03 1022_16405 image=http://STATION/app/assets/lok/DB%20BR%2003%201022.png f=32
+  loc BR 05 003 addr=40 MFX uid=BR 05 003_16424 image=http://STATION/app/assets/lok/DB%20BR%2005%20Schwarz.png f=32
+  loc BR 10 001 addr=10 MM2 uid=BR 10 001_10 image=http://STATION/app/assets/lok/DB%20BR%2010%20001.png f=5
+  loc BR 103 137-6 addr=3 MM2 uid=BR 103 137-6_3 image=http://STATION/app/assets/lok/DB%20E%2003%20001.png f=5
+  loc BR 143 606-2 addr=43 MM2 uid=BR 143 606-2_43 image=http://STATION/app/assets/lok/DB%20BR%20143%20007-3.png f=5
+  loc BR 152 002-2 addr=52 MM2 uid=BR 152 002-2_52 image=http://STATION/app/assets/lok/DB%20Cargo%20BR%20152%20015-4.png f=5
+  loc BR 182 005-9 addr=17 MM2 uid=BR 182 005-9_17 image=http://STATION/app/assets/lok/DB%20BR%20182%20012-5.png f=5
+  loc BR 23 001 addr=42 MFX uid=BR 23 001_16426 image=http://STATION/app/assets/lok/DB%20BR%2023%20001.png f=32
+  loc BR 232 241-0 addr=5 MFX uid=BR 232 241-0_16389 image=http://STATION/app/assets/lok/DB%20BR%20232%20241-0.png f=32
+  loc BR 42 9000 addr=42 MM2 uid=BR 42 9000_42 image=http://STATION/app/assets/lok/DB%20BR%2042%209000%20Foto.png f=5
+  loc BR 610 addr=63 MM2 uid=BR 610_63 image=http://STATION/app/assets/lok/DB%20BR%20610%20015-0.png f=5
+  loc BR 628 2 addr=28 MM2 uid=BR 628 2_28 image=http://STATION/app/assets/lok/DB%20BR%20628%20350-8.png f=5
+  loc BR 85 003 DB addr=88 MFX uid=BR 85 003 DB_16472 image=http://STATION/app/assets/lok/DB%20BR%2085%20003.png f=32
+  loc BR 86 123 fx addr=53 MM2 uid=BR 86 123 fx_53 image=http://STATION/app/assets/lok/DB%20BR%20086%20182-3.png f=5
+  loc BR 89 7339 II addr=56 MFX uid=BR 89 7339 II_16440 image=http://STATION/app/assets/lok/DB%20BR%2089%207339.png f=32
+  loc BR101 addr=34 MFX uid=BR101_16418 image=http://STATION/app/assets/lok/DB%20BR%20101%20109-7.png f=32
+  loc BR120 addr=72 MFX uid=BR120_16456 image=http://STATION/app/assets/lok/DB%20BR%20120-145%20Widmer.png f=32
+  loc BR232-275 addr=30 MFX uid=BR232-275_16414 image=http://STATION/app/assets/lok/PCCR%20232%20275.png f=32
+  loc Big Boy 4019 UP addr=26 MFX uid=Big Boy 4019 UP_16410 image=http://STATION/app/assets/lok/UP%204019%20Big%20Boy.png f=32
+  loc Challenger 3969 addr=17 MFX uid=Challenger 3969_16401 image=http://STATION/app/assets/lok/UP%203969%20Challenger.png f=32
+  loc DCC Lok 112 addr=112 DCC uid=DCC Lok 112_49264 image=http://STATION/app/assets/lok/leere%20Lok.png f=29
+  loc DSB MY 1106 addr=86 MFX uid=DSB MY 1106_16470 image=http://STATION/app/assets/lok/leere%20Lok.png f=32
+  loc DSB MY 1126 ATCS addr=98 MFX uid=DSB MY 1126 ATCS_16482 image=http://STATION/app/assets/lok/leere%20Lok.png f=32
+  loc EA 3005 DSB addr=62 MFX uid=EA 3005 DSB_16446 image=http://STATION/app/assets/lok/ea.png f=32
+  loc EB 3203 DSB addr=22 MFX uid=EB 3203 DSB_16406 image=http://STATION/app/assets/lok/DSB%20003%20204-4.png f=32
+  loc EB 3240 DSB addr=84 MFX uid=EB 3240 DSB_16468 image=http://STATION/app/assets/lok/900_PK-59737.png f=32
+  loc EN57-1000 addr=66 MFX uid=EN57-1000_16450 image=http://STATION/app/assets/lok/en57_1000_%281%29.png f=32
+  loc EN57-1022 addr=18 MFX uid=EN57-1022_16402 image=http://STATION/app/assets/lok/piko-51456_%281%29.png f=32
+  loc EN57-1079 addr=70 MFX uid=EN57-1079_16454 image=http://STATION/app/assets/lok/en57-1079.png f=32
+  loc EN57-925 addr=46 MFX uid=EN57-925_16430 image=http://STATION/app/assets/lok/41582_51450.png f=32
+  loc EN57-947 addr=92 MFX uid=EN57-947_16476 image=http://STATION/app/assets/lok/en57_947_2.png f=32
+  loc EP08-006 addr=95 MFX uid=EP08-006_16479 image=http://STATION/app/assets/lok/ep08_006.png f=32
+  loc EP08-009 addr=109 DCC uid=EP08-009_49261 image=http://STATION/app/assets/lok/EP08.png f=29
+  loc EP08-013 addr=68 MFX uid=EP08-013_16452 image=http://STATION/app/assets/lok/ep08-013.png f=32
+  loc ER 2035 DSB addr=97 MFX uid=ER 2035 DSB_16481 image=http://STATION/app/assets/lok/dsb_er.png f=32
+  loc ES44 x2 addr=3 MULTI_UNIT uid=ES44 x2_11267 image=http://STATION/app/assets/lok/UP%207495.png f=32
+  loc ES44AC 4848 KCS addr=65 MFX uid=ES44AC 4848 KCS_16449 image=http://STATION/app/assets/lok/leere%20Lok.png f=32
+  loc ES44AC 7495 UP addr=57 MFX uid=ES44AC 7495 UP_16441 image=http://STATION/app/assets/lok/UP%207495.png f=32
+  loc ES44AC 7912 UP addr=64 MFX uid=ES44AC 7912 UP_16448 image=http://STATION/app/assets/lok/UP%207912.png f=32
+  loc ET21-157 addr=45 MFX uid=ET21-157_16429 image=http://STATION/app/assets/lok/900_PK-51602.png f=32
+  loc ET21-375 addr=74 MFX uid=ET21-375_16458 image=http://STATION/app/assets/lok/et21_375.png f=32
+  loc ET21-442 addr=33 MFX uid=ET21-442_16417 image=http://STATION/app/assets/lok/et212_%281%29.png f=32
+  loc ET22-243 addr=55 MFX uid=ET22-243_16439 image=http://STATION/app/assets/lok/et22-243.png f=32
+  loc ET22-273 addr=51 MFX uid=ET22-273_16435 image=http://STATION/app/assets/lok/et22_%281%29.png f=32
+  loc ET22-678 addr=48 MFX uid=ET22-678_16432 image=http://STATION/app/assets/lok/et22_678.png f=32
+  loc ET22-951 addr=22 DCC uid=ET22-951_49174 image=http://STATION/app/assets/lok/et22.png f=29
+  loc ET41-149 addr=60 MFX uid=ET41-149_16444 image=http://STATION/app/assets/lok/et41.png f=32
+  loc ET41-166 addr=76 MFX uid=ET41-166_16460 image=http://STATION/app/assets/lok/et41-166.png f=32
+  loc EU07-076 addr=93 MFX uid=EU07-076_16477 image=http://STATION/app/assets/lok/leere%20Lok.png f=32
+  loc EU07-123 addr=58 MFX uid=EU07-123_16442 image=http://STATION/app/assets/lok/eu07.png f=32
+  loc EU07-205 addr=75 MFX uid=EU07-205_16459 image=http://STATION/app/assets/lok/pk96389.png f=32
+  loc EU07-314 addr=47 MFX uid=EU07-314_16431 image=http://STATION/app/assets/lok/eu07_314.png f=32
+  loc EU07-336 addr=50 MFX uid=EU07-336_16434 image=http://STATION/app/assets/lok/eu07336.png f=32
+  loc EU44-003 addr=71 MFX uid=EU44-003_16455 image=http://STATION/app/assets/lok/eu44.png f=32
+  loc EU46-520 addr=47 DCC uid=EU46-520_49199 image=http://STATION/app/assets/lok/Roco-71799_EU46.png f=29
+  loc EU46-523 addr=152 DCC uid=EU46-523_49304 image=http://STATION/app/assets/lok/eu46-523.png f=29
+  loc Flying Scotsman addr=59 MFX uid=Flying Scotsman_16443 image=http://STATION/app/assets/lok/Flying%20Scotsman.png f=32
+  loc GLASKASTEN addr=36 MM2 uid=GLASKASTEN_36 image=http://STATION/app/assets/lok/KBayStB%20PtL%202_2%204511.png f=5
+  loc GT 2X4/4 addr=13 MFX uid=GT 2X4/4_16397 image=http://STATION/app/assets/lok/KBayStB%20Gt%202x4_4%205752.png f=32
+  loc ICE 3 406 addr=1 MM2 uid=ICE 3 406_1 image=http://STATION/app/assets/lok/DB%20BR%20403%20005-2%20ICE3.png f=5
+  loc ICE TD DSB addr=60 DCC uid=ICE TD DSB_49212 image=http://STATION/app/assets/lok/DB%20ICE%203%20Ger%C3%A4uschwagen.png f=29
+  loc ICE4 9010 DB AG addr=9 MFX uid=ICE4 9010 DB AG_16393 image=http://STATION/app/assets/lok/DB%20BR%20812%20005-8%20ICE4.png f=32
+  loc Litra E 991 DSB addr=19 MFX uid=Litra E 991 DSB_16403 image=http://STATION/app/assets/lok/litra_e.png f=32
+  loc ME 1529 DSB addr=14 MFX uid=ME 1529 DSB_16398 image=http://STATION/app/assets/lok/ME.png f=32
+  loc MF 5028 DSB addr=96 MFX uid=MF 5028 DSB_16480 image=http://STATION/app/assets/lok/dsb_mf.png f=32
+  loc MF+ER addr=4 MULTI_UNIT uid=MF+ER_11268 image=http://STATION/app/assets/lok/dsb_mf.png f=32
+  loc MIKADO UP addr=40 MM2 uid=MIKADO UP_40 image=http://STATION/app/assets/lok/UP%202494.png f=5
+  loc ML 4000 addr=73 MFX uid=ML 4000_16457 image=http://STATION/app/assets/lok/DB%20V%20140%20001.png f=32
+  loc MQ DSB addr=65 DCC uid=MQ DSB_49217 image=http://STATION/app/assets/lok/mq.png f=29
+  loc MY 1135 DSB addr=12 MFX uid=MY 1135 DSB_16396 image=http://STATION/app/assets/lok/DSB%20MY%201135%20alt.png f=32
+  loc MY 1147 DSB addr=54 MFX uid=MY 1147 DSB_16438 image=http://STATION/app/assets/lok/DSB%20MY%201142.png f=32
+  loc MY 1150 DSB addr=94 MFX uid=MY 1150 DSB_16478 image=http://STATION/app/assets/lok/DSB%20MY%201103.png f=32
+  loc MY Gul DSB addr=108 DCC uid=MY Gul DSB_49260 image=http://STATION/app/assets/lok/DSB%20MY%2021%20108-4.png f=29
+  loc MY Nohab-GM addr=8 MM2 uid=MY Nohab-GM_8 image=http://STATION/app/assets/lok/SJ%20NOHAB-GM.png f=5
+  loc MZ 1425 DSB addr=81 MFX uid=MZ 1425 DSB_16465 image=http://STATION/app/assets/lok/mz_1425.png f=32
+  loc Mx M9 Skagen addr=82 MFX uid=Mx M9 Skagen_16466 image=http://STATION/app/assets/lok/m9.png f=32
+  loc OBB 2016 addr=26 MM2 uid=OBB 2016_26 image=http://STATION/app/assets/lok/%C3%96BB%202016%20021-5.png f=5
+  loc PKP OkO1 addr=78 DCC uid=PKP OkO1_49230 image=http://STATION/app/assets/lok/oko1.png f=29
+  loc Pm2 PKP addr=79 MFX uid=Pm2 PKP_16463 image=http://STATION/app/assets/lok/pm2.png f=32
+  loc Re 620 054-7 SBB addr=38 MFX uid=Re 620 054-7 SBB_16422 image=http://STATION/app/assets/lok/SBB%20Re%206_6%2011666.png f=32
+  loc Re4/4II 11229SBB addr=35 MFX uid=Re4/4II 11229SBB_16419 image=http://STATION/app/assets/lok/SBB%20Re%204_4%2011229.png f=32
+  loc S 2-6 3201 addr=26 DCC uid=S 2-6 3201_49178 image=http://STATION/app/assets/lok/KBayStB%20S%202_6%203201.png f=29
+  loc S 2/6 Pfalz addr=83 MFX uid=S 2/6 Pfalz_16467 image=http://STATION/app/assets/lok/KBayStB%20S%202_6%203201%20Pfalz.png f=32
+  loc S 3/6 3629 addr=16 MFX uid=S 3/6 3629_16400 image=http://STATION/app/assets/lok/KBayStB%20S%203_6%203629.png f=32
+  loc S. 122 addr=22 MM2 uid=S. 122_22 image=http://STATION/app/assets/lok/SNCB%202338.png f=5
+  loc SBB RE 4_4 II addr=76 MM2 uid=SBB RE 4_4 II_76 image=http://STATION/app/assets/lok/SBB%20Re%204_4%2011332.png f=5
+  loc SBB420  Red/Cargo addr=2 MULTI_UNIT uid=SBB420  Red/Cargo_11266 image=http://STATION/app/assets/lok/SBB%20Re%204_4%2011229.png f=32
+  loc SBB460 Milleu d addr=6 MFX uid=SBB460 Milleu d_16390 image=http://STATION/app/assets/lok/SBB%20Re%20460%20006-0.png f=32
+  loc SBBC 421 378-1 addr=36 MFX uid=SBBC 421 378-1_16420 image=http://STATION/app/assets/lok/SBB%20Re%20421%20378-1%20Cargo.png f=32
+  loc SM31-012 addr=90 MFX uid=SM31-012_16474 image=http://STATION/app/assets/lok/sm42_dark.png f=32
+  loc SM31-108 addr=87 MFX uid=SM31-108_16471 image=http://STATION/app/assets/lok/sm31_light.png f=32
+  loc SM31-118 addr=77 MFX uid=SM31-118_16461 image=http://STATION/app/assets/lok/sm31.png f=32
+  loc SM42-926 addr=4 DCC uid=SM42-926_49156 image=http://STATION/app/assets/lok/sm42.png f=29
+  loc SP45-090 addr=52 MFX uid=SP45-090_16436 image=http://STATION/app/assets/lok/sp45090.png f=32
+  loc SP45-155 addr=67 MFX uid=SP45-155_16451 image=http://STATION/app/assets/lok/sp45-155.png f=32
+  loc SP45-204 addr=63 MFX uid=SP45-204_16447 image=http://STATION/app/assets/lok/spalinowoz-sp45-204-piko-96300.png f=32
+  loc ST44-613 addr=44 DCC uid=ST44-613_49196 image=http://STATION/app/assets/lok/st44.png f=29
+  loc SU45-070 addr=80 MFX uid=SU45-070_16464 image=http://STATION/app/assets/lok/su45_070.png f=32
+  loc SU45-098 addr=85 MFX uid=SU45-098_16469 image=http://STATION/app/assets/lok/451314177_1291985725099172_527684296369278187_n.png f=32
+  loc SU45-118 addr=138 DCC uid=SU45-118_49290 image=http://STATION/app/assets/lok/su45.png f=29
+  loc SU46-012 addr=120 DCC uid=SU46-012_49272 image=http://STATION/app/assets/lok/su462.png f=29
+  loc SU46-035 addr=89 MFX uid=SU46-035_16473 image=http://STATION/app/assets/lok/su46_piko_pkp.png f=32
+  loc SU46-039 addr=69 MFX uid=SU46-039_16453 image=http://STATION/app/assets/lok/su46_039.png f=32
+  loc SU46-043 addr=46 DCC uid=SU46-043_49198 image=http://STATION/app/assets/lok/SU46043.png f=29
+  loc Simplon-Orient addr=15 MFX uid=Simplon-Orient_16399 image=http://STATION/app/assets/lok/CIWL%20Packwagen%20blau.png f=32
+  loc TKt 63 PKP addr=44 MFX uid=TKt 63 PKP_16428 image=http://STATION/app/assets/lok/tkt63.png f=32
+  loc Test TC addr=1 MULTI_UNIT uid=Test TC_11265 image=http://STATION/app/assets/lok/DB%20BR%20118%20028-0.png f=32
+  loc Ty2 697 PKP addr=97 DCC uid=Ty2 697 PKP_49249 image=http://STATION/app/assets/lok/ty2.png f=29
+  loc UP 844 addr=28 MFX uid=UP 844_16412 image=http://STATION/app/assets/lok/UP%20844.png f=32
+  loc V 160 029 addr=29 MM2 uid=V 160 029_29 image=http://STATION/app/assets/lok/DB%20BR%20218%20151-9.png f=5
+  loc V 200 150 addr=21 MM2 uid=V 200 150_21 image=http://STATION/app/assets/lok/DB%20V%20200%20150.png f=5
+  loc V 30.0 MHI 2020 addr=23 MFX uid=V 30.0 MHI 2020_16407 image=http://STATION/app/assets/lok/DB%20V%20300%20001%20MHI.png f=32
+  loc V 320 001 WIEBE addr=24 MFX uid=V 320 001 WIEBE_16408 image=http://STATION/app/assets/lok/HFW%20Lok%207.png f=32
+  loc V 60 706 addr=60 MM2 uid=V 60 706_60 image=http://STATION/app/assets/lok/DB%20V%2060%20107.png f=5
+  loc WGmh 824#DB addr=37 MFX uid=WGmh 824#DB_16421 image=http://STATION/app/assets/lok/DB%20WGmh%20824%20DB.png f=32
+  loc WÜRTT.K addr=41 MFX uid=WÜRTT.K_16425 image=http://STATION/app/assets/lok/KWStE%20K%201802.png f=32
+-- log
+  Starting Central Station database sync...
+  Station type detection result: CS3
+  Imported layout Startpackung
+  Adding Switch 2
+  Adding Switch 1
+  Adding Signal 4
+  Adding Switch 3
+  Adding Signal 6
+  Imported layout Main
+  Imported layout Something
+  Adding Switch 9
+  Adding Switch 11
+  Imported layout Main Layout
+  Adding Signal 23
+  Adding Switch 25 DCC
+  Adding Switch 80
+  Adding Switch 25
+  Adding Switch 2047 DCC
+  Adding Signal 89
+  Adding Switch 10
+  Adding Switch 12
+  Adding Switch 1000 DCC
+  Adding Switch 8
+  Adding Switch 14
+  Adding Switch 2048 DCC
+  Adding Switch 13
+  Adding Switch 24
+  Adding Switch 83
+  Adding Switch 1 DCC
+  Added route sk reset
+  Added route si r
+  Added route si r udk
+  Added route si r indk
+  Added route si r dvaerg
+  Added route si g dvaerg
+  Added route 04-23<
+  Added route 04-24<
+  Added route 04-30<
+  Added route 04-31<
+  Added route 21-01<
+  Added route 21-02<
+  Added route 03-23<
+  Added route 03-24<
+  Added route 03-30<
+  Added route 03-31<
+  Added route 22-01<
+  Added route 22-02<
+  Added route 02-21>
+  Added route 02-22>
+  Added route 02-23>
+  Added route 02-24>
+  Added route 23-03>
+  Added route 23-04>
+  Added route 23-01>
+  Added route 01-21>
+  Added route 01-22>
+  Added route 01-23>
+  Added route 01-24>
+  Added route 24-03>
+  Added route 24-04>
+  Added route 24-4-21<
+  Added route 01a-05>
+  Added route 05-01a>
+  Added route 06-01>
+  Added route 06-02>
+  Added route 2223p<
+  Added route 03-32>
+  Added route 0203p>
+  Added route 32-04<
+  Added route 02-32>
+  Added route 32-31<
+  Added route 02-04>
+  Added route 31-21>
+  Added route 31-22>
+  Added route 31-23>
+  Added route 31-24>
+  Added route 01-32>
+  Added route 31-32>
+  Added route xTEE
+  Added MFX locomotive 02 0314-1 DDR with address 39 (0x4027) from Central Station
+  Added MFX locomotive 06 001 DRG with address 43 (0x402b) from Central Station
+  Added MFX locomotive 065 001-0 DB with address 11 (0x400b) from Central Station
+  Added MM2 locomotive 1047 005-2 with address 16 (0x10) from Central Station
+  Added MFX locomotive 1116 228railjet with address 29 (0x401d) from Central Station
+  Added MFX locomotive 118 028-0 DB with address 7 (0x4007) from Central Station
+  Added MFX locomotive 140 024-1 DB AG with address 10 (0x400a) from Central Station
+  Added MFX locomotive 141-R 1244 SNCF with address 91 (0x405b) from Central Station
+  Added MFX locomotive 218 497-6 DB AG with address 32 (0x4020) from Central Station
+  Added MFX locomotive 220 023-6 DB with address 8 (0x4008) from Central Station
+  Added MFX locomotive 241-A-65 SNCF with address 20 (0x4014) from Central Station
+  Added DCC locomotive 26199 SNCF with address 126 (0xc07e) from Central Station
+  Added MFX locomotive 3E/1-045 with address 61 (0x403d) from Central Station
+  Added MFX locomotive 460 067-2 SBB with address 78 (0x404e) from Central Station
+  Added MFX locomotive 498 104 ZSR with address 31 (0x401f) from Central Station
+  Added MFX locomotive 648 113-2 Lokal with address 49 (0x4031) from Central Station
+  Added MFX locomotive 75 407 DB with address 27 (0x401b) from Central Station
+  Added MFX locomotive 86 234 DB with address 53 (0x4035) from Central Station
+  Added MM2 locomotive ALCO UP with address 60 (0x3c) from Central Station
+  Added MFX locomotive BDymf 457 DB with address 25 (0x4019) from Central Station
+  Added MFX locomotive BR 03 1022 with address 21 (0x4015) from Central Station
+  Added MFX locomotive BR 05 003 with address 40 (0x4028) from Central Station
+  Added MM2 locomotive BR 10 001 with address 10 (0xa) from Central Station
+  Added MM2 locomotive BR 103 137-6 with address 3 (0x3) from Central Station
+  Added MM2 locomotive BR 143 606-2 with address 43 (0x2b) from Central Station
+  Added MM2 locomotive BR 152 002-2 with address 52 (0x34) from Central Station
+  Added MM2 locomotive BR 182 005-9 with address 17 (0x11) from Central Station
+  Added MFX locomotive BR 23 001 with address 42 (0x402a) from Central Station
+  Added MFX locomotive BR 232 241-0 with address 5 (0x4005) from Central Station
+  Added MM2 locomotive BR 42 9000 with address 42 (0x2a) from Central Station
+  Added MM2 locomotive BR 610 with address 63 (0x3f) from Central Station
+  Added MM2 locomotive BR 628 2 with address 28 (0x1c) from Central Station
+  Added MFX locomotive BR 85 003 DB with address 88 (0x4058) from Central Station
+  Added MM2 locomotive BR 86 123 fx with address 53 (0x35) from Central Station
+  Added MFX locomotive BR 89 7339 II with address 56 (0x4038) from Central Station
+  Added MFX locomotive BR101 with address 34 (0x4022) from Central Station
+  Added MFX locomotive BR120 with address 72 (0x4048) from Central Station
+  Added MFX locomotive BR232-275 with address 30 (0x401e) from Central Station
+  Added MFX locomotive Big Boy 4019 UP with address 26 (0x401a) from Central Station
+  Added MFX locomotive Challenger 3969 with address 17 (0x4011) from Central Station
+  Added DCC locomotive DCC Lok 112 with address 112 (0xc070) from Central Station
+  Added MFX locomotive DSB MY 1106 with address 86 (0x4056) from Central Station
+  Added MFX locomotive DSB MY 1126 ATCS with address 98 (0x4062) from Central Station
+  Added MFX locomotive EA 3005 DSB with address 62 (0x403e) from Central Station
+  Added MFX locomotive EB 3203 DSB with address 22 (0x4016) from Central Station
+  Added MFX locomotive EB 3240 DSB with address 84 (0x4054) from Central Station
+  Added MFX locomotive EN57-1000 with address 66 (0x4042) from Central Station
+  Added MFX locomotive EN57-1022 with address 18 (0x4012) from Central Station
+  Added MFX locomotive EN57-1079 with address 70 (0x4046) from Central Station
+  Added MFX locomotive EN57-925 with address 46 (0x402e) from Central Station
+  Added MFX locomotive EN57-947 with address 92 (0x405c) from Central Station
+  Added MFX locomotive EP08-006 with address 95 (0x405f) from Central Station
+  Added DCC locomotive EP08-009 with address 109 (0xc06d) from Central Station
+  Added MFX locomotive EP08-013 with address 68 (0x4044) from Central Station
+  Added MFX locomotive ER 2035 DSB with address 97 (0x4061) from Central Station
+  Added Multi-Unit locomotive ES44 x2 with address 3 (0x2c03) from Central Station
+  Added MFX locomotive ES44AC 4848 KCS with address 65 (0x4041) from Central Station
+  Added MFX locomotive ES44AC 7495 UP with address 57 (0x4039) from Central Station
+  Added MFX locomotive ES44AC 7912 UP with address 64 (0x4040) from Central Station
+  Added MFX locomotive ET21-157 with address 45 (0x402d) from Central Station
+  Added MFX locomotive ET21-375 with address 74 (0x404a) from Central Station
+  Added MFX locomotive ET21-442 with address 33 (0x4021) from Central Station
+  Added MFX locomotive ET22-243 with address 55 (0x4037) from Central Station
+  Added MFX locomotive ET22-273 with address 51 (0x4033) from Central Station
+  Added MFX locomotive ET22-678 with address 48 (0x4030) from Central Station
+  Added DCC locomotive ET22-951 with address 22 (0xc016) from Central Station
+  Added MFX locomotive ET41-149 with address 60 (0x403c) from Central Station
+  Added MFX locomotive ET41-166 with address 76 (0x404c) from Central Station
+  Added MFX locomotive EU07-076 with address 93 (0x405d) from Central Station
+  Added MFX locomotive EU07-123 with address 58 (0x403a) from Central Station
+  Added MFX locomotive EU07-205 with address 75 (0x404b) from Central Station
+  Added MFX locomotive EU07-314 with address 47 (0x402f) from Central Station
+  Added MFX locomotive EU07-336 with address 50 (0x4032) from Central Station
+  Added MFX locomotive EU44-003 with address 71 (0x4047) from Central Station
+  Added DCC locomotive EU46-520 with address 47 (0xc02f) from Central Station
+  Added DCC locomotive EU46-523 with address 152 (0xc098) from Central Station
+  Added MFX locomotive Flying Scotsman with address 59 (0x403b) from Central Station
+  Added MM2 locomotive GLASKASTEN with address 36 (0x24) from Central Station
+  Added MFX locomotive GT 2X4/4 with address 13 (0x400d) from Central Station
+  Added MM2 locomotive ICE 3 406 with address 1 (0x1) from Central Station
+  Added DCC locomotive ICE TD DSB with address 60 (0xc03c) from Central Station
+  Added MFX locomotive ICE4 9010 DB AG with address 9 (0x4009) from Central Station
+  Added MFX locomotive Litra E 991 DSB with address 19 (0x4013) from Central Station
+  Added MFX locomotive ME 1529 DSB with address 14 (0x400e) from Central Station
+  Added MFX locomotive MF 5028 DSB with address 96 (0x4060) from Central Station
+  Added Multi-Unit locomotive MF+ER with address 4 (0x2c04) from Central Station
+  Added MM2 locomotive MIKADO UP with address 40 (0x28) from Central Station
+  Added MFX locomotive ML 4000 with address 73 (0x4049) from Central Station
+  Added DCC locomotive MQ DSB with address 65 (0xc041) from Central Station
+  Added MFX locomotive MY 1135 DSB with address 12 (0x400c) from Central Station
+  Added MFX locomotive MY 1147 DSB with address 54 (0x4036) from Central Station
+  Added MFX locomotive MY 1150 DSB with address 94 (0x405e) from Central Station
+  Added DCC locomotive MY Gul DSB with address 108 (0xc06c) from Central Station
+  Added MM2 locomotive MY Nohab-GM with address 8 (0x8) from Central Station
+  Added MFX locomotive MZ 1425 DSB with address 81 (0x4051) from Central Station
+  Added MFX locomotive Mx M9 Skagen with address 82 (0x4052) from Central Station
+  Added MM2 locomotive OBB 2016 with address 26 (0x1a) from Central Station
+  Added DCC locomotive PKP OkO1 with address 78 (0xc04e) from Central Station
+  Added MFX locomotive Pm2 PKP with address 79 (0x404f) from Central Station
+  Added MFX locomotive Re 620 054-7 SBB with address 38 (0x4026) from Central Station
+  Added MFX locomotive Re4/4II 11229SBB with address 35 (0x4023) from Central Station
+  Added MFX locomotive S 2/6 Pfalz with address 83 (0x4053) from Central Station
+  Added DCC locomotive S 2-6 3201 with address 26 (0xc01a) from Central Station
+  Added MFX locomotive S 3/6 3629 with address 16 (0x4010) from Central Station
+  Added MM2 locomotive S. 122 with address 22 (0x16) from Central Station
+  Added MM2 locomotive SBB RE 4_4 II with address 76 (0x4c) from Central Station
+  Added Multi-Unit locomotive SBB420  Red/Cargo with address 2 (0x2c02) from Central Station
+  Added MFX locomotive SBB460 Milleu d with address 6 (0x4006) from Central Station
+  Added MFX locomotive SBBC 421 378-1 with address 36 (0x4024) from Central Station
+  Added MFX locomotive SM31-012 with address 90 (0x405a) from Central Station
+  Added MFX locomotive SM31-108 with address 87 (0x4057) from Central Station
+  Added MFX locomotive SM31-118 with address 77 (0x404d) from Central Station
+  Added DCC locomotive SM42-926 with address 4 (0xc004) from Central Station
+  Added MFX locomotive SP45-090 with address 52 (0x4034) from Central Station
+  Added MFX locomotive SP45-155 with address 67 (0x4043) from Central Station
+  Added MFX locomotive SP45-204 with address 63 (0x403f) from Central Station
+  Added DCC locomotive ST44-613 with address 44 (0xc02c) from Central Station
+  Added MFX locomotive SU45-070 with address 80 (0x4050) from Central Station
+  Added MFX locomotive SU45-098 with address 85 (0x4055) from Central Station
+  Added DCC locomotive SU45-118 with address 138 (0xc08a) from Central Station
+  Added DCC locomotive SU46-012 with address 120 (0xc078) from Central Station
+  Added MFX locomotive SU46-035 with address 89 (0x4059) from Central Station
+  Added MFX locomotive SU46-039 with address 69 (0x4045) from Central Station
+  Added DCC locomotive SU46-043 with address 46 (0xc02e) from Central Station
+  Added MFX locomotive Simplon-Orient with address 15 (0x400f) from Central Station
+  Added MFX locomotive TKt 63 PKP with address 44 (0x402c) from Central Station
+  Added Multi-Unit locomotive Test TC with address 1 (0x2c01) from Central Station
+  Added DCC locomotive Ty2 697 PKP with address 97 (0xc061) from Central Station
+  Added MFX locomotive UP 844 with address 28 (0x401c) from Central Station
+  Added MM2 locomotive V 160 029 with address 29 (0x1d) from Central Station
+  Added MM2 locomotive V 200 150 with address 21 (0x15) from Central Station
+  Added MFX locomotive V 30.0 MHI 2020 with address 23 (0x4017) from Central Station
+  Added MFX locomotive V 320 001 WIEBE with address 24 (0x4018) from Central Station
+  Added MM2 locomotive V 60 706 with address 60 (0x3c) from Central Station
+  Added MFX locomotive WÜRTT.K with address 41 (0x4029) from Central Station
+  Added MFX locomotive WGmh 824#DB with address 37 (0x4025) from Central Station
+  Sync complete.
+  Starting Central Station database sync...
+  Station type detection result: CS3
+  Sync complete.
+  Not suggesting a rename to "ALCO UP": the Central Station has 2 locomotives at that address, so it is unclear which name is meant.  Remove the duplicates there first.
+  Not suggesting a rename to "V 60 706": the Central Station has 2 locomotives at that address, so it is unclear which name is meant.  Remove the duplicates there first.
+  No routes were downloaded from the Central Station.
+  Starting Central Station database sync...
+  Station type detection result: CS3
+  Imported layout Startpackung
+  Imported layout Main
+  Imported layout Something
+  Imported layout Main Layout
+  Sync complete.
+  Starting Central Station database sync...
+  Station type detection result: CS3
+  Loading static layout files from: ROOT\250\local
+  Layout: W 11 DCC, W 1R MM2 share address 1.  This local copy is not checked against the Central Station, so the squares at 10,4 on page Startpackung use DCC unless their protocol is set in the editor.
+  Layout: W 11 DCC, W 1R MM2 share address 1.  This local copy is not checked against the Central Station, so the squares at 16,6 17,6 on page Main Layout use DCC unless their protocol is set in the editor.
+  Layout: W 14 DCC, W 15 MM2 share address 25.  This local copy is not checked against the Central Station, so the squares at 4,7 5,9 on page Main Layout use DCC unless their protocol is set in the editor.
+  Imported layout Startpackung
+  Imported layout Main
+  Imported layout Something
+  Imported layout Main Layout
+  Sync complete.
+  Not suggesting a rename to "ALCO UP": the Central Station has 2 locomotives at that address, so it is unclear which name is meant.  Remove the duplicates there first.
+  Not suggesting a rename to "V 60 706": the Central Station has 2 locomotives at that address, so it is unclear which name is meant.  Remove the duplicates there first.
+  No routes were downloaded from the Central Station.

@@ -1,0 +1,39 @@
+## sync -> 189
+  /config/geraet.vrs
+  /config/magnetartikel.cs2
+  /config/gleisbild.cs2
+  /config/gleisbilder/test.cs2
+  /config/fahrstrassen.cs2
+  /config/magnetartikel.cs2
+  /config/lokomotive.cs2
+## resync -> 0
+  /config/geraet.vrs
+  /config/fahrstrassen.cs2
+  /config/magnetartikel.cs2
+  /config/lokomotive.cs2
+## rename proposals -> 0
+  /config/lokomotive.cs2
+## download -> [fahrstrassen.cs2, gleisbild.cs2, gleisbilder, magnetartikel.cs2]
+  /config/gleisbild.cs2
+  /config/gleisbild.cs2
+  /config/gleisbilder/test.cs2
+  /config/magnetartikel.cs2
+  /config/fahrstrassen.cs2
+## sync from an emptied railway -> 0
+  /config/geraet.vrs
+  /config/magnetartikel.cs2
+  /config/gleisbild.cs2
+  /config/gleisbilder/test.cs2
+  /config/fahrstrassen.cs2
+  /config/magnetartikel.cs2
+  /config/lokomotive.cs2
+## sync with a local folder -> 0
+  /config/geraet.vrs
+  /config/fahrstrassen.cs2
+  /config/magnetartikel.cs2
+  /config/lokomotive.cs2
+## rename proposals with a local folder -> 0
+  /config/lokomotive.cs2
+## download with a local folder -> [fahrstrassen.cs2, gleisbild.cs2, gleisbilder, magnetartikel.cs2]
+  /config/magnetartikel.cs2
+  /config/fahrstrassen.cs2
