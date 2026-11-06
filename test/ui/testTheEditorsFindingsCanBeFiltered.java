@@ -30,7 +30,7 @@ import org.traincontrol.util.I18n;
  */
 public class testTheEditorsFindingsCanBeFiltered
 {
-    private static support.LayoutSandbox sandbox;
+    private static final support.SandboxedWindow held = new support.SandboxedWindow();
     private static MarklinControlStation model;
     private static TrainControlUI ui;
     private static AutonomySession session;
@@ -44,20 +44,17 @@ public class testTheEditorsFindingsCanBeFiltered
     {
         if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the autonomy editor needs a display");
 
-        sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+        held.hold(support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot")));
 
         model = support.TestStation.simulatedInDebug();
 
-        SwingUtilities.invokeAndWait(() -> ui = new TrainControlUI());
-
+        ui = held.hold(support.Components.onTheEventThread(TrainControlUI::new));
         ui.setViewListener(model, new java.util.concurrent.CountDownLatch(1));
 
         session = ui.getAutonomySession();
 
-        if (session == null || session.getStore().getActiveConfiguration() == null)
-        {
-            throw new AssertionError("no autonomy configuration, so there is no editor to open");
-        }
+        assertNotNull(session, "no setup, so there is no editor to open");
+        assertNotNull(session.getStore().getActiveConfiguration(), "no configuration, so there is no editor to open");
 
         page = model.getLayout(PAGE);
     }
@@ -67,18 +64,11 @@ public class testTheEditorsFindingsCanBeFiltered
     {
         try
         {
-            if (ui != null)
-            {
-                final TrainControlUI closing = ui;
-
-                SwingUtilities.invokeAndWait(() -> closing.dispose());
-            }
-
             if (model != null) model.stop();
         }
         finally
         {
-            if (sandbox != null) sandbox.close();
+            held.close();
         }
     }
 
@@ -408,24 +398,11 @@ public class testTheEditorsFindingsCanBeFiltered
             type(editor, word);
 
             // IN PLACE
-            java.lang.reflect.Method leave =
+            final java.lang.reflect.Method leave =
                 LayoutEditor.class.getDeclaredMethod("leaveFor", String.class, boolean.class);
 
             leave.setAccessible(true);
-
-            final LayoutEditor switching = editor;
-
-            SwingUtilities.invokeAndWait(() ->
-            {
-                try
-                {
-                    leave.invoke(switching, OTHER_PAGE, true);
-                }
-                catch (ReflectiveOperationException e)
-                {
-                    throw new IllegalStateException(e);
-                }
-            });
+            support.Components.onTheEventThread(() -> leave.invoke(editor, OTHER_PAGE, true));
 
             settle();
 
@@ -554,18 +531,19 @@ public class testTheEditorsFindingsCanBeFiltered
 
     private static LayoutEditor anEditor() throws Exception
     {
-        final LayoutEditor[] built = new LayoutEditor[1];
-
-        SwingUtilities.invokeAndWait(() ->
+        LayoutEditor made = support.Components.onTheEventThread(() ->
         {
-            built[0] = new LayoutEditor(page, 30, ui, 0);
-            built[0].render();
-            built[0].setAutonomyMode(session);
+            LayoutEditor fresh = new LayoutEditor(page, 30, ui, 0);
+
+            fresh.render();
+            fresh.setAutonomyMode(session);
+
+            return fresh;
         });
 
         settle();
 
-        return built[0];
+        return made;
     }
 
     private static void close(LayoutEditor on) throws Exception
@@ -578,38 +556,25 @@ public class testTheEditorsFindingsCanBeFiltered
     {
         if (on == null || !on.isDisplayable()) return;
 
-        if (asTheUserDoes)
+        support.Components.onTheEventThread(() ->
         {
-            SwingUtilities.invokeAndWait(() -> on.dispatchEvent(
-                new java.awt.event.WindowEvent(on, java.awt.event.WindowEvent.WINDOW_CLOSING)));
-        }
-        else
-        {
-            SwingUtilities.invokeAndWait(() -> on.dispose());
-        }
+            if (asTheUserDoes) on.dispatchEvent(new java.awt.event.WindowEvent(on, java.awt.event.WindowEvent.WINDOW_CLOSING));
+            else on.dispose();
+
+            return null;
+        });
 
         settle();
     }
 
+    /** What a window posts while it opens or closes, then a moment for the build it queues. */
     private static void settle() throws Exception
     {
-        for (int i = 0; i < 10; i++) SwingUtilities.invokeAndWait(() -> { });
-
-        // Off the screen, so no real pointer reaches the window
-        SwingUtilities.invokeAndWait(() ->
-        {
-            for (java.awt.Window window : java.awt.Window.getWindows())
-            {
-                if (window instanceof LayoutEditor && window.isShowing() && window.getX() > -5000)
-                {
-                    window.setLocation(-8000, -8000);
-                }
-            }
-        });
+        support.Components.settle();
 
         Thread.sleep(500);
 
-        for (int i = 0; i < 10; i++) SwingUtilities.invokeAndWait(() -> { });
+        support.Components.settle();
     }
 
     private static javax.swing.JList<?> list(LayoutEditor editor)
@@ -724,29 +689,12 @@ public class testTheEditorsFindingsCanBeFiltered
 
     private static javax.swing.JTextField box(LayoutEditor editor)
     {
-        return (javax.swing.JTextField) find(editor.getAutonomyPanel().getFindingsBox(), javax.swing.JTextField.class);
+        return support.Components.inside(editor.getAutonomyPanel().getFindingsBox(), javax.swing.JTextField.class);
     }
 
     private static javax.swing.JButton theCross(LayoutEditor editor)
     {
-        return (javax.swing.JButton) find(editor.getAutonomyPanel().getFindingsBox(), javax.swing.JButton.class);
-    }
-
-    private static java.awt.Component find(java.awt.Container in, Class<?> type)
-    {
-        for (java.awt.Component child : in.getComponents())
-        {
-            if (type.isInstance(child)) return child;
-
-            if (child instanceof java.awt.Container)
-            {
-                java.awt.Component deeper = find((java.awt.Container) child, type);
-
-                if (deeper != null) return deeper;
-            }
-        }
-
-        return null;
+        return support.Components.inside(editor.getAutonomyPanel().getFindingsBox(), javax.swing.JButton.class);
     }
 
     /** Typing: the text set in the box, as the document sees it. */
@@ -800,33 +748,29 @@ public class testTheEditorsFindingsCanBeFiltered
         return false;
     }
 
+    /** The listener a panel holds for one of the editor's own reopenings, by its field's name. */
+    private static Object doorOf(LayoutEditor from, String field) throws Exception
+    {
+        java.lang.reflect.Field held = AutonomyEditorPanel.class.getDeclaredField(field);
+
+        held.setAccessible(true);
+
+        return held.get(from.getAutonomyPanel());
+    }
+
+    @SuppressWarnings("unchecked")
     private static LayoutEditor throughDoor(LayoutEditor from, String door, TileKey tile) throws Exception
     {
         Runnable opening;
 
         if ("finding".equals(door))
         {
-            java.lang.reflect.Field field = AutonomyEditorPanel.class.getDeclaredField("onJumpToPage");
-
-            field.setAccessible(true);
-
-            @SuppressWarnings("unchecked")
-            final java.util.function.Consumer<TileKey> toPage =
-                (java.util.function.Consumer<TileKey>) field.get(from.getAutonomyPanel());
-
-            opening = () -> toPage.accept(tile);
+            opening = () -> ((java.util.function.Consumer<TileKey>) doorUnchecked(from, "onJumpToPage")).accept(tile);
         }
         else if ("notice".equals(door))
         {
-            java.lang.reflect.Field field = AutonomyEditorPanel.class.getDeclaredField("onJumpToNotice");
-
-            field.setAccessible(true);
-
-            @SuppressWarnings("unchecked")
-            final java.util.function.BiConsumer<TileKey, List<TileKey>> toNotice =
-                (java.util.function.BiConsumer<TileKey, List<TileKey>>) field.get(from.getAutonomyPanel());
-
-            opening = () -> toNotice.accept(tile, new ArrayList<TileKey>());
+            opening = () -> ((java.util.function.BiConsumer<TileKey, List<TileKey>>) doorUnchecked(from, "onJumpToNotice"))
+                .accept(tile, new ArrayList<TileKey>());
         }
         else
         {
@@ -840,31 +784,55 @@ public class testTheEditorsFindingsCanBeFiltered
         return opened;
     }
 
+    private static Object doorUnchecked(LayoutEditor from, String field)
+    {
+        try
+        {
+            return doorOf(from, field);
+        }
+        catch (Exception e)
+        {
+            throw new IllegalStateException(e);
+        }
+    }
+
+    /** The editor the main window shows once {@code opening} has run, a different window from {@code not}. */
     private static LayoutEditor openedBy(Runnable opening, LayoutEditor not) throws Exception
     {
-        SwingUtilities.invokeAndWait(() -> ui.setEditLayoutEnabled(true));
+        support.Components.onTheEventThread(() ->
+        {
+            ui.setEditLayoutEnabled(true);
+            opening.run();
 
-        SwingUtilities.invokeAndWait(opening);
+            return null;
+        });
 
-        java.lang.reflect.Field shown = TrainControlUI.class.getDeclaredField("openEditor");
+        final java.lang.reflect.Field shown = TrainControlUI.class.getDeclaredField("openEditor");
 
         shown.setAccessible(true);
 
-        long until = System.currentTimeMillis() + 20000;
+        final LayoutEditor[] now = new LayoutEditor[1];
 
-        while (System.currentTimeMillis() < until)
+        boolean came = support.Components.waitFor(() ->
         {
-            settle();
-
-            Object open = shown.get(ui);
-
-            if (open instanceof LayoutEditor && open != not && ((LayoutEditor) open).isDisplayable()
-                && ((LayoutEditor) open).isAutonomyMode() && ((LayoutEditor) open).getAutonomyPanel() != null)
+            try
             {
-                return (LayoutEditor) open;
-            }
-        }
+                Object open = shown.get(ui);
 
-        throw new AssertionError("precondition: no autonomy editor was opened");
+                now[0] = open instanceof LayoutEditor && open != not ? (LayoutEditor) open : null;
+            }
+            catch (IllegalAccessException e)
+            {
+                throw new IllegalStateException(e);
+            }
+
+            return now[0] != null && now[0].isDisplayable() && now[0].isAutonomyMode() && now[0].getAutonomyPanel() != null;
+        }, 20000);
+
+        assertTrue(came, "precondition: no autonomy editor was opened");
+
+        settle();
+
+        return now[0];
     }
 }

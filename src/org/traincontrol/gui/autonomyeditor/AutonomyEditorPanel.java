@@ -1083,26 +1083,7 @@ public class AutonomyEditorPanel extends JPanel
         findingFilter.setToolTipText(wrapped(I18n.t("autosetup.ui.tooltipFilterFindings")));
 
         // Reshaped from the last check's rows, so typing costs no new check and leaves the banner alone.
-        findingFilter.getDocument().addDocumentListener(new javax.swing.event.DocumentListener()
-        {
-            @Override
-            public void insertUpdate(javax.swing.event.DocumentEvent e)
-            {
-                showFindings();
-            }
-
-            @Override
-            public void removeUpdate(javax.swing.event.DocumentEvent e)
-            {
-                showFindings();
-            }
-
-            @Override
-            public void changedUpdate(javax.swing.event.DocumentEvent e)
-            {
-                showFindings();
-            }
-        });
+        ((FilterField) findingFilter).onChange = this::showFindings;
 
         JButton clear = new JButton("×");
 
@@ -1144,6 +1125,30 @@ public class AutonomyEditorPanel extends JPanel
                 letGo();
             }
         };
+
+        /** Run after the text changes. */
+        Runnable onChange;
+
+        @Override
+        protected javax.swing.text.Document createDefaultModel()
+        {
+            return new javax.swing.text.PlainDocument()
+            {
+                @Override
+                protected void fireInsertUpdate(javax.swing.event.DocumentEvent e)
+                {
+                    super.fireInsertUpdate(e);
+                    if (onChange != null) onChange.run();
+                }
+
+                @Override
+                protected void fireRemoveUpdate(javax.swing.event.DocumentEvent e)
+                {
+                    super.fireRemoveUpdate(e);
+                    if (onChange != null) onChange.run();
+                }
+            };
+        }
 
         FilterField()
         {
