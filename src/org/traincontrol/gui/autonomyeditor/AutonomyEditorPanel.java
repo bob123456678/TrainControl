@@ -3465,7 +3465,7 @@ public class AutonomyEditorPanel extends JPanel
         setupChanged();
     }
 
-    String locomotiveAt(TileKey tile)
+    public String locomotiveAt(TileKey tile)
     {
         return session == null ? null : session.getLocomotiveNameAt(tile);
     }
@@ -3510,6 +3510,15 @@ public class AutonomyEditorPanel extends JPanel
 
         if (name == null) return;
 
+        putLocomotiveOn(tile, name);
+    }
+
+    /**
+     * The door every placement in this editor goes through: the picker above and a train dragged from station to
+     * station (FR-160).
+     */
+    private void putLocomotiveOn(TileKey tile, String name)
+    {
         // The session lifts it off everywhere, excluded pages too.  Its heading is read first: the facing would
         // otherwise be the previous occupant's.
         org.traincontrol.automationui.TilePorts.Side heading = session.facingOf(name);
@@ -3522,6 +3531,48 @@ public class AutonomyEditorPanel extends JPanel
 
         // Named (MT-337): only the rebuild puts the train on the railway.
         placementChanged(java.util.Collections.singletonList(name));
+    }
+
+    /**
+     * Whether a train may be dragged from one square to another (FR-160): the questions the menu's Add to autonomy
+     * asks (a station, and nothing running), so the mark drawn while dragging and the drop cannot disagree.
+     * @param from the square the train stands on
+     * @param to the square under the pointer
+     * @return true when letting go there would move the train
+     */
+    public boolean canDropTrain(TileKey from, TileKey to)
+    {
+        if (session == null || from == null || to == null || to.equals(from)) return false;
+
+        if (from.getPage() == null || !from.getPage().equals(to.getPage())) return false;
+
+        if (locomotiveAt(from) == null || !session.getStore().isStation(to)) return false;
+
+        return !setupIsHeldByARun();
+    }
+
+    /** Whether a run holds the setup, asked without saying anything: a drag is simply not offered then (FR-160). */
+    public boolean setupIsHeldByARun()
+    {
+        TrainControlUI window = parentWindow();
+
+        return window != null && window.aRunHoldsTheSetup();
+    }
+
+    /**
+     * Moves the train standing on a square to another station by the placement door (FR-160); nothing happens, and
+     * nothing is said, where `canDropTrain` says no.
+     * @param from the square the train stands on
+     * @param to the square it was let go on
+     * @return whether it moved
+     */
+    public boolean dropTrain(TileKey from, TileKey to)
+    {
+        if (!canDropTrain(from, to)) return false;
+
+        putLocomotiveOn(to, locomotiveAt(from));
+
+        return true;
     }
 
     /**

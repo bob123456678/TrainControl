@@ -941,6 +941,36 @@ public class LayoutEditor extends PositionAwareJFrame
      */
     private LayoutLabel clickToIgnore = null;
 
+    /** The train being dragged from station to station in the autonomy editor (FR-160). */
+    private final LayoutEditorTrainDrag trainDrag = new LayoutEditorTrainDrag(this);
+
+    /**
+     * A press that may begin dragging the train drawn under it (FR-160), for a station's caption sitting over it.
+     * @return whether the press landed on a train that can be dragged
+     */
+    public boolean pressTrain(MouseEvent e)
+    {
+        return isAutonomyMode() && this.trainDrag.press(e);
+    }
+
+    /** The pointer moved with the button down after `pressTrain` said yes (FR-160). */
+    public void dragTrain(MouseEvent e)
+    {
+        this.trainDrag.move(e);
+    }
+
+    /** The button went up after `pressTrain` said yes (FR-160). */
+    public void releaseTrain(MouseEvent e)
+    {
+        this.trainDrag.release(e);
+    }
+
+    /** Ignores the click that ends the current press, once, as for a box Escape dropped. */
+    void ignoreTheClickOf(LayoutLabel label)
+    {
+        this.clickToIgnore = label;
+    }
+
     /** Whether the pointer moved with the button down since the last left press; AWT then makes no click. */
     private boolean pressMoved = false;
 
@@ -975,8 +1005,14 @@ public class LayoutEditor extends PositionAwareJFrame
 
         this.pressMoved = false;
 
-        // Dragging moves track; in autonomy mode that would be a silent accident.
-        if (isAutonomyMode()) return;
+        // Dragging moves track; in autonomy mode that would be a silent accident.  A train is the one thing it drags
+        // there (FR-160).
+        if (isAutonomyMode())
+        {
+            this.trainDrag.press(e);
+
+            return;
+        }
 
         // The grip first, or picking mode would swallow it.
         if (label != null && isSelectionHandle(label))
@@ -1143,7 +1179,12 @@ public class LayoutEditor extends PositionAwareJFrame
         // A move with the button down: the release makes no click
         this.pressMoved = true;
 
-        if (isAutonomyMode()) return;
+        if (isAutonomyMode())
+        {
+            this.trainDrag.move(e);
+
+            return;
+        }
 
         if (this.groupDragging && this.dragSource != null)
         {
@@ -1190,7 +1231,12 @@ public class LayoutEditor extends PositionAwareJFrame
 
     public void endDrag(MouseEvent e, LayoutLabel label)
     {
-        if (isAutonomyMode()) return;
+        if (isAutonomyMode())
+        {
+            this.trainDrag.release(e);
+
+            return;
+        }
 
         // The click to ignore goes if this release makes none, or the square's next click would be swallowed.
         if (this.clickToIgnore != null && (this.pressMoved || this.getLastHoveredLabel() != this.clickToIgnore))
@@ -1815,11 +1861,19 @@ public class LayoutEditor extends PositionAwareJFrame
      */
     public LayoutLabel trainClicked(MouseEvent e)
     {
-        if (e == null || e.getComponent() == null || grid == null || autonomyPanel == null
-            || !autonomyPanel.takesATrainForItsStation())
-        {
-            return null;
-        }
+        if (autonomyPanel == null || !autonomyPanel.takesATrainForItsStation()) return null;
+
+        return trainDrawnUnder(e);
+    }
+
+    /**
+     * The square whose drawn train covers a mouse event's point, whatever tool is armed.
+     * @param e the event, in its own component's coordinates
+     * @return the square, or null where no train is drawn
+     */
+    LayoutLabel trainDrawnUnder(MouseEvent e)
+    {
+        if (e == null || e.getComponent() == null || grid == null) return null;
 
         if (e.getComponent() instanceof LayoutLabel && ((LayoutLabel) e.getComponent()).trainDrawnAt(e.getPoint()))
         {
@@ -4191,7 +4245,7 @@ public class LayoutEditor extends PositionAwareJFrame
      */
     private boolean letGoOfWhateverIsHeld()
     {
-        if (isAutonomyMode()) return autonomyPanel.putToolsDown();
+        if (isAutonomyMode()) return this.trainDrag.cancel() || autonomyPanel.putToolsDown();
 
         // A box being drawn is held too, or Escape would close the editor with the button down.
         boolean boxOpen = this.boxAnchorX >= 0 && this.boxAnchorY >= 0;
