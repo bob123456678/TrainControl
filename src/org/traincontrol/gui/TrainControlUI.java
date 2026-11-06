@@ -4869,7 +4869,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     {
         javax.swing.SwingUtilities.invokeLater(() ->
         {
-            // Bounds: a page remembered from before the keyboard had 16 pages lands on the last one
+            // Bounds: a page past the last tab lands on the last one, and one before the first on the first
             this.keyboardNumber = Math.max(1, Math.min(TrainControlUI.NUM_KEYBOARDS, keyboardNum));
 
             this.keyboardKeys.showPage(this.keyboardNumber);
@@ -15876,6 +15876,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     {
         final int switchId = address;
 
+        // Read now: the worker below may wait on the power, and the radio can be changed meanwhile
+        final Accessory.accessoryDecoderType protocol = getKeyboardProtocol();
+
         // Asked before the key is repainted: a refusal has to leave it as it was (MT-261).
         final KeyboardSwitch allowed = keyboardSwitchAllowed(address, red);
 
@@ -15911,7 +15914,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                     }
                 }
 
-                this.model.setAccessoryState(switchId, getKeyboardProtocol(), red);
+                this.model.setAccessoryState(switchId, protocol, red);
             }).start();
     }
 

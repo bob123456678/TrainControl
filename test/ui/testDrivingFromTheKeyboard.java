@@ -1045,12 +1045,12 @@ public class testDrivingFromTheKeyboard
     }
 
     /**
-     * A page remembered from before the keyboard had 16 tabs (it had up to 32) lands on a tab that exists.
+     * A page number past the last tab (the keyboard once had 32 pages) lands on the last tab.
      *
      * MUTATION: take the `Math.min` out of `switchKeyboard`, and this fails.
      */
     @Test
-    public void testAnOldRememberedPageLandsOnATabThatExists() throws Exception
+    public void testAPagePastTheLastTabLandsOnTheLast() throws Exception
     {
         AccessoryKeyboard keys = keys();
 
@@ -1094,19 +1094,15 @@ public class testDrivingFromTheKeyboard
 
         AccessoryKeyboard keys = keys();
 
-        java.awt.Color lightGray = new java.awt.Color(0xF0, 0xF0, 0xF0);
+        java.awt.Color lightGray = new java.awt.Color(0xF0F0F0);
 
-        java.awt.Color litRed = paintedColor(keys.half(9, true));
-
-        assertTrue(litRed.getRed() > 180 && litRed.getGreen() < 80 && litRed.getBlue() < 80, "the lit red half is not red: " + litRed);
+        assertEquals(paintedColor(keys.half(9, true)), new java.awt.Color(0xFF6666), "the lit red half is not the mockup's red");
         assertEquals(paintedColor(keys.half(9, false)), lightGray, "the half not lit is not very light gray");
 
         support.Mouse.enter(keys.half(9, false));
 
-        java.awt.Color hint = paintedColor(keys.half(9, false));
-
-        assertTrue(hint.getGreen() > hint.getRed() && hint.getGreen() > 200 && !hint.equals(lightGray),
-            "pointing at the gray half shows no pale hint of green: " + hint);
+        assertEquals(paintedColor(keys.half(9, false)), new java.awt.Color(0xC8EFC8),
+            "pointing at the gray half shows no pale hint of green");
 
         support.Mouse.exit(keys.half(9, false));
 
@@ -1115,11 +1111,14 @@ public class testDrivingFromTheKeyboard
         click(9, false);
 
         assertTrue(waitFor(() -> lit(9, false)), "green is not lit");
-
-        java.awt.Color litGreen = paintedColor(keys.half(9, false));
-
-        assertTrue(litGreen.getGreen() > 140 && litGreen.getRed() < 80, "the lit green half is not green: " + litGreen);
+        assertEquals(paintedColor(keys.half(9, false)), new java.awt.Color(0x58C858), "the lit green half is not the mockup's green");
         assertEquals(paintedColor(keys.half(9, true)), lightGray, "the red half stayed lit after green was clicked");
+
+        support.Mouse.enter(keys.half(9, true));
+
+        assertEquals(paintedColor(keys.half(9, true)), new java.awt.Color(0xFBCACA), "pointing at the gray half shows no pale hint of red");
+
+        support.Mouse.exit(keys.half(9, true));
     }
 
     /** The color at the middle of a half as it paints. */

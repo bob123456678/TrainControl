@@ -5,6 +5,7 @@ import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.Graphics;
+import java.awt.Graphics2D;
 import java.awt.GridLayout;
 import java.awt.event.MouseEvent;
 import javax.swing.AbstractButton;
@@ -35,17 +36,22 @@ public class AccessoryKeyboard extends JPanel
     /** The color of a half: clear red or green when lit, very light gray when not, a pale hint of its own color when pointed at. */
     public static Color lookOf(boolean red, boolean lit, boolean hinted)
     {
-        if (lit) return red ? new Color(214, 40, 40) : new Color(40, 167, 69);
+        if (lit) return red ? new Color(0xFF6666) : new Color(0x58C858);
 
-        if (hinted) return red ? new Color(250, 214, 214) : new Color(210, 240, 218);
+        if (hinted) return red ? new Color(0xFBCACA) : new Color(0xC8EFC8);
 
         return new Color(0xF0, 0xF0, 0xF0);
     }
 
     private static final Font NUMBER_FONT = new Font("Segoe UI", Font.BOLD, 12);
-    private static final int KEY_HEIGHT = 44;
+    private static final int KEY_HEIGHT = 43;
+    private static final int NUMBER_HEIGHT = 16;
     private static final int TAB_HEIGHT = 26;
     private static final int GAP = 3;
+    private static final int KEY_GAP = 4;
+    private static final Color OUTLINE = new Color(0xBBBBBB);
+    private static final Color KEY_BACKGROUND = new Color(0xFAFAFA);
+    private static final Color DIVIDER = new Color(0xDDDDDD);
 
     /** What the window does with the keyboard's clicks. */
     public interface Listener
@@ -100,7 +106,7 @@ public class AccessoryKeyboard extends JPanel
         this.tabs[0].setSelected(true);
         tabRows.setPreferredSize(new Dimension(width, 2 * TAB_HEIGHT + GAP));
 
-        JPanel grid = new JPanel(new GridLayout(ROWS, COLUMNS, GAP, GAP));
+        JPanel grid = new JPanel(new GridLayout(ROWS, COLUMNS, KEY_GAP, KEY_GAP));
         grid.setOpaque(false);
         grid.setFocusable(false);
 
@@ -112,7 +118,7 @@ public class AccessoryKeyboard extends JPanel
         this.add(tabRows, BorderLayout.NORTH);
         this.add(grid, BorderLayout.CENTER);
 
-        int height = 2 * TAB_HEIGHT + GAP + 6 + ROWS * KEY_HEIGHT + (ROWS - 1) * GAP;
+        int height = 2 * TAB_HEIGHT + GAP + 6 + ROWS * KEY_HEIGHT + (ROWS - 1) * KEY_GAP;
 
         this.setPreferredSize(new Dimension(width, height));
         this.setMinimumSize(new Dimension(width, height));
@@ -129,9 +135,33 @@ public class AccessoryKeyboard extends JPanel
 
     private JPanel buildKey(int index)
     {
-        JPanel key = new JPanel(new BorderLayout());
+        JPanel key = new JPanel(new BorderLayout())
+        {
+            @Override
+            protected void paintComponent(Graphics g)
+            {
+                g.setColor(KEY_BACKGROUND);
+                g.fillRoundRect(0, 0, this.getWidth() - 1, this.getHeight() - 1, 3, 3);
+            }
+
+            /** The halves are cut to the rounded corners, and the outline goes over them. */
+            @Override
+            protected void paintChildren(Graphics g)
+            {
+                Graphics2D g2 = (Graphics2D) g.create();
+
+                g2.setClip(new java.awt.geom.RoundRectangle2D.Float(0, 0, this.getWidth() - 1, this.getHeight() - 1, 3, 3));
+                super.paintChildren(g2);
+                g2.dispose();
+
+                g.setColor(OUTLINE);
+                g.drawRoundRect(0, 0, this.getWidth() - 1, this.getHeight() - 1, 3, 3);
+            }
+        };
+
         key.setOpaque(false);
         key.setFocusable(false);
+        key.setBorder(BorderFactory.createEmptyBorder(1, 1, 1, 1));
 
         final int at = index;
 
@@ -146,11 +176,11 @@ public class AccessoryKeyboard extends JPanel
 
         number.setFont(NUMBER_FONT);
         number.setForeground(Color.BLACK);
-        number.setPreferredSize(new Dimension(10, KEY_HEIGHT - 26));
+        number.setPreferredSize(new Dimension(10, NUMBER_HEIGHT));
         number.setToolTipText(" ");
         this.numbers[index] = number;
 
-        JPanel halves = new JPanel(new GridLayout(1, 2, 2, 0));
+        JPanel halves = new JPanel(new GridLayout(1, 2, 0, 0));
         halves.setOpaque(false);
         halves.setFocusable(false);
 
@@ -283,6 +313,12 @@ public class AccessoryKeyboard extends JPanel
 
             g.setColor(fill);
             g.fillRect(0, 0, this.getWidth(), this.getHeight());
+
+            if (!this.red)
+            {
+                g.setColor(DIVIDER);
+                g.fillRect(0, 0, 1, this.getHeight());
+            }
         }
     }
 }
