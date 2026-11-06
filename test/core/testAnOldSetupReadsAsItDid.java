@@ -105,8 +105,7 @@ public class testAnOldSetupReadsAsItDid
     /**
      * An old out-of-service square is both boxes off, as it stands: it is not stop-only, and nothing can stop or pass.
      *
-     * MUTATION: drop the `active` test from `AutonomySession.isStopOnly` and set the key on such a square, or drop the
-     * inactive rule from `Layout.isPathClear`, and this fails.
+     * MUTATION: drop the inactive intermediate rule from `Layout.isPathClear` and this fails.
      */
     @Test
     public void testAnOldOutOfServiceSquareReadsBothOff() throws Exception
@@ -164,7 +163,7 @@ public class testAnOldSetupReadsAsItDid
     /**
      * A save of an old setup writes none of the new keys.  Byte for byte against an older build is the script's.
      *
-     * MUTATION: write `RUN_THROUGH` always in `AutonomySession.setStopsAndRunsThrough` or `Point.toJSON` and this fails.
+     * MUTATION: write `RUN_THROUGH` always in `Point.toJSON` and this fails.
      */
     @Test
     public void testASaveWritesNoNewKey() throws Exception
@@ -202,8 +201,7 @@ public class testAnOldSetupReadsAsItDid
      * wherever a train could get to without passing it, it still can.  By pair, not by route: the search passes over a
      * route once another has left a square under the same settings, so which alternatives it gives shifts.
      *
-     * MUTATION: skip every copy of the same block too in `Layout.bfsBySettings`, or refuse a route that starts or ends at
-     * a stop-only station in `stopOnlyStationRunThrough`, and this fails.
+     * MUTATION: refuse a route leaving a stop-only station too in `Layout.bfsBySettings` and this fails.
      */
     @Test
     public void testTheRuleTakesAwayOnlyTheRoutesThroughIt() throws Exception

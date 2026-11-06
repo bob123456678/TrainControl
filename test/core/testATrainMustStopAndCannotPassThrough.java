@@ -258,6 +258,8 @@ public class testATrainMustStopAndCannotPassThrough
     /**
      * The fixture, with the rule off: WestEnd reaches both platforms straight through Approach.  Without this every
      * refusal below could be the track's.
+     *
+     * MUTATION: read an absent key as off in `Layout.parseAuto` and this fails.
      */
     @Test
     public void testAnOrdinaryStationLetsTrainsThrough() throws Exception
@@ -464,7 +466,7 @@ public class testATrainMustStopAndCannotPassThrough
      * with no turn round.  That is how it differs from Must, which is the control: there the same arrival turns the
      * train.
      *
-     * MUTATION: have the builder emit `mustReverse` for a stop-only station and this fails.
+     * MUTATION: make a stop-only Point a terminus in `Layout.parseAuto` and this fails.
      */
     @Test
     public void testALaterTripLeavesOnwardWithNoTurnRound() throws Exception
@@ -523,7 +525,7 @@ public class testATrainMustStopAndCannotPassThrough
      * May depart off beyond the station leaves a train that came in there with no way on, and says so: the rule is not
      * a way round the arrows.
      *
-     * MUTATION: drop the closing of the road in `directionThatClosesTheWayOn` and this fails.
+     * MUTATION: make `AutonomySession.setDirection` do nothing and this fails.
      */
     @Test
     public void testMayDepartOffGivesNoWayOn() throws Exception
@@ -929,7 +931,7 @@ public class testATrainMustStopAndCannotPassThrough
      * A train standing there when the setting changes stays where it stands, on the same copy, facing the same way, and
      * leaves onward; a train on the far side is refused the way past it.
      *
-     * MUTATION: have `AutonomyBuilder` clear `loc` on a stop-only square and this fails.
+     * MUTATION: have `AutonomyBuilder` leave the locomotive off a stop-only square and this fails.
      */
     @Test
     public void testATrainStandingThereWhenItChanges() throws Exception

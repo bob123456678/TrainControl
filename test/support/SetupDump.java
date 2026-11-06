@@ -34,9 +34,13 @@ import org.traincontrol.marklin.MarklinControlStation;
  *
  * One folder per fixture: `settings.txt` (what was loaded), `graph.txt` (what it built), `paths.txt` (every route
  * between stations for the locomotives sampled, whether it is clear and why not), `offers.txt` (each tier's answer),
- * `runs.txt` (simulated trips picked by a fixed seed, as `Layout.pickPath` shuffles with no seed of its own),
+ * `runs.txt` (simulated trips picked by a fixed seed),
  * `railway.json` (the running layout's own file), and `saved-unchanged/` and `saved-captured/` (the setup's files after
  * a save with no change, and after the exit's capture and save).  `input/` is the files as they came.
+ *
+ * The railway shuffles its route search and its choice of station with `Collections.shuffle`, which has no seed to give,
+ * so `seed` plants one in the shared generator before each question: the same question then has the same answer in any
+ * build that asks the generator as often.
  */
 public final class SetupDump
 {
@@ -200,6 +204,7 @@ public final class SetupDump
         if (sampled.size() > sample.locomotives) sampled = sampled.subList(0, sample.locomotives);
 
         counts.put("locomotives", sampled.size());
+        counts.put("locomotives known", model.getLocomotives().size());
 
         writeAnswers(railway, sampled, sample, new File(out, "paths.txt"), new File(out, "offers.txt"), counts);
 
@@ -207,6 +212,16 @@ public final class SetupDump
 
         // And the file once the trains have moved
         writeText(new File(out, "railway-after-runs.json"), railway.toJSON());
+    }
+
+    /** Seeds the generator `Collections.shuffle` shares, for this question.  Java 8: the field is reachable. */
+    private static void seed(String question) throws Exception
+    {
+        java.lang.reflect.Field shared = Collections.class.getDeclaredField("r");
+
+        shared.setAccessible(true);
+
+        shared.set(null, new Random(question.hashCode()));
     }
 
     /** Every locomotive, by name; the same order whichever build asks. */
@@ -339,6 +354,8 @@ public final class SetupDump
 
                     pairs++;
 
+                    seed(from.getName() + to.getName());
+
                     routes.put(from.getName() + "\u0000" + to.getName(), routesBetween(railway, from, to, sample));
                 }
             }
@@ -354,6 +371,8 @@ public final class SetupDump
                     if (standing != null && standing != loc) continue;
 
                     from.setLocomotive(loc);
+
+                    seed(loc.getName() + from.getName());
 
                     offerLines.println(loc.getName() + " at " + from.getName() + " cannot start: "
                         + railway.explainCannotStart(loc) + " / by hand " + railway.explainCannotStart(loc, true));
@@ -472,6 +491,8 @@ public final class SetupDump
                 List<String> names = new ArrayList<>();
                 Map<String, List<Edge>> offers = new TreeMap<>();
 
+                seed(loc.getName() + i);
+
                 for (List<Edge> path : railway.getPossiblePaths(loc, false))
                 {
                     offers.put(namesOf(path), path);
@@ -489,7 +510,15 @@ public final class SetupDump
 
                 String chosen = names.get(seeded.nextInt(names.size()));
 
-                boolean arrived = railway.executePathByHand(offers.get(chosen), loc, 50, Layout.ALWAYS_REVERSE, -1);
+                // Every other trip as autonomy would choose and send it, the rest as a person would
+                seed(loc.getName() + "picks" + i);
+
+                List<Edge> picked = i % 2 == 0 ? null : railway.pickPath(loc);
+
+                boolean arrived = picked != null ? railway.executePath(picked, loc, 50, null)
+                    : railway.executePathByHand(offers.get(chosen), loc, 50, Layout.ALWAYS_REVERSE, -1);
+
+                if (picked != null) chosen = namesOf(picked);
 
                 trips++;
 

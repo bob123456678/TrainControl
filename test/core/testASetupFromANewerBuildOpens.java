@@ -136,7 +136,11 @@ public class testASetupFromANewerBuildOpens
         return out;
     }
 
-    /** No throw, the checks raise nothing they would not raise without the new settings, and the railway builds whole. */
+    /**
+     * No throw, the checks raise nothing they would not raise without the new settings, and the railway builds whole.
+     *
+     * MUTATION: have `Layout.parseAuto` invalidate the railway on the stop-only key and this fails.
+     */
     @Test
     public void testItOpensAndBuilds() throws Exception
     {
@@ -166,6 +170,8 @@ public class testASetupFromANewerBuildOpens
     /**
      * Nothing is lost: not on a load, a save, a reopen, nor the exit's capture from the running railway, so a setup
      * carried through this build and back keeps its choices.
+     *
+     * MUTATION: add the remembered list's key to `AutonomySession.POINT_OPERATIONAL_KEYS` and this fails.
      */
     @Test
     public void testNothingIsLostOnLoadAndSave() throws Exception
@@ -212,7 +218,11 @@ public class testASetupFromANewerBuildOpens
         assertNull(from.getPointProperty(main, "excludedLocs"), "the remembered list came to be in force " + when);
     }
 
-    /** A list All remembers keeps nobody out, in any build: it must not read as a Blacklist or a Whitelist. */
+    /**
+     * A list All remembers keeps nobody out, in any build: it must not read as a Blacklist or a Whitelist.
+     *
+     * MUTATION: store it in the fixture as `excludedLocs` with `excludedLocsMode: all` and run this in 3.0.8: it fails.
+     */
     @Test
     public void testTheRememberedListKeepsNobodyOut() throws Exception
     {
@@ -230,6 +240,8 @@ public class testASetupFromANewerBuildOpens
      * Here the rule holds and a train stops.  In an older build, which knows no such rule, the same station is an
      * ordinary station: a train offered what it is offered with the setting gone, and it runs through to the end.  No
      * worse than with the feature off, and that is what the owner accepted.
+     *
+     * MUTATION: take the `isStopOnly` line out of `Layout.bfsBySettings` and this fails here.
      */
     @Test
     public void testAStopOnlyStationIsSafeWhereItIsNotKnown() throws Exception

@@ -9,6 +9,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import org.json.JSONObject;
 import static org.testng.Assert.*;
 import org.testng.annotations.Test;
 import support.SetupDump;
@@ -55,7 +56,9 @@ public class testSetupDumpComparesBuilds
     };
 
     /**
-     * MUTATION: have `SetupDump.writeRuns` choose by an unseeded `Random`, and this fails on a railway with a choice.
+     * On the real railway, where the search has choices, and a setting changed in a copy of a small one.
+     *
+     * MUTATION: take the seed out of `SetupDump.seed` and this fails, as the railway's own shuffles decide the answers.
      */
     @Test
     public void testTheDumpIsTheSameTwiceAndSeesAChange() throws Exception
@@ -71,11 +74,11 @@ public class testSetupDumpComparesBuilds
 
         File temp = Files.createTempDirectory("tc-setup-dump").toFile();
 
-        File single = new File("test/layouts/single-switch");
+        File real = new File("test/layouts/live-snapshot");
 
-        Map<String, Integer> counts = SetupDump.layout(single, new File(temp, "first"), SMALL);
+        Map<String, Integer> counts = SetupDump.layout(real, new File(temp, "first"), SMALL);
 
-        SetupDump.layout(single, new File(temp, "second"), SMALL);
+        SetupDump.layout(real, new File(temp, "second"), SMALL);
 
         assertTrue(counts.get("path answers") > 0, "the dump asked nothing: " + counts);
         assertTrue(counts.get("simulated trips") > 0, "the dump ran nothing: " + counts);
@@ -85,6 +88,41 @@ public class testSetupDumpComparesBuilds
         {
             assertEquals(read(new File(temp, "second/" + section)), read(new File(temp, "first/" + section)),
                 "two dumps of one setup differ in " + section + ", so a difference between builds would prove nothing");
+        }
+
+        // A real change shows: the small railway, and again with its middle station out of service
+        File single = new File("test/layouts/single-switch");
+
+        SetupDump.layout(single, new File(temp, "plain"), SMALL);
+
+        File changed = new File(temp, "changed-layout");
+
+        copy(single, changed);
+
+        File configuration = new File(changed, "config/autonomy/configuration-Main.json");
+
+        JSONObject written = new JSONObject(read(configuration));
+
+        written.getJSONObject("points").put("1 - Junction:3,3", new JSONObject().put("active", false));
+
+        Files.write(configuration.toPath(), written.toString(2).getBytes(StandardCharsets.UTF_8));
+
+        SetupDump.layout(changed, new File(temp, "changed"), SMALL);
+
+        assertNotEquals(read(new File(temp, "changed/paths.txt")), read(new File(temp, "plain/paths.txt")),
+            "the dump did not see a station go out of service");
+    }
+
+    private static void copy(File from, File to) throws Exception
+    {
+        File[] files = from.listFiles();
+
+        to.mkdirs();
+
+        for (File file : files == null ? new File[0] : files)
+        {
+            if (file.isDirectory()) copy(file, new File(to, file.getName()));
+            else Files.copy(file.toPath(), new File(to, file.getName()).toPath());
         }
     }
 

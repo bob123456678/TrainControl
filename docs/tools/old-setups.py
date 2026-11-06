@@ -59,14 +59,15 @@ def main():
         saved = files_under(os.path.join(new, fixture, "saved-unchanged"))
         for rel, path in saved.items():
             unchanged_total += 1
-            if rel in given and read(given[rel]) == read(path):
+            # A checkout turns the fixture's line endings to CRLF; the program writes LF.
+            if rel in given and read(given[rel]).replace(b"\r\n", b"\n") == read(path).replace(b"\r\n", b"\n"):
                 unchanged_same_as_input += 1
 
     counts = os.path.join(new, "counts.txt")
     if os.path.exists(counts):
         print(open(counts, encoding="utf-8").read().rstrip())
     print("files compared: %d, identical: %d, different: %d; %d lines" % (identical + different, identical, different, lines))
-    print("saved with no change, new build: %d of %d files byte-identical to the file as it came" %
+    print("saved with no change, new build: %d of %d files the same as the file as it came, line endings aside" %
           (unchanged_same_as_input, unchanged_total))
     return 1 if different else 0
 
