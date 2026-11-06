@@ -187,3 +187,4 @@ not fix it. Name the square.
 - `ui.testAPageWindowsSetupMenuAsksOverIt`
 - `ui.testFindAPoint`
 - `ui.testTheEditorsDoorsAskOverThem`
+- `regression.testLocomotiveCsvImportDoor`

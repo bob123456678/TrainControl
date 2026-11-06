@@ -1449,6 +1449,43 @@ public abstract class Locomotive
     }
     
     /**
+     * The latest day on which the locomotive has a runtime record (yyyy-MM-dd), or null if it has none
+     * @return
+     */
+    public String getLastRunDay()
+    {
+        String last = null;
+
+        for (String day : this.historicalOperatingTime.keySet())
+        {
+            if (last == null || day.compareTo(last) > 0) last = day;
+        }
+
+        return last;
+    }
+
+    /**
+     * Raises the total runtime to at least `wantedMs`, filing only the difference on `day` (FR-049); the other days are
+     * never touched.  Takes the lock runtime tracking takes.
+     * @param wantedMs
+     * @param day yyyy-MM-dd
+     * @return the milliseconds added (0 when the total is already that large)
+     */
+    public long raiseTotalRuntimeTo(long wantedMs, String day)
+    {
+        synchronized (speedMonitor)
+        {
+            long add = wantedMs - this.getTotalRuntime();
+
+            if (add <= 0) return 0;
+
+            this.historicalOperatingTime.merge(day, add, Long::sum);
+
+            return add;
+        }
+    }
+
+    /**
      * On how many different days was the locomotive run
      * @return 
      */
