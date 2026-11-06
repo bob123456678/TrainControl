@@ -35,7 +35,7 @@ import org.traincontrol.util.I18n;
 /**
  * The Locomotive Settings window (FR-048): one non-modal window, reused, for a locomotive's name, address and picture,
  * its functions, its notes and its multi-unit.  Everything waits for Save except the picture's overlay icons, which
- * apply at once.  A locomotive that is moving cannot be saved (see {@link LocomotiveSettings}).
+ * apply at once.  A locomotive that cannot be edited now cannot be saved (see {@link LocomotiveSettings}).
  */
 public class LocomotiveSettingsFrame extends javax.swing.JFrame
 {
@@ -69,7 +69,10 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
     private LocomotiveFunctionsTab functionsTab;
     private NotesTab notesTab;
     private MultiUnitTab multiUnitTab;
-    private boolean moving;
+    private boolean blocked;
+
+    /** Asks the rule again every second while the window is open: a run starting or stopping raises no single event. */
+    private final javax.swing.Timer watch = new javax.swing.Timer(1000, e -> refresh());
 
     LocomotiveSettingsFrame(TrainControlUI main)
     {
@@ -81,7 +84,7 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
             @Override
             public void windowClosing(WindowEvent e)
             {
-                close();
+                closeAsking();
             }
         });
 
@@ -119,7 +122,7 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
         setContentPane(content);
 
         // Escape is Cancel
-        getRootPane().registerKeyboardAction(e -> close(), KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0),
+        getRootPane().registerKeyboardAction(e -> closeAsking(), KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0),
             JComponent.WHEN_IN_FOCUSED_WINDOW);
 
         setAlwaysOnTop(main.isAlwaysOnTop());
@@ -154,6 +157,8 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
         }
 
         tabs.setSelectedIndex(tab.ordinal());
+
+        watch.start();
 
         if (function != null && tab == Tab.FUNCTIONS) functionsTab.select(function);
 
@@ -197,18 +202,21 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
     {
         if (loc == null) return;
 
-        moving = LocomotiveSettings.isMoving(main, loc);
+        String reason = LocomotiveSettings.stripFor(main, loc);
 
-        strip.setText(I18n.f("loc.ui.settingsMovingStrip", loc.getName()));
+        blocked = reason != null;
 
-        if (strip.isVisible() != moving)
+        if (blocked) strip.setText(reason);
+
+        if (strip.isVisible() != blocked)
         {
-            strip.setVisible(moving);
+            strip.setVisible(blocked);
 
-            if (isDisplayable()) pack();
+            // The strip takes its room from the tabs: the window is not resized under the operator
+            getContentPane().revalidate();
         }
 
-        locomotiveTab.setMoving(moving);
+        locomotiveTab.setBlocked(blocked);
         locomotiveTab.refreshPicture();
         functionsTab.refresh();
         changed();
@@ -223,7 +231,15 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
 
     private void changed()
     {
-        save.setEnabled(isDirty() && !moving);
+        save.setEnabled(isDirty() && !blocked);
+    }
+
+    /** The X and Escape: closes, asking first what to do with typing that is not saved. */
+    void closeAsking()
+    {
+        if (isDirty() && !settleUnsaved()) return;
+
+        close();
     }
 
     /** Closes the window, throwing away what was typed. */
@@ -231,6 +247,14 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
     {
         loc = null;
         dispose();
+    }
+
+    @Override
+    public void dispose()
+    {
+        watch.stop();
+
+        super.dispose();
     }
 
     /**
@@ -294,7 +318,7 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
 
         stopEditing();
 
-        if (LocomotiveSettings.refuseIfMoving(main, loc, this))
+        if (LocomotiveSettings.refuseIfNotEditable(main, loc, this))
         {
             refresh();
             return false;
@@ -302,8 +326,6 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
 
         boolean identity = locomotiveTab.identityChanged();
         boolean members = multiUnitTab.isDirty();
-
-        if (identity && RunGates.refuseWhileAutonomyRunning(main, this)) return false;
 
         if (identity && main.refuseWhileARouteDrivesIt(this, loc.getName())) return false;
 
@@ -326,8 +348,11 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
             }
         }
 
-        if (identity && !main.locomotiveActions.writeNameAndAddress(this, loc, locomotiveTab.name.getText(),
-            locomotiveTab.address.getText(), (decoderType) locomotiveTab.decoder.getSelectedItem()))
+        // Only what the operator changed from the loaded values: another door may have changed the rest since
+        if (identity && !main.locomotiveActions.writeNameAndAddress(this, loc,
+            locomotiveTab.nameChanged() ? locomotiveTab.name.getText() : null,
+            locomotiveTab.addressOrDecoderChanged() ? locomotiveTab.address.getText() : "",
+            (decoderType) locomotiveTab.decoder.getSelectedItem()))
         {
             return false;
         }
@@ -443,9 +468,9 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
             corner.add(crop, BorderLayout.EAST);
             picture.add(corner, BorderLayout.NORTH);
 
-            mark(wrench, I18n.t("loc.ui.menuSetLocalLocomotiveIcon"), () -> main.setLocIcon(loc));
-            mark(crop, I18n.t("loc.ui.tooltip.recrop"), () -> main.recropLocIcon(loc, LocomotiveSettingsFrame.this));
-            mark(revert, I18n.t("loc.ui.menuClearLocalLocomotiveIcon"), () -> main.clearLocIcon(loc));
+            mark(wrench, I18n.t("loc.ui.menuSetLocalLocomotiveIcon"), e -> main.setLocIcon(loc, e));
+            mark(crop, I18n.t("loc.ui.tooltip.recrop"), e -> main.recropLocIcon(loc, LocomotiveSettingsFrame.this));
+            mark(revert, I18n.t("loc.ui.menuClearLocalLocomotiveIcon"), e -> main.clearLocIcon(loc));
 
             trash.setToolTipText(I18n.t("loc.ui.menuDeleteFromDatabase"));
             trash.setFocusable(false);
@@ -518,7 +543,7 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
             warnAboutTheSameAddress();
         }
 
-        private void mark(JLabel mark, String tip, Runnable doThis)
+        private void mark(JLabel mark, String tip, java.util.function.Consumer<MouseEvent> doThis)
         {
             mark.setToolTipText(tip);
             mark.setCursor(java.awt.Cursor.getPredefinedCursor(java.awt.Cursor.HAND_CURSOR));
@@ -529,15 +554,15 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
                 {
                     if (!mark.isVisible() || !moveAllowed()) return;
 
-                    doThis.run();
+                    doThis.accept(e);
                 }
             });
         }
 
-        /** The moving rule for the picture's marks and the trash can, asked at the click. */
+        /** The rule for the picture's marks and the trash can, asked at the click. */
         boolean moveAllowed()
         {
-            return !LocomotiveSettings.refuseIfMoving(main, loc, LocomotiveSettingsFrame.this);
+            return !LocomotiveSettings.refuseIfNotEditable(main, loc, LocomotiveSettingsFrame.this);
         }
 
         private void delete()
@@ -581,6 +606,16 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
             sameAddress.setText(also == null ? " " : I18n.f("loc.ui.settingsAlsoUsedBy", also));
         }
 
+        boolean nameChanged()
+        {
+            return !name.getText().equals(loadedName);
+        }
+
+        boolean addressOrDecoderChanged()
+        {
+            return !address.getText().equals(loadedAddress) || decoder.getSelectedItem() != loadedDecoder;
+        }
+
         boolean identityChanged()
         {
             return !name.getText().equals(loadedName) || !address.getText().equals(loadedAddress)
@@ -602,8 +637,8 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
             return identityChanged() || speedChanged();
         }
 
-        /** Grays what the moving rule refuses. */
-        void setMoving(boolean m)
+        /** Grays what the rule refuses. */
+        void setBlocked(boolean m)
         {
             trash.setEnabled(!m);
             wrench.setEnabled(!m);
@@ -621,14 +656,36 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
             {
                 shownPicture = url;
 
-                try
-                {
-                    picture.setIcon(url == null || url.isEmpty() ? null : new javax.swing.ImageIcon(
-                        main.getLocImageMaxHeight(url, 200, 90)));
-                }
-                catch (Exception e)
+                if (url == null || url.isEmpty())
                 {
                     picture.setIcon(null);
+                }
+                else
+                {
+                    // A fetch may be over the network: loaded off the event thread, and a result for a locomotive the
+                    // window has since left is ignored
+                    final Locomotive target = loc;
+
+                    main.getImageLoader().submit(() ->
+                    {
+                        javax.swing.ImageIcon loaded = null;
+
+                        try
+                        {
+                            loaded = new javax.swing.ImageIcon(main.getLocImageMaxHeight(url, 200, 90));
+                        }
+                        catch (Exception e)
+                        {
+                            // Shown as no picture
+                        }
+
+                        final javax.swing.ImageIcon shown = loaded;
+
+                        SwingUtilities.invokeLater(() ->
+                        {
+                            if (loc == target && url.equals(shownPicture)) picture.setIcon(shown);
+                        });
+                    });
                 }
             }
 

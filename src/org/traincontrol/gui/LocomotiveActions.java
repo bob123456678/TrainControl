@@ -548,7 +548,7 @@ final class LocomotiveActions
     boolean deleteLoc(String value, Component source)
     {
         // The moving rule, at every door (FR-048), and asked again at Yes.
-        if (LocomotiveSettings.refuseIfMoving(this.ui, this.ui.getModel().getLocByName(value), source)) return false;
+        if (LocomotiveSettings.refuseIfNotEditable(this.ui, this.ui.getModel().getLocByName(value), source)) return false;
 
         if (this.ui.getModel().isAutonomyRunning())
         {
@@ -596,7 +596,7 @@ final class LocomotiveActions
 
             Locomotive l = this.ui.getModel().getLocByName(value);
 
-            if (LocomotiveSettings.refuseIfMoving(this.ui, l, source)) return false;
+            if (LocomotiveSettings.refuseIfNotEditable(this.ui, l, source)) return false;
 
             if (l != null)
             {

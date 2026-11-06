@@ -221,7 +221,7 @@ final class LocomotiveFunctionsTab extends JPanel
 
         useCurrent.addActionListener(e ->
         {
-            for (Row r : rows) r.preset = loc.getF(r.function);
+            for (Row r : rows) r.preset = r.function < loc.getNumF() && loc.getF(r.function);
 
             changed();
         });
@@ -233,11 +233,7 @@ final class LocomotiveFunctionsTab extends JPanel
             changed();
         });
 
-        Locomotive from = ui.getCopyTarget();
-
-        copyIcons.setEnabled(from != null);
-        copyIcons.setText(from == null ? I18n.t("loc.ui.copyIconsFromClipboardLocomotive")
-            : I18n.f("loc.ui.copyIconsFromLocomotive", from.getName()));
+        fitCopyIcons();
         copyIcons.setToolTipText(I18n.t("loc.ui.toolip.copyIconHelp"));
         copyIcons.addActionListener(e -> copyFrom(ui.getCopyTarget()));
 
@@ -286,29 +282,49 @@ final class LocomotiveFunctionsTab extends JPanel
         return left;
     }
 
+    /** The Copy Icons button names, and is lit by, the locomotive on the clipboard now. */
+    private void fitCopyIcons()
+    {
+        Locomotive from = ui.getCopyTarget();
+
+        copyIcons.setEnabled(from != null);
+        copyIcons.setText(from == null ? I18n.t("loc.ui.copyIconsFromClipboardLocomotive")
+            : I18n.f("loc.ui.copyIconsFromLocomotive", from.getName()));
+    }
+
     /** Shows the standard icons as they load, the first at once and the rest after the window is up. */
     private void loadStandardIcons()
     {
-        SwingUtilities.invokeLater(() ->
+        // Each icon is fetched once, off the event thread; the table repaints as they arrive
+        boolean active = ui.getModel().isCS3() || !ui.getModel().getNetworkCommState();
+
+        for (int i = 0; i < standardIcons.length; i++)
         {
-            for (int i = 0; i < standardIcons.length; i++)
+            final int which = i;
+
+            ui.getImageLoader().submit(() ->
             {
+                ImageIcon loaded = null;
+
                 try
                 {
-                    // Use "active" icons for the CS3 for a better look
-                    String url = loc.getFunctionIconUrl(i, ui.getModel().isCS3() || !ui.getModel().getNetworkCommState(), true);
-
-                    standardIcons[i] = new ImageIcon(ui.getLocImage(url, TrainControlUI.BUTTON_ICON_WIDTH));
+                    loaded = new ImageIcon(ui.getLocImage(loc.getFunctionIconUrl(which, active, true),
+                        TrainControlUI.BUTTON_ICON_WIDTH));
                 }
                 catch (Exception e)
                 {
-                    ui.getModel().logf("loc.ui.errorLoadingFunctionIcon", i);
+                    ui.getModel().logf("loc.ui.errorLoadingFunctionIcon", which);
                 }
-            }
 
-            iconEditor.combo.repaint();
-            table.repaint();
-        });
+                final ImageIcon shown = loaded;
+
+                SwingUtilities.invokeLater(() ->
+                {
+                    standardIcons[which] = shown;
+                    table.repaint();
+                });
+            });
+        }
     }
 
     private void changed()
@@ -407,6 +423,7 @@ final class LocomotiveFunctionsTab extends JPanel
     {
         table.repaint();
         resetAll.setEnabled(loc.isCustomFunctions() || reset);
+        fitCopyIcons();
     }
 
     /** What the tab means to write, for the window to know whether the Central Station is to be asked again. */
@@ -431,6 +448,9 @@ final class LocomotiveFunctionsTab extends JPanel
         for (Row r : rows)
         {
             int f = r.function;
+
+            // A decoder change in the same Save can leave the locomotive with fewer functions than the table has
+            if (f >= preset.length) continue;
 
             if (copied || r.icon != loc.sanitizeFIconIndex(loc.getFunctionType(f)) || r.behavior != behaviorShownFor(loc, f))
             {
@@ -459,21 +479,31 @@ final class LocomotiveFunctionsTab extends JPanel
         loc.setPreferredFunctions(preset);
     }
 
+    /** Each custom image as it was loaded, by path; a file that would not load is held as null so it is tried once. */
+    private final Map<String, ImageIcon> customPictures = new java.util.HashMap<>();
+
     /** The picture for a row: its own image when it has one, else its standard icon. */
     private ImageIcon pictureOf(Row r)
     {
         if (r.custom != null)
         {
-            try
+            if (!customPictures.containsKey(r.custom))
             {
-                return new ImageIcon(ui.getLocImage(r.custom, TrainControlUI.BUTTON_ICON_WIDTH));
-            }
-            catch (Exception ex)
-            {
-                ui.getModel().logf("loc.ui.errorInvalidIconPath", r.custom);
+                ImageIcon loaded = null;
 
-                return null;
+                try
+                {
+                    loaded = new ImageIcon(ui.getLocImage(r.custom, TrainControlUI.BUTTON_ICON_WIDTH));
+                }
+                catch (Exception ex)
+                {
+                    ui.getModel().logf("loc.ui.errorInvalidIconPath", r.custom);
+                }
+
+                customPictures.put(r.custom, loaded);
             }
+
+            return customPictures.get(r.custom);
         }
 
         return r.icon >= 0 && r.icon < standardIcons.length ? standardIcons[r.icon] : null;
@@ -669,7 +699,7 @@ final class LocomotiveFunctionsTab extends JPanel
                 case 0: return row;
                 case 1: return "F" + row.function;
                 case 2: return behaviorNames[row.behavior];
-                case 3: return loc.getF(row.function) ? I18n.t("loc.ui.settingsNowOn") : "";
+                case 3: return row.function < loc.getNumF() && loc.getF(row.function) ? I18n.t("loc.ui.settingsNowOn") : "";
                 default: return row.preset;
             }
         }

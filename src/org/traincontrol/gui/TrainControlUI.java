@@ -514,10 +514,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     RouteEditorFrame routeEditor;
 
     /** The Locomotive Settings window while it is open, or null (FR-048). */
-    LocomotiveSettingsFrame locomotiveSettings;
+    volatile LocomotiveSettingsFrame locomotiveSettings;
 
     /**
-     * Opens the Locomotive Settings window on a tab, unless the locomotive is moving (then it says so).  The one door
+     * Opens the Locomotive Settings window on a tab, unless the locomotive cannot be edited (then it says why).  The one door
      * the menus, the name, the database tile and the function buttons all use.
      *
      * @param function the function to show on the Functions tab, or null
@@ -525,7 +525,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      */
     public boolean openLocomotiveSettings(Locomotive l, LocomotiveSettingsFrame.Tab tab, Integer function)
     {
-        if (l == null || LocomotiveSettings.refuseIfMoving(this, l, this)) return false;
+        if (l == null || LocomotiveSettings.refuseIfNotEditable(this, l, this)) return false;
 
         if (this.locomotiveSettings == null || !this.locomotiveSettings.isDisplayable())
         {

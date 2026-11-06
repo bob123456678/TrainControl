@@ -6,13 +6,21 @@ import org.traincontrol.base.Locomotive;
 import org.traincontrol.util.I18n;
 
 /**
- * The doors to the Locomotive Settings window and the one rule they share: a locomotive is not edited while the power
- * is on and it, or a multi-unit it belongs to, is running (FR-048).  Every door and control asks {@link #whyNotEditable}.
+ * The one rule behind every door to the Locomotive Settings window (FR-048): a locomotive is not edited while it, or a
+ * multi-unit it belongs to, is moving with the power on, or while autonomy runs.  The
+ * window and its save, trash can and picture marks, the key menu's entries, the right-clicks on a function button and on
+ * the name, and delete ask {@link #whyNotEditable}; the quick actions (the presets) do not.
  */
 public final class LocomotiveSettings
 {
     private LocomotiveSettings()
     {
+    }
+
+    /** Why a locomotive cannot be edited. */
+    public enum Why
+    {
+        MOVING, AUTONOMY
     }
 
     /**
@@ -43,22 +51,55 @@ public final class LocomotiveSettings
     }
 
     /**
+     * Why a locomotive cannot be edited now: autonomy is running (for every locomotive), or it, or a multi-unit it
+     * belongs to, is moving with the power on.  A route that drives it is not a reason: its name, address and multi-unit
+     * are refused at Save.
+     *
+     * @return the reason, or null when it can be edited
+     */
+    public static Why why(TrainControlUI ui, Locomotive l)
+    {
+        if (ui == null || l == null || ui.getModel() == null) return null;
+
+        if (isMoving(ui, l)) return Why.MOVING;
+
+        return ui.getModel().isAutonomyRunning() ? Why.AUTONOMY : null;
+    }
+
+    /**
      * The sentence that says a locomotive cannot be edited now.
      *
-     * @return null when it can be, else "Stop BR 218 to edit it."
+     * @return null when it can be, else "Stop BR 218 to edit it." or the refusal for autonomy
      */
     public static String whyNotEditable(TrainControlUI ui, Locomotive l)
     {
-        return isMoving(ui, l) ? I18n.f("loc.ui.stopToEdit", l.getName()) : null;
+        return say(ui, l, false);
+    }
+
+    /** What the window's strip says for the reason, or null when the locomotive can be edited. */
+    public static String stripFor(TrainControlUI ui, Locomotive l)
+    {
+        return say(ui, l, true);
+    }
+
+    private static String say(TrainControlUI ui, Locomotive l, boolean strip)
+    {
+        Why why = why(ui, l);
+
+        if (why == null) return null;
+
+        if (why == Why.MOVING) return I18n.f(strip ? "loc.ui.settingsMovingStrip" : "loc.ui.stopToEdit", l.getName());
+
+        return I18n.t(strip ? "loc.ui.settingsAutonomyStrip" : "autolayout.ui.errorCannotEditLocomotivesWhileRunning");
     }
 
     /**
      * Asks the rule and, when it says no, says so.
      *
      * @param owner what the message hangs off
-     * @return true when the locomotive is moving and the message has been shown
+     * @return true when the locomotive cannot be edited and the message has been shown
      */
-    public static boolean refuseIfMoving(TrainControlUI ui, Locomotive l, Component owner)
+    public static boolean refuseIfNotEditable(TrainControlUI ui, Locomotive l, Component owner)
     {
         String why = whyNotEditable(ui, l);
 
