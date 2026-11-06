@@ -6,12 +6,21 @@ Part of the behavior reference: [`../behaviour.md`](../behaviour.md) is the inde
 
 ### Pages and links
 
-**Pages are ordered by name, not by the number the Central Station orders them with.** Adam:
-*"the `.id` field is what the Central Station uses to order the pages. We still order by
-name, which is the simpler behavior."* `getLayoutList` sorts, and that sort is what the window and every menu show. An id
-is still an identity (the autonomy setup is keyed by it, which is why `writeLayoutIndex` keeps each page's id rather than
-renumbering), but not a position. The `page=N` line at the top of a page file is preserved exactly as the station wrote
-it, and neither number decides where the page appears.
+**Pages follow the order of the `seite` entries in `gleisbild.cs2`, not their names and not their `.id`** (FR-175).
+This replaces Adam's earlier ruling, *"We still order by name"*; his FR-175 answer was *"OK, go for file order."*
+`MarklinControlStation.getLayoutList` returns the order the last import read from the index (`layoutOrder`, set where
+`syncLayouts` fills the page database, which holds no order of its own), and that list is what the window and every
+menu show, for a Central Station layout too. A page the import did not list comes after those, by name. An id is an
+identity, not a position (the autonomy setup is keyed by it, which is why `writeLayoutIndex` keeps each page's id and
+writes the pages in the order it is given): moving a page leaves every id and `config/autonomy/setup.json` byte for byte
+as they were. The `page=N` line at the top of a page file is preserved exactly as the station wrote it.
+
+- **The editor's up and down arrows move the selected page** and save at once, as a rename does
+  (`LayoutFileActions.movePage`); at the top or bottom the arrow is grayed. **Sort Pages by Name** writes name order
+  once, and writes nothing when the pages already are. A new page, a copy and a combined page go at the end. A Central
+  Station layout cannot be edited, so its arrows are refused as other edits are.
+- **A layout in name order shows no change**, and a layout written by this version is safe in 3.0.8, which sorts by
+  name: every name keeps its id. Its arrows are another matter, below.
 
 **A page that states no `.id` has id 0.** Adam: *"no .id means id 0 implicitly."* That is the CS2 convention (a key the
 station omits carries the zero value) and what the files say: of the index files here, four have a first page with no
@@ -21,13 +30,15 @@ id, keying both into one space in the autonomy setup.
 
 **A PAGE LINK IS STORED AS A POSITION, and it is the only thing that is.** Adam: *"right
 now, let's make artikel be the sorted index of the page - which i believe is already how it worked."* An arrow tile
-holds the destination's place in the name-sorted list, not its id. So:
+holds the destination's place in the page list (the file order since FR-175; it was the name order), not its id. So:
 
-- **Every operation that changes the set of page names re-aims the arrows.** Adding, renaming, duplicating, deleting and
-  combining all move the alphabet, and an arrow follows the page it pointed at; otherwise it would silently come to mean
-  another page (on the five pages of the sample layout, adding one page repoints four of seven arrows). **Combine is
-  covered too**: its copy is written before the re-aim, but the page is then refilled from the corrected sources and
-  saved again.
+- **Every operation that changes the set or the order of the pages re-aims the arrows.** Adding, renaming,
+  duplicating, deleting, combining and moving a page all change a position, and an arrow follows the page it pointed
+  at; otherwise it would silently come to mean another page. Add, Duplicate and Combine append, so they move no
+  position. **Combine is covered too**: its copy is written before the re-aim, but the page is then refilled from the
+  corrected sources and saved again. **Arrows are not re-aimed on a load:** a layout whose file order differs from name
+  order, written before FR-175, has arrows aimed against name order, and 3.0.8 reads a rearranged layout's arrows
+  against name order.
 - **An arrow whose page is deleted points at nothing.** Adam: *"set the ID to -1. This shouldn't throw
   any errors, and simply resolve to nothing when clicked. Then, the user can set it to the right page
   on their next edit."* Clicking it does nothing and its tooltip says so.

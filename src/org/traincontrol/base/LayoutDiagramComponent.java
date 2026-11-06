@@ -566,13 +566,13 @@ public class LayoutDiagramComponent
     }
 
     /**
-     * Points a link tile at a page, by its place in the name-sorted page list, or at nothing.  Positions move when a
+     * Points a link tile at a page, by its place in the page list, or at nothing.  Positions move when a
      * page is added, renamed, duplicated, deleted or combined, so those operations call
      * `LayoutDiagram.repointPageLinks` to rewrite the numbers; `setLogicalAddress` is the operator's door and refuses
      * what this must write.  -1 is a link to nothing (an arrow whose page is deleted): clicking it does nothing, and
      * `.artikel=-1` is the file's own "no address".
      *
-     * @param index the page's place in the name-sorted list, or -1 for no page
+     * @param index the page's place in the page list, or -1 for no page
      */
     public void setLinkedPageIndex(int index)
     {

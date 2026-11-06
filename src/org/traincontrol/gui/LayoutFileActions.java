@@ -41,10 +41,10 @@ final class LayoutFileActions
 
     /**
      * Writes the page index and re-aims every arrow on the layout at the page it was aimed at, as a link tile holds a
-     * position in the name-sorted page list.  Delete and Combine go through here; Add, Duplicate and Rename go through
+     * position in the page list.  Delete and Combine go through here; Add, Duplicate and Rename go through
      * `LayoutPageEdit`.  The order is taken from the pages this session holds, not the index file (FR-018).
      *
-     * @param layoutList the new page list, name-sorted, as writeLayoutIndex takes it
+     * @param layoutList the new page list, in the order to write, as writeLayoutIndex takes it
      * @param renamed old name -&gt; new name, or null - which both callers pass; a rename goes through `LayoutPageEdit`
      * @param keepAbsent pages to hold in the index though they are not loaded (FR-018), or null
      * @throws java.io.IOException if the index cannot be written, which is the caller's to report
@@ -409,6 +409,110 @@ final class LayoutFileActions
                 javax.swing.SwingUtilities.invokeLater(() -> this.ui.refreshesUnderWay.updateAndGet(n -> Math.max(0, n - 1)));
             }
         }).start();
+    }
+
+    /**
+     * Moves the selected page one place up or down the page list and saves at once (FR-175).  Silent at either end,
+     * where the editor grays the arrow.
+     *
+     * @param by -1 for up, 1 for down
+     * @param from the layout editor that asked, or null
+     */
+    void movePage(int by, final LayoutEditor from)
+    {
+        List<String> order = this.ui.getModel().getLayoutList();
+
+        String page = String.valueOf(this.ui.layoutList().getSelectedItem());
+
+        int at = order.indexOf(page);
+        int to = at + by;
+
+        if (at < 0 || to < 0 || to >= order.size()) return;
+
+        java.util.Collections.swap(order, at, to);
+
+        reorder(order, page, from);
+    }
+
+    /**
+     * Writes the pages in name order once (FR-175); nothing is written when they already are.
+     *
+     * @param from the layout editor that asked, or null
+     */
+    void sortPagesByName(final LayoutEditor from)
+    {
+        List<String> order = this.ui.getModel().getLayoutList();
+
+        List<String> sorted = new ArrayList<>(order);
+
+        java.util.Collections.sort(sorted);
+
+        if (sorted.equals(order)) return;
+
+        reorder(sorted, String.valueOf(this.ui.layoutList().getSelectedItem()), from);
+    }
+
+    /**
+     * Writes the index in a new page order: every page keeps its id, the arrows are re-aimed, and the setup is not
+     * touched.  Refused as the other page edits are.
+     *
+     * @param order the pages in the order to write
+     * @param page the page to show afterwards
+     * @param from the layout editor that asked (FR-109), or null for the Layouts menu
+     */
+    private void reorder(final List<String> order, final String page, final LayoutEditor from)
+    {
+        final java.awt.Component over = from == null ? this.ui : from;
+
+        if (from == null && this.ui.refuseWhileEditorOpen()) return;
+
+        if (this.ui.refuseWhileARunHoldsTheSetup(over)) return;
+
+        if (!this.ui.isLocalLayout())
+        {
+            JOptionPane.showMessageDialog(over, I18n.t("layout.ui.errorCannotManipulateRemoteLayouts"));
+
+            return;
+        }
+
+        final Runnable work = () ->
+        {
+            boolean arriving = false;
+
+            try
+            {
+                this.ui.captureRunningLayout();
+
+                java.util.Collection<String> keepAbsent = this.ui.settleTheAbsentPages(
+                    this.ui.getModel().getLayoutList(), null, null);
+
+                if (keepAbsent == null) return;
+
+                writeIndexAndKeepLinksAimed(order, null, keepAbsent);
+
+                this.ui.layoutEditingComplete(() ->
+                {
+                    if (from != null) from.arriveOn(page);
+
+                    this.ui.layoutList().setSelectedItem(page);
+                    this.ui.repaintLayout();
+                });
+
+                arriving = true;
+            }
+            catch (Exception ex)
+            {
+                JOptionPane.showMessageDialog(over, I18n.f("layout.ui.errorSavingLayoutWithMessage", ex.getMessage()));
+                this.ui.getModel().log(ex);
+            }
+            finally
+            {
+                if (from != null && !arriving) from.arriveOn(null);
+            }
+        };
+
+        if (from == null) javax.swing.SwingUtilities.invokeLater(work);
+        else from.stepOutFor(work);
     }
 
     /**

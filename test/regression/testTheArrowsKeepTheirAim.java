@@ -14,23 +14,23 @@ import org.testng.annotations.Test;
 
 /**
  * An arrow on the diagram points at the same page after the page list changes.  A link tile holds a POSITION in the
- * name-sorted page list (Adam: "let's make artikel be the sorted index of the page"), so adding, renaming,
- * duplicating, deleting or combining a page changes what every arrow means, and
- * `LayoutDiagram.writeIndexAndKeepLinksAimed` re-aims them.
+ * page list (the index file's order since FR-175; Adam: "let's make artikel be the sorted index of the page" when
+ * that was name order), so deleting or moving a page changes what an arrow means, and
+ * `LayoutDiagram.writeIndexAndKeepLinksAimed` re-aims them.  A rename keeps its slot and an add, a duplicate and a
+ * combine append, so they move no position.
  *
- * The first version resolved the destination against the list the CALLER handed in, and four of the five gestures
- * hand over a list that is not sorted (a rename puts the new name in the old slot; an add, a duplicate and a combine
- * append).  So it is driven at `writeIndexAndKeepLinksAimed` directly, where an unsorted list can be handed over.
+ * It is driven at `writeIndexAndKeepLinksAimed` directly, where any list can be handed over, and an arrow's
+ * destination is read off the new list as handed in, which is the order the model will list.
  */
 public class testTheArrowsKeepTheirAim
 {
     /**
-     * Adding a page whose name sorts into the MIDDLE leaves every arrow on the same page.  The name is the one
-     * Combine Linked Pages offers by default (`"<page> and neighbors"`), which sorts right after the page it was made
-     * from rather than last, so the caller's appended list differs from the sorted one.
+     * Adding a page whose name would sort into the MIDDLE leaves every arrow on the same page: the page goes at the
+     * end of the list, whatever its name.  The name is the one Combine Linked Pages offers by default
+     * (`"<page> and neighbors"`).
      *
-     * MUTATION: re-aim against `layoutList` as handed in, instead of a sorted copy, and this fails with
-     * the arrow on "2 - Bottom".
+     * MUTATION: sort `before` and `after` in `repointLinksForNewOrder` again, and this fails with the arrow on
+     * "2 - Bottom".
      */
     @Test
     public void testAddingAPageInTheMiddleLeavesTheArrowsAimed() throws Exception
@@ -46,8 +46,7 @@ public class testTheArrowsKeepTheirAim
 
         assertEquals(aimed.destination, "3 - Top Parking",
             "the arrow pointed at 3 - Top Parking and now points at " + aimed.destination
-            + ".  A link holds a position in the NAME-SORTED list, and the list the caller passes is "
-            + "appended rather than sorted (FV3-A2)");
+            + ".  A link holds a position in the page list, and a new page is appended to it (FV3-A2)");
     }
 
     /**
@@ -68,12 +67,34 @@ public class testTheArrowsKeepTheirAim
 
         renamed.put("2 - Bottom", "9 - Bottom");
 
-        // The arrow points at 2 - Bottom, which is position 1 of the old sorted list.
+        // The arrow points at 2 - Bottom, which is position 1 of the old list.
         Aimed aimed = repoint(was, now, renamed, 1);
 
         assertEquals(aimed.destination, "9 - Bottom",
             "a renamed page is the same page under another name and its arrows should follow it; this "
             + "one now points at " + aimed.destination);
+    }
+
+    /**
+     * Moving a page re-aims the arrows at it: with 3 - Top Parking moved up one, an arrow that pointed at it (position
+     * 2) points at position 1, and the page it now sits beside is not mistaken for it.
+     *
+     * MUTATION: sort `before` and `after` in `repointLinksForNewOrder` again, and the arrow stays on position 2, which
+     * is now "2 - Bottom".
+     */
+    @Test
+    public void testMovingAPageKeepsTheArrowsAimed() throws Exception
+    {
+        List<String> was = Arrays.asList("1 - Main", "2 - Bottom", "3 - Top Parking");
+
+        List<String> now = Arrays.asList("1 - Main", "3 - Top Parking", "2 - Bottom");
+
+        Aimed aimed = repoint(was, now, null, 2);
+
+        assertEquals(aimed.destination, "3 - Top Parking", "the arrow pointed at 3 - Top Parking and now points at "
+            + aimed.destination);
+
+        assertEquals(aimed.raw, 1, "the arrow is not on the moved page's new position");
     }
 
     /**
@@ -119,13 +140,15 @@ public class testTheArrowsKeepTheirAim
      * Add Page blanks the CURRENT page's object to write it out as the new blank page, so a re-aim that ran after that
      * saw a page with no tiles and the original file was never corrected.
      *
-     * MUTATION: move the re-aim back below `page.saveChanges(newLayoutName, duplicate)` and this fails
-     * with the arrow still on 2.
+     * Since FR-175 an added page goes at the end, so no position moves and the arrow stays on 2.
+     *
+     * MUTATION: sort `layoutList` before the write in `LayoutPageEdit.renameOrDuplicate`, and the new page takes a
+     * slot before the arrow's page and the file says 3.
      */
     @Test
     public void testAddingAPageCorrectsTheFileItWasInvokedFrom() throws Exception
     {
-        assertArrowOnDiskAfterGesture("add", 3);
+        assertArrowOnDiskAfterGesture("add", 2);
     }
 
     /**
@@ -137,7 +160,7 @@ public class testTheArrowsKeepTheirAim
     @Test
     public void testDuplicatingAPageCorrectsTheCopy() throws Exception
     {
-        assertArrowOnDiskAfterGesture("duplicate", 3);
+        assertArrowOnDiskAfterGesture("duplicate", 2);
     }
 
     /**
@@ -149,10 +172,9 @@ public class testTheArrowsKeepTheirAim
     @Test
     public void testARenamedPageKeepsItsOwnArrowsOnDisk() throws Exception
     {
-        // 1 - Main is renamed, not 2 - Bottom: Bottom's arrow points at Main, which does not move, so that case would
-        // pass with the re-aim deleted.  Main's own first arrow points at 3 - Top Parking, which moves from position 2
-        // to 1.
-        assertArrowOnDiskAfterGesture("rename", 1);
+        // 1 - Main is renamed, in its own slot, so no position moves: its first arrow still points at 3 - Top Parking,
+        // position 2, in the file the rename writes under the new name.
+        assertArrowOnDiskAfterGesture("rename", 2);
     }
 
     /** What an arrow ended up aimed at. */
@@ -166,8 +188,7 @@ public class testTheArrowsKeepTheirAim
     /**
      * Builds a one-page layout carrying a single arrow, runs the real re-aim over it, and reports where the arrow
      * ended up.  Built by hand because what is under test is the ARITHMETIC between two page lists, and a fixture
-     * would fix one of them.  `was` is the sorted list, `now` the caller's (deliberately unsorted), `pointsAt` indexes
-     * into `was`.
+     * would fix one of them.  `was` is the old page list, `now` the new, `pointsAt` indexes into `was`.
      */
     private static Aimed repoint(List<String> was, List<String> now, Map<String, String> renamed,
         int pointsAt) throws Exception
@@ -207,12 +228,8 @@ public class testTheArrowsKeepTheirAim
             out.tile = tile;
             out.raw = tile.getRawAddress();
 
-            // Resolved through the list a link's number actually indexes into, which is the sorted one.
-            List<String> sorted = new ArrayList<>(now);
-
-            java.util.Collections.sort(sorted);
-
-            out.destination = out.raw >= 0 && out.raw < sorted.size() ? sorted.get(out.raw) : "(nothing)";
+            // Resolved through the list a link's number actually indexes into: the new page list, in its order.
+            out.destination = out.raw >= 0 && out.raw < now.size() ? now.get(out.raw) : "(nothing)";
 
             return out;
         }
@@ -238,7 +255,8 @@ public class testTheArrowsKeepTheirAim
     /**
      * Runs one real page gesture over a three-page layout and reports where the arrow points in the FILE afterwards.
      * The fixture is `live-snapshot`, whose `1 - Main` carries three arrows, the first aimed at `3 - Top Parking`,
-     * position 2 of the five; adding a page that sorts second moves that destination to position 3.
+     * position 2 of the five; none of these gestures moves a position (a new page is appended, a rename keeps its slot), so
+     * the file written must still say 2.
      */
     private static void assertArrowOnDiskAfterGesture(String gesture, int expected) throws Exception
     {

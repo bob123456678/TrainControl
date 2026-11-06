@@ -145,7 +145,7 @@ public class LayoutPageEdit
         if (rename) renamed.put(currentLayout, newLayoutName);
 
         // Arrows are re-aimed BEFORE any page is written: a link tile holds the destination's place in the
-        // name-sorted page list, and re-aiming upstream of every write fixes Add Page, Duplicate and Rename at once.
+        // page list, and re-aiming upstream of every write fixes Add Page, Duplicate and Rename at once.
         List<LayoutDiagram> pages = loadedPages(log);
 
         // Held, so the page this gesture is about can be asked the same question.
@@ -227,7 +227,7 @@ public class LayoutPageEdit
             }
         }
 
-        // A link tile holds a POSITION in the name-sorted page list, so each gesture changes what every arrow means.
+        // A link tile holds a POSITION in the page list, so each gesture changes what every arrow means.
         // The arrows were re-aimed above; the index is what is left.  The rule lives in LayoutDiagram because
         // TrainControlUI writes the same index for Delete and Combine.
         LayoutDiagram.writeLayoutIndex(layoutPath, layoutList, renamed, pageIdFloor(session),

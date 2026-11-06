@@ -459,7 +459,7 @@ public class TileGraph
     private final List<Problem> problems = new ArrayList<>();
 
     /**
-     * Every page in the layout in the order the window lists them (sorted by name), excluded pages included.  A link
+     * Every page in the layout in the order the window lists them, excluded pages included.  A link
      * tile records its destination as a zero-based index into this list; `pages` has already dropped the excluded ones.
      */
     private final List<String> allPages = new ArrayList<>();
