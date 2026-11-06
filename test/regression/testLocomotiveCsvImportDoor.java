@@ -45,6 +45,7 @@ public class testLocomotiveCsvImportDoor
     {
         volatile boolean chose;
         volatile String question;
+        volatile List<String> questionDetails = Collections.emptyList();
         final List<String> said = Collections.synchronizedList(new ArrayList<>());
         final List<support.PopupShape> saidShapes = Collections.synchronizedList(new ArrayList<>());
     }
@@ -61,6 +62,13 @@ public class testLocomotiveCsvImportDoor
      */
     private static Seen press(TrainControlUI ui, File file, String answer, java.util.function.Predicate<Seen> until)
         throws Exception
+    {
+        return press(ui, file, answer, until, null);
+    }
+
+    /** The same, running `whenAsked` as the question is on screen, before it is answered. */
+    private static Seen press(TrainControlUI ui, File file, String answer, java.util.function.Predicate<Seen> until,
+        Runnable whenAsked) throws Exception
     {
         final Seen seen = new Seen();
         final boolean[] going = {true};
@@ -101,6 +109,9 @@ public class testLocomotiveCsvImportDoor
             if (I18n.t("loc.ui.importCsvTitle").equals(dialog.getTitle()))
             {
                 seen.question = shape.sentence;
+                seen.questionDetails = shape.details;
+
+                if (whenAsked != null) whenAsked.run();
 
                 SwingUtilities.invokeLater(() ->
                 {
@@ -235,7 +246,7 @@ public class testLocomotiveCsvImportDoor
 
             model.newMM2Locomotive(there, 20);
 
-            File file = write(HEADER + "FR049 door new,,MFX,88,0,0:00:00,0,0,,\n" + there + ",,DCC,21,0,0:00:00,0,0,,\n"
+            File file = write(HEADER + "FR049 door new,,MFX,12345,0,0:00:00,0,0,,\n" + there + ",,DCC,21,0,0:00:00,0,0,,\n"
                 + "FR049 door bad,,MFX,xx,0,0:00:00,0,0,,\n");
 
             try
@@ -247,6 +258,8 @@ public class testLocomotiveCsvImportDoor
                 assertNotNull(seen.question, "the door did not ask before changing anything");
                 assertEquals(words(seen.question), words(I18n.f("loc.ui.confirmImportCsv", 1, 1) + "\n\n"
                     + I18n.f("loc.ui.confirmImportCsvReaddress", 1) + "\n\n" + I18n.f("loc.ui.confirmImportCsvUnreadable", 1)));
+                assertEquals(seen.questionDetails, Collections.singletonList(I18n.f("loc.ui.importCsvChangeLine", there, "MM2 20",
+                    "DCC 21")), "the question does not list the locomotive that changes address, old and new");
                 assertEquals(everyLocomotive(model), before, "Cancel changed the database");
                 assertNull(model.getLocByName("FR049 door new"));
                 assertTrue(seen.said.isEmpty(), "Cancel went on to say something: " + seen.said);
@@ -289,8 +302,8 @@ public class testLocomotiveCsvImportDoor
 
                 assertTrue(said.startsWith(words(I18n.f("loc.ui.infoImportCsvDone", 1, 1))), said);
                 assertTrue(said.contains(words(I18n.f("loc.ui.infoImportCsvReaddressed", 1))), said);
-                assertEquals(seen.saidShapes.get(0).details, Collections.singletonList(I18n.f("loc.ui.importCsvSkippedLine", 4)),
-                    "the skipped row's line is not named");
+                assertEquals(seen.saidShapes.get(0).details, Collections.singletonList(I18n.f("loc.ui.importCsvSkippedLine", 4) + ": "
+                    + I18n.t("loc.ui.importCsvReasonUnreadable")), "the skipped row's line and reason are not named");
 
                 Locomotive added = model.getLocByName("FR049 door new");
 
@@ -352,6 +365,157 @@ public class testLocomotiveCsvImportDoor
                 model.waitForPowerState(false);
                 file.delete();
                 model.deleteLoc(name);
+            }
+        });
+    }
+
+    /**
+     * A run that begins while the question is on screen refuses the import when the answer comes: the question is modal,
+     * and the gates are asked again after it.
+     *
+     * MUTATION: take the second gate out of the door, and this fails.
+     */
+    @Test
+    public void testAnAutonomyRunBehindTheQuestionStopsTheImport() throws Exception
+    {
+        inAWindow((ui, model) ->
+        {
+            File file = write(HEADER + "FR049 door gate,,MFX,12346,0,0:00:00,0,0,,\n");
+
+            try
+            {
+                Seen seen = press(ui, file, IMPORT, s -> !s.said.isEmpty(), () -> model.getAutoLayout().setStagingInProgress(true));
+
+                assertNotNull(seen.question, "precondition: the door did not ask");
+                assertEquals(seen.said, Collections.singletonList(I18n.t("autolayout.ui.errorCannotEditLocomotivesWhileRunning")));
+                assertNull(model.getLocByName("FR049 door gate"), "the import went ahead behind a run");
+            }
+            finally
+            {
+                model.getAutoLayout().setStagingInProgress(false);
+                file.delete();
+            }
+        });
+    }
+
+    /**
+     * The locomotive list the operator picks from shows a locomotive the import added, and the message says when a new
+     * locomotive came in without running time because the file gave no last run day.
+     *
+     * MUTATION: leave the list unrefreshed, or leave the no-runtime sentence out, and this fails.
+     */
+    @Test
+    public void testTheListShowsTheNewLocomotiveAndTheMessageSaysItHasNoRuntime() throws Exception
+    {
+        inAWindow((ui, model) ->
+        {
+            File file = write(HEADER11 + "FR049 door listed,,MFX,12347,0,3:00:00,0,0,,,\n");
+
+            try
+            {
+                Seen seen = press(ui, file, IMPORT, s -> !s.said.isEmpty());
+
+                assertEquals(seen.said.size(), 1, "the door said: " + seen.said);
+                assertTrue(words(seen.said.get(0)).contains(words(I18n.f("loc.ui.infoImportCsvNoRuntime", 1))), seen.said.get(0));
+
+                boolean listed = false;
+
+                for (java.awt.Component c : ui.getLocSelector().getMainLocList().getComponents())
+                {
+                    listed |= ((org.traincontrol.gui.locomotive.LocomotiveSelectorItem) c).getText().contains("FR049 door listed");
+                }
+
+                assertTrue(listed, "the locomotive list does not show the locomotive the import added");
+
+                model.deleteLoc("FR049 door listed");
+            }
+            finally
+            {
+                file.delete();
+            }
+        });
+    }
+
+    /**
+     * The question lists the locomotives that change address or decoder, ten lines and then "and N more".
+     *
+     * MUTATION: list them all, or none, and this fails.
+     */
+    @Test
+    public void testTheQuestionListsTenChangesAndThenHowManyMore() throws Exception
+    {
+        inAWindow((ui, model) ->
+        {
+            StringBuilder rows = new StringBuilder(HEADER);
+
+            for (int i = 1; i <= 12; i++)
+            {
+                String name = String.format("FR049 door chg %02d", i);
+
+                model.newMM2Locomotive(name, i);
+                rows.append(name).append(",,DCC,").append(1000 + i).append(",0,0:00:00,0,0,,\n");
+            }
+
+            File file = write(rows.toString());
+
+            try
+            {
+                Seen seen = press(ui, file, CANCEL, s -> s.question != null);
+
+                assertEquals(seen.questionDetails.size(), 11, "the list is not ten lines and a count: " + seen.questionDetails);
+                assertEquals(seen.questionDetails.get(10), I18n.f("loc.ui.importCsvMoreLine", 2));
+                assertEquals(seen.questionDetails.get(0), I18n.f("loc.ui.importCsvChangeLine", "FR049 door chg 01", "MM2 1", "DCC 1001"));
+            }
+            finally
+            {
+                file.delete();
+
+                for (int i = 1; i <= 12; i++) model.deleteLoc(String.format("FR049 door chg %02d", i));
+            }
+        });
+    }
+
+    /**
+     * An address change that would put a locomotive on the address of a train standing on the layout is left out and
+     * counted: the autonomy sweep would take the standing train off the layout.
+     *
+     * MUTATION: let the file give a locomotive the address of a standing train, and this fails.
+     */
+    @Test
+    public void testAnAddressOfAStandingTrainIsNotTaken() throws Exception
+    {
+        inAWindow((ui, model) ->
+        {
+            Locomotive standing = null;
+
+            for (org.traincontrol.automation.Point p : model.getAutoLayout().getPoints())
+            {
+                Locomotive l = p.getCurrentLocomotive();
+
+                if (standing == null && l != null && l.getDecoderType() != Locomotive.decoderType.MULTI_UNIT && !l.hasLinkedLocomotives())
+                {
+                    standing = l;
+                }
+            }
+
+            assertNotNull(standing, "precondition: no train stands on this layout");
+
+            Locomotive other = model.newMM2Locomotive("FR049 door elsewhere", 77);
+            File file = write(HEADER + "FR049 door elsewhere,," + standing.getDecoderType().name() + "," + standing.getAddress()
+                + ",0,0:00:00,0,0,,\n");
+
+            try
+            {
+                Seen seen = press(ui, file, IMPORT, s -> !s.said.isEmpty());
+
+                assertEquals(other.getAddress(), 77, "a locomotive was given the address of a standing train");
+                assertTrue(words(seen.said.get(0)).contains(words(I18n.f("loc.ui.infoImportCsvReaddressRefused", 1))), seen.said.get(0));
+                assertNotNull(model.getAutoLayout().getLocomotiveLocation(standing), "the standing train left the layout");
+            }
+            finally
+            {
+                file.delete();
+                model.deleteLoc("FR049 door elsewhere");
             }
         });
     }
