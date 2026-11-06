@@ -313,14 +313,15 @@ public class testLocomotiveCsvImport
 
         MarklinLocomotiveCsv csv = MarklinLocomotiveCsv.read(OLD + name + ",,DCC,37,0,0:00:00,0,0,,\n");
 
-        assertTrue(csv.movingToReaddress(model).isEmpty(), "a standing train is named with the power off");
+        // The simulated station starts with the power on and does not echo a stop, so the power is set where the model keeps it.
+        java.lang.reflect.Field power = MarklinControlStation.class.getDeclaredField("powerState");
+
+        power.setAccessible(true);
 
         try
         {
-            model.go();
-            model.waitForPowerState(true);
-
-            assertTrue(csv.movingToReaddress(model).isEmpty(), "a standing train is named with the power on");
+            assertTrue(model.getPowerState(), "precondition: the power is on");
+            assertTrue(csv.movingToReaddress(model).isEmpty(), "a standing train is named");
 
             l.setSpeed(30);
             l.waitForSpeedAtOrAbove(1);
@@ -329,22 +330,17 @@ public class testLocomotiveCsvImport
             assertTrue(MarklinLocomotiveCsv.read(OLD + name + ",,MM2,36,0,0:00:00,0,0,,\n").movingToReaddress(model).isEmpty(),
                 "a moving train the file would not re-address is named");
 
-            model.stop();
-            model.waitForPowerState(false);
+            power.setBoolean(model, false);
 
-            assertTrue(l.getSpeed() > 0, "precondition: the train keeps its speed when the power goes off");
+            assertTrue(l.getSpeed() > 0, "precondition: the train is still moving");
             assertTrue(csv.movingToReaddress(model).isEmpty(), "a train is named with the power off");
         }
         finally
         {
+            power.setBoolean(model, true);
+
             l.setSpeed(0);
             l.waitForSpeedBelow(1);
-
-            if (model.getPowerState())
-            {
-                model.stop();
-                model.waitForPowerState(false);
-            }
         }
     }
 
