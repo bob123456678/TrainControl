@@ -527,7 +527,7 @@ public final class CS2File
 
     public List<MarklinLocomotive> parseLocomotivesCS3() throws Exception
     {
-        return parseLocomotivesCS3(parseJSONArray(fetchCS3LocDB()));
+        return parseLocomotivesCS3(readList(fetchCS3LocDB(), null, "loc.errorPreParsingLocomotives"));
     }
 
     /**
@@ -536,7 +536,8 @@ public final class CS2File
      */
     public List<MarklinLocomotive> parseLocomotivesCS3(boolean is260) throws Exception
     {
-        return parseLocomotivesCS3(parseJSONArray(fetchURL(getCS3LocDBUrl(is260 ? 260 : 250))));
+        return parseLocomotivesCS3(readList(fetchURL(getCS3LocDBUrl(is260 ? 260 : 250)), null,
+            "loc.errorPreParsingLocomotives"));
     }
     
     // The accessory list the route import read, for the positions read after it in the same sync
@@ -560,15 +561,24 @@ public final class CS2File
         }
 
         Map<String, String> stateById = new HashMap<>();
-        JSONArray states = new JSONArray(body);
+        JSONArray states = new JSONArray();
+
+        try
+        {
+            states = new JSONArray(body);
+        }
+        catch (JSONException unreadable)
+        {
+            // An answer that will not read changes no position
+        }
 
         for (int i = 0; i < states.length(); i++)
         {
             JSONArray pair = states.optJSONArray(i);
 
-            if (pair != null && pair.optJSONObject(1) != null)
+            if (pair != null && pair.length() > 0 && pair.optJSONObject(1) != null)
             {
-                stateById.put(String.valueOf(pair.get(0)), pair.getJSONObject(1).optString("state", ""));
+                stateById.put(String.valueOf(pair.opt(0)), pair.optJSONObject(1).optString("state", ""));
             }
         }
 
@@ -578,7 +588,7 @@ public final class CS2File
         {
             try (BufferedReader in = fetchURL(getCS3MagDBUrl()))
             {
-                mags = parseJSONArray(in);
+                mags = readList(in, null, "route.warningRouteDataCs3");
             }
         }
 
@@ -587,9 +597,9 @@ public final class CS2File
         for (int i = 0; i < mags.length(); i++)
         {
             JSONObject a = mags.optJSONObject(i);
-            String state = a == null ? null : stateById.get(String.valueOf(a.opt("id")));
+            String state = a == null ? null : positionOf(stateById.get(String.valueOf(a.opt("id"))));
 
-            if (a != null && a.optInt("states") == 2 && a.optInt("address") > 0 && ("0".equals(state) || "1".equals(state))
+            if (a != null && a.optInt("states") == 2 && a.optInt("address") > 0 && state != null
                 && ("mm".equals(a.optString("prot")) || "dcc".equals(a.optString("prot"))))
             {
                 out.put(MarklinAccessory.UIDfromAddress(a.optInt("address") - 1, "dcc".equals(a.optString("prot"))
@@ -598,6 +608,17 @@ public final class CS2File
         }
 
         return out;
+    }
+
+    /**
+     * "0" or "1" for a position the CS3 reports, which is 128 plus the position while the solenoid is energized
+     * (FR-169); null for anything else, which is skipped.
+     */
+    private static String positionOf(String reported)
+    {
+        String plain = reported == null ? "" : reported.trim();
+
+        return "0".equals(plain) || "128".equals(plain) ? "0" : "1".equals(plain) || "129".equals(plain) ? "1" : null;
     }
 
     /** Whether the CS3 runs firmware 2.6 or later, which serves its locomotives and routes differently. */
@@ -659,26 +680,50 @@ public final class CS2File
              BufferedReader magBR   = fetchURL(getCS3MagDBUrl());
              BufferedReader locBR   = fetchURL(getCS3LocDBUrl(is260 ? 260 : 250)))
         {
-            // Now parse routes based on the loc DB version
-            if (is260)
+            // The routes are the list itself from firmware 2.6, and under "automatics" before; either is read
+            return parseRoutesCS3(
+                readList(routeBR, "automatics", "route.warningRouteDataCs3"),
+                readList(magBR, null, "route.warningRouteDataCs3"),
+                readList(locBR, null, "loc.errorPreParsingLocomotives")
+            );
+        }
+    }
+
+    /**
+     * A CS3 list, read so that a firmware change cannot fail the sync: the array itself, or the array under `key` of an
+     * object; anything else is one warning and an empty list (FR-169).
+     */
+    private JSONArray readList(BufferedReader in, String key, String warning) throws IOException
+    {
+        String body = readAndClose(in);
+
+        try
+        {
+            Object value = new JSONTokener(body).nextValue();
+
+            if (value instanceof JSONArray)
             {
-                // New firmware (260+): route DB is an array
-                return parseRoutesCS3(
-                    parseJSONArray(routeBR),
-                    parseJSONArray(magBR),
-                    parseJSONArray(locBR)
-                );
+                return (JSONArray) value;
             }
-            else
+
+            if (key != null && value instanceof JSONObject && ((JSONObject) value).optJSONArray(key) != null)
             {
-                // Old firmware: route DB is an object
-                return parseRoutesCS3(
-                    parseJSONObject(routeBR).getJSONArray("automatics"),
-                    parseJSONArray(magBR),
-                    parseJSONArray(locBR)
-                );
+                return ((JSONObject) value).optJSONArray(key);
             }
         }
+        catch (JSONException unreadable)
+        {
+            // Warned below
+        }
+
+        logMessage(I18n.t(warning));
+        return new JSONArray();
+    }
+
+    /** The string under a key, or null if there is none or it is not a string. */
+    private static String text(JSONObject o, String key)
+    {
+        return o.opt(key) instanceof String ? (String) o.opt(key) : null;
     }
     
     /**
@@ -1039,47 +1084,35 @@ public final class CS2File
     
     private JSONObject getCS3MagById(int searchId, JSONArray mags)
     {
-        // Cache accessories by ID
-        if (this.magList.containsKey(searchId))
-        {
-            return this.magList.get(searchId);
-        }
-        
-        for (int i = 0 ; i < mags.length(); i++)
-        {
-            JSONObject obj = mags.getJSONObject(i);
-            
-            if (searchId == obj.getInt("id"))
-            {
-                this.magList.put(searchId, obj);
-                
-                return obj;
-            }
-        }
-        
-        return null;   
+        return findCS3(this.magList, searchId, mags, o -> o.optInt("id", Integer.MIN_VALUE) == searchId);
     }
     
     private JSONObject getCS3LocById(String searchId, JSONArray locs)
     {
-        if (this.locList.containsKey(searchId))
+        return findCS3(this.locList, searchId, locs, o -> searchId.equals(text(o, "internname")));
+    }
+
+    /** The first record of a CS3 list that matches, remembered by the key it was asked for; records that are not objects are passed over. */
+    private <K> JSONObject findCS3(Map<K, JSONObject> found, K key, JSONArray list, java.util.function.Predicate<JSONObject> matches)
+    {
+        if (found.containsKey(key))
         {
-            return this.locList.get(searchId);
+            return found.get(key);
         }
-        
-        for (int i = 0 ; i < locs.length(); i++)
+
+        for (int i = 0 ; i < list.length(); i++)
         {
-            JSONObject obj = locs.getJSONObject(i);
-            
-            if (searchId.equals(obj.getString("internname")))
+            JSONObject obj = list.optJSONObject(i);
+
+            if (obj != null && matches.test(obj))
             {
-                this.locList.put(searchId, obj);
-                
+                found.put(key, obj);
+
                 return obj;
             }
         }
-        
-        return null;   
+
+        return null;
     }
     
     public List<MarklinRoute> parseRoutesCS3(JSONArray routeList, JSONArray mags, JSONArray locs)
@@ -1397,7 +1430,7 @@ public final class CS2File
 
                     out.add(r);
                 }
-                catch (NumberFormatException | JSONException e)
+                catch (NumberFormatException | JSONException | ClassCastException e)
                 {
                     logMessage(
                         I18n.f("route.invalidCs3Route",
@@ -1448,21 +1481,15 @@ public final class CS2File
         
         Map<String, String> internalNames = new HashMap<>();
         
-        // For multi-units, we need to parse the internal CS3 locomotive names
+        // For multi-units, we need to parse the internal CS3 locomotive names.  A record that will not read is warned of
+        // below, once.
         for (int i = 0 ; i < locomotiveList.length(); i++)
         {
-            try
+            JSONObject loc = locomotiveList.optJSONObject(i);
+
+            if (loc != null && text(loc, "internname") != null && text(loc, "name") != null)
             {
-                JSONObject loc = locomotiveList.getJSONObject(i);
-                internalNames.put(loc.getString("internname"), loc.getString("name"));
-            }
-            catch (JSONException e)
-            {
-                logMessage(
-                    I18n.f("loc.errorPreParsingLocomotives"),
-                    e,
-                    false
-                );
+                internalNames.put(text(loc, "internname"), text(loc, "name"));
             }
         }
         
@@ -1475,11 +1502,11 @@ public final class CS2File
                 Integer uid = Integer.decode(loc.getString("uid"));
 
                 String name = loc.getString("name");
-                String icon = loc.getString("icon");
+                String icon = text(loc, "icon");
                 
                 // dir and speed may now be available from v260+
 
-                String type = loc.getString("dectyp");
+                String type = text(loc, "dectyp") == null ? "" : text(loc, "dectyp");
                 MarklinLocomotive.decoderType decoderType;
                 Map<String, Double> multiUnitLocMap = new HashMap<>();
 
@@ -1498,10 +1525,10 @@ public final class CS2File
 
                         for (String key : trakObj.keySet())
                         {
-                            JSONObject entry = trakObj.getJSONObject(key);
+                            JSONObject entry = trakObj.optJSONObject(key);
 
                             // Extract the locomotive identifier
-                            String identifier = entry.optString("lokname", null);
+                            String identifier = entry == null ? null : text(entry, "lokname");
 
                             if (internalNames.containsKey(identifier))
                             {
@@ -1567,14 +1594,17 @@ public final class CS2File
                 List<Integer> functionTypes = new ArrayList<>();
                 List<Integer> functionTriggerTypes = new ArrayList<>();
 
-                for (Object readArr : loc.getJSONArray("funktionen"))
+                // A function that will not read keeps its place, as a plain toggle, so the others keep their numbers
+                JSONArray functions = loc.optJSONArray("funktionen") == null ? new JSONArray() : loc.optJSONArray("funktionen");
+
+                for (int k = 0; k < functions.length(); k++)
                 {                
-                    JSONObject fInfo = (JSONObject) readArr;
+                    JSONObject fInfo = functions.optJSONObject(k) == null ? new JSONObject() : functions.optJSONObject(k);
                     
                     // Icon path is http://cs3ip/app/assets/fct/fkticon_i_001.svg
-                    Integer fType = Math.max(fInfo.getInt("typ"), fInfo.getInt("typ2"));                                          
-                    Boolean isMoment = fInfo.getBoolean("isMoment");
-                    Integer duration = fInfo.getInt("dauer");
+                    Integer fType = Math.max(fInfo.optInt("typ"), fInfo.optInt("typ2"));                                          
+                    Boolean isMoment = fInfo.optBoolean("isMoment");
+                    Integer duration = fInfo.optInt("dauer");
 
                     functionTypes.add(fType);
                     
@@ -1609,7 +1639,7 @@ public final class CS2File
 
                 out.add(newLoc);
             }
-            catch (NumberFormatException | JSONException e)
+            catch (NumberFormatException | JSONException | ClassCastException e)
             {
                 logMessage(
                     I18n.f("loc.invalidCs3Locomotive",
