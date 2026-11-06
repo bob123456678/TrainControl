@@ -729,7 +729,6 @@ public final class CS2File
 
             requireUsable(routes, mags, "mag", o -> o.optInt("id", Integer.MIN_VALUE) != Integer.MIN_VALUE, "accessories");
             requireUsable(routes, locs, "lok", o -> true, "locomotives");
-            requireKeysOfALargeRailway(routes);
 
             return parseRoutesCS3(routes, mags, locs);
         }
@@ -772,54 +771,6 @@ public final class CS2File
         if (referred && !any)
         {
             throw new UnreadableAnswerException("the routes use " + what + ", and there are none");
-        }
-    }
-
-    // Sizes from which a missing key is too much to be honest: a small railway may have no switch off its default
-    // position, no speed but 0, or only empty routes, and is read as it is
-    private static final int MANY_SWITCHES = 10;
-
-    private static final int MANY_SPEEDS = 10;
-
-    private static final int MANY_ROUTES = 5;
-
-    /**
-     * Keys that real firmware omits for their default ("stellung", "wert") are missing from some items, but not from all
-     * of a large railway: with many switch items none carrying "stellung" or "magnetartikel", many speed items none
-     * carrying "wert", or many routes all empty, the key has gone from the answer and the routes cannot be read (FR-169).
-     */
-    private static void requireKeysOfALargeRailway(JSONArray routes) throws UnreadableAnswerException
-    {
-        int switches = 0, withPosition = 0, withArticle = 0, speeds = 0, withValue = 0, withItems = 0;
-
-        for (int i = 0; i < routes.length(); i++)
-        {
-            JSONArray items = routes.optJSONObject(i) == null ? null : routes.optJSONObject(i).optJSONArray("items");
-            withItems += items != null && items.length() > 0 ? 1 : 0;
-
-            for (int j = 0; items != null && j < items.length(); j++)
-            {
-                JSONObject item = items.optJSONObject(j);
-
-                if (item != null && "mag".equals(item.opt("typ")))
-                {
-                    switches++;
-                    withPosition += item.has("stellung") ? 1 : 0;
-                    withArticle += item.has("magnetartikel") ? 1 : 0;
-                }
-                else if (item != null && "speed".equals(item.opt("typ")))
-                {
-                    speeds++;
-                    withValue += item.has("wert") ? 1 : 0;
-                }
-            }
-        }
-
-        if (routes.length() >= MANY_ROUTES && withItems == 0
-            || switches >= MANY_SWITCHES && (withPosition == 0 || withArticle == 0)
-            || speeds >= MANY_SPEEDS && withValue == 0)
-        {
-            throw new UnreadableAnswerException("a key every route item had has gone");
         }
     }
 
