@@ -56,7 +56,7 @@ public class testNoTwoShortcutsShareAKey
             {null, "public void receiveKeyEvent(KeyEvent e, LayoutLabel label)"}});
 
         HANDLERS.put(MAIN, new String[][] {
-            {null, "private void LocControlPanelKeyPressed("},
+            {null, "public static final class KeyShortcuts"},
             {null, "    boolean locomotiveGestureOnDiagram("}});
     }
 
@@ -69,9 +69,9 @@ public class testNoTwoShortcutsShareAKey
         "\\be(?:vt)?\\.isControlDown\\(\\)\\s*&&\\s*e(?:vt)?\\.getKeyCode\\(\\)"
         + "\\s*==\\s*KeyEvent\\.VK_([A-Z0-9_]+)");
 
-    /** `controlPressed && keyCode == KeyEvent.VK_X`. */
+    /** `Held.CONTROL.on(KeyEvent.VK_X)` in the table, `controlPressed && keyCode == KeyEvent.VK_X` in the gesture. */
     private static final Pattern IN_THE_MAIN_WINDOW = Pattern.compile(
-        "controlPressed\\s*&&\\s*keyCode\\s*==\\s*KeyEvent\\.VK_([A-Z0-9_]+)");
+        "(?:Held\\.CONTROL\\.on\\(|controlPressed\\s*&&\\s*keyCode\\s*==\\s*)KeyEvent\\.VK_([A-Z0-9_]+)");
 
     /**
      * The keys one file binds twice on purpose, as `File.java#KEY`; each is a claim somebody has to defend.
@@ -79,7 +79,7 @@ public class testNoTwoShortcutsShareAKey
      * **A second binding is not automatically a collision.**  `TrainControlUI.locomotiveGestureOnDiagram` is asked
      * FIRST and returns true when it has handled the key, so Control+X and Control+V mean the square under the pointer
      * while it rests on the track diagram, and the locomotive button elsewhere.  Delete is here because the diagram
-     * layer takes it WITHOUT Control and the else-if chain WITH, so they never contend, and the regex sees only the key
+     * layer takes it WITHOUT Control and the shortcut table WITH, so they never contend, and the regex sees only the key
      * name.
      */
     private static final Set<String> BOUND_TWICE_ON_PURPOSE = new LinkedHashSet<>(java.util.Arrays.asList(
@@ -192,15 +192,29 @@ public class testNoTwoShortcutsShareAKey
     }
 
     /**
-     * The main window's last arm takes a bare letter and not a Control chord (OB-197): `buttonMapping` holds all 26
-     * letters, so without `!controlPressed` Control plus every letter the arms above do not catch selected a locomotive
-     * button.  Everything this class says about free keys rests on this arm, so it is asserted rather than assumed.
+     * The main window's letter row takes a bare letter and not a Control chord (OB-197): `buttonMapping` holds all 26
+     * letters, so without `Held.NOT_CONTROL` Control plus every letter the rows above do not catch selected a locomotive
+     * button.  Everything this class says about free keys rests on this row, so it is asserted rather than assumed.
      */
     @Test
     public void testTheFallThroughStillFiltersControl() throws IOException
     {
-        assertTrue(SourceOf.allCode().contains("!controlPressed && this.buttonMapping.containsKey(keyCode)"),
-            "the main window's last arm no longer filters Control, so Control plus every letter no"
+        Map<Integer, Object> letters = new LinkedHashMap<>();
+
+        for (int key = java.awt.event.KeyEvent.VK_A; key <= java.awt.event.KeyEvent.VK_Z; key++) letters.put(key, key);
+
+        Set<String> bare = new TreeSet<>();
+
+        for (int key : letters.keySet())
+        {
+            org.traincontrol.gui.TrainControlUI.KeyShortcuts.Row row =
+                org.traincontrol.gui.TrainControlUI.KeyShortcuts.choose(key, java.awt.event.InputEvent.CTRL_MASK, letters);
+
+            if (row != null && row.name().equals("show a letter's button")) bare.add(row.toString() + " on " + key);
+        }
+
+        assertEquals(bare, new TreeSet<String>(),
+            "the main window's letter row no longer filters Control, so Control plus every letter no"
             + " named shortcut catches selects a locomotive button again - and the free-key list this"
             + " class prints is wrong about all of them. That is OB-197 coming back");
     }
