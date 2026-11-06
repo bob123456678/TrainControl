@@ -50,6 +50,13 @@ public class Point
      * withholds the station from automatic selection, so a route picked by hand and Return Home still reach it.
      */
     private boolean autoDestination = true;
+
+    /** Whether a trip must end here rather than run through (FR-111); see `isStopOnly`. */
+    private boolean stopOnly = false;
+
+    /** The key a stop-only station is written under, as false, and only then: absent means a trip may run through. */
+    public static final String RUN_THROUGH = "runThrough";
+
     private Set<Locomotive> excludedLocs;
 
     /**
@@ -188,6 +195,21 @@ public class Point
     public void setAutoDestination(boolean status)
     {
         this.autoDestination = status;
+    }
+
+    /**
+     * Whether a trip may end here but not run through (FR-111).  Every copy of a square says the same.  Unlike a
+     * terminus, nothing turns a train round here.  Return Home alone is exempt: `Layout.stopOnlyStationRunThrough`.
+     */
+    public boolean isStopOnly()
+    {
+        return stopOnly;
+    }
+
+    /** @param stopOnly true where a trip must end here rather than run through (FR-111) */
+    public void setStopOnly(boolean stopOnly)
+    {
+        this.stopOnly = stopOnly;
     }
 
     /**
@@ -1046,7 +1068,12 @@ public class Point
         {
             jsonObj.put("autoDestination", this.autoDestination);
         }
-        
+
+        if (this.stopOnly)
+        {
+            jsonObj.put(RUN_THROUGH, false);
+        }
+
         if (this.priority != 0)
         {
             jsonObj.put("priority", this.priority);

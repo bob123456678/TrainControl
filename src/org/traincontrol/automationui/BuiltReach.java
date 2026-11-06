@@ -29,6 +29,7 @@ public final class BuiltReach
     private final Map<String, List<String>> onward = new HashMap<>();
     private final Set<String> stations = new HashSet<>();
     private final Set<String> inactive = new HashSet<>();
+    private final Set<String> stopOnly = new HashSet<>();
     private final Map<String, TileKey> squareOf;
     private final Map<TileKey, List<String>> copiesOf = new LinkedHashMap<>();
 
@@ -47,6 +48,8 @@ public final class BuiltReach
 
             // As parseAuto reads it: only a boolean false switches a Point off
             if (Boolean.FALSE.equals(point.opt("active"))) inactive.add(name);
+
+            if (Boolean.FALSE.equals(point.opt(org.traincontrol.automation.Point.RUN_THROUGH))) stopOnly.add(name);
 
             TileKey square = squareOf.get(name);
 
@@ -76,8 +79,9 @@ public final class BuiltReach
 
     /**
      * The squares, other than its own, where a train starting on this copy can be sent to a station copy.  With
-     * `closures`, a copy out of service is neither a way through nor somewhere to stop, as `isPathClear` refuses it;
-     * the start is exempt, since a train on a square switched off is driven off it by hand.
+     * `closures`, a copy out of service is neither a way through nor somewhere to stop, as `isPathClear` refuses it,
+     * and a stop-only station is somewhere to stop and no way through (FR-111); the start is exempt, since a train on a
+     * square switched off is driven off it by hand.
      */
     public Set<TileKey> stationsReachedFrom(String copy, boolean closures)
     {
@@ -102,7 +106,7 @@ public final class BuiltReach
 
                 if (stations.contains(next) && square != null && !square.equals(home)) reached.add(square);
 
-                queue.add(next);
+                if (!closures || !stopOnly.contains(next)) queue.add(next);
             }
         }
 

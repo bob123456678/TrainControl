@@ -37,6 +37,8 @@ public class TimetablePath
     // again, so the train ends facing and standing as it did when it was recorded.
     private Boolean turnAtTheEnd = null;
 
+    private boolean returnHome = false;
+
     public TimetablePath(Locomotive loc, List<Edge> path, long executionTime)
     {
         this.loc = loc;
@@ -94,6 +96,18 @@ public class TimetablePath
     public void setTurnAtTheEnd(Boolean turnAtTheEnd)
     {
         this.turnAtTheEnd = turnAtTheEnd;
+    }
+
+    /** Whether this entry is a leg of a Return Home plan, which alone may run through a stop-only station (FR-111). */
+    public boolean isReturnHome()
+    {
+        return returnHome;
+    }
+
+    /** Marks this entry as a leg of a Return Home plan; never saved, as a plan is never kept as a timetable. */
+    void setReturnHome(boolean returnHome)
+    {
+        this.returnHome = returnHome;
     }
 
     /** Whether the railway can run this entry. */
