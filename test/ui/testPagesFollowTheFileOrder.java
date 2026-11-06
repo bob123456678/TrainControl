@@ -315,7 +315,9 @@ public class testPagesFollowTheFileOrder extends support.PageWindowTest
 
         assertEquals(Files.readAllBytes(setupFile().toPath()), setup, "sorting rewrote the autonomy setup");
 
-        assertEquals(model.getLayoutList(), BY_NAME, "the model is not in name order");
+        // The model follows the file by a posted refresh, not with it
+        assertTrue(Components.waitFor(() -> model.getLayoutList().equals(BY_NAME), 15000),
+            "the model is not in name order: " + model.getLayoutList());
 
         assertTrue(editorOn("1 - Main") != null, "the editor left its page");
 

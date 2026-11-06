@@ -27,6 +27,12 @@ import org.traincontrol.util.I18n;
  */
 final class FindAPointPrompt extends JDialog
 {
+    // The look is installed before the first window of this class is built, as every window's is
+    static
+    {
+        if (!java.awt.GraphicsEnvironment.isHeadless()) org.traincontrol.gui.TrainControlUI.installLookAndFeel();
+    }
+
     /** One named point: where it is and what it is called. */
     static final class Entry
     {
@@ -69,6 +75,7 @@ final class FindAPointPrompt extends JDialog
         });
 
         setDefaultCloseOperation(DISPOSE_ON_CLOSE);
+        org.traincontrol.gui.TrainControlUI.applyWindowIcon(this);
 
         JPanel content = new JPanel(new BorderLayout(4, 4));
 

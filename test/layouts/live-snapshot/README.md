@@ -186,3 +186,4 @@ not fix it. Name the square.
 - `ui.testAPageWindowsMenuAsksOverIt`
 - `ui.testAPageWindowsSetupMenuAsksOverIt`
 - `ui.testFindAPoint`
+- `ui.testTheEditorsDoorsAskOverThem`

@@ -1294,18 +1294,6 @@ public class LayoutEditor extends PositionAwareJFrame
      */
     public void setAutonomyMode(org.traincontrol.automationui.AutonomySession session)
     {
-        try
-        {
-            setAutonomyModeNow(session);
-        }
-        finally
-        {
-            refreshFindPointItem();
-        }
-    }
-
-    private void setAutonomyModeNow(org.traincontrol.automationui.AutonomySession session)
-    {
         // Resizing the page is editing the diagram, so its buttons go with the palette; Toggle Visibility stays.
         if (this.diagramSize != null) this.diagramSize.setVisible(session == null);
         if (this.plusButton != null) this.plusButton.setVisible(session == null);
@@ -1694,6 +1682,8 @@ public class LayoutEditor extends PositionAwareJFrame
 
         // And the pointer says whether a drag picks
         this.showWhetherADragPicks();
+
+        refreshFindPointItem();
     }
 
     /**

@@ -1040,12 +1040,12 @@ public class testTheLayoutEditorManagesPages
 
     /**
      * FR-174: the editor's menu is called Tools, and holds only what has no icon: Sort Pages by Name, a separator, and
-     * Combine Linked Pages.  The page actions with icons are not in it.
+     * Combine Linked Pages, then (FR-055) a separator and Find a Point.  The page actions with icons are not in it.
      *
      * MUTATION: put Add Blank Page back in `mountPageMenu`, or the title back to Manage Pages, and this fails.
      */
     @Test
-    public void testTheToolsMenuHoldsOnlySortAndCombine() throws Exception
+    public void testTheToolsMenuHoldsSortCombineAndFind() throws Exception
     {
         Watched editor = editPage("1 - Main", false);
 
@@ -1059,7 +1059,7 @@ public class testTheLayoutEditorManagesPages
 
         String[] keys = {"ui.main.toolbar.addBlackPage", "ui.main.toolbar.renameCurrentPage",
             "ui.main.toolbar.duplicateCurrentPage", "ui.main.toolbar.sortPages", "layout.ui.menuCombineLinkedPages",
-            "ui.main.toolbar.deleteCurrentPage"};
+            "ui.main.toolbar.deleteCurrentPage", "layout.ui.menuFindAPoint"};
 
         List<String> items = Components.onTheEventThread(() ->
         {
@@ -1078,7 +1078,7 @@ public class testTheLayoutEditorManagesPages
             return out;
         });
 
-        assertEquals(String.join(" ", items), "ui.main.toolbar.sortPages | layout.ui.menuCombineLinkedPages",
+        assertEquals(String.join(" ", items), "ui.main.toolbar.sortPages | layout.ui.menuCombineLinkedPages | layout.ui.menuFindAPoint",
             "the Tools menu's items, | for a separator");
     }
 
