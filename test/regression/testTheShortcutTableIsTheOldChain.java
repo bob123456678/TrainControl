@@ -342,7 +342,7 @@ public class testTheShortcutTableIsTheOldChain
     /**
      * The window's handler is the lookup and what ran before the chain, and nothing else.
      *
-     * MUTATION: add `if (evt.getKeyCode() == KeyEvent.VK_F25) stop();` to `LocControlPanelKeyPressed`, and this fails.
+     * MUTATION: add `if (evt.getKeyCode() == KeyEvent.VK_PAUSE) stop();` to `LocControlPanelKeyPressed`, and this fails.
      */
     @Test
     public void testNoKeyHandlingRemainsInTheHandler()

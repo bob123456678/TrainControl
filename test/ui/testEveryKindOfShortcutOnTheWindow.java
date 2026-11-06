@@ -133,7 +133,8 @@ public class testEveryKindOfShortcutOnTheWindow
     }
 
     /**
-     * Alt letters: Alt+O switches the shown train's functions off, Alt+G sends the power on.
+     * Alt letters: Alt+S and Alt+U save the shown train's functions and speed, Alt+O switches its functions off, Alt+P and
+     * Alt+V bring back what was saved, and Alt+G sends the power on.
      *
      * MUTATION: in the row "functions off", `applyPreferredFunctions`, and this fails.
      */
@@ -142,11 +143,31 @@ public class testEveryKindOfShortcutOnTheWindow
     {
         one.setF(3, true);
         two.setF(3, true);
+        one.setSpeed(40);
+
+        Keys.press(keyboard(), KeyEvent.VK_S, ALT);
+
+        assertTrue(waitFor(() -> one.getPreferredFunctions()[3]), "Alt+S did not save the function");
+
+        Keys.press(keyboard(), KeyEvent.VK_U, ALT);
+
+        assertTrue(waitFor(() -> one.getPreferredSpeed() == 40), "Alt+U did not save the speed");
 
         Keys.press(keyboard(), KeyEvent.VK_O, ALT);
 
         assertTrue(waitFor(() -> !one.getF(3)), "Alt+O left the shown train's function on");
         assertTrue(two.getF(3), "Alt+O reached the other train");
+
+        Keys.press(keyboard(), KeyEvent.VK_P, ALT);
+
+        assertTrue(waitFor(() -> one.getF(3)), "Alt+P did not bring back the function Alt+S saved");
+
+        one.setSpeed(0);
+
+        Keys.press(keyboard(), KeyEvent.VK_V, ALT);
+
+        assertTrue(waitFor(() -> one.getSpeed() == 40), "Alt+V did not bring back the speed Alt+U saved: "
+            + one.getSpeed());
 
         sendsOnce(KeyEvent.VK_G, ALT, CS2Message.CMD_SYSSUB_GO);
     }
