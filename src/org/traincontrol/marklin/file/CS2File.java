@@ -522,22 +522,63 @@ public final class CS2File
      */
     private BufferedReader fetchCS3LocDB() throws Exception
     {
-        return fetchURL(getCS3LocDBUrl());
+        return openCS3Locos(isCS3Version260OrAbove());
+    }
+
+    /**
+     * The locomotive list of the endpoint the firmware version names.  If that answers not found, the old probe decides
+     * which endpoint the station has, once, and its answer replaces the version for this parser; a station that has
+     * neither is not found (FR-170).
+     */
+    private BufferedReader openCS3Locos(boolean is260) throws Exception
+    {
+        try
+        {
+            return fetchURL(getCS3LocDBUrl(is260 ? 260 : 250));
+        }
+        catch (FileNotFoundException notThere)
+        {
+            boolean probed = !isNotFoundError(getCS3LocDBUrl(260));
+            this.cs3Firmware = new FirmwareVersion(2, probed ? 6 : 5, 0);
+
+            if (probed == is260)
+            {
+                throw notThere;
+            }
+
+            return fetchURL(getCS3LocDBUrl(probed ? 260 : 250));
+        }
     }
 
     public List<MarklinLocomotive> parseLocomotivesCS3() throws Exception
     {
-        return parseLocomotivesCS3(readList(fetchCS3LocDB(), null, "loc.errorPreParsingLocomotives"));
+        return parseLocomotivesCS3(namedList(readList(fetchCS3LocDB(), null)));
     }
 
     /**
-     * The same, for a caller that probed the firmware once for the whole sync.
+     * The locomotive list if every record can be matched by its internal name, which a multi-unit's members and a route's
+     * locomotives are named by; otherwise it cannot be used, and the import is left alone (FR-169).
+     */
+    private static JSONArray namedList(JSONArray locomotives) throws UnreadableAnswerException
+    {
+        for (int i = 0; i < locomotives.length(); i++)
+        {
+            if (locomotives.optJSONObject(i) != null && text(locomotives.optJSONObject(i), "internname") == null)
+            {
+                throw new UnreadableAnswerException("a locomotive has no internal name");
+            }
+        }
+
+        return locomotives;
+    }
+
+    /**
+     * The same, for a caller that already knows the firmware.
      * @param is260 what isCS3Version260OrAbove answered
      */
     public List<MarklinLocomotive> parseLocomotivesCS3(boolean is260) throws Exception
     {
-        return parseLocomotivesCS3(readList(fetchURL(getCS3LocDBUrl(is260 ? 260 : 250)), null,
-            "loc.errorPreParsingLocomotives"));
+        return parseLocomotivesCS3(namedList(readList(openCS3Locos(is260), null)));
     }
     
     // The accessory list the route import read, for the positions read after it in the same sync
@@ -588,7 +629,7 @@ public final class CS2File
         {
             try (BufferedReader in = fetchURL(getCS3MagDBUrl()))
             {
-                mags = readList(in, null, "route.warningRouteDataCs3");
+                mags = readList(in, null);
             }
         }
 
@@ -663,14 +704,12 @@ public final class CS2File
 
     public List<MarklinRoute> parseRoutesCS3() throws Exception
     {
-        // Probed once and passed explicitly: the no-argument getCS3LocDBUrl() would probe again.
-        boolean is260 = isCS3Version260OrAbove();
-
-        return parseRoutesCS3(is260);
+        return parseRoutesCS3(isCS3Version260OrAbove());
     }
 
     /**
-     * The same, for a caller that probed the firmware once for the whole sync (each probe reads the locomotive list).
+     * The same, for a caller that already knows the firmware.  Routes need all three lists: if any cannot be read, this
+     * throws UnreadableAnswerException and the caller leaves its routes as they are (FR-169).
      * @param is260 what isCS3Version260OrAbove answered
      */
     public List<MarklinRoute> parseRoutesCS3(boolean is260) throws Exception
@@ -678,22 +717,65 @@ public final class CS2File
         // All three in one try-with-resources, so an exception after the first is opened leaks none of them.
         try (BufferedReader routeBR = fetchURL(getCS3RouteDBUrl());
              BufferedReader magBR   = fetchURL(getCS3MagDBUrl());
-             BufferedReader locBR   = fetchURL(getCS3LocDBUrl(is260 ? 260 : 250)))
+             BufferedReader locBR   = openCS3Locos(is260))
         {
             // The routes are the list itself from firmware 2.6, and under "automatics" before; either is read
-            return parseRoutesCS3(
-                readList(routeBR, "automatics", "route.warningRouteDataCs3"),
-                readList(magBR, null, "route.warningRouteDataCs3"),
-                readList(locBR, null, "loc.errorPreParsingLocomotives")
-            );
+            JSONArray routes = readList(routeBR, "automatics");
+            JSONArray mags = readList(magBR, null);
+            JSONArray locs = readList(locBR, null);
+
+            requireUsable(routes, mags, "mag", o -> o.optInt("id", Integer.MIN_VALUE) != Integer.MIN_VALUE, "accessories");
+            requireUsable(routes, locs, "lok", o -> text(o, "internname") != null, "locomotives");
+
+            return parseRoutesCS3(routes, mags, locs);
         }
     }
 
     /**
-     * A CS3 list, read so that a firmware change cannot fail the sync: the array itself, or the array under `key` of an
-     * object; anything else is one warning and an empty list (FR-169).
+     * Whether the routes' items name records of `list` (a "typ" of `reference`, or any "lok" for locomotives): then every
+     * record must carry what matches them, and there must be some, or no route could be read right.
      */
-    private JSONArray readList(BufferedReader in, String key, String warning) throws IOException
+    private static void requireUsable(JSONArray routes, JSONArray list, String reference,
+        java.util.function.Predicate<JSONObject> usable, String what) throws UnreadableAnswerException
+    {
+        boolean referred = false;
+
+        for (int i = 0; i < routes.length(); i++)
+        {
+            JSONArray items = routes.optJSONObject(i) == null ? null : routes.optJSONObject(i).optJSONArray("items");
+
+            for (int j = 0; items != null && j < items.length(); j++)
+            {
+                JSONObject item = items.optJSONObject(j);
+                referred |= item != null && ("lok".equals(reference) ? item.has("lok") : reference.equals(item.opt("typ")));
+            }
+        }
+
+        boolean any = false;
+
+        for (int i = 0; referred && i < list.length(); i++)
+        {
+            JSONObject record = list.optJSONObject(i);
+
+            if (record != null && !usable.test(record))
+            {
+                throw new UnreadableAnswerException("a record of the " + what + " cannot be matched");
+            }
+
+            any |= record != null;
+        }
+
+        if (referred && !any)
+        {
+            throw new UnreadableAnswerException("the routes use " + what + ", and there are none");
+        }
+    }
+
+    /**
+     * A CS3 list: the array itself, or the array under `key` of an object.  Anything else, including an empty or cut-off
+     * answer, is not a list (FR-169).
+     */
+    private static JSONArray readList(BufferedReader in, String key) throws IOException
     {
         String body = readAndClose(in);
 
@@ -713,11 +795,10 @@ public final class CS2File
         }
         catch (JSONException unreadable)
         {
-            // Warned below
+            // Not a list, below
         }
 
-        logMessage(I18n.t(warning));
-        return new JSONArray();
+        throw new UnreadableAnswerException("the answer is not a list");
     }
 
     /** The string under a key, or null if there is none or it is not a string. */
@@ -1115,9 +1196,19 @@ public final class CS2File
         return null;
     }
     
+    // The ids of the routes of the last parse that would not read: the sync keeps those it holds locked
+    private final List<Integer> unreadableRouteIds = new ArrayList<>();
+
+    /** The ids of the routes the last CS3 route parse had to skip, so that the routes held under them are left alone. */
+    public List<Integer> getUnreadableRouteIds()
+    {
+        return new ArrayList<>(this.unreadableRouteIds);
+    }
+
     public List<MarklinRoute> parseRoutesCS3(JSONArray routeList, JSONArray mags, JSONArray locs)
     {
         this.cs3Mags = mags;
+        this.unreadableRouteIds.clear();
 
         if (locs.isEmpty())
         {
@@ -1432,6 +1523,13 @@ public final class CS2File
                 }
                 catch (NumberFormatException | JSONException | ClassCastException e)
                 {
+                    JSONObject skipped = routeList.optJSONObject(i);
+
+                    if (skipped != null && skipped.optInt("id", Integer.MIN_VALUE) != Integer.MIN_VALUE)
+                    {
+                        this.unreadableRouteIds.add(skipped.optInt("id"));
+                    }
+
                     logMessage(
                         I18n.f("route.invalidCs3Route",
                             describeCS3Field(routeList, i, "name"),
@@ -1481,15 +1579,22 @@ public final class CS2File
         
         Map<String, String> internalNames = new HashMap<>();
         
-        // For multi-units, we need to parse the internal CS3 locomotive names.  A record that will not read is warned of
-        // below, once.
+        // For multi-units, we need to parse the internal CS3 locomotive names.  A record with no name is warned of in the
+        // loop below.
         for (int i = 0 ; i < locomotiveList.length(); i++)
         {
             JSONObject loc = locomotiveList.optJSONObject(i);
 
-            if (loc != null && text(loc, "internname") != null && text(loc, "name") != null)
+            if (loc != null && text(loc, "name") != null)
             {
-                internalNames.put(text(loc, "internname"), text(loc, "name"));
+                if (text(loc, "internname") != null)
+                {
+                    internalNames.put(text(loc, "internname"), text(loc, "name"));
+                }
+                else
+                {
+                    logMessage(I18n.f("loc.errorPreParsingLocomotives"), null, false);
+                }
             }
         }
         
@@ -1506,7 +1611,7 @@ public final class CS2File
                 
                 // dir and speed may now be available from v260+
 
-                String type = text(loc, "dectyp") == null ? "" : text(loc, "dectyp");
+                String type = loc.getString("dectyp");
                 MarklinLocomotive.decoderType decoderType;
                 Map<String, Double> multiUnitLocMap = new HashMap<>();
 
@@ -1525,10 +1630,10 @@ public final class CS2File
 
                         for (String key : trakObj.keySet())
                         {
-                            JSONObject entry = trakObj.optJSONObject(key);
+                            JSONObject entry = trakObj.getJSONObject(key);
 
                             // Extract the locomotive identifier
-                            String identifier = entry == null ? null : text(entry, "lokname");
+                            String identifier = entry.getString("lokname");
 
                             if (internalNames.containsKey(identifier))
                             {
@@ -1594,17 +1699,15 @@ public final class CS2File
                 List<Integer> functionTypes = new ArrayList<>();
                 List<Integer> functionTriggerTypes = new ArrayList<>();
 
-                // A function that will not read keeps its place, as a plain toggle, so the others keep their numbers
-                JSONArray functions = loc.optJSONArray("funktionen") == null ? new JSONArray() : loc.optJSONArray("funktionen");
-
-                for (int k = 0; k < functions.length(); k++)
+                // Every function must read: a locomotive with a function missing would overwrite the functions it holds
+                for (Object readArr : loc.getJSONArray("funktionen"))
                 {                
-                    JSONObject fInfo = functions.optJSONObject(k) == null ? new JSONObject() : functions.optJSONObject(k);
+                    JSONObject fInfo = (JSONObject) readArr;
                     
                     // Icon path is http://cs3ip/app/assets/fct/fkticon_i_001.svg
-                    Integer fType = Math.max(fInfo.optInt("typ"), fInfo.optInt("typ2"));                                          
-                    Boolean isMoment = fInfo.optBoolean("isMoment");
-                    Integer duration = fInfo.optInt("dauer");
+                    Integer fType = Math.max(fInfo.getInt("typ"), fInfo.getInt("typ2"));                                          
+                    Boolean isMoment = fInfo.getBoolean("isMoment");
+                    Integer duration = fInfo.getInt("dauer");
 
                     functionTypes.add(fType);
                     
@@ -1874,7 +1977,10 @@ public final class CS2File
             // And the locomotives (OB-099): a CS3 keeps its locomotive database only in this JSON.
             try
             {
-                copyAtomically(this.getCS3LocDBUrl(), new File(configDir, "CS3_locos.json"));
+                try (BufferedReader locos = openCS3Locos(isCS3Version260OrAbove()))
+                {
+                    copyAtomically(locos, new File(configDir, "CS3_locos.json"));
+                }
             }
             catch (Exception noCS3Locs)
             {
@@ -1892,27 +1998,33 @@ public final class CS2File
     {
         try (BufferedReader reader = fetchURL(url))
         {
-            Util.writeAtomically(target, out ->
-            {
-                try (BufferedWriter writer = new BufferedWriter(
-                    new java.io.OutputStreamWriter(out, java.nio.charset.StandardCharsets.UTF_8)))
-                {
-                    String line;
-
-                    while ((line = reader.readLine()) != null)
-                    {
-                        writer.write(line);
-                        writer.newLine();
-                    }
-                }
-                catch (Exception e)
-                {
-                    // As an IOException, as the staging write contracts: throwing at all discards the staged file and
-                    // keeps the previous one.
-                    throw new java.io.IOException(e);
-                }
-            });
+            copyAtomically(reader, target);
         }
+    }
+
+    /** The same, from a reader already open. */
+    private void copyAtomically(BufferedReader reader, File target) throws Exception
+    {
+        Util.writeAtomically(target, out ->
+        {
+            try (BufferedWriter writer = new BufferedWriter(
+                new java.io.OutputStreamWriter(out, java.nio.charset.StandardCharsets.UTF_8)))
+            {
+                String line;
+
+                while ((line = reader.readLine()) != null)
+                {
+                    writer.write(line);
+                    writer.newLine();
+                }
+            }
+            catch (Exception e)
+            {
+                // As an IOException, as the staging write contracts: throwing at all discards the staged file and
+                // keeps the previous one.
+                throw new java.io.IOException(e);
+            }
+        });
     }
 
     private List<String> parseLayoutList() throws Exception

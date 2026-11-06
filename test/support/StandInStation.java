@@ -51,6 +51,9 @@ public final class StandInStation implements AutoCloseable
                 body = "{\"error\":\"Not Found\"}".getBytes(StandardCharsets.UTF_8);
             }
 
+            // A new connection for every request: the client library retries a request it thinks a kept-alive connection
+            // dropped, which would put a request in the log twice
+            exchange.getResponseHeaders().add("Connection", "close");
             exchange.sendResponseHeaders(status, body.length == 0 ? -1 : body.length);
 
             try (OutputStream out = exchange.getResponseBody())
@@ -178,11 +181,27 @@ public final class StandInStation implements AutoCloseable
                 case "/app/api/mags": return file(is260 ? "test/cs3_v261/app/api/mags.json" : "test/CS3_mags.json");
                 case "/app/api/mags/state": return file("test/cs3_v261/app/api/mags/state.json");
                 case "/app/api/gbs": return file("test/cs3_v261/app/api/gbs.json");
-                case "/app/api/automatics": return file(is260 ? "test/CS3_automatics_v260.json"
-                    : "test/CS3_automatics.json");
+                case "/app/api/automatics": return withLocomotiveRoutes(is260);
                 default: return path.startsWith("/config/") ? file("test/cs3_v261" + path) : null;
             }
         };
+    }
+
+    /**
+     * The fixture's routes with two more, test/CS3_automatics_lok.json, that start locomotives (speed and direction items
+     * naming them): the fixtures hold no such route.  The list itself from 2.6, under "automatics" before.
+     */
+    private static byte[] withLocomotiveRoutes(boolean is260)
+    {
+        String text = new String(file(is260 ? "test/CS3_automatics_v260.json" : "test/CS3_automatics.json"), StandardCharsets.UTF_8);
+        org.json.JSONArray more = new org.json.JSONArray(new String(file("test/CS3_automatics_lok.json"), StandardCharsets.UTF_8));
+        Object parsed = new org.json.JSONTokener(text).nextValue();
+        org.json.JSONArray list = parsed instanceof org.json.JSONArray ? (org.json.JSONArray) parsed
+            : ((org.json.JSONObject) parsed).getJSONArray("automatics");
+
+        for (int i = 0; i < more.length(); i++) list.put(more.get(i));
+
+        return parsed.toString().getBytes(StandardCharsets.UTF_8);
     }
 
     /** A file's bytes, or null when there is no such file. */

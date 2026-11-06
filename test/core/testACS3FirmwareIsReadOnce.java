@@ -15,7 +15,8 @@ import support.StationRig;
  * old probe of the 2.6 locomotive endpoint finds the kind, once.  A CS2 never asks (testACS2RequestsAreAsBefore).
  *
  * MUTATION: have cs3Firmware in CS2File forget its answer (never store it in `this.cs3Firmware`), and the rename check
- * and the download ask /app/api/info again.
+ * and the download ask /app/api/info again.  Make openCS3Locos rethrow when the chosen endpoint is not found, and the two
+ * stations whose info names the wrong endpoint fail their sync.
  *
  * @author Adam
  */
@@ -38,7 +39,7 @@ public class testACS3FirmwareIsReadOnce
             StandInStation s = rig.station;
             String out = "";
 
-            rig.model.syncWithCS2();
+            assertTrue(rig.model.syncWithCS2() >= 0, "the sync succeeds: " + rig.model.getLastSyncError());
             out += count(s) + ";";
             rig.model.getRenameProposals();
             out += count(s) + ";";
@@ -93,6 +94,20 @@ public class testACS3FirmwareIsReadOnce
         assertEquals(afterEach("260", "{\"softwareVersion\":\"unknown\"}"), "1/3/0;1/4/0;1/5/0");
         assertEquals(afterEach("260", "{\"name\":\"CS3\"}"), "1/3/0;1/4/0;1/5/0");
         assertEquals(afterEach("260", "not json"), "1/3/0;1/4/0;1/5/0");
+    }
+
+    /** Info says 2.5 and only the 2.6 list is there: the old probe decides, once, and the sync, the check and the download follow it. */
+    @Test
+    public void testAnInfoThatNamesAnEndpointTheStationLacksIsOverruledByTheProbe() throws Exception
+    {
+        assertEquals(afterEach("260", "{\"softwareVersion\":\"2.5.1 (Build 1)\"}"), "1/3/1;1/4/1;1/5/1");
+    }
+
+    /** Info says 2.6 and only the older list is there. */
+    @Test
+    public void testAnInfoThatNamesTheNewEndpointOnAnOlderStationIsOverruledToo() throws Exception
+    {
+        assertEquals(afterEach("250", INFO_261), "1/2/2;1/2/3;1/2/4");
     }
 
     /** With no sync before, the action finds the kind itself with one request, and asks no more after. */

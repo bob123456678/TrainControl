@@ -60,6 +60,7 @@ import org.traincontrol.base.Route;
 import org.traincontrol.base.RouteCommand;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.file.CS2File;
+import org.traincontrol.marklin.file.UnreadableAnswerException;
 import org.traincontrol.base.udp.CANMessage;
 import org.traincontrol.marklin.udp.CS2Message;
 import org.traincontrol.marklin.udp.CSDetect;
@@ -1588,16 +1589,23 @@ public class MarklinControlStation implements ViewListener, ModelListener
             // Import layout
             this.syncLayoutsFromConfiguredSource();
             
-            // Import locomotives
+            // Import routes
             List<MarklinRoute> parsedRoutes;
 
-            // Probed once for the routes and the locomotives: each probe reads the whole locomotive list (OB-403)
-            boolean cs3Is260 = false;
-            
             if (this.isCS3)
             {
-                cs3Is260 = fileParser.isCS3Version260OrAbove();
-                parsedRoutes = fileParser.parseRoutesCS3(cs3Is260);
+                // The firmware is read once for the whole sync, by the parser (OB-403, FR-170).  A CS3 answer that cannot
+                // be read leaves the routes, or the locomotives below, as they are, and the sync goes on (FR-169).
+                try
+                {
+                    parsedRoutes = fileParser.parseRoutesCS3();
+                }
+                catch (UnreadableAnswerException e)
+                {
+                    this.logf("route.importSkippedUnreadable");
+                    parsedRoutes = null;
+                }
+
                 this.adoptCS3AccessoryStates();
             }
             else
@@ -1605,14 +1613,15 @@ public class MarklinControlStation implements ViewListener, ModelListener
                 parsedRoutes = fileParser.parseRoutes();
             }
             
-            // Unlock all routes in case they have been deleted
-            for (MarklinRoute r : this.getRoutes())
+            // Unlock all routes in case they have been deleted; one the Central Station has but that would not read stays
+            // as it is
+            for (MarklinRoute r : parsedRoutes == null ? Collections.<MarklinRoute>emptyList() : this.getRoutes())
             {
-                r.setLocked(false);
+                if (!this.isCS3 || !fileParser.getUnreadableRouteIds().contains(r.getId())) r.setLocked(false);
             }
             
             // Import routes, one step each - see adoptCentralStationRoute
-            for (MarklinRoute r : parsedRoutes)
+            for (MarklinRoute r : parsedRoutes == null ? Collections.<MarklinRoute>emptyList() : parsedRoutes)
             {
                 if (this.adoptCentralStationRoute(r)) num++;
             }
@@ -1622,7 +1631,15 @@ public class MarklinControlStation implements ViewListener, ModelListener
             
             if (this.isCS3)
             {
-                parsedLocs = fileParser.parseLocomotivesCS3(cs3Is260);
+                try
+                {
+                    parsedLocs = fileParser.parseLocomotivesCS3();
+                }
+                catch (UnreadableAnswerException e)
+                {
+                    this.logf("loc.importSkippedUnreadable");
+                    parsedLocs = new ArrayList<>();
+                }
             }
             else
             {

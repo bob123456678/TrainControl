@@ -42,7 +42,8 @@ public class testACS2RequestsAreAsBefore
         try (support.StationRig rig = new support.StationRig(root.toFile(), (path, n) ->
             path.equals("/config/geraet.vrs") ? CS2_DEVICE : StandInStation.file(served.getPath() + path)))
         {
-            actual = rig.scenario(root.toFile(), local).replace(rig.station.address(), "STATION");
+            actual = rig.scenario(root.toFile(), local) + support.HeldState.of(rig.model);
+            actual = actual.replace(rig.station.address(), "STATION");
         }
 
         support.GoldenCheck.check(actual, GOLDEN, "test/baseline/cs2_requests_golden_changes.tsv", "cs2_requests_actual.txt");

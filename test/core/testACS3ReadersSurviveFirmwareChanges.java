@@ -4,31 +4,37 @@ import java.io.File;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.BiFunction;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.json.JSONTokener;
 import static org.testng.Assert.*;
 import org.testng.annotations.Test;
+import org.traincontrol.marklin.MarklinRoute;
 import org.traincontrol.marklin.file.CS2File;
+import support.HeldState;
 import support.StandInStation;
 import support.StationRig;
 
 /**
- * A new CS3 firmware that renames, removes or retypes a key, or answers with something else altogether, costs the
- * records it touches and nothing more: every reader skips what it cannot read with one log warning, and a sync still
- * succeeds and keeps every page (FR-169).  The fixtures are the repository's (2.5, and 2.6.1 from the CS3 plus), mutated
- * one key at a time and all keys at once, in six ways: removed, renamed, a number for a string and the reverse, null,
- * an empty object, an empty array.  The goldens of good input are testCS3InputsParseAsBefore and testACS3SyncIsAsBefore.
+ * A new CS3 firmware that renames, removes or retypes a key, or answers with something else altogether, changes nothing
+ * the application already holds that it could not read, and the sync goes on with what it could (FR-169).
  *
- * The CS3 reports a solenoid's position as 128 plus the position while the current flows, then the plain position about a
- * second later; both are read.
+ * Each test syncs well, arms the routes, and keeps what is held (support.HeldState: routes with their commands, lock and
+ * auto flag, locomotives with their functions, types, triggers and members, pages, accessories).  Then a mutated answer is
+ * served, and the sync must succeed and leave what is held exactly as it was where the answer could not be read; then a
+ * good sync must give the right result again.  A list that cannot be read, or that has no way to match its records, skips
+ * that import whole; a record missing what it needs is skipped alone.
  *
- * MUTATION: read a locomotive's `dectyp` with getString again (CS2File.parseLocomotivesCS3), and the mutated `dectyp`
- * lists fail; or take a position of 128 and 129 for none, and the energized articles are skipped.
+ * MUTATION: have CS2File.readList return an empty list instead of throwing UnreadableAnswerException, and
+ * testAnAnswerThatCannotBeReadChangesNothingHeld finds the routes replaced.  Read a locomotive's `funktionen` with
+ * optJSONArray, and testALocomotiveThatCannotBeReadIsSkippedAndTheHeldOneKept finds its functions overwritten.  Read a
+ * multi-unit's `lokname` with optString, and the same test finds the members gone.  Read `dectyp` with optString and a
+ * default, and testAnEmptyDatabaseIsNotFilledWithGuesses finds every locomotive stored as MM2.
  *
  * @author Adam
  */
@@ -40,11 +46,24 @@ public class testACS3ReadersSurviveFirmwareChanges
 
     private static final String[] MAGS = {"test/CS3_mags.json", "test/cs3_v261/app/api/mags.json"};
 
+    private static final String INFO = "{\"softwareVersion\":\"2.6.1 (Build 3)\"}";
+
+    private static final String LOCOS = "/app/api/locos";
+
+    private static final String ROUTES = "/app/api/automatics";
+
+    private static final String ACCESSORIES = "/app/api/mags";
+
     private static final int MODES = 6;
 
     private static String read(String path) throws Exception
     {
         return new String(Files.readAllBytes(new File(path).toPath()), StandardCharsets.UTF_8);
+    }
+
+    private static byte[] bytes(Object json)
+    {
+        return String.valueOf(json).getBytes(StandardCharsets.UTF_8);
     }
 
     /** The JSON of a file with the key (every key when null) mutated in one of the six ways, wherever it occurs. */
@@ -145,142 +164,287 @@ public class testACS3ReadersSurviveFirmwareChanges
         return new CS2File("127.0.0.1:1", rig.model);
     }
 
-    private static StationRig rig() throws Exception
+    /** The answers of a 2.6.1 CS3 with the accessory list that the routes' articles are in, mutated where `replaced` says. */
+    private static BiFunction<String, Integer, byte[]> station(Map<String, byte[]> replaced)
     {
-        return new StationRig(Files.createTempDirectory("tc-cs3-mutated").toFile(), StandInStation.cs3("260", null));
+        BiFunction<String, Integer, byte[]> base = StandInStation.cs3("260", INFO);
+
+        return (path, n) -> replaced.containsKey(path) ? replaced.get(path)
+            : ACCESSORIES.equals(path) ? StandInStation.file(MAGS[0]) : base.apply(path, n);
     }
 
-    @Test
-    public void testNoLocomotiveListFailsTheReader() throws Exception
+    private static StationRig rig(Map<String, byte[]> replaced) throws Exception
     {
-        try (StationRig rig = rig())
+        return new StationRig(Files.createTempDirectory("tc-cs3-held").toFile(), station(replaced));
+    }
+
+    /** Syncs well, arms the routes that can be, and returns what is held. */
+    private static String held(StationRig rig, String what) throws Exception
+    {
+        rig.model.syncWithCS2();
+        assertTrue(rig.model.syncWithCS2() >= 0, "the good sync succeeds (" + what + "): " + rig.model.getLastSyncError());
+
+        for (MarklinRoute r : rig.model.getRoutes())
         {
-            CS2File parser = new CS2File("127.0.0.1:1", rig.model);
-
-            for (String file : LOCS)
-            {
-                int plain = parser.parseLocomotivesCS3(new JSONArray(read(file))).size();
-                assertTrue(plain > 50, "the fixture reads: " + plain);
-
-                forEachVariant(file, list ->
-                    {
-                        assertTrue(fresh(rig).parseLocomotivesCS3(list).size() <= plain, "a mutation cannot add locomotives");
-                        rig.takeLog();
-                    });
-            }
+            if (r.hasS88()) r.enable();
         }
+
+        return state(rig);
     }
 
-    @Test
-    public void testNoRouteListFailsTheReader() throws Exception
+    private static String state(StationRig rig) throws Exception
     {
-        try (StationRig rig = rig())
-        {
-            CS2File parser = new CS2File("127.0.0.1:1", rig.model);
+        return HeldState.of(rig.model).replace(rig.station.address(), "STATION");
+    }
 
-            for (int f = 0; f < 2; f++)
+    private static void disarm(StationRig rig)
+    {
+        for (MarklinRoute r : rig.model.getRoutes()) r.disable();
+    }
+
+    /** Serves `answers` for one sync and returns the sync's result; the good answers are back after. */
+    private static int syncWith(StationRig rig, Map<String, byte[]> replaced, Map<String, byte[]> answers) throws Exception
+    {
+        replaced.putAll(answers);
+        int result = rig.model.syncWithCS2();
+        replaced.clear();
+        rig.takeLog();
+        return result;
+    }
+
+    /** The sync succeeds, what is held is as it was, and a good sync gives the same again. */
+    private static void assertHeldUnchanged(StationRig rig, Map<String, byte[]> replaced, String held, String what,
+        Map<String, byte[]> answers) throws Exception
+    {
+        int result = syncWith(rig, replaced, answers);
+
+        assertTrue(result >= 0, "the sync goes on (" + what + "): " + rig.model.getLastSyncError());
+        assertEquals(state(rig), held, "what is held is unchanged (" + what + ")");
+        assertTrue(rig.model.syncWithCS2() >= 0, "a good sync after it (" + what + ")");
+        assertEquals(state(rig), held, "a good sync after it gives the same (" + what + ")");
+    }
+
+    private static Map<String, byte[]> only(String path, Object body)
+    {
+        Map<String, byte[]> one = new ConcurrentHashMap<>();
+        one.put(path, body instanceof byte[] ? (byte[]) body : bytes(body));
+        return one;
+    }
+
+    /** A list that is empty, cut off, another shape or has no way to match its records leaves the routes as they are. */
+    @Test
+    public void testAnAnswerThatCannotBeReadChangesNothingHeld() throws Exception
+    {
+        Map<String, byte[]> replaced = new ConcurrentHashMap<>();
+
+        try (StationRig rig = rig(replaced))
+        {
+            String held = held(rig, "start");
+
+            try
             {
-                String automatics = AUTOMATICS[f];
-                JSONArray mags = new JSONArray(read(MAGS[f]));
-                JSONArray locs = new JSONArray(read(LOCS[1 - f]));
-                JSONArray routes = listOf(read(automatics));
-                int plain = parser.parseRoutesCS3(routes, mags, locs).size();
+                int commands = rig.model.getRoutes().stream().mapToInt(r -> r.getRoute().size()).sum();
+                assertTrue(commands > 100, "the routes hold many commands: " + commands);
+                assertTrue(rig.model.getRoutes().stream().anyMatch(r -> r.isEnabled()), "some route is armed");
 
-                forEachVariant(automatics, list ->
-                    {
-                        assertTrue(fresh(rig).parseRoutesCS3(list, mags, locs).size() <= plain, "a mutation cannot add routes");
-                        rig.takeLog();
-                    });
-                forEachVariant(MAGS[f], list ->
-                    {
-                        assertTrue(fresh(rig).parseRoutesCS3(routes, list, locs).size() <= plain, "bad accessories add no routes");
-                        rig.takeLog();
-                    });
-                forEachVariant(LOCS[1 - f], list ->
-                    {
-                        assertTrue(fresh(rig).parseRoutesCS3(routes, mags, list).size() <= plain, "bad locomotives add no routes");
-                        rig.takeLog();
-                    });
-            }
-        }
-    }
+                String[] paths = {ROUTES, ACCESSORIES, LOCOS};
+                String[] files = {AUTOMATICS[0], MAGS[0], LOCS[1]};
 
-    /** One locomotive that will not read costs that locomotive and one warning, not the others. */
-    @Test
-    public void testOneBadLocomotiveIsSkippedWithOneWarning() throws Exception
-    {
-        try (StationRig rig = rig())
-        {
-            CS2File parser = new CS2File("127.0.0.1:1", rig.model);
-            JSONArray list = new JSONArray(read(LOCS[1]));
-            int plain = parser.parseLocomotivesCS3(list).size();
-            rig.takeLog();
-
-            list.getJSONObject(5).remove("uid");
-            assertEquals(parser.parseLocomotivesCS3(list).size(), plain - 1, "the others are read");
-
-            long warnings = rig.takeLog().stream().filter(l -> l.contains("could not be parsed")).count();
-            assertEquals(warnings, 1, "one warning");
-        }
-    }
-
-    /** A sync against a station whose answers are all mutated succeeds and keeps every page. */
-    @Test
-    public void testASyncSurvivesAStationThatAnswersWithOtherThingsAndKeepsEveryPage() throws Exception
-    {
-        String[] served = {"/app/api/locos", "/app/api/automatics", "/app/api/mags", "/app/api/mags/state", "/app/api/gbs",
-            "/app/api/info"};
-        Map<String, byte[]> replaced = new java.util.concurrent.ConcurrentHashMap<>();
-        java.util.function.BiFunction<String, Integer, byte[]> base = StandInStation.cs3("260", "{\"softwareVersion\":\"2.6.1\"}");
-
-        try (StationRig rig = new StationRig(Files.createTempDirectory("tc-cs3-answers").toFile(),
-            (path, n) -> replaced.containsKey(path) ? replaced.get(path) : base.apply(path, n)))
-        {
-            rig.model.syncWithCS2();
-            List<String> pages = new ArrayList<>(rig.model.getLayoutList());
-            assertTrue(pages.size() >= 3, "the pages of the fixture: " + pages);
-
-            List<String> others = Arrays.asList("", "{}", "[]", "null", "7", "\"text\"", "<html>", "[[],{},7]",
-                "{\"automatics\":7}", "{\"plans\":{}}");
-
-            // Every answer mutated at once, in each way
-            for (int mode = 0; mode < MODES; mode++)
-            {
-                replaced.clear();
-
-                for (String p : served)
+                for (int p = 0; p < paths.length; p++)
                 {
-                    byte[] b = base.apply(p, 1);
+                    String good = read(files[p]);
+                    Object[] answers = {"", "<html>not json</html>", good.substring(0, good.length() / 2), "{}", "7", "null",
+                        "\"text\"", "{\"automatics\":7}"};
 
-                    if (b != null && !p.equals("/app/api/info"))
+                    for (Object answer : answers)
                     {
-                        replaced.put(p, String.valueOf(mutated(new String(b, StandardCharsets.UTF_8), null, mode))
-                            .getBytes(StandardCharsets.UTF_8));
+                        assertHeldUnchanged(rig, replaced, held, paths[p] + " answering " + answer.toString().substring(0,
+                            Math.min(20, answer.toString().length())), only(paths[p], answer));
                     }
                 }
 
-                syncKeepingThePages(rig, pages, "all answers, mode " + mode);
-            }
+                // Empty lists, while the routes use accessories and locomotives
+                assertHeldUnchanged(rig, replaced, held, "no accessories", only(ACCESSORIES, "[]"));
+                assertHeldUnchanged(rig, replaced, held, "no locomotives", only(LOCOS, "[]"));
 
-            // And each answer in turn something else altogether
-            for (String path : served)
-            {
-                for (String other : others)
+                // Lists whose records cannot be matched: the key that names them renamed, or not what it was
+                for (int mode : new int[] {0, 1, 2})
                 {
-                    replaced.clear();
-                    replaced.put(path, other.getBytes(StandardCharsets.UTF_8));
-                    syncKeepingThePages(rig, pages, path + " answering " + other);
+                    assertHeldUnchanged(rig, replaced, held, "accessory id, mode " + mode,
+                        only(ACCESSORIES, mutated(read(MAGS[0]), "id", mode)));
+                    assertHeldUnchanged(rig, replaced, held, "locomotive internname, mode " + mode,
+                        only(LOCOS, mutated(read(LOCS[1]), "internname", mode)));
                 }
+            }
+            finally
+            {
+                disarm(rig);
             }
         }
     }
 
-    private static void syncKeepingThePages(StationRig rig, List<String> pages, String what) throws Exception
+    /** A record missing what it needs is skipped, with one warning, and the one held is not touched. */
+    @Test
+    public void testALocomotiveThatCannotBeReadIsSkippedAndTheHeldOneKept() throws Exception
+    {
+        Map<String, byte[]> replaced = new ConcurrentHashMap<>();
+
+        try (StationRig rig = rig(replaced))
+        {
+            String held = held(rig, "start");
+
+            try
+            {
+                String[] keys = {"uid", "name", "dectyp", "funktionen", "typ", "typ2", "isMoment", "dauer", "lokname"};
+
+                for (String key : keys)
+                {
+                    for (int mode : new int[] {0, 1, 2})
+                    {
+                        assertHeldUnchanged(rig, replaced, held, key + ", mode " + mode,
+                            only(LOCOS, mutated(read(LOCS[1]), key, mode)));
+                    }
+                }
+
+                // A multi-unit's members are the whole of its entry: one entry that will not read skips the unit
+                assertHeldUnchanged(rig, replaced, held, "traktion retyped", only(LOCOS, mutated(read(LOCS[1]), "traktion", 2)));
+
+                // An icon is not needed: a locomotive without one keeps the one it holds
+                assertHeldUnchanged(rig, replaced, held, "icon removed", only(LOCOS, mutated(read(LOCS[1]), "icon", 0)));
+
+                // One record only, and one warning
+                JSONArray one = new JSONArray(read(LOCS[1]));
+                one.getJSONObject(5).remove("funktionen");
+                rig.takeLog();
+                replaced.put(LOCOS, bytes(one));
+                assertTrue(rig.model.syncWithCS2() >= 0);
+                replaced.clear();
+
+                assertEquals(state(rig), held, "the others are read as they were, and the held one is kept");
+                assertEquals(rig.takeLog().stream().filter(l -> l.contains("could not be parsed")).count(), 1, "one warning");
+            }
+            finally
+            {
+                disarm(rig);
+            }
+        }
+    }
+
+    /** A first sync with locomotives missing their decoder type guesses nothing: the database stays empty, and a good sync fills it. */
+    @Test
+    public void testAnEmptyDatabaseIsNotFilledWithGuesses() throws Exception
+    {
+        Map<String, byte[]> replaced = new ConcurrentHashMap<>();
+        String good;
+
+        try (StationRig rig = rig(new ConcurrentHashMap<>()))
+        {
+            rig.model.syncWithCS2();
+            good = state(rig);
+        }
+
+        replaced.put(LOCOS, bytes(mutated(read(LOCS[1]), "dectyp", 0)));
+
+        try (StationRig rig = rig(replaced))
+        {
+            assertTrue(rig.model.syncWithCS2() >= 0, "the sync goes on: " + rig.model.getLastSyncError());
+            assertEquals(rig.model.getLocomotives().size(), 0, "no locomotive is stored on a guess");
+
+            replaced.clear();
+            rig.model.syncWithCS2();
+            assertEquals(state(rig), good, "a good sync gives the right result");
+        }
+    }
+
+    /** No reader throws on a locomotive or route list with any key mutated, and none gives more than the good list does. */
+    @Test
+    public void testNoListFailsTheReader() throws Exception
+    {
+        try (StationRig rig = rig(new ConcurrentHashMap<>()))
+        {
+            int locs = fresh(rig).parseLocomotivesCS3(new JSONArray(read(LOCS[1]))).size();
+            JSONArray mags = new JSONArray(read(MAGS[0]));
+            JSONArray locations = new JSONArray(read(LOCS[1]));
+            JSONArray routes = listOf(read(AUTOMATICS[0]));
+            int plain = fresh(rig).parseRoutesCS3(routes, mags, locations).size();
+            assertTrue(locs > 50 && plain > 20, "the fixtures read: " + locs + ", " + plain);
+
+            sweep(rig, LOCS[1], list -> fresh(rig).parseLocomotivesCS3(list).size(), locs);
+            sweep(rig, AUTOMATICS[0], list -> fresh(rig).parseRoutesCS3(list, mags, locations).size(), plain);
+            sweep(rig, MAGS[0], list -> fresh(rig).parseRoutesCS3(routes, list, locations).size(), plain);
+            sweep(rig, LOCS[1], list -> fresh(rig).parseRoutesCS3(routes, mags, list).size(), plain);
+        }
+    }
+
+    /** Every variant of the file is read without throwing, and gives no more than the good one did. */
+    private static void sweep(StationRig rig, String file, java.util.function.ToIntFunction<JSONArray> parse, int most)
+        throws Exception
+    {
+        forEachVariant(file, list ->
+        {
+            assertTrue(parse.applyAsInt(list) <= most, "a mutation cannot add records");
+            rig.takeLog();
+        });
+    }
+
+    /** A sync against a station whose answers are all mutated, or each something else, succeeds and keeps every page. */
+    @Test
+    public void testASyncSurvivesAStationThatAnswersWithOtherThingsAndKeepsEveryPage() throws Exception
+    {
+        String[] served = {LOCOS, ROUTES, ACCESSORIES, "/app/api/mags/state", "/app/api/gbs"};
+        Map<String, byte[]> replaced = new ConcurrentHashMap<>();
+        BiFunction<String, Integer, byte[]> base = station(new ConcurrentHashMap<>());
+
+        try (StationRig rig = rig(replaced))
+        {
+            String held = held(rig, "start");
+
+            try
+            {
+                List<String> pages = new ArrayList<>(rig.model.getLayoutList());
+                assertTrue(pages.size() >= 3, "the pages of the fixture: " + pages);
+
+                // Every answer mutated at once, in each way
+                for (int mode = 0; mode < MODES; mode++)
+                {
+                    for (String p : served)
+                    {
+                        replaced.put(p, bytes(mutated(new String(base.apply(p, 1), StandardCharsets.UTF_8), null, mode)));
+                    }
+
+                    syncKeepingThePages(rig, replaced, pages, "all answers, mode " + mode);
+                }
+
+                // And each answer in turn something else altogether
+                for (String path : served)
+                {
+                    for (String other : new String[] {"", "{}", "[]", "null", "7", "\"text\"", "<html>", "[[],{},7]"})
+                    {
+                        replaced.put(path, other.getBytes(StandardCharsets.UTF_8));
+                        syncKeepingThePages(rig, replaced, pages, path + " answering " + other);
+                    }
+                }
+
+                // As a start-up does: the pages are built from what the station gives
+                rig.model.clearLayouts();
+                assertTrue(rig.model.syncWithCS2() >= 0, "a good sync after them all");
+                assertEquals(state(rig), held, "and it gives the right result");
+            }
+            finally
+            {
+                disarm(rig);
+            }
+        }
+    }
+
+    private static void syncKeepingThePages(StationRig rig, Map<String, byte[]> replaced, List<String> pages, String what)
+        throws Exception
     {
         rig.takeLog();
         rig.model.clearLayouts();
         assertTrue(rig.model.syncWithCS2() >= 0, "the sync succeeds (" + what + "): " + rig.model.getLastSyncError());
         assertEquals(new ArrayList<>(rig.model.getLayoutList()), pages, "every page is kept (" + what + ")");
+        replaced.clear();
     }
 
     /** 128 and 129 are the positions 0 and 1 with the current flowing; any other state is skipped. */

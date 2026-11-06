@@ -20,8 +20,8 @@ import support.StandInStation;
  * golden is `test/baseline/cs3_parse_golden.txt`, written by this class on dev at e9bbd789; a mismatch writes what this
  * run saw to `build/cs3_parse_actual.txt`.
  *
- * MUTATION: drop the `states` test from parseAccessoryStatesCS3 (take every article for a two-position one), and the
- * positions differ.
+ * MUTATION: scale a route's locomotive speed by 10 instead of 100 (parseRoutesCS3, the "speed" item), and the routes of
+ * test/CS3_automatics_lok.json differ.
  *
  * @author Adam
  */
@@ -31,7 +31,9 @@ public class testCS3InputsParseAsBefore
     {
         {"test/CS3_automatics.json", "test/CS3_mags.json", "test/CS3_loks.json"},
         {"test/CS3_automatics_v260.json", "test/CS3_mags.json", "test/CS3_loks_v260.json"},
-        {"test/CS3_automatics_v260.json", "test/cs3_v261/app/api/mags.json", "test/CS3_loks_v260.json"}
+        {"test/CS3_automatics_v260.json", "test/cs3_v261/app/api/mags.json", "test/CS3_loks_v260.json"},
+        {"test/CS3_automatics_lok.json", "test/CS3_mags.json", "test/CS3_loks_v260.json"},
+        {"test/CS3_automatics_lok.json", "test/CS3_mags.json", "test/CS3_loks.json"}
     };
 
     private static String read(String path) throws Exception
@@ -65,7 +67,10 @@ public class testCS3InputsParseAsBefore
             for (MarklinLocomotive l : parser.parseLocomotivesCS3(array(file)))
             {
                 out.add("  " + l.toString().replace("\n", " | ") + " | functions=" + l.getNumF() + " | image="
-                    + l.getImageURL() + " | uid=" + l.getUID());
+                    + l.getImageURL() + " | uid=" + l.getUID() + " | types=" + java.util.Arrays.toString(l.getFunctionTypes())
+                    + " | triggers=" + java.util.Arrays.toString(l.getFunctionTriggerTypes()) + " | members="
+                    + (l.getModelMultiUnitLocomotiveNames() == null ? "-"
+                        : new java.util.TreeMap<>(l.getModelMultiUnitLocomotiveNames())));
             }
         }
 
@@ -75,7 +80,8 @@ public class testCS3InputsParseAsBefore
 
             for (MarklinRoute route : parser.parseRoutesCS3(automatics(r[0]), array(r[1]), array(r[2])))
             {
-                out.add("  " + route.toString().replace("\n", " | ") + " s88=" + route.getS88() + " | " + route.getRoute());
+                out.add("  " + route.toString().replace("\n", " | ") + " s88=" + route.getS88() + " | " + route.getRoute()
+                    + " | " + route.toJSON());
             }
         }
 
