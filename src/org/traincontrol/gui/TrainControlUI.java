@@ -14259,7 +14259,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
     /**
      * Navigates to a specific layout page
-     * @param index the page's place in the page list, or -1 for a link that points at no page
+     * @param index the page's place in the name-sorted list, or -1 for a link that points at no page
      */
     public void goToLayoutPage(int index)
     {
@@ -14269,13 +14269,15 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         int page = index + 1;
 
-        if (this.LayoutList.getModel().getSize() > index && index >= 0)
+        List<String> byName = this.model.getLayoutListByName();
+
+        if (byName.size() > index && index >= 0 && this.LayoutList.getModel().getSize() > index)
         {
             this.model.logf(
                 "layout.ui.infoJumpingToLayoutPage",
                 page
             );
-            this.LayoutList.setSelectedIndex(index);
+            this.LayoutList.setSelectedItem(byName.get(index));
             this.repaintLayout();
         }
         else

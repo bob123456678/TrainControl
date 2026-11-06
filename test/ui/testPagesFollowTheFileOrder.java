@@ -163,14 +163,14 @@ public class testPagesFollowTheFileOrder extends support.PageWindowTest
     }
 
     /**
-     * Moving 3 - Top Parking up one place re-aims every arrow in the layout's files: each still leads to the page it led
-     * to, though its number (a place in the list) changed.
+     * Moving 3 - Top Parking up one place leaves every arrow's number as it was: a number is a place in the name-sorted
+     * list, which does not move, so no page file is rewritten.
      *
-     * MUTATION: write the index without re-aiming (`writeIndexAndKeepLinksAimed` replaced by `writeLayoutIndex` in
-     * `LayoutFileActions`), and the arrow that led to 3 - Top Parking leads to 2 - Bottom.
+     * MUTATION: `reorder` writes the index through `writeIndexAndKeepLinksAimed` after sorting nothing (re-aiming against
+     * the shown order), and the numbers on pages with arrows to the moved page change.
      */
     @Test
-    public void testMovingAPageKeepsEveryArrowOnItsPage() throws Exception
+    public void testMovingAPageLeavesEveryArrowNumberAlone() throws Exception
     {
         open(null);
 
@@ -178,28 +178,10 @@ public class testPagesFollowTheFileOrder extends support.PageWindowTest
 
         for (String page : BY_NAME) before.put(page, arrowsIn(page));
 
-        final List<String> moved = Arrays.asList("1 - Main", "3 - Top Parking", "2 - Bottom", "4 - Combined", "5 - Test");
+        movePage("3 - Top Parking", "layout.ui.tooltipMovePageUp",
+            Arrays.asList("1 - Main", "3 - Top Parking", "2 - Bottom", "4 - Combined", "5 - Test"));
 
-        movePage("3 - Top Parking", "layout.ui.tooltipMovePageUp", moved);
-
-        boolean anyMoved = false;
-
-        for (String page : BY_NAME)
-        {
-            List<Integer> was = before.get(page);
-            List<Integer> now = arrowsIn(page);
-
-            assertEquals(now.size(), was.size(), page + " lost or gained an arrow");
-
-            for (int i = 0; i < was.size(); i++)
-            {
-                assertEquals(moved.get(now.get(i)), BY_NAME.get(was.get(i)), "an arrow on " + page + " leads elsewhere");
-
-                if (!now.get(i).equals(was.get(i))) anyMoved = true;
-            }
-        }
-
-        assertTrue(anyMoved, "precondition: no arrow's number changed, so this proves nothing");
+        for (String page : BY_NAME) assertEquals(arrowsIn(page), before.get(page), "an arrow on " + page + " was renumbered");
     }
 
     /**

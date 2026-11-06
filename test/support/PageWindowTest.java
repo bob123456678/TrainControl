@@ -21,11 +21,17 @@ public abstract class PageWindowTest
     protected TrainControlUI ui;
 
     @BeforeMethod
-    public void openTheSandbox() throws Exception
+    public void openTheSandbox(java.lang.reflect.Method test) throws Exception
     {
         if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the main window needs a display");
 
-        sandbox = LayoutSandbox.open();
+        sandbox = LayoutSandbox.open(fixtureFor(test));
+    }
+
+    /** The layout folder a test's sandbox is a copy of: the test layout, unless a class says otherwise. */
+    protected java.io.File fixtureFor(java.lang.reflect.Method test)
+    {
+        return new java.io.File("test/test_layout");
     }
 
     @AfterMethod(alwaysRun = true)

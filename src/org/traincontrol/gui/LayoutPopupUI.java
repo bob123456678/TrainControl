@@ -172,11 +172,17 @@ public class LayoutPopupUI extends PositionAwareJFrame
     
     /**
      * Updates the layout page
-     * @param index
+     * @param index the page's place in the name-sorted list, as an arrow holds it
      */
     public void goToLayoutPage(int index)
     {
-        this.goToLayoutPage(index, true);
+        // An arrow's number is a place in the name-sorted list; the window keeps its own place in the shown list.
+        java.util.List<String> byName = this.parent.getModel().getLayoutListByName();
+
+        int shown = index >= 0 && index < byName.size()
+            ? this.parent.getModel().getLayoutList().indexOf(byName.get(index)) : index;
+
+        this.goToLayoutPage(shown, true);
     }
 
     /**

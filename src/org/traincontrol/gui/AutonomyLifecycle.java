@@ -302,7 +302,8 @@ final class AutonomyLifecycle
         {
             java.util.List<org.traincontrol.base.LayoutDiagram> pages = new java.util.ArrayList<>();
 
-            for (String name : ui.getModel().getLayoutList())
+            // Name-sorted: a link's number indexes this list
+            for (String name : ui.getModel().getLayoutListByName())
             {
                 pages.add(ui.getModel().getLayout(name));
             }

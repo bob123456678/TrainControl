@@ -453,8 +453,7 @@ final class LayoutFileActions
     }
 
     /**
-     * Writes the index in a new page order: every page keeps its id, the arrows are re-aimed, and the setup is not
-     * touched.  Refused as the other page edits are.
+     * Writes the index in a new page order: every page keeps its id, and no page file and not the setup is touched.  Refused as the other page edits are.
      *
      * @param order the pages in the order to write
      * @param page the page to show afterwards
@@ -473,7 +472,9 @@ final class LayoutFileActions
 
             if (keepAbsent == null) return false;
 
-            writeIndexAndKeepLinksAimed(order, null, keepAbsent);
+            // Only the order of the index changes: an arrow's number indexes the name-sorted list, which does not move,
+            // and each page keeps its id.
+            LayoutDiagram.writeLayoutIndex(this.ui.localLayoutPath(), order, null, this.ui.pageIdFloor(), keepAbsent);
 
             return true;
         });
@@ -732,7 +733,7 @@ final class LayoutFileActions
 
         if (page == null) return out;
 
-        List<String> all = this.ui.getModel().getLayoutList();
+        List<String> all = this.ui.getModel().getLayoutListByName();
 
         // Left to right, top to bottom, so the same diagram always produces the same page
         for (int y = 0; y < page.getSy(); y++)

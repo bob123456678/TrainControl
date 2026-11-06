@@ -463,12 +463,12 @@ public class LayoutDiagram
     
     /**
      * Writes the page index and re-aims every arrow at the page it was aimed at, saving what changed.  The one place
-     * the rule lives: a link tile holds a POSITION in the page list (the index file's order, FR-175), so adding,
-     * renaming, duplicating, deleting, combining or moving pages changes what every arrow means.  The OLD order comes
-     * from the pages this session holds, in the order `pages` gives them, not the index file.
+     * the rule lives: a link tile holds a POSITION in the name-sorted page list, so adding, renaming, duplicating,
+     * deleting or combining pages changes what every arrow means.  The OLD order comes from the pages this session
+     * holds, not the index file.
      *
      * @param path the layout folder
-     * @param layoutList the new page list, in the order the index is to list it
+     * @param layoutList the new page list, name-sorted
      * @param renamed old name -&gt; new name, or null
      * @param floor the id floor, as `writeLayoutIndex` takes it
      * @param keepAbsent pages to hold in the index though they are not loaded (FR-018), or null
@@ -480,8 +480,9 @@ public class LayoutDiagram
         Map<String, String> renamed, int floor, java.util.Collection<String> keepAbsent,
         java.util.Collection<LayoutDiagram> pages) throws IOException
     {
-        // `before` comes from the PAGES, so two pages with one name do not make it longer than the list the arrows
-        // index into.
+        // Both ends are the sorted list, the only thing a link's number indexes into: `layoutList` is not it (a rename
+        // keeps the old slot, add/duplicate/combine append), and `before` comes from the PAGES so two pages with one
+        // name do not make it longer than the list the arrows index into.
         List<LayoutDiagram> changed = repointLinksForNewOrder(pages, layoutList, renamed);
 
         writeLayoutIndex(path, layoutList, renamed, floor, keepAbsent);
@@ -494,15 +495,14 @@ public class LayoutDiagram
      * because a caller that writes a page file in the same gesture (`LayoutPageEdit`: Add, Duplicate, Rename) must
      * re-aim before it writes; `writeIndexAndKeepLinksAimed` is the whole job for Delete and Combine.
      *
-     * @param pages every page of the layout, in the order the arrows were written against
-     * @param layoutList the new page list, in the order it is to be written
+     * @param pages every page of the layout
+     * @param layoutList the new page list, in whatever order the caller holds it
      * @param renamed old name -&gt; new name, or null
      * @return the pages whose arrows changed, which the caller must save
      */
     public static List<LayoutDiagram> repointLinksForNewOrder(java.util.Collection<LayoutDiagram> pages,
         List<String> layoutList, Map<String, String> renamed)
     {
-        // The pages arrive in the order the model lists them, which is the order the arrows were written against.
         List<String> before = new ArrayList<>();
 
         if (pages != null)
@@ -513,7 +513,11 @@ public class LayoutDiagram
             }
         }
 
+        java.util.Collections.sort(before);
+
         List<String> after = new ArrayList<>(layoutList);
+
+        java.util.Collections.sort(after);
 
         // A rename is the same page under another name: substituted on the OLD list, which an arrow's number indexes.
         if (renamed != null)
@@ -534,7 +538,7 @@ public class LayoutDiagram
      * that moved.
      *
      * @param pages every page of the layout
-     * @param before the page order the arrows were written against - the OLD page list
+     * @param before the page order the arrows were written against - the OLD page list, sorted
      * @param after the page order as it now is
      * @return the pages whose arrows changed, which are the ones the caller has to save
      */
@@ -555,7 +559,7 @@ public class LayoutDiagram
 
     /**
      * Rewrites every link on this page so it still points at the page it pointed at before.  A link holds a position in
-     * the page list, so the destination is identified by NAME across the change; a page not in the new list
+     * the NAME-SORTED page list, so the destination is identified by NAME across the change; a page not in the new list
      * (deleted) leaves its arrows pointing at nothing rather than at whatever slid into its place.  A link that already
      * points nowhere, or whose number is not in the OLD list, is left alone.
      *

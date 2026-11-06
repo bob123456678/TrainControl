@@ -146,9 +146,9 @@ public class LayoutEditorAddressPopup extends javax.swing.JPanel
             }
             else if (lc.isLink())
             {
-                // `addr` is the page's place in the FULL list, one-based, which is what getLogicalAddress hands out;
+                // `addr` is the page's place in the FULL name-sorted list, one-based, which is what getLogicalAddress hands out;
                 // the combo no longer holds the full list.
-                List<String> all = tcui.getModel().getLayoutList();
+                List<String> all = tcui.getModel().getLayoutListByName();
 
                 int at = Integer.parseInt(addr) - 1;
 
@@ -215,7 +215,7 @@ public class LayoutEditorAddressPopup extends javax.swing.JPanel
                 // to -1, and the combo holds this very object (`pagesThatCanBeLinkedTo` puts it in).
                 if (chosen == NO_PAGE) return "0";
 
-                int at = tcui.getModel().getLayoutList().indexOf(chosen.toString());
+                int at = tcui.getModel().getLayoutListByName().indexOf(chosen.toString());
 
                 return Integer.toString(at + 1);
             }
@@ -229,7 +229,7 @@ public class LayoutEditorAddressPopup extends javax.swing.JPanel
     /**
      * Every page a link on this square may point at - which is every page except the one it is on.
      *
-     * @return the page names, in the window's own order
+     * @return the page names, in the order the window shows them
      */
     private List<String> pagesThatCanBeLinkedTo()
     {

@@ -4143,8 +4143,9 @@ public class MarklinControlStation implements ViewListener, ModelListener
     }
     
     /**
-     * Gets all the available layout names, in the order the index file (gleisbild.cs2) lists them (FR-175), a page the
-     * import did not list after those, by name.  A fresh list each call.
+     * Gets all the available layout names for display, in the order the index file (gleisbild.cs2) lists them (FR-175),
+     * a page the import did not list after those, by name.  Not what an arrow's number indexes: that is
+     * `getLayoutListByName`.  A fresh list each call.
      * @return
      */
     @Override
@@ -4161,6 +4162,20 @@ public class MarklinControlStation implements ViewListener, ModelListener
         Collections.sort(held);
 
         l.addAll(held);
+
+        return l;
+    }
+
+    /**
+     * The layout names sorted by name: the list an arrow's number indexes into, whatever order the pages are shown in
+     * (`getLayoutList`).  A fresh list each call.
+     * @return the names, sorted
+     */
+    @Override
+    public List<String> getLayoutListByName()
+    {
+        List<String> l = this.layoutDB.getItemNames();
+        Collections.sort(l);
 
         return l;
     }
