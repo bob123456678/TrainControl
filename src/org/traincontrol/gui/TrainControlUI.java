@@ -2529,6 +2529,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 if (train != null && train.isAutonomyPaused() == active) changed.add(train);
             }
 
+            setup.noteTheCardsPausesADoorOvertakes(changed, this.activeDiagramConfiguration,
+                settingsAsBuiltFor(this.model == null ? null : this.model.getAutoLayoutIfLoaded()));
+
             try
             {
                 setup.setTrainsActive(trains, active);
