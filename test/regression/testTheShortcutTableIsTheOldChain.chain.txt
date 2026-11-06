@@ -1,0 +1,431 @@
+    private void LocControlPanelKeyPressed(java.awt.event.KeyEvent evt)//GEN-FIRST:event_LocControlPanelKeyPressed
+    {//GEN-HEADEREND:event_LocControlPanelKeyPressed
+        // So `letTheWholeWindowDriveTrains` can tell a key it must still deliver from one already brought here.
+        this.theKeyTheMapAlreadySaw = evt;
+
+        int keyCode = evt.getKeyCode();
+        boolean altPressed = (evt.getModifiers() & KeyEvent.ALT_MASK) != 0;
+        boolean controlPressed = (evt.getModifiers() & KeyEvent.CTRL_MASK) != 0 || (evt.getModifiers() & KeyEvent.CTRL_DOWN_MASK) != 0;
+
+        // The diagram gets first refusal on cut, paste and delete, while the pointer is over one of its squares.
+        if (locomotiveGestureOnDiagram(keyCode, controlPressed)) return;
+
+        if (altPressed && keyCode == KeyEvent.VK_G)
+        {
+            go();
+        }
+        else if (altPressed && keyCode == KeyEvent.VK_P)
+        {
+            this.applyPreferredFunctions(this.activeLoc);
+        }
+        else if (altPressed && keyCode == KeyEvent.VK_V)
+        {
+            this.applyPreferredSpeed(this.activeLoc);
+        }
+        else if (altPressed && keyCode == KeyEvent.VK_O)
+        {
+            this.locFunctionsOff(this.activeLoc);
+        }
+        else if (altPressed && keyCode == KeyEvent.VK_S)
+        {
+            this.savePreferredFunctions(this.activeLoc);
+        }
+        else if (altPressed && keyCode == KeyEvent.VK_U)
+        {
+            this.savePreferredSpeed(this.activeLoc);
+        }
+        else if (controlPressed && keyCode == KeyEvent.VK_A)
+        {
+            this.selectLocomotiveActivated(this.currentButton);
+        }
+        else if (controlPressed && keyCode == KeyEvent.VK_F)
+        {
+            this.quickLocSearch();
+        }
+        else if (controlPressed && keyCode == KeyEvent.VK_C)
+        {
+            this.setCopyTarget(this.currentButton, false);
+        }
+        else if (controlPressed && keyCode == KeyEvent.VK_D)
+        {
+            this.getLocAdder().setVisible(true);
+        }
+        else if (controlPressed && keyCode == KeyEvent.VK_N)
+        {
+            this.changeLocNotes(this.getButtonLocomotive(this.currentButton));
+        }
+        else if (controlPressed && keyCode == KeyEvent.VK_L)
+        {
+            this.changeLinkedLocomotives((Locomotive) this.getButtonLocomotive(this.currentButton));
+        }
+        else if (controlPressed && keyCode == KeyEvent.VK_M)
+        {
+            this.toggleMenuBar.setSelected(!this.toggleMenuBar.isSelected());
+            toggleMenuBarActionPerformed(null);
+        }
+        else if (controlPressed && keyCode == KeyEvent.VK_DELETE)
+        {
+            if (this.getButtonLocomotive(this.currentButton) != null)
+            {
+                this.deleteLoc(this.getButtonLocomotive(this.currentButton).getName());
+            }
+        }
+        else if (controlPressed && keyCode == KeyEvent.VK_R)
+        {
+            this.changeLocAddress(this.getButtonLocomotive(this.currentButton));
+        }
+        else if (controlPressed && keyCode == KeyEvent.VK_V) // Paste
+        {
+            if (this.hasCopyTarget())
+            {
+                this.doPaste(this.currentButton, false, false);
+            }
+        }
+        else if (controlPressed && keyCode == KeyEvent.VK_S) // Swap
+        {
+            if (this.hasCopyTarget())
+            {
+                this.doPaste(this.currentButton, true, false);
+            }
+        }
+        else if (controlPressed && keyCode == KeyEvent.VK_X)
+        {
+            this.setCopyTarget(this.currentButton, true);
+        }
+        else if (!controlPressed && keyCode == KeyEvent.VK_DELETE)
+        {
+            // This is the same as clearing the button
+            this.setCopyTarget(this.currentButton, true);
+            this.setCopyTarget(this.currentButton, true);
+        }
+        // A bare letter, not a control chord (OB-197): without `!controlPressed`, Control plus any letter no arm above
+        // catches selected a locomotive button.  Alt is not filtered: the arms above take every Alt chord this window
+        // has.
+        else if (!controlPressed && this.buttonMapping.containsKey(keyCode))
+        {
+            this.displayCurrentButtonLoc(this.buttonMapping.get(evt.getKeyCode()));
+        }
+        else if (keyCode == KeyEvent.VK_UP)
+        {            
+            if (altPressed)
+            {
+                incrementLocSpeed(SPEED_STEP * 2);
+            }
+            else if (controlPressed)
+            {
+                incrementLocSpeed(1);
+            }
+            else
+            {
+                this.UpArrowLetterButtonPressed(null);
+            }
+        }
+        else if (keyCode == KeyEvent.VK_DOWN)
+        {            
+            if (altPressed)
+            {
+                decrementLocSpeed(SPEED_STEP * 2);
+            }
+            else if (controlPressed)
+            {
+                decrementLocSpeed(1);
+            }
+            else
+            {
+                this.DownArrowLetterButtonPressed(null);
+            }
+        }
+        else if (keyCode == KeyEvent.VK_RIGHT && !altPressed)
+        {
+            if (controlPressed)
+            {
+                this.forwardLoc();
+            }
+            else
+            {
+                this.RightArrowLetterButtonPressed(null);
+            }
+        }
+        else if (keyCode == KeyEvent.VK_LEFT && !altPressed)
+        {
+            if (controlPressed)
+            {
+                this.backwardLoc();
+            }
+            else
+            {
+               this.LeftArrowLetterButtonPressed(null); 
+            }
+        }
+        else if (keyCode == KeyEvent.VK_SPACE)
+        {
+            this.SpacebarButtonActionPerformed(null);
+        }
+        else if (keyCode == KeyEvent.VK_0 && !altPressed && !controlPressed)
+        {
+            this.ZeroButtonActionPerformed(null);
+        }
+        else if (keyCode == KeyEvent.VK_1 && !altPressed && !controlPressed)
+        {
+            this.OneButtonActionPerformed(null);
+        }
+        else if (keyCode == KeyEvent.VK_2 && !altPressed && !controlPressed)
+        {
+            this.TwoButtonActionPerformed(null);
+        }
+        else if (keyCode == KeyEvent.VK_3 && !altPressed && !controlPressed)
+        {
+            this.ThreeButtonActionPerformed(null);
+        }
+        else if (keyCode == KeyEvent.VK_4 && !altPressed && !controlPressed)
+        {
+            this.FourButtonActionPerformed(null);
+        }
+        else if (keyCode == KeyEvent.VK_5 && !altPressed && !controlPressed)
+        {
+            this.FiveButtonActionPerformed(null);
+        }
+        else if (keyCode == KeyEvent.VK_6 && !altPressed && !controlPressed)
+        {
+            this.SixButtonActionPerformed(null);
+        }
+        else if (keyCode == KeyEvent.VK_7 && !altPressed && !controlPressed)
+        {
+            this.SevenButtonActionPerformed(null);
+        }
+        else if (keyCode == KeyEvent.VK_8 && !altPressed && !controlPressed)
+        {
+            this.EightButtonActionPerformed(null);
+        }
+        else if (keyCode == KeyEvent.VK_9 && !altPressed && !controlPressed)
+        {
+            this.NineButtonActionPerformed(null);
+        }
+        else if (keyCode == KeyEvent.VK_MINUS || keyCode == KeyEvent.VK_UNDERSCORE || keyCode == KeyEvent.VK_QUOTE || keyCode == KeyEvent.VK_OPEN_BRACKET)
+        {
+            if (this.KeyboardTab.getSelectedIndex() == 1)
+            {
+                int currentIndex = this.LayoutList.getSelectedIndex();
+                
+                if (currentIndex > 0)
+                {
+                     this.LayoutList.setSelectedIndex(currentIndex - 1);
+                     //this.repaintLayout();
+                }
+            }
+            else
+            {
+                if (controlPressed)
+                {
+                    this.switchKeyboard(this.keyboardNumber - 4);
+                }
+                else
+                {
+                    this.PrevKeyboardActionPerformed(null);
+                }
+            }
+        }
+        else if (keyCode == KeyEvent.VK_EQUALS || keyCode == KeyEvent.VK_PLUS || keyCode == KeyEvent.VK_LEFT_PARENTHESIS || keyCode == KeyEvent.VK_CLOSE_BRACKET)
+        {
+            if (this.KeyboardTab.getSelectedIndex() == 1)
+            {
+                int currentIndex = this.LayoutList.getSelectedIndex();
+                
+                if (currentIndex < this.LayoutList.getItemCount() - 1)
+                {
+                     this.LayoutList.setSelectedIndex(currentIndex + 1);
+                }
+            }
+            else
+            {
+                if (controlPressed)
+                {
+                    this.switchKeyboard(this.keyboardNumber + 4);
+                }
+                else
+                {
+                    this.NextKeyboardActionPerformed(null);
+                }
+            } 
+        }
+        else if ((keyCode == KeyEvent.VK_COMMA && altPressed) || (keyCode == KeyEvent.VK_SEMICOLON && altPressed))
+        {
+            this.switchLocMapping(1);    
+        }
+        else if ((keyCode == KeyEvent.VK_PERIOD && altPressed) || (keyCode == KeyEvent.VK_COLON && altPressed))
+        {
+            this.switchLocMapping(this.numLocMappings); 
+        }
+        else if ((keyCode == KeyEvent.VK_COMMA && !altPressed) || (keyCode == KeyEvent.VK_SEMICOLON && !altPressed) || (keyCode == KeyEvent.VK_LEFT && altPressed))
+        {
+            this.PrevLocMappingActionPerformed(null);   
+        }
+        else if ((keyCode == KeyEvent.VK_PERIOD && !altPressed) || (keyCode == KeyEvent.VK_COLON && !altPressed) || (keyCode == KeyEvent.VK_RIGHT && altPressed))
+        {
+            this.NextLocMappingActionPerformed(null);
+        }
+        else if ((keyCode == KeyEvent.VK_NUMPAD0 && !controlPressed && !altPressed) || keyCode == KeyEvent.VK_BACK_QUOTE || (keyCode == KeyEvent.VK_0 && altPressed && !controlPressed))
+        {
+            this.switchF(0);
+        }
+        else if ((keyCode == KeyEvent.VK_NUMPAD1 && !controlPressed && !altPressed) || keyCode == KeyEvent.VK_F1 || (keyCode == KeyEvent.VK_1 && altPressed && !controlPressed))
+        {
+            this.switchF(1);
+        }
+        else if ((keyCode == KeyEvent.VK_NUMPAD2 && !controlPressed && !altPressed) || keyCode == KeyEvent.VK_F2 || (keyCode == KeyEvent.VK_2 && altPressed && !controlPressed))
+        {
+            this.switchF(2);
+        }
+        else if ((keyCode == KeyEvent.VK_NUMPAD3 && !controlPressed && !altPressed) || keyCode == KeyEvent.VK_F3 || (keyCode == KeyEvent.VK_3 && altPressed && !controlPressed))
+        {
+            this.switchF(3);
+        }
+        else if ((keyCode == KeyEvent.VK_NUMPAD4 && !controlPressed && !altPressed) || keyCode == KeyEvent.VK_F4 || (keyCode == KeyEvent.VK_4 && altPressed && !controlPressed))
+        {
+            this.switchF(4);
+        }
+        else if ((keyCode == KeyEvent.VK_NUMPAD5 && !controlPressed && !altPressed) || keyCode == KeyEvent.VK_F5 || (keyCode == KeyEvent.VK_5 && altPressed && !controlPressed))
+        {
+            this.switchF(5);
+        }
+        else if ((keyCode == KeyEvent.VK_NUMPAD6 && !controlPressed && !altPressed) || keyCode == KeyEvent.VK_F6 || (keyCode == KeyEvent.VK_6 && altPressed && !controlPressed))
+        {
+            this.switchF(6);
+        }
+        else if ((keyCode == KeyEvent.VK_NUMPAD7 && !controlPressed && !altPressed) || keyCode == KeyEvent.VK_F7 || (keyCode == KeyEvent.VK_7 && altPressed && !controlPressed))
+        {
+            this.switchF(7);
+        }
+        else if ((keyCode == KeyEvent.VK_NUMPAD8 && !controlPressed && !altPressed) || keyCode == KeyEvent.VK_F8 || (keyCode == KeyEvent.VK_8 && altPressed && !controlPressed))
+        {
+            this.switchF(8);
+        }
+        else if ((keyCode == KeyEvent.VK_NUMPAD9 && !controlPressed && !altPressed) || keyCode == KeyEvent.VK_F9 || (keyCode == KeyEvent.VK_9 && altPressed && !controlPressed))
+        {
+            this.switchF(9);
+        }
+        else if (keyCode == KeyEvent.VK_F10 || ((keyCode == KeyEvent.VK_0 || keyCode == KeyEvent.VK_NUMPAD0) && !altPressed && controlPressed))
+        {
+            this.switchF(10);
+        }
+        else if (keyCode == KeyEvent.VK_F11 || ((keyCode == KeyEvent.VK_1 || keyCode == KeyEvent.VK_NUMPAD1) && !altPressed && controlPressed))
+        {
+            this.switchF(11);
+        }
+        else if (keyCode == KeyEvent.VK_F12 || ((keyCode == KeyEvent.VK_2 || keyCode == KeyEvent.VK_NUMPAD2) && !altPressed && controlPressed))
+        {
+            this.switchF(12);
+        }
+        else if (keyCode == KeyEvent.VK_F13 || ((keyCode == KeyEvent.VK_3 || keyCode == KeyEvent.VK_NUMPAD3) && !altPressed && controlPressed))
+        {
+            this.switchF(13);
+        }
+        else if (keyCode == KeyEvent.VK_F14 || ((keyCode == KeyEvent.VK_4 || keyCode == KeyEvent.VK_NUMPAD4) && !altPressed && controlPressed))
+        {
+            this.switchF(14);
+        }
+        else if (keyCode == KeyEvent.VK_F15 || ((keyCode == KeyEvent.VK_5 || keyCode == KeyEvent.VK_NUMPAD5) && !altPressed && controlPressed))
+        {
+            this.switchF(15);
+        }
+        else if (keyCode == KeyEvent.VK_F16 || ((keyCode == KeyEvent.VK_6 || keyCode == KeyEvent.VK_NUMPAD6) && !altPressed && controlPressed))
+        {
+            this.switchF(16);
+        }
+        else if (keyCode == KeyEvent.VK_F17 || ((keyCode == KeyEvent.VK_7 || keyCode == KeyEvent.VK_NUMPAD7) && !altPressed && controlPressed))
+        {
+            this.switchF(17);
+        }
+        else if (keyCode == KeyEvent.VK_F18 || ((keyCode == KeyEvent.VK_8 || keyCode == KeyEvent.VK_NUMPAD8) && !altPressed && controlPressed))
+        {
+            this.switchF(18);
+        }
+        else if (keyCode == KeyEvent.VK_F19 || ((keyCode == KeyEvent.VK_9 || keyCode == KeyEvent.VK_NUMPAD9) && !altPressed && controlPressed))
+        {
+            this.switchF(19);
+        }
+        else if (keyCode == KeyEvent.VK_F20 || ((keyCode == KeyEvent.VK_0 || keyCode == KeyEvent.VK_NUMPAD0) && altPressed && controlPressed))
+        {
+            this.switchF(20);
+        }
+        else if (keyCode == KeyEvent.VK_F21 || ((keyCode == KeyEvent.VK_1 || keyCode == KeyEvent.VK_NUMPAD1) && altPressed && controlPressed))
+        {
+            this.switchF(21);
+        }
+        else if (keyCode == KeyEvent.VK_F22 || ((keyCode == KeyEvent.VK_2 || keyCode == KeyEvent.VK_NUMPAD2) && altPressed && controlPressed))
+        {
+            this.switchF(22);
+        }
+        else if (keyCode == KeyEvent.VK_F23 || ((keyCode == KeyEvent.VK_3 || keyCode == KeyEvent.VK_NUMPAD3) && altPressed && controlPressed))
+        {
+            this.switchF(23);
+        }
+        else if (keyCode == KeyEvent.VK_F24 || ((keyCode == KeyEvent.VK_4 || keyCode == KeyEvent.VK_NUMPAD4) && altPressed && controlPressed))
+        {
+            this.switchF(24);
+        }
+        else if ((keyCode == KeyEvent.VK_5 || keyCode == KeyEvent.VK_NUMPAD5) && altPressed && controlPressed)
+        {
+            this.switchF(25);
+        }
+        else if ((keyCode == KeyEvent.VK_6 || keyCode == KeyEvent.VK_NUMPAD6) && altPressed && controlPressed)
+        {
+            this.switchF(26);
+        }
+        else if ((keyCode == KeyEvent.VK_7 || keyCode == KeyEvent.VK_NUMPAD7) && altPressed && controlPressed)
+        {
+            this.switchF(27);
+        }
+        else if ((keyCode == KeyEvent.VK_8 || keyCode == KeyEvent.VK_NUMPAD8) && altPressed && controlPressed)
+        {
+            this.switchF(28);
+        }
+        else if ((keyCode == KeyEvent.VK_9 || keyCode == KeyEvent.VK_NUMPAD9) && altPressed && controlPressed)
+        {
+            this.switchF(29);
+        }
+        else if (keyCode == KeyEvent.VK_ESCAPE)
+        {
+            stop();
+        }
+        else if (keyCode == KeyEvent.VK_SHIFT)
+        {
+            ShiftButtonActionPerformed(null);
+        }  
+        else if (keyCode == KeyEvent.VK_ENTER)
+        {
+            AltEmergencyStopActionPerformed(null);
+        }
+        else if ((keyCode == KeyEvent.VK_CAPS_LOCK || keyCode == KeyEvent.VK_BACK_SPACE) && !altPressed)
+        {
+            // Easy tab cycling
+            do
+            {
+                this.KeyboardTab.setSelectedIndex(
+                    (this.KeyboardTab.getSelectedIndex() + 1) 
+                        % this.KeyboardTab.getComponentCount()
+                );
+            }
+            while (!this.KeyboardTab.isEnabledAt(this.KeyboardTab.getSelectedIndex()));
+        } 
+        else if ((keyCode == KeyEvent.VK_CAPS_LOCK || keyCode == KeyEvent.VK_BACK_SPACE) && altPressed)
+        {
+            do
+            {
+                this.KeyboardTab.setSelectedIndex(
+                    Math.floorMod(this.KeyboardTab.getSelectedIndex() - 1, 
+                            this.KeyboardTab.getComponentCount()
+                    )
+                );
+            }
+            while (!this.KeyboardTab.isEnabledAt(this.KeyboardTab.getSelectedIndex()));
+        } 
+        else if (keyCode == KeyEvent.VK_SLASH || keyCode == KeyEvent.VK_LESS)
+        {
+            // Cycle function tabs
+            this.FunctionTabs.setSelectedIndex(
+                (this.FunctionTabs.getSelectedIndex() + 1) 
+                    % this.FunctionTabs.getComponentCount()
+            );
+        }
+    }//GEN-LAST:event_LocControlPanelKeyPressed
