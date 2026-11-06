@@ -1517,6 +1517,12 @@ public class testTheActiveTickPausesATrain
 
     // ----------------------------------------------------- an editor gesture that overtakes a card's change (OB-346)
 
+    /** A step of a claim, on what it is given. */
+    private interface Step<T>
+    {
+        void on(T it) throws Exception;
+    }
+
     /** The setup as a new session reads it off the disk, for what Cancel or Save left saved. */
     private static java.util.Set<String> pausedInTheSavedSetup() throws Exception
     {
@@ -1527,40 +1533,64 @@ public class testTheActiveTickPausesATrain
         return reread.getPausedLocomotives();
     }
 
-    /** The crowd stood and the cards built, with every train going, for a claim's editor to open on. */
-    private static Locomotive theCrowdGoing() throws Exception
+    /**
+     * The crowd stood with every train going (the card's train built paused if asked), the editor opened, the gesture
+     * made in it with the card's train, the editor left, then what is asserted of the card's train.
+     */
+    private static void overTheEditor(boolean builtPaused, Step<java.awt.Window> gesture, Step<java.awt.Window> leave,
+        Step<Locomotive> after) throws Exception
     {
-        theNextSetupGestureRebuilds();
+        java.awt.Window editor = null;
 
-        crowd();
+        try
+        {
+            theNextSetupGestureRebuilds();
 
-        rebuildTheCards();
+            crowd();
 
-        return model.getLocByName(CARD_TRAIN);
+            rebuildTheCards();
+
+            if (builtPaused) theCardsTrainBuiltPaused();
+
+            editor = openTheEditor();
+
+            gesture.on(editor);
+
+            leave.on(editor);
+
+            editor = null;
+
+            settleTheRebuild();
+
+            after.on(model.getLocByName(CARD_TRAIN));
+        }
+        finally
+        {
+            if (editor != null) closeTheEditor(editor);
+
+            uncrowd();
+        }
     }
 
-    /** Activate All Trains from the editor's Bulk Tools, covering this many, and the rebuild it asks for. */
-    private static void activateAll(java.awt.Window editor, int paused) throws Exception
+    /** The trains standing, by name. */
+    private static List<String> theTrainsStanding()
     {
-        clickTheEditorsTickAndSettle(editor, I18n.f("autosetup.ui.menuActivateAllTrains", paused));
+        return new ArrayList<>(new java.util.TreeSet<>(session.trainsWhereTheyStand().values()));
     }
 
     /** The Is Active tick of the card's train, on the editor's right-click on its own square, and the rebuild it asks for. */
     private static void clickTheCardTrainsTickInTheEditor(java.awt.Window editor) throws Exception
     {
-        final AutonomyEditorPanel panel = editorsPanel(editor);
-
         final String label = I18n.f("autolayout.ui.menuLocomotiveActive", CARD_TRAIN);
 
-        final TileKey at = square(CARD_TRAIN_SQUARE);
+        final List<String> offered = new ArrayList<>();
 
-        final javax.swing.JMenuItem[] tick = new javax.swing.JMenuItem[1];
+        final javax.swing.JMenuItem tick = editorsTickItem(editorsPanel(editor), square(CARD_TRAIN_SQUARE), label, offered);
 
-        SwingUtilities.invokeAndWait(() -> tick[0] = itemNamed(panel.buildTileMenu(at, null), label));
+        assertNotNull(tick, "precondition: the editor's right-click on " + CARD_TRAIN_SQUARE + " offers no " + label + ": "
+            + offered);
 
-        assertNotNull(tick[0], "precondition: the editor's right-click on " + CARD_TRAIN_SQUARE + " offers no " + label);
-
-        click(tick[0]);
+        click(tick);
 
         settleTheRebuild();
     }
@@ -1577,41 +1607,28 @@ public class testTheActiveTickPausesATrain
     @Test(timeOut = 180000)
     public void testTheEditorsCancelKeepsACardsPauseOverActivateAllTrains() throws Exception
     {
-        java.awt.Window editor = null;
+        final int[] asked = {0};
 
-        try
+        overTheEditor(false, editor ->
         {
-            final Locomotive card = theCrowdGoing();
-
-            editor = openTheEditor();
+            Locomotive card = model.getLocByName(CARD_TRAIN);
 
             pressTheCardsButton(card, true);
 
-            activateAll(editor, 1);
+            clickTheEditorsTickAndSettle(editor, I18n.f("autosetup.ui.menuActivateAllTrains", 1));
 
             assertFalse(card.isAutonomyPaused(), "precondition: Activate All Trains did not set " + CARD_TRAIN + " going");
 
-            int asked = leavingAsked;
-
-            closeTheEditor(editor);
-
-            editor = null;
-
-            settleTheRebuild();
-
-            assertEquals(leavingAsked, asked + 1, "Cancel did not ask about discarding the tool (OB-346)");
+            asked[0] = leavingAsked;
+        }, testTheActiveTickPausesATrain::closeTheEditor, card ->
+        {
+            assertEquals(leavingAsked, asked[0] + 1, "Cancel did not ask about discarding the tool (OB-346)");
 
             assertPausedEverywhere(card, true, "after Activate All Trains and the editor's Cancel");
 
             assertTrue(pausedInTheSavedSetup().contains(CARD_TRAIN), "the saved setup lost the card's pause: "
                 + pausedInTheSavedSetup());
-        }
-        finally
-        {
-            if (editor != null) closeTheEditor(editor);
-
-            uncrowd();
-        }
+        });
     }
 
     /**
@@ -1625,43 +1642,24 @@ public class testTheActiveTickPausesATrain
     @Test(timeOut = 180000)
     public void testTheEditorsCancelKeepsACardsGoingOverDeactivateAllTrains() throws Exception
     {
-        java.awt.Window editor = null;
-
-        try
+        overTheEditor(true, editor ->
         {
-            theCrowdGoing();
-
-            final Locomotive card = theCardsTrainBuiltPaused();
-
-            final List<String> standing = new ArrayList<>(new java.util.TreeSet<>(session.trainsWhereTheyStand().values()));
-
-            editor = openTheEditor();
+            Locomotive card = model.getLocByName(CARD_TRAIN);
 
             pressTheCardsButton(card, false);
 
-            clickTheEditorsTickAndSettle(editor, I18n.f("autosetup.ui.menuDeactivateAllTrains", standing.size()));
+            clickTheEditorsTickAndSettle(editor, I18n.f("autosetup.ui.menuDeactivateAllTrains", theTrainsStanding().size()));
 
             assertTrue(card.isAutonomyPaused(), "precondition: Deactivate All Trains did not pause " + CARD_TRAIN);
-
-            closeTheEditor(editor);
-
-            editor = null;
-
-            settleTheRebuild();
-
+        }, testTheActiveTickPausesATrain::closeTheEditor, card ->
+        {
             assertPausedEverywhere(card, false, "after Deactivate All Trains and the editor's Cancel");
 
             assertFalse(train.isAutonomyPaused(), "the tool's pause of " + HIS_TRAIN + " was kept by Cancel");
 
             assertFalse(pausedInTheSavedSetup().contains(CARD_TRAIN), "the saved setup lost the card's going: "
                 + pausedInTheSavedSetup());
-        }
-        finally
-        {
-            if (editor != null) closeTheEditor(editor);
-
-            uncrowd();
-        }
+        });
     }
 
     /**
@@ -1675,13 +1673,9 @@ public class testTheActiveTickPausesATrain
     @Test(timeOut = 180000)
     public void testTheEditorsCancelKeepsACardsPauseOverATickThatLeavesTheSetupAsOpened() throws Exception
     {
-        java.awt.Window editor = null;
-
-        try
+        overTheEditor(false, editor ->
         {
-            final Locomotive card = theCrowdGoing();
-
-            editor = openTheEditor();
+            Locomotive card = model.getLocByName(CARD_TRAIN);
 
             pressTheCardsButton(card, true);
 
@@ -1697,21 +1691,8 @@ public class testTheActiveTickPausesATrain
 
             assertEquals(session.getPausedLocomotives().size(), 0, "precondition: the setup does not list as the editor"
                 + " opened it: " + session.getPausedLocomotives());
-
-            closeTheEditor(editor);
-
-            editor = null;
-
-            settleTheRebuild();
-
-            assertPausedEverywhere(card, true, "after the tick and the editor's Cancel");
-        }
-        finally
-        {
-            if (editor != null) closeTheEditor(editor);
-
-            uncrowd();
-        }
+        }, testTheActiveTickPausesATrain::closeTheEditor,
+            card -> assertPausedEverywhere(card, true, "after the tick and the editor's Cancel"));
     }
 
     /**
@@ -1725,15 +1706,9 @@ public class testTheActiveTickPausesATrain
     @Test(timeOut = 180000)
     public void testTheEditorsCancelKeepsACardsPauseOverATickWithAnEditAndARebuildBetween() throws Exception
     {
-        java.awt.Window editor = null;
-
-        try
+        overTheEditor(false, editor ->
         {
-            final Locomotive card = theCrowdGoing();
-
-            editor = openTheEditor();
-
-            pressTheCardsButton(card, true);
+            pressTheCardsButton(model.getLocByName(CARD_TRAIN), true);
 
             clickTheEditorsTickAndSettle(editor, I18n.f("autolayout.ui.menuLocomotiveActive", HIS_TRAIN));
 
@@ -1743,23 +1718,12 @@ public class testTheActiveTickPausesATrain
             clickTheCardTrainsTickInTheEditor(editor);
 
             assertTrue(train.isAutonomyPaused(), "precondition: the unrelated edit is gone");
-
-            closeTheEditor(editor);
-
-            editor = null;
-
-            settleTheRebuild();
-
+        }, testTheActiveTickPausesATrain::closeTheEditor, card ->
+        {
             assertPausedEverywhere(card, true, "after an edit, a rebuild, the tick and the editor's Cancel");
 
             assertFalse(train.isAutonomyPaused(), "the editor's own tick of " + HIS_TRAIN + " was kept by its Cancel");
-        }
-        finally
-        {
-            if (editor != null) closeTheEditor(editor);
-
-            uncrowd();
-        }
+        });
     }
 
     /**
@@ -1773,50 +1737,30 @@ public class testTheActiveTickPausesATrain
     @Test(timeOut = 180000)
     public void testTheEditorsSaveKeepsActivateAllTrainsOverACardsPause() throws Exception
     {
-        java.awt.Window editor = null;
-
-        try
+        overTheEditor(false, editor ->
         {
-            final Locomotive card = theCrowdGoing();
+            pressTheCardsButton(model.getLocByName(CARD_TRAIN), true);
 
-            editor = openTheEditor();
-
-            pressTheCardsButton(card, true);
-
-            activateAll(editor, 1);
-
-            final java.awt.Window saving = editor;
-
-            final java.lang.reflect.Field button = saving.getClass().getDeclaredField("saveButton");
-
-            button.setAccessible(true);
-
-            final javax.swing.AbstractButton save = (javax.swing.AbstractButton) button.get(saving);
+            clickTheEditorsTickAndSettle(editor, I18n.f("autosetup.ui.menuActivateAllTrains", 1));
+        }, editor ->
+        {
+            final javax.swing.AbstractButton save = support.Components.withText(editor, I18n.t("layout.ui.saveChanges"));
 
             SwingUtilities.invokeLater(save::doClick);
 
-            for (long end = System.currentTimeMillis() + 30000; (saving.isDisplayable() || ui.whyLayoutCannotBeEdited() != null)
+            for (long end = System.currentTimeMillis() + 30000; (editor.isDisplayable() || ui.whyLayoutCannotBeEdited() != null)
                 && System.currentTimeMillis() < end; )
             {
                 Thread.sleep(50);
             }
 
-            assertFalse(saving.isDisplayable(), "the editor's Save did not close it");
-
-            editor = null;
-
-            settleTheRebuild();
-
+            assertFalse(editor.isDisplayable(), "the editor's Save did not close it");
+        }, card ->
+        {
             assertPausedEverywhere(card, false, "after Activate All Trains and the editor's Save");
 
             assertFalse(pausedInTheSavedSetup().contains(CARD_TRAIN), "Save did not keep the tool: " + pausedInTheSavedSetup());
-        }
-        finally
-        {
-            if (editor != null) closeTheEditor(editor);
-
-            uncrowd();
-        }
+        });
     }
 
     /**
@@ -1830,46 +1774,32 @@ public class testTheActiveTickPausesATrain
     @Test(timeOut = 180000)
     public void testTheEditorsCancelAsksNothingOfAGestureAndItsOppositeWithNoCard() throws Exception
     {
-        java.awt.Window editor = null;
+        final int[] asked = {0};
 
-        try
+        overTheEditor(false, editor ->
         {
-            final Locomotive card = theCrowdGoing();
+            int standing = theTrainsStanding().size();
 
-            final List<String> standing = new ArrayList<>(new java.util.TreeSet<>(session.trainsWhereTheyStand().values()));
+            clickTheEditorsTickAndSettle(editor, I18n.f("autosetup.ui.menuDeactivateAllTrains", standing));
 
-            editor = openTheEditor();
+            assertTrue(model.getLocByName(CARD_TRAIN).isAutonomyPaused(), "precondition: Deactivate All Trains did not pause "
+                + CARD_TRAIN);
 
-            clickTheEditorsTickAndSettle(editor, I18n.f("autosetup.ui.menuDeactivateAllTrains", standing.size()));
+            clickTheEditorsTickAndSettle(editor, I18n.f("autosetup.ui.menuActivateAllTrains", standing));
 
-            assertTrue(card.isAutonomyPaused(), "precondition: Deactivate All Trains did not pause " + CARD_TRAIN);
+            asked[0] = leavingAsked;
+        }, testTheActiveTickPausesATrain::closeTheEditor, card ->
+        {
+            assertEquals(leavingAsked, asked[0], "Cancel asked about a setup as the editor opened it, with no card pressed");
 
-            activateAll(editor, standing.size());
-
-            int asked = leavingAsked;
-
-            closeTheEditor(editor);
-
-            editor = null;
-
-            settleTheRebuild();
-
-            assertEquals(leavingAsked, asked, "Cancel asked about a setup as the editor opened it, with no card pressed");
-
-            for (String name : standing)
+            for (String name : theTrainsStanding())
             {
                 assertFalse(model.getLocByName(name).isAutonomyPaused(), name + " came out of Cancel paused");
             }
 
             assertEquals(session.getPausedLocomotives().size(), 0, "the setup came out of Cancel with "
                 + session.getPausedLocomotives());
-        }
-        finally
-        {
-            if (editor != null) closeTheEditor(editor);
-
-            uncrowd();
-        }
+        });
     }
 
     // ----------------------------------------------------- a locomotive renamed, with a card's change not yet folded (OB-343)
@@ -2154,11 +2084,18 @@ public class testTheActiveTickPausesATrain
     private static javax.swing.JMenuItem editorsTickItem(final AutonomyEditorPanel panel, final String label,
         final List<String> offered) throws Exception
     {
+        return editorsTickItem(panel, mainB, label, offered);
+    }
+
+    /** The same on the editor's right-click on another square. */
+    private static javax.swing.JMenuItem editorsTickItem(final AutonomyEditorPanel panel, final TileKey at, final String label,
+        final List<String> offered) throws Exception
+    {
         final javax.swing.JMenuItem[] tick = new javax.swing.JMenuItem[1];
 
         SwingUtilities.invokeAndWait(() ->
         {
-            javax.swing.JPopupMenu menu = panel.buildTileMenu(mainB, null);
+            javax.swing.JPopupMenu menu = panel.buildTileMenu(at, null);
 
             texts(menu, offered);
 
