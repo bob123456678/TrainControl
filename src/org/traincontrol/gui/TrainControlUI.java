@@ -23,7 +23,6 @@ import java.awt.event.KeyEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseMotionAdapter;
-import java.awt.font.TextAttribute;
 import java.awt.image.BufferedImage;
 import java.io.BufferedReader;
 import java.io.File;
@@ -328,7 +327,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     private static final int CAN_MONITOR_DELAY = 15;
     
     // Total number of keyboards >= 1
-    private static final int NUM_KEYBOARDS = 32;
+    private static final int NUM_KEYBOARDS = AccessoryKeyboard.PAGES;
     
     /** How many locomotive mapping pages a new installation gets: ten, the number the digit keys reach. */
     private static final int DEFAULT_LOC_MAPPINGS = 10;
@@ -357,9 +356,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
     javax.swing.JCheckBoxMenuItem restrictionArrowsMenuItem;
 
-    private static final Color COLOR_SWITCH_RED = new Color(255, 204, 204);
-    private static final Color COLOR_SWITCH_GREEN = new Color(204, 255, 204);
-    
     // Internal fields /////////////
     
     // View listener (model) reference
@@ -407,7 +403,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     final List<HashMap<javax.swing.JButton, Locomotive>> locMapping;
     private final HashMap<javax.swing.JToggleButton, Integer> functionMapping;
     private final HashMap<Integer, javax.swing.JToggleButton> rFunctionMapping;
-    private final HashMap<Integer, javax.swing.JToggleButton> switchMapping;
+    private AccessoryKeyboard keyboardKeys;
     
     // Custom labels for mapping pages
     // Package-private for `LocomotiveActions.findSimilarLocs`, which reads it on the event thread to name the pages; no lock
@@ -447,7 +443,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     private int lastLocMappingPainted = 0;
     
     // Number of keys per page
-    private static final int KEYBOARD_KEYS = 64;
+    private static final int KEYBOARD_KEYS = AccessoryKeyboard.KEYS;
 
     /**
      * How much of the debug log is kept.  Roughly a thousand lines - far more than anyone scrolls back
@@ -760,7 +756,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // Mappings allowing us to programatically access UI components
         this.buttonMapping = new HashMap<>();
         this.labelMapping = new LinkedHashMap<>();
-        this.switchMapping = new HashMap<>();
         this.functionMapping = new HashMap<>();
         this.rFunctionMapping = new HashMap<>();
         this.sliderMapping = new HashMap<>();
@@ -913,99 +908,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         this.labelMapping.put(NButton, NLabel);
         this.labelMapping.put(MButton, MLabel);
         
-        // Map switch addresses to buttons
-        this.switchMapping.put(1,SwitchButton1);
-        this.switchMapping.put(2,SwitchButton2);
-        this.switchMapping.put(3,SwitchButton3);
-        this.switchMapping.put(4,SwitchButton4);
-        this.switchMapping.put(5,SwitchButton5);
-        this.switchMapping.put(6,SwitchButton6);
-        this.switchMapping.put(7,SwitchButton7);
-        this.switchMapping.put(8,SwitchButton8);
-        this.switchMapping.put(9,SwitchButton9);
-        this.switchMapping.put(10,SwitchButton10);
-        this.switchMapping.put(11,SwitchButton11);
-        this.switchMapping.put(12,SwitchButton12);
-        this.switchMapping.put(13,SwitchButton13);
-        this.switchMapping.put(14,SwitchButton14);
-        this.switchMapping.put(15,SwitchButton15);
-        this.switchMapping.put(16,SwitchButton16);
-        this.switchMapping.put(17,SwitchButton17);
-        this.switchMapping.put(18,SwitchButton18);
-        this.switchMapping.put(19,SwitchButton19);
-        this.switchMapping.put(20,SwitchButton20);
-        this.switchMapping.put(21,SwitchButton21);
-        this.switchMapping.put(22,SwitchButton22);
-        this.switchMapping.put(23,SwitchButton23);
-        this.switchMapping.put(24,SwitchButton24);
-        this.switchMapping.put(25,SwitchButton25);
-        this.switchMapping.put(26,SwitchButton26);
-        this.switchMapping.put(27,SwitchButton27);
-        this.switchMapping.put(28,SwitchButton28);
-        this.switchMapping.put(29,SwitchButton29);
-        this.switchMapping.put(30,SwitchButton30);
-        this.switchMapping.put(31,SwitchButton31);
-        this.switchMapping.put(32,SwitchButton32);
-        this.switchMapping.put(33,SwitchButton33);
-        this.switchMapping.put(34,SwitchButton34);
-        this.switchMapping.put(35,SwitchButton35);
-        this.switchMapping.put(36,SwitchButton36);
-        this.switchMapping.put(37,SwitchButton37);
-        this.switchMapping.put(38,SwitchButton38);
-        this.switchMapping.put(39,SwitchButton39);
-        this.switchMapping.put(40,SwitchButton40);
-        this.switchMapping.put(41,SwitchButton41);
-        this.switchMapping.put(42,SwitchButton42);
-        this.switchMapping.put(43,SwitchButton43);
-        this.switchMapping.put(44,SwitchButton44);
-        this.switchMapping.put(45,SwitchButton45);
-        this.switchMapping.put(46,SwitchButton46);
-        this.switchMapping.put(47,SwitchButton47);
-        this.switchMapping.put(48,SwitchButton48);
-        this.switchMapping.put(49,SwitchButton49);
-        this.switchMapping.put(50,SwitchButton50);
-        this.switchMapping.put(51,SwitchButton51);
-        this.switchMapping.put(52,SwitchButton52);
-        this.switchMapping.put(53,SwitchButton53);
-        this.switchMapping.put(54,SwitchButton54);
-        this.switchMapping.put(55,SwitchButton55);
-        this.switchMapping.put(56,SwitchButton56);
-        this.switchMapping.put(57,SwitchButton57);
-        this.switchMapping.put(58,SwitchButton58);
-        this.switchMapping.put(59,SwitchButton59);
-        this.switchMapping.put(60,SwitchButton60);
-        this.switchMapping.put(61,SwitchButton61);
-        this.switchMapping.put(62,SwitchButton62);
-        this.switchMapping.put(63,SwitchButton63);
-        this.switchMapping.put(64,SwitchButton64);
-        
-        // Load actuation count dynamically into tooltip
-        for (JToggleButton j : this.switchMapping.values())
-        {
-            j.addMouseMotionListener(new MouseMotionAdapter()
-            {
-                @Override
-                public void mouseMoved(MouseEvent e)
-                {    
-                    int accAddress = Integer.parseInt(((JToggleButton) e.getSource()).getText());
+        // The accessory keyboard: hand-written, replacing the generated 64 keys (FR-050)
+        mountKeyboardPanel();
 
-                    // Without creating: this runs on every mouse movement over the keyboard, and the creating lookup
-                    // would register an accessory for any address that had none.
-                    Accessory acc = model.getAccessoryByAddressIfPresent(accAddress, getKeyboardProtocol());
-
-                    // No accessory yet means nothing has ever been actuated here, so there is no count
-                    // to show.  Pressing the button still creates it, through the command path.
-                    ((JToggleButton) e.getSource()).setToolTipText(
-                        acc == null ? null : I18n.f(
-                            "acc.ui.tooltip.actuationCount",
-                            acc.getName(),
-                            acc.getNumActuations()
-                        )
-                    );
-                }
-            });
-        }
-        
         // Prevent the tabbed pane from being stupid
         this.KeyboardTab.getInputMap(JComponent.WHEN_FOCUSED)
             .put(KeyStroke.getKeyStroke("LEFT"), "none");
@@ -4970,61 +4875,74 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     {
         javax.swing.SwingUtilities.invokeLater(() ->
         {
-            int tarKeyboard = keyboardNum;
-            
-            // Ensure bounds
-            if (keyboardNum < 1)
-            {
-                tarKeyboard = 1;
-            }
-            
-            if (keyboardNum > TrainControlUI.NUM_KEYBOARDS)
-            {
-                tarKeyboard = TrainControlUI.NUM_KEYBOARDS;
-            }
-            
-            if (tarKeyboard <= TrainControlUI.NUM_KEYBOARDS && tarKeyboard >= 1)
-            {
-                this.keyboardNumber = tarKeyboard;
-            }
+            // Bounds: a page past the last tab lands on the last one, and one before the first on the first
+            this.keyboardNumber = Math.max(1, Math.min(TrainControlUI.NUM_KEYBOARDS, keyboardNum));
 
-            if (this.keyboardNumber == 1)
-            {
-                this.PrevKeyboard.setEnabled(false);
-            }
-            else
-            {
-                this.PrevKeyboard.setEnabled(true);
-            }
-
-            if (this.keyboardNumber == TrainControlUI.NUM_KEYBOARDS)
-            {
-                this.NextKeyboard.setEnabled(false);
-            }
-            else
-            {
-                this.NextKeyboard.setEnabled(true);
-            }
-
-            this.KeyboardNumberLabel.setText(
-                I18n.f("keyboard.ui.labelKeyboardNumber", this.keyboardNumber)
-            );
-
-            Integer offset = this.getKeyboardOffset();
-
-            for (Integer i = 1; i <= TrainControlUI.KEYBOARD_KEYS; i++)
-            {
-                this.switchMapping.get(i).setText((Integer.valueOf(i + offset)).toString());
-
-                // Set the font size dynamically 
-                int fontSize = i + offset > 960 ? 11 : 14;
-                this.switchMapping.get(i).setFont(new java.awt.Font("Segoe UI", java.awt.Font.BOLD, fontSize));
-            }
+            this.keyboardKeys.showPage(this.keyboardNumber);
 
             repaintSwitches();
         });
     }
-    
+
+    /** Puts the hand-written keyboard where the generated one was, at the width that one had. */
+    private void mountKeyboardPanel()
+    {
+        this.keyboardKeys = new AccessoryKeyboard(new AccessoryKeyboard.Listener()
+        {
+            @Override
+            public void pageChosen(int page)
+            {
+                switchKeyboard(page);
+            }
+
+            @Override
+            public void clicked(int address, boolean red)
+            {
+                keyboardKeyClicked(address, red);
+            }
+
+            @Override
+            public String tooltip(int address)
+            {
+                // Without creating: this runs on every mouse movement over the keyboard, and the creating lookup
+                // would register an accessory for any address that had none.
+                Accessory acc = model == null ? null : model.getAccessoryByAddressIfPresent(address, getKeyboardProtocol());
+
+                // No accessory yet means nothing has ever been actuated here, so there is no count to show.
+                return acc == null ? null : I18n.f("acc.ui.tooltip.actuationCount", acc.getName(), acc.getNumActuations());
+            }
+        }, this.keyboardButtonPanel.getPreferredSize().width);
+
+        java.awt.GridBagConstraints at = new java.awt.GridBagConstraints();
+
+        this.KeyboardPanel.removeAll();
+        this.KeyboardPanel.setLayout(new java.awt.GridBagLayout());
+
+        at.gridx = 0;
+        at.anchor = java.awt.GridBagConstraints.NORTHWEST;
+
+        at.gridy = 0;
+        at.insets = new java.awt.Insets(6, 6, 6, 0);
+        this.KeyboardPanel.add(this.KeyboardLabel, at);
+
+        at.gridy = 1;
+        at.insets = new java.awt.Insets(0, 6, 0, 0);
+        this.KeyboardPanel.add(this.keyboardKeys, at);
+
+        at.gridy = 2;
+        at.insets = new java.awt.Insets(6, 6, 0, 0);
+
+        javax.swing.JPanel protocol = new javax.swing.JPanel(new java.awt.FlowLayout(java.awt.FlowLayout.LEFT, 0, 0));
+        protocol.setOpaque(false);
+        protocol.add(this.MM2);
+        protocol.add(this.DCC);
+        this.KeyboardPanel.add(protocol, at);
+
+        at.gridy = 3;
+        at.weighty = 1;
+        this.KeyboardPanel.add(javax.swing.Box.createGlue(), at);
+    }
+
     /**
      * Fetches and scales a resource icon
      * @param size
@@ -6538,16 +6456,12 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     {
         javax.swing.SwingUtilities.invokeLater(() -> 
         {
-            int offset = this.getKeyboardOffset();
-            
-            if (offset + 1 <= address && offset + TrainControlUI.KEYBOARD_KEYS >= address)
+            int key = this.keyboardKeys.keyOf(address);
+
+            if (key > 0)
             {
-                JToggleButton key = this.switchMapping.get(address - offset);
-
-                boolean red = this.model.getAccessoryStateIfPresent(address, getKeyboardProtocol());
-
-                key.setSelected(red);
-                paintSwitchKey(key, red);
+                this.keyboardKeys.setKey(key, this.model.getAccessoryStateIfPresent(address, getKeyboardProtocol()),
+                    keyboardAddressExists(address));
             }
             
             // The new editor belongs in this gate too: capture did nothing unless the old editor was also open.
@@ -6654,7 +6568,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             int offset = this.getKeyboardOffset();
             
             // DCC-only addresses
-            if (this.keyboardNumber >= 6)
+            if (!Accessory.isValidLogicalAddress(offset + 1, Accessory.accessoryDecoderType.MM2))
             {
                 this.DCC.setSelected(true);                  
             }
@@ -6665,18 +6579,17 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
             for (int i = 1; i <= TrainControlUI.KEYBOARD_KEYS; i++)
             {
-                JToggleButton key = this.switchMapping.get(i);
-                
-                if (key != null)
-                {           
-                    // Painting is looking: getAccessoryState creates a switch on a miss, registering all 64 addresses.
-                    boolean red = this.model.getAccessoryStateIfPresent(i + offset, getKeyboardProtocol());
-
-                    key.setSelected(red);
-                    paintSwitchKey(key, red);
-                }
+                // Painting is looking: getAccessoryState creates a switch on a miss, registering every address.
+                this.keyboardKeys.setKey(i, this.model.getAccessoryStateIfPresent(i + offset, getKeyboardProtocol()),
+                    keyboardAddressExists(i + offset));
             }
         });
+    }
+
+    /** Whether the protocol chosen on the keyboard has this address; the MM2 ones end at 320. */
+    private boolean keyboardAddressExists(int address)
+    {
+        return Accessory.isValidLogicalAddress(address, getKeyboardProtocol());
     }
     
     /**
@@ -15897,10 +15810,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     /**
      * Whether a click on the switch keyboard may go to the railway, asking the operator when it may not: the same two
      * questions the diagram tile and the route door ask (`getActiveAccs`, `Layout.clearsProtection`).  The direction
-     * supplied is the button's, not the accessory's: a keyboard button SETS an absolute state (selected is thrown), so
-     * the green command is the one that leaves it clear.  The button is put back on no.
+     * supplied is the half clicked, not the accessory's: a key SETS an absolute state (red is thrown), so the green
+     * command is the one that leaves it clear.
      */
-    private KeyboardSwitch keyboardSwitchAllowed(int address, javax.swing.JToggleButton button)
+    private KeyboardSwitch keyboardSwitchAllowed(int address, boolean red)
     {
         // The power question, which the diagram tile asks (MT-261): a command sent with the power off does nothing, and
         // the keyboard left the button looking as though it had worked.  Asked first, as the tile does.
@@ -15920,17 +15833,17 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 null, powerOptions, powerOptions[0]);
 
             // Anything but the two yeses is a no, Escape and the close box included.
-            if (answer != 0 && answer != 1) return refuse(button);
+            if (answer != 0 && answer != 1) return KeyboardSwitch.REFUSED;
 
             // The autonomy questions still follow, so this answer is remembered rather than returned here.
             if (answer == 0)
             {
-                return keyboardAutonomyAllows(address, button)
+                return keyboardAutonomyAllows(address, red)
                     ? KeyboardSwitch.POWER_ON_THEN_PROCEED : KeyboardSwitch.REFUSED;
             }
         }
 
-        return keyboardAutonomyAllows(address, button)
+        return keyboardAutonomyAllows(address, red)
             ? KeyboardSwitch.PROCEED : KeyboardSwitch.REFUSED;
     }
 
@@ -15942,20 +15855,12 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         /** Turn the track power on, wait for it, then send it. */
         POWER_ON_THEN_PROCEED,
 
-        /** Do nothing; the button has already been put back. */
+        /** Do nothing; the key was never changed. */
         REFUSED
     }
 
-    /** Puts the flipped toggle back (`setSelected` fires no ActionEvent, so no re-entry) and returns REFUSED. */
-    private KeyboardSwitch refuse(javax.swing.JToggleButton button)
-    {
-        button.setSelected(!button.isSelected());
-
-        return KeyboardSwitch.REFUSED;
-    }
-
     /** The two autonomy questions the diagram tile and the route door both ask; true lets the command through. */
-    private boolean keyboardAutonomyAllows(int address, javax.swing.JToggleButton button)
+    private boolean keyboardAutonomyAllows(int address, boolean red)
     {
         if (!this.model.hasAutoLayout() || !this.model.isAutonomyRunning()) return true;
 
@@ -15970,8 +15875,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         boolean onAPath = layout.getActiveAccs().contains(accessory);
 
-        // Clear, not selected, is the green one - see the javadoc.
-        boolean protecting = layout.clearsProtection(accessory, !button.isSelected());
+        boolean protecting = layout.clearsProtection(accessory, !red);
 
         if (!onAPath && !protecting) return true;
 
@@ -15989,33 +15893,25 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         if (choice == 0) return true;
 
         // Anything but OK is a no, Escape and the close box included: -1 must not fall through to "proceed".
-        refuse(button);
-
         return false;
     }
 
-    /** A keyboard switch key's look: red (pink, underlined) or green.  The caller sets whether it is selected. */
-    private static void paintSwitchKey(javax.swing.JToggleButton key, boolean red)
+    /** A half of a key was clicked: asks what has to be asked, then sends exactly that color, lit already or not (FR-050). */
+    private void keyboardKeyClicked(int address, boolean red)
     {
-        key.setBackground(red ? COLOR_SWITCH_RED : COLOR_SWITCH_GREEN);
+        final int switchId = address;
 
-        Font font = key.getFont();
-        Map<TextAttribute, Object> attributes = new HashMap<>(font.getAttributes());
-        attributes.put(TextAttribute.UNDERLINE, red ? TextAttribute.UNDERLINE_ON : -1);
-        key.setFont(font.deriveFont(attributes));
-    }
+        // Read now: the worker below may wait on the power, and the radio can be changed meanwhile
+        final Accessory.accessoryDecoderType protocol = getKeyboardProtocol();
 
-    private void UpdateSwitchState(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_UpdateSwitchState
-        javax.swing.JToggleButton b = (javax.swing.JToggleButton) evt.getSource();
-        int switchId = Integer.parseInt(b.getText());
-
-        // Asked before the button is repainted: a refusal has to leave it as it was (MT-261).
-        final KeyboardSwitch allowed = keyboardSwitchAllowed(switchId, b);
+        // Asked before the key is repainted: a refusal has to leave it as it was (MT-261).
+        final KeyboardSwitch allowed = keyboardSwitchAllowed(address, red);
 
         if (allowed == KeyboardSwitch.REFUSED) return;
 
-        // The click has already toggled the key's selection
-        paintSwitchKey(b, b.isSelected());
+        int key = this.keyboardKeys.keyOf(address);
+
+        if (key > 0) this.keyboardKeys.setKey(key, red, true);
 
         new Thread(() ->
             {
@@ -16043,8 +15939,15 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                     }
                 }
 
-                this.model.setAccessoryState(switchId, getKeyboardProtocol(), b.isSelected());
+                this.model.setAccessoryState(switchId, protocol, red);
             }).start();
+    }
+
+    /** The generated keys' handler: those keys are no longer shown, and the new ones go through `keyboardKeyClicked`. */
+    private void UpdateSwitchState(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_UpdateSwitchState
+        javax.swing.JToggleButton b = (javax.swing.JToggleButton) evt.getSource();
+
+        keyboardKeyClicked(Integer.parseInt(b.getText()), b.isSelected());
     }//GEN-LAST:event_UpdateSwitchState
 
     private void BulkDisableActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_BulkDisableActionPerformed

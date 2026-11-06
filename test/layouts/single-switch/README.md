@@ -68,3 +68,4 @@ It also produces something else the suite has never had by hand: **a split squar
 - `core.testARunLeavesItsStateBehind` - a simulated run and a Return Home over the switch, read afterwards (FR-136)
 - `ui.testTheAutoTabSaysWhyATrainWaits`
 - `ui.testTheAutonomyEditorsBulkDoors`
+- `ui.testTheKeyboardAsksDuringAnAutonomyRun`
