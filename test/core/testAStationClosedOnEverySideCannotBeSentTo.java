@@ -83,11 +83,17 @@ public class testAStationClosedOnEverySideCannotBeSentTo
 
         for (int i = 0; i < 3; i++) model.newFeedback(a + i, null);
 
-        page.addComponent(componentType.FEEDBACK, 1, 1, 0, 0, a, a, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.STRAIGHT, 2, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.FEEDBACK, 3, 1, 0, 0, a + 1, a + 1, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.STRAIGHT, 4, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.FEEDBACK, 5, 1, 0, 0, a + 2, a + 2, accessoryDecoderType.MM2, null);
+        // Sensors on squares 1, 3 and 5 with plain track between
+        for (int x = 1; x <= 5; x++)
+        {
+            boolean sensor = x % 2 == 1;
+
+            int address = sensor ? a + x / 2 : 0;
+
+            page.addComponent(sensor ? componentType.FEEDBACK : componentType.STRAIGHT, x, 1, 0, 0, address, address,
+                accessoryDecoderType.MM2, null);
+        }
+
         page.setPageId("1");
 
         AutonomySession s = new AutonomySession(folder);
@@ -95,13 +101,16 @@ public class testAStationClosedOnEverySideCannotBeSentTo
         s.open(Arrays.asList(page));
         s.initialize(tag);
 
-        TileKey alpha = new TileKey("main", 1, 1), beta = new TileKey("main", 3, 1), gamma = new TileKey("main", 5, 1);
+        TileKey[] squares = {new TileKey("main", 1, 1), new TileKey("main", 3, 1), new TileKey("main", 5, 1)};
 
-        for (TileKey t : Arrays.asList(alpha, beta, gamma)) s.setStation(t, true);
+        TileKey alpha = squares[0], beta = squares[1], gamma = squares[2];
 
-        s.setPointName(alpha, "OB411Alpha");
-        s.setPointName(beta, "OB411Beta");
-        s.setPointName(gamma, "OB411Gamma");
+        for (int i = 0; i < 3; i++)
+        {
+            s.setStation(squares[i], true);
+
+            s.setPointName(squares[i], "OB411" + new String[] {"Alpha", "Beta", "Gamma"}[i]);
+        }
 
         s.setPointProperty(alpha, org.traincontrol.automationui.AutonomyBuilder.MUST_REVERSE, Boolean.TRUE);
         s.setPointProperty(gamma, org.traincontrol.automationui.AutonomyBuilder.MUST_REVERSE, Boolean.TRUE);
