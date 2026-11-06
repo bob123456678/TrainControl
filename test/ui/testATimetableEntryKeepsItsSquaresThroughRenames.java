@@ -361,6 +361,93 @@ public class testATimetableEntryKeepsItsSquaresThroughRenames
             + " did: " + Arrays.toString(first));
     }
 
+    /**
+     * A shift of the track and Cancel: the track editor moves the squares and the carry's memory, so that memory no
+     * longer names the squares of the setup Cancel restores, and reading the legs by it would write them under the
+     * wrong names.  The fold is the one a railway newer than the setup makes while the track editor is open.
+     *
+     * MUTATION: in `restoreSetup`, drop `!squareMovedInTheEdit`, and this fails.
+     */
+    @Test
+    public void testAShiftOfTheTrackThenCancel() throws Exception
+    {
+        final LayoutEditor[] editor = new LayoutEditor[1];
+
+        SwingUtilities.invokeAndWait(() ->
+        {
+            editor[0] = new LayoutEditor(model.getLayout(PAGE), 30, ui, 0);
+
+            editor[0].render();
+        });
+
+        open = editor[0];
+
+        settle();
+
+        final java.lang.reflect.Method newer = TrainControlUI.class.getDeclaredMethod("setupNewerThanTheRailway", boolean.class);
+
+        newer.setAccessible(true);
+
+        try
+        {
+            newer.invoke(ui, true);
+
+            theRailwayChangesItsTimetable();
+
+            SwingUtilities.invokeAndWait(() -> ui.captureRunningLayout());
+
+            assertStoredTheWholeWay(session, "the fold, before the shift");
+
+            final java.lang.reflect.Method drawGrid = LayoutEditor.class.getDeclaredMethod("drawGrid");
+            final java.lang.reflect.Field hovered = LayoutEditor.class.getDeclaredField("lastHoveredX");
+
+            drawGrid.setAccessible(true);
+            hovered.setAccessible(true);
+
+            SwingUtilities.invokeAndWait(() ->
+            {
+                try
+                {
+                    drawGrid.invoke(editor[0]);
+
+                    hovered.setInt(editor[0], 2);
+
+                    editor[0].shiftRight();
+                }
+                catch (ReflectiveOperationException failed)
+                {
+                    throw new IllegalStateException(failed);
+                }
+            });
+
+            settle();
+
+            assertEquals(session.getStore().getPointName(new TileKey(PAGE, 8, 3)), "MainPlatform",
+                "precondition: the shift did not carry the station");
+
+            cancel();
+
+            session = ui.getAutonomySession();
+
+            assertEquals(session.getStore().getPointName(MAIN), "MainPlatform", "precondition: Cancel did not undo the shift");
+
+            assertStoredTheWholeWay(session, "the shift and Cancel, in the setup");
+
+            assertEquals(lastLegOf(storedTimetable(session))[1], "MainPlatform", "the entry does not end under the name the"
+                + " setup opened with");
+
+            newer.invoke(ui, false);
+
+            theNextLoad();
+
+            assertTheEntryRunsTheWholeWay("the load after the shift and Cancel");
+        }
+        finally
+        {
+            newer.invoke(ui, false);
+        }
+    }
+
     // ----------------------------------------------------------- what the claims do
 
     private static support.LayoutSandbox sandbox;
