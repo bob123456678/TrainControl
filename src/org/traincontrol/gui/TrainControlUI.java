@@ -2087,7 +2087,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // Windows.
         try (java.io.FileInputStream file_in =
                 new java.io.FileInputStream(Util.dataPath(TrainControlUI.DATA_FILE_NAME));
-            ObjectInputStream obj_in = new ObjectInputStream(file_in))
+            ObjectInputStream obj_in = new ObjectInputStream(new java.io.BufferedInputStream(file_in)))
         {
             // Read an object
             Object obj = obj_in.readObject();
