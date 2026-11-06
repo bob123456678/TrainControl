@@ -165,6 +165,14 @@ public class AutonomyEditorPanel extends JPanel
     private final DefaultListModel<String> findingsModel = new DefaultListModel<>();
     private final JList<String> findings = new JList<>(findingsModel);
 
+    /** The box above the list (FR-073); the one control that may take the keyboard. */
+    private final javax.swing.JTextField findingFilter = new FilterField();
+
+    /** The last check's rows by severity, unfiltered; the filter reshapes the list from these without a new check. */
+    private List<Object[]> errorFindings = new java.util.ArrayList<>();
+    private List<Object[]> warningFindings = new java.util.ArrayList<>();
+    private List<Object[]> noticeFindings = new java.util.ArrayList<>();
+
     /** How much direction information is drawn: one control, as the answers are exclusive. */
     private final javax.swing.JComboBox<String> directions = new WideListBox(new String[]
     {
@@ -330,6 +338,7 @@ public class AutonomyEditorPanel extends JPanel
 
     // Built here, mounted by the window across the bottom of the diagram
     private JScrollPane findingsPanel;
+    private javax.swing.JPanel findingsBox;
 
     // Offered only while something is unnamed
     private JButton nameAll;
@@ -488,6 +497,9 @@ public class AutonomyEditorPanel extends JPanel
 
         // Nothing here is worked by keyboard, and a focusable control swallows the window's keys.
         AutonomyViewerPanel.unfocusable(this);
+
+        // After the sweep: the filter box is the one exception, and the window mounts it, not this panel.
+        findingsBox = buildFindingsBox(findingsPanel);
 
         refresh();
     }
@@ -1049,6 +1061,145 @@ public class AutonomyEditorPanel extends JPanel
         scroll.setPreferredSize(new Dimension(width - 20, 160));
 
         return scroll;
+    }
+
+    /**
+     * The filter box with its clear button, over the list (FR-073).  It narrows the list as typed and never selects a
+     * row, so it neither jumps nor copies.
+     */
+    private javax.swing.JPanel buildFindingsBox(JScrollPane list)
+    {
+        javax.swing.JPanel box = new javax.swing.JPanel(new BorderLayout(4, 0));
+
+        box.setOpaque(false);
+        box.setBorder(BorderFactory.createEmptyBorder(0, 4, 2, 4));
+
+        JLabel label = new JLabel(I18n.t("autosetup.ui.labelFilterFindings"));
+
+        label.setFont(FONT_CONTROL);
+        label.setFocusable(false);
+
+        findingFilter.setFont(FONT_CONTROL);
+        findingFilter.setToolTipText(wrapped(I18n.t("autosetup.ui.tooltipFilterFindings")));
+
+        // Reshaped from the last check's rows, so typing costs no new check and leaves the banner alone.
+        findingFilter.getDocument().addDocumentListener(new javax.swing.event.DocumentListener()
+        {
+            @Override
+            public void insertUpdate(javax.swing.event.DocumentEvent e)
+            {
+                showFindings();
+            }
+
+            @Override
+            public void removeUpdate(javax.swing.event.DocumentEvent e)
+            {
+                showFindings();
+            }
+
+            @Override
+            public void changedUpdate(javax.swing.event.DocumentEvent e)
+            {
+                showFindings();
+            }
+        });
+
+        JButton clear = new JButton("×");
+
+        clear.setFont(FONT_CONTROL);
+        clear.setFocusable(false);
+        clear.setMargin(new java.awt.Insets(0, 6, 0, 6));
+        clear.setToolTipText(wrapped(I18n.t("autosetup.ui.tooltipClearFilterFindings")));
+        clear.addActionListener(e -> findingFilter.setText(""));
+
+        box.add(label, BorderLayout.WEST);
+        box.add(findingFilter, BorderLayout.CENTER);
+        box.add(clear, BorderLayout.EAST);
+
+        javax.swing.JPanel whole = new javax.swing.JPanel(new BorderLayout());
+
+        whole.setOpaque(false);
+        whole.add(box, BorderLayout.NORTH);
+        whole.add(list, BorderLayout.CENTER);
+
+        return whole;
+    }
+
+    /**
+     * The filter box.  Unfocusable until clicked, so the window's keys work as with every other control; it gives the
+     * keyboard back on Escape (which also clears it), Enter, or a click elsewhere in its window.
+     */
+    private static final class FilterField extends javax.swing.JTextField
+    {
+        private final java.awt.event.AWTEventListener clickAway = event ->
+        {
+            if (event.getID() != java.awt.event.MouseEvent.MOUSE_PRESSED || !isFocusable()) return;
+
+            Object source = event.getSource();
+
+            if (source != this && source instanceof java.awt.Component
+                && javax.swing.SwingUtilities.getWindowAncestor((java.awt.Component) source)
+                    == javax.swing.SwingUtilities.getWindowAncestor(this))
+            {
+                letGo();
+            }
+        };
+
+        FilterField()
+        {
+            setFocusable(false);
+
+            addMouseListener(new java.awt.event.MouseAdapter()
+            {
+                @Override
+                public void mousePressed(java.awt.event.MouseEvent e)
+                {
+                    setFocusable(true);
+                    requestFocusInWindow();
+                }
+            });
+
+            addKeyListener(new java.awt.event.KeyAdapter()
+            {
+                @Override
+                public void keyPressed(java.awt.event.KeyEvent e)
+                {
+                    if (e.getKeyCode() == java.awt.event.KeyEvent.VK_ESCAPE)
+                    {
+                        setText("");
+                        letGo();
+                        e.consume();
+                    }
+                    else if (e.getKeyCode() == java.awt.event.KeyEvent.VK_ENTER)
+                    {
+                        letGo();
+                        e.consume();
+                    }
+                }
+            });
+        }
+
+        /** Unfocusable again, which hands the keyboard back to the window as it is with no text box. */
+        void letGo()
+        {
+            setFocusable(false);
+        }
+
+        @Override
+        public void addNotify()
+        {
+            super.addNotify();
+
+            java.awt.Toolkit.getDefaultToolkit().addAWTEventListener(clickAway, java.awt.AWTEvent.MOUSE_EVENT_MASK);
+        }
+
+        @Override
+        public void removeNotify()
+        {
+            java.awt.Toolkit.getDefaultToolkit().removeAWTEventListener(clickAway);
+
+            super.removeNotify();
+        }
     }
 
 
@@ -5835,11 +5986,6 @@ public class AutonomyEditorPanel extends JPanel
             }
         }
 
-        findingsModel.clear();
-        findingTiles.clear();
-        findingRelated.clear();
-        findingSeverity.clear();
-
         // What must be fixed and what is worth checking, over the whole layout, as a load refuses on any problem; the
         // graph's own problems are among the findings.  Warnings and notices apart: the diagram's count adds errors and
         // warnings only.
@@ -5870,14 +6016,14 @@ public class AutonomyEditorPanel extends JPanel
         List<Object[]> warningRows = sorted.get(AutonomyChecks.Severity.WARNING);
         List<Object[]> noticeRows = sorted.get(AutonomyChecks.Severity.NOTICE);
 
+        // The banner and the diagram's count below read these, never the filtered list.
         int errors = errorRows.size();
 
-        section(I18n.f("autosetup.ui.headingErrors", errorRows.size()), errorRows,
-            AutonomyChecks.Severity.ERROR);
-        section(I18n.f("autosetup.ui.headingWarningsShort", warningRows.size()), warningRows,
-            AutonomyChecks.Severity.WARNING);
-        section(I18n.f("autosetup.ui.headingNotices", noticeRows.size()), noticeRows,
-            AutonomyChecks.Severity.NOTICE);
+        errorFindings = errorRows;
+        warningFindings = warningRows;
+        noticeFindings = noticeRows;
+
+        showFindings();
 
         // Unnamed points are already errors in the list.
         int unnamed = unnamedPoints().size();
@@ -5934,18 +6080,69 @@ public class AutonomyEditorPanel extends JPanel
         if (onChanged != null) onChanged.run();
     }
 
-    /** Adds one severity section, headed as the Auto tab's; a null heading continues the one above. */
-    private void section(String heading, List<Object[]> rows, AutonomyChecks.Severity severity)
+    /**
+     * Rebuilds the list from the last check's rows through the filter (FR-073); the four parallel lists are rebuilt
+     * together, so a click on a row reaches that row's finding.  A heading with no match goes, and the rest say
+     * "1 of 4".
+     */
+    private void showFindings()
     {
-        if (rows.isEmpty()) return;
+        findingsModel.clear();
+        findingTiles.clear();
+        findingRelated.clear();
+        findingSeverity.clear();
 
-        if (heading != null)
+        String wanted = findingFilter.getText().trim().toLowerCase();
+
+        section("autosetup.ui.headingErrors", "autosetup.ui.headingErrorsOf", errorFindings, wanted,
+            AutonomyChecks.Severity.ERROR);
+        section("autosetup.ui.headingWarningsShort", "autosetup.ui.headingWarningsShortOf", warningFindings, wanted,
+            AutonomyChecks.Severity.WARNING);
+        section("autosetup.ui.headingNotices", "autosetup.ui.headingNoticesOf", noticeFindings, wanted,
+            AutonomyChecks.Severity.NOTICE);
+
+        // A line that is not a finding: no tile, no severity, so a click on it does nothing
+        if (!wanted.isEmpty() && findingsModel.isEmpty())
         {
-            findingsModel.addElement(heading);
+            findingsModel.addElement(I18n.f("autosetup.ui.findingsNoMatch", findingFilter.getText().trim()));
             findingTiles.add(null);
             findingRelated.add(null);
             findingSeverity.add(null);
         }
+    }
+
+    /** @return the filter box's text, to carry across a page change */
+    public String getFindingFilter()
+    {
+        return findingFilter.getText();
+    }
+
+    /** @param text what to put in the filter box; the list follows */
+    public void setFindingFilter(String text)
+    {
+        findingFilter.setText(text == null ? "" : text);
+    }
+
+    /** Adds one severity section, headed as the Auto tab's, with only the rows that contain {@code wanted}. */
+    private void section(String headingKey, String filteredHeadingKey, List<Object[]> all, String wanted,
+        AutonomyChecks.Severity severity)
+    {
+        List<Object[]> rows = new java.util.ArrayList<>();
+
+        for (Object[] row : all)
+        {
+            if (wanted.isEmpty() || String.valueOf(row[1]).toLowerCase().contains(wanted)) rows.add(row);
+        }
+
+        if (rows.isEmpty()) return;
+
+        String heading = wanted.isEmpty()
+            ? I18n.f(headingKey, rows.size()) : I18n.f(filteredHeadingKey, rows.size(), all.size());
+
+        findingsModel.addElement(heading);
+        findingTiles.add(null);
+        findingRelated.add(null);
+        findingSeverity.add(null);
 
         for (Object[] row : rows)
         {
@@ -6628,6 +6825,12 @@ public class AutonomyEditorPanel extends JPanel
     public JScrollPane getFindingsPanel()
     {
         return findingsPanel;
+    }
+
+    /** @return the findings list under its filter box, for the window to put across the bottom */
+    public javax.swing.JComponent getFindingsBox()
+    {
+        return findingsBox;
     }
 
     /** @return the height of a findings row: the taller of a notice and a heading, the same for every row */

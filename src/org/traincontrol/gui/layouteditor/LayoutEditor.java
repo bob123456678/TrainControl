@@ -1307,6 +1307,8 @@ public class LayoutEditor extends PositionAwareJFrame
         {
             if (autonomyPanel != null)
             {
+                findingFilter = autonomyPanel.getFindingFilter();
+
                 this.newComponents.remove(autonomyPanel);
                 autonomyPanel = null;
 
@@ -1363,6 +1365,9 @@ public class LayoutEditor extends PositionAwareJFrame
 
             // The main window cannot be found from a JFrame, which has no owner.
             autonomyPanel.setMainWindow(parent);
+
+            // The filter box's text stays across a page change (FR-073).
+            autonomyPanel.setFindingFilter(findingFilter);
 
             // Where the railway is, so the arrived-from menu and `setFacingAndMove` work here as on the track diagram.
             autonomyPanel.setRunningLayoutSource(
@@ -1424,8 +1429,10 @@ public class LayoutEditor extends PositionAwareJFrame
                     // Carried before the window goes: the user closed nothing
                     final boolean clicked = squareClicked;
 
+                    final String typed = currentFindingFilter();
+
                     parent.autonomyEditorClosedFromTheEditor(
-                        () -> parent.openCarryingTheClick(clicked, () -> parent.openAutonomyEditor(tile)));
+                        () -> parent.openCarryingTheClick(clicked, typed, () -> parent.openAutonomyEditor(tile)));
 
                     dispose();
                 }
@@ -1439,8 +1446,10 @@ public class LayoutEditor extends PositionAwareJFrame
                 // Carried before the window goes: the user closed nothing
                 final boolean clicked = squareClicked;
 
+                final String typed = currentFindingFilter();
+
                 parent.autonomyEditorClosedFromTheEditor(
-                    () -> parent.openCarryingTheClick(clicked, () -> parent.openAutonomyEditor(at, named)));
+                    () -> parent.openCarryingTheClick(clicked, typed, () -> parent.openAutonomyEditor(at, named)));
 
                 dispose();
             });
@@ -1631,7 +1640,7 @@ public class LayoutEditor extends PositionAwareJFrame
                 javax.swing.JPanel foot = new javax.swing.JPanel(new BorderLayout());
                 foot.setOpaque(false);
 
-                javax.swing.JScrollPane list = autonomyPanel.getFindingsPanel();
+                javax.swing.JComponent list = autonomyPanel.getFindingsBox();
 
                 if (list != null)
                 {
@@ -1719,6 +1728,22 @@ public class LayoutEditor extends PositionAwareJFrame
      * window's, so the next opening starts afresh; reopenings hand it on (`carryTheClick`).
      */
     private boolean squareClicked = false;
+
+    /** The findings filter's text between autonomy panels, which a page change rebuilds (FR-073). */
+    private String findingFilter = "";
+
+    private String currentFindingFilter()
+    {
+        return autonomyPanel != null ? autonomyPanel.getFindingFilter() : findingFilter;
+    }
+
+    /** Starts this editor's findings filter with what the editor it replaces held; not saved anywhere. */
+    public void carryTheFindingFilter(String text)
+    {
+        findingFilter = text == null ? "" : text;
+
+        if (autonomyPanel != null) autonomyPanel.setFindingFilter(findingFilter);
+    }
 
     /** The next editor opened by one of this window's reopenings starts knowing a square was clicked. */
     public void carryTheClick()
@@ -3669,8 +3694,10 @@ public class LayoutEditor extends PositionAwareJFrame
         // Carried before the window goes: the user closed nothing
         final boolean clicked = squareClicked;
 
+        final String typed = currentFindingFilter();
+
         parent.autonomyEditorClosedFromTheEditor(
-            () -> parent.openCarryingTheClick(clicked, () -> parent.openAutonomyEditor(tile)));
+            () -> parent.openCarryingTheClick(clicked, typed, () -> parent.openAutonomyEditor(tile)));
 
         dispose();
     }
