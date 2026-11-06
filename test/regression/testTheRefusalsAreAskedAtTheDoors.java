@@ -55,6 +55,22 @@ public class testTheRefusalsAreAskedAtTheDoors
     }
 
     /**
+     * Every page edit that rewrites the index asks the shared refusals first (`refusedAsAPageEdit`): the DOORS list
+     * checks the helper's content, and this checks that its callers call it.
+     *
+     * MUTATION: take the call out of `duplicateOrRenameCurrentLayout` or `reorder`, and this names it.
+     */
+    @Test
+    public void testEveryPageEditCallsTheSharedRefusals() throws Exception
+    {
+        for (String door : new String[] {"    void duplicateOrRenameCurrentLayout(", "    private void reorder("})
+        {
+            assertTrue(code(door).contains("refusedAsAPageEdit("), door.trim() + " does not ask the page edits' shared"
+                + " refusals before it writes");
+        }
+    }
+
+    /**
      * Every door that names a page asks whose file the name is: Rename, Duplicate and Add Blank Page through one
      * method, Duplicate's own choice of name, and Combine Linked Pages.
      *

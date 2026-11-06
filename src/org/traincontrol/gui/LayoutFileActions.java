@@ -41,10 +41,10 @@ final class LayoutFileActions
 
     /**
      * Writes the page index and re-aims every arrow on the layout at the page it was aimed at, as a link tile holds a
-     * position in the page list.  Delete and Combine go through here; Add, Duplicate and Rename go through
+     * position in the name-sorted page list.  Delete and Combine go through here; Add, Duplicate and Rename go through
      * `LayoutPageEdit`.  The order is taken from the pages this session holds, not the index file (FR-018).
      *
-     * @param layoutList the new page list, in the order to write, as writeLayoutIndex takes it
+     * @param layoutList the new page list, as writeLayoutIndex takes it
      * @param renamed old name -&gt; new name, or null - which both callers pass; a rename goes through `LayoutPageEdit`
      * @param keepAbsent pages to hold in the index though they are not loaded (FR-018), or null
      * @throws java.io.IOException if the index cannot be written, which is the caller's to report
@@ -418,20 +418,38 @@ final class LayoutFileActions
      * @param by -1 for up, 1 for down
      * @param from the layout editor that asked, or null
      */
-    void movePage(int by, final LayoutEditor from)
+    void movePage(final int by, final LayoutEditor from)
     {
-        List<String> order = this.ui.getModel().getLayoutList();
+        final String page = String.valueOf(this.ui.layoutList().getSelectedItem());
 
-        String page = String.valueOf(this.ui.layoutList().getSelectedItem());
+        if (moved(this.ui.getModel().getLayoutList(), page, by) == null) return;
 
-        int at = order.indexOf(page);
+        reorder(pages -> moved(pages, page, by), page, page, from);
+    }
+
+    /** The pages with this one moved by `by` places, or null at either end. */
+    private static List<String> moved(List<String> pages, String page, int by)
+    {
+        int at = pages.indexOf(page);
         int to = at + by;
 
-        if (at < 0 || to < 0 || to >= order.size()) return;
+        if (at < 0 || to < 0 || to >= pages.size()) return null;
 
-        java.util.Collections.swap(order, at, to);
+        List<String> out = new ArrayList<>(pages);
 
-        reorder(order, page, from);
+        java.util.Collections.swap(out, at, to);
+
+        return out;
+    }
+
+    /** The pages in name order, or null when they already are. */
+    private static List<String> sorted(List<String> pages)
+    {
+        List<String> out = new ArrayList<>(pages);
+
+        java.util.Collections.sort(out);
+
+        return out.equals(pages) ? null : out;
     }
 
     /**
@@ -441,30 +459,32 @@ final class LayoutFileActions
      */
     void sortPagesByName(final LayoutEditor from)
     {
-        List<String> order = this.ui.getModel().getLayoutList();
+        if (sorted(this.ui.getModel().getLayoutList()) == null) return;
 
-        List<String> sorted = new ArrayList<>(order);
-
-        java.util.Collections.sort(sorted);
-
-        if (sorted.equals(order)) return;
-
-        reorder(sorted, String.valueOf(this.ui.layoutList().getSelectedItem()), from);
+        // Each window stays on the page it shows
+        reorder(LayoutFileActions::sorted, String.valueOf(this.ui.layoutList().getSelectedItem()), null, from);
     }
 
     /**
      * Writes the index in a new page order: every page keeps its id, and no page file and not the setup is touched.  Refused as the other page edits are.
      *
-     * @param order the pages in the order to write
-     * @param page the page to show afterwards
+     * @param order the pages in the order to write, worked out from the pages as they are when the write goes ahead
+     *        (a page may have been added meanwhile); null when there is nothing to change
+     * @param page the page the main window shows afterwards
+     * @param editorPage the page the layout editor that asked arrives on, or null for the one it left
      * @param from the layout editor that asked (FR-109), or null for the Layouts menu
      */
-    private void reorder(final List<String> order, final String page, final LayoutEditor from)
+    private void reorder(final java.util.function.Function<List<String>, List<String>> order, final String page,
+        final String editorPage, final LayoutEditor from)
     {
         if (refusedAsAPageEdit(from)) return;
 
-        runPageEdit(from, page, () ->
+        runPageEdit(from, page, editorPage, () ->
         {
+            List<String> next = order.apply(this.ui.getModel().getLayoutList());
+
+            if (next == null) return false;
+
             this.ui.captureRunningLayout();
 
             java.util.Collection<String> keepAbsent = this.ui.settleTheAbsentPages(
@@ -474,7 +494,7 @@ final class LayoutFileActions
 
             // Only the order of the index changes: an arrow's number indexes the name-sorted list, which does not move,
             // and each page keeps its id.
-            LayoutDiagram.writeLayoutIndex(this.ui.localLayoutPath(), order, null, this.ui.pageIdFloor(), keepAbsent);
+            LayoutDiagram.writeLayoutIndex(this.ui.localLayoutPath(), next, null, this.ui.pageIdFloor(), keepAbsent);
 
             return true;
         });
@@ -520,6 +540,12 @@ final class LayoutFileActions
      */
     private void runPageEdit(final LayoutEditor from, final String show, final PageEdit edit)
     {
+        runPageEdit(from, show, show, edit);
+    }
+
+    /** The same, with the layout editor arriving on `editorShows` (null: the page it left) and the main window on `show`. */
+    private void runPageEdit(final LayoutEditor from, final String show, final String editorShows, final PageEdit edit)
+    {
         final java.awt.Component over = from == null ? this.ui : from;
 
         final Runnable work = () ->
@@ -533,7 +559,7 @@ final class LayoutFileActions
                     this.ui.layoutEditingComplete(() ->
                     {
                         // Posted, so it lands after the two below
-                        if (from != null) from.arriveOn(show);
+                        if (from != null) from.arriveOn(editorShows);
 
                         this.ui.layoutList().setSelectedItem(show);
                         this.ui.repaintLayout();

@@ -203,7 +203,7 @@ public class LayoutEditorAddressPopup extends javax.swing.JPanel
             }
             else if (lc.isLink())
             {
-                // Back to the page's place in the FULL list, since that is what a link stores - see the
+                // Back to the page's place in the FULL name-sorted list, since that is what a link stores - see the
                 // combo model above.  Nothing selected leaves the square as it was.
                 Object chosen = this.addressSelector.getSelectedItem();
 

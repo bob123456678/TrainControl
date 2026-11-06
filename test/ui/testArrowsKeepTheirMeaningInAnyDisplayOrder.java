@@ -20,10 +20,12 @@ import org.traincontrol.automationui.AutonomySession;
 import org.traincontrol.automationui.GraphReducer;
 import org.traincontrol.automationui.TileGraph;
 import org.traincontrol.base.LayoutDiagramComponent;
+import org.traincontrol.gui.LayoutLabel;
 import org.traincontrol.gui.LayoutPopupUI;
 import org.traincontrol.gui.layouteditor.LayoutEditorAddressPopup;
 import org.traincontrol.util.I18n;
 import support.Components;
+import support.Mouse;
 
 /**
  * FR-175: pages are SHOWN in the order of the layout file, but an arrow's number stays a place in the NAME-SORTED list,
@@ -100,36 +102,269 @@ public class testArrowsKeepTheirMeaningInAnyDisplayOrder extends support.PageWin
 
         final javax.swing.JComboBox<?> shown = combo();
 
-        final LayoutPopupUI popup = Components.onTheEventThread(() ->
+        int clicked = 0;
+
+        for (final String page : model.getLayoutList())
         {
-            LayoutPopupUI made = new LayoutPopupUI(model.getLayout(byName.get(0)), 30, ui, 0);
+            LayoutDiagramComponent arrow = null;
 
-            made.render();
+            for (LayoutDiagramComponent tile : model.getLayout(page).getAll())
+            {
+                if (arrow == null && tile.isLink() && tile.getRawAddress() >= 0 && !byName.get(tile.getRawAddress()).equals(page)) arrow = tile;
+            }
 
-            return made;
+            if (arrow == null) continue;
+
+            final int number = arrow.getRawAddress();
+
+            Components.select(shown, page);
+
+            assertTrue(Components.waitFor(() -> page.equals(String.valueOf(shown.getSelectedItem())), 5000), "the page list"
+                + " would not show " + page);
+
+            Components.settle();
+
+            Mouse.click(arrowOn(ui, number));
+
+            assertTrue(Components.waitFor(() -> byName.get(number).equals(String.valueOf(shown.getSelectedItem())), 5000),
+                "clicking the arrow numbered " + number + " on " + page + " shows " + shown.getSelectedItem()
+                + ", not the page at that place in the name-sorted list, " + byName.get(number));
+
+            // And in a page popup showing the same page
+            showPopup(page);
+
+            final LayoutPopupUI popup = popups().get(popups().size() - 1);
+
+            Mouse.click(arrowOn(popup, number));
+
+            assertTrue(Components.waitFor(() -> byName.get(number).equals(popupPage(popup)), 5000), "the popup arrow numbered "
+                + number + " on " + page + " shows " + popupPage(popup) + ", not " + byName.get(number));
+
+            SwingUtilities.invokeAndWait(popup::dispose);
+
+            clicked++;
+        }
+
+        assertTrue(clicked > 0, "precondition: no arrow could be clicked");
+    }
+
+    /** The label of the arrow tile with this number, showing in this window. */
+    private static LayoutLabel arrowOn(java.awt.Component window, int number)
+    {
+        assertTrue(Components.waitFor(() -> Components.find(window, LayoutLabel.class, l -> l.isShowing()
+            && l.getComponent() != null && l.getComponent().isLink() && l.getComponent().getRawAddress() == number) != null,
+            5000), "no arrow numbered " + number + " is showing");
+
+        return Components.find(window, LayoutLabel.class, l -> l.isShowing() && l.getComponent() != null
+            && l.getComponent().isLink() && l.getComponent().getRawAddress() == number);
+    }
+
+    @SuppressWarnings("unchecked")
+    private List<LayoutPopupUI> popups() throws Exception
+    {
+        java.lang.reflect.Field field = org.traincontrol.gui.TrainControlUI.class.getDeclaredField("popups");
+
+        field.setAccessible(true);
+
+        return (List<LayoutPopupUI>) field.get(ui);
+    }
+
+    /** Opens a page popup as the Pop Up menu does and waits for it. */
+    private void showPopup(String page) throws Exception
+    {
+        int had = popups().size();
+
+        java.lang.reflect.Method open = org.traincontrol.gui.TrainControlUI.class.getDeclaredMethod("showLayoutPopup",
+            String.class, int.class);
+
+        open.setAccessible(true);
+
+        open.invoke(ui, page, 30);
+
+        assertTrue(Components.waitFor(() -> popups().size() > had && popups().get(popups().size() - 1).isShowing(), 10000),
+            "the popup did not open");
+
+        Components.settle();
+    }
+
+    /**
+     * A page popup whose page is at another place in the shown list than in the name-sorted list stays on its page, and
+     * keeps its size and place, when the diagrams are refreshed (a Show Addresses tick, an edit, a page action).
+     *
+     * MUTATION: `LayoutPopupUI.refreshDiagram` passes its saved shown place to the arrow door again (the place is read
+     * as an arrow's number), and the popup jumps to another page.
+     */
+    @Test
+    public void testAPopupStaysOnItsPageWhenTheDiagramsAreRefreshed() throws Exception
+    {
+        writeIndex(NOT_BY_NAME);
+
+        startTheWindow(5);
+
+        refreshAPopup();
+    }
+
+    /** The same on a copy of the Central Station layout. */
+    @Test
+    public void testAPopupOnAStationLayoutStaysOnItsPageWhenTheDiagramsAreRefreshed() throws Exception
+    {
+        startTheWindow(4);
+
+        refreshAPopup();
+    }
+
+    private void refreshAPopup() throws Exception
+    {
+        final List<String> byName = sortedByName();
+
+        String page = null;
+
+        for (String each : model.getLayoutList()) if (page == null && model.getLayoutList().indexOf(each) != byName.indexOf(each)) page = each;
+
+        assertNotNull(page, "precondition: every page is at the same place in both lists");
+
+        showPopup(page);
+
+        LayoutPopupUI popup = popups().get(popups().size() - 1);
+
+        assertEquals(popupPage(popup), page);
+
+        java.awt.Rectangle bounds = Components.onTheEventThread(popup::getBounds);
+
+        java.lang.reflect.Method refresh = org.traincontrol.gui.TrainControlUI.class.getDeclaredMethod("updatePopups",
+            boolean.class);
+
+        refresh.setAccessible(true);
+
+        SwingUtilities.invokeAndWait(() ->
+        {
+            try
+            {
+                refresh.invoke(ui, true);
+            }
+            catch (ReflectiveOperationException e)
+            {
+                throw new IllegalStateException(e);
+            }
         });
 
-        try
+        Components.settle();
+
+        assertEquals(popupPage(popup), page, "a refresh moved the popup to another page");
+
+        assertEquals(Components.onTheEventThread(popup::getBounds), bounds, "a refresh changed the popup's size or place");
+    }
+
+    /**
+     * A page added to the index while the editor asks about its unsaved work is still in the index after the move: the
+     * new order is worked out when the write goes ahead.
+     *
+     * MUTATION: `movePage` works the new order out before it steps out (the old `order` captured early), and the late
+     * page is dropped from the index.
+     */
+    @Test
+    public void testAPageAddedWhileTheEditorAsksIsKeptByTheMove() throws Exception
+    {
+        startTheWindow(5);
+
+        SwingUtilities.invokeAndWait(() -> ui.openLayoutEditor("2 - Bottom", false, null));
+
+        assertTrue(Components.waitFor(() -> support.EditorsOpen.editorOn("2 - Bottom") != null, 15000), "no editor");
+
+        Components.settle();
+
+        final org.traincontrol.gui.layouteditor.LayoutEditor editor = support.EditorsOpen.editorOn("2 - Bottom");
+
+        final org.traincontrol.gui.LayoutLabel square = Components.find(editor, org.traincontrol.gui.LayoutLabel.class,
+            l -> l.getComponent() != null && !l.getComponent().isText());
+
+        SwingUtilities.invokeAndWait(() -> editor.rotate(square));
+
+        try (support.Answering answering = support.Answering.start(message ->
         {
-            for (int n = 0; n < byName.size(); n++)
+            if (!message.equals(I18n.t("layout.ui.confirmPageActionWithUnsavedWork"))) return support.Answering.pressAt(0);
+
+            try
             {
-                final int number = n;
+                Files.copy(new File(sandbox.getFolder(), "config/gleisbilder/5 - Test.cs2").toPath(),
+                    new File(sandbox.getFolder(), "config/gleisbilder/6 - Late.cs2").toPath());
 
-                SwingUtilities.invokeAndWait(() -> ui.goToLayoutPage(number));
+                File index = new File(sandbox.getFolder(), "config/gleisbild.cs2");
 
-                assertEquals(String.valueOf(Components.onTheEventThread(shown::getSelectedItem)), byName.get(n),
-                    "arrow number " + n + " does not show the page at that place in the name-sorted list");
+                Files.write(index.toPath(), (new String(Files.readAllBytes(index.toPath()), StandardCharsets.UTF_8)
+                    + "seite\n .id=9\n .name=6 - Late\n").getBytes(StandardCharsets.UTF_8));
 
-                SwingUtilities.invokeAndWait(() -> popup.goToLayoutPage(number));
-
-                assertTrue(Components.waitFor(() -> byName.get(number).equals(popupPage(popup)), 5000), "arrow number "
-                    + n + " shows " + popupPage(popup) + " in the page popup, not " + byName.get(n));
+                model.refreshLayouts();
             }
-        }
-        finally
+            catch (java.io.IOException e)
+            {
+                throw new IllegalStateException(e);
+            }
+
+            return support.Answering.press(I18n.t("layout.ui.switchDiscard"));
+        }))
         {
-            SwingUtilities.invokeAndWait(popup::dispose);
+            Components.press(Components.all(editor, javax.swing.AbstractButton.class,
+                b -> I18n.t("layout.ui.tooltipMovePageDown").equals(b.getToolTipText())).get(0));
+
+            assertTrue(answering.awaitAsked(1, 10000), "the move did not ask about the unsaved work");
+
+            assertTrue(Components.waitFor(() -> namesInTheIndex().equals(Arrays.asList("1 - Main", "3 - Top Parking",
+                "2 - Bottom", "4 - Combined", "5 - Test", "6 - Late")), 15000), "the page added meanwhile is not in the"
+                + " moved index: " + namesInTheIndex());
         }
+    }
+
+    /**
+     * The Autonomy menu lists the pages in the order they are shown (its Edit and Pages submenus), and the session's own
+     * list, which links index, stays name-sorted.
+     *
+     * MUTATION: `AutonomyMenu.shownOrder` returns the session's list as it is, and the menus list by name.
+     */
+    @Test
+    public void testTheAutonomyMenuListsPagesInTheOrderTheyAreShown() throws Exception
+    {
+        writeIndex(NOT_BY_NAME);
+
+        startTheWindow(5);
+
+        java.lang.reflect.Field field = org.traincontrol.gui.TrainControlUI.class.getDeclaredField("autonomyMenu");
+
+        field.setAccessible(true);
+
+        final javax.swing.JMenu menu = (javax.swing.JMenu) field.get(ui);
+
+        SwingUtilities.invokeAndWait(() ->
+        {
+            menu.setSelected(true);
+            menu.setSelected(false);
+        });
+
+        Components.settle();
+
+        for (final String submenu : new String[] {"autosetup.ui.menuEditAutonomy", "autosetup.ui.btnExcludePage"})
+        {
+            final javax.swing.JMenu sub = Components.find(menu, javax.swing.JMenu.class, m -> I18n.t(submenu).equals(m.getText()));
+
+            assertNotNull(sub, "the Autonomy menu has no " + I18n.t(submenu));
+
+            List<String> listed = Components.onTheEventThread(() ->
+            {
+                List<String> out = new ArrayList<>();
+
+                for (int i = 0; i < sub.getItemCount(); i++) out.add(sub.getItem(i).getText());
+
+                return out;
+            });
+
+            assertEquals(listed, NOT_BY_NAME, I18n.t(submenu) + " does not list the pages in the order they are shown");
+        }
+
+        List<String> session = new ArrayList<>();
+
+        for (org.traincontrol.base.LayoutDiagram each : ui.getAutonomySession().getPages()) session.add(each.getName());
+
+        assertEquals(session, sortedByName(), "the menu changed the session's own list");
     }
 
     /**

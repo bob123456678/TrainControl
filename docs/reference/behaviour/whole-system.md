@@ -23,9 +23,11 @@ arrow elsewhere. Anything that turns an arrow's number into a page, or a page in
 
 - **The editor's up and down arrows move the selected page** and save at once, as a rename does
   (`LayoutFileActions.movePage`); at the top or bottom the arrow is grayed. **Sort Pages by Name** writes name order
-  once, and writes nothing when the pages already are. Both change only the index file's order: every id, every page
-  file and `setup.json` stay byte for byte as they were, and no arrow is re-aimed, because the name-sorted list does
-  not move. A new page, a copy and a combined page go at the end. A Central Station layout cannot be edited, so its
+  once, and writes nothing when the pages already are. Both rewrite `gleisbild.cs2` and nothing else, with the writer
+  every page edit uses (`writeLayoutIndex`): the order changes, every id and the lines the writer keeps stay, and the
+  header block is regenerated, so a `groesse` width a station wrote is dropped, as at every other page edit. Every
+  page file and `setup.json` stay byte for byte as they were, and no arrow is re-aimed, because the name-sorted list
+  does not move. A new page, a copy and a combined page go at the end. A Central Station layout cannot be edited, so its
   arrows are refused as other edits are.
 - **A layout in name order shows no change**, and 3.0.8, which sorts by name, reads a rearranged layout with every id
   and every arrow as before.

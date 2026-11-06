@@ -4202,7 +4202,13 @@ public class LayoutEditor extends PositionAwareJFrame
 
         javax.swing.JMenu menu = new javax.swing.JMenu(I18n.t("layout.ui.menuTools"));
 
-        menu.add(pageMenuItem("ui.main.toolbar.sortPages", () -> parent.sortPagesFromTheEditor(this)));
+        // Acts on no page, so a Sort that changes nothing leaves the main window where it was
+        javax.swing.JMenuItem sort = new javax.swing.JMenuItem(I18n.t("ui.main.toolbar.sortPages"));
+
+        sort.setFocusable(false);
+        sort.addActionListener(e -> runPageAction(() -> parent.sortPagesFromTheEditor(this), false));
+
+        menu.add(sort);
         menu.addSeparator();
 
         javax.swing.JMenuItem combine = pageMenuItem("layout.ui.menuCombineLinkedPages",
@@ -4237,13 +4243,19 @@ public class LayoutEditor extends PositionAwareJFrame
     /** The check the Tools menu and the strip's icons share before a page action runs. */
     private void runPageAction(Runnable action)
     {
+        runPageAction(action, true);
+    }
+
+    /** `onThisPage`: whether the action is about the edited page, which the main window is then put on. */
+    private void runPageAction(Runnable action, boolean onThisPage)
+    {
         if (switching || changingPage || parent == null || parent.getModel() == null) return;
 
         // A run refuses before the name is asked for, in one dialog
         if (parent.refuseWhileARunHoldsTheSetup(this)) return;
 
         // The handlers act on the main window's page, which may be another
-        parent.selectLayoutPage(layout.getName());
+        if (onThisPage) parent.selectLayoutPage(layout.getName());
 
         action.run();
     }
