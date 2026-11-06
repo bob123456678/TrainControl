@@ -320,7 +320,7 @@ public class testTheEditorsDoorsAskOverThem
     /**
      * And from the Layouts menu, over the main window.
      *
-     * MUTATION: `over` is the open page window in `showOnTheEventThread`, and it hangs off that.
+     * MUTATION: `null` for the window in `showOnTheEventThread`, and it hangs off nothing.
      */
     @Test
     public void testAnUnreadableIndexFromTheLayoutsMenuIsSaidOverTheMainWindow() throws Exception

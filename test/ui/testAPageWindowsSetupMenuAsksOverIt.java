@@ -601,8 +601,7 @@ public class testAPageWindowsSetupMenuAsksOverIt
     }
 
     /**
-     * With no train left to offer, Add to Autonomy says so over the window.  After Clear Locomotives, which leaves none
-     * placed elsewhere.
+     * With no train left to offer, none placed elsewhere and none in the database, Add to Autonomy says so over the window.
      *
      * MUTATION: `dialogOwner` for `((TrainControlUI) dialogOwner).dialogParent()` in `AutonomyEditorPanel.owner`, and it
      * hangs off the main window.
@@ -610,6 +609,14 @@ public class testAPageWindowsSetupMenuAsksOverIt
     @Test(priority = 6)
     public void testAddToAutonomyWithNoTrainSaysSoOverTheWindow() throws Exception
     {
+        if (session.placementsAutonomyWillWrite().size() > 0)
+        {
+            press(ui, station, counted("autolayout.ui.menuClearLocomotives"), message -> Answering.press(YES), 1);
+        }
+
+        assertTrue(Components.waitFor(() -> session.placementsAutonomyWillWrite().isEmpty(), PATIENCE_MS),
+            "precondition: trains are still placed");
+
         AskingWindows.withOnlyTheseLocomotives(model, Collections.emptyList(), () ->
         {
             for (Window window : new Window[] {ui, page})
