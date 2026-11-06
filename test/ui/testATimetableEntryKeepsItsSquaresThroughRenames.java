@@ -36,23 +36,21 @@ public class testATimetableEntryKeepsItsSquaresThroughRenames
 {
     private static final String PAGE = "1 - Junction";
 
-    private static final TileKey WEST_END = new TileKey(PAGE, 1, 3);
-    private static final TileKey APPROACH = new TileKey(PAGE, 3, 3);
-    private static final TileKey MAIN = new TileKey(PAGE, 7, 3);
+    private static final String TRAIN = "OB-345 train";
+
+    private static final TileKey WEST_END = onThePage(1);
+    private static final TileKey APPROACH = onThePage(3);
+    private static final TileKey MAIN = onThePage(7);
 
     /** The plain track between WestEnd and Approach, whose arrow can take the entry's first leg away. */
-    private static final TileKey BETWEEN = new TileKey(PAGE, 2, 3);
+    private static final TileKey BETWEEN = onThePage(2);
 
     private static final List<TileKey> THE_WHOLE_WAY = Arrays.asList(WEST_END, APPROACH, MAIN);
 
-    private static final String TRAIN = "OB-345 train";
-
-    private static support.LayoutSandbox sandbox;
-    private static MarklinControlStation model;
-    private static TrainControlUI ui;
-    private static AutonomySession session;
-    private static org.json.JSONObject asFound;
-    private static java.awt.Window open;
+    private static TileKey onThePage(int x)
+    {
+        return new TileKey(PAGE, x, 3);
+    }
 
     @BeforeClass
     public static void setUpClass() throws Exception
@@ -65,21 +63,25 @@ public class testATimetableEntryKeepsItsSquaresThroughRenames
         sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("single-switch"));
 
         model = support.TestStation.simulatedWithWindowInDebug();
-        model.setNetworkCommState(false);
-
-        ui = (TrainControlUI) model.getGUI();
-
-        assertNotNull(ui, "there is no window");
 
         settle();
 
+        ui = (TrainControlUI) model.getGUI();
+
         session = ui.getAutonomySession();
 
-        assertNotNull(session, "precondition: the scenario holds no autonomy setup");
+        model.setNetworkCommState(false);
 
         model.newMM2Locomotive(TRAIN, 3451);
 
-        // A CONFIGURATION LOADED: a gesture's rebuild and its fold run only then
+        theConfigurationIsLoaded();
+
+        asFound = session.snapshotSetup();
+    }
+
+    /** A gesture's rebuild and its fold run only with a configuration loaded. */
+    private static void theConfigurationIsLoaded() throws Exception
+    {
         if (ui.getActiveDiagramConfiguration() == null)
         {
             final String active = session.getStore().getActiveConfiguration();
@@ -92,8 +94,6 @@ public class testATimetableEntryKeepsItsSquaresThroughRenames
         assertNotNull(ui.getActiveDiagramConfiguration(), "precondition: no configuration is loaded");
 
         assertNotNull(railway(), "precondition: the scenario built no railway");
-
-        asFound = session.snapshotSetup();
     }
 
     @AfterClass(alwaysRun = true)
@@ -362,6 +362,13 @@ public class testATimetableEntryKeepsItsSquaresThroughRenames
     }
 
     // ----------------------------------------------------------- what the claims do
+
+    private static support.LayoutSandbox sandbox;
+    private static MarklinControlStation model;
+    private static TrainControlUI ui;
+    private static AutonomySession session;
+    private static org.json.JSONObject asFound;
+    private static java.awt.Window open;
 
     private static Layout railway()
     {
