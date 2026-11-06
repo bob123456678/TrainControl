@@ -2,11 +2,8 @@ package core;
 
 import java.io.File;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import static org.testng.Assert.*;
 import org.testng.annotations.AfterClass;
@@ -18,9 +15,7 @@ import org.traincontrol.automation.Point;
 import org.traincontrol.automationui.AutonomyChecks;
 import org.traincontrol.automationui.AutonomySession;
 import org.traincontrol.automationui.TileGraph.TileKey;
-import org.traincontrol.base.LayoutDiagram;
 import org.traincontrol.base.Locomotive;
-import org.traincontrol.marklin.MarklinControlStation;
 
 /**
  * A setup saved by 3.1.0 with a new feature stays safe in 3.0.8 (FR-111).  `saved-by-3-1-0` is `single-switch` as this
@@ -36,14 +31,12 @@ public class testASetupFromANewerBuildOpens
     private static final String REMEMBERED_KEY = "rememberedLocs";
     private static final String LISTED = "Saved list train";
 
-    private static support.LayoutSandbox sandbox;
-    private static MarklinControlStation model;
-    private static AutonomySession session;
-    private static List<LayoutDiagram> pages;
     private static Locomotive listed;
     private static Locomotive other;
     private static TileKey approach;
     private static TileKey main;
+    private static support.Scenario scenario;
+    private static AutonomySession session;
 
     private static boolean thisBuildKnowsTheRule()
     {
@@ -64,76 +57,33 @@ public class testASetupFromANewerBuildOpens
     {
         String savedByTheOlderBuild = System.getenv("TC_OLDER_SAVED");
 
-        // Before the model (OB-111)
-        sandbox = support.LayoutSandbox.open(savedByTheOlderBuild != null ? new File(savedByTheOlderBuild)
-            : support.Scenario.folderFor("saved-by-3-1-0"));
+        scenario = savedByTheOlderBuild != null ? support.Scenario.openSimulated(new File(savedByTheOlderBuild))
+            : support.Scenario.openSimulated("saved-by-3-1-0");
 
-        model = support.TestStation.simulatedInDebug();
+        scenario.getModel().stop();
 
-        model.stop();
+        session = scenario.getSession();
 
-        pages = support.LayoutSandbox.wiredPages(model);
+        approach = scenario.tile(3, 3);
+        main = scenario.tile(7, 3);
 
-        session = new AutonomySession(sandbox.getFolder());
-        session.open(pages);
-
-        approach = new TileKey(pages.get(0).getName(), 3, 3);
-        main = new TileKey(pages.get(0).getName(), 7, 3);
-
-        listed = model.newMM2Locomotive(LISTED, 2221);
-        other = model.newMM2Locomotive("Saved other train", 2222);
-
-        for (Locomotive each : Arrays.asList(listed, other))
-        {
-            each.setReversible(true);
-            each.setPreferredSpeed(50);
-        }
+        listed = scenario.newTrain(LISTED, 2221);
+        other = scenario.newTrain("Saved other train", 2222);
     }
 
     @AfterClass(alwaysRun = true)
-    public static void tearDownClass() throws Exception
+    public static void tearDownClass()
     {
-        try
-        {
-            if (model != null)
-            {
-                model.deleteLoc(listed.getName());
-                model.deleteLoc(other.getName());
-            }
-        }
-        finally
-        {
-            if (sandbox != null) sandbox.close();
-        }
+        if (scenario != null) scenario.close();
     }
 
-    private static Layout build(AutonomySession from) throws Exception
+    private static Layout build() throws Exception
     {
-        model.parseAuto(from.buildConfiguration());
+        Layout railway = scenario.buildSimulated();
 
-        Layout railway = model.getAutoLayout();
-
-        assertTrue(railway != null && railway.isValid(), "the setup does not build here: " + Layout.getLastError());
-
-        railway.setSimulate(true);
-        railway.setMinDelay(0);
-        railway.setMaxDelay(0);
+        assertTrue(railway.isValid(), "the setup does not build here: " + Layout.getLastError());
 
         return railway;
-    }
-
-    private static List<String> offered(Layout railway, Locomotive loc)
-    {
-        List<String> out = new ArrayList<>();
-
-        for (List<Edge> path : railway.getPossiblePaths(loc, true))
-        {
-            out.add(path.get(path.size() - 1).getEnd().getName());
-        }
-
-        Collections.sort(out);
-
-        return out;
     }
 
     /**
@@ -144,7 +94,7 @@ public class testASetupFromANewerBuildOpens
     @Test
     public void testItOpensAndBuilds() throws Exception
     {
-        Layout railway = build(session);
+        Layout railway = build();
 
         assertEquals(railway.getPoints().size(), 5, "the railway came out a different shape");
         assertEquals(railway.getEdges().size(), 6, "the railway came out a different shape");
@@ -180,27 +130,37 @@ public class testASetupFromANewerBuildOpens
 
         session.save();
 
-        AutonomySession reopened = new AutonomySession(sandbox.getFolder());
+        AutonomySession reopened = new AutonomySession(scenario.getFolder());
 
-        reopened.open(pages);
+        reopened.open(scenario.getPages());
 
         assertKept(reopened, "after a save and a reopen");
 
-        reopened.captureFromLayout(build(reopened).toJSON());
+        scenario.getModel().parseAuto(reopened.buildConfiguration());
+
+        reopened.captureFromLayout(scenario.getModel().getAutoLayout().toJSON());
 
         assertKept(reopened, "after a capture from the running railway");
 
         reopened.save();
 
-        AutonomySession again = new AutonomySession(sandbox.getFolder());
+        AutonomySession again = new AutonomySession(scenario.getFolder());
 
-        again.open(pages);
+        again.open(scenario.getPages());
 
         assertKept(again, "after a capture, a save and a reopen");
 
         String saveTo = System.getenv("TC_OLDER_SAVES_TO");
 
-        if (saveTo != null) copy(sandbox.getFolder().toPath(), new File(saveTo).toPath());
+        // Only what this build wrote: the script has put the rest of the layout there
+        if (saveTo != null)
+        {
+            for (File written : new File(scenario.getFolder(), "config/autonomy").listFiles())
+            {
+                Files.copy(written.toPath(), new File(saveTo, "config/autonomy/" + written.getName()).toPath(),
+                    StandardCopyOption.REPLACE_EXISTING);
+            }
+        }
     }
 
     private static String said(AutonomyChecks.Finding finding)
@@ -226,7 +186,7 @@ public class testASetupFromANewerBuildOpens
     @Test
     public void testTheRememberedListKeepsNobodyOut() throws Exception
     {
-        Layout railway = build(session);
+        Layout railway = build();
 
         Point platform = railway.getPoint("MainPlatform");
 
@@ -246,7 +206,7 @@ public class testASetupFromANewerBuildOpens
     @Test
     public void testAStopOnlyStationIsSafeWhereItIsNotKnown() throws Exception
     {
-        Layout railway = build(session);
+        Layout railway = build();
 
         railway.getPoint("WestEnd").setLocomotive(other);
 
@@ -261,22 +221,22 @@ public class testASetupFromANewerBuildOpens
             return;
         }
 
-        List<String> withTheSetting = offered(railway, other);
+        List<String> withTheSetting = support.Scenario.endsOffered(railway, other);
 
         org.json.JSONObject held = session.snapshotSetup();
 
         session.setPointProperty(approach, STOP_ONLY_KEY, null);
         session.setPointProperty(main, REMEMBERED_KEY, null);
 
-        Layout control = build(session);
+        Layout control = build();
 
         control.getPoint("WestEnd").setLocomotive(other);
 
-        assertEquals(withTheSetting, offered(control, other), "the older build offers something it would not otherwise");
+        assertEquals(withTheSetting, support.Scenario.endsOffered(control, other), "the older build offers something it would not otherwise");
 
         session.getStore().restoreSetup(held);
 
-        railway = build(session);
+        railway = build();
 
         railway.getPoint("WestEnd").setLocomotive(other);
 
@@ -287,19 +247,5 @@ public class testASetupFromANewerBuildOpens
         assertTrue(railway.executePathByHand(route, other, 50, Layout.ALWAYS_REVERSE, -1), "the train did not arrive");
 
         assertEquals(railway.getLocomotiveLocation(other).getName(), "MainPlatform", "the train is not where it was sent");
-    }
-
-    private static void copy(Path from, Path to) throws Exception
-    {
-        try (java.util.stream.Stream<Path> files = Files.walk(from))
-        {
-            for (Path file : (Iterable<Path>) files::iterator)
-            {
-                Path target = to.resolve(from.relativize(file).toString());
-
-                if (Files.isDirectory(file)) Files.createDirectories(target);
-                else Files.copy(file, target, StandardCopyOption.REPLACE_EXISTING);
-            }
-        }
     }
 }

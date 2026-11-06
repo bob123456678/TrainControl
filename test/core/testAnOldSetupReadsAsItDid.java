@@ -31,28 +31,26 @@ import org.traincontrol.marklin.MarklinControlStation;
  */
 public class testAnOldSetupReadsAsItDid
 {
-    private static support.LayoutSandbox sandbox;
+    private static support.Scenario scenario;
     private static MarklinControlStation model;
     private static AutonomySession session;
 
     @BeforeClass
     public static void setUpClass() throws Exception
     {
-        // Before the model (OB-111)
-        sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+        scenario = support.Scenario.open("live-snapshot");
 
-        model = support.TestStation.simulatedInDebug();
+        model = scenario.getModel();
 
         model.stop();
 
-        session = new AutonomySession(sandbox.getFolder());
-        session.open(support.LayoutSandbox.wiredPages(model));
+        session = scenario.getSession();
     }
 
     @AfterClass(alwaysRun = true)
     public static void tearDownClass() throws Exception
     {
-        if (sandbox != null) sandbox.close();
+        if (scenario != null) scenario.close();
     }
 
     private static JSONObject pointsOfTheConfiguration()
@@ -128,36 +126,47 @@ public class testAnOldSetupReadsAsItDid
             assertNull(session.getPointProperty(square, Point.RUN_THROUGH), "an old square gained a key on load");
         }
 
+        // And it means what it did: `active: false` on a through station, as an old file has it, stops a route through it
         model.parseAuto(session.buildConfiguration());
 
-        Layout railway = model.getAutoLayout();
+        Layout open = model.getAutoLayout();
 
-        int shutPoints = 0;
+        Point through = busiestThroughStation(open);
 
-        for (Point p : railway.getPoints())
+        List<String> route = new ArrayList<>();
+
+        for (Edge e : routeThrough(open, through)) route.add(e.getName());
+
+        TileKey station = keyOf(through.getSquare());
+
+        session.setPointProperty(station, "active", Boolean.FALSE);
+
+        try
         {
-            if (p.isActive()) continue;
+            model.parseAuto(session.buildConfiguration());
 
-            shutPoints++;
+            Layout shutOne = model.getAutoLayout();
 
-            for (Edge in : railway.getIncomingEdges(p))
-            {
-                for (Edge out : railway.getNeighbors(p))
-                {
-                    Locomotive anyTrain = model.getLocomotives().get(0);
+            // Standing trains would refuse it first
+            for (Point p : shutOne.getPoints()) p.setLocomotive(null);
 
-                    List<Edge> through = new ArrayList<>();
+            List<Edge> edges = new ArrayList<>();
 
-                    through.add(in);
-                    through.add(out);
+            for (String name : route) edges.add(shutOne.getEdge(name));
 
-                    assertFalse(railway.isPathClear(through, anyTrain, false),
-                        "a route ran through a square out of service: " + through);
-                }
-            }
+            assertFalse(shutOne.isPathClear(edges, model.getLocomotives().get(0), false),
+                "a route ran through a square out of service: " + edges);
+
+            assertTrue(Layout.getLastError().startsWith(
+                org.traincontrol.util.I18n.f("autolayout.errorInactiveIntermediatePoint", "").trim()),
+                "refused, but not for being out of service: " + Layout.getLastError());
+
+            assertFalse(session.isStopOnly(station), "a square out of service reads stop-only");
         }
-
-        assertTrue(shutPoints > 0, "no square out of service reached the railway");
+        finally
+        {
+            session.setPointProperty(station, "active", null);
+        }
     }
 
     /**
@@ -180,7 +189,7 @@ public class testAnOldSetupReadsAsItDid
 
         assertFalse(railway.contains(Point.RUN_THROUGH), "the railway's own file gained the key");
 
-        File[] files = new File(sandbox.getFolder(), "config/autonomy").listFiles();
+        File[] files = new File(scenario.getFolder(), "config/autonomy").listFiles();
 
         assertNotNull(files, "the setup was not written");
 
@@ -248,18 +257,23 @@ public class testAnOldSetupReadsAsItDid
         assertTrue(taken > 0, "no route passed " + through + ", so this says nothing");
     }
 
+    private static List<Point> stationsOf(Layout railway)
+    {
+        List<Point> stations = new ArrayList<>();
+
+        for (Point p : railway.getPoints()) if (p.isDestination()) stations.add(p);
+
+        return stations;
+    }
+
     /** Every route the search gives between stations, up to eight a pair, as the squares it passes between its ends. */
     private static Set<String> routes(Layout railway) throws Exception
     {
         Set<String> out = new HashSet<>();
 
-        List<Point> stations = new ArrayList<>();
-
-        for (Point p : railway.getPoints()) if (p.isDestination()) stations.add(p);
-
-        for (Point from : stations)
+        for (Point from : stationsOf(railway))
         {
-            for (Point to : stations)
+            for (Point to : stationsOf(railway))
             {
                 if (from == to) continue;
 
@@ -288,22 +302,35 @@ public class testAnOldSetupReadsAsItDid
         return out;
     }
 
+    /** A route through this station that the search gives. */
+    private static List<Edge> routeThrough(Layout railway, Point through) throws Exception
+    {
+        for (Point from : stationsOf(railway))
+        {
+            for (Point to : stationsOf(railway))
+            {
+                List<Edge> path = from == to ? null : railway.bfs(from, to, null);
+
+                for (int at = 0; path != null && at + 1 < path.size(); at++)
+                {
+                    if (through.isSamePlaceAs(path.get(at).getEnd())) return path;
+                }
+            }
+        }
+
+        throw new AssertionError("no route found through " + through);
+    }
+
     /** The station most shortest routes pass through, so taking it away is a real change. */
     private static Point busiestThroughStation(Layout railway) throws Exception
     {
         java.util.Map<Point, Integer> passes = new java.util.HashMap<>();
 
-        List<Point> stations = new ArrayList<>();
-
-        for (Point p : railway.getPoints()) if (p.isDestination()) stations.add(p);
-
-        for (Point from : stations)
+        for (Point from : stationsOf(railway))
         {
-            for (Point to : stations)
+            for (Point to : stationsOf(railway))
             {
-                if (from == to) continue;
-
-                List<Edge> path = railway.bfs(from, to, null);
+                List<Edge> path = from == to ? null : railway.bfs(from, to, null);
 
                 if (path == null) continue;
 

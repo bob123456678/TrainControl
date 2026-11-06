@@ -2296,13 +2296,6 @@ public class Layout
     /** The same, saying whether a person would send it by hand, which the cap on trains out does not refuse. */
     private boolean isPathClear(List<Edge> path, Locomotive loc, boolean logFailures, boolean byHand)
     {
-        return isPathClear(path, loc, logFailures, byHand, this.returningHome.contains(loc));
-    }
-
-    /** The same, saying whether this is a leg of Return Home, which a stop-only station lets through (FR-111). */
-    private boolean isPathClear(List<Edge> path, Locomotive loc, boolean logFailures, boolean byHand,
-        boolean goingHome)
-    {
         if (!byHand && !this.sentByHand.contains(loc)
             && this.maxActiveTrains > 0 && this.isAutoRunning() && trainsUnderway() >= this.maxActiveTrains)
         {
@@ -2466,7 +2459,7 @@ public class Layout
         }
 
         // Trains must stop here (FR-111).  Past the inactive rules, so a square switched off reports as switched off.
-        Point mustStopAt = goingHome ? null : stopOnlyStationRunThrough(path);
+        Point mustStopAt = this.returningHome.contains(loc) ? null : stopOnlyStationRunThrough(path);
 
         if (mustStopAt != null)
         {
@@ -5101,10 +5094,22 @@ public class Layout
         return getPossiblePaths(loc, uniqueDest, false);
     }
 
-    /** The same, as a leg of Return Home would find them, for `HomeStaging.auditAgainstRuntime` (FR-111). */
+    /**
+     * The same, as a leg of Return Home would find them, for `HomeStaging.auditAgainstRuntime` (FR-111): marked for the
+     * question alone, under the monitor, and only if not already.
+     */
     synchronized List<List<Edge>> getPossiblePathsGoingHome(Locomotive loc, boolean uniqueDest)
     {
-        return getPossiblePaths(loc, uniqueDest, true);
+        boolean marked = loc != null && this.returningHome.add(loc);
+
+        try
+        {
+            return getPossiblePaths(loc, uniqueDest, true);
+        }
+        finally
+        {
+            if (marked) this.returningHome.remove(loc);
+        }
     }
 
     private List<List<Edge>> getPossiblePaths(Locomotive loc, boolean uniqueDest, boolean goingHome)
@@ -5138,7 +5143,7 @@ public class Layout
                                 {
                                     path = this.bfs(start, end, seenPaths, false, goingHome);
 
-                                    if (path != null && this.isPathClear(path, loc, false, false, goingHome))
+                                    if (path != null && this.isPathClear(path, loc, false))
                                     {
                                         boolean unique = true;
 
@@ -9240,6 +9245,12 @@ public class Layout
                     layout.getPoint(point.getString("name")).setCopyFacing(point.optString("copyFacing", null));
                 }
                 
+                // Only a boolean false: anything else, or nothing, is a station trips may run through (FR-111).
+                if (Boolean.FALSE.equals(point.opt(Point.RUN_THROUGH)))
+                {
+                    layout.getPoint(point.getString("name")).setStopOnly(true);
+                }
+
                 if (point.has("excludedLocs") && point.get("excludedLocs") instanceof JSONArray)
                 {
                     JSONArray locs = point.getJSONArray("excludedLocs");
@@ -9373,12 +9384,6 @@ public class Layout
                             I18n.f("autolayout.errorAutoDestinationInvalidValue", point.toString())
                         );
                     }
-                }
-
-                // Only a boolean false: anything else, or nothing, is a station trips may run through (FR-111).
-                if (Boolean.FALSE.equals(point.opt(Point.RUN_THROUGH)))
-                {
-                    layout.getPoint(point.getString("name")).setStopOnly(true);
                 }
 
                 if (point.has("reversing"))

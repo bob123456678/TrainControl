@@ -41,13 +41,12 @@ import org.traincontrol.util.I18n;
  */
 public class testATrainMustStopAndCannotPassThrough
 {
-    private static support.LayoutSandbox sandbox;
+    private static support.Scenario scenario;
     private static MarklinControlStation model;
     private static AutonomySession session;
     private static List<LayoutDiagram> pages;
 
     private static Locomotive train;
-    private static Locomotive other;
 
     private static final List<String> LOGGED = Collections.synchronizedList(new ArrayList<String>());
     private static java.util.logging.Handler tap;
@@ -60,28 +59,19 @@ public class testATrainMustStopAndCannotPassThrough
     @BeforeClass
     public static void setUpClass() throws Exception
     {
-        // Before the model (OB-111)
-        sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("single-switch"));
+        scenario = support.Scenario.openSimulated("single-switch");
 
-        model = support.TestStation.simulatedInDebug();
+        model = scenario.getModel();
 
         model.stop();
 
-        pages = support.LayoutSandbox.wiredPages(model);
+        pages = scenario.getPages();
 
-        session = new AutonomySession(sandbox.getFolder());
-        session.open(pages);
+        session = scenario.getSession();
 
         approach = new TileKey(pages.get(0).getName(), 3, 3);
 
-        train = model.newMM2Locomotive("Stop-only train", 2201);
-        other = model.newMM2Locomotive("Stop-only other", 2202);
-
-        for (Locomotive each : Arrays.asList(train, other))
-        {
-            each.setReversible(true);
-            each.setPreferredSpeed(50);
-        }
+        train = scenario.newTrain("Stop-only train", 2201);
 
         pristine = session.snapshotSetup();
 
@@ -91,25 +81,11 @@ public class testATrainMustStopAndCannotPassThrough
     }
 
     @AfterClass(alwaysRun = true)
-    public static void tearDownClass() throws Exception
+    public static void tearDownClass()
     {
-        try
-        {
-            if (tap != null)
-            {
-                java.util.logging.Logger.getLogger(MarklinControlStation.class.getName()).removeHandler(tap);
-            }
+        if (tap != null) java.util.logging.Logger.getLogger(MarklinControlStation.class.getName()).removeHandler(tap);
 
-            if (model != null)
-            {
-                model.deleteLoc(train.getName());
-                model.deleteLoc(other.getName());
-            }
-        }
-        finally
-        {
-            if (sandbox != null) sandbox.close();
-        }
+        if (scenario != null) scenario.close();
     }
 
     @BeforeMethod
@@ -123,15 +99,9 @@ public class testATrainMustStopAndCannotPassThrough
     /** What the application does after an edit; simulated and unpaced. */
     private static Layout build() throws Exception
     {
-        model.parseAuto(session.buildConfiguration());
+        Layout railway = scenario.buildSimulated();
 
-        Layout railway = model.getAutoLayout();
-
-        assertTrue(railway != null && railway.isValid(), "the setup did not build: " + Layout.getLastError());
-
-        railway.setSimulate(true);
-        railway.setMinDelay(0);
-        railway.setMaxDelay(0);
+        assertTrue(railway.isValid(), "the setup did not build: " + Layout.getLastError());
 
         return railway;
     }
@@ -149,6 +119,13 @@ public class testATrainMustStopAndCannotPassThrough
     {
         return Arrays.asList(railway.getEdge(Edge.getEdgeName(railway.getPoint("WestEnd"), eastbound(railway))),
             railway.getEdge(Edge.getEdgeName(eastbound(railway), railway.getPoint("MainPlatform"))));
+    }
+
+    private static Layout trainAtWestEnd(Layout railway)
+    {
+        railway.getPoint("WestEnd").setLocomotive(train);
+
+        return railway;
     }
 
     private static Point eastbound(Layout railway)
@@ -230,18 +207,9 @@ public class testATrainMustStopAndCannotPassThrough
         }
     }
 
-    private static List<String> offeredEnds(Layout railway, Locomotive loc)
+    private static boolean sentArrives(Layout railway, String end) throws Exception
     {
-        List<String> out = new ArrayList<>();
-
-        for (List<Edge> path : railway.getPossiblePaths(loc, true))
-        {
-            out.add(path.get(path.size() - 1).getEnd().getName());
-        }
-
-        Collections.sort(out);
-
-        return out;
+        return railway.executePathByHand(sendTo(railway, train, end), train, 50, Layout.ALWAYS_REVERSE, -1);
     }
 
     private static List<Edge> sendTo(Layout railway, Locomotive loc, String end) throws Exception
@@ -270,7 +238,7 @@ public class testATrainMustStopAndCannotPassThrough
 
         railway.getPoint("WestEnd").setLocomotive(train);
 
-        assertEquals(offeredEnds(railway, train),
+        assertEquals(support.Scenario.endsOffered(railway, train),
             Arrays.asList(copyArrivingFromTheWest(railway).getName(), "BranchPlatform", "MainPlatform").stream()
                 .sorted().collect(java.util.stream.Collectors.toList()),
             "an ordinary through station does not let trains through on this fixture");
@@ -308,9 +276,7 @@ public class testATrainMustStopAndCannotPassThrough
     @Test
     public void testARouteThroughItIsNotClear() throws Exception
     {
-        Layout railway = stopOnly();
-
-        railway.getPoint("WestEnd").setLocomotive(train);
+        Layout railway = trainAtWestEnd(stopOnly());
 
         for (Point p : railway.getPoints())
         {
@@ -342,9 +308,7 @@ public class testATrainMustStopAndCannotPassThrough
     @Test
     public void testAHandSentTripIsRefusedWithItsMessage() throws Exception
     {
-        Layout railway = stopOnly();
-
-        railway.getPoint("WestEnd").setLocomotive(train);
+        Layout railway = trainAtWestEnd(stopOnly());
 
         try (Watched watched = new Watched(railway, train))
         {
@@ -363,7 +327,7 @@ public class testATrainMustStopAndCannotPassThrough
             "the log calls a standing rule busy track, which sends the operator to look for a train");
 
         // The doors a person uses offer only the station itself
-        assertEquals(offeredEnds(railway, train), Arrays.asList(copyArrivingFromTheWest(railway).getName()),
+        assertEquals(support.Scenario.endsOffered(railway, train), Arrays.asList(copyArrivingFromTheWest(railway).getName()),
             "the right-click menu's list offers somewhere beyond a stop-only station");
     }
 
@@ -375,9 +339,7 @@ public class testATrainMustStopAndCannotPassThrough
     @Test
     public void testAnAutomaticRunStopsThereAndNeverPasses() throws Exception
     {
-        Layout railway = stopOnly();
-
-        railway.getPoint("WestEnd").setLocomotive(train);
+        Layout railway = trainAtWestEnd(stopOnly());
 
         railway.setTimetableCapture(true);
 
@@ -471,9 +433,7 @@ public class testATrainMustStopAndCannotPassThrough
     @Test
     public void testALaterTripLeavesOnwardWithNoTurnRound() throws Exception
     {
-        Layout railway = stopOnly();
-
-        railway.getPoint("WestEnd").setLocomotive(train);
+        Layout railway = trainAtWestEnd(stopOnly());
 
         Locomotive.locDirection setOff = train.getDirection();
 
@@ -481,7 +441,7 @@ public class testATrainMustStopAndCannotPassThrough
 
         try (Watched watched = new Watched(railway, train))
         {
-            assertTrue(railway.executePathByHand(sendTo(railway, train, middle), train, 50, Layout.ALWAYS_REVERSE, -1),
+            assertTrue(sentArrives(railway, middle),
                 "the trip to the station did not arrive");
 
             assertEquals(new java.util.TreeSet<>(watched.squares()),
@@ -493,10 +453,10 @@ public class testATrainMustStopAndCannotPassThrough
 
         assertEquals(train.getDirection(), setOff, "arriving at a stop-only station turned the train round");
 
-        assertEquals(offeredEnds(railway, train), Arrays.asList("BranchPlatform", "MainPlatform"),
+        assertEquals(support.Scenario.endsOffered(railway, train), Arrays.asList("BranchPlatform", "MainPlatform"),
             "a train at the station is not offered the way on");
 
-        assertTrue(railway.executePathByHand(sendTo(railway, train, "MainPlatform"), train, 50, Layout.ALWAYS_REVERSE, -1),
+        assertTrue(sentArrives(railway, "MainPlatform"),
             "the later trip did not arrive");
 
         assertEquals(railway.getLocomotiveLocation(train).getName(), "MainPlatform", "the train did not go on");
@@ -505,9 +465,7 @@ public class testATrainMustStopAndCannotPassThrough
         session.setStopsAndRunsThrough(approach, true, true);
         session.setPointProperty(approach, org.traincontrol.automationui.AutonomyBuilder.MUST_REVERSE, Boolean.TRUE);
 
-        Layout must = build();
-
-        must.getPoint("WestEnd").setLocomotive(train);
+        Layout must = trainAtWestEnd(build());
 
         Locomotive.locDirection before = train.getDirection();
 
@@ -536,21 +494,19 @@ public class testATrainMustStopAndCannotPassThrough
 
         session.setDirection(approach, THE_ROAD, onlyWest);
 
-        Layout railway = build();
-
-        railway.getPoint("WestEnd").setLocomotive(train);
+        Layout railway = trainAtWestEnd(build());
 
         Point middle = copyArrivingFromTheWest(railway);
 
-        assertEquals(offeredEnds(railway, train), Arrays.asList(middle.getName()),
+        assertEquals(support.Scenario.endsOffered(railway, train), Arrays.asList(middle.getName()),
             "the station is not reached, or something past it is offered");
 
-        assertTrue(railway.executePathByHand(sendTo(railway, train, middle.getName()), train, 50, Layout.ALWAYS_REVERSE, -1),
+        assertTrue(sentArrives(railway, middle.getName()),
             "the trip to the station did not arrive");
 
         assertEquals(railway.getLocomotiveLocation(train).getName(), middle.getName(), "the train is not at the station");
 
-        assertEquals(offeredEnds(railway, train), Collections.emptyList(),
+        assertEquals(support.Scenario.endsOffered(railway, train), Collections.emptyList(),
             "May depart is off that way, and the train was offered somewhere");
 
         assertNotNull(railway.explainDestinations(train, true).get("MainPlatform"),
@@ -600,9 +556,7 @@ public class testATrainMustStopAndCannotPassThrough
 
         session.setPointProperty(new TileKey(pages.get(0).getName(), 7, 3), "home", train.getName());
 
-        Layout railway = build();
-
-        railway.getPoint("WestEnd").setLocomotive(train);
+        Layout railway = trainAtWestEnd(build());
 
         HomeStaging.Plan plan = railway.loadReturnToHomeTimetable();
 
@@ -645,9 +599,7 @@ public class testATrainMustStopAndCannotPassThrough
     @Test
     public void testTheParityAuditAgreesAboutTheSameTrips() throws Exception
     {
-        Layout railway = stopOnly();
-
-        railway.getPoint("WestEnd").setLocomotive(train);
+        Layout railway = trainAtWestEnd(stopOnly());
 
         HomeStaging staging = HomeStaging.snapshot(railway);
 
@@ -656,14 +608,12 @@ public class testATrainMustStopAndCannotPassThrough
         assertEquals(staging.auditAgainstRuntime(), 0, "the audit disagrees: " + LOGGED);
 
         // The other door still refuses, so the audit's agreement is not the rule having gone away
-        assertFalse(offeredEnds(railway, train).contains("MainPlatform"), "the rule has gone from the menu's door");
+        assertFalse(support.Scenario.endsOffered(railway, train).contains("MainPlatform"), "the rule has gone from the menu's door");
 
         // And the planner itself reaches the far side, so the zero is about a station past the rule
         session.setPointProperty(new TileKey(pages.get(0).getName(), 7, 3), "home", train.getName());
 
-        Layout homed = build();
-
-        homed.getPoint("WestEnd").setLocomotive(train);
+        Layout homed = trainAtWestEnd(build());
 
         HomeStaging.Plan plan = homed.planReturnToHome();
 
@@ -681,9 +631,7 @@ public class testATrainMustStopAndCannotPassThrough
     @Test
     public void testWhyNotMovingSaysWhy() throws Exception
     {
-        Layout railway = stopOnly();
-
-        railway.getPoint("WestEnd").setLocomotive(train);
+        Layout railway = trainAtWestEnd(stopOnly());
 
         String middle = copyArrivingFromTheWest(railway).getName();
 
@@ -703,9 +651,7 @@ public class testATrainMustStopAndCannotPassThrough
         // The station not chosen by autonomy: nothing else to choose from here, and the walk stops at it
         session.setAutoDestination(approach, false);
 
-        Layout berth = build();
-
-        berth.getPoint("WestEnd").setLocomotive(train);
+        Layout berth = trainAtWestEnd(build());
 
         assertNotNull(berth.explainCannotStart(train),
             "a train whose only stations lie past a berth it may not pass was told nothing stops it starting");
@@ -713,9 +659,7 @@ public class testATrainMustStopAndCannotPassThrough
         // The control: the same berth, no rule, and the train can start.
         session.setStopsAndRunsThrough(approach, true, true);
 
-        Layout open = build();
-
-        open.getPoint("WestEnd").setLocomotive(train);
+        Layout open = trainAtWestEnd(build());
 
         assertNull(open.explainCannotStart(train), "the control: the berth alone stops a train starting");
     }
@@ -741,9 +685,7 @@ public class testATrainMustStopAndCannotPassThrough
             new String[][] {{"WestEnd", middle}},
             new String[][] {{middle, "MainPlatform"}}));
 
-        Layout railway = build();
-
-        railway.getPoint("WestEnd").setLocomotive(train);
+        Layout railway = trainAtWestEnd(build());
 
         assertEquals(railway.getTimetable().size(), 2, "the timetable did not load");
 
@@ -759,9 +701,7 @@ public class testATrainMustStopAndCannotPassThrough
         // One recorded straight through
         session.setGlobal("timetable", timetableOf(new String[][] {{"WestEnd", middle}, {middle, "MainPlatform"}}));
 
-        Layout stale = build();
-
-        stale.getPoint("WestEnd").setLocomotive(train);
+        Layout stale = trainAtWestEnd(build());
 
         assertEquals(stale.getTimetable().size(), 1, "the old entry did not load");
 
@@ -817,7 +757,7 @@ public class testATrainMustStopAndCannotPassThrough
 
         session.save();
 
-        AutonomySession reopened = new AutonomySession(sandbox.getFolder());
+        AutonomySession reopened = new AutonomySession(scenario.getFolder());
 
         reopened.open(pages);
 
@@ -889,11 +829,9 @@ public class testATrainMustStopAndCannotPassThrough
 
         assertFalse(session.isStopOnly(approach), "a square that is no station reads stop-only");
 
-        Layout railway = build();
+        Layout railway = trainAtWestEnd(build());
 
-        railway.getPoint("WestEnd").setLocomotive(train);
-
-        assertTrue(offeredEnds(railway, train).contains("MainPlatform"),
+        assertTrue(support.Scenario.endsOffered(railway, train).contains("MainPlatform"),
             "a square that is no station stopped trains passing");
 
         // Both off: Nothing Can Pass, what the square is left alone
@@ -906,11 +844,9 @@ public class testATrainMustStopAndCannotPassThrough
 
         assertTrue(session.getStore().isStation(approach), "both off changed what the square is");
 
-        Layout shut = build();
+        Layout shut = trainAtWestEnd(build());
 
-        shut.getPoint("WestEnd").setLocomotive(train);
-
-        assertEquals(offeredEnds(shut, train), Collections.emptyList(), "a train was offered somewhere past a shut square");
+        assertEquals(support.Scenario.endsOffered(shut, train), Collections.emptyList(), "a train was offered somewhere past a shut square");
 
         // Only Running through: a pass-through
         session.setStopsAndRunsThrough(approach, false, true);
@@ -951,10 +887,10 @@ public class testATrainMustStopAndCannotPassThrough
         assertEquals(railway.getLocomotiveLocation(model.getLocByName(train.getName())).getName(), middle,
             "the rebuild moved the train that was standing there");
 
-        assertEquals(offeredEnds(railway, train), Arrays.asList("BranchPlatform", "MainPlatform"),
+        assertEquals(support.Scenario.endsOffered(railway, train), Arrays.asList("BranchPlatform", "MainPlatform"),
             "the train standing at the station may not leave onward");
 
-        assertTrue(railway.executePathByHand(sendTo(railway, train, "MainPlatform"), train, 50, Layout.ALWAYS_REVERSE, -1),
+        assertTrue(sentArrives(railway, "MainPlatform"),
             "the train standing there did not get away");
 
         assertEquals(railway.getLocomotiveLocation(train).getName(), "MainPlatform", "the train did not go on");
@@ -971,23 +907,19 @@ public class testATrainMustStopAndCannotPassThrough
     {
         session.setBarredArrivals(approach, EnumSet.of(Side.W));
 
-        Layout barred = build();
-
-        barred.getPoint("WestEnd").setLocomotive(train);
+        Layout barred = trainAtWestEnd(build());
 
         assertFalse(copyArrivingFromTheWest(barred).isDestination(), "the fixture's barred copy still stops trains");
 
-        assertTrue(offeredEnds(barred, train).contains("MainPlatform"), "the control: a barred side stops trains passing");
+        assertTrue(support.Scenario.endsOffered(barred, train).contains("MainPlatform"), "the control: a barred side stops trains passing");
 
         session.setPointProperty(approach, Point.RUN_THROUGH, Boolean.FALSE);
 
-        Layout railway = build();
-
-        railway.getPoint("WestEnd").setLocomotive(train);
+        Layout railway = trainAtWestEnd(build());
 
         assertTrue(copyArrivingFromTheWest(railway).isStopOnly(), "a barred side's copy does not carry the rule");
 
-        assertEquals(offeredEnds(railway, train), Collections.emptyList(), "a train passed by the barred side");
+        assertEquals(support.Scenario.endsOffered(railway, train), Collections.emptyList(), "a train passed by the barred side");
 
         assertEquals(railway.explainDestinations(train, true).get("MainPlatform"), sentence("Approach"),
             "Why Not Moving? does not say why");
@@ -1022,7 +954,7 @@ public class testATrainMustStopAndCannotPassThrough
 
         railway.getPoint("WestEnd").setLocomotive(train);
 
-        assertFalse(offeredEnds(railway, train).contains("MainPlatform"), "a train passed a may-turn stop-only station");
+        assertFalse(support.Scenario.endsOffered(railway, train).contains("MainPlatform"), "a train passed a may-turn stop-only station");
     }
 
     /**
@@ -1043,7 +975,7 @@ public class testATrainMustStopAndCannotPassThrough
         session.save();
 
         JSONObject written = new JSONObject(new String(java.nio.file.Files.readAllBytes(
-            new java.io.File(sandbox.getFolder(), "config/autonomy/configuration-Main.json").toPath()), "UTF-8"));
+            new java.io.File(scenario.getFolder(), "config/autonomy/configuration-Main.json").toPath()), "UTF-8"));
 
         JSONObject fixture = new JSONObject(new String(java.nio.file.Files.readAllBytes(
             new java.io.File(support.Scenario.folderFor("saved-by-3-1-0"),

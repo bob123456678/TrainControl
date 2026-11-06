@@ -31,7 +31,6 @@ fi
 OUT="$S/old-setups"
 OTHER="$OUT/other-build"
 
-rm -rf "$OUT/base" "$OUT/new" "$OUT/older-saved"
 mkdir -p "$OUT"
 
 # The older build in a worktree of its own, its data folder and scratch set up by env.sh.
@@ -56,21 +55,26 @@ status=0
 
 if [ "$1" = "--opens-in" ]
 then
+    copy_in support/Scenario.java
     copy_in core/testASetupFromANewerBuildOpens.java
 
     rm -rf "$OTHER/test/layouts/saved-by-3-1-0"
     cp -r test/layouts/saved-by-3-1-0 "$OTHER/test/layouts/saved-by-3-1-0" || exit 2
+
+    rm -rf "$OUT/older-saved"
+    cp -r test/layouts/saved-by-3-1-0 "$OUT/older-saved" || exit 2
 
     (cd "$OTHER" && TC_OLDER_SAVES_TO="$OUT/older-saved" TC_SCRATCH="$OTHER_SCRATCH" \
         sh docs/tools/one.sh core.testASetupFromANewerBuildOpens) || status=1
 
     TC_OLDER_SAVED="$OUT/older-saved" TC_SCRATCH="$S" sh docs/tools/one.sh core.testASetupFromANewerBuildOpens || status=1
 else
+    copy_in support/Scenario.java
     copy_in support/SetupDump.java
     copy_in core/testSetupDumpComparesBuilds.java
 
     # One copy, so both read the same railway whatever the live one does meanwhile; LayoutSandbox copies it again.
-    rm -rf "$OUT/live-copy"
+    rm -rf "$OUT/base" "$OUT/new" "$OUT/live-copy"
     cp -r cs2_sample_layout "$OUT/live-copy" || exit 2
 
     (cd "$OTHER" && TC_OLD_SETUPS_OUT="$OUT/base" TC_OLD_SETUPS_LIVE="$OUT/live-copy" TC_SCRATCH="$OTHER_SCRATCH" \

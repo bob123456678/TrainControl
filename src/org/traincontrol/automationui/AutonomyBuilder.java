@@ -128,12 +128,6 @@ public class AutonomyBuilder
     /** The authored key marking a berth trains are only sent to on purpose; emitted as `autoDestination` false. */
     public static final String AUTO_DESTINATION = "autoDestination";
 
-    /**
-     * The key of a list a square remembers while Which Trains says All (FR-111): the setup's alone, never emitted, so
-     * the list keeps nobody out and an older build, which does not know the key, reads the square as open to all.
-     */
-    public static final String REMEMBERED_LOCS = "rememberedLocs";
-
     /** A placed locomotive's key: parseAuto's own name, named here because it must land on a single copy. */
     public static final String LOCOMOTIVE = "loc";
 
@@ -163,6 +157,12 @@ public class AutonomyBuilder
      * a terminus on a plain copy, or a terminus and a reversing flag on one Point, which fails the whole configuration.
      */
     private static final List<String> DERIVED = Arrays.asList("terminus", "reversing");
+
+    /**
+     * The key of a list a square remembers while Which Trains says All (FR-111): the setup's alone, never emitted, so
+     * the list keeps nobody out and an older build, which does not know the key, reads the square as open to all.
+     */
+    public static final String REMEMBERED_LOCS = "rememberedLocs";
 
     private final GraphReducer reducer;
     private final Globals globals;

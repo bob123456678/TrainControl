@@ -28,7 +28,7 @@ import org.traincontrol.marklin.MarklinControlStation;
  */
 public class testWhichTrainsKeepsOneList
 {
-    private static support.LayoutSandbox sandbox;
+    private static support.Scenario scenario;
     private static MarklinControlStation model;
     private static AutonomySession session;
     private static List<LayoutDiagram> pages;
@@ -40,39 +40,26 @@ public class testWhichTrainsKeepsOneList
     @BeforeClass
     public static void setUpClass() throws Exception
     {
-        // Before the model (OB-111)
-        sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("single-switch"));
+        scenario = support.Scenario.open("single-switch");
 
-        model = support.TestStation.simulatedInDebug();
+        model = scenario.getModel();
 
-        pages = support.LayoutSandbox.wiredPages(model);
+        pages = scenario.getPages();
 
-        session = new AutonomySession(sandbox.getFolder());
-        session.open(pages);
+        session = scenario.getSession();
 
         square = new TileKey(pages.get(0).getName(), 3, 3);
 
-        listed = model.newMM2Locomotive("Which trains listed", 2211);
-        unlisted = model.newMM2Locomotive("Which trains unlisted", 2212);
+        listed = scenario.newTrain("Which trains listed", 2211);
+        unlisted = scenario.newTrain("Which trains unlisted", 2212);
 
         pristine = session.snapshotSetup();
     }
 
     @AfterClass(alwaysRun = true)
-    public static void tearDownClass() throws Exception
+    public static void tearDownClass()
     {
-        try
-        {
-            if (model != null)
-            {
-                model.deleteLoc(listed.getName());
-                model.deleteLoc(unlisted.getName());
-            }
-        }
-        finally
-        {
-            if (sandbox != null) sandbox.close();
-        }
+        if (scenario != null) scenario.close();
     }
 
     @BeforeMethod
@@ -83,11 +70,9 @@ public class testWhichTrainsKeepsOneList
 
     private static Point built() throws Exception
     {
-        model.parseAuto(session.buildConfiguration());
+        Layout railway = scenario.build();
 
-        Layout railway = model.getAutoLayout();
-
-        assertTrue(railway != null && railway.isValid(), "the setup did not build: " + Layout.getLastError());
+        assertTrue(railway.isValid(), "the setup did not build: " + Layout.getLastError());
 
         for (Point p : railway.getPoints())
         {
@@ -232,7 +217,7 @@ public class testWhichTrainsKeepsOneList
 
         session.save();
 
-        AutonomySession reopened = new AutonomySession(sandbox.getFolder());
+        AutonomySession reopened = new AutonomySession(scenario.getFolder());
 
         reopened.open(pages);
 

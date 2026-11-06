@@ -23,7 +23,6 @@ import org.traincontrol.automation.Layout;
 import org.traincontrol.automation.Point;
 import org.traincontrol.automationui.AutonomyChecks;
 import org.traincontrol.automationui.AutonomySession;
-import org.traincontrol.base.LayoutDiagram;
 import org.traincontrol.base.Locomotive;
 import org.traincontrol.marklin.MarklinControlStation;
 
@@ -77,21 +76,17 @@ public final class SetupDump
 
         out.mkdirs();
 
-        LayoutSandbox sandbox = LayoutSandbox.open(folder);
+        Scenario sandbox = Scenario.openSimulated(folder);
 
         try
         {
             copyTree(new File(folder, "config/autonomy"), new File(out, "input"));
 
-            MarklinControlStation model = TestStation.simulatedInDebug();
+            MarklinControlStation model = sandbox.getModel();
 
             model.stop();
 
-            List<LayoutDiagram> pages = LayoutSandbox.wiredPages(model);
-
-            AutonomySession session = new AutonomySession(sandbox.getFolder());
-
-            session.open(pages);
+            AutonomySession session = sandbox.getSession();
 
             File files = new File(sandbox.getFolder(), "config/autonomy");
 
@@ -104,16 +99,9 @@ public final class SetupDump
 
             copyTree(files, new File(out, "saved-unchanged"));
 
-            model.parseAuto(built);
+            Layout railway = read(model, built, out);
 
-            Layout railway = model.getAutoLayout();
-
-            if (railway == null)
-            {
-                writeLines(new File(out, "graph.txt"), Arrays.asList("no railway: " + Layout.getLastError()));
-
-                return counts;
-            }
+            if (railway == null) return counts;
 
             writeGraph(railway, built, new File(out, "graph.txt"), counts);
 
@@ -146,11 +134,11 @@ public final class SetupDump
 
         out.mkdirs();
 
-        LayoutSandbox sandbox = LayoutSandbox.open(over);
+        Scenario sandbox = Scenario.openSimulated(over);
 
         try
         {
-            MarklinControlStation model = TestStation.simulatedInDebug();
+            MarklinControlStation model = sandbox.getModel();
 
             model.stop();
 
@@ -158,25 +146,9 @@ public final class SetupDump
 
             Files.copy(json.toPath(), new File(out, "input.json").toPath(), StandardCopyOption.REPLACE_EXISTING);
 
-            try
-            {
-                model.parseAuto(text);
-            }
-            catch (Exception refused)
-            {
-                writeLines(new File(out, "graph.txt"), Arrays.asList("refused: " + refused.getMessage()));
+            Layout railway = read(model, text, out);
 
-                return counts;
-            }
-
-            Layout railway = model.getAutoLayout();
-
-            if (railway == null)
-            {
-                writeLines(new File(out, "graph.txt"), Arrays.asList("no railway: " + Layout.getLastError()));
-
-                return counts;
-            }
+            if (railway == null) return counts;
 
             writeGraph(railway, text, new File(out, "graph.txt"), counts);
 
@@ -190,6 +162,27 @@ public final class SetupDump
         {
             sandbox.close();
         }
+    }
+
+    /** The railway this text builds, or null, having said why in the dump. */
+    private static Layout read(MarklinControlStation model, String text, File out) throws IOException
+    {
+        String refused;
+
+        try
+        {
+            model.parseAuto(text);
+
+            refused = model.getAutoLayout() == null ? "no railway: " + Layout.getLastError() : null;
+        }
+        catch (Exception thrown)
+        {
+            refused = "refused: " + thrown.getMessage();
+        }
+
+        if (refused != null) writeLines(new File(out, "graph.txt"), Arrays.asList(refused));
+
+        return refused != null ? null : model.getAutoLayout();
     }
 
     private static void dumpRailway(MarklinControlStation model, Layout railway, File out, Sample sample,
@@ -288,17 +281,15 @@ public final class SetupDump
 
         lines.add("built: " + canonical(new JSONObject(built)));
 
-        List<String> points = new ArrayList<>();
+        TreeSet<String> points = new TreeSet<>();
 
         for (Point p : railway.getPoints())
         {
-            points.add("point " + canonical(p.toJSON()) + " terminus=" + p.isTerminus() + " reversing="
-                + p.isReversing() + " active=" + p.isActive() + " auto=" + p.isAutoDestination()
-                + " block=" + p.getBlock() + " sendable=" + railway.isSendableDestination(p)
-                + " stationSquare=" + railway.isAStationSquare(p) + " reach=" + railway.canReachAnyDestination(p));
+            points.add(String.join(" ", "point", canonical(p.toJSON()), "terminus=" + p.isTerminus(),
+                "reversing=" + p.isReversing(), "active=" + p.isActive(), "auto=" + p.isAutoDestination(),
+                "block=" + p.getBlock(), "sendable=" + railway.isSendableDestination(p),
+                "stationSquare=" + railway.isAStationSquare(p), "reach=" + railway.canReachAnyDestination(p)));
         }
-
-        Collections.sort(points);
 
         lines.addAll(points);
 
@@ -452,12 +443,15 @@ public final class SetupDump
     {
         Random seeded = new Random(111);
 
-        List<Locomotive> standing = new ArrayList<>();
+        // The trains the setup placed, sampled or not, as they are the ones with somewhere to go
+        Map<String, Locomotive> placed = new TreeMap<>();
 
-        for (Locomotive loc : sampled)
+        for (Point p : railway.getPoints())
         {
-            if (railway.getLocomotiveLocation(loc) != null) standing.add(loc);
+            if (p.getCurrentLocomotive() != null) placed.put(p.getCurrentLocomotive().getName(), p.getCurrentLocomotive());
         }
+
+        List<Locomotive> standing = new ArrayList<>(placed.values());
 
         // A fixture nobody is placed on gets one train on its first free station
         if (standing.isEmpty() && !sampled.isEmpty())
@@ -522,12 +516,25 @@ public final class SetupDump
 
                 trips++;
 
+                settle(railway);
+
                 lines.println(i + " " + loc.getName() + " took " + chosen + " arrived=" + arrived + " now at "
                     + railway.getLocomotiveLocation(loc) + " direction=" + loc.getDirection());
             }
         }
 
         counts.put("simulated trips", trips);
+    }
+
+    /** Waits for the simulated sensors to fall behind a trip, or the next answer depends on how quickly they did. */
+    private static void settle(Layout railway) throws InterruptedException
+    {
+        long until = System.currentTimeMillis() + 15000;
+
+        while (railway.isRunning() && System.currentTimeMillis() < until) Thread.sleep(20);
+
+        // Longer than the simulation holds a sensor
+        Thread.sleep(1500);
     }
 
     /** Sorted keys all the way down, so two runs of one file read the same whatever order a map kept. */

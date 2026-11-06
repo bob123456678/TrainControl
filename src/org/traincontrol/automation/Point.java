@@ -198,21 +198,6 @@ public class Point
     }
 
     /**
-     * Whether a trip may end here but not run through (FR-111).  Every copy of a square says the same.  Unlike a
-     * terminus, nothing turns a train round here.  Return Home alone is exempt: `Layout.stopOnlyStationRunThrough`.
-     */
-    public boolean isStopOnly()
-    {
-        return stopOnly;
-    }
-
-    /** @param stopOnly true where a trip must end here rather than run through (FR-111) */
-    public void setStopOnly(boolean stopOnly)
-    {
-        this.stopOnly = stopOnly;
-    }
-
-    /**
      * Returns if the point is active.
      * Active means the point will be selected by autonomous logic
      * `isPathClear` refuses a path THROUGH an inactive point whatever it is (the editor's Out of service).
@@ -923,6 +908,21 @@ public class Point
         return loc.getTrainLength() <= this.getMaxTrainLength();   
     }
     
+    /**
+     * Whether a trip may end here but not run through (FR-111).  Every copy of a square says the same.  Unlike a
+     * terminus, nothing turns a train round here.  Return Home alone is exempt: `Layout.stopOnlyStationRunThrough`.
+     */
+    public boolean isStopOnly()
+    {
+        return stopOnly;
+    }
+
+    /** @param stopOnly true where a trip must end here rather than run through (FR-111) */
+    public void setStopOnly(boolean stopOnly)
+    {
+        this.stopOnly = stopOnly;
+    }
+
     /** The locomotive assigned to this station, or null. */
     public Locomotive getHomeLoc()
     {
