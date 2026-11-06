@@ -25,6 +25,7 @@ import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
+import org.traincontrol.base.Locomotive;
 import org.traincontrol.gui.LocomotiveSettingsFrame;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.gui.locomotive.RightClickSelectorMenu;
@@ -73,7 +74,7 @@ public class testTheLocomotiveSettingsWindow
     {
         try
         {
-            if (fixture != null) fixture.finish(NAME, OTHER, THIRD, "LS renamed");
+            if (fixture != null) fixture.finish(NAME, OTHER, THIRD, "LS renamed", "LS elsewhere");
         }
         finally
         {
@@ -89,7 +90,7 @@ public class testTheLocomotiveSettingsWindow
 
         LocomotiveSettingsFrame.unsavedAnswerForTest = null;
 
-        fixture.forget(NAME, OTHER, THIRD, "LS renamed");
+        fixture.forget(NAME, OTHER, THIRD, "LS renamed", "LS elsewhere");
 
         SettingsWindow.power(ui, model, false);
 
@@ -588,6 +589,195 @@ public class testTheLocomotiveSettingsWindow
 
         assertFalse((Boolean) Components.onTheEventThread(() -> invoke(asks, windows)),
             "the exit went on though the window holds unsaved typing and the operator canceled");
+    }
+
+    // The validators' findings
+
+    /**
+     * A decoder change with a function edited in the same Save goes through: the new decoder has fewer functions than
+     * the table, and the rows past them are skipped.
+     *
+     * MUTATION: drop the `f >= preset.length` skip in `LocomotiveFunctionsTab.apply`, and this fails.
+     */
+    @Test
+    public void testADecoderChangeWithAFunctionEditSavesEverything() throws Exception
+    {
+        assertTrue(loc.getNumF() > 20, "precondition: the MFX locomotive has few functions");
+
+        open(1);
+
+        SettingsWindow.pickIcon(3, 12);
+        SettingsWindow.pickIcon(25, 12);
+
+        SettingsWindow.selectTab(0);
+
+        Components.onTheEventThread(() ->
+        {
+            SettingsWindow.part("settings.decoder", JComboBox.class).setSelectedItem(Locomotive.decoderType.MM2);
+
+            return null;
+        });
+
+        SettingsWindow.type("settings.address", "40");
+
+        SettingsWindow.press(SettingsWindow.save());
+
+        assertTrue(Components.waitFor(() -> SettingsWindow.showing() == null, WAIT), "Save did not go through and close the window");
+        assertEquals(loc.getDecoderType(), Locomotive.decoderType.MM2);
+        assertEquals(loc.getAddress(), 40);
+        assertEquals(loc.getFunctionType(3), 12, "the function edit was not written");
+    }
+
+    /**
+     * A name-only Save does not put back the address it was opened with, and an address-only Save does not put back
+     * the name, when another door changed them while the window was open.
+     *
+     * MUTATION: pass the typed name and address whenever either changed, in `LocomotiveSettingsFrame.write`, and this
+     * fails.
+     */
+    @Test
+    public void testASaveWritesOnlyWhatWasChanged() throws Exception
+    {
+        open(0);
+
+        model.changeLocAddress(NAME, 3450, Locomotive.decoderType.MFX);
+
+        SettingsWindow.type("settings.name", "LS renamed");
+
+        SettingsWindow.press(SettingsWindow.save());
+
+        assertTrue(Components.waitFor(() -> SettingsWindow.showing() == null, WAIT));
+        assertNotNull(model.getLocByName("LS renamed"), "the name was not written");
+        assertEquals(loc.getAddress(), 3450, "a name-only Save put the old address back");
+
+        open(0);
+
+        model.renameLoc("LS renamed", "LS elsewhere");
+
+        SettingsWindow.type("settings.address", "3460");
+
+        SettingsWindow.press(SettingsWindow.save());
+
+        assertTrue(Components.waitFor(() -> SettingsWindow.showing() == null, WAIT));
+        assertEquals(loc.getAddress(), 3460, "the address was not written");
+        assertNotNull(model.getLocByName("LS elsewhere"), "an address-only Save put the old name back");
+    }
+
+    /**
+     * The X and Escape ask what to do with typing that is not saved; Cancel stays, Discard closes and writes nothing,
+     * Save writes; with nothing typed they close without asking.
+     *
+     * MUTATION: call `close()` instead of `closeAsking()` from the X or Escape, and this fails.
+     */
+    @Test
+    public void testTheXAndEscapeAskAboutTypingNotSaved() throws Exception
+    {
+        open(0);
+
+        LocomotiveSettingsFrame.unsavedAnswerForTest = 2;
+
+        assertTrue(closeBy(true), "a window with nothing typed did not just close");
+
+        open(0);
+
+        SettingsWindow.type("settings.name", "LS renamed");
+
+        for (boolean byEscape : new boolean[] { true, false })
+        {
+            LocomotiveSettingsFrame.unsavedAnswerForTest = 2;
+
+            assertFalse(closeBy(byEscape), "Cancel on the question closed the window");
+            assertEquals(SettingsWindow.text("settings.name"), "LS renamed", "Cancel lost the typing");
+        }
+
+        LocomotiveSettingsFrame.unsavedAnswerForTest = 1;
+
+        assertTrue(closeBy(false), "Discard did not close the window");
+        assertEquals(loc.getName(), NAME, "Discard wrote the typing");
+
+        open(0);
+
+        SettingsWindow.type("settings.name", "LS renamed");
+
+        LocomotiveSettingsFrame.unsavedAnswerForTest = 0;
+
+        assertTrue(closeBy(true), "Save on the question did not close the window");
+        assertNotNull(model.getLocByName("LS renamed"), "Save on the question did not write the typing");
+    }
+
+    /** Closes by Escape or by the X, and says whether the window went. */
+    private static boolean closeBy(boolean escape) throws Exception
+    {
+        LocomotiveSettingsFrame window = SettingsWindow.showing();
+
+        Components.onTheEventThread(() ->
+        {
+            if (escape)
+            {
+                javax.swing.JRootPane root = window.getRootPane();
+
+                root.getActionForKeyStroke(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_ESCAPE, 0))
+                    .actionPerformed(new java.awt.event.ActionEvent(root, java.awt.event.ActionEvent.ACTION_PERFORMED, "escape"));
+            }
+            else
+            {
+                window.dispatchEvent(new java.awt.event.WindowEvent(window, java.awt.event.WindowEvent.WINDOW_CLOSING));
+            }
+
+            return null;
+        });
+
+        Components.settle();
+
+        return SettingsWindow.showing() == null;
+    }
+
+    /**
+     * The picture's marks open their chooser over this window, not over the main window.
+     *
+     * MUTATION: call `main.setLocIcon(loc)` with no mouse event in the wrench's handler, and this fails.
+     */
+    @Test
+    public void testThePicturesChooserHangsOffTheSettingsWindow() throws Exception
+    {
+        open(0);
+
+        LocomotiveSettingsFrame window = SettingsWindow.showing();
+
+        Mouse.click(SettingsWindow.part("settings.wrench", Component.class));
+
+        final java.awt.Window[] owner = new java.awt.Window[1];
+        final javax.swing.JFileChooser[] chooser = new javax.swing.JFileChooser[1];
+
+        assertTrue(Components.waitFor(() -> Components.onTheEventThread(() ->
+        {
+            for (java.awt.Window w : java.awt.Window.getWindows())
+            {
+                if (!(w instanceof javax.swing.JDialog) || !w.isShowing()) continue;
+
+                javax.swing.JFileChooser found = Components.inside(((javax.swing.JDialog) w).getContentPane(),
+                    javax.swing.JFileChooser.class);
+
+                if (found != null)
+                {
+                    chooser[0] = found;
+                    owner[0] = w.getOwner();
+
+                    return true;
+                }
+            }
+
+            return false;
+        }), WAIT), "the wrench opened no chooser");
+
+        Components.onTheEventThread(() ->
+        {
+            chooser[0].cancelSelection();
+
+            return null;
+        });
+
+        assertSame(owner[0], window, "the chooser hangs off " + owner[0] + ", not the settings window");
     }
 
     // Helpers

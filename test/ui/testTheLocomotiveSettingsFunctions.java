@@ -100,6 +100,14 @@ public class testTheLocomotiveSettingsFunctions
 
         SettingsWindow.showOnKeyA(ui, loc);
 
+        // Nothing is on the clipboard unless a claim puts it there
+        Components.onTheEventThread(() ->
+        {
+            ui.clearCopyTarget();
+
+            return null;
+        });
+
         open();
     }
 
@@ -468,6 +476,115 @@ public class testTheLocomotiveSettingsFunctions
 
         assertTrue(Components.waitFor(() -> picture.toPath().toUri().toString().equals(loc.getLocalFunctionImageURL(F)), WAIT),
             "Customize Icon... did not give the row the image");
+    }
+
+    /**
+     * The Copy Icons button follows the clipboard locomotive while the window is open.
+     *
+     * MUTATION: leave `fitCopyIcons` out of `LocomotiveFunctionsTab.refresh`, and this fails.
+     */
+    @Test
+    public void testCopyIconsFollowsTheClipboardWhileOpen() throws Exception
+    {
+        Components.onTheEventThread(() ->
+        {
+            ui.clearCopyTarget();
+
+            return null;
+        });
+
+        open();
+
+        JButton copy = SettingsWindow.part("functions.copyIcons", JButton.class);
+
+        assertFalse(Components.onTheEventThread(copy::isEnabled), "Copy Icons is lit with nothing copied");
+
+        JButton keyA = SettingsWindow.key(ui, java.awt.event.KeyEvent.VK_A);
+
+        SettingsWindow.showOnKeyA(ui, source);
+
+        Components.onTheEventThread(() ->
+        {
+            ui.setCopyTarget(keyA, false);
+            ui.repaintLoc(true, null);
+
+            return null;
+        });
+
+        final JButton live = copy;
+
+        assertTrue(Components.waitFor(() -> Components.onTheEventThread(live::isEnabled), WAIT), "Copy Icons did not light when something was copied");
+        assertEquals(Components.onTheEventThread(live::getText), I18n.f("loc.ui.copyIconsFromLocomotive", FROM));
+    }
+
+    /**
+     * A custom image that is missing is tried and logged once, however often the table paints.
+     *
+     * MUTATION: load the image afresh in `pictureOf` every time, and this fails.
+     */
+    @Test
+    public void testAMissingImageIsLoggedOnce() throws Exception
+    {
+        String missing = new File(fixture.folder, "nothing-here.png").toPath().toUri().toString();
+
+        loc.setLocalFunctionImageURL(F, missing);
+
+        final java.util.List<String> logged = java.util.Collections.synchronizedList(new java.util.ArrayList<>());
+        final java.util.logging.Handler tap = support.LogTap.messagesInto(logged);
+        final java.util.logging.Logger log = java.util.logging.Logger.getLogger(MarklinControlStation.class.getName());
+
+        log.addHandler(tap);
+
+        try
+        {
+            open();
+
+            JTable table = table();
+
+            for (int i = 0; i < 6; i++)
+            {
+                Components.onTheEventThread(() ->
+                {
+                    ui.repaintLoc(true, null);
+                    table.paintImmediately(table.getBounds());
+
+                    return null;
+                });
+
+                Components.settle();
+            }
+        }
+        finally
+        {
+            log.removeHandler(tap);
+        }
+
+        long count = 0;
+
+        synchronized (logged)
+        {
+            for (String m : logged) if (m.contains(I18n.f("loc.ui.errorInvalidIconPath", missing))) count++;
+        }
+
+        assertEquals(count, 1L, "the missing image was logged " + count + " times");
+    }
+
+    /**
+     * The icons and the picture are fetched off the event thread.
+     *
+     * MUTATION: load the standard icons in one `invokeLater` again, and this fails.
+     */
+    @Test
+    public void testTheImagesAreFetchedOffTheEventThread() throws Exception
+    {
+        String icons = support.SourceOf.declaration("private void loadStandardIcons()");
+
+        assertTrue(icons.contains("getImageLoader().submit"), "the standard icons are not fetched by the image loader");
+        assertFalse(icons.contains("invokeLater(() ->\n        {\n            for"), "the icons are loaded in one pass on the event thread");
+
+        String picture = support.SourceOf.declaration("void refreshPicture()");
+
+        assertTrue(picture.contains("getImageLoader().submit"), "the picture is not fetched by the image loader");
     }
 
     // Helpers

@@ -29,13 +29,19 @@ public final class SettingsFixture
     /** Opens the sandbox, the model and the window. */
     public static SettingsFixture open() throws Exception
     {
+        return open(null);
+    }
+
+    /** The same over a frozen copy of a railway, or the empty sandbox when there is none. */
+    public static SettingsFixture open(java.io.File railway) throws Exception
+    {
         if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
 
         SettingsFixture f = new SettingsFixture();
 
         try
         {
-            f.sandbox = support.LayoutSandbox.open();
+            f.sandbox = railway == null ? support.LayoutSandbox.open() : support.LayoutSandbox.open(railway);
             f.model = support.TestStation.simulatedWithWindowInDebug();
             f.ui = (TrainControlUI) f.model.getGUI();
 

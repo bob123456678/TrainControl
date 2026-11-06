@@ -22,6 +22,7 @@ import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
+import org.traincontrol.gui.LocomotiveSettings;
 import org.traincontrol.gui.LocomotiveSettingsFrame;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.gui.locomotive.RightClickSelectorMenu;
@@ -145,6 +146,53 @@ public class testTheLocomotiveSettingsMovingRule
         Components.settle();
     }
 
+    /**
+     * Every door that opens the window says this and opens nothing: the key menu grays its two entries with it as
+     * their tooltip, and the name, a function button and the database tile say it when pressed.
+     */
+    private static void everyDoorSays(String reason) throws Exception
+    {
+        JPopupMenu menu = SettingsWindow.rightClickKey(key);
+
+        for (String text : new String[] { I18n.t("loc.ui.menuLocomotiveSettings"), I18n.t("loc.ui.menuSetAsMultiUnit") })
+        {
+            AbstractButton item = Components.withText(menu, text);
+
+            assertNotNull(item, "the key's menu has no \"" + text + "\"");
+            assertFalse(Components.onTheEventThread(item::isEnabled), "\"" + text + "\" is lit");
+            assertEquals(Components.onTheEventThread(item::getToolTipText), reason, "\"" + text + "\" does not say why it is gray");
+        }
+
+        Mouse.closeMenus();
+
+        Component name = (Component) field("ActiveLocLabel");
+
+        assertEquals(SettingsWindow.asked(() -> Mouse.rightClick(name, 500)), Arrays.asList(reason), "the name said the wrong thing");
+
+        javax.swing.JToggleButton f3 = SettingsWindow.functionButton(ui, 3);
+
+        assertTrue(Components.waitFor(() -> Components.onTheEventThread(() -> f3.isEnabled() && f3.isShowing()), WAIT));
+
+        assertEquals(SettingsWindow.asked(() -> Mouse.rightClick(f3, 500)), Arrays.asList(reason), "a function button said the wrong thing");
+
+        final JPopupMenu[] tile = new JPopupMenu[1];
+
+        SwingUtilities.invokeAndWait(() -> tile[0] = new RightClickSelectorMenu(ui, null, loc));
+
+        AbstractButton settings = Components.withText(tile[0], I18n.t("loc.ui.menuLocomotiveSettings"));
+
+        assertTrue(Components.onTheEventThread(settings::isEnabled), "the tile's entry is gray: only the key menu grays");
+
+        assertEquals(SettingsWindow.asked(() -> Components.onTheEventThread(() ->
+        {
+            settings.doClick(0);
+
+            return null;
+        })), Arrays.asList(reason), "the tile said the wrong thing");
+
+        assertNull(SettingsWindow.showing(), "the window opened");
+    }
+
     // The doors
 
     /**
@@ -159,49 +207,7 @@ public class testTheLocomotiveSettingsMovingRule
     {
         run(loc);
 
-        JPopupMenu menu = SettingsWindow.rightClickKey(key);
-
-        for (String text : new String[] { I18n.t("loc.ui.menuLocomotiveSettings"), I18n.t("loc.ui.menuSetAsMultiUnit") })
-        {
-            AbstractButton item = Components.withText(menu, text);
-
-            assertNotNull(item, "the key's menu has no \"" + text + "\"");
-            assertFalse(Components.onTheEventThread(item::isEnabled), "\"" + text + "\" is lit for a moving train");
-            assertEquals(Components.onTheEventThread(item::getToolTipText), stop(NAME),
-                "\"" + text + "\" does not say why it is gray");
-        }
-
-        Mouse.closeMenus();
-
-        // The name
-        Component name = (Component) field("ActiveLocLabel");
-
-        assertEquals(SettingsWindow.asked(() -> Mouse.rightClick(name, 500)), Arrays.asList(stop(NAME)), "the name said the wrong thing");
-
-        // A function button
-        javax.swing.JToggleButton f3 = SettingsWindow.functionButton(ui, 3);
-
-        assertTrue(Components.waitFor(() -> Components.onTheEventThread(() -> f3.isEnabled() && f3.isShowing()), WAIT));
-
-        assertEquals(SettingsWindow.asked(() -> Mouse.rightClick(f3, 500)), Arrays.asList(stop(NAME)), "a function button said the wrong thing");
-
-        // The database tile
-        final JPopupMenu[] tile = new JPopupMenu[1];
-
-        SwingUtilities.invokeAndWait(() -> tile[0] = new RightClickSelectorMenu(ui, null, loc));
-
-        AbstractButton settings = Components.withText(tile[0], I18n.t("loc.ui.menuLocomotiveSettings"));
-
-        assertTrue(Components.onTheEventThread(settings::isEnabled), "the tile's entry is gray: only the key menu grays");
-
-        assertEquals(SettingsWindow.asked(() -> Components.onTheEventThread(() ->
-        {
-            settings.doClick(0);
-
-            return null;
-        })), Arrays.asList(stop(NAME)), "the tile said the wrong thing");
-
-        assertNull(SettingsWindow.showing(), "a moving train's window opened");
+        everyDoorSays(stop(NAME));
     }
 
     /**
@@ -409,6 +415,272 @@ public class testTheLocomotiveSettingsMovingRule
         assertTrue(Components.waitFor(() -> loc.getLocalImageURL() == null, WAIT), "the mark did not clear the picture of a train at rest");
     }
 
+    /**
+     * The strip takes its room from the tabs: the window keeps its size when a train starts, and the buttons at the
+     * bottom stay inside it.
+     *
+     * MUTATION: call `pack()` when the strip shows, in `LocomotiveSettingsFrame.refresh`, and this fails.
+     */
+    @Test
+    public void testTheStripDoesNotResizeTheWindow() throws Exception
+    {
+        SettingsWindow.open(ui, loc, LocomotiveSettingsFrame.Tab.LOCOMOTIVE, null);
+        SettingsWindow.awaited();
+
+        LocomotiveSettingsFrame window = SettingsWindow.showing();
+
+        java.awt.Dimension before = Components.onTheEventThread(window::getSize);
+
+        run(loc);
+
+        assertTrue(Components.waitFor(() -> Components.onTheEventThread(SettingsWindow.part("settings.strip", JLabel.class)::isVisible), WAIT));
+
+        assertEquals(Components.onTheEventThread(window::getSize), before, "the window was resized when the strip came up");
+
+        assertTrue(Components.onTheEventThread(() ->
+        {
+            window.getContentPane().doLayout();
+
+            java.awt.Rectangle save = javax.swing.SwingUtilities.convertRectangle(SettingsWindow.save().getParent(),
+                SettingsWindow.save().getBounds(), window.getContentPane());
+
+            return window.getContentPane().getBounds().contains(save);
+        }), "the Save button is clipped with the strip up");
+    }
+
+    // Autonomy, and a route
+
+    private static final String AUTONOMY = "autolayout.ui.errorCannotEditLocomotivesWhileRunning";
+
+    /** Autonomy running, as the model counts it: staging stands in for a run. */
+    private static void autonomy(boolean running)
+    {
+        model.getAutoLayout().setStagingInProgress(running);
+    }
+
+    /**
+     * While autonomy runs no door opens the window, for any locomotive: the key menu grays its entries and gives the
+     * reason, the name, a function button and the database tile say so, and Delete refuses.
+     *
+     * MUTATION: leave autonomy out of `LocomotiveSettings.why`, and this fails.
+     */
+    @Test
+    public void testAutonomyKeepsTheWindowFromEveryDoor() throws Exception
+    {
+        autonomy(true);
+
+        try
+        {
+            assertTrue(model.isAutonomyRunning(), "precondition: the model does not read autonomy as running");
+
+            everyDoorSays(I18n.t(AUTONOMY));
+
+            assertEquals(SettingsWindow.asked(() -> Components.onTheEventThread(() ->
+            {
+                ui.deleteLoc(NAME);
+
+                return null;
+            })), Arrays.asList(I18n.t(AUTONOMY)), "Delete did not refuse while autonomy runs");
+
+            assertNotNull(model.getLocByName(NAME));
+        }
+        finally
+        {
+            autonomy(false);
+        }
+    }
+
+    /**
+     * A window open when autonomy starts says why and grays Save, the trash can and the marks, keeps what was typed,
+     * and Save asks again at the click; when the run ends the window is usable again.
+     *
+     * MUTATION: stop asking the rule every second in `LocomotiveSettingsFrame` (drop `watch.start()`), and this fails.
+     */
+    @Test
+    public void testAWindowOpenWhenAutonomyStartsGraysAndComesBack() throws Exception
+    {
+        SettingsWindow.open(ui, loc, LocomotiveSettingsFrame.Tab.LOCOMOTIVE, null);
+        SettingsWindow.awaited();
+
+        SettingsWindow.type("settings.name", "MR typed");
+
+        JLabel strip = SettingsWindow.part("settings.strip", JLabel.class);
+
+        autonomy(true);
+
+        try
+        {
+            assertTrue(Components.waitFor(() -> Components.onTheEventThread(strip::isVisible), WAIT), "no strip came up when autonomy started");
+            assertEquals(Components.onTheEventThread(strip::getText), I18n.t("loc.ui.settingsAutonomyStrip"));
+            assertFalse(Components.onTheEventThread(SettingsWindow.save()::isEnabled), "Save is lit while autonomy runs");
+            assertFalse(Components.onTheEventThread(SettingsWindow.part("settings.trash", Component.class)::isEnabled));
+            assertEquals(SettingsWindow.text("settings.name"), "MR typed", "the typing was lost");
+
+            // Save asks again at the click, the window not being told
+            java.lang.reflect.Method save = LocomotiveSettingsFrame.class.getDeclaredMethod("save");
+
+            save.setAccessible(true);
+
+            LocomotiveSettingsFrame window = SettingsWindow.showing();
+
+            assertEquals(SettingsWindow.asked(() -> Components.onTheEventThread(() ->
+            {
+                try
+                {
+                    return save.invoke(window);
+                }
+                catch (ReflectiveOperationException e)
+                {
+                    throw new IllegalStateException(e);
+                }
+            })), Arrays.asList(I18n.t(AUTONOMY)));
+
+            assertEquals(loc.getName(), NAME, "Save renamed the locomotive while autonomy runs");
+        }
+        finally
+        {
+            autonomy(false);
+        }
+
+        assertTrue(Components.waitFor(() -> !Components.onTheEventThread(strip::isVisible), WAIT), "the strip stayed up after the run");
+        assertTrue(Components.waitFor(() -> Components.onTheEventThread(SettingsWindow.save()::isEnabled), WAIT), "Save stayed gray after the run");
+        assertEquals(SettingsWindow.text("settings.name"), "MR typed");
+    }
+
+    /**
+     * A stopped locomotive a running route drives opens the window, and so does another; the route's refusal comes at
+     * Save for its name, address and multi-unit, and not for the preset speed.
+     *
+     * MUTATION: put a running route into `LocomotiveSettings.why`, or leave the route question out of
+     * `LocomotiveActions.writeNameAndAddress`, and this fails.
+     */
+    @Test
+    public void testARouteDoesNotKeepTheWindowButRefusesItsIdentityAtSave() throws Exception
+    {
+        java.util.List<org.traincontrol.base.RouteCommand> commands = new java.util.ArrayList<>();
+
+        org.traincontrol.base.RouteCommand fires = org.traincontrol.base.RouteCommand.RouteCommandFunction(NAME, 1, true);
+
+        fires.setDelay(20000);
+
+        commands.add(fires);
+
+        model.newRoute("MR route", commands, 0, org.traincontrol.marklin.MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED, false, null);
+
+        new Thread(() -> model.execRoute("MR route")).start();
+
+        try
+        {
+            assertTrue(Components.waitFor(() -> model.getRoute("MR route").isExecuting(), WAIT), "precondition: the route never started");
+
+            assertTrue(SettingsWindow.open(ui, loc, LocomotiveSettingsFrame.Tab.LOCOMOTIVE, null), "a stopped locomotive a route drives did not open");
+            SettingsWindow.awaited();
+
+            assertFalse(Components.onTheEventThread(SettingsWindow.part("settings.strip", JLabel.class)::isVisible), "the strip is up for a route");
+
+            SettingsWindow.type("settings.name", "MR renamed");
+
+            assertEquals(SettingsWindow.asked(() -> Components.press(SettingsWindow.save())),
+                Arrays.asList(I18n.f("loc.ui.errorLocomotiveDrivenByARunningRoute", NAME, "MR route")));
+            assertEquals(loc.getName(), NAME);
+
+            SettingsWindow.type("settings.name", NAME);
+
+            Components.onTheEventThread(() ->
+            {
+                SettingsWindow.part("settings.speed", javax.swing.JSpinner.class).setValue(66);
+
+                return null;
+            });
+
+            SettingsWindow.press(SettingsWindow.save());
+
+            assertTrue(Components.waitFor(() -> loc.getPreferredSpeed() == 66, WAIT), "the preset speed of a driven locomotive was refused");
+
+            assertTrue(SettingsWindow.open(ui, third, LocomotiveSettingsFrame.Tab.LOCOMOTIVE, null), "another locomotive did not open");
+        }
+        finally
+        {
+            SettingsWindow.closeIfOpen();
+
+            long giveUp = System.currentTimeMillis() + 30000;
+
+            while (model.getRoute("MR route") != null && model.getRoute("MR route").isExecuting() && System.currentTimeMillis() < giveUp)
+            {
+                Thread.sleep(100);
+            }
+
+            model.deleteRoute("MR route");
+        }
+    }
+
+    /**
+     * The presets still save while autonomy runs, from the key menu and the hotkeys' own door: Save Current Speed and
+     * Save Current Functions as Preset.
+     *
+     * MUTATION: ask the rule in `RightClickMenuListener` for the two Save items (gray them while autonomy runs), and
+     * this fails.
+     */
+    @Test
+    public void testThePresetsStillSaveDuringARun() throws Exception
+    {
+        autonomy(true);
+
+        try
+        {
+            loc.setSpeed(35);
+            loc.setF(2, true);
+
+            assertTrue(Components.waitFor(() -> loc.getF(2), WAIT));
+
+            JPopupMenu menu = SettingsWindow.rightClickKey(key);
+
+            Mouse.choose(lit(menu, I18n.t("loc.ui.menuSaveSpeedAsPreset")));
+            lit(menu, I18n.t("loc.ui.menuSaveFunctionsAsPreset"));
+
+            assertTrue(Components.waitFor(() -> loc.getPreferredSpeed() == 35, WAIT), "the speed preset was not saved during a run");
+
+            menu = SettingsWindow.rightClickKey(key);
+
+            Mouse.choose((JMenuItem) Components.withText(menu, I18n.t("loc.ui.menuSaveFunctionsAsPreset")));
+
+            assertTrue(Components.waitFor(() -> loc.getPreferredFunctions()[2], WAIT), "the function preset was not saved during a run");
+
+            // The hotkeys' door
+            loc.setSpeed(44);
+
+            ui.savePreferredSpeed(loc);
+
+            assertTrue(Components.waitFor(() -> loc.getPreferredSpeed() == 44, WAIT), "Alt+U did not save during a run");
+        }
+        finally
+        {
+            autonomy(false);
+        }
+    }
+
+    /**
+     * The rule's own comment says what it asks: its reasons are the enum's, and a route is not one.
+     *
+     * MUTATION: add a ROUTE reason to `LocomotiveSettings.Why`, and this fails.
+     */
+    @Test
+    public void testTheRulesCommentSaysWhatItAsks() throws Exception
+    {
+        String source = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(
+            "src/org/traincontrol/gui/LocomotiveSettings.java")), java.nio.charset.StandardCharsets.UTF_8);
+
+        String comment = source.substring(0, source.indexOf("public final class LocomotiveSettings"));
+
+        java.util.Set<String> reasons = new java.util.TreeSet<>();
+
+        for (Object o : LocomotiveSettings.Why.class.getEnumConstants()) reasons.add(o.toString());
+
+        assertEquals(reasons, new java.util.TreeSet<>(Arrays.asList("MOVING", "AUTONOMY")), "the rule's reasons changed");
+        assertTrue(comment.contains("moving") && comment.contains("autonomy runs"), "the comment does not name the reasons");
+        assertFalse(comment.contains("route"), "the comment names a route, which is not a reason");
+    }
+
     // Quick actions
 
     /**
@@ -426,13 +698,9 @@ public class testTheLocomotiveSettingsMovingRule
 
         JPopupMenu menu = SettingsWindow.rightClickKey(key);
 
-        AbstractButton apply = Components.withText(menu, I18n.f("loc.ui.menuApplySavedSpeedPreset", 20));
-        AbstractButton off = Components.withText(menu, I18n.t("loc.ui.menuTurnOffFunctions"));
+        lit(menu, I18n.t("loc.ui.menuTurnOffFunctions"));
 
-        assertTrue(Components.onTheEventThread(apply::isEnabled), "Apply Saved Speed Preset is gray for a moving train");
-        assertTrue(Components.onTheEventThread(off::isEnabled), "Turn Off Functions is gray for a moving train");
-
-        Mouse.choose((JMenuItem) apply);
+        Mouse.choose(lit(menu, I18n.f("loc.ui.menuApplySavedSpeedPreset", 20)));
 
         assertTrue(Components.waitFor(() -> loc.getSpeed() == 20, WAIT), "the speed preset did not drive the moving train");
 
@@ -446,6 +714,17 @@ public class testTheLocomotiveSettingsMovingRule
     }
 
     // Helpers
+
+    /** The menu's item of this text, which is lit. */
+    private static JMenuItem lit(JPopupMenu menu, String text)
+    {
+        JMenuItem item = (JMenuItem) Components.withText(menu, text);
+
+        assertNotNull(item, "the key's menu has no \"" + text + "\"");
+        assertTrue(Components.onTheEventThread(item::isEnabled), "\"" + text + "\" is gray");
+
+        return item;
+    }
 
     private static Object field(String name) throws Exception
     {
