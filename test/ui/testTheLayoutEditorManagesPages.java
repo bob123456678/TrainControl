@@ -1163,8 +1163,9 @@ public class testTheLayoutEditorManagesPages
 
         assertEquals(fingerprint(), before, "Sort Pages by Name changed the layout's folder");
 
-        assertEquals(String.valueOf(pageList().getSelectedItem()), "1 - Main", "Sort Pages by Name moved the main"
-            + " window's page");
+        // A refusal leaves the main window alone; an action that goes ahead acts on the edited page, so it shows it
+        assertEquals(String.valueOf(pageList().getSelectedItem()), routeRuns ? "1 - Main" : page, "Sort Pages by Name"
+            + " left the main window on the wrong page");
     }
 
     // ------------------------------------------------------------------------------------------------ the window

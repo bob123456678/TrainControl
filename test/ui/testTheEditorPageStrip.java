@@ -92,15 +92,6 @@ public class testTheEditorPageStrip
 
     private LayoutEditor editorOn(String page, boolean autonomy) throws Exception
     {
-        for (LayoutEditor open : editors())
-        {
-            final LayoutEditor closing = open;
-
-            SwingUtilities.invokeAndWait(closing::dispose);
-        }
-
-        Components.waitFor(() -> editors().isEmpty(), 5000);
-
         SwingUtilities.invokeAndWait(() -> ui.openLayoutEditor(page, autonomy, null));
 
         assertTrue(Components.waitFor(() -> editors().size() == 1 && editors().get(0).isShowing()
@@ -123,11 +114,22 @@ public class testTheEditorPageStrip
      * fails.
      */
     @Test
-    public void testTheStripIsFlatOrderedAndUnderThePageHeading() throws Exception
+    public void testTheStripIsFlatOrderedAndUnderThePageHeadingInTheTrackEditor() throws Exception
+    {
+        checkTheStrip(false);
+    }
+
+    /** The same in Autonomy Setup mode of the same window. */
+    @Test
+    public void testTheStripIsFlatOrderedAndUnderThePageHeadingInTheSetupEditor() throws Exception
+    {
+        checkTheStrip(true);
+    }
+
+    private void checkTheStrip(boolean autonomy) throws Exception
     {
         open(5);
 
-        for (boolean autonomy : new boolean[] {false, true})
         {
             LayoutEditor editor = editorOn("3 - Top Parking", autonomy);
 
@@ -191,7 +193,7 @@ public class testTheEditorPageStrip
      * is lit.
      */
     @Test
-    public void testTheArrowsGrayAtTheEndsWithTheirReason() throws Exception
+    public void testTheUpArrowGraysOnTheFirstPage() throws Exception
     {
         open(5);
 
@@ -203,9 +205,24 @@ public class testTheEditorPageStrip
         assertTrue(first.get(5).isEnabled(), "delete is grayed with five pages");
         assertEquals(first.get(5).getToolTipText(), I18n.t("ui.main.toolbar.deleteCurrentPage"));
 
+    }
+
+    /** Both arrows are lit on a middle page. */
+    @Test
+    public void testBothArrowsAreLitOnAMiddlePage() throws Exception
+    {
+        open(5);
+
         List<AbstractButton> middle = strip(editorOn("3 - Top Parking", false));
 
         assertTrue(middle.get(3).isEnabled() && middle.get(4).isEnabled(), "an arrow is grayed on a middle page");
+    }
+
+    /** Down is grayed on the last page, with its reason. */
+    @Test
+    public void testTheDownArrowGraysOnTheLastPage() throws Exception
+    {
+        open(5);
 
         List<AbstractButton> last = strip(editorOn("5 - Test", false));
 
