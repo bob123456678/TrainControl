@@ -14,13 +14,9 @@ import javax.swing.SwingUtilities;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertTrue;
-import org.testng.SkipException;
-import org.testng.annotations.AfterMethod;
-import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.gui.layouteditor.LayoutEditor;
-import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.util.I18n;
 import support.Answering;
 import support.Components;
@@ -33,75 +29,40 @@ import support.Components;
  * Each claim has a window of its own over a fresh sandboxed copy of the five-page test layout, whose index is in name
  * order with ids 5, 1, 2, 3, 4 (so name order, file order and id order are three different things).
  */
-public class testPagesFollowTheFileOrder
+public class testPagesFollowTheFileOrder extends support.PageWindowTest
 {
     private static final List<String> BY_NAME = Arrays.asList("1 - Main", "2 - Bottom", "3 - Top Parking",
         "4 - Combined", "5 - Test");
-
-    private support.LayoutSandbox sandbox;
-    private MarklinControlStation model;
-    private TrainControlUI ui;
-
-    @BeforeMethod
-    public void openTheSandbox() throws Exception
-    {
-        if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the main window needs a display");
-
-        sandbox = support.LayoutSandbox.open();
-    }
-
-    @AfterMethod(alwaysRun = true)
-    public void closeTheWindow() throws Exception
-    {
-        try
-        {
-            closeEditors();
-
-            if (ui != null)
-            {
-                final TrainControlUI closing = ui;
-
-                SwingUtilities.invokeAndWait(closing::dispose);
-            }
-
-            if (model != null) model.stop();
-        }
-        finally
-        {
-            ui = null;
-            model = null;
-
-            if (sandbox != null) sandbox.close();
-
-            sandbox = null;
-        }
-    }
 
     /** Opens the window over the sandbox, whose index first lists the pages in this order (null: as it is). */
     private void open(List<String> fileOrder) throws Exception
     {
         if (fileOrder != null) writeIndex(fileOrder);
 
-        start();
+        startTheWindow(5);
     }
 
-    private void start() throws Exception
+    /** Presses an arrow in the editor on this page and waits until the index lists the pages in this order. */
+    private void movePage(String page, String arrow, List<String> expected) throws Exception
     {
-        model = support.TestStation.simulatedWithWindow();
+        edit(page);
 
-        ui = (TrainControlUI) model.getGUI();
+        press(editorOn(page), arrow);
 
-        assertNotNull(ui, "the model has no window");
-
-        assertTrue(Components.waitFor(() -> model.getLayoutList().size() == 5, 10000), "precondition: the test layout"
-            + " does not have its five pages: " + model.getLayoutList());
+        assertTrue(Components.waitFor(() -> namesInTheIndex().equals(expected), 15000), "the index is not in the new"
+            + " order: " + namesInTheIndex());
 
         Components.settle();
     }
 
-    private void closeEditors() throws Exception
+    /** Opens the editor on this page, in track mode, and waits for it. */
+    private void edit(String page) throws Exception
     {
-        support.EditorsOpen.closeAll();
+        SwingUtilities.invokeAndWait(() -> ui.openLayoutEditor(page, false, null));
+
+        assertTrue(Components.waitFor(() -> editorOn(page) != null, 15000), "no editor opened on " + page);
+
+        Components.settle();
     }
 
     /**
@@ -124,11 +85,7 @@ public class testPagesFollowTheFileOrder
 
         assertEquals(editMenuOrder(), order, "Layouts > Edit Layout Page does not list the pages in file order");
 
-        SwingUtilities.invokeAndWait(() -> ui.openLayoutEditor("3 - Top Parking", false, null));
-
-        assertTrue(Components.waitFor(() -> editorOn("3 - Top Parking") != null, 15000), "no editor opened");
-
-        Components.settle();
+        edit("3 - Top Parking");
 
         assertEquals(sidebarOrder(editorOn("3 - Top Parking")), order, "the editor's page list is not in file order");
 
@@ -150,7 +107,7 @@ public class testPagesFollowTheFileOrder
     {
         byte[] before = Files.readAllBytes(indexFile().toPath());
 
-        start();
+        startTheWindow(5);
 
         assertEquals(model.getLayoutList(), BY_NAME, "the list of a layout in name order changed");
 
@@ -175,11 +132,7 @@ public class testPagesFollowTheFileOrder
 
         byte[] setup = Files.readAllBytes(setupFile().toPath());
 
-        SwingUtilities.invokeAndWait(() -> ui.openLayoutEditor("1 - Main", false, null));
-
-        assertTrue(Components.waitFor(() -> editorOn("1 - Main") != null, 15000), "no editor opened");
-
-        Components.settle();
+        edit("1 - Main");
 
         press(editorOn("1 - Main"), "layout.ui.tooltipMovePageDown");
 
@@ -225,20 +178,9 @@ public class testPagesFollowTheFileOrder
 
         for (String page : BY_NAME) before.put(page, arrowsIn(page));
 
-        SwingUtilities.invokeAndWait(() -> ui.openLayoutEditor("3 - Top Parking", false, null));
-
-        assertTrue(Components.waitFor(() -> editorOn("3 - Top Parking") != null, 15000), "no editor opened");
-
-        Components.settle();
-
-        press(editorOn("3 - Top Parking"), "layout.ui.tooltipMovePageUp");
-
         final List<String> moved = Arrays.asList("1 - Main", "3 - Top Parking", "2 - Bottom", "4 - Combined", "5 - Test");
 
-        assertTrue(Components.waitFor(() -> namesInTheIndex().equals(moved), 15000), "the index is not in the new order: "
-            + namesInTheIndex());
-
-        Components.settle();
+        movePage("3 - Top Parking", "layout.ui.tooltipMovePageUp", moved);
 
         boolean anyMoved = false;
 
@@ -270,31 +212,13 @@ public class testPagesFollowTheFileOrder
     {
         open(null);
 
-        SwingUtilities.invokeAndWait(() -> ui.openLayoutEditor("5 - Test", false, null));
-
-        assertTrue(Components.waitFor(() -> editorOn("5 - Test") != null, 15000), "no editor opened");
-
-        Components.settle();
-
-        press(editorOn("5 - Test"), "layout.ui.tooltipMovePageUp");
-
         final List<String> moved = Arrays.asList("1 - Main", "2 - Bottom", "3 - Top Parking", "5 - Test", "4 - Combined");
 
-        assertTrue(Components.waitFor(() -> namesInTheIndex().equals(moved), 15000), "the index is not in the new order: "
-            + namesInTheIndex());
+        movePage("5 - Test", "layout.ui.tooltipMovePageUp", moved);
 
-        Components.settle();
+        stopTheWindow();
 
-        closeEditors();
-
-        SwingUtilities.invokeAndWait(ui::dispose);
-
-        model.stop();
-
-        ui = null;
-        model = null;
-
-        start();
+        startTheWindow(5);
 
         assertEquals(model.getLayoutList(), moved, "the reopened layout is not in the rearranged order");
 
@@ -314,11 +238,7 @@ public class testPagesFollowTheFileOrder
 
         Map<String, String> ids = idsInTheIndex();
 
-        SwingUtilities.invokeAndWait(() -> ui.openLayoutEditor("2 - Bottom", false, null));
-
-        assertTrue(Components.waitFor(() -> editorOn("2 - Bottom") != null, 15000), "no editor opened");
-
-        Components.settle();
+        edit("2 - Bottom");
 
         press(editorOn("2 - Bottom"), "layout.ui.tooltipMovePageDown");
 
@@ -346,11 +266,7 @@ public class testPagesFollowTheFileOrder
     {
         open(Arrays.asList("3 - Top Parking", "1 - Main", "5 - Test", "2 - Bottom", "4 - Combined"));
 
-        SwingUtilities.invokeAndWait(() -> ui.openLayoutEditor("1 - Main", false, null));
-
-        assertTrue(Components.waitFor(() -> editorOn("1 - Main") != null, 15000), "no editor opened");
-
-        Components.settle();
+        edit("1 - Main");
 
         try (Answering answering = Answering.start(message -> Answering.type("0 - First")))
         {
@@ -386,11 +302,7 @@ public class testPagesFollowTheFileOrder
 
         byte[] setup = Files.readAllBytes(setupFile().toPath());
 
-        SwingUtilities.invokeAndWait(() -> ui.openLayoutEditor("1 - Main", false, null));
-
-        assertTrue(Components.waitFor(() -> editorOn("1 - Main") != null, 15000), "no editor opened");
-
-        Components.settle();
+        edit("1 - Main");
 
         javax.swing.JMenu tools = Components.find(editorOn("1 - Main"), javax.swing.JMenu.class,
             m -> I18n.t("layout.ui.menuTools").equals(m.getText()));
@@ -424,11 +336,7 @@ public class testPagesFollowTheFileOrder
     {
         open(null);
 
-        SwingUtilities.invokeAndWait(() -> ui.openLayoutEditor("1 - Main", false, null));
-
-        assertTrue(Components.waitFor(() -> editorOn("1 - Main") != null, 15000), "no editor opened");
-
-        Components.settle();
+        edit("1 - Main");
 
         byte[] before = Files.readAllBytes(indexFile().toPath());
 
@@ -462,21 +370,13 @@ public class testPagesFollowTheFileOrder
 
     // ------------------------------------------------------------------------------------------------ the doors
 
-    private List<String> comboOrder()
+    private List<String> comboOrder() throws Exception
     {
-        final String first = model.getLayoutList().get(0);
+        java.lang.reflect.Field field = TrainControlUI.class.getDeclaredField("LayoutList");
 
-        javax.swing.JComboBox<?> box = Components.find(ui, javax.swing.JComboBox.class, b ->
-        {
-            for (int i = 0; i < b.getItemCount(); i++)
-            {
-                if (first.equals(String.valueOf(b.getItemAt(i)))) return true;
-            }
+        field.setAccessible(true);
 
-            return false;
-        });
-
-        assertNotNull(box, "the window has no page list");
+        final javax.swing.JComboBox<?> box = (javax.swing.JComboBox<?>) field.get(ui);
 
         return Components.onTheEventThread(() ->
         {

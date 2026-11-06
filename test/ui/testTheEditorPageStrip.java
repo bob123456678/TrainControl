@@ -12,13 +12,9 @@ import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertTrue;
-import org.testng.SkipException;
-import org.testng.annotations.AfterMethod;
-import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.gui.layouteditor.LayoutEditor;
-import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.util.I18n;
 import support.Components;
 
@@ -27,52 +23,8 @@ import support.Components;
  * strip under the Page heading: add, rename, duplicate, move up, move down, a gap, and delete.  What the user sees is
  * the strip's order, its place, its width, and which icons are lit.
  */
-public class testTheEditorPageStrip
+public class testTheEditorPageStrip extends support.PageWindowTest
 {
-    private support.LayoutSandbox sandbox;
-    private MarklinControlStation model;
-    private TrainControlUI ui;
-
-    @BeforeMethod
-    public void openTheSandbox() throws Exception
-    {
-        if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the main window needs a display");
-
-        sandbox = support.LayoutSandbox.open();
-    }
-
-    @AfterMethod(alwaysRun = true)
-    public void closeTheWindow() throws Exception
-    {
-        try
-        {
-            for (LayoutEditor editor : editors())
-            {
-                final LayoutEditor closing = editor;
-
-                SwingUtilities.invokeAndWait(closing::dispose);
-            }
-
-            if (ui != null)
-            {
-                final TrainControlUI closing = ui;
-
-                SwingUtilities.invokeAndWait(closing::dispose);
-            }
-
-            if (model != null) model.stop();
-        }
-        finally
-        {
-            ui = null;
-            model = null;
-
-            if (sandbox != null) sandbox.close();
-
-            sandbox = null;
-        }
-    }
-
     private void open(int pages) throws Exception
     {
         if (pages == 1)
@@ -83,16 +35,7 @@ public class testTheEditorPageStrip
                     .getBytes(StandardCharsets.UTF_8));
         }
 
-        model = support.TestStation.simulatedWithWindow();
-
-        ui = (TrainControlUI) model.getGUI();
-
-        assertNotNull(ui, "the model has no window");
-
-        assertTrue(Components.waitFor(() -> model.getLayoutList().size() == pages, 10000), "precondition: the layout"
-            + " does not have its " + pages + " pages: " + model.getLayoutList());
-
-        Components.settle();
+        startTheWindow(pages);
     }
 
     private LayoutEditor editorOn(String page, boolean autonomy) throws Exception
@@ -207,12 +150,9 @@ public class testTheEditorPageStrip
 
         List<AbstractButton> first = strip(editorOn("1 - Main", false));
 
-        assertFalse(first.get(3).isEnabled(), "up is lit on the first page");
-        assertEquals(first.get(3).getToolTipText(), I18n.t("layout.ui.tooltipPageIsFirst"));
-        assertTrue(first.get(4).isEnabled(), "down is grayed on the first page");
-        assertTrue(first.get(5).isEnabled(), "delete is grayed with five pages");
-        assertEquals(first.get(5).getToolTipText(), I18n.t("ui.main.toolbar.deleteCurrentPage"));
-
+        assertLit(first.get(3), false, "layout.ui.tooltipPageIsFirst");
+        assertLit(first.get(4), true, "layout.ui.tooltipMovePageDown");
+        assertLit(first.get(5), true, "ui.main.toolbar.deleteCurrentPage");
     }
 
     /** Both arrows are lit on a middle page. */
@@ -234,9 +174,14 @@ public class testTheEditorPageStrip
 
         List<AbstractButton> last = strip(editorOn("5 - Test", false));
 
-        assertTrue(last.get(3).isEnabled(), "up is grayed on the last page");
-        assertFalse(last.get(4).isEnabled(), "down is lit on the last page");
-        assertEquals(last.get(4).getToolTipText(), I18n.t("layout.ui.tooltipPageIsLast"));
+        assertLit(last.get(3), true, "layout.ui.tooltipMovePageUp");
+        assertLit(last.get(4), false, "layout.ui.tooltipPageIsLast");
+    }
+
+    private static void assertLit(AbstractButton icon, boolean lit, String tip)
+    {
+        assertEquals(icon.isEnabled(), lit, I18n.t(tip) + " is " + (lit ? "grayed" : "lit"));
+        assertEquals(icon.getToolTipText(), I18n.t(tip));
     }
 
     /**
