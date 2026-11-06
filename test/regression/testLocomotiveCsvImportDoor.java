@@ -604,6 +604,42 @@ public class testLocomotiveCsvImportDoor
     }
 
     /**
+     * A train that gets a speed while the question is open is not re-addressed when it is answered Yes: the door asks
+     * the moving check again after the question and refuses.
+     *
+     * MUTATION: leave the moving check out of the gates asked after the question, and this fails.
+     */
+    @Test
+    public void testATrainThatStartsMovingBehindTheQuestionIsNotReaddressed() throws Exception
+    {
+        inAWindow((ui, model) ->
+        {
+            Locomotive behind = model.newMM2Locomotive("FR049 door behind", 30);
+            File file = write(HEADER + "FR049 door behind,,DCC,31,0,0:00:00,0,0,,\n");
+
+            try
+            {
+                Seen seen = press(ui, file, IMPORT, s -> !s.said.isEmpty(), () ->
+                {
+                    behind.setSpeed(40);
+                    behind.waitForSpeedAtOrAbove(1);
+                });
+
+                assertNotNull(seen.question, "precondition: the door did not ask");
+                assertEquals(seen.said, Collections.singletonList(I18n.f("loc.ui.errorImportCsvMoving", "FR049 door behind")));
+                assertEquals(behind.getAddress(), 30, "a train that began to move behind the question was re-addressed");
+            }
+            finally
+            {
+                behind.setSpeed(0);
+                behind.waitForSpeedBelow(1);
+                file.delete();
+                model.deleteLoc("FR049 door behind");
+            }
+        });
+    }
+
+    /**
      * Refused while autonomy runs, before the chooser opens; nothing changes.
      *
      * MUTATION: take the refusal out of the door, and this fails.

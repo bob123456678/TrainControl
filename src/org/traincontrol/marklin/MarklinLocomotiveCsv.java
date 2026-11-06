@@ -50,7 +50,7 @@ public final class MarklinLocomotiveCsv
     public enum Fate { NEW, MERGE, SKIP }
 
     /** Why a change of address is not made. */
-    public enum Keep { CONSIST, STANDING, MOVING }
+    public enum Keep { CONSIST, STANDING, MOVING, HELD }
 
     /** One locomotive the import will give another address or decoder. */
     public static final class Move
@@ -138,9 +138,13 @@ public final class MarklinLocomotiveCsv
     /** The text of a file's bytes: UTF-8 when it is, else what Excel saved in on this machine. */
     public static String decode(byte[] bytes)
     {
-        Charset machine = Charset.defaultCharset();
+        return decode(bytes, fallbackFor(Charset.defaultCharset()));
+    }
 
-        return decode(bytes, machine.newEncoder().maxBytesPerChar() == 1.0f ? machine : Charset.forName("windows-1252"));
+    /** What to read a file in after UTF-8 fails: the machine's own code page when it is a single-byte one, else Windows-1252. */
+    public static Charset fallbackFor(Charset machine)
+    {
+        return machine.newEncoder().maxBytesPerChar() == 1.0f ? machine : Charset.forName("windows-1252");
     }
 
     /** The text of a file's bytes: UTF-8 when it is, else read in `fallback`. */
@@ -419,6 +423,7 @@ public final class MarklinLocomotiveCsv
     {
         Result result = new Result();
         Map<String, Move> moves = new HashMap<>();
+        Set<String> held = new HashSet<>();
 
         for (Move move : plan.moves) moves.put(move.name, move);
 
@@ -441,7 +446,7 @@ public final class MarklinLocomotiveCsv
             }
             else if (fate == Fate.MERGE)
             {
-                merge(model, model.getLocByName(row.name), row, moves.get(row.name), result);
+                merge(model, model.getLocByName(row.name), row, moves.get(row.name), held, result);
                 result.merged++;
             }
             else
@@ -474,7 +479,7 @@ public final class MarklinLocomotiveCsv
      * total becomes the larger of the two and the difference is filed on the file's day.  The address and decoder change
      * only if the plan says so, and not if the train has begun to move since.
      */
-    private static void merge(ViewListener model, Locomotive loc, Row row, Move move, Result result)
+    private static void merge(ViewListener model, Locomotive loc, Row row, Move move, Set<String> held, Result result)
     {
         fillEmpty(loc, row);
 
@@ -491,7 +496,8 @@ public final class MarklinLocomotiveCsv
 
         if (row.kind != Kind.PLAIN)
         {
-            result.leftOutMultiUnit++;
+            // Left out only where the file's address differs: "Steam", no decoder, or the same address asked nothing
+            if ((row.kind == Kind.MULTI || row.kind == Kind.LINKED) && row.address != loc.getAddress()) result.leftOutMultiUnit++;
         }
         else if (loc.getDecoderType() != Locomotive.decoderType.MULTI_UNIT
             && !MarklinLocomotive.validateNewAddress(row.type, row.address))
@@ -505,8 +511,17 @@ public final class MarklinLocomotiveCsv
             late.name = loc.getName();
             late.why = Keep.MOVING;
 
+            // An address a train that began to move still holds is not free for the rows after it
+            if (held.contains(move.to))
+            {
+                late.why = Keep.HELD;
+                result.kept.add(late);
+                return;
+            }
+
             if (loc.getSpeed() > 0)
             {
+                held.add(label(loc.getDecoderType(), loc.getAddress()));
                 result.kept.add(late);
                 return;
             }
@@ -518,6 +533,7 @@ public final class MarklinLocomotiveCsv
             }
             catch (Exception refused)
             {
+                held.add(label(loc.getDecoderType(), loc.getAddress()));
                 result.kept.add(late);
             }
         }

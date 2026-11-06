@@ -156,7 +156,8 @@ final class LocomotiveCsvDoor
     private static String keptLine(MarklinLocomotiveCsv.Kept kept)
     {
         String why = kept.why == MarklinLocomotiveCsv.Keep.CONSIST ? "loc.ui.importCsvKeptConsist"
-            : kept.why == MarklinLocomotiveCsv.Keep.STANDING ? "loc.ui.importCsvKeptStanding" : "loc.ui.importCsvKeptMoving";
+            : kept.why == MarklinLocomotiveCsv.Keep.STANDING ? "loc.ui.importCsvKeptStanding"
+            : kept.why == MarklinLocomotiveCsv.Keep.HELD ? "loc.ui.importCsvKeptHeld" : "loc.ui.importCsvKeptMoving";
 
         return I18n.f("loc.ui.importCsvKeptLine", kept.name, I18n.t(why));
     }

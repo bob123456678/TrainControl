@@ -857,6 +857,86 @@ public class testLocomotiveCsvImport
     }
 
     /**
+     * A train that begins to move after the plan was made is not re-addressed, and its address stays held for the rows
+     * after it: the next row does not land on it (it would put two locomotives on one address, or drop a consist link).
+     *
+     * MUTATION: leave out the speed check in `apply`, or the held address, and this fails.
+     */
+    @Test
+    public void testATrainThatBeginsToMoveIsKeptAndItsAddressStaysHeld() throws Exception
+    {
+        MarklinLocomotive moving = make("FR049 late mover", decoderType.MM2, 30);
+        MarklinLocomotive next = make("FR049 late next", decoderType.MM2, 32);
+
+        MarklinLocomotiveCsv csv = MarklinLocomotiveCsv.read(OLD + moving.getName() + ",,DCC,31,0,0:00:00,0,0,,\n"
+            + next.getName() + ",,MM2,30,0,0:00:00,0,0,,\n");
+
+        MarklinLocomotiveCsv.Plan plan = csv.plan(model);
+
+        assertEquals(plan.moves.size(), 2, "precondition: both changes are in the plan");
+
+        moving.setSpeed(40);
+        moving.waitForSpeedAtOrAbove(1);
+
+        try
+        {
+            MarklinLocomotiveCsv.Result result = csv.apply(model, plan);
+
+            assertEquals(moving.getAddress(), 30, "a train that began to move was re-addressed");
+            assertEquals(next.getAddress(), 32, "the next row landed on the address a moving train still holds");
+            assertEquals(result.kept.size(), 2);
+            assertEquals(result.kept.get(0).why, MarklinLocomotiveCsv.Keep.MOVING);
+            assertEquals(result.kept.get(1).why, MarklinLocomotiveCsv.Keep.HELD);
+        }
+        finally
+        {
+            moving.setSpeed(0);
+            moving.waitForSpeedBelow(1);
+        }
+    }
+
+    /**
+     * Only rows really left out are counted as multi-unit rows left out: an existing name with "Steam", with no decoder,
+     * with no decoder column, or with a linked label at the address it already has was merged and left nothing out.
+     *
+     * MUTATION: count every existing row that is not plain, and this fails.
+     */
+    @Test
+    public void testOnlyRowsReallyLeftOutAreCounted()
+    {
+        make("FR049 left steam", decoderType.MFX, 24);
+        make("FR049 left blank", decoderType.MFX, 25);
+        make("FR049 left same", decoderType.MFX, 26);
+        make("FR049 left other", decoderType.MFX, 27);
+        make("FR049 left nocolumn", decoderType.MFX, 29);
+
+        MarklinLocomotiveCsv.Result result = importText(OLD
+            + "FR049 left steam,,Steam,24,0,0:00:00,0,0,,\n"
+            + "FR049 left blank,,,25,0,0:00:00,0,0,,\n"
+            + "FR049 left same,,MU MFX,26,0,0:00:00,0,0,,\n"
+            + "FR049 left other,,MU MFX,99,0,0:00:00,0,0,,\n");
+
+        assertEquals(result.merged, 4);
+        assertEquals(result.leftOutMultiUnit, 1, "rows that left nothing out were counted");
+
+        assertEquals(importText("Name,Address,Notes\nFR049 left nocolumn,29,Note\n").leftOutMultiUnit, 0,
+            "a file with no decoder column left something out");
+    }
+
+    /**
+     * After UTF-8 fails a file is read in the machine's own code page when that is a single-byte one, else in Windows-1252.
+     *
+     * MUTATION: always answer Windows-1252, and this fails.
+     */
+    @Test
+    public void testTheMachinesCodePageIsTheFallbackWhenItIsSingleByte()
+    {
+        assertEquals(MarklinLocomotiveCsv.fallbackFor(Charset.forName("windows-1250")), Charset.forName("windows-1250"));
+        assertEquals(MarklinLocomotiveCsv.fallbackFor(Charset.forName("UTF-8")), Charset.forName("windows-1252"));
+        assertEquals(MarklinLocomotiveCsv.fallbackFor(Charset.forName("UTF-16")), Charset.forName("windows-1252"));
+    }
+
+    /**
      * The export's columns and the saved form of a locomotive are as they were, apart from the LastRun column Adam asked
      * for: the header the importer reads, the saved record's version and fields (a change there is a change to
      * LocDB.data), and an imported locomotive saves and loads like any other.
