@@ -164,6 +164,15 @@ public abstract class Locomotive
     {
         return this.preferredFunctions;
     }
+
+    /**
+     * Sets which functions the function preset turns on, for the Functions tab's Preset ticks
+     * @param on one entry per function; extra entries are dropped and missing ones are off
+     */
+    public void setPreferredFunctions(boolean[] on)
+    {
+        this.preferredFunctions = Arrays.copyOf(on, this.functionState.length);
+    }
     
     /**
      * Retrieves the function trigger types
@@ -1533,6 +1542,14 @@ public abstract class Locomotive
         public int[] getTypes()
         {
             return Arrays.copyOf(this.types, this.types.length);
+        }
+
+        /**
+         * @return the function trigger types
+         */
+        public int[] getTriggers()
+        {
+            return Arrays.copyOf(this.triggers, this.triggers.length);
         }
     }
 

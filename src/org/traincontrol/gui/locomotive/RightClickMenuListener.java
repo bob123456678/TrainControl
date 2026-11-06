@@ -3,7 +3,6 @@ package org.traincontrol.gui.locomotive;
 import java.awt.Color;
 import java.awt.event.MouseEvent;
 import javax.swing.JButton;
-import javax.swing.JMenu;
 import javax.swing.JMenuItem;
 import javax.swing.JPopupMenu;
 import org.traincontrol.gui.TrainControlUI;
@@ -45,6 +44,11 @@ public class RightClickMenuListener extends PopupListener
             menuItem.addActionListener(event -> ui.selectLocomotiveActivated(source));
             menuItem.setToolTipText("Control+A");
             add(menuItem);
+
+            if (ui.buttonHasLocomotive(source))
+            {
+                add(LocomotiveMenuItems.settings(ui, ui.getButtonLocomotive(source), true));
+            }
 
             addSeparator();
 
@@ -154,64 +158,13 @@ public class RightClickMenuListener extends PopupListener
 
                 addSeparator();
 
-                // Shared with the locomotive database's menu, and on this menu's own level beside Manage Locomotive;
-                // the key belongs to this menu
-                menuItem = LocomotiveMenuItems.multiUnit(ui, ui.getButtonLocomotive(source));
-                menuItem.setToolTipText("Control+L");
+                // Shared with the locomotive database's menu; the key belongs to this menu
+                menuItem = LocomotiveMenuItems.multiUnit(ui, ui.getButtonLocomotive(source), true);
+
+                // Grayed while moving, with the reason in the tooltip (FR-048)
+                if (menuItem.isEnabled()) menuItem.setToolTipText("Control+L");
+
                 add(menuItem);
-
-                addSeparator();
-
-                JMenu submenu = new JMenu(
-                    I18n.t("loc.ui.submenuManageLocomotive")
-                );
-
-                menuItem = new JMenuItem(ui.getButtonLocomotive(source).getName());
-                menuItem.setEnabled(false);
-                submenu.add(menuItem);
-                submenu.addSeparator();
-
-                // Shared with the locomotive database menu (FR-047): these items live in LocomotiveMenuItems now; the
-                // ORDER and the keyboard tooltips stay here, as they belong to this menu.  The locomotive is resolved
-                // ONCE, as the menu is built, so the menu acts on what it was opened for.
-                final org.traincontrol.base.Locomotive subject = ui.getButtonLocomotive(source);
-
-                submenu.add(LocomotiveMenuItems.setLocalIcon(ui, subject, null));
-
-                // Through `subject`, like every other line here, so the locomotive is resolved once.
-                if (subject != null && subject.getLocalImageURL() != null)
-                {
-                    submenu.add(LocomotiveMenuItems.clearLocalIcon(ui, subject));
-                }
-
-                submenu.add(LocomotiveMenuItems.customiseFunctionIcons(ui, subject, source, null));
-                submenu.addSeparator();
-
-                menuItem = LocomotiveMenuItems.editNameAddressDecoder(ui, subject, null);
-                menuItem.setToolTipText("Control+R");
-                submenu.add(menuItem);
-
-                menuItem = LocomotiveMenuItems.editNotes(ui, subject, null);
-                menuItem.setToolTipText("Control+N");
-                submenu.add(menuItem);
-
-                // How long this train is, when there is autonomy to care (FR-047).  Null when there
-                // is not, so the item simply is not there rather than being grayed.
-                JMenuItem howLong = LocomotiveMenuItems.trainLength(ui, subject, null);
-
-                if (howLong != null) submenu.add(howLong);
-
-                submenu.addSeparator();
-
-                submenu.add(LocomotiveMenuItems.findSimilar(ui, subject, null));
-
-                submenu.addSeparator();
-
-                menuItem = LocomotiveMenuItems.deleteFromDatabase(ui, subject, null);
-                menuItem.setToolTipText("Control+Delete");
-                submenu.add(menuItem);
-
-                add(submenu);
 
                 addSeparator();
 

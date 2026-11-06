@@ -42,35 +42,7 @@ public class RightClickSelectorMenu extends JPopupMenu
             add(menuItem);
         }
 
-        add(LocomotiveMenuItems.setLocalIcon(ui, loc, e));
-
-        if (loc.getLocalImageURL() != null)
-        {
-            add(LocomotiveMenuItems.clearLocalIcon(ui, loc));
-        }
-
-        add(LocomotiveMenuItems.customiseFunctionIcons(ui, loc, null, e));
-
-        addSeparator();
-
-        add(LocomotiveMenuItems.editNameAddressDecoder(ui, loc, e));
-
-        add(LocomotiveMenuItems.editNotes(ui, loc, e));
-
-        // HOW LONG THIS TRAIN IS, when there is autonomy to care (FR-047): beside the other facts about the locomotive,
-        // not the icons.
-        JMenuItem length = LocomotiveMenuItems.trainLength(ui, loc, e);
-
-        if (length != null) add(length);
-
-        // And its multi-unit, as the keyboard's menu offers it, below a divider of its own
-        addSeparator();
-
-        add(LocomotiveMenuItems.multiUnit(ui, loc));
-
-        addSeparator();
-
-        add(LocomotiveMenuItems.findSimilar(ui, loc, e));
+        add(LocomotiveMenuItems.settings(ui, loc, false));
 
         addSeparator();
 
