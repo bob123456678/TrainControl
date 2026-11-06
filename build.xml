@@ -646,6 +646,7 @@
         <test-one-class class="testCS3InputsParseAsBefore"/>
         <test-one-class class="testACS3FirmwareIsReadOnce"/>
         <test-one-class class="testACS3ReadersSurviveFirmwareChanges"/>
+        <test-one-class class="testTheSyncSaysWhenPartOfTheDataWasNotRead"/>
     </target>
     <target name="package-for-store" depends="jar">
         <property name="store.jar.name" value="TrainControl"/>

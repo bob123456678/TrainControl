@@ -41,7 +41,11 @@ import support.StationRig;
  * parseRoutesCS3(boolean), a `typ` read with optString, or the missing-`lok` check, and testARouteItemThatCannotBeReadKeepsTheHeldRoute
  * finds routes emptied or a train command dropped.  Unlock the routes whatever skipped (canTellDeleted), and
  * testARouteWithNoIdLeavesTheLocksAlone finds the deleted route unlocked.  Drop the partial flag that records set, and
- * the tests find the sync not saying part was unread.
+ * the tests find the sync not saying part was unread.  Refuse every list that looks suspect, whatever is held
+ * (MarklinControlStation.wouldChangeHeldRoute always true), and testASmallRailwayIsImportedAtFirstAndSecondSync finds the
+ * small railways refused; never refuse (always false), and testARouteItemThatCannotBeReadKeepsTheHeldRoute finds the
+ * routes rewritten.  Read a direction's `wert` as before (only the text "1" is backward, a missing one forward), and
+ * testADirectionThatCannotBeReadKeepsTheHeldRoute finds the route rewritten.
  *
  * @author Adam
  */
@@ -490,6 +494,90 @@ public class testACS3ReadersSurviveFirmwareChanges
 
             assertHeldUnchanged(rig, replaced, held, "a unit's member without an internal name", only(LOCOS, bytes(members)));
         });
+    }
+
+    /** Small railways look like a key gone from every item, and are imported, at the first sync and the next. */
+    @Test
+    public void testASmallRailwayIsImportedAtFirstAndSecondSync() throws Exception
+    {
+        String loc = "02#200314-1#20DDR";
+        String[] railways =
+        {
+            // one route, whose one switch stands in its default position
+            "[{\"id\":\"1\",\"name\":\"one\",\"items\":[{\"typ\":\"mag\",\"magnetartikel\":\"0\",\"key\":\"000\"}]}]",
+            // only speed items, none with a value
+            "[{\"id\":\"1\",\"name\":\"one\",\"items\":[{\"typ\":\"speed\",\"lok\":\"" + loc + "\",\"key\":\"000\"}]}]",
+            // only empty routes
+            "[{\"id\":\"1\",\"name\":\"one\",\"items\":[]},{\"id\":\"2\",\"name\":\"two\",\"items\":[]}]"
+        };
+
+        for (int i = 0; i < railways.length; i++)
+        {
+            Map<String, byte[]> replaced = new ConcurrentHashMap<>();
+            replaced.put(ROUTES, railways[i].getBytes(StandardCharsets.UTF_8));
+
+            try (StationRig rig = rig(replaced))
+            {
+                String first = null;
+
+                for (int sync = 1; sync <= 2; sync++)
+                {
+                    assertTrue(rig.model.syncWithCS2() >= 0, "railway " + i + ", sync " + sync);
+                    assertFalse(rig.model.wasLastSyncPartial(), "railway " + i + ", sync " + sync + " reads it");
+                    assertEquals(rig.model.getRoutes().size(), i == 2 ? 2 : 1, "railway " + i + " is imported, sync " + sync);
+                    assertTrue(rig.takeLog().stream().noneMatch(l -> l.matches("(?is).*(not updated|could not|skipping).*")),
+                        "and nothing is said of it");
+
+                    String now = state(rig);
+                    first = first == null ? now : first;
+                    assertEquals(now, first, "the second sync changes nothing");
+                }
+
+                if (i < 2)
+                {
+                    assertEquals(rig.model.getRoutes().get(0).getRoute().size(), 1, "its one command");
+                }
+            }
+        }
+    }
+
+    /** A direction is 0 or 1, as a number or as text; one that is missing or unreadable keeps the held route. */
+    @Test
+    public void testADirectionThatCannotBeReadKeepsTheHeldRoute() throws Exception
+    {
+        onHeld((rig, replaced, held) ->
+        {
+            String routes = new String(StandInStation.cs3("260", INFO).apply(ROUTES, 1), StandardCharsets.UTF_8);
+
+            for (Object wert : new Object[] {null, "x", 2})
+            {
+                assertHeldUnchanged(rig, replaced, held, "direction " + wert, only(ROUTES, withDirection(routes, wert)));
+            }
+
+            // The number 1 means backward, as the text "1" does
+            assertHeldUnchanged(rig, replaced, held, "direction 1", only(ROUTES, withDirection(routes, 1)), false);
+        });
+    }
+
+    /** The routes with every direction item's value set, or removed when it is null. */
+    private static byte[] withDirection(String routes, Object wert)
+    {
+        JSONArray list = listOf(routes);
+
+        for (int i = 0; i < list.length(); i++)
+        {
+            JSONArray items = list.getJSONObject(i).getJSONArray("items");
+
+            for (int j = 0; j < items.length(); j++)
+            {
+                if ("dir".equals(items.getJSONObject(j).optString("typ")))
+                {
+                    if (wert == null) items.getJSONObject(j).remove("wert"); else items.getJSONObject(j).put("wert", wert);
+                }
+            }
+        }
+
+        return bytes(list);
     }
 
     /** A first sync with locomotives missing their decoder type guesses nothing: the database stays empty, and a good sync fills it. */

@@ -41,6 +41,12 @@ public final class StationRig implements AutoCloseable
      */
     public StationRig(File root, BiFunction<String, Integer, byte[]> answer) throws Exception
     {
+        this(root, answer, false);
+    }
+
+    /** The same, with the application's own window when `window` is true (it needs a display). */
+    public StationRig(File root, BiFunction<String, Integer, byte[]> answer, boolean window) throws Exception
+    {
         MarklinControlStation started = null;
         LayoutSandbox opened = null;
         StandInStation standIn = null;
@@ -51,7 +57,7 @@ public final class StationRig implements AutoCloseable
             System.setProperty(Util.DATA_DIR_PROPERTY, Files.createDirectories(new File(root, "data").toPath()).toString());
             opened = LayoutSandbox.open(new File(root, "none"));
             TrainControlUI.getPrefs().put(TrainControlUI.LAYOUT_OVERRIDE_PATH_PREF, "");
-            started = TestStation.simulated();
+            started = window ? TestStation.simulatedWithWindow() : TestStation.simulated();
         }
         catch (Exception | Error e)
         {
