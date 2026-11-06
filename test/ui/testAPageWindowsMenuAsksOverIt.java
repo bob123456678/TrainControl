@@ -746,6 +746,26 @@ public class testAPageWindowsMenuAsksOverIt
             onItsWay.setBoolean(ui, false);
 
             AskingWindows.assertSaid(asked.get(1), window, editor);
+
+            String routeRuns = TrainControlUI.routeRunningRefusal(java.util.Collections.singletonList(ROUTE));
+
+            assertTrue(model.newRoute(ROUTE, new ArrayList<>(), 0,
+                org.traincontrol.base.Route.s88Triggers.CLEAR_THEN_OCCUPIED, false, null), "precondition: no route");
+
+            asked = choose(aDestination(menuOn(window, post), TURNS_THERE), message ->
+            {
+                if (message.equals(routeRuns)) return null;
+
+                model.getRoute(ROUTE).setExecuting();
+
+                return Answering.press(YES);
+            }, 2);
+
+            model.getRoute(ROUTE).stopExecuting();
+
+            model.deleteRoute(ROUTE);
+
+            AskingWindows.assertSaid(asked.get(1), window, routeRuns);
         }
     }
 
@@ -1056,6 +1076,34 @@ public class testAPageWindowsMenuAsksOverIt
                 assertEquals(pick.getY(), window.getY() + 60, "the tail question is not at the top of its window");
 
                 cancelThe(pick);
+
+                assertNotNull(railway().getLocomotiveLocation(train), "Cancel took the train off");
+
+                takeHimOff();
+            }
+        });
+    }
+
+    /**
+     * With a sensor on another page, the tail question is the list, over the window of the door; Cancel leaves the train
+     * placed.
+     *
+     * MUTATION: `parent` for `dialogParent()` at `over` in `askAfterPlacement`, and it hangs off the main window.
+     */
+    @Test
+    public void testTheTailQuestionAsAListIsOverTheWindow() throws Exception
+    {
+        onTunnelsPage((tunnel, there) ->
+        {
+            train.setTrainLength(30);
+
+            for (Window window : new Window[] {ui, there})
+            {
+                Answering.Question list = choose(AskingWindows.itemOf(menuOn(window, tunnel),
+                    I18n.f("layout.ui.menuPlaceLocomotive", HIS_TRAIN)), message -> Answering.pressAt(1), 1).get(0);
+
+                AskingWindows.assertAsked(list, window, I18n.t("autolayout.ui.askArrivalSideTitle"), AskingWindows.ANY_MESSAGE,
+                    JOptionPane.QUESTION_MESSAGE, I18n.t("ui.ok"), I18n.t("ui.ok"), I18n.t("ui.cancel"));
 
                 assertNotNull(railway().getLocomotiveLocation(train), "Cancel took the train off");
 
