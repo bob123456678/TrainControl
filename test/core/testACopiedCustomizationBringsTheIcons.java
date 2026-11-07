@@ -1,5 +1,6 @@
 package core;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import org.traincontrol.base.Locomotive;
@@ -11,12 +12,14 @@ import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
+import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 /**
  * Copy Customizations carries the custom ICONS, and Cancel puts the old ones back (MT-466).  The rule is
  * `Locomotive.Customizations`, captured and applied as one value, so the copy and the Cancel that undoes it cannot
- * disagree about what a customization is.
+ * disagree about what a customization is.  Also what `copyCustomizationsFrom`, a public API method, leaves alone, and
+ * what it does between locomotives with different numbers of functions.
  *
  * MUTATION: take the `setLocalFunctionImageURLs` line out of `applyCustomizations` and the first two
  * claims go red - the copy leaves the target with no icon, and Cancel leaves it with the source's.
@@ -33,6 +36,9 @@ public class testACopiedCustomizationBringsTheIcons
     private static Locomotive source;
 
     private static Locomotive target;
+
+    /** Thirty-two functions, where the other two have five. */
+    private static Locomotive mfx;
 
     private static final String THE_SOURCES_ICON = "file:///C:/icons/f0-source.png";
 
@@ -51,9 +57,11 @@ public class testACopiedCustomizationBringsTheIcons
 
         source = model.newMM2Locomotive("MT466 source", 71);
         target = model.newMM2Locomotive("MT466 target", 72);
+        mfx = model.newMFXLocomotive("MT466 MFX", 75);
 
         assertNotNull(source, "the source locomotive was not created");
         assertNotNull(target, "the target locomotive was not created");
+        assertNotNull(mfx, "the MFX locomotive was not created");
     }
 
     @AfterClass(alwaysRun = true)
@@ -67,12 +75,26 @@ public class testACopiedCustomizationBringsTheIcons
 
                 if (target != null) model.deleteLoc(target.getName());
 
+                if (mfx != null) model.deleteLoc(mfx.getName());
+
                 model.stop();
             }
         }
         finally
         {
             if (sandbox != null) sandbox.close();
+        }
+    }
+
+    /** All three plain, so no claim reads what another left behind. */
+    @BeforeMethod
+    public void plain()
+    {
+        for (Locomotive l : new Locomotive[] {source, target, mfx})
+        {
+            l.setFunctionTypes(new int[l.getNumF()], new int[l.getNumF()]);
+            l.unsetLocalFunctionImageURLs();
+            l.setCustomFunctions(false);
         }
     }
 
@@ -244,5 +266,224 @@ public class testACopiedCustomizationBringsTheIcons
         assertNull(target.getLocalFunctionImageURL(1),
             "an icon added to the SOURCE after the copy turned up on the target, so the two share one"
             + " map: `setLocalFunctionImageURLs` keeps the reference it is handed");
+    }
+
+    /** F1 customized on all three counts: a type, a behavior and an icon, and the flag. */
+    private static void customizeF1(Locomotive l, String icon)
+    {
+        l.setFunctionType(1, 32, 1);
+        l.setLocalFunctionImageURL(1, icon);
+        l.setCustomFunctions(true);
+    }
+
+    private static void assertKeepsItsCount(Locomotive l, int count)
+    {
+        assertEquals(l.getNumF(), count, "the copy changed how many functions the target has");
+        assertEquals(l.getFunctionTypes().length, count, "the target's types don't match its functions");
+        assertEquals(l.getFunctionTriggerTypes().length, count, "the target's behaviors don't match its functions");
+    }
+
+    /**
+     * A null source changes nothing.
+     *
+     * MUTATION: take out the null check, and this throws.
+     */
+    @Test
+    public void testNoSourceChangesNothing()
+    {
+        customizeF1(target, THE_TARGETS_OWN_ICON);
+
+        target.copyCustomizationsFrom(null);
+
+        assertEquals(target.getFunctionTypes()[1], 32, "copying from nothing changed a function type");
+        assertEquals(target.getLocalFunctionImageURL(1), THE_TARGETS_OWN_ICON, "copying from nothing changed an icon");
+        assertTrue(target.hasCustomFunctionsFlag(), "copying from nothing changed the customized flag");
+    }
+
+    /**
+     * Types and behaviors both arrive, each for its own function.
+     *
+     * MUTATION: pass `was.types` for both arguments of `setFunctionTypes` in `applyCustomizations`, and this fails.
+     */
+    @Test
+    public void testTypesAndBehaviorsArrive()
+    {
+        source.setFunctionType(2, 32, 0);
+        source.setFunctionType(3, 40, 1);
+
+        int[] triggers = source.getFunctionTriggerTypes();
+
+        target.copyCustomizationsFrom(source);
+
+        assertEquals(target.getFunctionTypes(), source.getFunctionTypes(), "the function types did not arrive");
+        assertEquals(target.getFunctionTriggerTypes(), triggers, "how each function behaves did not arrive");
+    }
+
+    /**
+     * The customized flag is the source's, in both directions.
+     *
+     * MUTATION: drop the `setCustomFunctions` line from `applyCustomizations`, and this fails.
+     */
+    @Test
+    public void testTheFlagIsTheSources()
+    {
+        source.setCustomFunctions(true);
+        target.copyCustomizationsFrom(source);
+        assertTrue(target.hasCustomFunctionsFlag(), "a customized source left the copy unmarked");
+
+        source.setCustomFunctions(false);
+        target.copyCustomizationsFrom(source);
+        assertFalse(target.hasCustomFunctionsFlag(), "an uncustomized source left the copy marked");
+    }
+
+    /**
+     * Copying from a plain locomotive wipes what the target had, because it takes the source's set whole.
+     *
+     * MUTATION: skip `setLocalFunctionImageURLs` when the snapshot's map is empty, and this fails.
+     */
+    @Test
+    public void testAPlainSourceWipesTheTarget()
+    {
+        customizeF1(target, THE_TARGETS_OWN_ICON);
+
+        target.copyCustomizationsFrom(source);
+
+        assertEquals(target.getFunctionTypes()[1], 0, "the target kept a function type the plain source does not have");
+        assertNull(target.getLocalFunctionImageURL(1), "the target kept an icon the plain source does not have");
+        assertFalse(target.isCustomFunctions(), "the target still reads as customized after a plain source");
+    }
+
+    /**
+     * The source comes through unchanged, and later edits on either side stay on that side.
+     *
+     * MUTATION: have `captureCustomizations` hand over the live types and `setFunctionTypes` keep an array of the right
+     * length, and this fails.
+     */
+    @Test
+    public void testTheTwoAreIndependentAfterwards()
+    {
+        customizeF1(source, THE_SOURCES_ICON);
+
+        target.copyCustomizationsFrom(source);
+
+        assertEquals(source.getFunctionTypes()[1], 32, "the copy changed the source's function type");
+        assertEquals(source.getLocalFunctionImageURL(1), THE_SOURCES_ICON, "the copy changed the source's icon");
+        assertTrue(source.hasCustomFunctionsFlag(), "the copy changed the source's flag");
+
+        target.setFunctionType(1, 40, 0);
+        target.setLocalFunctionImageURL(1, THE_TARGETS_OWN_ICON);
+
+        assertEquals(source.getFunctionTypes()[1], 32, "an edit on the copy reached the source's function type");
+        assertEquals(source.getLocalFunctionImageURL(1), THE_SOURCES_ICON, "an edit on the copy reached the source's icon");
+
+        source.setFunctionType(2, 50, 0);
+
+        assertEquals(target.getFunctionTypes()[2], 0, "an edit on the source reached the copy's function type");
+    }
+
+    /**
+     * A locomotive copied from itself is unchanged.
+     *
+     * MUTATION: have `captureCustomizations` hand over the live map and `applyCustomizations` clear the map before
+     * filling it, and this fails.
+     */
+    @Test
+    public void testCopyingFromItselfChangesNothing()
+    {
+        customizeF1(source, THE_SOURCES_ICON);
+
+        int[] types = Arrays.copyOf(source.getFunctionTypes(), source.getNumF());
+        int[] triggers = Arrays.copyOf(source.getFunctionTriggerTypes(), source.getNumF());
+
+        source.copyCustomizationsFrom(source);
+
+        assertEquals(source.getFunctionTypes(), types, "copying from itself changed the function types");
+        assertEquals(source.getFunctionTriggerTypes(), triggers, "copying from itself changed the behaviors");
+        assertEquals(source.getLocalFunctionImageURL(1), THE_SOURCES_ICON, "copying from itself lost the icon");
+        assertTrue(source.hasCustomFunctionsFlag(), "copying from itself changed the flag");
+    }
+
+    /**
+     * Only customizations cross: not the name, address, preset speed, notes, or what the target's functions are doing.
+     *
+     * MUTATION: copy the preset speed in `copyCustomizationsFrom`, and this fails.
+     */
+    @Test
+    public void testNothingElseCrosses()
+    {
+        source.setFunctionType(1, 32, 0);
+        source.setPreferredSpeed(40);
+        source.setNotes("the source's notes");
+        source.setF(1, true);
+
+        target.setPreferredSpeed(70);
+        target.setNotes("the target's notes");
+        target.setF(1, false);
+
+        String name = target.getName();
+        int address = target.getAddress();
+        String notes = target.getNotes();
+
+        target.copyCustomizationsFrom(source);
+
+        assertEquals(target.getName(), name, "the copy changed the target's name");
+        assertEquals(target.getAddress(), address, "the copy changed the target's address");
+        assertEquals(target.getPreferredSpeed(), 70, "the copy changed the target's preset speed");
+        assertEquals(target.getNotes(), notes, "the copy changed the target's notes");
+        assertFalse(target.getF(1), "the copy switched on a function the target had off");
+    }
+
+    /**
+     * From a locomotive with more functions, the target keeps its own count and takes the ones that fit.
+     *
+     * MUTATION: have `setFunctionTypes` keep the array's own length, and this fails.
+     */
+    @Test
+    public void testAFewerFunctionsTargetTakesWhatFits()
+    {
+        mfx.setFunctionType(4, 32, 0);
+        mfx.setFunctionType(20, 40, 0);
+
+        target.copyCustomizationsFrom(mfx);
+
+        assertKeepsItsCount(target, 5);
+        assertEquals(target.getFunctionTypes()[4], 32, "the function that fits did not arrive");
+    }
+
+    /**
+     * From a locomotive with fewer functions, the target's extra functions go plain and it still has all of them.
+     *
+     * MUTATION: have `applyCustomizations` write only the source's count of types over the existing ones, and this fails.
+     */
+    @Test
+    public void testAMoreFunctionsTargetGoesPlainPastTheSource()
+    {
+        mfx.setFunctionType(20, 40, 0);
+        source.setFunctionType(4, 32, 0);
+
+        mfx.copyCustomizationsFrom(source);
+
+        assertKeepsItsCount(mfx, 32);
+        assertEquals(mfx.getFunctionTypes()[4], 32, "the function the source has did not arrive");
+        assertEquals(mfx.getFunctionTypes()[20], 0, "a function past the source's count kept what it had");
+    }
+
+    /**
+     * An icon on a function the target doesn't have doesn't arrive, so it can't mark the target as customized with
+     * nothing to show for it, and can't be saved as if it belonged.
+     *
+     * MUTATION: take the `removeIf` line out of `copyCustomizationsFrom`, and this fails.
+     */
+    @Test
+    public void testAnIconPastTheTargetsFunctionsDoesNotArrive()
+    {
+        assertTrue(mfx.setLocalFunctionImageURL(20, THE_SOURCES_ICON), "precondition: F20 is within an MFX locomotive's functions");
+
+        target.copyCustomizationsFrom(mfx);
+
+        assertTrue(target.getLocalFunctionImageURLs().isEmpty(), "the target holds an icon for F20 and has five functions: "
+            + target.getLocalFunctionImageURLs());
+
+        assertFalse(target.isCustomFunctions(), "the target reads as customized because of an icon it can never show");
     }
 }
