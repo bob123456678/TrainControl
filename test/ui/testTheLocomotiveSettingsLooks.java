@@ -167,8 +167,8 @@ public class testTheLocomotiveSettingsLooks extends support.SettingsClass
      * The Preset Speed label, its spinner, the % sign and the (i) share one vertical center, and the spinner is as tall
      * as the fields above.
      *
-     * MUTATION: drop the spinner's preferred height in `LocomotiveSettingsFrame.LocomotiveTab`, or add a top inset to the
-     * speed row's panel, and this fails.
+     * MUTATION: add 10 to the spinner's preferred height in `LocomotiveSettingsFrame.LocomotiveTab`, or set the % label's
+     * alignment so it sits on the top of the row, and this fails.
      */
     @Test
     public void testThePresetSpeedRowIsCenteredAndAsTallAsTheFields() throws Exception
