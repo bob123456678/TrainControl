@@ -611,8 +611,7 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
                 });
             }
 
-            checkDuplicates.setFont(new Font("Segoe UI", Font.PLAIN, 13));
-            checkDuplicates.putClientProperty("JButton.buttonType", "toolBarButton");
+            checkDuplicates.setFont(BUTTON_FONT);
             checkDuplicates.setFocusable(false);
             checkDuplicates.addActionListener(e -> main.locomotiveActions.checkDuplicates(LocomotiveSettingsFrame.this,
                 address.getText(), (decoderType) decoder.getSelectedItem(), loc));

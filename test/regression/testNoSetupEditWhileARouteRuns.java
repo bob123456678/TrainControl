@@ -2264,7 +2264,7 @@ public class testNoSetupEditWhileARouteRuns
      * @param ui the window
      * @param runs whether it runs
      */
-    private static void aRouteRuns(TrainControlUI ui, boolean runs)
+    public static void aRouteRuns(TrainControlUI ui, boolean runs)
     {
         MarklinControlStation model = (MarklinControlStation) ui.getModel();
 

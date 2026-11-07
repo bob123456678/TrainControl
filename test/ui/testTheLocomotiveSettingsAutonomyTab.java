@@ -323,18 +323,9 @@ public class testTheLocomotiveSettingsAutonomyTab
     {
         startFrom(5, false, null, null);
 
-        java.util.List<org.traincontrol.base.RouteCommand> commands = new java.util.ArrayList<>();
-
-        commands.add(org.traincontrol.base.RouteCommand.RouteCommandAccessory(39,
-            org.traincontrol.base.Accessory.accessoryDecoderType.MM2, true));
-
-        assertTrue(model.newRoute(ROUTE, commands, 0, org.traincontrol.marklin.MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED,
-            false, null), "precondition: the route could not be made");
-
         try
         {
-            assertTrue(model.getRoute(ROUTE).setExecuting(), "precondition: the route would not run");
-            assertFalse(model.isAutonomyRunning(), "precondition: autonomy is running, so this is not a route alone");
+            regression.testNoSetupEditWhileARouteRuns.aRouteRuns(ui, true);
 
             openTheTab();
             setTheTab(8, true, -1, -1, null);
@@ -353,13 +344,10 @@ public class testTheLocomotiveSettingsAutonomyTab
         }
         finally
         {
-            model.getRoute(ROUTE).stopExecuting();
-            model.deleteRoute(ROUTE);
+            regression.testNoSetupEditWhileARouteRuns.aRouteRuns(ui, false);
             fixture.quiet();
         }
     }
-
-    private static final String ROUTE = "AU probe route";
 
     private static void assertLocked(String strip, String why)
     {
