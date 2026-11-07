@@ -206,18 +206,7 @@ public class testTheLocomotiveSettingsMovingRule
 
         assertOpenedLocked("a function button", LocomotiveSettingsFrame.Tab.FUNCTIONS.ordinal(), strip);
 
-        final JPopupMenu[] tile = new JPopupMenu[1];
-
-        SwingUtilities.invokeAndWait(() -> tile[0] = new RightClickSelectorMenu(ui, null, loc));
-
-        AbstractButton settings = Components.withText(tile[0], I18n.t("loc.ui.menuLocomotiveSettings"));
-
-        Components.onTheEventThread(() ->
-        {
-            settings.doClick(0);
-
-            return null;
-        });
+        SettingsWindow.openFromTheTile(ui, loc);
 
         assertOpenedLocked("the database tile", LocomotiveSettingsFrame.Tab.LOCOMOTIVE.ordinal(), strip);
     }

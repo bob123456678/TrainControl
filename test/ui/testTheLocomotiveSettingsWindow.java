@@ -587,20 +587,7 @@ public class testTheLocomotiveSettingsWindow
         assertSame(SettingsWindow.showing(), first, "a second locomotive opened a different window");
         assertSame(Components.onTheEventThread(first::getLocomotive), other, "the window does not show the second locomotive");
 
-        JPopupMenu[] tile = new JPopupMenu[1];
-
-        SwingUtilities.invokeAndWait(() -> tile[0] = new RightClickSelectorMenu(ui, null, third));
-
-        AbstractButton settings = Components.withText(tile[0], I18n.t("loc.ui.menuLocomotiveSettings"));
-
-        Components.onTheEventThread(() ->
-        {
-            settings.doClick(0);
-
-            return null;
-        });
-
-        Components.settle();
+        SettingsWindow.openFromTheTile(ui, third);
 
         assertEquals(windowsOpen(), 1L, "the database's door made another window");
         assertSame(Components.onTheEventThread(first::getLocomotive), third, "the window does not show the third locomotive");

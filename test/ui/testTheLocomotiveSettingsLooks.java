@@ -137,6 +137,18 @@ public class testTheLocomotiveSettingsLooks extends support.SettingsClass
         assertEquals(blues.size(), blue.length, "blue labels are only the first tab's five");
     }
 
+    /** Where a named part of the window is, in the window's own coordinates. */
+    private static java.awt.Rectangle at(String name, Class<? extends java.awt.Component> type)
+    {
+        return inWindow(SettingsWindow.part(name, type));
+    }
+
+    /** Where the first tab's divider is. */
+    private static java.awt.Rectangle divider()
+    {
+        return inWindow(Components.find(SettingsWindow.showing().getContentPane(), javax.swing.JSeparator.class, null));
+    }
+
     private static java.awt.Rectangle inWindow(java.awt.Component c)
     {
         return Components.onTheEventThread(() -> javax.swing.SwingUtilities.convertRectangle(c.getParent(), c.getBounds(),
@@ -154,10 +166,9 @@ public class testTheLocomotiveSettingsLooks extends support.SettingsClass
     {
         opened();
 
-        java.awt.Rectangle can = inWindow(SettingsWindow.part("settings.trash", javax.swing.JButton.class));
-        java.awt.Rectangle speed = inWindow(SettingsWindow.part("settings.speed", javax.swing.JSpinner.class));
-        java.awt.Rectangle line = inWindow(Components.find(SettingsWindow.showing().getContentPane(),
-            javax.swing.JSeparator.class, null));
+        java.awt.Rectangle can = at("settings.trash", javax.swing.JButton.class);
+        java.awt.Rectangle speed = at("settings.speed", javax.swing.JSpinner.class);
+        java.awt.Rectangle line = divider();
 
         int above = line.y - (can.y + can.height);
         int below = speed.y - (line.y + line.height);
@@ -196,7 +207,7 @@ public class testTheLocomotiveSettingsLooks extends support.SettingsClass
             assertTrue(Math.abs(r.y + r.height / 2 - center) <= 1, c + " is not on the spinner's center line");
         }
 
-        int field = inWindow(SettingsWindow.part("settings.name", javax.swing.JTextField.class)).height;
+        int field = at("settings.name", javax.swing.JTextField.class).height;
 
         assertEquals(inWindow(speed).height, field, "the spinner is not as tall as the fields");
     }
@@ -218,13 +229,12 @@ public class testTheLocomotiveSettingsLooks extends support.SettingsClass
         javax.swing.JButton trash = SettingsWindow.part("settings.trash", javax.swing.JButton.class);
         java.awt.Rectangle box = inWindow(picture);
         java.awt.Rectangle can = inWindow(trash);
-        java.awt.Rectangle name = inWindow(SettingsWindow.part("settings.name", javax.swing.JTextField.class));
-        java.awt.Rectangle address = inWindow(SettingsWindow.part("settings.address", javax.swing.JTextField.class));
-        java.awt.Rectangle speed = inWindow(SettingsWindow.part("settings.speed", javax.swing.JSpinner.class));
+        java.awt.Rectangle name = at("settings.name", javax.swing.JTextField.class);
+        java.awt.Rectangle address = at("settings.address", javax.swing.JTextField.class);
+        java.awt.Rectangle speed = at("settings.speed", javax.swing.JSpinner.class);
         java.awt.Rectangle nameLabel = inWindow(labelFor("ui.name"));
         java.awt.Rectangle cancel = inWindow(SettingsWindow.cancel());
-        java.awt.Rectangle line = inWindow(Components.find(SettingsWindow.showing().getContentPane(),
-            javax.swing.JSeparator.class, null));
+        java.awt.Rectangle line = divider();
         JLabel caption = labelFor("loc.ui.settingsLocomotiveIcon");
 
         assertTrue(box.width >= 260 && box.height >= 130, "the picture box is only " + box.width + " by " + box.height);

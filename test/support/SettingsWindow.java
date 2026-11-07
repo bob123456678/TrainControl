@@ -384,6 +384,26 @@ public final class SettingsWindow
         closeIfOpen();
     }
 
+    /** Chooses Locomotive Settings in the locomotive database's menu for this locomotive, and lets it finish. */
+    public static void openFromTheTile(TrainControlUI ui, Locomotive loc) throws Exception
+    {
+        final javax.swing.JPopupMenu[] tile = new javax.swing.JPopupMenu[1];
+
+        javax.swing.SwingUtilities.invokeAndWait(
+            () -> tile[0] = new org.traincontrol.gui.locomotive.RightClickSelectorMenu(ui, null, loc));
+
+        AbstractButton settings = Components.withText(tile[0], I18n.t("loc.ui.menuLocomotiveSettings"));
+
+        Components.onTheEventThread(() ->
+        {
+            settings.doClick(0);
+
+            return null;
+        });
+
+        Components.settle();
+    }
+
     /** The title the window should wear for a locomotive. */
     public static String titleFor(String locomotive)
     {
