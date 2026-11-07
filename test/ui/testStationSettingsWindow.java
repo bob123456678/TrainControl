@@ -413,6 +413,44 @@ public class testStationSettingsWindow
     }
 
     /**
+     * A refused value still showing does not follow the window to another square (OB-415): the new square's own value
+     * shows, the refusal goes, and closing writes nothing to either square.
+     *
+     * MUTATION: have `StationSettingsWindow.aimAt` keep a refusal when the square changes, and this fails.
+     */
+    @Test(timeOut = 120000)
+    public void testARefusedValueStaysWithItsSquare() throws Exception
+    {
+        TileKey first = aStation();
+        TileKey second = aSecondStation(first);
+
+        Components.onTheEventThread(() -> { session.setPointProperty(second, "maxTrainLength", 30); return null; });
+
+        Object firstHad = Components.onTheEventThread(() -> session.getPointProperty(first, "maxTrainLength"));
+
+        StationSettingsWindow window = StationDoors.open(panel, first);
+
+        StationDoors.typeAndEnter(window, "station.maxLength", "-5");
+
+        assertTrue(visible(window, "station.maxLengthProblem"), "precondition: a negative length was not refused");
+
+        Components.onTheEventThread(() -> panel.openStationSettings(second));
+
+        StationDoors.current(window);
+
+        assertEquals(StationDoors.text(window, "station.maxLength"), "30", "the other square shows the refused value");
+
+        assertFalse(visible(window, "station.maxLengthProblem"), "the other square shows the first one's refusal");
+
+        StationDoors.close(window);
+
+        assertEquals(numberOf(session.getPointProperty(second, "maxTrainLength")), 30.0, "closing changed the other square");
+
+        assertEquals(Components.onTheEventThread(() -> session.getPointProperty(first, "maxTrainLength")), firstHad,
+            "closing changed the square the value was refused for");
+    }
+
+    /**
      * Leaving a field applies it, as Close does.  Nothing is applied per keystroke, as each change rebuilds the railway.
      *
      * MUTATION: drop the focus listener in `commitsOnLeaving`, and this fails.

@@ -205,14 +205,14 @@ public final class StationSettingsWindow extends StationWindowBase
     {
         commitFields();
 
-        boolean wasSeveral = isSeveral();
+        List<TileKey> before = tile == null ? Collections.<TileKey>emptyList() : new ArrayList<>(targets());
 
         several = squares.size() > 1 ? new ArrayList<>(squares) : Collections.<TileKey>emptyList();
 
         stripWrapsAt = isSeveral() ? stripNarrow : stripWide;
 
-        // A refusal shown for the squares before is not theirs
-        if (wasSeveral || isSeveral())
+        // A refusal, and the text it kept, belong to the squares it was typed for (OB-415)
+        if (!before.equals(squares))
         {
             for (JTextField part : problems.keySet()) showProblem(part, null);
         }
