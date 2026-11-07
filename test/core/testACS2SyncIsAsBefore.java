@@ -40,6 +40,9 @@ import support.StandInStation;
  * is no longer re-created for each tile of the other kind.  So those tiles are live, 68 keeps the switch the first
  * railway made rather than becoming a signal, and the "Adding" lines of the re-creations are gone.
  *
+ * And on purpose: a saved arrow writes the ID of the page it goes to beside its number (` .zielseite=`, FR-175), so each
+ * arrow in the saved pages gains that line, listed after the line it follows.
+ *
  * Since every accessory tile writes its protocol, a save may also add ` .prot=MM2` to an addressed switch, signal or
  * uncoupler that read as MM2, and only there (support.SavedProtocol).
  *
