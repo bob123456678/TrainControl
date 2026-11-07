@@ -106,8 +106,6 @@ import javax.swing.ListModel;
 import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
 import javax.swing.border.MatteBorder;
-import javax.swing.event.AncestorEvent;
-import javax.swing.event.AncestorListener;
 import javax.swing.filechooser.FileFilter;
 import javax.swing.filechooser.FileNameExtensionFilter;
 import javax.swing.table.DefaultTableCellRenderer;
@@ -523,7 +521,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      */
     public boolean openLocomotiveSettings(Locomotive l, LocomotiveSettingsFrame.Tab tab, Integer function)
     {
-        if (l == null || LocomotiveSettings.refuseIfNotEditable(this, l, this)) return false;
+        // Over the window whose door was pressed (OB-324), and the settings window stands as high as that one
+        final java.awt.Window asking = dialogParent();
+
+        if (l == null || LocomotiveSettings.refuseIfNotEditable(this, l, asking)) return false;
 
         if (this.locomotiveSettings == null || !this.locomotiveSettings.isDisplayable())
         {
@@ -535,6 +536,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             return false;
         }
 
+        this.locomotiveSettings.setAlwaysOnTop(asking.isAlwaysOnTop());
         this.locomotiveSettings.setVisible(true);
         this.locomotiveSettings.toFront();
 
@@ -14742,20 +14744,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         panel.setPreferredSize(new Dimension(600, 540));
 
-        // Ensure the field is focused
-        panel.addAncestorListener(new AncestorListener()
-        {
-            @Override
-            public void ancestorRemoved(AncestorEvent event) {}
-
-            @Override
-            public void ancestorMoved(AncestorEvent event) {}
-
-            @Override
-            public void ancestorAdded(AncestorEvent event) {
-                panel.focusFilter();
-            }
-        });
+        Typing.onShown(panel, panel::focusFilter);
 
         int result = JOptionPane.showOptionDialog(
             asked,

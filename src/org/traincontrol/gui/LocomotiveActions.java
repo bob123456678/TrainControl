@@ -19,8 +19,6 @@ import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JRadioButton;
 import javax.swing.JTextField;
-import javax.swing.event.AncestorEvent;
-import javax.swing.event.AncestorListener;
 import org.traincontrol.base.Locomotive.decoderType;
 import org.traincontrol.base.Locomotive;
 import org.traincontrol.base.LocomotiveNotes;
@@ -505,15 +503,7 @@ final class LocomotiveActions
         {
             LocomotiveNotesPanel panel = new LocomotiveNotesPanel(l, 15, 80, null);
 
-            panel.addAncestorListener(new AncestorListener()
-            {
-                @Override public void ancestorRemoved(AncestorEvent event) {}
-                @Override public void ancestorMoved(AncestorEvent event) {}
-                @Override public void ancestorAdded(AncestorEvent event)
-                {
-                    panel.focusNotes();
-                }
-            });
+            Typing.onShown(panel, panel::focusNotes);
 
             int confirm = JOptionPane.showOptionDialog(
                 source,

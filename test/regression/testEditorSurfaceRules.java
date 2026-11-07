@@ -80,7 +80,8 @@ public class testEditorSurfaceRules
         final String[][] doors =
         {
             {"private void AddLocButtonActionPerformed(java.awt.event.ActionEvent evt)", "the Add Locomotive dialog"},
-            {"    void changeLocAddress(Locomotive l, MouseEvent evt)", "the rename dialog"},
+            {"    boolean writeNameAndAddress(Component source, Locomotive l, String newName, String newAddress,",
+                "the rename dialog and the Locomotive Settings window"},
             {"private void checkForRenameMenuItemActionPerformed(java.awt.event.ActionEvent evt)",
                 "the Central Station name"},
             {"private List<String> problemsWith(CommandRow row)", "the route editor"},
