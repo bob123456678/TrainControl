@@ -1,11 +1,8 @@
 package ui;
 
-import java.awt.Window;
 import java.lang.reflect.Field;
 import java.util.List;
 import javax.swing.JButton;
-import javax.swing.JDialog;
-import javax.swing.JOptionPane;
 import javax.swing.JRadioButton;
 import javax.swing.JTextField;
 import javax.swing.SwingUtilities;
@@ -24,7 +21,7 @@ import support.Components;
 
 /**
  * A typed locomotive address is read the same way at its three doors: Add Locomotive's Add, its Check Duplicates, and the
- * Change Name or Address dialog.  "0x" means hex for an MFX decoder and is not a number for any other.
+ * Locomotive Settings window's Save.  "0x" means hex for an MFX decoder and is not a number for any other.
  */
 public class testATypedAddressIsReadTheSameAtEveryDoor
 {
@@ -141,7 +138,7 @@ public class testATypedAddressIsReadTheSameAtEveryDoor
     }
 
     /**
-     * The Change Name or Address dialog: a hex address changes an MFX locomotive's address and is refused for a DCC one.
+     * The Locomotive Settings window's Save: a hex address changes an MFX locomotive's address and is refused for a DCC one.
      *
      * MUTATION: `Conversion.parseTypedAddress` reading "0x" as hex whatever the decoder (its `mfx &&` dropped) lets the
      * DCC locomotive's address change to 16.
@@ -208,68 +205,26 @@ public class testATypedAddressIsReadTheSameAtEveryDoor
     }
 
     /**
-     * Opens the Change Name or Address dialog for a locomotive, types the address and presses OK.
+     * Opens the Locomotive Settings window on a locomotive, types the address and presses Save; gives what was said.
      */
     private static List<String> edit(Locomotive loc, String address) throws Exception
     {
-        final java.util.concurrent.atomic.AtomicBoolean returned = new java.util.concurrent.atomic.AtomicBoolean(false);
+        assertTrue(support.SettingsWindow.open(ui, loc, org.traincontrol.gui.LocomotiveSettingsFrame.Tab.LOCOMOTIVE, null),
+            "the door did not open the Locomotive Settings window");
 
-        SwingUtilities.invokeLater(() ->
+        support.SettingsWindow.type("settings.address", address);
+
+        try (Answering answering = Answering.start(message -> Answering.pressAt(0)))
         {
-            try
-            {
-                ui.changeLocAddress(loc, null);
-            }
-            finally
-            {
-                returned.set(true);
-            }
-        });
+            Components.press(support.SettingsWindow.save());
 
-        final boolean[] typed = new boolean[1];
+            Components.settle();
 
-        long giveUp = System.currentTimeMillis() + WAIT;
+            List<String> said = new java.util.ArrayList<>(answering.asked());
 
-        while (!typed[0] && !returned.get() && System.currentTimeMillis() < giveUp)
-        {
-            Thread.sleep(100);
+            support.SettingsWindow.closeIfOpen();
 
-            SwingUtilities.invokeAndWait(() ->
-            {
-                for (Window window : Window.getWindows())
-                {
-                    if (!(window instanceof JDialog) || !window.isShowing()) continue;
-
-                    JOptionPane pane = Components.find(((JDialog) window).getContentPane(), JOptionPane.class, p -> true);
-
-                    if (pane == null || !(pane.getMessage() instanceof org.traincontrol.gui.locomotive.LocomotiveAddressChange))
-                    {
-                        continue;
-                    }
-
-                    text((java.awt.Component) pane.getMessage(), "address").setText(address);
-
-                    pane.setValue(pane.getOptions()[0]);
-                    window.dispose();
-
-                    typed[0] = true;
-
-                    return;
-                }
-            });
-        }
-
-        assertTrue(typed[0], "the door showed no Change Name or Address dialog");
-
-        try (Answering answering = Answering.start(message -> null))
-        {
-            giveUp = System.currentTimeMillis() + WAIT;
-
-            while (!returned.get() && System.currentTimeMillis() < giveUp) Thread.sleep(100);
-
-            assertTrue(returned.get(), "the door never returned");
-
-            return answering.asked();
+            return said;
         }
     }
 

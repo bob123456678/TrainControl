@@ -14757,17 +14757,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         }
     }
     
-    public void changeLocAddress(Locomotive l)
-    {
-        changeLocAddress(l, null);
-    }
-    
-    /** Delegates to `LocomotiveActions.changeLocAddress`. */
-    public void changeLocAddress(Locomotive l, MouseEvent evt)
-    {
-        this.locomotiveActions.changeLocAddress(l, evt);
-    }
-      
     /**
      * Prompts the user to choose locomotives to link to this one
      * @param l 
