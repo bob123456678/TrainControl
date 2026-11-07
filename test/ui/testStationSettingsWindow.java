@@ -1823,9 +1823,17 @@ public class testStationSettingsWindow
     @Test(timeOut = 300000)
     public void testEveryMarkIsPressedByAClickAtItsMiddle() throws Exception
     {
-        TileKey curved = Components.onTheEventThread(() -> support.AskingWindows.stationNamed(session, "TopMainR2Inter"));
+        Set<String> pages = Components.onTheEventThread(() ->
+        {
+            Set<String> out = new java.util.TreeSet<>();
 
-        StationSettingsWindow first = StationDoors.open(panel, curved);
+            for (TileKey each : session.getReducer().getPoints().keySet()) out.add(each.getPage());
+
+            return out;
+        });
+
+        StationSettingsWindow first = StationDoors.open(panel,
+            Components.onTheEventThread(() -> support.AskingWindows.stationNamed(session, "TopMainR2Inter")));
 
         javax.swing.JComboBox<?> depart = StationDoors.part(first, "station.depart.0", javax.swing.JComboBox.class);
 
@@ -1838,15 +1846,6 @@ public class testStationSettingsWindow
             "a click on TopMainR2Inter's way in from the east changed May Depart");
 
         StationDoors.close(first);
-
-        Set<String> pages = Components.onTheEventThread(() ->
-        {
-            Set<String> out = new java.util.TreeSet<>();
-
-            for (TileKey each : session.getReducer().getPoints().keySet()) out.add(each.getPage());
-
-            return out;
-        });
 
         List<String> wrong = new java.util.ArrayList<>();
         List<String> onOneSpot = new java.util.ArrayList<>();
