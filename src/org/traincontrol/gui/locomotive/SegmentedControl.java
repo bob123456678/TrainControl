@@ -129,6 +129,7 @@ public class SegmentedControl extends JPanel
         {
             super.updateUI();
 
+            setFont(org.traincontrol.gui.widgets.UiStyle.BUTTON_FONT);
             setBorder(null);
             setContentAreaFilled(false);
             setOpaque(false);
@@ -140,7 +141,7 @@ public class SegmentedControl extends JPanel
         {
             FontMetrics fm = getFontMetrics(getFont());
 
-            return new Dimension(fm.stringWidth(getText()) + 32, new JButton(getText()).getPreferredSize().height);
+            return new Dimension(fm.stringWidth(getText()) + 32, org.traincontrol.gui.widgets.UiStyle.button(new JButton(getText())).getPreferredSize().height);
         }
 
         @Override

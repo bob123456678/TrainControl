@@ -501,6 +501,10 @@ public class LayoutEditor extends PositionAwareJFrame
     {
         initComponents();
 
+        // Bold 12 like every other button; the designer drew these at 11.
+        org.traincontrol.gui.widgets.UiStyle.button(saveButton);
+        org.traincontrol.gui.widgets.UiStyle.button(cancelButton);
+
         // After the layout has settled, so the content's height is the new one (OB-399).
         addComponentListener(new java.awt.event.ComponentAdapter()
         {

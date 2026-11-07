@@ -16,6 +16,9 @@ public final class UiStyle
     /** Segoe UI Semibold 13. */
     public static final Font LABEL_FONT = new Font("Segoe UI Semibold", Font.PLAIN, 13);
 
+    /** Segoe UI Bold 12: every button. */
+    public static final Font BUTTON_FONT = new Font("Segoe UI", Font.BOLD, 12);
+
     private UiStyle()
     {
     }
@@ -57,6 +60,14 @@ public final class UiStyle
         styleHeading(l);
 
         return l;
+    }
+
+    /** Puts a button in the standard's button font, and returns it. */
+    public static <T extends javax.swing.AbstractButton> T button(T b)
+    {
+        b.setFont(BUTTON_FONT);
+
+        return b;
     }
 
     /** Puts a label in the item style. */
