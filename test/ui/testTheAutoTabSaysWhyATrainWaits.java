@@ -150,7 +150,8 @@ public class testTheAutoTabSaysWhyATrainWaits
                 && reasons.get("Approach (eastbound)") != null,
                 "precondition: Approach is not reachable by one copy and refused by the other: " + reasons);
 
-            AutoLocomotiveStatus card = card(mover);
+            // The card is built once its search lands; read before then, there is no card to ask
+            AutoLocomotiveStatus card = refreshedUntil(mover, I18n.t("autolayout.ui.doubleClickExecute"));
 
             String window = (String) said(card, "whyNotReport");
             String tooltip = (String) said(card, "whyNotToolTip");

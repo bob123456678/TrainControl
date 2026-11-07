@@ -689,6 +689,7 @@
         <test-one-class class="testRightClickMenuTipsCanBeHidden"/>
         <test-one-class class="testTheHandBuiltWindowsWearTheStandard"/>
         <test-one-class class="testTheAutonomyEditorWearsTheStandard"/>
+        <test-one-class class="testARestartLeavesTheRunsDataAsItFoundIt"/>
     </target>
     <target name="package-for-store" depends="jar">
         <property name="store.jar.name" value="TrainControl"/>

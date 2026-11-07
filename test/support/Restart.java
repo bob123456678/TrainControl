@@ -1,9 +1,13 @@
 package support;
 
 import java.io.File;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import javax.swing.SwingUtilities;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;
+import org.traincontrol.util.Util;
 
 /**
  * The program started with its window on a throwaway copy of a railway, closed as the window's close box closes it, and
@@ -13,6 +17,9 @@ import org.traincontrol.marklin.MarklinControlStation;
  * here, before the first model, so the program never reads the operator's own railway (OB-111), and closed by
  * `close()`.  Every window this starts is the model's own (`getGUI`), so a class using it builds no `TrainControlUI`
  * itself.
+ *
+ * `close()` puts the saved data files back as `open` found them: the classes after this one in a battery lane read the
+ * same data folder, and an armed route left there makes their Start ask a question nobody answers.
  *
  *     restart = support.Restart.open(support.Scenario.folderFor("live-snapshot"));
  *     MarklinControlStation first = restart.getModel();
@@ -28,13 +35,26 @@ public final class Restart
     /** How long the window is given to load the setup's active configuration. */
     private static final long LOAD_MS = 30000;
 
+    /** The data files a restart saves; see `Util.dataPath`. */
+    private static final String[] SAVED = {MarklinControlStation.DATA_FILE_NAME, TrainControlUI.DATA_FILE_NAME};
+
     private final LayoutSandbox sandbox;
+
+    /** Each saved file's bytes before the first start, null where there was none. */
+    private final byte[][] savedBefore = new byte[SAVED.length][];
 
     private MarklinControlStation model;
 
-    private Restart(LayoutSandbox sandbox)
+    private Restart(LayoutSandbox sandbox) throws java.io.IOException
     {
         this.sandbox = sandbox;
+
+        for (int i = 0; i < SAVED.length; i++)
+        {
+            Path file = Paths.get(Util.dataPath(SAVED[i]));
+
+            savedBefore[i] = Files.exists(file) ? Files.readAllBytes(file) : null;
+        }
     }
 
     /**
@@ -104,7 +124,7 @@ public final class Restart
         return model;
     }
 
-    /** Throws the window away without saving anything, and puts the layout preference back. */
+    /** Throws the window away without saving anything, and puts the saved data files and the layout preference back. */
     public void close() throws Exception
     {
         try
@@ -115,7 +135,26 @@ public final class Restart
         }
         finally
         {
-            sandbox.close();
+            try
+            {
+                putBack();
+            }
+            finally
+            {
+                sandbox.close();
+            }
+        }
+    }
+
+    /** Writes each saved file back as `open` found it, or deletes it where there was none. */
+    private void putBack() throws java.io.IOException
+    {
+        for (int i = 0; i < SAVED.length; i++)
+        {
+            Path file = Paths.get(Util.dataPath(SAVED[i]));
+
+            if (savedBefore[i] == null) Files.deleteIfExists(file);
+            else Files.write(file, savedBefore[i]);
         }
     }
 
