@@ -5,7 +5,6 @@ import java.awt.BasicStroke;
 import java.awt.BorderLayout;
 import java.awt.Component;
 import java.awt.FlowLayout;
-import java.awt.Font;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.RenderingHints;
@@ -27,6 +26,7 @@ import javax.swing.Icon;
 import javax.swing.SwingConstants;
 import javax.swing.UIManager;
 import org.traincontrol.gui.TrainControlUI;
+import org.traincontrol.gui.widgets.UiStyle;
 import org.traincontrol.model.ViewListener;
 import org.traincontrol.util.I18n;
 
@@ -118,11 +118,11 @@ public class UsageChart extends JFrame
 
         chart.setName("usageChart.panel");
         summary.setName("usageChart.summary");
-        summary.setFont(summary.getFont().deriveFont(Font.BOLD));
+        UiStyle.style(summary);
         firstDay.setName("usageChart.firstDay");
         lastDay.setName("usageChart.lastDay");
-        firstDay.setFont(firstDay.getFont().deriveFont(Font.BOLD));
-        lastDay.setFont(lastDay.getFont().deriveFont(Font.BOLD));
+        UiStyle.style(firstDay);
+        UiStyle.style(lastDay);
 
         SegmentedControl ranges = new SegmentedControl();
 
@@ -192,7 +192,7 @@ public class UsageChart extends JFrame
 
     private static JButton pagingButton(String textKey, String name)
     {
-        JButton b = new JButton(I18n.t(textKey));
+        JButton b = UiStyle.button(new JButton(I18n.t(textKey)));
 
         b.setName(name);
         b.setFocusable(false);
