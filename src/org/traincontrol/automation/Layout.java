@@ -552,6 +552,9 @@ public class Layout
     /** Why a train cannot start, and why a station is not offered or reached. */
     private final LayoutExplanations layoutExplanations = new LayoutExplanations(this);
 
+    /** What the square's copies allow, for Station Settings. */
+    private final LayoutStandingRules layoutStandingRules = new LayoutStandingRules(this, layoutExplanations);
+
     /** Where each standing train's body lies: the tail walks behind the covered track and places. */
     private final StandingTrains standingTrains = new StandingTrains(this);
 
@@ -4589,6 +4592,31 @@ public class Layout
     synchronized public boolean isOfferableToOperator(Point end, Locomotive loc)
     {
         return whyNotOfferedToOperator(end, loc) == null;
+    }
+
+    /**
+     * What a square's standing rules let a train do (FR-111), from its copies on this railway, whoever stands where.
+     * Synchronized on this Layout, so never on the event thread (OB-192).
+     *
+     * @param copies the names of the square's Points, as `StationIndex.pointNamesAt` gives them
+     * @return the answers, or null when none of those names is on this railway
+     */
+    synchronized public StandingRules standingRulesAt(java.util.Collection<String> copies)
+    {
+        List<Point> found = new ArrayList<>();
+
+        for (String name : copies)
+        {
+            if (this.getPoint(name) != null) found.add(this.getPoint(name));
+        }
+
+        return found.isEmpty() ? null : layoutStandingRules.at(found);
+    }
+
+    /** The standing bar on this square, for no train in particular, or null. */
+    String whyBarredFromAutonomy(Point end)
+    {
+        return barredFromAutonomy(end, null);
     }
 
     /** Why the right-click menu leaves this station out for this train, or null; Why Not Moving? asks the same. */

@@ -543,6 +543,50 @@ public class testATrainMustStopAndCannotPassThrough
     }
 
     /**
+     * A train that cannot change direction may be sent home to a square every train must turn at: it goes in nose first, to
+     * be backed out by hand (`checkHomeNeedsReversible`), and the trip runs to its end on the railway.
+     *
+     * MUTATION: have `HomeStaging.canBeHome` refuse a must-turn square to a train that cannot reverse, and no plan exists.
+     */
+    @Test
+    public void testATrainThatCannotReverseComesHomeToAMustTurnSquare() throws Exception
+    {
+        TileKey home = new TileKey(pages.get(0).getName(), 7, 3);
+
+        session.setPointProperty(home, "home", train.getName());
+        session.setPointProperty(home, org.traincontrol.automationui.AutonomyBuilder.MUST_REVERSE, Boolean.TRUE);
+
+        boolean wasReversible = train.isReversible();
+
+        train.setReversible(false);
+
+        try
+        {
+            Layout railway = trainAtWestEnd(build());
+
+            HomeStaging.Plan plan = railway.loadReturnToHomeTimetable();
+
+            assertTrue(plan.isPossible(), "no plan home to a must-turn square for a train that cannot reverse: " + plan.getOutcome());
+
+            assertTrue(railway.executeTimetable(), "the plan was refused on the way: " + railway.whyTheTimetableStopped());
+
+            waitFor(() -> !railway.isRunning(), 60000, "the plan did not finish");
+
+            Point there = railway.getLocomotiveLocation(train);
+
+            assertNotNull(there, "the train is nowhere after Return Home");
+
+            assertTrue(there.getName().startsWith("MainPlatform"), "the train did not get home: " + there.getName());
+
+            assertTrue(there.isTerminus(), "the train stands on a copy that does not turn it: " + there.getName());
+        }
+        finally
+        {
+            train.setReversible(wasReversible);
+        }
+    }
+
+    /**
      * Return Home does run through it, to the end, and the exemption goes when the trip does: the same train sent by hand
      * through the same station afterwards is refused.
      *
