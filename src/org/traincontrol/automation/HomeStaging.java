@@ -50,28 +50,29 @@ public final class HomeStaging
 
     /**
      * How heavily the second half of the search weighs the moves still needed against the moves made (OB-230).  At 1
-     * the search finds the shortest plan but runs out of time on a crowded railway; weighted, it may return a plan
+     * the search finds the shortest plan but runs out of budget on a crowded railway; weighted, it may return a plan
      * longer than the shortest, by at most this factor.  5 solves `core.testReturnHomeFindsAPlanOnAFullRailway`.
      */
     private static final int ANY_PLAN_WEIGHT = 5;
 
     /**
-     * Wall clock, because a state count cannot bound the time this takes.
-     *
-     * An arrangement with no solution must say NO_PLAN_FOUND ("may still be possible") within this budget, not freeze.
-     *
-     * One budget for the whole search, shared out between the shortest-plan and any-plan passes (OB-230).
+     * Route work one plan may spend (`spent`), shared out between the passes (OB-230).  Work, not time, so a plan is
+     * the same on any machine at any load (OB-413): about 15 s on the owner's machine, at 0.1 to 0.3 us a unit.  An
+     * arrangement with no solution says NO_PLAN_FOUND within it.
      */
-    private static final long SEARCH_BUDGET_MS = 15000;
+    private static final long SEARCH_BUDGET = 90000000L;
 
-    /** When the search in progress started - set once per `search`, so every `astar` it runs is timed from it. */
-    private long searchStarted;
+    /** The budget this planner uses; a field so a test can shrink it. */
+    private long budget = SEARCH_BUDGET;
 
-    /**
-     * Where the search reads the time.  A field so a test can step it instead of spending fifteen seconds a run
-     * (`core.testReturnHomeKeepsClearOfTheTailsItLeaves` sets it).
-     */
-    private java.util.function.LongSupplier clock = System::currentTimeMillis;
+    /** Route work spent by the search in progress, counted in `firstClearRoute`: routes, edges tried and checked. */
+    private long spent;
+
+    /** Whether a pass stopped at its share of the budget or at SEARCH_LIMIT with arrangements still open. */
+    private boolean ranOut;
+
+    /** The trains with a length, whose tails each edge a route tries is asked about: part of what an edge costs. */
+    private final int tailed;
 
     /** Expansions allowed per route search.  A point can be revisited under different accessory settings. */
     private static final int ROUTE_SEARCH_LIMIT = 20000;
@@ -157,6 +158,15 @@ public final class HomeStaging
         this.stations = stations;
         this.sensorsSet = sensorsSet;
         this.pointsBySensor = pointsBySensor;
+
+        int withALength = 0;
+
+        for (Locomotive l : new LinkedHashSet<>(start.values()))
+        {
+            if (l.getTrainLength() != null && l.getTrainLength() > 0) withALength++;
+        }
+
+        this.tailed = withALength;
 
     }
 
@@ -370,13 +380,33 @@ public final class HomeStaging
             this(outcome, moves, blocked, Collections.<Locomotive, List<String>>emptyMap());
         }
 
+        /** Whether the search used up its budget before trying every arrangement it could reach (OB-413). */
+        private final boolean ranOut;
+
         Plan(Outcome outcome, List<Move> moves, List<Locomotive> blocked,
             Map<Locomotive, List<String>> reasons)
+        {
+            this(outcome, moves, blocked, reasons, false);
+        }
+
+        Plan(Outcome outcome, List<Move> moves, List<Locomotive> blocked,
+            Map<Locomotive, List<String>> reasons, boolean ranOut)
         {
             this.outcome = outcome;
             this.moves = moves;
             this.blocked = blocked;
             this.reasons = reasons;
+            this.ranOut = ranOut;
+        }
+
+        /**
+         * Whether the search stopped at its limit with arrangements left untried (OB-413), so a shorter plan, or one
+         * where none was found, may exist.
+         * @return true when the budget, not the railway, ended the search
+         */
+        public boolean ranOutOfSearch()
+        {
+            return this.ranOut;
         }
 
         /**
@@ -548,10 +578,10 @@ public final class HomeStaging
 
         if (moves == null)
         {
-            return new Plan(Outcome.NO_PLAN_FOUND, empty(), noLocs(), whatCanBeSeen());
+            return new Plan(Outcome.NO_PLAN_FOUND, empty(), noLocs(), whatCanBeSeen(), this.ranOut);
         }
 
-        return new Plan(Outcome.READY, moves, noLocs());
+        return new Plan(Outcome.READY, moves, noLocs(), Collections.<Locomotive, List<String>>emptyMap(), this.ranOut);
     }
 
     /**
@@ -681,13 +711,65 @@ public final class HomeStaging
     private List<Move> search()
     {
         Map<Point, Locomotive> state = new LinkedHashMap<>(this.start);
+
+        // ONE BUDGET, for every search this runs, shared out below.
+        this.spent = 0;
+        this.ranOut = false;
+
+        List<Move> plan = greedy(state);
+
+        if (misplaced(state) == 0) return plan;
+
+        Map<Locomotive, List<Edge>> greedyRoutes = new java.util.HashMap<>(this.movedAlong);
+
+        // A SHARE OF THE BUDGET EACH (OB-230): the shortest plan from the railway as it stands, the shortest from where
+        // the greedy pass stopped, then any plan.  Thirds when the greedy pass moved something; halves when it moved
+        // nothing, because then the first two would search from the same arrangement.
+        boolean retry = !plan.isEmpty();
+
+        long share = this.budget / (retry ? 3 : 2);
+
+        // From the railway as it stands first (OB-413): when it finishes it is the shortest plan there is, and it
+        // costs a fraction of the search from the greedy pass's arrangement, whose greedy moves can make the plan
+        // longer.
+        this.greedyMovedAlong = new java.util.HashMap<>();
+
+        List<Move> fromTheStart = astar(new LinkedHashMap<>(this.start), share, 1);
+
+        if (fromTheStart != null) return fromTheStart;
+
+        // Then from where the greedy pass left things, inheriting the routes that pass gave (OB-228).
+        if (retry)
+        {
+            this.greedyMovedAlong = greedyRoutes;
+
+            List<Move> rest = astar(state, 2 * share, 1);
+
+            this.greedyMovedAlong = new java.util.HashMap<>();
+
+            if (rest != null)
+            {
+                plan.addAll(rest);
+
+                return plan;
+            }
+        }
+
+        // And then for ANY plan, not the shortest (OB-230): on a crowded railway the shortest-plan search runs out of
+        // room while the weighted one finds a longer plan.
+        return astar(new LinkedHashMap<>(this.start), this.budget, ANY_PLAN_WEIGHT);
+    }
+
+    /**
+     * Sends home, again and again, every train whose home is free and reachable as things stand; leaves `state` and
+     * `movedAlong` where it stopped.
+     */
+    private List<Move> greedy(Map<Point, Locomotive> state)
+    {
         List<Move> plan = new ArrayList<>();
 
         // Nothing has moved yet (OB-228).
         this.movedAlong = new java.util.HashMap<>();
-
-        // ONE BUDGET, for every search this runs, shared out below.
-        this.searchStarted = this.clock.getAsLong();
 
         boolean progress = true;
 
@@ -717,51 +799,16 @@ public final class HomeStaging
             }
         }
 
-        if (misplaced(state) == 0) return plan;
-
-        // A* starts from the greedy pass's arrangement, so it inherits the routes that pass gave (OB-228).
-        this.greedyMovedAlong = new java.util.HashMap<>(this.movedAlong);
-
-        // A SHARE OF THE BUDGET EACH (OB-230): the shortest plan from where the greedy pass stopped, the shortest
-        // from the railway as it stands, then any plan.  Thirds when the greedy pass moved something; halves when it
-        // moved nothing, because then the first two would search from the same arrangement.
-        boolean retry = !plan.isEmpty();
-
-        long share = SEARCH_BUDGET_MS / (retry ? 3 : 2);
-
-        List<Move> rest = astar(state, this.searchStarted + share, 1);
-
-        if (rest != null)
-        {
-            plan.addAll(rest);
-
-            return plan;
-        }
-
-        // Not only from where the greedy pass left things (OB-228): a move it makes can block the rest (a train parked
-        // on a platform with no way out, its tail across the run another train needs), which no search from there can
-        // undo.  So when nothing is found, search again from the railway as it stands.
-        this.greedyMovedAlong = new java.util.HashMap<>();
-
-        if (retry)
-        {
-            List<Move> fromTheStart = astar(new LinkedHashMap<>(this.start), this.searchStarted + 2 * share, 1);
-
-            if (fromTheStart != null) return fromTheStart;
-        }
-
-        // And then for ANY plan, not the shortest (OB-230): on a crowded railway the shortest-plan search runs out of
-        // time while the weighted one finds a longer plan.  Not in place of the retry above: on the railway that retry
-        // exists for, the weighted search finds nothing in its time.
-        return astar(new LinkedHashMap<>(this.start), this.searchStarted + SEARCH_BUDGET_MS, ANY_PLAN_WEIGHT);
+        return plan;
     }
 
     /**
-     * A* over configurations, with `movesStillNeeded` as the heuristic, weighted by `weight`.
+     * A* over configurations, with `movesStillNeeded` as the heuristic, weighted by `weight`, until `spent` reaches
+     * `until`.
      *
      * Admissible: the estimate counts only moves that cannot be avoided (OB-230).
      */
-    private List<Move> astar(Map<Point, Locomotive> from, long deadline, int weight)
+    private List<Move> astar(Map<Point, Locomotive> from, long until, int weight)
     {
         Map<String, Map<Point, Locomotive>> states = new HashMap<>();
         Map<String, Integer> cost = new HashMap<>();
@@ -794,10 +841,15 @@ public final class HomeStaging
         Set<String> closed = new HashSet<>();
         int examined = 0;
 
-
-
-        while (!open.isEmpty() && examined < SEARCH_LIMIT && this.clock.getAsLong() < deadline)
+        while (!open.isEmpty())
         {
+            if (examined >= SEARCH_LIMIT || this.spent >= until)
+            {
+                this.ranOut = true;
+
+                break;
+            }
+
             Scored polled = open.poll();
             String currentKey = polled.key;
 
@@ -933,6 +985,8 @@ public final class HomeStaging
     private List<Edge> firstClearRoute(Map<Point, Locomotive> state, Set<String> blocked, Locomotive loc,
         Point from, Point to)
     {
+        this.spent++;
+
         if (from == null || to == null || from.equals(to)) return null;
 
         // Not round a loop back onto the square it stands on (Adam: "These are the same point so we should never do a
@@ -961,7 +1015,7 @@ public final class HomeStaging
 
         // Its own body as it stands here, for the own-tail question below (OB-294): the road this plan moved it along,
         // or what the railway records where it has not.  Walked after the cheap refusals and once per train and road,
-        // since it is asked once per destination inside a search with a time budget.
+        // since it is asked once per destination inside a search with a work budget.
         List<Edge> cameAlong = this.movedAlong.get(loc);
 
         if (cameAlong != null && (cameAlong.isEmpty() || !from.isSamePlaceAs(cameAlong.get(cameAlong.size() - 1).getEnd())))
@@ -1002,6 +1056,8 @@ public final class HomeStaging
             {
                 Point next = e.getEnd();
 
+                this.spent++;
+
                 // The copy rule is NOT applied here ("menu and autonomy only"): `Layout.bfs` refuses a route passing
                 // another copy of the square it starts or ends at, so the menu and autonomy never offer a lap, but
                 // applying it here lost Return Home plans (`core.testTrainsComeHomeToTheirPlatforms`).  The runtime
@@ -1013,6 +1069,8 @@ public final class HomeStaging
                 boolean turned = current.turned || next.isReversing();
 
                 if (!canEnter(next, loc, blocked, state)) continue;
+
+                this.spent += this.tailed * (1 + e.getPlaceIds().size());
 
                 // And not through a square held back by an occupied one (OB-295): `isPathClear` asks FR-001 of every
                 // square a route arrives at, so a plan through one is OB-073's plan.  Asked of the planned state; a
@@ -1039,6 +1097,9 @@ public final class HomeStaging
                 // train in.
                 List<Edge> route = new LinkedList<>(current.route);
                 route.add(e);
+
+                // The copy, and the walk of its own body along it below, are most of what a long route costs.
+                this.spent += route.size() * (ownBody == null || ownBody.isEmpty() ? 1 : 2);
 
                 // And not round a loop into its own tail (OB-294), as `Layout.isPathClear` asks it.  Prefix-closed,
                 // like the room rule below: no extension of a route that meets the tail can clear it, so pruning loses

@@ -159,9 +159,8 @@ public class testReturnHomeKeepsClearOfTheTailsItLeaves
     }
 
     /**
-     * The retry from the start still has time when the first search spends its share (OB-228's second search).  Sixty
-     * sidings keep the first search from running out of arrangements before its time does; the search's clock is
-     * stepped 300 ms a read, so the fifteen-second budget is fifty reads.
+     * The search from the railway as it stands gets its share when the greedy pass boxes itself in (OB-228's second
+     * search): sixty sidings give the search from the greedy pass's arrangement more to look at than its share.
      */
     @Test
     public void testTheRetryFromTheStartHasTimeLeft() throws Exception
@@ -231,24 +230,15 @@ public class testReturnHomeKeepsClearOfTheTailsItLeaves
 
         HomeStaging staging = HomeStaging.snapshot(layout);
 
-        // A clock that moves 300 ms every time the search looks at it.
-        final java.util.concurrent.atomic.AtomicLong now = new java.util.concurrent.atomic.AtomicLong();
-
-        java.lang.reflect.Field clock = HomeStaging.class.getDeclaredField("clock");
-
-        clock.setAccessible(true);
-        clock.set(staging, (java.util.function.LongSupplier) () -> now.addAndGet(300));
-
         HomeStaging.Plan plan = staging.plan();
 
-        // NOT VACUOUS: more than the first search's share was read (a third of the budget since OB-230), so the greedy
-        // pass did not simply succeed and the retry ran.
-        assertTrue(now.get() > 5000, "precondition: the search read the clock for only " + now.get() + " ms, so the greedy"
-            + " pass brought everybody home and neither search ran - this claim is about the second one");
+        // NOT VACUOUS: the greedy pass meets Y first and sends it home, so a plan moving X first came from a search.
+        assertTrue(plan.getMoves().isEmpty() || plan.getMoves().get(0).getLocomotive().equals(trainA),
+            "precondition: the plan starts with " + plan.getMoves() + ", so the greedy pass may have brought everybody"
+            + " home and no search ran - this claim is about the search from the start");
 
-        assertEquals(plan.getOutcome(), HomeStaging.Outcome.READY,
-            "the first search spent the time and the retry from the start - which finds X long, Y, Z - had none left:"
-            + " NO_PLAN_FOUND after " + now.get() + " ms on the search's clock (MFV-B1).  Moves: " + plan.getMoves());
+        assertTrue(plan.isPossible(), "the search from the greedy pass's arrangement spent the budget and the one from"
+            + " the start - which finds X long, Y, Z - had none left: " + plan.getOutcome() + ".");
 
         List<String> run = replay(layout, plan);
 

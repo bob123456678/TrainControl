@@ -38,12 +38,14 @@ Part of the behavior reference: [`../behaviour.md`](../behaviour.md) is the inde
   **So two homes that hold each other back are a deadlock**, and Return Home answers `NO_PLAN_FOUND`, not `IMPOSSIBLE`.
   See §1.
 - It never asks the operator anything: the decision was made when the homes were set.
-- **The shortest plan where it can be had, and some plan where it cannot** (OB-230). The fifteen-second budget is
-  shared: a third looks for the plan with the fewest moves from where the quick first pass left the trains, a third for
-  the fewest from where they stand (the retry for a first pass that boxed itself in), and if both find nothing, the last
-  third looks for any plan, weighing the moves still needed five times the moves made (halves, fewest then any, when the
-  first pass moved nobody). On Adam's measured layout, six trains each with a way home need the second kind of search.
-  `core.testReturnHomeFindsAPlanOnAFullRailway`.
+- **The shortest plan where it can be had, and some plan where it cannot** (OB-230). The budget is shared: a third
+  looks for the plan with the fewest moves from where the trains stand, a third for the fewest from where the quick first
+  pass left them, and if both find nothing, the last third looks for any plan, weighing the moves still needed five times
+  the moves made (halves, fewest then any, when the first pass moved nobody). On Adam's measured layout, six trains each
+  with a way home need the second kind of search. `core.testReturnHomeFindsAPlanOnAFullRailway`.
+- **The same setup gets the same plan every time** (OB-413): the budget counts route work, not time, so a slow or busy
+  machine takes longer but finds what a fast one finds, about 15 s at most on Adam's machine. When the budget runs out
+  the log says a shorter plan, or one where none was found, may exist. `core.testReturnHomeIsTheSameEveryTime`.
 - **A train that cannot reverse is turned on the way only to go home** (Adam: *"this should
   only be allowed if the train is going to reverse into its berth on the next turn"*). Every leg ends with the train
   turned if it stops at a terminus or a reversing point, so a plan may stop such a train on one only when its next move

@@ -37,7 +37,8 @@ import org.traincontrol.marklin.MarklinControlStation;
  * between stations for the locomotives sampled, whether it is clear and why not), `offers.txt` (each tier's answer),
  * `runs.txt` (simulated trips picked by a fixed seed), `homes.txt` (Return Home, as set and for homes chosen by the seed:
  * the outcome, the parity audit, and where each train ended with its direction), `home-plans.txt` (those plans' moves,
- * apart because the planner's wall clock picks among plans, so one setup gives different moves run to run in one build),
+ * apart because a planner from before OB-413, 3.0.8's included, picks among plans by its wall clock; line one says
+ * which kind of planner wrote it),
  * `timetables.txt` (the stored timetable and one recorded from the railway's offers, run to the end),
  * `railway.json` (the running layout's own file), and `saved-unchanged/` and `saved-captured/` (the setup's files after
  * a save with no change, and after the exit's capture and save).  `input/` is the files as they came.
@@ -435,6 +436,20 @@ public final class SetupDump
         counts.put("recorded timetables that ran to the end", finished);
     }
 
+    /** The first line of `home-plans.txt`, read by `docs/tools/old-setups.py` to know whether moves can be compared. */
+    public static final String PLANNER = "planner budget: ";
+
+    /** Whether this build's Return Home planner has a wall clock budget, as every build before OB-413 does. */
+    private static boolean plannerReadsAClock()
+    {
+        for (java.lang.reflect.Field field : HomeStaging.class.getDeclaredFields())
+        {
+            if (field.getName().equals("clock")) return true;
+        }
+
+        return false;
+    }
+
     /** Return Home as the setup has it, then for homes the seed chooses among where each train can be sent. */
     private static void writeHomes(MarklinControlStation model, String text, List<Locomotive> sampled, File to,
         Map<String, Integer> counts) throws Exception
@@ -444,6 +459,8 @@ public final class SetupDump
 
         try (PrintWriter lines = writer(to); PrintWriter plans = writer(new File(to.getParentFile(), "home-plans.txt")))
         {
+            plans.println(PLANNER + (plannerReadsAClock() ? "wall clock" : "route work"));
+
             for (int round = 0; round < 4; round++)
             {
                 Layout railway = fresh(model, text);
