@@ -2,6 +2,7 @@ package org.traincontrol.gui.autonomyeditor;
 
 import java.awt.BorderLayout;
 import java.awt.Color;
+import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Font;
 import java.awt.GridBagConstraints;
@@ -43,7 +44,21 @@ abstract class StationWindowBase extends JDialog
     /** What holds the setup now, in words, or null. */
     private String held;
 
-    private final JLabel strip = new JLabel();
+    /** The width the reason at the top wraps at, for a window that keeps its width; 0 leaves it on one line. */
+    int stripWrapsAt;
+
+    private final JLabel strip = new JLabel()
+    {
+        @Override
+        public Dimension getPreferredSize()
+        {
+            Dimension asked = super.getPreferredSize();
+
+            if (stripWrapsAt > 0) asked.width = 1;
+
+            return asked;
+        }
+    };
 
     /** Asks again every second: a run starting or stopping raises no single event. */
     private final javax.swing.Timer watch = new javax.swing.Timer(1000, e -> watched());
@@ -216,7 +231,7 @@ abstract class StationWindowBase extends JDialog
         else if (editor.menuOnly && main.isLayoutEditorOpen()) held = I18n.t("autosetup.ui.menuEditorOpen");
         else held = main.aRunHoldsTheSetup() ? I18n.t(RunGates.NO_EDITS_WHILE_RUNNING) : null;
 
-        strip.setText(held == null ? "" : held);
+        strip.setText(held == null ? "" : AutonomyEditorPanel.wrappedAt(held, stripWrapsAt));
 
         if (strip.isVisible() != (held != null))
         {
@@ -329,6 +344,56 @@ abstract class StationWindowBase extends JDialog
         c.gridwidth = columnsUsed;
 
         form.add(control, c);
+    }
+
+    /** A label that takes the room its row has and never asks for more: its text is cut off or already wrapped. */
+    static final class RoomyLabel extends JLabel
+    {
+        @Override
+        public Dimension getPreferredSize()
+        {
+            return noWidth(super.getPreferredSize());
+        }
+
+        @Override
+        public Dimension getMinimumSize()
+        {
+            return noWidth(super.getMinimumSize());
+        }
+    }
+
+    /** The same for a panel of answers that vary. */
+    static final class RoomyPanel extends JPanel
+    {
+        RoomyPanel(java.awt.LayoutManager layout)
+        {
+            super(layout);
+        }
+
+        @Override
+        public Dimension getPreferredSize()
+        {
+            return noWidth(super.getPreferredSize());
+        }
+
+        @Override
+        public Dimension getMinimumSize()
+        {
+            return noWidth(super.getMinimumSize());
+        }
+    }
+
+    /** The width to give `wrappedAt` to fill this room: Swing's HTML counts its pixel as 1.3 of ours. */
+    static int wrapWithin(int room)
+    {
+        return room * 3 / 4;
+    }
+
+    static Dimension noWidth(Dimension asked)
+    {
+        asked.width = 1;
+
+        return asked;
     }
 
     /** Names a control and gives it its font. */

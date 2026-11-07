@@ -2,10 +2,12 @@ package org.traincontrol.gui.autonomyeditor;
 
 import java.awt.BorderLayout;
 import java.awt.Color;
+import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Font;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
+import java.awt.GridLayout;
 import java.awt.Insets;
 import java.awt.Window;
 import java.awt.event.ActionListener;
@@ -65,18 +67,32 @@ public final class StationSettingsWindow extends StationWindowBase
 
     private final Map<StationPreset, JToggleButton> presets = new EnumMap<>(StationPreset.class);
 
-    private final JLabel closedLine = new JLabel(AutonomyEditorPanel.wrappedAt(I18n.t("autosetup.ui.stationNothingCanPass"), 380));
+    private final JLabel closedLine = new RoomyLabel();
 
     private final JCheckBox stops = sectionBox("station.stops", "autosetup.ui.stationSectionStop");
     private final JCheckBox fullAutonomy = box("station.fullAutonomy", "autosetup.ui.stationMayChoose");
     private final JTextField maxLength = field("station.maxLength", 5);
-    private final JPanel arrivals = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+    private final JPanel arrivals = new RoomyPanel(new GridLayout(0, 2));
     private final JLabel exitGuard = value("station.exitGuard");
     private final JLabel entryGuard = value("station.entryGuard");
-    private final JComboBox<String> home = new JComboBox<>();
+
+    private final JComboBox<String> home = new JComboBox<String>()
+    {
+        @Override
+        public Dimension getPreferredSize()
+        {
+            return noWidth(super.getPreferredSize());
+        }
+
+        @Override
+        public Dimension getMinimumSize()
+        {
+            return noWidth(super.getMinimumSize());
+        }
+    };
 
     private final JCheckBox runsThrough = sectionBox("station.runsThrough", "autosetup.ui.stationSectionThrough");
-    private final JPanel depart = new JPanel(new GridBagLayout());
+    private final JPanel depart = new RoomyPanel(new GridBagLayout());
     private final JRadioButton turnNever = radio("station.turnNever", "autosetup.ui.stationTurnNever");
     private final JRadioButton turnMay = radio("station.turnMay", "autosetup.ui.stationTurnMay");
     private final JRadioButton turnMust = radio("station.turnMust", "autosetup.ui.stationTurnMust");
@@ -100,6 +116,11 @@ public final class StationSettingsWindow extends StationWindowBase
 
     private final StationMatrixPanel matrix = new StationMatrixPanel();
 
+    private final StationPicture picture = new StationPicture();
+
+    /** How wide what is under a control, and a line across the whole form, may be. */
+    private int controlWidth;
+
     /** Numbers each matrix question, so only the latest paints; a change of mind on a worker is dropped. */
     private final AtomicLong matrixAsked = new AtomicLong();
     private volatile long matrixPainted;
@@ -112,7 +133,7 @@ public final class StationSettingsWindow extends StationWindowBase
 
         buildForm();
 
-        matrix.setLineWidth(300);
+        lockTheWidth();
 
         JPanel columns = new JPanel(new BorderLayout(14, 0));
 
@@ -122,15 +143,59 @@ public final class StationSettingsWindow extends StationWindowBase
 
         columns.add(left, BorderLayout.CENTER);
 
-        JPanel right = new JPanel(new BorderLayout());
+        JPanel right = new JPanel(new BorderLayout(0, 12));
 
         right.add(matrix, BorderLayout.NORTH);
+        right.add(picture, BorderLayout.CENTER);
 
-        columns.add(right, BorderLayout.EAST);
+        JPanel rightTop = new JPanel(new BorderLayout());
+
+        rightTop.add(right, BorderLayout.NORTH);
+
+        columns.add(rightTop, BorderLayout.EAST);
 
         assemble(columns);
 
+        stripWrapsAt = wrapWithin(form.getPreferredSize().width + 14 + matrix.getPreferredSize().width + 2 * PAD - 24);
+
         showAdvanced(false);
+    }
+
+    /**
+     * Sizes the form once, for its widest state in this language and scale: Advanced open.  Whatever varies after this is
+     * built to take the room it is given (`RoomyLabel`), so no edit moves the window's width.
+     */
+    private void lockTheWidth()
+    {
+        for (JComponent part : advancedRows) part.setVisible(true);
+
+        form.setSize(form.getPreferredSize());
+        form.doLayout();
+
+        GridBagLayout layout = (GridBagLayout) form.getLayout();
+
+        int[] columns = layout.getLayoutDimensions()[0];
+
+        layout.columnWidths = columns;
+
+        controlWidth = columns[2] + columns[3];
+
+        int whole = 0;
+
+        for (int each : columns) whole += each;
+
+        closedLine.setText(AutonomyEditorPanel.wrappedAt(I18n.t("autosetup.ui.stationNothingCanPass"), wrapWithin(whole - 8)));
+    }
+
+    /** Keeps the width the window has while it is open, whatever it is asked to fit; only the height follows. */
+    @Override
+    public void pack()
+    {
+        int kept = isVisible() ? getWidth() : 0;
+
+        super.pack();
+
+        if (kept > 0) setSize(kept, getHeight());
     }
 
     // ------------------------------------------------------------------------------------------- building the form
@@ -313,6 +378,7 @@ public final class StationSettingsWindow extends StationWindowBase
         GridBagConstraints c = at(2, row++);
 
         c.gridwidth = 2;
+        c.fill = GridBagConstraints.HORIZONTAL;
         c.insets = new Insets(0, 0, 3, 0);
 
         form.add(problem, c);
@@ -371,13 +437,14 @@ public final class StationSettingsWindow extends StationWindowBase
         GridBagConstraints c = at(0, row++);
 
         c.gridwidth = 4;
+        c.fill = GridBagConstraints.HORIZONTAL;
 
         form.add(part, c);
     }
 
     private static JLabel problemLine(String partName)
     {
-        JLabel out = new JLabel();
+        JLabel out = new RoomyLabel();
 
         out.setName(partName);
         out.setForeground(new Color(170, 0, 0));
@@ -393,7 +460,7 @@ public final class StationSettingsWindow extends StationWindowBase
 
     private static JLabel value(String partName)
     {
-        return styled(new JLabel(), partName, REGULAR);
+        return styled(new RoomyLabel(), partName, REGULAR);
     }
 
     private static JCheckBox box(String partName, String key)
@@ -494,7 +561,7 @@ public final class StationSettingsWindow extends StationWindowBase
 
         if (line != null)
         {
-            line.setText(why == null ? "" : AutonomyEditorPanel.wrappedAt(why, 320));
+            line.setText(why == null ? "" : AutonomyEditorPanel.wrappedAt(why, wrapWithin(controlWidth - 8)));
             line.setVisible(why != null);
         }
 
@@ -616,6 +683,8 @@ public final class StationSettingsWindow extends StationWindowBase
 
         // A field grayed by a section still shows its value
         whichChoose.setEnabled(!readOnly && which != WhichTrains.ALL);
+
+        picture.show(session, tile, editor.parentWindow());
 
         askTheRailway();
     }
@@ -909,7 +978,7 @@ public final class StationSettingsWindow extends StationWindowBase
 
                     matrixPainted = asked;
 
-                    if (getPreferredSize().height > getHeight() || getPreferredSize().width > getWidth()) pack();
+                    if (getPreferredSize().height > getHeight()) pack();
                 });
             }
         });
@@ -949,6 +1018,12 @@ public final class StationSettingsWindow extends StationWindowBase
     public boolean matrixIsCurrent()
     {
         return matrixPainted == matrixAsked.get();
+    }
+
+    /** @return what the picture of the station wears */
+    public org.traincontrol.automationui.TileAnnotation pictureForTest()
+    {
+        return picture.drawnForTest();
     }
 
     /** @return the square the window is about */

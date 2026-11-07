@@ -22,6 +22,7 @@ import org.traincontrol.automation.StandingRules;
 import org.traincontrol.automation.StandingRules.Answer;
 import org.traincontrol.automation.StandingRules.Cell;
 import org.traincontrol.automation.StandingRules.Row;
+import org.traincontrol.automationui.TilePorts;
 import org.traincontrol.gui.InfoMark;
 import org.traincontrol.gui.widgets.RowIcons;
 import org.traincontrol.gui.widgets.UiStyle;
@@ -44,8 +45,8 @@ final class StationMatrixPanel extends JPanel
     /** A cell as drawn, for a test to compare with the real doors: row, tier and answer per side. */
     private final Map<String, Map<String, Answer>> drawn = new java.util.LinkedHashMap<>();
 
-    /** The width the two lines under the table wrap at. */
-    private int lineWidth;
+    /** The width the two lines under the table wrap at, and the panel's. */
+    private final int lineWidth;
 
     StationMatrixPanel()
     {
@@ -90,12 +91,77 @@ final class StationMatrixPanel extends JPanel
         below.add(lines, BorderLayout.CENTER);
 
         add(below, BorderLayout.CENTER);
+
+        lineWidth = lockTheColumns();
     }
 
-    /** Words that wrap, at a width that holds a long language's table. */
-    void setLineWidth(int width)
+    /**
+     * Sizes the table once, for the longest thing each column can say in this language and scale, so an answer changing
+     * moves nothing.
+     *
+     * @return the table's width
+     */
+    private int lockTheColumns()
     {
-        this.lineWidth = width;
+        Insets gap = cellGap();
+
+        int first = UiStyle.blackLabel(I18n.t("autosetup.ui.stationMatrixTrainsCanBe")).getPreferredSize().width;
+
+        for (String key : new String[] {"autosetup.ui.stationRowSentHere", "autosetup.ui.stationRowSentThrough",
+            "autosetup.ui.stationRowSentFrom", "autosetup.ui.stationRowTurned"})
+        {
+            first = Math.max(first, UiStyle.blackLabel(I18n.t(key)).getPreferredSize().width);
+        }
+
+        int answers = 0;
+
+        for (Answer each : Answer.values()) answers = Math.max(answers, line(each, verdict(each)).getPreferredSize().width);
+
+        for (TilePorts.Side side : TilePorts.Side.values())
+        {
+            for (String key : new String[] {"autosetup.ui.stationSideFrom", "autosetup.ui.stationSideTo"})
+            {
+                answers = Math.max(answers, line(Answer.YES, I18n.f(key, sideName(side.name()))).getPreferredSize().width);
+            }
+        }
+
+        int[] widths =
+        {
+            first + gap.left + gap.right,
+            Math.max(answers, autoHeading().getPreferredSize().width) + gap.left + gap.right,
+            Math.max(answers, handHeading().getPreferredSize().width) + gap.left + gap.right
+        };
+
+        ((GridBagLayout) table.getLayout()).columnWidths = widths;
+
+        return table.getInsets().left + table.getInsets().right + widths[0] + widths[1] + widths[2];
+    }
+
+    private static Insets cellGap()
+    {
+        return new Insets(5, 8, 5, 8);
+    }
+
+    private static JComponent autoHeading()
+    {
+        return withMark(I18n.t("autosetup.ui.stationMatrixAutomatically"), I18n.t("autosetup.ui.stationMatrixAutoHelp"));
+    }
+
+    private static JComponent handHeading()
+    {
+        return withMark(I18n.t("autosetup.ui.stationMatrixManually"), I18n.t("autosetup.ui.stationMatrixManualHelp")
+            + "  " + I18n.t("autosetup.ui.stationMatrixHomeHelp"));
+    }
+
+    /** As wide as the table, whatever the lines under it hold. */
+    @Override
+    public java.awt.Dimension getPreferredSize()
+    {
+        java.awt.Dimension asked = super.getPreferredSize();
+
+        asked.width = lineWidth;
+
+        return asked;
     }
 
     /**
@@ -113,12 +179,11 @@ final class StationMatrixPanel extends JPanel
         c.gridy = 0;
         c.anchor = GridBagConstraints.WEST;
         c.fill = GridBagConstraints.BOTH;
-        c.insets = new Insets(5, 8, 5, 8);
+        c.insets = cellGap();
 
         heading(c, 0, UiStyle.blackLabel(I18n.t("autosetup.ui.stationMatrixTrainsCanBe")));
-        heading(c, 1, withMark(I18n.t("autosetup.ui.stationMatrixAutomatically"), I18n.t("autosetup.ui.stationMatrixAutoHelp")));
-        heading(c, 2, withMark(I18n.t("autosetup.ui.stationMatrixManually"), I18n.t("autosetup.ui.stationMatrixManualHelp")
-            + "  " + I18n.t("autosetup.ui.stationMatrixHomeHelp")));
+        heading(c, 1, autoHeading());
+        heading(c, 2, handHeading());
 
         row(c, Row.SENT_HERE, "autosetup.ui.stationRowSentHere", "autosetup.ui.stationSideFrom", rules, error);
         row(c, Row.SENT_THROUGH, "autosetup.ui.stationRowSentThrough", "autosetup.ui.stationSideFrom", rules, error);
@@ -137,7 +202,7 @@ final class StationMatrixPanel extends JPanel
 
     private String wrapAt(String text)
     {
-        return AutonomyEditorPanel.wrappedAt(text, lineWidth);
+        return AutonomyEditorPanel.wrappedAt(text, StationWindowBase.wrapWithin(lineWidth));
     }
 
     private void heading(GridBagConstraints c, int x, JComponent part)

@@ -1018,7 +1018,7 @@ public class testStationSettingsWindow
     // -------------------------------------------------------------------------------------------------------------- look
 
     /**
-     * Blue is for the four section headings alone (Adam: "it looks very blue"); every other label is black Semibold 13
+     * Blue is for the section headings alone (Adam: "it looks very blue"); every other label is black Semibold 13
      * (docs/UI-standards.md), and a label in an off section still grays.  `UiStyle.label` itself stays blue, for the windows
      * still waiting on his ruling.
      *
@@ -1047,7 +1047,8 @@ public class testStationSettingsWindow
 
         assertEquals(blue, new java.util.TreeSet<>(Arrays.asList(I18n.t("autosetup.ui.stationSectionStop"),
             I18n.t("autosetup.ui.stationSectionThrough"), I18n.t("autosetup.ui.stationSectionAdvanced"),
-            I18n.t("autosetup.ui.stationMatrixHeading"))), "what is blue is not the four section headings");
+            I18n.t("autosetup.ui.stationMatrixHeading"), I18n.t("autosetup.ui.stationPictureHeading"))),
+            "what is blue is not the section headings");
 
         for (String key : new String[] {"autosetup.ui.stationMaxLength", "autosetup.ui.menuAutoDestination",
             "autosetup.ui.stationHome", "autosetup.ui.stationMatrixTrainsCanBe", "autosetup.ui.stationMatrixAutomatically",
@@ -1187,6 +1188,267 @@ public class testStationSettingsWindow
         assertNotNull(found, "the window has no label saying \"" + text + "\"");
 
         return found;
+    }
+
+    /**
+     * The window keeps its width while it is open, whatever is edited (Adam: "we don't want it to get wider as station edits
+     * change"), in English, German and Polish at 100% and 150%, and nothing it holds is cut off by that: the form and the
+     * table still fit, with long text wrapped or shortened.
+     *
+     * MUTATION: drop `lockTheWidth`'s columns, or have `pack` take the width it asks for, and this fails on the edit that
+     * moves it.
+     */
+    @Test(timeOut = 420000)
+    public void testTheWidthNeverChanges() throws Exception
+    {
+        try
+        {
+            for (java.util.Locale locale : new java.util.Locale[] {java.util.Locale.ENGLISH, java.util.Locale.GERMAN,
+                new java.util.Locale("pl")})
+            {
+                for (float zoom : new float[] {1f, 1.5f})
+                {
+                    Components.onTheEventThread(() ->
+                    {
+                        I18n.setLocale(locale);
+
+                        com.formdev.flatlaf.util.UIScale.setZoomFactor(zoom);
+
+                        panel.closeStationWindows();
+
+                        return null;
+                    });
+
+                    frozen.putBack();
+
+                    everyEditKeepsTheWidth(locale + " at " + zoom);
+                }
+            }
+        }
+        finally
+        {
+            Components.onTheEventThread(() ->
+            {
+                I18n.setLocale(java.util.Locale.ENGLISH);
+
+                com.formdev.flatlaf.util.UIScale.setZoomFactor(1f);
+
+                return null;
+            });
+        }
+    }
+
+    private void everyEditKeepsTheWidth(String where) throws Exception
+    {
+        TileKey square = aStation();
+
+        StationSettingsWindow window = StationDoors.open(panel, square);
+
+        StationDoors.current(window);
+
+        int width = Components.onTheEventThread(window::getWidth);
+
+        String[] pressed = {"station.advanced", "station.preset.TERMINUS", "station.preset.PARKING", "station.runsThrough",
+            "station.stops", "station.stops", "station.runsThrough", "station.preset.REVERSING_POINT",
+            "station.preset.STATION"};
+
+        for (String each : pressed)
+        {
+            StationDoors.press(window, each);
+            StationDoors.current(window);
+
+            assertTheWidthHolds(window, width, where + ", " + each);
+        }
+
+        // A refusal under a field, in both fields that can refuse
+        StationDoors.typeAndEnter(window, "station.maxLength", "not a number at all, and long enough to run on and on");
+        assertTheWidthHolds(window, width, where + ", a refused length");
+
+        StationDoors.typeAndEnter(window, "station.maxLength", "4");
+
+        String other = Components.onTheEventThread(() ->
+        {
+            for (TileKey each : session.getStore().getNamedTiles())
+            {
+                if (!each.equals(square)) return session.getStore().getPointName(each);
+            }
+
+            return null;
+        });
+
+        StationDoors.typeAndEnter(window, "station.name", other);
+        assertTheWidthHolds(window, width, where + ", a refused name");
+
+        // A long name, which the title and the field show
+        StationDoors.typeAndEnter(window, "station.name", "A station with a very long name indeed which goes on and on and on");
+        StationDoors.current(window);
+        assertTheWidthHolds(window, width, where + ", a long name");
+
+        // Long lists in every value that shows one, and the sentence under the table
+        Components.onTheEventThread(() ->
+        {
+            List<TileKey> everySignal = new java.util.ArrayList<>();
+            List<TileKey> everyPoint = new java.util.ArrayList<>(session.getStore().getNamedTiles());
+
+            everyPoint.remove(square);
+
+            for (Map.Entry<TileKey, org.traincontrol.base.LayoutDiagramComponent> each : session.getGraph().getTiles().entrySet())
+            {
+                if (each.getValue() != null && each.getValue().isSignal()) everySignal.add(each.getKey());
+            }
+
+            session.setProtectingSignals(square, everySignal);
+            session.setEntrySignals(square, everySignal);
+            session.getStore().setBlockingPoints(square, everyPoint);
+            session.setWhichTrains(square, AutonomySession.WhichTrains.BLACKLIST, Arrays.asList("A train", "Another train"));
+
+            return null;
+        });
+
+        StationDoors.press(window, "station.fullAutonomy");
+        StationDoors.current(window);
+        assertTheWidthHolds(window, width, where + ", long lists");
+
+        // Folded again, and on to another square, which may have other sides
+        StationDoors.press(window, "station.advanced");
+        StationDoors.current(window);
+        assertTheWidthHolds(window, width, where + ", Advanced folded");
+
+        StationDoors.open(panel, aSecondStation(square));
+        StationDoors.current(window);
+        assertTheWidthHolds(window, width, where + ", another square");
+
+        Components.onTheEventThread(() -> { panel.closeStationWindows(); return null; });
+    }
+
+    private static void assertTheWidthHolds(StationSettingsWindow window, int width, String after) throws Exception
+    {
+        Components.settle();
+
+        Components.onTheEventThread(() ->
+        {
+            assertEquals(window.getWidth(), width, "the window changed width after: " + after);
+
+            window.validate();
+
+            for (String each : new String[] {"station.form", "station.matrix"})
+            {
+                javax.swing.JPanel part = StationDoors.part(window, each, javax.swing.JPanel.class);
+
+                assertTrue(part.getWidth() >= part.getPreferredSize().width, each + " is " + part.getWidth() + " wide and"
+                    + " wants " + part.getPreferredSize().width + ", so it is cut off, after: " + after);
+            }
+
+            return null;
+        });
+    }
+
+    /**
+     * The picture wears what the track diagram's own pass puts on this square (with its two arrow options on), through a
+     * plain station, a one-way one, a terminus and a closed one, and it follows each change at once.
+     *
+     * MUTATION: have `fill` skip `picture.show`, and it stands still; have `StationPicture.show` ask `staticAnnotations`
+     * for no allowed directions or `staticAnnotationFor` with no arrivals, and it differs from the diagram; and this fails.
+     */
+    @Test(timeOut = 180000)
+    public void testThePictureWearsWhatTheDiagramDoes() throws Exception
+    {
+        TileKey square = aStation();
+
+        java.util.prefs.Preferences prefs = TrainControlUI.getPrefs();
+
+        String restricted = prefs.get(TrainControlUI.DIAGRAM_RESTRICTION_ARROWS, null);
+        String allowed = prefs.get(TrainControlUI.DIAGRAM_ALLOWED_DIRECTIONS, null);
+
+        try
+        {
+            prefs.putBoolean(TrainControlUI.DIAGRAM_RESTRICTION_ARROWS, true);
+            prefs.putBoolean(TrainControlUI.DIAGRAM_ALLOWED_DIRECTIONS, true);
+
+            org.traincontrol.gui.LayoutLabel onTheDiagram = Components.onTheEventThread(() ->
+            {
+                org.traincontrol.gui.LayoutLabel label = new org.traincontrol.gui.LayoutLabel(
+                    session.getGraph().getTiles().get(square), new javax.swing.JPanel(), 30, ui, false);
+
+                label.setSquare(square);
+
+                ui.getDiagramTileRegistry().register(square, label);
+
+                return label;
+            });
+
+            StationSettingsWindow window = StationDoors.open(panel, square);
+
+            StationDoors.current(window);
+
+            org.traincontrol.automationui.TileAnnotation plain = theSameOnBoth(window, onTheDiagram, "a plain station");
+
+            Components.onTheEventThread(() ->
+            {
+                StationDoors.part(window, "station.depart.0", javax.swing.JComboBox.class).setSelectedIndex(1);
+
+                return null;
+            });
+
+            StationDoors.current(window);
+
+            org.traincontrol.automationui.TileAnnotation oneWay = theSameOnBoth(window, onTheDiagram, "a one-way station");
+
+            assertFalse(oneWay.equals(plain), "a one-way station is drawn as a plain one");
+
+            StationDoors.press(window, "station.preset.TERMINUS");
+            StationDoors.current(window);
+
+            org.traincontrol.automationui.TileAnnotation terminus = theSameOnBoth(window, onTheDiagram, "a terminus");
+
+            assertFalse(terminus.equals(oneWay), "a terminus is drawn as a station");
+
+            StationDoors.press(window, "station.runsThrough");
+            StationDoors.press(window, "station.stops");
+            StationDoors.current(window);
+
+            assertFalse(theSameOnBoth(window, onTheDiagram, "a closed station").equals(terminus), "a closed station is drawn as an"
+                + " open one");
+        }
+        finally
+        {
+            if (restricted == null) prefs.remove(TrainControlUI.DIAGRAM_RESTRICTION_ARROWS);
+            else prefs.put(TrainControlUI.DIAGRAM_RESTRICTION_ARROWS, restricted);
+
+            if (allowed == null) prefs.remove(TrainControlUI.DIAGRAM_ALLOWED_DIRECTIONS);
+            else prefs.put(TrainControlUI.DIAGRAM_ALLOWED_DIRECTIONS, allowed);
+
+            Components.onTheEventThread(() -> { ui.getDiagramTileRegistry().reset(); return null; });
+        }
+    }
+
+    /** The diagram's real pass, and what its square then wears against what the picture wears. */
+    private static org.traincontrol.automationui.TileAnnotation theSameOnBoth(StationSettingsWindow window,
+        org.traincontrol.gui.LayoutLabel onTheDiagram, String what) throws Exception
+    {
+        java.lang.reflect.Field worn = org.traincontrol.gui.LayoutLabel.class.getDeclaredField("autonomyAnnotation");
+
+        worn.setAccessible(true);
+
+        return Components.onTheEventThread(() ->
+        {
+            ui.showStaticAutonomyLayer(true);
+
+            try
+            {
+                Object diagram = worn.get(onTheDiagram);
+
+                assertNotNull(diagram, what + ": the diagram's pass put nothing on the square");
+
+                assertEquals(window.pictureForTest(), diagram, what + ": the picture differs from the diagram");
+            }
+            catch (IllegalAccessException e)
+            {
+                throw new AssertionError(e);
+            }
+
+            return window.pictureForTest();
+        });
     }
 
     /** A component drawn on its parent's background. */
