@@ -26,7 +26,8 @@ import support.SourceOf;
  * The doors a person uses are driven here on a real window, closing the dialogs the refusal and a wrongly open door
  * show.  The third door, the Central Station's name proposal, sits inside a loop over a modal list, so it is read.
  *
- * MUTATION: take the refusal out of either door, and the matching claim fails.
+ * MUTATION: take the refusal out of either door, and the matching claim fails; leave the member list out of
+ * `LocomotiveSettingsFrame.MultiUnitTab` while autonomy runs, and the Central Station list claim fails.
  *
  * @author Adam
  */
@@ -244,6 +245,39 @@ public class testARouteDrivenLocomotiveIsNotEdited
 
             assertNull(said, "a Central Station multi-unit's list, which changes nothing, was refused while a route drives"
                 + " a member (RSA30-C8): " + said);
+
+            // AND WHILE AUTONOMY IS BUSY, when the window opens locked: the list is still shown, ticked and gray, with
+            // the strip saying why.  Staging stands in for a run here, as the model counts it among them.
+            model.getAutoLayout().setStagingInProgress(true);
+
+            try
+            {
+                assertTrue(model.isAutonomyRunning(), "precondition: the model does not read autonomy as busy");
+
+                assertTrue(support.SettingsWindow.open(window, centralStations, LocomotiveSettingsFrame.Tab.MULTI_UNIT, null),
+                    "the window did not open on a Central Station multi-unit while autonomy was busy");
+
+                support.Components.settle();
+
+                javax.swing.JLabel strip = support.SettingsWindow.part("settings.strip", javax.swing.JLabel.class);
+
+                assertTrue(support.Components.onTheEventThread(strip::isVisible), "no strip while autonomy was busy");
+
+                java.util.List<javax.swing.JCheckBox> listed = support.Components.all(
+                    support.SettingsWindow.showing().getContentPane(), javax.swing.JCheckBox.class,
+                    b -> LOC.equals(b.getToolTipText()));
+
+                assertEquals(listed.size(), 1, "a Central Station multi-unit's list was not shown while autonomy was busy");
+                assertTrue(support.Components.onTheEventThread(listed.get(0)::isSelected), "the member is not ticked");
+                assertFalse(support.Components.onTheEventThread(support.SettingsWindow.save()::isEnabled),
+                    "Save is lit on a Central Station multi-unit's read-only list");
+
+                support.SettingsWindow.closeIfOpen();
+            }
+            finally
+            {
+                model.getAutoLayout().setStagingInProgress(false);
+            }
         }
         finally
         {

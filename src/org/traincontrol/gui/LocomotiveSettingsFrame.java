@@ -214,6 +214,13 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
 
         setTitle(I18n.f("loc.ui.settingsTitle", loc.getName()));
 
+        // The strip is up before the window is sized, so a locked window opens with its tabs whole
+        String reason = LocomotiveSettings.stripFor(main, loc);
+
+        if (reason != null) strip.setText(reason);
+
+        strip.setVisible(reason != null);
+
         boolean first = !isVisible();
 
         pack();

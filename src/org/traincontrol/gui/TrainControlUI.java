@@ -511,8 +511,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     volatile LocomotiveSettingsFrame locomotiveSettings;
 
     /**
-     * Opens the Locomotive Settings window on a tab, unless the locomotive cannot be edited (then it says why).  The one door
-     * the menus, the name, the database tile and the function buttons all use.
+     * Opens the Locomotive Settings window on a tab.  A locomotive that cannot be edited now opens locked (the window's
+     * strip says why).  The one door the menus, the name, the database tile and the function buttons all use.
      *
      * @param function the function to show on the Functions tab, or null
      * @return true when the window is open on the locomotive
@@ -522,7 +522,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // Over the window whose door was pressed (OB-324), and the settings window stands as high as that one
         final java.awt.Window asking = dialogParent();
 
-        if (l == null || LocomotiveSettings.refuseIfNotEditable(this, l, asking)) return false;
+        if (l == null) return false;
 
         if (this.locomotiveSettings == null || !this.locomotiveSettings.isDisplayable())
         {
