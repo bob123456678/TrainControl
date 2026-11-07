@@ -423,10 +423,10 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
 
     // ------------------------------------------------------------------------------------------------------------
 
-    /** The first tab's labels are blue; the other tabs' item labels are black. */
+    /** A field's label: black, under a blue section heading. */
     private static JLabel label(String text)
     {
-        return UiStyle.heading(text);
+        return UiStyle.label(text);
     }
 
     /** The first tab: picture, name, decoder, address and preset speed, with the trash can. */
@@ -507,8 +507,8 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
             trash.setContentAreaFilled(false);
             trash.addActionListener(e -> delete());
 
-            // The fields are at the tab's left edge and the picture at its right, level with Name under its label; the
-            // trash can is under Address, and the divider is midway between it and Preset Speed
+            // The fields are at the tab's left edge under their heading, the picture at its right under its own, level
+            // with Name; the trash can is under Address, and the divider is midway between it and the next heading
             final Insets edge = new Insets(4, 4, 4, 6);
             final Insets inner = new Insets(4, 4, 4, 6);
 
@@ -516,14 +516,21 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
             gbc.insets = inner;
             gbc.anchor = GridBagConstraints.WEST;
 
-            gbc.gridx = 3;
+            gbc.gridx = 0;
             gbc.gridy = 0;
+            gbc.gridwidth = 2;
+            gbc.insets = edge;
+            add(UiStyle.heading(I18n.t("loc.ui.settingsNameAndAddress")), gbc);
+            gbc.gridwidth = 1;
+
+            // The picture's heading starts where the picture does
+            gbc.gridx = 3;
             gbc.insets = new Insets(4, 6, 4, 4);
-            gbc.anchor = GridBagConstraints.NORTHEAST;
+            gbc.anchor = GridBagConstraints.NORTHWEST;
             add(UiStyle.heading(I18n.t("loc.ui.settingsLocomotiveIcon")), gbc);
 
             gbc.gridy = 1;
-            gbc.gridheight = 8;
+            gbc.gridheight = 9;
             add(picture, gbc);
 
             gbc.gridheight = 1;
@@ -565,7 +572,12 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
             gbc.fill = GridBagConstraints.NONE;
 
             gbc.gridy = 7;
+            gbc.gridwidth = 2;
             gbc.insets = edge;
+            add(UiStyle.heading(I18n.t("loc.ui.settingsCustomizeBehavior")), gbc);
+            gbc.gridwidth = 1;
+
+            gbc.gridy = 8;
             add(label(I18n.t("loc.ui.settingsPresetSpeed")), gbc);
             gbc.gridx = 1;
             gbc.insets = inner;
@@ -586,7 +598,7 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
             add(new JLabel(), gbc);
 
             gbc.gridx = 0;
-            gbc.gridy = 8;
+            gbc.gridy = 9;
             gbc.weightx = 0;
             gbc.weighty = 1;
             add(new JLabel(), gbc);
