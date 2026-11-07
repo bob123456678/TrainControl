@@ -686,6 +686,8 @@
         <test-one-class class="testAddingALocomotiveInTheSettingsWindow"/>
         <test-one-class class="testSeveralStationsAtOnce"/>
         <test-one-class class="testReturnHomeIsTheSameEveryTime"/>
+        <test-one-class class="testTheHandBuiltWindowsWearTheStandard"/>
+        <test-one-class class="testTheAutonomyEditorWearsTheStandard"/>
     </target>
     <target name="package-for-store" depends="jar">
         <property name="store.jar.name" value="TrainControl"/>
