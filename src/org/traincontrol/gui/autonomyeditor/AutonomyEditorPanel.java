@@ -1059,9 +1059,8 @@ public class AutonomyEditorPanel extends JPanel
         box.setOpaque(false);
         box.setBorder(BorderFactory.createEmptyBorder(0, 4, 2, 4));
 
-        JLabel label = new JLabel(I18n.t("autosetup.ui.labelFilterFindings"));
+        JLabel label = org.traincontrol.gui.widgets.UiStyle.label(I18n.t("autosetup.ui.labelFilterFindings"));
 
-        label.setFont(FONT_CONTROL);
         label.setFocusable(false);
 
         findingFilter.setFont(FONT_CONTROL);
