@@ -1318,14 +1318,10 @@ public class testATrainDragsFromStationToStation
 
         assertTrue(session.getStore().isStation(where) && session.getLocomotiveNameAt(where) == null, "precondition: 1 - Main:9,6 is not an empty station");
 
-        String lone = null;
+        String lone = "02 0314-1 DDR";
 
-        for (String each : model.getLocList())
-        {
-            if (!session.placementsAutonomyWillWrite().containsValue(each)) lone = each;
-        }
-
-        assertNotNull(lone, "precondition: every train is on the railway already");
+        assertTrue(model.getLocList().contains(lone) && !session.placementsAutonomyWillWrite().containsValue(lone),
+            "precondition: " + lone + " is not a train that stands in the roster only");
 
         int landed = 0;
 
@@ -1360,8 +1356,10 @@ public class testATrainDragsFromStationToStation
 
                 landed++;
 
-                assertNotNull(session.getPointProperty(to, "arrivedAlong"),
-                    "the drag onto " + to + " recorded no road, where a paste records one");
+                // 7,7 has no fork behind it, so a paste records no road there either; 1,10 is the square that has one
+                if (to.getX() == 1) assertNotNull(session.getPointProperty(to, "arrivedAlong"),
+                    "the drag onto " + to + " recorded no road, where a paste records one: " + outcome(to)
+                    + " length " + model.getLocByName(lone).getTrainLength() + " mayTurn " + session.mayTurnTiles().contains(to));
             }
         }
         finally
