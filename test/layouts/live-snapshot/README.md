@@ -176,7 +176,6 @@ not fix it. Name the square.
 - `ui.testTheTimetableAnswersItsMenu`
 - `ui.testARestartKeepsTheRailway`
 - `ui.testOpenLayoutLeavesTheOldTrainsBehind`
-- `ui.testTheAutonomyEditorsQuestionsChangeTheSetup`
 - `ui.testStartingAutonomyFromTheWindow`
 - `core.testTestAPathStartsWhereTheFindingsDo`
 - `ui.testTheToolsSitUnderTheHeading`
@@ -191,3 +190,4 @@ not fix it. Name the square.
 - `regression.testLocomotiveCsvImportDoor`
 - `regression.testATrainDragsFromStationToStation`
 - `ui.testThePresetSpeedSurvivesTheSetupDoors`
+- `ui.testTheTrainWindow`

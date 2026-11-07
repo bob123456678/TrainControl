@@ -26,7 +26,6 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 import org.traincontrol.automationui.AutonomySession;
 import org.traincontrol.automationui.TileGraph.TileKey;
-import org.traincontrol.base.LayoutDiagram;
 import org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel;
 import org.traincontrol.gui.layouteditor.LayoutEditor;
 import org.traincontrol.gui.TrainControlUI;
@@ -40,20 +39,16 @@ import support.Components;
  * editor's Save has written it (FR-136 Phase 6).
  *
  * Each claim opens the editor afresh on the frozen railway (never `cs2_sample_layout`, OB-111), picks the item from the
- * menu the editor builds, answers the real dialog, presses Save, and reads the setup back from disk.  Between claims
- * the setup is put back as it opened.
+ * menu the editor builds or presses the control of Station Settings, answers the real dialog, presses Save, and reads the
+ * setup back from disk.  Between claims the setup is put back as it opened.
  *
  * @author Adam
  */
 public class testTheAutonomyEditorsQuestionsChangeTheSetup
 {
-    private static support.LayoutSandbox sandbox;
+    private static support.FrozenEditor frozen;
     private static MarklinControlStation model;
-    private static TrainControlUI ui;
     private static AutonomySession session;
-
-    /** The setup as the class found it, put back before every claim. */
-    private static org.json.JSONObject asOpened;
 
     private static final String PAGE = "1 - Main";
 
@@ -62,83 +57,26 @@ public class testTheAutonomyEditorsQuestionsChangeTheSetup
     @BeforeClass
     public static void setUpClass() throws Exception
     {
-        if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the autonomy editor needs a display");
-
-        sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
-
-        model = support.TestStation.simulatedInDebug();
-
-        SwingUtilities.invokeAndWait(() -> ui = new TrainControlUI());
-
-        ui.setViewListener(model, new CountDownLatch(1));
-
-        session = ui.getAutonomySession();
-
-        if (session == null || session.getStore().getActiveConfiguration() == null)
-        {
-            throw new SkipException("no autonomy configuration, so there is no editor to open");
-        }
-
-        asOpened = Components.onTheEventThread(() -> session.snapshotSetup());
+        frozen = support.FrozenEditor.open();
+        model = frozen.model;
+        session = frozen.session;
     }
 
     @AfterClass(alwaysRun = true)
     public static void tearDownClass() throws Exception
     {
-        try
-        {
-            if (ui != null)
-            {
-                final TrainControlUI closing = ui;
-
-                SwingUtilities.invokeAndWait(() -> closing.dispose());
-            }
-
-            if (model != null) model.stop();
-        }
-        finally
-        {
-            if (sandbox != null) sandbox.close();
-        }
+        if (frozen != null) frozen.close();
     }
 
     /** The setup put back as it opened, the railway built from it, and the editor opened on the main page. */
     @BeforeMethod
     public void openTheEditor() throws Exception
     {
-        if (asOpened == null) throw new SkipException("the class did not set up");
+        if (frozen == null) throw new SkipException("the class did not set up");
 
-        Components.onTheEventThread(() ->
-        {
-            session.restoreSetup(asOpened);
+        frozen.putBack();
 
-            // every train named, so the railway stands each where the setup has it, not where the last claim left it
-            Set<String> trains = new LinkedHashSet<>(session.placementsAutonomyWillWrite().values());
-
-            trains.addAll(session.homesToPlace().values());
-
-            ui.rebuildRunningLayoutFromSetup(false, trains);
-
-            return null;
-        });
-
-        Components.settle();
-
-        final LayoutDiagram page = model.getLayout(PAGE);
-
-        assertNotNull(page, "precondition: no page " + PAGE);
-
-        editor = Components.onTheEventThread(() ->
-        {
-            LayoutEditor built = new LayoutEditor(page, 30, ui, 0);
-
-            built.render();
-            built.setAutonomyMode(session);
-
-            return built;
-        });
-
-        Components.settle();
+        editor = frozen.editorOn(PAGE);
     }
 
     @AfterMethod(alwaysRun = true)
@@ -146,14 +84,9 @@ public class testTheAutonomyEditorsQuestionsChangeTheSetup
     {
         org.traincontrol.gui.autonomy.FacingPrompt.answerForTests(null);
 
-        if (editor != null)
-        {
-            final LayoutEditor closing = editor;
+        support.FrozenEditor.dispose(editor);
 
-            SwingUtilities.invokeAndWait(() -> closing.dispose());
-
-            editor = null;
-        }
+        editor = null;
     }
 
     // ---------------------------------------------------------------- Bulk Tools
@@ -311,7 +244,7 @@ public class testTheAutonomyEditorsQuestionsChangeTheSetup
     // ---------------------------------------------------------------- a square's own questions
 
     /**
-     * Speed Multiplier answered 150: the square's multiplier is 1.5, saved.
+     * Speed Into Here given 150: the square's multiplier is 1.5, saved.
      *
      * MUTATION: store the percentage as `value / 10.0`, and this fails.
      */
@@ -322,16 +255,14 @@ public class testTheAutonomyEditorsQuestionsChangeTheSetup
 
         assertNull(session.getPointProperty(square, "speedMultiplier"), "precondition: the square has a multiplier");
 
-        List<String> asked = pressAndAnswer(speedItem(square), message -> Answering.type("150"));
-
-        assertEquals(asked.size(), 1, "the speed multiplier asked more than its question: " + asked);
+        support.StationDoors.typeAndEnter(support.StationDoors.open(panel(), square), "station.speed", "150");
 
         assertEquals(numberOf(saveAndReadBack().getPointProperty(square, "speedMultiplier")), 1.5,
             "after 150% and Save, the square's multiplier is not 1.5");
     }
 
     /**
-     * Answered 250, it is refused with the sentence giving the range, and nothing is written.
+     * Given 250, it is refused beside the field with the sentence giving the range, and nothing is written.
      *
      * MUTATION: let the range run to 300, and this fails.
      */
@@ -342,7 +273,7 @@ public class testTheAutonomyEditorsQuestionsChangeTheSetup
     }
 
     /**
-     * Answered with a word, it is refused with the same sentence, and nothing is written.
+     * Given a word, it is refused with the same sentence, and nothing is written.
      *
      * MUTATION: leave the refusal out of the catch, and this fails.
      */
@@ -358,20 +289,21 @@ public class testTheAutonomyEditorsQuestionsChangeTheSetup
 
         assertNull(session.getPointProperty(square, "speedMultiplier"), "precondition: the square has a multiplier");
 
-        List<String> asked = pressAndAnswer(speedItem(square),
-            message -> message.equals(I18n.t("autolayout.ui.errorInvalidSpeedMultiplier")) ? null : Answering.type(typed));
+        org.traincontrol.gui.autonomyeditor.StationSettingsWindow window = support.StationDoors.open(panel(), square);
 
-        assertEquals(asked.size(), 2, typed + " was not refused with a second message: " + asked);
+        support.StationDoors.typeAndEnter(window, "station.speed", typed);
 
-        assertEquals(asked.get(1), I18n.t("autolayout.ui.errorInvalidSpeedMultiplier"), typed + " was refused with"
-            + " another sentence");
+        assertEquals(support.StationDoors.said(window, "station.speedProblem"),
+            I18n.t("autolayout.ui.errorInvalidSpeedMultiplier"), typed + " was refused with another sentence");
+
+        assertEquals(support.StationDoors.text(window, "station.speed"), typed, "the refusal took back what was typed");
 
         assertNull(saveAndReadBack().getPointProperty(square, "speedMultiplier"), typed + " was written as the square's"
             + " multiplier");
     }
 
     /**
-     * Excluded Locomotives with one chosen and OK: the square keeps that train out, saved.
+     * Blacklist with nothing on the list opens it; one chosen and OK: the square keeps that train out, saved.
      *
      * MUTATION: store the list as empty, and this fails.
      */
@@ -391,7 +323,8 @@ public class testTheAutonomyEditorsQuestionsChangeTheSetup
 
         assertNotNull(chosen, "precondition: no locomotive to keep out");
 
-        List<String> asked = pressAndAnswer(excludedItem(square), choosing(chosen));
+        List<String> asked = support.StationDoors.press(support.StationDoors.open(panel(), square), "station.whichBlack",
+            choosing(chosen));
 
         assertEquals(asked.size(), 1, "keeping " + chosen + " out asked more than its question: " + asked);
 
@@ -422,7 +355,7 @@ public class testTheAutonomyEditorsQuestionsChangeTheSetup
 
         final boolean[] listed = {false};
 
-        List<String> asked = pressAndAnswer(excludedItem(square), message ->
+        List<String> asked = support.StationDoors.press(support.StationDoors.open(panel(), square), "station.whichBlack", message ->
         {
             if (listed[0]) return noAnswer();
 
@@ -440,8 +373,8 @@ public class testTheAutonomyEditorsQuestionsChangeTheSetup
     }
 
     /**
-     * Set Home Locomotive with a train homed elsewhere asks before it moves the home; Yes moves it, saved: home here, and
-     * not there.
+     * Home Locomotive given a train homed elsewhere asks before it moves the home; Yes moves it, saved: home here, and not
+     * there.
      *
      * MUTATION: skip the question, and this fails.
      */
@@ -456,12 +389,12 @@ public class testTheAutonomyEditorsQuestionsChangeTheSetup
 
         String question = I18n.f("autolayout.ui.confirmHomeIsAlreadySet", train, "").trim();
 
-        List<String> asked = pressAndAnswer(homeItem(square), message ->
-            message.startsWith(I18n.t("autosetup.ui.promptHomeFor")) ? Answering.type(train)
-            : message.startsWith(question.substring(0, Math.min(question.length(), 12))) ? yes() : Answering.pressAt(0));
+        List<Answering.Question> asked = support.StationDoors.pickAndAnswer(support.StationDoors.open(panel(), square),
+            "station.home", train, message ->
+            message.startsWith(question.substring(0, Math.min(question.length(), 12))) ? yes() : Answering.pressAt(0));
 
-        assertTrue(asked.size() >= 2 && asked.get(1).contains(train), "giving " + train + " a second home did not ask"
-            + " first: " + asked);
+        assertTrue(asked.size() >= 1 && asked.get(0).message.contains(train), "giving " + train + " a second home did not"
+            + " ask first");
 
         AutonomySession saved = saveAndReadBack();
 
@@ -487,10 +420,10 @@ public class testTheAutonomyEditorsQuestionsChangeTheSetup
 
         Object homeHere = session.getPointProperty(square, "home");
 
-        List<String> asked = pressAndAnswer(homeItem(square), message ->
-            message.startsWith(I18n.t("autosetup.ui.promptHomeFor")) ? Answering.type(train) : noAnswer());
+        List<Answering.Question> asked = support.StationDoors.pickAndAnswer(support.StationDoors.open(panel(), square),
+            "station.home", train, message -> noAnswer());
 
-        assertTrue(asked.size() >= 2, "giving " + train + " a second home did not ask first: " + asked);
+        assertTrue(asked.size() >= 1, "giving " + train + " a second home did not ask first");
 
         AutonomySession saved = saveAndReadBack();
 
@@ -527,7 +460,7 @@ public class testTheAutonomyEditorsQuestionsChangeTheSetup
     // ---------------------------------------------------------------- the station's protecting signals
 
     /**
-     * Exit Guard Signal..., then By Address with a signal's address, then Done: the window closes and the station is
+     * Exit Guard's pencil, then By Address with a signal's address, then Done: the window closes and the station is
      * protected by that signal, saved.
      *
      * MUTATION: have By Address skip pairing what it found, or Done leave the window open, and this fails.
@@ -571,7 +504,7 @@ public class testTheAutonomyEditorsQuestionsChangeTheSetup
     }
 
     /**
-     * Opens the station's Exit Guard Signal window from its menu, presses By Address, types this, then presses Done
+     * Opens the station's Exit Guard Signal window from Station Settings, presses By Address, types this, then presses Done
      * once every question has been answered and the window lists as many signals as expected (or three seconds later).
      * The window is a dialog of the editor's own, so it is driven here; its questions are plain ones, which `Answering`
      * takes.
@@ -583,7 +516,8 @@ public class testTheAutonomyEditorsQuestionsChangeTheSetup
     {
         final String title = I18n.t("autosetup.ui.menuPairSignal");
 
-        final AbstractButton item = tileItem(station, title);
+        final AbstractButton item = support.StationDoors.part(support.StationDoors.open(panel(), station),
+            "station.exitGuardChange", AbstractButton.class);
 
         final java.util.concurrent.atomic.AtomicBoolean going = new java.util.concurrent.atomic.AtomicBoolean(true);
         final java.util.concurrent.atomic.AtomicBoolean byAddress = new java.util.concurrent.atomic.AtomicBoolean();
@@ -797,74 +731,15 @@ public class testTheAutonomyEditorsQuestionsChangeTheSetup
         return item;
     }
 
-    private AbstractButton speedItem(TileKey square)
-    {
-        return tileItem(square, I18n.f("autolayout.ui.menuSpeedMultiplier", 100));
-    }
-
-    private AbstractButton excludedItem(TileKey square)
-    {
-        Object listed = session.getPointProperty(square, "excludedLocs");
-
-        int count = listed instanceof org.json.JSONArray ? ((org.json.JSONArray) listed).length() : 0;
-
-        return tileItem(square, I18n.f("autolayout.ui.menuExcludedLocomotives", count));
-    }
-
-    private AbstractButton homeItem(TileKey square)
-    {
-        Object home = session.getPointProperty(square, "home");
-
-        return tileItem(square, home == null ? I18n.t("autosetup.ui.menuHomeNone")
-            : I18n.f("autosetup.ui.menuHomeFor", home));
-    }
-
-    /**
-     * Presses an item as a click does and answers each question it asks by the rule, returning once the click's own work
-     * is done, and what was asked.
-     */
     private static List<String> pressAndAnswer(final AbstractButton item, Function<String, Answering.Answer> rule)
         throws Exception
     {
-        final CountDownLatch done = new CountDownLatch(1);
-
-        try (Answering answering = Answering.start(rule))
-        {
-            SwingUtilities.invokeLater(() ->
-            {
-                try
-                {
-                    item.doClick();
-                }
-                finally
-                {
-                    done.countDown();
-                }
-            });
-
-            assertTrue(done.await(30, TimeUnit.SECONDS), "\"" + item.getText() + "\" did not finish; it asked: "
-                + answering.asked());
-
-            Components.settle();
-
-            return answering.asked();
-        }
+        return support.StationDoors.pressAndAnswer(item, rule);
     }
 
-    /** The editor's Save, pressed; then the setup read back from the files it wrote. */
     private AutonomySession saveAndReadBack() throws Exception
     {
-        AbstractButton save = Components.withText(editor, I18n.t("layout.ui.saveChanges"));
-
-        assertNotNull(save, "precondition: the editor has no Save button");
-
-        pressAndAnswer(save, message -> null);
-
-        AutonomySession reread = new AutonomySession(sandbox.getFolder());
-
-        reread.open(support.LayoutSandbox.wiredPages(model));
-
-        return reread;
+        return frozen.saveAndReadBack(editor);
     }
 
     private static Function<String, Answering.Answer> yesTo(final String question)
@@ -887,35 +762,9 @@ public class testTheAutonomyEditorsQuestionsChangeTheSetup
         return Answering.press(String.valueOf(TrainControlUI.YES_NO_OPTS[1]));
     }
 
-    /**
-     * Picks this locomotive in the list of the question on screen, then presses OK (`Answering` does not type into the
-     * list).
-     */
     private static Function<String, Answering.Answer> choosing(final String name)
     {
-        return message ->
-        {
-            Components.onTheEventThread(() ->
-            {
-                for (java.awt.Window w : java.awt.Window.getWindows())
-                {
-                    if (!w.isShowing()) continue;
-
-                    JOptionPane pane = Components.find(w, JOptionPane.class, null);
-
-                    if (pane == null) continue;
-
-                    @SuppressWarnings("unchecked")
-                    JList<String> list = Components.find(pane, JList.class, null);
-
-                    if (list != null) list.setSelectedValue(name, true);
-                }
-
-                return null;
-            });
-
-            return Answering.pressAt(0);
-        };
+        return message -> support.StationDoors.choosing(name);
     }
 
     /** Every home in a setup, square to train. */

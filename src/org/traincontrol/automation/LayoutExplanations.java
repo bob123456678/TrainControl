@@ -115,7 +115,7 @@ final class LayoutExplanations
      * Why autonomy starts no train from this copy of a square, or null where it may: the square's own start rules,
      * asked of a train standing there and of the copy Why not Moving? would turn one round onto - one rule for both.
      */
-    private String whyNoTrainIsStartedFrom(Point at)
+    String whyNoTrainIsStartedFrom(Point at)
     {
         // FACING THE WAY TRAINS MAY NOT ARRIVE, AT A STATION: named as the square, with what to do - turn it round, or
         // open that side.
@@ -142,17 +142,24 @@ final class LayoutExplanations
 
         if (loc != null && end.excludes(loc)) return I18n.f("autolayout.why.excluded", loc.getName());
 
-        // A TERMINUS A TRAIN THAT CANNOT REVERSE WOULD BE STRANDED AT (OB-205), unless it is a berth: a square autonomy
-        // never chooses.  It is a question about the square, not this copy of it: `isTerminus()` cannot be read for
-        // this, so ask whether any way of standing on the square does not turn a train round (MT-367).
-        if (loc != null && !loc.isReversible() && (end.isTerminus() || end.isReversing())
-            && end.isAutoDestination()
-            && (!owner.hasAWayThrough(end) || owner.noCopyFacesOnFromAnyWayIn(end)))
+        if (loc != null && !loc.isReversible() && strandsATrainThatCannotReverse(end))
         {
             return I18n.f("autolayout.errorTerminusNotAllowedForNonReversibleLoc", loc.getName());
         }
 
         return null;
+    }
+
+    /**
+     * A terminus a train that cannot reverse would be stranded at (OB-205), unless it is a berth: a square autonomy
+     * never chooses.  It is a question about the square, not this copy of it: `isTerminus()` cannot be read for this,
+     * so ask whether any way of standing on the square does not turn a train round (MT-367).
+     */
+    boolean strandsATrainThatCannotReverse(Point end)
+    {
+        return (end.isTerminus() || end.isReversing())
+            && end.isAutoDestination()
+            && (!owner.hasAWayThrough(end) || owner.noCopyFacesOnFromAnyWayIn(end));
     }
 
     /** The body of `Layout.whyNoRouteFitsTo`. */

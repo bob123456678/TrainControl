@@ -675,6 +675,9 @@
         <test-one-class class="testThePresetSpeedSurvivesTheSetupDoors"/>
         <test-one-class class="testTheFunctionsTabSwitchesFunctionsNow"/>
         <test-one-class class="testTheLocomotiveSettingsLooks"/>
+        <test-one-class class="testStandingRulesAnswerAsTheDoorsDo"/>
+        <test-one-class class="testStationSettingsWindow"/>
+        <test-one-class class="testTheTrainWindow"/>
         <test-one-class class="testASyncBringsADeletedLocomotiveBack"/>
         <test-one-class class="testPageLinksGoByPageId"/>
         <test-one-class class="testALinkOnAStationGoesByPageId"/>

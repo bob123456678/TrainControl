@@ -649,21 +649,19 @@ public class testNoSetupEditDuringARun
 
             assertNotNull(branches, "precondition: no square on the main page whose menu sets all branches and one");
 
-            javax.swing.JMenuItem check = itemCalled(menu[0], I18n.t("autosetup.ui.menuAutoDestination"));
-            javax.swing.JMenuItem choice = null;
+            // Station Settings, opened at rest
+            SwingUtilities.invokeAndWait(() -> support.Components.withText(menu[0], I18n.t("autosetup.ui.menuStationSettings")).doClick());
 
-            for (String kind : new String[] {"autosetup.ui.menuCanStop", "autosetup.ui.menuCanTraverse",
-                "autosetup.ui.menuNeither"})
-            {
-                javax.swing.JMenuItem radio = itemOfKind(menu[0], I18n.t(kind), javax.swing.JRadioButtonMenuItem.class,
-                    false);
+            final org.traincontrol.gui.autonomyeditor.StationSettingsWindow settings =
+                support.StationDoors.showing(org.traincontrol.gui.autonomyeditor.StationSettingsWindow.class);
 
-                if (choice == null && radio != null) choice = radio;
-            }
+            assertNotNull(settings, "precondition: the setup menu of " + station + " does not open Station Settings");
 
-            assertNotNull(check, "precondition: the setup menu of " + station + " has no item for whether autonomy may"
-                + " choose it");
-            assertNotNull(choice, "precondition: the setup menu of " + station + " offers no other use of it");
+            final Object[][] controls = {
+                {"a check box (Full Autonomy)", "station.fullAutonomy"},
+                {"a box (Stop)", "station.stops"},
+                {"a choice of one (Changing Direction)", "station.turnMust"},
+                {"a preset (Terminus)", "station.preset.TERMINUS"}};
 
             // THEN A RUN BEGINS
             final Object[] dispatched = dispatchATrain(ui[0], null);
@@ -672,8 +670,6 @@ public class testNoSetupEditDuringARun
 
             final Object[][] clicks = {
                 {"a plain item (all branches: " + I18n.t("autosetup.ui.menuRouteNone") + ")", plain, branches},
-                {"a check box (" + check.getText() + ")", check, station},
-                {"a choice of one (" + choice.getText() + ")", choice, station},
                 {"a direction (" + direction.getText() + ")", direction, branches}};
 
             startAnsweringYes(asked, going);
@@ -701,6 +697,42 @@ public class testNoSetupEditDuringARun
                 assertFalse((Boolean) declined.get(ui[0]), click[0] + " of the setup menu, clicked during a run, left an"
                     + " edit waiting against the running railway");
             }
+
+            // A window opened at rest, in the second before it notices the run: its doors refuse by themselves
+            for (Object[] control : controls)
+            {
+                final javax.swing.AbstractButton button = support.StationDoors.part(settings, (String) control[1],
+                    javax.swing.AbstractButton.class);
+                final String before = setupOf(session, at);
+
+                final int from = asked.size();
+
+                SwingUtilities.invokeAndWait(() -> support.StationDoors.fireThoughGrayed(button));
+
+                for (int turn = 0; turn < 6; turn++) SwingUtilities.invokeAndWait(() -> { });
+
+                final List<String> said = new ArrayList<>(asked.subList(from, asked.size()));
+
+                assertEquals(setupOf(session, at), before, control[0] + " of Station Settings, opened at rest, wrote the setup"
+                    + " when pressed while " + dispatched[0] + " was under way (FR-111): " + said);
+
+                assertTrue(said.contains(I18n.t("ui.main.errorNoEditsWhileRunning")), control[0] + " of Station Settings,"
+                    + " pressed during a run, did not say why it did nothing: " + said);
+            }
+
+            // And within a second it says so, gray
+            assertTrue(support.Components.waitFor(settings::isReadOnly, 5000), "Station Settings did not go read-only");
+
+            support.Components.settle();
+
+            for (Object[] control : controls)
+            {
+                assertFalse(support.StationDoors.live(settings, (String) control[1]), control[0] + " of Station Settings is"
+                    + " live during a run");
+            }
+
+            assertTrue(support.Components.named(settings, "station.strip", javax.swing.JLabel.class).isVisible(),
+                "Station Settings does not say why it is read-only");
         }
         finally
         {

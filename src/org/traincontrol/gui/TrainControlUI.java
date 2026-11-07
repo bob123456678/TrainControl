@@ -2909,23 +2909,77 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         if (buildAutonomyTileMenu(tile) == null) return null;
 
         // The session is told where the railway is before it is asked to change anything on it.
-        // Set here rather than once at start-up because the session is replaced whenever
-        // a configuration is loaded, and a supplier set on the wrong instance is set on nothing.
-        if (getAutonomySession() != null)
-        {
-            // Asked, not built: each reader takes no railway as nothing to show
-            getAutonomySession().setRunningLayoutSource(
-                () -> this.model == null ? null : this.model.getAutoLayoutIfLoaded());
-        }
-
-        // The panel needs it too, for the arrived-from menu it builds
-        if (autonomyTileMenus != null)
-        {
-            autonomyTileMenus.setRunningLayoutSource(
-                () -> this.model == null ? null : this.model.getAutoLayoutIfLoaded());
-        }
+        wireTheRailwayIntoTheMenus();
 
         return autonomyTileMenus == null ? null : autonomyTileMenus.buildFacingMenu(tile);
+    }
+
+    /** Whether the track diagram's menu offers Station Settings on this square; no while an editor holds the setup. */
+    boolean offersStationSettings(org.traincontrol.automationui.TileGraph.TileKey tile)
+    {
+        return tile != null && liveSetupPanel() != null && autonomyTileMenus.offersStationSettings(tile);
+    }
+
+    /** Station Settings... for a menu on the track diagram (FR-111), or null with no setup to edit here. */
+    javax.swing.JMenuItem stationSettingsItem(org.traincontrol.automationui.TileGraph.TileKey tile)
+    {
+        if (!offersStationSettings(tile)) return null;
+
+        wireTheRailwayIntoTheMenus();
+
+        return autonomyTileMenus.stationSettingsItem(tile);
+    }
+
+    /** Train at Bramley... or Place a Locomotive Here... for a menu on the track diagram, or null. */
+    javax.swing.JMenuItem trainWindowItem(org.traincontrol.automationui.TileGraph.TileKey tile)
+    {
+        if (!offersStationSettings(tile)) return null;
+
+        wireTheRailwayIntoTheMenus();
+
+        return autonomyTileMenus.trainWindowItem(tile);
+    }
+
+    /** A right-click on another square moves a window already open there (FR-111). */
+    void stationWindowsFollow(org.traincontrol.automationui.TileGraph.TileKey tile)
+    {
+        if (autonomyTileMenus != null && tile != null) autonomyTileMenus.stationWindowsFollow(tile);
+    }
+
+    /**
+     * The session and the panel told where the railway is: a load replaces the session, and a supplier set on the old is
+     * lost.  Asked, not built: each reader takes no railway as nothing to show.
+     */
+    private void wireTheRailwayIntoTheMenus()
+    {
+        if (getAutonomySession() != null)
+        {
+            getAutonomySession().setRunningLayoutSource(() -> this.model == null ? null : this.model.getAutoLayoutIfLoaded());
+        }
+
+        if (autonomyTileMenus != null)
+        {
+            autonomyTileMenus.setRunningLayoutSource(() -> this.model == null ? null : this.model.getAutoLayoutIfLoaded());
+        }
+    }
+
+    /** Flashes a square on the track diagram. */
+    public void flashSquare(org.traincontrol.automationui.TileGraph.TileKey tile)
+    {
+        for (LayoutLabel label : getDiagramTileRegistry().labelsFor(tile)) label.flashHighlight();
+    }
+
+    /**
+     * Pauses a train or sets it going while a run holds the setup, as its Auto tab card does (FR-059): the train alone,
+     * as the setup is not edited, and the fold takes it into the setup with the rest of that tab's settings.
+     */
+    public void pauseTrainWhileRunning(Locomotive train, boolean paused)
+    {
+        train.setAutonomyPaused(paused);
+
+        trainsPausedChanged();
+
+        repaintAutoLocList(false);
     }
 
     /**

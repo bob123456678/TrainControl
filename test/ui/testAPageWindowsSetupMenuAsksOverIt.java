@@ -5,8 +5,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.function.Function;
-import javax.swing.JDialog;
-import javax.swing.JList;
 import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
 import javax.swing.JPopupMenu;
@@ -22,11 +20,15 @@ import org.traincontrol.automationui.TileGraph.TileKey;
 import org.traincontrol.base.LayoutDiagramComponent;
 import org.traincontrol.gui.LayoutPopupUI;
 import org.traincontrol.gui.TrainControlUI;
+import org.traincontrol.gui.autonomyeditor.StationSettingsWindow;
+import org.traincontrol.gui.autonomyeditor.TrainWindow;
 import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.util.I18n;
 import support.Answering;
 import support.AskingWindows;
 import support.Components;
+import support.Mouse;
+import support.StationDoors;
 
 /**
  * The autonomy setup on a square's right-click menu asks its questions over the window the square was clicked in
@@ -155,26 +157,70 @@ public class testAPageWindowsSetupMenuAsksOverIt
         return fromThePage;
     }
 
-    /** {@link #bothWays} for a list to pick from, whose message holds what its field was last given. */
-    private static void pickingBothWays(TileKey square, Function<JPopupMenu, JMenuItem> item,
-        Function<String, Answering.Answer> rule, String title, int type, String startsOn, String... buttons) throws Exception
+    /** Station Settings as this window's own menu opens it, hanging off that window. */
+    private static StationSettingsWindow settingsFrom(Window window, TileKey square) throws Exception
+    {
+        Mouse.choose(AskingWindows.itemOf(AskingWindows.menuOn(ui, window, square), I18n.t("autosetup.ui.menuStationSettings")));
+
+        Components.settle();
+
+        StationSettingsWindow opened = StationDoors.showing(StationSettingsWindow.class);
+
+        assertNotNull(opened, "Station Settings did not open from the window");
+
+        assertSame(opened.getOwner(), window, "Station Settings hangs off the wrong window");
+
+        return opened;
+    }
+
+    /** A control of Station Settings pressed from each window; its one question comes back over that window's settings. */
+    private static void asksOverTheSettings(TileKey square, String control, Function<String, Answering.Answer> rule,
+        String title, int type, String startsOn, String... buttons) throws Exception
     {
         for (Window window : new Window[] {ui, page})
         {
-            AskingWindows.assertAsked(press(window, square, item, rule, 1).get(0), window, title, AskingWindows.ANY_MESSAGE,
-                type, startsOn, buttons);
+            StationSettingsWindow settings = settingsFrom(window, square);
+
+            try (Answering answering = Answering.start(rule))
+            {
+                Components.press(StationDoors.part(settings, control, javax.swing.AbstractButton.class));
+
+                assertTrue(answering.awaitAsked(1, PATIENCE_MS), control + " asked nothing");
+
+                Components.settle();
+
+                AskingWindows.assertAsked(answering.questions().get(0), settings, title, AskingWindows.ANY_MESSAGE, type,
+                    startsOn, buttons);
+            }
+
+            StationDoors.close(settings);
         }
     }
 
-    /** A list to pick from, whose Cancel leaves this setting of the station as it was. */
-    private static void assertCancelKeeps(String property, Function<JPopupMenu, JMenuItem> door, String title) throws Exception
+    /** A number typed into a field of each window's settings, refused beside the field, and nothing written. */
+    private static void assertARefusal(String field, String problem, String property, String typed, String said) throws Exception
     {
-        Object was = String.valueOf(session.getPointProperty(station, property));
+        Object was = session.getPointProperty(station, property);
 
-        pickingBothWays(station, door, message -> cancel(), title, JOptionPane.PLAIN_MESSAGE, null, ok(),
-            UIManager.getString("OptionPane.cancelButtonText"));
+        for (Window window : new Window[] {ui, page})
+        {
+            StationSettingsWindow settings = settingsFrom(window, station);
 
-        assertEquals(String.valueOf(session.getPointProperty(station, property)), was, "Cancel changed " + property);
+            StationDoors.typeAndEnter(settings, field, typed);
+
+            assertTrue(!StationDoors.said(settings, problem).isEmpty(), "\"" + typed + "\" was not refused");
+
+            if (said != null) assertEquals(StationDoors.said(settings, problem), said, "the refusal of \"" + typed + "\" changed");
+
+            assertEquals(StationDoors.text(settings, field), typed, "the refusal took back what was typed");
+
+            assertEquals(session.getPointProperty(station, property), was, "a refused value was written");
+
+            // Back, or closing would try it again
+            StationDoors.typeAndEnter(settings, field, was == null ? "" : String.valueOf(was));
+
+            StationDoors.close(settings);
+        }
     }
 
     private static Answering.Answer cancel()
@@ -210,121 +256,81 @@ public class testAPageWindowsSetupMenuAsksOverIt
     // ---------------------------------------------------------------- the numbers
 
     /**
-     * Speed Multiplier asks over the window, Cancel writes nothing, a number writes it, and both refusals are said over
-     * the same window.
+     * Speed Into Here's refusals are said beside it in the window that hangs off the one asked from, and a number writes it.
      *
-     * MUTATION: `dialogOwner` for `((TrainControlUI) dialogOwner).dialogParent()` in `AutonomyEditorPanel.owner`, and
-     * they hang off the main window.
+     * MUTATION: have `StationWindows.station` hang the window off `dialogParent()`, and it hangs off the main window.
      */
     @Test
-    public void testSpeedMultiplierAsksOverTheWindow() throws Exception
+    public void testSpeedMultiplierHangsOffTheWindow() throws Exception
     {
-        Function<JPopupMenu, JMenuItem> door = counted("autolayout.ui.menuSpeedMultiplier");
-
-        String prompt = I18n.f("autolayout.ui.promptEnterSpeedMultiplier", session.describeTile(station));
-
-        Object was = session.getPointProperty(station, "speedMultiplier");
-
-        AskingWindows.assertAsked(bothWays(station, door, message -> cancel(), input(), JOptionPane.QUESTION_MESSAGE, null,
-            ok(), UIManager.getString("OptionPane.cancelButtonText")), page, input(), prompt, JOptionPane.QUESTION_MESSAGE,
-            null, ok(), UIManager.getString("OptionPane.cancelButtonText"));
-
-        assertEquals(session.getPointProperty(station, "speedMultiplier"), was, "Cancel wrote the multiplier");
-
         String invalid = I18n.t("autolayout.ui.errorInvalidSpeedMultiplier");
 
-        assertARefusal(station, door, prompt, "999", invalid);
-        assertARefusal(station, door, prompt, "many", invalid);
+        assertARefusal("station.speed", "station.speedProblem", "speedMultiplier", "999", invalid);
+        assertARefusal("station.speed", "station.speedProblem", "speedMultiplier", "many", invalid);
 
-        assertEquals(session.getPointProperty(station, "speedMultiplier"), was, "a refused number was written");
+        StationSettingsWindow settings = settingsFrom(page, station);
 
-        press(page, station, door, message -> Answering.type("150"), 1);
+        StationDoors.typeAndEnter(settings, "station.speed", "150");
 
         assertEquals(((Number) session.getPointProperty(station, "speedMultiplier")).doubleValue(), 1.5, 0.001,
-            "the answer over the page's window was not written");
+            "the number in the page's window was not written");
 
-        press(page, station, door, message -> Answering.type("100"), 1);
+        StationDoors.typeAndEnter(settings, "station.speed", "100");
+
+        StationDoors.close(settings);
     }
 
     /**
-     * Max Train Length asks over the window, Cancel writes nothing, and a number that is none is refused over it.
+     * Maximum Train Length's refusals are said beside it, in the window that hangs off the one asked from.
      *
-     * MUTATION: `dialogOwner` for `((TrainControlUI) dialogOwner).dialogParent()` in `AutonomyEditorPanel.owner`, and
-     * they hang off the main window.
+     * MUTATION: have `StationWindows.station` hang the window off `dialogParent()`, and it hangs off the main window.
      */
     @Test
-    public void testMaxTrainLengthAsksOverTheWindow() throws Exception
+    public void testMaxTrainLengthHangsOffTheWindow() throws Exception
     {
-        Function<JPopupMenu, JMenuItem> door = menu ->
-        {
-            int maximum = ((Number) (session.getPointProperty(station, "maxTrainLength") == null ? 0
-                : session.getPointProperty(station, "maxTrainLength"))).intValue();
+        assertARefusal("station.maxLength", "station.maxLengthProblem", "maxTrainLength", "long",
+            I18n.f("autosetup.ui.errorNotANumber", "long"));
 
-            return AskingWindows.itemOf(menu, I18n.f("autolayout.ui.menuMaxTrainLength",
-                maximum == 0 ? I18n.t("autolayout.ui.any") : String.valueOf(maximum)));
-        };
-
-        String prompt = I18n.f("autolayout.ui.promptEnterMaxTrainLength", session.describeTile(station));
-
-        Object was = session.getPointProperty(station, "maxTrainLength");
-
-        bothWays(station, door, message -> cancel(), input(), JOptionPane.QUESTION_MESSAGE, null, ok(),
-            UIManager.getString("OptionPane.cancelButtonText"));
-
-        assertEquals(session.getPointProperty(station, "maxTrainLength"), was, "Cancel wrote the length");
-
-        assertARefusal(station, door, prompt, "long", I18n.f("autosetup.ui.errorNotANumber", "long"));
-
-        assertARefusal(station, door, prompt, "-3", null);
-
-        assertEquals(session.getPointProperty(station, "maxTrainLength"), was, "a refused length was written");
+        assertARefusal("station.maxLength", "station.maxLengthProblem", "maxTrainLength", "-3", null);
     }
 
     // ---------------------------------------------------------------- the name
 
     /**
-     * Rename asks over the window; a quote mark is warned about over it, another square's name refused over it.
+     * Another square's name is refused beside the field; a quote mark is taken out of the name.
      *
-     * MUTATION: `dialogOwner` for `((TrainControlUI) dialogOwner).dialogParent()` in `AutonomyEditorPanel.owner`, and
-     * they hang off the main window.
+     * MUTATION: have `StationWindows.station` hang the window off `dialogParent()`, and it hangs off the main window.
      */
     @Test
-    public void testRenameAsksOverTheWindow() throws Exception
+    public void testRenameHangsOffTheWindow() throws Exception
     {
-        Function<JPopupMenu, JMenuItem> door = item(I18n.t("autosetup.ui.menuRename"));
-
-        String prompt = I18n.t("autosetup.ui.promptPointName");
-
         String name = session.getStore().getPointName(station);
 
-        bothWays(station, door, message -> cancel(), input(), JOptionPane.QUESTION_MESSAGE, null, ok(),
-            UIManager.getString("OptionPane.cancelButtonText"));
-
-        assertEquals(session.getStore().getPointName(station), name, "Cancel renamed it");
-
-        assertARefusal(station, door, prompt, "BottomMainA", null);
-
-        assertEquals(session.getStore().getPointName(station), name, "another's name was taken");
-
-        // Quotes stripped, it is the name it already has, so nothing changes
         for (Window window : new Window[] {ui, page})
         {
-            List<Answering.Question> asked = press(window, station, door,
-                message -> message.equals(prompt) ? Answering.type(name + "\"") : null, 2);
+            StationSettingsWindow settings = settingsFrom(window, station);
 
-            assertSame(asked.get(1).owner, window, "the warning about quotes hangs off the wrong window");
+            StationDoors.typeAndEnter(settings, "station.name", "BottomMainA");
 
-            assertEquals(asked.get(1).message, I18n.t("autosetup.ui.warnQuotesStrippedFromName"));
+            assertTrue(!StationDoors.said(settings, "station.nameProblem").isEmpty(), "another's name was not refused");
+
+            assertEquals(session.getStore().getPointName(station), name, "another's name was taken");
+
+            // Quotes stripped, it is the name it already has, so nothing changes
+            StationDoors.typeAndEnter(settings, "station.name", name + "\"");
+
+            assertEquals(session.getStore().getPointName(station), name, "the stripped name is not the name");
+
+            assertEquals(StationDoors.text(settings, "station.name"), name, "the field still shows the quote");
+
+            StationDoors.close(settings);
         }
-
-        assertEquals(session.getStore().getPointName(station), name, "the stripped name is not the name");
     }
 
     /**
-     * A sensor made a station asks its name over the window, and Cancel leaves it as it was.
+     * A sensor made a station asks its name over Station Settings, and Cancel leaves it as it was.
      *
-     * MUTATION: `dialogOwner` for `((TrainControlUI) dialogOwner).dialogParent()` in `AutonomyEditorPanel.owner`, and it
-     * hangs off the main window.
+     * MUTATION: have `pressedFrom` skip setting `askingWindow`, and it hangs off the window behind.
      */
     @Test
     public void testANewStationsNameIsAskedOverTheWindow() throws Exception
@@ -333,8 +339,8 @@ public class testAPageWindowsSetupMenuAsksOverIt
             && !session.getStore().isStation(new TileKey(station.getPage(), each.getX(), each.getY()))
             && session.getStore().getPointName(new TileKey(station.getPage(), each.getX(), each.getY())) == null);
 
-        bothWays(nameless, item(I18n.t("autosetup.ui.menuCanStop")), message -> cancel(), input(),
-            JOptionPane.QUESTION_MESSAGE, null, ok(), UIManager.getString("OptionPane.cancelButtonText"));
+        asksOverTheSettings(nameless, "station.stops", message -> cancel(), input(), JOptionPane.QUESTION_MESSAGE, null, ok(),
+            UIManager.getString("OptionPane.cancelButtonText"));
 
         assertFalse(session.getStore().isStation(nameless), "Cancel made it a station");
     }
@@ -342,55 +348,94 @@ public class testAPageWindowsSetupMenuAsksOverIt
     // ---------------------------------------------------------------- homes and placing
 
     /**
-     * Home asks over the window, starting with what it offers, and Cancel leaves the home alone.
+     * Home Locomotive given a train homed elsewhere asks over Station Settings, and No leaves the homes alone.
      *
-     * MUTATION: `dialogOwner` for `((TrainControlUI) dialogOwner).dialogParent()` in `AutonomyEditorPanel.owner`, and it
-     * hangs off the main window.
+     * MUTATION: have `pressedFrom` skip setting `askingWindow`, and it hangs off the window behind.
      */
     @Test(priority = -1)
     public void testHomeAsksOverTheWindow() throws Exception
     {
-        Function<JPopupMenu, JMenuItem> door = menu -> AskingWindows.hasItem(menu, I18n.t("autosetup.ui.menuHomeNone"))
-            ? AskingWindows.itemOf(menu, I18n.t("autosetup.ui.menuHomeNone"))
-            : AskingWindows.itemOf(menu, I18n.f("autosetup.ui.menuHomeFor", session.getPointProperty(station, "home")));
+        String train = null;
+        TileKey elsewhere = null;
 
-        assertCancelKeeps("home", door, I18n.t("autosetup.ui.menuHomeNone"));
+        for (java.util.Map.Entry<TileKey, String> home : session.homesToPlace().entrySet())
+        {
+            if (!home.getKey().equals(station) && session.placementsAutonomyWillWrite().containsValue(home.getValue()))
+            {
+                train = home.getValue();
+                elsewhere = home.getKey();
+            }
+        }
+
+        assertNotNull(train, "precondition: no standing train is homed away from " + station);
+
+        Object was = session.getPointProperty(station, "home");
+
+        String asked = I18n.f("autolayout.ui.confirmHomeIsAlreadySet", train, session.describeTile(elsewhere));
+
+        for (Window window : new Window[] {ui, page})
+        {
+            StationSettingsWindow settings = settingsFrom(window, station);
+
+            List<Answering.Question> questions = StationDoors.pickAndAnswer(settings, "station.home", train,
+                message -> message.equals(asked) ? Answering.press(NO) : Answering.pressAt(0));
+
+            assertFalse(questions.isEmpty(), "a second home asked nothing");
+
+            assertSame(questions.get(questions.size() - 1).owner, settings, "the question hangs off the wrong window");
+
+            StationDoors.close(settings);
+        }
+
+        assertEquals(session.getPointProperty(station, "home"), was, "No changed the home here");
+
+        assertEquals(session.getPointProperty(elsewhere, "home"), train, "No changed the home there");
     }
 
     /**
-     * Add to Autonomy asks over the window, Cancel placing nothing; with every locomotive already in autonomy it says so
-     * over the window.
+     * Train at..., from the window's own menu, opens the train window over that window, and looking places nothing.
      *
-     * MUTATION: `dialogOwner` for `((TrainControlUI) dialogOwner).dialogParent()` in `AutonomyEditorPanel.owner`, and
-     * they hang off the main window.
+     * MUTATION: have `StationWindows.train` hang the window off `dialogParent()`, and it hangs off the main window.
      */
     @Test(priority = -1)
-    public void testAddToAutonomyAsksOverTheWindow() throws Exception
+    public void testTheTrainWindowHangsOffTheWindow() throws Exception
     {
-        Function<JPopupMenu, JMenuItem> door = item(I18n.t("autosetup.ui.menuAddToAutonomy"));
-
         String standing = String.valueOf(session.getLocomotiveNameAt(station));
 
-        pickingBothWays(station, door, message -> cancel(), I18n.t("autosetup.ui.menuAddToAutonomy"), JOptionPane.PLAIN_MESSAGE, null,
-            ok(), UIManager.getString("OptionPane.cancelButtonText"));
+        for (Window window : new Window[] {ui, page})
+        {
+            JPopupMenu menu = AskingWindows.menuOn(ui, window, station);
 
-        assertEquals(String.valueOf(session.getLocomotiveNameAt(station)), standing, "Cancel placed something");
+            Mouse.choose(AskingWindows.itemOf(menu, session.getLocomotiveNameAt(station) == null
+                ? I18n.t("autosetup.ui.menuPlaceHere") : I18n.f("autosetup.ui.menuTrainAt", session.describeTile(station))));
+
+            Components.settle();
+
+            TrainWindow opened = StationDoors.showing(TrainWindow.class);
+
+            assertNotNull(opened, "the train window did not open");
+
+            assertSame(opened.getOwner(), window, "the train window hangs off the wrong window");
+
+            StationDoors.close(opened);
+        }
+
+        assertEquals(String.valueOf(session.getLocomotiveNameAt(station)), standing, "looking placed something");
     }
 
     // ---------------------------------------------------------------- the advanced parameters
 
     /**
-     * Blocked by Points asks over the window, and Cancel writes nothing.
+     * Unavailable While asks over Station Settings, and Cancel writes nothing.
      *
-     * MUTATION: `dialogOwner` for `((TrainControlUI) dialogOwner).dialogParent()` in `AutonomyEditorPanel.owner`, and it
-     * hangs off the main window.
+     * MUTATION: have `pressedFrom` skip setting `askingWindow`, and it hangs off the window behind.
      */
     @Test
     public void testBlockedByPointsAsksOverTheWindow() throws Exception
     {
         List<TileKey> was = new ArrayList<>(session.getStore().getBlockingPoints(station));
 
-        bothWays(station, counted("autolayout.ui.menuBlockedByPoints"), message -> cancel(),
+        asksOverTheSettings(station, "station.unavailableChoose", message -> cancel(),
             I18n.t("autosetup.ui.menuBlockedByPointsTitle"), JOptionPane.PLAIN_MESSAGE, ok(), ok(),
             I18n.t("autosetup.ui.optionPickBlockerOnDiagram"), UIManager.getString("OptionPane.cancelButtonText"));
 
@@ -398,24 +443,35 @@ public class testAPageWindowsSetupMenuAsksOverIt
     }
 
     /**
-     * Excluded Locomotives asks over the window, and Cancel writes nothing; with no locomotives it says so over the
-     * window; excluding the station's home locomotive is warned about over the window, and No writes nothing.
+     * Blacklist on an empty list asks over Station Settings, and Cancel writes nothing; with no locomotives it says so over
+     * it; keeping out the station's home locomotive is warned about over it, and No writes nothing.
      *
-     * MUTATION: `dialogOwner` for `((TrainControlUI) dialogOwner).dialogParent()` in `AutonomyEditorPanel.owner`, and
-     * they hang off the main window.
+     * MUTATION: have `pressedFrom` skip setting `askingWindow`, and they hang off the window behind.
      */
     @Test(priority = -1)
     public void testExcludedLocomotivesAsksOverTheWindow() throws Exception
     {
-        Function<JPopupMenu, JMenuItem> door = counted("autolayout.ui.menuExcludedLocomotives");
-
         Object was = String.valueOf(session.getPointProperty(station, "excludedLocs"));
 
-        assertCancelKeeps("excludedLocs", door, I18n.t("autosetup.ui.labelLocomotiveExclusions"));
+        asksOverTheSettings(station, "station.whichBlack", message -> cancel(), I18n.t("autosetup.ui.labelLocomotiveExclusions"),
+            JOptionPane.PLAIN_MESSAGE, null, ok(), UIManager.getString("OptionPane.cancelButtonText"));
+
+        assertEquals(String.valueOf(session.getPointProperty(station, "excludedLocs")), was, "Cancel changed the list");
 
         AskingWindows.withOnlyTheseLocomotives(model, Collections.emptyList(), () ->
         {
-            AskingWindows.assertSaid(press(page, station, door, message -> null, 1).get(0), page, I18n.t("error.noLocs"));
+            StationSettingsWindow settings = settingsFrom(page, station);
+
+            try (Answering answering = Answering.start(message -> null))
+            {
+                Components.press(StationDoors.part(settings, "station.whichBlack", javax.swing.AbstractButton.class));
+
+                assertTrue(answering.awaitAsked(1, PATIENCE_MS), "no locomotives said nothing");
+
+                AskingWindows.assertSaid(answering.questions().get(0), settings, I18n.t("error.noLocs"));
+            }
+
+            StationDoors.close(settings);
         });
 
         final String home = model.getLocList().get(0);
@@ -428,30 +484,16 @@ public class testAPageWindowsSetupMenuAsksOverIt
 
             for (Window window : new Window[] {ui, page})
             {
-                List<Answering.Question> asked = press(window, station, door, message ->
-                {
-                    if (message.equals(warned)) return Answering.press(NO);
+                StationSettingsWindow settings = settingsFrom(window, station);
 
-                    Components.onTheEventThread(() ->
-                    {
-                        for (Window each : Window.getWindows())
-                        {
-                            if (!(each instanceof JDialog) || !each.isShowing()) continue;
+                List<String> asked = StationDoors.press(settings, "station.whichBlack", message ->
+                    message.equals(warned) ? Answering.press(NO) : StationDoors.choosing(home));
 
-                            @SuppressWarnings("unchecked")
-                            JList<String> list = Components.find(each, JList.class, any -> true);
+                assertEquals(asked.size(), 2, "keeping out the home locomotive did not warn: " + asked);
 
-                            if (list != null) list.setSelectedValue(home, true);
-                        }
+                assertEquals(asked.get(1), warned, "the warning changed");
 
-                        return null;
-                    });
-
-                    return Answering.pressAt(0);
-                }, 2);
-
-                AskingWindows.assertAsked(asked.get(1), window, I18n.t("autosetup.ui.labelExcludedLocs"), warned,
-                    JOptionPane.PLAIN_MESSAGE, NO, YES, NO);
+                StationDoors.close(settings);
             }
 
             assertEquals(String.valueOf(session.getPointProperty(station, "excludedLocs")), was, "No wrote the list");
@@ -583,8 +625,8 @@ public class testAPageWindowsSetupMenuAsksOverIt
     }
 
     /**
-     * Clear Locomotives asks over the window; No lifts nothing and Yes lifts them.  Then, with nothing placed, Home says
-     * there is no locomotive to choose, over the window.
+     * Clear Locomotives asks over the window; No lifts nothing and Yes lifts them.  Then, with nothing placed, Home
+     * Locomotive offers none but None.
      *
      * MUTATION: `dialogOwner` for `((TrainControlUI) dialogOwner).dialogParent()` in `AutonomyEditorPanel.owner`, and
      * they hang off the main window.
@@ -594,20 +636,22 @@ public class testAPageWindowsSetupMenuAsksOverIt
     {
         assertBulk("autolayout.ui.menuClearLocomotives", () -> session.placementsAutonomyWillWrite().size());
 
-        Function<JPopupMenu, JMenuItem> home = item(I18n.t("autosetup.ui.menuHomeNone"));
+        StationSettingsWindow settings = settingsFrom(page, station);
 
-        AskingWindows.assertSaid(press(page, station, home, message -> null, 1).get(0), page, I18n.t("error.noLocs"));
-        AskingWindows.assertSaid(press(ui, station, home, message -> null, 1).get(0), ui, I18n.t("error.noLocs"));
+        assertEquals(StationDoors.part(settings, "station.home", javax.swing.JComboBox.class).getItemCount(), 1,
+            "Home Locomotive offers a train though none is placed");
+
+        StationDoors.close(settings);
     }
 
     /**
-     * With no train left to offer, none placed elsewhere and none in the database, Add to Autonomy says so over the window.
+     * With no train left to offer, none placed elsewhere and none in the database, the train window's list offers only None.
      *
      * MUTATION: `dialogOwner` for `((TrainControlUI) dialogOwner).dialogParent()` in `AutonomyEditorPanel.owner`, and it
      * hangs off the main window.
      */
     @Test(priority = 6)
-    public void testAddToAutonomyWithNoTrainSaysSoOverTheWindow() throws Exception
+    public void testTheTrainListOffersNoneWithNoTrain() throws Exception
     {
         if (session.placementsAutonomyWillWrite().size() > 0)
         {
@@ -621,8 +665,21 @@ public class testAPageWindowsSetupMenuAsksOverIt
         {
             for (Window window : new Window[] {ui, page})
             {
-                AskingWindows.assertSaid(press(window, station, item(I18n.t("autosetup.ui.menuAddToAutonomy")),
-                    message -> null, 1).get(0), window, I18n.t("autosetup.ui.infoAllLocomotivesInAutonomy"));
+                Mouse.choose(AskingWindows.itemOf(AskingWindows.menuOn(ui, window, station),
+                    I18n.t("autosetup.ui.menuPlaceHere")));
+
+                Components.settle();
+
+                TrainWindow opened = StationDoors.showing(TrainWindow.class);
+
+                assertNotNull(opened, "the train window did not open");
+
+                assertSame(opened.getOwner(), window, "the train window hangs off the wrong window");
+
+                assertEquals(StationDoors.part(opened, "train.train", javax.swing.JComboBox.class).getItemCount(), 1,
+                    "the list offers a train where none exists");
+
+                StationDoors.close(opened);
             }
         });
     }

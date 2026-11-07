@@ -308,6 +308,9 @@ public class AutonomyEditorPanel extends JPanel
 
     public static final String SHORTCUT_NAME = "Control+S";
 
+    /** The key that opens Station Settings, over a square or for the chosen finding (FR-111, FR-072). */
+    public static final String SHORTCUT_SETTINGS = "Control+O";
+
     public static final String SHORTCUT_LENGTH = "Control+E";
 
     /** Shows a station's name on the square under the pointer (FR-086). */
@@ -477,6 +480,16 @@ public class AutonomyEditorPanel extends JPanel
         this.session = session;
         this.page = page;
         this.onChanged = onChanged;
+        this.stationWindows = new StationWindows(this, session);
+
+        // A window about a square goes when the editor does, or leaves Autonomy Setup: an edit there can move every square
+        addHierarchyListener(e ->
+        {
+            if ((e.getChangeFlags() & java.awt.event.HierarchyEvent.SHOWING_CHANGED) != 0 && !isShowing())
+            {
+                stationWindows.closeAll();
+            }
+        });
 
         setLayout(new BorderLayout(4, 4));
         // No inset either side, to stay in step with the heading and buttons that run edge to edge; none on top, as the
@@ -1009,12 +1022,25 @@ public class AutonomyEditorPanel extends JPanel
         findings.setCellRenderer(new AutonomyViewerPanel.FindingRenderer(findingSeverity, findingTiles, FONT_CONTROL,
             AutonomyViewerPanel.FONT_GROUP));
 
+        // A double-click, or Control+O, opens the station's settings; one click stays as it is (FR-072).
+        findings.addMouseListener(new java.awt.event.MouseAdapter()
+        {
+            @Override
+            public void mouseClicked(java.awt.event.MouseEvent e)
+            {
+                if (e.getClickCount() == 2) openStationSettingsForTheFinding();
+            }
+        });
+
         // Clicking a finding goes to its tile.
         findings.addListSelectionListener(e ->
         {
             if (e.getValueIsAdjusting()) return;
 
             int row = findings.getSelectedIndex();
+
+            // Kept, as going to it refreshes the list, which loses the selection
+            if (row >= 0) chosenFinding = row < findingTiles.size() ? findingTiles.get(row) : null;
 
             // And its text onto the clipboard (MT-767), for a notice, not a heading
             if (row >= 0 && row < findingSeverity.size() && findingSeverity.get(row) != null)
@@ -1047,6 +1073,19 @@ public class AutonomyEditorPanel extends JPanel
 
         return scroll;
     }
+
+    /** Opens Station Settings on the square of the finding chosen in the list, or the station a caption names (FR-072). */
+    public StationSettingsWindow openStationSettingsForTheFinding()
+    {
+        if (chosenFinding == null) return null;
+
+        TileKey shows = session.getCaptionTarget(chosenFinding);
+
+        return openStationSettings(shows != null ? shows : chosenFinding);
+    }
+
+    /** The square of the finding last clicked, or null. */
+    private TileKey chosenFinding;
 
     /**
      * The filter box with its clear button, over the list (FR-073).  It narrows the list as typed and never selects a
@@ -1204,9 +1243,17 @@ public class AutonomyEditorPanel extends JPanel
     public void tileRightClicked(TileKey tile, LayoutDiagramComponent component,
         java.awt.Component invoker, int x, int y)
     {
+        stationWindowsFollow(tile);
+
         javax.swing.JPopupMenu menu = buildTileMenu(tile, component);
 
         if (menu != null) menu.show(invoker, x, y);
+    }
+
+    /** A right-click on another square moves a window already open there (FR-111). */
+    public void stationWindowsFollow(TileKey tile)
+    {
+        if (tile != null) stationWindows.rightClicked(leaderOf(tile));
     }
 
     /**
@@ -1559,7 +1606,7 @@ public class AutonomyEditorPanel extends JPanel
     }
 
     /** Whether a train is paused (FR-126): the train's own flag where the model has it, else the list. */
-    private boolean isPaused(String name, java.util.Set<String> listed)
+    boolean isPaused(String name, java.util.Set<String> listed)
     {
         org.traincontrol.base.Locomotive train = modelTrain(name);
 
@@ -1845,7 +1892,7 @@ public class AutonomyEditorPanel extends JPanel
      * Whether a setup edit is refused because trains are running, having said so (Adam: *"There should be no setup edit
      * possible during a run"*): a menu opened at rest can be clicked after a run begins (OB-047).
      */
-    private boolean refusedWhileRunning()
+    boolean refusedWhileRunning()
     {
         TrainControlUI window = parentWindow();
 
@@ -1883,17 +1930,7 @@ public class AutonomyEditorPanel extends JPanel
             }
             catch (RuntimeException ex)
             {
-                // The class too: a NullPointerException has no message.
-                String said = ex.getMessage() == null || ex.getMessage().trim().isEmpty()
-                    ? ex.getClass().getSimpleName() : ex.getMessage();
-
-                JOptionPane.showMessageDialog(owner(), I18n.f("error.generic", said));
-
-                // And into the log, with the stack
-                if (parentWindow() != null && parentWindow().getModel() != null)
-                {
-                    parentWindow().getModel().log(ex);
-                }
+                reportFailedDoor(ex);
             }
 
             refresh();
@@ -2427,31 +2464,6 @@ public class AutonomyEditorPanel extends JPanel
         return null;
     }
 
-    String stationSummary(TileKey tile, boolean isStation)
-    {
-        // Yes or no: may a train stop here.  Out of service reads no.
-        boolean stops = isStation
-            && !Boolean.FALSE.equals(session.getPointProperty(tile, "active"));
-
-        // A berth (never chosen by autonomy) is marked with a star.
-        String star = stops && !session.isAutoDestination(tile) ? " *" : "";
-
-        if (!stops) return I18n.t("autosetup.ui.stationNo") + star;
-
-        // And which kind of turn, must or may: the two settings people confuse.
-        if (session.isMustTurnAround(tile))
-        {
-            return I18n.t("autosetup.ui.stationYesTerminus") + star;
-        }
-
-        if (session.isTurnAround(tile))
-        {
-            return I18n.t("autosetup.ui.stationYesReversing") + star;
-        }
-
-        return I18n.t("autosetup.ui.stationYes") + star;
-    }
-
     /**
      * Writes a station's name onto the diagram, rebuilding the grid if it went anywhere.  Where there is no room the
      * not-shown check reports it; a dialog would interrupt the click that made the station.
@@ -2487,6 +2499,8 @@ public class AutonomyEditorPanel extends JPanel
     /** The window this panel lives in, for parenting dialogs: JOptionPane centers over its component, a side strip. */
     java.awt.Component owner()
     {
+        if (askingWindow != null && askingWindow.isShowing()) return askingWindow;
+
         java.awt.Window window = javax.swing.SwingUtilities.getWindowAncestor(this);
 
         if (window != null) return window;
@@ -2496,6 +2510,174 @@ public class AutonomyEditorPanel extends JPanel
         if (dialogOwner instanceof TrainControlUI) return ((TrainControlUI) dialogOwner).dialogParent();
 
         return dialogOwner == null ? this : dialogOwner;
+    }
+
+    /** This surface's Station Settings and train windows (FR-111). */
+    final StationWindows stationWindows;
+
+    /**
+     * Opens Station Settings on a square from outside its menu: Control+O, a finding, the track diagram.
+     * @param tile the square; somewhere that has no settings is said on the message strip
+     * @return the window, or null where there is none to show
+     */
+    public StationSettingsWindow openStationSettings(TileKey tile)
+    {
+        if (!offersStationSettings(tile))
+        {
+            if (tile != null && session.getGraph() != null) say(hint, I18n.t("autosetup.ui.infoNoStationSettings"));
+
+            return null;
+        }
+
+        cancelPendingGesture();
+
+        flashSquare(leaderOf(tile));
+
+        return stationWindows.station(leaderOf(tile));
+    }
+
+    /** Opens the train window on a square, from its menu.  @return the window, or null where there is none to show */
+    public TrainWindow openTrainWindow(TileKey tile)
+    {
+        if (!offersStationSettings(tile)) return null;
+
+        cancelPendingGesture();
+
+        return stationWindows.train(leaderOf(tile));
+    }
+
+    /** Station Settings..., for the track diagram's menu to carry. */
+    public javax.swing.JMenuItem stationSettingsItem(TileKey tile)
+    {
+        return tileMenus.settingsItem(tile);
+    }
+
+    /** Train at Bramley... or Place a Locomotive Here..., for the track diagram's menu; null where neither applies. */
+    public javax.swing.JMenuItem trainWindowItem(TileKey tile)
+    {
+        return tileMenus.trainItem(tile);
+    }
+
+    /** @return whether this square has Station Settings: a sensor square autonomy takes notice of */
+    public boolean offersStationSettings(TileKey tile)
+    {
+        if (tile == null || session == null || session.getGraph() == null || session.getReducer() == null) return false;
+
+        if (isIgnored(tile)) return false;
+
+        return session.getReducer().getPoints().containsKey(leaderOf(tile));
+    }
+
+    /** The Station Settings window on screen for this surface, or null. */
+    public StationSettingsWindow stationSettingsWindow()
+    {
+        return stationWindows.stationWindow();
+    }
+
+    /** The train window on screen for this surface, or null. */
+    public TrainWindow trainWindow()
+    {
+        return stationWindows.trainWindow();
+    }
+
+    /** Closes this surface's windows, whose square may be about to move. */
+    public void closeStationWindows()
+    {
+        stationWindows.closeAll();
+    }
+
+    /** A control of a window hit a failure: said, and logged with its stack, as the menus' items do. */
+    void reportFailedDoor(RuntimeException ex)
+    {
+        // The class too: a NullPointerException has no message.
+        String said = ex.getMessage() == null || ex.getMessage().trim().isEmpty()
+            ? ex.getClass().getSimpleName() : ex.getMessage();
+
+        JOptionPane.showMessageDialog(owner(), I18n.f("error.generic", said));
+
+        if (parentWindow() != null && parentWindow().getModel() != null) parentWindow().getModel().log(ex);
+    }
+
+    /**
+     * Sets the four settings a preset names (FR-176), through the doors the window's own controls use.
+     * @return false where the operator canceled a new station's name, and nothing changed
+     */
+    boolean applyPreset(TileKey tile, StationPreset preset)
+    {
+        if (!setUsage(tile, true, true)) return false;
+
+        session.setAutoDestination(tile, preset.fullAutonomy);
+
+        setTurning(tile, preset.may, preset.must);
+
+        setupChanged();
+
+        return true;
+    }
+
+    /** Flashes a square, where the window could not otherwise show what it is about. */
+    void flashSquare(TileKey tile)
+    {
+        if (tile == null) return;
+
+        if (menuOnly && parentWindow() != null) parentWindow().flashSquare(tile);
+        else if (onReveal != null) onReveal.accept(tile);
+    }
+
+    /** Draws the marks again, for an outline that changed; nothing about the setup has. */
+    void redrawTheMarks()
+    {
+        if (onAnnotationsChanged != null) onAnnotationsChanged.run();
+    }
+
+    /** @return the railway this setup was last built into, which Why Not Moving? asks too, or null */
+    org.traincontrol.automation.Layout builtRailway()
+    {
+        return layoutSource == null ? null : layoutSource.get();
+    }
+
+    /** Runs a question for the railway on the worker Why Not Moving? uses (OB-192). */
+    void offTheEventThread(Runnable question)
+    {
+        WhyRenderer.submit(question);
+    }
+
+    /**
+     * Why this square's settings stop everything, as the setup check says: a station every train must turn at with two
+     * sides open to arrivals (`checkTerminusTwoWaysIn`); else null.
+     */
+    String whyTheSetupStopsThisSquare(TileKey tile)
+    {
+        for (AutonomyChecks.Finding finding : session.check())
+        {
+            if (AutonomyChecks.TERMINUS_WITH_TWO_WAYS_IN.equals(finding.getMessageKey()) && tile.equals(finding.getTile()))
+            {
+                return I18n.t("autosetup.ui.stationMatrixMustTwoSides");
+            }
+        }
+
+        return null;
+    }
+
+    /** The window whose control is being pressed (`pressedFrom`), or null. */
+    private java.awt.Window askingWindow;
+
+    /** Runs a door for a window of this panel's, whose questions hang off that window while it runs (OB-324). */
+    void pressedFrom(java.awt.Window from, Runnable door)
+    {
+        final java.awt.Window before = askingWindow;
+
+        askingWindow = from;
+
+        try
+        {
+            if (parentWindow() != null) parentWindow().pressFromWindow(from, door);
+            else door.run();
+        }
+        finally
+        {
+            askingWindow = before;
+        }
     }
 
     /** Where to parent dialogs when this panel is not in a window of its own. */
@@ -2754,26 +2936,32 @@ public class AutonomyEditorPanel extends JPanel
     }
 
     /**
-     * Applies one of the three answers: `station` whether trains may stop here, `open` whether they may come at all.
+     * Applies Station Settings' two boxes (FR-111): both a station, only `stops` a stop-only station, only `runsThrough`
+     * a pass-through, neither Nothing Can Pass.
+     * @return false where the operator canceled a new station's name, and nothing changed
      */
-    void setUsage(TileKey tile, boolean station, boolean open)
+    boolean setUsage(TileKey tile, boolean stops, boolean runsThrough)
     {
         // A nameless sensor is named as it becomes a station (FR-120); Cancel or blank changes nothing.
-        if (station && !session.getStore().isStation(tile) && !hasAName(tile))
+        if (stops && !session.getStore().isStation(tile) && !hasAName(tile))
         {
             String name = askTheNewStationsName(tile);
 
-            if (name == null) return;
+            if (name == null) return false;
 
             session.setPointName(tile, name);
         }
 
-        setStation(tile, station);
+        session.setStopsAndRunsThrough(tile, stops, runsThrough);
 
-        // Stored only when off, like every default
-        session.setPointProperty(tile, "active", open ? null : Boolean.FALSE);
+        // A new station gets its name on the diagram at once, only where it has no caption (OB-310).
+        if (stops && !session.getLabelledStationTiles().contains(tile)) placeLabelFor(tile);
+
+        // A demoted sensor keeps its "terminus" flag, read only of stations, and its active state.
 
         setupChanged();
+
+        return true;
     }
 
     /** Asks for a new station's name (FR-120): message and text so far to the answer, null for Cancel. */
@@ -2821,7 +3009,7 @@ public class AutonomyEditorPanel extends JPanel
      * Why a typed name may not go on this square, as unusable or as another square's (FR-120), or null; every prompt
      * that names a square asks this.
      */
-    private String whyNotNamed(TileKey tile, String name)
+    String whyNotNamed(TileKey tile, String name)
     {
         String refused = AutonomySession.whyNotAPointName(name);
 
@@ -2831,18 +3019,6 @@ public class AutonomyEditorPanel extends JPanel
         }
 
         return refused;
-    }
-
-    private void setStation(TileKey tile, boolean on)
-    {
-        session.setStation(tile, on);
-
-        // A new station gets its name on the diagram at once, only where it has no caption (OB-310).
-        if (on && !session.getLabelledStationTiles().contains(tile)) placeLabelFor(tile);
-
-        // A demoted sensor keeps its "terminus" flag, read only of stations, and its active state.
-
-        setupChanged();
     }
 
     void setAllBranches(TileKey tile, Direction direction)
@@ -2874,24 +3050,13 @@ public class AutonomyEditorPanel extends JPanel
         prompts.promptNumber(tile, key, promptKey, unset);
     }
 
-
-    Set<String> strings(TileKey tile, String key)
+    /** Delegates to `EditorPrompts.applyNumber`. */
+    String applyNumber(TileKey tile, String key, String entered, int unset)
     {
-        Set<String> out = new LinkedHashSet<>();
-
-        Object value = session.getPointProperty(tile, key);
-
-        if (value instanceof org.json.JSONArray)
-        {
-            for (Object o : (org.json.JSONArray) value) out.add(String.valueOf(o));
-        }
-        else if (value != null)
-        {
-            out.add(String.valueOf(value));
-        }
-
-        return out;
+        return prompts.applyNumber(tile, key, entered, unset);
     }
+
+
     /** A stored number for a point, or the value meaning "not set". */
     int number(TileKey tile, String key, int fallback)
     {
@@ -2917,29 +3082,33 @@ public class AutonomyEditorPanel extends JPanel
 
         if (entered == null) return;
 
+        String refused = applyPercent(tile, entered);
+
+        if (refused != null) JOptionPane.showMessageDialog(owner(), refused);
+    }
+
+    /**
+     * Sets the speed multiplier from what was typed; 100% is the default, stored as nothing.
+     * @return why it was refused, with nothing written, or null
+     */
+    String applyPercent(TileKey tile, String entered)
+    {
         try
         {
             int value = Integer.parseInt(entered.trim());
 
-            if (value <= 0 || value > 200)
-            {
-                JOptionPane.showMessageDialog(owner(),
-                    I18n.t("autolayout.ui.errorInvalidSpeedMultiplier"));
-                return;
-            }
+            if (value <= 0 || value > 200) return I18n.t("autolayout.ui.errorInvalidSpeedMultiplier");
 
-            // 100% is the default, stored as nothing
-            session.setPointProperty(tile, "speedMultiplier",
-                value == 100 ? null : value / 100.0);
+            session.setPointProperty(tile, "speedMultiplier", value == 100 ? null : value / 100.0);
         }
         catch (NumberFormatException e)
         {
-            JOptionPane.showMessageDialog(owner(), I18n.t("autolayout.ui.errorInvalidSpeedMultiplier"));
-            // Nothing written, so nothing to announce.
-            return;
+            return I18n.t("autolayout.ui.errorInvalidSpeedMultiplier");
         }
 
         setupChanged();
+
+        return null;
     }
 
     /**
@@ -3251,8 +3420,12 @@ public class AutonomyEditorPanel extends JPanel
 
         if (chosen == null) return;
 
-        String picked = names.get(0).equals(chosen) ? null : chosen;
+        applyHome(tile, names.get(0).equals(chosen) ? null : chosen);
+    }
 
+    /** Makes this locomotive the square's home, or none for null, after the warnings a home can raise. */
+    void applyHome(TileKey tile, String picked)
+    {
         // A home it cannot rest at is warned about, not refused (OB-022): the track may not be finished.
         if (picked != null && !mayRestHere(tile, picked) && !confirmedAnyway(picked, tile)) return;
 
@@ -3334,7 +3507,7 @@ public class AutonomyEditorPanel extends JPanel
     }
 
     /** Only the locomotives placed on this layout: a home for one autonomy never heard of would do nothing. */
-    private List<String> placedLocomotives()
+    List<String> placedLocomotives()
     {
         List<String> out = new java.util.ArrayList<>();
 
@@ -3477,8 +3650,12 @@ public class AutonomyEditorPanel extends JPanel
     {
         String name = trainBeingDropped != null ? trainBeingDropped : askWhichTrain(tile);
 
-        if (name == null) return;
+        if (name != null) placeLocomotive(tile, name);
+    }
 
+    /** Puts this locomotive on the square: the one placement door, whichever control chose it (OB-373). */
+    void placeLocomotive(TileKey tile, String name)
+    {
         // The session lifts it off everywhere, excluded pages too.  Its heading is read first: the facing would
         // otherwise be the previous occupant's.
         org.traincontrol.automationui.TilePorts.Side heading = session.facingOf(name);
@@ -3493,11 +3670,23 @@ public class AutonomyEditorPanel extends JPanel
         placementChanged(java.util.Collections.singletonList(name));
     }
 
+    /** Takes the train off a square. */
+    void removeLocomotive(TileKey tile)
+    {
+        String standing = locomotiveAt(tile);
+
+        session.placeLocomotive(tile, null);
+
+        // The setup's new answer for this train is "nowhere", and it is an answer - without naming it the rebuild puts
+        // the train straight back.
+        placementChanged(java.util.Collections.singletonList(standing));
+    }
+
     /** The train being dragged onto a square, for the length of `dropTrain`; null otherwise. */
     private String trainBeingDropped;
 
-    /** The picker: which train goes on the square, or null when none was chosen. */
-    private String askWhichTrain(TileKey tile)
+    /** The trains a square may be given, with those autonomy already runs first and marked: a move is the commoner. */
+    private List<String> trainsToChooseFrom(TileKey tile)
     {
         List<String> placed = placedLocomotives();
 
@@ -3505,7 +3694,6 @@ public class AutonomyEditorPanel extends JPanel
 
         List<String> names = new java.util.ArrayList<>();
 
-        // Already in autonomy first, and marked: a move is the commoner gesture.
         for (String name : placed)
         {
             if (!name.equals(here)) names.add(I18n.f("autosetup.ui.locomotiveElsewhere", name));
@@ -3515,6 +3703,36 @@ public class AutonomyEditorPanel extends JPanel
         {
             if (!placed.contains(name)) names.add(name);
         }
+
+        return names;
+    }
+
+    /** That list for the train window: "none", then the train here, then the rest. */
+    List<String> trainChoices(TileKey tile, String none)
+    {
+        List<String> names = new java.util.ArrayList<>();
+
+        names.add(none);
+
+        if (locomotiveAt(tile) != null) names.add(locomotiveAt(tile));
+
+        names.addAll(trainsToChooseFrom(tile));
+
+        return names;
+    }
+
+    /** The plain name behind a row of that list. */
+    String withoutMark(String chosen)
+    {
+        return unmark(chosen, placedLocomotives());
+    }
+
+    /** The picker: which train goes on the square, or null when none was chosen. */
+    private String askWhichTrain(TileKey tile)
+    {
+        List<String> placed = placedLocomotives();
+
+        List<String> names = trainsToChooseFrom(tile);
 
         if (names.isEmpty())
         {
@@ -3669,20 +3887,29 @@ public class AutonomyEditorPanel extends JPanel
         return chosen;
     }
 
-    /** Delegates to `EditorPrompts.promptLocomotives`. */
-    void promptLocomotives(TileKey tile, String key, List<String> names)
+    /** Delegates to `EditorPrompts.promptTrainList`. */
+    boolean promptTrainList(TileKey tile, org.traincontrol.automationui.AutonomySession.WhichTrains which)
     {
-        prompts.promptLocomotives(tile, key, names);
+        return prompts.promptTrainList(tile, which);
     }
 
     /**
-     * The home that excluding these locomotives here would contradict, read off the setup, where homes live.
-     * @param allowOnly whether the list names the only ones allowed (FR-121) rather than the ones shut out
-     * @return the home that would be contradicted, or null
+     * Which Trains (FR-111), asking about a home the choice would break as the list does (OB-022).
+     * @return false where the operator kept it as it was
      */
-    String homeBrokenBy(TileKey tile, List<String> chosen, boolean allowOnly)
+    boolean setWhichTrains(TileKey tile, org.traincontrol.automationui.AutonomySession.WhichTrains which)
     {
-        return homeBrokenBy(homeOf(tile), chosen, allowOnly);
+        if (which != org.traincontrol.automationui.AutonomySession.WhichTrains.ALL
+            && !prompts.homeMayBeBroken(tile, session.getTrainList(tile), which))
+        {
+            return false;
+        }
+
+        session.setWhichTrains(tile, which);
+
+        setupChanged();
+
+        return true;
     }
 
     /**
@@ -3709,13 +3936,6 @@ public class AutonomyEditorPanel extends JPanel
         if (home == null || chosen == null) return null;
 
         return chosen.contains(home) != allowOnly ? home : null;
-    }
-
-    /** Whether a square's locomotive list names the only ones allowed there (FR-121). */
-    boolean allowsOnlyListed(TileKey tile)
-    {
-        return org.traincontrol.automation.Point.ALLOW_ONLY_LISTED.equals(
-            session.getPointProperty(tile, org.traincontrol.automation.Point.EXCLUDED_LOCS_MODE));
     }
 
     /**
@@ -3919,14 +4139,20 @@ public class AutonomyEditorPanel extends JPanel
         }
 
         // A name ending like a builder copy's, or another square's, is refused, and said.
+        String refused = applyName(tile, name);
+
+        if (refused != null) JOptionPane.showMessageDialog(owner(), wrapped(refused));
+    }
+
+    /**
+     * Names the square.
+     * @return why the name is refused, with nothing written, or null
+     */
+    String applyName(TileKey tile, String name)
+    {
         String refused = whyNotNamed(tile, name);
 
-        if (refused != null)
-        {
-            JOptionPane.showMessageDialog(owner(), wrapped(refused));
-
-            return;
-        }
+        if (refused != null) return refused;
 
         // Cannot fail: captions point at the square.
         session.setPointName(tile, name.trim());
@@ -3941,6 +4167,8 @@ public class AutonomyEditorPanel extends JPanel
         // And the running layout is rebuilt, or the label goes blank (OB-034): it still holds the old name.  Persisted
         // too (MT-246).
         setupChanged();
+
+        return null;
     }
 
     /** Delegates to `EditorPrompts.promptLinkName`. */
@@ -5801,21 +6029,27 @@ public class AutonomyEditorPanel extends JPanel
         {
             if (refusedWhileRunning()) return;
 
-            // Set on the run, not the tile: a run has one direction.
-            int set = session.setRunDirection(tile, routeId, direction);
-
-            if (set == 0)
-            {
-                say(hint, I18n.t("autosetup.ui.oneWayNoPath"));
-            }
-
-            refresh();
-
-            // Here, beside the write, through the light door (MT-334).
-            annotationsChanged();
+            setRunDirection(tile, routeId, direction);
         });
 
         return item;
+    }
+
+    /** Sets which way trains may run over a square, on the run it belongs to. */
+    void setRunDirection(TileKey tile, RouteId routeId, Direction direction)
+    {
+        // Set on the run, not the tile: a run has one direction.
+        int set = session.setRunDirection(tile, routeId, direction);
+
+        if (set == 0)
+        {
+            say(hint, I18n.t("autosetup.ui.oneWayNoPath"));
+        }
+
+        refresh();
+
+        // Here, beside the write, through the light door (MT-334).
+        annotationsChanged();
     }
 
     /** What this sensor has been designated as, or null when it is not a station. */
@@ -6021,6 +6255,8 @@ public class AutonomyEditorPanel extends JPanel
 
         // One rebuild per gesture, coalesced, as doors nest; no rebuild sees a half-applied edit.
         rebuildRunningLayoutSoon();
+
+        stationWindows.changed();
     }
 
     /** The coalesced rebuild half, also asked by an annotations-only change (OB-185). */
@@ -6041,6 +6277,9 @@ public class AutonomyEditorPanel extends JPanel
             placementsJustEdited.clear();
 
             if (parentWindow() != null) parentWindow().rebuildRunningLayoutFromSetup(true, edited);
+
+            // An open Station Settings asks the rebuilt railway, as an arrow change reloads it before the rebuild
+            stationWindows.changed();
         });
     }
 
@@ -6179,6 +6418,8 @@ public class AutonomyEditorPanel extends JPanel
         }
 
         if (onChanged != null) onChanged.run();
+
+        stationWindows.changed();
     }
 
     /**
@@ -6579,7 +6820,8 @@ public class AutonomyEditorPanel extends JPanel
      */
     public boolean isOutlined(TileKey tile)
     {
-        return selection.contains(tile) || noticeOutline.contains(tile) || highlightedSignals.contains(tile);
+        return selection.contains(tile) || noticeOutline.contains(tile) || highlightedSignals.contains(tile)
+            || stationWindows.outlines(tile);
     }
 
     void outlineAndReveal(java.util.Collection<TileKey> squares)

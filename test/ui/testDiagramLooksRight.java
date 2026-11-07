@@ -1781,12 +1781,11 @@ public class testDiagramLooksRight
 
     /**
      * Changing what trains may do at a station leaves its caption where it is (OB-310; the rename has the same rule,
-     * MT-116): each answer under Station goes through `setStation(tile, true)`, which must place a caption only where
-     * the station has none.  Covered: every named station with a caption, both changes, through
-     * `buildAutonomyTileMenu`; then a station captioned on north-south rails, drawn after the answer that lets no train
-     * pass.
+     * MT-116): both boxes of Station Settings go through `setUsage`, which must place a caption only where the station
+     * has none.  Covered: every named station with a caption, both changes, through the window `buildAutonomyTileMenu`
+     * opens; then a station captioned on north-south rails, drawn with both boxes off.
      *
-     * MUTATION: dropping the "has none" test from `AutonomyEditorPanel.setStation` fails both halves.
+     * MUTATION: dropping the "has none" test from `AutonomyEditorPanel.setUsage` fails both halves.
      */
     @Test
     public void testChangingWhatTrainsMayDoLeavesTheCaptionWhereItIs() throws Exception
@@ -1795,8 +1794,8 @@ public class testDiagramLooksRight
 
         assertNotNull(session, "no autonomy session over the fixture layout");
 
-        final String neither = org.traincontrol.util.I18n.t("autosetup.ui.menuNeither");
-        final String stop = org.traincontrol.util.I18n.t("autosetup.ui.menuCanStop");
+        final String neither = "both boxes off";
+        final String stop = "both boxes on";
 
         final org.json.JSONObject asItWas = session.snapshotSetup();
 
@@ -1849,7 +1848,7 @@ public class testDiagramLooksRight
                 final java.util.Set<org.traincontrol.automationui.TileGraph.TileKey> was =
                     new java.util.LinkedHashSet<>(session.captionsFor(station));
 
-                choose(station, neither, said);
+                choose(station, false, said);
 
                 if (!session.captionsFor(station).equals(was))
                 {
@@ -1858,7 +1857,7 @@ public class testDiagramLooksRight
 
                 if (station.equals(onEnd)) drawnShut = drawnOnEnd(station);
 
-                choose(station, stop, said);
+                choose(station, true, said);
 
                 if (!session.captionsFor(station).equals(was))
                 {
@@ -1884,13 +1883,13 @@ public class testDiagramLooksRight
     }
 
     /**
-     * Chooses one answer under Station on a square's right-click menu, as the track diagram builds it.
+     * Sets both boxes of Station Settings, opened from a square's right-click menu as the track diagram builds it.
      *
      * @param station the square
-     * @param answer the item's text
+     * @param open the boxes' state
      * @param said the text of any dialog that came up, which is closed
      */
-    private void choose(final org.traincontrol.automationui.TileGraph.TileKey station, final String answer,
+    private void choose(final org.traincontrol.automationui.TileGraph.TileKey station, final boolean open,
         final java.util.List<String> said) throws Exception
     {
         final String[] missing = new String[1];
@@ -1899,30 +1898,30 @@ public class testDiagramLooksRight
         {
             javax.swing.JPopupMenu menu = ui.buildAutonomyTileMenu(station);
 
-            if (menu == null)
+            javax.swing.AbstractButton opens = menu == null ? null : support.Components.withText(menu,
+                org.traincontrol.util.I18n.t("autosetup.ui.menuStationSettings"));
+
+            if (opens == null)
             {
-                missing[0] = "no menu for " + station;
+                missing[0] = "no Station Settings for " + station;
 
                 return;
             }
 
-            for (java.awt.Component part : menu.getComponents())
+            opens.doClick();
+
+            org.traincontrol.gui.autonomyeditor.StationSettingsWindow window =
+                support.StationDoors.showing(org.traincontrol.gui.autonomyeditor.StationSettingsWindow.class);
+
+            for (String box : open ? new String[] {"station.stops", "station.runsThrough"}
+                : new String[] {"station.runsThrough", "station.stops"})
             {
-                if (!(part instanceof javax.swing.JMenu)) continue;
+                javax.swing.AbstractButton each = support.StationDoors.part(window, box, javax.swing.AbstractButton.class);
 
-                for (java.awt.Component item : ((javax.swing.JMenu) part).getMenuComponents())
-                {
-                    if (item instanceof javax.swing.AbstractButton
-                        && answer.equals(((javax.swing.AbstractButton) item).getText()))
-                    {
-                        ((javax.swing.AbstractButton) item).doClick();
-
-                        return;
-                    }
-                }
+                if (each.isSelected() != open) each.doClick();
             }
 
-            missing[0] = "no \"" + answer + "\" under Station for " + station;
+            support.StationDoors.part(window, "station.close", javax.swing.AbstractButton.class).doClick();
         };
 
         final java.util.concurrent.atomic.AtomicBoolean done = new java.util.concurrent.atomic.AtomicBoolean();
@@ -1942,7 +1941,8 @@ public class testDiagramLooksRight
 
                 for (java.awt.Window w : java.awt.Window.getWindows())
                 {
-                    if (w instanceof javax.swing.JDialog && w.isShowing())
+                    if (w instanceof javax.swing.JDialog && w.isShowing()
+                        && !(w instanceof org.traincontrol.gui.autonomyeditor.StationSettingsWindow))
                     {
                         said.add(String.valueOf(((javax.swing.JDialog) w).getTitle()));
 

@@ -36,35 +36,39 @@ final class EditorPrompts
 
         if (entered == null) return;
 
+        String refused = applyNumber(tile, key, entered, unset);
+
+        if (refused != null) JOptionPane.showMessageDialog(editor.owner(), AutonomyEditorPanel.wrapped(refused));
+    }
+
+    /**
+     * Stores a typed number, nothing when it is the value that means "no setting".
+     * @return why it was refused, with nothing written, or null
+     */
+    String applyNumber(TileKey tile, String key, String entered, int unset)
+    {
         try
         {
             int value = Integer.parseInt(entered.trim());
 
-            // Refused before it is written, rather than by the layer that loads it; nothing is stored, as in the
-            // NumberFormatException arm below.
+            // Refused before it is written, rather than by the layer that loads it.
             String refused = AutonomyEditorPanel.whyNotThisNumber(key, value);
 
-            if (refused != null)
-            {
-                JOptionPane.showMessageDialog(editor.owner(), AutonomyEditorPanel.wrapped(refused));
-
-                return;
-            }
+            if (refused != null) return refused;
 
             editor.session.setPointProperty(tile, key, value == unset ? null : value);
         }
         catch (NumberFormatException e)
         {
-            // About numbers, not about lengths: this prompt is also used for a station's priority, where negatives are
-            // valid.
-            JOptionPane.showMessageDialog(editor.owner(), I18n.f("autosetup.ui.errorNotANumber", entered));
-            // Nothing was written, so nothing to announce: the call below would save the setup and rebuild the railway
-            // having changed nothing.
-            return;
+            // About numbers, not about lengths: this is also used for a station's priority, where negatives are valid.
+            // Nothing was written, so nothing to announce.
+            return I18n.f("autosetup.ui.errorNotANumber", entered);
         }
 
         // Persisted, and the running layout told (MT-246).
         editor.setupChanged();
+
+        return null;
     }
 
     /**
@@ -248,19 +252,21 @@ final class EditorPrompts
     }
 
     /**
-     * Asks which locomotives, as a multi-select list rather than typed names: a name that does not match the roster
-     * exactly would silently do nothing.
+     * Asks which locomotives are on a square's one list (FR-111), as a multi-select list rather than typed names: a name
+     * that does not match the roster exactly would silently do nothing.  OK puts the list in force under `which`.
      *
      * @param tile the square
-     * @param key the point property to store the choice under
-     * @param names the locomotives worth offering, which is not always the whole roster
+     * @param which Blacklist or Whitelist
+     * @return false where nothing changed: no locomotives, Cancel, or a home the operator would not break
      */
-    void promptLocomotives(TileKey tile, String key, List<String> names)
+    boolean promptTrainList(TileKey tile, org.traincontrol.automationui.AutonomySession.WhichTrains which)
     {
+        List<String> names = editor.allLocomotives();
+
         if (names.isEmpty())
         {
             JOptionPane.showMessageDialog(editor.owner(), I18n.t("error.noLocs"));
-            return;
+            return false;
         }
 
         javax.swing.DefaultListModel<String> model = new javax.swing.DefaultListModel<>();
@@ -273,7 +279,7 @@ final class EditorPrompts
         list.setVisibleRowCount(Math.max(8, Math.min(18, names.size())));
         AutonomyEditorPanel.control(list);
 
-        Set<String> chosen = editor.strings(tile, key);
+        List<String> chosen = editor.session.getTrainList(tile);
         List<Integer> indexes = new java.util.ArrayList<>();
 
         for (int i = 0; i < names.size(); i++)
@@ -287,81 +293,43 @@ final class EditorPrompts
 
         list.setSelectedIndices(selection);
 
-        // And the list's mode, above it (FR-121): keep the chosen locomotives out (the default, a blacklist), or let
-        // only them in (a whitelist). Adam: "we don't want to allow new locomotives that get added later when that mode
-        // is on."
-        boolean exclusions = "excludedLocs".equals(key);
-
-        javax.swing.JRadioButton keepOut = new javax.swing.JRadioButton(I18n.t("autosetup.ui.optionExcludeChosenLocs"));
-        javax.swing.JRadioButton letInOnly = new javax.swing.JRadioButton(I18n.t("autosetup.ui.optionAllowOnlyChosenLocs"));
-
-        javax.swing.ButtonGroup modes = new javax.swing.ButtonGroup();
-
-        modes.add(keepOut);
-        modes.add(letInOnly);
-
-        (editor.allowsOnlyListed(tile) ? letInOnly : keepOut).setSelected(true);
-
-        javax.swing.JComponent asked = new JScrollPane(list);
-
-        if (exclusions)
-        {
-            javax.swing.JPanel choices = new javax.swing.JPanel(new java.awt.GridLayout(0, 1));
-
-            choices.add(keepOut);
-            choices.add(letInOnly);
-
-            javax.swing.JPanel both = new javax.swing.JPanel(new java.awt.BorderLayout(0, 6));
-
-            both.add(choices, java.awt.BorderLayout.NORTH);
-            both.add(asked, java.awt.BorderLayout.CENTER);
-
-            asked = both;
-        }
-
-        // The "home" arm of this is not reached: the only caller passes "excludedLocs".  Kept because the shape is right
-        // for any list-valued property, but anything that starts using it for a HOME has to go through session.setHome,
-        // which sweeps that locomotive's home off every other square.
-        if (JOptionPane.showConfirmDialog(editor.owner(), asked, I18n.t(key.equals("home")
-                ? "autosetup.ui.labelHomeFor" : "autosetup.ui.labelLocomotiveExclusions"),
+        if (JOptionPane.showConfirmDialog(editor.owner(), new JScrollPane(list),
+            I18n.t("autosetup.ui.labelLocomotiveExclusions"),
             JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE) != JOptionPane.OK_OPTION)
         {
-            return;
+            return false;
         }
 
         List<String> picked = list.getSelectedValuesList();
 
-        boolean allowOnly = exclusions && letInOnly.isSelected();
+        if (!homeMayBeBroken(tile, picked, which)) return false;
 
-        // Excluding a locomotive from the station that is its HOME contradicts the home (OB-022; HomeStaging.homeBrokenByExcluding):
-        // warned rather than refused, like the home warning, since an operator may mean it.
-        if ("excludedLocs".equals(key))
-        {
-            String broken = editor.homeBrokenBy(tile, picked, allowOnly);
-
-            if (broken != null && JOptionPane.showOptionDialog(editor.owner(),
-                I18n.f("autolayout.ui.confirmExcludingHome", broken, editor.describeTile(tile)),
-                I18n.t("autosetup.ui.labelExcludedLocs"),
-                JOptionPane.YES_NO_OPTION, JOptionPane.PLAIN_MESSAGE, null,
-                TrainControlUI.YES_NO_OPTS, TrainControlUI.YES_NO_OPTS[1]) != JOptionPane.YES_OPTION)
-            {
-                return;
-            }
-        }
-
-        editor.session.setPointProperty(tile, key,
-            picked.isEmpty() ? null : new org.json.JSONArray(picked));
-
-        if (exclusions)
-        {
-            editor.session.setPointProperty(tile, org.traincontrol.automation.Point.EXCLUDED_LOCS_MODE,
-                allowOnly ? org.traincontrol.automation.Point.ALLOW_ONLY_LISTED : null);
-        }
-
-        editor.refresh();
+        editor.session.setWhichTrains(tile, which, picked);
 
         // Persisted, and the running layout told (MT-246).
         editor.setupChanged();
+
+        return true;
+    }
+
+    /**
+     * Excluding a locomotive from the station that is its home contradicts the home (OB-022;
+     * HomeStaging.homeBrokenByExcluding): warned rather than refused, like the home warning, since an operator may mean
+     * it.
+     *
+     * @return false where the operator would rather not
+     */
+    boolean homeMayBeBroken(TileKey tile, List<String> chosen,
+        org.traincontrol.automationui.AutonomySession.WhichTrains which)
+    {
+        String broken = AutonomyEditorPanel.homeBrokenBy(editor.homeOf(tile), chosen,
+            which == org.traincontrol.automationui.AutonomySession.WhichTrains.WHITELIST);
+
+        return broken == null || JOptionPane.showOptionDialog(editor.owner(),
+            I18n.f("autolayout.ui.confirmExcludingHome", broken, editor.describeTile(tile)),
+            I18n.t("autosetup.ui.labelExcludedLocs"),
+            JOptionPane.YES_NO_OPTION, JOptionPane.PLAIN_MESSAGE, null,
+            TrainControlUI.YES_NO_OPTS, TrainControlUI.YES_NO_OPTS[1]) == JOptionPane.YES_OPTION;
     }
 
     /**
