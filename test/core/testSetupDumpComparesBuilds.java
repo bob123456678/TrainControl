@@ -85,8 +85,9 @@ public class testSetupDumpComparesBuilds
         assertTrue(counts.get("plans ready") > 0, "no Return Home plan was ready, so none was compared: " + counts);
         assertTrue(counts.get("timetable entries played") > 0, "no timetable was played: " + counts);
 
+        // home-plans.txt too: the planner budgets route work, not time, so its moves are the same twice (OB-413)
         for (String section : Arrays.asList("settings.txt", "graph.txt", "paths.txt", "offers.txt", "runs.txt", "homes.txt",
-            "timetables.txt",
+            "home-plans.txt", "timetables.txt",
             "railway.json", "saved-unchanged/setup.json", "saved-captured/configuration-Main.json"))
         {
             assertEquals(read(new File(temp, "second/" + section)), read(new File(temp, "first/" + section)),

@@ -685,6 +685,7 @@
         <test-one-class class="testTheLocomotiveSettingsAutonomyTab"/>
         <test-one-class class="testAddingALocomotiveInTheSettingsWindow"/>
         <test-one-class class="testSeveralStationsAtOnce"/>
+        <test-one-class class="testReturnHomeIsTheSameEveryTime"/>
     </target>
     <target name="package-for-store" depends="jar">
         <property name="store.jar.name" value="TrainControl"/>

@@ -12,8 +12,9 @@ Two things are printed as information and do not fail:
 
 - How many saved files equal the file as it came: a build may well tidy an old file, and the question is whether the two
   builds tidy it alike.
-- Each Return Home plan's moves (home-plans.txt).  NOT proved identical (OB-413): HomeStaging's search has a wall clock budget that
-  picks among plans, so one setup gives 4 moves or 8 run to run inside one JVM, in 3.0.8 as in later builds.
+- Each Return Home plan's moves (home-plans.txt), when the older build's planner has a wall clock budget, as 3.0.8's and
+  every build's before OB-413 does: it picks among plans by how fast it runs, so one setup gives 4 moves or 8 run to run.
+  When both files say "planner budget: route work", the moves are compared like every other file and a difference fails.
 """
 import difflib
 import json
@@ -43,6 +44,12 @@ def total(counts_text, key):
 PLANS = "home-plans.txt"
 
 
+def plans_by_work(path):
+    lines = read(path).decode("utf-8").splitlines()
+    first = lines[0].strip() if lines else ""
+    return first == "planner budget: route work"
+
+
 def plan_sizes(path):
     return [line.strip() for line in read(path).decode("utf-8").splitlines() if line.startswith("round ")]
 
@@ -67,7 +74,7 @@ def main():
     plans_same = plans_total = 0
     plans_apart = []
     for rel in sorted(set(a) | set(b)):
-        if rel.endswith("/" + PLANS) and rel in a and rel in b:
+        if rel.endswith("/" + PLANS) and rel in a and rel in b and not (plans_by_work(a[rel]) and plans_by_work(b[rel])):
             plans_total += 1
             if read(a[rel]) == read(b[rel]):
                 plans_same += 1
@@ -130,10 +137,14 @@ def main():
     print("information: %d of %d of those saved files equal the file as it came, CRLF aside; the others: %s" %
           (matches_input, compared_to_input, how))
 
-    print("information, NOT proved identical (OB-413): the moves of Return Home plans, as the planner's wall clock budget picks among "
-          "plans within one build; the same moves on %d of %d setups" % (plans_same, plans_total))
-    for line in plans_apart:
-        print("  " + line)
+    if plans_total:
+        print("information, NOT compared (OB-413): the moves of Return Home plans on %d setups, as a planner with a wall clock "
+              "budget (3.0.8's, and every build's before OB-413) picks among plans run to run; the same moves on %d of them" %
+              (plans_total, plans_same))
+        for line in plans_apart:
+            print("  " + line)
+    else:
+        print("Return Home plans' moves: compared with the other files, as both builds plan by route work (OB-413)")
 
     failed = different > 0 or saved_total == 0 or saved_same != saved_total or ready == 0 or played == 0
     if saved_total == 0 or ready == 0 or played == 0:
