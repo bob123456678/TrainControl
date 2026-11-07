@@ -1580,6 +1580,8 @@ public class testARouteDoesNotThrowSwitchesUnderATrain
      *
      * A count nothing consults is a count nobody reads.  Anchored on the call rather than on the key
      * alone, because the key existing in the bundles says only that somebody wrote a sentence.
+     *
+     * MUTATION: count something else than `r.commandsDrive(value)` in `LocomotiveActions.deleteLoc`, and this fails.
      */
     @Test
     public void testTheDeleteDialogNamesTheRoutesThatWillLoseCommands() throws Exception
