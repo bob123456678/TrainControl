@@ -695,6 +695,12 @@ public class TileAnnotation
         return ignored;
     }
 
+    /** Whether the arrows follow a curve's chord. */
+    public boolean isCurved()
+    {
+        return curved;
+    }
+
     /** The look of a square autonomy takes no notice of: washed out and hatched; leaves g's composite changed. */
     private static void paintGreyedOut(Graphics2D g, int width, int height)
     {
@@ -1013,38 +1019,60 @@ public class TileAnnotation
             double baseX = at[0] + dx * 1.5 + px * along;
             double baseY = at[1] + dy * 1.5 + py * along;
 
-            double tipX = baseX + dx * depth;
-            double tipY = baseY + dy * depth;
-
-            java.awt.geom.Path2D head = new java.awt.geom.Path2D.Double();
-
-            head.moveTo(baseX + px * wing, baseY + py * wing);
-            head.lineTo(tipX, tipY);
-            head.lineTo(baseX - px * wing, baseY - py * wing);
-
-            if (arrival.isAllowed())
-            {
-                head.closePath();
-
-                g.setColor(ARRIVAL);
-                g.fill(head);
-
-                g.setColor(ARRIVAL_EDGE);
-                g.draw(head);
-            }
-            else
-            {
-                // THE CHEVRON ALONE, ITS ARMS SCALED WITH THE SQUARE, IN GRAY (OB-326): the same shape at 30 and 60
-                // pixels, where a hollow chevron with strokes through it would read as a hollow triangle.
-                java.awt.Stroke was = g.getStroke();
-
-                g.setColor(ARRIVAL_BARRED);
-                g.setStroke(new BasicStroke((float) Math.max(2.0, span / 14.0), BasicStroke.CAP_ROUND,
-                    BasicStroke.JOIN_ROUND));
-                g.draw(head);
-                g.setStroke(was);
-            }
+            paintArrival(g, head(baseX, baseY, dx, dy, px, py, wing, depth), arrival.isAllowed(), span);
         }
+    }
+
+    private static java.awt.geom.Path2D head(double baseX, double baseY, double dx, double dy, double px, double py,
+        double wing, double depth)
+    {
+        java.awt.geom.Path2D head = new java.awt.geom.Path2D.Double();
+
+        head.moveTo(baseX + px * wing, baseY + py * wing);
+        head.lineTo(baseX + dx * depth, baseY + dy * depth);
+        head.lineTo(baseX - px * wing, baseY - py * wing);
+
+        return head;
+    }
+
+    /**
+     * The arrival chevron's shape for a square of this size, its base at the given point, pointing along `heading` (a
+     * unit vector), for a picture that draws one off the diagram's place (FR-111).
+     */
+    public static java.awt.geom.Path2D arrivalShape(double baseX, double baseY, double[] heading, int span)
+    {
+        return head(baseX, baseY, heading[0], heading[1], -heading[1], heading[0], Math.max(2.5, span / 7.0),
+            Math.max(3.0, span / 5.0));
+    }
+
+    /** Draws an arrival chevron: filled where trains may stop coming that way, a gray open chevron where not. */
+    public static void paintArrival(Graphics2D g, java.awt.geom.Path2D head, boolean allowed, int span)
+    {
+        java.awt.Stroke was = g.getStroke();
+
+        if (allowed)
+        {
+            head.closePath();
+
+            g.setStroke(new BasicStroke(Math.max(1.2f, span / 22f), BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+
+            g.setColor(ARRIVAL);
+            g.fill(head);
+
+            g.setColor(ARRIVAL_EDGE);
+            g.draw(head);
+        }
+        else
+        {
+            // THE CHEVRON ALONE, ITS ARMS SCALED WITH THE SQUARE, IN GRAY (OB-326): the same shape at 30 and 60
+            // pixels, where a hollow chevron with strokes through it would read as a hollow triangle.
+            g.setColor(ARRIVAL_BARRED);
+            g.setStroke(new BasicStroke((float) Math.max(2.0, span / 14.0), BasicStroke.CAP_ROUND,
+                BasicStroke.JOIN_ROUND));
+            g.draw(head);
+        }
+
+        g.setStroke(was);
     }
 
     /**
@@ -1377,11 +1405,62 @@ public class TileAnnotation
      */
     private static void arrow(Graphics2D g, int[] target, double[] heading, boolean allowed, int span)
     {
+        java.awt.Polygon shape = arrowShape(target, heading, allowed, span);
+
+        if (shape == null) return;
+
+        // OUTLINED ON THE SHAPE ITSELF, not nudged to the pixel grid, whose rounding hangs an outline half a pixel
+        // right and down and would pull an arrow off its rail.  The thin lines elsewhere on a square are crisper on the
+        // grid.
+        Object control = g.getRenderingHint(RenderingHints.KEY_STROKE_CONTROL);
+
+        g.setRenderingHint(RenderingHints.KEY_STROKE_CONTROL, RenderingHints.VALUE_STROKE_PURE);
+
+        try
+        {
+            if (allowed)
+            {
+                g.setColor(ONE_WAY);
+                g.fillPolygon(shape);
+
+                g.setColor(ONE_WAY_EDGE);
+                g.setStroke(new BasicStroke(1.0f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+                g.drawPolygon(shape);
+            }
+            else
+            {
+                // Hollow, outlined in the same weight as the open ones, so the pair read as one mark in two states
+                g.setColor(Color.WHITE);
+                g.fillPolygon(shape);
+
+                g.setColor(CLOSED);
+                g.setStroke(new BasicStroke(1.6f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+                g.drawPolygon(shape);
+            }
+        }
+        finally
+        {
+            g.setRenderingHint(RenderingHints.KEY_STROKE_CONTROL,
+                control == null ? RenderingHints.VALUE_STROKE_DEFAULT : control);
+        }
+    }
+
+    /**
+     * The arrowhead `arrow` draws, or null for a heading shorter than a pixel: for a picture that draws one off a square (FR-111) and must
+     * know where it lies.
+     *
+     * @param target where its tip points, less the gap the diagram leaves at a square's edge
+     * @param heading which way it points
+     * @param allowed whether trains may go that way (filled) or not (hollow, a pixel smaller and further back)
+     * @param span the size of square it is drawn for
+     */
+    public static java.awt.Polygon arrowShape(int[] target, double[] heading, boolean allowed, int span)
+    {
         double dx = heading[0];
         double dy = heading[1];
         double len = Math.sqrt(dx * dx + dy * dy);
 
-        if (len < 1) return;
+        if (len < 1) return null;
 
         dx /= len;
         dy /= len;
@@ -1416,53 +1495,13 @@ public class TileAnnotation
             ys[i + 1] = (int) Math.round(tipY + Math.sin(angle + barb) * size);
         }
 
-        // OUTLINED ON THE SHAPE ITSELF, not nudged to the pixel grid, whose rounding hangs an outline half a pixel
-        // right and down and would pull an arrow off its rail.  The thin lines elsewhere on a square are crisper on the
-        // grid.
-        Object control = g.getRenderingHint(RenderingHints.KEY_STROKE_CONTROL);
-
-        g.setRenderingHint(RenderingHints.KEY_STROKE_CONTROL, RenderingHints.VALUE_STROKE_PURE);
-
-        try
-        {
-            if (allowed)
-            {
-                g.setColor(ONE_WAY);
-                g.fillPolygon(xs, ys, 3);
-
-                g.setColor(ONE_WAY_EDGE);
-                g.setStroke(new BasicStroke(1.0f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
-                g.drawPolygon(xs, ys, 3);
-            }
-            else
-            {
-                // Hollow, outlined in the same weight as the open ones, so the pair read as one mark in two states
-                g.setColor(Color.WHITE);
-                g.fillPolygon(xs, ys, 3);
-
-                g.setColor(CLOSED);
-                g.setStroke(new BasicStroke(1.6f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
-                g.drawPolygon(xs, ys, 3);
-            }
-        }
-        finally
-        {
-            g.setRenderingHint(RenderingHints.KEY_STROKE_CONTROL,
-                control == null ? RenderingHints.VALUE_STROKE_DEFAULT : control);
-        }
+        return new java.awt.Polygon(xs, ys, 3);
     }
 
-    /**
-     * The diagram's open-direction arrow, for a picture that draws one off a square (FR-111).
-     *
-     * @param g where to draw
-     * @param target where its tip points, less the gap the diagram leaves at a square's edge
-     * @param heading which way it points
-     * @param span the size of square it is drawn for
-     */
-    public static void openArrow(Graphics2D g, int[] target, double[] heading, int span)
+    /** Draws `arrowShape`'s arrowhead as the diagram does: green where trains may go that way, a red outline where not. */
+    public static void paintArrow(Graphics2D g, int[] target, double[] heading, boolean allowed, int span)
     {
-        arrow(g, target, heading, true, span);
+        arrow(g, target, heading, allowed, span);
     }
 
     /** How far short of the tile edge an arrowhead stops, so arrows on neighboring tiles stay separate marks. */

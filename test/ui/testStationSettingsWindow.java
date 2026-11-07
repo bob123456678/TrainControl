@@ -1344,11 +1344,11 @@ public class testStationSettingsWindow
     }
 
     /**
-     * The picture wears what the track diagram's own pass puts on this square (with its two arrow options on), through a
-     * plain station, a one-way one, a terminus and a closed one, and it follows each change at once.
+     * The picture's station wears the badge the track diagram's own pass puts on this square (with its two arrow options
+     * on), through a plain station, a one-way one, a terminus and a closed one, and its marks follow each change at once.
      *
-     * MUTATION: have `fill` skip `picture.show`, and it stands still; have `StationPicture.show` ask `staticAnnotations`
-     * for no allowed directions or `staticAnnotationFor` with no arrivals, and it differs from the diagram; and this fails.
+     * MUTATION: have `fill` skip `picture.show`, and it stands still; have `StationPicture.show` wear no badge, and it
+     * differs from the diagram; and this fails.
      */
     @Test(timeOut = 180000)
     public void testThePictureWearsWhatTheDiagramDoes() throws Exception
@@ -1381,7 +1381,7 @@ public class testStationSettingsWindow
 
             StationDoors.current(window);
 
-            org.traincontrol.automationui.TileAnnotation plain = theSameOnBoth(window, onTheDiagram, "a plain station");
+            String plain = theSameOnBoth(window, onTheDiagram, "a plain station");
 
             Components.onTheEventThread(() ->
             {
@@ -1392,14 +1392,14 @@ public class testStationSettingsWindow
 
             StationDoors.current(window);
 
-            org.traincontrol.automationui.TileAnnotation oneWay = theSameOnBoth(window, onTheDiagram, "a one-way station");
+            String oneWay = theSameOnBoth(window, onTheDiagram, "a one-way station");
 
             assertFalse(oneWay.equals(plain), "a one-way station is drawn as a plain one");
 
             StationDoors.press(window, "station.preset.TERMINUS");
             StationDoors.current(window);
 
-            org.traincontrol.automationui.TileAnnotation terminus = theSameOnBoth(window, onTheDiagram, "a terminus");
+            String terminus = theSameOnBoth(window, onTheDiagram, "a terminus");
 
             assertFalse(terminus.equals(oneWay), "a terminus is drawn as a station");
 
@@ -1423,11 +1423,11 @@ public class testStationSettingsWindow
     }
 
     /**
-     * TopMainR1 stands on track that only runs northward: with Both Ways chosen for its own square, the picture's arrows
-     * round it are a way in from the south and a way out to the north, and no arrow is drawn on any other side.
+     * TopMainR1 stands on track that only runs northward: with Both Ways chosen for its own square, the picture's station
+     * has a way in from the south and a way out to the north, drawn green only at the north.
      *
-     * MUTATION: have `StationPicture` draw a way out at every side it draws a way in and the reverse, as Both Ways says,
-     * and this fails.
+     * MUTATION: have `StationPicture` draw a way out open at every side trains may come in by, as Both Ways says, and this
+     * fails.
      */
     @Test(timeOut = 120000)
     public void testAOneWayStationShowsOnlyTheWayTrainsGo() throws Exception
@@ -1453,14 +1453,14 @@ public class testStationSettingsWindow
         assertEquals(Components.onTheEventThread(() -> window.pictureWaysForTest(false)), set("S"), "the ways in");
         assertEquals(Components.onTheEventThread(() -> window.pictureWaysForTest(true)), set("N"), "the ways out");
 
-        assertEquals(sidesWithGreenRound(window), set("N", "S"), "the sides an arrow is drawn at");
+        assertEquals(sidesDrawnIn(window, ONE_WAY_GREEN), set("N"), "the sides of the station a green arrow is drawn at");
 
         StationDoors.close(window);
     }
 
     /**
      * TopR1ParkLong's track runs on to its east side and stops there: the picture draws a way in and out at the west, and
-     * nothing at the east.
+     * no mark at the east.
      *
      * MUTATION: have `LayoutStandingRules` take a way out as the side opposite the copy's way in, straight on, and this
      * fails.
@@ -1486,15 +1486,23 @@ public class testStationSettingsWindow
         assertEquals(Components.onTheEventThread(() -> window.pictureWaysForTest(false)), set("W"), "the ways in");
         assertEquals(Components.onTheEventThread(() -> window.pictureWaysForTest(true)), set("W"), "the ways out");
 
-        assertEquals(sidesWithGreenRound(window), set("W"), "the sides an arrow is drawn at");
+        assertEquals(sidesDrawnIn(window, ONE_WAY_GREEN), set("W"), "the sides of the station a green arrow is drawn at");
+
+        for (java.awt.Color mark : new java.awt.Color[] {CLOSED_RED, ARRIVAL_YELLOW})
+        {
+            assertFalse(sidesDrawnIn(window, mark).contains("E"), "a mark at the dead end, in " + mark);
+        }
+
+        assertFalse(Components.onTheEventThread(window::pictureMarksForTest).containsKey("OUT.E"), "a way out at the dead end");
+        assertFalse(Components.onTheEventThread(window::pictureMarksForTest).containsKey("IN.E"), "a way in at the dead end");
 
         StationDoors.close(window);
     }
 
     /**
-     * Every station on the frozen railway, on every page: the ways in drawn are the sides where an arriving row of
-     * `Layout.standingRulesAt` is not No, and the ways out the sides where Sent From is (by side on a square of several
-     * copies; on a one-Point square, whose cells are keyed by its way in, whether there is one).
+     * Every station on the frozen railway, on every page: the ways in drawn open are the sides where Sent Here or Turned
+     * Round of `Layout.standingRulesAt` is not No, and the ways out the sides where Sent From is (by side on a square of
+     * several copies; on a one-Point square, whose cells are keyed by its way in, whether there is one).
      *
      * MUTATION: have `LayoutStandingRules` read a way out from `copy.getCopyFacing()`, which a one-Point square does not
      * record, and this fails.
@@ -1545,7 +1553,7 @@ public class testStationSettingsWindow
                     Set<String> in = new java.util.TreeSet<>();
 
                     for (StandingRules.Row row : new StandingRules.Row[] {StandingRules.Row.SENT_HERE,
-                        StandingRules.Row.SENT_THROUGH, StandingRules.Row.TURNED_ROUND})
+                        StandingRules.Row.TURNED_ROUND})
                     {
                         for (boolean byHand : new boolean[] {false, true})
                         {
@@ -1595,35 +1603,378 @@ public class testStationSettingsWindow
         assertTrue(differ.isEmpty(), "the picture's ways differ from what is allowed: " + differ);
     }
 
-    /** The sides of the picture's square with any of the diagram's green beyond them. */
-    private static Set<String> sidesWithGreenRound(StationSettingsWindow window) throws Exception
+    /**
+     * Running through is the form's box and the table's row, and has no mark: BottomMainA, which trains run through both
+     * ways, wears no tested-path line, and none of that line's yellow or orange is drawn.
+     *
+     * MUTATION: have `StationPicture.show` give the station a trace for each side trains may run through from, as the
+     * mockup did, and this fails.
+     */
+    @Test(timeOut = 120000)
+    public void testNoRunThroughMarkIsDrawn() throws Exception
     {
-        javax.swing.JComponent ways = StationDoors.part(window, "station.picture.ways", javax.swing.JComponent.class);
+        TileKey square = Components.onTheEventThread(() -> support.AskingWindows.stationNamed(session, "BottomMainA"));
 
-        return Components.onTheEventThread(() ->
+        StationSettingsWindow window = StationDoors.open(panel, square);
+
+        assertTrue(Components.onTheEventThread(() -> window.drawnForTest(StandingRules.Row.SENT_THROUGH, "both"))
+            .containsValue(StandingRules.Answer.YES), "precondition: trains run through it");
+
+        assertTrue(Components.onTheEventThread(() -> window.pictureForTest().getTraces().isEmpty()),
+            "the station wears a run-through line");
+
+        javax.swing.JComponent block = StationDoors.part(window, "station.picture.ways", javax.swing.JComponent.class);
+
+        int line = Components.onTheEventThread(() ->
         {
-            java.awt.image.BufferedImage image = drawnOn(ways);
+            java.awt.image.BufferedImage image = drawnOn(block);
 
-            java.awt.Rectangle at = ways.getComponent(0).getBounds();
-
-            Set<String> out = new java.util.TreeSet<>();
-
-            int green = new java.awt.Color(70, 205, 90).getRGB() & 0xffffff;
+            int found = 0;
 
             for (int y = 0; y < image.getHeight(); y++)
             {
                 for (int x = 0; x < image.getWidth(); x++)
                 {
-                    if ((image.getRGB(x, y) & 0xffffff) != green) continue;
+                    int rgb = image.getRGB(x, y) & 0xffffff;
 
-                    if (y < at.y && x >= at.x && x < at.x + at.width) out.add("N");
-                    if (y >= at.y + at.height && x >= at.x && x < at.x + at.width) out.add("S");
-                    if (x < at.x && y >= at.y && y < at.y + at.height) out.add("W");
-                    if (x >= at.x + at.width && y >= at.y && y < at.y + at.height) out.add("E");
+                    if (rgb == (TRACE_YELLOW.getRGB() & 0xffffff) || rgb == (TRACE_ORANGE.getRGB() & 0xffffff)) found++;
+                }
+            }
+
+            return found;
+        });
+
+        assertEquals(line, 0, "pixels of a run-through line are drawn");
+
+        StationDoors.close(window);
+    }
+
+    /**
+     * Only arrows carry color: the square east of BottomMainA is a signal whose art has a red lamp, and the picture draws
+     * that square with no red in it.
+     *
+     * MUTATION: have `StationPicture` paint the next squares without `inGray`, and this fails.
+     */
+    @Test(timeOut = 120000)
+    public void testANeighborsSignalIsDrawnWithoutColor() throws Exception
+    {
+        TileKey square = Components.onTheEventThread(() -> support.AskingWindows.stationNamed(session, "BottomMainA"));
+
+        assertTrue(Components.onTheEventThread(() -> session.getGraph().getTiles()
+            .get(square.beside(org.traincontrol.automationui.TilePorts.Side.E)).isSignal()),
+            "precondition: the square east of the station is a signal");
+
+        StationSettingsWindow window = StationDoors.open(panel, square);
+
+        javax.swing.JComponent block = StationDoors.part(window, "station.picture.ways", javax.swing.JComponent.class);
+
+        int[] red = Components.onTheEventThread(() ->
+        {
+            java.awt.Rectangle east = (java.awt.Rectangle) window.pictureMarksForTest().get("SQUARE.E");
+
+            assertNotNull(east, "the picture has no square east of the station");
+
+            java.awt.Component signal = null;
+
+            for (java.awt.Component each : block.getComponents())
+            {
+                if (each.getBounds().equals(east)) signal = each;
+            }
+
+            assertNotNull(signal, "no square of the picture is the signal");
+
+            java.awt.image.BufferedImage alone = new java.awt.image.BufferedImage(east.width, east.height,
+                java.awt.image.BufferedImage.TYPE_INT_RGB);
+
+            java.awt.Graphics2D g = alone.createGraphics();
+
+            g.setColor(java.awt.Color.WHITE);
+            g.fillRect(0, 0, east.width, east.height);
+            signal.paint(g);
+            g.dispose();
+
+            return new int[] {reds(alone, new java.awt.Rectangle(0, 0, east.width, east.height)), reds(drawnOn(block), east)};
+        });
+
+        assertTrue(red[0] > 0, "precondition: the signal's own art has no red");
+
+        assertEquals(red[1], 0, "red pixels on the signal's square in the picture");
+
+        StationDoors.close(window);
+    }
+
+    /**
+     * A click on the picture changes what the form's control for it changes, and the table follows, at BottomMainA: its
+     * barred way in from the east opens as ticking May Arrive From East does; its way out to the east closes as choosing
+     * Toward W under May Depart does; and the arrow at the far side of the square west of it closes that way as that
+     * square's right-click Trains May Depart does.
+     *
+     * MUTATION: have `wayOut` toggle the arm opposite the one clicked, and this fails.
+     */
+    @Test(timeOut = 180000)
+    public void testEachClickChangesWhatItsControlDoes() throws Exception
+    {
+        final org.traincontrol.automationui.TilePorts.Side east = org.traincontrol.automationui.TilePorts.Side.E;
+        final org.traincontrol.automationui.TilePorts.Side westSide = org.traincontrol.automationui.TilePorts.Side.W;
+
+        TileKey square = Components.onTheEventThread(() -> support.AskingWindows.stationNamed(session, "BottomMainA"));
+        TileKey west = square.beside(westSide);
+
+        StationSettingsWindow window = StationDoors.open(panel, square);
+
+        assertFalse(StationDoors.on(window, "station.arrive.E"), "precondition: arrivals from the east are closed");
+
+        // The way in from the east
+        clickOn(window, "IN.E");
+        StationDoors.current(window);
+
+        assertTrue(StationDoors.on(window, "station.arrive.E"), "the click did not tick May Arrive From East");
+        assertFalse(Components.onTheEventThread(() -> session.getBarredArrivals(square).contains(east)),
+            "the setup still bars arrivals from the east");
+        assertEquals(Components.onTheEventThread(() -> window.drawnForTest(StandingRules.Row.SENT_HERE, "hand")).get("E"),
+            StandingRules.Answer.YES, "the table did not follow the way in");
+        assertTrue(Components.onTheEventThread(() -> window.pictureWaysForTest(false)).contains("E"),
+            "the picture did not follow the way in");
+
+        // The way out to the east
+        clickOn(window, "OUT.E");
+        StationDoors.current(window);
+
+        javax.swing.JComboBox<?> depart = StationDoors.part(window, "station.depart.0", javax.swing.JComboBox.class);
+
+        assertEquals(Components.onTheEventThread(depart::getSelectedItem), I18n.f("autosetup.ui.menuRouteToward", "W"),
+            "the click did not choose Toward W under May Depart");
+        assertEquals(Components.onTheEventThread(() -> window.drawnForTest(StandingRules.Row.SENT_FROM, "hand")).get("E"),
+            StandingRules.Answer.NO, "the table did not follow the way out");
+        assertFalse(Components.onTheEventThread(() -> window.pictureWaysForTest(true)).contains("E"),
+            "the picture did not follow the way out");
+
+        // The square to the west, its arrow at its own west side
+        clickOn(window, "NEXT.W.W");
+        StationDoors.current(window);
+
+        assertEquals(Components.onTheEventThread(() ->
+        {
+            Map.Entry<org.traincontrol.automationui.TileGraph.RouteId, org.traincontrol.automationui.TilePorts.Route> only =
+                session.getRoutes(west).entrySet().iterator().next();
+
+            org.traincontrol.automationui.TilePorts.Route road = only.getValue();
+
+            org.traincontrol.automationui.TileGraph.Direction now = org.traincontrol.automationui.TileGraph.inForce(
+                session.directionAsDrawn(west, only.getKey()), road);
+
+            return now == (road.getA() == east ? org.traincontrol.automationui.TileGraph.Direction.TOWARD_A
+                : org.traincontrol.automationui.TileGraph.Direction.TOWARD_B);
+        }), Boolean.TRUE, "the square west of the station does not now run eastward only");
+        assertFalse(Components.onTheEventThread(() -> window.pictureWaysForTest(true)).contains("W"),
+            "the picture did not follow the next square");
+
+        StationDoors.close(window);
+    }
+
+    /**
+     * On every station of the page, each side's marks sit on that side's axis, the track's line from the middle of the
+     * station's edge into it: the way out with its tip at the edge and the way in just behind it, pointing in.  Both are
+     * inside the station's square, apart from each other, and clear of every next square.
+     *
+     * MUTATION: draw the way in a quarter square along the edge, where the diagram puts its arrival chevrons, and this
+     * fails.
+     */
+    @Test(timeOut = 300000)
+    public void testTheMarksOfASideLineUp() throws Exception
+    {
+        List<TileKey> stations = Components.onTheEventThread(() ->
+        {
+            List<TileKey> out = new java.util.ArrayList<>();
+
+            for (TileKey each : session.getReducer().getPoints().keySet())
+            {
+                if (PAGE.equals(each.getPage()) && session.getStore().isStation(each)) out.add(each);
+            }
+
+            return out;
+        });
+
+        List<String> wrong = new java.util.ArrayList<>();
+
+        int sides = 0;
+
+        for (TileKey square : stations)
+        {
+            StationSettingsWindow window = StationDoors.open(panel, square);
+
+            Map<String, java.awt.Shape> marks = Components.onTheEventThread(window::pictureMarksForTest);
+
+            java.awt.Rectangle at = (java.awt.Rectangle) marks.get("SQUARE");
+
+            java.awt.Rectangle inside = new java.awt.Rectangle(at);
+
+            inside.grow(1, 1);
+
+            for (String side : new String[] {"N", "E", "S", "W"})
+            {
+                java.awt.Shape out = marks.get("OUT." + side);
+
+                if (out == null) continue;
+
+                sides++;
+
+                java.awt.geom.Line2D axis = (java.awt.geom.Line2D) marks.get("AXIS." + side);
+
+                for (String kind : new String[] {"OUT.", "IN."})
+                {
+                    java.awt.Shape mark = marks.get(kind + side);
+
+                    if (mark == null) continue;
+
+                    double[] middle = middleOf(mark);
+
+                    double off = axis.ptLineDist(middle[0], middle[1]);
+
+                    if (off > 1.0) wrong.add(square + " " + kind + side + " is " + off + " off its axis");
+
+                    if (!inside.contains(mark.getBounds2D())) wrong.add(square + " " + kind + side + " leaves the station's square");
+
+                    for (Map.Entry<String, java.awt.Shape> next : marks.entrySet())
+                    {
+                        if (next.getKey().startsWith("SQUARE.") && next.getValue().intersects(mark.getBounds2D()))
+                        {
+                            wrong.add(square + " " + kind + side + " is over " + next.getKey());
+                        }
+                    }
+                }
+
+                java.awt.Shape in = marks.get("IN." + side);
+
+                if (in != null)
+                {
+                    java.awt.geom.Area both = new java.awt.geom.Area(out);
+
+                    both.intersect(new java.awt.geom.Area(in));
+
+                    if (!both.isEmpty()) wrong.add(square + " " + side + ": its way in overlaps its way out");
+                }
+            }
+
+            StationDoors.close(window);
+        }
+
+        assertTrue(sides >= 20, "precondition: only " + sides + " sides were looked at");
+
+        assertTrue(wrong.isEmpty(), "marks off their axis or overlapping: " + wrong);
+    }
+
+    private static final java.awt.Color ONE_WAY_GREEN = new java.awt.Color(70, 205, 90);
+    private static final java.awt.Color CLOSED_RED = new java.awt.Color(200, 0, 0);
+    private static final java.awt.Color ARRIVAL_YELLOW = new java.awt.Color(255, 205, 0);
+    private static final java.awt.Color TRACE_YELLOW = new java.awt.Color(255, 214, 0);
+    private static final java.awt.Color TRACE_ORANGE = new java.awt.Color(255, 150, 40);
+
+    /** The sides of the picture's station square that pixels of exactly this color lie nearest to. */
+    private static Set<String> sidesDrawnIn(StationSettingsWindow window, java.awt.Color color) throws Exception
+    {
+        javax.swing.JComponent block = StationDoors.part(window, "station.picture.ways", javax.swing.JComponent.class);
+
+        return Components.onTheEventThread(() ->
+        {
+            java.awt.image.BufferedImage image = drawnOn(block);
+
+            java.awt.Rectangle at = (java.awt.Rectangle) window.pictureMarksForTest().get("SQUARE");
+
+            Set<String> out = new java.util.TreeSet<>();
+
+            for (int y = at.y; y < at.y + at.height; y++)
+            {
+                for (int x = at.x; x < at.x + at.width; x++)
+                {
+                    if ((image.getRGB(x, y) & 0xffffff) != (color.getRGB() & 0xffffff)) continue;
+
+                    int[] to = {y - at.y, at.x + at.width - 1 - x, at.y + at.height - 1 - y, x - at.x};
+
+                    int nearest = 0;
+
+                    for (int i = 1; i < 4; i++) if (to[i] < to[nearest]) nearest = i;
+
+                    out.add(new String[] {"N", "E", "S", "W"}[nearest]);
                 }
             }
 
             return out;
+        });
+    }
+
+    /** How many strongly red pixels an image has inside this rectangle. */
+    private static int reds(java.awt.image.BufferedImage image, java.awt.Rectangle within)
+    {
+        int found = 0;
+
+        for (int y = within.y; y < within.y + within.height; y++)
+        {
+            for (int x = within.x; x < within.x + within.width; x++)
+            {
+                int rgb = image.getRGB(x, y);
+
+                int r = rgb >> 16 & 0xff;
+                int g = rgb >> 8 & 0xff;
+                int b = rgb & 0xff;
+
+                if (r > 150 && r - g > 70 && r - b > 70) found++;
+            }
+        }
+
+        return found;
+    }
+
+    /** The middle of a mark's corners, which lies on a symmetric mark's axis. */
+    private static double[] middleOf(java.awt.Shape shape)
+    {
+        double x = 0;
+        double y = 0;
+        int n = 0;
+
+        double[] at = new double[6];
+
+        for (java.awt.geom.PathIterator each = shape.getPathIterator(null); !each.isDone(); each.next())
+        {
+            int kind = each.currentSegment(at);
+
+            if (kind == java.awt.geom.PathIterator.SEG_MOVETO || kind == java.awt.geom.PathIterator.SEG_LINETO)
+            {
+                x += at[0];
+                y += at[1];
+                n++;
+            }
+        }
+
+        return n == 0 ? new double[] {shape.getBounds2D().getCenterX(), shape.getBounds2D().getCenterY()}
+            : new double[] {x / n, y / n};
+    }
+
+    /** A left click on the middle of one of the picture's marks, as the mouse gives it. */
+    private static void clickOn(StationSettingsWindow window, String mark) throws Exception
+    {
+        javax.swing.JComponent block = StationDoors.part(window, "station.picture.ways", javax.swing.JComponent.class);
+
+        Components.onTheEventThread(() ->
+        {
+            java.awt.Shape shape = window.pictureMarksForTest().get(mark);
+
+            assertNotNull(shape, "the picture has no " + mark);
+
+            double[] middle = middleOf(shape);
+
+            int x = (int) Math.round(middle[0]);
+            int y = (int) Math.round(middle[1]);
+
+            for (int id : new int[] {java.awt.event.MouseEvent.MOUSE_PRESSED, java.awt.event.MouseEvent.MOUSE_RELEASED,
+                java.awt.event.MouseEvent.MOUSE_CLICKED})
+            {
+                block.dispatchEvent(new java.awt.event.MouseEvent(block, id, System.currentTimeMillis(),
+                    id == java.awt.event.MouseEvent.MOUSE_PRESSED ? java.awt.event.InputEvent.BUTTON1_DOWN_MASK : 0, x, y, 1,
+                    false, java.awt.event.MouseEvent.BUTTON1));
+            }
+
+            return null;
         });
     }
 
@@ -1632,8 +1983,8 @@ public class testStationSettingsWindow
         return new java.util.TreeSet<>(Arrays.asList(sides));
     }
 
-    /** The diagram's real pass, and what its square then wears against what the picture wears. */
-    private static org.traincontrol.automationui.TileAnnotation theSameOnBoth(StationSettingsWindow window,
+    /** The diagram's real pass, its square's badge against the picture's, and what the picture then shows. */
+    private static String theSameOnBoth(StationSettingsWindow window,
         org.traincontrol.gui.LayoutLabel onTheDiagram, String what) throws Exception
     {
         java.lang.reflect.Field worn = org.traincontrol.gui.LayoutLabel.class.getDeclaredField("autonomyAnnotation");
@@ -1650,14 +2001,16 @@ public class testStationSettingsWindow
 
                 assertNotNull(diagram, what + ": the diagram's pass put nothing on the square");
 
-                assertEquals(window.pictureForTest(), diagram, what + ": the picture differs from the diagram");
+                assertEquals(window.pictureForTest().getBadge(), ((org.traincontrol.automationui.TileAnnotation) diagram).getBadge(),
+                    what + ": the picture's badge differs from the diagram's");
             }
             catch (IllegalAccessException e)
             {
                 throw new AssertionError(e);
             }
 
-            return window.pictureForTest();
+            return window.pictureForTest().getBadge() + " out " + window.pictureWaysForTest(true) + " in "
+                + window.pictureWaysForTest(false) + " " + window.pictureMarksForTest().keySet();
         });
     }
 

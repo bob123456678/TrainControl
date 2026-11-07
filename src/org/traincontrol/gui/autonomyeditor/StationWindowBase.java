@@ -223,6 +223,12 @@ abstract class StationWindowBase extends JDialog
         if (was == null ? held != null : !was.equals(held)) reload();
     }
 
+    /** @return why nothing in the window may be changed now, or null */
+    final String whyHeld()
+    {
+        return held;
+    }
+
     private void readHeld()
     {
         TrainControlUI main = editor.parentWindow();

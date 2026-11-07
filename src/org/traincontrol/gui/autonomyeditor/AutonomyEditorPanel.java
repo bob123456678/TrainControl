@@ -6277,6 +6277,9 @@ public class AutonomyEditorPanel extends JPanel
             placementsJustEdited.clear();
 
             if (parentWindow() != null) parentWindow().rebuildRunningLayoutFromSetup(true, edited);
+
+            // An open Station Settings asks the rebuilt railway, as an arrow change reloads it before the rebuild
+            stationWindows.changed();
         });
     }
 

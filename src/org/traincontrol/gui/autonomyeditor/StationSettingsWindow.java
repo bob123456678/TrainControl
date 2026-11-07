@@ -684,7 +684,7 @@ public final class StationSettingsWindow extends StationWindowBase
         // A field grayed by a section still shows its value
         whichChoose.setEnabled(!readOnly && which != WhichTrains.ALL);
 
-        picture.show(session, tile, editor.parentWindow());
+        picture.show(session, tile, editor.parentWindow(), pictureDoors);
 
         askTheRailway();
     }
@@ -713,6 +713,7 @@ public final class StationSettingsWindow extends StationWindowBase
         java.util.Set<TilePorts.Side> barred = session.getBarredArrivals(tile);
 
         arrivals.removeAll();
+        arriveBoxes.clear();
 
         List<String> open = new ArrayList<>();
         List<String> all = new ArrayList<>();
@@ -745,6 +746,7 @@ public final class StationSettingsWindow extends StationWindowBase
             });
 
             arrivals.add(allow);
+            arriveBoxes.put(side, allow);
         }
 
         fly("arrivals", StationFlyovers.arrivals(open, all));
@@ -775,6 +777,8 @@ public final class StationSettingsWindow extends StationWindowBase
         AutonomySession session = editor.session;
 
         depart.removeAll();
+        departChoices.clear();
+        departAnswers.clear();
 
         Map<RouteId, TilePorts.Route> routes = session.getRoutes(tile);
 
@@ -839,6 +843,9 @@ public final class StationSettingsWindow extends StationWindowBase
             c.insets = new Insets(0, 0, 0, 0);
 
             depart.add(choice, c);
+
+            departChoices.put(entry.getKey(), choice);
+            departAnswers.put(entry.getKey(), answers);
         }
 
         fly("depart", StationFlyovers.depart(said == null ? I18n.t("autosetup.ui.labelNone") : said));
@@ -941,6 +948,143 @@ public final class StationSettingsWindow extends StationWindowBase
         if (isVisible()) pack();
     }
 
+    // ------------------------------------------------------------------------------------------- the picture's clicks
+
+    /** The form's controls by what they set, so a click on the picture presses the same control. */
+    private final Map<RouteId, JComboBox<String>> departChoices = new LinkedHashMap<>();
+    private final Map<RouteId, List<Direction>> departAnswers = new LinkedHashMap<>();
+    private final Map<TilePorts.Side, JCheckBox> arriveBoxes = new EnumMap<>(TilePorts.Side.class);
+
+    private transient StandingRules shownRules;
+
+    /** A station's mark presses the form's control for it; a next square's arrow, its right-click menu's door. */
+    private final StationPicture.Doors pictureDoors = new StationPicture.Doors()
+    {
+        @Override
+        public String tip(StationPicture.Mark mark)
+        {
+            return pictureClick(mark, false);
+        }
+
+        @Override
+        public void press(StationPicture.Mark mark)
+        {
+            pictureClick(mark, true);
+        }
+    };
+
+    /** What a click on a mark does, and does it when pressed: one method, so the tooltip says what the click does. */
+    private String pictureClick(StationPicture.Mark mark, boolean press)
+    {
+        if (whyHeld() != null) return whyHeld();
+
+        switch (mark.kind)
+        {
+            case OUT: return wayOut(mark, press);
+            case IN: return wayIn(mark, press);
+            default: return nextSquare(mark, press);
+        }
+    }
+
+    /** A way out toggles that side among the open arms, as May Depart's choice for its track. */
+    private String wayOut(StationPicture.Mark mark, boolean press)
+    {
+        Map<RouteId, TilePorts.Route> routes = editor.session.getRoutes(tile);
+        List<TilePorts.Side> arms = AutonomyEditorPanel.armsOf(routes);
+
+        int at = arms.indexOf(mark.side);
+
+        if (at < 0) return I18n.t("autosetup.ui.stationPicCannot");
+
+        int mask = editor.armMask(tile, routes, arms);
+        boolean set = (mask & 1 << at) != 0;
+
+        // Open here, but the railway takes no train out this way: the track around is what to change
+        if (set && !mark.open) return I18n.t("autosetup.ui.stationPicOutBeyond");
+
+        for (Map.Entry<RouteId, TilePorts.Route> each : routes.entrySet())
+        {
+            TilePorts.Route road = each.getValue();
+
+            if (road.getA() != mark.side && road.getB() != mark.side) continue;
+
+            JComboBox<String> choice = departChoices.get(each.getKey());
+
+            int answer = choice == null ? -1
+                : departAnswers.get(each.getKey()).indexOf(TileGraph.answerFor(road, arms, mask ^ 1 << at));
+
+            if (answer < 0 || !choice.isEnabled()) return I18n.t("autosetup.ui.stationPicCannot");
+
+            if (press) choice.setSelectedIndex(answer);
+
+            return I18n.t(set ? "autosetup.ui.stationPicOutOpen" : "autosetup.ui.stationPicOutShut");
+        }
+
+        return I18n.t("autosetup.ui.stationPicCannot");
+    }
+
+    /** A way in ticks or unticks that side's May Arrive From box. */
+    private String wayIn(StationPicture.Mark mark, boolean press)
+    {
+        boolean barred = editor.session.getBarredArrivals(tile).contains(mark.side);
+
+        // Open, and still no train may stop coming this way: the table's reason
+        if (!barred && !mark.open)
+        {
+            StandingRules.Cell why = shownRules == null ? null : shownRules.cells(StandingRules.Row.SENT_HERE, true)
+                .get(mark.side.name());
+
+            return why == null ? I18n.t("autosetup.ui.stationPicCannot") : why.getWhy();
+        }
+
+        JCheckBox box = arriveBoxes.get(mark.side);
+
+        if (box == null || !box.isEnabled())
+        {
+            return editor.session.arrivalSides(tile).size() == 1
+                ? I18n.f("autosetup.ui.hintOneWayIn", I18n.t("autosetup.ui.side" + mark.side.name()))
+                : I18n.t(box == null ? "autosetup.ui.stationPicCannot" : "autosetup.ui.stationPicInKept");
+        }
+
+        if (press) box.doClick();
+
+        return I18n.t(barred ? "autosetup.ui.stationPicInShut" : "autosetup.ui.stationPicInOpen");
+    }
+
+    /** A next square's arrow, set as its right-click menu's Trains May Depart sets it: its one track, or that arm. */
+    private String nextSquare(StationPicture.Mark mark, boolean press)
+    {
+        final TileKey square = mark.square;
+
+        String name = editor.describeTile(square);
+
+        Map<RouteId, TilePorts.Route> routes = editor.session.getRoutes(square);
+        List<TilePorts.Side> arms = AutonomyEditorPanel.armsOf(routes);
+
+        int at = arms.indexOf(mark.side);
+
+        if (!editor.session.canCarryDirection(square) || at < 0) return I18n.f("autosetup.ui.stationPicNextCannot", name);
+
+        int mask = editor.armMask(square, routes, arms);
+        final boolean open = (mask & 1 << at) != 0;
+
+        if (routes.size() == 1)
+        {
+            final Map.Entry<RouteId, TilePorts.Route> only = routes.entrySet().iterator().next();
+            final Direction wanted = TileGraph.answerFor(only.getValue(), arms, mask ^ 1 << at);
+
+            if (!TileGraph.directionIsPossible(wanted, only.getValue())) return I18n.f("autosetup.ui.stationPicNextCannot", name);
+
+            if (press) actAlone(() -> editor.setRunDirection(square, only.getKey(), wanted));
+        }
+        else if (press)
+        {
+            actAlone(() -> editor.setArm(square, mark.side, !open));
+        }
+
+        return I18n.f(open ? "autosetup.ui.stationPicNextOpen" : "autosetup.ui.stationPicNextShut", name);
+    }
+
     // ------------------------------------------------------------------------------------------------- the matrix
 
     /** Asks the railway what this square's settings allow, on a worker (OB-192), and paints the latest answer. */
@@ -976,7 +1120,9 @@ public final class StationSettingsWindow extends StationWindowBase
 
                     matrix.show(rules, shown, line);
 
-                    picture.showWays(error == null ? rules : null);
+                    shownRules = error == null ? rules : null;
+
+                    picture.showWays(shownRules);
 
                     matrixPainted = asked;
 
@@ -1032,6 +1178,46 @@ public final class StationSettingsWindow extends StationWindowBase
     public java.util.Set<String> pictureWaysForTest(boolean out)
     {
         return picture.waysForTest(out);
+    }
+
+    /**
+     * @return in the picture's block's pixels: "OUT.N", "IN.N" (a station's marks), "AXIS.N" (that side's axis),
+     *     "NEXT.N.W" (the next square to the north's arrow at its west side), "SQUARE" and "SQUARE.N" (the squares)
+     */
+    public Map<String, java.awt.Shape> pictureMarksForTest()
+    {
+        Map<String, java.awt.Shape> out = new LinkedHashMap<>();
+
+        for (Map.Entry<String, java.awt.Rectangle> each : picture.squaresForTest().entrySet())
+        {
+            out.put(each.getKey().isEmpty() ? "SQUARE" : "SQUARE." + each.getKey(), each.getValue());
+
+            if (!each.getKey().isEmpty())
+            {
+                java.awt.geom.Line2D axis = picture.axisForTest(TilePorts.Side.valueOf(each.getKey()));
+
+                if (axis != null) out.put("AXIS." + each.getKey(), axis);
+            }
+        }
+
+        for (StationPicture.Mark mark : picture.marks())
+        {
+            String side = mark.kind == StationPicture.Mark.Kind.NEIGHBOR ? sideOf(mark.square) + "." + mark.side : mark.side.name();
+
+            out.put((mark.kind == StationPicture.Mark.Kind.NEIGHBOR ? "NEXT" : mark.kind.name()) + "." + side, mark.shape);
+        }
+
+        return out;
+    }
+
+    private String sideOf(TileKey square)
+    {
+        for (TilePorts.Side side : TilePorts.Side.values())
+        {
+            if (square.equals(tile.beside(side))) return side.name();
+        }
+
+        return "?";
     }
 
     /** @return the square the window is about */

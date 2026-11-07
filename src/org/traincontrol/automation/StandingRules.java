@@ -86,12 +86,12 @@ public final class StandingRules
         waysOut.add(side);
     }
 
-    /** @return the sides a train may come in by on any trip, sent or chosen: where an arriving row is not No */
+    /** @return the sides a train may come in by and stop, sent or chosen: where Sent Here or Turned Round is not No */
     public Set<String> waysIn()
     {
         Set<String> out = new TreeSet<>();
 
-        for (Row row : new Row[] {Row.SENT_HERE, Row.SENT_THROUGH, Row.TURNED_ROUND})
+        for (Row row : new Row[] {Row.SENT_HERE, Row.TURNED_ROUND})
         {
             for (Map<Row, Map<String, Cell>> tier : java.util.Arrays.asList(automatically, manually))
             {
