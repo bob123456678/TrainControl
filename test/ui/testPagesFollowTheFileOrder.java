@@ -98,15 +98,15 @@ public class testPagesFollowTheFileOrder extends support.PageWindowTest
     }
 
     /**
-     * A layout already in name order shows no change: its index is not rewritten by being opened, and the list is the
-     * name order the old code showed.
+     * A layout already in name order shows no change: opening it adds only the mark of the one-time link conversion to
+     * its index (FR-175), and the list is the name order the old code showed.
      *
-     * MUTATION: write the index when a layout is loaded (any write in `syncLayouts`), and the bytes differ.
+     * MUTATION: write the index when a layout is loaded (any other write in `syncLayouts`), and the bytes differ.
      */
     @Test
     public void testALayoutAlreadyInNameOrderShowsNoChange() throws Exception
     {
-        byte[] before = Files.readAllBytes(indexFile().toPath());
+        String before = new String(Files.readAllBytes(indexFile().toPath()), java.nio.charset.StandardCharsets.ISO_8859_1);
 
         startTheWindow(5);
 
@@ -114,7 +114,10 @@ public class testPagesFollowTheFileOrder extends support.PageWindowTest
 
         assertEquals(comboOrder(), BY_NAME, "the main window's list of a layout in name order changed");
 
-        assertEquals(Files.readAllBytes(indexFile().toPath()), before, "opening a layout in name order rewrote its index");
+        String after = new String(Files.readAllBytes(indexFile().toPath()), java.nio.charset.StandardCharsets.ISO_8859_1);
+
+        assertEquals(after.replaceFirst("traincontrol\\r?\\n \\.linksByPageId=1\\r?\\n", ""), before,
+            "opening a layout in name order rewrote its index");
     }
 
     /**

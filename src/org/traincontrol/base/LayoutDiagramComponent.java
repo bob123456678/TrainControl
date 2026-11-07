@@ -640,14 +640,37 @@ public class LayoutDiagramComponent
     {
         if (!this.isLink() || text == null) return;
 
+        this.linkPageId = pageIdFromText(text);
+    }
+
+    /** @return the page ID a `.zielseite` value states, or null when it is absent or not a number */
+    public static Integer pageIdFromText(String text)
+    {
+        if (text == null) return null;
+
         try
         {
-            this.linkPageId = Integer.valueOf(text.trim());
+            return Integer.valueOf(text.trim());
         }
         catch (NumberFormatException notANumber)
         {
-            this.linkPageId = null;
+            return null;
         }
+    }
+
+    /**
+     * The page a link on a station's own layout goes to: the ID it carries, else its number, which on a station is a
+     * page ID; a negative number is no page.
+     *
+     * @param carried the ID the link carries, or null
+     * @param number its `.artikel`
+     * @return the page ID, or null for none
+     */
+    public static Integer stationLinkPageId(Integer carried, int number)
+    {
+        if (carried != null) return carried;
+
+        return number >= 0 ? Integer.valueOf(number) : null;
     }
     
     public Accessory getAccessory()

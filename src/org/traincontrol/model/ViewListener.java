@@ -107,6 +107,7 @@ public interface ViewListener
     public List<String> getLayoutListByName();
     public String getPageNameForId(int id);
     public int getPageIdOf(String name);
+    public void aimLink(org.traincontrol.base.LayoutDiagramComponent tile, String page);
     public LayoutDiagram getLayout(String name);
     public void syncLocomotive(String name);
     public boolean isFeedbackSet(String name);
