@@ -508,6 +508,97 @@ public final class RowIcons
         return turned(size, colour, shape);
     }
 
+    /** The green of a function's play icon. */
+    private static final Color PLAY = new Color(46, 160, 67);
+
+    /** How a play icon reads: an outline when off, solid when on, a turning arc while a momentary function fires. */
+    public enum PlayState
+    {
+        OFF, ON, FIRING, DISABLED
+    }
+
+    /**
+     * A play triangle that says whether the function is on by its fill.
+     *
+     * @param size how many pixels square
+     * @param state how the function stands
+     * @param phase the spinner's turn in degrees while {@code FIRING}; unused otherwise
+     * @return the icon
+     */
+    public static Icon play(final int size, final PlayState state, final int phase)
+    {
+        return new Painted(size)
+        {
+            @Override
+            void draw(Graphics2D g, int width, int height)
+            {
+                Color colour = state == PlayState.DISABLED ? new Color(175, 175, 175) : PLAY;
+
+                g.setColor(colour);
+                g.setStroke(new BasicStroke(Math.max(1.4f, width / 10f), BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+
+                if (state == PlayState.FIRING)
+                {
+                    float inset = width * 0.16f;
+
+                    g.draw(new java.awt.geom.Arc2D.Float(inset, inset, width - 2 * inset, height - 2 * inset, -phase, 270,
+                        java.awt.geom.Arc2D.OPEN));
+
+                    return;
+                }
+
+                java.awt.geom.Path2D.Float triangle = new java.awt.geom.Path2D.Float();
+
+                triangle.moveTo(width * 0.24f, height * 0.14f);
+                triangle.lineTo(width * 0.84f, height * 0.5f);
+                triangle.lineTo(width * 0.24f, height * 0.86f);
+                triangle.closePath();
+
+                if (state == PlayState.ON) g.fill(triangle);
+
+                g.draw(triangle);
+            }
+        };
+    }
+
+    /**
+     * A loop with an arrow pointing counterclockwise: put back what was.
+     *
+     * @param size how many pixels square
+     * @param colour its color
+     * @return the icon
+     */
+    public static Icon revert(final int size, final Color colour)
+    {
+        return new Painted(size)
+        {
+            @Override
+            void draw(Graphics2D g, int width, int height)
+            {
+                float inset = width * 0.2f;
+
+                // Drawn with its head at the right; mirrored so the turn runs counterclockwise
+                g.translate(width, 0);
+                g.scale(-1, 1);
+
+                g.setColor(colour);
+                g.setStroke(new BasicStroke(Math.max(1.5f, width / 9f), BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+                g.draw(new java.awt.geom.Arc2D.Float(inset, inset, width - 2 * inset, height - 2 * inset, 60, 280,
+                    java.awt.geom.Arc2D.OPEN));
+
+                // The head where the arc ends, on the right, pointing up: the way a counterclockwise turn goes
+                java.awt.geom.Path2D.Float head = new java.awt.geom.Path2D.Float();
+
+                head.moveTo(width * 0.79f, height * 0.28f);
+                head.lineTo(width * 0.57f, height * 0.58f);
+                head.lineTo(width * 1.00f, height * 0.58f);
+                head.closePath();
+
+                g.fill(head);
+            }
+        };
+    }
+
     /** An icon that paints itself, antialiased, on a graphics it is handed. */
     abstract static class Painted implements Icon
     {

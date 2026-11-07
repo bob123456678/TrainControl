@@ -481,9 +481,9 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
             corner.add(crop, BorderLayout.EAST);
             picture.add(corner, BorderLayout.NORTH);
 
-            mark(wrench, I18n.t("loc.ui.menuSetLocalLocomotiveIcon"), e -> main.setLocIcon(loc, e));
-            mark(crop, I18n.t("loc.ui.tooltip.recrop"), e -> main.recropLocIcon(loc, LocomotiveSettingsFrame.this));
-            mark(revert, I18n.t("loc.ui.menuClearLocalLocomotiveIcon"), e -> main.clearLocIcon(loc));
+            mark(wrench, noted(I18n.t("loc.ui.menuSetLocalLocomotiveIcon")), e -> main.setLocIcon(loc, e));
+            mark(crop, noted(I18n.t("loc.ui.tooltip.recrop")), e -> main.recropLocIcon(loc, LocomotiveSettingsFrame.this));
+            mark(revert, noted(I18n.t("loc.ui.menuClearLocalLocomotiveIcon")), e -> main.clearLocIcon(loc));
 
             trash.setToolTipText(I18n.t("loc.ui.menuDeleteFromDatabase"));
             trash.setFocusable(false);
@@ -498,13 +498,12 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
             // The picture, with what it does under it and the trash can that deletes the locomotive
             gbc.gridx = 0;
             gbc.gridy = 0;
-            gbc.gridheight = 6;
+            gbc.gridheight = 7;
             gbc.anchor = GridBagConstraints.NORTHWEST;
             JPanel pictureColumn = new JPanel(new BorderLayout(0, 4));
             JPanel trashRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
             trashRow.setBorder(BorderFactory.createEmptyBorder(8, 0, 0, 0));
             trashRow.add(trash);
-            trashRow.add(InfoMark.label(I18n.t("loc.ui.settingsPictureNote")));
             pictureColumn.add(picture, BorderLayout.NORTH);
             pictureColumn.add(trashRow, BorderLayout.CENTER);
             add(pictureColumn, gbc);
@@ -537,6 +536,14 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
 
             gbc.gridx = 1;
             gbc.gridy = 4;
+            gbc.gridwidth = 2;
+            gbc.fill = GridBagConstraints.HORIZONTAL;
+            add(new javax.swing.JSeparator(), gbc);
+            gbc.gridwidth = 1;
+            gbc.fill = GridBagConstraints.NONE;
+
+            gbc.gridx = 1;
+            gbc.gridy = 5;
             gbc.weightx = 0;
             add(label(I18n.t("loc.ui.settingsPresetSpeed")), gbc);
             gbc.gridx = 2;
@@ -552,11 +559,18 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
 
             // The rest of the tab is room
             gbc.gridx = 1;
-            gbc.gridy = 5;
+            gbc.gridy = 6;
             gbc.weighty = 1;
             add(new JLabel(), gbc);
 
             warnAboutTheSameAddress();
+        }
+
+        /** What a picture mark does, and that it does it at once. */
+        private String noted(String what)
+        {
+            return "<html>" + what.replace("&", "&amp;").replace("<", "&lt;") + "<br>"
+                + I18n.t("loc.ui.settingsPictureNote") + "</html>";
         }
 
         private void mark(JLabel mark, String tip, java.util.function.Consumer<MouseEvent> doThis)

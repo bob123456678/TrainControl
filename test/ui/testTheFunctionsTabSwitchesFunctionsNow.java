@@ -17,20 +17,22 @@ import org.traincontrol.base.Locomotive;
 import org.traincontrol.gui.LocomotiveSettingsFrame;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinLocomotive;
+import org.traincontrol.gui.widgets.RowIcons;
 import support.Components;
 import support.SettingsWindow;
 import support.WireRecorder;
 
 /**
- * The Functions tab's Now column switches a function on the railway at once, by the door the main window's function
- * buttons use: not at Save, not undone by Cancel, following the railway, and locked when the moving rule locks the
- * window.  Commands are counted on the wire.
+ * The play icon at the right of the Functions tab's Function cell switches a function on the railway at once, by the
+ * door the main window's function buttons use: not at Save, not undone by Cancel, following the railway, turning while
+ * a timed or momentary function fires, and locked when the moving rule locks the window.  Commands are counted on the
+ * wire.
  */
 public class testTheFunctionsTabSwitchesFunctionsNow
 {
     private static final String NAME = "FN train";
     private static final int F = 3;
-    private static final int NOW = 3;
+    private static final int FUNCTION = 1;
     private static final long WAIT = 8000;
 
     private static support.SettingsFixture fixture;
@@ -77,15 +79,15 @@ public class testTheFunctionsTabSwitchesFunctionsNow
         return SettingsWindow.part("functions.table", JTable.class);
     }
 
-    /** A click on the Now cell of a function's row, as the pointer delivers it. */
-    private static void clickNow(int row) throws Exception
+    /** A click on a row's play icon, at the right edge of its Function cell, as the pointer delivers it. */
+    private static void clickPlay(int row) throws Exception
     {
         JTable table = table();
 
         Components.onTheEventThread(() ->
         {
-            Rectangle r = table.getCellRect(row, NOW, false);
-            int x = r.x + r.width / 2;
+            Rectangle r = table.getCellRect(row, FUNCTION, false);
+            int x = r.x + r.width - 12;
             int y = r.y + r.height / 2;
             long t = System.currentTimeMillis();
 
@@ -99,9 +101,24 @@ public class testTheFunctionsTabSwitchesFunctionsNow
         Components.settle();
     }
 
-    private static boolean shown(int row)
+    /** How the row's play icon reads: the state its renderer drew. */
+    private static RowIcons.PlayState state(int row)
     {
-        return (Boolean) Components.onTheEventThread(() -> table().getValueAt(row, NOW));
+        return Components.onTheEventThread(() ->
+        {
+            JTable table = table();
+            java.awt.Component cell = table.prepareRenderer(table.getCellRenderer(row, FUNCTION), row, FUNCTION);
+
+            for (java.awt.Component c : ((java.awt.Container) cell).getComponents())
+            {
+                if (c instanceof javax.swing.JLabel && ((javax.swing.JLabel) c).getClientProperty("playState") != null)
+                {
+                    return (RowIcons.PlayState) ((javax.swing.JLabel) c).getClientProperty("playState");
+                }
+            }
+
+            return null;
+        });
     }
 
     /** What the function commands for the locomotive were, from a mark, as text. */
@@ -115,35 +132,37 @@ public class testTheFunctionsTabSwitchesFunctionsNow
     }
 
     /**
-     * A click on a function's Now box turns it on with one command, and the next click turns it off with one, on the
+     * A click on a function's play icon turns it on with one command, and the next click turns it off with one, on the
      * locomotive at once and without Save, which stays grayed.
      *
      * MUTATION: make `TableModel.setValueAt` ignore column 3, or let `isCellEditable` refuse it, and this fails.
      */
     @Test
-    public void testTheNowBoxSwitchesTheFunctionOnAndOffWithOneCommandEach() throws Exception
+    public void testThePlayIconSwitchesTheFunctionOnAndOffWithOneCommandEach() throws Exception
     {
         assertFalse(loc.getF(F));
 
         int mark = wire.mark();
 
-        clickNow(F);
+        clickPlay(F);
 
         assertTrue(Components.waitFor(() -> loc.getF(F), WAIT), "the click did not switch the function on");
-        assertTrue(Components.waitFor(() -> shown(F), WAIT), "the box does not show it on");
+        assertTrue(Components.waitFor(() -> (state(F) == RowIcons.PlayState.ON), WAIT), "the box does not show it on");
         assertEquals(wire.functionCommandsSince(mark, loc.getIntUID()).size(), 1, "on took " + sent(mark));
         assertEquals(wire.functionCommandsSince(mark, loc.getIntUID()).get(0).sixth(), 1, "not an on command");
         assertFalse(SettingsWindow.save().isEnabled(), "a switch counts as an unsaved change");
 
-        clickNow(F);
+        clickPlay(F);
 
         assertTrue(Components.waitFor(() -> !loc.getF(F), WAIT), "the second click did not switch it off");
+        assertTrue(Components.waitFor(() -> wire.functionCommandsSince(mark, loc.getIntUID()).size() >= 2, WAIT),
+            "the off command never reached the wire: " + sent(mark));
         assertEquals(wire.functionCommandsSince(mark, loc.getIntUID()).size(), 2, "off took " + sent(mark));
         assertEquals(wire.functionCommandsSince(mark, loc.getIntUID()).get(1).sixth(), 0, "not an off command");
     }
 
     /**
-     * A momentary function pressed in the Now box sends what the main window's button sends for it: the same commands
+     * A momentary function pressed on its play icon sends what the main window's button sends for it: the same commands
      * in the same order.
      *
      * MUTATION: have `TrainControlUI.fireFunction` call `setF` for a pulse function and this fails.
@@ -166,11 +185,29 @@ public class testTheFunctionsTabSwitchesFunctionsNow
 
         int second = wire.mark();
 
-        clickNow(F);
+        clickPlay(F);
 
         assertTrue(Components.waitFor(() -> wire.functionCommandsSince(second, loc.getIntUID()).size() >= 2, WAIT),
-            "the Now box sent " + sent(second));
+            "the play icon sent " + sent(second));
         assertEquals(sent(second), fromTheButton);
+    }
+
+    /**
+     * A timed function shows a turning arc while it runs its course, then goes back to the outline.
+     *
+     * MUTATION: make `firing` return false and this fails.
+     */
+    @Test
+    public void testATimedFunctionTurnsThenReturns() throws Exception
+    {
+        loc.setFunctionType(F, 9, 2);
+
+        clickPlay(F);
+
+        assertTrue(Components.waitFor(() -> state(F) == RowIcons.PlayState.FIRING, WAIT), "no spinner while it ran: "
+            + state(F));
+        assertTrue(Components.waitFor(() -> state(F) == RowIcons.PlayState.OFF, WAIT), "the icon did not go back: "
+            + state(F));
     }
 
     /**
@@ -183,11 +220,11 @@ public class testTheFunctionsTabSwitchesFunctionsNow
     {
         loc.setF(F + 1, true);
 
-        assertTrue(Components.waitFor(() -> shown(F + 1), WAIT), "the box did not follow the function");
+        assertTrue(Components.waitFor(() -> (state(F + 1) == RowIcons.PlayState.ON), WAIT), "the box did not follow the function");
 
         loc.setF(F + 1, false);
 
-        assertTrue(Components.waitFor(() -> !shown(F + 1), WAIT), "the box did not follow it off");
+        assertTrue(Components.waitFor(() -> !(state(F + 1) == RowIcons.PlayState.ON), WAIT), "the box did not follow it off");
     }
 
     /**
@@ -199,7 +236,7 @@ public class testTheFunctionsTabSwitchesFunctionsNow
     @Test
     public void testSaveAndCancelLeaveAFunctionAsSwitched() throws Exception
     {
-        clickNow(F);
+        clickPlay(F);
 
         assertTrue(Components.waitFor(() -> loc.getF(F), WAIT));
 
@@ -215,7 +252,7 @@ public class testTheFunctionsTabSwitchesFunctionsNow
 
         Components.onTheEventThread(() ->
         {
-            table().setValueAt(Boolean.TRUE, F + 1, 4);
+            table().setValueAt(Boolean.TRUE, F + 1, 3);
 
             return null;
         });
@@ -228,7 +265,7 @@ public class testTheFunctionsTabSwitchesFunctionsNow
     }
 
     /**
-     * While the moving rule locks the window the Now boxes cannot be clicked.
+     * While the moving rule locks the window the play icons are grayed and do nothing.
      *
      * MUTATION: drop `!blocked` from `isCellEditable` and this fails.
      */
@@ -238,12 +275,12 @@ public class testTheFunctionsTabSwitchesFunctionsNow
         SettingsWindow.power(ui, fixture.model, true);
         loc.setSpeed(40);
 
-        assertTrue(Components.waitFor(() -> !Components.onTheEventThread(() -> table().isCellEditable(F, NOW)), WAIT),
-            "the box is still clickable in a locked window");
+        assertTrue(Components.waitFor(() -> state(F) == RowIcons.PlayState.DISABLED, WAIT),
+            "the play icon is not grayed in a locked window");
 
         int mark = wire.mark();
 
-        clickNow(F);
+        clickPlay(F);
 
         assertFalse(loc.getF(F), "a locked window switched a function");
         assertTrue(sent(mark).isEmpty(), "a locked window sent " + sent(mark));
