@@ -61,6 +61,11 @@ final class StationPicture extends JPanel
     /** Between a way out's back and the way in's base, along the axis. */
     private static final double APART = 2;
 
+    /** Where a way in that stands by its edge starts: inward from the edge, and along it beside the way out. */
+    private static final double EDGE = 4;
+
+    private static final double BESIDE = 14;
+
     /** What a click on a mark does, and what its tooltip says: the window's, as the window owns the controls. */
     interface Doors
     {
@@ -377,10 +382,38 @@ final class StationPicture extends JPanel
 
         double[] inward = {-away[0], -away[1]};
 
+        if (other != null && other.opposite() != side && other != side)
+        {
+            out.add(new Mark(Mark.Kind.IN, showing, side, rules.waysIn().contains(side.name()), apartChevron(at, side, other), null,
+                null));
+
+            return;
+        }
+
         Path2D chevron = TileAnnotation.arrivalShape(edge[0] + inward[0] * (back + APART), edge[1] + inward[1] * (back + APART),
             inward, CHEVRON);
 
         out.add(new Mark(Mark.Kind.IN, showing, side, rules.waysIn().contains(side.name()), chevron, null, null));
+    }
+
+    /**
+     * A way in on a curve whose other end is a way in too: both chevrons would land on one spot of the chord, so this one
+     * stands by its own edge, pointing straight in, shifted along the edge away from the curve, beside its way out (FR-111).
+     */
+    private static Path2D apartChevron(Rectangle at, Side side, Side other)
+    {
+        double[] edge = middleOf(at, side);
+        double[] toward = middleOf(at, other);
+
+        double inX = Math.signum(at.getCenterX() - edge[0]);
+        double inY = Math.signum(at.getCenterY() - edge[1]);
+
+        // Along the edge, away from where the curve goes
+        double lateral = inY != 0 ? -Math.signum(toward[0] - edge[0]) : 0;
+        double longways = inX != 0 ? -Math.signum(toward[1] - edge[1]) : 0;
+
+        return TileAnnotation.arrivalShape(edge[0] + inX * EDGE + lateral * BESIDE, edge[1] + inY * EDGE + longways * BESIDE,
+            new double[] {inX, inY}, CHEVRON);
     }
 
     /** A next square's arrows at each side of its track that meets the station, where the diagram draws them. */
