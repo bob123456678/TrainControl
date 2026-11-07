@@ -98,6 +98,9 @@ public class LayoutGrid
         final java.awt.Point[] began = new java.awt.Point[1];
         final boolean[] dragging = new boolean[1];
 
+        // A press on a train drawn over the caption drags the train, not the caption (FR-160).
+        final boolean[] train = new boolean[1];
+
         java.awt.event.MouseAdapter gesture = new java.awt.event.MouseAdapter()
         {
             // Forward the hover to the method the tiles call: the caption is stacked over its square, so moving onto
@@ -140,6 +143,19 @@ public class LayoutGrid
                     began[0] = null;
                     dragging[0] = false;
 
+                    editor.hideCaptionGhost();
+                    editor.clearCaptionDropTarget();
+
+                    return;
+                }
+
+                train[0] = editor.pressTrain(e);
+
+                if (train[0])
+                {
+                    began[0] = null;
+                    dragging[0] = false;
+
                     return;
                 }
 
@@ -150,6 +166,14 @@ public class LayoutGrid
             @Override
             public void mouseDragged(MouseEvent e)
             {
+                // The square's own listener already carries a train it was pressed on; the caption over it hands on.
+                if (train[0])
+                {
+                    if (handle != square) editor.dragTrain(e);
+
+                    return;
+                }
+
                 if (began[0] == null) return;
 
                 // Below this distance a press is a click, which both listeners already answer.
@@ -176,6 +200,15 @@ public class LayoutGrid
             @Override
             public void mouseReleased(MouseEvent e)
             {
+                if (train[0])
+                {
+                    train[0] = false;
+
+                    if (handle != square && javax.swing.SwingUtilities.isLeftMouseButton(e)) editor.releaseTrain(e);
+
+                    return;
+                }
+
                 // The left button finishes a drag; any other cancels it.
                 if (!javax.swing.SwingUtilities.isLeftMouseButton(e))
                 {
@@ -289,8 +322,17 @@ public class LayoutGrid
         return null;
     }
 
+    /**
+     * The square under a mouse event, for a train dragged over the diagram (FR-160): the caption drag's own question.
+     * @return the square, or null when off the diagram
+     */
+    public static LayoutLabel squareUnder(Container container, java.awt.Component from, MouseEvent e)
+    {
+        return tileUnder(container, from, e);
+    }
+
     /** How far the mouse moves before a press on a caption counts as a drag rather than a click. */
-    private static final int DRAG_SLOP = 4;
+    public static final int DRAG_SLOP = 4;
 
     /**
      * Whether the track on this square runs up and down rather than across (FR-028), asked of the geometry as the

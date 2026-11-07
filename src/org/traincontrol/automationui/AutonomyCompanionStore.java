@@ -1384,24 +1384,33 @@ public class AutonomyCompanionStore
                 else point.put(HOME_KEY, to);
             }
 
-            JSONArray excluded = point.optJSONArray(EXCLUDED_LOCS_KEY);
+            renameInList(point, EXCLUDED_LOCS_KEY, from, to);
 
-            if (excluded == null) continue;
-
-            JSONArray kept = new JSONArray();
-
-            for (int at = 0; at < excluded.length(); at++)
-            {
-                String was = excluded.optString(at, null);
-
-                if (was == null) continue;
-
-                if (!from.equals(was)) kept.put(was);
-                else if (to != null) kept.put(to);
-            }
-
-            point.put(EXCLUDED_LOCS_KEY, kept);
+            // And a list remembered while Which Trains says All (FR-111), or it comes back naming a train that is gone
+            renameInList(point, AutonomyBuilder.REMEMBERED_LOCS, from, to);
         }
+    }
+
+    /** One square's list of locomotives under a key, with `from` renamed to `to`, or dropped for a null `to`. */
+    private static void renameInList(JSONObject point, String key, String from, String to)
+    {
+        JSONArray listed = point.optJSONArray(key);
+
+        if (listed == null) return;
+
+        JSONArray kept = new JSONArray();
+
+        for (int at = 0; at < listed.length(); at++)
+        {
+            String was = listed.optString(at, null);
+
+            if (was == null) continue;
+
+            if (!from.equals(was)) kept.put(was);
+            else if (to != null) kept.put(to);
+        }
+
+        point.put(key, kept);
     }
 
     /** Named here rather than borrowed: AutonomyBuilder keeps its copy private. */

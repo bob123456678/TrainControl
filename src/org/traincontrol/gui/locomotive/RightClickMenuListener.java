@@ -47,7 +47,12 @@ public class RightClickMenuListener extends PopupListener
 
             if (ui.buttonHasLocomotive(source))
             {
-                add(LocomotiveMenuItems.settings(ui, ui.getButtonLocomotive(source), true));
+                menuItem = LocomotiveMenuItems.settings(ui, ui.getButtonLocomotive(source), true);
+
+                // Grayed while it cannot be edited, with the reason as its tooltip
+                if (menuItem.isEnabled()) menuItem.setToolTipText("Control+E");
+
+                add(menuItem);
             }
 
             addSeparator();

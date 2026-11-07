@@ -640,7 +640,7 @@ public class testLocomotiveIdentityPropagates
 
         // Bounded by the door's own method, so the rule cannot read the rest of the file and pass whatever the code
         // does.
-        String door = withoutComments(SourceOf.declaration("    void deleteLoc(String value, MouseEvent evt)"));
+        String door = withoutComments(SourceOf.declaration("    boolean deleteLoc(String value, Component source)"));
 
         int at = door.indexOf("this.ui.getModel().deleteLoc(");
 
@@ -669,19 +669,19 @@ public class testLocomotiveIdentityPropagates
     @Test
     public void testRenamingALocomotiveRewritesTheStationLabels() throws Exception
     {
-        // EVERY renameLoc call site, not the first: there are two (the edit dialog, and accepting a name the Central
+        // EVERY renameLoc call site, not the first: there are two (the Locomotive Settings window's write, and accepting a name the Central
         // Station proposes), near-copies, and a rule that stops at the first match would call the pair covered after
         // fixing one.  Asked of the whole program, naming the doors that make the two calls.
         int found = SourceOf.occurrences("model.renameLoc(") + SourceOf.occurrences("getModel().renameLoc(");
 
         assertEquals(found, 2,
-            "expected two renameLoc call sites in the window - the edit dialog and the Central "
+            "expected two renameLoc call sites in the window - the settings write and the Central "
             + "Station proposal. Found " + found + ", so either a door has been added without "
             + "this rule being told, or one has gone and the rule is watching less than it says");
 
         List<String> doors = new ArrayList<>();
 
-        doors.add(withoutComments(SourceOf.declaration("    void changeLocAddress(Locomotive l, MouseEvent evt)")));
+        doors.add(withoutComments(SourceOf.declaration("    boolean writeNameAndAddress(Component source, Locomotive l,")));
         doors.add(withoutComments(SourceOf.declaration("private void checkForRenameMenuItemActionPerformed(")));
 
         int counted = 0;

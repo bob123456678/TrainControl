@@ -173,6 +173,23 @@ An inactive square is refused as a **destination** and as an **intermediate** po
 **The square a train is already standing on is exempt.** Switching a square off around a train is how you take it out
 of service; the train then has to be driven off by hand, and a rule that refused that would strand it.
 
+### 2b. A station trains must stop at (FR-111)
+
+With **When trains stop here** on and **Running through** off, an automatic run or a trip sent by hand may end at the
+station and may leave it, and may not run through it. A later trip may leave in the same direction, as `Trains May
+Depart...` allows, with no turn round: that is how it differs from Must. Every copy of the square says so, a barred
+side's included, so a train arriving by a barred side can neither stop nor pass.
+
+**Return Home may still run through it** (Adam's choice). `HomeStaging` does not ask the rule, and each leg of a plan is
+marked, so `isPathClear` lets it pass; `auditAgainstRuntime` asks the runtime about those same trips.
+
+The one question is `Layout.stopOnlyStationRunThrough`; `bfsBySettings` asks it step by step. A timetable entry recorded
+through the station before the setting changed stops the run at once and says why, as an entry the railway cannot build
+does: waiting would not help. Stored as `runThrough: false` and only then, so an old station reads as both boxes on with
+no conversion; an old out-of-service square is both off, Nothing Can Pass. A demoted square keeps the setting (2a).
+An older build ignores the key and treats the square as an ordinary station. `core.testATrainMustStopAndCannotPassThrough`,
+`core.testAnOldSetupReadsAsItDid`, `core.testASetupFromANewerBuildOpens`.
+
 ### 2a. A square that stops being a station keeps what it had
 
 Adam, asked what setting a station to `No - Trains Cannot Stop Here` should do with its settings: *keep

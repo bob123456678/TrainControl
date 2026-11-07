@@ -158,6 +158,12 @@ public class AutonomyBuilder
      */
     private static final List<String> DERIVED = Arrays.asList("terminus", "reversing");
 
+    /**
+     * The key of a list a square remembers while Which Trains says All (FR-111): the setup's alone, never emitted, so
+     * the list keeps nobody out and an older build, which does not know the key, reads the square as open to all.
+     */
+    public static final String REMEMBERED_LOCS = "rememberedLocs";
+
     private final GraphReducer reducer;
     private final Globals globals;
 
@@ -918,6 +924,12 @@ public class AutonomyBuilder
                                 || FACING.equals(key) || AUTO_DESTINATION.equals(key) || HOME_FACING.equals(key)) continue;
 
                         if (DERIVED.contains(key)) continue;
+
+                        if (REMEMBERED_LOCS.equals(key)) continue;
+
+                        // Stop-only means a station (FR-111), on every copy including a barred side's: a square that
+                        // is no station lets trains through, whatever it remembers from when it was one.
+                        if (org.traincontrol.automation.Point.RUN_THROUGH.equals(key) && !point.isStation()) continue;
 
                         // Active is carried on every square, not only a station: the usage menu writes `active` alone
                         // for Out of service on any square, and `Layout.isPathClear` refuses a path through an inactive

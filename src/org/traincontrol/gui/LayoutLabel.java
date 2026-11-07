@@ -1768,6 +1768,19 @@ public final class LayoutLabel extends JLabel
     }
 
     /**
+     * Whether this square shows no train though trains are shown: the picture is between a wipe and the next one, or
+     * not yet made.  A press then may still be on a train the setup says stands here (FR-160).
+     *
+     * @return true when no train is drawn on the square at the moment
+     */
+    public boolean trainPictureIsMissing()
+    {
+        TileOverlay overlay = autonomyOverlay;
+
+        return trainsShown.getAsBoolean() && (overlay == null || overlay.isBlank() || !overlay.hasTrain());
+    }
+
+    /**
      * Whether the train `paintTrainOverCaptions` draws for this square covers a point (OB-354): a click on it can land
      * on a caption or on the next square.
      *

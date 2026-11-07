@@ -478,6 +478,10 @@ public class Layout
     private final Set<Locomotive> sentByHand = Collections.synchronizedSet(Collections.newSetFromMap(
         new java.util.IdentityHashMap<Locomotive, Boolean>()));
 
+    // Trains on a leg of Return Home, the one kind of trip a stop-only station lets through (FR-111).
+    private final Set<Locomotive> returningHome = Collections.synchronizedSet(Collections.newSetFromMap(
+        new java.util.IdentityHashMap<Locomotive, Boolean>()));
+
     /**
      * Where each locomotive stood when this railway last turned it at a destination, by square; dropped when it
      * arrives without turning.  Kept here because nothing in this class may call the window, which drains it when the
@@ -818,6 +822,8 @@ public class Layout
         this.takingPath.remove(l);
 
         this.sentByHand.remove(l);
+
+        this.returningHome.remove(l);
 
         // A route condition waiting on this sensor would wait forever; updatePendingS88 notifies any waiter.
         updatePendingS88(l, null);
@@ -2207,6 +2213,32 @@ public class Layout
     }
 
     /**
+     * The first stop-only station this route would run through, or null (FR-111): the one question every door asks,
+     * and the matrix may.  Its ends are never run through: a trip may end at one and may leave one.
+     *
+     * @param path the route
+     * @return the square it may not pass, or null
+     */
+    public Point stopOnlyStationRunThrough(List<Edge> path)
+    {
+        if (path == null) return null;
+
+        // As in isPathClear: the end of every edge but the last visits each intermediate once.
+        for (int i = 0; i < path.size() - 1; i++)
+        {
+            if (path.get(i).getEnd().isStopOnly()) return path.get(i).getEnd();
+        }
+
+        return null;
+    }
+
+    /** The sentence for a route refused at a stop-only station (FR-111). */
+    private static String whyNotThroughStopOnly(Point station)
+    {
+        return I18n.f("autolayout.errorThroughStopOnlyStation", placeNameOf(station));
+    }
+
+    /**
      * Checks if the provided path is unoccupied
      * @param path
      * @param loc
@@ -2423,6 +2455,16 @@ public class Layout
                 logFailures,
                 I18n.f("autolayout.errorInactiveStation", placeNameOf(path.get(path.size() - 1).getEnd()))
             );
+            return false;
+        }
+
+        // Trains must stop here (FR-111).  Past the inactive rules, so a square switched off reports as switched off.
+        Point mustStopAt = this.returningHome.contains(loc) ? null : stopOnlyStationRunThrough(path);
+
+        if (mustStopAt != null)
+        {
+            logPathError(loc, path, logFailures, whyNotThroughStopOnly(mustStopAt));
+
             return false;
         }
 
@@ -3348,7 +3390,12 @@ public class Layout
             // Return if this path isn't clear
             if (!this.isPathClear(path, loc))
             {
-                this.control.logf("autolayout.errorPathOccupied");
+                // A standing rule is no busy track: said as itself, as nothing else tells the operator (FR-111).
+                Point mustStopAt = this.returningHome.contains(loc) ? null : stopOnlyStationRunThrough(path);
+
+                if (mustStopAt != null) this.control.log(whyNotThroughStopOnly(mustStopAt));
+                else this.control.logf("autolayout.errorPathOccupied");
+
                 return false;
             }
 
@@ -3767,7 +3814,16 @@ public class Layout
      */
     public List<Edge> bfs(Point start, Point end, List<List<Edge>> excludePaths) throws Exception
     {
-        return bfs(start, end, excludePaths, false);
+        return bfs(start, end, excludePaths, false, false);
+    }
+
+    /**
+     * The same search, for a trip that is a leg of Return Home, which a stop-only station lets through (FR-111).  For
+     * `HomeStaging.auditAgainstRuntime`, so it compares the planner with the runtime on the trips the planner plans.
+     */
+    List<Edge> bfsGoingHome(Point start, Point end, List<List<Edge>> excludePaths) throws Exception
+    {
+        return bfs(start, end, excludePaths, false, true);
     }
 
     /**
@@ -3782,14 +3838,15 @@ public class Layout
      */
     public boolean anyTrackRouteBetween(Point start, Point end) throws Exception
     {
-        return bfs(start, end, null, true) != null;
+        return bfs(start, end, null, true, true) != null;
     }
 
     /**
      * The same search; throughTermini asks about the track rather than a route a train may take, so Why Not Moving?
      * can tell "a terminus is in the way" from "no track leads there".
      */
-    private List<Edge> bfs(Point start, Point end, List<List<Edge>> excludePaths, boolean throughTermini) throws Exception
+    private List<Edge> bfs(Point start, Point end, List<List<Edge>> excludePaths, boolean throughTermini,
+        boolean throughStopOnly) throws Exception
     {
         start = this.getPoint(start.getName());
         end = this.getPoint(end.getName());
@@ -3810,7 +3867,7 @@ public class Layout
         // switch both ways cannot hide a clear one (see bfsBySettings).
         //
         // Below, marked on dequeue, not enqueue: finding a route that is not excluded needs a point reached by several.
-        if (!throughTermini) return bfsBySettings(start, end, excludePaths);
+        if (!throughTermini) return bfsBySettings(start, end, excludePaths, throughStopOnly);
 
         Set<Point> visited = new HashSet<>();
         Queue<PointPath> queue = new LinkedList<>();
@@ -3875,7 +3932,7 @@ public class Layout
     }
 
     /** bfs by square and the switch settings on the way; see the note in bfs. */
-    private List<Edge> bfsBySettings(Point start, Point end, List<List<Edge>> excludePaths)
+    private List<Edge> bfsBySettings(Point start, Point end, List<List<Edge>> excludePaths, boolean throughStopOnly)
     {
         // Marked when taken off the queue, as in bfs, so excluded routes of equal length still lead on.
         Map<String, List<Map<String, Accessory.accessorySetting>>> seen = new HashMap<>();
@@ -3913,6 +3970,9 @@ public class Layout
                 // Never through a terminus that is not the end (OB-229), nor round onto another copy of either end
                 if (next.getEnd().isTerminus() || next.getEnd().isSamePlaceAs(start)
                     || next.getEnd().isSamePlaceAs(end)) continue;
+
+                // Nor through a stop-only station (FR-111), the rule of stopOnlyStationRunThrough, step by step
+                if (!throughStopOnly && next.getEnd().isStopOnly()) continue;
 
                 // Passed over when this square was left already under settings that leave as much freedom.  A route
                 // already in conflict keeps the square-alone rule: it is followed only so Why Not Moving? can name the
@@ -4906,7 +4966,7 @@ public class Layout
         {
             try
             {
-                List<Edge> anyTrack = this.bfs(start, end, null, true);
+                List<Edge> anyTrack = this.bfs(start, end, null, true, true);
 
                 if (anyTrack != null)
                 {
@@ -4924,6 +4984,11 @@ public class Layout
 
                     // The terminus first: it has a remedy on the diagram.
                     if (passesATerminus) return I18n.t("autolayout.errorIntermediateTerminusStation");
+
+                    // And the station the operator asked trains to stop at (FR-111)
+                    Point mustStopAt = stopOnlyStationRunThrough(anyTrack);
+
+                    if (mustStopAt != null) return whyNotThroughStopOnly(mustStopAt);
 
                     if (passesACopy) return I18n.t("autolayout.why.onlyALapLeadsThere");
                 }
@@ -5026,6 +5091,29 @@ public class Layout
      */
     synchronized public List<List<Edge>> getPossiblePaths(Locomotive loc, boolean uniqueDest)
     {
+        return getPossiblePaths(loc, uniqueDest, false);
+    }
+
+    /**
+     * The same, as a leg of Return Home would find them, for `HomeStaging.auditAgainstRuntime` (FR-111): marked for the
+     * question alone, under the monitor, and only if not already.
+     */
+    synchronized List<List<Edge>> getPossiblePathsGoingHome(Locomotive loc, boolean uniqueDest)
+    {
+        boolean marked = loc != null && this.returningHome.add(loc);
+
+        try
+        {
+            return getPossiblePaths(loc, uniqueDest, true);
+        }
+        finally
+        {
+            if (marked) this.returningHome.remove(loc);
+        }
+    }
+
+    private List<List<Edge>> getPossiblePaths(Locomotive loc, boolean uniqueDest, boolean goingHome)
+    {
         List<List<Edge>> output = new LinkedList<>();
 
         if (loc == null) return output;
@@ -5053,7 +5141,7 @@ public class Layout
                                 // If the first shortest path is invalid, check all alternatives                            
                                 do 
                                 {
-                                    path = this.bfs(start, end, seenPaths);
+                                    path = this.bfs(start, end, seenPaths, false, goingHome);
 
                                     if (path != null && this.isPathClear(path, loc, false))
                                     {
@@ -5199,6 +5287,19 @@ public class Layout
     }
 
     /**
+     * Why this timetable entry can never run, or null: one the railway cannot build, or one recorded through a station
+     * trips must now stop at (FR-111).  Waiting would not help, so the run stops at it.  A leg of Return Home may pass.
+     */
+    private String whyEntryCannotRun(TimetablePath ttp)
+    {
+        if (!ttp.isRunnable()) return ttp.whyNotRunnable();
+
+        Point mustStopAt = ttp.isReturnHome() ? null : stopOnlyStationRunThrough(ttp.getPath());
+
+        return mustStopAt == null ? null : whyNotThroughStopOnly(mustStopAt);
+    }
+
+    /**
      * Executes the paths in the timetable.
      *
      * Blocks until every train has arrived, not merely until the last one has set off.
@@ -5326,14 +5427,14 @@ public class Layout
                         "autolayout.infoWaitingForPreviousRouteToFinish"
                     );
                 }
-                else if (!ttp.isRunnable())
+                else if (whyEntryCannotRun(ttp) != null)
                 {
                     // A path through a point the railway does not have stops the run, and says why (Adam: "stop the
                     // timetable run upon encountering an invalid path, and let the user know"); skipped, a train's
                     // later entries would start where it was not.
-                    this.control.logf("autolayout.errorTimetableEntryNotRun", ttp.toString(), ttp.whyNotRunnable());
+                    this.control.logf("autolayout.errorTimetableEntryNotRun", ttp.toString(), whyEntryCannotRun(ttp));
 
-                    this.timetableStoppedBecause = ttp.whyNotRunnable();
+                    this.timetableStoppedBecause = whyEntryCannotRun(ttp);
 
                     abandoned.set(true);
 
@@ -6276,6 +6377,9 @@ public class Layout
             if (from != null) path = from;
         }
 
+        // Marked only if not already, as a hand send is.
+        final boolean homeBound = ttp != null && ttp.isReturnHome() && loc != null && this.returningHome.add(loc);
+
         // Every dispatch is counted, by hand too: activeLocomotives is written only after the lock phase, and
         // everything built on isRunning() must hold through it (Adam: "The same thing should happen in manual
         // operation vs auto - the same switches and signals set, and guards applied.").  Reaching zero announces the
@@ -6358,6 +6462,8 @@ public class Layout
         }
         finally
         {
+            if (homeBound) this.returningHome.remove(loc);
+
             // In a finally, as in runLocomotive: otherwise the layout reads as running for the rest of the session.
             if (this.locomotiveThreads.decrementAndGet() == 0)
             {
@@ -8009,7 +8115,8 @@ public class Layout
                     return true;
                 }
 
-                queue.add(end);
+                // No further than a station trips must end at (FR-111).
+                if (!end.isStopOnly()) queue.add(end);
             }
         }
 
@@ -8382,6 +8489,8 @@ public class Layout
             // No delay: every entry should start as soon as the one before it has, and be held back
             // only by the path actually being occupied
             entry.setSecondsToNext(0);
+
+            entry.setReturnHome(true);
 
             staged.add(entry);
         }
@@ -9136,6 +9245,12 @@ public class Layout
                     layout.getPoint(point.getString("name")).setCopyFacing(point.optString("copyFacing", null));
                 }
                 
+                // Only a boolean false: anything else, or nothing, is a station trips may run through (FR-111).
+                if (Boolean.FALSE.equals(point.opt(Point.RUN_THROUGH)))
+                {
+                    layout.getPoint(point.getString("name")).setStopOnly(true);
+                }
+
                 if (point.has("excludedLocs") && point.get("excludedLocs") instanceof JSONArray)
                 {
                     JSONArray locs = point.getJSONArray("excludedLocs");

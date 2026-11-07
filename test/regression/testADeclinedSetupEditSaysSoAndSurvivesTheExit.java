@@ -1352,34 +1352,27 @@ public class testADeclinedSetupEditSaysSoAndSurvivesTheExit
     }
 
     /**
-     * Edit Name/Address/Decoder's error is owned by the window the operator clicked in, read before the locomotive
-     * database refreshes (MT-703), which replaces every tile.  Read off the source, because only a failure of the
-     * database reaches that error.
+     * The Locomotive Settings window's Save says what went wrong over the window itself, which the locomotive
+     * database's refresh does not replace (MT-703: an error said over a clicked tile was ownerless once the refresh took
+     * the tile out of its window).  Read off the source, because only a failure of the database reaches that error.
      *
-     * MUTATION: say the error over the clicked tile again, and this fails.
+     * MUTATION: have Save hand `writeNameAndAddress` another component than the window (`main`, say), and this fails.
      */
     @Test
     public void testAnAddressEditsErrorIsOwnedByTheWindowItWasClickedIn() throws Exception
     {
-        final String body = SourceOf.declaration("    void changeLocAddress(Locomotive l, MouseEvent evt)")
+        final String save = SourceOf.declaration("\n    boolean write()\n").replaceAll("//[^\n]*", "")
+            .replaceAll("\\s+", "");
+
+        assertTrue(save.contains("writeNameAndAddress(this,loc,"), "Save no longer says what went wrong over the window"
+            + " it was pressed in - an error said over another owner can hide under an always-on-top main window");
+
+        final String body = SourceOf.declaration("    boolean writeNameAndAddress(Component source, Locomotive l,")
             .replaceAll("//[^\n]*", "");
 
-        final int refresh = body.indexOf("refreshLocSelectorList()");
+        final String after = body.substring(body.indexOf("refreshLocSelectorList()")).replaceAll("\\s+", "");
 
-        assertTrue(refresh > 0, "precondition: the address edit no longer refreshes the locomotive database");
-
-        final int read = body.indexOf("getWindowAncestor(source)");
-
-        assertTrue(read > 0 && read < refresh, "the address edit looks for the clicked tile's window after the database"
-            + " has refreshed - by then the tile is out of it");
-
-        final String after = body.substring(refresh).replaceAll("\\s+", "");
-
-        assertTrue(after.contains("showMessageDialog(sourceWindow,"), "precondition: no message after the refresh is"
-            + " said over the window read before it");
-
-        assertFalse(after.contains("showMessageDialog(source,"), "a message after the locomotive database's refresh is"
-            + " said over the clicked tile, which the refresh has taken out of its window - so Swing's hidden frame owns"
-            + " it, under an always-on-top main window");
+        assertTrue(after.contains("showMessageDialog(source,"), "precondition: no message after the database's refresh is"
+            + " said over the window that asked");
     }
 }

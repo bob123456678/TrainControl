@@ -219,13 +219,15 @@ TrainControl's key mappings are designed to allow you to send any command nearly
         * Delete (clear mapping of currently active button)
         * Control+X (cut locomotive and clear mapping of currently active button)
         * Control+V (paste copied locomotive at currently active button)
+        * Control+B (move copied locomotive to currently active button, clearing the button it came from)
         * Control+S (swap copied locomotive with currently active button)
         * Control+A (assign a new locomotive to the currently active button)
     * The locomotive database
         * Control+D (add a new locomotive to the database)
-        * Control+N (edit locomotive notes)
-        * Control+R (edit locomotive name or address)
-        * Control+L (edit multi-unit)
+        * Control+E (open Locomotive Settings)
+        * Control+N (open Locomotive Settings on the notes)
+        * Control+R (open Locomotive Settings to change the name or address)
+        * Control+L (open Locomotive Settings on the multi-unit)
         * Control+Delete (permanently delete locomotive from database)
 * UI shortcuts
     * Control+M (show menu bar)

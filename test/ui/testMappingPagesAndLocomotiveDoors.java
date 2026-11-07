@@ -16,10 +16,8 @@ import javax.swing.AbstractButton;
 import javax.swing.JButton;
 import javax.swing.JDialog;
 import javax.swing.JLabel;
-import javax.swing.JOptionPane;
 import javax.swing.JPopupMenu;
 import javax.swing.JTabbedPane;
-import javax.swing.JTextField;
 import javax.swing.SwingUtilities;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
@@ -359,34 +357,30 @@ public class testMappingPagesAndLocomotiveDoors
     // The locomotive's doors
 
     /**
-     * Control+N edits the shown train's notes: the year typed is the year kept.  Cancel keeps the old one.
+     * Control+N opens the Locomotive Settings window on its Notes tab: the year typed is the year kept, and Cancel keeps
+     * it.
      *
-     * MUTATION: save the end year's text as the start year in `changeLocNotes`, and this fails.
+     * MUTATION: open the window on the Locomotive tab in the "locomotive notes" row of `TrainControlUI.KeyShortcuts`, or
+     * leave the start year out of the window's write, and this fails.
      */
     @Test
     public void testControlNEditsTheNotes() throws Exception
     {
-        try (Answering answering = Answering.start(asked -> Answering.type("1957")))
-        {
-            Keys.press(keyboard(), KeyEvent.VK_N, InputEvent.CTRL_DOWN_MASK);
+        openWithControl(KeyEvent.VK_N, 2);
 
-            assertTrue(answering.awaitAsked(1, WAIT), "Control+N opened no notes");
-            assertTrue(answering.asked().get(0).contains(I18n.t("loc.ui.labelStartYear")),
-                "Control+N opened something other than the notes: " + answering.asked());
-        }
+        support.SettingsWindow.type("notes.startYear", "1957");
+        support.SettingsWindow.press(support.SettingsWindow.save());
 
         assertTrue(waitFor(() -> one.getStructuredNotes().getStartYear() == 1957),
             "the notes kept " + one.getStructuredNotes().getStartYear() + ", not the year typed");
         assertEquals(one.getStructuredNotes().getRailway(), RAILWAY, "saving the notes lost the railway");
 
-        try (Answering answering = Answering.start(asked -> Answering.press(I18n.t("ui.cancel"))))
-        {
-            Keys.press(keyboard(), KeyEvent.VK_N, InputEvent.CTRL_DOWN_MASK);
+        support.SettingsWindow.closeIfOpen();
 
-            assertTrue(answering.awaitAsked(1, WAIT), "Control+N opened no notes the second time");
-        }
+        openWithControl(KeyEvent.VK_N, 2);
 
-        Components.settle();
+        support.SettingsWindow.type("notes.startYear", "1960");
+        support.SettingsWindow.press(support.SettingsWindow.cancel());
 
         assertEquals(one.getStructuredNotes().getStartYear(), 1957, "Cancel changed the notes");
     }
@@ -455,10 +449,11 @@ public class testMappingPagesAndLocomotiveDoors
     }
 
     /**
-     * Control+R changes the shown train's name and address: the database answers to the new name, the train has the
-     * new address, and the key still holds it.
+     * Control+R opens the Locomotive Settings window on its first tab: the name and address typed there are what the
+     * database answers to, and the key still holds the train.
      *
-     * MUTATION: drop `this.ui.getModel().renameLoc(...)` from `LocomotiveActions.changeLocAddress`, and this fails.
+     * MUTATION: open the window on the Notes tab in the "change the address" row of `TrainControlUI.KeyShortcuts`, or
+     * drop `renameLoc` from `LocomotiveActions.writeNameAndAddress`, and this fails.
      */
     @Test
     public void testControlRChangesTheNameAndAddress() throws Exception
@@ -471,14 +466,11 @@ public class testMappingPagesAndLocomotiveDoors
 
             final int newAddress = 3206;
 
-            Thread answering = answerTheAddressDialog(renamed.getName(), RENAMED, String.valueOf(renamed.getAddress()),
-                String.valueOf(newAddress));
+            openWithControl(KeyEvent.VK_R, 0);
 
-            Keys.press(keyboard(), KeyEvent.VK_R, InputEvent.CTRL_DOWN_MASK);
-
-            answering.join(WAIT * 2);
-
-            assertFalse(answering.isAlive(), "Control+R opened no name and address dialog");
+            support.SettingsWindow.type("settings.name", RENAMED);
+            support.SettingsWindow.type("settings.address", String.valueOf(newAddress));
+            support.SettingsWindow.press(support.SettingsWindow.save());
 
             assertTrue(waitFor(() -> model.getLocByName(RENAMED) != null), "Control+R, answered with a new name, did not "
                 + "rename the train");
@@ -804,63 +796,13 @@ public class testMappingPagesAndLocomotiveDoors
         });
     }
 
-    /**
-     * Answers the name and address dialog: the field showing the old name gets the new one, the field showing the old
-     * address the new one, and OK is pressed.
-     */
-    private static Thread answerTheAddressDialog(String oldName, String newName, String oldAddress, String newAddress)
+    /** Presses Control and a key on the keyboard, and checks that the Locomotive Settings window opened on this tab. */
+    private static void openWithControl(int key, int tab) throws Exception
     {
-        Thread t = new Thread(() ->
-        {
-            long until = System.currentTimeMillis() + WAIT * 2;
+        Keys.press(keyboard(), key, InputEvent.CTRL_DOWN_MASK);
 
-            while (System.currentTimeMillis() < until)
-            {
-                boolean done = Components.onTheEventThread(() ->
-                {
-                    for (Window w : Window.getWindows())
-                    {
-                        if (!(w instanceof JDialog) || !w.isShowing()) continue;
-
-                        JOptionPane pane = Components.find(w, JOptionPane.class, null);
-
-                        if (pane == null) continue;
-
-                        JTextField name = Components.find(pane, JTextField.class, f -> oldName.equals(f.getText()));
-                        JTextField address = Components.find(pane, JTextField.class, f -> oldAddress.equals(f.getText()));
-
-                        if (name == null || address == null) continue;
-
-                        name.setText(newName);
-                        address.setText(newAddress);
-
-                        JButton ok = Components.find(pane, JButton.class, b -> I18n.t("ui.ok").equals(b.getText()));
-
-                        SwingUtilities.invokeLater(ok::doClick);
-
-                        return true;
-                    }
-
-                    return false;
-                });
-
-                if (done) return;
-
-                try
-                {
-                    Thread.sleep(50);
-                }
-                catch (InterruptedException e)
-                {
-                    return;
-                }
-            }
-        }, "answering the address dialog");
-
-        t.setDaemon(true);
-        t.start();
-
-        return t;
+        assertNotNull(support.SettingsWindow.awaited(), "Control+" + KeyEvent.getKeyText(key) + " opened no window");
+        assertEquals(support.SettingsWindow.tabShowing(), tab, "Control+" + KeyEvent.getKeyText(key) + " opened another tab");
     }
 
     private static Component keyboard() throws Exception

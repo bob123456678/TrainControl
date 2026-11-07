@@ -641,7 +641,11 @@
         <test-one-class class="testACS3SyncTakesTheStationsPositions"/>
         <test-one-class class="testACS3IconFollowsTheWebAppsRule"/>
         <test-one-class class="testASystemFrameSaysWhetherItIsForAll"/>
-        <test-one-class class="testTheShortcutTableIsTheOldChain"/>
+        <test-one-class class="testATrainMustStopAndCannotPassThrough"/>
+        <test-one-class class="testWhichTrainsKeepsOneList"/>
+        <test-one-class class="testAnOldSetupReadsAsItDid"/>
+        <test-one-class class="testASetupFromANewerBuildOpens"/>
+        <test-one-class class="testSetupDumpComparesBuilds"/>
         <test-one-class class="testEveryKindOfShortcutOnTheWindow"/>
         <test-one-class class="testTheEditorsFindingsCanBeFiltered"/>
         <test-one-class class="testTheKeyboardAsksDuringAnAutonomyRun"/>
@@ -659,6 +663,7 @@
         <test-one-class class="testLocomotiveCsvImport"/>
         <test-one-class class="testLocomotiveCsvImportDoor"/>
         <test-one-class class="testASyncKeepsAnImportedLocomotive"/>
+        <test-one-class class="testATrainDragsFromStationToStation"/>
         <test-one-class class="testACS2RequestsAreAsBefore"/>
         <test-one-class class="testACS3SyncIsAsBefore"/>
         <test-one-class class="testCS3InputsParseAsBefore"/>

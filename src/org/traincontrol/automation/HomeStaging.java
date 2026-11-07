@@ -583,7 +583,9 @@ public final class HomeStaging
 
             Set<Point> runtimeSays = new HashSet<>();
 
-            for (List<Edge> path : this.layout.getPossiblePaths(loc, true))
+            // Asked as a leg of Return Home, which alone may run through a stop-only station (FR-111): this planner
+            // obeys no such rule, and both sides must be answering about the same trips or the audit says nothing.
+            for (List<Edge> path : this.layout.getPossiblePathsGoingHome(loc, true))
             {
                 runtimeSays.add(path.get(path.size() - 1).getEnd());
             }
@@ -1943,7 +1945,7 @@ public final class HomeStaging
 
         try
         {
-            if (this.layout.bfs(from, to, null) != null) return false;
+            if (this.layout.bfsGoingHome(from, to, null) != null) return false;
 
             return this.layout.anyTrackRouteBetween(from, to);
         }

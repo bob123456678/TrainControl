@@ -208,6 +208,38 @@ public class testEveryKindOfShortcutOnTheWindow
     }
 
     /**
+     * Control+B moves the copied train onto the shown button and clears the button it came from, as the key menu's Move
+     * item does (OB-410); with nothing copied it changes nothing.
+     *
+     * MUTATION: `doPaste(key.ui.currentButton, false, false)` in the row "move onto the button", and this fails at A; drop
+     * the row, and it fails at D.
+     */
+    @Test
+    public void testControlBMovesTheCopiedTrain() throws Exception
+    {
+        Keys.press(keyboard(), KeyEvent.VK_D);
+        Keys.press(keyboard(), KeyEvent.VK_B, CTRL);
+
+        assertNull(locOn(KeyEvent.VK_D), "Control+B with nothing copied put a train on D");
+
+        movedWithControlB(KeyEvent.VK_A, KeyEvent.VK_D, one);
+        movedWithControlB(KeyEvent.VK_S, KeyEvent.VK_A, two);
+    }
+
+    /** Copies the train on one key, goes to another and presses Control+B: the train is there and not where it was. */
+    private void movedWithControlB(int from, int to, MarklinLocomotive train) throws Exception
+    {
+        Keys.press(keyboard(), from);
+        Keys.press(keyboard(), KeyEvent.VK_C, CTRL);
+        Keys.press(keyboard(), to);
+        Keys.press(keyboard(), KeyEvent.VK_B, CTRL);
+
+        assertSame(locOn(to), train, "Control+B did not move the train to its new key");
+        assertNull(locOn(from), "Control+B left the train on the key it came from");
+        assertFalse(ui.hasCopyTarget(), "Control+B left the train copied");
+    }
+
+    /**
      * Delete clears the button and leaves the locomotive; Control+Delete asks, then deletes the locomotive itself.
      *
      * MUTATION: in "delete the locomotive", `key.ui.setCopyTarget(key.ui.currentButton, true)` for the `deleteLoc`, and
@@ -240,7 +272,7 @@ public class testEveryKindOfShortcutOnTheWindow
     /**
      * A bare letter shows its button, on each keyboard layout; Shift and Alt do not stop it, Control does.
      *
-     * MUTATION: in "show a letter's button", `Held.ANY`, and this fails at Control+B; `Held.NEITHER`, and it fails at
+     * MUTATION: in "show a letter's button", `Held.ANY`, and this fails at Control+Q; `Held.NEITHER`, and it fails at
      * Alt+B.
      */
     @Test
@@ -263,9 +295,9 @@ public class testEveryKindOfShortcutOnTheWindow
 
         JButton before = settled();
 
-        Keys.press(keyboard(), KeyEvent.VK_B, CTRL);
+        Keys.press(keyboard(), KeyEvent.VK_Q, CTRL);
 
-        assertSame(settled(), before, "Control+B chose a button");
+        assertSame(settled(), before, "Control+Q chose a button");
 
         String[] layouts = {TrainControlUI.KEYBOARD_QWERTZ, TrainControlUI.KEYBOARD_AZERTY, TrainControlUI.KEYBOARD_QWERTY};
 

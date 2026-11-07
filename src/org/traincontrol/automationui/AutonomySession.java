@@ -4254,6 +4254,119 @@ public class AutonomySession
         setPointProperty(tile, "reversing", null);
     }
 
+    /**
+     * Whether this square is a stop-only station: in service, trains stop here and none may run through (FR-111).  An
+     * old station reads false with no conversion, as the setting is stored only when off.
+     */
+    public boolean isStopOnly(TileKey tile)
+    {
+        return store.isStation(tile) && !Boolean.FALSE.equals(getPointProperty(tile, "active"))
+            && Boolean.FALSE.equals(getPointProperty(tile, org.traincontrol.automation.Point.RUN_THROUGH));
+    }
+
+    /**
+     * Sets the two boxes of a square's use (FR-111): both ticked a station, only `stops` a stop-only station, only
+     * `runsThrough` a pass-through, neither Nothing Can Pass, which leaves what the square is alone so that ticking a
+     * box again brings it back.  Names nothing: a square becoming a station needs its name set first by whoever asks.
+     *
+     * @param tile the square, a sensor where `stops` is set
+     * @param stops When trains stop here
+     * @param runsThrough Running through
+     */
+    public void setStopsAndRunsThrough(TileKey tile, boolean stops, boolean runsThrough)
+    {
+        if (!stops && !runsThrough)
+        {
+            setPointProperty(tile, "active", Boolean.FALSE);
+
+            return;
+        }
+
+        setStation(tile, stops);
+
+        setPointProperty(tile, "active", null);
+
+        setPointProperty(tile, org.traincontrol.automation.Point.RUN_THROUGH, runsThrough ? null : Boolean.FALSE);
+    }
+
+    /** Which trains a square's list applies to (FR-111); the three share one list. */
+    public enum WhichTrains
+    {
+        /** Every train; the list is remembered and keeps nobody out. */
+        ALL,
+        /** Every train but those listed. */
+        BLACKLIST,
+        /** Only those listed; an empty list keeps every train out (`Point.excludes`). */
+        WHITELIST
+    }
+
+    /** @return which trains this square lets in; a square with no list in force reads ALL */
+    public WhichTrains getWhichTrains(TileKey tile)
+    {
+        if (org.traincontrol.automation.Point.ALLOW_ONLY_LISTED.equals(
+            getPointProperty(tile, org.traincontrol.automation.Point.EXCLUDED_LOCS_MODE)))
+        {
+            return WhichTrains.WHITELIST;
+        }
+
+        return namesUnder(tile, "excludedLocs").isEmpty() ? WhichTrains.ALL : WhichTrains.BLACKLIST;
+    }
+
+    /** @return this square's one list of locomotives, by name, whichever of the three is chosen */
+    public List<String> getTrainList(TileKey tile)
+    {
+        List<String> inForce = namesUnder(tile, "excludedLocs");
+
+        return !inForce.isEmpty() || getWhichTrains(tile) != WhichTrains.ALL
+            ? inForce : namesUnder(tile, AutonomyBuilder.REMEMBERED_LOCS);
+    }
+
+    /** Replaces this square's one list, under whichever of the three is chosen. */
+    public void setTrainList(TileKey tile, java.util.Collection<String> names)
+    {
+        storeTrains(tile, getWhichTrains(tile), names);
+    }
+
+    /**
+     * Chooses which trains this square lets in, keeping its one list: All keeps it under a key the build leaves out and
+     * an older build does not read, so a list held back is never a list in force.  Blacklist with an empty list reads
+     * All again, as nothing distinguishes the two; a window asks for a list first.
+     */
+    public void setWhichTrains(TileKey tile, WhichTrains which)
+    {
+        storeTrains(tile, which, getTrainList(tile));
+    }
+
+    private void storeTrains(TileKey tile, WhichTrains which, java.util.Collection<String> names)
+    {
+        org.json.JSONArray listed = names == null || names.isEmpty() ? null : new org.json.JSONArray(names);
+
+        setPointProperty(tile, "excludedLocs", which == WhichTrains.ALL ? null : listed);
+
+        setPointProperty(tile, org.traincontrol.automation.Point.EXCLUDED_LOCS_MODE,
+            which == WhichTrains.WHITELIST ? org.traincontrol.automation.Point.ALLOW_ONLY_LISTED : null);
+
+        setPointProperty(tile, AutonomyBuilder.REMEMBERED_LOCS, which == WhichTrains.ALL ? listed : null);
+    }
+
+    /** The names stored under a key of this square, in order; empty where there are none. */
+    private List<String> namesUnder(TileKey tile, String key)
+    {
+        List<String> out = new ArrayList<>();
+
+        Object value = getPointProperty(tile, key);
+
+        if (value instanceof org.json.JSONArray)
+        {
+            for (Object name : (org.json.JSONArray) value)
+            {
+                if (name instanceof String) out.add((String) name);
+            }
+        }
+
+        return out;
+    }
+
     /** Sets one of the three switches (CAN_REVERSE or PARKING), clearing the older spellings. */
     public void setPointFlag(TileKey tile, String key, boolean on)
     {
@@ -6280,7 +6393,8 @@ public class AutonomySession
 
         Object existing = getPointProperty(tile, "loc");
 
-        org.json.JSONObject loc = existing instanceof org.json.JSONObject
+        // The settings of the train standing here belong to it: a different train starts from none (FR-160).
+        org.json.JSONObject loc = existing instanceof org.json.JSONObject && name.equals(nameOfPlacedLocomotive(existing))
             ? new org.json.JSONObject(existing.toString()) : new org.json.JSONObject();
 
         loc.put("name", name);

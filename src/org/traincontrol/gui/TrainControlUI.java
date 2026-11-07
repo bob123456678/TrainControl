@@ -4119,6 +4119,59 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         this.diagramLocGestures.setHoveredDiagramTile(page, x, y);
     }
 
+    /**
+     * Whether a paste of this train onto this square would land it there (FR-160), asked of what the paste asks: the
+     * roster knows the train, the railway has a Point for the square and for every copy the setup builds there (a
+     * square renamed or changed since the last build is stale, and the facing would be lost), and one of them is a
+     * destination.
+     *
+     * @param locomotive the train's name
+     * @param to the station square
+     * @return whether it lands
+     */
+    public boolean canTrainLandOn(String locomotive, org.traincontrol.automationui.TileGraph.TileKey to)
+    {
+        org.traincontrol.automationui.AutonomySession session = getAutonomySession();
+
+        org.traincontrol.automation.Layout shown = this.model == null ? null : this.model.getAutoLayoutIfLoaded();
+
+        if (session == null || shown == null || to == null || session.getStationIndex() == null
+            || this.model.getLocByName(locomotive) == null || getAutonomyPointForTile(to) == null)
+        {
+            return false;
+        }
+
+        // And one copy the railway takes a train on: a square made a station since the build is no destination yet
+        boolean takes = false;
+
+        for (String name : session.getStationIndex().pointNamesAt(to))
+        {
+            org.traincontrol.automation.Point copy = shown.getPoint(name);
+
+            if (copy == null) return false;
+
+            if (copy.isDestination() || shown.isABarredCopyOfAStation(copy)) takes = true;
+        }
+
+        return takes;
+    }
+
+    /**
+     * Delegates to `DiagramLocGestures.dropByPaste`: a train dragged in the autonomy editor lands as a paste (FR-160).
+     *
+     * @param locomotive the train's name
+     * @param to the station square
+     * @return whether it now stands there; false also where no railway is loaded to paste onto
+     */
+    public boolean dropTrainByPaste(String locomotive, org.traincontrol.automationui.TileGraph.TileKey to)
+    {
+        Locomotive train = this.model == null ? null : this.model.getLocByName(locomotive);
+
+        if (train == null || !this.model.hasAutoLayout()) return false;
+
+        return this.diagramLocGestures.dropByPaste(train, to);
+    }
+
     /** Delegates to `DiagramLocGestures.locomotiveGestureOnDiagram`. */
     private boolean locomotiveGestureOnDiagram(int keyCode, boolean controlPressed)
     {
@@ -13884,10 +13937,13 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 key -> key.ui.selectLocomotiveActivated(key.ui.currentButton));
             row("find a locomotive", Held.CONTROL.on(KeyEvent.VK_F), key -> key.ui.quickLocSearch());
             row("add a locomotive", Held.CONTROL.on(KeyEvent.VK_D), key -> key.ui.getLocAdder().setVisible(true));
-            row("locomotive notes", Held.CONTROL.on(KeyEvent.VK_N),
-                key -> key.ui.changeLocNotes(key.ui.getButtonLocomotive(key.ui.currentButton)));
-            row("linked locomotives", Held.CONTROL.on(KeyEvent.VK_L),
-                key -> key.ui.changeLinkedLocomotives((Locomotive) key.ui.getButtonLocomotive(key.ui.currentButton)));
+            // The locomotive keys open the Locomotive Settings window, whose one rule covers them (FR-048).
+            row("locomotive settings", Held.CONTROL.on(KeyEvent.VK_E), key -> key.ui.openLocomotiveSettings(
+                key.ui.getButtonLocomotive(key.ui.currentButton), LocomotiveSettingsFrame.Tab.LOCOMOTIVE, null));
+            row("locomotive notes", Held.CONTROL.on(KeyEvent.VK_N), key -> key.ui.openLocomotiveSettings(
+                key.ui.getButtonLocomotive(key.ui.currentButton), LocomotiveSettingsFrame.Tab.NOTES, null));
+            row("linked locomotives", Held.CONTROL.on(KeyEvent.VK_L), key -> key.ui.openLocomotiveSettings(
+                key.ui.getButtonLocomotive(key.ui.currentButton), LocomotiveSettingsFrame.Tab.MULTI_UNIT, null));
             row("show or hide the menu bar", Held.CONTROL.on(KeyEvent.VK_M), key ->
             {
                 key.ui.toggleMenuBar.setSelected(!key.ui.toggleMenuBar.isSelected());
@@ -13900,13 +13956,21 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                     key.ui.deleteLoc(key.ui.getButtonLocomotive(key.ui.currentButton).getName());
                 }
             });
-            row("change the address", Held.CONTROL.on(KeyEvent.VK_R),
-                key -> key.ui.changeLocAddress(key.ui.getButtonLocomotive(key.ui.currentButton)));
+            row("change the address", Held.CONTROL.on(KeyEvent.VK_R), key -> key.ui.openLocomotiveSettings(
+                key.ui.getButtonLocomotive(key.ui.currentButton), LocomotiveSettingsFrame.Tab.LOCOMOTIVE, null));
             row("paste onto the button", Held.CONTROL.on(KeyEvent.VK_V), key ->
             {
                 if (key.ui.hasCopyTarget())
                 {
                     key.ui.doPaste(key.ui.currentButton, false, false);
+                }
+            });
+            // The key menu's Move item names this key (OB-410).
+            row("move onto the button", Held.CONTROL.on(KeyEvent.VK_B), key ->
+            {
+                if (key.ui.hasCopyTarget())
+                {
+                    key.ui.doPaste(key.ui.currentButton, false, true);
                 }
             });
             row("swap with the button", Held.CONTROL.on(KeyEvent.VK_S), key ->
