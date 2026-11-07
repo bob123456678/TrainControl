@@ -148,12 +148,12 @@ public class testATypedAddressIsReadTheSameAtEveryDoor
     {
         Locomotive mfx = model.newMFXLocomotive(EDIT_MFX, 3330);
 
-        assertEquals(edit(mfx, "0xD05").size(), 0, "an MFX hex address raised a message");
+        assertEquals(edit(mfx, "0xD05", 0).size(), 0, "an MFX hex address raised a message");
         assertEquals(model.getLocByName(EDIT_MFX).getAddress(), 0xD05, "an MFX address typed as hex did not change");
 
         Locomotive dcc = model.newDCCLocomotive(EDIT_DCC, 1331);
 
-        List<String> said = edit(dcc, "0x10");
+        List<String> said = edit(dcc, "0x10", 1);
 
         assertEquals(said.size(), 1, "a DCC hex address raised no refusal: " + said);
         assertEquals(model.getLocByName(EDIT_DCC).getAddress(), 1331, "a DCC address typed as hex changed the locomotive");
@@ -205,9 +205,10 @@ public class testATypedAddressIsReadTheSameAtEveryDoor
     }
 
     /**
-     * Opens the Locomotive Settings window on a locomotive, types the address and presses Save; gives what was said.
+     * Opens the Locomotive Settings window on a locomotive, types the address and presses Save; gives what was said,
+     * after waiting for {@code expected} messages.
      */
-    private static List<String> edit(Locomotive loc, String address) throws Exception
+    private static List<String> edit(Locomotive loc, String address, int expected) throws Exception
     {
         assertTrue(support.SettingsWindow.open(ui, loc, org.traincontrol.gui.LocomotiveSettingsFrame.Tab.LOCOMOTIVE, null),
             "the door did not open the Locomotive Settings window");
@@ -217,6 +218,8 @@ public class testATypedAddressIsReadTheSameAtEveryDoor
         try (Answering answering = Answering.start(message -> Answering.pressAt(0)))
         {
             Components.press(support.SettingsWindow.save());
+
+            if (expected > 0) assertTrue(answering.awaitAsked(expected, WAIT), "Save said nothing");
 
             Components.settle();
 
