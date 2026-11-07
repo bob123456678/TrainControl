@@ -1450,10 +1450,7 @@ public class testStationSettingsWindow
         assertEquals(Components.onTheEventThread(depart::getSelectedItem), I18n.t("autosetup.ui.menuRouteBoth"),
             "precondition: Both Ways is chosen for the station");
 
-        assertEquals(Components.onTheEventThread(() -> window.pictureWaysForTest(false)), set("S"), "the ways in");
-        assertEquals(Components.onTheEventThread(() -> window.pictureWaysForTest(true)), set("N"), "the ways out");
-
-        assertEquals(sidesDrawnIn(window, ONE_WAY_GREEN), set("N"), "the sides of the station a green arrow is drawn at");
+        assertWays(window, set("S"), set("N"), set("N"));
 
         StationDoors.close(window);
     }
@@ -1483,14 +1480,11 @@ public class testStationSettingsWindow
 
         StationSettingsWindow window = StationDoors.open(panel, square);
 
-        assertEquals(Components.onTheEventThread(() -> window.pictureWaysForTest(false)), set("W"), "the ways in");
-        assertEquals(Components.onTheEventThread(() -> window.pictureWaysForTest(true)), set("W"), "the ways out");
+        assertWays(window, set("W"), set("W"), set("W"));
 
-        assertEquals(sidesDrawnIn(window, ONE_WAY_GREEN), set("W"), "the sides of the station a green arrow is drawn at");
-
-        for (java.awt.Color mark : new java.awt.Color[] {CLOSED_RED, ARRIVAL_YELLOW})
+        for (int mark : new int[] {CLOSED_RED, ARRIVAL_YELLOW})
         {
-            assertFalse(sidesDrawnIn(window, mark).contains("E"), "a mark at the dead end, in " + mark);
+            assertFalse(sidesDrawnIn(window, mark).contains("E"), "a mark at the dead end, in " + Integer.toHexString(mark));
         }
 
         assertFalse(Components.onTheEventThread(window::pictureMarksForTest).containsKey("OUT.E"), "a way out at the dead end");
@@ -1518,17 +1512,7 @@ public class testStationSettingsWindow
 
         for (String page : Components.onTheEventThread(() -> new java.util.TreeSet<>(model.getLayoutList())))
         {
-            List<TileKey> stations = Components.onTheEventThread(() ->
-            {
-                List<TileKey> out = new java.util.ArrayList<>();
-
-                for (TileKey each : session.getReducer().getPoints().keySet())
-                {
-                    if (page.equals(each.getPage()) && session.getStore().isStation(each)) out.add(each);
-                }
-
-                return out;
-            });
+            List<TileKey> stations = stationsOn(page);
 
             if (stations.isEmpty()) continue;
 
@@ -1625,24 +1609,8 @@ public class testStationSettingsWindow
 
         javax.swing.JComponent block = StationDoors.part(window, "station.picture.ways", javax.swing.JComponent.class);
 
-        int line = Components.onTheEventThread(() ->
-        {
-            java.awt.image.BufferedImage image = drawnOn(block);
-
-            int found = 0;
-
-            for (int y = 0; y < image.getHeight(); y++)
-            {
-                for (int x = 0; x < image.getWidth(); x++)
-                {
-                    int rgb = image.getRGB(x, y) & 0xffffff;
-
-                    if (rgb == (TRACE_YELLOW.getRGB() & 0xffffff) || rgb == (TRACE_ORANGE.getRGB() & 0xffffff)) found++;
-                }
-            }
-
-            return found;
-        });
+        int line = Components.onTheEventThread(() -> pixels(drawnOn(block), new java.awt.Rectangle(block.getSize()),
+            rgb -> rgb == TRACE_YELLOW || rgb == TRACE_ORANGE));
 
         assertEquals(line, 0, "pixels of a run-through line are drawn");
 
@@ -1683,17 +1651,8 @@ public class testStationSettingsWindow
 
             assertNotNull(signal, "no square of the picture is the signal");
 
-            java.awt.image.BufferedImage alone = new java.awt.image.BufferedImage(east.width, east.height,
-                java.awt.image.BufferedImage.TYPE_INT_RGB);
-
-            java.awt.Graphics2D g = alone.createGraphics();
-
-            g.setColor(java.awt.Color.WHITE);
-            g.fillRect(0, 0, east.width, east.height);
-            signal.paint(g);
-            g.dispose();
-
-            return new int[] {reds(alone, new java.awt.Rectangle(0, 0, east.width, east.height)), reds(drawnOn(block), east)};
+            return new int[] {pixels(drawnOn((javax.swing.JComponent) signal), new java.awt.Rectangle(signal.getSize()), RED),
+                pixels(drawnOn(block), east, RED)};
         });
 
         assertTrue(red[0] > 0, "precondition: the signal's own art has no red");
@@ -1783,17 +1742,7 @@ public class testStationSettingsWindow
     @Test(timeOut = 300000)
     public void testTheMarksOfASideLineUp() throws Exception
     {
-        List<TileKey> stations = Components.onTheEventThread(() ->
-        {
-            List<TileKey> out = new java.util.ArrayList<>();
-
-            for (TileKey each : session.getReducer().getPoints().keySet())
-            {
-                if (PAGE.equals(each.getPage()) && session.getStore().isStation(each)) out.add(each);
-            }
-
-            return out;
-        });
+        List<TileKey> stations = stationsOn(PAGE);
 
         List<String> wrong = new java.util.ArrayList<>();
 
@@ -1864,14 +1813,25 @@ public class testStationSettingsWindow
         assertTrue(wrong.isEmpty(), "marks off their axis or overlapping: " + wrong);
     }
 
-    private static final java.awt.Color ONE_WAY_GREEN = new java.awt.Color(70, 205, 90);
-    private static final java.awt.Color CLOSED_RED = new java.awt.Color(200, 0, 0);
-    private static final java.awt.Color ARRIVAL_YELLOW = new java.awt.Color(255, 205, 0);
-    private static final java.awt.Color TRACE_YELLOW = new java.awt.Color(255, 214, 0);
-    private static final java.awt.Color TRACE_ORANGE = new java.awt.Color(255, 150, 40);
+    /** The diagram's colors, as 0xRRGGBB: a way out, a shut one, a way in, and a tested path's two lines. */
+    private static final int ONE_WAY_GREEN = 0x46cd5a;
+    private static final int CLOSED_RED = 0xc80000;
+    private static final int ARRIVAL_YELLOW = 0xffcd00;
+    private static final int TRACE_YELLOW = 0xffd600;
+    private static final int TRACE_ORANGE = 0xff9628;
+
+    /** What the picture's station shows: its open ways in and out, and the sides it is drawn green at. */
+    private static void assertWays(StationSettingsWindow window, Set<String> in, Set<String> out, Set<String> green)
+        throws Exception
+    {
+        assertEquals(Components.onTheEventThread(() -> window.pictureWaysForTest(false)), in, "the ways in");
+        assertEquals(Components.onTheEventThread(() -> window.pictureWaysForTest(true)), out, "the ways out");
+
+        assertEquals(sidesDrawnIn(window, ONE_WAY_GREEN), green, "the sides of the station a green arrow is drawn at");
+    }
 
     /** The sides of the picture's station square that pixels of exactly this color lie nearest to. */
-    private static Set<String> sidesDrawnIn(StationSettingsWindow window, java.awt.Color color) throws Exception
+    private static Set<String> sidesDrawnIn(StationSettingsWindow window, int color) throws Exception
     {
         javax.swing.JComponent block = StationDoors.part(window, "station.picture.ways", javax.swing.JComponent.class);
 
@@ -1887,7 +1847,7 @@ public class testStationSettingsWindow
             {
                 for (int x = at.x; x < at.x + at.width; x++)
                 {
-                    if ((image.getRGB(x, y) & 0xffffff) != (color.getRGB() & 0xffffff)) continue;
+                    if ((image.getRGB(x, y) & 0xffffff) != color) continue;
 
                     int[] to = {y - at.y, at.x + at.width - 1 - x, at.y + at.height - 1 - y, x - at.x};
 
@@ -1903,8 +1863,13 @@ public class testStationSettingsWindow
         });
     }
 
-    /** How many strongly red pixels an image has inside this rectangle. */
-    private static int reds(java.awt.image.BufferedImage image, java.awt.Rectangle within)
+    /** A strongly red pixel, as a signal's lamp is and no arrow of a next square is. */
+    private static final java.util.function.IntPredicate RED = rgb ->
+        (rgb >> 16 & 0xff) > 150 && (rgb >> 16 & 0xff) - (rgb >> 8 & 0xff) > 70 && (rgb >> 16 & 0xff) - (rgb & 0xff) > 70;
+
+    /** How many pixels of an image inside this rectangle are of this kind, read as 0xRRGGBB. */
+    private static int pixels(java.awt.image.BufferedImage image, java.awt.Rectangle within,
+        java.util.function.IntPredicate kind)
     {
         int found = 0;
 
@@ -1912,17 +1877,27 @@ public class testStationSettingsWindow
         {
             for (int x = within.x; x < within.x + within.width; x++)
             {
-                int rgb = image.getRGB(x, y);
-
-                int r = rgb >> 16 & 0xff;
-                int g = rgb >> 8 & 0xff;
-                int b = rgb & 0xff;
-
-                if (r > 150 && r - g > 70 && r - b > 70) found++;
+                if (kind.test(image.getRGB(x, y) & 0xffffff)) found++;
             }
         }
 
         return found;
+    }
+
+    /** The stations of one page of the frozen railway. */
+    private static List<TileKey> stationsOn(String page)
+    {
+        return Components.onTheEventThread(() ->
+        {
+            List<TileKey> out = new java.util.ArrayList<>();
+
+            for (TileKey each : session.getReducer().getPoints().keySet())
+            {
+                if (page.equals(each.getPage()) && session.getStore().isStation(each)) out.add(each);
+            }
+
+            return out;
+        });
     }
 
     /** The middle of a mark's corners, which lies on a symmetric mark's axis. */
