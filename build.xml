@@ -674,6 +674,8 @@
         <test-one-class class="testTheLocomotiveSettingsMovingRule"/>
         <test-one-class class="testTheLocomotiveSettingsFunctions"/>
         <test-one-class class="testThePresetSpeedSurvivesTheSetupDoors"/>
+        <test-one-class class="testPageLinksGoByPageId"/>
+        <test-one-class class="testALinkOnAStationGoesByPageId"/>
     </target>
     <target name="package-for-store" depends="jar">
         <property name="store.jar.name" value="TrainControl"/>

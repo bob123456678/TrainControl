@@ -14366,35 +14366,35 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * Navigates to a specific layout page
-     * @param index the page's place in the name-sorted list, or -1 for a link that points at no page
+     * Goes to the page a link tile leads to, found by the page ID it carries (FR-175).  A link to nothing clicks to
+     * nothing, its tooltip says so; one to a page that is gone says so in the log.
+     *
+     * @param link the arrow that was clicked
      */
-    public void goToLayoutPage(int index)
+    public void followLink(org.traincontrol.base.LayoutDiagramComponent link)
     {
-        // A link to nothing clicks to nothing: a deleted page's arrow carries -1.  Silent, not logged: the tooltip
-        // already says the link points at no page.
-        if (index < 0) return;
+        String page = link.getLinkPageName();
 
-        int page = index + 1;
-
-        List<String> byName = this.model.getLayoutListByName();
-
-        if (byName.size() > index && index >= 0 && this.LayoutList.getModel().getSize() > index)
+        if (page == null)
         {
-            this.model.logf(
-                "layout.ui.infoJumpingToLayoutPage",
-                page
-            );
-            this.LayoutList.setSelectedItem(byName.get(index));
-            this.repaintLayout();
+            if (link.linksToAPageThatIsGone()) this.model.logf("layout.ui.errorLinkedPageGone", link.getLinkPageId());
+
+            return;
         }
-        else
+
+        for (int i = 0; i < this.LayoutList.getModel().getSize(); i++)
         {
-            this.model.logf(
-                "layout.ui.errorLayoutPageDoesNotExist",
-                page
-            );
+            if (page.equals(String.valueOf(this.LayoutList.getModel().getElementAt(i))))
+            {
+                this.model.logf("layout.ui.infoJumpingToLayoutPage", page);
+                this.LayoutList.setSelectedIndex(i);
+                this.repaintLayout();
+
+                return;
+            }
         }
+
+        this.model.logf("layout.ui.errorLayoutPageDoesNotExist", page);
     }
         
     /** What asking about a route's conflict came back with; "nothing to confirm" must not become a full override. */

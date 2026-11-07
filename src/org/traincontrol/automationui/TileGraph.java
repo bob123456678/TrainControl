@@ -1083,6 +1083,9 @@ public class TileGraph
     {
         if (link == null) return false;
 
+        // A link that carries a page ID goes by it: the layout has resolved the page, whatever order pages are in
+        if (link.getLinkPageId() != null) return link.getLinkPageName() == null || !pages.contains(link.getLinkPageName());
+
         int address = link.getRawAddress();
 
         if (address < 0 || address >= allPages.size()) return true;

@@ -493,10 +493,10 @@ public class testArrowsKeepTheirMeaningInAnyDisplayOrder extends support.PageWin
     }
 
     /**
-     * The arrow picker lists the pages in the order they are shown and stores the name-sorted position of the page
-     * picked, and shows the page at the stored position.
+     * The arrow picker lists the pages in the order they are shown, gives the ID of the page picked, and shows the page
+     * an arrow goes to.
      *
-     * MUTATION: `LayoutEditorAddressPopup` indexes `getLayoutList` instead of `getLayoutListByName`, and this fails.
+     * MUTATION: `LayoutEditorAddressPopup` gives the page's place in the shown list instead of its ID, and this fails.
      */
     @Test
     public void testThePickerShowsPagesInFileOrderAndStoresTheNameSortedPlace() throws Exception
@@ -545,17 +545,20 @@ public class testArrowsKeepTheirMeaningInAnyDisplayOrder extends support.PageWin
 
         final int stored = tile.getRawAddress();
 
-        SwingUtilities.invokeAndWait(() -> picker.setAddress(Integer.toString(stored + 1)));
+        // An old arrow's number is a place in the name-sorted list, so the page it goes to is the one there
+        assertEquals(tile.getLinkPageName(), byName.get(stored), "precondition: the arrow does not go to its number's page");
+
+        SwingUtilities.invokeAndWait(() -> picker.setAddress(Integer.toString(tile.getLogicalAddress())));
 
         assertEquals(String.valueOf(Components.onTheEventThread(choices::getSelectedItem)), byName.get(stored),
-            "the picker shows another page than the name-sorted list has at the arrow's number");
+            "the picker shows another page than the one the arrow goes to");
 
         final String other = shownOrder.get(0);
 
         SwingUtilities.invokeAndWait(() -> choices.setSelectedItem(other));
 
-        assertEquals(Components.onTheEventThread(picker::getAddress), Integer.toString(byName.indexOf(other) + 1),
-            "the picker does not store the name-sorted place of the page picked");
+        assertEquals(Components.onTheEventThread(picker::getAddress), Integer.toString(model.getPageIdOf(other) + 1),
+            "the picker does not give the ID of the page picked");
     }
 
     // ------------------------------------------------------------------------------------------------

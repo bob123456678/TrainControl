@@ -799,6 +799,8 @@ public class MarklinControlStation implements ViewListener, ModelListener
         }
 
         this.layoutOrder = fileOrder;
+
+        attachLinks(parser);
         
         // Prune stale feedback, but only when the whole railway was read: a page that failed to load would take the
         // sensors seen only on it, and the autonomy points watching them, out of LocDB.data for good.
@@ -4203,6 +4205,112 @@ public class MarklinControlStation implements ViewListener, ModelListener
         l.addAll(held);
 
         return l;
+    }
+
+    // The page names the autonomy setup records under each ID, which decide who keeps an ID two pages share
+    private volatile Map<Integer, String> setupPageNames = new java.util.TreeMap<>();
+
+    /**
+     * Tells every link which page it goes to (FR-175).  A link that carries a page ID goes to the page with it.  One
+     * written by an earlier version has none: on a local layout its number is a place in the name-sorted list, on a
+     * station it is the page's ID; it resolves that way and the ID is attached here, in memory, to be written when its
+     * page is next saved.  A local link whose target shares its ID with another page keeps going by its number until
+     * the IDs are told apart.  On a local layout the number written beside the ID is made right for 3.0.8.
+     */
+    private void attachLinks(CS2File parser)
+    {
+        final boolean station = parser.isFromStation();
+
+        this.setupPageNames = station ? new java.util.TreeMap<Integer, String>()
+            : LayoutDiagram.readSetupPageNames(parser.localLayoutFolder());
+
+        List<String> byName = getLayoutListByName();
+
+        Map<Integer, Integer> uses = new HashMap<>();
+
+        for (String name : byName)
+        {
+            LayoutDiagram page = this.layoutDB.getByName(name);
+
+            if (page != null) uses.merge(page.getPageIdNumber(), 1, Integer::sum);
+        }
+
+        for (String name : byName)
+        {
+            LayoutDiagram page = this.layoutDB.getByName(name);
+
+            if (page == null) continue;
+
+            for (LayoutDiagramComponent tile : page.getAll())
+            {
+                if (tile == null || !tile.isLink()) continue;
+
+                Integer id = tile.getLinkPageId();
+
+                int raw = tile.getRawAddress();
+
+                if (id == null)
+                {
+                    if (station)
+                    {
+                        if (raw >= 0) id = raw;
+                    }
+                    else if (raw >= 0 && raw < byName.size())
+                    {
+                        LayoutDiagram target = this.layoutDB.getByName(byName.get(raw));
+
+                        int targetId = target == null ? 0 : target.getPageIdNumber();
+
+                        // Left to its number while two pages share the ID: the ID could name the other one
+                        if (target != null && uses.get(targetId) == 1) id = targetId;
+                        else if (target != null)
+                        {
+                            tile.setLinkTarget(null, byName.get(raw), raw);
+
+                            continue;
+                        }
+                    }
+                }
+
+                String target = id == null ? null : getPageNameForId(id);
+
+                int number = station ? raw : target != null ? byName.indexOf(target) : id == null ? raw : -1;
+
+                tile.setLinkTarget(id, target, number);
+            }
+        }
+    }
+
+    /**
+     * The name of the page that has this ID, or null.  Two pages that share an ID (a layout from before IDs were told
+     * apart) give it to the one the setup records under it, else the first by name.
+     */
+    @Override
+    public String getPageNameForId(int id)
+    {
+        String found = null;
+
+        for (String name : getLayoutListByName())
+        {
+            LayoutDiagram page = this.layoutDB.getByName(name);
+
+            if (page == null || page.getPageIdNumber() != id) continue;
+
+            if (name.equals(this.setupPageNames.get(id))) return name;
+
+            if (found == null) found = name;
+        }
+
+        return found;
+    }
+
+    /** @return the ID of the page with this name, or -1 when there is none */
+    @Override
+    public int getPageIdOf(String name)
+    {
+        LayoutDiagram page = this.layoutDB.getByName(name);
+
+        return page == null ? -1 : page.getPageIdNumber();
     }
 
     /**
