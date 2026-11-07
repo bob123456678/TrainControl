@@ -22,8 +22,6 @@ import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JSlider;
 import javax.swing.JTextField;
-import javax.swing.event.DocumentEvent;
-import javax.swing.event.DocumentListener;
 import org.traincontrol.base.Locomotive;
 import org.traincontrol.util.I18n;
 
@@ -108,12 +106,7 @@ final class MultiUnitPanel extends JPanel
             }
         }
 
-        filterField.getDocument().addDocumentListener(new DocumentListener()
-        {
-            @Override public void insertUpdate(DocumentEvent e) { render(); }
-            @Override public void removeUpdate(DocumentEvent e) { render(); }
-            @Override public void changedUpdate(DocumentEvent e) { render(); }
-        });
+        filterField.getDocument().addDocumentListener(Typing.tell(this::render));
 
         render();
 

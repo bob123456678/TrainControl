@@ -13,6 +13,7 @@ import java.util.Map;
 import java.util.function.Function;
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
+import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
 import javax.swing.JPopupMenu;
 import javax.swing.JTextField;
@@ -26,6 +27,7 @@ import org.testng.annotations.Test;
 import org.traincontrol.base.Locomotive;
 import org.traincontrol.base.RouteCommand;
 import org.traincontrol.gui.LayoutPopupUI;
+import org.traincontrol.gui.LocomotiveSettingsFrame;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.gui.locomotive.LocomotiveSelector;
 import org.traincontrol.gui.locomotive.LocomotiveSelectorItem;
@@ -36,6 +38,7 @@ import support.Answering;
 import support.AskingWindows;
 import support.Components;
 import support.Mouse;
+import support.SettingsWindow;
 
 /**
  * Multi-Unit from the locomotive database's menu, and the locomotive shortcuts pressed in the database or a page's own
@@ -70,6 +73,9 @@ public class testTheLocomotiveDoorsAskOverTheirWindow
 
         model = opened.model;
         sandbox = opened.sandbox;
+
+        // The start-up raise has ended, so a window opened from the main window is compared with where that settles
+        Components.waitFor(() -> !ui.isAlwaysOnTop(), PATIENCE_MS);
 
         Components.settle();
 
@@ -125,6 +131,7 @@ public class testTheLocomotiveDoorsAskOverTheirWindow
     @AfterMethod(alwaysRun = true)
     public void putThingsBack() throws Exception
     {
+        SettingsWindow.closeIfOpen();
         AskingWindows.closeEveryDialog();
         AskingWindows.minimize(ui, false);
 
@@ -169,7 +176,10 @@ public class testTheLocomotiveDoorsAskOverTheirWindow
         AskingWindows.pressKey(whereKeysGo(window), key, CTRL);
     }
 
-    /** Right-clicks a locomotive in the database, or the active one's button in the main window, for its Multi-Unit. */
+    /**
+     * Opens the Locomotive Settings window the way each window's door does: from the database tile's menu, then its
+     * Multi-Unit tab; or from the active button's Set as Multi-Unit..., which opens that tab itself.
+     */
     private static void chooseMultiUnit(Window window, String name) throws Exception
     {
         JPopupMenu menu = null;
@@ -178,26 +188,40 @@ public class testTheLocomotiveDoorsAskOverTheirWindow
         {
             // A window just opened can still be settling into place, which closes a menu as it opens
             for (int tries = 0; menu == null && tries < 3; tries++) menu = Mouse.rightClick(tile(name), PATIENCE_MS / 3);
+
+            assertNotNull(menu, "no menu opened");
+
+            Mouse.choose(AskingWindows.itemOf(menu, I18n.t("loc.ui.menuLocomotiveSettings")));
+
+            Components.waitFor(() -> SettingsWindow.showing() != null, 2000);
+
+            if (SettingsWindow.showing() != null) SettingsWindow.selectTab(3);
+
+            return;
         }
-        else
-        {
-            Field current = TrainControlUI.class.getDeclaredField("currentButton");
 
-            current.setAccessible(true);
+        Mouse.choose(keyMenuItem(name));
+    }
 
-            Components.select((JButton) current.get(ui));
+    /** The active button's multi-unit entry, with its menu open. */
+    private static JMenuItem keyMenuItem(String name) throws Exception
+    {
+        Field current = TrainControlUI.class.getDeclaredField("currentButton");
 
-            Components.settle();
+        current.setAccessible(true);
 
-            menu = Mouse.rightClick((JButton) current.get(ui), PATIENCE_MS);
-        }
+        Components.select((JButton) current.get(ui));
+
+        Components.settle();
+
+        JPopupMenu menu = Mouse.rightClick((JButton) current.get(ui), PATIENCE_MS);
 
         assertNotNull(menu, "no menu opened");
 
         Locomotive loco = model.getLocByName(name);
 
-        Mouse.choose(AskingWindows.itemOf(menu, I18n.t(loco.hasLinkedLocomotives()
-            ? "loc.ui.menuEditMultiUnitLocomotives" : "loc.ui.menuSetAsMultiUnit")));
+        return AskingWindows.itemOf(menu, I18n.t(loco.hasLinkedLocomotives()
+            ? "loc.ui.menuEditMultiUnitLocomotives" : "loc.ui.menuSetAsMultiUnit"));
     }
 
     /** The question a door asked, answered by the rule. */
@@ -251,13 +275,6 @@ public class testTheLocomotiveDoorsAskOverTheirWindow
         AskingWindows.assertSaid(asked(message -> null, door, "nothing was said"), over, said);
     }
 
-    /** Multi-Unit on the first locomotive says this over the database, and over the main window from there. */
-    private static void assertMultiUnitSays(String said)
-    {
-        assertSaidBy(multiUnit(database, ONE), database, said);
-        assertSaidBy(multiUnit(ui, ONE), ui, said);
-    }
-
     private static Answering.Answer cancel()
     {
         return Answering.pressAt(1);
@@ -265,7 +282,7 @@ public class testTheLocomotiveDoorsAskOverTheirWindow
 
     // ---------------------------------------------------------------- Multi-Unit
 
-    /** The chooser's shape over a window. */
+    /** The chooser's shape over a window, for Control+L, which still reaches the old dialog. */
     private static void assertTheChooser(Answering.Question question, Window over, String said)
     {
         AskingWindows.assertAsked(question, over, I18n.f("loc.ui.dialogLinkLocomotivesToMultiUnit", ONE), said,
@@ -273,52 +290,103 @@ public class testTheLocomotiveDoorsAskOverTheirWindow
             String.valueOf(TrainControlUI.OK_CANCEL_OPTS[0]), String.valueOf(TrainControlUI.OK_CANCEL_OPTS[1]));
     }
 
+    /** The window the multi-unit door opened, on its Multi-Unit tab and for this locomotive. */
+    private static LocomotiveSettingsFrame theWindowFor(Locomotive loc) throws Exception
+    {
+        LocomotiveSettingsFrame window = SettingsWindow.awaited();
+
+        assertNotNull(window, "the door opened no Locomotive Settings window");
+        assertSame(Components.onTheEventThread(window::getLocomotive), loc, "the window is for another locomotive");
+        assertEquals(SettingsWindow.tabShowing(), 3, "the window did not open on the Multi-Unit tab");
+
+        return window;
+    }
+
     /**
-     * Multi-Unit from the database's right-click menu asks over the database, the same question as from the main
-     * window's own button, which asks over the main window; Cancel links nothing.
+     * Multi-Unit from the database's menu (its Locomotive Settings..., then the Multi-Unit tab) and from the active
+     * button's Set as Multi-Unit... open the one Locomotive Settings window on the Multi-Unit tab, standing as high as the
+     * window that asked; Cancel links nothing.
      *
-     * MUTATION: `this` for `asked` at the chooser in `changeLinkedLocomotives`, and it hangs off the main window.
+     * MUTATION: open the window on another tab from `LocomotiveMenuItems.multiUnit`, or do not stand it as high as the
+     * asking window in `TrainControlUI.openLocomotiveSettings`, and this fails.
      */
     @Test
     public void testMultiUnitAsksOverTheWindowItWasChosenIn() throws Exception
     {
-        Answering.Question fromTheMain = asked(message -> cancel(), multiUnit(ui, ONE), "the button's menu asked nothing");
+        chooseMultiUnit(ui, ONE);
 
-        assertTheChooser(fromTheMain, ui, fromTheMain.message);
+        LocomotiveSettingsFrame fromTheMain = theWindowFor(one);
 
-        Answering.Question fromTheDatabase = asked(message -> cancel(), multiUnit(database, ONE),
-            "the database's menu asked nothing");
+        assertEquals((boolean) Components.onTheEventThread(fromTheMain::isAlwaysOnTop), ui.isAlwaysOnTop(), "the window is not as high as the main window");
 
-        assertTheChooser(fromTheDatabase, database, fromTheMain.message);
+        SettingsWindow.press(SettingsWindow.cancel());
+
+        // The database stands on top while the main window does not, so the window must follow the database.  The
+        // harness drops a window that stays on top for a second and a half, so the database is raised with the menu
+        // open and the window is read at once.
+        JPopupMenu menu = Mouse.rightClick(tile(ONE), PATIENCE_MS);
+
+        assertNotNull(menu, "no menu opened");
+
+        JMenuItem settings = AskingWindows.itemOf(menu, I18n.t("loc.ui.menuLocomotiveSettings"));
+
+        Components.onTheEventThread(() ->
+        {
+            database.setAlwaysOnTop(true);
+
+            return null;
+        });
+
+        Mouse.choose(settings);
+
+        assertTrue(Components.waitFor(() -> SettingsWindow.showing() != null, 2000), "the window did not open");
+
+        boolean onTop = Components.onTheEventThread(() -> SettingsWindow.showing().isAlwaysOnTop());
+
+        Components.onTheEventThread(() ->
+        {
+            database.setAlwaysOnTop(false);
+
+            return null;
+        });
+
+        SettingsWindow.selectTab(3);
+
+        LocomotiveSettingsFrame fromTheDatabase = theWindowFor(one);
+
+        assertTrue(Components.onTheEventThread(fromTheDatabase::isShowing), "the window is not on screen");
+        assertTrue(onTop, "the window stands lower than the database it was asked from: it opens behind it");
+
+        SettingsWindow.press(SettingsWindow.cancel());
 
         assertFalse(one.hasLinkedLocomotives(), "Cancel linked something");
     }
 
     /**
-     * OK over the database, with a locomotive ticked, links it.
+     * OK (Save) in the window opened from the database, with a locomotive ticked, links it.
      *
-     * MUTATION: `this` for `asked` at the chooser in `changeLinkedLocomotives`, and it hangs off the main window.
+     * MUTATION: leave `applyLinkedLocomotives` out of `LocomotiveSettingsFrame.write`, and this fails.
      */
     @Test
     public void testOKOverTheDatabaseLinksWhatIsTicked() throws Exception
     {
-        Answering.Question question = asked(message ->
-        {
-            AskingWindows.inTheQuestion(JCheckBox.class, each -> TWO.equals(each.getText()), box -> box.doClick(0));
+        chooseMultiUnit(database, ONE);
 
-            return Answering.pressAt(0);
-        }, multiUnit(database, ONE), "the database's menu asked nothing");
+        theWindowFor(one);
 
-        assertSame(question.owner, database, "the chooser is not the database's");
+        SettingsWindow.tickMember(TWO);
+        SettingsWindow.press(SettingsWindow.save());
 
         assertTrue(Components.waitFor(() -> one.getLinkedLocomotiveNames().containsKey(TWO), PATIENCE_MS),
-            "OK did not link the ticked locomotive");
+            "Save did not link the ticked locomotive");
     }
 
     /**
-     * A locomotive already in another's multi-unit is told so over the database, or over the main window from there.
+     * A locomotive already in another's multi-unit has its Multi-Unit tab say so, from the database and from the main
+     * window; Control+L over a page still refuses over that page, with the old message.
      *
-     * MUTATION: `this` for `asked` at the first message in `changeLinkedLocomotives`, and it hangs off the main window.
+     * MUTATION: show the list instead of the sentence in `LocomotiveSettingsFrame.MultiUnitTab`, or `this` for `asked` at
+     * the first message in `changeLinkedLocomotives`, and this fails.
      */
     @Test
     public void testAlreadyLinkedIsSaidOverTheWindowThatAsked() throws Exception
@@ -330,8 +398,16 @@ public class testTheLocomotiveDoorsAskOverTheirWindow
         one.setLinkedLocomotives(linked);
 
         String said = I18n.f("loc.ui.errorLocomotiveAlreadyLinkedCannotBeMultiUnit", ONE);
+        String sentence = I18n.f("loc.ui.settingsPartOfMultiUnit", TWO, ONE);
 
-        assertSaidBy(multiUnit(database, TWO), database, said);
+        chooseMultiUnit(database, TWO);
+
+        theWindowFor(two);
+
+        assertEquals(Components.all(SettingsWindow.showing().getContentPane(), javax.swing.JLabel.class,
+            label -> sentence.equals(label.getText())).size(), 1, "the tab does not say " + TWO + " belongs to " + ONE);
+
+        SettingsWindow.press(SettingsWindow.cancel());
 
         Components.onTheEventThread(() ->
         {
@@ -345,7 +421,10 @@ public class testTheLocomotiveDoorsAskOverTheirWindow
         try
         {
             assertSaidBy(key(page, KeyEvent.VK_L), page, said);
-            assertSaidBy(multiUnit(ui, TWO), ui, said);
+
+            chooseMultiUnit(ui, TWO);
+
+            theWindowFor(two);
         }
         finally
         {
@@ -361,21 +440,35 @@ public class testTheLocomotiveDoorsAskOverTheirWindow
     }
 
     /**
-     * While autonomy is busy, Multi-Unit says it cannot be done, over the database and over the main window.
+     * While autonomy is busy no door opens the window: the database's menu says so over the database, the button's
+     * entry is grayed with the reason as its tooltip, and the shortcuts still say it over theirs.
      *
-     * MUTATION: `this` for `asked` at that message in `changeLinkedLocomotives`, and it hangs off the main window.
+     * MUTATION: `this` for the asking window in `TrainControlUI.openLocomotiveSettings`, or leave autonomy out of
+     * `LocomotiveSettings.why`, and this fails.
      */
     @Test
     public void testNoMultiUnitsWhileRunningIsSaidOverTheWindowThatAsked() throws Exception
     {
         model.getAutoLayout().setStagingInProgress(true);
 
-        String said = I18n.t("autolayout.ui.errorCannotEditMultiUnitsWhileRunning");
+        String said = I18n.t("autolayout.ui.errorCannotEditLocomotivesWhileRunning");
 
-        assertMultiUnitSays(said);
-        assertSaidBy(key(database, KeyEvent.VK_L), database, said);
-        assertSaidBy(key(page, KeyEvent.VK_L), page, said);
-        assertSaidBy(key(ui, KeyEvent.VK_L), ui, said);
+        assertSaidBy(multiUnit(database, ONE), database, said);
+
+        JMenuItem item = keyMenuItem(ONE);
+
+        assertFalse(item.isEnabled(), "the button's entry is open while autonomy runs");
+        assertEquals(item.getToolTipText(), said, "the button's entry does not say why");
+
+        Mouse.closeMenus();
+
+        String shortcut = I18n.t("autolayout.ui.errorCannotEditMultiUnitsWhileRunning");
+
+        assertSaidBy(key(database, KeyEvent.VK_L), database, shortcut);
+        assertSaidBy(key(page, KeyEvent.VK_L), page, shortcut);
+        assertSaidBy(key(ui, KeyEvent.VK_L), ui, shortcut);
+
+        assertNull(SettingsWindow.showing(), "the window opened while autonomy runs");
     }
 
     /** A route that drives the first locomotive, running long enough for every door to be tried. */
@@ -398,10 +491,10 @@ public class testTheLocomotiveDoorsAskOverTheirWindow
     }
 
     /**
-     * While a route drives it, Multi-Unit and Edit say so over the window that asked.
+     * A route that drives the locomotive does not keep the window: it opens from both doors for the stopped locomotive,
+     * and the route's refusal is said at Save over the window itself; the shortcuts still say it over theirs.
      *
-     * MUTATION: `this` for `asked` at `refuseWhileARouteDrivesAny` in `changeLinkedLocomotives`, and it hangs off the
-     * main window.
+     * MUTATION: put a running route into `LocomotiveSettings.why`, and the window does not open and this fails.
      */
     @Test
     public void testADrivingRouteIsSaidOverTheWindowThatAsked() throws Exception
@@ -410,55 +503,93 @@ public class testTheLocomotiveDoorsAskOverTheirWindow
 
         String said = I18n.f("loc.ui.errorLocomotiveDrivenByARunningRoute", ONE, ROUTE);
 
-        assertMultiUnitSays(said);
+        chooseMultiUnit(database, ONE);
+
+        LocomotiveSettingsFrame window = theWindowFor(one);
+
+        SettingsWindow.tickMember(TWO);
+
+        try (Answering answering = Answering.start(message -> Answering.pressAt(0)))
+        {
+            Components.press(SettingsWindow.save());
+
+            AskingWindows.assertSaid(AskingWindows.onlyQuestion(answering, "Save said nothing"), window, said);
+
+            AskingWindows.awaitAnswered();
+        }
+
+        SettingsWindow.press(SettingsWindow.cancel());
+
         assertSaidBy(key(page, KeyEvent.VK_R), page, said);
         assertSaidBy(key(ui, KeyEvent.VK_R), ui, said);
     }
 
     /**
-     * With fewer than two locomotives, Multi-Unit says so over the window that asked.
+     * With fewer than two locomotives the Multi-Unit tab says so, instead of a list; Control+L says it over its window.
      *
-     * MUTATION: `this` for `asked` at that message in `changeLinkedLocomotives`, and it hangs off the main window.
+     * MUTATION: show the list whatever the number of locomotives in `LocomotiveSettingsFrame.MultiUnitTab`, and this
+     * fails.
      */
     @Test
     public void testNeedingTwoIsSaidOverTheWindowThatAsked() throws Exception
     {
         AskingWindows.withOnlyTheseLocomotives(model, Collections.singletonList(ONE), () ->
         {
+            chooseMultiUnit(ui, ONE);
+
+            theWindowFor(one);
+
             String said = I18n.t("loc.ui.errorNeedTwoLocomotivesForMultiUnit");
 
-            assertSaidBy(multiUnit(database, ONE), database, said);
+            assertEquals(Components.all(SettingsWindow.showing().getContentPane(), javax.swing.JLabel.class,
+                label -> said.equals(label.getText())).size(), 1, "the tab does not say two locomotives are needed");
+
+            SettingsWindow.press(SettingsWindow.cancel());
+
             assertSaidBy(key(ui, KeyEvent.VK_L), ui, said);
         });
     }
 
     /**
-     * With the main window minimized, Multi-Unit from the database still shows, over the database.
+     * With the main window minimized, the window opened from the database still shows.
      *
-     * MUTATION: `this` for `asked` at the chooser in `changeLinkedLocomotives`, and it is hidden with the main window.
+     * MUTATION: show the window only when the main window is not minimized, in `TrainControlUI.openLocomotiveSettings`, and
+     * this fails.
      */
     @Test
     public void testWithTheMainWindowMinimizedMultiUnitShowsOverTheDatabase() throws Exception
     {
         AskingWindows.minimize(ui, true);
 
-        assertSame(asked(message -> cancel(), multiUnit(database, ONE), "the database's menu asked nothing").owner, database,
-            "the chooser is not the database's");
+        chooseMultiUnit(database, ONE);
+
+        assertTrue(Components.onTheEventThread(theWindowFor(one)::isShowing), "the window is not on screen with the main window minimized");
     }
 
     /**
-     * A database closed while its question is up takes the question with it, and nothing is linked.
+     * A database closed while Control+L's question is up takes the question with it, and nothing is linked.
      *
      * MUTATION: `this` for `asked` at the chooser in `changeLinkedLocomotives`, and the question outlives the window.
      */
     @Test
     public void testADatabaseThatClosesTakesItsQuestionWithIt() throws Exception
     {
-        chooseMultiUnit(database, ONE);
+        AskingWindows.pressKey(database, KeyEvent.VK_L, CTRL);
 
         AskingWindows.assertClosingTakesTheQuestion(database);
 
         assertFalse(one.hasLinkedLocomotives(), "the closed question linked something");
+    }
+
+    /** Control+L over the main window is the chooser still, over the main window; Cancel links nothing. */
+    @Test
+    public void testControlLAsksTheChooserOverTheWindowItWasPressedIn() throws Exception
+    {
+        Answering.Question question = asked(message -> cancel(), key(ui, KeyEvent.VK_L), "Control+L asked nothing");
+
+        assertTheChooser(question, ui, question.message);
+
+        assertFalse(one.hasLinkedLocomotives(), "Cancel linked something");
     }
 
     // ---------------------------------------------------------------- the shortcuts
