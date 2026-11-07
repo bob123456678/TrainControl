@@ -363,6 +363,27 @@ public final class SettingsWindow
         }
     }
 
+    /**
+     * What a window opened locked must show: the strip up with this sentence, typing kept, Save gray.  The window is
+     * closed again.
+     */
+    public static void assertLocked(String where, String strip)
+    {
+        javax.swing.JLabel up = part("settings.strip", javax.swing.JLabel.class);
+
+        if (!Components.onTheEventThread(up::isVisible)) throw new AssertionError(where + " opened without the strip");
+
+        if (!strip.equals(Components.onTheEventThread(up::getText))) throw new AssertionError(where + " has the wrong strip");
+
+        type("settings.name", "typed while locked");
+
+        if (!"typed while locked".equals(text("settings.name"))) throw new AssertionError(where + " did not keep the typing");
+
+        if (Components.onTheEventThread(save()::isEnabled)) throw new AssertionError("Save is lit in the window locked from " + where);
+
+        closeIfOpen();
+    }
+
     /** The title the window should wear for a locomotive. */
     public static String titleFor(String locomotive)
     {

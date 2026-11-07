@@ -160,17 +160,7 @@ public class testTheLocomotiveSettingsMovingRule
         assertNotNull(SettingsWindow.awaited(), where + " opened no window");
         assertEquals(SettingsWindow.tabShowing(), tab, where + " opened on the wrong tab");
 
-        JLabel up = SettingsWindow.part("settings.strip", JLabel.class);
-
-        assertTrue(Components.onTheEventThread(up::isVisible), where + " opened without the strip");
-        assertEquals(Components.onTheEventThread(up::getText), strip, where + " has the wrong strip");
-
-        SettingsWindow.type("settings.name", "MR typed");
-
-        assertEquals(SettingsWindow.text("settings.name"), "MR typed", where + " did not keep the typing");
-        assertFalse(Components.onTheEventThread(SettingsWindow.save()::isEnabled), "Save is lit in the window locked from " + where);
-
-        SettingsWindow.closeIfOpen();
+        SettingsWindow.assertLocked(where, strip);
     }
 
     /**
@@ -415,6 +405,28 @@ public class testTheLocomotiveSettingsMovingRule
         lockedThenFree(() -> autonomy(true), () -> autonomy(false), I18n.t(AUTONOMY), 52);
     }
 
+    /** Calls the open window's Save as a click would, whatever its gray, and gives what was said. */
+    private static java.util.List<String> saveAnyway() throws Exception
+    {
+        java.lang.reflect.Method save = LocomotiveSettingsFrame.class.getDeclaredMethod("save");
+
+        save.setAccessible(true);
+
+        LocomotiveSettingsFrame window = SettingsWindow.showing();
+
+        return SettingsWindow.asked(() -> Components.onTheEventThread(() ->
+        {
+            try
+            {
+                return save.invoke(window);
+            }
+            catch (ReflectiveOperationException e)
+            {
+                throw new IllegalStateException(e);
+            }
+        }));
+    }
+
     private interface Step
     {
         void go() throws Exception;
@@ -439,23 +451,7 @@ public class testTheLocomotiveSettingsMovingRule
 
         assertFalse(Components.onTheEventThread(SettingsWindow.save()::isEnabled), "Save is lit in a locked window");
 
-        java.lang.reflect.Method save = LocomotiveSettingsFrame.class.getDeclaredMethod("save");
-
-        save.setAccessible(true);
-
-        LocomotiveSettingsFrame window = SettingsWindow.showing();
-
-        assertEquals(SettingsWindow.asked(() -> Components.onTheEventThread(() ->
-        {
-            try
-            {
-                return save.invoke(window);
-            }
-            catch (ReflectiveOperationException e)
-            {
-                throw new IllegalStateException(e);
-            }
-        })), Arrays.asList(refusal), "a Save made in a locked window was not refused");
+        assertEquals(saveAnyway(), Arrays.asList(refusal), "a Save made in a locked window was not refused");
 
         assertEquals(loc.getPreferredSpeed(), before, "a refused Save wrote the preset speed");
         assertNotNull(SettingsWindow.showing(), "the refused Save closed the window");
@@ -645,23 +641,7 @@ public class testTheLocomotiveSettingsMovingRule
             assertEquals(SettingsWindow.text("settings.name"), "MR typed", "the typing was lost");
 
             // Save asks again at the click, the window not being told
-            java.lang.reflect.Method save = LocomotiveSettingsFrame.class.getDeclaredMethod("save");
-
-            save.setAccessible(true);
-
-            LocomotiveSettingsFrame window = SettingsWindow.showing();
-
-            assertEquals(SettingsWindow.asked(() -> Components.onTheEventThread(() ->
-            {
-                try
-                {
-                    return save.invoke(window);
-                }
-                catch (ReflectiveOperationException e)
-                {
-                    throw new IllegalStateException(e);
-                }
-            })), Arrays.asList(I18n.t(AUTONOMY)));
+            assertEquals(saveAnyway(), Arrays.asList(I18n.t(AUTONOMY)));
 
             assertEquals(loc.getName(), NAME, "Save renamed the locomotive while autonomy runs");
         }

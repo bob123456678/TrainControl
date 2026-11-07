@@ -503,16 +503,7 @@ public class testTheLocomotiveDoorsAskOverTheirWindow
         assertSame(Components.onTheEventThread(window::getLocomotive), one, door + " opened the window for another locomotive");
         assertEquals(SettingsWindow.tabShowing(), tab, door + " opened on another tab");
 
-        javax.swing.JLabel up = SettingsWindow.part("settings.strip", javax.swing.JLabel.class);
-
-        assertTrue(Components.onTheEventThread(up::isVisible), door + " opened without the strip");
-        assertEquals(Components.onTheEventThread(up::getText), strip, door + " has the wrong strip");
-
-        SettingsWindow.type("settings.name", "OB-324 typed");
-
-        assertFalse(Components.onTheEventThread(SettingsWindow.save()::isEnabled), "Save is lit in the window locked from " + door);
-
-        SettingsWindow.closeIfOpen();
+        SettingsWindow.assertLocked(door, strip);
     }
 
     /** Each of the four locomotive shortcuts, in each window, opens the window locked on its own tab. */
