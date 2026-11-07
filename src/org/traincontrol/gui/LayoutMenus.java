@@ -532,6 +532,25 @@ final class LayoutMenus
         autonomyToolbarMenu.add(this.allowedDirectionsMenuItem);
     }
 
+    /** Preferences > Hide Right-Click Menu Tips (FR-168); read when a menu opens, so it needs no refresh. */
+    void mountRightClickTipsMenu()
+    {
+        RightClickTips.install();
+
+        if (ui.interfaceMenu() == null) return;
+
+        final javax.swing.JCheckBoxMenuItem hide = new javax.swing.JCheckBoxMenuItem(
+            I18n.t("ui.main.toolbar.hideRightClickTips"),
+            RightClickTips.hidden());
+
+        hide.setToolTipText(AutonomyEditorPanel.wrappedIfLong(I18n.t("ui.main.toolbar.tooltip.hideRightClickTips")));
+
+        hide.addActionListener(event ->
+            TrainControlUI.getPrefs().putBoolean(RightClickTips.PREF, hide.isSelected()));
+
+        ui.interfaceMenu().add(hide);
+    }
+
     /** "Save diagram as a picture", on the Layout menu; built by hand so the feature is one method and one class. */
     void buildDiagramExportMenu()
     {

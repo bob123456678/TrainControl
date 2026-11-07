@@ -195,3 +195,4 @@ not fix it. Name the square.
 - `ui.testPageLinksGoByPageId`
 - `regression.testTheAutonomyTabSavesWhatTheDialogDid`
 - `ui.testTheLocomotiveSettingsAutonomyTab`
+- `ui.testRightClickMenuTipsCanBeHidden`
