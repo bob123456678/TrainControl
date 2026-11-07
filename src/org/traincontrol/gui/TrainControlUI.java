@@ -6159,30 +6159,30 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
     
     private void fireF(int fn, boolean state)
-    {        
-        if (this.activeLoc != null)
-        {            
-            if (this.activeLoc.isFunctionTimed(fn) > 0)
-            {
-                new Thread(() -> {
-                    this.activeLoc.toggleF(fn, this.activeLoc.isFunctionTimed(fn) * 1000);
-                }).start();
-            }
-            else if (this.activeLoc.isFunctionPulse(fn))
-            {
-                new Thread(() -> {
-                    this.activeLoc.toggleF(fn, this.activeLoc.getPulseFunctionDuration());
-                }).start();
-            }
-            else
-            {
-                new Thread(() -> {
-                    this.activeLoc.setF(fn, state);
-                }).start();
-            }
+    {
+        if (this.activeLoc != null) fireFunction(this.activeLoc, fn, state);
+    }
+
+    /**
+     * The door every function button uses, for any locomotive: a timed or momentary function runs its course, any
+     * other is set to `state`.
+     */
+    void fireFunction(Locomotive l, int fn, boolean state)
+    {
+        if (l.isFunctionTimed(fn) > 0)
+        {
+            new Thread(() -> l.toggleF(fn, l.isFunctionTimed(fn) * 1000)).start();
+        }
+        else if (l.isFunctionPulse(fn))
+        {
+            new Thread(() -> l.toggleF(fn, l.getPulseFunctionDuration())).start();
+        }
+        else
+        {
+            new Thread(() -> l.setF(fn, state)).start();
         }
     }
-    
+
     public void selectLocomotiveActivated(JButton button)
     {
         // Make sure this button is selected

@@ -30,6 +30,7 @@ final class LocomotiveNotesPanel extends JPanel
     private String loadedEnd;
     private String loadedRailway;
     private String loadedNotes;
+    private final java.util.List<JLabel> captions = new java.util.ArrayList<>();
 
     /**
      * @param l the locomotive whose notes are shown
@@ -103,31 +104,51 @@ final class LocomotiveNotesPanel extends JPanel
 
         gbc.gridx = 0;
         gbc.gridy = 0;
-        add(new JLabel(I18n.t("loc.ui.labelStartYear")), gbc);
+        add(caption(I18n.t("loc.ui.labelStartYear")), gbc);
         gbc.gridx = 1;
+        gbc.weightx = 1;
         add(startYear, gbc);
 
         gbc.gridx = 0;
         gbc.gridy++;
-        add(new JLabel(I18n.t("loc.ui.labelEndYear")), gbc);
+        add(caption(I18n.t("loc.ui.labelEndYear")), gbc);
         gbc.gridx = 1;
         add(endYear, gbc);
 
         gbc.gridx = 0;
         gbc.gridy++;
-        add(new JLabel(I18n.t("loc.ui.labelRailwayName")), gbc);
+        add(caption(I18n.t("loc.ui.labelRailwayName")), gbc);
         gbc.gridx = 1;
         add(railway, gbc);
 
         gbc.gridx = 0;
         gbc.gridy++;
         gbc.gridwidth = 2;
-        add(new JLabel(I18n.t("loc.ui.labelNotes")), gbc);
+        add(caption(I18n.t("loc.ui.labelNotes")), gbc);
 
         gbc.gridy++;
         gbc.weighty = 1;
         gbc.fill = GridBagConstraints.BOTH;
         add(new JScrollPane(notes), gbc);
+    }
+
+    private JLabel caption(String text)
+    {
+        JLabel l = new JLabel(text);
+
+        captions.add(l);
+
+        return l;
+    }
+
+    /** Sets the captions in the owner's label style, without the colon the older dialog puts after them. */
+    void styleCaptions()
+    {
+        for (JLabel l : captions)
+        {
+            l.setText(org.traincontrol.gui.widgets.UiStyle.withoutColon(l.getText()));
+            org.traincontrol.gui.widgets.UiStyle.style(l);
+        }
     }
 
     /** Shows what the locomotive holds now, and makes that what {@link #isDirty} compares against. */

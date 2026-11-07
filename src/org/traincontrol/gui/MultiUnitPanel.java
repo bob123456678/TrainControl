@@ -34,7 +34,10 @@ final class MultiUnitPanel extends JPanel
 {
     private final boolean readOnly;
     private final JPanel scrollPanel = new JPanel(new GridBagLayout());
-    private final JPanel headingPanel = new JPanel(new GridLayout(1, 3));
+    private final JPanel headingPanel = new JPanel(new GridBagLayout());
+    private final JPanel top = new JPanel(new java.awt.BorderLayout(6, 0));
+    private final JLabel filterLabel = org.traincontrol.gui.widgets.UiStyle.label(
+        org.traincontrol.gui.widgets.UiStyle.withoutColon(I18n.t("loc.ui.filterList")));
     private final JTextField filterField = new JTextField();
     private final List<JPanel> rowPanels = new ArrayList<>();
     private final Runnable onChange;
@@ -80,7 +83,11 @@ final class MultiUnitPanel extends JPanel
         gbc.gridx = 0;
         gbc.gridy = 0;
         gbc.weightx = 1;
-        add(filterField, gbc);
+
+        top.setOpaque(false);
+        top.add(filterLabel, java.awt.BorderLayout.WEST);
+        top.add(filterField, java.awt.BorderLayout.CENTER);
+        add(top, gbc);
 
         JLabel nameLabel = new JLabel(I18n.t("loc.ui.labelLocomotiveName"));
         nameLabel.setFont(new Font("Segoe UI", Font.BOLD, 12));
@@ -93,9 +100,8 @@ final class MultiUnitPanel extends JPanel
         reverseLabel.setToolTipText(I18n.t("loc.ui.tooltip.swapDirection"));
         reverseLabel.setFont(new Font("Segoe UI", Font.BOLD, 12));
 
-        headingPanel.add(nameLabel);
-        headingPanel.add(multiplierLabel);
-        headingPanel.add(reverseLabel);
+        headingPanel.setOpaque(false);
+        columns(headingPanel, nameLabel, multiplierLabel, null, reverseLabel);
 
         for (Locomotive loco : allLocomotives)
         {
@@ -111,7 +117,11 @@ final class MultiUnitPanel extends JPanel
         render();
 
         // sanity check - should never happen unless CS data is corrupt
-        if (readOnly) filterField.setVisible(false);
+        if (readOnly)
+        {
+            filterField.setVisible(false);
+            filterLabel.setVisible(false);
+        }
 
         JScrollPane scrollPane = new JScrollPane(scrollPanel);
         scrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
@@ -127,9 +137,56 @@ final class MultiUnitPanel extends JPanel
         this.loaded = chosen();
     }
 
+    /** Says what the list is for, as an (i) at the end of the filter's row. */
+    void setNote(String note)
+    {
+        top.add(org.traincontrol.gui.InfoMark.label(note), java.awt.BorderLayout.EAST);
+    }
+
+    /**
+     * Lays out a heading or a row in the same four columns: name, slider, its value, Reverse.  A null `value` lets the
+     * slider's column take the value's room.
+     */
+    private static void columns(JPanel panel, java.awt.Component name, java.awt.Component slider,
+        java.awt.Component value, java.awt.Component reverse)
+    {
+        GridBagConstraints c = new GridBagConstraints();
+
+        c.fill = GridBagConstraints.HORIZONTAL;
+        c.anchor = GridBagConstraints.WEST;
+        c.insets = new Insets(0, 0, 0, 10);
+        c.weightx = 0;
+        name.setPreferredSize(new Dimension(com.formdev.flatlaf.util.UIScale.scale(170), name.getPreferredSize().height));
+        panel.add(name, c);
+
+        c.gridx = 1;
+        c.weightx = 1;
+        c.gridwidth = value == null ? 2 : 1;
+        panel.add(slider, c);
+
+        c.gridx = 3;
+        c.gridwidth = 1;
+        c.weightx = 0;
+        c.insets = new Insets(0, 0, 0, 0);
+        reverse.setPreferredSize(new Dimension(com.formdev.flatlaf.util.UIScale.scale(84), reverse.getPreferredSize().height));
+        panel.add(reverse, c);
+
+        // Added last, so a row's first three components stay the name, the slider and Reverse
+        if (value != null)
+        {
+            c.gridx = 2;
+            c.gridwidth = 1;
+            c.weightx = 0;
+            c.insets = new Insets(0, 0, 0, 10);
+            panel.add(value, c);
+        }
+    }
+
     private JPanel buildRow(Locomotive loco, Map<String, Double> currentLinkedLocos)
     {
-        JPanel rowPanel = new JPanel(new GridLayout(1, 3, 10, 5));
+        JPanel rowPanel = new JPanel(new GridBagLayout());
+
+        rowPanel.setOpaque(false);
 
         JCheckBox checkBox = new JCheckBox(loco.getName().length() > TrainControlUI.MAX_MU_SELECTOR_LOC_NAME_LENGTH
             ? loco.getName().substring(0, TrainControlUI.MAX_MU_SELECTOR_LOC_NAME_LENGTH) + "..."
@@ -145,20 +202,18 @@ final class MultiUnitPanel extends JPanel
         multiplierSlider.setMajorTickSpacing(50);
         multiplierSlider.setMinorTickSpacing(50);
         multiplierSlider.setPaintTicks(true);
-        multiplierSlider.setPaintLabels(true);
+        multiplierSlider.setPaintLabels(false);
         multiplierSlider.setSnapToTicks(false);
-        multiplierSlider.setPreferredSize(new Dimension(250, 50));
+        multiplierSlider.setPreferredSize(new Dimension(com.formdev.flatlaf.util.UIScale.scale(150),
+            multiplierSlider.getPreferredSize().height));
         multiplierSlider.setFont(new Font("Segoe UI", Font.PLAIN, 12));
         multiplierSlider.setFocusable(true);
 
-        // Custom label table for specific tick labels
-        java.util.Hashtable<Integer, JLabel> labelTable = new java.util.Hashtable<>();
-        labelTable.put(0, new JLabel("0"));
-        labelTable.put(50, new JLabel("50"));
-        labelTable.put(100, new JLabel("100"));
-        labelTable.put(150, new JLabel("150"));
-        labelTable.put(200, new JLabel("200"));
-        multiplierSlider.setLabelTable(labelTable);
+        // The value is read beside the slider, which carries ticks only
+        JLabel valueLabel = new JLabel(multiplierSlider.getValue() + "%", JLabel.RIGHT);
+
+        valueLabel.setPreferredSize(new Dimension(com.formdev.flatlaf.util.UIScale.scale(44),
+            valueLabel.getPreferredSize().height));
 
         // Update tooltip to show selected value on hover
         multiplierSlider.addMouseMotionListener(new MouseMotionAdapter()
@@ -176,6 +231,7 @@ final class MultiUnitPanel extends JPanel
         {
             if (multiplierSlider.getValue() == 0) multiplierSlider.setValue(1);
 
+            valueLabel.setText(multiplierSlider.getValue() + "%");
             changed();
         });
 
@@ -204,9 +260,7 @@ final class MultiUnitPanel extends JPanel
             multiplierSlider.setEnabled(false);
         }
 
-        rowPanel.add(checkBox);
-        rowPanel.add(multiplierSlider);
-        rowPanel.add(reverseCheckBox);
+        columns(rowPanel, checkBox, multiplierSlider, valueLabel, reverseCheckBox);
 
         return rowPanel;
     }
@@ -224,14 +278,14 @@ final class MultiUnitPanel extends JPanel
         scrollPanel.removeAll();
 
         GridBagConstraints scrollGbc = new GridBagConstraints();
-        scrollGbc.insets = new Insets(5, 5, 5, 5);
+        scrollGbc.insets = new Insets(2, 5, 2, 5);
         scrollGbc.fill = GridBagConstraints.HORIZONTAL;
         scrollGbc.weightx = 1;
         scrollGbc.gridwidth = 3;
 
         scrollPanel.add(headingPanel, scrollGbc);
         scrollGbc.gridy++;
-        scrollPanel.add(Box.createVerticalStrut(10), scrollGbc);
+        scrollPanel.add(Box.createVerticalStrut(2), scrollGbc);
 
         boolean hasRows = false;
 
@@ -243,8 +297,6 @@ final class MultiUnitPanel extends JPanel
             {
                 scrollGbc.gridy++;
                 scrollPanel.add(rowPanel, scrollGbc);
-                scrollGbc.gridy++;
-                scrollPanel.add(Box.createVerticalStrut(10), scrollGbc);
                 hasRows = true;
             }
         }

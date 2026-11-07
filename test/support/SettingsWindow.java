@@ -290,7 +290,7 @@ public final class SettingsWindow
     /** Picks a standard icon in a row's dropdown. */
     public static void pickIcon(int row, int icon)
     {
-        javax.swing.JComboBox<?> combo = inEditor(row, 0, "functions.iconCombo", javax.swing.JComboBox.class);
+        javax.swing.JComboBox<?> combo = inEditor(row, 1, "functions.iconCombo", javax.swing.JComboBox.class);
 
         Components.onTheEventThread(() ->
         {
@@ -320,7 +320,7 @@ public final class SettingsWindow
     /** Presses a row's wrench and picks this picture in the chooser it opens. */
     public static void pickAnImage(int row, java.io.File picture)
     {
-        javax.swing.JButton wrench = inEditor(row, 0, "functions.wrench", javax.swing.JButton.class);
+        javax.swing.JButton wrench = inEditor(row, 1, "functions.wrench", javax.swing.JButton.class);
 
         try (Answering answering = Answering.start(message -> null).choosing(picture))
         {

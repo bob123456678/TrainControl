@@ -42,6 +42,8 @@ import javax.swing.table.TableCellEditor;
 import javax.swing.table.TableCellRenderer;
 import org.traincontrol.base.Locomotive;
 import org.traincontrol.gui.widgets.PopupListener;
+import org.traincontrol.gui.widgets.RowIcons;
+import org.traincontrol.gui.widgets.UiStyle;
 import org.traincontrol.gui.widgets.QuickFileChooser;
 import org.traincontrol.util.I18n;
 
@@ -97,9 +99,13 @@ final class LocomotiveFunctionsTab extends JPanel
     private final IconCell iconRenderer;
     private final IconCell iconEditor;
     private final JButton copyIcons = button("");
-    private final JButton resetAll = button(I18n.t("loc.ui.resetAllCustomizations"));
+    private final JButton resetAll = revertButton("functions.resetAll", "loc.ui.resetAllCustomizations");
+    private final JButton clearPreset = revertButton("functions.clearPreset", "loc.ui.settingsClearPreset");
+    private final javax.swing.Timer spinner = new javax.swing.Timer(100, e -> turn());
+    private int phase;
     private boolean reset;
     private boolean copied;
+    private boolean blocked;
 
     LocomotiveFunctionsTab(TrainControlUI ui, Locomotive loc, Runnable onChange)
     {
@@ -132,8 +138,11 @@ final class LocomotiveFunctionsTab extends JPanel
         table.setRowHeight(TrainControlUI.BUTTON_ICON_WIDTH + 8);
         table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         table.getTableHeader().setReorderingAllowed(false);
-        table.getColumnModel().getColumn(0).setCellRenderer(iconRenderer);
-        table.getColumnModel().getColumn(0).setCellEditor(iconEditor);
+        table.getTableHeader().setFont(org.traincontrol.gui.widgets.UiStyle.LABEL_FONT);
+        table.getTableHeader().setForeground(org.traincontrol.gui.widgets.UiStyle.BLUE);
+        table.getColumnModel().getColumn(1).setCellRenderer(iconRenderer);
+        table.getColumnModel().getColumn(1).setCellEditor(iconEditor);
+        table.getColumnModel().getColumn(TEST).setCellRenderer(new TestCell());
 
         JComboBox<String> behaviorBox = new JComboBox<>(behaviorNames);
         behaviorBox.setName("functions.behaviorCombo");
@@ -142,11 +151,35 @@ final class LocomotiveFunctionsTab extends JPanel
         behaviorEditor.setClickCountToStart(1);
         table.getColumnModel().getColumn(2).setCellEditor(behaviorEditor);
 
-        table.getColumnModel().getColumn(0).setPreferredWidth(110);
-        table.getColumnModel().getColumn(1).setPreferredWidth(70);
+        fixTheFnColumn();
+        table.getColumnModel().getColumn(1).setPreferredWidth(110);
         table.getColumnModel().getColumn(2).setPreferredWidth(110);
-        table.getColumnModel().getColumn(3).setPreferredWidth(60);
-        table.getColumnModel().getColumn(4).setPreferredWidth(70);
+        table.getColumnModel().getColumn(3).setPreferredWidth(70);
+        table.getColumnModel().getColumn(TEST).setPreferredWidth(70);
+
+        // The Test column's cell is the target: a press anywhere in it switches the function
+        table.addMouseListener(new java.awt.event.MouseAdapter()
+        {
+            @Override
+            public void mouseReleased(MouseEvent e)
+            {
+                int row = playRowAt(e);
+
+                if (row >= 0 && SwingUtilities.isLeftMouseButton(e)) press(row);
+            }
+        });
+
+        table.addMouseMotionListener(new java.awt.event.MouseMotionAdapter()
+        {
+            @Override
+            public void mouseMoved(MouseEvent e)
+            {
+                boolean over = playRowAt(e) >= 0;
+
+                table.setCursor(over ? java.awt.Cursor.getPredefinedCursor(java.awt.Cursor.HAND_CURSOR) : null);
+                table.setToolTipText(over ? I18n.t("loc.ui.settingsSwitchFunction") : null);
+            }
+        });
 
         table.addMouseListener(new PopupListener()
         {
@@ -212,12 +245,9 @@ final class LocomotiveFunctionsTab extends JPanel
         JPanel panel = new JPanel(new GridBagLayout());
 
         JButton useCurrent = button(I18n.t("loc.ui.settingsUseCurrentAsPreset"));
-        JButton clearPreset = button(I18n.t("loc.ui.settingsClearPreset"));
 
         useCurrent.setName("functions.useCurrent");
-        clearPreset.setName("functions.clearPreset");
         copyIcons.setName("functions.copyIcons");
-        resetAll.setName("functions.resetAll");
 
         useCurrent.addActionListener(e ->
         {
@@ -237,44 +267,40 @@ final class LocomotiveFunctionsTab extends JPanel
         copyIcons.setToolTipText(I18n.t("loc.ui.toolip.copyIconHelp"));
         copyIcons.addActionListener(e -> copyFrom(ui.getCopyTarget()));
 
-        resetAll.setEnabled(loc.isCustomFunctions());
+        refreshReverts();
         resetAll.addActionListener(e -> resetEverything());
 
         // One width for the buttons in a column, so their edges line up.
-        int width = Math.max(Math.max(useCurrent.getPreferredSize().width, clearPreset.getPreferredSize().width),
-            Math.max(copyIcons.getPreferredSize().width, resetAll.getPreferredSize().width));
+        int width = Math.max(useCurrent.getPreferredSize().width, copyIcons.getPreferredSize().width);
 
-        for (JButton b : new JButton[] { useCurrent, clearPreset, copyIcons, resetAll })
+        for (JButton b : new JButton[] { useCurrent, copyIcons })
         {
             b.setPreferredSize(new Dimension(width, b.getPreferredSize().height));
         }
 
         GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(2, 4, 2, 4);
+        gbc.insets = new Insets(2, 0, 2, 4);
         gbc.anchor = GridBagConstraints.WEST;
 
         gbc.gridy = 0;
         gbc.gridx = 0;
-        panel.add(new JLabel(I18n.t("loc.ui.settingsPresetLabel")), gbc);
+        panel.add(org.traincontrol.gui.widgets.UiStyle.label(I18n.t("loc.ui.settingsPresetLabel")), gbc);
         gbc.gridx = 1;
         panel.add(useCurrent, gbc);
         gbc.gridx = 2;
         panel.add(clearPreset, gbc);
 
+        // Beside the Preset row; the sentence also says the play icons act at once
+        gbc.gridx = 3;
+        panel.add(org.traincontrol.gui.InfoMark.label(I18n.t("loc.ui.settingsFunctionsHint")), gbc);
+
         gbc.gridy = 1;
         gbc.gridx = 0;
-        panel.add(new JLabel(I18n.t("loc.ui.settingsIconsLabel")), gbc);
+        panel.add(org.traincontrol.gui.widgets.UiStyle.label(I18n.t("loc.ui.settingsIconsLabel")), gbc);
         gbc.gridx = 1;
         panel.add(copyIcons, gbc);
         gbc.gridx = 2;
         panel.add(resetAll, gbc);
-
-        gbc.gridy = 2;
-        gbc.gridx = 0;
-        gbc.gridwidth = 3;
-        JLabel hint = new JLabel(I18n.t("loc.ui.settingsFunctionsHint"));
-        hint.setForeground(java.awt.Color.GRAY);
-        panel.add(hint, gbc);
 
         JPanel left = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
         left.add(panel);
@@ -341,6 +367,7 @@ final class LocomotiveFunctionsTab extends JPanel
     private void changed()
     {
         model.fireTableRowsUpdated(0, Math.max(0, rows.size() - 1));
+        refreshReverts();
 
         if (onChange != null) onChange.run();
     }
@@ -429,12 +456,126 @@ final class LocomotiveFunctionsTab extends JPanel
         if (table.isEditing()) table.getCellEditor().stopCellEditing();
     }
 
-    /** Redraws the Now column and the Reset button from the locomotive. */
+    /** Redraws the table and the revert icons from the locomotive. */
     void refresh()
     {
         table.repaint();
-        resetAll.setEnabled(loc.isCustomFunctions() || reset);
+        refreshReverts();
         fitCopyIcons();
+        keepTurning();
+    }
+
+    /** An icon is lit when there is something to put back: a preset, or a customization. */
+    private void refreshReverts()
+    {
+        boolean preset = false;
+
+        for (Row r : rows) preset |= r.preset;
+
+        clearPreset.setEnabled(preset);
+        resetAll.setEnabled(loc.isCustomFunctions() || reset);
+    }
+
+    private static JButton revertButton(String name, String tipKey)
+    {
+        int size = com.formdev.flatlaf.util.UIScale.scale(18);
+        JButton b = new JButton(RowIcons.revert(size, UiStyle.BLUE));
+
+        b.setDisabledIcon(RowIcons.revert(size, new java.awt.Color(175, 175, 175)));
+        b.putClientProperty("JButton.buttonType", "toolBarButton");
+        b.setFocusable(false);
+        b.setToolTipText(I18n.t(tipKey));
+        b.setName(name);
+
+        return b;
+    }
+
+    /** The row whose play icon the pointer is over, or -1. */
+    private int playRowAt(MouseEvent e)
+    {
+        int row = table.rowAtPoint(e.getPoint());
+
+        return row >= 0 && table.columnAtPoint(e.getPoint()) == TEST ? row : -1;
+    }
+
+    /**
+     * The Fn column is as wide as its heading and the highest function number, and stays so: minimum, maximum and
+     * preferred together, so a resized window gives its room to the other columns.
+     */
+    private void fixTheFnColumn()
+    {
+        java.awt.Font heading = table.getTableHeader().getFont();
+        int widest = Math.max(table.getFontMetrics(table.getFont()).stringWidth("F" + Math.max(0, loc.getNumF() - 1)),
+            table.getFontMetrics(heading).stringWidth(model.getColumnName(0)));
+        int width = widest + com.formdev.flatlaf.util.UIScale.scale(20);
+        javax.swing.table.TableColumn column = table.getColumnModel().getColumn(0);
+
+        column.setMinWidth(width);
+        column.setMaxWidth(width);
+        column.setPreferredWidth(width);
+        column.setResizable(false);
+    }
+
+    /** The Test column's place in the table. */
+    private static final int TEST = 4;
+
+    /** Whether a momentary or timed function is running its course, which the play icon shows as a turning arc. */
+    private boolean firing(Row row)
+    {
+        return row.function < loc.getNumF() && loc.getF(row.function)
+            && (loc.isFunctionPulse(row.function) || loc.isFunctionTimed(row.function) > 0);
+    }
+
+    /** A press on a play icon: a command to the railway now, not part of Save. */
+    private void press(int row)
+    {
+        Row r = rows.get(row);
+
+        if (blocked || r.function >= loc.getNumF()) return;
+
+        ui.fireFunction(loc, r.function, !loc.getF(r.function));
+
+        // The railway answers on its own thread: shown again once it has, and turning while a pulse runs
+        javax.swing.Timer later = new javax.swing.Timer(300, e ->
+        {
+            table.repaint();
+            keepTurning();
+        });
+
+        later.setRepeats(false);
+        later.start();
+    }
+
+    /** Runs the spinner only while some function is firing. */
+    private void keepTurning()
+    {
+        boolean any = false;
+
+        for (Row r : rows) any |= firing(r);
+
+        if (any && !spinner.isRunning()) spinner.start();
+        else if (!any && spinner.isRunning()) spinner.stop();
+    }
+
+    private void turn()
+    {
+        phase = (phase + 40) % 360;
+        table.repaint();
+        keepTurning();
+    }
+
+    @Override
+    public void removeNotify()
+    {
+        spinner.stop();
+        super.removeNotify();
+    }
+
+    /** Whether the moving rule locks the window: the Now boxes then do nothing, as they send at once. */
+    void setBlocked(boolean b)
+    {
+        blocked = b;
+        table.repaint();
     }
 
     /** What the tab means to write, for the window to know whether the Central Station is to be asked again. */
@@ -689,13 +830,42 @@ final class LocomotiveFunctionsTab extends JPanel
         list.setFixedCellHeight(TrainControlUI.BUTTON_ICON_WIDTH + 12);
     }
 
+    /** The Test column: the play icon, centered, filled when the function is on. */
+    private final class TestCell extends JLabel implements TableCellRenderer
+    {
+        TestCell()
+        {
+            super("", JLabel.CENTER);
+
+            setOpaque(true);
+        }
+
+        @Override
+        public Component getTableCellRendererComponent(JTable t, Object value, boolean selected, boolean focus, int r, int c)
+        {
+            Row row = (Row) value;
+
+            setBackground(selected ? t.getSelectionBackground() : t.getBackground());
+
+            RowIcons.PlayState state = blocked ? RowIcons.PlayState.DISABLED
+                : firing(row) ? RowIcons.PlayState.FIRING
+                : row.function < loc.getNumF() && loc.getF(row.function) ? RowIcons.PlayState.ON
+                : RowIcons.PlayState.OFF;
+
+            setIcon(RowIcons.play(com.formdev.flatlaf.util.UIScale.scale(16), state, phase));
+            putClientProperty("playState", state);
+
+            return this;
+        }
+    }
+
     /** The table's rows over the buffer. */
     private final class TableModel extends AbstractTableModel
     {
         private final String[] names = {
-            I18n.t("loc.ui.settingsColumnIcon"), I18n.t("loc.ui.settingsColumnFunction"),
-            I18n.t("loc.ui.settingsColumnBehavior"), I18n.t("loc.ui.settingsColumnNow"),
-            I18n.t("loc.ui.settingsColumnPreset") };
+            I18n.t("loc.ui.settingsColumnFn"), I18n.t("loc.ui.settingsColumnIcon"),
+            I18n.t("loc.ui.settingsColumnBehavior"), I18n.t("loc.ui.settingsColumnPreset"),
+            I18n.t("loc.ui.settingsColumnTest") };
 
         @Override public int getRowCount() { return rows.size(); }
         @Override public int getColumnCount() { return names.length; }
@@ -704,13 +874,13 @@ final class LocomotiveFunctionsTab extends JPanel
         @Override
         public Class<?> getColumnClass(int c)
         {
-            return c == 0 ? Row.class : c == 4 ? Boolean.class : String.class;
+            return c == 1 || c == TEST ? Row.class : c == 3 ? Boolean.class : String.class;
         }
 
         @Override
         public boolean isCellEditable(int r, int c)
         {
-            return c == 0 || c == 2 || c == 4;
+            return c == 1 || c == 2 || c == 3;
         }
 
         @Override
@@ -720,11 +890,11 @@ final class LocomotiveFunctionsTab extends JPanel
 
             switch (c)
             {
-                case 0: return row;
-                case 1: return "F" + row.function;
+                case 0: return "F" + row.function;
+                case 1: return row;
                 case 2: return behaviorNames[row.behavior];
-                case 3: return row.function < loc.getNumF() && loc.getF(row.function) ? I18n.t("loc.ui.settingsNowOn") : "";
-                default: return row.preset;
+                case 3: return row.preset;
+                default: return row;
             }
         }
 
@@ -740,9 +910,10 @@ final class LocomotiveFunctionsTab extends JPanel
                     if (behaviorNames[i].equals(value)) row.behavior = i;
                 }
             }
-            else if (c == 4)
+            else if (c == 3)
             {
                 row.preset = Boolean.TRUE.equals(value);
+                refreshReverts();
             }
 
             if (onChange != null) onChange.run();
@@ -783,6 +954,7 @@ final class LocomotiveFunctionsTab extends JPanel
             });
 
             wrench.setFocusable(false);
+            wrench.putClientProperty("JButton.buttonType", "toolBarButton");
             wrench.setMargin(new Insets(1, 1, 1, 1));
             wrench.setToolTipText(I18n.t("loc.ui.settingsMenuCustomIcon"));
             wrench.setPreferredSize(new Dimension(24, 24));

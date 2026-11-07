@@ -59,6 +59,56 @@ public final class SettingsFixture
         return f;
     }
 
+    /**
+     * A fresh DCC locomotive on key A with the power off and its Settings window open on a tab: what a claim starts from.
+     */
+    public org.traincontrol.marklin.MarklinLocomotive layDcc(String name, int address,
+        org.traincontrol.gui.LocomotiveSettingsFrame.Tab tab) throws Exception
+    {
+        quiet();
+        forget(name);
+
+        org.traincontrol.marklin.MarklinLocomotive loc = model.newDCCLocomotive(name, address);
+
+        SettingsWindow.power(ui, model, false);
+        SettingsWindow.showOnKeyA(ui, loc);
+
+        return (org.traincontrol.marklin.MarklinLocomotive) show(loc, tab);
+    }
+
+    /** Opens the Settings window on a tab of this locomotive and waits for it to be on screen. */
+    public org.traincontrol.base.Locomotive show(org.traincontrol.base.Locomotive loc,
+        org.traincontrol.gui.LocomotiveSettingsFrame.Tab tab)
+    {
+        if (!SettingsWindow.open(ui, loc, tab, null)) throw new AssertionError("the window did not open");
+
+        try
+        {
+            if (SettingsWindow.awaited() == null) throw new AssertionError("the window is not on screen");
+        }
+        catch (Exception e)
+        {
+            throw new AssertionError(e);
+        }
+
+        return loc;
+    }
+
+    /** The end of a class that may have failed to open: finishes the fixture if there is one, and always its sandbox. */
+    public static void tearDown(SettingsFixture f, String... names) throws Exception
+    {
+        if (f == null) return;
+
+        try
+        {
+            f.finish(names);
+        }
+        finally
+        {
+            f.closeSandbox();
+        }
+    }
+
     /** Takes these locomotives out of the database, those that are there. */
     public void forget(String... names) throws Exception
     {
