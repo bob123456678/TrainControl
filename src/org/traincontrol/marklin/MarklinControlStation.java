@@ -4211,29 +4211,23 @@ public class MarklinControlStation implements ViewListener, ModelListener
     private volatile Map<Integer, String> setupPageNames = new java.util.TreeMap<>();
 
     /**
-     * Tells every link which page it goes to (FR-175).  A link that carries a page ID goes to the page with it.  One
-     * written by an earlier version has none: on a local layout its number is a place in the name-sorted list, on a
-     * station it is the page's ID; it resolves that way and the ID is attached here, in memory, to be written when its
-     * page is next saved.  A local link whose target shares its ID with another page keeps going by its number until
-     * the IDs are told apart.  On a local layout the number written beside the ID is made right for 3.0.8.
+     * Tells every link which page it goes to (FR-175).  On a station, and on a local layout marked as going by page
+     * ID, a link that carries an ID goes to the page with it.  Otherwise a local link's number is a place in the
+     * name-sorted list, and a station link's number is the page's ID.  An unmarked local layout is converted here,
+     * once: every arrow is given the ID of the page its number names, written into its file, and the layout is marked.
      */
     private void attachLinks(CS2File parser)
     {
         final boolean station = parser.isFromStation();
 
+        final String folder = station ? null : parser.localLayoutFolder();
+
+        final boolean byId = station || LayoutDiagram.linksGoByPageId(folder);
+
         this.setupPageNames = station ? new java.util.TreeMap<Integer, String>()
-            : LayoutDiagram.readSetupPageNames(parser.localLayoutFolder());
+            : LayoutDiagram.readSetupPageNames(folder);
 
         List<String> byName = getLayoutListByName();
-
-        Map<Integer, Integer> uses = new HashMap<>();
-
-        for (String name : byName)
-        {
-            LayoutDiagram page = this.layoutDB.getByName(name);
-
-            if (page != null) uses.merge(page.getPageIdNumber(), 1, Integer::sum);
-        }
 
         for (String name : byName)
         {
@@ -4245,40 +4239,85 @@ public class MarklinControlStation implements ViewListener, ModelListener
             {
                 if (tile == null || !tile.isLink()) continue;
 
-                Integer id = tile.getLinkPageId();
+                Integer id = byId ? tile.getLinkPageId() : null;
 
                 int raw = tile.getRawAddress();
 
-                if (id == null)
+                if (station) id = LayoutDiagramComponent.stationLinkPageId(id, raw);
+                else if (id == null)
                 {
-                    if (station)
-                    {
-                        if (raw >= 0) id = raw;
-                    }
-                    else if (raw >= 0 && raw < byName.size())
-                    {
-                        LayoutDiagram target = this.layoutDB.getByName(byName.get(raw));
+                    // A number past the list is kept as it was, and goes to no page
+                    if (raw >= 0 && raw < byName.size()) aimLink(tile, byName.get(raw));
+                    else tile.setLinkTarget(null, null, raw);
 
-                        int targetId = target == null ? 0 : target.getPageIdNumber();
-
-                        // Left to its number while two pages share the ID: the ID could name the other one
-                        if (target != null && uses.get(targetId) == 1) id = targetId;
-                        else if (target != null)
-                        {
-                            tile.setLinkTarget(null, byName.get(raw), raw);
-
-                            continue;
-                        }
-                    }
+                    continue;
                 }
 
                 String target = id == null ? null : getPageNameForId(id);
 
-                int number = station ? raw : target != null ? byName.indexOf(target) : id == null ? raw : -1;
+                int number = station ? raw : target != null ? byName.indexOf(target) : -1;
 
                 tile.setLinkTarget(id, target, number);
             }
         }
+
+        if (!byId && folder != null && new File(folder, "config/gleisbild.cs2").isFile()) convertLinksToPageIds(folder);
+    }
+
+    /**
+     * Writes each arrow's page ID, as just resolved, into its page's file and marks the layout, so that from now on the
+     * ID decides; every arrow goes where it went.  Not marked if a page could not be written, so the next open tries
+     * again with the old reading.
+     */
+    private void convertLinksToPageIds(String folder)
+    {
+        int arrows = 0;
+
+        try
+        {
+            for (String name : getLayoutListByName())
+            {
+                LayoutDiagram page = this.layoutDB.getByName(name);
+
+                if (page != null) arrows += page.writeLinkPageIdsIntoFile();
+            }
+
+            LayoutDiagram.markLinksByPageId(folder);
+
+            if (arrows > 0) this.logf("layout.linksConvertedToPageIds", arrows);
+        }
+        catch (Exception e)
+        {
+            this.log(e);
+        }
+    }
+
+    /**
+     * Aims a local link at a page by name, or at none.  A page whose ID another page shares is aimed at by its place
+     * in the name-sorted list alone, since the ID could name the other page.
+     *
+     * @param tile the link
+     * @param page the page's name, or null for none
+     */
+    @Override
+    public void aimLink(LayoutDiagramComponent tile, String page)
+    {
+        List<String> byName = getLayoutListByName();
+
+        if (page == null || !byName.contains(page))
+        {
+            tile.setLinkTarget(null, null, -1);
+
+            return;
+        }
+
+        int id = getPageIdOf(page);
+
+        int sharing = 0;
+
+        for (String name : byName) if (getPageIdOf(name) == id) sharing++;
+
+        tile.setLinkTarget(sharing == 1 ? Integer.valueOf(id) : null, page, byName.indexOf(page));
     }
 
     /**
