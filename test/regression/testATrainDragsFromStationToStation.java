@@ -13,6 +13,7 @@ import org.testng.SkipException;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
+import org.traincontrol.automationui.AutonomyBuilder;
 import org.traincontrol.automationui.AutonomySession;
 import org.traincontrol.automationui.TileGraph.TileKey;
 import org.traincontrol.base.LayoutDiagram;
@@ -911,6 +912,220 @@ public class testATrainDragsFromStationToStation
     }
 
     /**
+     * A train dragged onto another train's square, then Cancel or Discard on a page or mode switch, puts both back where
+     * they were in the setup, the file and the railway, with their facing and tail (FR-160): the railway alone lost the
+     * displaced train, and a rebuild let the railway's places win over the restored setup.
+     *
+     * MUTATION: passing no trains from `LayoutEditor.discardAutonomyWork` to the rebuild (as before) loses the
+     * displaced train from all three stores.
+     */
+    @Test(timeOut = 400000)
+    public void testCancelAndDiscardPutBothTrainsBackWhenTheTargetIsOccupied() throws Exception
+    {
+        fixture(true);
+
+        org.json.JSONObject asFound = session.snapshotSetup();
+
+        try
+        {
+            for (boolean bySwitch : new boolean[] {false, true})
+            {
+                putBack(asFound);
+
+                SwingUtilities.invokeAndWait(() -> editor.dispose());
+
+                editor = openEditor();
+
+                Fixture f = fixture(true);
+
+                String dragged = session.getLocomotiveNameAt(f.from);
+
+                String before = threeStores(f);
+
+                Mouse.drag(f.fromLabel, f.toLabel);
+                settle();
+
+                assertEquals(session.getLocomotiveNameAt(f.to), dragged, "precondition: the train did not land");
+
+                if (bySwitch) discardBySwitch();
+                else cancelTheEditor();
+
+                assertEquals(threeStores(f), before, (bySwitch ? "a Discard on a switch" : "Cancel")
+                    + " did not put both trains back");
+            }
+        }
+        finally
+        {
+            putBack(asFound);
+        }
+    }
+
+    /** The setup, the file and the railway on two squares: each train, its facing and its tail. */
+    private static String threeStores(Fixture f) throws Exception
+    {
+        AutonomySession onDisk = new AutonomySession(sandbox.getFolder());
+
+        java.util.List<LayoutDiagram> pages = new java.util.ArrayList<>();
+
+        for (String name : model.getLayoutList()) pages.add(model.getLayout(name));
+
+        onDisk.open(pages);
+
+        StringBuilder out = new StringBuilder();
+
+        for (AutonomySession each : new AutonomySession[] {session, onDisk})
+        {
+            out.append(each == session ? "setup " : "file ").append(each.placementsAutonomyWillWrite());
+
+            for (TileKey tile : new TileKey[] {f.from, f.to})
+            {
+                for (String property : new String[] {"facing", "arrivedFrom", "arrivedAlong"})
+                {
+                    out.append(' ').append(each.getPointProperty(tile, property));
+                }
+            }
+
+            out.append('\n');
+        }
+
+        for (org.traincontrol.automation.Point point : model.getAutoLayout().getPoints())
+        {
+            if (point.getCurrentLocomotive() != null) out.append(point.getCurrentLocomotive().getName()).append('@')
+                .append(point.getName()).append(' ');
+        }
+
+        return out.toString();
+    }
+
+    /** The question a switch asks about unsaved work, answered Discard. */
+    private static void discardBySwitch() throws Exception
+    {
+        try (Answering answering = Answering.start(message -> Answering.press(I18n.t("layout.ui.switchDiscard"))))
+        {
+            final java.lang.reflect.Method settle = LayoutEditor.class.getDeclaredMethod("settleUnsavedWork");
+
+            settle.setAccessible(true);
+
+            onTheEventThread(() -> assertTrue((Boolean) settle.invoke(editor), "the switch did not go ahead"));
+
+            assertEquals(answering.asked().size(), 1, "the switch did not ask about the unsaved work");
+        }
+
+        settle();
+    }
+
+    /**
+     * A green mark is true (FR-160): where the railway cannot take the train on that square (a square built since the
+     * railway was, a train the roster lacks) or autonomy ignores the page, the mark is red and the release changes
+     * nothing.
+     *
+     * MUTATION: dropping the copy-names loop from `TrainControlUI.canTrainLandOn` leaves the stale square green;
+     * dropping the roster test leaves the unknown train green; dropping `isIgnored` from `canDropTrain` leaves the
+     * excluded page green.
+     */
+    @Test(timeOut = 240000)
+    public void testAMarkIsRedWhereTheRailwayCannotTakeTheTrain() throws Exception
+    {
+        Fixture f = fixture(false);
+
+        org.json.JSONObject asFound = session.snapshotSetup();
+
+        String train = session.getLocomotiveNameAt(f.from);
+
+        try
+        {
+            // A square changed since the railway was built: its copies have other names now
+            session.setPointProperty(f.to, AutonomyBuilder.CAN_REVERSE, true);
+
+            assertFalse(editor.getAutonomyPanel().canDropTrain(f.from, f.to), "a square the railway has not been rebuilt for is offered");
+
+            org.json.JSONObject changed = session.snapshotSetup();
+
+            Mouse.drag(f.fromLabel, f.toLabel);
+            settle();
+
+            assertUnchanged(changed, "a train was dropped on a square the railway is stale for");
+
+            putBack(asFound);
+
+            // A train the roster does not know
+            session.setPointProperty(f.from, "loc", settings("No Such Train", 5, false, 40));
+
+            assertFalse(editor.getAutonomyPanel().canDropTrain(f.from, f.to), "a train the roster lacks is offered");
+
+            putBack(asFound);
+
+            // A page autonomy ignores
+            session.setPageExcluded(PAGE, true);
+
+            assertFalse(editor.getAutonomyPanel().canDropTrain(f.from, f.to), "a square on an ignored page is offered");
+
+            assertEquals(session.getLocomotiveNameAt(f.from), train, "precondition");
+        }
+        finally
+        {
+            putBack(asFound);
+        }
+    }
+
+    /**
+     * Where the paste would ask, the drag asks nothing and the mark tells the truth (FR-160): on a station trains may
+     * turn at, a green mark means the train lands; and a drag handed a square that is no station meets no dialog.
+     *
+     * MUTATION: removing `!dropping` from the tail-side check in `DiagramLocGestures` stops a paste there with the
+     * mark green; removing `if (dropping) return true;` before `errorTrainOnlyAtStation` shows that dialog.
+     */
+    @Test(timeOut = 240000)
+    public void testAStationTrainsMayTurnAtTakesTheDragAndNoDialogIsMet() throws Exception
+    {
+        Fixture f = fixture(false);
+
+        org.json.JSONObject asFound = session.snapshotSetup();
+
+        String train = session.getLocomotiveNameAt(f.from);
+
+        try (Answering answering = Answering.start(message -> null))
+        {
+            session.setPointProperty(f.to, AutonomyBuilder.CAN_REVERSE, true);
+
+            onTheEventThread(ui::rebuildRunningLayoutFromSetup);
+            settle();
+
+            Fixture again = fixture(false);
+
+            boolean green = editor.getAutonomyPanel().canDropTrain(again.from, again.to);
+
+            dragTrain(again.from, again.to);
+
+            if (green)
+            {
+                assertEquals(session.getLocomotiveNameAt(again.to), train, "the mark was green and the train did not land");
+            }
+
+            // A square the railway has a Point for that is no station
+            TileKey notAStation = null;
+
+            for (TileKey tile : session.getReducer().getPoints().keySet())
+            {
+                if (PAGE.equals(tile.getPage()) && !session.getStore().isStation(tile) && ui.getAutonomyPointForTile(tile) != null)
+                {
+                    notAStation = tile;
+                }
+            }
+
+            assertNotNull(notAStation, "precondition: every square the railway has a Point for is a station");
+
+            assertFalse(ui.dropTrainByPaste(train, notAStation), "a train was dropped on a square that is no station");
+
+            assertEquals(answering.asked().size(), 0, "a drag met a dialog: " + answering.asked());
+        }
+        finally
+        {
+            putBack(asFound);
+        }
+    }
+
+    /**
      * Cancel after a drag leaves the train where it landed, every time (FR-160): the drag is a paste on the railway,
      * and Cancel keeps what the railway changed alone (`putBackWhatTheRailwayChangedAlone`).  A diagram scrolled away
      * from its corner still lands the train.
@@ -1334,15 +1549,37 @@ public class testATrainDragsFromStationToStation
         return out;
     }
 
-    /** The setup as found, and the running layout built from it again. */
+    /**
+     * The setup as found, and the railway made to agree with it: a rebuild lets the railway's places win unless the
+     * trains are named, so every train placed before or after is.
+     */
     private static void putBack(org.json.JSONObject asFound) throws Exception
     {
+        final java.util.Set<String> trains = new java.util.HashSet<>(session.placementsAutonomyWillWrite().values());
+
         session.restoreSetup(asFound);
 
-        SwingUtilities.invokeAndWait(() -> ui.rebuildRunningLayoutFromSetup());
+        trains.addAll(session.placementsAutonomyWillWrite().values());
+
+        SwingUtilities.invokeAndWait(() -> ui.rebuildRunningLayoutFromSetup(false, trains));
 
         settle();
 
+        for (java.util.Map.Entry<TileKey, String> placed : session.placementsAutonomyWillWrite().entrySet())
+        {
+            TileKey standing = null;
+
+            for (org.traincontrol.automation.Point point : model.getAutoLayout().getPoints())
+            {
+                if (point.getCurrentLocomotive() != null && placed.getValue().equals(point.getCurrentLocomotive().getName()))
+                {
+                    standing = session.getStationIndex().squareOf(point);
+                }
+            }
+
+            assertEquals(standing, placed.getKey(), "precondition: after putting the setup back, the railway has "
+                + placed.getValue() + " elsewhere than the setup says");
+        }
     }
 
     /** Presses the train and carries it over the target station, the button still down. */

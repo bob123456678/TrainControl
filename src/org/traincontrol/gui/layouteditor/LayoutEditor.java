@@ -427,7 +427,11 @@ public class LayoutEditor extends PositionAwareJFrame
 
         // The railway follows at once, before the window goes, or a fold in between would write the discarded edit
         // back.  Declines while autonomy runs.
-        if (failed == null && autonomy != null) parent.rebuildRunningLayoutFromSetup();
+        // Both trains of a drop onto an occupied square come back with the setup: the railway holds only the one
+        if (failed == null && autonomy != null)
+        {
+            parent.rebuildRunningLayoutFromSetup(false, new java.util.HashSet<>(autonomyPanel.trainsToPutBackOnDiscard()));
+        }
 
         return failed;
     }

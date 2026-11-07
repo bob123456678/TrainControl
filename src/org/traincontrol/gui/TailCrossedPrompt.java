@@ -173,12 +173,15 @@ public class TailCrossedPrompt
     public static Answer askAfterPlacement(Layout layout, Point at, String arrivedFrom, Integer trainLength,
         String train, Component parent, Function<String, String> shown, List<Edge> recorded)
     {
-        if (quiet || !wouldAsk(layout, at, arrivedFrom, trainLength)) return Answer.NOT_ASKED;
+        if (!wouldAsk(layout, at, arrivedFrom, trainLength)) return Answer.NOT_ASKED;
 
         // WHETHER AN EDITOR IS OPEN AS IT IS ASKED, for the door to know whether one opened in the wait
         boolean editorWasOpen = parent instanceof TrainControlUI && ((TrainControlUI) parent).isLayoutEditorOpen();
 
         List<Choice> choices = choicesFor(layout, at, arrivedFrom, trainLength, shown);
+
+        // Quiet, nobody is asked; one road is no question, and is taken as ever
+        if (quiet && choices.size() != 1) return Answer.NOT_ASKED;
 
         // On the diagram where it can be (FR-100; Adam: *"instead of showing the list of points, highlight possible
         // squares on the diagram and ask the user to click one.  only show the list if there are options on another

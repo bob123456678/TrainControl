@@ -4051,6 +4051,35 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
+     * Whether a paste of this train onto this square would land it there (FR-160), asked of what the paste asks: the
+     * roster knows the train, the railway has a Point for the square and for every copy the setup builds there (a
+     * square renamed or changed since the last build is stale, and the facing would be lost).
+     *
+     * @param locomotive the train's name
+     * @param to the station square
+     * @return whether it lands
+     */
+    public boolean canTrainLandOn(String locomotive, org.traincontrol.automationui.TileGraph.TileKey to)
+    {
+        org.traincontrol.automationui.AutonomySession session = getAutonomySession();
+
+        org.traincontrol.automation.Layout shown = this.model == null ? null : this.model.getAutoLayoutIfLoaded();
+
+        if (session == null || shown == null || to == null || session.getStationIndex() == null
+            || this.model.getLocByName(locomotive) == null || getAutonomyPointForTile(to) == null)
+        {
+            return false;
+        }
+
+        for (String name : session.getStationIndex().pointNamesAt(to))
+        {
+            if (shown.getPoint(name) == null) return false;
+        }
+
+        return true;
+    }
+
+    /**
      * Delegates to `DiagramLocGestures.dropByPaste`: a train dragged in the autonomy editor lands as a paste (FR-160).
      *
      * @param locomotive the train's name

@@ -180,6 +180,9 @@ final class DiagramLocGestures
 
             if (onto == null || !onto.getStore().isStation(aimed))
             {
+                // A dragged train is only offered a station, and never meets a dialog
+                if (dropping) return true;
+
                 JOptionPane.showMessageDialog(ui.dialogParent(), I18n.t("autolayout.ui.errorTrainOnlyAtStation"));
 
                 return true;
@@ -229,7 +232,7 @@ final class DiagramLocGestures
                 mayTurnHere(aimed) && !dropping, ui.dialogParent(),
                 ui.getAutonomySession() == null ? null : ui.getAutonomySession().unbarredArrivalSides(aimed));
 
-            if (ui.tailAtTheLanding == null && org.traincontrol.gui.autonomy.ArrivalSidePrompt.wouldAsk(
+            if (!dropping && ui.tailAtTheLanding == null && org.traincontrol.gui.autonomy.ArrivalSidePrompt.wouldAsk(
                 ui.getModel() == null ? null : ui.getModel().getAutoLayout(), point,
                 mayTurnHere(aimed), ui.getAutonomySession() == null
                     ? null : ui.getAutonomySession().unbarredArrivalSides(aimed)))

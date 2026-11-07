@@ -3532,8 +3532,9 @@ public class AutonomyEditorPanel extends JPanel
     }
 
     /**
-     * Whether a train may be dragged from one square to another (FR-160): the questions the menu's Add to autonomy
-     * asks (a station, and nothing running), so the mark drawn while dragging and the drop cannot disagree.
+     * Whether a train may be dragged from one square to another (FR-160): a square autonomy does not ignore, a station,
+     * nothing running or armed, and what the window's paste asks (`canTrainLandOn`), so a green mark means the train
+     * lands on that square.
      * @param from the square the train stands on
      * @param to the square under the pointer
      * @return true when letting go there would move the train
@@ -3544,9 +3545,27 @@ public class AutonomyEditorPanel extends JPanel
 
         if (from.getPage() == null || !from.getPage().equals(to.getPage())) return false;
 
-        if (locomotiveAt(from) == null || !session.getStore().isStation(to)) return false;
+        if (locomotiveAt(from) == null || !session.getStore().isStation(to) || isIgnored(from) || isIgnored(to))
+        {
+            return false;
+        }
 
-        return !anythingIsArmed() && !setupIsHeldByARun();
+        if (anythingIsArmed() || setupIsHeldByARun()) return false;
+
+        // Without a railway to paste onto the picker's door does the placing, and asks the railway nothing
+        TrainControlUI window = parentWindow();
+
+        return window == null || window.getModel() == null || !window.getModel().hasAutoLayout()
+            || window.canTrainLandOn(locomotiveAt(from), to);
+    }
+
+    /** The trains a Cancel puts back with the setup: those a drop displaced, and the train that displaced them. */
+    private final java.util.Set<String> putBackOnDiscard = new java.util.LinkedHashSet<>();
+
+    /** @return the trains the railway must not keep where a drag left them when the edit is thrown away */
+    public java.util.Set<String> trainsToPutBackOnDiscard()
+    {
+        return java.util.Collections.unmodifiableSet(putBackOnDiscard);
     }
 
     /** Whether a tool or a half-made gesture is waiting for a click, which a press on a train then belongs to. */
@@ -3577,16 +3596,25 @@ public class AutonomyEditorPanel extends JPanel
         if (!canDropTrain(from, to)) return false;
 
         String name = locomotiveAt(from);
+        String displaced = locomotiveAt(to);
 
         TrainControlUI window = parentWindow();
 
         if (window != null && window.getModel() != null && window.getModel().hasAutoLayout())
         {
-            if (!window.dropTrainByPaste(name, to)) return false;
+            boolean landed = window.dropTrainByPaste(name, to);
 
+            // Whatever the paste did to the setup is drawn and rebuilt, landed or not
             placementChanged(java.util.Collections.singletonList(name));
 
-            return true;
+            // A train sent from under another is put back with it by a Cancel: the railway alone lost the other
+            if (landed && displaced != null && !displaced.equals(name))
+            {
+                putBackOnDiscard.add(name);
+                putBackOnDiscard.add(displaced);
+            }
+
+            return landed;
         }
 
         trainBeingDropped = name;
