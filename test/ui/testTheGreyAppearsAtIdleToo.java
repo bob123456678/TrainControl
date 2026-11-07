@@ -1248,9 +1248,9 @@ public class testTheGreyAppearsAtIdleToo
                 });
             }
 
-            assertTrue(texts.contains(org.traincontrol.util.I18n.t("autosetup.ui.menuRename"))
+            assertTrue(texts.contains(org.traincontrol.util.I18n.t("autosetup.ui.menuStationSettings"))
                 && texts.contains(org.traincontrol.util.I18n.t("autosetup.ui.menuSetLength")), "precondition: the menus hold"
-                + " no Rename... or Segment Length..., the items that named a key: " + texts);
+                + " no Station Settings... or Segment Length..., the items that name a key: " + texts);
 
             assertTrue(named.isEmpty(), "the track diagram's menu names keys that work only in the autonomy editor: " + named);
         }

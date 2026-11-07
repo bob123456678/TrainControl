@@ -662,7 +662,7 @@ public class testMessageBundles
 
             String arrivals = trimmed(values.getProperty("autosetup.ui.menuArrivalsGroup"));
 
-            String departures = trimmed(values.getProperty("autosetup.ui.menuConnections"));
+            String departures = trimmed(values.getProperty("autosetup.ui.stationDepart"));
 
             if (error == null || arrivals == null)
             {
@@ -1050,7 +1050,7 @@ public class testMessageBundles
         {
             java.util.Properties values = valuesOf(bundle);
 
-            String item = values.getProperty("autosetup.ui.menuTurnMay");
+            String item = values.getProperty("autosetup.ui.stationTurning");
 
             for (String key : new String[] {"autosetup.ui.checkMayTurnOnDeadEnd", "autosetup.ui.checkArrivalTrapped",
                 "autosetup.ui.checkArrivalTrappedNoClosing", "autosetup.ui.checkTerminusTwoWaysIn"})
@@ -1065,8 +1065,8 @@ public class testMessageBundles
             }
         }
 
-        assertTrue(wrong.isEmpty(), "a finding names the turning setting in words its menu does not use, so the reader"
-            + " looks for an item that is not there: " + wrong);
+        assertTrue(wrong.isEmpty(), "a finding names the turning setting in words Station Settings does not use, so the"
+            + " reader looks for a row that is not there: " + wrong);
     }
 
     /**

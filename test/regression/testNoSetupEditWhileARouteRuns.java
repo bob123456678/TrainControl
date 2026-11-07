@@ -98,7 +98,7 @@ public class testNoSetupEditWhileARouteRuns
             setupItems.put("Remove", I18n.f("layout.ui.menuRemoveLocomotive", train));
             setupItems.put("Edit Locomotive", (String) label.invoke(null, standing));
             setupItems.put("Is Active", I18n.f("autolayout.ui.menuLocomotiveActive", train));
-            setupItems.put("Autonomy Setup", I18n.t("autosetup.ui.menuAutonomySetup"));
+            setupItems.put("Segment Length", I18n.t("autosetup.ui.menuSetLength"));
 
             if (facing[0] != null) setupItems.put("Facing", facing[0].getText());
 
@@ -136,6 +136,10 @@ public class testNoSetupEditWhileARouteRuns
 
             assertTrue(running.contains(start), "the right-click menu left out Start Autonomy while a route runs, which is"
                 + " not a setup edit: " + running);
+
+            // What a route leaves on the menu is no edit of the setup: the window, read-only
+            assertTrue(running.contains(I18n.t("autosetup.ui.menuStationSettings")), "no read-only Station Settings while a"
+                + " route runs: " + running);
         }
         finally
         {
@@ -186,8 +190,7 @@ public class testNoSetupEditWhileARouteRuns
 
             assertTrue(place != null && remove != null, "precondition: the menu on " + square + " lacks Place or Remove");
 
-            // A SETUP ITEM THAT IS LIVE AT REST: whether autonomy may choose a station, on the first that offers it
-            JMenuItem live = null;
+            // A SETUP CONTROL THAT IS LIVE AT REST: whether autonomy may choose a station, on the first with its window
             TileKey other = null;
 
             List<TileKey> stations = new ArrayList<>();
@@ -201,23 +204,25 @@ public class testNoSetupEditWhileARouteRuns
 
             for (TileKey candidate : stations)
             {
-                if (live != null) break;
-
                 SwingUtilities.invokeAndWait(() -> deep[0] = window.buildAutonomyTileMenu(candidate));
 
-                JMenuItem item = deep[0] == null ? null : itemCalled(deep[0], I18n.t("autosetup.ui.menuAutoDestination"));
-
-                if (item != null && item.isEnabled())
-                {
-                    live = item;
-                    other = candidate;
-                }
+                if (other == null && deep[0] != null) other = candidate;
             }
 
-            assertNotNull(live, "precondition: no station's setup menu offers whether autonomy may choose it, live");
+            assertNotNull(other, "precondition: no station has Station Settings");
 
-            final JMenuItem choose = live;
             final TileKey chosen = other;
+
+            SwingUtilities.invokeAndWait(() -> support.Components.withText(window.buildAutonomyTileMenu(chosen),
+                I18n.t("autosetup.ui.menuStationSettings")).doClick());
+
+            final org.traincontrol.gui.autonomyeditor.StationSettingsWindow settings =
+                support.StationDoors.showing(org.traincontrol.gui.autonomyeditor.StationSettingsWindow.class);
+
+            assertNotNull(settings, "precondition: Station Settings did not open");
+
+            final javax.swing.AbstractButton choose = support.StationDoors.part(settings, "station.fullAutonomy",
+                javax.swing.AbstractButton.class);
 
             final Layout railway = ui.getModel().getAutoLayout();
             final org.traincontrol.base.Locomotive placing = ui.getModel().getLocByName(active);
@@ -231,8 +236,7 @@ public class testNoSetupEditWhileARouteRuns
 
             try
             {
-                Object[][] clicks = {{"Place", place}, {"Remove", remove},
-                    {"a setup item (" + choose.getText() + ")", choose}};
+                Object[][] clicks = {{"Place", place}, {"Remove", remove}};
 
                 for (Object[] click : clicks)
                 {
@@ -250,6 +254,16 @@ public class testNoSetupEditWhileARouteRuns
                         + " not say why it did nothing: " + said);
                 }
 
+                // A window opened at rest, in the second before it notices the route
+                int fromWindow = answering.count();
+
+                SwingUtilities.invokeAndWait(() -> support.StationDoors.fireThoughGrayed(choose));
+
+                settle();
+
+                assertTrue(answering.since(fromWindow).contains(refusal), "Station Settings' control, offered at rest and"
+                    + " pressed while a route runs, did not say why it did nothing: " + answering.since(fromWindow));
+
                 assertEquals(railway.getLocomotiveLocation(placing), wasAt, "Place, clicked while a route runs, moved "
                     + active);
 
@@ -265,15 +279,14 @@ public class testNoSetupEditWhileARouteRuns
                 aRouteRuns(ui, false);
             }
 
-            // AT REST, the setup item does what it says - from a menu opened now, since the refused click left the old
-            // menu's tick turned
-            SwingUtilities.invokeAndWait(() -> deep[0] = window.buildAutonomyTileMenu(chosen));
+            // AT REST, the control does what it says
+            SwingUtilities.invokeAndWait(settings::toFront);
 
-            final JMenuItem again = itemCalled(deep[0], I18n.t("autosetup.ui.menuAutoDestination"));
+            assertTrue(support.Components.waitFor(() -> choose.isEnabled(), 5000), "the control stayed gray after the route");
 
             int from = answering.count();
 
-            SwingUtilities.invokeAndWait(again::doClick);
+            SwingUtilities.invokeAndWait(choose::doClick);
 
             settle();
 

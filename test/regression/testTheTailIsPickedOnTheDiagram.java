@@ -1763,11 +1763,18 @@ public class testTheTailIsPickedOnTheDiagram
     {
         javax.swing.JPopupMenu menu = rightClickMenu(square);
 
-        final javax.swing.JMenuItem item = itemNamed(menu, org.traincontrol.util.I18n.t("autosetup.ui.menuAutoDestination"));
+        final javax.swing.JMenuItem item = itemNamed(menu, org.traincontrol.util.I18n.t("autosetup.ui.menuStationSettings"));
 
-        assertNotNull(item, "the diagram's right-click on " + square + " has no Can Be Chosen in Full Autonomy item");
+        assertNotNull(item, "the diagram's right-click on " + square + " has no Station Settings item");
 
-        javax.swing.SwingUtilities.invokeLater(item::doClick);
+        javax.swing.SwingUtilities.invokeAndWait(item::doClick);
+
+        org.traincontrol.gui.autonomyeditor.StationSettingsWindow window =
+            support.StationDoors.showing(org.traincontrol.gui.autonomyeditor.StationSettingsWindow.class);
+
+        support.StationDoors.press(window, "station.fullAutonomy");
+
+        support.StationDoors.close(window);
 
         for (int turn = 0; turn < 6; turn++) javax.swing.SwingUtilities.invokeAndWait(() -> { });
     }

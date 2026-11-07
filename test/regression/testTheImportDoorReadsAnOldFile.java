@@ -3092,10 +3092,10 @@ public class testTheImportDoorReadsAnOldFile
     }
 
     /**
-     * No setup edit is made while trains run (Adam: *"There should be no setup edit possible during a run"*).  A
-     * diagram Autonomy Setup menu opened at rest and clicked after a run began is refused at the click, and said.
+     * No setup edit is made while trains run (Adam: *"There should be no setup edit possible during a run"*).  Station
+     * Settings, opened from the diagram's menu at rest and pressed after a run began, is refused at the press, and said.
      *
-     * MUTATION: let the menu's items write while trains run, and this fails.
+     * MUTATION: let the window's `act` write while trains run, and this fails.
      */
     @Test
     public void testASetupMenuOpenedAtRestRefusesOnceTrainsRun() throws Exception
@@ -3137,10 +3137,15 @@ public class testTheImportDoorReadsAnOldFile
 
             SwingUtilities.invokeAndWait(() -> menu[0] = ui[0].buildAutonomyTileMenu(at));
 
-            final javax.swing.JMenuItem choose = itemCalled(menu[0], I18n.t("autosetup.ui.menuAutoDestination"));
+            final javax.swing.JMenuItem opens = itemCalled(menu[0], I18n.t("autosetup.ui.menuStationSettings"));
 
-            assertNotNull(choose, "precondition: the setup menu of " + at + " has no item for whether autonomy may choose"
-                + " it");
+            assertNotNull(opens, "precondition: the setup menu of " + at + " has no Station Settings");
+
+            SwingUtilities.invokeAndWait(opens::doClick);
+
+            final javax.swing.AbstractButton choose = support.StationDoors.part(support.StationDoors.showing(
+                org.traincontrol.gui.autonomyeditor.StationSettingsWindow.class), "station.fullAutonomy",
+                javax.swing.AbstractButton.class);
 
             final boolean was = session.isAutoDestination(at);
 
@@ -3151,11 +3156,11 @@ public class testTheImportDoorReadsAnOldFile
             assertTrue(ui[0].getModel().isAutonomyRunning(), "precondition: autonomy does not read busy with " + dispatched[0]
                 + " under way");
 
-            List<String> asked = answeringYes(() -> choose.doClick());
+            List<String> asked = answeringYes(() -> support.StationDoors.fireThoughGrayed(choose));
 
             for (int turn = 0; turn < 6; turn++) SwingUtilities.invokeAndWait(() -> { });
 
-            assertEquals(session.isAutoDestination(at), was, "a setup menu opened at rest wrote the setup when clicked"
+            assertEquals(session.isAutoDestination(at), was, "a window opened at rest wrote the setup when pressed"
                 + " while " + dispatched[0] + " was under way - no setup edit is made during a run: " + asked);
 
             assertFalse((Boolean) declined.get(ui[0]), "a setup menu clicked during a run left an edit waiting against"
@@ -4105,7 +4110,7 @@ public class testTheImportDoorReadsAnOldFile
      * the layout's own order meets last.  It waits on a sensor nothing sets, so it stays under way holding every point
      * of its path.  Returns its name, where it set off, where it is bound, and the thread driving it.
      */
-    static Object[] dispatchATrain(TrainControlUI ui, String notThis) throws Exception
+    public static Object[] dispatchATrain(TrainControlUI ui, String notThis) throws Exception
     {
         final org.traincontrol.automation.Layout railway = ui.getModel().getAutoLayout();
 

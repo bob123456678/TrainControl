@@ -443,7 +443,7 @@ public class testTheRefusalsAreAskedAtTheDoors
         // elsewhere, so the places are named with the calls each makes.
         final Object[][] places =
         {
-            {"    void placeLocomotive(TileKey tile)", 1},
+            {"    void placeLocomotive(TileKey tile, String name)", 1},
             {"public static void commitAndRecord(GraphLocAssign edit)", 2},
             {"private LayoutRightclickAutonomyMenu(TrainControlUI ui,", 1},
             {"static String copyToPlaceOn(", 1},

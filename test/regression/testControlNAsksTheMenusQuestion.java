@@ -430,8 +430,8 @@ public class testControlNAsksTheMenusQuestion
     }
 
     /**
-     * Control+H offers a home exactly where the right-click menu does: only on a station, so the key cannot write a
-     * home onto a square that is not one.
+     * Control+H offers a home exactly where Station Settings does: only on a station, so the key cannot write a home onto
+     * a square that is not one.
      */
     @Test
     public void testControlHOffersAHomeOnlyWhereTheMenuDoes() throws Exception
@@ -453,34 +453,29 @@ public class testControlNAsksTheMenusQuestion
 
             AutonomyEditorPanel panel = new AutonomyEditorPanel(session, "main", () -> { });
 
-            // The control: a station, where the menu offers a home and so must the key.
-            javax.swing.JPopupMenu atTheStation = panel.buildTileMenu(station, null);
-
-            assertTrue(offersAHome(atTheStation), "precondition: the menu offers no home on the station at " + station
-                + ": " + itemNames(atTheStation));
+            // The control: a station, where the window offers a home and so must the key.
+            assertTrue(support.StationDoors.offeredInTheWindow(panel, station, "station.home"),
+                "precondition: the window offers no home on the station at " + station);
 
             assertTrue(keyOffers(panel, "offersAHome", station),
-                "Control+H offers no home on the station at " + station + ", where the menu does");
+                "Control+H offers no home on the station at " + station + ", where the window does");
 
-            // Plain track: no home on the menu, none from the key.
-            javax.swing.JPopupMenu onTrack = panel.buildTileMenu(track, null);
-
-            assertFalse(offersAHome(onTrack), "precondition: the menu offers a home on plain track: " + itemNames(onTrack));
+            // Plain track: no window, none from the key.
+            assertFalse(support.StationDoors.offeredInTheWindow(panel, track, "station.home"),
+                "precondition: the window offers a home on plain track");
 
             assertFalse(keyOffers(panel, "offersAHome", track),
-                "Control+H offers a home on the plain track at " + track + ", where the menu offers " + itemNames(onTrack)
+                "Control+H offers a home on the plain track at " + track
                 + " - a home written onto a square that is not a station (MFW-B1)");
 
-            // And the station on a page left out of autonomy: only the bulk tools on the menu.
+            // And the station on a page left out of autonomy: no window there.
             session.setPageExcluded("main", true);
 
-            javax.swing.JPopupMenu ignored = panel.buildTileMenu(station, null);
-
-            assertFalse(offersAHome(ignored), "precondition: the menu offers a home on an ignored square: " + itemNames(ignored));
+            assertFalse(support.StationDoors.offeredInTheWindow(panel, station, "station.home"),
+                "precondition: the window offers a home on an ignored square");
 
             assertFalse(keyOffers(panel, "offersAHome", station),
-                "Control+H offers a home on " + station + ", on a page left out of autonomy, where the menu offers "
-                + itemNames(ignored) + " (MFW-B1)");
+                "Control+H offers a home on " + station + ", on a page left out of autonomy (MFW-B1)");
         }
         finally
         {
@@ -712,22 +707,6 @@ public class testControlNAsksTheMenusQuestion
         }
 
         return (Boolean) asked.invoke(panel, tile);
-    }
-
-    private static boolean offersAHome(javax.swing.JPopupMenu menu)
-    {
-        String none = I18n.t("autosetup.ui.menuHomeNone");
-        String named = I18n.t("autosetup.ui.menuHomeFor");
-        String namedStart = named.contains("{0}") ? named.substring(0, named.indexOf("{0}")) : named;
-
-        for (String name : itemNames(menu))
-        {
-            if (name == null) continue;
-
-            if (name.equals(none) || (!namedStart.isEmpty() && name.startsWith(namedStart))) return true;
-        }
-
-        return false;
     }
 
     /** What the key acts on - public, so the two doors can be put side by side. */

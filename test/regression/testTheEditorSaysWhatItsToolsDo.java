@@ -65,47 +65,38 @@ public class testTheEditorSaysWhatItsToolsDo
     }
 
     /**
-     * The exit and entry guard items on a station's menu say what the two guards do (OB-293), each its OWN guard's
-     * text.
+     * The exit and entry guard rows of Station Settings say what the two guards do (OB-293), each its OWN guard's text.
      *
-     * MUTATION: leave either tooltip out, or give the two items each other's.
+     * MUTATION: leave either flyover out, or give the two rows each other's.
      */
     @Test
     public void testTheGuardItemsSayWhatTheGuardsDo() throws Exception
     {
         // "OCCUPIED", NOT "TAKEN" (MT-569)
-        assertTrue(I18n.t("autosetup.ui.tooltipExitGuard").contains("while this station is occupied")
-            && !I18n.t("autosetup.ui.tooltipExitGuard").contains("taken"), "the exit guard's tooltip does not say"
-            + " \"occupied\" (MT-569): " + I18n.t("autosetup.ui.tooltipExitGuard"));
+        assertTrue(I18n.t("autosetup.ui.flyExitNoneChange").contains("while this station is occupied")
+            && !I18n.t("autosetup.ui.flyExitNoneChange").contains("taken"), "the exit guard's flyover does not say"
+            + " \"occupied\" (MT-569): " + I18n.t("autosetup.ui.flyExitNoneChange"));
 
         final AutonomyEditorPanel panel = new AutonomyEditorPanel(session, "main", () -> { });
 
-        final javax.swing.JPopupMenu[] menu = new javax.swing.JPopupMenu[1];
+        final org.traincontrol.gui.autonomyeditor.StationSettingsWindow window = support.StationDoors.open(panel, EMPTY);
 
-        javax.swing.SwingUtilities.invokeAndWait(() ->
-            menu[0] = panel.buildTileMenu(EMPTY, session.getGraph().getTiles().get(EMPTY)));
-
-        String[][] items = {{"autosetup.ui.menuPairSignal", "autosetup.ui.tooltipExitGuard"},
-            {"autosetup.ui.menuPairEntrySignal", "autosetup.ui.tooltipEntryGuard"}};
+        String[][] items = {{"exitGuard", "autosetup.ui.flyExitNoneChange"}, {"entryGuard", "autosetup.ui.flyEntryNoneChange"}};
 
         for (String[] pair : items)
         {
             String key = pair[0];
 
-            javax.swing.JMenuItem item = find(menu[0], I18n.t(key));
+            String tip = window.flyoverForTest(key);
 
-            assertNotNull(item, "precondition: a station's menu has no " + I18n.t(key));
-
-            String tip = item.getToolTipText();
-
-            assertTrue(tip != null && !tip.replaceAll("<[^>]*>", "").trim().isEmpty(), I18n.t(key) + " has no tooltip -"
+            assertTrue(tip != null && !tip.replaceAll("<[^>]*>", "").trim().isEmpty(), key + " has no flyover -"
                 + " Adam, OB-293: \"add brief tooltips on what entry guards and exit guards are\"");
 
             // ITS OWN GUARD'S TEXT, read past the wrapping.
             String said = tip.replaceAll("<[^>]*>", " ").replace("&nbsp;", " ").replaceAll("\\s+", " ").trim();
             String own = I18n.t(pair[1]).replaceAll("\\s+", " ").trim();
 
-            assertTrue(said.startsWith(own.substring(0, Math.min(40, own.length()))), I18n.t(key) + " says what the"
+            assertTrue(said.contains(own.substring(0, Math.min(40, own.length()))), key + " says what the"
                 + " other guard does, or something else: " + said);
         }
     }
@@ -426,7 +417,7 @@ public class testTheEditorSaysWhatItsToolsDo
         {
             final String title = I18n.t("autosetup.ui.menuPairEntrySignal");
 
-            javax.swing.JDialog window = openTheGuardWindow(panel, SIGNALLED, title, title);
+            javax.swing.JDialog window = openTheGuardWindow(panel, SIGNALLED, title);
 
             clickOnTheDiagram(window, title);
 
@@ -487,7 +478,7 @@ public class testTheEditorSaysWhatItsToolsDo
         {
             final String title = I18n.t("autosetup.ui.menuPairSignal");
 
-            javax.swing.JDialog window = openTheGuardWindow(panel, SIGNALLED, labelOf(panel, his, SIGNALLED, false), title);
+            javax.swing.JDialog window = openTheGuardWindow(panel, SIGNALLED, title);
 
             final javax.swing.AbstractButton byAddress = buttonIn(window, I18n.t("autosetup.ui.optionSignalAddress"));
 
@@ -567,31 +558,16 @@ public class testTheEditorSaysWhatItsToolsDo
         return his;
     }
 
-    /** The station's guard item as its menu labels it now, with what is paired so far. */
-    private static String labelOf(AutonomyEditorPanel panel, AutonomySession his, TileKey station, boolean entry)
-        throws Exception
-    {
-        java.util.List<TileKey> paired = entry ? his.getEntrySignals(station) : his.getProtectingSignals(station);
-
-        if (paired.isEmpty()) return I18n.t(entry ? "autosetup.ui.menuPairEntrySignal" : "autosetup.ui.menuPairSignal");
-
-        return I18n.f(paired.size() == 1
-            ? (entry ? "autosetup.ui.menuPairedEntrySignal" : "autosetup.ui.menuPairedSignal")
-            : (entry ? "autosetup.ui.menuPairedEntrySignals" : "autosetup.ui.menuPairedSignals"),
-            addressesOf(panel, paired));
-    }
-
-    /** The station's menu item labeled so, clicked, and the guard window titled so that it opens. */
+    /** The station's window, its guard row's pencil pressed, and the guard window titled so that it opens. */
     private static javax.swing.JDialog openTheGuardWindow(final AutonomyEditorPanel panel, final TileKey station,
-        final String label, String title) throws Exception
+        String title) throws Exception
     {
-        final javax.swing.JMenuItem[] item = new javax.swing.JMenuItem[1];
+        final org.traincontrol.gui.autonomyeditor.StationSettingsWindow settings = support.StationDoors.open(panel, station);
 
-        javax.swing.SwingUtilities.invokeAndWait(() -> item[0] = itemNamed(panel.buildTileMenu(station, null), label));
+        boolean entry = title.equals(I18n.t("autosetup.ui.menuPairEntrySignal"));
 
-        assertNotNull(item[0], "the station's menu has no " + label + " item");
-
-        javax.swing.SwingUtilities.invokeLater(item[0]::doClick);
+        support.Components.press(support.StationDoors.part(settings, entry ? "station.entryGuardChange"
+            : "station.exitGuardChange", javax.swing.AbstractButton.class));
 
         return awaitWindowTitled(title, null);
     }
@@ -791,7 +767,7 @@ public class testTheEditorSaysWhatItsToolsDo
         // THE WINDOW'S TITLE is the item's name with nothing paired, whatever the item's label now says.
         final String title = I18n.t(entry ? "autosetup.ui.menuPairEntrySignal" : "autosetup.ui.menuPairSignal");
 
-        javax.swing.JDialog window = openTheGuardWindow(panel, station, labelOf(panel, his, station, entry), title);
+        javax.swing.JDialog window = openTheGuardWindow(panel, station, title);
 
         clickOnTheDiagram(window, title);
 
