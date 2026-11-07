@@ -83,8 +83,8 @@ public class testLocomotiveAddressRules
     }
 
     /**
-     * The dialog asks the rule above rather than restating it: the original defect was in `AddLocomotive`'s own copy,
-     * which no other test here calls.
+     * Add Locomotive asks the rule above rather than restating it: the original defect was in its dialog's own copy,
+     * which no other test here calls.  Its Add is `LocomotiveActions.addLocomotive` now (FR-179).
      *
      * MUTATION: replace the call this checks for with the three-`if` copy the class javadoc describes; address 0 is
      * accepted again for every decoder type this dialog offers.
@@ -93,12 +93,12 @@ public class testLocomotiveAddressRules
     public void testTheDialogAsksTheRuleRatherThanRestatingIt() throws Exception
     {
         String body = SourceOf.withoutComments(SourceOf.declaration(
-            "private void AddLocButtonActionPerformed(java.awt.event.ActionEvent evt)"));
+            "    Locomotive addLocomotive(Component source, String locName, String typedAddress, decoderType type)"));
 
         int validated = body.indexOf("validateNewAddress(");
 
         assertTrue(validated >= 0,
-            "AddLocomotive no longer calls validateNewAddress at all - either the shared rule has gone "
+            "Add Locomotive no longer calls validateNewAddress at all - either the shared rule has gone "
             + "and each decoder's range is being restated here again, or it has been renamed and this "
             + "scan needs updating either way");
 

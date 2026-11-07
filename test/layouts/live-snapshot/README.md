@@ -194,3 +194,4 @@ not fix it. Name the square.
 - `core.testStandingRulesAnswerAsTheDoorsDo`
 - `ui.testPageLinksGoByPageId`
 - `regression.testTheAutonomyTabSavesWhatTheDialogDid`
+- `ui.testTheLocomotiveSettingsAutonomyTab`

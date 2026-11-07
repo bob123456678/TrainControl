@@ -1,10 +1,6 @@
 package ui;
 
-import java.lang.reflect.Field;
 import java.util.List;
-import javax.swing.JButton;
-import javax.swing.JRadioButton;
-import javax.swing.JTextField;
 import javax.swing.SwingUtilities;
 import static org.testng.Assert.*;
 import org.testng.SkipException;
@@ -13,15 +9,14 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 import org.traincontrol.base.Locomotive;
 import org.traincontrol.gui.TrainControlUI;
-import org.traincontrol.gui.locomotive.AddLocomotive;
 import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.util.I18n;
 import support.Answering;
 import support.Components;
 
 /**
- * A typed locomotive address is read the same way at its three doors: Add Locomotive's Add, its Check Duplicates, and the
- * Locomotive Settings window's Save.  "0x" means hex for an MFX decoder and is not a number for any other.
+ * A typed locomotive address is read the same way at its three doors, all in the Locomotive Settings window: Add
+ * Locomotive's Add, Check Duplicates, and Save.  "0x" means hex for an MFX decoder and is not a number for any other.
  */
 public class testATypedAddressIsReadTheSameAtEveryDoor
 {
@@ -160,47 +155,48 @@ public class testATypedAddressIsReadTheSameAtEveryDoor
     }
 
     /**
-     * Types into the Add Locomotive dialog and presses Add.
+     * Types into Add Locomotive and presses Add.
      */
     private static List<String> add(String name, String address, boolean mfx) throws Exception
     {
-        return typeAndPress(name, address, mfx, "AddLocButton", "Add said nothing");
+        return typeAndPress(name, address, mfx, "settings.save", "Add said nothing");
     }
 
     /**
-     * Types into the Add Locomotive dialog and presses Check Duplicates.
+     * Types into Add Locomotive and presses Check Duplicates.
      */
     private static List<String> check(String address, boolean mfx) throws Exception
     {
-        return typeAndPress(null, address, mfx, "checkDuplicates", "Check Duplicates said nothing");
+        return typeAndPress(null, address, mfx, "settings.checkDuplicates", "Check Duplicates said nothing");
     }
 
     /** Types the name (unless null) and the address into Add Locomotive, presses the button, gives what was asked. */
     private static List<String> typeAndPress(String name, String address, boolean mfx, String pressed, String silent)
         throws Exception
     {
-        final AddLocomotive dialog = Components.onTheEventThread(() -> new AddLocomotive(model, ui));
+        assertTrue(Components.onTheEventThread(ui::openAddLocomotive), "Add Locomotive did not open");
+        assertNotNull(support.SettingsWindow.awaited(), "Add Locomotive is not on screen");
 
         try (Answering answering = Answering.start(message -> null))
         {
-            Components.onTheEventThread(() ->
-            {
-                if (name != null) text(dialog, "LocNameInput").setText(name);
+            if (name != null) support.SettingsWindow.type("settings.name", name);
 
-                text(dialog, "LocAddressInput").setText(address);
-                radio(dialog, mfx ? "LocTypeMFX" : "LocTypeDCC").setSelected(true);
-                button(dialog, pressed).doClick();
+            support.SettingsWindow.type("settings.address", address);
 
-                return null;
-            });
+            Components.select(support.SettingsWindow.part("settings.decoder", javax.swing.JComboBox.class),
+                mfx ? Locomotive.decoderType.MFX : Locomotive.decoderType.DCC);
+
+            Components.press(support.SettingsWindow.part(pressed, javax.swing.JButton.class));
 
             assertTrue(answering.awaitAsked(1, WAIT), silent);
+
+            Components.settle();
 
             return answering.asked();
         }
         finally
         {
-            SwingUtilities.invokeAndWait(dialog::dispose);
+            support.SettingsWindow.closeIfOpen();
         }
     }
 
@@ -234,36 +230,5 @@ public class testATypedAddressIsReadTheSameAtEveryDoor
     private static List<String> one(String key)
     {
         return java.util.Collections.singletonList(I18n.t(key));
-    }
-
-    private static JTextField text(java.awt.Component owner, String field)
-    {
-        return (JTextField) fieldOf(owner, field);
-    }
-
-    private static JRadioButton radio(java.awt.Component owner, String field)
-    {
-        return (JRadioButton) fieldOf(owner, field);
-    }
-
-    private static JButton button(java.awt.Component owner, String field)
-    {
-        return (JButton) fieldOf(owner, field);
-    }
-
-    private static Object fieldOf(Object owner, String name)
-    {
-        try
-        {
-            Field f = owner.getClass().getDeclaredField(name);
-
-            f.setAccessible(true);
-
-            return f.get(owner);
-        }
-        catch (ReflectiveOperationException e)
-        {
-            throw new IllegalStateException(e);
-        }
     }
 }

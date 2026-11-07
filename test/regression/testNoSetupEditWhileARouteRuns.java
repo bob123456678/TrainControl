@@ -87,16 +87,11 @@ public class testNoSetupEditWhileARouteRuns
 
             SwingUtilities.invokeAndWait(() -> facing[0] = window.buildAutonomyFacingMenu(square));
 
-            java.lang.reflect.Method label = Class.forName("org.traincontrol.gui.GraphLocAssign")
-                .getDeclaredMethod("menuLabelFor", Point.class);
-
-            label.setAccessible(true);
-
             Map<String, String> setupItems = new java.util.LinkedHashMap<>();
 
             setupItems.put("Place", I18n.f("layout.ui.menuPlaceLocomotive", active));
             setupItems.put("Remove", I18n.f("layout.ui.menuRemoveLocomotive", train));
-            setupItems.put("Edit Locomotive", (String) label.invoke(null, standing));
+            setupItems.put("Edit Locomotive", I18n.t("autolayout.ui.labelEditLocomotiveAt"));
             setupItems.put("Is Active", I18n.f("autolayout.ui.menuLocomotiveActive", train));
             setupItems.put("Segment Length", I18n.t("autosetup.ui.menuSetLength"));
 

@@ -402,7 +402,7 @@ public final class LocomotiveSelector extends javax.swing.JFrame
     private void addLocomotiveActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_addLocomotiveActionPerformed
         javax.swing.SwingUtilities.invokeLater(() ->
         {
-            this.parent.getLocAdder().setVisible(true);
+            this.parent.openAddLocomotive();
 
             // this.toBack();
             // this.parent.showTab("Tools");

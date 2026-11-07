@@ -36,8 +36,9 @@ import org.traincontrol.util.I18n;
 
 /**
  * The Locomotive Settings window (FR-048): one non-modal window, reused, for a locomotive's name, address and picture,
- * its functions, its notes and its multi-unit.  Everything waits for Save except the picture's overlay icons, which
- * apply at once.  A locomotive that cannot be edited now cannot be saved (see {@link LocomotiveSettings}).
+ * its functions, its notes, its multi-unit and what autonomy needs of it; and Add Locomotive's (FR-179), the first tab
+ * alone with Add for Save.  Everything waits for Save except the picture's overlay icons, which apply at once.  A
+ * locomotive that cannot be edited now cannot be saved (see {@link LocomotiveSettings}).
  */
 public class LocomotiveSettingsFrame extends javax.swing.JFrame
 {
@@ -50,7 +51,7 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
     /** The tabs, in order. */
     public enum Tab
     {
-        LOCOMOTIVE, FUNCTIONS, NOTES, MULTI_UNIT
+        LOCOMOTIVE, FUNCTIONS, NOTES, MULTI_UNIT, AUTONOMY
     }
 
     private static final Font BUTTON_FONT = new Font("Segoe UI", Font.BOLD, 12);
@@ -77,7 +78,11 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
     private LocomotiveFunctionsTab functionsTab;
     private NotesTab notesTab;
     private MultiUnitTab multiUnitTab;
+    private AutonomyTab autonomyTab;
     private boolean blocked;
+
+    /** Whether the window is Add Locomotive's: no locomotive yet, the first tab alone and Add for Save. */
+    private boolean adding;
 
     /** Asks the rule again every second while the window is open: a run starting or stopping raises no single event. */
     private final javax.swing.Timer watch = new javax.swing.Timer(1000, e -> refresh());
@@ -166,10 +171,11 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
      */
     boolean aim(Locomotive l, Tab tab, Integer function)
     {
-        if (loc != null && loc != l && isDirty() && !settleUnsaved()) return false;
+        if ((adding || loc != null && loc != l) && isDirty() && !settleUnsaved()) return false;
 
-        if (loc != l)
+        if (adding || loc != l)
         {
+            adding = false;
             loc = l;
 
             build();
@@ -186,31 +192,67 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
         return true;
     }
 
+    /**
+     * Points the window at a locomotive still to be made, with blank fields; asks first when there is something typed.
+     *
+     * @return false when the operator canceled the question about unsaved changes
+     */
+    boolean aimAtANewLocomotive()
+    {
+        if (isDirty() && !settleUnsaved()) return false;
+
+        loc = null;
+        adding = true;
+
+        build();
+
+        watch.start();
+
+        refresh();
+
+        return true;
+    }
+
     /** @return the locomotive the window is showing, or null */
     public Locomotive getLocomotive()
     {
         return loc;
     }
 
-    /** Builds the four tabs afresh from the locomotive. */
+    /** Builds the tabs afresh from the locomotive, or the first tab alone for one still to be made. */
     private void build()
     {
         tabs.removeAll();
 
         locomotiveTab = new LocomotiveTab();
+        locomotiveTab.setBorder(BorderFactory.createEmptyBorder(PAD, PAD, PAD, PAD));
+        tabs.addTab(I18n.t("loc.ui.settingsTabLocomotive"), TabIcons.locomotive(), locomotiveTab);
+
+        save.setText(I18n.t(adding ? "ui.add" : "loc.ui.settingsSave"));
+
+        if (adding)
+        {
+            setTitle(I18n.t("loc.ui.addLocomotive"));
+            strip.setVisible(false);
+            fit();
+
+            return;
+        }
+
         functionsTab = new LocomotiveFunctionsTab(main, loc, this::changed);
         notesTab = new NotesTab();
         multiUnitTab = new MultiUnitTab();
+        autonomyTab = new AutonomyTab();
 
-        for (JPanel tab : new JPanel[] { locomotiveTab, functionsTab, notesTab, multiUnitTab })
+        for (JPanel tab : new JPanel[] { functionsTab, notesTab, multiUnitTab, autonomyTab })
         {
             tab.setBorder(BorderFactory.createEmptyBorder(PAD, PAD, PAD, PAD));
         }
 
-        tabs.addTab(I18n.t("loc.ui.settingsTabLocomotive"), TabIcons.locomotive(), locomotiveTab);
         tabs.addTab(I18n.t("loc.ui.settingsTabFunctions"), TabIcons.functions(), functionsTab);
         tabs.addTab(I18n.t("loc.ui.settingsTabNotes"), TabIcons.notes(), notesTab);
         tabs.addTab(I18n.t("loc.ui.settingsTabMultiUnit"), TabIcons.multiUnit(), multiUnitTab);
+        tabs.addTab(I18n.t("loc.ui.settingsTabAutonomy"), TabIcons.autonomy(), autonomyTab);
 
         setTitle(I18n.f("loc.ui.settingsTitle", loc.getName()));
 
@@ -221,6 +263,11 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
 
         strip.setVisible(reason != null);
 
+        fit();
+    }
+
+    private void fit()
+    {
         boolean first = !isVisible();
 
         pack();
@@ -231,6 +278,13 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
     /** Re-reads the moving rule and the locomotive: the window is told whenever either may have changed. */
     void refresh()
     {
+        if (adding)
+        {
+            changed();
+
+            return;
+        }
+
         if (loc == null) return;
 
         String reason = LocomotiveSettings.stripFor(main, loc);
@@ -257,13 +311,16 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
     /** Whether the window is showing anything the operator has typed and not saved. */
     boolean isDirty()
     {
+        if (adding) return locomotiveTab.isDirty();
+
         return locomotiveTab != null && (locomotiveTab.isDirty() || functionsTab.isDirty() || notesTab.panel.isDirty()
-            || multiUnitTab.isDirty());
+            || multiUnitTab.isDirty() || autonomyTab.isDirty());
     }
 
     private void changed()
     {
-        save.setEnabled(isDirty() && !blocked);
+        // Add is always pressable: a blank name is refused with today's message
+        save.setEnabled(adding || isDirty() && !blocked);
     }
 
     /** The X and Escape: closes, asking first what to do with typing that is not saved. */
@@ -278,6 +335,7 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
     void close()
     {
         loc = null;
+        adding = false;
         dispose();
     }
 
@@ -321,7 +379,8 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
         {
             Object[] options = { I18n.t("loc.ui.settingsSave"), I18n.t("loc.ui.settingsDiscard"), I18n.t("ui.cancel") };
 
-            answer = JOptionPane.showOptionDialog(this, I18n.f("loc.ui.settingsUnsaved", loc.getName()),
+            answer = JOptionPane.showOptionDialog(this, I18n.f("loc.ui.settingsUnsaved",
+                adding ? I18n.t("loc.ui.addLocomotive") : loc.getName()),
                 I18n.t("route.ui.titleDiscardChanges"), JOptionPane.YES_NO_CANCEL_OPTION, JOptionPane.QUESTION_MESSAGE,
                 null, options, options[2]);
         }
@@ -331,10 +390,30 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
         return answer == 1;
     }
 
-    /** Save: writes, and closes when it went through. */
+    /** Save: writes, and closes when it went through.  Add stays open, on the locomotive it made. */
     void save()
     {
+        if (adding)
+        {
+            add();
+
+            return;
+        }
+
         if (write()) close();
+    }
+
+    /** Makes the locomotive typed on the first tab, and shows it with all its tabs. */
+    private boolean add()
+    {
+        Locomotive made = main.locomotiveActions.addLocomotive(this, locomotiveTab.name.getText(),
+            locomotiveTab.address.getText(), (decoderType) locomotiveTab.decoder.getSelectedItem());
+
+        if (made == null) return false;
+
+        adding = false;
+
+        return aim(made, Tab.LOCOMOTIVE, null);
     }
 
     /**
@@ -346,6 +425,8 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
      */
     boolean write()
     {
+        if (adding) return add();
+
         if (loc == null) return false;
 
         stopEditing();
@@ -355,6 +436,9 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
             refresh();
             return false;
         }
+
+        // The Autonomy tab writes into the setup, which no edit touches during a run
+        if (autonomyTab.isDirty() && main.refuseWhileARunHoldsTheSetup(this)) return false;
 
         boolean identity = locomotiveTab.identityChanged();
         boolean members = multiUnitTab.isDirty();
@@ -411,6 +495,8 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
 
         if (notesTab.panel.isDirty()) notesTab.panel.apply(loc);
 
+        if (autonomyTab.isDirty()) autonomyTab.apply();
+
         if (members && !main.locomotiveActions.applyLinkedLocomotives(this, loc, multiUnitTab.chosen())) return false;
 
         return true;
@@ -429,11 +515,16 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
         return UiStyle.label(text);
     }
 
-    /** The first tab: picture, name, decoder, address and preset speed, with the trash can. */
+    /**
+     * The first tab: picture, name, decoder, address and preset speed, with the trash can and Check Duplicates.  For a
+     * locomotive still to be made, the name, the decoders Add Locomotive offers and the address alone.
+     */
     private final class LocomotiveTab extends JPanel
     {
         final JTextField name = new JTextField(16);
-        final JComboBox<decoderType> decoder = new JComboBox<>(decoderType.values());
+        final JComboBox<decoderType> decoder = new JComboBox<>(adding
+            ? new decoderType[] { decoderType.MFX, decoderType.MM2, decoderType.DCC } : decoderType.values());
+        final JButton checkDuplicates = new JButton(I18n.t("ui.checkDuplicates"));
         final JTextField address = new JTextField(16);
         final JSpinner speed = new JSpinner(new SpinnerNumberModel(0, 0, 100, 1));
         final JLabel sameAddress = new JLabel();
@@ -443,10 +534,12 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
         final JLabel crop = new JLabel(new LocIconActions.CropMark());
         final JLabel revert = new JLabel(new LocIconActions.RevertMark());
 
-        private final String loadedName = loc.getName();
-        private final String loadedAddress = Integer.toString(loc.getAddress());
-        private final decoderType loadedDecoder = loc.getDecoderType();
-        private final int loadedSpeed = loc.getPreferredSpeed();
+        private final String loadedName = adding ? "" : loc.getName();
+        private final String loadedAddress = adding ? "" : Integer.toString(loc.getAddress());
+
+        // DCC is what Add Locomotive started on
+        private final decoderType loadedDecoder = adding ? decoderType.DCC : loc.getDecoderType();
+        private final int loadedSpeed = adding ? 0 : loc.getPreferredSpeed();
         private String shownPicture = "";
 
         LocomotiveTab()
@@ -471,6 +564,7 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
             });
 
             name.setName("settings.name");
+            checkDuplicates.setName("settings.checkDuplicates");
             decoder.setName("settings.decoder");
             address.setName("settings.address");
             speed.setName("settings.speed");
@@ -503,6 +597,25 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
             });
             decoder.addActionListener(e -> typed());
             speed.addChangeListener(e -> typed());
+
+            // Add Locomotive's limit on a new name; a rename is refused at Save instead
+            if (adding)
+            {
+                name.addKeyListener(new java.awt.event.KeyAdapter()
+                {
+                    @Override
+                    public void keyReleased(KeyEvent e)
+                    {
+                        TrainControlUI.limitLength(e, TrainControlUI.MAX_LOC_NAME_DATABASE);
+                    }
+                });
+            }
+
+            checkDuplicates.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+            checkDuplicates.putClientProperty("JButton.buttonType", "toolBarButton");
+            checkDuplicates.setFocusable(false);
+            checkDuplicates.addActionListener(e -> main.locomotiveActions.checkDuplicates(LocomotiveSettingsFrame.this,
+                address.getText(), (decoderType) decoder.getSelectedItem(), loc));
 
             // The picture and the marks that change it, which apply at once.
             picture.setPreferredSize(new Dimension(PICTURE_WIDTH, PICTURE_HEIGHT));
@@ -546,18 +659,21 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
             add(UiStyle.heading(I18n.t("loc.ui.settingsNameAndAddress")), gbc);
             gbc.gridwidth = 1;
 
-            // The picture's heading starts where the picture does
-            gbc.gridx = 3;
-            gbc.insets = new Insets(4, 6, 4, 4);
-            gbc.anchor = GridBagConstraints.NORTHWEST;
-            add(UiStyle.heading(I18n.t("loc.ui.settingsLocomotiveIcon")), gbc);
+            if (!adding)
+            {
+                // The picture's heading starts where the picture does
+                gbc.gridx = 3;
+                gbc.insets = new Insets(4, 6, 4, 4);
+                gbc.anchor = GridBagConstraints.NORTHWEST;
+                add(UiStyle.heading(I18n.t("loc.ui.settingsLocomotiveIcon")), gbc);
 
-            gbc.gridy = 1;
-            gbc.gridheight = 9;
-            add(picture, gbc);
+                gbc.gridy = 1;
+                gbc.gridheight = 9;
+                add(picture, gbc);
 
-            gbc.gridheight = 1;
-            gbc.anchor = GridBagConstraints.WEST;
+                gbc.gridheight = 1;
+                gbc.anchor = GridBagConstraints.WEST;
+            }
 
             JComponent[] fields = { name, decoder, address };
             String[] labels = { "ui.name", "loc.ui.decoderType", "layout.ui.address" };
@@ -579,14 +695,34 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
             gbc.fill = GridBagConstraints.NONE;
             gbc.gridx = 1;
             gbc.gridy = 4;
-            add(sameAddress, gbc);
+
+            // Check Duplicates and the warning share the row under the address
+            JPanel under = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+            under.setOpaque(false);
+            under.add(checkDuplicates);
+            under.add(javax.swing.Box.createHorizontalStrut(4));
+            under.add(InfoMark.label(I18n.t("loc.ui.settingsCheckDuplicatesHint")));
+            under.add(javax.swing.Box.createHorizontalStrut(10));
+            under.add(sameAddress);
+            add(under, gbc);
+
+            if (adding)
+            {
+                gbc.gridy = 5;
+                gbc.weighty = 1;
+                add(new JLabel(), gbc);
+
+                warnAboutTheSameAddress();
+
+                return;
+            }
 
             gbc.gridx = 0;
             gbc.gridy = 6;
             gbc.gridwidth = 2;
             gbc.fill = GridBagConstraints.HORIZONTAL;
             // The row above holds the warning line, so the bottom inset carries its height
-            gbc.insets = new Insets(6, 4, 14 + sameAddress.getPreferredSize().height, 6);
+            gbc.insets = new Insets(6, 4, 14 + under.getPreferredSize().height, 6);
             add(new javax.swing.JSeparator(), gbc);
             gbc.gridwidth = 1;
             gbc.fill = GridBagConstraints.NONE;
@@ -868,6 +1004,180 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
         java.util.Map<String, Double> chosen()
         {
             return members == null ? new java.util.HashMap<>() : members.chosen();
+        }
+    }
+
+    /**
+     * The fifth tab: what autonomy needs to know of the train.  A setup that
+     * keeps its own copy of a standing train has that copy changed too, or the next load would undo the Save.
+     */
+    private final class AutonomyTab extends JPanel
+    {
+        private final int loadedLength = loc.getTrainLength() == null ? 0 : loc.getTrainLength();
+        private final boolean loadedReversible = loc.isReversible();
+        private final Integer loadedDeparture = loc.getDepartureFunc();
+        private final Integer loadedArrival = loc.getArrivalFunc();
+        private final boolean loadedActive = !loc.isAutonomyPaused();
+
+        final JSpinner length = new JSpinner(new SpinnerNumberModel(loadedLength, 0,
+            Math.max(TrainControlUI.ROUTE_TRAIN_LENGTH_MAX, loadedLength), 1));
+        final javax.swing.JCheckBox reversible = new javax.swing.JCheckBox(I18n.t("loc.ui.settingsReversibleBox"));
+        final javax.swing.JCheckBox active = new javax.swing.JCheckBox(I18n.t("autosetup.ui.trainMayBeMoved"));
+        final JComboBox<String> departure = functionChoices(loadedDeparture);
+        final JComboBox<String> arrival = functionChoices(loadedArrival);
+
+        AutonomyTab()
+        {
+            super(new GridBagLayout());
+
+            length.setName("autonomy.length");
+            reversible.setName("autonomy.reversible");
+            active.setName("autonomy.active");
+            departure.setName("autonomy.departure");
+            arrival.setName("autonomy.arrival");
+
+            reversible.setSelected(loadedReversible);
+            active.setSelected(loadedActive);
+
+            Font regular = new Font("Segoe UI", Font.PLAIN, 14);
+
+            reversible.setFont(regular);
+            active.setFont(regular);
+
+            length.addChangeListener(e -> changed());
+            reversible.addItemListener(e -> changed());
+            active.addItemListener(e -> changed());
+            departure.addActionListener(e -> changed());
+            arrival.addActionListener(e -> changed());
+
+            GridBagConstraints gbc = new GridBagConstraints();
+            gbc.anchor = GridBagConstraints.WEST;
+
+            int y = 0;
+
+            y = heading(gbc, y, "loc.ui.settingsAutonomyHeading");
+            y = row(gbc, y, "autolayout.ui.trainLength", length, "loc.ui.settingsTrainLengthHint");
+            y = row(gbc, y, "autolayout.ui.reversible", reversible, "loc.ui.settingsReversibleHint");
+            y = row(gbc, y, "autosetup.ui.trainActive", active, "autolayout.ui.hintLocomotiveActive");
+            y = heading(gbc, y, "loc.ui.settingsAutonomyFunctionsHeading");
+            y = row(gbc, y, "autolayout.ui.departureFunction", departure, "loc.ui.settingsDepartureHint");
+            y = row(gbc, y, "autolayout.ui.arrivalFunction", arrival, "loc.ui.settingsArrivalHint");
+
+            // The rest of the tab, right and below
+            gbc.gridx = 3;
+            gbc.gridy = y;
+            gbc.weightx = 1;
+            gbc.weighty = 1;
+            add(new JLabel(), gbc);
+        }
+
+        private int heading(GridBagConstraints gbc, int y, String key)
+        {
+            gbc.gridx = 0;
+            gbc.gridy = y;
+            gbc.gridwidth = 3;
+            gbc.insets = new Insets(y == 0 ? 4 : 14, 4, 4, 6);
+            add(UiStyle.heading(I18n.t(key)), gbc);
+            gbc.gridwidth = 1;
+
+            return y + 1;
+        }
+
+        private int row(GridBagConstraints gbc, int y, String label, JComponent field, String hint)
+        {
+            gbc.gridy = y;
+            gbc.gridx = 0;
+            gbc.insets = new Insets(4, 4, 4, 12);
+            add(label(I18n.t(label)), gbc);
+            gbc.gridx = 1;
+            gbc.insets = new Insets(4, 4, 4, 6);
+            add(field, gbc);
+            gbc.gridx = 2;
+            add(InfoMark.label(I18n.t(hint)), gbc);
+
+            return y + 1;
+        }
+
+        /** None, then F0 up to the last function, and to the one set if it lies beyond. */
+        private JComboBox<String> functionChoices(Integer set)
+        {
+            int count = Math.max(loc.getNumF(), set == null ? 0 : set + 1);
+
+            String[] items = new String[count + 1];
+
+            items[0] = I18n.t("autosetup.ui.labelNone");
+
+            for (int i = 0; i < count; i++) items[i + 1] = "F" + i;
+
+            JComboBox<String> out = new JComboBox<>(items);
+
+            out.setSelectedIndex(set == null ? 0 : set + 1);
+
+            return out;
+        }
+
+        private Integer function(JComboBox<String> box)
+        {
+            return box.getSelectedIndex() <= 0 ? null : box.getSelectedIndex() - 1;
+        }
+
+        private int lengthValue()
+        {
+            return ((Number) length.getValue()).intValue();
+        }
+
+        boolean isDirty()
+        {
+            return lengthValue() != loadedLength || reversible.isSelected() != loadedReversible
+                || !java.util.Objects.equals(function(departure), loadedDeparture)
+                || !java.util.Objects.equals(function(arrival), loadedArrival) || active.isSelected() != loadedActive;
+        }
+
+        /** Writes what changed onto the train, and into the setup's copies of it under `Point.toJSON`'s keys. */
+        void apply()
+        {
+            java.util.Map<String, Object> stored = new java.util.LinkedHashMap<>();
+
+            if (lengthValue() != loadedLength)
+            {
+                main.applyTrainLength(loc, lengthValue());
+
+                stored.put("trainLength", lengthValue() > 0 ? (Object) lengthValue() : null);
+            }
+
+            if (reversible.isSelected() != loadedReversible)
+            {
+                loc.setReversible(reversible.isSelected());
+
+                stored.put("reversible", reversible.isSelected());
+            }
+
+            if (!java.util.Objects.equals(function(departure), loadedDeparture))
+            {
+                loc.setDepartureFunc(function(departure));
+
+                stored.put("departureFunc", function(departure));
+            }
+
+            if (!java.util.Objects.equals(function(arrival), loadedArrival))
+            {
+                loc.setArrivalFunc(function(arrival));
+
+                stored.put("arrivalFunc", function(arrival));
+            }
+
+            org.traincontrol.automation.Layout railway = main.getModel().getAutoLayoutIfLoaded();
+
+            if (railway != null) railway.applyDefaultLocCallbacks(loc);
+
+            main.recordInTheSetup(loc, stored);
+
+            if (active.isSelected() != loadedActive)
+            {
+                main.setLocomotiveActive(main.getAutonomySession(), loc, active.isSelected());
+            }
+
+            main.repaintAutoLocList(false);
         }
     }
 

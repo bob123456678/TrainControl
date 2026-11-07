@@ -3,26 +3,26 @@ package regression;
 import javax.swing.SwingUtilities;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
+import static org.testng.Assert.assertTrue;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
-import org.traincontrol.automation.Layout;
 import org.traincontrol.automationui.AutonomySession;
 import org.traincontrol.automationui.TileGraph.TileKey;
 import org.traincontrol.base.Locomotive;
+import org.traincontrol.gui.LocomotiveSettingsFrame;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;
-import org.traincontrol.util.I18n;
-import support.Answering;
 import support.Components;
 
 /**
  * Adam's rule for FR-048, "make sure behavior is unchanged" for autonomy configs and file reads: the station dialog
- * (`GraphLocAssign`) retires, and a train's length, reversible flag and functions set through its successor leave the
- * saved setup, and the train after a reload, as they are when the same values are written straight onto the
- * locomotive.  On the frozen copy of Adam's railway, with a train standing on BottomMainB.
+ * (`GraphLocAssign`) retires, and a train's length, reversible flag and functions set in the Autonomy tab of Locomotive
+ * Settings leave the saved setup, and the train after a reload, as they are when the same values are written straight
+ * onto the locomotive, which the dialog's OK was shown to do on b51f7e3a.  On the frozen copy of Adam's railway, with a train standing on BottomMainB.
  *
- * MUTATION: have the door also write the train's length into the setup's record of it, and this fails.
+ * MUTATION: let `AutonomySession.updateStoredRecord` add a key the setup's record of the train lacks (drop its
+ * `!stored.has(key)`), and the saved setup differs and this fails.
  */
 public class testTheAutonomyTabSavesWhatTheDialogDid
 {
@@ -61,26 +61,16 @@ public class testTheAutonomyTabSavesWhatTheDialogDid
 
         train = model.getLocByName(TRAIN);
 
-        final TileKey square = squareNamed("BottomMainB");
+        final TileKey square = support.StandingTrain.squareNamed(session, "BottomMainB");
 
+        support.StandingTrain.standOn(model, session, TRAIN, square);
+
+        // Its heading and tail, as a placement door records them: the dialog wrote them where they were missing
         SwingUtilities.invokeAndWait(() ->
         {
-            Layout railway = model.getAutoLayout();
-
-            railway.getPoints().stream().filter(p -> p.getCurrentLocomotive() != null)
-                .forEach(p -> railway.moveLocomotive(null, p.getName(), true));
-
-            session.facingsFor(square).keySet().stream().map(railway::getPoint).filter(p -> p != null).findFirst()
-                .ifPresent(p -> railway.moveLocomotive(TRAIN, p.getName(), false));
-
-            session.placeLocomotive(square, TRAIN);
-
-            // Its heading and tail, as a placement door records them: the dialog wrote them where they were missing
             session.setFacing(square, org.traincontrol.automationui.TilePorts.Side.E);
             session.setArrivedFrom(square, "W");
         });
-
-        assertNotNull(model.getAutoLayout().getLocomotiveLocation(train), "precondition: the train could not be stood on BottomMainB");
 
         // A speed of its own: the dialog wrote the layout's default over a speed of 0
         train.setPreferredSpeed(40);
@@ -91,8 +81,6 @@ public class testTheAutonomyTabSavesWhatTheDialogDid
     {
         try
         {
-            org.traincontrol.gui.TailCrossedPrompt.answerForTests(null);
-
             if (made && fixture != null) SwingUtilities.invokeAndWait(() -> model.deleteLoc(TRAIN));
 
             if (fixture != null) fixture.finish();
@@ -145,37 +133,25 @@ public class testTheAutonomyTabSavesWhatTheDialogDid
         assertEquals(door, plain, "the setup saved after the door's edit differs from a plain write's");
     }
 
-    /** The edit through the station dialog's OK, as both station menus commit it. */
+    /** The edit through the Autonomy tab's Save, opened as the station menus' Edit Locomotive opens it. */
     private static void throughTheDoor() throws Exception
     {
-        org.traincontrol.gui.TailCrossedPrompt.answerForTests(org.traincontrol.gui.TailCrossedPrompt.DISMISSED);
+        assertTrue(support.SettingsWindow.open(ui, train, LocomotiveSettingsFrame.Tab.AUTONOMY, null), "the window did not open");
+        assertNotNull(support.SettingsWindow.awaited(), "the window is not on screen");
 
         Components.onTheEventThread(() ->
         {
-            org.traincontrol.automation.Point at = model.getAutoLayout().getLocomotiveLocation(train);
-            org.traincontrol.gui.GraphLocAssign edit = new org.traincontrol.gui.GraphLocAssign(ui, at, session,
-                model.getAutoLayout());
-
-            field(edit, "trainLength", javax.swing.JComboBox.class).setSelectedItem(String.valueOf(SET[0]));
-            field(edit, "reversible", javax.swing.JCheckBox.class).setSelected((Boolean) SET[1]);
-            field(edit, "departureFunc", javax.swing.JComboBox.class).setSelectedItem(String.valueOf(SET[2]));
-            field(edit, "arrivalFunc", javax.swing.JComboBox.class).setSelectedItem(String.valueOf(SET[3]));
-
-            org.traincontrol.gui.GraphLocAssign.commitAndRecord(edit);
+            support.SettingsWindow.part("autonomy.length", javax.swing.JSpinner.class).setValue(SET[0]);
+            support.SettingsWindow.part("autonomy.reversible", javax.swing.JCheckBox.class).setSelected((Boolean) SET[1]);
+            support.SettingsWindow.part("autonomy.departure", javax.swing.JComboBox.class).setSelectedIndex((Integer) SET[2] + 1);
+            support.SettingsWindow.part("autonomy.arrival", javax.swing.JComboBox.class).setSelectedIndex((Integer) SET[3] + 1);
 
             return null;
         });
 
-        Components.settle();
-    }
+        support.SettingsWindow.press(support.SettingsWindow.save());
 
-    private static <T> T field(Object on, String name, Class<T> type) throws Exception
-    {
-        java.lang.reflect.Field f = on.getClass().getDeclaredField(name);
-
-        f.setAccessible(true);
-
-        return type.cast(f.get(on));
+        assertTrue(Components.waitFor(() -> support.SettingsWindow.showing() == null, 8000), "Save did not close the window");
     }
 
     /** The train back at the starting values, and the setup saved, twice, so the next save writes only what changed. */
@@ -201,43 +177,16 @@ public class testTheAutonomyTabSavesWhatTheDialogDid
     {
         Components.onTheEventThread(() -> session.save());
 
-        java.util.Map<String, String> out = new java.util.TreeMap<>();
-
-        java.nio.file.Path root = new java.io.File(fixture.sandbox.getFolder(), "config" + java.io.File.separator + "autonomy").toPath();
-
-        try (java.util.stream.Stream<java.nio.file.Path> walk = java.nio.file.Files.walk(root))
-        {
-            for (java.nio.file.Path file : (Iterable<java.nio.file.Path>) walk.filter(java.nio.file.Files::isRegularFile)::iterator)
-            {
-                out.put(root.relativize(file).toString(), new String(java.nio.file.Files.readAllBytes(file), java.nio.charset.StandardCharsets.UTF_8));
-            }
-        }
-
-        return out;
+        return support.StandingTrain.setupFiles(fixture.sandbox.getFolder());
     }
 
     /** The train's length, reversible flag, functions and speed after a load of the setup that does not fold. */
     private static String afterAReload(String configuration) throws Exception
     {
-        try (Answering answering = Answering.start(message -> Answering.press(I18n.t("ui.yes"))))
-        {
-            SwingUtilities.invokeAndWait(() -> ui.getAutonomyViewerPanel().load(configuration, false, false));
-
-            Components.settle();
-            Components.settle();
-        }
+        support.StandingTrain.reloadWithoutFolding(ui, configuration);
 
         return train.getTrainLength() + " " + train.isReversible() + " " + train.getDepartureFunc() + " "
             + train.getArrivalFunc() + " " + train.getPreferredSpeed();
     }
 
-    private static TileKey squareNamed(String name)
-    {
-        for (TileKey key : session.getStore().getNamedTiles())
-        {
-            if (name.equals(session.getStore().getPointName(key))) return key;
-        }
-
-        throw new AssertionError("this railway has no " + name);
-    }
 }

@@ -244,7 +244,7 @@ final class LocomotiveFunctionsTab extends JPanel
     {
         JPanel panel = new JPanel(new GridBagLayout());
 
-        JButton useCurrent = button(I18n.t("loc.ui.settingsUseCurrentAsPreset"));
+        JButton useCurrent = button(I18n.t("loc.ui.menuSaveFunctionsAsPreset"));
 
         useCurrent.setName("functions.useCurrent");
         copyIcons.setName("functions.copyIcons");
