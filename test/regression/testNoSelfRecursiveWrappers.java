@@ -593,11 +593,13 @@ public class testNoSelfRecursiveWrappers
     }
 
     /**
-     * The autonomy editor panel and its five helpers (FR-136): the only classes that may reach `session`, `promptName(` or
-     * `applyLength(` through a panel.
+     * The autonomy editor panel, its five helpers (FR-136) and the two windows that stand in for its square menus, whose
+     * writes go through `StationWindowBase.act` and so the panel (FR-111): the only classes that may reach `session`,
+     * `promptName(` or `applyLength(` through a panel.
      */
     private static final String[] EDITOR_FILES = {
-        "AutonomyEditorPanel", "EditorTileMenus", "EditorPrompts", "EditorSignals", "EditorMassAssign", "EditorWhy" };
+        "AutonomyEditorPanel", "EditorTileMenus", "EditorPrompts", "EditorSignals", "EditorMassAssign", "EditorWhy",
+        "StationSettingsWindow", "TrainWindow" };
 
     /**
      * What a file reaches into an AutonomyEditorPanel for: each `session`, `promptName(` or `applyLength(` taken from
