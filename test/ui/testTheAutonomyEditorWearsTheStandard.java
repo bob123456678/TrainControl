@@ -87,11 +87,11 @@ public class testTheAutonomyEditorWearsTheStandard
             });
 
             final String title = I18n.t("autosetup.ui.menuPairSignal");
-            JDialog dialog = null;
+            final JDialog[] found = new JDialog[1];
 
-            for (long end = System.currentTimeMillis() + 10000; dialog == null && System.currentTimeMillis() < end;)
+            Components.waitFor(() ->
             {
-                dialog = Components.onTheEventThread(() ->
+                found[0] = Components.onTheEventThread(() ->
                 {
                     for (java.awt.Window w : java.awt.Window.getWindows())
                     {
@@ -101,8 +101,10 @@ public class testTheAutonomyEditorWearsTheStandard
                     return null;
                 });
 
-                if (dialog == null) Thread.sleep(50);
-            }
+                return found[0] != null;
+            }, 10000);
+
+            JDialog dialog = found[0];
 
             org.testng.Assert.assertNotNull(dialog, "the signal dialog did not open");
 
