@@ -4119,6 +4119,59 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         this.diagramLocGestures.setHoveredDiagramTile(page, x, y);
     }
 
+    /**
+     * Whether a paste of this train onto this square would land it there (FR-160), asked of what the paste asks: the
+     * roster knows the train, the railway has a Point for the square and for every copy the setup builds there (a
+     * square renamed or changed since the last build is stale, and the facing would be lost), and one of them is a
+     * destination.
+     *
+     * @param locomotive the train's name
+     * @param to the station square
+     * @return whether it lands
+     */
+    public boolean canTrainLandOn(String locomotive, org.traincontrol.automationui.TileGraph.TileKey to)
+    {
+        org.traincontrol.automationui.AutonomySession session = getAutonomySession();
+
+        org.traincontrol.automation.Layout shown = this.model == null ? null : this.model.getAutoLayoutIfLoaded();
+
+        if (session == null || shown == null || to == null || session.getStationIndex() == null
+            || this.model.getLocByName(locomotive) == null || getAutonomyPointForTile(to) == null)
+        {
+            return false;
+        }
+
+        // And one copy the railway takes a train on: a square made a station since the build is no destination yet
+        boolean takes = false;
+
+        for (String name : session.getStationIndex().pointNamesAt(to))
+        {
+            org.traincontrol.automation.Point copy = shown.getPoint(name);
+
+            if (copy == null) return false;
+
+            if (copy.isDestination() || shown.isABarredCopyOfAStation(copy)) takes = true;
+        }
+
+        return takes;
+    }
+
+    /**
+     * Delegates to `DiagramLocGestures.dropByPaste`: a train dragged in the autonomy editor lands as a paste (FR-160).
+     *
+     * @param locomotive the train's name
+     * @param to the station square
+     * @return whether it now stands there; false also where no railway is loaded to paste onto
+     */
+    public boolean dropTrainByPaste(String locomotive, org.traincontrol.automationui.TileGraph.TileKey to)
+    {
+        Locomotive train = this.model == null ? null : this.model.getLocByName(locomotive);
+
+        if (train == null || !this.model.hasAutoLayout()) return false;
+
+        return this.diagramLocGestures.dropByPaste(train, to);
+    }
+
     /** Delegates to `DiagramLocGestures.locomotiveGestureOnDiagram`. */
     private boolean locomotiveGestureOnDiagram(int keyCode, boolean controlPressed)
     {

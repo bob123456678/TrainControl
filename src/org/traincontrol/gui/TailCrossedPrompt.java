@@ -36,6 +36,15 @@ public class TailCrossedPrompt
     /** How many sensors back a road is followed at most, so a loop in a hand-written layout cannot run away. */
     private static final int MOST_SENSORS_BACK = 30;
 
+    /** While true no question is put: a train dragged in the autonomy editor never waits on one (FR-160). */
+    private static volatile boolean quiet;
+
+    /** Silences or restores the questions a placement would put; event thread only. */
+    static void beQuiet(boolean on)
+    {
+        quiet = on;
+    }
+
     /** The answer the next question gets without a dialog, for tests; null shows the dialog. */
     private static volatile String answeredByATest;
 
@@ -171,6 +180,9 @@ public class TailCrossedPrompt
 
         List<Choice> choices = choicesFor(layout, at, arrivedFrom, trainLength, shown);
 
+        // Quiet, nobody is asked; one road is no question, and is taken as ever
+        if (quiet && choices.size() != 1) return Answer.NOT_ASKED;
+
         // On the diagram where it can be (FR-100; Adam: *"instead of showing the list of points, highlight possible
         // squares on the diagram and ask the user to click one.  only show the list if there are options on another
         // page."*).  Not for one choice, which is answered without asking, nor for a test's answer.
@@ -211,7 +223,7 @@ public class TailCrossedPrompt
         org.traincontrol.automationui.AutonomySession session, Layout layout, Point at, String arrivedFrom,
         Integer trainLength, TrainControlUI window)
     {
-        if (session == null || at == null || !wouldAsk(layout, at, arrivedFrom, trainLength)) return null;
+        if (quiet || session == null || at == null || !wouldAsk(layout, at, arrivedFrom, trainLength)) return null;
 
         if (window != null && window.anEditorIsOpenOrOnItsWay()) return null;
 

@@ -3465,16 +3465,40 @@ public class AutonomyEditorPanel extends JPanel
         setupChanged();
     }
 
-    String locomotiveAt(TileKey tile)
+    public String locomotiveAt(TileKey tile)
     {
         return session == null ? null : session.getLocomotiveNameAt(tile);
     }
 
     /**
      * Puts a locomotive on a square, chosen from the whole roster with those autonomy runs marked first; choosing one
-     * moves it (OB-009).
+     * moves it (OB-009).  A train dragged here (FR-160) is the choice already made.
      */
     void placeLocomotive(TileKey tile)
+    {
+        String name = trainBeingDropped != null ? trainBeingDropped : askWhichTrain(tile);
+
+        if (name == null) return;
+
+        // The session lifts it off everywhere, excluded pages too.  Its heading is read first: the facing would
+        // otherwise be the previous occupant's.
+        org.traincontrol.automationui.TilePorts.Side heading = session.facingOf(name);
+
+        session.placeLocomotive(tile, name);
+
+        // Over the copies it could leave (OB-284), as a paste records it.
+        session.setFacing(tile, org.traincontrol.automationui.AutonomySession.facingAfterAPaste(
+            session.departableFacingsFor(tile, layoutSource == null ? null : layoutSource.get()), heading, null));
+
+        // Named (MT-337): only the rebuild puts the train on the railway.
+        placementChanged(java.util.Collections.singletonList(name));
+    }
+
+    /** The train being dragged onto a square, for the length of `dropTrain`; null otherwise. */
+    private String trainBeingDropped;
+
+    /** The picker: which train goes on the square, or null when none was chosen. */
+    private String askWhichTrain(TileKey tile)
     {
         List<String> placed = placedLocomotives();
 
@@ -3497,31 +3521,116 @@ public class AutonomyEditorPanel extends JPanel
         {
             JOptionPane.showMessageDialog(owner(),
                 I18n.t("autosetup.ui.infoAllLocomotivesInAutonomy"));
-            return;
+            return null;
         }
 
         // FR-011: without "use current", as the driven train is rarely in this list.
         String chosen = pickLocomotive(owner(), I18n.t("autosetup.ui.menuAddToAutonomy"),
             I18n.t("autosetup.ui.promptAddToAutonomy"), names, names.get(0), null, null);
 
-        if (chosen == null) return;
+        return chosen == null ? null : unmark(chosen, placed);
+    }
 
-        String name = unmark(chosen, placed);
+    /**
+     * Whether a train may be dragged from one square to another (FR-160): a square autonomy does not ignore, a station,
+     * nothing running or armed, and what the window's paste asks (`canTrainLandOn`), so a green mark means the train
+     * lands on that square.
+     * @param from the square the train stands on
+     * @param to the square under the pointer
+     * @return true when letting go there would move the train
+     */
+    public boolean canDropTrain(TileKey from, TileKey to)
+    {
+        if (session == null || from == null || to == null || to.equals(from)) return false;
 
-        if (name == null) return;
+        if (from.getPage() == null || !from.getPage().equals(to.getPage())) return false;
 
-        // The session lifts it off everywhere, excluded pages too.  Its heading is read first: the facing would
-        // otherwise be the previous occupant's.
-        org.traincontrol.automationui.TilePorts.Side heading = session.facingOf(name);
+        if (locomotiveAt(from) == null || !session.getStore().isStation(to) || isIgnored(from) || isIgnored(to))
+        {
+            return false;
+        }
 
-        session.placeLocomotive(tile, name);
+        if (anythingIsArmed() || setupIsHeldByARun()) return false;
 
-        // Over the copies it could leave (OB-284), as a paste records it.
-        session.setFacing(tile, org.traincontrol.automationui.AutonomySession.facingAfterAPaste(
-            session.departableFacingsFor(tile, layoutSource == null ? null : layoutSource.get()), heading, null));
+        // Without a railway to paste onto the picker's door does the placing, and asks the railway nothing
+        TrainControlUI window = parentWindow();
 
-        // Named (MT-337): only the rebuild puts the train on the railway.
-        placementChanged(java.util.Collections.singletonList(name));
+        return window == null || window.getModel() == null || !window.getModel().hasAutoLayout()
+            || window.canTrainLandOn(locomotiveAt(from), to);
+    }
+
+    /** The trains a Cancel puts back with the setup: every train dragged this session, and any a drop displaced. */
+    private final java.util.Set<String> putBackOnDiscard = new java.util.LinkedHashSet<>();
+
+    /** @return the trains the railway must not keep where a drag left them when the edit is thrown away */
+    public java.util.Set<String> trainsToPutBackOnDiscard()
+    {
+        return java.util.Collections.unmodifiableSet(putBackOnDiscard);
+    }
+
+    /** Whether a tool or a half-made gesture is waiting for a click, which a press on a train then belongs to. */
+    public boolean isAToolArmed()
+    {
+        return anythingIsArmed();
+    }
+
+    /** Whether a run holds the setup, asked without saying anything: a drag is simply not offered then (FR-160). */
+    public boolean setupIsHeldByARun()
+    {
+        TrainControlUI window = parentWindow();
+
+        return window != null && window.aRunHoldsTheSetup();
+    }
+
+    /**
+     * Moves the train standing on a square to another station as a copy and paste of it does (FR-160): through the
+     * window's paste, which walks the road, picks the copy and records the facing and the tail.  Where no railway is
+     * loaded to paste onto, through `placeLocomotive`, which the menu's Add to Autonomy uses.  Nothing happens, and
+     * nothing is said, where `canDropTrain` says no, and the drag never waits on a question a paste would ask.
+     * @param from the square the train stands on
+     * @param to the square it was let go on
+     * @return whether it moved
+     */
+    public boolean dropTrain(TileKey from, TileKey to)
+    {
+        if (!canDropTrain(from, to)) return false;
+
+        String name = locomotiveAt(from);
+        String displaced = locomotiveAt(to);
+
+        TrainControlUI window = parentWindow();
+
+        if (window != null && window.getModel() != null && window.getModel().hasAutoLayout())
+        {
+            boolean landed = window.dropTrainByPaste(name, to);
+
+            // Whatever the paste did to the setup is drawn and rebuilt, landed or not
+            placementChanged(java.util.Collections.singletonList(name));
+
+            // Cancel throws every drag away, and a drop onto another train takes that one back with it: the railway
+            // alone lost it.  To let an empty target stay moved, add the dragged name only when `displaced` is not null.
+            if (landed)
+            {
+                putBackOnDiscard.add(name);
+
+                if (displaced != null) putBackOnDiscard.add(displaced);
+            }
+
+            return landed;
+        }
+
+        trainBeingDropped = name;
+
+        try
+        {
+            placeLocomotive(to);
+        }
+        finally
+        {
+            trainBeingDropped = null;
+        }
+
+        return true;
     }
 
     /**
