@@ -681,6 +681,7 @@
         <test-one-class class="testASyncBringsADeletedLocomotiveBack"/>
         <test-one-class class="testPageLinksGoByPageId"/>
         <test-one-class class="testALinkOnAStationGoesByPageId"/>
+        <test-one-class class="testSeveralStationsAtOnce"/>
     </target>
     <target name="package-for-store" depends="jar">
         <property name="store.jar.name" value="TrainControl"/>
