@@ -14758,65 +14758,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
     
     /**
-     * Prompts the user to choose locomotives to link to this one
-     * @param l 
-     */
-    public void changeLinkedLocomotives(Locomotive l)
-    {
-        final java.awt.Window asked = dialogParent();
-
-        // If the multi unit is defined in the central station, enter a read-only mode
-        boolean isCSMultiUnit = (l.getDecoderType() == Locomotive.decoderType.MULTI_UNIT);
-        
-        if (this.model.isLocLinkedToOthers(l) != null)
-        {
-            JOptionPane.showMessageDialog(
-                asked,
-                I18n.f(
-                    "loc.ui.errorLocomotiveAlreadyLinkedCannotBeMultiUnit",
-                    this.model.isLocLinkedToOthers(l).getName()
-                )
-            );
-            return;
-        }
-
-        // Only for the dialog that can change one: a Central Station multi-unit's list is read-only, nothing is
-        // written.
-        if (!isCSMultiUnit && this.locomotiveActions.refuseMultiUnitEdit(asked, l, null)) return;
-
-        if (this.model.getLocomotives().size() < 2)
-        {
-            JOptionPane.showMessageDialog(
-                asked,
-                I18n.t("loc.ui.errorNeedTwoLocomotivesForMultiUnit")
-            );
-            return;
-        }
-
-        MultiUnitPanel panel = new MultiUnitPanel(this, l, null);
-
-        panel.setPreferredSize(new Dimension(600, 540));
-
-        Typing.onShown(panel, panel::focusFilter);
-
-        int result = JOptionPane.showOptionDialog(
-            asked,
-            panel,
-            I18n.f("loc.ui.dialogLinkLocomotivesToMultiUnit", l.getName()),
-            JOptionPane.OK_CANCEL_OPTION,
-            JOptionPane.PLAIN_MESSAGE,
-            null,
-            OK_CANCEL_OPTS,
-            OK_CANCEL_OPTS[0] // default selection
-        );
-
-        if (result == JOptionPane.OK_OPTION && !isCSMultiUnit)
-        {
-            this.locomotiveActions.applyLinkedLocomotives(asked, l, panel.chosen());
-        }
-    }
-
-    /**
      * Shows the user locomotives similar to searchLoc, and maps them to a page if requested
      * @param searchLoc
      * @param evt 
