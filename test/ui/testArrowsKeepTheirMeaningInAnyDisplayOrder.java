@@ -715,29 +715,4 @@ public class testArrowsKeepTheirMeaningInAnyDisplayOrder extends support.PageWin
 
         Files.write(index.toPath(), out.toString().getBytes(StandardCharsets.UTF_8));
     }
-
-    /** Every file in the layout's folder, by its path there, with a digest of its bytes. */
-    private Map<String, String> fingerprint() throws Exception
-    {
-        Map<String, String> files = new TreeMap<>();
-
-        java.nio.file.Path root = sandbox.getFolder().toPath();
-
-        java.security.MessageDigest digest = java.security.MessageDigest.getInstance("SHA-256");
-
-        List<java.nio.file.Path> found = new ArrayList<>();
-
-        try (java.util.stream.Stream<java.nio.file.Path> walk = Files.walk(root))
-        {
-            walk.filter(Files::isRegularFile).forEach(found::add);
-        }
-
-        for (java.nio.file.Path file : found)
-        {
-            files.put(root.relativize(file).toString().replace('\\', '/'),
-                java.util.Base64.getEncoder().encodeToString(digest.digest(Files.readAllBytes(file))));
-        }
-
-        return files;
-    }
 }
