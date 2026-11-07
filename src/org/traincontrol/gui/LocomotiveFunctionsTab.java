@@ -533,6 +533,9 @@ final class LocomotiveFunctionsTab extends JPanel
 
         if (blocked || r.function >= loc.getNumF()) return;
 
+        // The cached flag is up to a second old: a train that has just started must not fire from Test
+        if (LocomotiveSettings.whyNotEditable(ui, loc) != null) return;
+
         ui.fireFunction(loc, r.function, !loc.getF(r.function));
 
         // The railway answers on its own thread: shown again once it has, and turning while a pulse runs

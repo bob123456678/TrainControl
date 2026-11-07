@@ -256,11 +256,34 @@ public class testTheFunctionsTabSwitchesFunctionsNow extends support.SettingsCla
         assertTrue(Components.waitFor(() -> state(F) == RowIcons.PlayState.DISABLED, WAIT),
             "the play icon is not grayed in a locked window");
 
+        assertNothingFires("a locked window");
+    }
+
+    /** A click on the play icon switches nothing and sends nothing. */
+    private static void assertNothingFires(String who) throws Exception
+    {
         int mark = wire.mark();
 
         clickPlay(F);
 
-        assertFalse(loc.getF(F), "a locked window switched a function");
-        assertTrue(sent(mark).isEmpty(), "a locked window sent " + sent(mark));
+        assertFalse(loc.getF(F), who + " switched a function");
+        assertTrue(sent(mark).isEmpty(), who + " sent " + sent(mark));
+    }
+
+    /**
+     * A train that has just started cannot fire a function from Test, though the window's cached lock (refreshed once a
+     * second) has not grayed the icon yet.
+     *
+     * MUTATION: drop the `whyNotEditable` check in `LocomotiveFunctionsTab.press` and this fails.
+     */
+    @Test
+    public void testATrainThatJustStartedCannotFireAFunction() throws Exception
+    {
+        SettingsWindow.power(ui, fixture.model, true);
+        loc.setSpeed(40);
+
+        assertTrue(state(F) != RowIcons.PlayState.DISABLED, "the lock had already refreshed, so this proves nothing");
+
+        assertNothingFires("a train that had just started");
     }
 }
