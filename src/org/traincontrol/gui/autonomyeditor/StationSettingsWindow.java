@@ -215,6 +215,8 @@ public final class StationSettingsWindow extends StationWindowBase
         if (!before.equals(squares))
         {
             for (JTextField part : problems.keySet()) showProblem(part, null);
+
+            sayOnTheStrip(null);
         }
 
         boolean was = reading;
@@ -256,19 +258,57 @@ public final class StationSettingsWindow extends StationWindowBase
         return first;
     }
 
-    /** A press for every square, in one gesture: each through the door one square's press takes. */
+    /** `actOnEach` for a change every square takes. */
     private void actOnEach(Predicate<TileKey> door)
     {
+        actOnEach(each -> true, door);
+    }
+
+    /**
+     * A press for every square, in one gesture: each through the door one square's press takes, those `needs` passes
+     * over left as they are.  A door answering false was refused or canceled, which stops the rest; where some had
+     * changed, the strip says how many.
+     */
+    private void actOnEach(Predicate<TileKey> needs, Predicate<TileKey> door)
+    {
         final List<TileKey> squares = new ArrayList<>(targets());
+        final int[] changed = {0};
+        final boolean[] stopped = {false};
+
+        sayOnTheStrip(null);
 
         act(() ->
         {
-            boolean changed = false;
+            editor.oneOfSeveral = squares.size() > 1;
 
-            for (TileKey each : squares) changed |= door.test(each);
+            try
+            {
+                for (TileKey each : squares)
+                {
+                    if (!needs.test(each)) continue;
 
-            return changed;
+                    if (!door.test(each))
+                    {
+                        stopped[0] = true;
+
+                        break;
+                    }
+
+                    changed[0]++;
+                }
+            }
+            finally
+            {
+                editor.oneOfSeveral = false;
+            }
+
+            return changed[0] > 0;
         });
+
+        if (stopped[0] && changed[0] > 0 && squares.size() > 1)
+        {
+            sayOnTheStrip(I18n.f("autosetup.ui.stationPartlyChanged", changed[0], squares.size()));
+        }
     }
 
     /**
@@ -315,15 +355,42 @@ public final class StationSettingsWindow extends StationWindowBase
         if (kept > 0) setSize(kept, getHeight());
     }
 
+    /** A picked square that has gone (its page left out, say) is dropped from the picks; the window goes with the last. */
     @Override
     boolean stillAbout()
     {
+        List<TileKey> left = new ArrayList<>();
+
         for (TileKey each : targets())
         {
-            if (!editor.stationWindows.stillAbout(each)) return false;
+            if (editor.stationWindows.stillAbout(each)) left.add(each);
         }
 
+        if (left.size() == targets().size()) return true;
+
+        if (!isSeveral() || left.isEmpty())
+        {
+            editor.keepOnlyTheseStationPicks(left);
+
+            return false;
+        }
+
+        several = left.size() > 1 ? left : Collections.<TileKey>emptyList();
+        tile = left.get(0);
+
+        editor.keepOnlyTheseStationPicks(left);
+
         return true;
+    }
+
+    @Override
+    void watched()
+    {
+        int before = targets().size();
+
+        super.watched();
+
+        if (tile != null && targets().size() != before) reload();
     }
 
     // ------------------------------------------------------------------------------------------- building the form
@@ -331,6 +398,8 @@ public final class StationSettingsWindow extends StationWindowBase
     private void buildForm()
     {
         severalLine.setName("station.several");
+        severalLine.setFont(REGULAR);
+        severalLine.setForeground(Color.BLACK);
         severalLine.setVisible(false);
         wide(severalLine);
 
@@ -357,6 +426,7 @@ public final class StationSettingsWindow extends StationWindowBase
         wide(strip);
 
         closedLine.setName("station.closedLine");
+        closedLine.setFont(REGULAR);
         closedLine.setForeground(new Color(170, 0, 0));
         closedLine.setVisible(false);
         wide(closedLine);
@@ -608,7 +678,7 @@ public final class StationSettingsWindow extends StationWindowBase
     {
         JLabel out = styled(new JLabel(I18n.t(MIXED)), partName, REGULAR);
 
-        out.setForeground(new Color(110, 110, 110));
+        out.setForeground(Color.BLACK);
         out.setBorder(javax.swing.BorderFactory.createEmptyBorder(0, 6, 0, 0));
         out.setVisible(false);
 
@@ -752,11 +822,8 @@ public final class StationSettingsWindow extends StationWindowBase
 
         final String[] refused = new String[1];
 
-        // A refusal stops the rest: what was typed is wrong for every square alike
         actOnEach(each ->
         {
-            if (refused[0] != null) return false;
-
             refused[0] = typedDoors.get(part).apply(each, typed);
 
             return refused[0] == null;
@@ -1218,9 +1285,9 @@ public final class StationSettingsWindow extends StationWindowBase
         if (reading || which == agreed(editor.session::getWhichTrains)) return;
 
         // Either list picked with nothing on it opens the list (FR-111), each square's own
-        actOnEach(each -> which != editor.session.getWhichTrains(each)
-            && (which != WhichTrains.ALL && editor.session.getTrainList(each).isEmpty()
-                ? editor.promptTrainList(each, which) : editor.setWhichTrains(each, which)));
+        actOnEach(each -> which != editor.session.getWhichTrains(each),
+            each -> which != WhichTrains.ALL && editor.session.getTrainList(each).isEmpty()
+                ? editor.promptTrainList(each, which) : editor.setWhichTrains(each, which));
     }
 
     private void pressChoose()

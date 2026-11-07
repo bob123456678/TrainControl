@@ -99,7 +99,9 @@ public class testTheTrainWindow
     {
         for (Map.Entry<TileKey, String> each : session.trainsWhereTheyStand().entrySet())
         {
-            if (PAGE.equals(each.getKey().getPage()) && session.getStore().isStation(each.getKey())) return each.getKey();
+            // The setup's own train, not one only the railway holds there, such as a train put at its home
+            if (PAGE.equals(each.getKey().getPage()) && session.getStore().isStation(each.getKey())
+                && each.getValue().equals(session.getLocomotiveNameAt(each.getKey()))) return each.getKey();
         }
 
         throw new AssertionError("precondition: no train stands on a station of " + PAGE);
@@ -225,6 +227,64 @@ public class testTheTrainWindow
     }
 
     /**
+     * A train placed from the list records the side it came in by, in the setup and on the railway, as every door that
+     * puts a train down by hand does (Adam: "the missing arrival side should be set - either from the data, by the
+     * user, or randomly"): Tunnel's one way in is from the north, BottomMainB's from the west.  The squares are emptied
+     * first, so nothing recorded before can answer.
+     *
+     * MUTATION: drop the `session.setArrivedFrom` from `AutonomyEditorPanel.placeLocomotive`, and this fails.
+     */
+    @Test(timeOut = 180000)
+    public void testAPlacedTrainRecordsTheSideItCameIn() throws Exception
+    {
+        AutonomyEditorPanel panel = theEditorsPanel();
+
+        org.traincontrol.gui.TailCrossedPrompt.answerForTests(org.traincontrol.gui.TailCrossedPrompt.DISMISSED);
+
+        try
+        {
+            for (String[] each : new String[][] {{"Tunnel", "N"}, {"BottomMainB", "W"}})
+            {
+                final TileKey square = support.StandingTrain.squareNamed(session, each[0]);
+
+                assertEquals(Components.onTheEventThread(() -> session.unbarredArrivalSides(square)).toString(),
+                    "[" + each[1] + "]", "precondition: " + each[0] + "'s ways in have changed");
+
+                Components.onTheEventThread(() -> { session.placeLocomotive(square, null); return null; });
+
+                Components.settle();
+
+                String train = aTrainNotPlaced();
+
+                TrainWindow window = StationDoors.openTrain(panel, square);
+
+                StationDoors.pick(window, "train.train", train);
+
+                assertEquals(session.getLocomotiveNameAt(square), train, "the list did not put the train on " + each[0]);
+
+                assertEquals(session.getArrivedFrom(square), each[1], "the train put on " + each[0] + " recorded no side,"
+                    + " or the wrong one, in the setup");
+
+                final Locomotive placed = model.getLocByName(train);
+
+                assertTrue(Components.waitFor(() -> model.getAutoLayout().getLocomotiveLocation(placed) != null, 20000),
+                    "the rebuild did not put " + train + " on the railway");
+
+                Components.settle();
+
+                assertEquals(model.getAutoLayout().getLocomotiveLocation(placed).getArrivedFrom(), each[1], "the train put"
+                    + " on " + each[0] + " has no side, or the wrong one, on the railway");
+
+                StationDoors.close(window);
+            }
+        }
+        finally
+        {
+            org.traincontrol.gui.TailCrossedPrompt.answerForTests(null);
+        }
+    }
+
+    /**
      * Active reads the train, not the setup's list, so a card's pause shows at once (OB-346 part 2), in the window and on the
      * editor's tick; clicking it sets the train going.
      *
@@ -291,7 +351,8 @@ public class testTheTrainWindow
             for (Map.Entry<TileKey, String> each : session.trainsWhereTheyStand().entrySet())
             {
                 if (!each.getValue().equals(dispatched[0]) && !ui.getModel().getAutoLayout().isAlreadyUnderway(
-                    model.getLocByName(each.getValue())) && session.getStore().isStation(each.getKey())) square = each.getKey();
+                    model.getLocByName(each.getValue())) && session.getStore().isStation(each.getKey())
+                    && each.getValue().equals(session.getLocomotiveNameAt(each.getKey()))) square = each.getKey();
             }
 
             assertNotNull(square, "precondition: no other train stands on a station during the run");
@@ -516,6 +577,73 @@ public class testTheTrainWindow
         }
         finally
         {
+            support.SettingsWindow.closeIfOpen();
+        }
+    }
+
+    /**
+     * During a run the diagram's menu over a train still offers Edit Locomotive... (Adam: "there should always be an edit
+     * loc"), on the running menu and on the menu while a run holds the setup, and the window opens locked ("open
+     * locked").
+     *
+     * MUTATION: leave `addEditLocomotive` out of `addWhileRunning`, and this fails.
+     */
+    @Test(timeOut = 120000)
+    public void testDuringARunTheDiagramsMenuStillEditsTheTrain() throws Exception
+    {
+        TileKey full = aSquareWithATrain();
+
+        String train = session.getLocomotiveNameAt(full);
+
+        AskingWindows.showThePageOf(ui, full);
+
+        final java.lang.reflect.Field staging = TrainControlUI.class.getDeclaredField("stagingFlowActive");
+
+        staging.setAccessible(true);
+
+        try
+        {
+            Components.onTheEventThread(() -> { staging.set(ui, true); return null; });
+
+            JPopupMenu running = AskingWindows.menuOn(ui, ui, full);
+
+            assertTrue(AskingWindows.hasItem(running, I18n.t("autolayout.ui.menuStopAutonomyGracefully")),
+                "precondition: this is not the running menu");
+
+            assertTrue(AskingWindows.hasItem(running, I18n.t("autolayout.ui.labelEditLocomotiveAt")),
+                "the running menu over a train has no Edit Locomotive...");
+
+            Mouse.closeMenus();
+        }
+        finally
+        {
+            Components.onTheEventThread(() -> { staging.set(ui, false); return null; });
+        }
+
+        model.getAutoLayout().setStagingInProgress(true);
+
+        try
+        {
+            assertTrue(ui.aRunHoldsTheSetup(), "precondition: no run holds the setup");
+
+            JPopupMenu held = AskingWindows.menuOn(ui, ui, full);
+
+            Mouse.choose(AskingWindows.itemOf(held, I18n.t("autolayout.ui.labelEditLocomotiveAt")));
+
+            Components.settle();
+
+            LocomotiveSettingsFrame frame = StationDoors.showing(LocomotiveSettingsFrame.class);
+
+            assertNotNull(frame, "Edit Locomotive... during a run opened no Locomotive Settings");
+            assertEquals(frame.getLocomotive(), model.getLocByName(train), "Edit Locomotive... opened another locomotive");
+
+            support.SettingsWindow.assertLocked("the diagram's Edit Locomotive... during a run",
+                I18n.t("loc.ui.settingsAutonomyStrip"));
+        }
+        finally
+        {
+            model.getAutoLayout().setStagingInProgress(false);
+
             support.SettingsWindow.closeIfOpen();
         }
     }

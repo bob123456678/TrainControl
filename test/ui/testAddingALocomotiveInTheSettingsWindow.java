@@ -174,6 +174,63 @@ public class testAddingALocomotiveInTheSettingsWindow extends support.SettingsCl
     }
 
     /**
+     * Add is refused while autonomy runs whichever door opened the window, here the locomotive database's Add
+     * Locomotive button, before the run began: autonomy works through the database, as the File menu's door says.
+     *
+     * MUTATION: drop the `refuseWhileAutonomyRunning` from `LocomotiveActions.addLocomotive`, and this fails.
+     */
+    @Test
+    public void testAddIsRefusedWhileAutonomyRuns() throws Exception
+    {
+        fixture.forget(MADE);
+
+        fixture.quiet();
+
+        javax.swing.AbstractButton button = Components.withText(ui.getLocSelector(), I18n.t("loc.ui.addLocomotive"));
+
+        assertNotNull(button, "the locomotive database has no Add Locomotive button");
+
+        Components.press(button);
+
+        assertNotNull(SettingsWindow.awaited(), "the database's Add Locomotive opened no window");
+
+        fixture.model.getAutoLayout().setStagingInProgress(true);
+
+        try
+        {
+            assertTrue(fixture.model.isAutonomyRunning(), "precondition: the model does not read autonomy as running");
+
+            assertEquals(type(MADE, "12", decoderType.DCC, "settings.save"),
+                java.util.Collections.singletonList(I18n.t("autolayout.ui.errorCannotEditLocomotivesWhileRunning")),
+                "Add was not refused while autonomy runs");
+
+            assertNull(fixture.model.getLocByName(MADE), "Add made a locomotive while autonomy runs");
+        }
+        finally
+        {
+            fixture.model.getAutoLayout().setStagingInProgress(false);
+        }
+    }
+
+    /**
+     * The address says how it may be typed, as the retired Add Locomotive window's did: an (i) beside it on Basic
+     * Settings.
+     *
+     * MUTATION: leave the address's (i) out of `LocomotiveTab`, and this fails.
+     */
+    @Test
+    public void testTheAddressSaysHowToTypeIt() throws Exception
+    {
+        openAdd();
+
+        javax.swing.JLabel hint = SettingsWindow.part("settings.addressHint", javax.swing.JLabel.class);
+
+        assertEquals(Components.onTheEventThread(hint::getToolTipText),
+            org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel.wrapped(I18n.t("loc.ui.settingsAddressHint")),
+            "the address's (i) does not say how an address is typed");
+    }
+
+    /**
      * Check Duplicates on Basic Settings writes the old window's report: under the MFX heading each shared MFX address's
      * locomotives and its separator, under the other heading the rest's, then the summary.  Asked of an Add and of a
      * locomotive's own settings, which counts only other locomotives at its address as using it.

@@ -302,27 +302,28 @@ public class testSeveralStationsAtOnce
     }
 
     /**
-     * A question one station's change asks is asked for that station among several, and its answer kept: a list that
-     * shuts out a station's home locomotive (OB-022) asks, and No leaves that station alone while the others change.
+     * A question one station's change asks is asked for that station among several, and its No stops there: a list that
+     * shuts out a station's home locomotive (OB-022) asks, No keeps that station and those after it as they were, and
+     * the window says how many changed.
      *
-     * MUTATION: have `pressWhich` write through `session.setWhichTrains` instead of the panel's `setWhichTrains`, and
-     * this fails.
+     * MUTATION: have `actOnEach` go on past a door that answers false, and this fails.
      */
     @Test(timeOut = 180000)
     public void testAQuestionOneStationAsksIsAskedAmongSeveral() throws Exception
     {
-        List<TileKey> two = stations(2);
+        List<TileKey> three = stations(3);
 
-        final TileKey homed = two.get(0);
-        final TileKey other = two.get(1);
+        final TileKey other = three.get(0);
+        final TileKey homed = three.get(1);
+        final TileKey after = three.get(2);
 
         final String train = aTrain();
 
         Components.onTheEventThread(() ->
         {
             session.setPointProperty(homed, "home", train);
-            session.setWhichTrains(homed, WhichTrains.ALL, Collections.singletonList(train));
-            session.setWhichTrains(other, WhichTrains.ALL, Collections.singletonList(train));
+
+            for (TileKey each : three) session.setWhichTrains(each, WhichTrains.ALL, Collections.singletonList(train));
 
             return null;
         });
@@ -337,15 +338,167 @@ public class testSeveralStationsAtOnce
 
         StationDoors.close(alone);
 
-        StationSettingsWindow window = pick(two);
+        StationSettingsWindow window = pick(three);
 
         List<String> asked = StationDoors.press(window, "station.whichBlack", message -> Answering.pressAt(1));
 
         assertEquals(asked, askedAlone, "several stations did not ask what one station asks");
 
+        assertEquals(on(() -> session.getWhichTrains(other)), WhichTrains.BLACKLIST, "the station before the No did not change");
+
         assertEquals(on(() -> session.getWhichTrains(homed)), WhichTrains.ALL, "No did not keep the home's station as it was");
 
-        assertEquals(on(() -> session.getWhichTrains(other)), WhichTrains.BLACKLIST, "the station with no home did not change");
+        assertEquals(on(() -> session.getWhichTrains(after)), WhichTrains.ALL, "the station after the No changed all the same");
+
+        assertEquals(StationDoors.said(window, "station.strip"), I18n.f("autosetup.ui.stationPartlyChanged", 1, 3),
+            "the window does not say that only some changed");
+    }
+
+    /**
+     * Nameless sensors picked together and made stations ask each its name, naming the square, as one at a time does;
+     * Cancel on one stops there, those before keep their change, the rest stay as they were, and the window says how
+     * many changed.
+     *
+     * MUTATION: have `askTheNewStationsName` ask with the one-station prompt whatever `oneOfSeveral` says, and this fails.
+     */
+    @Test(timeOut = 180000)
+    public void testACanceledNameStopsTheRestAndSaysSo() throws Exception
+    {
+        final List<TileKey> three = on(() ->
+        {
+            List<TileKey> out = new ArrayList<>();
+
+            for (TileKey each : session.getReducer().getPoints().keySet())
+            {
+                String name = session.getStore().getPointName(each);
+
+                if (out.size() < 3 && PAGE.equals(each.getPage()) && !session.getStore().isStation(each)
+                    && (name == null || name.trim().isEmpty())) out.add(each);
+            }
+
+            assertEquals(out.size(), 3, "precondition: too few nameless sensors on " + PAGE);
+
+            return out;
+        });
+
+        final List<String> called = on(() ->
+        {
+            List<String> out = new ArrayList<>();
+
+            for (TileKey each : three) out.add(session.describeTile(each));
+
+            return out;
+        });
+
+        StationSettingsWindow window = pick(three);
+
+        final int[] asking = {0};
+
+        List<String> asked = StationDoors.press(window, "station.stops", message ->
+            ++asking[0] == 1 ? Answering.type("Zed Alpha") : Answering.pressAt(1));
+
+        assertEquals(asked.size(), 2, "the questions did not stop at the Cancel: " + asked);
+
+        for (int i = 0; i < 2; i++)
+        {
+            assertTrue(asked.get(i).contains(called.get(i)), "question " + (i + 1) + " does not name " + called.get(i)
+                + ", so the same words are asked of each: " + asked.get(i));
+        }
+
+        assertEquals(on(() -> session.getStore().getPointName(three.get(0))), "Zed Alpha", "the first did not take its name");
+        assertTrue(on(() -> session.getStore().isStation(three.get(0))), "the first did not become a station");
+
+        for (TileKey each : three.subList(1, 3))
+        {
+            assertFalse(on(() -> session.getStore().isStation(each)), each + " changed after the Cancel");
+        }
+
+        assertEquals(StationDoors.said(window, "station.strip"), I18n.f("autosetup.ui.stationPartlyChanged", 1, 3),
+            "the window does not say that only one of the three changed");
+    }
+
+    /**
+     * "(mixed)" and the line saying changes apply to every station picked are item text: black, in the standard's
+     * regular text (Adam: "blue for section headings, black for item text").
+     *
+     * MUTATION: give `mixedLabel` its gray back, and this fails.
+     */
+    @Test(timeOut = 120000)
+    public void testMixedAndTheLineAboveAreItemText() throws Exception
+    {
+        final List<TileKey> two = stations(2);
+
+        Components.onTheEventThread(() ->
+        {
+            session.setAutoDestination(two.get(0), true);
+            session.setAutoDestination(two.get(1), false);
+
+            return null;
+        });
+
+        StationSettingsWindow window = pick(two);
+
+        java.awt.Font regular = new java.awt.Font("Segoe UI", java.awt.Font.PLAIN, 14);
+
+        for (String name : new String[] {"station.fullAutonomyMixed", "station.several"})
+        {
+            javax.swing.JLabel label = StationDoors.part(window, name, javax.swing.JLabel.class);
+
+            assertTrue(on(label::isShowing), "precondition: " + name + " is not showing");
+            assertEquals(on(label::getForeground), java.awt.Color.BLACK, name + " is not black");
+            assertEquals(on(label::getFont), regular, name + " is not the standard's regular text");
+        }
+    }
+
+    /**
+     * A picked station that goes while the window is open (its page left out) is dropped from the picks, and the
+     * window goes on for the rest, unmarked where it went.
+     *
+     * MUTATION: have `StationSettingsWindow.stillAbout` answer false for any square gone, as it did, and the window
+     * closes and this fails.
+     */
+    @Test(timeOut = 180000)
+    public void testAPickedStationThatGoesIsDropped() throws Exception
+    {
+        final TileKey far = on(() ->
+        {
+            for (TileKey each : session.getReducer().getPoints().keySet())
+            {
+                if (!PAGE.equals(each.getPage()) && session.getStore().isStation(each)) return each;
+            }
+
+            return null;
+        });
+
+        assertNotNull(far, "precondition: no station on another page than " + PAGE);
+
+        List<TileKey> two = stations(2);
+
+        closeTheEditor();
+
+        editor = frozen.editorOn(far.getPage());
+
+        panel = Components.onTheEventThread(() -> editor.getAutonomyPanel());
+
+        List<TileKey> picks = Arrays.asList(far, two.get(0), two.get(1));
+
+        StationSettingsWindow window = pick(picks);
+
+        assertEquals(window.squaresForTest(), picks, "precondition: the window is not about the three picked");
+
+        AbstractButton exclude = on(() -> panel.getExcludePage());
+
+        assertNotNull(exclude, "precondition: the editor has no Exclude Page");
+
+        StationDoors.pressAndAnswer(exclude, message -> Answering.pressAt(0));
+
+        StationDoors.current(window);
+
+        assertTrue(on(window::isShowing), "the window closed when one of the stations picked went");
+
+        assertEquals(window.squaresForTest(), two, "the window is not about the stations left");
+
+        assertNull(mark(far), "the station that went is still marked picked");
     }
 
     /**

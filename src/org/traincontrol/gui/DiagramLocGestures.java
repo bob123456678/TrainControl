@@ -500,7 +500,7 @@ final class DiagramLocGestures
 
             setupStands = org.traincontrol.gui.TailCrossedPrompt.recordTheTail(session, tile, ui.getModel().getAutoLayout(),
                 point, tail, point.getCurrentLocomotive().getName(), roadBefore, sameSquareAsBefore, sideBefore, ui,
-                ui::noteIfTheSetupWasNotTidied);
+                ui, ui::noteIfTheSetupWasNotTidied);
         }
 
         // Not a setup the window has let go: one replaced in the wait was written by the reset that replaced it, and

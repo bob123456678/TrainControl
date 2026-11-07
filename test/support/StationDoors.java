@@ -260,6 +260,14 @@ public final class StationDoors
     /** Selects this locomotive in the list of the question on screen and presses OK (`Answering` does not type into lists). */
     public static Answering.Answer choosing(final String... names)
     {
+        final List<String> wanted = java.util.Arrays.asList(names);
+
+        return choosingRows(wanted::contains);
+    }
+
+    /** Selects every row of the list of the question on screen that `row` takes, and presses OK. */
+    public static Answering.Answer choosingRows(final java.util.function.Predicate<String> row)
+    {
         Components.onTheEventThread(() ->
         {
             for (java.awt.Window w : java.awt.Window.getWindows())
@@ -277,16 +285,9 @@ public final class StationDoors
 
                 list.clearSelection();
 
-                for (String name : names)
+                for (int i = 0; i < list.getModel().getSize(); i++)
                 {
-                    int at = -1;
-
-                    for (int i = 0; i < list.getModel().getSize(); i++)
-                    {
-                        if (name.equals(list.getModel().getElementAt(i))) at = i;
-                    }
-
-                    if (at >= 0) list.addSelectionInterval(at, at);
+                    if (row.test(String.valueOf(list.getModel().getElementAt(i)))) list.addSelectionInterval(i, i);
                 }
             }
 

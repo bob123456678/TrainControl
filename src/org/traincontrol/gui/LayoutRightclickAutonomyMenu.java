@@ -439,17 +439,7 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
                     menuItem.setEnabled(false);
                     add(menuItem);
 
-                    // The standing train's own settings (FR-048), at rest as Place and Remove are
-                    if (locomotive != null && !ui.aRunHoldsTheSetup())
-                    {
-                        final Locomotive standing = locomotive;
-
-                        menuItem = new JMenuItem(I18n.t("autolayout.ui.labelEditLocomotiveAt"));
-                        menuItem.addActionListener(event -> ui.openLocomotiveSettings(standing,
-                            LocomotiveSettingsFrame.Tab.AUTONOMY, null));
-
-                        add(menuItem);
-                    }
+                    if (locomotive != null) addEditLocomotive(locomotive);
 
                     // Place a different locomotive at this station, FACING a chosen way.  A square is several Points,
                     // one per side a train can arrive by, each leaving only the way its own facing allows, so "put it
@@ -593,6 +583,8 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
             active.addActionListener(event -> ui.pauseTrainWhileRunning(train, !active.isSelected()));
 
             add(active);
+
+            addEditLocomotive(train);
         }
 
         JMenuItem trainWindow = train == null ? null : ui.trainWindowItem(here);
@@ -603,6 +595,19 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
         if (trainWindow != null) add(trainWindow);
 
         if (settings != null) add(settings);
+    }
+
+    /**
+     * The standing train's own settings (FR-048), on every menu over a train (Adam: "there should always be an edit
+     * loc"); during a run the window opens locked.
+     */
+    private void addEditLocomotive(final Locomotive standing)
+    {
+        JMenuItem edit = new JMenuItem(I18n.t("autolayout.ui.labelEditLocomotiveAt"));
+
+        edit.addActionListener(event -> ui.openLocomotiveSettings(standing, LocomotiveSettingsFrame.Tab.AUTONOMY, null));
+
+        add(edit);
     }
 
     /** Whether the train window's item is on this menu already. */
@@ -956,7 +961,7 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
             {
                 setupStands = org.traincontrol.gui.TailCrossedPrompt.recordTheTail(session, station, running, landing,
                     tail, locName, roadBefore, station != null && station.equals(squareBefore), sideBefore, ui,
-                    saved -> savedEarly[0] = saved);
+                    ui, saved -> savedEarly[0] = saved);
             }
         }
 

@@ -270,6 +270,152 @@ public class testThePlaceDoorsKeepTheHeading
     }
 
     /**
+     * Placed from the autonomy editor's train window, the train records the side it came in by and is asked where its
+     * tail lies: the list, hung off the window that asked, in front of the editor, and choosing TunnelPre answers it
+     * (MT-575).  His 75 407 DB with a length of 5, on Tunnel, whose one way in is from the north.
+     *
+     * MUTATION: drop `askWhereTheTailIsOnceBuilt` from `AutonomyEditorPanel.placeLocomotive`, and no question comes and
+     * this fails.
+     */
+    @Test(timeOut = 180000)
+    public void testFromTheEditorTheTailQuestionIsTheListInFrontOfIt() throws Exception
+    {
+        TileKey tunnel = square("Tunnel");
+
+        Integer lengthWas = train.getTrainLength();
+
+        java.awt.Window editor = null;
+
+        try
+        {
+            // STEP 1: a length of 5, and nothing standing on the railway
+            train.setTrainLength(5);
+
+            SwingUtilities.invokeAndWait(() ->
+            {
+                for (Point point : railway().getPoints())
+                {
+                    if (point.getCurrentLocomotive() != null) railway().moveLocomotive(null, point.getName(), false);
+                }
+            });
+
+            // THE QUESTION ASKED FOR REAL: this class answers it "Not known" for the other claims.
+            TailCrossedPrompt.answerForTests(null);
+
+            // THE EDITOR, as Autonomy > Edit Autonomy > 1 - Main opens it.
+            SwingUtilities.invokeLater(() -> ui.openAutonomyEditorOnPage(tunnel.getPage()));
+
+            final java.awt.Window[] opened = new java.awt.Window[1];
+
+            support.Components.waitFor(() ->
+            {
+                for (java.awt.Window window : java.awt.Window.getWindows())
+                {
+                    if (window.isShowing() && "LayoutEditor".equals(window.getClass().getSimpleName())) opened[0] = window;
+                }
+
+                return opened[0] != null;
+            }, 60000);
+
+            editor = opened[0];
+
+            assertNotNull(editor, "the autonomy editor did not open on " + tunnel.getPage());
+
+            for (int turn = 0; turn < 6; turn++) pump();
+
+            java.lang.reflect.Field panelField = editor.getClass().getDeclaredField("autonomyPanel");
+
+            panelField.setAccessible(true);
+
+            final AutonomyEditorPanel panel = (AutonomyEditorPanel) panelField.get(editor);
+
+            assertNotNull(panel, "precondition: the editor opened without its autonomy panel");
+
+            // THE TRAIN WINDOW ON TUNNEL, and his train chosen in its list.
+            final org.traincontrol.gui.autonomyeditor.TrainWindow window = support.StationDoors.openTrain(panel, tunnel);
+
+            assertNotNull(window, "the editor opened no train window on Tunnel");
+
+            final javax.swing.JComboBox<?> trains = support.StationDoors.part(window, "train.train", javax.swing.JComboBox.class);
+
+            SwingUtilities.invokeLater(() ->
+            {
+                for (int i = 0; i < trains.getItemCount(); i++)
+                {
+                    Object each = trains.getItemAt(i);
+
+                    if (HIS_TRAIN.equals(each) || I18n.f("autosetup.ui.locomotiveElsewhere", HIS_TRAIN).equals(each))
+                    {
+                        trains.setSelectedIndex(i);
+
+                        return;
+                    }
+                }
+            });
+
+            // THE QUESTION: the list, in front of the editor, hung off the train window.
+            javax.swing.JDialog question = awaitDialogStarting(I18n.t("autolayout.ui.askArrivalSideTitle"));
+
+            java.lang.reflect.Field armed = TailCrossedPrompt.class.getDeclaredField("armed");
+
+            armed.setAccessible(true);
+
+            assertNull(armed.get(null), "with the editor open the tail question was put on the main window's diagram,"
+                + " which the editor covers (MT-575)");
+
+            assertEquals(question.getOwner(), window, "the tail question's list does not hang off the train window that"
+                + " asked: its owner is " + question.getOwner());
+
+            assertEquals(session.getArrivedFrom(tunnel), "N", "the placement recorded no arrival side, or the wrong one");
+
+            // TUNNELPRE, CHOSEN IN IT.
+            final javax.swing.JList<?> list = find(question.getContentPane(), javax.swing.JList.class);
+
+            assertNotNull(list, "the tail question has no list");
+
+            support.StationDoors.choosingRows(row -> row.contains("TunnelPre"));
+
+            assertTrue(support.Components.onTheEventThread(list::getSelectedIndex) >= 0,
+                "the tail question's list does not offer TunnelPre");
+
+            final javax.swing.JOptionPane asked = find(question.getContentPane(), javax.swing.JOptionPane.class);
+
+            SwingUtilities.invokeLater(() -> asked.setValue(I18n.t("ui.ok")));
+
+            final javax.swing.JDialog answered = question;
+
+            support.Components.waitFor(() -> !answered.isShowing(), 10000);
+
+            for (int turn = 0; turn < 6; turn++) pump();
+
+            // ANSWERED: the train stands on Tunnel with TunnelPre's road behind it.
+            Point standing = railway().getLocomotiveLocation(train);
+
+            assertNotNull(standing, "the train window put the train nowhere");
+
+            assertEquals(standing.getArrivedFrom(), "N", "the railway's copy holds no arrival side, or the wrong one");
+
+            TailCrossedPrompt.Choice tunnelPre = TailCrossedPrompt.choicesFor(railway(), standing, "N", 5, null).stream()
+                .filter(choice -> choice.getFarthest().getName().startsWith("TunnelPre")).findFirst().orElse(null);
+
+            assertNotNull(tunnelPre, "precondition: a five-unit train at Tunnel from the north is not offered TunnelPre");
+
+            assertEquals(named(standing.getArrivedAlong()), named(tunnelPre.getRoad()), "choosing TunnelPre in the list did"
+                + " not give the train at Tunnel TunnelPre's road (MT-575)");
+        }
+        finally
+        {
+            TailCrossedPrompt.answerForTests(TailCrossedPrompt.DISMISSED);
+
+            closeEveryDialog();
+
+            if (editor != null) closeTheEditor(editor);
+
+            train.setTrainLength(lengthWas);
+        }
+    }
+
+    /**
      * With the autonomy editor open but minimized, the tail question's list belongs to the main window, where it can be
      * seen: on Windows a window owned by a minimized frame is hidden, so the question would be a modal nobody could
      * see.

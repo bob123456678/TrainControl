@@ -244,6 +244,9 @@ final class LocomotiveActions
      */
     Locomotive addLocomotive(Component source, String locName, String typedAddress, decoderType type)
     {
+        // Asked at Add, whichever door opened the window and whenever: autonomy iterates the database
+        if (RunGates.refuseWhileAutonomyRunning(this.ui, source)) return null;
+
         if (locName.trim().length() == 0)
         {
             JOptionPane.showMessageDialog(source, I18n.t("loc.errorNameMissing"));

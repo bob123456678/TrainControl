@@ -349,6 +349,59 @@ public class testTheLocomotiveSettingsAutonomyTab
         }
     }
 
+    /**
+     * A number typed into Train Length, or into the preset speed on Basic Settings, lights Save as it is typed, as a
+     * text box does, without Enter or leaving the box.
+     *
+     * MUTATION: have `typedAtOnce` leave the spinner as it was, and this fails.
+     */
+    @Test
+    public void testATypedNumberLightsSaveAsItIsTyped() throws Exception
+    {
+        startFrom(5, false, null, null);
+
+        try
+        {
+            openTheTab();
+
+            assertFalse(Components.onTheEventThread(SettingsWindow.save()::isEnabled), "precondition: Save is lit unchanged");
+
+            typeInto("autonomy.length", "9");
+
+            assertTrue(Components.onTheEventThread(SettingsWindow.save()::isEnabled), "a typed train length left Save gray");
+
+            SettingsWindow.closeIfOpen();
+
+            fixture.quiet();
+
+            assertTrue(SettingsWindow.open(ui, train, LocomotiveSettingsFrame.Tab.LOCOMOTIVE, null), "the window did not open");
+            assertNotNull(SettingsWindow.awaited(), "the window is not on screen");
+
+            int speed = (Integer) Components.onTheEventThread(SettingsWindow.part("settings.speed", JSpinner.class)::getValue);
+
+            typeInto("settings.speed", Integer.toString(speed == 40 ? 41 : 40));
+
+            assertTrue(Components.onTheEventThread(SettingsWindow.save()::isEnabled), "a typed preset speed left Save gray");
+        }
+        finally
+        {
+            SettingsWindow.closeIfOpen();
+        }
+    }
+
+    /** Types into a spinner's box as the keyboard does, leaving the focus where it is. */
+    private static void typeInto(String name, String text)
+    {
+        Components.onTheEventThread(() ->
+        {
+            ((JSpinner.DefaultEditor) SettingsWindow.part(name, JSpinner.class).getEditor()).getTextField().setText(text);
+
+            return null;
+        });
+
+        Components.settle();
+    }
+
     private static void assertLocked(String strip, String why)
     {
         JLabel shown = SettingsWindow.part("settings.strip", JLabel.class);

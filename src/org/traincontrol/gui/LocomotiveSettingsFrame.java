@@ -515,6 +515,22 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
         return UiStyle.label(text);
     }
 
+    /** A number spinner whose typed value counts as it is typed, as a text box's does, not only on Enter or leaving it. */
+    private static JSpinner typedAtOnce(JSpinner spinner)
+    {
+        if (spinner.getEditor() instanceof JSpinner.DefaultEditor)
+        {
+            javax.swing.JFormattedTextField field = ((JSpinner.DefaultEditor) spinner.getEditor()).getTextField();
+
+            if (field.getFormatter() instanceof javax.swing.text.DefaultFormatter)
+            {
+                ((javax.swing.text.DefaultFormatter) field.getFormatter()).setCommitsOnValidEdit(true);
+            }
+        }
+
+        return spinner;
+    }
+
     /**
      * The first tab: picture, name, decoder, address and preset speed, with the trash can and Check Duplicates.  For a
      * locomotive still to be made, the name, the decoders Add Locomotive offers and the address alone.
@@ -526,7 +542,7 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
             ? new decoderType[] { decoderType.MFX, decoderType.MM2, decoderType.DCC } : decoderType.values());
         final JButton checkDuplicates = new JButton(I18n.t("ui.checkDuplicates"));
         final JTextField address = new JTextField(16);
-        final JSpinner speed = new JSpinner(new SpinnerNumberModel(0, 0, 100, 1));
+        final JSpinner speed = typedAtOnce(new JSpinner(new SpinnerNumberModel(0, 0, 100, 1)));
         final JLabel sameAddress = new JLabel();
         final JLabel picture = new JLabel("", JLabel.CENTER);
         final JButton trash = new JButton(RowIcons.trash(18));
@@ -692,6 +708,14 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
             }
 
             gbc.fill = GridBagConstraints.NONE;
+
+            JLabel addressHint = InfoMark.label(I18n.t("loc.ui.settingsAddressHint"));
+
+            addressHint.setName("settings.addressHint");
+            gbc.gridx = 2;
+            gbc.gridy = 3;
+            add(addressHint, gbc);
+
             gbc.gridx = 1;
             gbc.gridy = 4;
 
@@ -1018,8 +1042,8 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
         private final Integer loadedArrival = loc.getArrivalFunc();
         private final boolean loadedActive = !loc.isAutonomyPaused();
 
-        final JSpinner length = new JSpinner(new SpinnerNumberModel(loadedLength, 0,
-            Math.max(TrainControlUI.ROUTE_TRAIN_LENGTH_MAX, loadedLength), 1));
+        final JSpinner length = typedAtOnce(new JSpinner(new SpinnerNumberModel(loadedLength, 0,
+            Math.max(TrainControlUI.ROUTE_TRAIN_LENGTH_MAX, loadedLength), 1)));
         final javax.swing.JCheckBox reversible = new javax.swing.JCheckBox(I18n.t("loc.ui.settingsReversibleBox"));
         final javax.swing.JCheckBox active = new javax.swing.JCheckBox(I18n.t("autosetup.ui.trainMayBeMoved"));
         final JComboBox<String> departure = functionChoices(loadedDeparture);

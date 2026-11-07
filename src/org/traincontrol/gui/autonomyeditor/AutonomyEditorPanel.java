@@ -1001,6 +1001,12 @@ public class AutonomyEditorPanel extends JPanel
         if (stationWindows.stationWindow() != null) stationWindows.stationWindow().closeWindow();
     }
 
+    /** Drops the picks that are not among these, which Station Settings found gone, and redraws the marks. */
+    void keepOnlyTheseStationPicks(java.util.Collection<TileKey> left)
+    {
+        if (stationPicks.retainAll(left)) redrawTheMarks();
+    }
+
     /** Picks a station to set with the others, or drops it (FR-052); Station Settings follows the picks. */
     private void pickStation(TileKey tile)
     {
@@ -3017,6 +3023,9 @@ public class AutonomyEditorPanel extends JPanel
         return true;
     }
 
+    /** True while Station Settings sets several stations in turn (FR-052): a question then names its square. */
+    boolean oneOfSeveral;
+
     /** Asks for a new station's name (FR-120): message and text so far to the answer, null for Cancel. */
     private java.util.function.BiFunction<String, String, String> askForAName =
         (message, typed) -> JOptionPane.showInputDialog(owner(), wrapped(message), typed);
@@ -3034,7 +3043,8 @@ public class AutonomyEditorPanel extends JPanel
      */
     private String askTheNewStationsName(TileKey tile)
     {
-        String prompt = I18n.t("autosetup.ui.promptNewStationName");
+        String prompt = oneOfSeveral ? I18n.f("autosetup.ui.promptNewStationNameAt", describeTile(tile))
+            : I18n.t("autosetup.ui.promptNewStationName");
         String message = prompt;
         String typed = "";
 
@@ -3675,14 +3685,95 @@ public class AutonomyEditorPanel extends JPanel
         // otherwise be the previous occupant's.
         org.traincontrol.automationui.TilePorts.Side heading = session.facingOf(name);
 
+        org.traincontrol.automation.Layout running = layoutSource == null ? null : layoutSource.get();
+
+        // What it had on the railway, which the tail question starts from
+        org.traincontrol.automation.Point wasOn = standingOn(running, name);
+        final List<org.traincontrol.automation.Edge> roadBefore = wasOn == null ? null : wasOn.getArrivedAlong();
+        final String sideBefore = wasOn == null ? null : wasOn.getArrivedFrom();
+        final boolean sameSquare = wasOn != null && session.getStationIndex() != null
+            && tile.equals(session.getStationIndex().squareOf(wasOn));
+
         session.placeLocomotive(tile, name);
 
         // Over the copies it could leave (OB-284), as a paste records it.
         session.setFacing(tile, org.traincontrol.automationui.AutonomySession.facingAfterAPaste(
-            session.departableFacingsFor(tile, layoutSource == null ? null : layoutSource.get()), heading, null));
+            session.departableFacingsFor(tile, running), heading, null));
+
+        // Every hand-placement door records the side it came in by (`behaviour/facing.md`); the rebuild carries it onto
+        // the railway
+        final String side = arrivalSideFor(tile, running, heading);
+
+        if (side != null) session.setArrivedFrom(tile, side);
 
         // Named (MT-337): only the rebuild puts the train on the railway.
         placementChanged(java.util.Collections.singletonList(name));
+
+        if (side != null && trainBeingDropped == null) askWhereTheTailIsOnceBuilt(tile, name, side, roadBefore, sameSquare,
+            sideBefore);
+    }
+
+    /**
+     * The side a train put here by hand came in by: from the rule (`ArrivalSidePrompt.suggestedFor`), else the first
+     * side the square has; null where nothing can say.
+     */
+    private String arrivalSideFor(TileKey tile, org.traincontrol.automation.Layout running,
+        org.traincontrol.automationui.TilePorts.Side heading)
+    {
+        org.traincontrol.automation.Point point = running == null ? null : pointOnTheLayout(running, tile);
+
+        if (point == null) return null;
+
+        List<org.traincontrol.automationui.TilePorts.Side> sides = session.unbarredArrivalSides(tile);
+
+        String side = org.traincontrol.gui.autonomy.ArrivalSidePrompt.suggestedFor(running, point,
+            heading == null ? null : heading.name(), false, sides);
+
+        List<String> all = org.traincontrol.gui.autonomy.ArrivalSidePrompt.choicesFor(running, point, sides);
+
+        return side != null || all.isEmpty() ? side : all.get(0);
+    }
+
+    /**
+     * Asks where the tail lies (`TailCrossedPrompt.recordTheTail`) once the posted rebuild has put the train on the
+     * railway, hung off the window that asked: the editor's own window, or on the track diagram as its doors ask.
+     */
+    private void askWhereTheTailIsOnceBuilt(final TileKey tile, final String name, final String side,
+        final List<org.traincontrol.automation.Edge> roadBefore, final boolean sameSquare, final String sideBefore)
+    {
+        final java.awt.Window asker = askingWindow;
+        final org.traincontrol.automationui.AutonomySession asked = session;
+
+        javax.swing.SwingUtilities.invokeLater(() -> pressedFrom(asker, () ->
+        {
+            TrainControlUI ui = parentWindow();
+            org.traincontrol.automation.Layout running = layoutSource == null ? null : layoutSource.get();
+            org.traincontrol.automation.Point point = standingOn(running, name);
+
+            if (ui == null || session != asked || ui.aRunHoldsTheSetup() || point == null
+                || session.getStationIndex() == null || !tile.equals(session.getStationIndex().squareOf(point)))
+            {
+                return;
+            }
+
+            boolean stands = TailCrossedPrompt.recordTheTail(session, tile, running, point, side, name, roadBefore,
+                sameSquare, sideBefore, ui, menuOnly ? ui : owner(), saved -> AutonomyReport.show(owner(), saved));
+
+            if (stands) placementChanged(null);
+        }));
+    }
+
+    /** The copy this train stands on in the railway, or null. */
+    private static org.traincontrol.automation.Point standingOn(org.traincontrol.automation.Layout running, String name)
+    {
+        if (running == null || name == null) return null;
+
+        for (org.traincontrol.automation.Point each : running.getPoints())
+        {
+            if (each.getCurrentLocomotive() != null && name.equals(each.getCurrentLocomotive().getName())) return each;
+        }
+
+        return null;
     }
 
     /** Takes the train off a square. */
