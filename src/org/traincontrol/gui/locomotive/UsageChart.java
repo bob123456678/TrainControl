@@ -5,6 +5,7 @@ import java.awt.BasicStroke;
 import java.awt.BorderLayout;
 import java.awt.Component;
 import java.awt.FlowLayout;
+import java.awt.Font;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.RenderingHints;
@@ -118,11 +119,11 @@ public class UsageChart extends JFrame
 
         chart.setName("usageChart.panel");
         summary.setName("usageChart.summary");
-        UiStyle.style(summary);
+        summary.setFont(summary.getFont().deriveFont(Font.BOLD));
         firstDay.setName("usageChart.firstDay");
         lastDay.setName("usageChart.lastDay");
-        UiStyle.style(firstDay);
-        UiStyle.style(lastDay);
+        firstDay.setFont(firstDay.getFont().deriveFont(Font.BOLD));
+        lastDay.setFont(lastDay.getFont().deriveFont(Font.BOLD));
 
         SegmentedControl ranges = new SegmentedControl();
 

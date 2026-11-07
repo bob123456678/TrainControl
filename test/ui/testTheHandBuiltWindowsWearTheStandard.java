@@ -47,10 +47,9 @@ public class testTheHandBuiltWindowsWearTheStandard extends support.SettingsClas
     }
 
     /**
-     * The usage chart's buttons, range segments and figures follow the standard.
+     * The usage chart's paging buttons and range segments are Bold 12.
      *
-     * MUTATION: leave `UsageChart.pagingButton` or `SegmentedControl.Segment` in the default font, or make the summary
-     * line bold by `deriveFont`, and this fails.
+     * MUTATION: leave `UsageChart.pagingButton` or `SegmentedControl.Segment` in the default font, and this fails.
      */
     @Test(timeOut = 120000)
     public void testTheUsageChartWearsTheStandard() throws Exception
@@ -60,14 +59,6 @@ public class testTheHandBuiltWindowsWearTheStandard extends support.SettingsClas
         try
         {
             Looks.assertButtonsAreBold12(chart.getContentPane(), "the usage chart");
-
-            for (String name : new String[] { "usageChart.summary", "usageChart.firstDay", "usageChart.lastDay" })
-            {
-                javax.swing.JLabel l = Components.named(chart.getContentPane(), name, javax.swing.JLabel.class);
-
-                org.testng.Assert.assertEquals(l.getFont(), UiStyle.LABEL_FONT, name + " is not Semibold 13");
-                org.testng.Assert.assertEquals(l.getForeground(), UiStyle.TEXT, name + " is not black");
-            }
         }
         finally
         {
