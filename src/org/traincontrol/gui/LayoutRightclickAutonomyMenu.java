@@ -640,9 +640,9 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
     private boolean trainOffered;
 
     /**
-     * What the autonomy editor offers on this square, folded into this menu: borrowed from the panel that builds it, so
-     * the two never drift.  On a sensor square its window and the rest, one level up (FR-111); anywhere else under a
-     * parent entry.  While a run holds the setup, only the window, which is read-only then.
+     * What the autonomy editor offers on this square, borrowed from the panel that builds it so the two never drift: on a
+     * sensor square its window and the rest, one level up (FR-111); elsewhere under a parent entry.  While a run holds the
+     * setup, only the window.
      */
     private void addSetupMenu()
     {

@@ -328,10 +328,9 @@ public class testPageLinksGoByPageId extends support.PageWindowTest
     }
 
     /**
-     * Two pages of a local layout that share an ID are left alone on read and told apart at the next page edit: the
-     * page the setup records under the ID keeps it, and the other takes a fresh one.  (The app rewrites the setup when
-     * the layout opens, recording the later page of two that share an ID, so the claim reads the setup as it stands
-     * when the edit is made.)
+     * Two pages of a local layout that share an ID are left alone on read and told apart at the next page edit: the page
+     * the setup records under the ID keeps it, and the other takes a fresh one.  The claim reads the setup as it stands at
+     * the edit, as the app rewrites it when the layout opens.
      *
      * MUTATION: `writeLayoutIndex` lets the later page in the list lose again (the tie broken by list order, not by
      * the setup), and the page the setup records loses its ID.

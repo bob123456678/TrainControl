@@ -313,9 +313,8 @@ final class EditorPrompts
     }
 
     /**
-     * Excluding a locomotive from the station that is its home contradicts the home (OB-022;
-     * HomeStaging.homeBrokenByExcluding): warned rather than refused, like the home warning, since an operator may mean
-     * it.
+     * Excluding a locomotive from the station that is its home contradicts the home (OB-022): warned rather than refused,
+     * as an operator may mean it.
      *
      * @return false where the operator would rather not
      */

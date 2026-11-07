@@ -151,9 +151,8 @@ final class LayoutExplanations
     }
 
     /**
-     * A terminus a train that cannot reverse would be stranded at (OB-205), unless it is a berth: a square autonomy
-     * never chooses.  It is a question about the square, not this copy of it: `isTerminus()` cannot be read for this,
-     * so ask whether any way of standing on the square does not turn a train round (MT-367).
+     * A terminus a train that cannot reverse would be stranded at (OB-205), unless it is a berth.  Asks whether any way of
+     * standing on the square does not turn a train round, as `isTerminus()` is per copy (MT-367).
      */
     boolean strandsATrainThatCannotReverse(Point end)
     {

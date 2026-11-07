@@ -1064,8 +1064,7 @@ public class TileAnnotation
         }
         else
         {
-            // THE CHEVRON ALONE, ITS ARMS SCALED WITH THE SQUARE, IN GRAY (OB-326): the same shape at 30 and 60
-            // pixels, where a hollow chevron with strokes through it would read as a hollow triangle.
+            // THE CHEVRON ALONE, ITS ARMS SCALED WITH THE SQUARE, IN GRAY (OB-326): strokes through a hollow one read as a triangle.
             g.setColor(ARRIVAL_BARRED);
             g.setStroke(new BasicStroke((float) Math.max(2.0, span / 14.0), BasicStroke.CAP_ROUND,
                 BasicStroke.JOIN_ROUND));
@@ -1409,9 +1408,7 @@ public class TileAnnotation
 
         if (shape == null) return;
 
-        // OUTLINED ON THE SHAPE ITSELF, not nudged to the pixel grid, whose rounding hangs an outline half a pixel
-        // right and down and would pull an arrow off its rail.  The thin lines elsewhere on a square are crisper on the
-        // grid.
+        // Outlined on the shape itself, not nudged to the pixel grid, whose rounding would pull an arrow off its rail.
         Object control = g.getRenderingHint(RenderingHints.KEY_STROKE_CONTROL);
 
         g.setRenderingHint(RenderingHints.KEY_STROKE_CONTROL, RenderingHints.VALUE_STROKE_PURE);
@@ -1446,8 +1443,8 @@ public class TileAnnotation
     }
 
     /**
-     * The arrowhead `arrow` draws, or null for a heading shorter than a pixel: for a picture that draws one off a square (FR-111) and must
-     * know where it lies.
+     * The arrowhead `arrow` draws, or null for a heading shorter than a pixel, for a picture that must know where it lies
+     * (FR-111).
      *
      * @param target where its tip points, less the gap the diagram leaves at a square's edge
      * @param heading which way it points

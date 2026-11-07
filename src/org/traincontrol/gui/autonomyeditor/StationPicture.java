@@ -46,11 +46,9 @@ import org.traincontrol.gui.widgets.UiStyle;
 import org.traincontrol.util.I18n;
 
 /**
- * The station and the track squares its track meets, as the track diagram draws them at 60 pixels (FR-111).  The
- * station wears only its ways out (the diagram's green arrow, or its red outline) and its ways in to stop (the arrival
- * chevron, gray where barred), from `Layout.standingRulesAt`; the next squares wear only their own arrows on the track
- * that meets the station, over art drawn in gray so that only arrows carry color.  A click on a mark is handed to the
- * window, which presses the control that owns that setting.  It holds no rule.
+ * The station and the track squares its track meets, as the track diagram draws them at 60 pixels (FR-111): the station
+ * with its ways out and its ways in to stop, from `Layout.standingRulesAt`; the next squares with only their own
+ * arrows, over gray art.  A click on a mark goes to the window, which presses the control that owns it.  Holds no rule.
  */
 final class StationPicture extends JPanel
 {

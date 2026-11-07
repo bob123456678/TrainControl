@@ -1019,8 +1019,7 @@ public class testStationSettingsWindow
 
     /**
      * Blue is for the section headings alone (Adam: "it looks very blue"); every other label is black Semibold 13
-     * (docs/UI-standards.md), and a label in an off section still grays.  `UiStyle.heading` is the blue one and
-     * `UiStyle.label` the black item style.
+     * (docs/UI-standards.md), and a label in an off section still grays.
      *
      * MUTATION: build a row's label with `UiStyle.heading`, or a section heading with `UiStyle.label`, and this fails naming it.
      */
@@ -1192,9 +1191,8 @@ public class testStationSettingsWindow
     }
 
     /**
-     * The window keeps its width while it is open, whatever is edited (Adam: "we don't want it to get wider as station edits
-     * change"), in English, German and Polish at 100% and 150%, and nothing it holds is cut off by that: the form and the
-     * table still fit, with long text wrapped or shortened.
+     * The window keeps its width while open, whatever is edited (Adam: "we don't want it to get wider as station edits
+     * change"), in English, German and Polish at 100% and 150%, with nothing cut off: the form and the table still fit.
      *
      * MUTATION: drop `lockTheWidth`'s columns, or have `pack` take the width it asks for, and this fails on the edit that
      * moves it.
@@ -1496,8 +1494,7 @@ public class testStationSettingsWindow
 
     /**
      * Every station on the frozen railway, on every page: the ways in drawn open are the sides where Sent Here or Turned
-     * Round of `Layout.standingRulesAt` is not No, and the ways out the sides where Sent From is (by side on a square of
-     * several copies; on a one-Point square, whose cells are keyed by its way in, whether there is one).
+     * Round of `Layout.standingRulesAt` is not No, and the ways out the sides where Sent From is.
      *
      * MUTATION: have `LayoutStandingRules` read a way out from `copy.getCopyFacing()`, which a one-Point square does not
      * record, and this fails.
@@ -1664,10 +1661,9 @@ public class testStationSettingsWindow
     }
 
     /**
-     * A click on the picture changes what the form's control for it changes, and the table follows, at BottomMainA: its
-     * barred way in from the east opens as ticking May Arrive From East does; its way out to the east closes as choosing
-     * Toward W under May Depart does; and the arrow at the far side of the square west of it closes that way as that
-     * square's right-click Trains May Depart does.
+     * A click on a mark changes what the form's control for it changes, and the table follows, at BottomMainA: the barred
+     * way in from the east opens as May Arrive From East does; the way out east closes as Toward W under May Depart does;
+     * the arrow on the square west of it closes that way as that square's right-click Trains May Depart does.
      *
      * MUTATION: have `wayOut` toggle the arm opposite the one clicked, and this fails.
      */
@@ -1733,9 +1729,8 @@ public class testStationSettingsWindow
     }
 
     /**
-     * On every station of the page, each side's marks sit on that side's axis, the track's line from the middle of the
-     * station's edge into it: the way out with its tip at the edge and the way in just behind it, pointing in.  Both are
-     * inside the station's square, apart from each other, and clear of every next square.
+     * On every station of the page each side's marks sit on that side's axis: the way out with its tip at the edge and the
+     * way in just behind it, pointing in; both inside the station's square, apart, and clear of every next square.
      *
      * MUTATION: draw the way in a quarter square along the edge, where the diagram puts its arrival chevrons, and this
      * fails.

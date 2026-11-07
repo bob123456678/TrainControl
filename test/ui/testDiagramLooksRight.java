@@ -1780,10 +1780,10 @@ public class testDiagramLooksRight
     }
 
     /**
-     * Changing what trains may do at a station leaves its caption where it is (OB-310; the rename has the same rule,
-     * MT-116): both boxes of Station Settings go through `setUsage`, which must place a caption only where the station
-     * has none.  Covered: every named station with a caption, both changes, through the window `buildAutonomyTileMenu`
-     * opens; then a station captioned on north-south rails, drawn with both boxes off.
+     * Changing what trains may do at a station leaves its caption where it is (OB-310): both boxes of Station Settings go
+     * through `setUsage`, which places a caption only where the station has none.  Covered: every named station with a
+     * caption, both changes, through the window `buildAutonomyTileMenu` opens; then a station captioned on north-south
+     * rails, drawn with both boxes off.
      *
      * MUTATION: dropping the "has none" test from `AutonomyEditorPanel.setUsage` fails both halves.
      */

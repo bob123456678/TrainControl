@@ -4211,11 +4211,10 @@ public class MarklinControlStation implements ViewListener, ModelListener
     private volatile Map<Integer, String> setupPageNames = new java.util.TreeMap<>();
 
     /**
-     * Tells every link which page it goes to (FR-175).  A link that carries a page ID goes to the page with it.  One
-     * written by an earlier version has none: on a local layout its number is a place in the name-sorted list, on a
-     * station it is the page's ID; it resolves that way and the ID is attached here, in memory, to be written when its
-     * page is next saved.  A local link whose target shares its ID with another page keeps going by its number until
-     * the IDs are told apart.  On a local layout the number written beside the ID is made right for 3.0.8.
+     * Tells every link which page it goes to (FR-175): one carrying a page ID goes by it.  One from an earlier version has
+     * a number only, a place in the name-sorted list on a local layout and the page's ID on a station; it resolves that
+     * way and the ID is attached in memory, to be written when the page is next saved.  A local link whose target shares
+     * its ID keeps its number until the IDs are told apart; the number written beside the ID is made right for 3.0.8.
      */
     private void attachLinks(CS2File parser)
     {

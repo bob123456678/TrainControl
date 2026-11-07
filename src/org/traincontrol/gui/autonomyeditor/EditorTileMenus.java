@@ -35,9 +35,8 @@ final class EditorTileMenus
         }
 
         /**
-         * Nothing ticked where nothing is known: with no facing recorded and none on the railway, the build stands the
-         * train on a copy it can start from, which need not be the first facing.  Where the square holds one facing,
-         * that one is known: the only copy is where the train stands.
+         * Nothing ticked where no facing is known; a square holding one facing knows it, the only copy being where the
+         * train stands.
          */
         boolean isTicked(org.traincontrol.automationui.TilePorts.Side facing)
         {
@@ -166,8 +165,7 @@ final class EditorTileMenus
 
             menu.addSeparator();
 
-            // PUTTING a train down is only at a station; TAKING one off is not, as a square under a train can stop being
-            // a station while the train stays recorded on it.  The track diagram's own menu has its own of these.
+            // PUTTING a train down is only at a station; TAKING one off is not, as a square can stop being one under it.
             if (!editor.menuOnly)
             {
                 javax.swing.JMenuItem train = trainItem(target);
@@ -182,8 +180,7 @@ final class EditorTileMenus
                         () -> editor.removeLocomotive(target)));
                 }
 
-                // WHETHER IT RUNS (FR-117), read off the train, as the track diagram's tick and its card (OB-346), and
-                // written to the train and the setup together; only at rest.
+                // Whether it runs (FR-117): read off the train and written to it and the setup together; only at rest.
                 if (standing != null && (editor.parentWindow() == null || !editor.parentWindow().aRunHoldsTheSetup()))
                 {
                     menu.add(editor.toggle(I18n.f("autolayout.ui.menuLocomotiveActive", standing),
@@ -300,9 +297,8 @@ final class EditorTileMenus
         // while a one-way run waits for a second click, which is a mode, and a mode advertised from a menu that closes the
         // moment you pick it shows the user nothing.  It is a button beside Test and Why.
 
-        // Only when there is something under the heading.  Everything that fills this submenu sits inside
-        // canCarryDirection(target), false for any portal, so right-clicking a link or a tunnel would open a grayed
-        // heading and a separator (the state hasItemsBesidesTitle detects, OB-032).  A sensor's is in its window.
+        // Only when there is something under the heading: everything here sits inside canCarryDirection(target), false for
+        // a portal, so a link or tunnel would get a grayed heading alone (OB-032).  A sensor's is in its window.
         if (!isPoint && editor.hasItemsBesidesTitle(connections)) menu.add(connections);
 
         // A link's own settings, on the menu ITSELF rather than inside the departures submenu.  A link is a jump to
@@ -579,8 +575,7 @@ final class EditorTileMenus
         // `Layout.entrySideOf` is what both the arrival write and the tail walk consult, so offering it here stores a
         // value they can match.
         java.util.List<String> sides = new java.util.ArrayList<>(
-            // UNBARRED (OB-204): this records where a train CAME FROM, and a side nothing may arrive by is not one of
-            // those.
+            // UNBARRED (OB-204): this records where a train CAME FROM, which a side nothing may arrive by is not.
             org.traincontrol.gui.autonomy.ArrivalSidePrompt.sidesOf(editor.session.unbarredArrivalSides(target)));
 
         final String recorded = editor.session.getArrivedFrom(target);
@@ -598,12 +593,9 @@ final class EditorTileMenus
     }
 
     /**
-     * Where the tail of the train standing here lies - the "arrived from" side.  `TrainControlUI.buildAutonomyTileMenu`
-     * serves this panel's menu to the diagram, so one implementation reaches both (OB-039).  The sides offered are the
-     * ones the railway HAS.
-     *
-     * @param target the square
-     * @return the menu, or null when no train is standing here (a tail belongs to a train)
+     * Where the tail of the train standing here lies, the "arrived from" side; the diagram's menu carries this one too
+     * (OB-039).
+     * @return the menu, or null when no train is standing here
      */
     javax.swing.JMenu buildArrivedFromMenu(final TileKey target)
     {
@@ -656,15 +648,13 @@ final class EditorTileMenus
 
         editor.session.setArrivedFrom(target, side);
 
-        // A road back describes one side: the tail cannot lie along a road that leaves by another, so a changed side
-        // forgets it, here and on the railway below.
+        // A road back describes one side: a changed side forgets it, here and on the railway below.
         if (!side.equals(recorded)) editor.session.setArrivedAlong(target, null);
 
         // SAVED AND SHOWN, like every other door that writes a point property.
         editor.setupChanged();
 
-        // THE RUNNING LAYOUT TOO, not only the setup: what blocks track is the Point, and a setting that changes the
-        // diagram while the railway uses the old value is a defect.
+        // The running layout too: what blocks track is the Point, so a diagram changed over an old railway value is a defect.
         org.traincontrol.automation.Layout now = editor.runningLayout == null ? null : editor.runningLayout.get();
 
         if (now != null)
@@ -678,9 +668,8 @@ final class EditorTileMenus
     }
 
     /**
-     * The train standing here: THE ONE THE RAILWAY HAS, and only then the setup's: after a run the setup still names each
-     * square's pre-run occupant (behaviour/editing-while-running.md 6a), so it would name the setup's train and tick the
-     * railway's, and a click would turn neither.  `setFacingAndMove` turns the one named here.
+     * The train the railway has standing here, and only then the setup's: after a run the setup names the pre-run occupant
+     * (behaviour/editing-while-running.md 6a), so a click would turn neither.  `setFacingAndMove` turns the one named.
      */
     String trainStanding(final TileKey target)
     {
@@ -735,11 +724,8 @@ final class EditorTileMenus
     }
 
     /**
-     * The "{loc} Is Facing..." submenu for a square, or null unless a locomotive is standing there.  Handed out on its
-     * own so the track diagram's right-click menu can carry it.  Where no track leads out of the square the submenu is
-     * there and grayed, with the reason in its tooltip (OB-347).
-     *
-     * @param target the square
+     * The "{loc} Is Facing..." submenu, or null unless a locomotive stands here; the diagram's menu carries it too.  Grayed
+     * with its reason as tooltip where no track leads out (OB-347).
      * @return the submenu, or null
      */
     javax.swing.JMenu buildFacingMenu(final TileKey target)
@@ -848,9 +834,7 @@ final class EditorTileMenus
     }
 
     /**
-     * The "farthest sensor the tail crossed" choices for the train standing here, where the answer matters: only when
-     * `TailCrossedPrompt.wouldAsk` says a junction behind the train has two roads back that put the tail on different
-     * track (MT-477).
+     * The "farthest sensor the tail crossed" choices, only where `TailCrossedPrompt.wouldAsk` finds two roads back (MT-477).
      */
     private void appendTailCrossed(javax.swing.JMenu menu, final TileKey target)
     {

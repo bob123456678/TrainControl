@@ -3677,8 +3677,7 @@ public class AutonomyEditorPanel extends JPanel
 
         session.placeLocomotive(tile, null);
 
-        // The setup's new answer for this train is "nowhere", and it is an answer - without naming it the rebuild puts
-        // the train straight back.
+        // "Nowhere" is the setup's answer for this train; unnamed, the rebuild puts it straight back.
         placementChanged(java.util.Collections.singletonList(standing));
     }
 

@@ -64,9 +64,9 @@ final class LocomotiveActions
     }
 
     /**
-     * Renames and re-addresses a locomotive, the one door the Locomotive Settings window's Save goes
-     * through.  The name is asked first (OB-301): a name refused returns before anything has changed, not after the new address went through.  A route that drives the locomotive is asked again here,
-     * before anything is written, because it can start while a dialog or window is open.
+     * Renames and re-addresses a locomotive: the one door the Locomotive Settings window's Save goes through.  The name is
+     * asked first (OB-301), so a refusal returns before anything has changed.  A route that drives the locomotive is asked
+     * again here, before anything is written, because it can start while a window is open.
      *
      * @param source what a refusal hangs off
      * @param newName the name wanted, or null to keep it

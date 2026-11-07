@@ -2146,8 +2146,7 @@ public final class CS2File
                 Map<String, String> page = new java.util.LinkedHashMap<>();
                 page.put("name", name);
                 // Through LayoutDiagram's rule, not a second copy: a non-numeric `.id=` must come out as the page's
-                // position, as in readLayoutIndexIds.  A station's pages that state none are numbered in the order
-                // they appear.
+                // position, as in readLayoutIndexIds.  A station's pages that state none are numbered in order.
                 page.put("id", String.valueOf(
                     org.traincontrol.base.LayoutDiagram.pageIdOrPosition(m.get("id"), position)));
 

@@ -31,8 +31,8 @@ import support.Mouse;
 import support.StationDoors;
 
 /**
- * The train window and the menus that lead to it and to Station Settings (FR-111, FR-059, FR-072, OB-346 part 2), pressed
- * as the user presses them on the frozen railway.
+ * The train window and the menus that lead to it and to Station Settings (FR-111), pressed as the user presses them on
+ * the frozen railway.
  *
  * @author Adam
  */

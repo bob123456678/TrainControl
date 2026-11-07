@@ -2170,9 +2170,8 @@ public class testEditorSurfaceRules
     }
 
     /**
-     * The train list still asks whether it is breaking a home.  `homeBrokenBy` has a test of its rule, but nothing tested
-     * that `promptTrainList` calls it: excluding a locomotive from the station it is homed to would go through with no
-     * warning.
+     * The train list still asks whether it is breaking a home: nothing tested that `promptTrainList` calls `homeBrokenBy`,
+     * so excluding a locomotive from its home station would go through unwarned.
      *
      * MUTATION: deleting the `homeMayBeBroken` call from `promptTrainList` fails this.
      */

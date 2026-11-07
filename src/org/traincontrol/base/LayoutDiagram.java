@@ -158,9 +158,8 @@ public class LayoutDiagram
     }
 
     /**
-     * The pages that share an ID are given IDs of their own, all but one: the page the setup records under the ID keeps
-     * it when it is one of them, otherwise the first by name, and the others take fresh IDs above every one in use, in
-     * name order.  Nothing is written here: the caller decides whether the result goes to a file or stays in memory.
+     * Gives the pages that share an ID IDs of their own, all but one: the page the setup records under the ID keeps it,
+     * else the first by name; the others take fresh IDs above every one in use, in name order.  Writes nothing.
      *
      * @param nameToId each page's ID by name
      * @param setupNames the page names the autonomy setup records under each ID, empty when there is none

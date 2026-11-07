@@ -96,8 +96,7 @@ final class StationMatrixPanel extends JPanel
     }
 
     /**
-     * Sizes the table once, for the longest thing each column can say in this language and scale, so an answer changing
-     * moves nothing.
+     * Sizes the table once, for the longest thing each column can say in this language and scale, so no answer moves it.
      *
      * @return the table's width
      */
