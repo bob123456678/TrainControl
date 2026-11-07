@@ -108,8 +108,6 @@ import javax.swing.SwingUtilities;
 import javax.swing.border.MatteBorder;
 import javax.swing.event.AncestorEvent;
 import javax.swing.event.AncestorListener;
-import javax.swing.event.DocumentEvent;
-import javax.swing.event.DocumentListener;
 import javax.swing.filechooser.FileFilter;
 import javax.swing.filechooser.FileNameExtensionFilter;
 import javax.swing.table.DefaultTableCellRenderer;
@@ -140,7 +138,6 @@ import org.traincontrol.gui.locomotive.LocomotiveKeyboardMapping;
 import org.traincontrol.gui.locomotive.LocomotivePlaceholder;
 import org.traincontrol.gui.locomotive.LocomotiveSelector;
 import org.traincontrol.gui.locomotive.LocomotiveStats;
-import org.traincontrol.gui.locomotive.RightClickFunctionMenu;
 import org.traincontrol.gui.locomotive.RightClickMenuListener;
 import org.traincontrol.gui.locomotive.RightClickPageMenu;
 import org.traincontrol.gui.locomotive.UsageChart;
@@ -513,6 +510,73 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     private String railwaySource;
 
     RouteEditorFrame routeEditor;
+
+    /** The Locomotive Settings window while it is open, or null (FR-048). */
+    volatile LocomotiveSettingsFrame locomotiveSettings;
+
+    /**
+     * Opens the Locomotive Settings window on a tab, unless the locomotive cannot be edited (then it says why).  The one door
+     * the menus, the name, the database tile and the function buttons all use.
+     *
+     * @param function the function to show on the Functions tab, or null
+     * @return true when the window is open on the locomotive
+     */
+    public boolean openLocomotiveSettings(Locomotive l, LocomotiveSettingsFrame.Tab tab, Integer function)
+    {
+        if (l == null || LocomotiveSettings.refuseIfNotEditable(this, l, this)) return false;
+
+        if (this.locomotiveSettings == null || !this.locomotiveSettings.isDisplayable())
+        {
+            this.locomotiveSettings = new LocomotiveSettingsFrame(this);
+        }
+
+        if (!this.locomotiveSettings.aim(l, tab, function))
+        {
+            return false;
+        }
+
+        this.locomotiveSettings.setVisible(true);
+        this.locomotiveSettings.toFront();
+
+        return true;
+    }
+
+    /** Writes a preset speed saved in the Locomotive Settings window into the loaded setup's copy of the train, if it keeps one. */
+    void recordPresetSpeedInTheSetup(Locomotive l)
+    {
+        org.traincontrol.automationui.AutonomySession session = this.autonomySession;
+
+        if (session == null || !session.updateStoredSpeed(l.getName(), l.getPreferredSpeed())) return;
+
+        try
+        {
+            session.saveWithoutReconciling();
+        }
+        catch (java.io.IOException e)
+        {
+            this.model.log(e);
+        }
+    }
+
+    /** Closes the Locomotive Settings window if it is showing this locomotive, which has left the database. */
+    void locomotiveSettingsClosedFor(Locomotive l)
+    {
+        if (this.locomotiveSettings != null && this.locomotiveSettings.getLocomotive() == l) this.locomotiveSettings.close();
+    }
+
+    /** Tells the open Locomotive Settings window that the locomotive or the power may have changed. */
+    private void tellLocomotiveSettings()
+    {
+        final LocomotiveSettingsFrame window = this.locomotiveSettings;
+
+        if (window != null) javax.swing.SwingUtilities.invokeLater(window::refresh);
+    }
+
+    /** Why a locomotive cannot be edited now ("Stop BR 218 to edit it."), or null when it can. */
+    public String whyNotEditable(Locomotive l)
+    {
+        return LocomotiveSettings.whyNotEditable(this, l);
+    }
 
     /** Delegates to `EditorWindows.everyOpenWindowMaySettle`. */
     public boolean everyOpenWindowMaySettle()
@@ -6460,6 +6524,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // On the EDT: called from the message thread, and setEnabled off it gives an occasionally wrong button.
         powerHeard = true;
 
+        tellLocomotiveSettings();
+
         javax.swing.SwingUtilities.invokeLater(() ->
         {
             if (this.model.getPowerState())
@@ -7337,6 +7403,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     @Override
     synchronized public void repaintLoc(boolean force, List<Locomotive> updatedLocs)
     {     
+        tellLocomotiveSettings();
+
         // Before the possibly deferred render: asked once per request, not again when a deferred render finally runs.
         followDirectionChanges(updatedLocs);
 
@@ -14659,23 +14727,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         // Only for the dialog that can change one: a Central Station multi-unit's list is read-only, nothing is
         // written.
-        if (!isCSMultiUnit && this.model.isAutonomyRunning())
-        {
-            JOptionPane.showMessageDialog(
-                asked,
-                I18n.t("autolayout.ui.errorCannotEditMultiUnitsWhileRunning")
-            );
-            return;
-        }
-
-        // Nor while a route drives it or a member (OB-287): a multi-unit's commands drive its members, so changing them
-        // mid-route changes what the route drives.
-        java.util.Set<String> involved = new java.util.LinkedHashSet<>();
-
-        involved.add(l.getName());
-        involved.addAll(l.getLinkedLocomotiveNames().keySet());
-
-        if (!isCSMultiUnit && refuseWhileARouteDrivesAny(asked, involved)) return;
+        if (!isCSMultiUnit && this.locomotiveActions.refuseMultiUnitEdit(asked, l, null)) return;
 
         if (this.model.getLocomotives().size() < 2)
         {
@@ -14686,257 +14738,12 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             return;
         }
 
-        List<Locomotive> allLocomotives = !isCSMultiUnit ? this.model.getLocomotives() : l.getModelMultiUnitLocomotives();
-        Map<String, Double> currentLinkedLocos = !isCSMultiUnit ? l.getLinkedLocomotiveNames() : l.getModelMultiUnitLocomotiveNames();        
-        Map<String, Double> newLinkedLocos = new HashMap<>(currentLinkedLocos);
+        MultiUnitPanel panel = new MultiUnitPanel(this, l, null);
 
-        // Sort allLocomotives to prioritize currentLinkedLocos and then alphabetically by name
-        Collections.sort(allLocomotives, (a, b) ->
-        {
-            boolean aLinked = currentLinkedLocos.containsKey(a.getName());
-            boolean bLinked = currentLinkedLocos.containsKey(b.getName());
-            if (aLinked && !bLinked)
-            {
-                return -1;
-            }
-            else if (!aLinked && bLinked)
-            {
-                return 1;
-            }
-            else
-            {
-                return a.getName().compareToIgnoreCase(b.getName());
-            }
-        });
+        panel.setPreferredSize(new Dimension(600, 540));
 
-        JPanel panel = new JPanel();
-        panel.setLayout(new GridBagLayout());
-        GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(5, 5, 5, 5);
-        gbc.fill = GridBagConstraints.HORIZONTAL;
-        panel.setFont(new Font("Segoe UI", Font.PLAIN, 12));
-
-        JTextField filterField = new JTextField();
-        filterField.setToolTipText(
-            I18n.t("loc.ui.tooltip.filterByLocomotiveName")
-        );
-
-        gbc.gridx = 0;
-        gbc.gridy = 0;
-        gbc.gridwidth = 3;
-        gbc.insets = new Insets(5, 5, 5, 5);
-        panel.add(filterField, gbc);
-
-        JPanel scrollPanel = new JPanel();
-        scrollPanel.setLayout(new GridBagLayout());
-        GridBagConstraints scrollGbc = new GridBagConstraints();
-        scrollGbc.insets = new Insets(5, 5, 5, 5);
-        scrollGbc.fill = GridBagConstraints.HORIZONTAL;
-
-        // Add heading
-        JPanel headingPanel = new JPanel(new GridLayout(1, 3));
-
-        JLabel nameLabel = new JLabel(
-            I18n.t("loc.ui.labelLocomotiveName")
-        );
-        nameLabel.setFont(new Font("Segoe UI", Font.BOLD, 12));
-
-        JLabel multiplierLabel = new JLabel(
-            I18n.t("loc.ui.labelSpeedMultiplierPercent")
-        );
-        multiplierLabel.setToolTipText(
-            I18n.t("loc.ui.tooltip.adjustRelativeSpeed")
-        );
-        multiplierLabel.setFont(new Font("Segoe UI", Font.BOLD, 12));
-
-        JLabel reverseLabel = new JLabel(
-            I18n.t("loc.ui.labelReverse")
-        );
-        reverseLabel.setToolTipText(
-            I18n.t("loc.ui.tooltip.swapDirection")
-        );
-        reverseLabel.setFont(new Font("Segoe UI", Font.BOLD, 12));
-        headingPanel.add(nameLabel);
-        headingPanel.add(multiplierLabel);
-        headingPanel.add(reverseLabel);
-        scrollGbc.gridy = 0;
-        scrollPanel.add(headingPanel, scrollGbc);
-        scrollGbc.gridy++;
-        scrollPanel.add(Box.createVerticalStrut(10), scrollGbc);
-
-        List<JPanel> rowPanels = new ArrayList<>();
-        for (Locomotive loco : allLocomotives)
-        {
-            if (
-                    isCSMultiUnit || // show all the CS MU's locomotives for informational purposes
-                    l.canBeLinkedTo(loco, false) || l.isLinkedTo(loco)) 
-            {
-                JPanel rowPanel = new JPanel(new GridLayout(1, 3, 10, 5));
-                JCheckBox checkBox = new JCheckBox(loco.getName().length() > MAX_MU_SELECTOR_LOC_NAME_LENGTH ?
-                        loco.getName().substring(0, MAX_MU_SELECTOR_LOC_NAME_LENGTH) + "..." : 
-                        loco.getName(), currentLinkedLocos.containsKey(loco.getName())
-                );                 
-                checkBox.setToolTipText(loco.getName());
-                checkBox.setFocusable(false);
-                double multiplierValue = currentLinkedLocos.getOrDefault(loco.getName(), 1.0);
-                boolean isReversed = multiplierValue < 0;
-                JSlider multiplierSlider = new JSlider(0, 200, (int) (Math.abs(multiplierValue) * 100));
-                multiplierSlider.setMajorTickSpacing(50);
-                multiplierSlider.setMinorTickSpacing(50);
-                multiplierSlider.setPaintTicks(true);
-                multiplierSlider.setPaintLabels(true);
-                multiplierSlider.setSnapToTicks(false);
-                multiplierSlider.setPreferredSize(new Dimension(250, 50));
-                multiplierSlider.setFont(new Font("Segoe UI", Font.PLAIN, 12));
-                multiplierSlider.setFocusable(true);
-
-                // Custom label table for specific tick labels
-                java.util.Hashtable<Integer, JLabel> labelTable = new java.util.Hashtable<>();
-                labelTable.put(0, new JLabel("0"));
-                labelTable.put(50, new JLabel("50"));
-                labelTable.put(100, new JLabel("100"));
-                labelTable.put(150, new JLabel("150"));
-                labelTable.put(200, new JLabel("200"));
-                multiplierSlider.setLabelTable(labelTable);
-
-                // Update tooltip to show selected value on hover
-                multiplierSlider.addMouseMotionListener(new MouseMotionAdapter()
-                {
-                    @Override
-                    public void mouseMoved(MouseEvent e)
-                    {
-                        JSlider source = (JSlider) e.getSource();
-                        source.setToolTipText(String.valueOf(source.getValue()) + "%");
-                    }
-                });
-
-                // Add change listener to jump to 1 if the value is 0
-                multiplierSlider.addChangeListener(e ->
-                {
-                    if (multiplierSlider.getValue() == 0)
-                    {
-                        multiplierSlider.setValue(1);
-                    }
-                });
-
-                // Add mouse listener to reset to 100 on double-click
-                multiplierSlider.addMouseListener(new MouseAdapter()
-                {
-                    @Override
-                    public void mouseClicked(MouseEvent e)
-                    {
-                        if (e.getClickCount() == 2)
-                        {
-                            multiplierSlider.setValue(100);
-                        }
-                    }
-                });
-
-                JCheckBox reverseCheckBox = new JCheckBox("", isReversed);
-                reverseCheckBox.setFocusable(false);
-
-                // Central station multi units are read-only
-                if (isCSMultiUnit)
-                {
-                    checkBox.setSelected(true);
-                    checkBox.setEnabled(false);
-                    reverseCheckBox.setEnabled(false);
-                    multiplierSlider.setEnabled(false);
-                    filterField.setVisible(false);
-                }
-                
-                rowPanel.add(checkBox);
-                rowPanel.add(multiplierSlider);
-                rowPanel.add(reverseCheckBox);
-                rowPanels.add(rowPanel);
-
-                scrollGbc.gridy++;
-                scrollPanel.add(rowPanel, scrollGbc);
-                scrollGbc.gridy++;
-                scrollPanel.add(Box.createVerticalStrut(10), scrollGbc);
-            }
-        }
-
-        filterField.getDocument().addDocumentListener(new DocumentListener()
-        {
-            @Override
-            public void insertUpdate(DocumentEvent e)
-            {
-                filter();
-            }
-
-            @Override
-            public void removeUpdate(DocumentEvent e)
-            {
-                filter();
-            }
-
-            @Override
-            public void changedUpdate(DocumentEvent e)
-            {
-                filter();
-            }
-
-            private void filter()
-            {
-                String text = filterField.getText().toLowerCase();
-                scrollPanel.removeAll();
-                scrollGbc.gridy = 0;
-                scrollGbc.gridwidth = 3;
-                scrollPanel.add(headingPanel, scrollGbc);
-                scrollGbc.gridy++;
-                scrollPanel.add(Box.createVerticalStrut(10), scrollGbc);
-
-                boolean hasRows = false;
-
-                for (JPanel rowPanel : rowPanels) {
-                    JCheckBox checkBox = (JCheckBox) rowPanel.getComponent(0);
-                    if (checkBox.getText().toLowerCase().contains(text)) {
-                        scrollGbc.gridy++;
-                        scrollPanel.add(rowPanel, scrollGbc);
-                        scrollGbc.gridy++;
-                        scrollPanel.add(Box.createVerticalStrut(10), scrollGbc);
-                        hasRows = true;
-                    }
-                }
-
-                if (!hasRows)
-                {
-                    headingPanel.setVisible(false);
-                    scrollGbc.gridwidth = 3;
-                    scrollPanel.add(
-                        new JLabel(I18n.t("loc.ui.labelNoLocomotivesFound")),
-                        scrollGbc
-                    );
-                }
-                else
-                {
-                    headingPanel.setVisible(true);
-                }
-
-                scrollPanel.revalidate();
-                scrollPanel.repaint();
-                filterField.requestFocus();
-            }
-        });
-
-        JScrollPane scrollPane = new JScrollPane(scrollPanel);
-        scrollPane.setPreferredSize(new Dimension(600, 500));
-        scrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
-
-        // Make scrolling faster
-        scrollPane.getVerticalScrollBar().setUnitIncrement(scrollPane.getVerticalScrollBar().getUnitIncrement() * 16);
-
-        gbc.gridy = 1;
-        gbc.gridx = 0;
-        gbc.gridwidth = 3;
-        panel.add(scrollPane, gbc);
-
-        // Call filter() once to render initial list
-        filterField.setText("");
-        
         // Ensure the field is focused
-        filterField.addAncestorListener(new AncestorListener()
+        panel.addAncestorListener(new AncestorListener()
         {
             @Override
             public void ancestorRemoved(AncestorEvent event) {}
@@ -14946,21 +14753,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
             @Override
             public void ancestorAdded(AncestorEvent event) {
-                event.getComponent().requestFocusInWindow();
+                panel.focusFilter();
             }
         });
-        
-        // sanity check - should never happen unless CS data is corrupt
-        if (isCSMultiUnit && allLocomotives.isEmpty())
-        {
-            headingPanel.setVisible(false);
-            scrollGbc.gridwidth = 3;
-            scrollPanel.add(
-                new JLabel(I18n.t("loc.ui.labelNoLocomotivesFound")),
-                scrollGbc
-            );
-            filterField.setVisible(false);
-        }   
 
         int result = JOptionPane.showOptionDialog(
             asked,
@@ -14975,50 +14770,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         if (result == JOptionPane.OK_OPTION && !isCSMultiUnit)
         {
-            newLinkedLocos.clear();
-            Component[] components = scrollPanel.getComponents();
-
-            for (Component component : components)
-            {
-                if (component instanceof JPanel && !(component.equals(headingPanel)))
-                {
-                    JPanel rowPanel = (JPanel) component;
-                    JCheckBox checkBox = (JCheckBox) rowPanel.getComponent(0);
-                    JSlider multiplierSlider = (JSlider) rowPanel.getComponent(1);
-                    JCheckBox reverseCheckBox = (JCheckBox) rowPanel.getComponent(2);
-
-                    if (checkBox.isSelected())
-                    {
-                        double multiplier = multiplierSlider.getValue() / 100.0;
-                        if (reverseCheckBox.isSelected())
-                        {
-                            multiplier = -multiplier;
-                        }
-
-                        if (multiplier != 0 && multiplier >= -2 && multiplier <= 2)
-                        {
-                            newLinkedLocos.put(checkBox.getToolTipText(), multiplier);
-                        }
-                    }
-                }
-            }
-
-            // Asked again at OK, of every member before and after: a route can start from its s88 while this is open.
-            involved.addAll(newLinkedLocos.keySet());
-
-            if (refuseWhileARouteDrivesAny(asked, involved)) return;
-
-            // One call: syncWithCS2 rebuilds consists off this thread; a two-call form would stage on a shared field.
-            l.setLinkedLocomotives(newLinkedLocos);
-            this.repaintLoc(true, null);
-
-            // Ensure there are no conflicts on the graph
-            if (this.model.hasAutoLayout())
-            {
-                this.model.getAutoLayout().sanitizeMultiUnits(l);
-                this.repaintAutoLocListFull();
-                this.model.getAutoLayout().refreshUI();
-            }
+            this.locomotiveActions.applyLinkedLocomotives(asked, l, panel.chosen());
         }
     }
 
@@ -15059,10 +14811,18 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /** The locomotive operations: find by name, rename or re-address, notes, find similar, and delete. */
-    private final LocomotiveActions locomotiveActions = new LocomotiveActions(this);
+    final LocomotiveActions locomotiveActions = new LocomotiveActions(this);
     
     private void ActiveLocLabelMouseReleased(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_ActiveLocLabelMouseReleased
         
+        // A right-click on the active name edits the locomotive; a left-click still opens the database (FR-048).
+        if (SwingUtilities.isRightMouseButton(evt))
+        {
+            if (this.activeLoc != null) this.openLocomotiveSettings(this.activeLoc, LocomotiveSettingsFrame.Tab.LOCOMOTIVE, null);
+
+            return;
+        }
+
         this.showLocSelector(true);
         
     }//GEN-LAST:event_ActiveLocLabelMouseReleased
@@ -15509,9 +15269,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 {
                     Integer fNumber = this.functionMapping.get(b);
 
-                    RightClickFunctionMenu menu = new RightClickFunctionMenu(this, this.activeLoc, fNumber);
-
-                    menu.showPopup(evt);      
+                    this.openLocomotiveSettings(this.activeLoc, LocomotiveSettingsFrame.Tab.FUNCTIONS, fNumber);
                 };
             });
         }
@@ -19340,7 +19098,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * Whether the power is known to be on, for the picture's tools.  Until the station says, only where start-up turned
      * it on, since the model takes it as on before it hears.
      */
-    private boolean powerIsOn()
+    boolean powerIsOn()
     {
         return this.model != null && this.model.getPowerState() && (powerHeard || poweredOnAtStartUp);
     }

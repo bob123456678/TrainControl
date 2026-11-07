@@ -11,6 +11,7 @@ import javax.swing.SwingUtilities;
 import static org.testng.Assert.*;
 import org.testng.annotations.Test;
 import org.traincontrol.base.RouteCommand;
+import org.traincontrol.gui.LocomotiveSettingsFrame;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.marklin.MarklinRoute;
@@ -127,27 +128,29 @@ public class testARouteDrivenLocomotiveIsNotEdited
 
             assertNotNull(model.getLocByName(LOC), "the edit door renamed a locomotive a running route drives");
 
-            // THE MULTI-UNIT DOOR, from the locomotive database's menu ...
+            // THE MULTI-UNIT DOORS now open the Locomotive Settings window on its Multi-Unit tab, and the refusal is asked
+            // once, at Save (FR-048): from the locomotive database's menu ...
+            model.newMM2Locomotive(UNIT, 64);
+
             final javax.swing.JPopupMenu[] database = new javax.swing.JPopupMenu[1];
 
             SwingUtilities.invokeAndWait(() -> database[0] = new org.traincontrol.gui.locomotive.RightClickSelectorMenu(window, null, loc));
 
-            final javax.swing.JMenuItem fromTheDatabase = multiUnitItemIn(database[0]);
+            assertNull(multiUnitItemIn(database[0]), "the locomotive database's menu still offers a multi-unit item of its own");
 
-            assertNotNull(fromTheDatabase, "the locomotive database's menu offers no multi-unit item");
+            final javax.swing.JMenuItem settings = (javax.swing.JMenuItem) support.Components.withText(database[0],
+                I18n.t("loc.ui.menuLocomotiveSettings"));
 
-            // WITH A DIVIDER ABOVE IT
-            int at = java.util.Arrays.asList(database[0].getComponents()).indexOf(fromTheDatabase);
+            assertNotNull(settings, "the locomotive database's menu offers no Locomotive Settings...");
 
-            assertTrue(at > 0 && database[0].getComponent(at - 1) instanceof javax.swing.JSeparator, "the locomotive"
-                + " database's multi-unit item has no divider above it");
+            SwingUtilities.invokeAndWait(() -> window.openLocomotiveSettings(loc, LocomotiveSettingsFrame.Tab.MULTI_UNIT, null));
 
-            said = askAndClose(() -> fromTheDatabase.doClick());
+            said = savingAMemberAsksOnce(UNIT);
 
-            assertEquals(said, refusal, "the multi-unit door, from the locomotive database, did not refuse a locomotive a"
-                + " running route drives, naming the route (OB-287)");
+            assertEquals(said, refusal, "Save, from the locomotive database's window, did not refuse a locomotive a running"
+                + " route drives, naming the route (OB-287)");
 
-            // ... and from the keyboard's, on its own level beside Manage Locomotive
+            // ... and from the keyboard's menu, whose item opens the same window on the same tab
             final java.lang.reflect.Field current = TrainControlUI.class.getDeclaredField("currentButton");
 
             current.setAccessible(true);
@@ -185,16 +188,23 @@ public class testARouteDrivenLocomotiveIsNotEdited
 
             final javax.swing.JMenuItem fromTheKeyboard = multiUnitItemIn(keyboard[0]);
 
-            assertNotNull(fromTheKeyboard, "the keyboard's menu offers no multi-unit item beside Manage Locomotive");
+            assertNotNull(fromTheKeyboard, "the keyboard's menu offers no multi-unit item");
 
-            said = askAndClose(() -> fromTheKeyboard.doClick());
+            support.SettingsWindow.closeIfOpen();
 
-            assertEquals(said, refusal, "the multi-unit door, from the keyboard, did not refuse a locomotive a running route"
+            SwingUtilities.invokeAndWait(fromTheKeyboard::doClick);
+
+            assertNotNull(support.SettingsWindow.awaited(), "the keyboard's multi-unit item opened no window");
+            assertEquals(support.SettingsWindow.tabShowing(), 3, "the keyboard's multi-unit item did not open the Multi-Unit tab");
+
+            said = savingAMemberAsksOnce(UNIT);
+
+            assertEquals(said, refusal, "Save, from the keyboard's window, did not refuse a locomotive a running route"
                 + " drives, naming the route (OB-287)");
 
-            // AND ASKED AGAIN AT OK: another locomotive's multi-unit, with the driven one ticked into it
-            model.newMM2Locomotive(UNIT, 64);
+            support.SettingsWindow.closeIfOpen();
 
+            // AND ASKED AGAIN AT OK: another locomotive's multi-unit, with the driven one ticked into it
             final org.traincontrol.base.Locomotive unit = model.getLocByName(UNIT);
 
             said = tickAndOk(() -> window.changeLinkedLocomotives(unit), LOC);
@@ -403,6 +413,26 @@ public class testARouteDrivenLocomotiveIsNotEdited
         });
 
         return closeUntilTheDoorReturns(returned, "the door");
+    }
+
+    /**
+     * The Multi-Unit tab of the open window: ticks a member and presses Save; the first thing said, answered with its
+     * first button.
+     */
+    private static String savingAMemberAsksOnce(String member) throws Exception
+    {
+        support.SettingsWindow.tickMember(member);
+
+        try (support.Answering answering = support.Answering.start(message -> support.Answering.pressAt(0)))
+        {
+            support.Components.press(support.SettingsWindow.save());
+
+            assertTrue(answering.awaitAsked(1, 8000), "Save said nothing");
+
+            support.Components.settle();
+
+            return answering.asked().get(0);
+        }
     }
 
     /** The multi-unit item at a menu's own level (set, edit or view), or null. */
