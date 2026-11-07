@@ -189,7 +189,7 @@ public class testAPageWindowsSquaresAskOverIt
 
         assertThePowerQuestion(AskingWindows.tileIn(ui, page, TURNOUT), page, I18n.t("ui.cancel"));
 
-        Thread.sleep(300);
+        Components.settle();
 
         assertEquals(turnoutWithThePowerOff().isSwitched(), was, "Cancel threw the turnout");
         assertFalse(model.getPowerState(), "Cancel turned the power on");
@@ -316,7 +316,7 @@ public class testAPageWindowsSquaresAskOverIt
 
             AskingWindows.assertClosingTakesTheQuestion(page);
 
-            Thread.sleep(300);
+            Components.settle();
         }
         finally
         {
@@ -433,7 +433,7 @@ public class testAPageWindowsSquaresAskOverIt
 
         assertTheProtectionQuestion(page, I18n.t("ui.cancel"));
 
-        Thread.sleep(300);
+        Components.settle();
 
         assertTrue(signal.isSwitched(), "Cancel set the protecting signal green");
     }
@@ -676,7 +676,7 @@ public class testAPageWindowsSquaresAskOverIt
 
         assertTheRouteQuestion(page, signal, I18n.t("ui.cancel"));
 
-        Thread.sleep(300);
+        Components.settle();
 
         assertTrue(signal.isSwitched(), "Cancel ran the route");
     }

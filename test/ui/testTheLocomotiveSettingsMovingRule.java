@@ -700,12 +700,7 @@ public class testTheLocomotiveSettingsMovingRule
         {
             SettingsWindow.closeIfOpen();
 
-            long giveUp = System.currentTimeMillis() + 30000;
-
-            while (model.getRoute("MR route") != null && model.getRoute("MR route").isExecuting() && System.currentTimeMillis() < giveUp)
-            {
-                Thread.sleep(100);
-            }
+            Components.waitFor(() -> model.getRoute("MR route") == null || !model.getRoute("MR route").isExecuting(), 30000);
 
             model.deleteRoute("MR route");
         }

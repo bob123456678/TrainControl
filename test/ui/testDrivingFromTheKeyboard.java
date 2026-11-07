@@ -944,7 +944,7 @@ public class testDrivingFromTheKeyboard
 
         model.receiveMessage(support.Packets.accessoryEcho(acc, true));
 
-        Thread.sleep(500);
+        Components.settle();
 
         assertEquals(acc.getNumActuations(), counted, "re-firing red counted as an actuation");
         assertTrue(lit(address, true), "red is not lit after it was fired again");
@@ -1029,7 +1029,7 @@ public class testDrivingFromTheKeyboard
 
             click(321, true);
 
-            Thread.sleep(300);
+            Components.settle();
 
             assertTrue(wire.accessoryCommandsSince(quiet, MarklinAccessory.UIDfromAddress(320, keyboardProtocol())).isEmpty(),
                 "a click past the MM2 addresses sent a command");
@@ -1283,8 +1283,6 @@ public class testDrivingFromTheKeyboard
         assertEquals(lit(address, false), !was, "Cancel changed the green half");
         assertEquals(model.getAccessoryState(address, keyboardProtocol()), state, "Cancel switched the accessory");
 
-        Thread.sleep(300);
-
         assertTrue(wire.accessoryCommandsSince(mark, uidOf(address)).isEmpty(), "Cancel sent the accessory's command");
         assertTrue(wire.systemCommandsSince(mark, CS2Message.CMD_SYSSUB_GO).isEmpty(), "Cancel turned the power on");
     }
@@ -1363,7 +1361,7 @@ public class testDrivingFromTheKeyboard
 
             waitFor(() -> !support.AccessoryCommands.positionsTo(seen, uidOf(address)).isEmpty());
 
-            Thread.sleep(300);
+            Components.settle();
         }
         finally
         {

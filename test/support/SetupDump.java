@@ -836,9 +836,7 @@ public final class SetupDump
     /** Waits for the simulated sensors to fall behind a trip, or the next answer depends on how quickly they did. */
     private static void settle(Layout railway) throws InterruptedException
     {
-        long until = System.currentTimeMillis() + 15000;
-
-        while (railway.isRunning() && System.currentTimeMillis() < until) Thread.sleep(20);
+        Settle.until(() -> !railway.isRunning(), 15000);
 
         // Longer than the simulation holds a sensor
         Thread.sleep(1500);

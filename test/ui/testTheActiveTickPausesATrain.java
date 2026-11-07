@@ -1748,11 +1748,7 @@ public class testTheActiveTickPausesATrain
 
             SwingUtilities.invokeLater(save::doClick);
 
-            for (long end = System.currentTimeMillis() + 30000; (editor.isDisplayable() || ui.whyLayoutCannotBeEdited() != null)
-                && System.currentTimeMillis() < end; )
-            {
-                Thread.sleep(50);
-            }
+            support.Components.waitFor(() -> !editor.isDisplayable() && ui.whyLayoutCannotBeEdited() == null, 30000);
 
             assertFalse(editor.isDisplayable(), "the editor's Save did not close it");
         }, card ->

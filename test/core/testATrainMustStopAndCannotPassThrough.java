@@ -197,14 +197,7 @@ public class testATrainMustStopAndCannotPassThrough
 
     private static void waitFor(BooleanSupplier what, long ms, String failure) throws InterruptedException
     {
-        long until = System.currentTimeMillis() + ms;
-
-        while (!what.getAsBoolean())
-        {
-            assertTrue(System.currentTimeMillis() < until, failure);
-
-            Thread.sleep(20);
-        }
+        assertTrue(support.Components.waitFor(what, ms), failure);
     }
 
     private static boolean sentArrives(Layout railway, String end) throws Exception

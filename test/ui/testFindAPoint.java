@@ -380,8 +380,6 @@ public class testFindAPoint
 
         support.Components.waitFor(() -> support.EditorsOpen.editors().isEmpty(), 5000);
         support.Components.settle();
-        Thread.sleep(300);
-        support.Components.settle();
     }
 
     private static Object field(Object on, String name) throws ReflectiveOperationException

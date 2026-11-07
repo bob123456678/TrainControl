@@ -567,13 +567,9 @@ public class testTheEditorsFindingsCanBeFiltered
         settle();
     }
 
-    /** What a window posts while it opens or closes, then a moment for the build it queues. */
+    /** What a window posts while it opens or closes. */
     private static void settle() throws Exception
     {
-        support.Components.settle();
-
-        Thread.sleep(500);
-
         support.Components.settle();
     }
 
@@ -731,7 +727,7 @@ public class testTheEditorsFindingsCanBeFiltered
     {
         java.awt.datatransfer.StringSelection s = new java.awt.datatransfer.StringSelection(text == null ? "" : text);
 
-        for (int tries = 0; tries < 5; tries++)
+        return support.Components.waitFor(() ->
         {
             try
             {
@@ -741,11 +737,9 @@ public class testTheEditorsFindingsCanBeFiltered
             }
             catch (IllegalStateException busy)
             {
-                try { Thread.sleep(100); } catch (InterruptedException e) { return false; }
+                return false;
             }
-        }
-
-        return false;
+        }, 500);
     }
 
     /** The listener a panel holds for one of the editor's own reopenings, by its field's name. */
