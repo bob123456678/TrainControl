@@ -45,8 +45,8 @@ PLANS = "home-plans.txt"
 
 
 def plans_by_work(path):
-    first = read(path).decode("utf-8").split("
-", 1)[0].strip()
+    lines = read(path).decode("utf-8").splitlines()
+    first = lines[0].strip() if lines else ""
     return first == "planner budget: route work"
 
 
