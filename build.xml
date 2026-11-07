@@ -660,6 +660,16 @@
         <test-one-class class="testLocomotiveCsvImportDoor"/>
         <test-one-class class="testASyncKeepsAnImportedLocomotive"/>
         <test-one-class class="testATrainDragsFromStationToStation"/>
+        <test-one-class class="testACS2RequestsAreAsBefore"/>
+        <test-one-class class="testACS3SyncIsAsBefore"/>
+        <test-one-class class="testCS3InputsParseAsBefore"/>
+        <test-one-class class="testACS3FirmwareIsReadOnce"/>
+        <test-one-class class="testACS3ReadersSurviveFirmwareChanges"/>
+        <test-one-class class="testTheSyncSaysWhenPartOfTheDataWasNotRead"/>
+        <test-one-class class="testTheLocomotiveSettingsWindow"/>
+        <test-one-class class="testTheLocomotiveSettingsMovingRule"/>
+        <test-one-class class="testTheLocomotiveSettingsFunctions"/>
+        <test-one-class class="testThePresetSpeedSurvivesTheSetupDoors"/>
     </target>
     <target name="package-for-store" depends="jar">
         <property name="store.jar.name" value="TrainControl"/>

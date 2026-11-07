@@ -2064,6 +2064,53 @@ public class AutonomySession
         }
     }
 
+    /**
+     * Notes the pause of each of these trains that `asBuilt` does not hold: a card's, no fold has noted it, and the door
+     * about to write the train would lose it from what Cancel keeps (OB-346).  Nothing while no edit is open.
+     */
+    public void noteTheCardsPausesADoorOvertakes(java.util.Collection<Locomotive> trains, String configurationName,
+        org.json.JSONObject asBuilt)
+    {
+        if (pausesTakenFromTheRailway == null || configurationName == null || asBuilt == null) return;
+
+        Set<String> held = namesIn(asBuilt.opt(org.traincontrol.automation.Layout.PAUSED_LOCOMOTIVES));
+
+        for (Locomotive train : trains)
+        {
+            if (train == null || train.getName() == null || train.isAutonomyPaused() == held.contains(train.getName())) continue;
+
+            pausesTakenFromTheRailway.computeIfAbsent(configurationName, name -> new java.util.TreeMap<>())
+                .put(train.getName(), train.isAutonomyPaused());
+        }
+    }
+
+    /**
+     * Whether the setup now says other than a pause Cancel would keep from the railway: a gesture overtook it, and
+     * Cancel has that to discard even where the setup reads as the editor opened it (OB-346).
+     */
+    public boolean aGestureOvertookTheRailwaysPause()
+    {
+        if (pausesTakenFromTheRailway == null) return false;
+
+        for (Map.Entry<String, java.util.Map<String, Boolean>> pauses : pausesTakenFromTheRailway.entrySet())
+        {
+            org.json.JSONObject configuration = store.getConfiguration(pauses.getKey());
+
+            if (configuration == null) continue;
+
+            org.json.JSONObject globals = configuration.optJSONObject("globals");
+
+            Set<String> listed = namesIn(globals == null ? null : globals.opt(org.traincontrol.automation.Layout.PAUSED_LOCOMOTIVES));
+
+            for (Map.Entry<String, Boolean> pause : pauses.getValue().entrySet())
+            {
+                if (pause.getValue() != listed.contains(pause.getKey())) return true;
+            }
+        }
+
+        return false;
+    }
+
     private void forgetTheNamesKept()
     {
         for (Map.Entry<String, TileKey> kept : keptSquares.entrySet())
@@ -7814,6 +7861,51 @@ public class AutonomySession
 
         // The split names are computed from these properties; this does not rebuild.
         deriveStationIndex();
+    }
+
+    /**
+     * Puts a speed saved in the Locomotive Settings window over the stale copy an old-format setup keeps of a standing
+     * train, which a load would otherwise read back.  Every configuration is walked, excluded pages included; a setup
+     * that stores no speed for the train, or already stores this one, is left alone.
+     *
+     * @return true when a stored speed was changed
+     */
+    public boolean updateStoredSpeed(String locomotive, int speed)
+    {
+        boolean changed = false;
+
+        for (String name : store.getConfigurationNames())
+        {
+            org.json.JSONObject configuration = store.getConfiguration(name);
+            org.json.JSONObject points = configuration == null ? null : configuration.optJSONObject("points");
+
+            if (points == null) continue;
+
+            for (String id : new ArrayList<>(points.keySet()))
+            {
+                org.json.JSONObject point = points.optJSONObject(id);
+                org.json.JSONObject stored = point == null ? null : point.optJSONObject("loc");
+
+                if (stored == null || !locomotive.equals(stored.optString("name", null)) || !stored.has("speed")) continue;
+
+                if (speed > 0)
+                {
+                    if (stored.optInt("speed", -1) == speed) continue;
+
+                    stored.put("speed", speed);
+                }
+                else
+                {
+                    stored.remove("speed");
+                }
+
+                changed = true;
+            }
+        }
+
+        if (changed) dirty = true;
+
+        return changed;
     }
 
     /** The write alone, for a caller making several and re-deriving once. */

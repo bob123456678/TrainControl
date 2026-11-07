@@ -189,3 +189,4 @@ not fix it. Name the square.
 - `ui.testTheEditorsDoorsAskOverThem`
 - `regression.testLocomotiveCsvImportDoor`
 - `regression.testATrainDragsFromStationToStation`
+- `ui.testThePresetSpeedSurvivesTheSetupDoors`

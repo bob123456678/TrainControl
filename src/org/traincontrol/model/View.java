@@ -125,6 +125,12 @@ public interface View
      */
     public boolean offerResync(String error);
 
+    /**
+     * Tells the user the sync reached the Central Station but could not read part of what it sent, which was left as it
+     * was (FR-169).  Must not block the calling thread.
+     */
+    public void showSyncPartial();
+
     // Tells us which key(s) a locomotive is bound to
     public List<String> getAllLocButtonMappings(Locomotive l);
 }

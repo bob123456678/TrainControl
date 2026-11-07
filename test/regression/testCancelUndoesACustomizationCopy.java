@@ -101,23 +101,22 @@ public class testCancelUndoesACustomizationCopy
     }
 
     /**
-     * The Cancel branch actually calls the undo: pinning the panel's method alone would leave the call site, the one
-     * place that was wrong, unchecked.  Read rather than driven, as the branch sits inside a modal `showOptionDialog`.
+     * The Locomotive Settings window's Copy Icons works on the window's buffer and never writes onto the locomotive, so
+     * Cancel has nothing to undo; pinning the copy's declaration keeps that so.  Read rather than driven: the
+     * driven claim is `ui.testTheLocomotiveSettingsFunctions.testCopyIconsWaitsForSave`.
+     *
+     * MUTATION: call `loc.copyCustomizationsFrom(from)` in `LocomotiveFunctionsTab.copyFrom`, and this fails.
      */
     @Test
     public void testTheCancelBranchCallsIt() throws Exception
     {
-        String source = SourceOf.declaration("private void openEditDialog(JToggleButton b)");
+        String source = SourceOf.declaration("private void copyFrom(Locomotive from)");
 
-        int cancel = source.indexOf("activeLoc.setDepartureFunc(departureWas)");
+        assertTrue(source.contains("captureCustomizations()"), "the copy no longer reads the source's customizations");
 
-        assertTrue(cancel > 0,
-            "the Cancel branch no longer restores the departure slot, so this test is reading for"
-            + " something that has moved and knows nothing about where it went");
-
-        assertTrue(source.indexOf("undoCopiedCustomizations()", cancel) > 0,
-            "the Cancel branch puts the two slots back and does not undo a Copy Customizations"
-            + " (GUX-C3)");
+        assertFalse(source.contains("loc.copyCustomizationsFrom") || source.contains("loc.applyCustomizations")
+            || source.contains("loc.setFunctionType") || source.contains("loc.setLocalFunctionImageURL"),
+            "the copy writes onto the locomotive before Save, so Cancel would have to undo it");
     }
 
     /**

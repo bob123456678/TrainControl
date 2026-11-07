@@ -1,0 +1,70 @@
+[
+ {
+  "id": "9001",
+  "name": "PROBE switch then go",
+  "state": "idle",
+  "step": 0,
+  "isCanceled": false,
+  "items": [
+   {
+    "typ": "mag",
+    "magnetartikel": "0",
+    "stellung": "1",
+    "key": "000"
+   },
+   {
+    "typ": "speed",
+    "lok": "02#200314-1#20DDR",
+    "wert": 500,
+    "sekunde": "2.5",
+    "key": "001"
+   },
+   {
+    "typ": "dir",
+    "lok": "02#200314-1#20DDR",
+    "wert": "1",
+    "key": "002"
+   },
+   {
+    "typ": "func",
+    "lok": "02#200314-1#20DDR",
+    "wert": "1",
+    "icon": 3,
+    "key": "003"
+   },
+   {
+    "typ": "speed",
+    "lok": "06#20001#20DRG",
+    "wert": 250,
+    "key": "004"
+   }
+  ]
+ },
+ {
+  "id": "9002",
+  "name": "PROBE sensor start",
+  "state": "idle",
+  "step": 0,
+  "isCanceled": false,
+  "items": [
+   {
+    "typ": "s88",
+    "id": 5,
+    "mode": 1,
+    "key": "000"
+   },
+   {
+    "typ": "speed",
+    "lok": "06#20001#20DRG",
+    "wert": 0,
+    "sekunde": "1",
+    "key": "001"
+   },
+   {
+    "typ": "mag",
+    "magnetartikel": "2",
+    "key": "002"
+   }
+  ]
+ }
+]

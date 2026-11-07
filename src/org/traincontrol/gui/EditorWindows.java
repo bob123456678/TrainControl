@@ -25,6 +25,9 @@ final class EditorWindows
     {
         if (ui.openEditor != null && ui.openEditor.isDisplayable() && !ui.openEditor.maySettleBeforeExit()) return false;
 
+        if (ui.locomotiveSettings != null && ui.locomotiveSettings.isDisplayable()
+            && !ui.locomotiveSettings.maySettleBeforeExit()) return false;
+
         // A non-modal frame with its own discard question; without it File > Exit would drop typing silently.
         return ui.routeEditor == null || !ui.routeEditor.isDisplayable() || ui.routeEditor.maySettleBeforeExit();
     }
