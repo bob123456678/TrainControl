@@ -8,8 +8,6 @@ import javax.swing.ToolTipManager;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertTrue;
-import org.testng.annotations.AfterClass;
-import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 import org.traincontrol.gui.InfoMark;
 import org.traincontrol.gui.LocomotiveSettingsFrame;
@@ -21,33 +19,15 @@ import support.Components;
 import support.SettingsWindow;
 
 /** What the Locomotive Settings window looks like: its tab icons, its label style, and the (i) marks. */
-public class testTheLocomotiveSettingsLooks
+public class testTheLocomotiveSettingsLooks extends support.SettingsClass
 {
     private static final String NAME = "LK train";
 
-    private static support.SettingsFixture fixture;
-    private static MarklinControlStation model;
-    private static TrainControlUI ui;
 
-    @BeforeClass
-    public static void setUpClass() throws Exception
+    @Override
+    protected String[] made()
     {
-        fixture = support.SettingsFixture.open();
-        model = fixture.model;
-        ui = fixture.ui;
-    }
-
-    @AfterClass(alwaysRun = true)
-    public static void tearDownClass() throws Exception
-    {
-        try
-        {
-            if (fixture != null) fixture.finish(NAME);
-        }
-        finally
-        {
-            if (fixture != null) fixture.closeSandbox();
-        }
+        return new String[] { NAME };
     }
 
     private static JTabbedPane opened() throws Exception
@@ -119,6 +99,76 @@ public class testTheLocomotiveSettingsLooks
         assertNotNull(name, "no Name label");
         assertEquals(name.getForeground(), UiStyle.BLUE);
         assertEquals(name.getFont(), UiStyle.LABEL_FONT);
+    }
+
+    /**
+     * The revert icons beside Preset and Icons are dim when there is nothing to put back, lit when there is a preset or
+     * a customization, and the Preset one clears the preset on a click and dims again.
+     *
+     * MUTATION: leave `refreshReverts` out of `changed`, or enable the icon always, and this fails.
+     */
+    @Test
+    public void testTheRevertIconsLightWhenThereIsSomethingToReset() throws Exception
+    {
+        org.traincontrol.marklin.MarklinLocomotive loc = fixture.layDcc(NAME, 3802, LocomotiveSettingsFrame.Tab.FUNCTIONS);
+        javax.swing.JButton clear = SettingsWindow.part("functions.clearPreset", javax.swing.JButton.class);
+        javax.swing.JButton reset = SettingsWindow.part("functions.resetAll", javax.swing.JButton.class);
+        javax.swing.JTable table = SettingsWindow.part("functions.table", javax.swing.JTable.class);
+
+        assertTrue(!Components.onTheEventThread(clear::isEnabled), "Clear Preset is lit with no preset");
+        assertTrue(!Components.onTheEventThread(reset::isEnabled), "Reset All is lit with nothing customized");
+
+        Components.onTheEventThread(() ->
+        {
+            table.setValueAt(Boolean.TRUE, 1, 3);
+
+            return null;
+        });
+
+        assertTrue(Components.onTheEventThread(clear::isEnabled), "a ticked preset did not light Clear Preset");
+
+        SettingsWindow.press(clear);
+
+        assertEquals(Components.onTheEventThread(() -> table.getValueAt(1, 3)), Boolean.FALSE, "the click left the tick");
+        assertTrue(!Components.onTheEventThread(clear::isEnabled), "Clear Preset stayed lit after it cleared");
+
+        loc.setCustomFunctions(true);
+        // The window asks again every second
+        assertTrue(Components.waitFor(() -> Components.onTheEventThread(reset::isEnabled), 8000),
+            "a customized locomotive did not light Reset All");
+    }
+
+    /**
+     * The Fn column holds the widest function number and its heading, and keeps exactly that width when the window is
+     * made wider, the extra room going to the other columns.
+     *
+     * MUTATION: drop `fixTheFnColumn` from the tab's constructor and the width changes with the window; this fails.
+     */
+    @Test
+    public void testTheFnColumnKeepsItsWidthWhenTheWindowResizes() throws Exception
+    {
+        org.traincontrol.marklin.MarklinLocomotive loc = fixture.layDcc(NAME, 3803, LocomotiveSettingsFrame.Tab.FUNCTIONS);
+        LocomotiveSettingsFrame window = SettingsWindow.showing();
+        javax.swing.JTable table = SettingsWindow.part("functions.table", javax.swing.JTable.class);
+
+        int before = Components.onTheEventThread(() -> table.getColumnModel().getColumn(0).getWidth());
+        int needs = Components.onTheEventThread(() -> table.getFontMetrics(table.getFont()).stringWidth("F" + (loc.getNumF() - 1)));
+
+        assertTrue(before > needs, "F" + (loc.getNumF() - 1) + " needs " + needs + " pixels and the column is " + before);
+
+        Components.onTheEventThread(() ->
+        {
+            window.setSize(window.getWidth() + 300, window.getHeight());
+            window.validate();
+
+            return null;
+        });
+
+        Components.settle();
+
+        assertEquals((int) Components.onTheEventThread(() -> table.getColumnModel().getColumn(0).getWidth()), before,
+            "the Fn column changed width with the window");
+        assertTrue(!Components.onTheEventThread(() -> table.getColumnModel().getColumn(0).getResizable()), "the user can resize it");
     }
 
     /**

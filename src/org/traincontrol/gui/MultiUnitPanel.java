@@ -156,7 +156,7 @@ final class MultiUnitPanel extends JPanel
         c.anchor = GridBagConstraints.WEST;
         c.insets = new Insets(0, 0, 0, 10);
         c.weightx = 0;
-        name.setPreferredSize(new Dimension(com.formdev.flatlaf.util.UIScale.scale(200), name.getPreferredSize().height));
+        name.setPreferredSize(new Dimension(com.formdev.flatlaf.util.UIScale.scale(170), name.getPreferredSize().height));
         panel.add(name, c);
 
         c.gridx = 1;
@@ -204,7 +204,8 @@ final class MultiUnitPanel extends JPanel
         multiplierSlider.setPaintTicks(true);
         multiplierSlider.setPaintLabels(false);
         multiplierSlider.setSnapToTicks(false);
-        multiplierSlider.setPreferredSize(new Dimension(220, multiplierSlider.getPreferredSize().height));
+        multiplierSlider.setPreferredSize(new Dimension(com.formdev.flatlaf.util.UIScale.scale(150),
+            multiplierSlider.getPreferredSize().height));
         multiplierSlider.setFont(new Font("Segoe UI", Font.PLAIN, 12));
         multiplierSlider.setFocusable(true);
 
