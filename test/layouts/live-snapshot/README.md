@@ -191,3 +191,5 @@ not fix it. Name the square.
 - `regression.testATrainDragsFromStationToStation`
 - `ui.testThePresetSpeedSurvivesTheSetupDoors`
 - `ui.testTheTrainWindow`
+- `core.testStandingRulesAnswerAsTheDoorsDo`
+- `ui.testPageLinksGoByPageId`

@@ -18,3 +18,4 @@ ship with MT-380 on the dev branch.
 ## Used by
 
 - `regression.testASetupMovesToAOnePageLayout`
+- `ui.testPageLinksGoByPageId`

@@ -30,6 +30,12 @@ import org.traincontrol.util.I18n;
  */
 abstract class StationWindowBase extends JDialog
 {
+    // A static block, not the constructor: JDialog's constructor creates the root pane before any constructor body here.
+    static
+    {
+        if (!java.awt.GraphicsEnvironment.isHeadless()) TrainControlUI.installLookAndFeel();
+    }
+
     /** The margin round the content: the route editor's. */
     static final int PAD = 10;
 

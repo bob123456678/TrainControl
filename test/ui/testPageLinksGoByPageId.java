@@ -144,27 +144,34 @@ public class testPageLinksGoByPageId extends support.PageWindowTest
         {
             sandbox.close();
 
-            sandbox = support.LayoutSandbox.open(folder);
+            sandbox = null;
 
-            Map<String, String> aimed = readAsThe308Would();
+            try
+            {
+                sandbox = support.LayoutSandbox.open(folder);
 
-            arrows += aimed.size();
+                Map<String, String> aimed = readAsThe308Would();
 
-            startTheWindow(idsInTheIndex().size());
+                arrows += aimed.size();
 
-            if (!targets().equals(aimed)) problems.add(folder + ": " + targets() + " not " + aimed);
+                startTheWindow(idsInTheIndex().size());
 
-            if (!readAsThe308Would().equals(aimed)) problems.add(folder + ": 3.0.8 now reads " + readAsThe308Would());
+                if (!targets().equals(aimed)) problems.add(folder + ": " + targets() + " not " + aimed);
 
-            if (!LayoutDiagram.linksGoByPageId(folder())) problems.add(folder + ": not marked");
+                if (!readAsThe308Would().equals(aimed)) problems.add(folder + ": 3.0.8 now reads " + readAsThe308Would());
 
-            stopTheWindow();
+                if (!LayoutDiagram.linksGoByPageId(folder())) problems.add(folder + ": not marked");
 
-            startTheWindow(idsInTheIndex().size());
+                stopTheWindow();
 
-            if (!targets().equals(aimed)) problems.add(folder + " reopened: " + targets() + " not " + aimed);
+                startTheWindow(idsInTheIndex().size());
 
-            stopTheWindow();
+                if (!targets().equals(aimed)) problems.add(folder + " reopened: " + targets() + " not " + aimed);
+            }
+            finally
+            {
+                stopTheWindow();
+            }
         }
 
         assertEquals(problems.toString(), "[]", "an arrow changed its page in the conversion");
