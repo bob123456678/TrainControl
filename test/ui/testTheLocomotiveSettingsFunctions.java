@@ -142,7 +142,7 @@ public class testTheLocomotiveSettingsFunctions
 
         assertEquals((int) Components.onTheEventThread(table::getRowCount), loc.getNumF(), "the table lacks a function");
 
-        assertEquals(Components.onTheEventThread(() -> table.getValueAt(F, 1)), "F" + F);
+        assertEquals(Components.onTheEventThread(() -> table.getValueAt(F, 0)), "F" + F);
         assertEquals(Components.onTheEventThread(() -> table.getValueAt(F, 2)), "2s");
         assertEquals(Components.onTheEventThread(() -> table.getValueAt(F + 1, 2)), I18n.t("function.ui.momentary"));
         assertEquals(Components.onTheEventThread(() -> table.getValueAt(0, 2)), I18n.t("function.ui.toggle"));

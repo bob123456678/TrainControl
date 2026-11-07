@@ -139,6 +139,39 @@ public class testTheLocomotiveSettingsLooks extends support.SettingsClass
     }
 
     /**
+     * The Fn column holds the widest function number and its heading, and keeps exactly that width when the window is
+     * made wider, the extra room going to the other columns.
+     *
+     * MUTATION: drop `fixTheFnColumn` from the tab's constructor and the width changes with the window; this fails.
+     */
+    @Test
+    public void testTheFnColumnKeepsItsWidthWhenTheWindowResizes() throws Exception
+    {
+        org.traincontrol.marklin.MarklinLocomotive loc = fixture.layDcc(NAME, 3803, LocomotiveSettingsFrame.Tab.FUNCTIONS);
+        LocomotiveSettingsFrame window = SettingsWindow.showing();
+        javax.swing.JTable table = SettingsWindow.part("functions.table", javax.swing.JTable.class);
+
+        int before = Components.onTheEventThread(() -> table.getColumnModel().getColumn(0).getWidth());
+        int needs = Components.onTheEventThread(() -> table.getFontMetrics(table.getFont()).stringWidth("F" + (loc.getNumF() - 1)));
+
+        assertTrue(before > needs, "F" + (loc.getNumF() - 1) + " needs " + needs + " pixels and the column is " + before);
+
+        Components.onTheEventThread(() ->
+        {
+            window.setSize(window.getWidth() + 300, window.getHeight());
+            window.validate();
+
+            return null;
+        });
+
+        Components.settle();
+
+        assertEquals((int) Components.onTheEventThread(() -> table.getColumnModel().getColumn(0).getWidth()), before,
+            "the Fn column changed width with the window");
+        assertTrue(!Components.onTheEventThread(() -> table.getColumnModel().getColumn(0).getResizable()), "the user can resize it");
+    }
+
+    /**
      * An (i) mark carries the shared icon and its sentence as a tooltip, which stays up long enough to read while the
      * pointer is on it.
      *

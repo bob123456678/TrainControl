@@ -140,9 +140,9 @@ final class LocomotiveFunctionsTab extends JPanel
         table.getTableHeader().setReorderingAllowed(false);
         table.getTableHeader().setFont(org.traincontrol.gui.widgets.UiStyle.LABEL_FONT);
         table.getTableHeader().setForeground(org.traincontrol.gui.widgets.UiStyle.BLUE);
-        table.getColumnModel().getColumn(0).setCellRenderer(iconRenderer);
-        table.getColumnModel().getColumn(0).setCellEditor(iconEditor);
-        table.getColumnModel().getColumn(1).setCellRenderer(new FunctionCell());
+        table.getColumnModel().getColumn(1).setCellRenderer(iconRenderer);
+        table.getColumnModel().getColumn(1).setCellEditor(iconEditor);
+        table.getColumnModel().getColumn(TEST).setCellRenderer(new TestCell());
 
         JComboBox<String> behaviorBox = new JComboBox<>(behaviorNames);
         behaviorBox.setName("functions.behaviorCombo");
@@ -151,12 +151,13 @@ final class LocomotiveFunctionsTab extends JPanel
         behaviorEditor.setClickCountToStart(1);
         table.getColumnModel().getColumn(2).setCellEditor(behaviorEditor);
 
-        table.getColumnModel().getColumn(0).setPreferredWidth(110);
-        table.getColumnModel().getColumn(1).setPreferredWidth(130);
+        fixTheFnColumn();
+        table.getColumnModel().getColumn(1).setPreferredWidth(110);
         table.getColumnModel().getColumn(2).setPreferredWidth(110);
         table.getColumnModel().getColumn(3).setPreferredWidth(70);
+        table.getColumnModel().getColumn(TEST).setPreferredWidth(70);
 
-        // The play icon at the right of the Function cell is a target of its own: a press on it switches the function
+        // The Test column's cell is the target: a press anywhere in it switches the function
         table.addMouseListener(new java.awt.event.MouseAdapter()
         {
             @Override
@@ -494,14 +495,29 @@ final class LocomotiveFunctionsTab extends JPanel
     {
         int row = table.rowAtPoint(e.getPoint());
 
-        if (row < 0 || table.columnAtPoint(e.getPoint()) != 1) return -1;
-
-        java.awt.Rectangle cell = table.getCellRect(row, 1, false);
-
-        return e.getX() >= cell.x + cell.width - PLAY_WIDTH ? row : -1;
+        return row >= 0 && table.columnAtPoint(e.getPoint()) == TEST ? row : -1;
     }
 
-    private static final int PLAY_WIDTH = com.formdev.flatlaf.util.UIScale.scale(34);
+    /**
+     * The Fn column is as wide as its heading and the highest function number, and stays so: minimum, maximum and
+     * preferred together, so a resized window gives its room to the other columns.
+     */
+    private void fixTheFnColumn()
+    {
+        java.awt.Font heading = table.getTableHeader().getFont();
+        int widest = Math.max(table.getFontMetrics(table.getFont()).stringWidth("F" + Math.max(0, loc.getNumF() - 1)),
+            table.getFontMetrics(heading).stringWidth(model.getColumnName(0)));
+        int width = widest + com.formdev.flatlaf.util.UIScale.scale(20);
+        javax.swing.table.TableColumn column = table.getColumnModel().getColumn(0);
+
+        column.setMinWidth(width);
+        column.setMaxWidth(width);
+        column.setPreferredWidth(width);
+        column.setResizable(false);
+    }
+
+    /** The Test column's place in the table. */
+    private static final int TEST = 4;
 
     /** Whether a momentary or timed function is running its course, which the play icon shows as a turning arc. */
     private boolean firing(Row row)
@@ -814,39 +830,30 @@ final class LocomotiveFunctionsTab extends JPanel
         list.setFixedCellHeight(TrainControlUI.BUTTON_ICON_WIDTH + 12);
     }
 
-    /** The Function column: the name at the left and the play icon at the right edge, filled when the function is on. */
-    private final class FunctionCell extends JPanel implements TableCellRenderer
+    /** The Test column: the play icon, centered, filled when the function is on. */
+    private final class TestCell extends JLabel implements TableCellRenderer
     {
-        private final JLabel name = new JLabel();
-        private final JLabel play = new JLabel();
-
-        FunctionCell()
+        TestCell()
         {
-            super(new BorderLayout());
+            super("", JLabel.CENTER);
 
-            setBorder(javax.swing.BorderFactory.createEmptyBorder(0, 4, 0, 6));
-            play.setPreferredSize(new Dimension(PLAY_WIDTH - 6, 1));
-            play.setHorizontalAlignment(JLabel.RIGHT);
-            add(name, BorderLayout.CENTER);
-            add(play, BorderLayout.EAST);
+            setOpaque(true);
         }
 
         @Override
         public Component getTableCellRendererComponent(JTable t, Object value, boolean selected, boolean focus, int r, int c)
         {
-            Row row = rows.get(r);
+            Row row = (Row) value;
 
             setBackground(selected ? t.getSelectionBackground() : t.getBackground());
-            name.setForeground(selected ? t.getSelectionForeground() : t.getForeground());
-            name.setText(String.valueOf(value));
 
             RowIcons.PlayState state = blocked ? RowIcons.PlayState.DISABLED
                 : firing(row) ? RowIcons.PlayState.FIRING
                 : row.function < loc.getNumF() && loc.getF(row.function) ? RowIcons.PlayState.ON
                 : RowIcons.PlayState.OFF;
 
-            play.setIcon(RowIcons.play(com.formdev.flatlaf.util.UIScale.scale(16), state, phase));
-            play.putClientProperty("playState", state);
+            setIcon(RowIcons.play(com.formdev.flatlaf.util.UIScale.scale(16), state, phase));
+            putClientProperty("playState", state);
 
             return this;
         }
@@ -856,8 +863,9 @@ final class LocomotiveFunctionsTab extends JPanel
     private final class TableModel extends AbstractTableModel
     {
         private final String[] names = {
-            I18n.t("loc.ui.settingsColumnIcon"), I18n.t("loc.ui.settingsColumnFunction"),
-            I18n.t("loc.ui.settingsColumnBehavior"), I18n.t("loc.ui.settingsColumnPreset") };
+            I18n.t("loc.ui.settingsColumnFn"), I18n.t("loc.ui.settingsColumnIcon"),
+            I18n.t("loc.ui.settingsColumnBehavior"), I18n.t("loc.ui.settingsColumnPreset"),
+            I18n.t("loc.ui.settingsColumnTest") };
 
         @Override public int getRowCount() { return rows.size(); }
         @Override public int getColumnCount() { return names.length; }
@@ -866,13 +874,13 @@ final class LocomotiveFunctionsTab extends JPanel
         @Override
         public Class<?> getColumnClass(int c)
         {
-            return c == 0 ? Row.class : c == 3 ? Boolean.class : String.class;
+            return c == 1 || c == TEST ? Row.class : c == 3 ? Boolean.class : String.class;
         }
 
         @Override
         public boolean isCellEditable(int r, int c)
         {
-            return c == 0 || c == 2 || c == 3;
+            return c == 1 || c == 2 || c == 3;
         }
 
         @Override
@@ -882,10 +890,11 @@ final class LocomotiveFunctionsTab extends JPanel
 
             switch (c)
             {
-                case 0: return row;
-                case 1: return "F" + row.function;
+                case 0: return "F" + row.function;
+                case 1: return row;
                 case 2: return behaviorNames[row.behavior];
-                default: return row.preset;
+                case 3: return row.preset;
+                default: return row;
             }
         }
 

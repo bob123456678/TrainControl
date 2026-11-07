@@ -20,7 +20,7 @@ import support.SettingsWindow;
 import support.WireRecorder;
 
 /**
- * The play icon at the right of the Functions tab's Function cell switches a function on the railway at once, by the
+ * The play icon in the Functions tab's Test column switches a function on the railway at once, by the
  * door the main window's function buttons use: not at Save, not undone by Cancel, following the railway, turning while
  * a timed or momentary function fires, and locked when the moving rule locks the window.  Commands are counted on the
  * wire.
@@ -29,7 +29,7 @@ public class testTheFunctionsTabSwitchesFunctionsNow extends support.SettingsCla
 {
     private static final String NAME = "FN train";
     private static final int F = 3;
-    private static final int FUNCTION = 1;
+    private static final int TEST = 4;
     private static final long WAIT = 8000;
 
     private static MarklinLocomotive loc;
@@ -64,15 +64,15 @@ public class testTheFunctionsTabSwitchesFunctionsNow extends support.SettingsCla
         return SettingsWindow.part("functions.table", JTable.class);
     }
 
-    /** A click on a row's play icon, at the right edge of its Function cell, as the pointer delivers it. */
+    /** A click on a row's play icon, in its Test cell, as the pointer delivers it. */
     private static void clickPlay(int row) throws Exception
     {
         JTable table = table();
 
         Components.onTheEventThread(() ->
         {
-            Rectangle r = table.getCellRect(row, FUNCTION, false);
-            int x = r.x + r.width - 12;
+            Rectangle r = table.getCellRect(row, TEST, false);
+            int x = r.x + r.width / 2;
             int y = r.y + r.height / 2;
             long t = System.currentTimeMillis();
 
@@ -93,17 +93,9 @@ public class testTheFunctionsTabSwitchesFunctionsNow extends support.SettingsCla
         return Components.onTheEventThread(() ->
         {
             JTable table = table();
-            java.awt.Component cell = table.prepareRenderer(table.getCellRenderer(row, FUNCTION), row, FUNCTION);
+            java.awt.Component cell = table.prepareRenderer(table.getCellRenderer(row, TEST), row, TEST);
 
-            for (java.awt.Component c : ((java.awt.Container) cell).getComponents())
-            {
-                if (c instanceof javax.swing.JLabel && ((javax.swing.JLabel) c).getClientProperty("playState") != null)
-                {
-                    return (RowIcons.PlayState) ((javax.swing.JLabel) c).getClientProperty("playState");
-                }
-            }
-
-            return null;
+            return (RowIcons.PlayState) ((javax.swing.JComponent) cell).getClientProperty("playState");
         });
     }
 

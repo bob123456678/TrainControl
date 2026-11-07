@@ -575,23 +575,29 @@ public final class RowIcons
             @Override
             void draw(Graphics2D g, int width, int height)
             {
-                float inset = width * 0.2f;
-
-                // Drawn with its head at the right; mirrored so the turn runs counterclockwise
-                g.translate(width, 0);
-                g.scale(-1, 1);
+                float radius = width * 0.30f;
+                float centre = width * 0.5f;
 
                 g.setColor(colour);
                 g.setStroke(new BasicStroke(Math.max(1.5f, width / 9f), BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
-                g.draw(new java.awt.geom.Arc2D.Float(inset, inset, width - 2 * inset, height - 2 * inset, 60, 280,
+
+                // From about 8 o'clock counterclockwise round to 11 o'clock, leaving a clear gap before the head
+                g.draw(new java.awt.geom.Arc2D.Float(centre - radius, centre - radius, 2 * radius, 2 * radius, 205, 275,
                     java.awt.geom.Arc2D.OPEN));
 
-                // The head where the arc ends, on the right, pointing up: the way a counterclockwise turn goes
+                // The head at 11 o'clock, pointing the way the turn goes there: left and a little down
+                double end = Math.toRadians(120);
+                float px = centre + radius * (float) Math.cos(end);
+                float py = centre - radius * (float) Math.sin(end);
+                float dx = (float) -Math.sin(end);
+                float dy = (float) -Math.cos(end);
+                float nx = -dy;
+                float ny = dx;
                 java.awt.geom.Path2D.Float head = new java.awt.geom.Path2D.Float();
 
-                head.moveTo(width * 0.79f, height * 0.28f);
-                head.lineTo(width * 0.57f, height * 0.58f);
-                head.lineTo(width * 1.00f, height * 0.58f);
+                head.moveTo(px + dx * 0.12f * width, py + dy * 0.12f * width);
+                head.lineTo(px - dx * 0.07f * width + nx * 0.17f * width, py - dy * 0.07f * width + ny * 0.17f * width);
+                head.lineTo(px - dx * 0.07f * width - nx * 0.17f * width, py - dy * 0.07f * width - ny * 0.17f * width);
                 head.closePath();
 
                 g.fill(head);
