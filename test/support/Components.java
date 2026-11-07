@@ -173,6 +173,39 @@ public final class Components
         return true;
     }
 
+    /** Waits until no live thread has this name, so work a click handed to a background thread has finished. */
+    public static boolean waitForThreadsNamed(String name, long millis)
+    {
+        return waitFor(() ->
+        {
+            for (Thread thread : Thread.getAllStackTraces().keySet())
+            {
+                if (thread.isAlive() && name.equals(thread.getName())) return false;
+            }
+
+            return true;
+        }, millis);
+    }
+
+    /** Waits until the diagram's switching thread has run everything queued on it so far. */
+    public static boolean switchingIdle(long millis)
+    {
+        final java.util.concurrent.CountDownLatch reached = new java.util.concurrent.CountDownLatch(1);
+
+        org.traincontrol.gui.LayoutLabel.submitSwitching(reached::countDown);
+
+        try
+        {
+            return reached.await(millis, java.util.concurrent.TimeUnit.MILLISECONDS);
+        }
+        catch (InterruptedException e)
+        {
+            Thread.currentThread().interrupt();
+
+            return false;
+        }
+    }
+
     /**
      * Runs this on the event thread, waiting for it, and gives back what it returned; a failure inside comes out as an
      * unchecked exception.
