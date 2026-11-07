@@ -32,13 +32,19 @@ final class StationWindows
     /** The window for this surface, made anew when another window asks than the one it hangs off. */
     StationSettingsWindow station(TileKey square)
     {
+        return stations(java.util.Collections.singletonList(square));
+    }
+
+    /** The same window about several squares at once (FR-052), or one. */
+    StationSettingsWindow stations(java.util.List<TileKey> squares)
+    {
         Window owner = editor.ownerWindow();
 
         if (station != null && station.getOwner() != owner) station.closeWindow();
 
         if (station == null) station = new StationSettingsWindow(editor, owner);
 
-        station.aim(square);
+        station.aimAt(squares);
 
         outline();
 
@@ -61,7 +67,8 @@ final class StationWindows
     /** Right-clicking another square switches a window already open (FR-111). */
     void rightClicked(TileKey square)
     {
-        if (station != null && station.tile != null && !square.equals(station.tile) && editor.offersStationSettings(square))
+        if (station != null && station.tile != null && !station.isSeveral() && !square.equals(station.tile)
+            && editor.offersStationSettings(square))
         {
             station(square);
         }
@@ -138,7 +145,7 @@ final class StationWindows
 
         Set<TileKey> now = new LinkedHashSet<>();
 
-        if (station != null && station.tile != null)
+        if (station != null && station.tile != null && !editor.isPickingStations())
         {
             now.add(station.tile);
             now.addAll(session.getProtectingSignals(station.tile));
