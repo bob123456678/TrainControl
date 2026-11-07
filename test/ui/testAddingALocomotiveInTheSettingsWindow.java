@@ -175,12 +175,11 @@ public class testAddingALocomotiveInTheSettingsWindow extends support.SettingsCl
 
     /**
      * Check Duplicates on Basic Settings writes the old window's report: under the MFX heading each shared MFX address's
-     * locomotives and its separator, under the other heading the rest's, then the summary; the address separator is
-     * formatted as each half always was.  Asked of an Add and of a locomotive's own settings, which counts only other
-     * locomotives at its address as using it.
+     * locomotives and its separator, under the other heading the rest's, then the summary.  Asked of an Add and of a
+     * locomotive's own settings, which counts only other locomotives at its address as using it.
      *
-     * MUTATION: format the other decoders' separator as the MFX one is (`Integer.toString`) in
-     * `LocomotiveActions.logShared`, and this fails.
+     * MUTATION: count the locomotive itself among those using its address in `LocomotiveActions.checkDuplicates`, and
+     * this fails.
      */
     @Test
     public void testCheckDuplicatesWritesTheOldReport() throws Exception
@@ -216,7 +215,7 @@ public class testAddingALocomotiveInTheSettingsWindow extends support.SettingsCl
 
             assertTrue(mfx >= 0 && mfx < rest && rest < end, "the report's headings are missing or out of order: " + report);
 
-            assertShared(report.subList(mfx, rest), I18n.f("loc.reportAddressSeparator", Integer.toString(0xCE7)), mfxA, mfxB);
+            assertShared(report.subList(mfx, rest), I18n.f("loc.reportAddressSeparator", 0xCE7), mfxA, mfxB);
             assertShared(report.subList(rest, end), I18n.f("loc.reportAddressSeparator", 1901), dccA, dccB);
 
             // And from a locomotive's own settings: its own address is free when no other uses it

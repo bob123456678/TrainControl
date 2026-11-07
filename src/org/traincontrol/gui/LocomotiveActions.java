@@ -369,7 +369,7 @@ final class LocomotiveActions
                 this.ui.getModel().log("\t" + l.getName() + " [" + l.getDecoderTypeLabel() + "]");
             }
 
-            this.ui.getModel().logf("loc.reportAddressSeparator", mfx ? Integer.toString(addr) : addr);
+            this.ui.getModel().logf("loc.reportAddressSeparator", addr);
         }
     }
 
