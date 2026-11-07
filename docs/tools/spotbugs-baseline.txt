@@ -691,7 +691,6 @@ SIC_INNER_SHOULD_BE_STATIC_ANON	org.traincontrol.gui.GraphLocAssign$N	<init>		1
 SIC_INNER_SHOULD_BE_STATIC_ANON	org.traincontrol.gui.LayoutGrid$N	<init>		2
 SIC_INNER_SHOULD_BE_STATIC_ANON	org.traincontrol.gui.LayoutLabel$N	<init>		3
 SIC_INNER_SHOULD_BE_STATIC_ANON	org.traincontrol.gui.LayoutPopupUI$N	render		1
-SIC_INNER_SHOULD_BE_STATIC_ANON	org.traincontrol.gui.LocomotiveActions$N	changeLocNotes		4
 SIC_INNER_SHOULD_BE_STATIC_ANON	org.traincontrol.gui.RouteEditorFrame$N	actOnRowMarks		1
 SIC_INNER_SHOULD_BE_STATIC_ANON	org.traincontrol.gui.RouteEditorFrame$N	build		1
 SIC_INNER_SHOULD_BE_STATIC_ANON	org.traincontrol.gui.RouteEditorFrame$N	greyWhatCannotBeEdited		1

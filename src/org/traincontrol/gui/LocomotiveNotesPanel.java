@@ -154,12 +154,6 @@ final class LocomotiveNotesPanel extends JPanel
             || !railway.getText().equals(loadedRailway) || !notes.getText().equals(loadedNotes);
     }
 
-    /** Gives the notes box the keyboard, for the dialog. */
-    void focusNotes()
-    {
-        notes.requestFocusInWindow();
-    }
-
     /**
      * The two years as numbers, zero for a blank one.
      *

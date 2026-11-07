@@ -14816,11 +14816,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         }
     }
 
-    public void changeLocNotes(Locomotive l)
-    {
-        changeLocNotes(l, null);
-    }
-    
     /**
      * Shows the user locomotives similar to searchLoc, and maps them to a page if requested
      * @param searchLoc
@@ -14831,16 +14826,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         this.locomotiveActions.findSimilarLocs(searchLoc, evt);
     }
     
-    /**
-    * Allows the user to specify notes and metadata for the given locomotive
-    * @param l
-    * @param evt
-    */
-    public void changeLocNotes(Locomotive l, MouseEvent evt)
-    {
-        this.locomotiveActions.changeLocNotes(l, evt);
-    }
-
     public void deleteLoc(String value)
     {
         deleteLoc(value, null);
