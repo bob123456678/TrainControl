@@ -102,6 +102,40 @@ public class testTheLocomotiveSettingsLooks extends support.SettingsClass
     }
 
     /**
+     * The first tab's picture box is at least 260 by 130, wider than tall like a locomotive picture, with the trash can
+     * under it and the fields to its right, level with its top.
+     *
+     * MUTATION: set `PICTURE_WIDTH` and `PICTURE_HEIGHT` in `LocomotiveSettingsFrame` back to 200 and 90, or move the
+     * trash can's row beside the picture, and this fails.
+     */
+    @Test
+    public void testThePictureBoxIsLargeWithTheTrashCanUnderIt() throws Exception
+    {
+        opened();
+
+        JLabel picture = SettingsWindow.part("settings.picture", JLabel.class);
+        javax.swing.JButton trash = SettingsWindow.part("settings.trash", javax.swing.JButton.class);
+        javax.swing.JTextField name = SettingsWindow.part("settings.name", javax.swing.JTextField.class);
+        java.awt.Container root = SettingsWindow.showing().getContentPane();
+
+        java.awt.Rectangle box = Components.onTheEventThread(
+            () -> javax.swing.SwingUtilities.convertRectangle(picture.getParent(), picture.getBounds(), root));
+        java.awt.Rectangle can = Components.onTheEventThread(
+            () -> javax.swing.SwingUtilities.convertRectangle(trash.getParent(), trash.getBounds(), root));
+        java.awt.Rectangle field = Components.onTheEventThread(
+            () -> javax.swing.SwingUtilities.convertRectangle(name.getParent(), name.getBounds(), root));
+
+        assertTrue(box.width >= 260 && box.height >= 130, "the picture box is only " + box.width + " by " + box.height);
+        assertTrue(box.width > box.height, "the picture box is not wide like a locomotive picture");
+        assertTrue(can.y >= box.y + box.height, "the trash can (y " + can.y + ") is not under the picture (bottom "
+            + (box.y + box.height) + ")");
+        assertTrue(can.x >= box.x && can.x < box.x + box.width, "the trash can is not under the picture's width");
+        assertTrue(field.x >= box.x + box.width, "the fields are not to the right of the picture");
+        assertTrue(Math.abs(Math.min(field.y, box.y) - box.y) <= 12 && field.y - box.y <= 12,
+            "the first field (y " + field.y + ") is not top-aligned with the picture (y " + box.y + ")");
+    }
+
+    /**
      * The revert icons beside Preset and Icons are dim when there is nothing to put back, lit when there is a preset or
      * a customization, and the Preset one clears the preset on a click and dims again.
      *

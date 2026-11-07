@@ -58,6 +58,10 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
     /** The margin round every tab's content and the footer: the route editor's. */
     private static final int PAD = 10;
 
+    /** The first tab's picture box: wide like the application's locomotive pictures, taller to balance the fields. */
+    private static final int PICTURE_WIDTH = 278;
+    private static final int PICTURE_HEIGHT = 150;
+
     /** What a test answers the unsaved-changes question with: 0 Save, 1 Discard, 2 Cancel, or null to ask. */
     public static Integer unsavedAnswerForTest;
 
@@ -420,9 +424,9 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
     /** The first tab: picture, name, decoder, address and preset speed, with the trash can. */
     private final class LocomotiveTab extends JPanel
     {
-        final JTextField name = new JTextField(22);
+        final JTextField name = new JTextField(16);
         final JComboBox<decoderType> decoder = new JComboBox<>(decoderType.values());
-        final JTextField address = new JTextField(22);
+        final JTextField address = new JTextField(16);
         final JSpinner speed = new JSpinner(new SpinnerNumberModel(0, 0, 100, 1));
         final JLabel sameAddress = new JLabel();
         final JLabel picture = new JLabel("", JLabel.CENTER);
@@ -466,7 +470,7 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
             speed.addChangeListener(e -> typed());
 
             // The picture and the marks that change it, which apply at once.
-            picture.setPreferredSize(new Dimension(200, 90));
+            picture.setPreferredSize(new Dimension(PICTURE_WIDTH, PICTURE_HEIGHT));
             picture.setBorder(BorderFactory.createLineBorder(new Color(204, 204, 204)));
             picture.setLayout(new BorderLayout());
 
@@ -708,7 +712,7 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
 
                         try
                         {
-                            loaded = new javax.swing.ImageIcon(main.getLocImageMaxHeight(url, 200, 90));
+                            loaded = new javax.swing.ImageIcon(main.getLocImageMaxHeight(url, PICTURE_WIDTH - 2, PICTURE_HEIGHT - 2));
                         }
                         catch (Exception e)
                         {
