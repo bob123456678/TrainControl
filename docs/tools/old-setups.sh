@@ -10,8 +10,15 @@
 # Side by side: a detached worktree of <base-commit> under $TC_SCRATCH gets a copy of support.SetupDump and
 # core.testSetupDumpComparesBuilds; both builds dump every test layout, every autonomy format fixture and one read-only
 # copy of cs2_sample_layout; docs/tools/old-setups.py compares them file by file, says how many answers it compared and
-# prints the first differences.  Exit 0 only when every file is the same.  TC_OLD_SETUPS_LOCOS, _ROUTES and _TRIPS size
-# the sample.  Later builders: use the commit your branch started from, and keep the base worktree with TC_KEEP=1.
+# prints the first differences.  Exit 0 only when every file is the same, what each build writes on a load and save with
+# no change among them, and at least one Return Home plan was compared.  A Return Home plan's moves are printed and do not
+# fail, as the planner's wall clock picks among plans within one build (see old-setups.py), so read that line as not proved.
+# The 3.0.8 build is `dev-3.0.9`.  Later builders: also the commit your branch started from.  TC_KEEP=1 keeps the base
+# worktree.
+#
+# TC_OLD_SETUPS_LOCOS, _ROUTES and _TRIPS size the sample.  Routine use is 6 trips a setup, over 10 minutes a build, so
+# schedule it with whoever owns the test slots; TC_OLD_SETUPS_TRIPS=30 is the full sample, about 50 minutes a build.
+# TC_OLD_SETUPS_ONLY=<part of a setup's name> dumps only the setups it names, and is the way to look again at one.
 #
 # --opens-in: the same worktree trick for core.testASetupFromANewerBuildOpens over test/layouts/saved-by-3-1-0, then the
 # files that build saved are read back by this one.  The 3.0.8 build is `dev-3.0.9` (it is only renumbered).
@@ -28,6 +35,9 @@ then
     exit 2
 fi
 
+TC_OLD_SETUPS_TRIPS="${TC_OLD_SETUPS_TRIPS:-6}"
+export TC_OLD_SETUPS_TRIPS
+
 OUT="$S/old-setups"
 OTHER="$OUT/other-build"
 
@@ -41,10 +51,23 @@ else
     COMMIT="$1"
 fi
 
+# Without a locomotive database one build sees no trains, and every answer about a train reads as a difference.
+if [ ! -f LocDB.data ]
+then
+    echo "old-setups: this worktree has no LocDB.data, so the comparison cannot mean anything; nothing was run.  Run: sh docs/tools/env.sh ." >&2
+    exit 2
+fi
+
 git worktree remove --force "$OTHER" 2>/dev/null
 git worktree add --detach "$OTHER" "$COMMIT" >/dev/null || exit 2
 
 OTHER_SCRATCH="$(sh "$TOOLS/env.sh" "$OTHER" | sed -n 's/^TC_SCRATCH=//p')"
+
+if [ ! -f "$OTHER/LocDB.data" ]
+then
+    echo "old-setups: the worktree of $COMMIT has no LocDB.data after env.sh; nothing was run." >&2
+    exit 2
+fi
 
 copy_in()
 {

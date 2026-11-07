@@ -60,7 +60,7 @@ public class testSetupDumpComparesBuilds
      *
      * MUTATION: take the seed out of `SetupDump.seed` and this fails, as the railway's own shuffles decide the answers.
      */
-    @Test
+    @Test(timeOut = 10800000)
     public void testTheDumpIsTheSameTwiceAndSeesAChange() throws Exception
     {
         String out = System.getenv("TC_OLD_SETUPS_OUT");
@@ -82,8 +82,11 @@ public class testSetupDumpComparesBuilds
 
         assertTrue(counts.get("path answers") > 0, "the dump asked nothing: " + counts);
         assertTrue(counts.get("simulated trips") > 0, "the dump ran nothing: " + counts);
+        assertTrue(counts.get("plans ready") > 0, "no Return Home plan was ready, so none was compared: " + counts);
+        assertTrue(counts.get("timetable entries played") > 0, "no timetable was played: " + counts);
 
-        for (String section : Arrays.asList("settings.txt", "graph.txt", "paths.txt", "offers.txt", "runs.txt",
+        for (String section : Arrays.asList("settings.txt", "graph.txt", "paths.txt", "offers.txt", "runs.txt", "homes.txt",
+            "timetables.txt",
             "railway.json", "saved-unchanged/setup.json", "saved-captured/configuration-Main.json"))
         {
             assertEquals(read(new File(temp, "second/" + section)), read(new File(temp, "first/" + section)),
@@ -148,9 +151,14 @@ public class testSetupDumpComparesBuilds
 
         if (live != null) folders.add(live);
 
+        // To look again at one setup that differed
+        String only = System.getenv("TC_OLD_SETUPS_ONLY");
+
         for (String folder : folders)
         {
             String label = folder.equals(live) ? "live" : folder.replace('/', '_');
+
+            if (only != null && !label.contains(only)) continue;
 
             report.add(label + " " + attempt(() -> SetupDump.layout(new File(folder), new File(out, label), sample)));
         }
@@ -158,6 +166,8 @@ public class testSetupDumpComparesBuilds
         for (String[] format : FORMATS)
         {
             String label = format[0].replace('/', '_');
+
+            if (only != null && !label.contains(only)) continue;
 
             report.add(label + " " + attempt(() -> SetupDump.json(new File(format[1]), new File(format[0]),
                 new File(out, label), sample)));
