@@ -211,13 +211,13 @@ public class testPageLinksGoByPageId extends support.PageWindowTest
     }
 
     /**
-     * B1, today's behavior, which the owner has not ruled on: on a converted layout the ID decides, so an arrow re-aimed
-     * in 3.0.8, which changes only `.artikel`, goes where its ID says.  Re-aim it in 3.1.0.
+     * An arrow re-aimed in 3.0.8 after the conversion, which changes only `.artikel`, goes where 3.0.8 aimed it: its
+     * number no longer matches the one saved beside its ID, so the number wins, and the arrow takes its new page's ID.
      *
-     * MUTATION: `attachLinks` ignores `.zielseite` on a marked layout, and the arrow goes where 3.0.8 aimed it.
+     * MUTATION: `setLinkPageIdFromFile` ignores `.zielartikel`, and the arrow goes where its old ID says.
      */
     @Test
-    public void testAnArrowReAimedIn308AfterTheConversionGoesByItsId() throws Exception
+    public void testAnArrowReAimedIn308AfterTheConversionGoesToItsNewPage() throws Exception
     {
         startTheWindow(5);
 
@@ -225,34 +225,206 @@ public class testPageLinksGoByPageId extends support.PageWindowTest
 
         stopTheWindow();
 
-        // Not 0,0, whose element states no square
-        String link = aimed.keySet().stream().filter(key -> !key.endsWith("|0,0")).findFirst().get();
+        String link = aimed.keySet().iterator().next();
 
         String elsewhere = elsewhereThan(aimed.get(link));
 
+        reAimAs308Does(link, sortedNames().indexOf(elsewhere));
+
+        startTheWindow(5);
+
+        assertEquals(targets().get(link), elsewhere, "the arrow re-aimed in 3.0.8 did not go to its new page");
+
+        saveEveryPage();
+
+        assertEquals(idsInTheFiles().get(link), Integer.valueOf(model.getPageIdOf(elsewhere)),
+            "the re-aimed arrow was not saved with its new page's ID");
+
+        assertEquals(readKeys("zielartikel").get(link), numbersInTheFiles().get(link),
+            "the re-aimed arrow was not saved with its number beside its ID");
+    }
+
+    /**
+     * A page deleted in 3.0.8 after the conversion sets its arrows' `.artikel` to -1 and leaves their ID; a page given
+     * that ID later does not collect them.
+     *
+     * MUTATION: `setLinkPageIdFromFile` ignores `.zielartikel`, and the arrows go to the new page.
+     */
+    @Test
+    public void testAPageDeletedIn308DoesNotPassItsArrowsToALaterPageWithItsId() throws Exception
+    {
+        startTheWindow(5);
+
+        Map<String, String> aimed = targets();
+
+        stopTheWindow();
+
+        int id = idsInTheIndex().get("3 - Top Parking");
+
+        // As 3.0.8 deletes the page: its file and index entry go, and its arrows get -1; no other number moves, since
+        // nothing links to the two pages after it
+        assertFalse(aimed.containsValue("4 - Combined") || aimed.containsValue("5 - Test"),
+            "precondition: a link goes to a page after 3 - Top Parking");
+
+        int toIt = 0;
+
+        for (Map.Entry<String, String> link : aimed.entrySet())
+        {
+            if (link.getValue().equals("3 - Top Parking") && !link.getKey().startsWith("3 - Top Parking|"))
+            {
+                reAimAs308Does(link.getKey(), -1);
+
+                toIt++;
+            }
+        }
+
+        assertTrue(toIt > 0, "precondition: nothing links to 3 - Top Parking");
+
+        Files.delete(new File(sandbox.getFolder(), "config/gleisbilder/3 - Top Parking.cs2").toPath());
+
+        String index = new String(Files.readAllBytes(indexFile().toPath()), StandardCharsets.UTF_8).replace("\r", "");
+
+        String entry = "seite\n .id=" + id + "\n .name=3 - Top Parking\n";
+
+        assertTrue(index.contains(entry), "precondition: the index does not list 3 - Top Parking as " + entry);
+
+        Files.write(indexFile().toPath(), index.replace(entry, "").getBytes(StandardCharsets.UTF_8));
+
+        // Later, a page is given the deleted page's ID
+        addAPageByHand("6 - New", id);
+
+        startTheWindow(5);
+
+        for (Map.Entry<String, String> link : aimed.entrySet())
+        {
+            if (link.getValue().equals("3 - Top Parking") && !link.getKey().startsWith("3 - Top Parking|"))
+            {
+                assertEquals(targets().get(link.getKey()), "none", "an arrow of the page deleted in 3.0.8 went to the "
+                    + "page given its ID");
+            }
+        }
+    }
+
+    /**
+     * An arrow nobody re-aimed follows its ID after the conversion, even when a page renamed by hand reorders the
+     * names, so that its number now names another page.
+     *
+     * MUTATION: the conversion saves the page ID as `.zielartikel` in `withLinkPageIds`, and every arrow goes by its
+     * number.
+     */
+    @Test
+    public void testAnUnchangedArrowFollowsItsIdWhenThePagesNamesReorder() throws Exception
+    {
+        startTheWindow(5);
+
+        Map<String, String> aimed = targets();
+
+        stopTheWindow();
+
+        assertTrue(aimed.containsValue("1 - Main"), "precondition: nothing links to 1 - Main");
+
+        renameByHand("1 - Main", "9 - Main");
+
+        startTheWindow(5);
+
+        assertEquals(readAsThe308Would().get(linkTo(aimed, "1 - Main")), "2 - Bottom",
+            "precondition: the rename did not move the number's page");
+
+        for (Map.Entry<String, String> link : aimed.entrySet())
+        {
+            String key = link.getKey().replace("1 - Main|", "9 - Main|");
+
+            assertEquals(targets().get(key), link.getValue().replace("1 - Main", "9 - Main"),
+                "an unchanged arrow did not follow its ID when the names reordered");
+        }
+    }
+
+    /**
+     * An arrow saved with its ID but without the number beside it, as a dev build wrote it before the number was
+     * saved, still goes by its ID when 3.0.8 re-aims it.
+     *
+     * MUTATION: `setLinkPageIdFromFile` drops the ID when there is no `.zielartikel`, and the arrow goes where 3.0.8
+     * aimed it.
+     */
+    @Test
+    public void testAnArrowWithNoSavedNumberGoesByItsIdAsBefore() throws Exception
+    {
+        startTheWindow(5);
+
+        Map<String, String> aimed = targets();
+
+        stopTheWindow();
+
+        for (String page : idsInTheIndex().keySet())
+        {
+            File file = new File(sandbox.getFolder(), "config/gleisbilder/" + page + ".cs2");
+
+            String text = new String(Files.readAllBytes(file.toPath()), StandardCharsets.UTF_8);
+
+            Files.write(file.toPath(), text.replaceAll(" \\.zielartikel=-?\\d+\\r?\\n", "").getBytes(StandardCharsets.UTF_8));
+        }
+
+        assertEquals(readKeys("zielartikel").toString(), "{}", "precondition: a saved number is left");
+
+        String link = aimed.keySet().iterator().next();
+
+        reAimAs308Does(link, sortedNames().indexOf(elsewhereThan(aimed.get(link))));
+
+        startTheWindow(5);
+
+        assertEquals(targets().get(link), aimed.get(link), "an arrow with no saved number did not go by its ID");
+    }
+
+    /** A link ("page|x,y") of these that goes to this page, on another page. */
+    private static String linkTo(Map<String, String> links, String page)
+    {
+        return links.entrySet().stream().filter(link -> link.getValue().equals(page)
+            && !link.getKey().startsWith(page + "|")).findFirst().get().getKey();
+    }
+
+    /** What 3.0.8 writes when it re-aims an arrow: the number alone, every other key as it was. */
+    private void reAimAs308Does(String link, int number) throws Exception
+    {
         File page = pageFileOf(link);
 
         String text = new String(Files.readAllBytes(page.toPath()), StandardCharsets.UTF_8).replace("\r", "");
 
-        // What 3.0.8 writes when the arrow is re-aimed: its new place in the name-sorted list, the ID kept as it was
         String[] at = link.split("\\|")[1].split(",");
 
-        String square = String.format(" .id=0x%x\n", Integer.parseInt(at[1]) * 256 + Integer.parseInt(at[0]));
+        int square = Integer.parseInt(at[1]) * 256 + Integer.parseInt(at[0]);
 
-        int block = text.indexOf(square);
+        Matcher m = ELEMENT.matcher(text);
 
-        assertTrue(block >= 0, "precondition: no element at " + link);
+        while (m.find())
+        {
+            Matcher id = Pattern.compile("\\.id=0x([0-9a-fA-F]+)").matcher(m.group(1));
 
-        int artikel = text.indexOf(" .artikel=", block);
+            if (!m.group(1).contains(".typ=pfeil") || (id.find() ? Integer.parseInt(id.group(1), 16) : 0) != square) continue;
 
-        Files.write(page.toPath(), (text.substring(0, artikel) + " .artikel=" + sortedNames().indexOf(elsewhere)
-            + text.substring(text.indexOf('\n', artikel))).getBytes(StandardCharsets.UTF_8));
+            text = text.substring(0, m.start(1)) + m.group(1).replaceFirst(" \\.artikel=-?\\d+", " .artikel=" + number)
+                + text.substring(m.end(1));
 
-        assertEquals(readAsThe308Would().get(link), elsewhere, "precondition: 3.0.8 does not read the arrow re-aimed");
+            break;
+        }
 
-        startTheWindow(5);
+        Files.write(page.toPath(), text.getBytes(StandardCharsets.UTF_8));
 
-        assertEquals(targets().get(link), aimed.get(link), "the arrow did not go by its ID");
+        assertEquals(numbersInTheFiles().get(link), Integer.valueOf(number), "precondition: the arrow was not re-aimed");
+    }
+
+    /** Renames a page in the index and its file, touching no arrow. */
+    private void renameByHand(String from, String to) throws Exception
+    {
+        String index = new String(Files.readAllBytes(indexFile().toPath()), StandardCharsets.UTF_8);
+
+        assertTrue(index.contains(" .name=" + from + "\n") || index.contains(" .name=" + from + "\r\n"),
+            "precondition: the index does not name " + from);
+
+        Files.write(indexFile().toPath(), index.replace(" .name=" + from + "\n", " .name=" + to + "\n")
+            .replace(" .name=" + from + "\r\n", " .name=" + to + "\r\n").getBytes(StandardCharsets.UTF_8));
+
+        Files.move(new File(sandbox.getFolder(), "config/gleisbilder/" + from + ".cs2").toPath(),
+            new File(sandbox.getFolder(), "config/gleisbilder/" + to + ".cs2").toPath());
     }
 
     private String folder()

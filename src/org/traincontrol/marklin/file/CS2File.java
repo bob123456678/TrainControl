@@ -2034,7 +2034,7 @@ public final class CS2File
 
                 String withIds = org.traincontrol.base.LayoutDiagram.withLinkPageIds(text.toString(), keys ->
                     LayoutDiagramComponent.stationLinkPageId(LayoutDiagramComponent.pageIdFromText(keys.get("zielseite")),
-                        artikelNumber(keys.get("artikel"))));
+                        LayoutDiagramComponent.artikelNumber(keys.get("artikel"))));
 
                 copyAtomically(new BufferedReader(new java.io.StringReader(withIds)), layoutFile);
             }
@@ -2101,19 +2101,6 @@ public final class CS2File
                 logMessage("No CS3 locomotive data was downloaded from the Central Station.",
                     noCS3Locs, false);
             }
-        }
-    }
-
-    /** An arrow's `.artikel` as `parseLayout` reads it: 0 when absent or not a number. */
-    private static int artikelNumber(String text)
-    {
-        try
-        {
-            return Integer.valueOf(text);
-        }
-        catch (NumberFormatException none)
-        {
-            return 0;
         }
     }
 
@@ -2706,7 +2693,7 @@ public final class CS2File
                                 added.setUnmodelledKeys(m);
 
                                 // The page a link goes to, when a 3.1.0 save wrote its ID
-                                added.setLinkPageIdFromFile(m.get("zielseite"));
+                                added.setLinkPageIdFromFile(m.get("zielseite"), m.get("zielartikel"));
 
                                 // And the file's own word for the type: the type mapping is many-to-one, so writing the
                                 // canonical word back would collapse every variant the file distinguished.
