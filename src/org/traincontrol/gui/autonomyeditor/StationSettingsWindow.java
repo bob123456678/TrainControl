@@ -1572,6 +1572,12 @@ public final class StationSettingsWindow extends StationWindowBase
         return out;
     }
 
+    /** @return every mark of the picture with its open state, to tell a press that changed something */
+    public java.util.Set<String> pictureStateForTest()
+    {
+        return picture.stateForTest();
+    }
+
     /** @return the mark, named as `pictureMarksForTest` names it, that a click at this point of the picture presses */
     public String pictureMarkAtForTest(java.awt.Point at)
     {

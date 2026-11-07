@@ -1462,8 +1462,9 @@ public class LayoutDiagram
     }
 
     /**
-     * A page file's text with each arrow's `.zielseite` set to what `idFor` gives for its element's keys, or taken out
-     * where it gives null.  Blocks are told apart as `CS2File.parseFile` does; every other line is left as it was.
+     * A page file's text with each arrow's `.zielseite` set to what `idFor` gives for its element's keys, and its
+     * `.artikel` saved beside it as `.zielartikel`, or both taken out where it gives null.  Blocks are told apart as
+     * `CS2File.parseFile` does; every other line is left as it was.
      *
      * @param text the page file
      * @param idFor the page ID for an arrow's keys, or null for none
@@ -1512,7 +1513,7 @@ public class LayoutDiagram
 
             keys.put(parts[0], parts[1]);
 
-            if (!parts[0].equals("zielseite")) last = i;
+            if (!parts[0].equals("zielseite") && !parts[0].equals("zielartikel")) last = i;
 
             if (parts[0].equals("artikel")) artikel = i;
         }
@@ -1531,12 +1532,20 @@ public class LayoutDiagram
 
         for (int i = 0; i < block.size(); i++)
         {
-            if (!block.get(i).replace("\r", "").startsWith(" .zielseite=")) out.add(block.get(i));
+            String line = block.get(i).replace("\r", "");
+
+            if (!line.startsWith(" .zielseite=") && !line.startsWith(" .zielartikel=")) out.add(block.get(i));
 
             if (i == last) at = out.size();
         }
 
-        if (id != null) out.add(at, " .zielseite=" + id + nl);
+        if (id != null)
+        {
+            out.add(at, " .zielseite=" + id + nl);
+
+            // The number it is saved with, as `exportToCS2TextFormat` writes it
+            out.add(at + 1, " .zielartikel=" + LayoutDiagramComponent.artikelNumber(keys.get("artikel")) + nl);
+        }
 
         return out;
     }

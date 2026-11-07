@@ -21,8 +21,11 @@ IDs."* Page position, name order and display order have no bearing on where a li
 - **A layout saved by 3.1.0 writes the ID beside the old number:** `.zielseite=<id>` on the arrow's tile line, and
   `.artikel` still the page's place in the NAME-SORTED list, kept right by every page edit as before, so 3.0.8 reads
   the same layout correctly (3.0.8 carries a key it does not know through load, save and Duplicate; run on `v3_0_8`).
-  The cost: the name-sorted repoint stays in the writer, and when 3.0.8 re-picks an arrow's page the ID left on it wins
-  in 3.1.0.
+  The cost: the name-sorted repoint stays in the writer.
+- **The number is saved beside the ID too** (`.zielartikel`, Adam: *"also save the page no."*). When an arrow's
+  `.artikel` no longer matches it, 3.0.8 (which re-picks a page, or deletes one, by `.artikel` alone) or a hand edit
+  changed the arrow, and the number wins, read by name order and the ID re-attached. An arrow with an ID and no saved
+  number, as dev builds wrote before this, goes by its ID.
 - **An arrow with no ID key** (every earlier version wrote only the number) holds a place in the name-sorted list on a
   local layout. It resolves exactly as it always did and `MarklinControlStation.attachLinks` attaches the ID in memory;
   nothing is written until its page is next saved. Two pages sharing the target's ID leave it going by its number until

@@ -635,12 +635,37 @@ public class LayoutDiagramComponent
         this.address = this.rawAddress;
     }
 
-    /** Sets the ID from what the file said (`.zielseite`), leaving it null for a key that is not a number. */
-    public void setLinkPageIdFromFile(String text)
+    /**
+     * Sets the ID from what the file said (`.zielseite`), leaving it null for a key that is not a number.  When the
+     * number saved beside it (`.zielartikel`) is not this link's `.artikel`, 3.0.8 or a hand edit re-aimed the link
+     * since, so the ID is dropped and the number decides (FR-175).
+     *
+     * @param text the `.zielseite` value, or null
+     * @param savedNumber the `.zielartikel` value, or null when the file has none
+     */
+    public void setLinkPageIdFromFile(String text, String savedNumber)
     {
         if (!this.isLink() || text == null) return;
 
+        // A saved number that is not a number is absent, as an absent `.zielseite` is
+        Integer saved = pageIdFromText(savedNumber);
+
+        if (saved != null && saved != this.rawAddress) return;
+
         this.linkPageId = pageIdFromText(text);
+    }
+
+    /** @return an `.artikel` value as the page parser reads it: 0 when absent or not a number */
+    public static int artikelNumber(String text)
+    {
+        try
+        {
+            return Integer.valueOf(text);
+        }
+        catch (NumberFormatException none)
+        {
+            return 0;
+        }
     }
 
     /** @return the page ID a `.zielseite` value states, or null when it is absent or not a number */
@@ -937,7 +962,7 @@ public class LayoutDiagramComponent
      * The keys this class reads out of a CS2 element and can therefore write back on its own.
      */
     private static final List<String> MODELLED_KEYS = Arrays.asList(
-        "_type", "id", "typ", "drehung", "prot", "artikel", "zielseite", "zustand", "text");
+        "_type", "id", "typ", "drehung", "prot", "artikel", "zielseite", "zielartikel", "zustand", "text");
 
     /**
      * Exports this component in the CS2 file format
@@ -1011,10 +1036,12 @@ public class LayoutDiagramComponent
             builder.append(" .artikel=-1").append("\n");
         }
         
-        // The page a link goes to, by ID; `.artikel` above stays the number 3.0.8 reads, which keeps that version right
+        // The page a link goes to, by ID; `.artikel` above stays the number 3.0.8 reads, which keeps that version right.
+        // `.zielartikel` is that number again, which tells a later read whether 3.0.8 has re-aimed the link since.
         if (this.isLink() && this.linkPageId != null)
         {
             builder.append(" .zielseite=").append(this.linkPageId).append("\n");
+            builder.append(" .zielartikel=").append(this.rawAddress).append("\n");
         }
 
         // Add state
