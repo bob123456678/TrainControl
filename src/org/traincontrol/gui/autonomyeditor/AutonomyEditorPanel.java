@@ -3559,13 +3559,19 @@ public class AutonomyEditorPanel extends JPanel
             || window.canTrainLandOn(locomotiveAt(from), to);
     }
 
-    /** The trains a Cancel puts back with the setup: those a drop displaced, and the train that displaced them. */
+    /** The trains a Cancel puts back with the setup: every train dragged this session, and any a drop displaced. */
     private final java.util.Set<String> putBackOnDiscard = new java.util.LinkedHashSet<>();
 
     /** @return the trains the railway must not keep where a drag left them when the edit is thrown away */
     public java.util.Set<String> trainsToPutBackOnDiscard()
     {
         return java.util.Collections.unmodifiableSet(putBackOnDiscard);
+    }
+
+    /** Forgets the drags, as a Save makes them the new starting point (the one line to take back only some). */
+    public void forgetTheDragsToUndo()
+    {
+        putBackOnDiscard.clear();
     }
 
     /** Whether a tool or a half-made gesture is waiting for a click, which a press on a train then belongs to. */
@@ -3607,11 +3613,13 @@ public class AutonomyEditorPanel extends JPanel
             // Whatever the paste did to the setup is drawn and rebuilt, landed or not
             placementChanged(java.util.Collections.singletonList(name));
 
-            // A train sent from under another is put back with it by a Cancel: the railway alone lost the other
-            if (landed && displaced != null && !displaced.equals(name))
+            // Cancel throws every drag away, and a drop onto another train takes that one back with it: the railway
+            // alone lost it.  To let an empty target stay moved, add the dragged name only when `displaced` is not null.
+            if (landed)
             {
                 putBackOnDiscard.add(name);
-                putBackOnDiscard.add(displaced);
+
+                if (displaced != null) putBackOnDiscard.add(displaced);
             }
 
             return landed;

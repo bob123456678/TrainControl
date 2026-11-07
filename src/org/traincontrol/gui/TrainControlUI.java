@@ -4120,7 +4120,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     /**
      * Whether a paste of this train onto this square would land it there (FR-160), asked of what the paste asks: the
      * roster knows the train, the railway has a Point for the square and for every copy the setup builds there (a
-     * square renamed or changed since the last build is stale, and the facing would be lost).
+     * square renamed or changed since the last build is stale, and the facing would be lost), and one of them is a
+     * destination.
      *
      * @param locomotive the train's name
      * @param to the station square
@@ -4138,12 +4139,19 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             return false;
         }
 
+        // And one copy the railway takes a train on: a square made a station since the build is no destination yet
+        boolean takes = false;
+
         for (String name : session.getStationIndex().pointNamesAt(to))
         {
-            if (shown.getPoint(name) == null) return false;
+            org.traincontrol.automation.Point copy = shown.getPoint(name);
+
+            if (copy == null) return false;
+
+            if (copy.isDestination() || shown.isABarredCopyOfAStation(copy)) takes = true;
         }
 
-        return true;
+        return takes;
     }
 
     /**

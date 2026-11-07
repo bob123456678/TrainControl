@@ -963,6 +963,12 @@ public class testATrainDragsFromStationToStation
     /** The setup, the file and the railway on two squares: each train, its facing and its tail. */
     private static String threeStores(Fixture f) throws Exception
     {
+        return storesOn(f.from, f.to);
+    }
+
+    /** The same on any squares. */
+    private static String storesOn(TileKey... squares) throws Exception
+    {
         AutonomySession onDisk = new AutonomySession(sandbox.getFolder());
 
         java.util.List<LayoutDiagram> pages = new java.util.ArrayList<>();
@@ -977,7 +983,7 @@ public class testATrainDragsFromStationToStation
         {
             out.append(each == session ? "setup " : "file ").append(each.placementsAutonomyWillWrite());
 
-            for (TileKey tile : new TileKey[] {f.from, f.to})
+            for (TileKey tile : squares)
             {
                 for (String property : new String[] {"facing", "arrivedFrom", "arrivedAlong"})
                 {
@@ -1126,15 +1132,15 @@ public class testATrainDragsFromStationToStation
     }
 
     /**
-     * Cancel after a drag leaves the train where it landed, every time (FR-160): the drag is a paste on the railway,
-     * and Cancel keeps what the railway changed alone (`putBackWhatTheRailwayChangedAlone`).  A diagram scrolled away
-     * from its corner still lands the train.
+     * Cancel throws away every drag of the session, in the setup, the file and the railway, with facing and tail
+     * (FR-160): the dragged train goes back whatever the target held, a chain of drops leaves no train lost, and a
+     * dragged train the railway moved on afterwards goes back too.
      *
-     * MUTATION: putting the drag back on `placeLocomotive` (setup only, put on the railway by a later rebuild) makes
-     * the result depend on whether that rebuild had run when Cancel did.
+     * MUTATION: adding the dragged name only for an occupied target (`displaced != null` in
+     * `AutonomyEditorPanel.dropTrain`) loses a train in the chain and leaves the empty drags moved.
      */
-    @Test(timeOut = 240000)
-    public void testCancelLeavesADraggedTrainWhereItLanded() throws Exception
+    @Test(timeOut = 400000)
+    public void testCancelUndoesEveryDragOfTheSession() throws Exception
     {
         fixture(false);
 
@@ -1142,34 +1148,272 @@ public class testATrainDragsFromStationToStation
 
         try
         {
-            for (int round = 0; round < 3; round++)
+            java.util.List<TileKey> trains = new java.util.ArrayList<>(session.placementsAutonomyWillWrite().keySet());
+            java.util.List<TileKey> empty = emptyStations();
+
+            assertTrue(trains.size() >= 3 && empty.size() >= 3, "precondition: three trains and three empty stations are needed");
+
+            TileKey a = trains.get(0), b = trains.get(1), c = trains.get(2);
+
+            // Two empty drops, then the railway moves the first train on alone
+            reopenedFrom(asFound);
+
+            String before = storesOn(a, b, c, empty.get(0), empty.get(1), empty.get(2));
+
+            scrollTheDiagram();
+
+            dragTrain(a, empty.get(0));
+            dragTrain(b, empty.get(1));
+
+            assertNotNull(session.getLocomotiveNameAt(empty.get(1)), "precondition: the second drop did not land");
+
+            moveOnTheRailwayAlone(session.getLocomotiveNameAt(empty.get(0)), empty.get(2));
+
+            cancelTheEditor();
+
+            assertEquals(storesOn(a, b, c, empty.get(0), empty.get(1), empty.get(2)), before,
+                "Cancel left something of two empty drops");
+
+            // A chain: a onto b, then c onto the square a left
+            reopenedFrom(asFound);
+
+            dragTrain(a, b);
+            dragTrain(c, a);
+
+
+            cancelTheEditor();
+
+            assertEquals(storesOn(a, b, c, empty.get(0), empty.get(1), empty.get(2)), before, "Cancel lost a train in a chain of drops");
+        }
+        finally
+        {
+            putBack(asFound);
+        }
+    }
+
+    /**
+     * A shut station edited in the same session comes back with the trains; what the railway moved on its own and
+     * nobody dragged keeps its place; and a Save makes the drags the new starting point, which a later Cancel keeps.
+     *
+     * MUTATION: dropping `forgetTheDragsToUndo` from `saveBeforeLeaving` lets that Cancel undo the saved drag; adding
+     * every train to the Cancel's list (not only the dragged) puts the railway's own move back.
+     */
+    @Test(timeOut = 400000)
+    public void testCancelKeepsWhatWasSavedAndWhatTheRailwayMovedAlone() throws Exception
+    {
+        fixture(false);
+
+        org.json.JSONObject asFound = session.snapshotSetup();
+
+        try
+        {
+            java.util.List<TileKey> trains = new java.util.ArrayList<>(session.placementsAutonomyWillWrite().keySet());
+            java.util.List<TileKey> empty = emptyStations();
+
+            TileKey a = trains.get(0), b = trains.get(1);
+
+            // A shut station edited after a drag
+            reopenedFrom(asFound);
+
+            Object activeBefore = session.getPointProperty(empty.get(1), "active");
+
+            String before = storesOn(a, b, empty.get(0), empty.get(1));
+
+            dragTrain(a, empty.get(0));
+
+            session.setPointProperty(empty.get(1), "active", false);
+
+            cancelTheEditor();
+
+            assertEquals(storesOn(a, b, empty.get(0), empty.get(1)), before, "a drag with a shut station was not all undone");
+            assertEquals(session.getPointProperty(empty.get(1), "active"), activeBefore, "the shut station stayed shut");
+
+            // A train the railway moved alone, and a drag that was never of it
+            reopenedFrom(asFound);
+
+            String mover = session.getLocomotiveNameAt(b);
+
+            moveOnTheRailwayAlone(mover, empty.get(2));
+
+            dragTrain(a, empty.get(0));
+
+            cancelTheEditor();
+
+            assertEquals(railwaySquareOf(mover), empty.get(2), "Cancel moved a train nobody dragged");
+
+            // Save, then Cancel: the saved drag stays
+            reopenedFrom(asFound);
+
+            String saved = session.getLocomotiveNameAt(a);
+
+            dragTrain(a, empty.get(0));
+
+            try (Answering answering = Answering.start(message -> Answering.press(I18n.t("layout.ui.switchSave"))))
+            {
+                final java.lang.reflect.Method settleWork = LayoutEditor.class.getDeclaredMethod("settleUnsavedWork");
+
+                settleWork.setAccessible(true);
+
+                onTheEventThread(() -> settleWork.invoke(editor));
+            }
+
+            dragTrain(b, empty.get(1));
+
+            cancelTheEditor();
+
+            assertEquals(session.getLocomotiveNameAt(empty.get(0)), saved, "Cancel undid a drag that was saved");
+            assertNull(session.getLocomotiveNameAt(empty.get(1)), "Cancel kept a drag made after the save");
+        }
+        finally
+        {
+            putBack(asFound);
+        }
+    }
+
+    /**
+     * A sensor the railway has, made a station in the setup with no rebuild, is no destination yet: the mark is red.
+     *
+     * MUTATION: dropping the destination question from `TrainControlUI.canTrainLandOn` leaves it green with nothing
+     * landing.
+     */
+    @Test(timeOut = 120000)
+    public void testASquareMadeAStationSinceTheBuildIsRed() throws Exception
+    {
+        Fixture f = fixture(false);
+
+        org.json.JSONObject asFound = session.snapshotSetup();
+
+        TileKey sensor = new TileKey(PAGE, 0, 3);
+
+        try
+        {
+            assertFalse(session.getStore().isStation(sensor), "precondition: 1 - Main:0,3 is already a station");
+
+            session.setStation(sensor, true);
+
+            assertFalse(editor.getAutonomyPanel().canDropTrain(f.from, sensor),
+                "a square made a station, not yet a destination on the railway, is offered");
+        }
+        finally
+        {
+            putBack(asFound);
+        }
+    }
+
+    /**
+     * With every station able to turn trains and a train that stands in the setup only, a drag records the road the
+     * paste records (`arrivedAlong`), on both of two squares.
+     *
+     * MUTATION: quieting the question even for one road (`if (quiet) return Answer.NOT_ASKED;` in
+     * `TailCrossedPrompt.askAfterPlacement`) leaves it null.
+     */
+    @Test(timeOut = 300000)
+    public void testADragRecordsTheRoadWhereEveryStationMayTurn() throws Exception
+    {
+        fixture(false);
+
+        org.json.JSONObject asFound = session.snapshotSetup();
+
+        TileKey where = new TileKey(PAGE, 9, 6);
+
+        assertTrue(session.getStore().isStation(where) && session.getLocomotiveNameAt(where) == null, "precondition: 1 - Main:9,6 is not an empty station");
+
+        String lone = null;
+
+        for (String each : model.getLocList())
+        {
+            if (!session.placementsAutonomyWillWrite().containsValue(each)) lone = each;
+        }
+
+        assertNotNull(lone, "precondition: every train is on the railway already");
+
+        int landed = 0;
+
+        try
+        {
+            for (TileKey to : new TileKey[] {new TileKey(PAGE, 1, 10), new TileKey(PAGE, 7, 7)})
             {
                 putBack(asFound);
 
-                SwingUtilities.invokeAndWait(() -> editor.dispose());
+                for (TileKey station : session.getReducer().getPoints().keySet())
+                {
+                    if (PAGE.equals(station.getPage()) && session.getStore().isStation(station))
+                    {
+                        session.setPointProperty(station, AutonomyBuilder.CAN_REVERSE, true);
+                    }
+                }
 
-                editor = openEditor();
+                final java.util.Set<String> all = new java.util.HashSet<>(session.placementsAutonomyWillWrite().values());
 
-                Fixture f = fixture(false);
+                onTheEventThread(() -> ui.rebuildRunningLayoutFromSetup(false, all));
+                settle();
 
-                scrollTheDiagram();
+                session.setPointProperty(where, "loc", settings(lone, 5, false, 40));
 
-                String train = session.getLocomotiveNameAt(f.from);
+                fixture(false);
 
-                Mouse.drag(f.fromLabel, f.toLabel);
+                if (!editor.getAutonomyPanel().canDropTrain(where, to)) continue;
 
-                assertEquals(session.getLocomotiveNameAt(f.to), train, "precondition: the train did not land");
+                dragTrain(where, to);
 
-                cancelTheEditor();
+                if (!lone.equals(session.getLocomotiveNameAt(to))) continue;
 
-                assertEquals(session.getLocomotiveNameAt(f.to), train, "round " + round + ": Cancel took the train off " + f.to);
-                assertNull(session.getLocomotiveNameAt(f.from), "round " + round + ": Cancel put the train back on " + f.from);
+                landed++;
+
+                assertNotNull(session.getPointProperty(to, "arrivedAlong"),
+                    "the drag onto " + to + " recorded no road, where a paste records one");
             }
         }
         finally
         {
             putBack(asFound);
         }
+
+        assertTrue(landed > 0, "precondition: the train landed on neither square, so the road is not compared");
+    }
+
+    /** Opens a fresh editor on the setup as found. */
+    private static void reopenedFrom(org.json.JSONObject asFound) throws Exception
+    {
+        putBack(asFound);
+
+        SwingUtilities.invokeAndWait(() -> editor.dispose());
+
+        editor = openEditor();
+
+        fixture(false);
+    }
+
+    /** The stations on the page with no train, in a fixed order, with a drawn square. */
+    private static java.util.List<TileKey> emptyStations() throws Exception
+    {
+        java.util.List<TileKey> empty = new java.util.ArrayList<>();
+
+        for (TileKey[] each : casesToCompare()) if (!empty.contains(each[1])) empty.add(each[1]);
+
+        return empty;
+    }
+
+    /** The railway moves a train on its own, as a run does: the setup is told nothing. */
+    private static void moveOnTheRailwayAlone(String train, TileKey to) throws Exception
+    {
+        final String point = session.getStationIndex().pointNamesAt(to).iterator().next();
+
+        onTheEventThread(() -> assertTrue(model.getAutoLayout().moveLocomotive(train, point, false, true),
+            "precondition: the railway would not move " + train + " to " + to));
+    }
+
+    private static TileKey railwaySquareOf(String train)
+    {
+        for (org.traincontrol.automation.Point point : model.getAutoLayout().getPoints())
+        {
+            if (point.getCurrentLocomotive() != null && train.equals(point.getCurrentLocomotive().getName()))
+            {
+                return session.getStationIndex().squareOf(point);
+            }
+        }
+
+        return null;
     }
 
     private static void cancelTheEditor() throws Exception
