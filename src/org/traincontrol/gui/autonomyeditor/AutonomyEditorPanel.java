@@ -3568,12 +3568,6 @@ public class AutonomyEditorPanel extends JPanel
         return java.util.Collections.unmodifiableSet(putBackOnDiscard);
     }
 
-    /** Forgets the drags, as a Save makes them the new starting point (the one line to take back only some). */
-    public void forgetTheDragsToUndo()
-    {
-        putBackOnDiscard.clear();
-    }
-
     /** Whether a tool or a half-made gesture is waiting for a click, which a press on a train then belongs to. */
     public boolean isAToolArmed()
     {

@@ -4240,9 +4240,6 @@ public class LayoutEditor extends PositionAwareJFrame
 
                 this.autonomyAsOpened = saved == null ? null : saved.snapshotSetup();
 
-                // What was dragged is now saved, and a later Cancel keeps it
-                autonomyPanel.forgetTheDragsToUndo();
-
                 return true;
             }
 

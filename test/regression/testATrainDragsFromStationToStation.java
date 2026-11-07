@@ -1142,13 +1142,11 @@ public class testATrainDragsFromStationToStation
     @Test(timeOut = 400000)
     public void testCancelUndoesEveryDragOfTheSession() throws Exception
     {
-        fixture(false);
-
-        org.json.JSONObject asFound = session.snapshotSetup();
+        org.json.JSONObject asFound = began();
 
         try
         {
-            java.util.List<TileKey> trains = new java.util.ArrayList<>(session.placementsAutonomyWillWrite().keySet());
+            java.util.List<TileKey> trains = trainSquares();
             java.util.List<TileKey> empty = emptyStations();
 
             assertTrue(trains.size() >= 3 && empty.size() >= 3, "precondition: three trains and three empty stations are needed");
@@ -1195,19 +1193,17 @@ public class testATrainDragsFromStationToStation
      * A shut station edited in the same session comes back with the trains; what the railway moved on its own and
      * nobody dragged keeps its place; and a Save makes the drags the new starting point, which a later Cancel keeps.
      *
-     * MUTATION: dropping `forgetTheDragsToUndo` from `saveBeforeLeaving` lets that Cancel undo the saved drag; adding
-     * every train to the Cancel's list (not only the dragged) puts the railway's own move back.
+     * MUTATION: none of its own: a Save retakes the undo point, which the restored setup then follows, so the saved
+     * drag stays whatever the Cancel's list holds; passing every train in the list would put the railway's own move back.
      */
     @Test(timeOut = 400000)
     public void testCancelKeepsWhatWasSavedAndWhatTheRailwayMovedAlone() throws Exception
     {
-        fixture(false);
-
-        org.json.JSONObject asFound = session.snapshotSetup();
+        org.json.JSONObject asFound = began();
 
         try
         {
-            java.util.List<TileKey> trains = new java.util.ArrayList<>(session.placementsAutonomyWillWrite().keySet());
+            java.util.List<TileKey> trains = trainSquares();
             java.util.List<TileKey> empty = emptyStations();
 
             TileKey a = trains.get(0), b = trains.get(1);
@@ -1368,6 +1364,19 @@ public class testATrainDragsFromStationToStation
         }
 
         assertTrue(landed > 0, "precondition: the train landed on neither square, so the road is not compared");
+    }
+
+    /** The editor ready, and the setup as it stands. */
+    private static org.json.JSONObject began() throws Exception
+    {
+        fixture(false);
+
+        return session.snapshotSetup();
+    }
+
+    private static java.util.List<TileKey> trainSquares()
+    {
+        return new java.util.ArrayList<>(session.placementsAutonomyWillWrite().keySet());
     }
 
     /** Opens a fresh editor on the setup as found. */
