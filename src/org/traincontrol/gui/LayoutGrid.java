@@ -143,6 +143,9 @@ public class LayoutGrid
                     began[0] = null;
                     dragging[0] = false;
 
+                    editor.hideCaptionGhost();
+                    editor.clearCaptionDropTarget();
+
                     return;
                 }
 

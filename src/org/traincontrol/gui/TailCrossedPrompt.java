@@ -36,6 +36,15 @@ public class TailCrossedPrompt
     /** How many sensors back a road is followed at most, so a loop in a hand-written layout cannot run away. */
     private static final int MOST_SENSORS_BACK = 30;
 
+    /** While true no question is put: a train dragged in the autonomy editor never waits on one (FR-160). */
+    private static volatile boolean quiet;
+
+    /** Silences or restores the questions a placement would put; event thread only. */
+    static void beQuiet(boolean on)
+    {
+        quiet = on;
+    }
+
     /** The answer the next question gets without a dialog, for tests; null shows the dialog. */
     private static volatile String answeredByATest;
 
@@ -164,7 +173,7 @@ public class TailCrossedPrompt
     public static Answer askAfterPlacement(Layout layout, Point at, String arrivedFrom, Integer trainLength,
         String train, Component parent, Function<String, String> shown, List<Edge> recorded)
     {
-        if (!wouldAsk(layout, at, arrivedFrom, trainLength)) return Answer.NOT_ASKED;
+        if (quiet || !wouldAsk(layout, at, arrivedFrom, trainLength)) return Answer.NOT_ASKED;
 
         // WHETHER AN EDITOR IS OPEN AS IT IS ASKED, for the door to know whether one opened in the wait
         boolean editorWasOpen = parent instanceof TrainControlUI && ((TrainControlUI) parent).isLayoutEditorOpen();
@@ -211,7 +220,7 @@ public class TailCrossedPrompt
         org.traincontrol.automationui.AutonomySession session, Layout layout, Point at, String arrivedFrom,
         Integer trainLength, TrainControlUI window)
     {
-        if (session == null || at == null || !wouldAsk(layout, at, arrivedFrom, trainLength)) return null;
+        if (quiet || session == null || at == null || !wouldAsk(layout, at, arrivedFrom, trainLength)) return null;
 
         if (window != null && window.anEditorIsOpenOrOnItsWay()) return null;
 

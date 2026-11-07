@@ -6233,7 +6233,8 @@ public class AutonomySession
 
         Object existing = getPointProperty(tile, "loc");
 
-        org.json.JSONObject loc = existing instanceof org.json.JSONObject
+        // The settings of the train standing here belong to it: a different train starts from none (FR-160).
+        org.json.JSONObject loc = existing instanceof org.json.JSONObject && name.equals(nameOfPlacedLocomotive(existing))
             ? new org.json.JSONObject(existing.toString()) : new org.json.JSONObject();
 
         loc.put("name", name);

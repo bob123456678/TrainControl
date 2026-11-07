@@ -3546,7 +3546,13 @@ public class AutonomyEditorPanel extends JPanel
 
         if (locomotiveAt(from) == null || !session.getStore().isStation(to)) return false;
 
-        return !setupIsHeldByARun();
+        return !anythingIsArmed() && !setupIsHeldByARun();
+    }
+
+    /** Whether a tool or a half-made gesture is waiting for a click, which a press on a train then belongs to. */
+    public boolean isAToolArmed()
+    {
+        return anythingIsArmed();
     }
 
     /** Whether a run holds the setup, asked without saying anything: a drag is simply not offered then (FR-160). */
@@ -3558,8 +3564,10 @@ public class AutonomyEditorPanel extends JPanel
     }
 
     /**
-     * Moves the train standing on a square to another station through `placeLocomotive`, the door the menu's Add to
-     * Autonomy uses (FR-160); nothing happens, and nothing is said, where `canDropTrain` says no.
+     * Moves the train standing on a square to another station as a copy and paste of it does (FR-160): through the
+     * window's paste, which walks the road, picks the copy and records the facing and the tail.  Where no railway is
+     * loaded to paste onto, through `placeLocomotive`, which the menu's Add to Autonomy uses.  Nothing happens, and
+     * nothing is said, where `canDropTrain` says no, and the drag never waits on a question a paste would ask.
      * @param from the square the train stands on
      * @param to the square it was let go on
      * @return whether it moved
@@ -3568,7 +3576,20 @@ public class AutonomyEditorPanel extends JPanel
     {
         if (!canDropTrain(from, to)) return false;
 
-        trainBeingDropped = locomotiveAt(from);
+        String name = locomotiveAt(from);
+
+        TrainControlUI window = parentWindow();
+
+        if (window != null && window.getModel() != null && window.getModel().hasAutoLayout())
+        {
+            if (!window.dropTrainByPaste(name, to)) return false;
+
+            placementChanged(java.util.Collections.singletonList(name));
+
+            return true;
+        }
+
+        trainBeingDropped = name;
 
         try
         {

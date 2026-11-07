@@ -365,6 +365,8 @@ public class LayoutEditor extends PositionAwareJFrame
     @Override
     public void dispose()
     {
+        this.trainDrag.abandon();
+
         java.awt.Toolkit.getDefaultToolkit().removeAWTEventListener(this.pointerWatch);
 
         if (this.autonomySessionForTheNote != null)
@@ -1864,6 +1866,34 @@ public class LayoutEditor extends PositionAwareJFrame
         if (autonomyPanel == null || !autonomyPanel.takesATrainForItsStation()) return null;
 
         return trainDrawnUnder(e);
+    }
+
+    /**
+     * The square a press lands on a train of, for dragging it (FR-160): the one whose drawn train covers the point, else
+     * the square pressed near its middle while the setup stands a train there that the picture has not drawn, as
+     * happens between a wipe of the diagram and the next picture.  Else a press there would fall to the caption.
+     * @param e the press
+     * @return the square, or null
+     */
+    LayoutLabel trainStandingUnder(MouseEvent e)
+    {
+        LayoutLabel drawn = trainDrawnUnder(e);
+
+        if (drawn != null || autonomyPanel == null || !(e.getComponent() instanceof LayoutLabel)) return drawn;
+
+        LayoutLabel pressed = (LayoutLabel) e.getComponent();
+
+        int x = getX(pressed);
+        int y = getY(pressed);
+
+        if (x < 0 || y < 0 || layout == null || !pressed.trainPictureIsMissing()) return null;
+
+        int reach = Math.min(pressed.getWidth(), pressed.getHeight()) * 35 / 100;
+
+        boolean near = e.getPoint().distance(pressed.getWidth() / 2.0, pressed.getHeight() / 2.0) <= reach;
+
+        return near && autonomyPanel.locomotiveAt(
+            new org.traincontrol.automationui.TileGraph.TileKey(layout.getName(), x, y)) != null ? pressed : null;
     }
 
     /**
@@ -4038,6 +4068,9 @@ public class LayoutEditor extends PositionAwareJFrame
      */
     private void arriveAt(String page, boolean wanted)
     {
+        // A train carried across a page or mode switch is put down where it was
+        this.trainDrag.abandon();
+
         // A page action's turn: the latch stays up until its `arriveOn` comes back here
         if (pageAction != null)
         {

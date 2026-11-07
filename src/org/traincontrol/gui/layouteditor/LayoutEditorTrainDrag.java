@@ -50,9 +50,10 @@ final class LayoutEditorTrainDrag
 
         AutonomyEditorPanel panel = editor.getAutonomyPanel();
 
-        if (panel == null || panel.setupIsHeldByARun() || editor.grid == null) return false;
+        // A tool waiting for a click takes a click on a train, and a press on one starts no drag
+        if (panel == null || panel.isAToolArmed() || panel.setupIsHeldByARun() || editor.grid == null) return false;
 
-        LayoutLabel square = editor.trainDrawnUnder(e);
+        LayoutLabel square = editor.trainStandingUnder(e);
 
         TileKey tile = tileOf(square);
 
@@ -135,6 +136,14 @@ final class LayoutEditorTrainDrag
         finish();
 
         return true;
+    }
+
+    /** Puts down whatever is carried or pressed, for a window that closes or changes page. */
+    void abandon()
+    {
+        finish();
+
+        reset();
     }
 
     private void reset()

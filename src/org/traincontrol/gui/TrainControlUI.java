@@ -4050,6 +4050,22 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         this.diagramLocGestures.setHoveredDiagramTile(page, x, y);
     }
 
+    /**
+     * Delegates to `DiagramLocGestures.dropByPaste`: a train dragged in the autonomy editor lands as a paste (FR-160).
+     *
+     * @param locomotive the train's name
+     * @param to the station square
+     * @return whether it now stands there; false also where no railway is loaded to paste onto
+     */
+    public boolean dropTrainByPaste(String locomotive, org.traincontrol.automationui.TileGraph.TileKey to)
+    {
+        Locomotive train = this.model == null ? null : this.model.getLocByName(locomotive);
+
+        if (train == null || !this.model.hasAutoLayout()) return false;
+
+        return this.diagramLocGestures.dropByPaste(train, to);
+    }
+
     /** Delegates to `DiagramLocGestures.locomotiveGestureOnDiagram`. */
     private boolean locomotiveGestureOnDiagram(int keyCode, boolean controlPressed)
     {

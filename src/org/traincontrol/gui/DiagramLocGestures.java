@@ -47,6 +47,53 @@ final class DiagramLocGestures
         return tile;
     }
 
+    /** True while `dropByPaste` runs the paste: it never asks, and an open editor is where it comes from. */
+    private boolean dropping;
+
+    /**
+     * A train dragged in the autonomy editor lands as a Control+V of it would (FR-160): the same branch, with the train
+     * as the clipboard, so facing, copy, tail and road come out as a paste leaves them.  Where a paste would ask (the
+     * tail's side at a square trains may turn at, the heading, the sensors the tail crossed) the drag asks nothing and
+     * takes the rule's own answer.
+     *
+     * @param train the train to put down
+     * @param to the station square
+     * @return whether the train now stands on that square in the setup
+     */
+    boolean dropByPaste(Locomotive train, org.traincontrol.automationui.TileGraph.TileKey to)
+    {
+        Locomotive cutWas = ui.cutLocomotive;
+        org.traincontrol.automationui.TilePorts.Side facingWas = ui.cutFacing;
+        String fromWas = ui.cutFrom;
+        org.traincontrol.automationui.TileGraph.TileKey hoveredWas = hoveredDiagramTile;
+
+        ui.cutLocomotive = train;
+        ui.cutFacing = null;
+        ui.cutFrom = null;
+        hoveredDiagramTile = to;
+        dropping = true;
+
+        TailCrossedPrompt.beQuiet(true);
+
+        try
+        {
+            locomotiveGestureOnDiagram(KeyEvent.VK_V, true);
+        }
+        finally
+        {
+            TailCrossedPrompt.beQuiet(false);
+            dropping = false;
+            ui.cutLocomotive = cutWas;
+            ui.cutFacing = facingWas;
+            ui.cutFrom = fromWas;
+            hoveredDiagramTile = hoveredWas;
+        }
+
+        org.traincontrol.automationui.AutonomySession session = ui.getAutonomySession();
+
+        return session != null && train.getName().equals(session.getLocomotiveNameAt(to));
+    }
+
     /** The diagram square under the pointer, or null: no cursor or selection exists, so this says what a key means. */
     private volatile org.traincontrol.automationui.TileGraph.TileKey hoveredDiagramTile;
 
@@ -87,7 +134,7 @@ final class DiagramLocGestures
         }
 
         // Nor while an editor holds the setup (OB-076): its Cancel would revert and write back this placement.
-        if (ui.isLayoutEditorOpen())
+        if (!dropping && ui.isLayoutEditorOpen())
         {
             ui.getModel().logf("layout.warnDiagramKeyWhileEditorOpen");
 
@@ -179,7 +226,7 @@ final class DiagramLocGestures
                 ui.facingAtTheLanding == null ? null : ui.facingAtTheLanding.name(),
             // The build's sides, which the model reads too (OB-182): the geometric answer names where the neighboring
             // POINT lies, and a reduced run turns corners.  `Layout.entrySideOf` is what both writes and the walk read.
-                mayTurnHere(aimed), ui.dialogParent(),
+                mayTurnHere(aimed) && !dropping, ui.dialogParent(),
                 ui.getAutonomySession() == null ? null : ui.getAutonomySession().unbarredArrivalSides(aimed));
 
             if (ui.tailAtTheLanding == null && org.traincontrol.gui.autonomy.ArrivalSidePrompt.wouldAsk(
@@ -199,7 +246,7 @@ final class DiagramLocGestures
                 java.util.Collection<org.traincontrol.automationui.TilePorts.Side> canHold =
                     ui.getAutonomySession().facingsFor(aimed).values();
 
-                if (org.traincontrol.gui.autonomy.FacingPrompt.wouldAsk(canHold))
+                if (!dropping && org.traincontrol.gui.autonomy.FacingPrompt.wouldAsk(canHold))
                 {
                     // Named as the square: a copy's name states a heading, which is what this asks.
                     ui.facingChosenAtTheLanding = org.traincontrol.gui.autonomy.FacingPrompt.forPlacement(

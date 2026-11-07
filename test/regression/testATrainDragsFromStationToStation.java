@@ -19,6 +19,8 @@ import org.traincontrol.base.LayoutDiagram;
 import org.traincontrol.gui.LayoutGrid;
 import org.traincontrol.gui.LayoutLabel;
 import org.traincontrol.gui.TrainControlUI;
+import org.traincontrol.gui.TailCrossedPrompt;
+import org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel;
 import org.traincontrol.gui.layouteditor.LayoutEditor;
 import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.util.I18n;
@@ -27,7 +29,7 @@ import support.Mouse;
 
 /**
  * FR-160: a train drawn on a station in the autonomy editor can be dragged to another station.  It lands through the
- * door the editor's Add to Autonomy picker places through (`placeLocomotive`), so the setup it leaves is the picker's.
+ * window's paste of a train, so the setup it leaves is a paste's.
  * Every claim drives real mouse events at the editor's squares on the frozen railway and puts the setup back.
  *
  * @author Adam
@@ -243,47 +245,417 @@ public class testATrainDragsFromStationToStation
     }
 
     /**
-     * What the drag leaves in the setup is what the picker's door leaves for the same move, facing, road and the rest,
-     * onto an empty station and onto one that holds a train (which the door replaces).
+     * A dragged train ends as a real Control+X, Control+V of it ends (FR-160): the facing, the tail's side and road,
+     * the copy it stands on and every other train, on several trains and squares, onto squares a paste asks nothing at.
      *
-     * MUTATION: having `dropTrain` write `session.placeLocomotive` and `placementChanged` itself, without
-     * `setFacing`, leaves the facing the picker records out.
+     * MUTATION: having `AutonomyEditorPanel.dropTrain` place through `placeLocomotive` (the picker's door) leaves the
+     * facing and the tail unrecorded where the paste records them.
+     */
+    @Test(timeOut = 600000)
+    public void testADragLeavesWhatAPasteLeaves() throws Exception
+    {
+        fixture(false);
+
+        org.json.JSONObject asFound = session.snapshotSetup();
+
+        java.util.List<TileKey[]> cases = casesToCompare();
+
+        SwingUtilities.invokeAndWait(() -> editor.dispose());
+
+        java.util.Map<String, String> pasted = new java.util.TreeMap<>();
+        java.util.Set<String> asked = new java.util.HashSet<>();
+        java.util.List<String> left = new java.util.ArrayList<>();
+
+        TailCrossedPrompt.answerForTests(TailCrossedPrompt.DISMISSED);
+
+        try (Answering answering = Answering.start(message -> null))
+        {
+            for (TileKey[] each : cases)
+            {
+                putBack(asFound);
+
+                int before = answering.asked().size();
+
+                String standing = session.getLocomotiveNameAt(each[0]);
+
+                realPaste(each[0], each[1]);
+
+                pasted.put(key(each), outcome(each[1]));
+
+                // A paste that asked, or whose cut found no train to take (it then puts down the selected one), is
+                // not a move to compare
+                boolean wasAsked = answering.asked().size() > before;
+
+                if (wasAsked || !standing.equals(session.getLocomotiveNameAt(each[1])))
+                {
+                    asked.add(key(each));
+
+                    left.add(key(each) + (wasAsked ? " asked " + answering.asked().subList(before, answering.asked().size())
+                        : " put down " + session.getLocomotiveNameAt(each[1]) + " not " + standing));
+                }
+            }
+        }
+        finally
+        {
+            TailCrossedPrompt.answerForTests(null);
+
+            putBack(asFound);
+        }
+
+        editor = openEditor();
+
+        int compared = 0;
+        int tailed = 0;
+
+        try
+        {
+            for (TileKey[] each : cases)
+            {
+                if (asked.contains(key(each))) continue;
+
+                putBack(asFound);
+
+                dragTrain(each[0], each[1]);
+
+                assertEquals(outcome(each[1]), pasted.get(key(each)),
+                    "dragging " + key(each) + " leaves what a real paste does not");
+
+                compared++;
+
+                if (session.getArrivedFrom(each[1]) != null) tailed++;
+            }
+        }
+        finally
+        {
+            putBack(asFound);
+        }
+
+        assertTrue(compared >= 5, "precondition: only " + compared + " of " + cases.size()
+            + " moves are ones a paste asks nothing at, so too few were compared: " + left);
+
+        assertTrue(tailed > 0, "precondition: no paste recorded the side the tail came in by, so the tail is not compared");
+    }
+
+    /**
+     * The train a drag displaces takes its own settings with it, and the dragged one keeps its own (FR-160): the
+     * placement door starts a different train from nothing, and the same train from what it had.
+     *
+     * MUTATION: dropping the `name.equals(nameOfPlacedLocomotive(existing))` test in `AutonomySession.placeLocomotive`
+     * gives the dragged train the displaced one's length, reversibility and speed.
      */
     @Test(timeOut = 180000)
-    public void testItLeavesTheSetupThePickersDoorLeaves() throws Exception
+    public void testADisplacedTrainsSettingsDoNotPassOn() throws Exception
     {
-        for (boolean occupied : new boolean[] { false, true })
+        Fixture f = fixture(true);
+
+        String dragged = session.getLocomotiveNameAt(f.from);
+        String displaced = session.getLocomotiveNameAt(f.to);
+
+        org.json.JSONObject asFound = session.snapshotSetup();
+
+        try
         {
-            Fixture f = fixture(occupied);
+            session.setPointProperty(f.from, "loc", settings(dragged, 7, true, 61));
+            session.setPointProperty(f.to, "loc", settings(displaced, 3, false, 33));
 
-            String train = session.getLocomotiveNameAt(f.from);
+            onTheEventThread(ui::rebuildRunningLayoutFromSetup);
+            settle();
 
-            org.json.JSONObject asFound = session.snapshotSetup();
+            Mouse.drag(f.fromLabel, f.toLabel);
+            settle();
 
-            try
+            org.json.JSONObject now = (org.json.JSONObject) session.getPointProperty(f.to, "loc");
+
+            assertEquals(now.optString("name"), dragged, "precondition: the train did not land");
+            assertEquals(now.optInt("trainLength", -1), 7, "the dragged train took the displaced train's length");
+            assertTrue(now.optBoolean("reversible"), "the dragged train took the displaced train's reversibility");
+            assertEquals(now.optInt("speed", -1), 61, "the dragged train took the displaced train's speed");
+
+            // The same train put down again keeps what it had
+            session.setPointProperty(f.to, "loc", settings(dragged, 9, true, 70).put("odd", 1));
+            session.placeLocomotive(f.to, dragged);
+
+            org.json.JSONObject kept = (org.json.JSONObject) session.getPointProperty(f.to, "loc");
+
+            assertEquals(kept.optInt("trainLength", -1), 9, "placing the same train again dropped its settings");
+            assertEquals(kept.optInt("odd", -1), 1, "placing the same train again dropped a setting it had");
+        }
+        finally
+        {
+            putBack(asFound);
+        }
+    }
+
+    private static org.json.JSONObject settings(String name, int length, boolean reversible, int speed)
+    {
+        return new org.json.JSONObject().put("name", name).put("trainLength", length).put("reversible", reversible)
+            .put("speed", speed);
+    }
+
+    /**
+     * A train pressed while the picture is between a wipe and the next one is still the train: the press does not fall
+     * to a station caption (the intermittent red of `testARefusedReleaseChangesAndSaysNothing`).
+     *
+     * MUTATION: having `LayoutEditorTrainDrag.press` ask `trainDrawnUnder` instead of `trainStandingUnder` lets the
+     * press go to the caption drag, so the train stays and a caption may move.
+     */
+    @Test(timeOut = 120000)
+    public void testAPressOnATrainWhoseOverlayIsWipedStillDragsIt() throws Exception
+    {
+        Fixture f = fixture(false);
+
+        org.json.JSONObject asFound = session.snapshotSetup();
+
+        String train = session.getLocomotiveNameAt(f.from);
+
+        try
+        {
+            onTheEventThread(() -> f.fromLabel.setAutonomyOverlay(null));
+
+            assertTrue(onTheEventThreadValue(f.fromLabel::trainPictureIsMissing), "precondition: the picture is not missing");
+
+            Mouse.drag(f.fromLabel, f.toLabel);
+            settle();
+
+            assertEquals(session.getLocomotiveNameAt(f.to), train, "a press on a train between pictures did not drag it");
+
+            assertEquals(asFound.getJSONObject("shared").optJSONObject("captions").toString(),
+                session.snapshotSetup().getJSONObject("shared").optJSONObject("captions").toString(),
+                "the press fell to the station caption and moved it");
+        }
+        finally
+        {
+            putBack(asFound);
+        }
+    }
+
+    /**
+     * With a tool armed, or a tail pick waiting for its click, a press on a train starts no drag and the pending pick
+     * still points at its square.
+     *
+     * MUTATION: dropping `panel.isAToolArmed()` from `LayoutEditorTrainDrag.press` lets the train be lifted.
+     */
+    @Test(timeOut = 120000)
+    public void testAnArmedToolOwnsThePressOnATrain() throws Exception
+    {
+        Fixture f = fixture(false);
+
+        org.json.JSONObject asFound = session.snapshotSetup();
+
+        final Object panel = editor.getAutonomyPanel();
+
+        final java.lang.reflect.Field tool = panel.getClass().getDeclaredField("tool");
+        final java.lang.reflect.Field tail = panel.getClass().getDeclaredField("tailFor");
+
+        tool.setAccessible(true);
+        tail.setAccessible(true);
+
+        try
+        {
+            onTheEventThread(() -> tool.set(panel, AutonomyEditorPanel.Tool.TEST));
+
+            Mouse.drag(f.fromLabel, f.toLabel);
+            settle();
+
+            assertUnchanged(asFound, "a train was dragged with a tool armed");
+
+            onTheEventThread(() ->
             {
-                Mouse.drag(f.fromLabel, f.toLabel);
-                settle();
+                tool.set(panel, AutonomyEditorPanel.Tool.NONE);
+                tail.set(panel, f.from);
+            });
 
-                org.json.JSONObject dragged = session.snapshotSetup();
+            Mouse.drag(f.fromLabel, f.toLabel);
+            settle();
 
-                putBack(asFound);
+            assertUnchanged(asFound, "a train was dragged with a tail pick waiting");
 
-                placeByThePicker(f, train);
-
-                settle();
-
-                assertNull(session.getLocomotiveNameAt(f.from), "precondition: the picker did not move the train");
-
-                assertTrue(dragged.similar(session.snapshotSetup()),
-                    "dragging " + train + " from " + f.from + " to " + (occupied ? "an occupied" : "an empty")
-                    + " station leaves a different setup from placing it there by the picker:\n" + dragged
-                    + "\nagainst\n" + session.snapshotSetup());
-            }
-            finally
+            assertEquals(editor.getAutonomyPanel().tailPickFor(), f.from, "the pending tail pick no longer points at its square");
+        }
+        finally
+        {
+            onTheEventThread(() ->
             {
-                putBack(asFound);
+                tool.set(panel, AutonomyEditorPanel.Tool.NONE);
+                tail.set(panel, null);
+            });
+
+            putBack(asFound);
+        }
+    }
+
+    /**
+     * A right press while a caption is being dragged puts the carried name down at once (FR-035).
+     *
+     * MUTATION: removing the two `hideCaptionGhost`/`clearCaptionDropTarget` lines from the press branch of
+     * `LayoutGrid.dragCaption` leaves the carried name on screen.
+     */
+    @Test(timeOut = 120000)
+    public void testARightPressMidCaptionDragPutsTheNameDown() throws Exception
+    {
+        Fixture f = fixture(false);
+
+        LayoutLabel captioned = null;
+
+        for (TileKey tile : session.getReducer().getPoints().keySet())
+        {
+            if (PAGE.equals(tile.getPage()) && session.getCaptionTarget(tile) != null
+                && session.getLocomotiveNameAt(tile) == null && labelOf(tile) != null)
+            {
+                captioned = labelOf(tile);
+
+                break;
             }
+        }
+
+        assertNotNull(captioned, "precondition: no station caption on " + PAGE + " away from a train");
+
+        Mouse.press(captioned, MouseEvent.BUTTON1);
+
+        // A name carried, as the first drag event lifts it
+        onTheEventThread(() -> editor.showCaptionGhost(
+            new java.awt.image.BufferedImage(10, 10, java.awt.image.BufferedImage.TYPE_INT_ARGB), 0, 0));
+
+        assertNotNull(ghost(), "precondition: no name is being carried");
+
+        post(captioned, MouseEvent.MOUSE_PRESSED, center(captioned), InputEvent.BUTTON3_DOWN_MASK, 1, MouseEvent.BUTTON3);
+
+        assertNull(ghost(), "a right press mid-drag left the carried caption on screen");
+
+        post(captioned, MouseEvent.MOUSE_RELEASED, center(captioned), 0, 1, MouseEvent.BUTTON3);
+        post(captioned, MouseEvent.MOUSE_RELEASED, center(captioned), 0, 1, MouseEvent.BUTTON1);
+        settle();
+    }
+
+    /**
+     * What the train brings stays with it (FR-160): a timetable entry of the train is not lost and a paused train stays
+     * paused.  Losing a timetable is grade B.
+     *
+     * MUTATION: none of its own: the drag is a paste, which these ride on; they fail if a drop ever folds a timetable
+     * or the pause away.
+     */
+    @Test(timeOut = 240000)
+    public void testATrainKeepsItsTimetableAndItsPause() throws Exception
+    {
+        Fixture f = fixture(false);
+
+        org.json.JSONObject asFound = session.snapshotSetup();
+
+        String train = session.getLocomotiveNameAt(f.from);
+
+        try
+        {
+            session.setLocomotivePaused(train, true);
+
+            org.json.JSONArray timetable = timetableOf(train);
+
+            Mouse.drag(f.fromLabel, f.toLabel);
+            settle();
+
+            assertEquals(session.getLocomotiveNameAt(f.to), train, "precondition: the train did not land");
+            assertTrue(session.getPausedLocomotives().contains(train), "the drag un-paused the train");
+            assertEquals(timetableOf(train).toString(), timetable.toString(), "the drag changed the train's timetable");
+        }
+        finally
+        {
+            session.setLocomotivePaused(train, false);
+
+            putBack(asFound);
+        }
+    }
+
+    /**
+     * A train that heads a multi-unit goes where a paste would put it, and what a paste does to the member standing
+     * elsewhere is what the drag does.
+     *
+     * MUTATION: as `testADragLeavesWhatAPasteLeaves`.
+     */
+    @Test(timeOut = 300000)
+    public void testAMultiUnitIsTreatedAsAPasteTreatsIt() throws Exception
+    {
+        Fixture f = fixture(false);
+
+        org.json.JSONObject asFound = session.snapshotSetup();
+
+        String head = session.getLocomotiveNameAt(f.from);
+        String member = null;
+
+        for (String each : session.placementsAutonomyWillWrite().values())
+        {
+            if (!each.equals(head)) member = each;
+        }
+
+        assertNotNull(member, "precondition: no second train stands on the railway");
+
+        org.traincontrol.base.Locomotive lead = model.getLocByName(head);
+
+        java.util.Map<String, Double> consist = new java.util.HashMap<>();
+
+        consist.put(member, 1.0);
+
+        lead.setModelMultiUnitLocomotives(consist);
+
+        try
+        {
+            SwingUtilities.invokeAndWait(() -> editor.dispose());
+
+            try (Answering answering = Answering.start(message -> null))
+            {
+                realPaste(f.from, f.to);
+            }
+
+            String pasted = outcome(f.to);
+
+            putBack(asFound);
+
+            editor = openEditor();
+
+            fixture(false);
+
+            dragTrain(f.from, f.to);
+
+            assertEquals(outcome(f.to), pasted, "a multi-unit head dragged is not left as a paste leaves it");
+        }
+        finally
+        {
+            lead.setModelMultiUnitLocomotives(new java.util.HashMap<String, Double>());
+
+            putBack(asFound);
+        }
+    }
+
+    /**
+     * Closing the editor with a train carried puts it down where it stood: the release that follows moves nothing.
+     *
+     * MUTATION: removing `trainDrag.abandon()` from `LayoutEditor.dispose` lets the release land.
+     */
+    @Test(timeOut = 120000)
+    public void testClosingTheEditorMidDragLeavesTheTrain() throws Exception
+    {
+        Fixture f = fixture(false);
+
+        org.json.JSONObject asFound = session.snapshotSetup();
+
+        try
+        {
+            Mouse.press(f.fromLabel, MouseEvent.BUTTON1);
+
+            carryTo(f.fromLabel, f.toLabel);
+
+            assertNotNull(ghost(), "precondition: the train was not being carried");
+
+            final LayoutEditor closing = editor;
+
+            SwingUtilities.invokeAndWait(closing::dispose);
+
+            post(f.fromLabel, MouseEvent.MOUSE_RELEASED, pointOn(f.toLabel, f.fromLabel), 0, 1, MouseEvent.BUTTON1);
+            settle();
+
+            assertUnchanged(asFound, "a train carried when the editor closed landed");
+        }
+        finally
+        {
+            putBack(asFound);
         }
     }
 
@@ -528,14 +900,15 @@ public class testATrainDragsFromStationToStation
     }
 
     /**
-     * Cancel does with a dragged train what it does with one placed by the picker (trains are working state, which
-     * Cancel leaves where they were put), and a diagram scrolled away from its corner still lands the train.
+     * Cancel after a drag leaves the train where it landed, every time (FR-160): the drag is a paste on the railway,
+     * and Cancel keeps what the railway changed alone (`putBackWhatTheRailwayChangedAlone`).  A diagram scrolled away
+     * from its corner still lands the train.
      *
-     * MUTATION: none of its own: the drag rides the door the picker uses.  Taking the scroll offset out of the square
-     * lookup (`LayoutGrid.tileUnder`) fails the scrolled landing.
+     * MUTATION: putting the drag back on `placeLocomotive` (setup only, put on the railway by a later rebuild) makes
+     * the result depend on whether that rebuild had run when Cancel did.
      */
     @Test(timeOut = 240000)
-    public void testCancelTreatsADraggedTrainAsAPlacedOne() throws Exception
+    public void testCancelLeavesADraggedTrainWhereItLanded() throws Exception
     {
         fixture(false);
 
@@ -543,16 +916,28 @@ public class testATrainDragsFromStationToStation
 
         try
         {
-            org.json.JSONObject byDrag = movedThenCanceled(asFound, true);
-            org.json.JSONObject byPicker = movedThenCanceled(asFound, false);
-
-            if (!byDrag.similar(byPicker))
+            for (int round = 0; round < 3; round++)
             {
-                java.util.List<String> differ = new java.util.ArrayList<>();
+                putBack(asFound);
 
-                collectDifferences("", byPicker, byDrag, differ);
+                SwingUtilities.invokeAndWait(() -> editor.dispose());
 
-                fail("Cancel leaves a dragged train differently from a placed one: " + differ);
+                editor = openEditor();
+
+                Fixture f = fixture(false);
+
+                scrollTheDiagram();
+
+                String train = session.getLocomotiveNameAt(f.from);
+
+                Mouse.drag(f.fromLabel, f.toLabel);
+
+                assertEquals(session.getLocomotiveNameAt(f.to), train, "precondition: the train did not land");
+
+                cancelTheEditor();
+
+                assertEquals(session.getLocomotiveNameAt(f.to), train, "round " + round + ": Cancel took the train off " + f.to);
+                assertNull(session.getLocomotiveNameAt(f.from), "round " + round + ": Cancel put the train back on " + f.from);
             }
         }
         finally
@@ -561,34 +946,8 @@ public class testATrainDragsFromStationToStation
         }
     }
 
-    /** Opens a fresh editor on the setup as found, moves a train by drag or by the picker, and Cancels. */
-    private static org.json.JSONObject movedThenCanceled(org.json.JSONObject asFound, boolean byDrag) throws Exception
+    private static void cancelTheEditor() throws Exception
     {
-        putBack(asFound);
-
-        SwingUtilities.invokeAndWait(() -> editor.dispose());
-
-        editor = openEditor();
-
-        Fixture f = fixture(false);
-
-        String train = session.getLocomotiveNameAt(f.from);
-
-        if (byDrag)
-        {
-            scrollTheDiagram();
-
-            Mouse.drag(f.fromLabel, f.toLabel);
-            settle();
-        }
-        else
-        {
-            placeByThePicker(f, train);
-        }
-
-        assertEquals(session.getLocomotiveNameAt(f.to), train, "precondition: the train did not reach " + f.to
-            + (byDrag ? " (diagram scrolled)" : ""));
-
         try (Answering answering = Answering.start(
             message -> Answering.press(String.valueOf(TrainControlUI.YES_NO_OPTS[0]))))
         {
@@ -607,27 +966,6 @@ public class testATrainDragsFromStationToStation
         settle();
 
         assertFalse(editor.isDisplayable(), "precondition: Cancel did not close the editor");
-
-        return session.snapshotSetup();
-    }
-
-    /** Moves the train as the menu's Add to Autonomy does: the picker asked which train, and answered. */
-    private static void placeByThePicker(Fixture f, String train) throws Exception
-    {
-        try (Answering answering = Answering.start(
-            message -> Answering.type(I18n.f("autosetup.ui.locomotiveElsewhere", train))))
-        {
-            final java.lang.reflect.Method pick = editor.getAutonomyPanel().getClass()
-                .getDeclaredMethod("placeLocomotive", TileKey.class);
-
-            pick.setAccessible(true);
-
-            later(() -> pick.invoke(editor.getAutonomyPanel(), f.to));
-
-            assertTrue(answering.awaitAsked(1, 20000), "the picker never asked which train to place");
-        }
-
-        settle();
     }
 
     // ------------------------------------------------------------------------------------------ the fixture
@@ -993,6 +1331,155 @@ public class testATrainDragsFromStationToStation
         SwingUtilities.invokeAndWait(() -> ui.rebuildRunningLayoutFromSetup());
 
         settle();
+
+        waitForTheTrainsToStandOnTheRailway();
+    }
+
+    /** The rebuild puts the trains on the railway a moment after it returns; a paste cuts what stands there. */
+    private static void waitForTheTrainsToStandOnTheRailway() throws Exception
+    {
+        for (int wait = 0; wait < 100; wait++)
+        {
+            int missing = session.placementsAutonomyWillWrite().size();
+
+            for (org.traincontrol.automation.Point point : model.getAutoLayout().getPoints())
+            {
+                if (point.getCurrentLocomotive() != null) missing--;
+            }
+
+            if (missing <= 0) return;
+
+            Thread.sleep(100);
+        }
+    }
+
+    private static String key(TileKey[] move)
+    {
+        return move[0] + ">" + move[1];
+    }
+
+    private static LayoutLabel labelOf(TileKey tile) throws Exception
+    {
+        return onTheEventThreadValue(() -> drawnLabel(gridOf(), tile));
+    }
+
+    private static <T> T onTheEventThreadValue(final java.util.concurrent.Callable<T> read) throws Exception
+    {
+        final Object[] out = new Object[1];
+
+        onTheEventThread(() -> out[0] = read.call());
+
+        @SuppressWarnings("unchecked")
+        T value = (T) out[0];
+
+        return value;
+    }
+
+    /** Drags the train on one square to another with the mouse, once the first is drawn. */
+    private static void dragTrain(TileKey from, TileKey to) throws Exception
+    {
+        LayoutLabel start = labelOf(from);
+
+        for (int wait = 0; wait < 100 && !onTheEventThreadValue(() -> start.trainDrawnAt(center(start))); wait++)
+        {
+            Thread.sleep(100);
+        }
+
+        Mouse.drag(start, labelOf(to));
+        settle();
+    }
+
+    /** The trains on the page, each with some empty stations, as moves to compare. */
+    private static java.util.List<TileKey[]> casesToCompare() throws Exception
+    {
+        java.util.List<TileKey> trains = new java.util.ArrayList<>(session.placementsAutonomyWillWrite().keySet());
+        java.util.List<TileKey> empty = new java.util.ArrayList<>();
+
+        for (TileKey tile : session.getReducer().getPoints().keySet())
+        {
+            if (PAGE.equals(tile.getPage()) && session.getStore().isStation(tile)
+                && session.getLocomotiveNameAt(tile) == null && labelOf(tile) != null) empty.add(tile);
+        }
+
+        java.util.Collections.sort(empty, (a, b) -> a.toString().compareTo(b.toString()));
+
+        java.util.List<TileKey[]> cases = new java.util.ArrayList<>();
+
+        for (TileKey from : trains)
+        {
+            for (int i = 0; i < empty.size(); i += 3) cases.add(new TileKey[] {from, empty.get(i)});
+        }
+
+        return cases;
+    }
+
+    /** A real Control+X on one square and Control+V on another, through the main window's key door. */
+    private static void realPaste(final TileKey from, final TileKey to) throws Exception
+    {
+        final java.lang.reflect.Method gesture = TrainControlUI.class.getDeclaredMethod("locomotiveGestureOnDiagram",
+            int.class, boolean.class);
+
+        gesture.setAccessible(true);
+
+        // The train is also the one selected in the main window, which is what a paste puts down if its cut took none
+        final java.lang.reflect.Field selected = TrainControlUI.class.getDeclaredField("activeLoc");
+
+        selected.setAccessible(true);
+
+        final org.traincontrol.base.Locomotive train = model.getLocByName(session.getLocomotiveNameAt(from));
+
+        onTheEventThread(() ->
+        {
+            selected.set(ui, train);
+            ui.setHoveredDiagramTile(PAGE, from.getX(), from.getY());
+            gesture.invoke(ui, KeyEvent.VK_X, true);
+            ui.setHoveredDiagramTile(PAGE, to.getX(), to.getY());
+            gesture.invoke(ui, KeyEvent.VK_V, true);
+        });
+
+        settle();
+    }
+
+    /** What a placement left on a square: facing, tail side and road, every train's place, and the copy it stands on. */
+    private static String outcome(TileKey to)
+    {
+        StringBuilder out = new StringBuilder();
+
+        for (String property : new String[] {"facing", "arrivedFrom", "arrivedAlong"})
+        {
+            out.append(property).append('=').append(session.getPointProperty(to, property)).append(' ');
+        }
+
+        out.append(placements());
+
+        String train = session.getLocomotiveNameAt(to);
+
+        for (org.traincontrol.automation.Point point : model.getAutoLayout().getPoints())
+        {
+            if (point.getCurrentLocomotive() != null && point.getCurrentLocomotive().getName().equals(train))
+            {
+                out.append(" on ").append(point.getName()).append(" from ").append(point.getArrivedFrom());
+            }
+        }
+
+        return out.toString();
+    }
+
+    private static org.json.JSONArray timetableOf(String train)
+    {
+        org.json.JSONObject globals = session.snapshotSetup().getJSONObject("configurations")
+            .getJSONObject(session.getStore().getActiveConfiguration()).optJSONObject("globals");
+
+        org.json.JSONArray all = globals == null ? null : globals.optJSONArray("timetable");
+
+        org.json.JSONArray mine = new org.json.JSONArray();
+
+        for (int i = 0; all != null && i < all.length(); i++)
+        {
+            if (all.get(i).toString().contains(train)) mine.put(all.get(i));
+        }
+
+        return mine;
     }
 
     /** Fails, naming the paths that differ, when the setup is not as it was found. */
