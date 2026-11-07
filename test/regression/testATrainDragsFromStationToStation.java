@@ -265,6 +265,7 @@ public class testATrainDragsFromStationToStation
         java.util.Map<String, String> pasted = new java.util.TreeMap<>();
         java.util.Set<String> asked = new java.util.HashSet<>();
         java.util.List<String> left = new java.util.ArrayList<>();
+        java.util.List<String> unstable = new java.util.ArrayList<>();
 
         TailCrossedPrompt.answerForTests(TailCrossedPrompt.DISMISSED);
 
@@ -280,7 +281,16 @@ public class testATrainDragsFromStationToStation
 
                 realPaste(each[0], each[1]);
 
+                String first = outcome(each[1]);
+
+                // Twice: a case the paste itself does not repeat is no reference to hold the drag to
+                putBack(asFound);
+
+                realPaste(each[0], each[1]);
+
                 pasted.put(key(each), outcome(each[1]));
+
+                if (!first.equals(pasted.get(key(each)))) unstable.add(key(each) + " " + first + " / " + pasted.get(key(each)));
 
                 // A paste that asked, or whose cut found no train to take (it then puts down the selected one), is
                 // not a move to compare
@@ -311,7 +321,7 @@ public class testATrainDragsFromStationToStation
         {
             for (TileKey[] each : cases)
             {
-                if (asked.contains(key(each))) continue;
+                if (asked.contains(key(each)) || unstable.toString().contains(key(each))) continue;
 
                 putBack(asFound);
 
@@ -331,7 +341,7 @@ public class testATrainDragsFromStationToStation
         }
 
         assertTrue(compared >= 5, "precondition: only " + compared + " of " + cases.size()
-            + " moves are ones a paste asks nothing at, so too few were compared: " + left);
+            + " moves are ones a paste asks nothing at and repeats, so too few were compared: " + left + unstable);
 
         assertTrue(tailed > 0, "precondition: no paste recorded the side the tail came in by, so the tail is not compared");
     }
@@ -426,6 +436,10 @@ public class testATrainDragsFromStationToStation
         finally
         {
             putBack(asFound);
+
+            // The square's picture was taken away by hand and the monitor does not repaint an unchanged one: a fresh
+            // editor takes the published pictures
+            SwingUtilities.invokeAndWait(() -> editor.dispose());
         }
     }
 
@@ -599,9 +613,16 @@ public class testATrainDragsFromStationToStation
         {
             SwingUtilities.invokeAndWait(() -> editor.dispose());
 
+            // Every question a paste would put is answered: the tail's is asked on the diagram, which waits for a click
+            TailCrossedPrompt.answerForTests(TailCrossedPrompt.DISMISSED);
+
             try (Answering answering = Answering.start(message -> null))
             {
                 realPaste(f.from, f.to);
+            }
+            finally
+            {
+                TailCrossedPrompt.answerForTests(null);
             }
 
             String pasted = outcome(f.to);
@@ -638,9 +659,7 @@ public class testATrainDragsFromStationToStation
 
         try
         {
-            Mouse.press(f.fromLabel, MouseEvent.BUTTON1);
-
-            carryTo(f.fromLabel, f.toLabel);
+            liftAndCarry(f);
 
             assertNotNull(ghost(), "precondition: the train was not being carried");
 
@@ -675,9 +694,7 @@ public class testATrainDragsFromStationToStation
 
         try
         {
-            Mouse.press(f.fromLabel, MouseEvent.BUTTON1);
-
-            carryTo(f.fromLabel, f.toLabel);
+            liftAndCarry(f);
 
             assertEquals(markOf(f.toLabel), new Color(0, 150, 0), "a station that takes the train is not marked green (canDropTrain "
                 + editor.getAutonomyPanel().canDropTrain(f.from, f.to) + ", run holds the setup "
@@ -761,9 +778,7 @@ public class testATrainDragsFromStationToStation
 
         try
         {
-            Mouse.press(f.fromLabel, MouseEvent.BUTTON1);
-
-            carryTo(f.fromLabel, f.toLabel);
+            liftAndCarry(f);
 
             support.Keys.press(editor, KeyEvent.VK_ESCAPE);
             settle();
@@ -856,9 +871,7 @@ public class testATrainDragsFromStationToStation
         try
         {
             // A run beginning while the train is carried
-            Mouse.press(f.fromLabel, MouseEvent.BUTTON1);
-
-            carryTo(f.fromLabel, f.toLabel);
+            liftAndCarry(f);
 
             assertNotNull(ghost(), "precondition: the train was not being carried before the run began");
 
@@ -882,9 +895,7 @@ public class testATrainDragsFromStationToStation
 
             assertTrue(drawn[0], "precondition: the train is no longer drawn under the press, so nothing is tested");
 
-            Mouse.press(f.fromLabel, MouseEvent.BUTTON1);
-
-            carryTo(f.fromLabel, f.toLabel);
+            liftAndCarry(f);
 
             Mouse.release(f.fromLabel, MouseEvent.BUTTON1);
             settle();
@@ -1332,25 +1343,14 @@ public class testATrainDragsFromStationToStation
 
         settle();
 
-        waitForTheTrainsToStandOnTheRailway();
     }
 
-    /** The rebuild puts the trains on the railway a moment after it returns; a paste cuts what stands there. */
-    private static void waitForTheTrainsToStandOnTheRailway() throws Exception
+    /** Presses the train and carries it over the target station, the button still down. */
+    private static void liftAndCarry(Fixture f) throws Exception
     {
-        for (int wait = 0; wait < 100; wait++)
-        {
-            int missing = session.placementsAutonomyWillWrite().size();
+        Mouse.press(f.fromLabel, MouseEvent.BUTTON1);
 
-            for (org.traincontrol.automation.Point point : model.getAutoLayout().getPoints())
-            {
-                if (point.getCurrentLocomotive() != null) missing--;
-            }
-
-            if (missing <= 0) return;
-
-            Thread.sleep(100);
-        }
+        carryTo(f.fromLabel, f.toLabel);
     }
 
     private static String key(TileKey[] move)
