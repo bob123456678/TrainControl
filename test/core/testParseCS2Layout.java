@@ -394,6 +394,32 @@ public class testParseCS2Layout
     }
 
     /**
+     * A `.zielartikel` that is not a plain number is absent: the link keeps its page ID whatever `.artikel` is, and
+     * one with spaces round it is read as the number it holds.
+     *
+     * MUTATION: read `.zielartikel` with `artikelNumber` again (0 for a non-number, no trim), and this fails.
+     */
+    @Test
+    public void testASavedLinkNumberThatIsNotANumberIsAbsent() throws Exception
+    {
+        String[][] cases = {
+            {"2", "abc", "5"}, {"0", "abc", "5"}, {"2", "", "5"}, {"1", " 1", "5"}, {"2", " 1", null}, {"2", "1", null},
+            {"2", null, "5"}
+        };
+
+        for (String[] each : cases)
+        {
+            LayoutDiagramComponent link = new LayoutDiagramComponent(LayoutDiagramComponent.componentType.LINK, 0, 0, 0, 0,
+                Integer.parseInt(each[0]), Integer.parseInt(each[0]), MM2);
+
+            link.setLinkPageIdFromFile("5", each[1]);
+
+            assertEquals(link.getLinkPageId(), each[2] == null ? null : Integer.valueOf(each[2]),
+                "`.artikel` " + each[0] + " with `.zielartikel` '" + each[1] + "'");
+        }
+    }
+
+    /**
      * Checks the number of layout pages
      */
     @Test

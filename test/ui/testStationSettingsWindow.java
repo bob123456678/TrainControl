@@ -1718,7 +1718,8 @@ public class testStationSettingsWindow
 
             java.awt.Component signal = null;
 
-            for (java.awt.Component each : block.getComponents())
+            // The art lives in the first child, out of the pointer's way
+            for (java.awt.Component each : ((java.awt.Container) block.getComponent(0)).getComponents())
             {
                 if (each.getBounds().equals(east)) signal = each;
             }
@@ -1938,15 +1939,6 @@ public class testStationSettingsWindow
     @Test(timeOut = 300000)
     public void testEveryMarkIsPressedByAClickAtItsMiddle() throws Exception
     {
-        Set<String> pages = Components.onTheEventThread(() ->
-        {
-            Set<String> out = new java.util.TreeSet<>();
-
-            for (TileKey each : session.getReducer().getPoints().keySet()) out.add(each.getPage());
-
-            return out;
-        });
-
         StationSettingsWindow first = StationDoors.open(panel,
             Components.onTheEventThread(() -> support.AskingWindows.stationNamed(session, "TopMainR2Inter")));
 
@@ -1963,7 +1955,101 @@ public class testStationSettingsWindow
         StationDoors.close(first);
 
         List<String> wrong = new java.util.ArrayList<>();
-        int marks = 0;
+        int[] marks = {0};
+
+        eachStation(square -> true, (square, window) ->
+            marks[0] += Components.onTheEventThread(() -> pressedWrong(window, wrong)));
+
+        assertTrue(marks[0] > 100, "precondition: only " + marks[0] + " marks were clicked");
+
+        assertTrue(wrong.isEmpty(), "a click at a mark's middle presses another: " + wrong);
+    }
+
+    /**
+     * A real click, routed through the window as AWT routes one, presses every mark of the curved stations and of a
+     * straight one (or is refused with the reason its tooltip gives), and hovering shows the mark's own tooltip: the station art under the marks never takes the pointer.
+     *
+     * MUTATION: have `StationPicture.label` add each art label to `block` instead of the hidden `art` panel, and this
+     * fails (the click lands on the LayoutLabel).
+     */
+    @Test(timeOut = 600000)
+    public void testARoutedClickPressesEveryMarkAndHoverShowsItsTip() throws Exception
+    {
+        List<String> wrong = new java.util.ArrayList<>();
+        int[] done = {0, 0, 0};
+
+        eachStation(square -> isCurved(square) || "BottomMainA".equals(
+            Components.onTheEventThread(() -> session.getStore().getPointName(square))), (square, window) ->
+        {
+            String name = String.valueOf(Components.onTheEventThread(() -> session.getStore().getPointName(square)));
+
+            List<String> keys = new java.util.ArrayList<>(Components.onTheEventThread(() -> window.pictureMarksForTest().keySet()));
+
+            keys.removeIf(key -> key.startsWith("SQUARE") || key.startsWith("AXIS"));
+
+            if (isCurved(square)) done[0]++;
+
+            for (String key : keys)
+            {
+                Set<String> before = Components.onTheEventThread(window::pictureStateForTest);
+                String setupBefore = setup();
+
+                String[] hover = new String[3];
+
+                routedClick(window, key, hover);
+                StationDoors.current(window);
+
+                if (!"block".equals(hover[0])) wrong.add(name + " " + key + ": the pointer is over " + hover[0]);
+                else if (hover[2] == null || !hover[2].equals(hover[1])) wrong.add(name + " " + key + ": the tooltip is " + hover[1]);
+
+                if (!before.equals(Components.onTheEventThread(window::pictureStateForTest)) || !setupBefore.equals(setup())) done[2]++;
+                else if (!refusal(hover[2], key))
+                {
+                    wrong.add(name + " " + key + ": the click changed nothing, the tip says " + hover[2]);
+                }
+
+                done[1]++;
+            }
+        });
+
+        assertTrue(done[0] >= 3, "precondition: only " + done[0] + " curved stations were found");
+        assertTrue(done[1] > 20, "precondition: only " + done[1] + " marks were pressed");
+        assertTrue(done[2] > 10, "precondition: only " + done[2] + " presses changed anything");
+
+        assertTrue(wrong.isEmpty(), "a routed click or hover missed its mark: " + wrong);
+    }
+
+    /** Whether a mark's tooltip gives the reason its click can change nothing. */
+    private static boolean refusal(String tip, String key)
+    {
+        String side = key.substring(key.length() - 1);
+
+        for (String reason : new String[] {I18n.t("autosetup.ui.stationPicOutBeyond"), I18n.t("autosetup.ui.stationPicInKept"),
+            I18n.t("autosetup.ui.stationPicCannot"), I18n.f("autosetup.ui.hintOneWayIn", I18n.t("autosetup.ui.side" + side))})
+        {
+            if (tip != null && tip.contains(reason)) return true;
+        }
+
+        return false;
+    }
+
+    /** What a claim does with one station's open window. */
+    private interface Visit
+    {
+        void at(TileKey square, StationSettingsWindow window) throws Exception;
+    }
+
+    /** Opens Station Settings on each station of the railway that `which` takes, hands it to `visit`, and closes it. */
+    private void eachStation(java.util.function.Predicate<TileKey> which, Visit visit) throws Exception
+    {
+        Set<String> pages = Components.onTheEventThread(() ->
+        {
+            Set<String> out = new java.util.TreeSet<>();
+
+            for (TileKey each : session.getReducer().getPoints().keySet()) out.add(each.getPage());
+
+            return out;
+        });
 
         for (String page : pages)
         {
@@ -1975,9 +2061,11 @@ public class testStationSettingsWindow
             {
                 for (TileKey square : stationsOn(page))
                 {
+                    if (!which.test(square)) continue;
+
                     StationSettingsWindow window = StationDoors.open(onPanel, square);
 
-                    marks += Components.onTheEventThread(() -> pressedWrong(window, wrong));
+                    visit.at(square, window);
 
                     StationDoors.close(window);
                 }
@@ -1987,10 +2075,6 @@ public class testStationSettingsWindow
                 if (on != editor) support.FrozenEditor.dispose(on);
             }
         }
-
-        assertTrue(marks > 100, "precondition: only " + marks + " marks were clicked");
-
-        assertTrue(wrong.isEmpty(), "a click at a mark's middle presses another: " + wrong);
     }
 
     /** Each of the window's marks asked what a click at its middle presses; one line in `wrong` per other answer. */
@@ -2143,10 +2227,24 @@ public class testStationSettingsWindow
             : new double[] {x / n, y / n};
     }
 
-    /** A left click on the middle of one of the picture's marks, as the mouse gives it. */
+    /**
+     * A left click on the middle of one of the picture's marks, routed through the window as AWT routes a real click, so
+     * it goes to the deepest component under the pointer.
+     */
     private static void clickOn(StationSettingsWindow window, String mark) throws Exception
     {
+        routedClick(window, mark, null);
+    }
+
+    /**
+     * Presses a mark through the window.  When `hover` is given it gets the pointer's tooltip over the mark and the
+     * component under it first.
+     */
+    private static void routedClick(StationSettingsWindow window, String mark, String[] hover) throws Exception
+    {
         javax.swing.JComponent block = StationDoors.part(window, "station.picture.ways", javax.swing.JComponent.class);
+
+        Components.settle();
 
         Components.onTheEventThread(() ->
         {
@@ -2156,18 +2254,51 @@ public class testStationSettingsWindow
 
             double[] middle = middleOf(shape);
 
-            int x = (int) Math.round(middle[0]);
-            int y = (int) Math.round(middle[1]);
+            java.awt.Point at = javax.swing.SwingUtilities.convertPoint(block, (int) Math.round(middle[0]),
+                (int) Math.round(middle[1]), window);
+
+            if (hover != null)
+            {
+                java.awt.Component under = javax.swing.SwingUtilities.getDeepestComponentAt(window, at.x, at.y);
+
+                hover[0] = String.valueOf(under == block ? "block" : under == null ? null : under.getClass().getSimpleName());
+
+                java.awt.Point inBlock = javax.swing.SwingUtilities.convertPoint(window, at, under);
+
+                hover[1] = under instanceof javax.swing.JComponent ? ((javax.swing.JComponent) under).getToolTipText(
+                    new java.awt.event.MouseEvent(under, java.awt.event.MouseEvent.MOUSE_MOVED, 0, 0, inBlock.x, inBlock.y, 0,
+                        false)) : null;
+
+                hover[2] = block.getToolTipText(new java.awt.event.MouseEvent(block, java.awt.event.MouseEvent.MOUSE_MOVED, 0,
+                    0, (int) Math.round(middle[0]), (int) Math.round(middle[1]), 0, false));
+            }
+
+            window.dispatchEvent(new java.awt.event.MouseEvent(window, java.awt.event.MouseEvent.MOUSE_MOVED,
+                System.currentTimeMillis(), 0, at.x, at.y, 0, false, java.awt.event.MouseEvent.NOBUTTON));
 
             for (int id : new int[] {java.awt.event.MouseEvent.MOUSE_PRESSED, java.awt.event.MouseEvent.MOUSE_RELEASED,
                 java.awt.event.MouseEvent.MOUSE_CLICKED})
             {
-                block.dispatchEvent(new java.awt.event.MouseEvent(block, id, System.currentTimeMillis(),
-                    id == java.awt.event.MouseEvent.MOUSE_PRESSED ? java.awt.event.InputEvent.BUTTON1_DOWN_MASK : 0, x, y, 1,
+                window.dispatchEvent(new java.awt.event.MouseEvent(window, id, System.currentTimeMillis(),
+                    id == java.awt.event.MouseEvent.MOUSE_PRESSED ? java.awt.event.InputEvent.BUTTON1_DOWN_MASK : 0, at.x, at.y, 1,
                     false, java.awt.event.MouseEvent.BUTTON1));
             }
 
             return null;
+        });
+    }
+
+    /** Whether any road of the station is a curve: its two arms are not opposite sides. */
+    private static boolean isCurved(TileKey square)
+    {
+        return Components.onTheEventThread(() ->
+        {
+            for (org.traincontrol.automationui.TilePorts.Route road : session.getRoutes(square).values())
+            {
+                if (road.getA() != road.getB() && road.getA().opposite() != road.getB()) return true;
+            }
+
+            return false;
         });
     }
 

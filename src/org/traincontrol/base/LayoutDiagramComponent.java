@@ -647,7 +647,10 @@ public class LayoutDiagramComponent
     {
         if (!this.isLink() || text == null) return;
 
-        if (savedNumber != null && artikelNumber(savedNumber) != this.rawAddress) return;
+        // A saved number that is not a number is absent, as an absent `.zielseite` is
+        Integer saved = pageIdFromText(savedNumber);
+
+        if (saved != null && saved != this.rawAddress) return;
 
         this.linkPageId = pageIdFromText(text);
     }

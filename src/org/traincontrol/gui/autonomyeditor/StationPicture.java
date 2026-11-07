@@ -12,8 +12,6 @@ import java.awt.RenderingHints;
 import java.awt.Shape;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
-import java.awt.event.MouseListener;
-import java.awt.event.MouseMotionListener;
 import java.awt.geom.Ellipse2D;
 import java.awt.geom.Line2D;
 import java.awt.geom.Path2D;
@@ -144,6 +142,16 @@ final class StationPicture extends JPanel
 
     private final Block block = new Block();
 
+    /** Holds the squares' art, painted by `Block`; the mouse never reaches it, so no tooltip or click lands on the art. */
+    private final JPanel art = new JPanel(null)
+    {
+        @Override
+        public boolean contains(int x, int y)
+        {
+            return false;
+        }
+    };
+
     private transient AutonomySession session;
     private transient TileKey showing;
     private transient LayoutLabel square;
@@ -180,6 +188,9 @@ final class StationPicture extends JPanel
         block.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createLineBorder(new Color(204, 204, 204)),
             BorderFactory.createEmptyBorder(8, 8, 8, 8)));
 
+        art.setOpaque(false);
+        block.add(art);
+
         add(block, BorderLayout.CENTER);
     }
 
@@ -191,7 +202,7 @@ final class StationPicture extends JPanel
 
         if (!tile.equals(showing))
         {
-            block.removeAll();
+            art.removeAll();
             next.clear();
 
             rules = null;
@@ -291,12 +302,7 @@ final class StationPicture extends JPanel
 
         LayoutLabel out = new LayoutLabel(art, block, SQUARE, main, false);
 
-        for (MouseListener each : out.getMouseListeners()) out.removeMouseListener(each);
-        for (MouseMotionListener each : out.getMouseMotionListeners()) out.removeMouseMotionListener(each);
-
-        out.setToolTipText(null);
-
-        block.add(out);
+        this.art.add(out);
 
         return out;
     }
@@ -337,8 +343,8 @@ final class StationPicture extends JPanel
     }
 
     /**
-     * A station side's two marks on one axis, the track's line from the side's middle into the square: the way out with
-     * its tip at the edge, where the diagram draws it, and the way in just behind it, pointing in.
+     * A station side's way out, its tip at the edge where the diagram draws it, and its way in: just behind the way out
+     * on one axis on a straight side, beside it by the edge on a curved one.
      */
     private void stationMarks(List<Mark> out, Rectangle at, Side side)
     {
@@ -397,8 +403,8 @@ final class StationPicture extends JPanel
     }
 
     /**
-     * A way in on a curve whose other end is a way in too: both chevrons would land on one spot of the chord, so this one
-     * stands by its own edge, pointing straight in, shifted along the edge away from the curve, beside its way out (FR-111).
+     * A way in on a curved side: it stands by its own edge, pointing straight in, shifted along the edge away from the
+     * curve, beside its way out, so the two ends of a curve never share a spot of the chord (FR-111).
      */
     private static Path2D apartChevron(Rectangle at, Side side, Side other)
     {
@@ -480,6 +486,16 @@ final class StationPicture extends JPanel
         }
 
         return sides;
+    }
+
+    /** @return every mark with its open state, as "kind.side square:open" */
+    Set<String> stateForTest()
+    {
+        Set<String> out = new TreeSet<>();
+
+        for (Mark mark : marks()) out.add(mark.kind + "." + mark.side + " " + mark.square + ":" + mark.open);
+
+        return out;
     }
 
     /** @return the station's square and each next square, by side ("" for the station) */
@@ -584,6 +600,8 @@ final class StationPicture extends JPanel
         @Override
         public void doLayout()
         {
+            art.setBounds(0, 0, getWidth(), getHeight());
+
             if (square != null) square.setBounds(cell(null));
 
             for (Map.Entry<Side, LayoutLabel> each : next.entrySet()) each.getValue().setBounds(cell(each.getKey()));
