@@ -72,7 +72,7 @@ public class testMessagesStayShort
         "banner: 1",
         "exception: 0",
         "popup: 1",
-        "finding: 36",
+        "finding: 35",
         "why: 6",
         "other: 11",
     };
