@@ -270,16 +270,14 @@ public class testThePlaceDoorsKeepTheHeading
     }
 
     /**
-     * Placed from the autonomy editor, the tail question is the list, in front of the editor, and choosing TunnelPre in
-     * it answers it (MT-575).
+     * Placed from the autonomy editor's train window, the train records the side it came in by and is asked where its
+     * tail lies: the list, hung off the window that asked, in front of the editor, and choosing TunnelPre answers it
+     * (MT-575).  His 75 407 DB with a length of 5, on Tunnel, whose one way in is from the north.
      *
-     * His 75 407 DB, given a length of 5, put on Tunnel from the editor's own Place door with "arrived from the north";
-     * the question must not wait on the main window's diagram, whose squares the editor covers.
-     *
-     * MUTATION: put the question on the diagram with the editor open, or hang the list from the main window, and this
-     * fails.
+     * MUTATION: drop `askWhereTheTailIsOnceBuilt` from `AutonomyEditorPanel.placeLocomotive`, and no question comes and
+     * this fails.
      */
-    @Test
+    @Test(timeOut = 180000)
     public void testFromTheEditorTheTailQuestionIsTheListInFrontOfIt() throws Exception
     {
         TileKey tunnel = square("Tunnel");
@@ -290,33 +288,16 @@ public class testThePlaceDoorsKeepTheHeading
 
         try
         {
-            // STEP 1: a length of 5, and nothing standing at Tunnel - taken off the squares but left among the trains
-            // autonomy runs, as a train is that is simply elsewhere: the editor offers Place only on a railway with
-            // trains to run.
+            // STEP 1: a length of 5, and nothing standing on the railway
             train.setTrainLength(5);
 
             SwingUtilities.invokeAndWait(() ->
             {
-                if (!railway().getLocomotivesToRun().contains(train))
-                {
-                    Point any = null;
-
-                    for (Point point : railway().getPoints())
-                    {
-                        if (point.isDestination() && point.getCurrentLocomotive() == null && any == null) any = point;
-                    }
-
-                    if (any != null) railway().moveLocomotive(HIS_TRAIN, any.getName(), false);
-                }
-
                 for (Point point : railway().getPoints())
                 {
                     if (point.getCurrentLocomotive() != null) railway().moveLocomotive(null, point.getName(), false);
                 }
             });
-
-            assertTrue(railway().getLocomotivesToRun().contains(train), "precondition: " + HIS_TRAIN + " is not among the"
-                + " trains autonomy runs, so the editor offers no Place");
 
             // THE QUESTION ASKED FOR REAL: this class answers it "Not known" for the other claims.
             TailCrossedPrompt.answerForTests(null);
@@ -324,15 +305,19 @@ public class testThePlaceDoorsKeepTheHeading
             // THE EDITOR, as Autonomy > Edit Autonomy > 1 - Main opens it.
             SwingUtilities.invokeLater(() -> ui.openAutonomyEditorOnPage(tunnel.getPage()));
 
-            for (long end = System.currentTimeMillis() + 60000; editor == null && System.currentTimeMillis() < end; )
-            {
-                Thread.sleep(100);
+            final java.awt.Window[] opened = new java.awt.Window[1];
 
+            support.Components.waitFor(() ->
+            {
                 for (java.awt.Window window : java.awt.Window.getWindows())
                 {
-                    if (window.isShowing() && "LayoutEditor".equals(window.getClass().getSimpleName())) editor = window;
+                    if (window.isShowing() && "LayoutEditor".equals(window.getClass().getSimpleName())) opened[0] = window;
                 }
-            }
+
+                return opened[0] != null;
+            }, 60000);
+
+            editor = opened[0];
 
             assertNotNull(editor, "the autonomy editor did not open on " + tunnel.getPage());
 
@@ -346,76 +331,29 @@ public class testThePlaceDoorsKeepTheHeading
 
             assertNotNull(panel, "precondition: the editor opened without its autonomy panel");
 
-            // THE EDITOR'S RIGHT-CLICK ON TUNNEL, and its Place item.
-            final javax.swing.JMenuItem[] place = new javax.swing.JMenuItem[1];
+            // THE TRAIN WINDOW ON TUNNEL, and his train chosen in its list.
+            final org.traincontrol.gui.autonomyeditor.TrainWindow window = support.StationDoors.openTrain(panel, tunnel);
 
-            final List<String> offered = new ArrayList<>();
+            assertNotNull(window, "the editor opened no train window on Tunnel");
 
-            Method label = Class.forName("org.traincontrol.gui.GraphLocAssign").getDeclaredMethod("menuLabelFor", Point.class);
+            final javax.swing.JComboBox<?> trains = support.StationDoors.part(window, "train.train", javax.swing.JComboBox.class);
 
-            label.setAccessible(true);
-
-            SwingUtilities.invokeAndWait(() ->
+            SwingUtilities.invokeLater(() ->
             {
-                javax.swing.JPopupMenu menu = panel.buildTileMenu(tunnel, null);
-
-                texts(menu, offered);
-
-                for (String copy : session.facingsFor(tunnel).keySet())
+                for (int i = 0; i < trains.getItemCount(); i++)
                 {
-                    Point point = railway().getPoint(copy);
+                    Object each = trains.getItemAt(i);
 
-                    try
+                    if (HIS_TRAIN.equals(each) || I18n.f("autosetup.ui.locomotiveElsewhere", HIS_TRAIN).equals(each))
                     {
-                        if (point != null && place[0] == null) place[0] = itemNamed(menu, (String) label.invoke(null, point));
-                    }
-                    catch (ReflectiveOperationException failed)
-                    {
-                        throw new IllegalStateException(failed);
+                        trains.setSelectedIndex(i);
+
+                        return;
                     }
                 }
             });
 
-            assertNotNull(place[0], "the editor's right-click on Tunnel has no Place item: " + offered);
-
-            SwingUtilities.invokeLater(place[0]::doClick);
-
-            // THE PLACE DIALOG: his train, arrived from the north, OK.
-            javax.swing.JDialog dialog = awaitDialogStarting(I18n.f("autolayout.ui.dialogEditOrAssignLocomotive", "")
-                .replaceAll("\\s*$", ""));
-
-            final Object assign = find(dialog.getContentPane(), Class.forName("org.traincontrol.gui.GraphLocAssign"));
-
-            assertNotNull(assign, "the Place dialog carries no locomotive form");
-
-            SwingUtilities.invokeAndWait(() ->
-            {
-                try
-                {
-                    java.lang.reflect.Field locs = assign.getClass().getDeclaredField("locAssign");
-                    java.lang.reflect.Field side = assign.getClass().getDeclaredField("arrivedFrom");
-
-                    locs.setAccessible(true);
-                    side.setAccessible(true);
-
-                    ((javax.swing.JComboBox<?>) locs.get(assign)).setSelectedItem(HIS_TRAIN);
-
-                    // THE SIDE, where the dialog asks it: at a square whose copies are the directions, the copy says it.
-                    javax.swing.JComboBox<?> sides = (javax.swing.JComboBox<?>) side.get(assign);
-
-                    if (sides != null) sides.setSelectedItem(org.traincontrol.gui.autonomy.ArrivalSidePrompt.labelFor("N"));
-                }
-                catch (ReflectiveOperationException failed)
-                {
-                    throw new IllegalStateException(failed);
-                }
-            });
-
-            final javax.swing.JOptionPane form = find(dialog.getContentPane(), javax.swing.JOptionPane.class);
-
-            SwingUtilities.invokeLater(() -> form.setValue(TrainControlUI.OK_CANCEL_OPTS[0]));
-
-            // THE QUESTION: the list, in front of the editor.
+            // THE QUESTION: the list, in front of the editor, hung off the train window.
             javax.swing.JDialog question = awaitDialogStarting(I18n.t("autolayout.ui.askArrivalSideTitle"));
 
             java.lang.reflect.Field armed = TailCrossedPrompt.class.getDeclaredField("armed");
@@ -425,52 +363,40 @@ public class testThePlaceDoorsKeepTheHeading
             assertNull(armed.get(null), "with the editor open the tail question was put on the main window's diagram,"
                 + " which the editor covers (MT-575)");
 
-            assertTrue(question.isShowing(), "the tail question's list is not on screen");
+            assertEquals(question.getOwner(), window, "the tail question's list does not hang off the train window that"
+                + " asked: its owner is " + question.getOwner());
 
-            assertEquals(question.getOwner(), editor, "the tail question's list does not belong to the editor, so it can"
-                + " open behind it (MT-575): its owner is " + question.getOwner());
+            assertEquals(session.getArrivedFrom(tunnel), "N", "the placement recorded no arrival side, or the wrong one");
 
             // TUNNELPRE, CHOSEN IN IT.
             final javax.swing.JList<?> list = find(question.getContentPane(), javax.swing.JList.class);
 
             assertNotNull(list, "the tail question has no list");
 
-            final int[] at = {-1};
+            support.StationDoors.choosingRows(row -> row.contains("TunnelPre"));
 
-            SwingUtilities.invokeAndWait(() ->
-            {
-                for (int i = 0; i < list.getModel().getSize(); i++)
-                {
-                    if (String.valueOf(list.getModel().getElementAt(i)).contains("TunnelPre")) at[0] = i;
-                }
-
-                if (at[0] >= 0) list.setSelectedIndex(at[0]);
-            });
-
-            assertTrue(at[0] >= 0, "the tail question's list does not offer TunnelPre");
+            assertTrue(support.Components.onTheEventThread(list::getSelectedIndex) >= 0,
+                "the tail question's list does not offer TunnelPre");
 
             final javax.swing.JOptionPane asked = find(question.getContentPane(), javax.swing.JOptionPane.class);
 
             SwingUtilities.invokeLater(() -> asked.setValue(I18n.t("ui.ok")));
 
-            for (long end = System.currentTimeMillis() + 10000; question.isShowing() && System.currentTimeMillis() < end; )
-            {
-                Thread.sleep(50);
-            }
+            final javax.swing.JDialog answered = question;
+
+            support.Components.waitFor(() -> !answered.isShowing(), 10000);
 
             for (int turn = 0; turn < 6; turn++) pump();
 
             // ANSWERED: the train stands on Tunnel with TunnelPre's road behind it.
             Point standing = railway().getLocomotiveLocation(train);
 
-            assertNotNull(standing, "the Place dialog put the train nowhere");
+            assertNotNull(standing, "the train window put the train nowhere");
 
-            TailCrossedPrompt.Choice tunnelPre = null;
+            assertEquals(standing.getArrivedFrom(), "N", "the railway's copy holds no arrival side, or the wrong one");
 
-            for (TailCrossedPrompt.Choice choice : TailCrossedPrompt.choicesFor(railway(), standing, "N", 5, null))
-            {
-                if (choice.getFarthest().getName().startsWith("TunnelPre")) tunnelPre = choice;
-            }
+            TailCrossedPrompt.Choice tunnelPre = TailCrossedPrompt.choicesFor(railway(), standing, "N", 5, null).stream()
+                .filter(choice -> choice.getFarthest().getName().startsWith("TunnelPre")).findFirst().orElse(null);
 
             assertNotNull(tunnelPre, "precondition: a five-unit train at Tunnel from the north is not offered TunnelPre");
 

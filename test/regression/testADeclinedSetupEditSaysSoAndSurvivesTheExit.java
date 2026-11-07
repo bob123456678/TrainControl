@@ -1281,16 +1281,18 @@ public class testADeclinedSetupEditSaysSoAndSurvivesTheExit
     {
         final boolean was = ui.isAlwaysOnTop();
 
-        final org.traincontrol.gui.locomotive.AddLocomotive[] child = new org.traincontrol.gui.locomotive.AddLocomotive[1];
+        final java.awt.Window[] child = new java.awt.Window[1];
 
         SwingUtilities.invokeAndWait(() ->
         {
             ui.setAlwaysOnTop(false);
 
-            child[0] = new org.traincontrol.gui.locomotive.AddLocomotive(model, ui);
-
-            child[0].pack();
+            ui.openAddLocomotive();
         });
+
+        child[0] = support.SettingsWindow.awaited();
+
+        assertNotNull(child[0], "precondition: Add Locomotive did not open");
 
         try
         {

@@ -4,9 +4,7 @@ import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import javax.swing.SwingUtilities;
 import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
-import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
 import org.testng.SkipException;
 import org.testng.annotations.AfterClass;
@@ -18,16 +16,12 @@ import org.traincontrol.automationui.AutonomySession;
 import org.traincontrol.automationui.TileGraph.TileKey;
 import org.traincontrol.base.Locomotive;
 import org.traincontrol.gui.autonomy.ArrivalSidePrompt;
-import org.traincontrol.gui.GraphLocAssign;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 
 /**
- * A train put down by the assign dialog records which way it came in.
- *
- * The question `behaviour/facing.md` section 4 left open is settled: the missing arrival side is set, from the data,
- * by the user, or randomly, reusing the machinery and checks of the current popup.
+ * Where a placed train came in from, as the rule works it out, and the lengths a train is offered.
  *
  * `Layout.edgesCoveredByStandingTrains` walks back from a standing train along the side it came in by and blocks that
  * track for everything else.  Three doors put a train down by hand and only the diagram's drag and paste worked the
@@ -36,10 +30,7 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
  *
  * ON THE FROZEN SNAPSHOT, never `cs2_sample_layout`.
  *
- * MUTATION: take the `session.setArrivedFrom` / `point.setArrivedFrom` pair back out of
- * `GraphLocAssign.commitAndRecord` and the first test fails; make `refreshArrivalSide` skip `recordedHere()` and the
- * second fails, naming the side it overwrote; drop the `size() < 2` guard in `buildArrivalSide` and the third fails on
- * the terminus.
+ * MUTATION: count barred sides in `AutonomySession.unbarredArrivalSides`, and the barred-side claim fails.
  *
  * @author Adam
  */
@@ -265,183 +256,13 @@ public class testAPlacedTrainRecordsWhereItCameFrom
     }
 
     /**
-     * Accepting the dialog records a side, in the setup AND on the railway: the walk that blocks track reads the live
-     * `Point`, the setup survives a restart, and written to one alone the operator cannot tell "it does not work" from
-     * "it has not been rebuilt yet".  The square is CLEARED first, so this cannot pass on a value already there.
-     */
-    @Test
-    public void testAcceptingTheDialogRecordsTheArrivalSide() throws Exception
-    {
-        assertBuilt();
-
-        if (junction == null) throw new AssertionError("no square here has two ways in");
-
-        Point point = putTheTrainOn(junctionPoint);
-
-        session.setArrivedFrom(junction, null);
-        point.setArrivedFrom(null);
-
-        assertNull(session.getArrivedFrom(junction), "the square did not clear, so this proves nothing");
-
-        GraphLocAssign edit = dialogOn(point);
-
-        GraphLocAssign.commitAndRecord(edit);
-
-        String recorded = session.getArrivedFrom(junction);
-
-        assertNotNull(recorded,
-            "the assign dialog placed a train and recorded no arrival side, so nothing behind it is "
-            + "blocked - while the identical placement by drag works the side out and blocks it "
-            + "(REV9-B2, settled by Adam 2026-09-11: the missing arrival side should be set)");
-
-        assertEquals(point.getArrivedFrom(), recorded,
-            "the setup was told where the tail is and the railway was not. What blocks track is the "
-            + "live Point, so the operator answers the question and watches nothing happen until a "
-            + "rebuild (VAL8-A2)");
-
-        assertTrue(ArrivalSidePrompt.choicesFor(model.getAutoLayout(), point,
-            session.arrivalSides(junction)).contains(recorded),
-            "the side recorded (" + recorded + ") is not one this square has track on, so the tail "
-            + "walk can never match it and it blocks nothing at all");
-    }
-
-    /**
-     * A side something WATCHED a train arrive by is not replaced by a derived one: re-opening the dialog to change a
-     * function must not overwrite a measured value with the rule's guess.  The side chosen is the one the rule would
-     * NOT pick, so agreement cannot satisfy it.
-     */
-    @Test
-    public void testARecordedSideSurvivesAVisitToTheDialog() throws Exception
-    {
-        assertBuilt();
-
-        if (junction == null) throw new AssertionError("no square here has two ways in");
-
-        Point point = putTheTrainOn(junctionPoint);
-
-        List<String> sides = ArrivalSidePrompt.choicesFor(model.getAutoLayout(), point,
-            session.arrivalSides(junction));
-
-        String derived = ArrivalSidePrompt.suggestedFor(model.getAutoLayout(), point,
-            session.facingOf(train.getName(), model.getAutoLayout()) == null ? null
-                : session.facingOf(train.getName(), model.getAutoLayout()).name(),
-            false, session.arrivalSides(junction));
-
-        String measured = sides.get(sides.size() - 1).equals(derived) ? sides.get(0)
-            : sides.get(sides.size() - 1);
-
-        assertFalse(measured.equals(derived),
-            "the fixture offers only one side to pick from, so this could not tell a kept value from "
-            + "a re-derived one");
-
-        session.setArrivedFrom(junction, measured);
-        point.setArrivedFrom(measured);
-
-        GraphLocAssign edit = dialogOn(point);
-
-        GraphLocAssign.commitAndRecord(edit);
-
-        assertEquals(session.getArrivedFrom(junction), measured,
-            "opening the dialog on a train that is already standing here lost the recorded arrival "
-            + "side - replaced by a derived one, or by nothing at all: `placeLocomotive` clears the "
-            + "property on every commit, so the dialog is what has to put it back. Something WATCHED "
-            + "that train arrive; the suggestion is worked out from its heading and is an assumption. "
-            + "A visit to this dialog to change an arrival function must not move the tail");
-
-        assertEquals(point.getArrivedFrom(), measured, "and the railway kept it too");
-    }
-
-    /**
-     * The combo appears where there is a choice, and the rule answers where there is not: a one-entry combo at a
-     * terminus would look like a decision and not be one ("asking would be a dialog with one button").  The ANSWER is
-     * the same either way: the door gets a side whether or not the operator was shown anything.
-     */
-    @Test
-    public void testTheChoiceIsOfferedOnlyWhereThereIsOne() throws Exception
-    {
-        assertBuilt();
-
-        if (terminus == null) throw new AssertionError("every square on this fixture has two ways in");
-
-        Point single = putTheTrainOn(terminusPoint);
-
-        GraphLocAssign forced = dialogOn(single);
-
-        assertTrue(forced.asDialogContent() == forced,
-            "a square with one way in offered a combo to choose it with, which is a control that "
-            + "looks like a decision and is not");
-
-        List<String> only = ArrivalSidePrompt.choicesFor(model.getAutoLayout(), single,
-            session.unbarredArrivalSides(terminus));
-
-        assertEquals(forced.getArrivedFrom(), only.get(0),
-            "the dialog showed no combo AND answered nothing, so a train placed at a terminus - where "
-            + "the side is not in doubt at all - records no tail");
-
-        if (junction == null) throw new AssertionError("no square here has two ways in");
-
-        GraphLocAssign asked = dialogOn(putTheTrainOn(junctionPoint));
-
-        assertFalse(asked.asDialogContent() == asked,
-            "a square with two ways in did not offer the choice, so the operator cannot correct a "
-            + "side that is an assumption about a train nobody watched arrive");
-    }
-
-    /**
-     * Every entry on the combo is a side, and a placement therefore always records one: clearing is not possible, only
-     * setting.  Every side the square has is offered, so a wrong answer is corrected by choosing the right one; a blank
-     * only offers a way to switch the tail blocking off.  The entries are read off what the dialog would really show,
-     * so a second row added anywhere in the wrapper is caught too.
-     *
-     * MUTATION: put `entries.add(NONE_LABEL);` back at the top of `buildArrivalSide` and the first claim fails, naming
-     * the entry that is not a side.
-     */
-    @Test
-    public void testTheComboOffersSidesAndNothingElse() throws Exception
-    {
-        assertBuilt();
-
-        if (junction == null) throw new AssertionError("no square here has two ways in");
-
-        Point point = putTheTrainOn(junctionPoint);
-
-        GraphLocAssign edit = dialogOn(point);
-
-        javax.swing.JComboBox<?> combo = theArrivalSideCombo(edit);
-
-        assertNotNull(combo, "the dialog showed no arrival-side combo on a square with two ways in");
-
-        List<String> sides = ArrivalSidePrompt.choicesFor(model.getAutoLayout(), point,
-            session.arrivalSides(junction));
-
-        for (int i = 0; i < combo.getItemCount(); i++)
-        {
-            String entry = String.valueOf(combo.getItemAt(i));
-
-            assertFalse(GraphLocAssign.NONE_LABEL.equals(entry),
-                "the arrival-side combo offers \"" + entry + "\", which records nothing. Clearing is "
-                + "not offered for this property (Adam, 2026-09-07) - a wrong side is corrected by "
-                + "choosing the right one, and a blank is a way to switch the tail blocking off");
-        }
-
-        assertEquals(combo.getItemCount(), sides.size(),
-            "the combo offers " + combo.getItemCount() + " entries for a square with " + sides.size()
-            + " ways in, so one of them is not a side this train could have come from");
-
-        assertNotNull(edit.getArrivedFrom(),
-            "the dialog would record nothing for this placement, which is the state Adam's ruling of "
-            + "2026-09-11 closed: the missing arrival side should be set - from the data, by the user, "
-            + "or randomly");
-    }
-
-    /**
      * The Edit Locomotive view offers every length the locomotive menu does, up to forty (OB-294).  The two lists are
      * one question, so the limit is `TrainControlUI.ROUTE_TRAIN_LENGTH_MAX`, not a list of its own.
      *
      * MUTATION: leave the limit at 20, or write this list out by hand again, and this fails.
      */
     @Test
-    public void testTheEditViewOffersEveryLengthTheMenuDoes() throws Exception
+    public void testTheAutonomyTabOffersEveryLengthTheMenuDoes() throws Exception
     {
         assertBuilt();
 
@@ -508,135 +329,27 @@ public class testAPlacedTrainRecordsWhereItCameFrom
             assertEquals(train.getTrainLength(), Integer.valueOf(TrainControlUI.ROUTE_TRAIN_LENGTH_MAX), "40 chosen from"
                 + " the locomotive menu's list did not give the train a length of 40 (MT-572)");
 
-            // THE EDIT LOCOMOTIVE VIEW SHOWS IT (step 3), AND OK KEEPS IT.
-            GraphLocAssign edit = dialogOn(point);
+            // THE AUTONOMY TAB SHOWS IT (step 3), AND RUNS NO SHORTER (FR-048)
+            assertTrue(support.SettingsWindow.open(ui, train, org.traincontrol.gui.LocomotiveSettingsFrame.Tab.AUTONOMY,
+                null), "the Locomotive Settings window did not open");
+            assertNotNull(support.SettingsWindow.awaited(), "the Locomotive Settings window is not on screen");
 
-            assertEquals(edit.getTrainLength(), Integer.valueOf(TrainControlUI.ROUTE_TRAIN_LENGTH_MAX), "a train of "
+            javax.swing.JSpinner lengths = support.SettingsWindow.part("autonomy.length", javax.swing.JSpinner.class);
+
+            assertEquals(support.Components.onTheEventThread(lengths::getValue),
+                Integer.valueOf(TrainControlUI.ROUTE_TRAIN_LENGTH_MAX), "a train of "
                 + TrainControlUI.ROUTE_TRAIN_LENGTH_MAX + " units - the longest the locomotive menu offers - opened in the"
-                + " Edit Locomotive view as " + edit.getTrainLength() + ", which OK would save");
-
-            // OK in that window commits through `commitAndRecord` (AutonomyEditorPanel's Edit Locomotive item).
-            GraphLocAssign.commitAndRecord(edit);
-
-            assertEquals(train.getTrainLength(), Integer.valueOf(TrainControlUI.ROUTE_TRAIN_LENGTH_MAX), "after OK in the"
-                + " Edit Locomotive view the train is no longer 40 long (MT-572)");
+                + " Autonomy tab as " + support.Components.onTheEventThread(lengths::getValue));
+            assertEquals(((javax.swing.SpinnerNumberModel) lengths.getModel()).getMaximum(),
+                Integer.valueOf(TrainControlUI.ROUTE_TRAIN_LENGTH_MAX), "the Autonomy tab's lengths do not run to the"
+                + " menu's longest");
         }
         finally
         {
+            support.SettingsWindow.closeIfOpen();
+
             train.setTrainLength(lengthBefore == null ? 0 : lengthBefore);
         }
-    }
-
-    /**
-     * OK on a placement the railway refuses leaves the locomotive as it was.  `Layout.moveLocomotive` refuses while
-     * autonomy runs, for a point the railway does not have, and for one that is no station; `commitChanges` threw the
-     * answer away and wrote the form's settings onto the locomotive anyway.
-     *
-     * Refused here by a point the railway does not have, so nothing on the fixture is changed to get the refusal; a
-     * different length is chosen in the form so a write cannot pass for the value already there.
-     *
-     * MUTATION: take the `if (!... moveLocomotive(...)) return false;` guard out of `commitChanges`, and this fails.
-     */
-    @Test
-    public void testARefusedPlacementLeavesTheTrainAsItWas() throws Exception
-    {
-        assertBuilt();
-
-        final Point nowhere = new Point("GST-B2 not on this railway", false, null);
-
-        assertNull(model.getAutoLayout().getPoint(nowhere.getName()), "precondition: the railway has a point called "
-            + nowhere.getName() + ", so nothing below is refused");
-
-        final GraphLocAssign[] built = new GraphLocAssign[1];
-
-        SwingUtilities.invokeAndWait(() ->
-            built[0] = new GraphLocAssign(ui, nowhere, session, model.getAutoLayout()));
-
-        final GraphLocAssign edit = built[0];
-
-        final Locomotive subject = model.getLocByName(edit.getLoc());
-
-        assertNotNull(subject, "precondition: the dialog offers no locomotive to place");
-
-        final javax.swing.JComboBox<?> lengths = theLengthCombo(edit);
-
-        assertNotNull(lengths, "precondition: the dialog shows no train-length list");
-
-        final Integer lengthWas = subject.getTrainLength();
-        final int speedWas = subject.getPreferredSpeed();
-
-        final String chosen = Integer.valueOf(7).equals(lengthWas) ? "8" : "7";
-
-        try
-        {
-            SwingUtilities.invokeAndWait(() -> lengths.setSelectedItem(chosen));
-
-            assertEquals(edit.getTrainLength(), Integer.valueOf(chosen),
-                "precondition: the form did not take the length chosen in it");
-
-            GraphLocAssign.commitAndRecord(edit);
-
-            assertEquals(subject.getTrainLength(), lengthWas, "OK on a placement the railway refused changed "
-                + subject.getName() + "'s length to " + chosen + " anyway - the log says the train was not placed, and"
-                + " its settings changed regardless (GST-B2)");
-        }
-        finally
-        {
-            subject.setTrainLength(lengthWas == null ? 0 : lengthWas);
-            subject.setPreferredSpeed(speedWas);
-        }
-    }
-
-    /**
-     * The form's train-length list, found by what it offers: its field is generated and private, so it is the one list
-     * that runs from 0 to `TrainControlUI.ROUTE_TRAIN_LENGTH_MAX`.
-     */
-    private static javax.swing.JComboBox<?> theLengthCombo(java.awt.Container in)
-    {
-        for (java.awt.Component child : in.getComponents())
-        {
-            if (child instanceof javax.swing.JComboBox)
-            {
-                javax.swing.JComboBox<?> list = (javax.swing.JComboBox<?>) child;
-
-                if (list.getItemCount() == TrainControlUI.ROUTE_TRAIN_LENGTH_MAX + 1
-                    && "0".equals(String.valueOf(list.getItemAt(0))))
-                {
-                    return list;
-                }
-            }
-            else if (child instanceof java.awt.Container)
-            {
-                javax.swing.JComboBox<?> inside = theLengthCombo((java.awt.Container) child);
-
-                if (inside != null) return inside;
-            }
-        }
-
-        return null;
-    }
-
-    /**
-     * The arrival-side combo as the operator would see it, searched through the wrapper: the form carries four combos
-     * of its own and the one that matters is OUTSIDE it.
-     */
-    private static javax.swing.JComboBox<?> theArrivalSideCombo(GraphLocAssign edit)
-    {
-        java.awt.Component shown = edit.asDialogContent();
-
-        if (shown == edit || !(shown instanceof java.awt.Container)) return null;
-
-        for (java.awt.Component child : ((java.awt.Container) shown).getComponents())
-        {
-            if (child == edit || !(child instanceof java.awt.Container)) continue;
-
-            for (java.awt.Component inner : ((java.awt.Container) child).getComponents())
-            {
-                if (inner instanceof javax.swing.JComboBox) return (javax.swing.JComboBox<?>) inner;
-            }
-        }
-
-        return null;
     }
 
     /** Puts the train on a named copy, the way a placement door does. */
@@ -653,20 +366,5 @@ public class testAPlacedTrainRecordsWhereItCameFrom
             + "below would be about an empty square");
 
         return point;
-    }
-
-    /** The dialog both assignment menus open, built on the event thread as they build it. */
-    private static GraphLocAssign dialogOn(Point point) throws Exception
-    {
-        final GraphLocAssign[] built = new GraphLocAssign[1];
-
-        SwingUtilities.invokeAndWait(() ->
-            built[0] = new GraphLocAssign(ui, point, session, model.getAutoLayout()));
-
-        assertEquals(built[0].getLoc(), train.getName(),
-            "the dialog opened on a different locomotive from the one standing here, so what it "
-            + "commits is not the placement these tests are about");
-
-        return built[0];
     }
 }

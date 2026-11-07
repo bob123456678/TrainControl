@@ -53,8 +53,8 @@ public class testNoSetupEditWhileARouteRuns
     private static final String WAIT = "autolayout.ui.errorWaitForActiveLocomotivesToStop";
 
     /**
-     * The track diagram's right-click menu leaves out Place, Remove, Edit Locomotive, Is Active, the Facing menu and
-     * Autonomy Setup while a route runs, and offers them at rest - Start Autonomy, which is not a setup edit, both times.
+     * The track diagram's right-click menu leaves out Place, Remove, Is Active, the Facing menu and Autonomy Setup while
+     * a route runs, and offers them at rest - Start Autonomy and Edit Locomotive, which are not setup edits, both times.
      *
      * MUTATION: ask `isAutonomyBusy` alone for any of them again, and this fails naming it.
      *
@@ -87,16 +87,10 @@ public class testNoSetupEditWhileARouteRuns
 
             SwingUtilities.invokeAndWait(() -> facing[0] = window.buildAutonomyFacingMenu(square));
 
-            java.lang.reflect.Method label = Class.forName("org.traincontrol.gui.GraphLocAssign")
-                .getDeclaredMethod("menuLabelFor", Point.class);
-
-            label.setAccessible(true);
-
             Map<String, String> setupItems = new java.util.LinkedHashMap<>();
 
             setupItems.put("Place", I18n.f("layout.ui.menuPlaceLocomotive", active));
             setupItems.put("Remove", I18n.f("layout.ui.menuRemoveLocomotive", train));
-            setupItems.put("Edit Locomotive", (String) label.invoke(null, standing));
             setupItems.put("Is Active", I18n.f("autolayout.ui.menuLocomotiveActive", train));
             setupItems.put("Segment Length", I18n.t("autosetup.ui.menuSetLength"));
 
@@ -139,6 +133,11 @@ public class testNoSetupEditWhileARouteRuns
 
             // What a route leaves on the menu is no edit of the setup: the window, read-only
             assertTrue(running.contains(I18n.t("autosetup.ui.menuStationSettings")), "no read-only Station Settings while a"
+                + " route runs: " + running);
+
+            // And Edit Locomotive, whose Save refuses the setup's part during a run (Adam: "there should always be an
+            // edit loc")
+            assertTrue(running.contains(I18n.t("autolayout.ui.labelEditLocomotiveAt")), "no Edit Locomotive while a"
                 + " route runs: " + running);
         }
         finally
@@ -2269,7 +2268,7 @@ public class testNoSetupEditWhileARouteRuns
      * @param ui the window
      * @param runs whether it runs
      */
-    private static void aRouteRuns(TrainControlUI ui, boolean runs)
+    public static void aRouteRuns(TrainControlUI ui, boolean runs)
     {
         MarklinControlStation model = (MarklinControlStation) ui.getModel();
 

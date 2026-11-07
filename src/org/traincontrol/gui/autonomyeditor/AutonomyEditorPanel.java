@@ -29,7 +29,6 @@ import org.traincontrol.automationui.TileGraph.Direction;
 import org.traincontrol.automationui.TileGraph.RouteId;
 import org.traincontrol.automationui.TileGraph.TileKey;
 import org.traincontrol.gui.AutonomyViewerPanel;
-import org.traincontrol.gui.GraphLocAssign;
 import org.traincontrol.gui.RunGates;
 import org.traincontrol.gui.TailCrossedPrompt;
 import org.traincontrol.gui.TrainControlUI;
@@ -66,7 +65,10 @@ public class AutonomyEditorPanel extends JPanel
         /**
          * Close a run of track in one direction between two squares; it writes, so it asks which direction first.
          */
-        ONE_WAY
+        ONE_WAY,
+
+        /** Pick stations, and set them together in one Station Settings window (FR-052); a click picks or drops one. */
+        STATIONS
     }
 
     /** The setup being edited, package-private for the editor's helpers; writes go through the panel. */
@@ -380,6 +382,11 @@ public class AutonomyEditorPanel extends JPanel
 
     private javax.swing.JToggleButton whyButton;
 
+    private JToggleButton pickButton;
+
+    /** The stations Pick Stations has picked, in the order picked. */
+    private final Set<TileKey> stationPicks = new LinkedHashSet<>();
+
     /**
      * How the panel reaches the running layout, for the "why" test.
      *
@@ -640,6 +647,10 @@ public class AutonomyEditorPanel extends JPanel
         oneWayButton = toolButton(Tool.ONE_WAY, I18n.t("autosetup.ui.toolOneWay"));
         oneWayButton.setToolTipText(wrapped(I18n.t("autosetup.ui.tooltipOneWay")));
 
+        pickButton = toolButton(Tool.STATIONS, I18n.t("autosetup.ui.toolPickStations"));
+        pickButton.setName("autonomy.pickStations");
+        pickButton.setToolTipText(wrapped(I18n.t("autosetup.ui.tooltipPickStations")));
+
         nameAll = new JButton(I18n.t("autosetup.ui.btnNameEverything"));
         nameAll.addActionListener(e -> nameEverything());
         button(nameAll);
@@ -652,7 +663,7 @@ public class AutonomyEditorPanel extends JPanel
         excludePage.setFont(FONT_CONTROL);
         excludePage.addActionListener(e -> setPageExcluded(excludePage.isSelected()));
 
-        fillWidth(testButton, whyButton, oneWayButton, nameAll);
+        fillWidth(testButton, whyButton, oneWayButton, nameAll, pickButton);
 
         // Flush under the heading, with 1 px below it for the gap to the next row.
         JPanel first = row(testButton);
@@ -667,6 +678,8 @@ public class AutonomyEditorPanel extends JPanel
         panel.add(row(pathTypeLabel));
         panel.add(row(pathTypeAuto));
         panel.add(row(pathTypeManual));
+
+        panel.add(row(pickButton));
 
         // One-Way Run and Name Everything are in Bulk Tools (OB-217); the disarm path still un-presses One-Way Run
         // (MT-098).  Exclude Page is the window's to mount, under its mode buttons (`getExcludePage`).
@@ -899,6 +912,9 @@ public class AutonomyEditorPanel extends JPanel
         if (testButton != null) testButton.setSelected(false);
         if (whyButton != null) whyButton.setSelected(false);
         if (oneWayButton != null) oneWayButton.setSelected(false);
+        if (pickButton != null) pickButton.setSelected(false);
+
+        dropStationPicks();
 
         backToEditing();
 
@@ -933,6 +949,7 @@ public class AutonomyEditorPanel extends JPanel
             if (tool == Tool.NONE) backToEditing();
             else say(hint, tool == Tool.TEST ? I18n.t("autosetup.ui.promptTestStart")
                 : tool == Tool.WHY ? I18n.t("autosetup.ui.promptWhy")
+                : tool == Tool.STATIONS ? I18n.t("autosetup.ui.promptPickStations")
                 : I18n.t("autosetup.ui.promptOneWayFrom"));
 
             refresh();
@@ -964,6 +981,48 @@ public class AutonomyEditorPanel extends JPanel
 
         tailFor = null;
         tailPicks.clear();
+
+        dropStationPicks();
+    }
+
+    /** Whether Pick Stations is armed, whose own mark outlines what the window is about. */
+    boolean isPickingStations()
+    {
+        return tool == Tool.STATIONS;
+    }
+
+    /** Lets go of the picked stations, closing the window that was about them. */
+    private void dropStationPicks()
+    {
+        if (stationPicks.isEmpty()) return;
+
+        stationPicks.clear();
+
+        if (stationWindows.stationWindow() != null) stationWindows.stationWindow().closeWindow();
+    }
+
+    /** Drops the picks that are not among these, which Station Settings found gone, and redraws the marks. */
+    void keepOnlyTheseStationPicks(java.util.Collection<TileKey> left)
+    {
+        if (stationPicks.retainAll(left)) redrawTheMarks();
+    }
+
+    /** Picks a station to set with the others, or drops it (FR-052); Station Settings follows the picks. */
+    private void pickStation(TileKey tile)
+    {
+        if (!offersStationSettings(tile))
+        {
+            say(hint, I18n.t("autosetup.ui.infoNoStationSettings"));
+
+            return;
+        }
+
+        TileKey square = leaderOf(tile);
+
+        if (!stationPicks.remove(square)) stationPicks.add(square);
+
+        if (!stationPicks.isEmpty()) stationWindows.stations(new java.util.ArrayList<>(stationPicks));
+        else if (stationWindows.stationWindow() != null) stationWindows.stationWindow().closeWindow();
     }
 
     /**
@@ -992,14 +1051,14 @@ public class AutonomyEditorPanel extends JPanel
     }
 
     /**
-     * Whether a click on a drawn train is a click on its station: while Test a Path or Why Not Moving? waits for one
-     * (OB-354).
+     * Whether a click on a drawn train is a click on its station: while Test a Path, Why Not Moving? or Pick Stations
+     * waits for one (OB-354).
      * @return true where the train's square is the answer
      */
     public boolean takesATrainForItsStation()
     {
-        return (tool == Tool.TEST || tool == Tool.WHY) && tailFor == null && oneWayFrom == null && signalFor == null
-            && blockingFor == null;
+        return (tool == Tool.TEST || tool == Tool.WHY || tool == Tool.STATIONS) && tailFor == null && oneWayFrom == null
+            && signalFor == null && blockingFor == null;
     }
 
     /** Whether a tool is armed or a gesture half made: one definition for `putToolsDown` and `cancelPendingGesture`. */
@@ -2964,6 +3023,9 @@ public class AutonomyEditorPanel extends JPanel
         return true;
     }
 
+    /** True while Station Settings sets several stations in turn (FR-052): a question then names its square. */
+    boolean oneOfSeveral;
+
     /** Asks for a new station's name (FR-120): message and text so far to the answer, null for Cancel. */
     private java.util.function.BiFunction<String, String, String> askForAName =
         (message, typed) -> JOptionPane.showInputDialog(owner(), wrapped(message), typed);
@@ -2981,7 +3043,8 @@ public class AutonomyEditorPanel extends JPanel
      */
     private String askTheNewStationsName(TileKey tile)
     {
-        String prompt = I18n.t("autosetup.ui.promptNewStationName");
+        String prompt = oneOfSeveral ? I18n.f("autosetup.ui.promptNewStationNameAt", describeTile(tile))
+            : I18n.t("autosetup.ui.promptNewStationName");
         String message = prompt;
         String typed = "";
 
@@ -3523,44 +3586,6 @@ public class AutonomyEditorPanel extends JPanel
         return out;
     }
 
-    /**
-     * The locomotive's own settings on this square's menu, the dialog the track diagram opens: the only place for
-     * arrival and departure functions.  Needs the running layout's Point; the placement is written back to the setup.
-     */
-    void addLocomotiveSettings(javax.swing.JPopupMenu menu, TileKey target)
-    {
-        org.traincontrol.automation.Layout layout =
-            layoutSource == null ? null : layoutSource.get();
-
-        if (layout == null || layout.getLocomotivesToRun().isEmpty()) return;
-
-        final org.traincontrol.automation.Point point = pointOnTheLayout(layout, target);
-
-        if (point == null) return;
-
-        // Offered whether or not a train stands here (MT-101); menuLabelFor says "Place" or "Edit".
-
-        menu.add(item(GraphLocAssign.menuLabelFor(point), () ->
-        {
-            // With this panel's session, for the arrival side.
-            GraphLocAssign edit = new GraphLocAssign(parentWindow(), point, session,
-                runningLayout == null ? null : runningLayout.get());
-
-            // `asDialogContent`, with the arrival side under the form.
-            int answer = JOptionPane.showOptionDialog(owner(), edit.asDialogContent(),
-                I18n.f("autolayout.ui.dialogEditOrAssignLocomotive", describeTile(target)),
-                JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE, null,
-                TrainControlUI.OK_CANCEL_OPTS, TrainControlUI.OK_CANCEL_OPTS[0]);
-
-            if (answer != JOptionPane.OK_OPTION) return;
-
-            // One door for both menus (Adam: *"there needs to be parity across the board"*).
-            GraphLocAssign.commitAndRecord(edit);
-            // And the railway is told.
-            setupChanged();
-        }));
-    }
-
     /** The running layout's Point for a square, preferring the copy holding a train. */
     org.traincontrol.automation.Point pointOnTheLayout(
         org.traincontrol.automation.Layout layout, TileKey tile)
@@ -3660,14 +3685,95 @@ public class AutonomyEditorPanel extends JPanel
         // otherwise be the previous occupant's.
         org.traincontrol.automationui.TilePorts.Side heading = session.facingOf(name);
 
+        org.traincontrol.automation.Layout running = layoutSource == null ? null : layoutSource.get();
+
+        // What it had on the railway, which the tail question starts from
+        org.traincontrol.automation.Point wasOn = standingOn(running, name);
+        final List<org.traincontrol.automation.Edge> roadBefore = wasOn == null ? null : wasOn.getArrivedAlong();
+        final String sideBefore = wasOn == null ? null : wasOn.getArrivedFrom();
+        final boolean sameSquare = wasOn != null && session.getStationIndex() != null
+            && tile.equals(session.getStationIndex().squareOf(wasOn));
+
         session.placeLocomotive(tile, name);
 
         // Over the copies it could leave (OB-284), as a paste records it.
         session.setFacing(tile, org.traincontrol.automationui.AutonomySession.facingAfterAPaste(
-            session.departableFacingsFor(tile, layoutSource == null ? null : layoutSource.get()), heading, null));
+            session.departableFacingsFor(tile, running), heading, null));
+
+        // Every hand-placement door records the side it came in by (`behaviour/facing.md`); the rebuild carries it onto
+        // the railway
+        final String side = arrivalSideFor(tile, running, heading);
+
+        if (side != null) session.setArrivedFrom(tile, side);
 
         // Named (MT-337): only the rebuild puts the train on the railway.
         placementChanged(java.util.Collections.singletonList(name));
+
+        if (side != null && trainBeingDropped == null) askWhereTheTailIsOnceBuilt(tile, name, side, roadBefore, sameSquare,
+            sideBefore);
+    }
+
+    /**
+     * The side a train put here by hand came in by: from the rule (`ArrivalSidePrompt.suggestedFor`), else the first
+     * side the square has; null where nothing can say.
+     */
+    private String arrivalSideFor(TileKey tile, org.traincontrol.automation.Layout running,
+        org.traincontrol.automationui.TilePorts.Side heading)
+    {
+        org.traincontrol.automation.Point point = running == null ? null : pointOnTheLayout(running, tile);
+
+        if (point == null) return null;
+
+        List<org.traincontrol.automationui.TilePorts.Side> sides = session.unbarredArrivalSides(tile);
+
+        String side = org.traincontrol.gui.autonomy.ArrivalSidePrompt.suggestedFor(running, point,
+            heading == null ? null : heading.name(), false, sides);
+
+        List<String> all = org.traincontrol.gui.autonomy.ArrivalSidePrompt.choicesFor(running, point, sides);
+
+        return side != null || all.isEmpty() ? side : all.get(0);
+    }
+
+    /**
+     * Asks where the tail lies (`TailCrossedPrompt.recordTheTail`) once the posted rebuild has put the train on the
+     * railway, hung off the window that asked: the editor's own window, or on the track diagram as its doors ask.
+     */
+    private void askWhereTheTailIsOnceBuilt(final TileKey tile, final String name, final String side,
+        final List<org.traincontrol.automation.Edge> roadBefore, final boolean sameSquare, final String sideBefore)
+    {
+        final java.awt.Window asker = askingWindow;
+        final org.traincontrol.automationui.AutonomySession asked = session;
+
+        javax.swing.SwingUtilities.invokeLater(() -> pressedFrom(asker, () ->
+        {
+            TrainControlUI ui = parentWindow();
+            org.traincontrol.automation.Layout running = layoutSource == null ? null : layoutSource.get();
+            org.traincontrol.automation.Point point = standingOn(running, name);
+
+            if (ui == null || session != asked || ui.aRunHoldsTheSetup() || point == null
+                || session.getStationIndex() == null || !tile.equals(session.getStationIndex().squareOf(point)))
+            {
+                return;
+            }
+
+            boolean stands = TailCrossedPrompt.recordTheTail(session, tile, running, point, side, name, roadBefore,
+                sameSquare, sideBefore, ui, menuOnly ? ui : owner(), saved -> AutonomyReport.show(owner(), saved));
+
+            if (stands) placementChanged(null);
+        }));
+    }
+
+    /** The copy this train stands on in the railway, or null. */
+    private static org.traincontrol.automation.Point standingOn(org.traincontrol.automation.Layout running, String name)
+    {
+        if (running == null || name == null) return null;
+
+        for (org.traincontrol.automation.Point each : running.getPoints())
+        {
+            if (each.getCurrentLocomotive() != null && name.equals(each.getCurrentLocomotive().getName())) return each;
+        }
+
+        return null;
     }
 
     /** Takes the train off a square. */
@@ -4853,6 +4959,15 @@ public class AutonomyEditorPanel extends JPanel
             return;
         }
 
+        // Picking only reads, so a run does not stop it; the window opens read-only then
+        if (tool == Tool.STATIONS)
+        {
+            pickStation(tile);
+
+            refresh();
+            return;
+        }
+
         if (addToSelection)
         {
             if (!selection.remove(tile)) selection.add(tile);
@@ -5925,6 +6040,11 @@ public class AutonomyEditorPanel extends JPanel
      */
     private org.traincontrol.automationui.TileAnnotation.ToolMark toolMark(TileKey tile)
     {
+        if (tool == Tool.STATIONS)
+        {
+            return stationPicks.contains(tile) ? org.traincontrol.automationui.TileAnnotation.ToolMark.TOGETHER : null;
+        }
+
         if (tool == Tool.TEST)
         {
             // Both ends stay blue while their answer shows (OB-395)

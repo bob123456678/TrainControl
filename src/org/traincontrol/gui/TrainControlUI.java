@@ -127,7 +127,6 @@ import org.traincontrol.gui.autonomy.ManualReversalPrompt;
 import org.traincontrol.gui.autonomy.RightClickTimetableMenu;
 import org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel;
 import org.traincontrol.gui.layouteditor.LayoutEditor;
-import org.traincontrol.gui.locomotive.AddLocomotive;
 import org.traincontrol.gui.locomotive.CurrentKeyRow;
 import org.traincontrol.gui.locomotive.LocButtonTransferHandler;
 import org.traincontrol.gui.locomotive.LocomotiveKeyboardMapping;
@@ -399,6 +398,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     private final HashMap<javax.swing.JToggleButton, Integer> functionMapping;
     private final HashMap<Integer, javax.swing.JToggleButton> rFunctionMapping;
     private AccessoryKeyboard keyboardKeys;
+
+    /** Saves the accessories' actuation counts as CSV (FR-178), at the right of the MM2/DCC row. */
+    private javax.swing.JButton exportActuationsButton;
     
     // Custom labels for mapping pages
     // Package-private for `LocomotiveActions.findSimilarLocs`, which reads it on the event thread to name the pages; no lock
@@ -491,7 +493,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     
     // Other UIs
     private LocomotiveSelector selector;
-    private AddLocomotive adder;
     private LocomotiveStats stats;
     // Set when a setup edit could not be applied because autonomy was running: the file is then NEWER than the layout,
     // and the exit's save would fold the layout back over it.  Cleared by a rebuild that replaces the running layout.
@@ -519,17 +520,32 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      */
     public boolean openLocomotiveSettings(Locomotive l, LocomotiveSettingsFrame.Tab tab, Integer function)
     {
+        if (l == null) return false;
+
+        return showLocomotiveSettings(window -> window.aim(l, tab, function));
+    }
+
+    /**
+     * Add Locomotive (FR-179): the Locomotive Settings window on its first tab with blank fields and Add for Save.
+     *
+     * @return true when the window is open for a new locomotive
+     */
+    public boolean openAddLocomotive()
+    {
+        return showLocomotiveSettings(LocomotiveSettingsFrame::aimAtANewLocomotive);
+    }
+
+    private boolean showLocomotiveSettings(java.util.function.Predicate<LocomotiveSettingsFrame> aim)
+    {
         // Over the window whose door was pressed (OB-324), and the settings window stands as high as that one
         final java.awt.Window asking = dialogParent();
-
-        if (l == null) return false;
 
         if (this.locomotiveSettings == null || !this.locomotiveSettings.isDisplayable())
         {
             this.locomotiveSettings = new LocomotiveSettingsFrame(this);
         }
 
-        if (!this.locomotiveSettings.aim(l, tab, function))
+        if (!aim.test(this.locomotiveSettings))
         {
             return false;
         }
@@ -544,9 +560,28 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     /** Writes a preset speed saved in the Locomotive Settings window into the loaded setup's copy of the train, if it keeps one. */
     void recordPresetSpeedInTheSetup(Locomotive l)
     {
+        recordInTheSetup(l, java.util.Collections.singletonMap("speed",
+            l.getPreferredSpeed() > 0 ? (Object) l.getPreferredSpeed() : null));
+    }
+
+    /**
+     * Writes values saved in the Locomotive Settings window into the loaded setup's copies of the train, where it keeps
+     * them (`AutonomySession.updateStoredRecord`), and saves the setup if any changed.
+     */
+    void recordInTheSetup(Locomotive l, java.util.Map<String, Object> values)
+    {
         org.traincontrol.automationui.AutonomySession session = this.autonomySession;
 
-        if (session == null || !session.updateStoredSpeed(l.getName(), l.getPreferredSpeed())) return;
+        if (session == null) return;
+
+        boolean changed = false;
+
+        for (java.util.Map.Entry<String, Object> each : values.entrySet())
+        {
+            changed |= session.updateStoredRecord(l.getName(), each.getKey(), each.getValue());
+        }
+
+        if (!changed) return;
 
         try
         {
@@ -4083,8 +4118,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         {
             if (window == this || !window.isDisplayable()) continue;
 
-            if (window instanceof LayoutPopupUI || window instanceof RouteEditorFrame || window instanceof AddLocomotive
-                || window instanceof LocomotiveSelector || window instanceof UsageChart)
+            if (window instanceof LayoutPopupUI || window instanceof RouteEditorFrame
+                || window instanceof LocomotiveSettingsFrame || window instanceof LocomotiveSelector
+                || window instanceof UsageChart)
             {
                 if (window.isAlwaysOnTop() != onTop) window.setAlwaysOnTop(onTop);
             }
@@ -5141,7 +5177,22 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         protocol.setOpaque(false);
         protocol.add(this.MM2);
         protocol.add(this.DCC);
-        this.KeyboardPanel.add(protocol, at);
+
+        // The row is as wide as the keys, so the button's right edge is the last key column's (FR-178).
+        this.exportActuationsButton = new javax.swing.JButton(I18n.t("acc.ui.exportActuations"));
+        this.exportActuationsButton.setFont(new java.awt.Font("Segoe UI", java.awt.Font.BOLD, 12));
+        this.exportActuationsButton.setToolTipText(I18n.t("acc.ui.tooltip.exportActuations"));
+        this.exportActuationsButton.setFocusable(false);
+        this.exportActuationsButton.addActionListener(event -> ActuationCsvDoor.save(this));
+
+        javax.swing.JPanel row = new javax.swing.JPanel(new java.awt.BorderLayout());
+        row.setOpaque(false);
+        row.add(protocol, java.awt.BorderLayout.WEST);
+        row.add(this.exportActuationsButton, java.awt.BorderLayout.EAST);
+
+        at.fill = java.awt.GridBagConstraints.HORIZONTAL;
+        this.KeyboardPanel.add(row, at);
+        at.fill = java.awt.GridBagConstraints.NONE;
 
         at.gridy = 3;
         at.weighty = 1;
@@ -5277,8 +5328,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         selector = new LocomotiveSelector(this.model, this);
         selector.init();
         
-        adder = new AddLocomotive(this.model, this);
-        adder.setLocationRelativeTo(this);
         selector.setLocationRelativeTo(this);
         
         // Add list of routes to tab
@@ -13988,7 +14037,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             row("choose a locomotive", Held.CONTROL.on(KeyEvent.VK_A),
                 key -> key.ui.selectLocomotiveActivated(key.ui.currentButton));
             row("find a locomotive", Held.CONTROL.on(KeyEvent.VK_F), key -> key.ui.quickLocSearch());
-            row("add a locomotive", Held.CONTROL.on(KeyEvent.VK_D), key -> key.ui.getLocAdder().setVisible(true));
+            row("add a locomotive", Held.CONTROL.on(KeyEvent.VK_D), key -> key.ui.openAddLocomotive());
             // The locomotive keys open the Locomotive Settings window, whose one rule covers them (FR-048).
             row("locomotive settings", Held.CONTROL.on(KeyEvent.VK_E), key -> key.ui.openLocomotiveSettings(
                 key.ui.getButtonLocomotive(key.ui.currentButton), LocomotiveSettingsFrame.Tab.LOCOMOTIVE, null));
@@ -15444,7 +15493,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // autonomy iterates.
         if (refuseWhileAutonomyRunning(evt == null ? this : (Component) evt.getSource())) return;
 
-        this.getLocAdder().setVisible(true);
+        openAddLocomotive();
     }//GEN-LAST:event_addLocomotiveMenuItemActionPerformed
 
     private void openCS3AppMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_openCS3AppMenuItemActionPerformed
@@ -18433,7 +18482,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         this.gracefulStopRequested = false;
 
         // Not non-atomic over a railway that could release track under a train: the third door the others cannot cover.
-        // A train's length is written on the live layout by `applyTrainLength` and `GraphLocAssign.commitChanges`
+        // A train's length is written on the live layout by `applyTrainLength`, which the Autonomy tab calls,
         // without any rebuild, so one cleared after the checkbox was unticked hands every edge back as the head passes
         // it, with the train still lying over it. Asked below, after the worker's refusals, so a refused press changes
         // nothing.
@@ -21149,11 +21198,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     {
         repaintLayout(false, false);
     }  
-    
-    public AddLocomotive getLocAdder()
-    {
-        return adder;
-    }
     
     /**
      * Repaints layout from cache - called from UI dropdown/hotkeys

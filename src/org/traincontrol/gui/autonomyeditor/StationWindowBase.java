@@ -179,7 +179,7 @@ abstract class StationWindowBase extends JDialog
     {
         if (tile == null) return;
 
-        if (!editor.stationWindows.stillAbout(tile))
+        if (!stillAbout())
         {
             goAway();
 
@@ -202,6 +202,12 @@ abstract class StationWindowBase extends JDialog
         if (getHeight() > 0 && getPreferredSize().height > getHeight()) pack();
     }
 
+    /** Whether what the window is about may keep it open (`StationWindows.stillAbout`). */
+    boolean stillAbout()
+    {
+        return editor.stationWindows.stillAbout(tile);
+    }
+
     /** Sets every control from the setup, and grays what may not be touched. */
     abstract void fill(boolean readOnly);
 
@@ -215,7 +221,7 @@ abstract class StationWindowBase extends JDialog
     {
         if (tile == null) return;
 
-        if (!editor.stationWindows.stillAbout(tile))
+        if (!stillAbout())
         {
             goAway();
 
@@ -243,11 +249,31 @@ abstract class StationWindowBase extends JDialog
         else if (editor.menuOnly && main.isLayoutEditorOpen()) held = I18n.t("autosetup.ui.menuEditorOpen");
         else held = main.aRunHoldsTheSetup() ? I18n.t(RunGates.NO_EDITS_WHILE_RUNNING) : null;
 
-        strip.setText(held == null ? "" : AutonomyEditorPanel.wrappedAt(held, stripWrapsAt));
+        showTheStrip();
+    }
 
-        if (strip.isVisible() != (held != null))
+    /** What the last change came to, shown on the strip under nothing more pressing; null for nothing. */
+    private String note;
+
+    /** Says what a change came to on the strip, until the next one; null takes it down. */
+    final void sayOnTheStrip(String said)
+    {
+        note = said;
+
+        showTheStrip();
+
+        if (getHeight() > 0 && getPreferredSize().height > getHeight()) pack();
+    }
+
+    private void showTheStrip()
+    {
+        String shown = held != null ? held : note;
+
+        strip.setText(shown == null ? "" : AutonomyEditorPanel.wrappedAt(shown, stripWrapsAt));
+
+        if (strip.isVisible() != (shown != null))
         {
-            strip.setVisible(held != null);
+            strip.setVisible(shown != null);
 
             if (getContentPane() != null) getContentPane().revalidate();
         }

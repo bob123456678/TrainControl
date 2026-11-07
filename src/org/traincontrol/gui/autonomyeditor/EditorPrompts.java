@@ -293,8 +293,9 @@ final class EditorPrompts
 
         list.setSelectedIndices(selection);
 
-        if (JOptionPane.showConfirmDialog(editor.owner(), new JScrollPane(list),
-            I18n.t("autosetup.ui.labelLocomotiveExclusions"),
+        if (JOptionPane.showConfirmDialog(editor.owner(), new JScrollPane(list), editor.oneOfSeveral
+            ? I18n.f("autosetup.ui.labelLocomotiveExclusionsAt", editor.describeTile(tile))
+            : I18n.t("autosetup.ui.labelLocomotiveExclusions"),
             JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE) != JOptionPane.OK_OPTION)
         {
             return false;

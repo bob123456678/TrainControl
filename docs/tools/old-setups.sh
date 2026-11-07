@@ -11,8 +11,9 @@
 # core.testSetupDumpComparesBuilds; both builds dump every test layout, every autonomy format fixture and one read-only
 # copy of cs2_sample_layout; docs/tools/old-setups.py compares them file by file, says how many answers it compared and
 # prints the first differences.  Exit 0 only when every file is the same, what each build writes on a load and save with
-# no change among them, and at least one Return Home plan was compared.  A Return Home plan's moves are printed and do not
-# fail, as the planner's wall clock picks among plans within one build (see old-setups.py), so read that line as not proved.
+# no change among them, and at least one Return Home plan was compared.  A Return Home plan's moves are compared too when
+# both builds plan by route work (OB-413); against an older build, 3.0.8 included, whose wall clock picks among plans run
+# to run, they are printed and do not fail (see old-setups.py).
 # The 3.0.8 build is `dev-3.0.9`.  Later builders: also the commit your branch started from.  TC_KEEP=1 keeps the base
 # worktree.
 #

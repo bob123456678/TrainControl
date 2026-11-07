@@ -7983,13 +7983,24 @@ public class AutonomySession
     }
 
     /**
-     * Puts a speed saved in the Locomotive Settings window over the stale copy an old-format setup keeps of a standing
-     * train, which a load would otherwise read back.  Every configuration is walked, excluded pages included; a setup
-     * that stores no speed for the train, or already stores this one, is left alone.
+     * {@link #updateStoredRecord} for the preset speed: 0 removes it, so a load gives the layout's default.
      *
      * @return true when a stored speed was changed
      */
     public boolean updateStoredSpeed(String locomotive, int speed)
+    {
+        return updateStoredRecord(locomotive, "speed", speed > 0 ? speed : null);
+    }
+
+    /**
+     * Puts a value saved in the Locomotive Settings window over the stale copy an old-format setup keeps of a standing
+     * train under `key` (as `Point.toJSON` names it), which a load would otherwise read back.  Every configuration is
+     * walked, excluded pages included; a record that stores no such key, or already stores this value, is left alone.
+     *
+     * @param value the value, or null to remove the key, which a load reads as "keep the train's own"
+     * @return true when a stored record was changed
+     */
+    public boolean updateStoredRecord(String locomotive, String key, Object value)
     {
         boolean changed = false;
 
@@ -8005,17 +8016,17 @@ public class AutonomySession
                 org.json.JSONObject point = points.optJSONObject(id);
                 org.json.JSONObject stored = point == null ? null : point.optJSONObject("loc");
 
-                if (stored == null || !locomotive.equals(stored.optString("name", null)) || !stored.has("speed")) continue;
+                if (stored == null || !locomotive.equals(stored.optString("name", null)) || !stored.has(key)) continue;
 
-                if (speed > 0)
+                if (value != null)
                 {
-                    if (stored.optInt("speed", -1) == speed) continue;
+                    if (String.valueOf(stored.opt(key)).equals(String.valueOf(value))) continue;
 
-                    stored.put("speed", speed);
+                    stored.put(key, value);
                 }
                 else
                 {
-                    stored.remove("speed");
+                    stored.remove(key);
                 }
 
                 changed = true;

@@ -54,7 +54,7 @@ public class testTheLocomotiveSettingsLooks extends support.SettingsClass
     }
 
     /**
-     * Each of the four tabs carries its own drawn icon, beside the title it keeps.
+     * Each of the five tabs carries its own drawn icon, beside the title it keeps.
      *
      * MUTATION: drop the icon from any `tabs.addTab` in `LocomotiveSettingsFrame.build`, or give two tabs the same
      * icon, and this fails.
@@ -65,9 +65,9 @@ public class testTheLocomotiveSettingsLooks extends support.SettingsClass
         JTabbedPane tabs = opened();
         java.util.Set<String> seen = new java.util.HashSet<>();
 
-        assertEquals(tabs.getTabCount(), 4);
+        assertEquals(tabs.getTabCount(), 5);
 
-        for (int i = 0; i < 4; i++)
+        for (int i = 0; i < 5; i++)
         {
             final int tab = i;
             Icon icon = Components.onTheEventThread(() -> tabs.getIconAt(tab));
@@ -91,9 +91,9 @@ public class testTheLocomotiveSettingsLooks extends support.SettingsClass
     }
 
     /**
-     * Blue is for section headings: on the first tab exactly "Name and Address", "Customize Behavior" and "Locomotive
-     * Icon" are dark blue, and every item label there and on the other tabs, and the Functions table's column headings,
-     * are black, all Semibold 13.
+     * Blue is for section headings: exactly "Name and Address", "Customize Behavior" and "Locomotive Icon" on the first
+     * tab and the Autonomy tab's two are dark blue, and every item label there and on the other tabs, and the Functions
+     * table's column headings, are black, all Semibold 13.
      *
      * MUTATION: make `LocomotiveSettingsFrame.label` build a blue `UiStyle.heading`, or `UiStyle.style` blue, or the
      * Functions table header's foreground blue, and this fails.
@@ -104,10 +104,12 @@ public class testTheLocomotiveSettingsLooks extends support.SettingsClass
         opened();
 
         String[] blue = { "loc.ui.settingsNameAndAddress", "loc.ui.settingsCustomizeBehavior",
-            "loc.ui.settingsLocomotiveIcon" };
+            "loc.ui.settingsLocomotiveIcon", "loc.ui.settingsAutonomyHeading", "loc.ui.settingsAutonomyFunctionsHeading" };
         String[] black = { "ui.name", "loc.ui.decoderType", "layout.ui.address", "loc.ui.settingsPresetSpeed",
             "loc.ui.settingsPresetLabel", "loc.ui.settingsIconsLabel", "loc.ui.labelStartYear",
-            "loc.ui.labelEndYear", "loc.ui.labelRailwayName", "loc.ui.labelNotes", "loc.ui.filterList" };
+            "loc.ui.labelEndYear", "loc.ui.labelRailwayName", "loc.ui.labelNotes", "loc.ui.filterList",
+            "autolayout.ui.trainLength", "autolayout.ui.reversible", "autosetup.ui.trainActive",
+            "autolayout.ui.departureFunction", "autolayout.ui.arrivalFunction" };
 
         for (String key : blue)
         {
@@ -136,7 +138,7 @@ public class testTheLocomotiveSettingsLooks extends support.SettingsClass
         java.util.List<JLabel> blues = Components.all(SettingsWindow.showing().getContentPane(), JLabel.class,
             l -> UiStyle.BLUE.equals(l.getForeground()));
 
-        assertEquals(blues.size(), blue.length, "the blue labels are not just the three headings");
+        assertEquals(blues.size(), blue.length, "the blue labels are not just the five headings");
     }
 
     /** Where a named part of the window is, in the window's own coordinates. */

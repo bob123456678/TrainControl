@@ -72,21 +72,7 @@ public class testThePresetSpeedSurvivesTheSetupDoors
 
         final TileKey square = squareNamed("BottomMainB");
 
-        SwingUtilities.invokeAndWait(() ->
-        {
-            Layout railway = model.getAutoLayout();
-
-            railway.getPoints().stream().filter(p -> p.getCurrentLocomotive() != null)
-                .forEach(p -> railway.moveLocomotive(null, p.getName(), true));
-
-            // On the first copy of the square that will take it
-            session.facingsFor(square).keySet().stream().map(railway::getPoint).filter(p -> p != null).findFirst()
-                .ifPresent(p -> railway.moveLocomotive(TRAIN, p.getName(), false));
-
-            session.placeLocomotive(square, TRAIN);
-        });
-
-        assertNotNull(model.getAutoLayout().getLocomotiveLocation(train), "precondition: the train could not be stood on BottomMainB");
+        support.StandingTrain.standOn(model, session, TRAIN, square);
     }
 
     @AfterClass(alwaysRun = true)
@@ -174,8 +160,8 @@ public class testThePresetSpeedSurvivesTheSetupDoors
     }
 
     /**
-     * Alt+U's Save Current Speed and the station dialog's write (a plain `setPreferredSpeed` on the locomotive, which
-     * is all `GraphLocAssign.commitChanges` does with the speed) survive the same load, so the window is no different.
+     * Alt+U's Save Current Speed and a plain `setPreferredSpeed` on the locomotive, which is all the retired station
+     * dialog did with the speed, survive the same load, so the window is no different.
      */
     @Test
     public void testTheOtherDoorsSpeedsSurviveTheSameLoad() throws Exception
@@ -248,18 +234,7 @@ public class testThePresetSpeedSurvivesTheSetupDoors
     /** Everything the setup keeps on disk, by file. */
     private static java.util.Map<String, String> setupFiles() throws Exception
     {
-        java.util.Map<String, String> out = new java.util.TreeMap<>();
-
-        try (java.util.stream.Stream<java.nio.file.Path> walk = java.nio.file.Files.walk(
-            new java.io.File(fixture.sandbox.getFolder(), "config" + java.io.File.separator + "autonomy").toPath()))
-        {
-            for (java.nio.file.Path file : (Iterable<java.nio.file.Path>) walk.filter(java.nio.file.Files::isRegularFile)::iterator)
-            {
-                out.put(file.toString(), new String(java.nio.file.Files.readAllBytes(file), java.nio.charset.StandardCharsets.UTF_8));
-            }
-        }
-
-        return out;
+        return support.StandingTrain.setupFiles(fixture.sandbox.getFolder());
     }
 
     /** The old-format setup the claims start from: the train stands with a speed of 20 on its square. */
@@ -280,7 +255,7 @@ public class testThePresetSpeedSurvivesTheSetupDoors
      * A second configuration that is a copy of the active one keeps the window's speed too: loaded without a fold, it
      * does not bring the stale one back.
      *
-     * MUTATION: walk only the active configuration in `AutonomySession.updateStoredSpeed`, and this fails.
+     * MUTATION: walk only the active configuration in `AutonomySession.updateStoredRecord`, and this fails.
      */
     @Test
     public void testAnotherConfigurationDoesNotBringTheStaleSpeedBack() throws Exception
@@ -311,7 +286,7 @@ public class testThePresetSpeedSurvivesTheSetupDoors
     /**
      * A train on an excluded page keeps the window's speed too: the page comes back and a load reads 66, not 20.
      *
-     * MUTATION: skip the points of excluded pages in `AutonomySession.updateStoredSpeed`, and this fails.
+     * MUTATION: skip the points of excluded pages in `AutonomySession.updateStoredRecord`, and this fails.
      */
     @Test
     public void testATrainOnAnExcludedPageDoesNotBringTheStaleSpeedBack() throws Exception
@@ -339,7 +314,7 @@ public class testThePresetSpeedSurvivesTheSetupDoors
      * A Save whose stored speed already equals the setup's does not rewrite the setup, and a setup that stores no
      * speed is left byte for byte as it was, in every configuration.
      *
-     * MUTATION: drop the equal-speed test in `AutonomySession.updateStoredSpeed`, and this fails.
+     * MUTATION: drop the equal-value test in `AutonomySession.updateStoredRecord`, and this fails.
      */
     @Test
     public void testASetupIsNotRewrittenForNothing() throws Exception
@@ -408,13 +383,7 @@ public class testThePresetSpeedSurvivesTheSetupDoors
 
     private static void reloadWithoutFolding(String configuration) throws Exception
     {
-        try (Answering answering = Answering.start(message -> Answering.press(I18n.t("ui.yes"))))
-        {
-            SwingUtilities.invokeAndWait(() -> ui.getAutonomyViewerPanel().load(configuration, false, false));
-
-            Components.settle();
-            Components.settle();
-        }
+        support.StandingTrain.reloadWithoutFolding(ui, configuration);
     }
 
     private static void reload(String configuration) throws Exception
@@ -450,11 +419,6 @@ public class testThePresetSpeedSurvivesTheSetupDoors
 
     private static TileKey squareNamed(String name)
     {
-        for (TileKey key : session.getStore().getNamedTiles())
-        {
-            if (name.equals(session.getStore().getPointName(key))) return key;
-        }
-
-        throw new AssertionError("this railway has no " + name);
+        return support.StandingTrain.squareNamed(session, name);
     }
 }

@@ -172,8 +172,6 @@ final class EditorTileMenus
 
                 if (train != null) menu.add(train);
 
-                editor.addLocomotiveSettings(menu, target);
-
                 if (standing != null)
                 {
                     menu.add(editor.item(I18n.f("autosetup.ui.menuRemoveLocomotive", standing),
@@ -487,7 +485,7 @@ final class EditorTileMenus
         boolean mine = label.trim().isEmpty() || captioned != null;
 
         // Both items NAME the station when there is one (FR-014): a caption draws the station's OCCUPANT, and an empty station
-        // draws as GraphLocAssign.NONE_LABEL, so a square captioning a station with no train says nothing about which station it
+        // draws as ---, so a square captioning a station with no train says nothing about which station it
         // is.  Here because both menus build their caption items through this method.
         String showing = captioned == null ? null : editor.describeTile(captioned);
 

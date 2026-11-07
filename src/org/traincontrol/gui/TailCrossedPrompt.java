@@ -250,12 +250,13 @@ public class TailCrossedPrompt
      * @param roadBefore the road the train had before the door moved it, or null
      * @param sameSquareAsBefore whether it was put back on the square it stood on
      * @param sideBefore the side it had there, or null
+     * @param asker what the question hangs off: the main window, which asks as its own doors do, or another window
      * @param savedEarly given what the save before the question reconciled (null when it did not save), or null
      * @return whether the setup written to is still the window's, so the door may save it
      */
-    static boolean recordTheTail(org.traincontrol.automationui.AutonomySession session,
+    public static boolean recordTheTail(org.traincontrol.automationui.AutonomySession session,
         org.traincontrol.automationui.TileGraph.TileKey tile, Layout layout, Point point, String tail, String train,
-        List<Edge> roadBefore, boolean sameSquareAsBefore, String sideBefore, TrainControlUI ui,
+        List<Edge> roadBefore, boolean sameSquareAsBefore, String sideBefore, TrainControlUI ui, Component asker,
         java.util.function.Consumer<org.traincontrol.automationui.AutonomyCompanionStore.Reconciliation> savedEarly)
     {
         session.setArrivedFrom(tile, tail);
@@ -271,8 +272,8 @@ public class TailCrossedPrompt
 
         if (savedEarly != null) savedEarly.accept(saved);
 
-        Answer answer = askAfterPlacement(layout, point, tail, lengthOf(point), train, ui, session::baseNameOf,
-            roadBefore);
+        Answer answer = askAfterPlacement(layout, point, tail, lengthOf(point), train, asker,
+            session::baseNameOf, roadBefore);
 
         boolean setupStands = sameSetup(session, ui.getAutonomySession()) && !answer.anEditorOpenedInTheWait();
 

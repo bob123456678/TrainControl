@@ -66,7 +66,7 @@ public class testEditorSurfaceRules
             + "no reason - which is the same silence in a different shape");
     }
     /**
-     * Every door that gives a locomotive a name asks `RouteCommand.isNameUsable` (MT-270): the Add Locomotive dialog,
+     * Every door that gives a locomotive a name asks `RouteCommand.isNameUsable` (MT-270): Add Locomotive,
      * the rename dialog, the route editor and the one applying a name the Central Station proposes.  A comma re-parses
      * as two commands in routes; brackets are allowed.  A door census, because the defect is a door that does not ask.
      *
@@ -79,7 +79,8 @@ public class testEditorSurfaceRules
         // silent is named, and so is a door that moved.
         final String[][] doors =
         {
-            {"private void AddLocButtonActionPerformed(java.awt.event.ActionEvent evt)", "the Add Locomotive dialog"},
+            {"    Locomotive addLocomotive(Component source, String locName, String typedAddress, decoderType type)",
+                "Add Locomotive"},
             {"    boolean writeNameAndAddress(Component source, Locomotive l, String newName, String newAddress,",
                 "the rename dialog and the Locomotive Settings window"},
             {"private void checkForRenameMenuItemActionPerformed(java.awt.event.ActionEvent evt)",
@@ -146,31 +147,28 @@ public class testEditorSurfaceRules
         // convention twenty lines down: "adding a writer means saying here which file it is in and why
         // it is allowed to be a second one".  A THIRD write still fails, and the message says what to
         // ask about it.
-        // FIVE OVER THE PROGRAM: the editor's two, GraphLocAssign.commitAndRecord, the diagram's placeFacing and the
-        // window's rememberPlacement.  Adam: "there needs to be parity across the board."
-        assertEquals(writes, 5,
-            "the facing is written from " + writes + " places in the program. Five are known.  Two are the "
+        // FOUR OVER THE PROGRAM: the editor's two, the diagram's placeFacing and the window's rememberPlacement.
+        // Adam: "there needs to be parity across the board."
+        assertEquals(writes, 4,
+            "the facing is written from " + writes + " places in the program. Four are known.  Two are the "
             + "autonomy editor's: `chooseFacing` in EditorTileMenus, the door of its menu and the train window (which moves"
             + " the railway too, SPEC-B4) and "
             + "AutonomyEditorPanel.placeLocomotive - the "
             + "add-to-autonomy door, which was the LAST one recording who without which way "
             + "(CONF-B2), and the worst of them, because placeLocomotive does not clear the facing on "
             + "the non-null path and so left the previous occupant's direction attached to the "
-            + "arriving train.  Three are the doors the list below names by file: GraphLocAssign.commitAndRecord, "
-            + "the track diagram's placeFacing and the window's rememberPlacement.  A sixth is either a second "
+            + "arriving train.  Two are the doors the list below names by file: "
+            + "the track diagram's placeFacing and the window's rememberPlacement.  A fifth is either a second "
             + "copy of the menu - which is how OB-039 "
             + "survived being fixed, the redraw going on the copy somebody is looking at while the "
-            + "other keeps the bug - or the edit-or-assign door writing its own facing again instead "
-            + "of going through GraphLocAssign.commitAndRecord, which is how it and the diagram's "
-            + "copy of the same item came a week apart (REG8-B2)");
+            + "other keeps the bug - or a door writing its own facing again (REG8-B2)");
 
-        // AND EACH OF THE FIVE IS WHERE IT IS SAID TO BE.  A total lets one door stop writing the facing
+        // AND EACH OF THE FOUR IS WHERE IT IS SAID TO BE.  A total lets one door stop writing the facing
         // while a second copy of the menu starts, and stays five; named place by place, either one is reported.
         final String[] facingWriters =
         {
             "    void chooseFacing(final TileKey target,",
             "    void placeLocomotive(TileKey tile, String name)",
-            "public static void commitAndRecord(GraphLocAssign edit)",
             "private void placeFacing(String locName, String pointName,",
             "private void rememberPlacement(org.traincontrol.automation.Point point,",
         };
@@ -188,38 +186,18 @@ public class testEditorSurfaceRules
             if (here != 1) misplaced.add(writer + " writes it " + here + " times");
         }
 
-        if (writes != named) misplaced.add((writes - named) + " writes outside those five");
+        if (writes != named) misplaced.add((writes - named) + " writes outside those four");
 
         assertEquals(misplaced, new ArrayList<String>(),
-            "the facing is not written once by each of the five doors known to write it: " + misplaced + ".  A door"
+            "the facing is not written once by each of the four doors known to write it: " + misplaced + ".  A door"
             + " that stopped is a placement recorded without which way, and a write somewhere new is a second copy of"
-            + " the menu - how OB-039 survived being fixed - or a door writing its own facing again instead of going"
-            + " through GraphLocAssign.commitAndRecord (REG8-B2)");
-
-        // AND BOTH ASSIGNMENT DOORS GO THROUGH THE ONE THAT RECORDS: `commitChanges` moves the running layout and
-        // nothing else, so a door calling it directly makes an assignment the setup will not remember.  The one
-        // `edit.commitChanges()` allowed is inside commitAndRecord.
-        assertEquals(outside("edit.commitChanges()", "public static void commitAndRecord(GraphLocAssign edit)"), 0,
-            "an assignment is committed without being recorded. commitChanges moves the running"
-            + " layout only, so the placement is gone at the next configuration load - use"
-            + " GraphLocAssign.commitAndRecord, which does both (REG8-B2)");
-
-        for (String door : new String[] {
-            "    void addLocomotiveSettings(javax.swing.JPopupMenu menu, TileKey target)",
-            "private LayoutRightclickAutonomyMenu(TrainControlUI ui," })
-        {
-            assertTrue(codeOf(door).contains("GraphLocAssign.commitAndRecord("),
-                door + " no longer commits an assignment at all, so the check above passes because"
-                + " the door has gone rather than because it was fixed");
-        }
+            + " the menu - how OB-039 survived being fixed - or a door writing its own facing again (REG8-B2)");
 
         // And project-wide, as a named LIST rather than a count, following testTriggerWaitsSayNothing: a list says what
         // is wrong, and adding a writer means saying here which file it is in and why it is allowed to be a second one.
         assertEquals(filesWriting("setFacing("),
             Arrays.asList("AutonomyEditorPanel.java", "AutonomySession.java", "DiagramLocGestures.java",
-                // GraphLocAssign is the DIALOG both assignment doors show, so what accepting it means is written once,
-                // with it; both callers repaint right after.
-                "GraphLocAssign.java", "LayoutRightclickAutonomyMenu.java",
+                "LayoutRightclickAutonomyMenu.java",
                 // RunningLayoutSync records the facing of a train the rebuild could not put back
                 // (`recordTheTrainsNotPutBack`), and the put-back tells the diagram after.
                 "RunningLayoutSync.java",

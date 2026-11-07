@@ -4794,6 +4794,27 @@ public class MarklinControlStation implements ViewListener, ModelListener
         return csvBuilder.toString();
     }
     
+    @Override
+    public String exportAccessoryActuationsToCSV()
+    {
+        List<MarklinAccessory> accessories = new ArrayList<>(this.accDB.getItems());
+
+        accessories.sort(Comparator.comparing((MarklinAccessory a) -> a.getDecoderType().ordinal())
+            .thenComparingInt(MarklinAccessory::getAddress));
+
+        StringBuilder csv = new StringBuilder("Name,Address,Protocol,Type,Actuations\n");
+
+        for (MarklinAccessory a : accessories)
+        {
+            // The address the keyboard shows: the stored one counts from 0
+            csv.append(escapeCsv(a.getName())).append(',').append(a.getAddress() + 1).append(',')
+                .append(a.getDecoderType()).append(',').append(Accessory.accessoryTypeToPrettyString(a.getType()))
+                .append(',').append(a.getNumActuations()).append('\n');
+        }
+
+        return csv.toString();
+    }
+
     /**
      * Main initialization method
      * @param initIP
