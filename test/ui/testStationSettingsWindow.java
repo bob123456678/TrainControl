@@ -575,6 +575,41 @@ public class testStationSettingsWindow
     }
 
     /**
+     * Turning on a kept list that shuts out the station's home locomotive warns, as choosing the list does (OB-022): No
+     * leaves All in force.
+     *
+     * MUTATION: drop the `homeMayBeBroken` call from `AutonomyEditorPanel.setWhichTrains`, and this fails.
+     */
+    @Test(timeOut = 120000)
+    public void testAModeThatShutsOutTheHomeWarns() throws Exception
+    {
+        TileKey square = aStation();
+
+        String train = model.getLocList().get(0);
+
+        Components.onTheEventThread(() ->
+        {
+            session.setHome(square, train);
+            session.setWhichTrains(square, WhichTrains.ALL, Arrays.asList(train));
+
+            return null;
+        });
+
+        StationSettingsWindow window = StationDoors.open(panel, square);
+
+        String warned = I18n.f("autolayout.ui.confirmExcludingHome", train, session.describeTile(square));
+
+        List<String> asked = StationDoors.press(window, "station.whichBlack",
+            message -> Answering.press(String.valueOf(TrainControlUI.YES_NO_OPTS[1])));
+
+        assertEquals(asked, Arrays.asList(warned), "Blacklist over a kept list naming the home did not warn");
+
+        assertEquals(session.getWhichTrains(square), WhichTrains.ALL, "No put the list in force");
+
+        assertTrue(StationDoors.on(window, "station.whichAll"), "after No the radio is not back on All");
+    }
+
+    /**
      * What is being typed applies when the window loses the keyboard, so the editor's Save has it; and the editor's Cancel
      * throws it away with the rest: nothing is committed over what Cancel put back.
      *
