@@ -20,6 +20,7 @@ import org.traincontrol.base.Accessory.accessoryDecoderType;
 import org.traincontrol.base.LayoutDiagram;
 import org.traincontrol.base.LayoutDiagramComponent.componentType;
 import org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel;
+import org.traincontrol.gui.autonomyeditor.StationSettingsWindow;
 import support.SourceOf;
 
 /**
@@ -764,7 +765,8 @@ public class testMassAssignLengths
     /**
      * On the frozen copy of Adam's railway, Clear All Station Max Train Lengths asks first; No changes nothing, and Yes
      * takes the maximum off every station on every page and says how many (MT-518, MT-519).  Each maximum is read where
-     * the steps read it: the Maximum Train Length item on the Station menu of its own page.
+     * the steps read it, now that the menu item is in Station Settings (FR-111): its Maximum train length field, opened
+     * from the station's right-click menu on its own page.
      *
      * MUTATION: clear on No, clear one page only, or say a count other than the item's, and this fails naming it.
      */
@@ -823,10 +825,10 @@ public class testMassAssignLengths
 
                 assertEquals(maxima(), before, "answered No, Clear All Station Max Train Lengths changed a maximum (MT-518)");
 
-                assertEquals(maximumShown(MAIN, onMain), shownAs(before.get(onMain)), "answered No, the Station menu of "
+                assertEquals(maximumShown(MAIN, onMain), shownAs(before.get(onMain)), "answered No, Station Settings of "
                     + session.getStore().getPointName(onMain) + " does not show its maximum (MT-518 step 4)");
 
-                assertEquals(maximumShown(BOTTOM, onBottom), shownAs(before.get(onBottom)), "answered No, the Station menu"
+                assertEquals(maximumShown(BOTTOM, onBottom), shownAs(before.get(onBottom)), "answered No, Station Settings"
                     + " of " + session.getStore().getPointName(onBottom) + " does not show its maximum (MT-518 step 4)");
 
                 javax.swing.SwingUtilities.invokeLater(item::doClick);
@@ -847,10 +849,10 @@ public class testMassAssignLengths
 
                 String any = shownAs(0);
 
-                assertEquals(maximumShown(MAIN, onMain), any, "answered Yes, the Station menu of "
+                assertEquals(maximumShown(MAIN, onMain), any, "answered Yes, Station Settings of "
                     + session.getStore().getPointName(onMain) + " on " + MAIN + " does not show any length (MT-519 step 4)");
 
-                assertEquals(maximumShown(BOTTOM, onBottom), any, "answered Yes, the Station menu of "
+                assertEquals(maximumShown(BOTTOM, onBottom), any, "answered Yes, Station Settings of "
                     + session.getStore().getPointName(onBottom) + " on " + BOTTOM + " does not show any length (MT-519"
                     + " step 4)");
             }
@@ -961,7 +963,7 @@ public class testMassAssignLengths
                 assertEquals(session.getPointProperty(first, "maxTrainLength"), 7, "the number typed and entered was not"
                     + " recorded for " + session.getStore().getPointName(first) + " (MT-520)");
 
-                assertEquals(maximumShown(MAIN, first), shownAs(7), "the Station menu of "
+                assertEquals(maximumShown(MAIN, first), shownAs(7), "Station Settings of "
                     + session.getStore().getPointName(first) + " does not show the number typed (MT-520 step 5)");
 
                 assertEquals(session.getPointProperty(second, "maxTrainLength"), secondBefore, "Escape gave the next station"
@@ -1312,57 +1314,43 @@ public class testMassAssignLengths
         return first;
     }
 
-    /** The Maximum Train Length item's label for this maximum, as the Station menu writes it. */
+    /** The Maximum train length field's text for this maximum: blank for any length. */
     private static String shownAs(Object maximum)
     {
         int value = maximum instanceof Number ? ((Number) maximum).intValue() : 0;
 
-        return org.traincontrol.util.I18n.f("autolayout.ui.menuMaxTrainLength",
-            value == 0 ? org.traincontrol.util.I18n.t("autolayout.ui.any") : String.valueOf(value));
+        return value == 0 ? "" : String.valueOf(value);
     }
 
-    /** The label of the Maximum Train Length item on this station's Station menu, on an editor showing its page. */
+    /** The Maximum train length field of Station Settings, opened from the station's right-click menu on its page. */
     private String maximumShown(String page, TileKey station) throws Exception
     {
-        final String[] label = new String[1];
-
         final AutonomyEditorPanel onItsPage = new AutonomyEditorPanel(session, page, () -> { });
 
-        String pattern = org.traincontrol.util.I18n.t("autolayout.ui.menuMaxTrainLength");
-
-        final String prefix = pattern.substring(0, pattern.indexOf("{0}"));
-
-        javax.swing.SwingUtilities.invokeAndWait(() ->
+        support.Components.onTheEventThread(() ->
         {
-            javax.swing.JMenuItem found = itemStarting(onItsPage.buildTileMenu(station, null), prefix);
+            javax.swing.AbstractButton item = support.Components.withText(onItsPage.buildTileMenu(station, null),
+                org.traincontrol.util.I18n.t("autosetup.ui.menuStationSettings"));
 
-            label[0] = found == null ? "no Maximum Train Length item" : found.getText();
+            if (item != null) item.doClick();
+
+            return null;
         });
 
-        return label[0];
-    }
+        StationSettingsWindow window = support.StationDoors.showing(StationSettingsWindow.class);
 
-    private static javax.swing.JMenuItem itemStarting(java.awt.Container menu, String prefix)
-    {
-        java.awt.Component[] children = menu instanceof javax.swing.JMenu
-            ? ((javax.swing.JMenu) menu).getMenuComponents() : menu.getComponents();
+        if (window == null) return "no Station Settings item";
 
-        for (java.awt.Component child : children)
+        try
         {
-            if (child instanceof javax.swing.JMenu)
-            {
-                javax.swing.JMenuItem found = itemStarting((javax.swing.JMenu) child, prefix);
+            support.StationDoors.current(window);
 
-                if (found != null) return found;
-            }
-            else if (child instanceof javax.swing.JMenuItem && ((javax.swing.JMenuItem) child).getText() != null
-                && ((javax.swing.JMenuItem) child).getText().startsWith(prefix))
-            {
-                return (javax.swing.JMenuItem) child;
-            }
+            return support.StationDoors.text(window, "station.maxLength");
         }
-
-        return null;
+        finally
+        {
+            support.StationDoors.close(window);
+        }
     }
 
     /** The Bulk Tools item whose text starts so - for an item that carries a count. */
