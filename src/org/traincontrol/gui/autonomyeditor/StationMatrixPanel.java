@@ -227,19 +227,6 @@ final class StationMatrixPanel extends JPanel
 
         String name = I18n.t(labelKey);
 
-        if (row == Row.SENT_THROUGH)
-        {
-            c.gridx = 1;
-            c.gridwidth = 2;
-            c.weightx = 1;
-
-            table.add(cell(row, "both", name, auto, sideKey, error), c);
-
-            c.gridwidth = 1;
-
-            return;
-        }
-
         c.gridx = 1;
         c.weightx = 1;
 
@@ -381,7 +368,7 @@ final class StationMatrixPanel extends JPanel
         return mark;
     }
 
-    /** @return what is drawn for this row and tier ("auto", "hand", or "both"): side to answer */
+    /** @return what is drawn for this row and tier ("auto" or "hand"): side to answer */
     Map<String, Answer> drawnFor(Row row, String tier)
     {
         return drawn.get(row + "." + tier);

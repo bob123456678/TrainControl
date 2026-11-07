@@ -99,15 +99,43 @@ final class StationPicture extends JPanel
             this.heading = heading;
         }
 
-        boolean hit(Point at)
+        /** On the shape itself, or `near` it: within a few pixels of its outline. */
+        boolean hit(Point at, boolean near)
+        {
+            return near ? NEAR.createStrokedShape(shape).contains(at) : shape.contains(at);
+        }
+
+        double size()
         {
             Rectangle area = shape.getBounds();
 
-            area.grow(3, 3);
+            return (double) area.width * area.height;
+        }
 
-            return area.contains(at);
+        /** How far the point is from the middle of the mark's corners. */
+        double apart(Point at)
+        {
+            double x = 0;
+            double y = 0;
+            int corners = 0;
+
+            double[] each = new double[6];
+
+            for (java.awt.geom.PathIterator it = shape.getPathIterator(null); !it.isDone(); it.next())
+            {
+                if (it.currentSegment(each) == java.awt.geom.PathIterator.SEG_CLOSE) continue;
+
+                x += each[0];
+                y += each[1];
+                corners++;
+            }
+
+            return corners == 0 ? Double.MAX_VALUE : at.distance(x / corners, y / corners);
         }
     }
+
+    /** How near a mark's outline a click still presses it, where it is on no mark. */
+    private static final java.awt.BasicStroke NEAR = new java.awt.BasicStroke(6);
 
     private final Block block = new Block();
 
@@ -396,6 +424,12 @@ final class StationPicture extends JPanel
         }
     }
 
+    /** @return the mark a click at this point of the block presses, or null */
+    Mark markAtForTest(Point at)
+    {
+        return block.at(at);
+    }
+
     /** @return what the station square wears */
     TileAnnotation drawnForTest()
     {
@@ -467,14 +501,35 @@ final class StationPicture extends JPanel
             });
         }
 
+        /**
+         * The smallest mark whose shape holds the point, as marks on a curve overlap, and of two near in size (two ways
+         * in) the one whose middle is nearer; failing one, the same among the marks near it.
+         */
         private Mark at(Point point)
         {
-            for (Mark mark : marks())
+            for (boolean near : new boolean[] {false, true})
             {
-                if (mark.hit(point)) return mark;
+                Mark best = null;
+
+                for (Mark mark : marks())
+                {
+                    if (mark.hit(point, near) && (best == null || before(mark, best, point))) best = mark;
+                }
+
+                if (best != null) return best;
             }
 
             return null;
+        }
+
+        private boolean before(Mark one, Mark other, Point point)
+        {
+            if (Math.max(one.size(), other.size()) < 1.5 * Math.min(one.size(), other.size()))
+            {
+                return one.apart(point) < other.apart(point);
+            }
+
+            return one.size() < other.size();
         }
 
         @Override

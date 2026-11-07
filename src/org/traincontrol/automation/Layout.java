@@ -2235,6 +2235,49 @@ public class Layout
         return null;
     }
 
+    /**
+     * Why this route runs through or ends on a square switched off, or null; `isPathClear` asks it, and the matrix
+     * (FR-111).  The start is exempt: that is how a train is driven out of a square closed around it.
+     */
+    private static String whySwitchedOffAlong(List<Edge> path)
+    {
+        // An inactive intermediate point may never be driven through, whatever asked for the route (Adam: "Inactive
+        // really means nothing can pass").  Intermediates are exactly the END of every edge but the last.
+        for (int i = 0; i < path.size() - 1; i++)
+        {
+            if (!path.get(i).getEnd().isActive())
+            {
+                return I18n.f("autolayout.errorInactiveIntermediatePoint", placeNameOf(path.get(i).getEnd()));
+            }
+        }
+
+        // At every door, not only under autonomy (Adam: "In manual mode, inactive endpoints and intermediates should
+        // be refused as well.  Just not inactive start points.").
+        if (!path.get(path.size() - 1).getEnd().isActive())
+        {
+            return I18n.f("autolayout.errorInactiveStation", placeNameOf(path.get(path.size() - 1).getEnd()));
+        }
+
+        return null;
+    }
+
+    /** The switch settings this route would set, previewed: no command is sent. */
+    private EdgeConfigurationState previewConfiguration(List<Edge> path)
+    {
+        EdgeConfigurationState validity = new EdgeConfigurationState();
+
+        for (Edge e : path) this.configureEdge(e, validity);
+
+        return validity;
+    }
+
+    /** `isPathClear`'s standing clauses alone, for a route the search gave: nobody on the track, no list or length. */
+    private boolean isClearByStandingRules(List<Edge> path)
+    {
+        return whySwitchedOffAlong(path) == null && stopOnlyStationRunThrough(path) == null
+            && previewConfiguration(path).configIsValid;
+    }
+
     /** The sentence for a route refused at a stop-only station (FR-111). */
     private static String whyNotThroughStopOnly(Point station)
     {
@@ -2428,38 +2471,17 @@ public class Layout
             }
         }
         
-        // An inactive intermediate point may never be driven through, whatever asked for the route (Adam: "Inactive
-        // really means nothing can pass").  Not fenced behind isAutoRunning: a manual route may still start there.
-        //
-        // Intermediates are exactly the END of every edge but the last: any edge start other than the
-        // first is the previous edge end, so this visits each intermediate once and neither endpoint.
-        for (int i = 0; i < path.size() - 1; i++)
+        String switchedOff = whySwitchedOffAlong(path);
+
+        if (switchedOff != null)
         {
-            if (!path.get(i).getEnd().isActive())
-            {
-                logPathError(loc, path, logFailures,
-                    I18n.f("autolayout.errorInactiveIntermediatePoint", placeNameOf(path.get(i).getEnd()))
-                );
-                return false;
-            }
+            logPathError(loc, path, logFailures, switchedOff);
+
+            return false;
         }
 
         // The station's own capacity is asked with the track room further down (MT-262), after the inactive and
         // covered-track rules, so a berth both switched off and too short reports as switched off.
-
-        // At every door, not only under autonomy (Adam: "In manual mode, inactive endpoints and intermediates should
-        // be refused as well.  Just not inactive start points.").  The start stays exempt: that is how a train is
-        // driven out of a square closed around it.
-        if (!path.get(path.size() - 1).getEnd().isActive())
-        {
-            logPathError(
-                loc,
-                path,
-                logFailures,
-                I18n.f("autolayout.errorInactiveStation", placeNameOf(path.get(path.size() - 1).getEnd()))
-            );
-            return false;
-        }
 
         // Trains must stop here (FR-111).  Past the inactive rules, so a square switched off reports as switched off.
         Point mustStopAt = this.returningHome.contains(loc) ? null : stopOnlyStationRunThrough(path);
@@ -2592,12 +2614,7 @@ public class Layout
             }
         }
 
-        // Preview the configuration
-        EdgeConfigurationState validity = new EdgeConfigurationState();
-        for (Edge e : path)
-        {
-            this.configureEdge(e, validity);
-        }
+        EdgeConfigurationState validity = previewConfiguration(path);
 
         // Invalid state means the commands conflicted, or referenced an accessory we do not have -
         // either way this path would not work as intended, so it must not be offered
@@ -4003,7 +4020,7 @@ public class Layout
      *
      * Only the end of each edge is tested: a train may leave the reversing point it stands on.
      */
-    private boolean reversesAlongTheWay(List<Edge> path)
+    boolean reversesAlongTheWay(List<Edge> path)
     {
         for (Edge e : path)
         {
@@ -4292,8 +4309,7 @@ public class Layout
                     // a terminus only for a train that can leave it at its length.  getBlockLocomotive, not isOccupied:
                     // a sibling copy holding a train is the same track.  The shared clauses are isSendableDestination.
                     if (!end.equals(start) && end.getBlockLocomotive() == null
-                            && isSendableDestination(end)
-                            && (!end.isTerminus() || (loc.isReversible() && this.leavesForAStationItFits(end, loc)))
+                            && autonomyMayEndAt(end, loc)
                             && !end.excludes(loc))
                     {
                         try 
@@ -4649,8 +4665,19 @@ public class Layout
     }
 
     /**
+     * pickPath's clauses on where a trip may end, but for the list; a null `loc` is a reversible train of no length
+     * (FR-111).
+     */
+    boolean autonomyMayEndAt(Point end, Locomotive loc)
+    {
+        return isSendableDestination(end)
+            && (!end.isTerminus() || ((loc == null || loc.isReversible()) && this.leavesForAStationItFits(end, loc)));
+    }
+
+    /**
      * Whether a train at this terminus could be sent on again by autonomy, to a station it fits; else a reversible
-     * train sent to turn there never moves again.  Standing clauses only, one hop, and true on doubt.
+     * train sent to turn there never moves again.  Standing clauses only, one hop, and true on doubt.  A null `loc` is
+     * a reversible train of no length that no list names.
      */
     private boolean leavesForAStationItFits(Point from, Locomotive loc)
     {
@@ -4658,7 +4685,7 @@ public class Layout
         {
             if (d.equals(from) || !isSendableDestination(d) || d.excludes(loc)) continue;
 
-            if (d.isTerminus() && !loc.isReversible()) continue;
+            if (loc != null && d.isTerminus() && !loc.isReversible()) continue;
 
             // Another copy of the square it is standing on is not somewhere else
             if (from.getBlock() != null && from.getBlock().equals(d.getBlock())) continue;
@@ -5148,75 +5175,92 @@ public class Layout
 
         // If the locomotive is currently running, it has no possible paths
         if (!this.activeLocomotives.containsKey(loc))
-        {     
-            List<Point> ends = new LinkedList<>(this.points.values());
-            //Collections.shuffle(ends);
-
+        {
             for (Point start : this.points.values())
             {
                 if (loc.equals(start.getCurrentLocomotive()))
                 {
-                    for (Point end : ends)
-                    {
-                        // The same block rule as above - a copy of an occupied square is occupied.
-                        if (!end.equals(start) && end.getBlockLocomotive() == null && end.isDestination())
+                    // The same block rule as above - a copy of an occupied square is occupied.
+                    routesFrom(start, goingHome, end -> end.getBlockLocomotive() == null,
+                        path -> this.isPathClear(path, loc, false), path ->
                         {
-                            try 
+                            // Only return unique starts and ends
+                            if (uniqueDest)
                             {
-                                List<Edge> path;
-                                List<List<Edge>> seenPaths = new LinkedList<>();
-
-                                // If the first shortest path is invalid, check all alternatives                            
-                                do 
+                                for (List<Edge> e : output)
                                 {
-                                    path = this.bfs(start, end, seenPaths, false, goingHome);
-
-                                    if (path != null && this.isPathClear(path, loc, false))
+                                    if (e.get(0).getStart().equals(start)
+                                        && e.get(e.size() - 1).getEnd().equals(path.get(path.size() - 1).getEnd()))
                                     {
-                                        boolean unique = true;
-
-                                        // Only return unique starts and ends
-                                        if (uniqueDest)
-                                        {
-                                            for (List<Edge> e : output)
-                                            {
-                                                if (e.get(0).getStart().equals(start) && e.get(e.size() - 1).getEnd().equals(end))
-                                                {
-                                                    unique = false;
-                                                    break;
-                                                }
-                                            }
-                                        }
-
-                                        if (unique)
-                                        {
-                                            output.add(path);
-                                        }
+                                        return false;
                                     }
-
-                                    if (path != null)
-                                    {
-                                        // Get another path other than the one we just saw
-                                        seenPaths.add(path);
-                                    }
-
-                                } while (path != null);
+                                }
                             }
-                            catch (Exception e)
-                            {
-                                // Not silent, as in pickPath.
-                                this.control.logf("autolayout.errorPathSelectionFailed", loc.getName());
-                                this.control.log(e);
-                            }
-                        }
-                    }
+
+                            output.add(path);
+
+                            return false;
+                        }, loc.getName());
 
                     break;
                 }
             }
         }
-        
+
         return output;
+    }
+
+    /**
+     * getPossiblePaths' search from one start: every route to every other station `ends` accepts, the alternatives
+     * too, each `clear` accepts handed to `take` until it answers true.
+     *
+     * @return whether `take` answered true
+     */
+    private boolean routesFrom(Point start, boolean goingHome, java.util.function.Predicate<Point> ends,
+        java.util.function.Predicate<List<Edge>> clear, java.util.function.Predicate<List<Edge>> take, String asking)
+    {
+        for (Point end : new ArrayList<>(this.points.values()))
+        {
+            if (end.equals(start) || !end.isDestination() || !ends.test(end)) continue;
+
+            try
+            {
+                List<Edge> path;
+                List<List<Edge>> seenPaths = new LinkedList<>();
+
+                // If the first shortest path is invalid, check all alternatives
+                do
+                {
+                    path = this.bfs(start, end, seenPaths, false, goingHome);
+
+                    if (path != null && clear.test(path) && take.test(path)) return true;
+
+                    // Get another path other than the one we just saw
+                    if (path != null) seenPaths.add(path);
+
+                } while (path != null);
+            }
+            catch (Exception e)
+            {
+                // Not silent, as in pickPath.
+                this.control.logf("autolayout.errorPathSelectionFailed", asking);
+                this.control.log(e);
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Whether the path search gives a route from `start`, to a station `ends` accepts, that `wanted` accepts: as
+     * getPossiblePaths would with nobody on the track and no list or length (FR-111).  Under the caller's monitor.
+     */
+    boolean anyStandingRoute(Point start, java.util.function.Predicate<Point> ends,
+        java.util.function.Predicate<List<Edge>> wanted)
+    {
+        // The train stands on its own square, so no copy of that is an end, as getPossiblePaths finds it occupied
+        return routesFrom(start, false, ends.and(end -> !end.isSamePlaceAs(start)), this::isClearByStandingRules,
+            wanted, placeNameOf(start));
     }
     
     /**

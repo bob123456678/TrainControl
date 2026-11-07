@@ -1,8 +1,10 @@
 package org.traincontrol.automation;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import org.traincontrol.automation.StandingRules.Answer;
 import org.traincontrol.automation.StandingRules.Cell;
@@ -11,14 +13,17 @@ import org.traincontrol.util.I18n;
 
 /**
  * The body of `Layout.standingRulesAt` (FR-111): which copies of a square the build emitted, read with the clauses the
- * real doors ask (`isSendableDestination`, `isChoosableByAutonomy`, `strandsATrainThatCannotReverse`, the start rules),
- * so it holds no rule of its own.  Occupancy, lengths and lists are left out.  Takes no lock: the caller holds the
- * railway's monitor.
+ * real doors ask (`isSendableDestination`, `autonomyMayEndAt`, `strandsATrainThatCannotReverse`, the start rules) and,
+ * for ways on and out, the path search (`anyStandingRoute`), so it holds no rule of its own.  Occupancy, lengths and
+ * lists are left out.  Takes no lock: the caller holds the railway's monitor.
  */
 final class LayoutStandingRules
 {
     private final Layout owner;
     private final LayoutExplanations explanations;
+
+    /** `mayEndAt`'s answers, for one question only. */
+    private final Map<Point, Boolean> endings = new HashMap<>();
 
     LayoutStandingRules(Layout owner, LayoutExplanations explanations)
     {
@@ -30,14 +35,13 @@ final class LayoutStandingRules
     {
         StandingRules rules = new StandingRules();
 
+        endings.clear();
+
         Set<String> arrivals = new LinkedHashSet<>();
 
         for (Point copy : copies)
         {
-            for (Edge in : incoming(copy))
-            {
-                arrivals.add(in.getEntrySide() == null ? StandingRules.NO_SIDE : in.getEntrySide());
-            }
+            for (Edge in : incoming(copy)) arrivals.add(sideOf(in));
         }
 
         // Nothing leads in: the three rows about arriving have no side, and each says so
@@ -73,9 +77,16 @@ final class LayoutStandingRules
 
         for (String side : exits) leaving(rules, copies, side);
 
+        // A way out the path search sends a train along
         for (Point copy : copies)
         {
-            for (Edge out : owner.getNeighbors(copy)) rules.wayOut(sideLeftBy(copy, out));
+            for (Edge out : owner.getNeighbors(copy))
+            {
+                if (owner.anyStandingRoute(copy, end -> true, path -> path.get(0) == out))
+                {
+                    rules.wayOut(sideLeftBy(copy, out));
+                }
+            }
         }
 
         return rules;
@@ -169,7 +180,7 @@ final class LayoutStandingRules
             {
                 here = cell(Answer.YES, hasAWayOut(stop) ? "autolayout.rules.mayEndHere" : "autolayout.rules.mayEndHereStuck");
             }
-            else if (hasAWayOut(stop))
+            else if (mayEndAt(stop))
             {
                 here = cell(Answer.SOME, "autolayout.rules.reversibleThatCanLeave");
             }
@@ -200,43 +211,115 @@ final class LayoutStandingRules
         return best;
     }
 
-    /** A train coming in by this side and carrying on out of another, which automatic and manual trips ask alike. */
+    /** A train coming in by this side and carrying on out of another, on a trip the path search gives. */
     private void passing(StandingRules rules, List<Point> landing, String side)
     {
-        Cell cell = null;
+        Cell auto = null;
+        Cell hand = null;
 
         for (Point copy : landing)
         {
-            Cell here;
+            Cell refused = null;
 
             if (!copy.isActive())
             {
-                here = closed();
+                refused = closed();
             }
             else if (copy.isTerminus() || copy.isReversing())
             {
-                here = cell(Answer.NO, "autolayout.rules.onlyTurnsHere");
+                refused = cell(Answer.NO, "autolayout.rules.onlyTurnsHere");
             }
             else if (!hasAWayOut(copy))
             {
-                here = cell(Answer.NO, "autolayout.rules.wayOnShut");
+                refused = cell(Answer.NO, "autolayout.rules.wayOnShut");
             }
             else if (copy.isStopOnly())
             {
-                here = cell(Answer.NO, "autolayout.rules.mustStop");
+                refused = cell(Answer.NO, "autolayout.rules.mustStop");
             }
-            else
+            else if (!sentOver(copy, side))
             {
-                here = cell(Answer.YES, copy.isDestination() || !owner.isABarredCopyOfAStation(copy)
-                    ? "autolayout.rules.runsThrough" : "autolayout.rules.runsThroughNoStop");
+                refused = cell(Answer.NO, "autolayout.rules.noTripThrough");
             }
 
-            cell = better(cell, here);
+            if (refused != null)
+            {
+                auto = better(auto, refused);
+                hand = better(hand, refused);
+
+                continue;
+            }
+
+            Cell yes = cell(Answer.YES, copy.isDestination() || !owner.isABarredCopyOfAStation(copy)
+                ? "autolayout.rules.runsThrough" : "autolayout.rules.runsThroughNoStop");
+
+            hand = better(hand, yes);
+            auto = better(auto, chosenOver(copy, side) ? yes : cell(Answer.NO, "autolayout.rules.noTripThroughAuto"));
         }
 
-        if (cell == null) cell = cell(Answer.NO, "autolayout.rules.wayOnShut");
+        if (hand == null)
+        {
+            hand = cell(Answer.NO, "autolayout.rules.wayOnShut");
+            auto = hand;
+        }
 
-        rules.put(Row.SENT_THROUGH, side, cell, cell);
+        rules.put(Row.SENT_THROUGH, side, auto, hand);
+    }
+
+    /**
+     * Whether a trip sent by hand runs over this copy, coming in by this side.  Asked from the track just behind it: a
+     * train may be sent from any square, and a longer trip over it passes there too.
+     */
+    private boolean sentOver(Point copy, String side)
+    {
+        for (Edge in : incoming(copy))
+        {
+            if (side.equals(sideOf(in))
+                && owner.anyStandingRoute(in.getStart(), end -> true, path -> runsOver(path, copy, side)))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /** Whether a trip autonomy may choose, from a square it starts trains from, runs over this copy coming in by this side. */
+    private boolean chosenOver(Point copy, String side)
+    {
+        for (Point start : new ArrayList<>(owner.getPoints()))
+        {
+            if (explanations.whyNoTrainIsStartedFrom(start) != null) continue;
+
+            if (owner.anyStandingRoute(start, this::mayEndAt,
+                path -> !owner.reversesAlongTheWay(path) && runsOver(path, copy, side)))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /** `Layout.autonomyMayEndAt` for any reversible train, asked once a question. */
+    private boolean mayEndAt(Point end)
+    {
+        return endings.computeIfAbsent(end, at -> owner.autonomyMayEndAt(at, null));
+    }
+
+    private static boolean runsOver(List<Edge> path, Point copy, String side)
+    {
+        for (int i = 0; i < path.size() - 1; i++)
+        {
+            if (path.get(i).getEnd() == copy && side.equals(sideOf(path.get(i)))) return true;
+        }
+
+        return false;
+    }
+
+    private static String sideOf(Edge in)
+    {
+        return in.getEntrySide() == null ? StandingRules.NO_SIDE : in.getEntrySide();
     }
 
     /** A train coming in by this side and going back out of it. */
@@ -278,12 +361,15 @@ final class LayoutStandingRules
             // A way of turning partway through a trip: refused to autonomy by `reversesAlongTheWay`, and a stop-only
             // station's arrivals-shut side would have to be run through to use it
             auto = cell(Answer.NO, turn.isStopOnly() ? "autolayout.rules.mustStop" : "autolayout.rules.noTurnPartway");
-            hand = turn.isStopOnly() ? auto : cell(Answer.YES, "autolayout.rules.mayTurnOnTheWay");
+            hand = turn.isStopOnly() ? auto
+                : sentOver(turn, side) ? cell(Answer.YES, "autolayout.rules.mayTurnOnTheWay")
+                : cell(Answer.NO, "autolayout.rules.noTripTurnsHere");
         }
         else
         {
-            auto = owner.isSendableDestination(terminus) ? cell(Answer.SOME, "autolayout.rules.reversibleThatCanLeave")
-                : cell(Answer.NO, "autolayout.rules.notChosen");
+            auto = !owner.isSendableDestination(terminus) ? cell(Answer.NO, "autolayout.rules.notChosen")
+                : mayEndAt(terminus) ? cell(Answer.SOME, "autolayout.rules.reversibleThatCanLeave")
+                : cell(Answer.NO, "autolayout.rules.couldNotLeave");
 
             hand = plain ? cell(Answer.SOME, "autolayout.rules.askedWhenSent")
                 : explanations.strandsATrainThatCannotReverse(terminus) ? cell(Answer.SOME, "autolayout.rules.reversibleOffered")
@@ -299,6 +385,8 @@ final class LayoutStandingRules
         Cell auto = null;
         Cell hand = null;
 
+        boolean leadsNowhere = false;
+
         for (Point copy : copies)
         {
             // A square's only copy has no facing of its own: it leaves by whatever way it has
@@ -306,7 +394,17 @@ final class LayoutStandingRules
 
             if (!hasAWayOut(copy)) continue;
 
+            if (!owner.anyStandingRoute(copy, end -> true, path -> true))
+            {
+                leadsNowhere = true;
+
+                continue;
+            }
+
+            // Autonomy's start question, as `explainCannotStart` asks it, but for the pause
             String refused = explanations.whyNoTrainIsStartedFrom(copy);
+
+            if (refused == null) refused = explanations.whyItReachesNoStation(copy);
 
             auto = better(auto, refused == null ? cell(Answer.YES, "autolayout.rules.mayStart")
                 : !copy.isActive() ? closed() : new Cell(Answer.NO, refused));
@@ -317,7 +415,7 @@ final class LayoutStandingRules
 
         if (auto == null)
         {
-            auto = cell(Answer.NO, "autolayout.rules.wayOutShut");
+            auto = cell(Answer.NO, leadsNowhere ? "autolayout.rules.leadsNowhere" : "autolayout.rules.wayOutShut");
             hand = auto;
         }
 
@@ -359,9 +457,7 @@ final class LayoutStandingRules
         {
             for (Edge in : incoming(copy))
             {
-                String entry = in.getEntrySide() == null ? StandingRules.NO_SIDE : in.getEntrySide();
-
-                if (entry.equals(side) && !out.contains(copy)) out.add(copy);
+                if (sideOf(in).equals(side) && !out.contains(copy)) out.add(copy);
             }
         }
 

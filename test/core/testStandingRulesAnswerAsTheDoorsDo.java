@@ -139,9 +139,14 @@ public class testStandingRulesAnswerAsTheDoorsDo
         };
     }
 
-    /** Autonomy would choose this ending: the clauses `pickPath` asks, through the question it asks them with. */
+    /**
+     * Autonomy would choose this ending: the clauses `pickPath` asks, through the question it asks them with, asked at the
+     * first route tested, when the train stands where it starts.
+     */
     private static Predicate<List<Edge>> chosenBy(Layout railway, Locomotive train)
     {
+        java.util.concurrent.atomic.AtomicReference<java.util.Set<String>> barred = new java.util.concurrent.atomic.AtomicReference<>();
+
         return path ->
         {
             Point end = path.get(path.size() - 1).getEnd();
@@ -153,7 +158,9 @@ public class testStandingRulesAnswerAsTheDoorsDo
                 if (e.getEnd().isReversing()) return false;
             }
 
-            return !railway.destinationsBarredFromAutonomy(train).contains(end.getName());
+            if (barred.get() == null) barred.set(railway.destinationsBarredFromAutonomy(train));
+
+            return !barred.get().contains(end.getName());
         };
     }
 
@@ -200,7 +207,7 @@ public class testStandingRulesAnswerAsTheDoorsDo
             Point from = railway.getPoint(trip[0]);
             Point to = railway.getPoint(trip[1]);
 
-            boolean overIt = reaches(railway, reversible, from, path ->
+            Predicate<List<Edge>> over = path ->
             {
                 if (path.get(path.size() - 1).getEnd() != to) return false;
 
@@ -210,12 +217,19 @@ public class testStandingRulesAnswerAsTheDoorsDo
                 }
 
                 return true;
-            });
+            };
+
+            boolean overIt = reaches(railway, reversible, from, over);
 
             assertEquals(rules.cells(Row.SENT_THROUGH, true).get(side).getAnswer() == Answer.YES, overIt,
                 say + ": Sent through from " + trip[0]);
-            assertEquals(rules.cells(Row.SENT_THROUGH, false).get(side).getAnswer(), rules.cells(Row.SENT_THROUGH, true).get(side).getAnswer(),
-                say + ": the merged row's two tiers differ");
+
+            // Autonomy's own trip, from a square it starts the train from
+            boolean chosen = reaches(railway, reversible, from, over.and(chosenBy(railway, reversible)))
+                && railway.explainCannotStart(reversible, false) == null;
+
+            assertEquals(rules.cells(Row.SENT_THROUGH, false).get(side).getAnswer() == Answer.YES, chosen,
+                say + ": Sent through by autonomy from " + trip[0]);
         }
     }
 
@@ -276,17 +290,9 @@ public class testStandingRulesAnswerAsTheDoorsDo
             return false;
         };
 
+        // A turn partway: the only way back here throws the switch the train came by, which one path cannot do, so no
+        // trip turns here and the cell says no
         boolean byHand = reaches(railway, reversible, from, turning.and(offeredTo(railway, reversible)));
-
-        // A turn partway: the only way back here throws the switch the train came by, which one path cannot do, so this
-        // fixture has no such trip to send; the cell answers for the square, whose copy is there and leads out
-        for (Edge in : railway.getEdges())
-        {
-            Point turn = in.getEnd();
-
-            byHand |= copies.contains(turn) && turn.isReversing() && turn.isActive() && !turn.isStopOnly()
-                && side.equals(in.getEntrySide()) && !railway.getNeighbors(turn).isEmpty();
-        }
 
         assertEquals(rules.cells(Row.TURNED_ROUND, true).get(side).getAnswer() != Answer.NO, byHand, say + ": Turned round by hand");
 
@@ -358,6 +364,171 @@ public class testStandingRulesAnswerAsTheDoorsDo
         }
 
         assertTrue(asked > 200, "too few combinations built to say anything: " + asked);
+    }
+
+    /**
+     * On the live snapshot, every cell of every square, by hand and automatically, says what the doors do with a
+     * reversible train and one that cannot reverse put on each point in turn: the routes `getPossiblePaths` gives, the
+     * ones offered, the ones autonomy would choose from a square it starts trains from, and where a train can be sent
+     * from.  Lists are left out of the matrix, so whitelists are set to All first.
+     *
+     * MUTATION: answer `passing`'s automatic cell with the manual one, as the merged row did, and this fails.
+     */
+    @Test(timeOut = 300000)
+    public void testEveryCellOnTheLiveSnapshotIsWhatThePathSearchGives() throws Exception
+    {
+        support.Scenario live = support.Scenario.open("live-snapshot");
+
+        try
+        {
+            AutonomySession setup = live.getSession();
+
+            for (TileKey square : setup.getStationIndex().squares())
+            {
+                if (setup.getWhichTrains(square) == AutonomySession.WhichTrains.WHITELIST)
+                {
+                    setup.setWhichTrains(square, AutonomySession.WhichTrains.ALL);
+                }
+            }
+
+            Locomotive[] trains = {live.newTrain("Live reversible", 2311), live.newTrain("Live one way", 2312)};
+
+            trains[1].setReversible(false);
+
+            Layout railway = live.build();
+
+            org.traincontrol.automationui.StationIndex index = setup.getStationIndex();
+
+            // Square and side, or a start's name, to "tier:train" for what the doors did there
+            Map<String, java.util.Set<String>> seen = new java.util.HashMap<>();
+
+            for (Point start : new ArrayList<>(railway.getPoints()))
+            {
+                for (Locomotive train : trains)
+                {
+                    String who = train.isReversible() ? ":both" : ":one";
+
+                    clearTrains(railway);
+
+                    start.setLocomotive(train);
+
+                    List<List<Edge>> paths = railway.getPossiblePaths(train, false);
+
+                    if (paths.isEmpty()) continue;
+
+                    Predicate<List<Edge>> offered = offeredTo(railway, train);
+                    Predicate<List<Edge>> chosen = chosenBy(railway, train);
+
+                    boolean starts = railway.explainCannotStart(train, false) == null;
+
+                    note(seen, "from " + start.getName(), "hand" + who);
+
+                    if (starts) note(seen, "from " + start.getName(), "auto" + who);
+
+                    for (List<Edge> path : paths)
+                    {
+                        Edge last = path.get(path.size() - 1);
+
+                        java.util.List<String> tiers = new ArrayList<>();
+
+                        if (offered.test(path)) tiers.add("hand" + who);
+                        if (starts && chosen.test(path)) tiers.add("auto" + who);
+
+                        for (String tier : tiers)
+                        {
+                            note(seen, Row.SENT_HERE + " " + index.squareOf(last.getEnd()) + " " + last.getEntrySide(), tier);
+
+                            if (last.getEnd().isTerminus() && !railway.getNeighbors(last.getEnd()).isEmpty())
+                            {
+                                note(seen, Row.TURNED_ROUND + " " + index.squareOf(last.getEnd()) + " " + last.getEntrySide(), tier);
+                            }
+
+                            for (Edge e : path.subList(0, path.size() - 1))
+                            {
+                                Row row = e.getEnd().isReversing() ? Row.TURNED_ROUND : Row.SENT_THROUGH;
+
+                                note(seen, row + " " + index.squareOf(e.getEnd()) + " " + e.getEntrySide(), tier);
+                            }
+                        }
+                    }
+                }
+            }
+
+            clearTrains(railway);
+
+            List<String> differ = new ArrayList<>();
+
+            int cells = 0;
+
+            for (TileKey square : index.squares())
+            {
+                List<String> copies = index.pointNamesAt(square);
+
+                StandingRules rules = railway.standingRulesAt(copies);
+
+                if (rules == null) continue;
+
+                for (boolean byHand : new boolean[] {true, false})
+                {
+                    String tier = byHand ? "hand" : "auto";
+
+                    for (Row row : Row.values())
+                    {
+                        for (Map.Entry<String, StandingRules.Cell> each : rules.cells(row, byHand).entrySet())
+                        {
+                            java.util.Set<String> did = new java.util.HashSet<>();
+
+                            if (row == Row.SENT_FROM)
+                            {
+                                for (String name : copies)
+                                {
+                                    Point copy = railway.getPoint(name);
+
+                                    if (copy != null && (copy.getCopyFacing() == null || copy.getCopyFacing().equals(each.getKey())))
+                                    {
+                                        did.addAll(seen.getOrDefault("from " + name, java.util.Collections.emptySet()));
+                                    }
+                                }
+                            }
+                            else
+                            {
+                                did.addAll(seen.getOrDefault(row + " " + square + " " + (each.getKey().isEmpty() ? null : each.getKey()),
+                                    java.util.Collections.emptySet()));
+                            }
+
+                            boolean any = did.contains(tier + ":both") || did.contains(tier + ":one");
+
+                            // Sent Here tells Yes from Some by the train that cannot reverse; the other rows say only whether
+                            Answer want = !any ? Answer.NO : row != Row.SENT_HERE ? null
+                                : did.contains(tier + ":one") ? Answer.YES : Answer.SOME;
+
+                            Answer got = each.getValue().getAnswer();
+
+                            if (want == null ? got == Answer.NO : got != want)
+                            {
+                                differ.add(square + " " + index.nameOf(square) + " " + row + " " + tier + " " + each.getKey()
+                                    + ": the matrix says " + got + " (" + each.getValue().getWhy() + "), the doors " + did);
+                            }
+
+                            cells++;
+                        }
+                    }
+                }
+            }
+
+            assertTrue(cells > 300, "precondition: only " + cells + " cells were compared");
+
+            assertTrue(differ.isEmpty(), differ.size() + " cells differ from the doors: " + differ);
+        }
+        finally
+        {
+            live.close();
+        }
+    }
+
+    private static void note(Map<String, java.util.Set<String>> seen, String what, String tier)
+    {
+        seen.computeIfAbsent(what, k -> new java.util.HashSet<>()).add(tier);
     }
 
     /**
