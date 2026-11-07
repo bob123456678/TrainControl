@@ -133,7 +133,7 @@ final class StationPicture extends JPanel
 
         heading.setLayout(new BoxLayout(heading, BoxLayout.X_AXIS));
         heading.setOpaque(false);
-        heading.add(UiStyle.label(I18n.t("autosetup.ui.stationPictureHeading")));
+        heading.add(UiStyle.heading(I18n.t("autosetup.ui.stationPictureHeading")));
         heading.add(Box.createHorizontalStrut(4));
 
         JLabel mark = InfoMark.label(I18n.t("autosetup.ui.stationPictureHelp"));

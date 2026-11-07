@@ -56,7 +56,7 @@ final class StationMatrixPanel extends JPanel
 
         heading.setLayout(new BoxLayout(heading, BoxLayout.X_AXIS));
         heading.setOpaque(false);
-        heading.add(UiStyle.label(I18n.t("autosetup.ui.stationMatrixHeading")));
+        heading.add(UiStyle.heading(I18n.t("autosetup.ui.stationMatrixHeading")));
         heading.add(javax.swing.Box.createHorizontalStrut(4));
         heading.add(mark(I18n.t("autosetup.ui.stationMatrixHelp")));
 
