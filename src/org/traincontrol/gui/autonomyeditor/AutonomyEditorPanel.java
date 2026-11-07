@@ -66,7 +66,10 @@ public class AutonomyEditorPanel extends JPanel
         /**
          * Close a run of track in one direction between two squares; it writes, so it asks which direction first.
          */
-        ONE_WAY
+        ONE_WAY,
+
+        /** Pick stations, and set them together in one Station Settings window (FR-052); a click picks or drops one. */
+        STATIONS
     }
 
     /** The setup being edited, package-private for the editor's helpers; writes go through the panel. */
@@ -380,6 +383,11 @@ public class AutonomyEditorPanel extends JPanel
 
     private javax.swing.JToggleButton whyButton;
 
+    private JToggleButton pickButton;
+
+    /** The stations Pick Stations has picked, in the order picked. */
+    private final Set<TileKey> stationPicks = new LinkedHashSet<>();
+
     /**
      * How the panel reaches the running layout, for the "why" test.
      *
@@ -640,6 +648,10 @@ public class AutonomyEditorPanel extends JPanel
         oneWayButton = toolButton(Tool.ONE_WAY, I18n.t("autosetup.ui.toolOneWay"));
         oneWayButton.setToolTipText(wrapped(I18n.t("autosetup.ui.tooltipOneWay")));
 
+        pickButton = toolButton(Tool.STATIONS, I18n.t("autosetup.ui.toolPickStations"));
+        pickButton.setName("autonomy.pickStations");
+        pickButton.setToolTipText(wrapped(I18n.t("autosetup.ui.tooltipPickStations")));
+
         nameAll = new JButton(I18n.t("autosetup.ui.btnNameEverything"));
         nameAll.addActionListener(e -> nameEverything());
         button(nameAll);
@@ -652,7 +664,7 @@ public class AutonomyEditorPanel extends JPanel
         excludePage.setFont(FONT_CONTROL);
         excludePage.addActionListener(e -> setPageExcluded(excludePage.isSelected()));
 
-        fillWidth(testButton, whyButton, oneWayButton, nameAll);
+        fillWidth(testButton, whyButton, oneWayButton, nameAll, pickButton);
 
         // Flush under the heading, with 1 px below it for the gap to the next row.
         JPanel first = row(testButton);
@@ -667,6 +679,8 @@ public class AutonomyEditorPanel extends JPanel
         panel.add(row(pathTypeLabel));
         panel.add(row(pathTypeAuto));
         panel.add(row(pathTypeManual));
+
+        panel.add(row(pickButton));
 
         // One-Way Run and Name Everything are in Bulk Tools (OB-217); the disarm path still un-presses One-Way Run
         // (MT-098).  Exclude Page is the window's to mount, under its mode buttons (`getExcludePage`).
@@ -899,6 +913,9 @@ public class AutonomyEditorPanel extends JPanel
         if (testButton != null) testButton.setSelected(false);
         if (whyButton != null) whyButton.setSelected(false);
         if (oneWayButton != null) oneWayButton.setSelected(false);
+        if (pickButton != null) pickButton.setSelected(false);
+
+        dropStationPicks();
 
         backToEditing();
 
@@ -933,6 +950,7 @@ public class AutonomyEditorPanel extends JPanel
             if (tool == Tool.NONE) backToEditing();
             else say(hint, tool == Tool.TEST ? I18n.t("autosetup.ui.promptTestStart")
                 : tool == Tool.WHY ? I18n.t("autosetup.ui.promptWhy")
+                : tool == Tool.STATIONS ? I18n.t("autosetup.ui.promptPickStations")
                 : I18n.t("autosetup.ui.promptOneWayFrom"));
 
             refresh();
@@ -964,6 +982,42 @@ public class AutonomyEditorPanel extends JPanel
 
         tailFor = null;
         tailPicks.clear();
+
+        dropStationPicks();
+    }
+
+    /** Whether Pick Stations is armed, whose own mark outlines what the window is about. */
+    boolean isPickingStations()
+    {
+        return tool == Tool.STATIONS;
+    }
+
+    /** Lets go of the picked stations, closing the window that was about them. */
+    private void dropStationPicks()
+    {
+        if (stationPicks.isEmpty()) return;
+
+        stationPicks.clear();
+
+        if (stationWindows.stationWindow() != null) stationWindows.stationWindow().closeWindow();
+    }
+
+    /** Picks a station to set with the others, or drops it (FR-052); Station Settings follows the picks. */
+    private void pickStation(TileKey tile)
+    {
+        if (!offersStationSettings(tile))
+        {
+            say(hint, I18n.t("autosetup.ui.infoNoStationSettings"));
+
+            return;
+        }
+
+        TileKey square = leaderOf(tile);
+
+        if (!stationPicks.remove(square)) stationPicks.add(square);
+
+        if (!stationPicks.isEmpty()) stationWindows.stations(new java.util.ArrayList<>(stationPicks));
+        else if (stationWindows.stationWindow() != null) stationWindows.stationWindow().closeWindow();
     }
 
     /**
@@ -992,14 +1046,14 @@ public class AutonomyEditorPanel extends JPanel
     }
 
     /**
-     * Whether a click on a drawn train is a click on its station: while Test a Path or Why Not Moving? waits for one
-     * (OB-354).
+     * Whether a click on a drawn train is a click on its station: while Test a Path, Why Not Moving? or Pick Stations
+     * waits for one (OB-354).
      * @return true where the train's square is the answer
      */
     public boolean takesATrainForItsStation()
     {
-        return (tool == Tool.TEST || tool == Tool.WHY) && tailFor == null && oneWayFrom == null && signalFor == null
-            && blockingFor == null;
+        return (tool == Tool.TEST || tool == Tool.WHY || tool == Tool.STATIONS) && tailFor == null && oneWayFrom == null
+            && signalFor == null && blockingFor == null;
     }
 
     /** Whether a tool is armed or a gesture half made: one definition for `putToolsDown` and `cancelPendingGesture`. */
@@ -4853,6 +4907,15 @@ public class AutonomyEditorPanel extends JPanel
             return;
         }
 
+        // Picking only reads, so a run does not stop it; the window opens read-only then
+        if (tool == Tool.STATIONS)
+        {
+            pickStation(tile);
+
+            refresh();
+            return;
+        }
+
         if (addToSelection)
         {
             if (!selection.remove(tile)) selection.add(tile);
@@ -5925,6 +5988,11 @@ public class AutonomyEditorPanel extends JPanel
      */
     private org.traincontrol.automationui.TileAnnotation.ToolMark toolMark(TileKey tile)
     {
+        if (tool == Tool.STATIONS)
+        {
+            return stationPicks.contains(tile) ? org.traincontrol.automationui.TileAnnotation.ToolMark.TOGETHER : null;
+        }
+
         if (tool == Tool.TEST)
         {
             // Both ends stay blue while their answer shows (OB-395)

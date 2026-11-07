@@ -577,7 +577,10 @@ public class TileAnnotation
         NOT_NOW,
 
         /** Autonomy will never choose this station for the train. */
-        NEVER
+        NEVER,
+
+        /** Picked to be set with others in Station Settings (FR-052), in a color no other mark uses. */
+        TOGETHER
     }
 
     /** Marks this square for a tool; carried through `isBlank`, `equals` and `hashCode` as `needsALength` is. */
@@ -617,17 +620,17 @@ public class TileAnnotation
 
     /**
      * The mark's border, over everything but a selection's: dashed where it cannot go now; where it can be clicked, a
-     * band in the selection's orange at the square's edge (OB-395), under a tested route's line.
+     * band in the selection's orange at the square's edge (OB-395), under a tested route's line; picked, a band too.
      */
     private void paintToolBorder(Graphics2D g, int width, int height)
     {
-        if (toolMark == ToolMark.CLICKABLE)
+        if (toolMark == ToolMark.CLICKABLE || toolMark == ToolMark.TOGETHER)
         {
             // Thicker than a selection's, a tenth of the square, so it reads at a glance across the diagram
             float thick = Math.max(3f, Math.min(width, height) / 10f);
 
             g.setStroke(new BasicStroke(thick));
-            g.setColor(SELECTED);
+            g.setColor(markColour());
             g.draw(new java.awt.geom.Rectangle2D.Float(thick / 2, thick / 2, width - thick, height - thick));
 
             return;
@@ -657,6 +660,9 @@ public class TileAnnotation
         g.drawRect(1, 1, width - 3, height - 3);
     }
 
+    /** TOGETHER's teal, which no other mark on the diagram uses. */
+    private static final Color MARK_TEAL = new Color(0, 140, 140);
+
     private Color markColour()
     {
         switch (toolMark)
@@ -665,6 +671,7 @@ public class TileAnnotation
             case PICKED: return MARK_BLUE;
             case CAN_GO: return MARK_GREEN;
             case NEVER: return TRACE_MANUAL;
+            case TOGETHER: return MARK_TEAL;
             default: return MARK_GRAY;
         }
     }

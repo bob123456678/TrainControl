@@ -179,7 +179,7 @@ abstract class StationWindowBase extends JDialog
     {
         if (tile == null) return;
 
-        if (!editor.stationWindows.stillAbout(tile))
+        if (!stillAbout())
         {
             goAway();
 
@@ -202,6 +202,12 @@ abstract class StationWindowBase extends JDialog
         if (getHeight() > 0 && getPreferredSize().height > getHeight()) pack();
     }
 
+    /** Whether what the window is about may keep it open (`StationWindows.stillAbout`). */
+    boolean stillAbout()
+    {
+        return editor.stationWindows.stillAbout(tile);
+    }
+
     /** Sets every control from the setup, and grays what may not be touched. */
     abstract void fill(boolean readOnly);
 
@@ -215,7 +221,7 @@ abstract class StationWindowBase extends JDialog
     {
         if (tile == null) return;
 
-        if (!editor.stationWindows.stillAbout(tile))
+        if (!stillAbout())
         {
             goAway();
 
