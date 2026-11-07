@@ -35,6 +35,17 @@ public final class UiStyle
         return l;
     }
 
+    /** A label in black, as the standard has it, for a window whose section headings alone are blue. */
+    public static JLabel blackLabel(String text)
+    {
+        JLabel l = new JLabel(text);
+
+        l.setFont(LABEL_FONT);
+        l.setForeground(Color.BLACK);
+
+        return l;
+    }
+
     /** Puts a label in the style. */
     public static void style(JLabel l)
     {

@@ -4337,6 +4337,12 @@ public class AutonomySession
         storeTrains(tile, which, getTrainList(tile));
     }
 
+    /** Chooses which trains this square lets in and its list, together. */
+    public void setWhichTrains(TileKey tile, WhichTrains which, java.util.Collection<String> names)
+    {
+        storeTrains(tile, which, names);
+    }
+
     private void storeTrains(TileKey tile, WhichTrains which, java.util.Collection<String> names)
     {
         org.json.JSONArray listed = names == null || names.isEmpty() ? null : new org.json.JSONArray(names);

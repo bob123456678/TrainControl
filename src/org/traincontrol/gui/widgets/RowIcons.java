@@ -225,6 +225,50 @@ public final class RowIcons
         };
     }
 
+    /** What a table of answers can say. */
+    public enum Answer
+    {
+        YES, SOME, NO
+    }
+
+    /**
+     * A tick for a yes, a ring with its left half filled for a "some", and a dash for a no.
+     *
+     * @param size how many pixels square
+     * @param answer which
+     * @param colour its color
+     * @return the icon
+     */
+    public static Icon answer(final int size, final Answer answer, final Color colour)
+    {
+        return new Painted(size)
+        {
+            @Override
+            void draw(Graphics2D g, int width, int height)
+            {
+                g.setColor(colour);
+                g.setStroke(new BasicStroke(answer == Answer.SOME ? 1.4f : 2f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+
+                if (answer == Answer.NO)
+                {
+                    g.drawLine(width / 5, height / 2, 4 * width / 5, height / 2);
+                }
+                else if (answer == Answer.SOME)
+                {
+                    int inset = width / 7;
+
+                    g.drawOval(inset, inset, width - 2 * inset, height - 2 * inset);
+                    g.fillArc(inset, inset, width - 2 * inset, height - 2 * inset, 90, 180);
+                }
+                else
+                {
+                    g.drawPolyline(new int[] {width / 7, 3 * width / 7, 6 * width / 7},
+                        new int[] {height / 2, 11 * height / 14, 3 * height / 14}, 3);
+                }
+            }
+        };
+    }
+
     /**
      * Two lines inside a rounded outline: put rows in a group of their own.
      *

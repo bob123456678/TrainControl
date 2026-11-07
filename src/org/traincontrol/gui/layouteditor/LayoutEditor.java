@@ -5147,6 +5147,21 @@ public class LayoutEditor extends PositionAwareJFrame
                 return;
             }
 
+            // Control+O opens Station Settings on the square under the pointer (FR-111), or, with the pointer off the
+            // diagram, on the finding chosen in the list (FR-072).
+            if (evt.isControlDown() && evt.getKeyCode() == KeyEvent.VK_O)
+            {
+                org.traincontrol.automationui.TileGraph.TileKey over = hoveredSquare();
+
+                if (autonomyPanel != null)
+                {
+                    if (over != null) autonomyPanel.openStationSettings(over);
+                    else autonomyPanel.openStationSettingsForTheFinding();
+                }
+
+                return;
+            }
+
             // Control+B, B for berth: the station's maximum train length (`regression.testNoTwoShortcutsShareAKey`
             // lists what is free).
             if (evt.isControlDown() && evt.getKeyCode() == KeyEvent.VK_B)
