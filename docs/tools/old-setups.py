@@ -12,7 +12,7 @@ Two things are printed as information and do not fail:
 
 - How many saved files equal the file as it came: a build may well tidy an old file, and the question is whether the two
   builds tidy it alike.
-- Each Return Home plan's moves (home-plans.txt).  NOT proved identical: HomeStaging's search has a wall clock budget that
+- Each Return Home plan's moves (home-plans.txt).  NOT proved identical (OB-413): HomeStaging's search has a wall clock budget that
   picks among plans, so one setup gives 4 moves or 8 run to run inside one JVM, in 3.0.8 as in later builds.
 """
 import difflib
@@ -130,7 +130,7 @@ def main():
     print("information: %d of %d of those saved files equal the file as it came, CRLF aside; the others: %s" %
           (matches_input, compared_to_input, how))
 
-    print("information, NOT proved identical: the moves of Return Home plans, as the planner's wall clock budget picks among "
+    print("information, NOT proved identical (OB-413): the moves of Return Home plans, as the planner's wall clock budget picks among "
           "plans within one build; the same moves on %d of %d setups" % (plans_same, plans_total))
     for line in plans_apart:
         print("  " + line)
