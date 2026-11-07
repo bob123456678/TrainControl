@@ -106,8 +106,9 @@ public class testParseWebServer
         
             server.stopServer();
         
-            // Test older versions
+            // An older firmware, on a new connection: the version is read once for a connection (FR-170)
             server.startServer(250);
+            parser = new CS2File("localhost:" + server.getPort(), null);
             assertEquals(false, parser.isCS3Version260OrAbove());
         
             db = parser.parseLocomotivesCS3();
