@@ -168,6 +168,9 @@ public class testRightClickMenuTipsCanBeHidden
         return tips;
     }
 
+    /** The items the last read found grayed: they keep their tips, which say why. */
+    private static final java.util.Set<String> grayed = new java.util.HashSet<>();
+
     private static void collect(Component[] items, Map<String, String> into)
     {
         for (Component each : items)
@@ -177,6 +180,8 @@ public class testRightClickMenuTipsCanBeHidden
             JMenuItem item = (JMenuItem) each;
 
             into.put(item.getText(), item.getToolTipText());
+
+            if (!item.isEnabled()) grayed.add(item.getText());
 
             if (item instanceof JMenu) collect(((JMenu) item).getMenuComponents(), into);
         }
@@ -267,6 +272,8 @@ public class testRightClickMenuTipsCanBeHidden
 
             Map<String, String> before = tipsOn(door);
 
+            java.util.Set<String> gray = new java.util.HashSet<>(grayed);
+
             hide(true);
 
             Map<String, String> after = tipsOn(door);
@@ -278,7 +285,7 @@ public class testRightClickMenuTipsCanBeHidden
 
             for (Map.Entry<String, String> item : before.entrySet())
             {
-                String expected = hotkeyOnly(item.getValue());
+                String expected = gray.contains(item.getKey()) ? item.getValue() : hotkeyOnly(item.getValue());
 
                 assertEquals(after.get(item.getKey()), expected, door + ": \"" + item.getKey() + "\" was \""
                     + item.getValue() + "\" and now shows the wrong thing");
@@ -307,6 +314,8 @@ public class testRightClickMenuTipsCanBeHidden
 
             Map<String, String> before = tipsOn(Door.EDITOR);
 
+            java.util.Set<String> gray = new java.util.HashSet<>(grayed);
+
             assertTrue(before.values().stream().anyMatch(t -> isHotkey(t)), "the editor menu has no hotkey tooltip: "
                 + before);
 
@@ -318,7 +327,8 @@ public class testRightClickMenuTipsCanBeHidden
 
             for (Map.Entry<String, String> item : before.entrySet())
             {
-                assertEquals(hidden.get(item.getKey()), hotkeyOnly(item.getValue()), "\"" + item.getKey()
+                assertEquals(hidden.get(item.getKey()),
+                    gray.contains(item.getKey()) ? item.getValue() : hotkeyOnly(item.getValue()), "\"" + item.getKey()
                     + "\" was \"" + item.getValue() + "\" and now shows the wrong thing");
             }
 
@@ -426,6 +436,139 @@ public class testRightClickMenuTipsCanBeHidden
         Mouse.closeMenus();
 
         assertEquals(button.getToolTipText(), buttonTip, "a button lost its tooltip");
+    }
+
+    /** A window with one button that opens a pop-up of three items, on a right-click or on a left-click as asked. */
+    private static javax.swing.JButton standIn(boolean onRightClick, javax.swing.JFrame[] frame) throws Exception
+    {
+        javax.swing.JButton button = new javax.swing.JButton("stand-in");
+
+        Components.onTheEventThread(() ->
+        {
+            JPopupMenu menu = new JPopupMenu();
+
+            JMenuItem sentence = new JMenuItem("Sentence");
+            sentence.setToolTipText("An explanation.");
+            menu.add(sentence);
+
+            JMenuItem grayed = new JMenuItem("Grayed");
+            grayed.setToolTipText("Close the editor first.");
+            grayed.setEnabled(false);
+            menu.add(grayed);
+
+            JMenuItem key = new JMenuItem("Keyed");
+            key.setToolTipText("Control+Q");
+            menu.add(key);
+
+            if (onRightClick)
+            {
+                button.addMouseListener(new java.awt.event.MouseAdapter()
+                {
+                    @Override
+                    public void mouseReleased(java.awt.event.MouseEvent e)
+                    {
+                        if (e.isPopupTrigger()) menu.show(button, e.getX(), e.getY());
+                    }
+                });
+            }
+            else button.addActionListener(e -> menu.show(button, 0, button.getHeight()));
+
+            frame[0] = new javax.swing.JFrame("stand-in");
+            frame[0].add(button);
+            frame[0].pack();
+            frame[0].setVisible(true);
+
+            return null;
+        });
+
+        Components.settle();
+
+        return button;
+    }
+
+    /**
+     * A grayed item keeps its tooltip, which says why it is grayed; an enabled item beside it loses its sentence and
+     * keeps its hotkey.
+     *
+     * MUTATION: strip grayed items too.
+     */
+    @Test
+    public void testAGrayedItemKeepsItsTip() throws Exception
+    {
+        javax.swing.JFrame[] frame = new javax.swing.JFrame[1];
+
+        try
+        {
+            hide(true);
+
+            JPopupMenu menu = Mouse.rightClick(standIn(true, frame), PATIENCE_MS);
+
+            assertNotNull(menu, "the right-click opened no menu");
+
+            Map<String, String> tips = Components.onTheEventThread(() ->
+            {
+                Map<String, String> read = new LinkedHashMap<>();
+
+                collect(menu.getComponents(), read);
+
+                return read;
+            });
+
+            assertEquals(tips.get("Grayed"), "Close the editor first.", "a grayed item lost its reason");
+            assertNull(tips.get("Sentence"), "an enabled item kept its sentence");
+            assertEquals(tips.get("Keyed"), "Control+Q", "a hotkey item does not show exactly its hotkey");
+        }
+        finally
+        {
+            Mouse.closeMenus();
+
+            if (frame[0] != null) SwingUtilities.invokeAndWait(frame[0]::dispose);
+        }
+    }
+
+    /**
+     * A pop-up opened by a left-click keeps every tooltip even with the setting on.
+     *
+     * MUTATION: treat every pop-up as a right-click menu.
+     */
+    @Test
+    public void testALeftClickPopupKeepsItsTips() throws Exception
+    {
+        javax.swing.JFrame[] frame = new javax.swing.JFrame[1];
+
+        try
+        {
+            hide(true);
+
+            javax.swing.JButton button = standIn(false, frame);
+
+            Mouse.enter(button);
+            Mouse.click(button);
+
+            assertTrue(Components.waitFor(() -> Components.popupShowing() != null, PATIENCE_MS),
+                "the left-click opened no pop-up");
+
+            JPopupMenu menu = Components.popupShowing();
+
+            Map<String, String> tips = Components.onTheEventThread(() ->
+            {
+                Map<String, String> read = new LinkedHashMap<>();
+
+                collect(menu.getComponents(), read);
+
+                return read;
+            });
+
+            assertEquals(tips.get("Sentence"), "An explanation.", "a left-click pop-up lost a tip");
+            assertEquals(tips.get("Grayed"), "Close the editor first.", "a left-click pop-up lost a tip");
+            assertEquals(tips.get("Keyed"), "Control+Q", "a left-click pop-up lost a tip");
+        }
+        finally
+        {
+            Mouse.closeMenus();
+
+            if (frame[0] != null) SwingUtilities.invokeAndWait(frame[0]::dispose);
+        }
     }
 
     private static Object field(String name) throws Exception

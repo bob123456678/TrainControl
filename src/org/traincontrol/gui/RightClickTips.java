@@ -10,8 +10,9 @@ import javax.swing.MenuElement;
 import javax.swing.MenuSelectionManager;
 
 /**
- * The "Hide Right-Click Menu Tips" setting (FR-168): when on, every item of a right-click menu loses its tooltip as the
- * menu opens, except an item with a hotkey, which keeps just the hotkey.  Done here for every pop-up menu rooted on a
+ * The "Hide Right-Click Menu Tips" setting (FR-168): when on, every enabled item of a right-click menu loses its tooltip
+ * as the menu opens, except an item with a hotkey, which keeps just the hotkey.  A menu is a right-click menu when the
+ * last mouse press was the right button; a left-click pop-up keeps its tips.  Done here for every pop-up menu rooted on a
  * component, so no menu builder knows of it; menu bar menus are untouched.
  */
 public final class RightClickTips
@@ -24,7 +25,14 @@ public final class RightClickTips
     private static final Pattern HOTKEY = Pattern.compile(
         "(?:(?:Control|Ctrl|Alt|Shift)[+-]\\S+|Delete)(?: / (?:(?:Control|Alt|Shift)[+-])?\\S+)*");
 
+    private static final String KIND = "RightClickTips.kind";
+
     private static boolean installed;
+
+    /** Whether the last mouse press or release was a right button, as when a menu is asked for. */
+    private static volatile boolean lastWasRight;
+
+    private static JPopupMenu lastRoot;
 
     private RightClickTips()
     {
@@ -56,6 +64,17 @@ public final class RightClickTips
         if (installed) return;
 
         installed = true;
+
+        java.awt.Toolkit.getDefaultToolkit().addAWTEventListener(event ->
+        {
+            java.awt.event.MouseEvent mouse = (java.awt.event.MouseEvent) event;
+
+            if (mouse.getID() == java.awt.event.MouseEvent.MOUSE_PRESSED
+                || mouse.getID() == java.awt.event.MouseEvent.MOUSE_RELEASED)
+            {
+                lastWasRight = mouse.isPopupTrigger() || mouse.getButton() == java.awt.event.MouseEvent.BUTTON3;
+            }
+        }, java.awt.AWTEvent.MOUSE_EVENT_MASK);
 
         MenuSelectionManager.defaultManager().addChangeListener(e -> apply());
     }
@@ -90,13 +109,28 @@ public final class RightClickTips
     {
         MenuElement[] path = MenuSelectionManager.defaultManager().getSelectedPath();
 
-        if (path.length == 0 || !(path[0] instanceof JPopupMenu)) return;
+        if (path.length == 0 || !(path[0] instanceof JPopupMenu))
+        {
+            if (path.length == 0 && lastRoot != null)
+            {
+                lastRoot.putClientProperty(KIND, null);
+
+                lastRoot = null;
+            }
+
+            return;
+        }
 
         JPopupMenu root = (JPopupMenu) path[0];
 
         if (root.getInvoker() instanceof JMenu) return;
 
-        apply(root.getComponents(), hidden());
+        // How it was asked for is settled when it opens: a click inside it must not change its kind.
+        if (root.getClientProperty(KIND) == null) root.putClientProperty(KIND, lastWasRight);
+
+        lastRoot = root;
+
+        apply(root.getComponents(), hidden() && Boolean.TRUE.equals(root.getClientProperty(KIND)));
     }
 
     private static void apply(Component[] items, boolean hide)
@@ -115,7 +149,8 @@ public final class RightClickTips
             String original = held instanceof Held && Objects.equals(now, ((Held) held).applied)
                 ? ((Held) held).original : now;
 
-            if (hide)
+            // A grayed item's tip says why, which is live information.
+            if (hide && item.isEnabled())
             {
                 String shown = hotkeyIn(original);
 
