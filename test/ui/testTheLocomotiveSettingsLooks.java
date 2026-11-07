@@ -83,22 +83,49 @@ public class testTheLocomotiveSettingsLooks extends support.SettingsClass
         }
     }
 
+    private static JLabel labelFor(String key)
+    {
+        String text = UiStyle.withoutColon(I18n.t(key));
+
+        return Components.find(SettingsWindow.showing().getContentPane(), JLabel.class, l -> text.equals(l.getText()));
+    }
+
     /**
-     * The window's field labels are in the owner's dark blue.
+     * Every item label and the Functions table's column headings are Semibold 13 in black ("blue for section
+     * headings, black for item text"), and nothing in this window is dark blue: it has no section headings.
      *
-     * MUTATION: build `LocomotiveSettingsFrame.label` as a plain JLabel and this fails.
+     * MUTATION: make `UiStyle.style` set `UiStyle.BLUE` again, or the Functions table header's foreground, and this
+     * fails.
      */
     @Test
-    public void testFieldLabelsAreDarkBlue() throws Exception
+    public void testItemLabelsAreBlackAndNothingIsBlue() throws Exception
     {
         opened();
 
-        JLabel name = Components.find(SettingsWindow.showing().getContentPane(), JLabel.class,
-            l -> I18n.t("ui.name").equals(l.getText()));
+        String[] keys = { "ui.name", "loc.ui.decoderType", "layout.ui.address", "loc.ui.settingsPresetSpeed",
+            "loc.ui.settingsPresetLabel", "loc.ui.settingsIconsLabel", "loc.ui.labelStartYear", "loc.ui.labelEndYear",
+            "loc.ui.labelRailwayName", "loc.ui.labelNotes", "loc.ui.filterList" };
 
-        assertNotNull(name, "no Name label");
-        assertEquals(name.getForeground(), UiStyle.BLUE);
-        assertEquals(name.getFont(), UiStyle.LABEL_FONT);
+        for (String key : keys)
+        {
+            JLabel l = labelFor(key);
+
+            assertNotNull(l, "no label for " + key);
+            assertEquals(l.getForeground(), UiStyle.TEXT, key + " is not black");
+            assertEquals(l.getFont(), UiStyle.LABEL_FONT, key + " is not Semibold 13");
+        }
+
+        javax.swing.table.JTableHeader header = SettingsWindow.part("functions.table", javax.swing.JTable.class)
+            .getTableHeader();
+
+        assertEquals(header.getForeground(), UiStyle.TEXT, "the column headings are not black");
+        assertEquals(header.getFont(), UiStyle.LABEL_FONT, "the column headings are not Semibold 13");
+
+        java.util.List<JLabel> blue = Components.all(SettingsWindow.showing().getContentPane(), JLabel.class,
+            l -> UiStyle.BLUE.equals(l.getForeground()));
+
+        assertTrue(blue.isEmpty(), "dark blue is for section headings and this window has none, yet: "
+            + (blue.isEmpty() ? "" : blue.get(0).getText()));
     }
 
     /**

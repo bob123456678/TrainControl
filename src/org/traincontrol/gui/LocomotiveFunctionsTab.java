@@ -139,7 +139,7 @@ final class LocomotiveFunctionsTab extends JPanel
         table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         table.getTableHeader().setReorderingAllowed(false);
         table.getTableHeader().setFont(org.traincontrol.gui.widgets.UiStyle.LABEL_FONT);
-        table.getTableHeader().setForeground(org.traincontrol.gui.widgets.UiStyle.BLUE);
+        table.getTableHeader().setForeground(org.traincontrol.gui.widgets.UiStyle.TEXT);
         table.getColumnModel().getColumn(1).setCellRenderer(iconRenderer);
         table.getColumnModel().getColumn(1).setCellEditor(iconEditor);
         table.getColumnModel().getColumn(TEST).setCellRenderer(new TestCell());
