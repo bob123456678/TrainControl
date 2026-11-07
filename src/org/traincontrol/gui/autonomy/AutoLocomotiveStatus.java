@@ -96,24 +96,14 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
         });
     }
 
-    /**
-     * The "there is a reason, hover me" mark: an image rather than a character, as U+24D8 has no glyph in the UI font
-     * on some machines (OB-063).  Loaded once; a null icon is harmless to setIcon.
-     */
-    private static final javax.swing.ImageIcon INFO_ICON = loadInfoIcon();
+    /** The "there is a reason, hover me" mark (OB-063), shared as {@link org.traincontrol.gui.InfoMark}. */
+    private static final javax.swing.ImageIcon INFO_ICON = org.traincontrol.gui.InfoMark.icon();
 
     /**
      * This tab's blue, for a card's station badge and its text: the darker blue the window's own labels are written in.
      * The track diagram's captions and badges keep their brighter blue, `StationCaption.PILL`.
      */
     static final Color TAB_BLUE = AutonomyViewerPanel.HEADING_COLOUR;
-
-    private static javax.swing.ImageIcon loadInfoIcon()
-    {
-        java.net.URL url = TrainControlUI.class.getResource("resources/info.gif");
-
-        return url == null ? null : new javax.swing.ImageIcon(url);
-    }
 
     /**
      * The " -" suffix marking a station full autonomy will never send this locomotive to.

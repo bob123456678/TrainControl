@@ -509,7 +509,7 @@ public final class RowIcons
     }
 
     /** An icon that paints itself, antialiased, on a graphics it is handed. */
-    private abstract static class Painted implements Icon
+    abstract static class Painted implements Icon
     {
         private final int size;
 

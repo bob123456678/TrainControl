@@ -146,8 +146,8 @@ public class testTheLocomotiveSettingsFunctions
         assertEquals(Components.onTheEventThread(() -> table.getValueAt(F, 2)), "2s");
         assertEquals(Components.onTheEventThread(() -> table.getValueAt(F + 1, 2)), I18n.t("function.ui.momentary"));
         assertEquals(Components.onTheEventThread(() -> table.getValueAt(0, 2)), I18n.t("function.ui.toggle"));
-        assertEquals(Components.onTheEventThread(() -> table.getValueAt(F + 2, 3)), I18n.t("loc.ui.settingsNowOn"));
-        assertEquals(Components.onTheEventThread(() -> table.getValueAt(F + 1, 3)), "");
+        assertEquals(Components.onTheEventThread(() -> table.getValueAt(F + 2, 3)), Boolean.TRUE);
+        assertEquals(Components.onTheEventThread(() -> table.getValueAt(F + 1, 3)), Boolean.FALSE);
         assertEquals(Components.onTheEventThread(() -> table.getValueAt(F + 3, 4)), Boolean.TRUE);
         assertEquals(Components.onTheEventThread(() -> table.getValueAt(F, 4)), Boolean.FALSE);
     }

@@ -59,6 +59,28 @@ public final class SettingsFixture
         return f;
     }
 
+    /**
+     * A fresh DCC locomotive on key A with the power off and its Settings window open on a tab: what a claim starts from.
+     */
+    public org.traincontrol.marklin.MarklinLocomotive layDcc(String name, int address,
+        org.traincontrol.gui.LocomotiveSettingsFrame.Tab tab) throws Exception
+    {
+        quiet();
+        forget(name);
+
+        SettingsWindow.power(ui, model, false);
+
+        org.traincontrol.marklin.MarklinLocomotive loc = model.newDCCLocomotive(name, address);
+
+        SettingsWindow.showOnKeyA(ui, loc);
+
+        if (!SettingsWindow.open(ui, loc, tab, null)) throw new AssertionError("the window did not open");
+
+        if (SettingsWindow.awaited() == null) throw new AssertionError("the window is not on screen");
+
+        return loc;
+    }
+
     /** Takes these locomotives out of the database, those that are there. */
     public void forget(String... names) throws Exception
     {
