@@ -3458,7 +3458,65 @@ public class testTheEditorNamesItsShortcuts
     }
 
     /**
-     * A station's right-click menu names Control+E, Control+S and Control+H on the items they do.
+     * Control+O opens Station Settings on the square under the pointer (FR-111), and with the pointer off the diagram and no
+     * finding chosen does nothing (FR-072's other half is `ui.testStationSettingsWindow`).
+     *
+     * MUTATION: drop the `over != null` branch from the key's handler in `LayoutEditor`, and this fails.
+     */
+    @Test
+    public void testControlOOpensTheSquareUnderThePointer() throws Exception
+    {
+        final TileKey station = aStationOnThePage();
+
+        final AutonomyEditorPanel panel = editor.getAutonomyPanel();
+
+        final java.lang.reflect.Method pressed = LayoutEditor.class.getDeclaredMethod("formKeyPressed", java.awt.event.KeyEvent.class);
+
+        pressed.setAccessible(true);
+
+        final Runnable controlO = () ->
+        {
+            try
+            {
+                pressed.invoke(editor, new java.awt.event.KeyEvent(editor, java.awt.event.KeyEvent.KEY_PRESSED,
+                    System.currentTimeMillis(), java.awt.event.InputEvent.CTRL_DOWN_MASK, java.awt.event.KeyEvent.VK_O, 'o'));
+            }
+            catch (ReflectiveOperationException e)
+            {
+                throw new IllegalStateException(e);
+            }
+        };
+
+        SwingUtilities.invokeAndWait(() -> { panel.closeStationWindows(); controlO.run(); });
+
+        SwingUtilities.invokeAndWait(() -> { });
+
+        assertNull(panel.stationSettingsWindow(), "with the pointer off the diagram and no finding, Control+O opened a window");
+
+        final org.traincontrol.gui.LayoutLabel square = gridOf(editor).getValueAt(station.getX(), station.getY());
+
+        // In one step: the real pointer moving moves the hover
+        SwingUtilities.invokeAndWait(() ->
+        {
+            editor.receiveMoveEvent(new java.awt.event.MouseEvent(square, java.awt.event.MouseEvent.MOUSE_MOVED,
+                System.currentTimeMillis(), 0, 1, 1, 0, false), square);
+
+            controlO.run();
+        });
+
+        // The handler runs in an invokeLater of its own
+        SwingUtilities.invokeAndWait(() -> { });
+
+        assertNotNull(panel.stationSettingsWindow(), "Control+O over a station opened no window");
+
+        assertEquals(panel.stationSettingsWindow().squareForTest(), station, "Control+O opened another square's window");
+
+        SwingUtilities.invokeAndWait(panel::closeStationWindows);
+    }
+
+    /**
+     * A station's right-click menu names Control+E and Control+O on the items they do, and its window Control+S and
+     * Control+H on the controls they do.
      */
     @Test
     public void testTheStationMenuNamesItsKeys() throws Exception
@@ -3485,31 +3543,24 @@ public class testTheEditorNamesItsShortcuts
             "Segment Length does not say Control+E. Adam, OB-214: \"Set Segment Length needs a tooltip"
             + " that says Control+E\"");
 
-        javax.swing.JMenuItem rename = byText(items, I18n.t("autosetup.ui.menuRename"));
+        javax.swing.JMenuItem settings = byText(items, I18n.t("autosetup.ui.menuStationSettings"));
 
-        assertNotNull(rename, "precondition: " + station + " offers no Rename item");
+        assertNotNull(settings, "precondition: " + station + " offers no Station Settings item");
 
-        assertEquals(rename.getToolTipText(), AutonomyEditorPanel.SHORTCUT_NAME,
-            "Rename does not say Control+S, the key that names the square under the pointer");
+        assertEquals(settings.getToolTipText(), AutonomyEditorPanel.SHORTCUT_SETTINGS,
+            "Station Settings does not say Control+O, the key that opens it");
 
-        boolean homeNamed = false;
+        org.traincontrol.gui.autonomyeditor.StationSettingsWindow window =
+            support.StationDoors.open(editor.getAutonomyPanel(), station);
 
-        String homeNone = I18n.t("autosetup.ui.menuHomeNone");
-        String homeFor = I18n.f("autosetup.ui.menuHomeFor", "\u0000").split("\u0000")[0];
+        assertEquals(support.StationDoors.part(window, "station.name", javax.swing.JTextField.class).getToolTipText(),
+            AutonomyEditorPanel.SHORTCUT_NAME, "the Name field does not say Control+S, the key that names the square under"
+            + " the pointer");
 
-        for (javax.swing.JMenuItem item : items)
-        {
-            String text = item.getText();
+        assertEquals(support.StationDoors.part(window, "station.home", javax.swing.JComboBox.class).getToolTipText(),
+            AutonomyEditorPanel.SHORTCUT_HOME, "the Home Locomotive list does not say Control+H");
 
-            if (text == null || !(text.equals(homeNone) || (!homeFor.isEmpty() && text.startsWith(homeFor))))
-            {
-                continue;
-            }
-
-            homeNamed |= AutonomyEditorPanel.SHORTCUT_HOME.equals(item.getToolTipText());
-        }
-
-        assertTrue(homeNamed, "the Home item on a station's menu does not say Control+H");
+        support.StationDoors.close(window);
 
         // AND CONTROL+N, on the item that shows a station's name on a square (FR-086, Adam on MT-397: "let's add a hotkey
         // for 'show station name here' too").  Its tooltip already says what a caption is, so the key is added to it.

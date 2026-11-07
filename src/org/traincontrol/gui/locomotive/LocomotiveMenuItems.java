@@ -21,35 +21,20 @@ final class LocomotiveMenuItems
     }
 
     /**
-     * Locomotive Settings..., which opens the window on its first tab.  On the key menu it is grayed, with the reason as
-     * its tooltip, while the locomotive is moving (FR-048); other doors say so when pressed.
+     * Locomotive Settings..., which opens the window on its first tab; a locomotive that cannot be edited opens locked.
      *
      * @param ui the main window
      * @param loc the locomotive
-     * @param grayWhenMoving whether to gray it while the locomotive is moving
      * @return the item
      */
-    static JMenuItem settings(TrainControlUI ui, Locomotive loc, boolean grayWhenMoving)
+    static JMenuItem settings(TrainControlUI ui, Locomotive loc)
     {
         JMenuItem item = new JMenuItem(I18n.t("loc.ui.menuLocomotiveSettings"));
 
         item.setName("menu.locomotiveSettings");
         item.addActionListener(event -> ui.openLocomotiveSettings(loc, LocomotiveSettingsFrame.Tab.LOCOMOTIVE, null));
-        if (grayWhenMoving) grayWhileMoving(ui, loc, item);
 
         return item;
-    }
-
-    /** The moving rule for a menu entry: grayed, and the tooltip says why. */
-    private static void grayWhileMoving(TrainControlUI ui, Locomotive loc, JMenuItem item)
-    {
-        String why = ui.whyNotEditable(loc);
-
-        if (why != null)
-        {
-            item.setEnabled(false);
-            item.setToolTipText(why);
-        }
     }
 
     static JMenuItem deleteFromDatabase(TrainControlUI ui, Locomotive loc, MouseEvent evt)
@@ -70,7 +55,7 @@ final class LocomotiveMenuItems
      * @param loc the locomotive
      * @return the item
      */
-    static JMenuItem multiUnit(TrainControlUI ui, Locomotive loc, boolean grayWhenMoving)
+    static JMenuItem multiUnit(TrainControlUI ui, Locomotive loc)
     {
         String text = loc.getDecoderType() == Locomotive.decoderType.MULTI_UNIT
             ? I18n.t("loc.ui.menuViewMultiUnitLocomotives")
@@ -80,7 +65,6 @@ final class LocomotiveMenuItems
 
         item.setName("menu.multiUnit");
         item.addActionListener(event -> ui.openLocomotiveSettings(loc, LocomotiveSettingsFrame.Tab.MULTI_UNIT, null));
-        if (grayWhenMoving) grayWhileMoving(ui, loc, item);
 
         return item;
     }

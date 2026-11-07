@@ -47,10 +47,9 @@ public class RightClickMenuListener extends PopupListener
 
             if (ui.buttonHasLocomotive(source))
             {
-                menuItem = LocomotiveMenuItems.settings(ui, ui.getButtonLocomotive(source), true);
+                menuItem = LocomotiveMenuItems.settings(ui, ui.getButtonLocomotive(source));
 
-                // Grayed while it cannot be edited, with the reason as its tooltip
-                if (menuItem.isEnabled()) menuItem.setToolTipText("Control+E");
+                menuItem.setToolTipText("Control+E");
 
                 add(menuItem);
             }
@@ -164,10 +163,9 @@ public class RightClickMenuListener extends PopupListener
                 addSeparator();
 
                 // Shared with the locomotive database's menu; the key belongs to this menu
-                menuItem = LocomotiveMenuItems.multiUnit(ui, ui.getButtonLocomotive(source), true);
+                menuItem = LocomotiveMenuItems.multiUnit(ui, ui.getButtonLocomotive(source));
 
-                // Grayed while moving, with the reason in the tooltip (FR-048)
-                if (menuItem.isEnabled()) menuItem.setToolTipText("Control+L");
+                menuItem.setToolTipText("Control+L");
 
                 add(menuItem);
 

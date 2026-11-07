@@ -19,6 +19,59 @@ final class EditorTileMenus
 {
     private final AutonomyEditorPanel editor;
 
+    /** A square's facing question: the train it is about, what is offered, what is ticked. */
+    static final class FacingFacts
+    {
+        final String standing;
+        final java.util.List<org.traincontrol.automationui.TilePorts.Side> facings;
+        final org.traincontrol.automationui.TilePorts.Side recorded;
+
+        FacingFacts(String standing, java.util.List<org.traincontrol.automationui.TilePorts.Side> facings,
+            org.traincontrol.automationui.TilePorts.Side recorded)
+        {
+            this.standing = standing;
+            this.facings = facings;
+            this.recorded = recorded;
+        }
+
+        /**
+         * Nothing ticked where no facing is known; a square holding one facing knows it, the only copy being where the
+         * train stands.
+         */
+        boolean isTicked(org.traincontrol.automationui.TilePorts.Side facing)
+        {
+            return recorded != null ? facing == recorded : facings.size() == 1;
+        }
+    }
+
+    /** A square's arrived-from question: the sides offered, the side recorded, one recorded the track has not. */
+    static final class ArrivedFacts
+    {
+        final java.util.List<String> sides;
+        final String recorded;
+        final String recordedButGone;
+
+        ArrivedFacts(java.util.List<String> sides, String recorded, String recordedButGone)
+        {
+            this.sides = sides;
+            this.recorded = recorded;
+            this.recordedButGone = recordedButGone;
+        }
+    }
+
+    /** A square's tail question: the roads offered, and the one recorded. */
+    static final class TailFacts
+    {
+        final java.util.List<TailCrossedPrompt.Choice> choices;
+        final TailCrossedPrompt.Choice ticked;
+
+        TailFacts(java.util.List<TailCrossedPrompt.Choice> choices, TailCrossedPrompt.Choice ticked)
+        {
+            this.choices = choices;
+            this.ticked = ticked;
+        }
+    }
+
     EditorTileMenus(AutonomyEditorPanel editor)
     {
         this.editor = editor;
@@ -98,327 +151,52 @@ final class EditorTileMenus
         editor.title(menu, isPoint ? editor.pointTitle(target) : component == null
             ? target.getX() + "," + target.getY() : component.getUserFriendlyTypeName());
 
-        // Built where the station settings are and added beside its other half further down.  Null when the square has
-        // only one way in, which is not a question worth asking.
-        javax.swing.JMenu arrivals = null;
-
-        // Everything a STATION can be tuned with, under one heading, and added LAST (OB-013).  Null on a square that is
-        // not a station: Segment Length stays loose on the menu, so plain track can set a length in one click.
-        javax.swing.JMenu advanced = null;
-
-        // Held and added at the foot of the menu - see where it is built
-        javax.swing.JMenuItem signalItem = null;
-
-        // And the entry guard's, beside it (FR-096)
-        javax.swing.JMenuItem entryItem = null;
-
         if (isPoint)
         {
-            // Locomotives first, as placing one is the commonest reason to open this menu.  PUTTING one down is only at
-            // a station (one can only be SENT to a station); TAKING one off is not, as a square under a train can stop
-            // being a station while the train stays recorded on it.  So that item follows the LOCOMOTIVE, as the
-            // diagram's menu does.
             final boolean isStation = editor.session.getStore().isStation(target);
             final String standing = editor.locomotiveAt(target);
 
-            // The locomotive's own settings (Place, Facing, Remove) are left out of the DEEP menu: the diagram's own
-            // menu carries them one level up (order, MT-053: put one here, edit what is here, take it away, its facing,
-            // its station).  "Add to autonomy" stays: the diagram's menu places the locomotive selected on the
-            // KEYBOARD, while this asks which.
-            if (isStation)
-            {
-                menu.add(editor.item(I18n.t("autosetup.ui.menuAddToAutonomy"),
-                    () -> editor.placeLocomotive(target)));
-            }
+            // Every setting of the square is in its window (FR-111), which a key opens too.
+            javax.swing.JMenuItem settings = settingsItem(target);
 
-            if (!editor.menuOnly) editor.addLocomotiveSettings(menu, target);
+            if (!editor.menuOnly) settings.setToolTipText(AutonomyEditorPanel.SHORTCUT_SETTINGS);
 
-            if (standing != null && !editor.menuOnly)
-            {
-                menu.add(editor.item(I18n.f("autosetup.ui.menuRemoveLocomotive", standing),
-                    () ->
-                    {
-                        editor.session.placeLocomotive(target, null);
-
-                        // The setup's new answer for this train is "nowhere", and it is an answer -
-                        // without naming it the rebuild puts the train straight back.
-                        editor.placementChanged(java.util.Collections.singletonList(standing));
-                    }));
-            }
-
-            // WHETHER IT RUNS (FR-117): an 'active' checkbox, shown where there is a locomotive at that station.  Read off
-            // the setup and written to the train and the setup together.  Not in the deep menu, whose train items are on
-            // the track diagram's own menu; and only at rest.
-            if (standing != null && !editor.menuOnly && (editor.parentWindow() == null || !editor.parentWindow().aRunHoldsTheSetup()))
-            {
-                menu.add(editor.toggle(I18n.f("autolayout.ui.menuLocomotiveActive", standing),
-                    "autolayout.ui.hintLocomotiveActive", !editor.session.getPausedLocomotives().contains(standing),
-                    on -> editor.setActive(standing, on)));
-            }
-
-            if (isStation)
-            {
-                // No "Move a Locomotive to This Station..." (OB-009): the edit dialog below also asks which locomotive, and
-                // does more.  The list "Add to Autonomy" offers is the whole roster, so it does what Move did.
-
-                // Which way round the train is standing: offered only where the answer could be more than one thing and
-                // only while a train is on it.  Left unanswered it takes the first facing, and once autonomy runs,
-                // where the train ends up says which way it was pointing.  Built by buildFacingMenu so the surfaces
-                // cannot drift (OB-039).
-                if (!editor.menuOnly)
-                {
-                    javax.swing.JMenu facingMenu = buildFacingMenu(target);
-
-                    // ONE MENU FOR BOTH ENDS OF THE TRAIN.  The tail question is inside that menu under its own heading, so
-                    // both surfaces get it: the viewer asks TrainControlUI for `buildFacingMenu` and for nothing else.
-                    if (facingMenu != null) menu.add(facingMenu);
-                }
-
-                // Last of the locomotive group (MT-104).  A home is a fact about a LOCOMOTIVE (which one belongs here), so it
-                // goes with the items about the train rather than the ones about the platform.
-                if (isStation)
-                {
-                    String home = editor.homeOf(target);
-
-                    javax.swing.JMenuItem homeItem = editor.item(home == null
-                        ? I18n.t("autosetup.ui.menuHomeNone") : I18n.f("autosetup.ui.menuHomeFor", home),
-                        () -> editor.promptHome(target));
-
-                    // THE KEY THAT DOES THIS WITHOUT THE MENU (OB-214).  See `SHORTCUT_HOME`.  Not on the track diagram's
-                    // menu, which borrows this one: the key works only in the editor.
-                    if (!editor.menuOnly) homeItem.setToolTipText(AutonomyEditorPanel.SHORTCUT_HOME);
-
-                    menu.add(homeItem);
-                }
-            }
-
-            if (standing != null || isStation) menu.addSeparator();
-
-            javax.swing.JMenuItem renameItem =
-                editor.item(I18n.t("autosetup.ui.menuRename"), () -> editor.promptName(target));
-
-            // And Control+S, the key that names the square under the pointer (OB-214), in the editor only: on the track
-            // diagram it swaps key mappings
-            if (!editor.menuOnly) renameItem.setToolTipText(AutonomyEditorPanel.SHORTCUT_NAME);
-
-            menu.add(renameItem);
+            menu.add(settings);
 
             menu.addSeparator();
 
-            // What trains may do at this square, as one three-way choice: stop, pass through, or neither.  Mutually
-            // exclusive by construction, so there is no combination to get wrong and nothing to gray out.
-            final boolean isOpen = !Boolean.FALSE.equals(editor.session.getPointProperty(target, "active"));
-
-            javax.swing.JMenu stationMenu = new javax.swing.JMenu(
-                I18n.f("autosetup.ui.menuStationGroup", editor.stationSummary(target, isStation)));
-
-            stationMenu.setToolTipText(AutonomyEditorPanel.wrapped(I18n.t("autosetup.ui.tooltipStationGroup")));
-
-            javax.swing.ButtonGroup group = new javax.swing.ButtonGroup();
-
-            // Headed: four answers under one menu, and the heading says what the four are about
-            editor.title(stationMenu, I18n.t("autosetup.ui.menuStationHeading"));
-
-            stationMenu.add(editor.radio(group, I18n.t("autosetup.ui.menuCanStop"),
-                "autolayout.ui.tooltip.Station", isOpen && isStation,
-                () -> editor.setUsage(target, true, true)));
-
-            stationMenu.add(editor.radio(group, I18n.t("autosetup.ui.menuCanTraverse"),
-                "autosetup.ui.hintCanTraverse", isOpen && !isStation,
-                () -> editor.setUsage(target, false, true)));
-
-            // Out of service.  What the square IS is left alone, so switching back returns it to what it was.
-            stationMenu.add(editor.radio(group, I18n.t("autosetup.ui.menuNeither"),
-                "autolayout.ui.tooltip.Active", !isOpen,
-                () -> editor.setUsage(target, isStation, false)));
-
-            stationMenu.addSeparator();
-
-            // Autonomy's own choosing, said directly.  Switched off, a route the user picks still reaches this station and
-            // Return Home still fills it; only full autonomy leaves it alone.
-            javax.swing.JCheckBoxMenuItem auto = editor.toggle(I18n.t("autosetup.ui.menuAutoDestination"),
-                "autosetup.ui.hintAutoDestination", editor.session.isAutoDestination(target),
-                on -> editor.session.setAutoDestination(target, on));
-
-            // Grayed rather than hidden, so the shape of the choice stays visible.  NOT grayed for an out-of-service square
-            // (Adam: *"Can Be Chosen in Full Autonomy - does not apply to returning home, of course.  these should be
-            // allowed."*): `active` is whether the railway may use the square, this is whether autonomy chooses it as a
-            // destination, and homing never consults it, which is what makes a parking berth work.  Still grayed on a square
-            // that is not a station: autonomy cannot choose somewhere trains do not stop.
-            auto.setEnabled(isStation);
-
-            stationMenu.add(auto);
-
-            // HOW LONG A TRAIN MAY BE TO STOP HERE (FR-046).  With the usage choices, because it answers the same
-            // question: what may stand at this platform.  Added only when the square IS a station.  The label carries the
-            // current value, as everything on this menu does.
-            if (isStation)
+            // PUTTING a train down is only at a station; TAKING one off is not, as a square can stop being one under it.
+            if (!editor.menuOnly)
             {
-                stationMenu.addSeparator();
+                javax.swing.JMenuItem train = trainItem(target);
 
-                int maxLength = editor.number(target, "maxTrainLength", 0);
+                if (train != null) menu.add(train);
 
-                javax.swing.JMenuItem maximum = editor.item(I18n.f("autolayout.ui.menuMaxTrainLength",
-                    maxLength == 0 ? I18n.t("autolayout.ui.any") : String.valueOf(maxLength)),
-                    () -> editor.promptNumber(target, "maxTrainLength",
-                        "autolayout.ui.promptEnterMaxTrainLength", 0));
+                editor.addLocomotiveSettings(menu, target);
 
-                // What the number means, and the key that sets it: the units are the operator's own, so "4" says nothing
-                // about carriages, centimeters or squares, and a reader cannot discover the shortcut by opening the dialog.
-                maximum.setToolTipText(AutonomyEditorPanel.wrapped(I18n.t("autosetup.ui.tooltipMaxTrainLength")
-                    + (editor.menuOnly ? "" : "  " + I18n.t("autosetup.ui.tooltipMaxTrainLengthKey"))));
-
-                stationMenu.add(maximum);
-            }
-
-
-            menu.add(stationMenu);
-
-            // Switching direction, on any square, independent of the above: a berth is usually both left alone by
-            // autonomy AND reversing in.  Three answers, as "may" and "must" are different railways: may leaves the
-            // plain copies so the path finder chooses, must leaves only the turning ones so every arrival turns.  On a
-            // dead end they are the same.
-            javax.swing.JMenu turning = new javax.swing.JMenu(
-                I18n.t("autosetup.ui.menuTurningGroup"));
-
-            javax.swing.ButtonGroup turns = new javax.swing.ButtonGroup();
-
-            boolean must = editor.session.isMustTurnAround(target);
-            boolean may = editor.session.isTurnAround(target) && !must;
-
-            editor.title(turning, I18n.t("autosetup.ui.menuTurningHeading"));
-
-            turning.add(editor.radio(turns, I18n.t("autosetup.ui.menuTurnNever"),
-                "autosetup.ui.hintTurnNever", !may && !must,
-                () -> editor.setTurning(target, false, false)));
-
-            turning.add(editor.radio(turns, I18n.t("autosetup.ui.menuTurnMay"),
-                "autosetup.ui.hintCanReverse", may,
-                () -> editor.setTurning(target, true, false)));
-
-            turning.add(editor.radio(turns, I18n.t("autosetup.ui.menuTurnMust"),
-                "autosetup.ui.hintTurnMust", must,
-                () -> editor.setTurning(target, true, true)));
-
-            menu.add(turning);
-
-            // Where trains may pull IN from, on the menu itself beside what the square IS.  Only where there is more than one way in:
-            // barring the only arrival side would leave a station no train could be sent to, which is a pass-through, the choice above.
-            final java.util.List<org.traincontrol.automationui.TilePorts.Side> ways =
-                editor.session.arrivalSides(target);
-
-            // Shown GRAYED where there is only one way in, rather than left out (MT-079): an absent menu and a menu with
-            // nothing to offer look identical from the outside, and a grayed one with a tooltip answers without being
-            // asked.
-            if (isStation && ways.size() == 1)
-            {
-                javax.swing.JMenu only = new javax.swing.JMenu(
-                    I18n.t("autosetup.ui.menuArrivalsGroup"));
-
-                only.setEnabled(false);
-
-                only.setToolTipText(AutonomyEditorPanel.wrapped(I18n.f("autosetup.ui.hintOneWayIn",
-                    I18n.t("autosetup.ui.side" + ways.get(0).name()))));
-
-                arrivals = only;
-            }
-            else if (isStation && ways.size() > 1)
-            {
-                arrivals = new javax.swing.JMenu(
-                    I18n.t("autosetup.ui.menuArrivalsGroup"));
-
-                arrivals.setToolTipText(AutonomyEditorPanel.wrapped(I18n.t("autosetup.ui.hintArrivals")));
-
-                editor.title(arrivals, I18n.t("autosetup.ui.menuArrivalsHeading"));
-
-                final java.util.Set<org.traincontrol.automationui.TilePorts.Side> barred =
-                    editor.session.getBarredArrivals(target);
-
-                for (final org.traincontrol.automationui.TilePorts.Side side : ways)
+                if (standing != null)
                 {
-                    javax.swing.JCheckBoxMenuItem allow = editor.toggle(
-                        I18n.f("autosetup.ui.menuArrivalFrom",
-                            I18n.t("autosetup.ui.side" + side.name())),
-                        "autosetup.ui.hintArrivals", !barred.contains(side),
-                        on -> editor.setArrivalAllowed(target, side, on));
-
-                    // The LAST way in cannot be shut here either: unticking them one at a time is the same as barring a
-                    // single-sided station.
-                    allow.setEnabled(barred.contains(side)
-                        || editor.session.arrivalsCanBeClosed(target, java.util.Collections.singleton(side)));
-
-                    arrivals.add(allow);
+                    menu.add(editor.item(I18n.f("autosetup.ui.menuRemoveLocomotive", standing),
+                        () -> editor.removeLocomotive(target)));
                 }
 
-                // Held rather than added here.  It is one half of a pair (which ends trains may come IN by, which ends they
-                // may go OUT by) and the two are added together, below.
+                // Whether it runs (FR-117): read off the train and written to it and the setup together; only at rest.
+                if (standing != null && (editor.parentWindow() == null || !editor.parentWindow().aRunHoldsTheSetup()))
+                {
+                    menu.add(editor.toggle(I18n.f("autolayout.ui.menuLocomotiveActive", standing),
+                        "autolayout.ui.hintLocomotiveActive",
+                        !editor.isPaused(standing, editor.session.getPausedLocomotives()),
+                        on -> editor.setActive(standing, on)));
+                }
+
+                // Which way round the train is standing, and where its tail lies (OB-039).
+                if (isStation)
+                {
+                    javax.swing.JMenu facingMenu = buildFacingMenu(target);
+
+                    if (facingMenu != null) menu.add(facingMenu);
+                }
             }
-
-            // The signal thrown to red while this platform is claimed, paired by hand: the nearest signal on the
-            // approach is not always the one that protects a platform, and a wrong guess throws a real signal.  Labeled
-            // with the signal's ADDRESS and outlined on the diagram while the item is acted on; left out of the deep
-            // menu, where pairing means clicking a diagram it is drawn over.
-            if (isStation && !editor.menuOnly)
-            {
-                java.util.List<TileKey> paired = editor.session.getProtectingSignals(target);
-
-                // Held, not added (MT-104): it goes at the foot of the menu, under the arrive/depart pair and beside
-                // Advanced Parameters, the last of the platform's own settings.
-                signalItem = editor.item(
-                    paired.isEmpty()
-                        ? I18n.t("autosetup.ui.menuPairSignal")
-                        : I18n.f(paired.size() == 1
-                            ? "autosetup.ui.menuPairedSignal" : "autosetup.ui.menuPairedSignals",
-                            editor.signalAddresses(paired)),
-                    () -> editor.pairProtectingSignal(target));
-
-                // WHAT THE GUARD DOES (OB-293), said as the runtime does it, `Layout.refreshProtectingSignal`.
-                signalItem.setToolTipText(AutonomyEditorPanel.wrapped(I18n.t("autosetup.ui.tooltipExitGuard")));
-
-                // THE ENTRY GUARD, the same dialog on the other list (FR-096), and labeled the same way.
-                java.util.List<TileKey> guarding = editor.session.getEntrySignals(target);
-
-                entryItem = editor.item(
-                    guarding.isEmpty()
-                        ? I18n.t("autosetup.ui.menuPairEntrySignal")
-                        : I18n.f(guarding.size() == 1
-                            ? "autosetup.ui.menuPairedEntrySignal" : "autosetup.ui.menuPairedEntrySignals",
-                            editor.signalAddresses(guarding)),
-                    () -> editor.pairGuardSignals(AutonomyEditorPanel.Guard.ENTRY, target));
-
-                // And this one's, as `Layout.throwEntryGuard` does it (OB-293).
-                entryItem.setToolTipText(AutonomyEditorPanel.wrapped(I18n.t("autosetup.ui.tooltipEntryGuard")));
-            }
-
-
-            // Everything a station can be TUNED with, under one heading: the settings a railway works without (station
-            // priority, speed multiplier, which locomotives are kept out or let in, and blockedByPoints, FR-001).  Every
-            // label carries its current value, as the graph window's did.
-            advanced = new javax.swing.JMenu(
-                I18n.t("autolayout.ui.menuEditAdvancedParameters"));
-
-            // Maximum Train Length is in the Station submenu (FR-046), not here: it is a fact about a platform and means nothing on a
-            // square that is not one, while Advanced is shown for squares that are not stations.
-            int priority = editor.number(target, "priority", 0);
-
-            advanced.add(editor.item(I18n.f("autolayout.ui.menuStationPriority",
-                priority == 0 ? I18n.t("autolayout.ui.default") : String.valueOf(priority)),
-                () -> editor.promptNumber(target, "priority",
-                    "autolayout.ui.promptEnterStationPriority", 0)));
-
-            advanced.add(editor.item(I18n.f("autolayout.ui.menuSpeedMultiplier", editor.percent(target)),
-                () -> editor.promptPercent(target)));
-
-            // named for its mode (FR-121): the locomotives kept out, or the only ones let in
-            advanced.add(editor.item(I18n.f(editor.allowsOnlyListed(target) ? "autolayout.ui.menuAllowedLocomotivesOnly"
-                : "autolayout.ui.menuExcludedLocomotives", editor.strings(target, "excludedLocs").size()),
-                () -> editor.promptLocomotives(target, "excludedLocs", editor.allLocomotives())));
-
-            // FR-001: like excluded locomotives, about PLACES rather than trains, and a restriction on what autonomy may
-            // choose.
-            advanced.add(editor.item(I18n.f("autolayout.ui.menuBlockedByPoints",
-                editor.session.getStore().getBlockingPoints(target).size()),
-                () -> editor.promptBlockingPoints(target)));
 
             menu.addSeparator();
         }
@@ -519,24 +297,9 @@ final class EditorTileMenus
         // while a one-way run waits for a second click, which is a mode, and a mode advertised from a menu that closes the
         // moment you pick it shows the user nothing.  It is a button beside Test and Why.
 
-        // The two halves of the same question, side by side: which ends trains may arrive by, and which they may leave
-        // by.
-        if (arrivals != null) menu.add(arrivals);
-
-        // Only when there is something under the heading.  Everything that fills this submenu sits inside
-        // canCarryDirection(target), false for any portal, so right-clicking a link or a tunnel would open a grayed
-        // heading and a separator (the state hasItemsBesidesTitle detects, OB-032).
-        if (editor.hasItemsBesidesTitle(connections)) menu.add(connections);
-
-        // Then a divider, the signal, and the drawer of numbers (MT-104).  Everything above is a decision about this
-        // square; what is left is the platform's protection and the settings that change how well those decisions work.
-        if (signalItem != null || advanced != null) menu.addSeparator();
-
-        if (signalItem != null) menu.add(signalItem);
-
-        if (entryItem != null) menu.add(entryItem);
-
-        if (advanced != null) menu.add(advanced);
+        // Only when there is something under the heading: everything here sits inside canCarryDirection(target), false for
+        // a portal, so a link or tunnel would get a grayed heading alone (OB-032).  A sensor's is in its window.
+        if (!isPoint && editor.hasItemsBesidesTitle(connections)) menu.add(connections);
 
         // A link's own settings, on the menu ITSELF rather than inside the departures submenu.  A link is a jump to
         // another page, not track with directions, and the three things anybody does to one (use it or not, pair it,
@@ -647,6 +410,31 @@ final class EditorTileMenus
         AutonomyEditorPanel.tidy(menu);
 
         return menu;
+    }
+
+    /** Station Settings..., for a square's menu on either surface. */
+    javax.swing.JMenuItem settingsItem(final TileKey target)
+    {
+        javax.swing.JMenuItem item = new javax.swing.JMenuItem(I18n.t("autosetup.ui.menuStationSettings"));
+
+        item.addActionListener(e -> editor.openStationSettings(target));
+
+        return item;
+    }
+
+    /** Train at Bramley..., or Place a Locomotive Here... on an empty station; null on an empty square of neither kind. */
+    javax.swing.JMenuItem trainItem(final TileKey target)
+    {
+        final String standing = trainStanding(target);
+
+        if (standing == null && !editor.session.getStore().isStation(target)) return null;
+
+        javax.swing.JMenuItem item = new javax.swing.JMenuItem(standing == null ? I18n.t("autosetup.ui.menuPlaceHere")
+            : I18n.f("autosetup.ui.menuTrainAt", editor.describeTile(target)));
+
+        item.addActionListener(e -> editor.openTrainWindow(target));
+
+        return item;
     }
 
     /**
@@ -762,15 +550,8 @@ final class EditorTileMenus
         return item;
     }
 
-    /**
-     * Where the tail of the train standing here lies - the "arrived from" side.  `TrainControlUI.buildAutonomyTileMenu`
-     * serves this panel's menu to the diagram, so one implementation reaches both (OB-039).  The sides offered are the
-     * ones the railway HAS.
-     *
-     * @param target the square
-     * @return the menu, or null when no train is standing here (a tail belongs to a train)
-     */
-    javax.swing.JMenu buildArrivedFromMenu(final TileKey target)
+    /** What the arrived-from question offers here, or null when no train stands here on the running railway. */
+    ArrivedFacts arrivedFacts(final TileKey target)
     {
         if (target == null || editor.locomotiveAt(target) == null) return null;
 
@@ -794,9 +575,7 @@ final class EditorTileMenus
         // `Layout.entrySideOf` is what both the arrival write and the tail walk consult, so offering it here stores a
         // value they can match.
         java.util.List<String> sides = new java.util.ArrayList<>(
-            // UNBARRED (OB-204): this menu records where a train CAME FROM, and a side nothing may
-            // arrive by is not one of those.  The "Trains May Arrive" menu above still offers every
-            // side, because its whole job is to open and close them.
+            // UNBARRED (OB-204): this records where a train CAME FROM, which a side nothing may arrive by is not.
             org.traincontrol.gui.autonomy.ArrivalSidePrompt.sidesOf(editor.session.unbarredArrivalSides(target)));
 
         final String recorded = editor.session.getArrivedFrom(target);
@@ -806,10 +585,27 @@ final class EditorTileMenus
         // square that has one.  Unlike the facing menu (OB-177) it is not added to the list, as such a side can never
         // match the geometry: it appears once, ticked, DISABLED.  "Not offered here" rather than "not on the track": a
         // split square has several copies' sides.
-        final String recordedButGone =
-            recorded != null && !sides.contains(recorded) ? recorded : null;
+        final String recordedButGone = recorded != null && !sides.contains(recorded) ? recorded : null;
 
         if (sides.isEmpty() && recordedButGone == null) return null;
+
+        return new ArrivedFacts(sides, recorded, recordedButGone);
+    }
+
+    /**
+     * Where the tail of the train standing here lies, the "arrived from" side; the diagram's menu carries this one too
+     * (OB-039).
+     * @return the menu, or null when no train is standing here
+     */
+    javax.swing.JMenu buildArrivedFromMenu(final TileKey target)
+    {
+        ArrivedFacts facts = arrivedFacts(target);
+
+        if (facts == null) return null;
+
+        final java.util.List<String> sides = facts.sides;
+        final String recorded = facts.recorded;
+        final String recordedButGone = facts.recordedButGone;
 
         javax.swing.JMenu menu = new javax.swing.JMenu(I18n.t("autosetup.ui.menuArrivedFrom"));
 
@@ -822,31 +618,7 @@ final class EditorTileMenus
             menu.add(editor.radio(group, org.traincontrol.gui.autonomy.ArrivalSidePrompt.labelFor(side),
                 "autosetup.ui.hintArrivedFrom",
                 side.equals(recorded),
-                () ->
-                {
-                    editor.session.setArrivedFrom(target, side);
-
-                    // A road back describes one side: the tail cannot lie along a road that leaves by another, so a
-                    // changed side forgets it, here and on the railway below.
-                    if (!side.equals(recorded)) editor.session.setArrivedAlong(target, null);
-
-                    // SAVED AND SHOWN, like every other door that writes a point property.
-                    editor.setupChanged();
-
-                    // THE RUNNING LAYOUT TOO, not only the setup: what blocks track is the Point, and a setting that
-                    // changes the diagram while the railway uses the old value is a defect.
-                    org.traincontrol.automation.Layout now =
-                        editor.runningLayout == null ? null : editor.runningLayout.get();
-
-                    if (now != null)
-                    {
-                        org.traincontrol.automation.Point on = editor.pointOnTheLayout(now, target);
-
-                        if (on != null) on.setArrivedFrom(side);
-
-                        if (on != null && !side.equals(recorded)) on.setArrivedAlong(null);
-                    }
-                }));
+                () -> setArrivedFrom(target, side)));
         }
 
         if (recordedButGone != null)
@@ -869,29 +641,65 @@ final class EditorTileMenus
         return menu;
     }
 
+    /** Records the side the train standing here came in by. */
+    void setArrivedFrom(TileKey target, String side)
+    {
+        final String recorded = editor.session.getArrivedFrom(target);
+
+        editor.session.setArrivedFrom(target, side);
+
+        // A road back describes one side: a changed side forgets it, here and on the railway below.
+        if (!side.equals(recorded)) editor.session.setArrivedAlong(target, null);
+
+        // SAVED AND SHOWN, like every other door that writes a point property.
+        editor.setupChanged();
+
+        // The running layout too: what blocks track is the Point, so a diagram changed over an old railway value is a defect.
+        org.traincontrol.automation.Layout now = editor.runningLayout == null ? null : editor.runningLayout.get();
+
+        if (now != null)
+        {
+            org.traincontrol.automation.Point on = editor.pointOnTheLayout(now, target);
+
+            if (on != null) on.setArrivedFrom(side);
+
+            if (on != null && !side.equals(recorded)) on.setArrivedAlong(null);
+        }
+    }
+
     /**
-     * The "{loc} Is Facing..." submenu for a square, or null unless a locomotive is standing there.  Handed out on its
-     * own so the track diagram's right-click menu can carry it.  Where no track leads out of the square the submenu is
-     * there and grayed, with the reason in its tooltip (OB-347).
-     *
-     * @param target the square
-     * @return the submenu, or null
+     * The train the railway has standing here, and only then the setup's: after a run the setup names the pre-run occupant
+     * (behaviour/editing-while-running.md 6a), so a click would turn neither.  `setFacingAndMove` turns the one named.
      */
-    javax.swing.JMenu buildFacingMenu(final TileKey target)
+    String trainStanding(final TileKey target)
     {
         if (target == null) return null;
 
         org.traincontrol.automation.Layout showing =
             editor.runningLayout == null ? null : editor.runningLayout.get();
 
-        // THE TRAIN THE RAILWAY HAS HERE, and only then the setup's: after a run the setup still names each square's
-        // pre-run occupant (behaviour/editing-while-running.md 6a), so it would name the setup's train and tick the
-        // railway's, and a click would turn neither.  `setFacingAndMove` turns the one named here.
         String onTheRailway = editor.session == null ? null : editor.session.trainOnTheRailway(target, showing);
 
-        final String standing = onTheRailway != null ? onTheRailway : editor.locomotiveAt(target);
+        return onTheRailway != null ? onTheRailway : editor.locomotiveAt(target);
+    }
+
+    /** The one door of a facing chosen by hand, from the menu or the train window. */
+    void chooseFacing(final TileKey target, final org.traincontrol.automationui.TilePorts.Side facing)
+    {
+        editor.session.setFacingAndMove(target, facing);
+
+        editor.setupChanged();
+    }
+
+    /** What the facing question offers here, or null unless a locomotive is standing there. */
+    FacingFacts facingFacts(final TileKey target)
+    {
+        final String standing = trainStanding(target);
 
         if (standing == null) return null;
+
+        org.traincontrol.automation.Layout showing =
+            editor.runningLayout == null ? null : editor.runningLayout.get();
 
         final java.util.List<org.traincontrol.automationui.TilePorts.Side> facings =
             new java.util.ArrayList<>(editor.session.facingChoices(target));
@@ -911,6 +719,24 @@ final class EditorTileMenus
         // that has one (`facingsThatCannotBeHeld` reports it).  It gets an entry rather than a silent correction: which
         // is wrong, the record or the track, is not this menu's to decide.  Not where no track leads out (OB-348).
         if (recorded != null && !facings.isEmpty() && !facings.contains(recorded)) facings.add(recorded);
+
+        return new FacingFacts(standing, facings, recorded);
+    }
+
+    /**
+     * The "{loc} Is Facing..." submenu, or null unless a locomotive stands here; the diagram's menu carries it too.  Grayed
+     * with its reason as tooltip where no track leads out (OB-347).
+     * @return the submenu, or null
+     */
+    javax.swing.JMenu buildFacingMenu(final TileKey target)
+    {
+        final FacingFacts facts = facingFacts(target);
+
+        if (facts == null) return null;
+
+        final String standing = facts.standing;
+
+        final java.util.List<org.traincontrol.automationui.TilePorts.Side> facings = facts.facings;
 
         // Shown even with one answer, so the menu explains itself instead of vanishing.  A facing has to be one the
         // BUILD can hold (`placementCopy`, else `startableCopy` quietly turns the train round).  Grayed, not hidden,
@@ -939,14 +765,11 @@ final class EditorTileMenus
         {
             facingMenu.add(editor.radio(facingGroup,
                 I18n.t("autosetup.ui.facing" + facing.name()), "autosetup.ui.hintFacing",
-                // NOTHING TICKED WHERE NOTHING IS KNOWN: with no facing recorded and none on the railway,
-                // the build stands the train on a copy it can start from, which need not be the first facing.  Where
-                // the square holds one facing, that one IS known - the only copy is where the train stands.
-                recorded != null ? facing == recorded : facings.size() == 1,
+                facts.isTicked(facing),
                 // The redraw is in radio() itself.  The railway too, not only the setup: `setFacingAndMove` stands the train
                 // on the copy that says the new direction, so the caption and the train cannot disagree until the next
                 // build.
-                () -> editor.session.setFacingAndMove(target, facing)));
+                () -> chooseFacing(target, facing)));
         }
 
         if (facings.size() == 1)
@@ -987,31 +810,41 @@ final class EditorTileMenus
         return facingMenu;
     }
 
-    /**
-     * The "farthest sensor the tail crossed" choices for the train standing here, where the answer matters: only when
-     * `TailCrossedPrompt.wouldAsk` says a junction behind the train has two roads back that put the tail on different
-     * track (MT-477).
-     */
-    private void appendTailCrossed(javax.swing.JMenu menu, final TileKey target)
+    /** The tail question here, or null where it does not matter (`TailCrossedPrompt.wouldAsk`). */
+    TailFacts tailFacts(final TileKey target)
     {
         org.traincontrol.automation.Layout running = editor.runningLayout == null ? null : editor.runningLayout.get();
 
-        if (running == null) return;
+        if (running == null) return null;
 
         org.traincontrol.automation.Point point = editor.pointOnTheLayout(running, target);
 
-        if (point == null || point.getCurrentLocomotive() == null) return;
+        if (point == null || point.getCurrentLocomotive() == null) return null;
 
         String side = point.getArrivedFrom() != null ? point.getArrivedFrom() : editor.session.getArrivedFrom(target);
 
         Integer length = point.getCurrentLocomotive().getTrainLength();
 
-        if (!TailCrossedPrompt.wouldAsk(running, point, side, length)) return;
+        if (!TailCrossedPrompt.wouldAsk(running, point, side, length)) return null;
 
         java.util.List<TailCrossedPrompt.Choice> choices =
             TailCrossedPrompt.choicesFor(running, point, side, length, editor.session::baseNameOf);
 
-        TailCrossedPrompt.Choice ticked = TailCrossedPrompt.recordedChoice(choices, point.getArrivedAlong());
+        return new TailFacts(choices, TailCrossedPrompt.recordedChoice(choices, point.getArrivedAlong()));
+    }
+
+    /**
+     * The "farthest sensor the tail crossed" choices, only where `TailCrossedPrompt.wouldAsk` finds two roads back (MT-477).
+     */
+    private void appendTailCrossed(javax.swing.JMenu menu, final TileKey target)
+    {
+        TailFacts facts = tailFacts(target);
+
+        if (facts == null) return;
+
+        java.util.List<TailCrossedPrompt.Choice> choices = facts.choices;
+
+        TailCrossedPrompt.Choice ticked = facts.ticked;
 
         menu.addSeparator();
         menu.add(heading(I18n.t("autosetup.ui.headingTailCrossed")));

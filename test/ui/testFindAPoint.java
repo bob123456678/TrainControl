@@ -237,13 +237,14 @@ public class testFindAPoint
     }
 
     /**
-     * Find a Point... is a Tools item in the autonomy editor, lit with its shortcut named, and in the Track Diagram
-     * editor it is grayed with the reason as its tooltip, and Control+F does nothing there.
+     * Find a Point... is a Tools item in the autonomy editor, shown with its shortcut named, and in the Track Diagram
+     * editor it is not shown at all (the Tools menu has no stray separator either), and Control+F does nothing there.
+     * Switching the open editor between the two modes shows and hides it again.
      *
-     * MUTATION: in `LayoutEditor.refreshFindPointItem`, `findPointItem.setEnabled(true)`; this fails.
+     * MUTATION: in `LayoutEditor.refreshFindPointItem`, `findPointItem.setVisible(true)`; this fails.
      */
     @Test
-    public void testTrackDiagramModeGraysItAndControlFDoesNothing() throws Exception
+    public void testTrackDiagramModeHidesItAndControlFDoesNothing() throws Exception
     {
         LayoutEditor editor = anAutonomyEditor(PAGE);
 
@@ -251,7 +252,7 @@ public class testFindAPoint
         {
             JMenuItem item = findItemOf(editor);
 
-            assertTrue(item.isEnabled(), "Find a Point... is grayed in the autonomy editor");
+            assertTrue(item.isEnabled() && item.isVisible(), "Find a Point... is not shown in the autonomy editor");
             assertTrue(item.getToolTipText().contains("Control+F"), "the tooltip does not name the key: "
                 + item.getToolTipText());
 
@@ -282,8 +283,8 @@ public class testFindAPoint
         {
             JMenuItem item = findItemOf(track);
 
-            assertFalse(item.isEnabled(), "Find a Point... is lit in the Track Diagram editor");
-            assertEquals(item.getToolTipText(), I18n.t("layout.ui.tooltipFindAPointTrackMode"), "the tooltip says why");
+            assertFalse(item.isVisible(), "Find a Point... is shown in the Track Diagram editor");
+            assertFalse(lastToolsItemIsASeparator(track), "the Tools menu ends in a separator");
 
             support.Keys.press(track, KeyEvent.VK_F, InputEvent.CTRL_DOWN_MASK);
 
@@ -471,6 +472,55 @@ public class testFindAPoint
         }, 1500);
 
         return seen[0];
+    }
+
+    /** Whether the last shown part of the Tools menu is a separator, which would hang under nothing. */
+    private static boolean lastToolsItemIsASeparator(LayoutEditor editor) throws Exception
+    {
+        return support.Components.onTheEventThread(() ->
+        {
+            java.awt.Component[] parts = editor.getJMenuBar().getMenu(0).getMenuComponents();
+
+            for (int i = parts.length - 1; i >= 0; i--)
+            {
+                if (parts[i].isVisible()) return parts[i] instanceof javax.swing.JSeparator;
+            }
+
+            return false;
+        });
+    }
+
+    /**
+     * Switching an open editor between the modes shows Find a Point... in autonomy mode and hides it in Track Diagram
+     * mode, with the Tools menu built once.
+     *
+     * MUTATION: leave `refreshFindPointItem` out of `setAutonomyMode` and this fails.
+     */
+    @Test
+    public void testSwitchingModesShowsAndHidesIt() throws Exception
+    {
+        LayoutEditor editor = anAutonomyEditor(PAGE);
+
+        try
+        {
+            JMenuItem item = findItemOf(editor);
+
+            support.Components.press(support.Components.withText(editor, I18n.t("layout.ui.sidebarTrack")));
+            support.Components.waitFor(() -> !editor.isAutonomyMode(), 15000);
+            support.Components.settle();
+
+            assertFalse(findItemOf(editor).isVisible(), "still shown after switching to Track Diagram mode");
+
+            support.Components.press(support.Components.withText(editor, I18n.t("layout.ui.sidebarAutonomy")));
+            support.Components.waitFor(() -> editor.isAutonomyMode(), 15000);
+            support.Components.settle();
+
+            assertTrue(findItemOf(editor).isVisible(), "not shown again after switching back");
+        }
+        finally
+        {
+            closeThem();
+        }
     }
 
     private static JMenuItem findItemOf(LayoutEditor editor) throws Exception

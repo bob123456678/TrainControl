@@ -142,14 +142,12 @@ public class testTheLocomotiveSettingsFunctions
 
         assertEquals((int) Components.onTheEventThread(table::getRowCount), loc.getNumF(), "the table lacks a function");
 
-        assertEquals(Components.onTheEventThread(() -> table.getValueAt(F, 1)), "F" + F);
+        assertEquals(Components.onTheEventThread(() -> table.getValueAt(F, 0)), "F" + F);
         assertEquals(Components.onTheEventThread(() -> table.getValueAt(F, 2)), "2s");
         assertEquals(Components.onTheEventThread(() -> table.getValueAt(F + 1, 2)), I18n.t("function.ui.momentary"));
         assertEquals(Components.onTheEventThread(() -> table.getValueAt(0, 2)), I18n.t("function.ui.toggle"));
-        assertEquals(Components.onTheEventThread(() -> table.getValueAt(F + 2, 3)), I18n.t("loc.ui.settingsNowOn"));
-        assertEquals(Components.onTheEventThread(() -> table.getValueAt(F + 1, 3)), "");
-        assertEquals(Components.onTheEventThread(() -> table.getValueAt(F + 3, 4)), Boolean.TRUE);
-        assertEquals(Components.onTheEventThread(() -> table.getValueAt(F, 4)), Boolean.FALSE);
+        assertEquals(Components.onTheEventThread(() -> table.getValueAt(F + 3, 3)), Boolean.TRUE);
+        assertEquals(Components.onTheEventThread(() -> table.getValueAt(F, 3)), Boolean.FALSE);
     }
 
     /**
@@ -188,6 +186,43 @@ public class testTheLocomotiveSettingsFunctions
         assertTrue(loc.isFunctionPulse(F), "Save did not make F" + F + " momentary");
         assertTrue(loc.isCustomFunctions(), "a changed function does not mark the locomotive customized");
         assertEquals(loc.getFunctionType(F + 1), loc.sanitizeFIconIndex(loc.getFunctionType(F + 1)), "another function changed");
+    }
+
+    /**
+     * Save is gray while nothing differs from what the locomotive holds, lit once a function's icon or behavior is
+     * changed, and gray again once it is put back: closing then asks nothing, and a change is never left unsavable
+     * (FR-098).
+     *
+     * MUTATION: leave `LocomotiveFunctionsTab.isDirty` answering true, or false, whatever the table shows, and this fails.
+     */
+    @Test
+    public void testSaveFollowsWhetherAFunctionChanged() throws Exception
+    {
+        int was = loc.getFunctionType(F);
+        int icon = (was + 7) % 100 + 1;
+
+        assertFalse(Components.onTheEventThread(SettingsWindow.save()::isEnabled),
+            "Save is lit on a function shown exactly as the locomotive holds it");
+
+        SettingsWindow.pickIcon(F, icon);
+
+        assertTrue(Components.onTheEventThread(SettingsWindow.save()::isEnabled),
+            "Save is gray with another icon chosen: closing would drop a change the operator cannot save");
+
+        SettingsWindow.pickIcon(F, was);
+
+        assertFalse(Components.onTheEventThread(SettingsWindow.save()::isEnabled),
+            "Save stays lit with the icon put back as it was");
+
+        SettingsWindow.pickBehavior(F, 1);
+
+        assertTrue(Components.onTheEventThread(SettingsWindow.save()::isEnabled),
+            "Save is gray with another behavior chosen");
+
+        SettingsWindow.pickBehavior(F, 0);
+
+        assertFalse(Components.onTheEventThread(SettingsWindow.save()::isEnabled),
+            "Save stays lit with the behavior put back as it was");
     }
 
     /**
@@ -254,16 +289,16 @@ public class testTheLocomotiveSettingsFunctions
 
         JTable table = table();
 
-        assertEquals(Components.onTheEventThread(() -> table.getValueAt(1, 4)), Boolean.TRUE);
-        assertEquals(Components.onTheEventThread(() -> table.getValueAt(F, 4)), Boolean.TRUE);
-        assertEquals(Components.onTheEventThread(() -> table.getValueAt(2, 4)), Boolean.FALSE, "a function that is off was ticked");
+        assertEquals(Components.onTheEventThread(() -> table.getValueAt(1, 3)), Boolean.TRUE);
+        assertEquals(Components.onTheEventThread(() -> table.getValueAt(F, 3)), Boolean.TRUE);
+        assertEquals(Components.onTheEventThread(() -> table.getValueAt(2, 3)), Boolean.FALSE, "a function that is off was ticked");
         assertFalse(saved(1), "Use Current Functions as Preset wrote before Save");
 
         tick(2);
 
         press("functions.clearPreset");
 
-        assertEquals(Components.onTheEventThread(() -> table.getValueAt(1, 4)), Boolean.FALSE, "Clear Preset left a tick");
+        assertEquals(Components.onTheEventThread(() -> table.getValueAt(1, 3)), Boolean.FALSE, "Clear Preset left a tick");
 
         tick(F);
 
@@ -396,7 +431,7 @@ public class testTheLocomotiveSettingsFunctions
 
         Mouse.choose(inPreset);
 
-        assertEquals(Components.onTheEventThread(() -> table.getValueAt(F, 4)), Boolean.TRUE, "In Preset did not tick the row");
+        assertEquals(Components.onTheEventThread(() -> table.getValueAt(F, 3)), Boolean.TRUE, "In Preset did not tick the row");
         assertFalse(saved(F), "In Preset wrote before Save");
 
         menu = rightClickRow(F);
@@ -638,7 +673,7 @@ public class testTheLocomotiveSettingsFunctions
 
     private static void tick(int row)
     {
-        JCheckBox box = SettingsWindow.inEditor(row, 4, null, JCheckBox.class);
+        JCheckBox box = SettingsWindow.inEditor(row, 3, null, JCheckBox.class);
 
         Components.onTheEventThread(() ->
         {

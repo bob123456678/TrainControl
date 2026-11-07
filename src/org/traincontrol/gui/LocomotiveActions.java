@@ -23,13 +23,12 @@ import org.traincontrol.base.Locomotive.decoderType;
 import org.traincontrol.base.Locomotive;
 import org.traincontrol.base.LocomotiveNotes;
 import org.traincontrol.base.Route;
-import org.traincontrol.gui.locomotive.LocomotiveAddressChange;
 import org.traincontrol.util.Conversion;
 import org.traincontrol.util.I18n;
 
 /**
  * The locomotive operations behind the locomotive buttons' menus and the keyboard's shortcuts: jumping to a
- * locomotive by name, renaming or re-addressing one, its notes, finding similar locomotives and mapping them to a
+ * locomotive by name, writing a locomotive's name and address, finding similar locomotives and mapping them to a
  * page, and deleting one from the database.
  *
  * Every field stays on `TrainControlUI`; the dialogs are owned by the clicked component or the window, as before.
@@ -64,56 +63,10 @@ final class LocomotiveActions
         });
     }
 
-    void changeLocAddress(Locomotive l, MouseEvent evt)
-    {
-        Component source = evt != null ? (Component) evt.getSource() : this.ui.dialogParent();
-
-        // The window, read now: the database's refresh takes the tile out of it, and an error after that was owned by
-        // Swing's hidden frame.
-        final java.awt.Window around = javax.swing.SwingUtilities.getWindowAncestor(source);
-
-        final Component sourceWindow = source instanceof java.awt.Window ? source : around != null ? around : this.ui;
-
-        if (this.ui.getModel().isAutonomyRunning())
-        {
-            JOptionPane.showMessageDialog(
-                source,
-                I18n.t("autolayout.ui.errorCannotEditLocomotivesWhileRunning")
-            );
-            return;
-        }
-
-        // AND NOT WHILE A ROUTE THAT DRIVES IT IS RUNNING.  This door renames as well as re-addresses, and
-        // both rewrite what a running route is reading.
-        if (this.ui.refuseWhileARouteDrivesIt(source, l == null ? null : l.getName())) return;
-
-        if (l != null)
-        {
-            LocomotiveAddressChange edit = new LocomotiveAddressChange(l);
-
-            int result = JOptionPane.showOptionDialog(
-                source,
-                edit,
-                I18n.f("loc.ui.dialogChangeNameOrAddress", l.getName()),
-                JOptionPane.OK_CANCEL_OPTION,
-                JOptionPane.PLAIN_MESSAGE,
-                null,
-                TrainControlUI.OK_CANCEL_OPTS,
-                TrainControlUI.OK_CANCEL_OPTS[0] // default selection
-            );
-
-            if (result == JOptionPane.OK_OPTION)
-            {
-                writeNameAndAddress(sourceWindow, l, edit.getLocName(), edit.getAddress(), edit.getDecoderType());
-            }
-        }
-    }
-
     /**
-     * Renames and re-addresses a locomotive, the one door both the Edit Name/Address/Decoder dialog and the Locomotive
-     * Settings window's Save go through.  The name is asked first (OB-301): a name refused returns before anything
-     * has changed, not after the new address went through.  A route that drives the locomotive is asked again here,
-     * before anything is written, because it can start while a dialog or window is open.
+     * Renames and re-addresses a locomotive: the one door the Locomotive Settings window's Save goes through.  The name is
+     * asked first (OB-301), so a refusal returns before anything has changed.  A route that drives the locomotive is asked
+     * again here, before anything is written, because it can start while a window is open.
      *
      * @param source what a refusal hangs off
      * @param newName the name wanted, or null to keep it
@@ -168,7 +121,17 @@ final class LocomotiveActions
 
             if (newAddress != null && !"".equals(newAddress.trim()))
             {
-                Integer proposedAddress = Conversion.parseTypedAddress(newAddress, newDecoderType == decoderType.MFX);
+                Integer proposedAddress;
+
+                try
+                {
+                    proposedAddress = Conversion.parseTypedAddress(newAddress, newDecoderType == decoderType.MFX);
+                }
+                catch (NumberFormatException notANumber)
+                {
+                    JOptionPane.showMessageDialog(source, I18n.t("loc.errorAddressNotNumeric"));
+                    return false;
+                }
 
                 if (proposedAddress != l.getAddress() || newDecoderType != l.getDecoderType())
                 {
@@ -249,7 +212,7 @@ final class LocomotiveActions
 
     /**
      * Makes {@code newLinkedLocos} the members of a multi-unit and tells everything that shows it: the one write the
-     * Set as Multi-Unit dialog and the Locomotive Settings window's Save both go through.
+     * Locomotive Settings window's Multi-Unit tab goes through on Save.
      *
      * @return true when it was written, false when a refusal stopped it
      */
@@ -487,51 +450,6 @@ final class LocomotiveActions
                 JOptionPane.ERROR_MESSAGE
             );
             this.ui.getModel().log(ex);
-        }
-    }
-
-    /**
-    * Allows the user to specify notes and metadata for the given locomotive
-    * @param l
-    * @param evt
-    */
-    void changeLocNotes(Locomotive l, MouseEvent evt)
-    {
-        Component source = evt != null ? (Component) evt.getSource() : this.ui.dialogParent();
-
-        if (l != null)
-        {
-            LocomotiveNotesPanel panel = new LocomotiveNotesPanel(l, 15, 80, null);
-
-            Typing.onShown(panel, panel::focusNotes);
-
-            int confirm = JOptionPane.showOptionDialog(
-                source,
-                panel,
-                I18n.f("loc.ui.dialogEditLocomotiveInfo", l.getName()),
-                JOptionPane.OK_CANCEL_OPTION,
-                JOptionPane.PLAIN_MESSAGE,
-                null,
-                TrainControlUI.OK_CANCEL_OPTS,
-                TrainControlUI.OK_CANCEL_OPTS[0] // default selection
-            );
-
-            if (confirm == JOptionPane.YES_OPTION)
-            {
-                try
-                {
-                    panel.apply(l);
-                }
-                catch (NumberFormatException ex)
-                {
-                    JOptionPane.showMessageDialog(
-                        source,
-                        I18n.t("loc.ui.errorStartEndYearMustBeIntegers"),
-                        I18n.t("ui.dialogInputError"),
-                        JOptionPane.ERROR_MESSAGE
-                    );
-                }
-            }
         }
     }
 

@@ -364,7 +364,7 @@ public class testMockCentralStation
 
     /**
      * A sync that gives a member of a standing multi-unit the address of another standing train takes that train off
-     * the graph, as the window's Change Name or Address does: the sync is the only door a Central Station multi-unit's
+     * the graph, as the Locomotive Settings window's Save does: the sync is the only door a Central Station multi-unit's
      * members come in by.  Here the served file's BR 85 006 Gl. is at address 5, the database has it at 70 in a consist
      * standing on one station, and another train at 5 stands on the other.
      *

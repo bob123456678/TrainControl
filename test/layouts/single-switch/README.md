@@ -74,3 +74,5 @@ It also produces something else the suite has never had by hand: **a split squar
 - `ui.testAPageWindowsSquaresAskOverIt`
 - `ui.testTheLocomotiveDoorsAskOverTheirWindow`
 - `ui.testATimetableEntryKeepsItsSquaresThroughRenames`
+- `core.testStandingRulesAnswerAsTheDoorsDo`
+- `ui.testPageLinksGoByPageId`

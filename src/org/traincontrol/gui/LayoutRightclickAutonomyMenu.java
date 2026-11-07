@@ -67,6 +67,8 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
         // the setup.
         if ((station != null || here != null) && (ui == null || !ui.isAutonomyLoaded())) return;
 
+        if (ui != null) ui.stationWindowsFollow(here != null ? here : station);
+
         // The railway is asked first, off the event thread (OB-192): `getPossiblePaths` is `synchronized` on the
         // `Layout`, and a dispatch holds that monitor across a `CONFIGURE_SLEEP` per accessory.  The square is resolved
         // here, on the event thread, as `getAutonomyPointForTile` goes through the LAZY `getAutonomySession()`; only
@@ -537,6 +539,19 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
                         add(menuItem);
                     }
 
+                    // The train's own window, or placing one by name on an empty station (FR-111)
+                    if (here != null)
+                    {
+                        JMenuItem trainWindow = ui.trainWindowItem(here);
+
+                        if (trainWindow != null)
+                        {
+                            trainOffered = true;
+
+                            add(trainWindow);
+                        }
+                    }
+
                     // Whether it runs (FR-117): an "active" checkbox, only at rest; while trains run the Auto tab's
                     // pause button says the same.
                     if (locomotive != null && !ui.aRunHoldsTheSetup())
@@ -583,18 +598,64 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
                 });    
 
                 add(menuItem);
+
+                addWhileRunning();
             }
         }
     }
 
     /**
-     * Everything the autonomy editor offers on this square, folded into this menu: borrowed from the panel that builds
-     * it, so the two never drift.  Under a parent entry, because it is a long menu and most right-clicks on a running
-     * layout are about sending a train.  Nothing while autonomy is running.
+     * Whether the train standing here runs, as its Auto tab card does (FR-059), and both windows, read-only.  Asks the
+     * Point what stands on it, which takes no monitor.
+     */
+    private void addWhileRunning()
+    {
+        Point current = ui.getAutonomyPointForTile(station != null ? station : here);
+
+        final Locomotive train = current == null ? null : current.getCurrentLocomotive();
+
+        if (train != null)
+        {
+            final javax.swing.JCheckBoxMenuItem active = new javax.swing.JCheckBoxMenuItem(
+                I18n.f("autolayout.ui.menuLocomotiveActive", train.getName()), !train.isAutonomyPaused());
+
+            active.setToolTipText(I18n.t("autolayout.ui.hintLocomotiveActive"));
+
+            active.addActionListener(event -> ui.pauseTrainWhileRunning(train, !active.isSelected()));
+
+            add(active);
+        }
+
+        JMenuItem trainWindow = train == null ? null : ui.trainWindowItem(here);
+        JMenuItem settings = ui.stationSettingsItem(here);
+
+        if (trainWindow != null || settings != null) addSeparator();
+
+        if (trainWindow != null) add(trainWindow);
+
+        if (settings != null) add(settings);
+    }
+
+    /** Whether the train window's item is on this menu already. */
+    private boolean trainOffered;
+
+    /**
+     * What the autonomy editor offers on this square, borrowed from the panel that builds it so the two never drift: on a
+     * sensor square its window and the rest, one level up (FR-111); elsewhere under a parent entry.  While a run holds the
+     * setup, only the window.
      */
     private void addSetupMenu()
     {
-        if (here == null || ui.aRunHoldsTheSetup()) return;
+        if (here == null) return;
+
+        if (ui.offersStationSettings(here))
+        {
+            addStationItems();
+
+            return;
+        }
+
+        if (ui.aRunHoldsTheSetup()) return;
 
         JPopupMenu built = ui.buildAutonomyTileMenu(here);
 
@@ -608,8 +669,62 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
             setup.add(part);
         }
 
-        // FR-026: the way out to the full editor, live exactly when pressing it would work and giving the window's own
-        // refusal reason when it is not.
+        setup.addSeparator();
+        setup.add(openFullEditorItem());
+
+        if (getComponentCount() > 0) addSeparator();
+
+        add(setup);
+    }
+
+    /** Station Settings... and what stays on a sensor square's menu at rest: Segment Length, the full editor, Bulk Tools. */
+    private void addStationItems()
+    {
+        if (getComponentCount() > 0) addSeparator();
+
+        if (!trainOffered && !ui.aRunHoldsTheSetup())
+        {
+            JMenuItem trainWindow = ui.trainWindowItem(here);
+
+            if (trainWindow != null) add(trainWindow);
+        }
+
+        if (ui.aRunHoldsTheSetup())
+        {
+            add(ui.stationSettingsItem(here));
+
+            return;
+        }
+
+        JPopupMenu built = ui.buildAutonomyTileMenu(here);
+
+        if (built == null) return;
+
+        java.awt.Component[] parts = built.getComponents();
+
+        // The panel's own heading first and Bulk Tools last, behind its divider; this menu has a heading of its own
+        for (int at = 0; at < parts.length - 2; at++)
+        {
+            if (parts[at] instanceof JMenuItem && !parts[at].isEnabled() && at == 0) continue;
+
+            if (parts[at] instanceof JPopupMenu.Separator && at <= 1) continue;
+
+            add(parts[at]);
+        }
+
+        add(openFullEditorItem());
+
+        addSeparator();
+
+        add(parts[parts.length - 1]);
+    }
+
+    /**
+     * FR-026: the way out to the full editor, live exactly when pressing it would work and giving the window's own
+     * refusal reason when it is not.
+     */
+    private JMenuItem openFullEditorItem()
+    {
         String refusal = ui.whyAutonomyEditorCannotOpen();
 
         JMenuItem openEditor = new JMenuItem(I18n.t("autosetup.ui.menuOpenFullEditor"));
@@ -626,12 +741,7 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
             openEditor.setToolTipText(I18n.t(refusal));
         }
 
-        setup.addSeparator();
-        setup.add(openEditor);
-
-        if (getComponentCount() > 0) addSeparator();
-
-        add(setup);
+        return openEditor;
     }
 
     /**

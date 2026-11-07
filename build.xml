@@ -314,7 +314,6 @@
         <test-one-class class="testATailPastASwitchIsAskedAbout"/>
         <test-one-class class="testTheTailIsPickedOnTheDiagram"/>
         <test-one-class class="testARouteDrivenLocomotiveIsNotEdited"/>
-        <test-one-class class="testApplyIsGreyedWithNothingToApply"/>
         <test-one-class class="testAThreeWayIsLitOnce"/>
         <test-one-class class="testReturnHomeKeepsClearOfTheTailsItLeaves"/>
         <test-one-class class="testATestedPathStaysOnItsRail"/>
@@ -674,6 +673,14 @@
         <test-one-class class="testTheLocomotiveSettingsMovingRule"/>
         <test-one-class class="testTheLocomotiveSettingsFunctions"/>
         <test-one-class class="testThePresetSpeedSurvivesTheSetupDoors"/>
+        <test-one-class class="testTheFunctionsTabSwitchesFunctionsNow"/>
+        <test-one-class class="testTheLocomotiveSettingsLooks"/>
+        <test-one-class class="testStandingRulesAnswerAsTheDoorsDo"/>
+        <test-one-class class="testStationSettingsWindow"/>
+        <test-one-class class="testTheTrainWindow"/>
+        <test-one-class class="testASyncBringsADeletedLocomotiveBack"/>
+        <test-one-class class="testPageLinksGoByPageId"/>
+        <test-one-class class="testALinkOnAStationGoesByPageId"/>
     </target>
     <target name="package-for-store" depends="jar">
         <property name="store.jar.name" value="TrainControl"/>

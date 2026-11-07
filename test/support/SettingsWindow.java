@@ -290,7 +290,7 @@ public final class SettingsWindow
     /** Picks a standard icon in a row's dropdown. */
     public static void pickIcon(int row, int icon)
     {
-        javax.swing.JComboBox<?> combo = inEditor(row, 0, "functions.iconCombo", javax.swing.JComboBox.class);
+        javax.swing.JComboBox<?> combo = inEditor(row, 1, "functions.iconCombo", javax.swing.JComboBox.class);
 
         Components.onTheEventThread(() ->
         {
@@ -320,7 +320,7 @@ public final class SettingsWindow
     /** Presses a row's wrench and picks this picture in the chooser it opens. */
     public static void pickAnImage(int row, java.io.File picture)
     {
-        javax.swing.JButton wrench = inEditor(row, 0, "functions.wrench", javax.swing.JButton.class);
+        javax.swing.JButton wrench = inEditor(row, 1, "functions.wrench", javax.swing.JButton.class);
 
         try (Answering answering = Answering.start(message -> null).choosing(picture))
         {
@@ -361,6 +361,47 @@ public final class SettingsWindow
 
             return answering.asked();
         }
+    }
+
+    /**
+     * What a window opened locked must show: the strip up with this sentence, typing kept, Save gray.  The window is
+     * closed again.
+     */
+    public static void assertLocked(String where, String strip)
+    {
+        javax.swing.JLabel up = part("settings.strip", javax.swing.JLabel.class);
+
+        if (!Components.onTheEventThread(up::isVisible)) throw new AssertionError(where + " opened without the strip");
+
+        if (!strip.equals(Components.onTheEventThread(up::getText))) throw new AssertionError(where + " has the wrong strip");
+
+        type("settings.name", "typed while locked");
+
+        if (!"typed while locked".equals(text("settings.name"))) throw new AssertionError(where + " did not keep the typing");
+
+        if (Components.onTheEventThread(save()::isEnabled)) throw new AssertionError("Save is lit in the window locked from " + where);
+
+        closeIfOpen();
+    }
+
+    /** Chooses Locomotive Settings in the locomotive database's menu for this locomotive, and lets it finish. */
+    public static void openFromTheTile(TrainControlUI ui, Locomotive loc) throws Exception
+    {
+        final javax.swing.JPopupMenu[] tile = new javax.swing.JPopupMenu[1];
+
+        javax.swing.SwingUtilities.invokeAndWait(
+            () -> tile[0] = new org.traincontrol.gui.locomotive.RightClickSelectorMenu(ui, null, loc));
+
+        AbstractButton settings = Components.withText(tile[0], I18n.t("loc.ui.menuLocomotiveSettings"));
+
+        Components.onTheEventThread(() ->
+        {
+            settings.doClick(0);
+
+            return null;
+        });
+
+        Components.settle();
     }
 
     /** The title the window should wear for a locomotive. */

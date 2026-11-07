@@ -42,7 +42,7 @@ public class RightClickSelectorMenu extends JPopupMenu
             add(menuItem);
         }
 
-        add(LocomotiveMenuItems.settings(ui, loc, false));
+        add(LocomotiveMenuItems.settings(ui, loc));
 
         addSeparator();
 

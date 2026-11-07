@@ -778,9 +778,11 @@ final class LayoutFileActions
 
                 int index = tile.getRawAddress();
 
-                if (index < 0 || index >= all.size()) continue;
+                // The page the link goes to by its ID; one with none is a place in the name-sorted list
+                String target = tile.getLinkPageName() != null ? tile.getLinkPageName()
+                    : index >= 0 && index < all.size() ? all.get(index) : null;
 
-                String target = all.get(index);
+                if (target == null) continue;
 
                 if (!out.contains(target)) out.add(target);
             }

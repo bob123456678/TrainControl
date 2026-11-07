@@ -2,11 +2,14 @@ package org.traincontrol.gui;
 
 import java.awt.BorderLayout;
 import java.awt.Color;
+import java.awt.Component;
+import java.awt.Container;
 import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.GridLayout;
+import java.awt.LayoutManager;
 import java.awt.event.MouseEvent;
 import javax.swing.AbstractButton;
 import javax.swing.BorderFactory;
@@ -83,7 +86,7 @@ public class AccessoryKeyboard extends JPanel
         this.setBackground(Color.WHITE);
         this.setFocusable(false);
 
-        JPanel tabRows = new JPanel(new GridLayout(2, PAGES / 2, GAP, GAP));
+        JPanel tabRows = new JPanel(new Columns(2, PAGES / 2, KEY_GAP, GAP));
         tabRows.setOpaque(false);
         tabRows.setFocusable(false);
 
@@ -106,7 +109,7 @@ public class AccessoryKeyboard extends JPanel
         this.tabs[0].setSelected(true);
         tabRows.setPreferredSize(new Dimension(width, 2 * TAB_HEIGHT + GAP));
 
-        JPanel grid = new JPanel(new GridLayout(ROWS, COLUMNS, KEY_GAP, KEY_GAP));
+        JPanel grid = new JPanel(new Columns(ROWS, COLUMNS, KEY_GAP, KEY_GAP));
         grid.setOpaque(false);
         grid.setFocusable(false);
 
@@ -277,6 +280,75 @@ public class AccessoryKeyboard extends JPanel
     public AbstractButton tab(int tabPage)
     {
         return this.tabs[tabPage - 1];
+    }
+
+    /**
+     * Rows laid out in 16ths of the full width, so every row shares its outer edges and a range button has the edges of
+     * the two key columns under it (FR-050); GridLayout would center each row's leftover pixels instead.
+     */
+    private static final class Columns implements LayoutManager
+    {
+        private final int rows;
+        private final int perRow;
+        private final int hgap;
+        private final int vgap;
+
+        Columns(int rows, int perRow, int hgap, int vgap)
+        {
+            this.rows = rows;
+            this.perRow = perRow;
+            this.hgap = hgap;
+            this.vgap = vgap;
+        }
+
+        /** The edge before cell {@code i} of {@code n} across {@code size} pixels. */
+        private static int edge(int i, int n, int size, int gap)
+        {
+            return Math.round(i * (size + gap) / (float) n);
+        }
+
+        @Override
+        public void layoutContainer(Container parent)
+        {
+            // Both rows measure columns in 16ths of the width, so a range button covers whole key columns
+            int width = parent.getWidth();
+            int height = parent.getHeight();
+            int span = COLUMNS / this.perRow;
+
+            for (int i = 0; i < parent.getComponentCount(); i++)
+            {
+                int row = i / this.perRow;
+                int first = (i % this.perRow) * span;
+                int left = edge(first, COLUMNS, width, this.hgap);
+                int right = edge(first + span, COLUMNS, width, this.hgap) - this.hgap;
+                int top = edge(row, this.rows, height, this.vgap);
+                int bottom = edge(row + 1, this.rows, height, this.vgap) - this.vgap;
+
+                parent.getComponent(i).setBounds(left, top, right - left, bottom - top);
+            }
+        }
+
+        @Override
+        public Dimension preferredLayoutSize(Container parent)
+        {
+            return new Dimension(0, 0);
+        }
+
+        @Override
+        public Dimension minimumLayoutSize(Container parent)
+        {
+            return new Dimension(0, 0);
+        }
+
+        @Override
+        public void addLayoutComponent(String name, Component comp)
+        {
+        }
+
+        @Override
+        public void removeLayoutComponent(Component comp)
+        {
+        }
     }
 
     /** One half of a key. */

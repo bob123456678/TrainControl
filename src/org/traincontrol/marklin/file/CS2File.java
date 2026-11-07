@@ -179,6 +179,27 @@ public final class CS2File
     {
         return getLayoutMasterURL(this.layoutDataLoc);
     }
+
+    /** Whether the layout is read from the Central Station itself, not from a folder of ours. */
+    public boolean isFromStation()
+    {
+        return getDefaultLayoutDataLoc().equals(this.layoutDataLoc);
+    }
+
+    /** @return the layout folder's path when it is one of ours, null for the station */
+    public String localLayoutFolder()
+    {
+        if (isFromStation()) return null;
+
+        try
+        {
+            return java.nio.file.Paths.get(new URL(this.layoutDataLoc.replaceAll(" ", "%20")).toURI()).toString();
+        }
+        catch (Exception notAFolder)
+        {
+            return null;
+        }
+    }
     
     public static String getLayoutMasterURL(String dataPath)
     {
@@ -1982,13 +2003,48 @@ public final class CS2File
             layoutsDir.mkdirs();
         }
         
-        for (String layoutName : parseLayoutList())
+        // A station's copy is read as a local layout, so it is given the station's page IDs as this build reads them,
+        // each arrow the ID it goes to there, and the mark that its arrows go by ID: they go where the station's do
+        final boolean fromStation = isFromStation();
+
+        List<Map<String, String>> index = parseLayoutIndex();
+
+        for (Map<String, String> page : index)
         {
+            String layoutName = page.get("name");
+
             // Sanitized, and matching what getLayoutURL will look for when this folder is read back.
             // The remote fetch above is unaffected: it goes through sanitizeURL on the http branch.
             File layoutFile = new File(layoutsDir, sanitizeFilename(layoutName) + ".cs2");
 
-            copyAtomically(getLayoutURL(layoutName), layoutFile);
+            if (!fromStation)
+            {
+                copyAtomically(getLayoutURL(layoutName), layoutFile);
+
+                continue;
+            }
+
+            try (BufferedReader reader = fetchURL(getLayoutURL(layoutName)))
+            {
+                StringBuilder text = new StringBuilder();
+
+                String line;
+
+                while ((line = reader.readLine()) != null) text.append(line).append('\n');
+
+                String withIds = org.traincontrol.base.LayoutDiagram.withLinkPageIds(text.toString(), keys ->
+                    LayoutDiagramComponent.stationLinkPageId(LayoutDiagramComponent.pageIdFromText(keys.get("zielseite")),
+                        artikelNumber(keys.get("artikel"))));
+
+                copyAtomically(new BufferedReader(new java.io.StringReader(withIds)), layoutFile);
+            }
+        }
+
+        if (fromStation)
+        {
+            giveTheCopyTheStationsPageIds(masterLayoutFile, index, localPath.getAbsolutePath());
+
+            org.traincontrol.base.LayoutDiagram.markLinksByPageId(localPath.getAbsolutePath());
         }
         
         // Download the accessory file      
@@ -2048,6 +2104,73 @@ public final class CS2File
         }
     }
 
+    /** An arrow's `.artikel` as `parseLayout` reads it: 0 when absent or not a number. */
+    private static int artikelNumber(String text)
+    {
+        try
+        {
+            return Integer.valueOf(text);
+        }
+        catch (NumberFormatException none)
+        {
+            return 0;
+        }
+    }
+
+    /**
+     * Rewrites the `.id` of each page in a downloaded index whose ID read as a local layout would differ from the
+     * station's: a station numbers pages that state none, and tells apart pages that share one, in memory only.
+     */
+    private static void giveTheCopyTheStationsPageIds(File copy, List<Map<String, String>> index, String folder)
+        throws Exception
+    {
+        Map<String, Integer> local = org.traincontrol.base.LayoutDiagram.readLayoutIndexIds(folder);
+
+        Map<String, String> wanted = new HashMap<>();
+
+        for (Map<String, String> page : index)
+        {
+            if (!page.get("id").equals(String.valueOf(local.get(page.get("name"))))) wanted.put(page.get("name"), page.get("id"));
+        }
+
+        if (wanted.isEmpty()) return;
+
+        List<String> lines = Files.readAllLines(copy.toPath(), StandardCharsets.UTF_8);
+
+        List<String> out = new ArrayList<>();
+
+        int start = 0;
+
+        while (start < lines.size())
+        {
+            int end = start + 1;
+
+            while (end < lines.size() && (lines.get(end).trim().isEmpty() || lines.get(end).trim().startsWith("."))) end++;
+
+            List<String> block = new ArrayList<>(lines.subList(start, end));
+
+            String name = null;
+
+            for (String line : block) if (line.trim().toLowerCase().startsWith(".name=")) name = line.trim().substring(6);
+
+            if ("seite".equalsIgnoreCase(block.get(0).trim()) && wanted.containsKey(name))
+            {
+                block.removeIf(line -> line.trim().toLowerCase().startsWith(".id="));
+
+                block.add(1, " .id=" + wanted.get(name));
+            }
+
+            out.addAll(block);
+
+            start = end;
+        }
+
+        org.traincontrol.util.Util.writeAtomically(copy, stream ->
+        {
+            for (String line : out) stream.write((line + System.lineSeparator()).getBytes(StandardCharsets.UTF_8));
+        });
+    }
+
     /**
      * Fetches a URL into a file, all of it or none of it: staged through a sibling file and moved into place, so a
      * transfer that stops part way leaves the previous file.  Written as UTF-8, matching fetchURL's decoder.
@@ -2104,11 +2227,17 @@ public final class CS2File
      */
     private List<Map<String, String>> parseLayoutIndex() throws Exception
     {
+        final boolean fromStation = isFromStation();
+
         List<Map<String, String> > l = parseFile(fetchURL(getLayoutMasterURL()));
 
         List<Map<String, String>> out = new ArrayList<>();
 
         int position = 0;
+
+        boolean statesAnId = false;
+
+        for (Map<String, String> m : l) if ("seite".equals(m.get("_type")) && m.get("id") != null) statesAnId = true;
 
         for (Map<String, String> m : l)
         {
@@ -2127,8 +2256,26 @@ public final class CS2File
                 page.put("id", String.valueOf(
                     org.traincontrol.base.LayoutDiagram.pageIdOrPosition(m.get("id"), position)));
 
+                // A station index that states no ID at all is numbered in file order from 0, so its first page is 0
+                // either way; otherwise an absent ID is 0 and the dedupe below separates any it shares
+                if (fromStation && !statesAnId) page.put("id", String.valueOf(position - 1));
+
                 out.add(page);
             }
+        }
+
+        // The station's own file cannot be written, so two pages sharing an ID are told apart here, in memory only, by
+        // the same rule every sync (name order breaks the tie)
+        if (fromStation)
+        {
+            Map<String, Integer> byName = new java.util.LinkedHashMap<>();
+
+            for (Map<String, String> page : out) byName.put(page.get("name"), Integer.valueOf(page.get("id")));
+
+            Map<String, Integer> deduped = org.traincontrol.base.LayoutDiagram.dedupeIds(byName,
+                new java.util.TreeMap<Integer, String>(), 0);
+
+            for (Map<String, String> page : out) page.put("id", String.valueOf(deduped.get(page.get("name"))));
         }
 
         return out;
@@ -2557,6 +2704,9 @@ public final class CS2File
                             if (added != null)
                             {
                                 added.setUnmodelledKeys(m);
+
+                                // The page a link goes to, when a 3.1.0 save wrote its ID
+                                added.setLinkPageIdFromFile(m.get("zielseite"));
 
                                 // And the file's own word for the type: the type mapping is many-to-one, so writing the
                                 // canonical word back would collapse every variant the file distinguished.

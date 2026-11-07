@@ -116,6 +116,9 @@ public class LayoutDiagramComponent
         this.unmodelledKeys = original.unmodelledKeys == null
             ? null : new TreeMap<>(original.unmodelledKeys);
 
+        this.linkPageId = original.linkPageId;
+        this.linkPageName = original.linkPageName;
+
         // What the tile is tied to: set when a page is read, by address, and not set again by the editor, so a copy
         // without them was a switch tied to no accessory.
         this.accessory = original.accessory;
@@ -587,7 +590,87 @@ public class LayoutDiagramComponent
      */
     public boolean linksNowhere()
     {
-        return this.isLink() && this.rawAddress < 0;
+        return this.isLink() && this.rawAddress < 0 && this.linkPageId == null;
+    }
+
+    /** The ID of the page a link goes to, or null (FR-175); the number beside it is for 3.0.8. */
+    private Integer linkPageId = null;
+
+    /** The name of the page that ID is, as the layout last resolved it; null when no page has it. */
+    private String linkPageName = null;
+
+    /** @return the page ID this link goes to, or null when it has none */
+    public Integer getLinkPageId()
+    {
+        return this.linkPageId;
+    }
+
+    /** @return the name of the page the link goes to, or null when no page has its ID or it has none */
+    public String getLinkPageName()
+    {
+        return this.linkPageName;
+    }
+
+    /** Whether this link goes by an ID that no page has any more. */
+    public boolean linksToAPageThatIsGone()
+    {
+        return this.isLink() && this.linkPageId != null && this.linkPageName == null;
+    }
+
+    /**
+     * Points a link at a page by ID.  `number` is the page's place in the name-sorted list, which 3.0.8 reads from
+     * `.artikel`, or -1 when no page has the ID.
+     *
+     * @param id the page's ID, or null for no page
+     * @param name the page's name, or null when no page has the ID
+     * @param number what is written to `.artikel` beside the ID
+     */
+    public void setLinkTarget(Integer id, String name, int number)
+    {
+        if (!this.isLink()) return;
+
+        this.linkPageId = id;
+        this.linkPageName = name;
+        this.rawAddress = number < 0 ? -1 : number;
+        this.address = this.rawAddress;
+    }
+
+    /** Sets the ID from what the file said (`.zielseite`), leaving it null for a key that is not a number. */
+    public void setLinkPageIdFromFile(String text)
+    {
+        if (!this.isLink() || text == null) return;
+
+        this.linkPageId = pageIdFromText(text);
+    }
+
+    /** @return the page ID a `.zielseite` value states, or null when it is absent or not a number */
+    public static Integer pageIdFromText(String text)
+    {
+        if (text == null) return null;
+
+        try
+        {
+            return Integer.valueOf(text.trim());
+        }
+        catch (NumberFormatException notANumber)
+        {
+            return null;
+        }
+    }
+
+    /**
+     * The page a link on a station's own layout goes to: the ID it carries, else its number, which on a station is a
+     * page ID; a negative number is no page.
+     *
+     * @param carried the ID the link carries, or null
+     * @param number its `.artikel`
+     * @return the page ID, or null for none
+     */
+    public static Integer stationLinkPageId(Integer carried, int number)
+    {
+        if (carried != null) return carried;
+
+        return number >= 0 ? Integer.valueOf(number) : null;
     }
     
     public Accessory getAccessory()
@@ -754,9 +837,12 @@ public class LayoutDiagramComponent
         {
             // The page it pointed at was deleted: say so, since an arrow that silently did nothing would read as
             // broken.
+            if (this.linksToAPageThatIsGone()) return I18n.t("layout.linkPageGone");
+
             if (this.linksNowhere()) return I18n.t("layout.linkPageNone");
 
-            return I18n.f("layout.linkPage", this.getRawAddress() + 1);
+            return I18n.f("layout.linkPage", this.linkPageName != null ? this.linkPageName
+                : String.valueOf(this.getRawAddress() + 1));
         }
         else
         {
@@ -851,7 +937,7 @@ public class LayoutDiagramComponent
      * The keys this class reads out of a CS2 element and can therefore write back on its own.
      */
     private static final List<String> MODELLED_KEYS = Arrays.asList(
-        "_type", "id", "typ", "drehung", "prot", "artikel", "zustand", "text");
+        "_type", "id", "typ", "drehung", "prot", "artikel", "zielseite", "zustand", "text");
 
     /**
      * Exports this component in the CS2 file format
@@ -925,6 +1011,12 @@ public class LayoutDiagramComponent
             builder.append(" .artikel=-1").append("\n");
         }
         
+        // The page a link goes to, by ID; `.artikel` above stays the number 3.0.8 reads, which keeps that version right
+        if (this.isLink() && this.linkPageId != null)
+        {
+            builder.append(" .zielseite=").append(this.linkPageId).append("\n");
+        }
+
         // Add state
         if (this.state > 0)
         {
@@ -1183,7 +1275,8 @@ public class LayoutDiagramComponent
         }
         else if (this.isLink())
         {
-            return this.rawAddress + 1;
+            // The page's ID, one up so that 0 can mean no page (an absent ID is 0)
+            return this.linkPageId == null ? 0 : this.linkPageId + 1;
         }
         else
         {

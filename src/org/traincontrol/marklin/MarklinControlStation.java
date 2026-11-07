@@ -799,6 +799,8 @@ public class MarklinControlStation implements ViewListener, ModelListener
         }
 
         this.layoutOrder = fileOrder;
+
+        attachLinks(parser);
         
         // Prune stale feedback, but only when the whole railway was read: a page that failed to load would take the
         // sensors seen only on it, and the autonomy points watching them, out of LocDB.data for good.
@@ -1948,7 +1950,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
                     if (other.hasLinkedLocomotives())
                     {
                         // ONE CALL: the two-call form stages on an instance field, and this loop runs off the event
-                        // thread while the multi-unit dialog can be staging on it.
+                        // thread while the Multi-Unit tab can be staging on it.
                         other.setLinkedLocomotives(other.getLinkedLocomotiveNames());
                     }
                 }
@@ -4203,6 +4205,151 @@ public class MarklinControlStation implements ViewListener, ModelListener
         l.addAll(held);
 
         return l;
+    }
+
+    // The page names the autonomy setup records under each ID, which decide who keeps an ID two pages share
+    private volatile Map<Integer, String> setupPageNames = new java.util.TreeMap<>();
+
+    /**
+     * Tells every link which page it goes to (FR-175).  On a station, and on a local layout marked as going by page
+     * ID, a link that carries an ID goes to the page with it.  Otherwise a local link's number is a place in the
+     * name-sorted list, and a station link's number is the page's ID.  An unmarked local layout is converted here,
+     * once: every arrow is given the ID of the page its number names, written into its file, and the layout is marked.
+     */
+    private void attachLinks(CS2File parser)
+    {
+        final boolean station = parser.isFromStation();
+
+        final String folder = station ? null : parser.localLayoutFolder();
+
+        final boolean byId = station || LayoutDiagram.linksGoByPageId(folder);
+
+        this.setupPageNames = station ? new java.util.TreeMap<Integer, String>()
+            : LayoutDiagram.readSetupPageNames(folder);
+
+        List<String> byName = getLayoutListByName();
+
+        for (String name : byName)
+        {
+            LayoutDiagram page = this.layoutDB.getByName(name);
+
+            if (page == null) continue;
+
+            for (LayoutDiagramComponent tile : page.getAll())
+            {
+                if (tile == null || !tile.isLink()) continue;
+
+                Integer id = byId ? tile.getLinkPageId() : null;
+
+                int raw = tile.getRawAddress();
+
+                if (station) id = LayoutDiagramComponent.stationLinkPageId(id, raw);
+                else if (id == null)
+                {
+                    // A number past the list is kept as it was, and goes to no page
+                    if (raw >= 0 && raw < byName.size()) aimLink(tile, byName.get(raw));
+                    else tile.setLinkTarget(null, null, raw);
+
+                    continue;
+                }
+
+                String target = id == null ? null : getPageNameForId(id);
+
+                int number = station ? raw : target != null ? byName.indexOf(target) : -1;
+
+                tile.setLinkTarget(id, target, number);
+            }
+        }
+
+        if (!byId && folder != null && new File(folder, "config/gleisbild.cs2").isFile()) convertLinksToPageIds(folder);
+    }
+
+    /**
+     * Writes each arrow's page ID, as just resolved, into its page's file and marks the layout, so that from now on the
+     * ID decides; every arrow goes where it went.  Not marked if a page could not be written, so the next open tries
+     * again with the old reading.
+     */
+    private void convertLinksToPageIds(String folder)
+    {
+        int arrows = 0;
+
+        try
+        {
+            for (String name : getLayoutListByName())
+            {
+                LayoutDiagram page = this.layoutDB.getByName(name);
+
+                if (page != null) arrows += page.writeLinkPageIdsIntoFile();
+            }
+
+            LayoutDiagram.markLinksByPageId(folder);
+
+            if (arrows > 0) this.logf("layout.linksConvertedToPageIds", arrows);
+        }
+        catch (Exception e)
+        {
+            this.log(e);
+        }
+    }
+
+    /**
+     * Aims a local link at a page by name, or at none.  A page whose ID another page shares is aimed at by its place
+     * in the name-sorted list alone, since the ID could name the other page.
+     *
+     * @param tile the link
+     * @param page the page's name, or null for none
+     */
+    @Override
+    public void aimLink(LayoutDiagramComponent tile, String page)
+    {
+        List<String> byName = getLayoutListByName();
+
+        if (page == null || !byName.contains(page))
+        {
+            tile.setLinkTarget(null, null, -1);
+
+            return;
+        }
+
+        int id = getPageIdOf(page);
+
+        int sharing = 0;
+
+        for (String name : byName) if (getPageIdOf(name) == id) sharing++;
+
+        tile.setLinkTarget(sharing == 1 ? Integer.valueOf(id) : null, page, byName.indexOf(page));
+    }
+
+    /**
+     * The name of the page that has this ID, or null.  Two pages that share an ID (a layout from before IDs were told
+     * apart) give it to the one the setup records under it, else the first by name.
+     */
+    @Override
+    public String getPageNameForId(int id)
+    {
+        String found = null;
+
+        for (String name : getLayoutListByName())
+        {
+            LayoutDiagram page = this.layoutDB.getByName(name);
+
+            if (page == null || page.getPageIdNumber() != id) continue;
+
+            if (name.equals(this.setupPageNames.get(id))) return name;
+
+            if (found == null) found = name;
+        }
+
+        return found;
+    }
+
+    /** @return the ID of the page with this name, or -1 when there is none */
+    @Override
+    public int getPageIdOf(String name)
+    {
+        LayoutDiagram page = this.layoutDB.getByName(name);
+
+        return page == null ? -1 : page.getPageIdNumber();
     }
 
     /**

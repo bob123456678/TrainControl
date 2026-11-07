@@ -54,3 +54,4 @@ answer and the build's answer are the same side, and everything passes.
 ## Used by
 
 - `core.testACurvedPlatformRecordsASideTheBuildUses`
+- `ui.testPageLinksGoByPageId`

@@ -22,3 +22,4 @@ is never refreshed.
 ## Used by
 
 - `core.testMassAssignLengths`
+- `ui.testPageLinksGoByPageId`

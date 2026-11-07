@@ -327,7 +327,7 @@ public class testWhereHisTrainsMayBeSent
 
         try
         {
-            // STEP 2: Advanced Parameters > Unavailable While Occupied, TunnelLeftPark ticked, OK; the editor closed
+            // STEP 2: Advanced > Unavailable While, TunnelLeftPark ticked, OK; the editor closed
             // saving it.
             watch(pre, leftPark);
 
@@ -859,17 +859,10 @@ public class testWhereHisTrainsMayBeSent
     {
         final AutonomyEditorPanel panel = new AutonomyEditorPanel(session, square.getPage(), () -> { });
 
-        String pattern = I18n.t("autolayout.ui.menuBlockedByPoints");
+        org.traincontrol.gui.autonomyeditor.StationSettingsWindow settings = support.StationDoors.open(panel, square);
 
-        final String prefix = pattern.substring(0, pattern.indexOf('(')).trim();
-
-        final javax.swing.JMenuItem[] item = new javax.swing.JMenuItem[1];
-
-        SwingUtilities.invokeAndWait(() -> item[0] = itemStarting(panel.buildTileMenu(square, null), prefix));
-
-        assertNotNull(item[0], "the right-click menu on " + name(square) + " has no Unavailable While Occupied item");
-
-        SwingUtilities.invokeLater(item[0]::doClick);
+        support.Components.press(support.StationDoors.part(settings, "station.unavailableChoose",
+            javax.swing.AbstractButton.class));
 
         String title = I18n.t("autosetup.ui.menuBlockedByPointsTitle");
 
@@ -899,6 +892,8 @@ public class testWhereHisTrainsMayBeSent
         awaitNoDialogTitled(title);
 
         pump();
+
+        support.StationDoors.close(settings);
 
         // CLOSED SAVING THE CHANGE: the running railway rebuilt from the setup.
         SwingUtilities.invokeAndWait(() -> ui.rebuildRunningLayoutFromSetup());

@@ -1079,6 +1079,123 @@ public class testDrivingFromTheKeyboard
     }
 
     /**
+     * The range buttons and the keys under them start and end on the same pixels: the two rows' outer edges, and each
+     * range button against the two key columns it sits over, at 100% and at 150% interface scale.
+     *
+     * MUTATION: `new GridLayout(2, PAGES / 2, GAP, GAP)` and `new GridLayout(ROWS, COLUMNS, KEY_GAP, KEY_GAP)` for the
+     * two `Columns` layouts in `AccessoryKeyboard`'s constructor, and this fails (each row centers its own leftover
+     * pixels, so the rows' edges are 5 pixels apart).
+     */
+    @Test
+    public void testTheRangeButtonsLineUpWithTheKeys() throws Exception
+    {
+        int width = Components.onTheEventThread(() -> keys0().getPreferredSize().width);
+        String was = System.getProperty("flatlaf.uiScale");
+
+        try
+        {
+            for (String scale : new String[] {"1.0", "1.5"})
+            {
+                int allowed = scale.equals("1.0") ? 0 : 1;
+
+                Components.onTheEventThread(() ->
+                {
+                    System.setProperty("flatlaf.uiScale", scale);
+                    com.formdev.flatlaf.FlatLightLaf.setup();
+
+                    return null;
+                });
+
+                AccessoryKeyboard built = Components.onTheEventThread(() ->
+                {
+                    AccessoryKeyboard k = new AccessoryKeyboard(new AccessoryKeyboard.Listener()
+                    {
+                        @Override
+                        public void pageChosen(int page)
+                        {
+                        }
+
+                        @Override
+                        public void clicked(int address, boolean red)
+                        {
+                        }
+
+                        @Override
+                        public String tooltip(int address)
+                        {
+                            return null;
+                        }
+                    }, width);
+
+                    k.setSize(k.getPreferredSize());
+                    layOut(k);
+
+                    return k;
+                });
+
+                int[] out = new int[2];
+
+                Components.onTheEventThread(() ->
+                {
+                    java.awt.Rectangle first = edges(built, built.tab(1));
+                    java.awt.Rectangle last = edges(built, built.tab(RANGE_BUTTONS_A_ROW));
+                    java.awt.Rectangle key1 = edges(built, built.half(1, true).getParent().getParent());
+                    java.awt.Rectangle key16 = edges(built, built.half(16, false).getParent().getParent());
+
+                    out[0] = Math.max(Math.abs(first.x - key1.x), Math.abs(last.x + last.width - key16.x - key16.width));
+
+                    for (int t = 1; t <= RANGE_BUTTONS_A_ROW; t++)
+                    {
+                        java.awt.Rectangle tab = edges(built, built.tab(t));
+                        java.awt.Rectangle a = edges(built, built.half(2 * t - 1, true).getParent().getParent());
+                        java.awt.Rectangle b = edges(built, built.half(2 * t, false).getParent().getParent());
+
+                        out[1] = Math.max(out[1], Math.max(Math.abs(tab.x - a.x), Math.abs(tab.x + tab.width - b.x - b.width)));
+                    }
+
+                    return null;
+                });
+
+                assertTrue(out[0] <= allowed, "at " + scale + " the range buttons' row and the keys' grid have outer edges "
+                    + out[0] + " pixels apart (at most " + allowed + ")");
+                assertTrue(out[1] <= allowed, "at " + scale + " a range button's edges are " + out[1]
+                    + " pixels from those of the two key columns under it (at most " + allowed + ")");
+            }
+        }
+        finally
+        {
+            Components.onTheEventThread(() ->
+            {
+                if (was == null) System.clearProperty("flatlaf.uiScale");
+                else System.setProperty("flatlaf.uiScale", was);
+
+                com.formdev.flatlaf.FlatLightLaf.setup();
+
+                return null;
+            });
+        }
+    }
+
+    /** Range buttons in the first row of the keyboard. */
+    private static final int RANGE_BUTTONS_A_ROW = 8;
+
+    /** A component's bounds in the keyboard's own coordinates. */
+    private static java.awt.Rectangle edges(Component keyboard, Component c)
+    {
+        return SwingUtilities.convertRectangle(c.getParent(), c.getBounds(), keyboard);
+    }
+
+    private static void layOut(java.awt.Container c)
+    {
+        c.doLayout();
+
+        for (Component child : c.getComponents())
+        {
+            if (child instanceof java.awt.Container) layOut((java.awt.Container) child);
+        }
+    }
+
+    /**
      * The lit half is a clear color and the other is very light gray; pointed at, the gray half shows a pale hint of its
      * own color.  Painted, since the look is the claim.
      *

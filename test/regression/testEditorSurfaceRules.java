@@ -150,7 +150,8 @@ public class testEditorSurfaceRules
         // window's rememberPlacement.  Adam: "there needs to be parity across the board."
         assertEquals(writes, 5,
             "the facing is written from " + writes + " places in the program. Five are known.  Two are the "
-            + "autonomy editor's: the facing menu in EditorTileMenus (which moves the railway too, SPEC-B4) and "
+            + "autonomy editor's: `chooseFacing` in EditorTileMenus, the door of its menu and the train window (which moves"
+            + " the railway too, SPEC-B4) and "
             + "AutonomyEditorPanel.placeLocomotive - the "
             + "add-to-autonomy door, which was the LAST one recording who without which way "
             + "(CONF-B2), and the worst of them, because placeLocomotive does not clear the facing on "
@@ -167,8 +168,8 @@ public class testEditorSurfaceRules
         // while a second copy of the menu starts, and stays five; named place by place, either one is reported.
         final String[] facingWriters =
         {
-            "    javax.swing.JMenu buildFacingMenu(final TileKey target)",
-            "    void placeLocomotive(TileKey tile)",
+            "    void chooseFacing(final TileKey target,",
+            "    void placeLocomotive(TileKey tile, String name)",
             "public static void commitAndRecord(GraphLocAssign edit)",
             "private void placeFacing(String locName, String pointName,",
             "private void rememberPlacement(org.traincontrol.automation.Point point,",
@@ -943,7 +944,7 @@ public class testEditorSurfaceRules
                 + "live item - which is the state FR-026 asked for the item NOT to be in");
         }
 
-        String setup = codeOf("private void addSetupMenu()");
+        String setup = codeOf("private JMenuItem openFullEditorItem()");
 
         assertTrue(setup.contains("whyAutonomyEditorCannotOpen()"),
             "the setup menu no longer asks the window whether the editor would open, so whatever "
@@ -1205,7 +1206,11 @@ public class testEditorSurfaceRules
         // Gone, `SourceOf.declaration` fails: label and menu would each be working it out again.
         SourceOf.declaration("public Side facingOnTheRailway(TileKey square,");
 
-        String panel = codeOf("    javax.swing.JMenu buildFacingMenu(final TileKey target)");
+        String panel = codeOf("    FacingFacts facingFacts(final TileKey target)") + codeOf("    void chooseFacing(final TileKey target,");
+
+        assertTrue(codeOf("    javax.swing.JMenu buildFacingMenu(final TileKey target)").contains("facingFacts(target)")
+            && SourceOf.withoutComments(SourceOf.declaration("public final class TrainWindow extends StationWindowBase"))
+                .contains("facingFacts(tile)"), "the facing menu or the train window works out the facing itself again");
 
         assertTrue(panel.contains("session.facingOnTheRailway(target, showing)"),
             "the facing menu reads the stored value again rather than the railway, so it disagrees with"
@@ -1535,37 +1540,41 @@ public class testEditorSurfaceRules
     @Test
     public void testTheTailCanBeSetAndNotUnset() throws Exception
     {
-        String menu = codeOf("    javax.swing.JMenu buildArrivedFromMenu(final TileKey target)");
+        String door = codeOf("    void setArrivedFrom(TileKey target, String side)");
 
-        assertTrue(menu.contains("session.setArrivedFrom(target, side)"),
-            "the menu no longer sets the arrival side at all, so the absence checked below is the"
-            + " absence of a menu rather than the absence of a clear");
+        String window = SourceOf.withoutComments(SourceOf.declaration("public final class TrainWindow extends StationWindowBase"));
 
-        assertFalse(menu.contains("setArrivedFrom(target, null)"),
-            "the menu still offers a way to clear the arrival side. Adam, 2026-09-07: \"clearing"
+        String facts = codeOf("    ArrivedFacts arrivedFacts(final TileKey target)");
+
+        assertTrue(door.contains("session.setArrivedFrom(target, side)"),
+            "the door no longer sets the arrival side at all, so the absence checked below is the"
+            + " absence of a door rather than the absence of a clear");
+
+        assertFalse(door.contains("setArrivedFrom(target, null)") || window.contains("setArrivedFrom(tile, null)"),
+            "the train window offers a way to clear the arrival side. Adam, 2026-09-07: \"clearing"
             + " should not be possible, only setting\" - a wrong answer is corrected by choosing the"
             + " right side, and what clearing offered was a way to switch the tail blocking off");
 
-        assertFalse(menu.contains("on.setArrivedFrom(null)"),
-            "the menu clears the side on the running layout, so the setup and the railway now"
+        assertFalse(door.contains("on.setArrivedFrom(null)"),
+            "the door clears the side on the running layout, so the setup and the railway now"
             + " disagree about whether clearing is possible at all");
 
         // AND IT SHOWS WHAT IS RECORDED, even when the geometry does not offer it: the radios are a ButtonGroup ticked
         // by equality, so a recorded side missing from the list ticks NOTHING while that side goes on steering the tail
         // walk (OB-177).
-        assertTrue(menu.contains("recorded != null && !sides.contains(recorded) ? recorded : null"),
-            "the arrived-from menu drops a recorded side the geometry does not offer, so it opens with"
+        assertTrue(facts.contains("recorded != null && !sides.contains(recorded) ? recorded : null"),
+            "the arrived-from choices drop a recorded side the geometry does not offer, so they open with"
             + " every choice blank for a square that HAS a tail recorded - a value still steering the"
             + " tail walk, unseen (RGD-C4)");
 
         // SHOWN, NOT OFFERED.  The tail walk matches stored sides against the geometry, so a side the geometry
         // does not have can never match: offering it is offering a choice guaranteed to do nothing.
-        assertFalse(menu.contains("sides.add(recorded)"),
+        assertFalse(facts.contains("sides.add(recorded)"),
             "a recorded side the track does not have is offered as a choice again. It can never match"
             + " the tail walk, so setting it blocks nothing - it is a statement about the square, and"
-            + " belongs in the menu disabled (RGD-C4)");
+            + " belongs in the window disabled (RGD-C4)");
 
-        assertTrue(menu.contains("gone.setEnabled(false)"),
+        assertTrue(window.replaceAll("\\s+", " ").contains("new ButtonGroup(), true, false, null)"),
             "the recorded-but-absent side is not disabled, so it reads as an answer the operator may"
             + " choose rather than as a fault to correct (RGD-C4)");
     }
@@ -2161,20 +2170,21 @@ public class testEditorSurfaceRules
     }
 
     /**
-     * The excluded-locomotives prompt still asks whether it is breaking a home.  `homeBrokenBy` has a test of its rule,
-     * but nothing tested that `promptLocomotives` calls it: excluding a locomotive from the station it is homed to
-     * would go through with no warning.
+     * The train list still asks whether it is breaking a home: nothing tested that `promptTrainList` calls `homeBrokenBy`,
+     * so excluding a locomotive from its home station would go through unwarned.
      *
-     * MUTATION: deleting the `homeBrokenBy` call from `promptLocomotives` fails this.
+     * MUTATION: deleting the `homeMayBeBroken` call from `promptTrainList` fails this.
      */
     @Test
     public void testExcludingALocomotiveStillWarnsAboutItsHome() throws Exception
     {
-        String prompt = SourceOf.withoutComments(memberOf("final class EditorPrompts", "    void promptLocomotives("));
-
-        assertTrue(prompt.contains("homeBrokenBy("),
-            "the excluded-locomotives prompt no longer asks whether the exclusion breaks a home, so "
+        assertTrue(SourceOf.withoutComments(memberOf("final class EditorPrompts", "    boolean promptTrainList("))
+            .contains("homeMayBeBroken("), "the train list no longer asks whether the list breaks a home, so "
             + "excluding a locomotive from the station it is homed to happens silently");
+
+        String prompt = SourceOf.withoutComments(memberOf("final class EditorPrompts", "    boolean homeMayBeBroken("));
+
+        assertTrue(prompt.contains("homeBrokenBy("), "the train list's question no longer asks homeBrokenBy");
 
         assertTrue(prompt.contains("confirmExcludingHome"),
             "the prompt asks homeBrokenBy and then does not warn about the answer, which is the same "
@@ -3084,6 +3094,11 @@ public class testEditorSurfaceRules
             "toggle() no longer announces, so every checkbox door on these menus is silent and the exemption is "
             + "hiding them (GSE-C1)");
 
+        // And the windows' `act`, which the scan exempts the same way.
+        assertTrue(codeOf("    final void act(BooleanSupplier door)").contains("placementChanged(null)"),
+            "the windows' act() no longer announces, so every control of Station Settings and the train window is silent"
+            + " and the exemption is hiding them (FR-111)");
+
         // And the light door's exemption is only sound while it announces (MT-334), as for radio above.
         assertTrue(codeOf("private void annotationsChanged()")
             .contains("rebuildRunningLayoutSoon()"),
@@ -3124,7 +3139,8 @@ public class testEditorSurfaceRules
             String text = new String(java.nio.file.Files.readAllBytes(f.toPath()),
                 java.nio.charset.StandardCharsets.UTF_8);
 
-            if (holds.matcher(SourceOf.withoutComments(text)).find())
+            // Station Settings and the train window hold it through their base, as `editor`
+            if (holds.matcher(SourceOf.withoutComments(text)).find() || text.contains(" extends StationWindowBase"))
             {
                 family.put(f.getName().replace(".java", ""), text);
             }
@@ -3220,7 +3236,7 @@ public class testEditorSurfaceRules
 
         String[] lines = source.split("\n", -1);
 
-        java.util.List<String> helpers = java.util.Arrays.asList("radio", "toggle");
+        java.util.List<String> helpers = java.util.Arrays.asList("radio", "toggle", "act");
 
         // EVERY WRITER, not two of them, in the order the file has them
         java.util.TreeSet<Integer> writes = new java.util.TreeSet<>();
@@ -3584,6 +3600,10 @@ public class testEditorSurfaceRules
             + " measured route in may hold) - FR-087");
 
         excused.put("automation/Point.java", "the accessor");
+
+        excused.put("automation/LayoutStandingRules.java",
+            "asks the rule itself first, and the clause only for which sentence to give: why a square autonomy may not"
+            + " choose is out, and whether one a train may be sent to is also one autonomy chooses (FR-111)");
 
         excused.put("automationui/AutonomyChecks.java",
             "names the clause in a comment explaining why a notice is drawn");

@@ -183,17 +183,29 @@ public class LayoutPopupUI extends PositionAwareJFrame
     
     /**
      * Updates the layout page
-     * @param index the page's place in the name-sorted list, as an arrow holds it
+     * @param index the page's place in the list the window shows
      */
     public void goToLayoutPage(int index)
     {
-        // An arrow's number is a place in the name-sorted list; the window keeps its own place in the shown list.
-        java.util.List<String> byName = this.parent.getModel().getLayoutListByName();
+        this.goToLayoutPage(index, true);
+    }
 
-        int shown = index >= 0 && index < byName.size()
-            ? this.parent.getModel().getLayoutList().indexOf(byName.get(index)) : index;
+    /**
+     * Goes to the page a link tile leads to, found by the page ID it carries (FR-175); a link to nothing clicks to
+     * nothing, and one to a page that is gone says so in the log.
+     */
+    public void followLink(org.traincontrol.base.LayoutDiagramComponent link)
+    {
+        String page = link.getLinkPageName();
 
-        this.goToLayoutPage(shown, true);
+        if (page == null)
+        {
+            if (link.linksToAPageThatIsGone()) this.parent.getModel().logf("layout.ui.errorLinkedPageGone", link.getLinkPageId());
+
+            return;
+        }
+
+        this.goToLayoutPage(this.parent.getModel().getLayoutList().indexOf(page), true);
     }
 
     /**

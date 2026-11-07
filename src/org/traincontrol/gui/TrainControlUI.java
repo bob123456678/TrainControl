@@ -70,7 +70,6 @@ import java.util.stream.Stream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 import javax.imageio.ImageIO;
-import javax.swing.AbstractAction;
 import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.ButtonGroup;
@@ -131,7 +130,6 @@ import org.traincontrol.gui.layouteditor.LayoutEditor;
 import org.traincontrol.gui.locomotive.AddLocomotive;
 import org.traincontrol.gui.locomotive.CurrentKeyRow;
 import org.traincontrol.gui.locomotive.LocButtonTransferHandler;
-import org.traincontrol.gui.locomotive.LocomotiveFunctionAssign;
 import org.traincontrol.gui.locomotive.LocomotiveKeyboardMapping;
 import org.traincontrol.gui.locomotive.LocomotivePlaceholder;
 import org.traincontrol.gui.locomotive.LocomotiveSelector;
@@ -513,8 +511,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     volatile LocomotiveSettingsFrame locomotiveSettings;
 
     /**
-     * Opens the Locomotive Settings window on a tab, unless the locomotive cannot be edited (then it says why).  The one door
-     * the menus, the name, the database tile and the function buttons all use.
+     * Opens the Locomotive Settings window on a tab.  A locomotive that cannot be edited now opens locked (the window's
+     * strip says why).  The one door the menus, the name, the database tile and the function buttons all use.
      *
      * @param function the function to show on the Functions tab, or null
      * @return true when the window is open on the locomotive
@@ -524,7 +522,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // Over the window whose door was pressed (OB-324), and the settings window stands as high as that one
         final java.awt.Window asking = dialogParent();
 
-        if (l == null || LocomotiveSettings.refuseIfNotEditable(this, l, asking)) return false;
+        if (l == null) return false;
 
         if (this.locomotiveSettings == null || !this.locomotiveSettings.isDisplayable())
         {
@@ -2911,23 +2909,77 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         if (buildAutonomyTileMenu(tile) == null) return null;
 
         // The session is told where the railway is before it is asked to change anything on it.
-        // Set here rather than once at start-up because the session is replaced whenever
-        // a configuration is loaded, and a supplier set on the wrong instance is set on nothing.
-        if (getAutonomySession() != null)
-        {
-            // Asked, not built: each reader takes no railway as nothing to show
-            getAutonomySession().setRunningLayoutSource(
-                () -> this.model == null ? null : this.model.getAutoLayoutIfLoaded());
-        }
-
-        // The panel needs it too, for the arrived-from menu it builds
-        if (autonomyTileMenus != null)
-        {
-            autonomyTileMenus.setRunningLayoutSource(
-                () -> this.model == null ? null : this.model.getAutoLayoutIfLoaded());
-        }
+        wireTheRailwayIntoTheMenus();
 
         return autonomyTileMenus == null ? null : autonomyTileMenus.buildFacingMenu(tile);
+    }
+
+    /** Whether the track diagram's menu offers Station Settings on this square; no while an editor holds the setup. */
+    boolean offersStationSettings(org.traincontrol.automationui.TileGraph.TileKey tile)
+    {
+        return tile != null && liveSetupPanel() != null && autonomyTileMenus.offersStationSettings(tile);
+    }
+
+    /** Station Settings... for a menu on the track diagram (FR-111), or null with no setup to edit here. */
+    javax.swing.JMenuItem stationSettingsItem(org.traincontrol.automationui.TileGraph.TileKey tile)
+    {
+        if (!offersStationSettings(tile)) return null;
+
+        wireTheRailwayIntoTheMenus();
+
+        return autonomyTileMenus.stationSettingsItem(tile);
+    }
+
+    /** Train at Bramley... or Place a Locomotive Here... for a menu on the track diagram, or null. */
+    javax.swing.JMenuItem trainWindowItem(org.traincontrol.automationui.TileGraph.TileKey tile)
+    {
+        if (!offersStationSettings(tile)) return null;
+
+        wireTheRailwayIntoTheMenus();
+
+        return autonomyTileMenus.trainWindowItem(tile);
+    }
+
+    /** A right-click on another square moves a window already open there (FR-111). */
+    void stationWindowsFollow(org.traincontrol.automationui.TileGraph.TileKey tile)
+    {
+        if (autonomyTileMenus != null && tile != null) autonomyTileMenus.stationWindowsFollow(tile);
+    }
+
+    /**
+     * The session and the panel told where the railway is: a load replaces the session, and a supplier set on the old is
+     * lost.  Asked, not built: each reader takes no railway as nothing to show.
+     */
+    private void wireTheRailwayIntoTheMenus()
+    {
+        if (getAutonomySession() != null)
+        {
+            getAutonomySession().setRunningLayoutSource(() -> this.model == null ? null : this.model.getAutoLayoutIfLoaded());
+        }
+
+        if (autonomyTileMenus != null)
+        {
+            autonomyTileMenus.setRunningLayoutSource(() -> this.model == null ? null : this.model.getAutoLayoutIfLoaded());
+        }
+    }
+
+    /** Flashes a square on the track diagram. */
+    public void flashSquare(org.traincontrol.automationui.TileGraph.TileKey tile)
+    {
+        for (LayoutLabel label : getDiagramTileRegistry().labelsFor(tile)) label.flashHighlight();
+    }
+
+    /**
+     * Pauses a train or sets it going while a run holds the setup, as its Auto tab card does (FR-059): the train alone,
+     * as the setup is not edited, and the fold takes it into the setup with the rest of that tab's settings.
+     */
+    public void pauseTrainWhileRunning(Locomotive train, boolean paused)
+    {
+        train.setAutonomyPaused(paused);
+
+        trainsPausedChanged();
+
+        repaintAutoLocList(false);
     }
 
     /**
@@ -6159,30 +6211,30 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
     
     private void fireF(int fn, boolean state)
-    {        
-        if (this.activeLoc != null)
-        {            
-            if (this.activeLoc.isFunctionTimed(fn) > 0)
-            {
-                new Thread(() -> {
-                    this.activeLoc.toggleF(fn, this.activeLoc.isFunctionTimed(fn) * 1000);
-                }).start();
-            }
-            else if (this.activeLoc.isFunctionPulse(fn))
-            {
-                new Thread(() -> {
-                    this.activeLoc.toggleF(fn, this.activeLoc.getPulseFunctionDuration());
-                }).start();
-            }
-            else
-            {
-                new Thread(() -> {
-                    this.activeLoc.setF(fn, state);
-                }).start();
-            }
+    {
+        if (this.activeLoc != null) fireFunction(this.activeLoc, fn, state);
+    }
+
+    /**
+     * The door every function button uses, for any locomotive: a timed or momentary function runs its course, any
+     * other is set to `state`.
+     */
+    void fireFunction(Locomotive l, int fn, boolean state)
+    {
+        if (l.isFunctionTimed(fn) > 0)
+        {
+            new Thread(() -> l.toggleF(fn, l.isFunctionTimed(fn) * 1000)).start();
+        }
+        else if (l.isFunctionPulse(fn))
+        {
+            new Thread(() -> l.toggleF(fn, l.getPulseFunctionDuration())).start();
+        }
+        else
+        {
+            new Thread(() -> l.setF(fn, state)).start();
         }
     }
-    
+
     public void selectLocomotiveActivated(JButton button)
     {
         // Make sure this button is selected
@@ -14366,35 +14418,35 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * Navigates to a specific layout page
-     * @param index the page's place in the name-sorted list, or -1 for a link that points at no page
+     * Goes to the page a link tile leads to, found by the page ID it carries (FR-175).  A link to nothing clicks to
+     * nothing, its tooltip says so; one to a page that is gone says so in the log.
+     *
+     * @param link the arrow that was clicked
      */
-    public void goToLayoutPage(int index)
+    public void followLink(org.traincontrol.base.LayoutDiagramComponent link)
     {
-        // A link to nothing clicks to nothing: a deleted page's arrow carries -1.  Silent, not logged: the tooltip
-        // already says the link points at no page.
-        if (index < 0) return;
+        String page = link.getLinkPageName();
 
-        int page = index + 1;
-
-        List<String> byName = this.model.getLayoutListByName();
-
-        if (byName.size() > index && index >= 0 && this.LayoutList.getModel().getSize() > index)
+        if (page == null)
         {
-            this.model.logf(
-                "layout.ui.infoJumpingToLayoutPage",
-                page
-            );
-            this.LayoutList.setSelectedItem(byName.get(index));
-            this.repaintLayout();
+            if (link.linksToAPageThatIsGone()) this.model.logf("layout.ui.errorLinkedPageGone", link.getLinkPageId());
+
+            return;
         }
-        else
+
+        for (int i = 0; i < this.LayoutList.getModel().getSize(); i++)
         {
-            this.model.logf(
-                "layout.ui.errorLayoutPageDoesNotExist",
-                page
-            );
+            if (page.equals(String.valueOf(this.LayoutList.getModel().getElementAt(i))))
+            {
+                this.model.logf("layout.ui.infoJumpingToLayoutPage", page);
+                this.LayoutList.setSelectedIndex(i);
+                this.repaintLayout();
+
+                return;
+            }
         }
+
+        this.model.logf("layout.ui.errorLayoutPageDoesNotExist", page);
     }
         
     /** What asking about a route's conflict came back with; "nothing to confirm" must not become a full override. */
@@ -14757,81 +14809,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         }
     }
     
-    public void changeLocAddress(Locomotive l)
-    {
-        changeLocAddress(l, null);
-    }
-    
-    /** Delegates to `LocomotiveActions.changeLocAddress`. */
-    public void changeLocAddress(Locomotive l, MouseEvent evt)
-    {
-        this.locomotiveActions.changeLocAddress(l, evt);
-    }
-      
-    /**
-     * Prompts the user to choose locomotives to link to this one
-     * @param l 
-     */
-    public void changeLinkedLocomotives(Locomotive l)
-    {
-        final java.awt.Window asked = dialogParent();
-
-        // If the multi unit is defined in the central station, enter a read-only mode
-        boolean isCSMultiUnit = (l.getDecoderType() == Locomotive.decoderType.MULTI_UNIT);
-        
-        if (this.model.isLocLinkedToOthers(l) != null)
-        {
-            JOptionPane.showMessageDialog(
-                asked,
-                I18n.f(
-                    "loc.ui.errorLocomotiveAlreadyLinkedCannotBeMultiUnit",
-                    this.model.isLocLinkedToOthers(l).getName()
-                )
-            );
-            return;
-        }
-
-        // Only for the dialog that can change one: a Central Station multi-unit's list is read-only, nothing is
-        // written.
-        if (!isCSMultiUnit && this.locomotiveActions.refuseMultiUnitEdit(asked, l, null)) return;
-
-        if (this.model.getLocomotives().size() < 2)
-        {
-            JOptionPane.showMessageDialog(
-                asked,
-                I18n.t("loc.ui.errorNeedTwoLocomotivesForMultiUnit")
-            );
-            return;
-        }
-
-        MultiUnitPanel panel = new MultiUnitPanel(this, l, null);
-
-        panel.setPreferredSize(new Dimension(600, 540));
-
-        Typing.onShown(panel, panel::focusFilter);
-
-        int result = JOptionPane.showOptionDialog(
-            asked,
-            panel,
-            I18n.f("loc.ui.dialogLinkLocomotivesToMultiUnit", l.getName()),
-            JOptionPane.OK_CANCEL_OPTION,
-            JOptionPane.PLAIN_MESSAGE,
-            null,
-            OK_CANCEL_OPTS,
-            OK_CANCEL_OPTS[0] // default selection
-        );
-
-        if (result == JOptionPane.OK_OPTION && !isCSMultiUnit)
-        {
-            this.locomotiveActions.applyLinkedLocomotives(asked, l, panel.chosen());
-        }
-    }
-
-    public void changeLocNotes(Locomotive l)
-    {
-        changeLocNotes(l, null);
-    }
-    
     /**
      * Shows the user locomotives similar to searchLoc, and maps them to a page if requested
      * @param searchLoc
@@ -14842,16 +14819,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         this.locomotiveActions.findSimilarLocs(searchLoc, evt);
     }
     
-    /**
-    * Allows the user to specify notes and metadata for the given locomotive
-    * @param l
-    * @param evt
-    */
-    public void changeLocNotes(Locomotive l, MouseEvent evt)
-    {
-        this.locomotiveActions.changeLocNotes(l, evt);
-    }
-
     public void deleteLoc(String value)
     {
         deleteLoc(value, null);
@@ -18769,52 +18736,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     javax.swing.JButton gracefulStopButton()
     {
         return this.gracefulStop;
-    }
-        
-    public void setFunctionIcon(Locomotive l, JButton source, MouseEvent evt)
-    {
-        Window sourceWindow = evt != null ? SwingUtilities.getWindowAncestor((Component) evt.getSource()) : this;
-        
-        javax.swing.SwingUtilities.invokeLater(() -> 
-        {    
-            LocomotiveFunctionAssign edit = new LocomotiveFunctionAssign(l, this, 0, false);
-            // Select the locomotive
-            if (source != null)
-            {
-                source.doClick();
-            }
-            
-            // Create a custom dialog without buttons
-            JDialog dialog = new JDialog(sourceWindow, 
-                                         I18n.f("loc.ui.dialogEditLocomotiveFunctions", l.getName()), 
-                                         Dialog.ModalityType.APPLICATION_MODAL);
-
-            // OB-124.
-            applyWindowIcon(dialog);
-            dialog.getContentPane().add(edit);
-            dialog.pack();
-            dialog.setLocationRelativeTo(sourceWindow);
-            dialog.setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
-            dialog.setResizable(false);
-            
-            // Add Escape key binding to close the dialog
-            KeyStroke escapeKeyStroke = KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0);
-            dialog.getRootPane().getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW)
-                  .put(escapeKeyStroke, "ESCAPE");
-            dialog.getRootPane().getActionMap()
-                  .put("ESCAPE", new AbstractAction() {
-                      @Override
-                      public void actionPerformed(ActionEvent e) {
-                          dialog.dispose();
-                      }
-                  });
-            
-            // A modal setVisible(true) does not return until dismissed, so a focus call after it does nothing; an
-            // invokeLater posted before it runs from the nested event loop once the dialog is on screen.
-            javax.swing.SwingUtilities.invokeLater(edit::focusFno);
-
-            dialog.setVisible(true);
-        });
     }
     
     /** FlatLightLaf's accent blue, written down because the UIManager key has changed name between FlatLaf releases. */

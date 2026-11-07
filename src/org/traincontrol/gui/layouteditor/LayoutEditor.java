@@ -2630,9 +2630,10 @@ public class LayoutEditor extends PositionAwareJFrame
 
                     // A link may be aimed at nothing, which setLogicalAddress cannot express; picking the first page
                     // would be the operator's choice made silently.
-                    if (lc.isLink() && newAddress <= 0)
+                    if (lc.isLink())
                     {
-                        lc.setLinkedPageIndex(-1);
+                        // By the page picked, not its ID, which another page may share
+                        parent.getModel().aimLink(lc, addressPopup.getLinkedPage());
                     }
                     else
                     {
@@ -4360,10 +4361,14 @@ public class LayoutEditor extends PositionAwareJFrame
         menu.add(combine);
         menu.addSeparator();
 
+        // Hidden with its item in Track Diagram mode, so no separator hangs under nothing
+        findPointSeparator = menu.getMenuComponent(menu.getMenuComponentCount() - 1);
+
         // Beside the page actions, as Adam asked: not in the sidebar (FR-055)
         findPointItem = new javax.swing.JMenuItem(I18n.t("layout.ui.menuFindAPoint"));
 
         findPointItem.setFocusable(false);
+        findPointItem.setToolTipText(I18n.t("layout.ui.tooltipFindAPoint"));
         findPointItem.addActionListener(e -> findAPoint());
 
         menu.add(findPointItem);
@@ -4382,16 +4387,17 @@ public class LayoutEditor extends PositionAwareJFrame
     }
 
     private javax.swing.JMenuItem findPointItem;
+    private java.awt.Component findPointSeparator;
 
-    /** Find a Point... is the autonomy editor's: grayed in Track Diagram mode, with the reason as its tooltip. */
+    /** Find a Point... is the autonomy editor's: not shown at all in Track Diagram mode (FR-055). */
     private void refreshFindPointItem()
     {
         if (findPointItem == null) return;
 
         boolean autonomy = isAutonomyMode();
 
-        findPointItem.setEnabled(autonomy);
-        findPointItem.setToolTipText(I18n.t(autonomy ? "layout.ui.tooltipFindAPoint" : "layout.ui.tooltipFindAPointTrackMode"));
+        findPointItem.setVisible(autonomy);
+        findPointSeparator.setVisible(autonomy);
     }
 
     /** Control+F and the Tools menu: asks for a point's name, then goes through the finding's door to its square. */
@@ -5143,6 +5149,21 @@ public class LayoutEditor extends PositionAwareJFrame
                 org.traincontrol.automationui.TileGraph.TileKey over = hoveredSquare();
 
                 if (over != null && autonomyPanel != null) autonomyPanel.showStationNameFor(over);
+
+                return;
+            }
+
+            // Control+O opens Station Settings on the square under the pointer (FR-111), or, with the pointer off the
+            // diagram, on the finding chosen in the list (FR-072).
+            if (evt.isControlDown() && evt.getKeyCode() == KeyEvent.VK_O)
+            {
+                org.traincontrol.automationui.TileGraph.TileKey over = hoveredSquare();
+
+                if (autonomyPanel != null)
+                {
+                    if (over != null) autonomyPanel.openStationSettings(over);
+                    else autonomyPanel.openStationSettingsForTheFinding();
+                }
 
                 return;
             }

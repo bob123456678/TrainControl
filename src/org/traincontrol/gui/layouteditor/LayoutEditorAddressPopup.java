@@ -146,15 +146,11 @@ public class LayoutEditorAddressPopup extends javax.swing.JPanel
             }
             else if (lc.isLink())
             {
-                // `addr` is the page's place in the FULL name-sorted list, one-based, which is what getLogicalAddress hands out;
-                // the combo no longer holds the full list.
-                List<String> all = tcui.getModel().getLayoutListByName();
+                // The page the link goes to, by name: two pages may share an ID.  A link to nothing shows as such,
+                // rather than leaving the combo on whatever happened to be first.
+                String page = lc.getLinkPageName();
 
-                int at = Integer.parseInt(addr) - 1;
-
-                // A link to nothing shows as such, rather than leaving the combo on whatever happened to
-                // be first.
-                if (at >= 0 && at < all.size()) this.addressSelector.setSelectedItem(all.get(at));
+                if (page != null && !page.equals(onPage)) this.addressSelector.setSelectedItem(page);
                 else this.addressSelector.setSelectedItem(NO_PAGE);
             }
             else
@@ -203,8 +199,7 @@ public class LayoutEditorAddressPopup extends javax.swing.JPanel
             }
             else if (lc.isLink())
             {
-                // Back to the page's place in the FULL name-sorted list, since that is what a link stores - see the
-                // combo model above.  Nothing selected leaves the square as it was.
+                // Back to the page's ID plus one, since that is what a link goes by - see the combo model above.  Nothing selected leaves the square as it was.
                 Object chosen = this.addressSelector.getSelectedItem();
 
                 if (chosen == null) return Integer.toString(lc.getLogicalAddress());
@@ -215,9 +210,7 @@ public class LayoutEditorAddressPopup extends javax.swing.JPanel
                 // to -1, and the combo holds this very object (`pagesThatCanBeLinkedTo` puts it in).
                 if (chosen == NO_PAGE) return "0";
 
-                int at = tcui.getModel().getLayoutListByName().indexOf(chosen.toString());
-
-                return Integer.toString(at + 1);
+                return Integer.toString(tcui.getModel().getPageIdOf(chosen.toString()) + 1);
             }
             else
             {
@@ -226,6 +219,17 @@ public class LayoutEditorAddressPopup extends javax.swing.JPanel
         }
     }
     
+    /** @return the page a link is aimed at here, by name, or null for no page; nothing selected keeps its page */
+    public String getLinkedPage()
+    {
+        Object chosen = this.addressSelector.getSelectedItem();
+
+        if (chosen == null) return lc.getLinkPageName();
+
+        // By reference, as in getAddress
+        return chosen == NO_PAGE ? null : chosen.toString();
+    }
+
     /**
      * Every page a link on this square may point at - which is every page except the one it is on.
      *

@@ -225,6 +225,50 @@ public final class RowIcons
         };
     }
 
+    /** What a table of answers can say. */
+    public enum Answer
+    {
+        YES, SOME, NO
+    }
+
+    /**
+     * A tick for a yes, a ring with its left half filled for a "some", and a dash for a no.
+     *
+     * @param size how many pixels square
+     * @param answer which
+     * @param colour its color
+     * @return the icon
+     */
+    public static Icon answer(final int size, final Answer answer, final Color colour)
+    {
+        return new Painted(size)
+        {
+            @Override
+            void draw(Graphics2D g, int width, int height)
+            {
+                g.setColor(colour);
+                g.setStroke(new BasicStroke(answer == Answer.SOME ? 1.4f : 2f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+
+                if (answer == Answer.NO)
+                {
+                    g.drawLine(width / 5, height / 2, 4 * width / 5, height / 2);
+                }
+                else if (answer == Answer.SOME)
+                {
+                    int inset = width / 7;
+
+                    g.drawOval(inset, inset, width - 2 * inset, height - 2 * inset);
+                    g.fillArc(inset, inset, width - 2 * inset, height - 2 * inset, 90, 180);
+                }
+                else
+                {
+                    g.drawPolyline(new int[] {width / 7, 3 * width / 7, 6 * width / 7},
+                        new int[] {height / 2, 11 * height / 14, 3 * height / 14}, 3);
+                }
+            }
+        };
+    }
+
     /**
      * Two lines inside a rounded outline: put rows in a group of their own.
      *
@@ -508,8 +552,106 @@ public final class RowIcons
         return turned(size, colour, shape);
     }
 
+    /** The green of a function's play icon. */
+    private static final Color PLAY = new Color(46, 160, 67);
+
+    /** How a play icon reads: an outline when off, solid when on, a turning arc while a momentary function fires. */
+    public enum PlayState
+    {
+        OFF, ON, FIRING, DISABLED
+    }
+
+    /**
+     * A play triangle that says whether the function is on by its fill.
+     *
+     * @param size how many pixels square
+     * @param state how the function stands
+     * @param phase the spinner's turn in degrees while {@code FIRING}; unused otherwise
+     * @return the icon
+     */
+    public static Icon play(final int size, final PlayState state, final int phase)
+    {
+        return new Painted(size)
+        {
+            @Override
+            void draw(Graphics2D g, int width, int height)
+            {
+                Color colour = state == PlayState.DISABLED ? new Color(175, 175, 175) : PLAY;
+
+                g.setColor(colour);
+                g.setStroke(new BasicStroke(Math.max(1.4f, width / 10f), BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+
+                if (state == PlayState.FIRING)
+                {
+                    float inset = width * 0.16f;
+
+                    g.draw(new java.awt.geom.Arc2D.Float(inset, inset, width - 2 * inset, height - 2 * inset, -phase, 270,
+                        java.awt.geom.Arc2D.OPEN));
+
+                    return;
+                }
+
+                java.awt.geom.Path2D.Float triangle = new java.awt.geom.Path2D.Float();
+
+                triangle.moveTo(width * 0.24f, height * 0.14f);
+                triangle.lineTo(width * 0.84f, height * 0.5f);
+                triangle.lineTo(width * 0.24f, height * 0.86f);
+                triangle.closePath();
+
+                if (state == PlayState.ON) g.fill(triangle);
+
+                g.draw(triangle);
+            }
+        };
+    }
+
+    /**
+     * A loop with an arrow pointing counterclockwise: put back what was.
+     *
+     * @param size how many pixels square
+     * @param colour its color
+     * @return the icon
+     */
+    public static Icon revert(final int size, final Color colour)
+    {
+        return new Painted(size)
+        {
+            @Override
+            void draw(Graphics2D g, int width, int height)
+            {
+                float radius = width * 0.30f;
+                float centre = width * 0.5f;
+
+                g.setColor(colour);
+                g.setStroke(new BasicStroke(Math.max(1.5f, width / 9f), BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+
+                // From about 8 o'clock counterclockwise, stopping where the head takes over
+                g.draw(new java.awt.geom.Arc2D.Float(centre - radius, centre - radius, 2 * radius, 2 * radius, 205, 263,
+                    java.awt.geom.Arc2D.OPEN));
+
+                // The head around 11 o'clock, pointing left and a little down.  Its back lies on the radius where the arc
+                // stops, so it stands square to the ring's open edge.
+                double end = Math.toRadians(108);
+                float px = centre + radius * (float) Math.cos(end);
+                float py = centre - radius * (float) Math.sin(end);
+                float dx = (float) -Math.sin(end);
+                float dy = (float) -Math.cos(end);
+                float nx = -dy;
+                float ny = dx;
+                java.awt.geom.Path2D.Float head = new java.awt.geom.Path2D.Float();
+
+                head.moveTo(px + dx * 0.19f * width, py + dy * 0.19f * width);
+                head.lineTo(px + nx * 0.17f * width, py + ny * 0.17f * width);
+                head.lineTo(px - nx * 0.17f * width, py - ny * 0.17f * width);
+                head.closePath();
+
+                g.fill(head);
+            }
+        };
+    }
+
     /** An icon that paints itself, antialiased, on a graphics it is handed. */
-    private abstract static class Painted implements Icon
+    abstract static class Painted implements Icon
     {
         private final int size;
 

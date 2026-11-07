@@ -468,40 +468,55 @@ public class testTheLocomotiveDoorsAskOverTheirWindow
     }
 
     /**
-     * While autonomy is busy no door opens the window: the database's menu says so over the database, the button's
-     * entry is grayed with the reason as its tooltip, and Control+E, R, N and L say it over the window they were pressed
-     * in.
+     * While autonomy is busy every door opens the window locked, with the strip saying so: the database's menu on the
+     * Multi-Unit tab, the button's entry (lit), and Control+E, R, N and L from every window on their own tabs.
      *
-     * MUTATION: `this` for the asking window in `TrainControlUI.openLocomotiveSettings`, or leave autonomy out of
-     * `LocomotiveSettings.why`, and this fails.
+     * MUTATION: put `LocomotiveSettings.refuseIfNotEditable` back at the top of `TrainControlUI.openLocomotiveSettings`,
+     * or gray the button's entry again, and this fails.
      */
     @Test
-    public void testNoMultiUnitsWhileRunningIsSaidOverTheWindowThatAsked() throws Exception
+    public void testMultiUnitsOpenLockedWhileRunning() throws Exception
     {
         model.getAutoLayout().setStagingInProgress(true);
 
-        String said = I18n.t("autolayout.ui.errorCannotEditLocomotivesWhileRunning");
+        String strip = I18n.t("loc.ui.settingsAutonomyStrip");
 
-        assertSaidBy(multiUnit(database, ONE), database, said);
+        chooseMultiUnit(database, ONE);
+
+        assertOpenedLocked(strip, 3, "the database's Multi-Unit");
 
         JMenuItem item = keyMenuItem(ONE);
 
-        assertFalse(item.isEnabled(), "the button's entry is open while autonomy runs");
-        assertEquals(item.getToolTipText(), said, "the button's entry does not say why");
+        assertTrue(item.isEnabled(), "the button's entry is gray while autonomy runs");
 
         Mouse.closeMenus();
 
-        assertEveryLocomotiveKeySays(said);
-
-        assertNull(SettingsWindow.showing(), "the window opened while autonomy runs");
+        assertEveryLocomotiveKeyOpensLocked(strip);
     }
 
-    /** Each of the four locomotive shortcuts, in each window, says this over the window it was pressed in. */
-    private static void assertEveryLocomotiveKeySays(String said)
+    /** What a door must have opened: the window for the first locomotive on this tab, with the strip up and Save gray. */
+    private static void assertOpenedLocked(String strip, int tab, String door) throws Exception
+    {
+        LocomotiveSettingsFrame window = SettingsWindow.awaited();
+
+        assertNotNull(window, door + " opened no window");
+        assertSame(Components.onTheEventThread(window::getLocomotive), one, door + " opened the window for another locomotive");
+        assertEquals(SettingsWindow.tabShowing(), tab, door + " opened on another tab");
+
+        SettingsWindow.assertLocked(door, strip);
+    }
+
+    /** Each of the four locomotive shortcuts, in each window, opens the window locked on its own tab. */
+    private static void assertEveryLocomotiveKeyOpensLocked(String strip) throws Exception
     {
         for (Window window : new Window[] {database, page, ui})
         {
-            for (int shortcut : LOCOMOTIVE_KEYS) assertSaidBy(key(window, shortcut), window, said);
+            for (int at = 0; at < LOCOMOTIVE_KEYS.length; at++)
+            {
+                pressKey(window, LOCOMOTIVE_KEYS[at]);
+
+                assertOpenedLocked(strip, LOCOMOTIVE_KEYS_TABS[at], "Control+" + KeyEvent.getKeyText(LOCOMOTIVE_KEYS[at]));
+            }
         }
     }
 
@@ -659,25 +674,21 @@ public class testTheLocomotiveDoorsAskOverTheirWindow
     }
 
     /**
-     * A locomotive that is moving is not edited from the keyboard: each of the four shortcuts says "Stop it" over the
-     * window it was pressed in, and opens nothing.
+     * A locomotive that is moving opens locked from the keyboard: each of the four shortcuts, in each window, opens the
+     * window on its own tab with the strip saying to stop it, and Save gray.
      *
-     * MUTATION: leave `isMoving` out of `LocomotiveSettings.why`, or send one of the four rows around
+     * MUTATION: leave `isMoving` out of `LocomotiveSettings.why`, or put `refuseIfNotEditable` back at the top of
      * `openLocomotiveSettings`, and this fails.
      */
     @Test
-    public void testAMovingLocomotiveIsSaidOverTheWindowTheKeyWasPressedIn() throws Exception
+    public void testAMovingLocomotiveOpensLockedFromEveryKey() throws Exception
     {
         SettingsWindow.power(ui, model, true);
         one.setSpeed(100);
 
         try
         {
-            String said = I18n.f("loc.ui.stopToEdit", ONE);
-
-            assertEveryLocomotiveKeySays(said);
-
-            assertNull(SettingsWindow.showing(), "the window opened for a moving locomotive");
+            assertEveryLocomotiveKeyOpensLocked(I18n.f("loc.ui.settingsMovingStrip", ONE));
         }
         finally
         {
@@ -809,10 +820,11 @@ public class testTheLocomotiveDoorsAskOverTheirWindow
     }
 
     /**
-     * While autonomy is busy, Control+R and Control+Delete say so over the window they were pressed in.
+     * While autonomy is busy, Control+R opens the window locked and Control+Delete says so over the window it was
+     * pressed in.
      *
-     * MUTATION: `this` for the asking window in `TrainControlUI.openLocomotiveSettings`, or `this.ui` for
-     * `this.ui.dialogParent()` at `source` in `deleteLoc`, and they hang off the main window.
+     * MUTATION: `this.ui` for `this.ui.dialogParent()` at `source` in `deleteLoc`, and it hangs off the main window; put
+     * `refuseIfNotEditable` back at the top of `openLocomotiveSettings`, and Control+R fails.
      */
     @Test
     public void testNoEditsWhileRunningAreSaidOverTheWindowThatAsked() throws Exception
@@ -823,7 +835,10 @@ public class testTheLocomotiveDoorsAskOverTheirWindow
 
         for (Window window : new Window[] {page, database, ui})
         {
-            assertSaidBy(key(window, KeyEvent.VK_R), window, said);
+            pressKey(window, KeyEvent.VK_R);
+
+            assertOpenedLocked(I18n.t("loc.ui.settingsAutonomyStrip"), 0, "Control+R");
+
             assertSaidBy(key(window, KeyEvent.VK_DELETE), window, said);
         }
     }

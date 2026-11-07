@@ -36,7 +36,7 @@ import support.SettingsWindow;
 
 /**
  * A locomotive is not edited while the power is on and it, or a multi-unit it belongs to, is running (FR-048): the
- * window will not open from any door, Delete is refused, an open window grays Save, the trash can and the picture's
+ * window opens locked from every door, Delete is refused, a locked window grays Save, the trash can and the picture's
  * marks and says why, and Save asks again at the click.  Quick actions stay allowed.  Each claim acts through the real
  * door and asserts what was said and what the locomotive holds.
  *
@@ -129,6 +129,11 @@ public class testTheLocomotiveSettingsMovingRule
         return I18n.f("loc.ui.stopToEdit", name);
     }
 
+    private static String stripFor(String name)
+    {
+        return I18n.f("loc.ui.settingsMovingStrip", name);
+    }
+
     /** Power on and the train running, as the station would report it. */
     private static void run(MarklinLocomotive who) throws Exception
     {
@@ -147,67 +152,80 @@ public class testTheLocomotiveSettingsMovingRule
     }
 
     /**
-     * Every door that opens the window says this and opens nothing: the key menu grays its two entries with it as
-     * their tooltip, and the name, a function button and the database tile say it when pressed.
+     * What a door that opened the window must have given: the window on this tab, its strip up with this sentence, what
+     * is typed kept, and Save gray for it.  The window is closed again.
      */
-    private static void everyDoorSays(String reason) throws Exception
+    private static void assertOpenedLocked(String where, int tab, String strip) throws Exception
     {
-        JPopupMenu menu = SettingsWindow.rightClickKey(key);
+        assertNotNull(SettingsWindow.awaited(), where + " opened no window");
+        assertEquals(SettingsWindow.tabShowing(), tab, where + " opened on the wrong tab");
 
-        for (String text : new String[] { I18n.t("loc.ui.menuLocomotiveSettings"), I18n.t("loc.ui.menuSetAsMultiUnit") })
+        SettingsWindow.assertLocked(where, strip);
+    }
+
+    /**
+     * Every door opens the window locked, whatever the reason: the key menu's two entries (lit, not grayed), the name,
+     * a function button and the database tile.
+     */
+    private static void everyDoorOpensLocked(String strip) throws Exception
+    {
+        String[] entries = { I18n.t("loc.ui.menuLocomotiveSettings"), I18n.t("loc.ui.menuSetAsMultiUnit") };
+        int[] tabs = { LocomotiveSettingsFrame.Tab.LOCOMOTIVE.ordinal(), LocomotiveSettingsFrame.Tab.MULTI_UNIT.ordinal() };
+
+        for (int i = 0; i < entries.length; i++)
         {
-            AbstractButton item = Components.withText(menu, text);
+            JPopupMenu menu = SettingsWindow.rightClickKey(key);
+            AbstractButton item = Components.withText(menu, entries[i]);
 
-            assertNotNull(item, "the key's menu has no \"" + text + "\"");
-            assertFalse(Components.onTheEventThread(item::isEnabled), "\"" + text + "\" is lit");
-            assertEquals(Components.onTheEventThread(item::getToolTipText), reason, "\"" + text + "\" does not say why it is gray");
+            assertNotNull(item, "the key's menu has no \"" + entries[i] + "\"");
+            assertTrue(Components.onTheEventThread(item::isEnabled), "\"" + entries[i] + "\" is gray");
+
+            Components.onTheEventThread(() ->
+            {
+                item.doClick(0);
+
+                return null;
+            });
+
+            Mouse.closeMenus();
+
+            assertOpenedLocked("the key menu's \"" + entries[i] + "\"", tabs[i], strip);
         }
-
-        Mouse.closeMenus();
 
         Component name = (Component) field("ActiveLocLabel");
 
-        assertEquals(SettingsWindow.asked(() -> Mouse.rightClick(name, 500)), Arrays.asList(reason), "the name said the wrong thing");
+        Mouse.rightClick(name, 500);
+
+        assertOpenedLocked("the name", LocomotiveSettingsFrame.Tab.LOCOMOTIVE.ordinal(), strip);
 
         javax.swing.JToggleButton f3 = SettingsWindow.functionButton(ui, 3);
 
         assertTrue(Components.waitFor(() -> Components.onTheEventThread(() -> f3.isEnabled() && f3.isShowing()), WAIT));
 
-        assertEquals(SettingsWindow.asked(() -> Mouse.rightClick(f3, 500)), Arrays.asList(reason), "a function button said the wrong thing");
+        Mouse.rightClick(f3, 500);
 
-        final JPopupMenu[] tile = new JPopupMenu[1];
+        assertOpenedLocked("a function button", LocomotiveSettingsFrame.Tab.FUNCTIONS.ordinal(), strip);
 
-        SwingUtilities.invokeAndWait(() -> tile[0] = new RightClickSelectorMenu(ui, null, loc));
+        SettingsWindow.openFromTheTile(ui, loc);
 
-        AbstractButton settings = Components.withText(tile[0], I18n.t("loc.ui.menuLocomotiveSettings"));
-
-        assertTrue(Components.onTheEventThread(settings::isEnabled), "the tile's entry is gray: only the key menu grays");
-
-        assertEquals(SettingsWindow.asked(() -> Components.onTheEventThread(() ->
-        {
-            settings.doClick(0);
-
-            return null;
-        })), Arrays.asList(reason), "the tile said the wrong thing");
-
-        assertNull(SettingsWindow.showing(), "the window opened");
+        assertOpenedLocked("the database tile", LocomotiveSettingsFrame.Tab.LOCOMOTIVE.ordinal(), strip);
     }
 
     // The doors
 
     /**
-     * Every door says to stop the train, and none opens the window: the key menu grays both its entries and gives the
-     * reason as their tooltip; the name, the database tile and a function button say it when pressed.
+     * A moving train opens the window from every door, locked: the key menu's two entries, the name, a function button
+     * and the database tile each give the window on its tab with the strip saying to stop the train, and Save gray.
      *
-     * MUTATION: leave the moving rule out of `openLocomotiveSettings`, or out of the key menu's `grayWhileMoving`, and
-     * this fails.
+     * MUTATION: put `LocomotiveSettings.refuseIfNotEditable` back at the top of `openLocomotiveSettings`, or gray the
+     * key menu's entries again while the train moves, and this fails.
      */
     @Test
-    public void testAMovingTrainIsNotOpenedFromAnyDoor() throws Exception
+    public void testAMovingTrainOpensLockedFromEveryDoor() throws Exception
     {
         run(loc);
 
-        everyDoorSays(stop(NAME));
+        everyDoorOpensLocked(stripFor(NAME));
     }
 
     /**
@@ -266,8 +284,8 @@ public class testTheLocomotiveSettingsMovingRule
     }
 
     /**
-     * A locomotive in a multi-unit that is moving is moving: the member is refused while its unit runs, and a train
-     * outside the unit is not.
+     * A locomotive in a multi-unit that is moving is moving: the member's window opens locked while its unit runs,
+     * and a train outside the unit opens free.
      *
      * MUTATION: look at the locomotive's own speed only in `isMoving`, and this fails.
      */
@@ -286,10 +304,12 @@ public class testTheLocomotiveSettingsMovingRule
 
         assertTrue(unit.getSpeed() > 0 && loc.getSpeed() == 0, "precondition: the unit is not the only one moving");
 
-        assertEquals(SettingsWindow.asked(() -> SettingsWindow.open(ui, loc, LocomotiveSettingsFrame.Tab.LOCOMOTIVE, null)),
-            Arrays.asList(stop(NAME)), "the member of a moving multi-unit was not refused");
+        assertTrue(SettingsWindow.open(ui, loc, LocomotiveSettingsFrame.Tab.LOCOMOTIVE, null), "the member of a moving multi-unit did not open");
+        assertOpenedLocked("a member of a moving multi-unit", LocomotiveSettingsFrame.Tab.LOCOMOTIVE.ordinal(), stripFor(NAME));
 
-        assertTrue(SettingsWindow.open(ui, third, LocomotiveSettingsFrame.Tab.LOCOMOTIVE, null), "a train outside the unit was refused");
+        assertTrue(SettingsWindow.open(ui, third, LocomotiveSettingsFrame.Tab.LOCOMOTIVE, null), "a train outside the unit did not open");
+        assertFalse(Components.onTheEventThread(SettingsWindow.part("settings.strip", JLabel.class)::isVisible),
+            "a train outside the unit opened locked");
     }
 
     // An open window
@@ -345,6 +365,98 @@ public class testTheLocomotiveSettingsMovingRule
             "the strip stayed up after the train stopped");
         assertTrue(Components.waitFor(() -> Components.onTheEventThread(SettingsWindow.save()::isEnabled), WAIT),
             "Save stayed gray after the train stopped");
+    }
+
+    /**
+     * A window opened locked keeps what is typed, Save is gray, a Save that is made anyway is refused and writes
+     * nothing, and when the train stops (or the run ends) Save works.
+     *
+     * MUTATION: let `LocomotiveSettingsFrame.refresh` leave `blocked` false for a window just opened, or drop the rule
+     * from `write`, and this fails.
+     */
+    @Test
+    public void testALockedWindowKeepsTheTypingRefusesSaveAndSavesAfterTheStop() throws Exception
+    {
+        lockedThenFree(() -> run(loc), () ->
+        {
+            loc.setSpeed(0);
+
+            Components.onTheEventThread(() ->
+            {
+                ui.repaintLoc(true, null);
+
+                return null;
+            });
+        }, stop(NAME), 51);
+
+        SettingsWindow.power(ui, model, false);
+
+        lockedThenFree(() -> autonomy(true), () -> autonomy(false), I18n.t(AUTONOMY), 52);
+    }
+
+    /** Calls the open window's Save as a click would, whatever its gray, and gives what was said. */
+    private static java.util.List<String> saveAnyway() throws Exception
+    {
+        java.lang.reflect.Method save = LocomotiveSettingsFrame.class.getDeclaredMethod("save");
+
+        save.setAccessible(true);
+
+        LocomotiveSettingsFrame window = SettingsWindow.showing();
+
+        return SettingsWindow.asked(() -> Components.onTheEventThread(() ->
+        {
+            try
+            {
+                return save.invoke(window);
+            }
+            catch (ReflectiveOperationException e)
+            {
+                throw new IllegalStateException(e);
+            }
+        }));
+    }
+
+    private interface Step
+    {
+        void go() throws Exception;
+    }
+
+    /** Opens locked, types a preset speed, tries Save, ends the lock, and Saves. */
+    private static void lockedThenFree(Step lock, Step free, String refusal, int speed) throws Exception
+    {
+        final int before = loc.getPreferredSpeed();
+
+        lock.go();
+
+        assertTrue(SettingsWindow.open(ui, loc, LocomotiveSettingsFrame.Tab.LOCOMOTIVE, null), "the door did not open the window");
+        SettingsWindow.awaited();
+
+        Components.onTheEventThread(() ->
+        {
+            SettingsWindow.part("settings.speed", javax.swing.JSpinner.class).setValue(speed);
+
+            return null;
+        });
+
+        assertFalse(Components.onTheEventThread(SettingsWindow.save()::isEnabled), "Save is lit in a locked window");
+
+        assertEquals(saveAnyway(), Arrays.asList(refusal), "a Save made in a locked window was not refused");
+
+        assertEquals(loc.getPreferredSpeed(), before, "a refused Save wrote the preset speed");
+        assertNotNull(SettingsWindow.showing(), "the refused Save closed the window");
+        assertEquals((int) (Integer) Components.onTheEventThread(
+            () -> SettingsWindow.part("settings.speed", javax.swing.JSpinner.class).getValue()), speed, "the typing was lost");
+
+        free.go();
+
+        assertTrue(Components.waitFor(() -> Components.onTheEventThread(SettingsWindow.save()::isEnabled), WAIT),
+            "Save stayed gray after the lock ended");
+
+        SettingsWindow.press(SettingsWindow.save());
+
+        assertTrue(Components.waitFor(() -> loc.getPreferredSpeed() == speed, WAIT), "Save did not write after the lock ended");
+
+        SettingsWindow.closeIfOpen();
     }
 
     /**
@@ -459,13 +571,14 @@ public class testTheLocomotiveSettingsMovingRule
     }
 
     /**
-     * While autonomy runs no door opens the window, for any locomotive: the key menu grays its entries and gives the
-     * reason, the name, a function button and the database tile say so, and Delete refuses.
+     * While autonomy runs every door opens the window locked, for any locomotive, with the strip saying so, and Delete
+     * refuses.
      *
-     * MUTATION: leave autonomy out of `LocomotiveSettings.why`, and this fails.
+     * MUTATION: leave autonomy out of `LocomotiveSettings.why`, or put `refuseIfNotEditable` back at the top of
+     * `openLocomotiveSettings`, and this fails.
      */
     @Test
-    public void testAutonomyKeepsTheWindowFromEveryDoor() throws Exception
+    public void testAutonomyOpensTheWindowLockedFromEveryDoor() throws Exception
     {
         autonomy(true);
 
@@ -473,7 +586,7 @@ public class testTheLocomotiveSettingsMovingRule
         {
             assertTrue(model.isAutonomyRunning(), "precondition: the model does not read autonomy as running");
 
-            everyDoorSays(I18n.t(AUTONOMY));
+            everyDoorOpensLocked(I18n.t("loc.ui.settingsAutonomyStrip"));
 
             assertEquals(SettingsWindow.asked(() -> Components.onTheEventThread(() ->
             {
@@ -517,23 +630,7 @@ public class testTheLocomotiveSettingsMovingRule
             assertEquals(SettingsWindow.text("settings.name"), "MR typed", "the typing was lost");
 
             // Save asks again at the click, the window not being told
-            java.lang.reflect.Method save = LocomotiveSettingsFrame.class.getDeclaredMethod("save");
-
-            save.setAccessible(true);
-
-            LocomotiveSettingsFrame window = SettingsWindow.showing();
-
-            assertEquals(SettingsWindow.asked(() -> Components.onTheEventThread(() ->
-            {
-                try
-                {
-                    return save.invoke(window);
-                }
-                catch (ReflectiveOperationException e)
-                {
-                    throw new IllegalStateException(e);
-                }
-            })), Arrays.asList(I18n.t(AUTONOMY)));
+            assertEquals(saveAnyway(), Arrays.asList(I18n.t(AUTONOMY)));
 
             assertEquals(loc.getName(), NAME, "Save renamed the locomotive while autonomy runs");
         }

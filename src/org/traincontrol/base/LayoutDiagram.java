@@ -151,6 +151,100 @@ public class LayoutDiagram
         this.pageId = pageId;
     }
 
+    /** @return the page's ID as a number, 0 when the index gave none or a damaged one (see `pageIdOrPosition`) */
+    public int getPageIdNumber()
+    {
+        return pageIdOrPosition(this.pageId, 0);
+    }
+
+    /**
+     * Gives the pages that share an ID IDs of their own, all but one: the page the setup records under the ID keeps it,
+     * else the first by name; the others take fresh IDs above every one in use, in name order.  Writes nothing.
+     *
+     * @param nameToId each page's ID by name
+     * @param setupNames the page names the autonomy setup records under each ID, empty when there is none
+     * @param floor an ID no fresh one may be at or below
+     * @return the IDs after the tie is broken, in the order given
+     */
+    public static Map<String, Integer> dedupeIds(Map<String, Integer> nameToId, Map<Integer, String> setupNames,
+        int floor)
+    {
+        Map<Integer, List<String>> sharing = new TreeMap<>();
+
+        for (Map.Entry<String, Integer> each : nameToId.entrySet())
+        {
+            if (each.getValue() != null) sharing.computeIfAbsent(each.getValue(), k -> new ArrayList<>()).add(each.getKey());
+        }
+
+        int next = floor + 1;
+
+        for (Integer used : sharing.keySet()) if (used >= next) next = used + 1;
+
+        Map<String, Integer> out = new LinkedHashMap<>(nameToId);
+
+        for (Map.Entry<Integer, List<String>> group : sharing.entrySet())
+        {
+            if (group.getValue().size() < 2) continue;
+
+            List<String> names = new ArrayList<>(group.getValue());
+
+            java.util.Collections.sort(names);
+
+            String keeper = names.contains(setupNames.get(group.getKey())) ? setupNames.get(group.getKey()) : names.get(0);
+
+            for (String name : names)
+            {
+                if (!name.equals(keeper)) out.put(name, next++);
+            }
+        }
+
+        return out;
+    }
+
+    /**
+     * The page names the autonomy setup records under each page ID (its `pages` map), read from the file; empty when
+     * the layout has no setup or it cannot be read.
+     *
+     * @param path the layout folder, or null
+     * @return ID to name
+     */
+    public static Map<Integer, String> readSetupPageNames(String path)
+    {
+        Map<Integer, String> out = new TreeMap<>();
+
+        if (path == null) return out;
+
+        try
+        {
+            File setup = new File(Paths.get(path, "config", "autonomy", "setup.json").toString());
+
+            if (!setup.isFile()) return out;
+
+            org.json.JSONObject pages = new org.json.JSONObject(
+                new String(Files.readAllBytes(setup.toPath()), java.nio.charset.StandardCharsets.UTF_8)).optJSONObject("pages");
+
+            if (pages == null) return out;
+
+            for (String id : pages.keySet())
+            {
+                try
+                {
+                    out.put(Integer.valueOf(id), pages.getString(id));
+                }
+                catch (NumberFormatException | org.json.JSONException notAPage)
+                {
+                    // A damaged entry is not a page the setup knows
+                }
+            }
+        }
+        catch (IOException | org.json.JSONException unreadable)
+        {
+            // A setup that cannot be read knows no pages; the tie is then broken by name
+        }
+
+        return out;
+    }
+
     public String getName()
     {
         return this.name;
@@ -589,7 +683,9 @@ public class LayoutDiagram
 
                 if (now == was) continue;
 
-                tile.setLinkedPageIndex(now);
+                // A deleted page's ID goes with it, or the next page issued that ID would collect its arrows
+                if (now < 0) tile.setLinkTarget(null, null, -1);
+                else tile.setLinkedPageIndex(now);
 
                 changed = true;
             }
@@ -652,19 +748,7 @@ public class LayoutDiagram
             // not ask for (the caption migration), so a crash mid-write must not lose the page.  A copy of what was
             // there is kept beside it the first time a page is rewritten, so a migration that strips something is
             // recoverable.
-            Path backup = newFilePath.resolveSibling(newFilePath.getFileName() + ".bak");
-
-            if (Files.exists(newFilePath) && !Files.exists(backup))
-            {
-                try
-                {
-                    Files.copy(newFilePath, backup);
-                }
-                catch (IOException backupFailed)
-                {
-                    // Not fatal: a backup that cannot be written is worth less than the save that follows.
-                }
-            }
+            backUpOnce(newFilePath);
 
             final String contents = data;
 
@@ -697,7 +781,25 @@ public class LayoutDiagram
             throw new Exception(I18n.f("error.savingFileChanges", url), e);
         }
     }
-    
+
+    /** Copies a page file beside itself as `.bak` the first time it is rewritten. */
+    private static void backUpOnce(Path file)
+    {
+        Path backup = file.resolveSibling(file.getFileName() + ".bak");
+
+        if (Files.exists(file) && !Files.exists(backup))
+        {
+            try
+            {
+                Files.copy(file, backup);
+            }
+            catch (IOException backupFailed)
+            {
+                // Not fatal: a backup that cannot be written is worth less than the save that follows.
+            }
+        }
+    }
+
     /**
      * Whether the rightmost column and the bottom row are both empty.
      *
@@ -1308,6 +1410,188 @@ public class LayoutDiagram
 
         return out;
     }
+
+    /** The index block that marks a local layout whose arrows go by `.zielseite` (FR-175); 3.0.8 keeps it unread. */
+    private static final String LINKS_BY_ID_BLOCK = "traincontrol";
+
+    private static final String LINKS_BY_ID_KEY = " .linksByPageId=1";
+
+    /**
+     * Whether a local layout's arrows go by the page ID they carry.  Until it is marked, every arrow goes by its
+     * `.artikel`, a place in the name-sorted list, as 3.0.8 reads it.
+     *
+     * @param path the layout folder
+     * @return true once the layout is marked
+     */
+    public static boolean linksGoByPageId(String path)
+    {
+        if (path == null) return false;
+
+        for (List<String> block : readLayoutIndexExtras(path))
+        {
+            if (block.get(0).equalsIgnoreCase(LINKS_BY_ID_BLOCK) && block.contains(LINKS_BY_ID_KEY)) return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * Marks the layout's index as going by page ID: the marker block goes in before the first page, where the index
+     * writer keeps unmodeled blocks, and every other byte stays as it was.
+     *
+     * @param path the layout folder
+     * @throws IOException if the index cannot be read or written
+     */
+    public static void markLinksByPageId(String path) throws IOException
+    {
+        File index = new File(Paths.get(path, "config", "gleisbild.cs2").toString());
+
+        String text = new String(Files.readAllBytes(index.toPath()), java.nio.charset.StandardCharsets.ISO_8859_1);
+
+        String nl = text.contains("\r\n") ? "\r\n" : "\n";
+
+        String marker = LINKS_BY_ID_BLOCK + nl + LINKS_BY_ID_KEY + nl;
+
+        java.util.regex.Matcher page = java.util.regex.Pattern.compile("(?im)^seite\\r?$").matcher(text);
+
+        final String marked = page.find() ? text.substring(0, page.start()) + marker + text.substring(page.start())
+            : text + (text.isEmpty() || text.endsWith("\n") ? "" : nl) + marker;
+
+        org.traincontrol.util.Util.writeAtomically(index, out ->
+            out.write(marked.getBytes(java.nio.charset.StandardCharsets.ISO_8859_1)));
+    }
+
+    /**
+     * A page file's text with each arrow's `.zielseite` set to what `idFor` gives for its element's keys, or taken out
+     * where it gives null.  Blocks are told apart as `CS2File.parseFile` does; every other line is left as it was.
+     *
+     * @param text the page file
+     * @param idFor the page ID for an arrow's keys, or null for none
+     * @return the text, unchanged when no arrow's ID changed
+     */
+    public static String withLinkPageIds(String text, java.util.function.Function<Map<String, String>, Integer> idFor)
+    {
+        List<String> lines = java.util.Arrays.asList(text.split("\n", -1));
+
+        List<String> out = new ArrayList<>();
+
+        int start = 0;
+
+        while (start < lines.size())
+        {
+            int end = start + 1;
+
+            while (end < lines.size() && !lines.get(end).replace("\r", "").matches("^[a-zA-Z]+$")) end++;
+
+            out.addAll(arrowWithId(lines.subList(start, end), idFor));
+
+            start = end;
+        }
+
+        return String.join("\n", out);
+    }
+
+    /** One block of `withLinkPageIds`, its `.zielseite` set when it is an arrow. */
+    private static List<String> arrowWithId(List<String> block, java.util.function.Function<Map<String, String>, Integer> idFor)
+    {
+        if (!block.get(0).replace("\r", "").equalsIgnoreCase("element")) return block;
+
+        Map<String, String> keys = new java.util.HashMap<>();
+
+        // After `.artikel`, where the page writer puts it, else after the block's last key
+        int last = 0;
+        int artikel = -1;
+
+        for (int i = 1; i < block.size(); i++)
+        {
+            String line = block.get(i).replace("\r", "");
+
+            if (!line.matches("^ \\.[a-z0-9A-Z]+=.+$")) continue;
+
+            String[] parts = line.substring(2).split("=", 2);
+
+            keys.put(parts[0], parts[1]);
+
+            if (!parts[0].equals("zielseite")) last = i;
+
+            if (parts[0].equals("artikel")) artikel = i;
+        }
+
+        if (artikel >= 0) last = artikel;
+
+        String nl = block.get(0).endsWith("\r") ? "\r" : "";
+
+        if (!"pfeil".equals(keys.get("typ"))) return block;
+
+        Integer id = idFor.apply(keys);
+
+        List<String> out = new ArrayList<>();
+
+        int at = 0;
+
+        for (int i = 0; i < block.size(); i++)
+        {
+            if (!block.get(i).replace("\r", "").startsWith(" .zielseite=")) out.add(block.get(i));
+
+            if (i == last) at = out.size();
+        }
+
+        if (id != null) out.add(at, " .zielseite=" + id + nl);
+
+        return out;
+    }
+
+    /**
+     * Writes into this page's file the page ID each of its arrows holds in memory, every other byte as it was.  The
+     * one-time conversion of a local layout to links by ID (FR-175).
+     *
+     * @return how many arrows the file now gives an ID
+     * @throws Exception if the file cannot be read or written
+     */
+    public int writeLinkPageIdsIntoFile() throws Exception
+    {
+        if (this.unreadable) return 0;
+
+        Path file = getFilePath();
+
+        String before = new String(Files.readAllBytes(file), java.nio.charset.StandardCharsets.ISO_8859_1);
+
+        int[] given = {0};
+
+        final String after = withLinkPageIds(before, keys ->
+        {
+            Integer id = null;
+
+            try
+            {
+                int coord = keys.get("id") == null ? 0 : Integer.valueOf(keys.get("id").replace("0x", ""), 16);
+
+                LayoutDiagramComponent tile = coord % 256 < getSx() && (coord >> 8) % 256 < getSy()
+                    ? getComponent(coord % 256, (coord >> 8) % 256) : null;
+
+                if (tile != null && tile.isLink()) id = tile.getLinkPageId();
+            }
+            catch (NumberFormatException unreadCoordinate)
+            {
+                // Not a square the page was read with
+            }
+
+            if (id != null) given[0]++;
+
+            return id;
+        });
+
+        if (!after.equals(before))
+        {
+            backUpOnce(file);
+
+            org.traincontrol.util.Util.writeAtomically(file.toFile(), out ->
+                out.write(after.getBytes(java.nio.charset.StandardCharsets.ISO_8859_1)));
+        }
+
+        return given[0];
+    }
+
     /**
      * The index file's lines, decoded by something that will not refuse them: older builds wrote it in the platform's
      * own encoding, so UTF-8 can throw `MalformedInputException`, and ISO-8859-1 is the total fallback that round-trips
@@ -1505,6 +1789,10 @@ public class LayoutDiagram
             throw new IOException("The layout index could not be read, so the pages were not renumbered."
                 + "  Nothing was written.  Try again in a moment: " + getUnreadableIndex().getMessage());
         }
+
+        // Pages that share an id are told apart by the rule (the setup's own page keeps it, else name order), not by
+        // where the caller's list happens to put them
+        existing = dedupeIds(existing, readSetupPageNames(path), floor);
 
         // Zero is a real id: the first id issued is one above the floor and above every id already in the file.
         int next = floor + 1;

@@ -284,7 +284,7 @@ final class LayoutEditorRightclickMenu extends JPopupMenu
                     I18n.f(
                         "layout.ui.menuEditAddressLabel",
                         addressLabel,
-                        component.getLogicalAddress(),
+                        component.isLink() ? linkLabel(component) : String.valueOf(component.getLogicalAddress()),
                         protocol
                     )
                 );
@@ -483,6 +483,14 @@ final class LayoutEditorRightclickMenu extends JPopupMenu
         // SHOW COORDINATES IS NOT HERE ANY MORE (OB-179).  Adam: "hide the show coordinates right click menu option...
         // this is tied to the show grid option and will be toggled on and off together with the grid."  See
         // `LayoutGrid.coordinatesVisible`.
+    }
+
+    /** What the Edit Linked Page item shows: the page's name, or why there is none. */
+    private static String linkLabel(org.traincontrol.base.LayoutDiagramComponent link)
+    {
+        if (link.getLinkPageName() != null) return link.getLinkPageName();
+
+        return link.linksToAPageThatIsGone() ? I18n.t("layout.linkPageGone") : I18n.t("autosetup.ui.labelNone");
     }
 
     /** One of the four shift items, written once: they differ only in their words and the method they call. */

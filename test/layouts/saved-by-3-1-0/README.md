@@ -19,3 +19,4 @@ build over these files, then reads back what that build saved.
 
 - `core.testASetupFromANewerBuildOpens`
 - `core.testATrainMustStopAndCannotPassThrough`
+- `ui.testPageLinksGoByPageId`

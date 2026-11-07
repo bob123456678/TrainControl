@@ -6,10 +6,10 @@ import org.traincontrol.base.Locomotive;
 import org.traincontrol.util.I18n;
 
 /**
- * The one rule behind every door to the Locomotive Settings window (FR-048): a locomotive is not edited while it, or a
- * multi-unit it belongs to, is moving with the power on, or while autonomy runs.  The
- * window and its save, trash can and picture marks, the key menu's entries, the right-clicks on a function button and on
- * the name, and delete ask {@link #whyNotEditable}; the quick actions (the presets) do not.
+ * The one rule behind the Locomotive Settings window (FR-048): a locomotive is not edited while it, or a multi-unit it
+ * belongs to, is moving with the power on, or while autonomy runs.  Every door opens the window anyway, locked; its
+ * strip, Save, trash can and picture marks, and every write and delete ask {@link #whyNotEditable}; the quick actions
+ * (the presets) do not.
  */
 public final class LocomotiveSettings
 {

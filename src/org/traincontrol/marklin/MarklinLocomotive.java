@@ -1137,7 +1137,7 @@ public class MarklinLocomotive extends Locomotive
     /**
      * Stages a list and applies it in one call, so no second thread can be staging at the same time:
      * `preSetLinkedLocomotives` writes an instance field that `setLinkedLocomotives` reads, and `syncWithCS2` and the
-     * multi-unit dialog both rebuild consists.  The two-call form remains for `restoreState`, which stages each consist
+     * Locomotive Settings window's Multi-Unit tab both rebuild consists.  The two-call form remains for `restoreState`, which stages each consist
      * before every member exists and applies them all afterwards, before the window is built.
      *
      * @param locList member name to speed adjustment, as `preSetLinkedLocomotives` takes it
@@ -1164,7 +1164,7 @@ public class MarklinLocomotive extends Locomotive
         // refilling it in place.  setSpeed and setDirection iterate linkedLocomotives under this
         // locomotive's monitor; rebuilding it unsynchronized let a fan-out land mid-rebuild and either
         // throw ConcurrentModificationException or command the head alone.  That was tolerable while
-        // only the multi-unit dialog rebuilt consists - a deliberate action on a consist the user is
+        // only the Locomotive Settings window's Multi-Unit tab rebuilt consists - a deliberate action on a consist the user is
         // editing - but a Central Station sync now rebuilds them too, automatically, and a consist can
         // be driven manually at the same time.
         //
