@@ -146,9 +146,7 @@ final class LocomotiveNotesPanel extends JPanel
     {
         for (JLabel l : captions)
         {
-            String text = l.getText().trim();
-
-            l.setText(text.endsWith(":") ? text.substring(0, text.length() - 1) : text);
+            l.setText(org.traincontrol.gui.widgets.UiStyle.withoutColon(l.getText()));
             org.traincontrol.gui.widgets.UiStyle.style(l);
         }
     }

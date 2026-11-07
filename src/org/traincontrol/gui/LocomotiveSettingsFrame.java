@@ -118,14 +118,14 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
         // Save, then Cancel, at the bottom right, spaced as the route editor's are
         JPanel buttons = new JPanel(new FlowLayout(FlowLayout.RIGHT, 4, 0));
 
+        // What Save does for every tab, as a mark beside it
+        buttons.add(InfoMark.label(I18n.t("loc.ui.settingsKeptHere")));
         buttons.add(save);
         buttons.add(cancel);
 
-        // What every tab shares, as a mark at the left
         JPanel footer = new JPanel(new BorderLayout());
 
         footer.setBorder(BorderFactory.createEmptyBorder(6, PAD, PAD, PAD));
-        footer.add(InfoMark.label(I18n.t("loc.ui.settingsKeptHere")), BorderLayout.WEST);
         footer.add(buttons, BorderLayout.EAST);
 
         JPanel content = new JPanel(new BorderLayout());
@@ -770,13 +770,11 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
 
                 members.setPreferredSize(new Dimension(560, 330));
 
+                members.setNote(members.isReadOnly() ? I18n.t("loc.ui.settingsMultiUnitReadOnly")
+                    : I18n.f("loc.ui.settingsMultiUnitHint", loc.getName()));
+
                 add(members, BorderLayout.CENTER);
 
-                JPanel note = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
-
-                note.add(InfoMark.label(members.isReadOnly() ? I18n.t("loc.ui.settingsMultiUnitReadOnly")
-                    : I18n.f("loc.ui.settingsMultiUnitHint", loc.getName())));
-                add(note, BorderLayout.SOUTH);
             }
         }
 

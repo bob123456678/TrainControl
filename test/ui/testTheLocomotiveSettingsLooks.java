@@ -52,22 +52,9 @@ public class testTheLocomotiveSettingsLooks
 
     private static JTabbedPane opened() throws Exception
     {
-        fixture.quiet();
-        fixture.forget(NAME);
+        fixture.layDcc(NAME, 3801, LocomotiveSettingsFrame.Tab.LOCOMOTIVE);
 
-        SettingsWindow.power(ui, model, false);
-
-        org.traincontrol.marklin.MarklinLocomotive loc = model.newDCCLocomotive(NAME, 3801);
-
-        SettingsWindow.showOnKeyA(ui, loc);
-
-        assertTrue(SettingsWindow.open(ui, loc, LocomotiveSettingsFrame.Tab.LOCOMOTIVE, null));
-
-        LocomotiveSettingsFrame w = SettingsWindow.awaited();
-
-        assertNotNull(w);
-
-        return w.tabsForTest();
+        return SettingsWindow.showing().tabsForTest();
     }
 
     private static String pixels(Icon icon)
