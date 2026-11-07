@@ -405,7 +405,7 @@ public class LayoutEditor extends PositionAwareJFrame
         org.traincontrol.automationui.AutonomySession autonomy = parent.getAutonomySession();
 
         return this.autonomyAsOpened != null && autonomy != null
-            && !this.autonomyAsOpened.similar(autonomy.snapshotSetup());
+            && (autonomy.aGestureOvertookTheRailwaysPause() || !this.autonomyAsOpened.similar(autonomy.snapshotSetup()));
     }
 
     /**

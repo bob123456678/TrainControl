@@ -2064,6 +2064,53 @@ public class AutonomySession
         }
     }
 
+    /**
+     * Notes the pause of each of these trains that `asBuilt` does not hold: a card's, no fold has noted it, and the door
+     * about to write the train would lose it from what Cancel keeps (OB-346).  Nothing while no edit is open.
+     */
+    public void noteTheCardsPausesADoorOvertakes(java.util.Collection<Locomotive> trains, String configurationName,
+        org.json.JSONObject asBuilt)
+    {
+        if (pausesTakenFromTheRailway == null || configurationName == null || asBuilt == null) return;
+
+        Set<String> held = namesIn(asBuilt.opt(org.traincontrol.automation.Layout.PAUSED_LOCOMOTIVES));
+
+        for (Locomotive train : trains)
+        {
+            if (train == null || train.getName() == null || train.isAutonomyPaused() == held.contains(train.getName())) continue;
+
+            pausesTakenFromTheRailway.computeIfAbsent(configurationName, name -> new java.util.TreeMap<>())
+                .put(train.getName(), train.isAutonomyPaused());
+        }
+    }
+
+    /**
+     * Whether the setup now says other than a pause Cancel would keep from the railway: a gesture overtook it, and
+     * Cancel has that to discard even where the setup reads as the editor opened it (OB-346).
+     */
+    public boolean aGestureOvertookTheRailwaysPause()
+    {
+        if (pausesTakenFromTheRailway == null) return false;
+
+        for (Map.Entry<String, java.util.Map<String, Boolean>> pauses : pausesTakenFromTheRailway.entrySet())
+        {
+            org.json.JSONObject configuration = store.getConfiguration(pauses.getKey());
+
+            if (configuration == null) continue;
+
+            org.json.JSONObject globals = configuration.optJSONObject("globals");
+
+            Set<String> listed = namesIn(globals == null ? null : globals.opt(org.traincontrol.automation.Layout.PAUSED_LOCOMOTIVES));
+
+            for (Map.Entry<String, Boolean> pause : pauses.getValue().entrySet())
+            {
+                if (pause.getValue() != listed.contains(pause.getKey())) return true;
+            }
+        }
+
+        return false;
+    }
+
     private void forgetTheNamesKept()
     {
         for (Map.Entry<String, TileKey> kept : keptSquares.entrySet())

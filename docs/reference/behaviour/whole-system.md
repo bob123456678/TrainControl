@@ -156,10 +156,10 @@ one copy). So a station renamed, or a square given more copies or fewer, carries
   so a timetable through stations moved stays on those stations. What the carry remembers is taken as the editor opens,
   so a Cancel after two stations' names were swapped puts every leg back on its station too.
 - Cancel also keeps what the railway changed alone while the editor was open (an Auto tab setting, a timetable entry, a
-  card's pause), with the legs of a kept timetable carried to the names of the edit's last build (OB-343). Known
-  exceptions, for 3.1.0: a chain of renames that hands one station's name to another can point such a leg, or the
-  railway's leg at the fold itself, at the wrong station (OB-345); and an editor gesture can overtake a card's pause no
-  fold has noted yet (OB-346).
+  card's pause), with the legs of a kept timetable carried to the names of the edit's last build (OB-343). That holds
+  for a card's pause an editor gesture then overtook, and Cancel asks about the gesture even where it leaves the setup
+  as the editor opened it (OB-346). Known exception, for 3.1.0: a chain of renames that hands one station's name to
+  another can point such a leg, or the railway's leg at the fold itself, at the wrong station (OB-345).
 - A station name two pages share is settled over every page, those out of autonomy too, so the plain name does not move
   to the other page while one is out.
 
