@@ -100,6 +100,7 @@ final class LocomotiveFunctionsTab extends JPanel
     private final JButton resetAll = button(I18n.t("loc.ui.resetAllCustomizations"));
     private boolean reset;
     private boolean copied;
+    private boolean blocked;
 
     LocomotiveFunctionsTab(TrainControlUI ui, Locomotive loc, Runnable onChange)
     {
@@ -132,6 +133,8 @@ final class LocomotiveFunctionsTab extends JPanel
         table.setRowHeight(TrainControlUI.BUTTON_ICON_WIDTH + 8);
         table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         table.getTableHeader().setReorderingAllowed(false);
+        table.getTableHeader().setFont(org.traincontrol.gui.widgets.UiStyle.LABEL_FONT);
+        table.getTableHeader().setForeground(org.traincontrol.gui.widgets.UiStyle.BLUE);
         table.getColumnModel().getColumn(0).setCellRenderer(iconRenderer);
         table.getColumnModel().getColumn(0).setCellEditor(iconEditor);
 
@@ -250,12 +253,12 @@ final class LocomotiveFunctionsTab extends JPanel
         }
 
         GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(2, 4, 2, 4);
+        gbc.insets = new Insets(2, 0, 2, 4);
         gbc.anchor = GridBagConstraints.WEST;
 
         gbc.gridy = 0;
         gbc.gridx = 0;
-        panel.add(new JLabel(I18n.t("loc.ui.settingsPresetLabel")), gbc);
+        panel.add(org.traincontrol.gui.widgets.UiStyle.label(I18n.t("loc.ui.settingsPresetLabel")), gbc);
         gbc.gridx = 1;
         panel.add(useCurrent, gbc);
         gbc.gridx = 2;
@@ -263,18 +266,16 @@ final class LocomotiveFunctionsTab extends JPanel
 
         gbc.gridy = 1;
         gbc.gridx = 0;
-        panel.add(new JLabel(I18n.t("loc.ui.settingsIconsLabel")), gbc);
+        panel.add(org.traincontrol.gui.widgets.UiStyle.label(I18n.t("loc.ui.settingsIconsLabel")), gbc);
         gbc.gridx = 1;
         panel.add(copyIcons, gbc);
         gbc.gridx = 2;
         panel.add(resetAll, gbc);
 
-        gbc.gridy = 2;
-        gbc.gridx = 0;
-        gbc.gridwidth = 3;
-        JLabel hint = new JLabel(I18n.t("loc.ui.settingsFunctionsHint"));
-        hint.setForeground(java.awt.Color.GRAY);
-        panel.add(hint, gbc);
+        // Beside the Preset row; the sentence also says the Now boxes act at once
+        gbc.gridy = 0;
+        gbc.gridx = 3;
+        panel.add(org.traincontrol.gui.InfoMark.label(I18n.t("loc.ui.settingsFunctionsHint")), gbc);
 
         JPanel left = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
         left.add(panel);
@@ -435,6 +436,13 @@ final class LocomotiveFunctionsTab extends JPanel
         table.repaint();
         resetAll.setEnabled(loc.isCustomFunctions() || reset);
         fitCopyIcons();
+    }
+
+    /** Whether the moving rule locks the window: the Now boxes then do nothing, as they send at once. */
+    void setBlocked(boolean b)
+    {
+        blocked = b;
+        table.repaint();
     }
 
     /** What the tab means to write, for the window to know whether the Central Station is to be asked again. */
@@ -704,13 +712,13 @@ final class LocomotiveFunctionsTab extends JPanel
         @Override
         public Class<?> getColumnClass(int c)
         {
-            return c == 0 ? Row.class : c == 4 ? Boolean.class : String.class;
+            return c == 0 ? Row.class : c == 3 || c == 4 ? Boolean.class : String.class;
         }
 
         @Override
         public boolean isCellEditable(int r, int c)
         {
-            return c == 0 || c == 2 || c == 4;
+            return c == 0 || c == 2 || c == 4 || c == 3 && !blocked && r < loc.getNumF();
         }
 
         @Override
@@ -723,7 +731,7 @@ final class LocomotiveFunctionsTab extends JPanel
                 case 0: return row;
                 case 1: return "F" + row.function;
                 case 2: return behaviorNames[row.behavior];
-                case 3: return row.function < loc.getNumF() && loc.getF(row.function) ? I18n.t("loc.ui.settingsNowOn") : "";
+                case 3: return row.function < loc.getNumF() && loc.getF(row.function);
                 default: return row.preset;
             }
         }
@@ -732,6 +740,23 @@ final class LocomotiveFunctionsTab extends JPanel
         public void setValueAt(Object value, int r, int c)
         {
             Row row = rows.get(r);
+
+            if (c == 3)
+            {
+                // A command to the railway now, not part of Save
+                if (!blocked && row.function < loc.getNumF())
+                {
+                    ui.fireFunction(loc, row.function, (Boolean) value);
+
+                    // The railway answers on its own thread: shown again once it has
+                    javax.swing.Timer later = new javax.swing.Timer(300, e -> table.repaint());
+
+                    later.setRepeats(false);
+                    later.start();
+                }
+
+                return;
+            }
 
             if (c == 2)
             {

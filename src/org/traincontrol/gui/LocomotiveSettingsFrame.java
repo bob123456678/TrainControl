@@ -30,6 +30,8 @@ import javax.swing.event.DocumentListener;
 import org.traincontrol.base.Locomotive;
 import org.traincontrol.base.Locomotive.decoderType;
 import org.traincontrol.gui.widgets.RowIcons;
+import org.traincontrol.gui.widgets.TabIcons;
+import org.traincontrol.gui.widgets.UiStyle;
 import org.traincontrol.util.I18n;
 
 /**
@@ -51,8 +53,10 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
         LOCOMOTIVE, FUNCTIONS, NOTES, MULTI_UNIT
     }
 
-    private static final Font LABEL_FONT = new Font("Segoe UI Semibold", Font.PLAIN, 13);
     private static final Font BUTTON_FONT = new Font("Segoe UI", Font.BOLD, 12);
+
+    /** The margin round every tab's content and the footer: the route editor's. */
+    private static final int PAD = 10;
 
     /** What a test answers the unsaved-changes question with: 0 Save, 1 Discard, 2 Cancel, or null to ask. */
     public static Integer unsavedAnswerForTest;
@@ -99,6 +103,9 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
 
         tabs.setName("settings.tabs");
 
+        // The application's compact tabs show the title of the chosen tab only; these keep every title beside its icon
+        tabs.putClientProperty("JTabbedPane.tabWidthMode", "preferred");
+
         // One width, so the two buttons share an edge.
         int width = Math.max(save.getPreferredSize().width, cancel.getPreferredSize().width);
 
@@ -108,10 +115,18 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
         save.addActionListener(e -> save());
         cancel.addActionListener(e -> close());
 
-        JPanel footer = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 8));
+        // Save, then Cancel, at the bottom right, spaced as the route editor's are
+        JPanel buttons = new JPanel(new FlowLayout(FlowLayout.RIGHT, 4, 0));
 
-        footer.add(save);
-        footer.add(cancel);
+        buttons.add(save);
+        buttons.add(cancel);
+
+        // What every tab shares, as a mark at the left
+        JPanel footer = new JPanel(new BorderLayout());
+
+        footer.setBorder(BorderFactory.createEmptyBorder(6, PAD, PAD, PAD));
+        footer.add(InfoMark.label(I18n.t("loc.ui.settingsKeptHere")), BorderLayout.WEST);
+        footer.add(buttons, BorderLayout.EAST);
 
         JPanel content = new JPanel(new BorderLayout());
 
@@ -183,10 +198,15 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
         notesTab = new NotesTab();
         multiUnitTab = new MultiUnitTab();
 
-        tabs.addTab(I18n.t("loc.ui.settingsTabLocomotive"), locomotiveTab);
-        tabs.addTab(I18n.t("loc.ui.settingsTabFunctions"), functionsTab);
-        tabs.addTab(I18n.t("loc.ui.settingsTabNotes"), notesTab);
-        tabs.addTab(I18n.t("loc.ui.settingsTabMultiUnit"), multiUnitTab);
+        for (JPanel tab : new JPanel[] { locomotiveTab, functionsTab, notesTab, multiUnitTab })
+        {
+            tab.setBorder(BorderFactory.createEmptyBorder(PAD, PAD, PAD, PAD));
+        }
+
+        tabs.addTab(I18n.t("loc.ui.settingsTabLocomotive"), TabIcons.locomotive(), locomotiveTab);
+        tabs.addTab(I18n.t("loc.ui.settingsTabFunctions"), TabIcons.functions(), functionsTab);
+        tabs.addTab(I18n.t("loc.ui.settingsTabNotes"), TabIcons.notes(), notesTab);
+        tabs.addTab(I18n.t("loc.ui.settingsTabMultiUnit"), TabIcons.multiUnit(), multiUnitTab);
 
         setTitle(I18n.f("loc.ui.settingsTitle", loc.getName()));
 
@@ -218,6 +238,7 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
 
         locomotiveTab.setBlocked(blocked);
         locomotiveTab.refreshPicture();
+        functionsTab.setBlocked(blocked);
         functionsTab.refresh();
         changed();
     }
@@ -393,20 +414,7 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
 
     private static JLabel label(String text)
     {
-        JLabel l = new JLabel(text);
-
-        l.setFont(LABEL_FONT);
-
-        return l;
-    }
-
-    private static JLabel hint(String text)
-    {
-        JLabel l = new JLabel(text);
-
-        l.setForeground(Color.GRAY);
-
-        return l;
+        return UiStyle.label(text);
     }
 
     /** The first tab: picture, name, decoder, address and preset speed, with the trash can. */
@@ -485,65 +493,68 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
 
             GridBagConstraints gbc = new GridBagConstraints();
             gbc.insets = new Insets(4, 6, 4, 6);
-            gbc.anchor = GridBagConstraints.NORTHWEST;
+            gbc.anchor = GridBagConstraints.WEST;
 
-            // The picture, with what it does under it
+            // The picture, with what it does under it and the trash can that deletes the locomotive
             gbc.gridx = 0;
             gbc.gridy = 0;
             gbc.gridheight = 6;
+            gbc.anchor = GridBagConstraints.NORTHWEST;
             JPanel pictureColumn = new JPanel(new BorderLayout(0, 4));
+            JPanel trashRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+            trashRow.setBorder(BorderFactory.createEmptyBorder(8, 0, 0, 0));
+            trashRow.add(trash);
+            trashRow.add(InfoMark.label(I18n.t("loc.ui.settingsPictureNote")));
             pictureColumn.add(picture, BorderLayout.NORTH);
-            pictureColumn.add(hint(I18n.t("loc.ui.settingsPictureNote")), BorderLayout.CENTER);
+            pictureColumn.add(trashRow, BorderLayout.CENTER);
             add(pictureColumn, gbc);
 
+            // Labels on their fields' baseline, and the three fields one width
             gbc.gridheight = 1;
-            gbc.gridx = 1;
-            add(label(I18n.t("ui.name")), gbc);
-            gbc.gridx = 2;
-            add(name, gbc);
+            gbc.anchor = GridBagConstraints.WEST;
 
-            gbc.gridx = 1;
-            gbc.gridy++;
-            add(label(I18n.t("loc.ui.decoderType")), gbc);
-            gbc.gridx = 2;
-            add(decoder, gbc);
+            JComponent[] fields = { name, decoder, address };
+            String[] labels = { "ui.name", "loc.ui.decoderType", "layout.ui.address" };
 
-            gbc.gridx = 1;
-            gbc.gridy++;
-            add(label(I18n.t("layout.ui.address")), gbc);
-            gbc.gridx = 2;
-            add(address, gbc);
+            for (int i = 0; i < fields.length; i++)
+            {
+                gbc.gridy = i;
+                gbc.gridx = 1;
+                gbc.weightx = 0;
+                gbc.fill = GridBagConstraints.NONE;
+                add(label(I18n.t(labels[i])), gbc);
+                gbc.gridx = 2;
+                gbc.weightx = 1;
+                gbc.fill = GridBagConstraints.HORIZONTAL;
+                add(fields[i], gbc);
+            }
 
+            gbc.weightx = 1;
+            gbc.fill = GridBagConstraints.NONE;
             gbc.gridx = 2;
-            gbc.gridy++;
+            gbc.gridy = 3;
             add(sameAddress, gbc);
 
             gbc.gridx = 1;
-            gbc.gridy++;
+            gbc.gridy = 4;
+            gbc.weightx = 0;
             add(label(I18n.t("loc.ui.settingsPresetSpeed")), gbc);
             gbc.gridx = 2;
-            JPanel speedRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 4, 0));
+            gbc.weightx = 1;
+            JPanel speedRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+            speedRow.setOpaque(false);
             speedRow.add(speed);
+            speedRow.add(javax.swing.Box.createHorizontalStrut(4));
             speedRow.add(new JLabel("%"));
+            speedRow.add(javax.swing.Box.createHorizontalStrut(8));
+            speedRow.add(InfoMark.label(I18n.t("loc.ui.settingsPresetSpeedHint")));
             add(speedRow, gbc);
 
-            gbc.gridx = 2;
-            gbc.gridy++;
-            add(hint(I18n.t("loc.ui.settingsPresetSpeedHint")), gbc);
-
-            // The foot: what is kept where, and the trash can at the right edge
-            gbc.gridx = 0;
-            gbc.gridy = 6;
-            gbc.gridwidth = 3;
-            gbc.weightx = 1;
+            // The rest of the tab is room
+            gbc.gridx = 1;
+            gbc.gridy = 5;
             gbc.weighty = 1;
-            gbc.anchor = GridBagConstraints.SOUTH;
-            gbc.fill = GridBagConstraints.HORIZONTAL;
-
-            JPanel foot = new JPanel(new BorderLayout());
-            foot.add(hint(I18n.t("loc.ui.settingsKeptHere")), BorderLayout.WEST);
-            foot.add(trash, BorderLayout.EAST);
-            add(foot, gbc);
+            add(new JLabel(), gbc);
 
             warnAboutTheSameAddress();
         }
@@ -722,9 +733,12 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
             find.setToolTipText(I18n.t("loc.ui.tooltip.findSimilarHint"));
             find.addActionListener(e -> main.locomotiveActions.findSimilarLocs(loc, LocomotiveSettingsFrame.this));
 
-            JPanel foot = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 0));
+            panel.styleCaptions();
+
+            // The gap is the notes panel's cell margin, so the button starts where the captions do
+            JPanel foot = new JPanel(new FlowLayout(FlowLayout.LEFT, 4, 0));
             foot.add(find);
-            foot.add(hint(I18n.t("loc.ui.settingsFindSimilarHint")));
+            foot.add(InfoMark.label(I18n.t("loc.ui.settingsFindSimilarHint")));
 
             add(panel, BorderLayout.CENTER);
             add(foot, BorderLayout.SOUTH);
@@ -744,11 +758,11 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
 
             if (parent != null)
             {
-                add(label(I18n.f("loc.ui.settingsPartOfMultiUnit", loc.getName(), parent.getName())), BorderLayout.NORTH);
+                add(new JLabel(I18n.f("loc.ui.settingsPartOfMultiUnit", loc.getName(), parent.getName())), BorderLayout.NORTH);
             }
             else if (main.getModel().getLocomotives().size() < 2)
             {
-                add(label(I18n.t("loc.ui.errorNeedTwoLocomotivesForMultiUnit")), BorderLayout.NORTH);
+                add(new JLabel(I18n.t("loc.ui.errorNeedTwoLocomotivesForMultiUnit")), BorderLayout.NORTH);
             }
             else
             {
@@ -757,8 +771,12 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
                 members.setPreferredSize(new Dimension(560, 330));
 
                 add(members, BorderLayout.CENTER);
-                add(hint(members.isReadOnly() ? I18n.t("loc.ui.settingsMultiUnitReadOnly")
-                    : I18n.f("loc.ui.settingsMultiUnitHint", loc.getName())), BorderLayout.SOUTH);
+
+                JPanel note = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+
+                note.add(InfoMark.label(members.isReadOnly() ? I18n.t("loc.ui.settingsMultiUnitReadOnly")
+                    : I18n.f("loc.ui.settingsMultiUnitHint", loc.getName())));
+                add(note, BorderLayout.SOUTH);
             }
         }
 
