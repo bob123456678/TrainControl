@@ -582,6 +582,7 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
             gbc.gridx = 2;
             gbc.gridy = 1;
             gbc.weightx = 1;
+            gbc.insets = new Insets(0, 3, 0, 3);
             add(new JLabel(), gbc);
 
             gbc.gridx = 0;
