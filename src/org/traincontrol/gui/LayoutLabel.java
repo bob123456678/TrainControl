@@ -346,6 +346,9 @@ public final class LayoutLabel extends JLabel
                                     return;
                                 }
                                 
+                                // The window this tile is in, read now: a redraw can take the tile out of it (OB-324)
+                                final java.awt.Window asked = javax.swing.SwingUtilities.getWindowAncestor(LayoutLabel.this);
+
                                 javax.swing.SwingUtilities.invokeLater(() -> 
                                 {
                                     boolean powerOnFirst = false;
@@ -359,7 +362,7 @@ public final class LayoutLabel extends JLabel
                                         };
 
                                         int choice = JOptionPane.showOptionDialog(
-                                            tcUI,
+                                            tcUI.stillShowing(asked),
                                             I18n.t("layout.ui.confirmAccessorySwitchPowerOff"),
                                             I18n.t("layout.ui.dialogPleaseConfirm"),
                                             JOptionPane.YES_NO_CANCEL_OPTION,
@@ -413,7 +416,7 @@ public final class LayoutLabel extends JLabel
                                             };
 
                                             int choice = JOptionPane.showOptionDialog(
-                                                tcUI,
+                                                tcUI.stillShowing(asked),
                                                 protecting
                                                     ? I18n.t("layout.ui.confirmAccessoryProtecting")
                                                     : I18n.t("layout.ui.confirmAccessoryActiveRoute"),
@@ -502,11 +505,13 @@ public final class LayoutLabel extends JLabel
                                             // freeze them all.
                                             new Thread(() ->
                                             {
+                                                tcUI.routesStartHereFrom(asked);
+
                                                 // One question, three answers: a conflict that cleared between the
                                                 // check and the dialog must not come back as "override", which would
                                                 // run the route with every guard off unasked.
                                                 TrainControlUI.RouteConflict answer =
-                                                    tcUI.askAboutRouteConflict(onTile, tcUI, null);
+                                                    tcUI.askAboutRouteConflict(onTile, tcUI.stillShowing(asked), null);
 
                                                 if (answer == TrainControlUI.RouteConflict.OVERRIDE)
                                                 {

@@ -183,3 +183,10 @@ not fix it. Name the square.
 - `ui.testTheAutoTabSaysWhyATrainWaits`
 - `ui.testTheAutonomyEditorsBulkDoors`
 - `core.testAnOldSetupReadsAsItDid`
+- `ui.testTheEditorsFindingsCanBeFiltered`
+- `ui.testAPageWindowsMenuAsksOverIt`
+- `ui.testAPageWindowsSetupMenuAsksOverIt`
+- `ui.testFindAPoint`
+- `ui.testTheEditorsDoorsAskOverThem`
+- `regression.testLocomotiveCsvImportDoor`
+- `ui.testThePresetSpeedSurvivesTheSetupDoors`

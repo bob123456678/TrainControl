@@ -26,6 +26,7 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 import org.traincontrol.base.Accessory;
 import org.traincontrol.base.Locomotive;
+import org.traincontrol.gui.AccessoryKeyboard;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinAccessory;
 import org.traincontrol.marklin.MarklinControlStation;
@@ -199,7 +200,7 @@ public class testDrivingFromTheKeyboard
     /**
      * Control with the arrows forces a direction; a plain arrow turns the train whichever way it faces.
      *
-     * MUTATION: `forwardLoc()` in the Control+LEFT arm of `LocControlPanelKeyPressed`, and this fails.
+     * MUTATION: `forwardLoc()` in the "turn left" row of `TrainControlUI.KeyShortcuts`, and this fails.
      */
     @Test
     public void testTheArrowKeysTurnTheTrain() throws Exception
@@ -270,7 +271,7 @@ public class testDrivingFromTheKeyboard
      * Every kind of function shortcut reaches its own function: the back quote for f0, F1-F24, Alt plus a digit for
      * f0-f9, Control plus a digit for f10-f19, Control and Alt plus a digit for f20-f29, and the number pad.
      *
-     * MUTATION: `switchF(12)` in the Control+1 arm of `LocControlPanelKeyPressed`, and this fails at Control+1.
+     * MUTATION: `switchF(fn + 1)` in the function rows of `TrainControlUI.KeyShortcuts`, and this fails.
      */
     @Test
     public void testEveryKindOfFunctionShortcutReachesItsFunction() throws Exception
@@ -327,7 +328,7 @@ public class testDrivingFromTheKeyboard
      * Each digit key sets the speed its button on screen sets, 1 stops the train, 0 is full speed, and the digits
      * between climb in order.
      *
-     * MUTATION: `SixButtonActionPerformed` in the VK_5 arm of `LocControlPanelKeyPressed`, and this fails at 5.
+     * MUTATION: swap Five and Six in `TrainControlUI.KeyShortcuts.SPEED_BUTTONS`, and this fails at 5.
      */
     @Test
     public void testTheDigitKeysSetTheSpeedTheirButtonsSet() throws Exception
@@ -559,7 +560,7 @@ public class testDrivingFromTheKeyboard
     /**
      * Alt+G turns the power on and Escape turns it off.
      *
-     * MUTATION: `stop()` for `go()` in the Alt+G arm of `LocControlPanelKeyPressed`, and this fails.
+     * MUTATION: `stop()` for `go()` in the "power on" row of `TrainControlUI.KeyShortcuts`, and this fails.
      */
     @Test
     public void testAltGAndEscapeSwitchThePower() throws Exception
@@ -715,57 +716,84 @@ public class testDrivingFromTheKeyboard
     }
 
     /**
-     * Next Keyboard shows the next block of accessory addresses, and the first button then switches the first of them;
-     * Prev Keyboard shows the block before again.
+     * The 16 tabs are ranges of 128 addresses, 1-128 up to 1921-2048, and each shows its first and last address on its
+     * first and last key; the + and - keys move between them, and Control moves four at a time.
      *
      * MUTATION: `keyboardNumber + 2` in `NextKeyboardActionPerformed`, and this fails.
      */
     @Test
-    public void testTheAccessoryKeyboardPagesOnAndBack() throws Exception
+    public void testTheAccessoryTabsAreRangesOfAddresses() throws Exception
     {
-        JButton next = (JButton) field("NextKeyboard");
-        JButton prev = (JButton) field("PrevKeyboard");
-        JToggleButton first = (JToggleButton) field("SwitchButton1");
+        AccessoryKeyboard keys = keys();
 
-        int keys = support.ProgramConstants.integer(TrainControlUI.class, "KEYBOARD_KEYS");
+        assertEquals(keys.tab(1).getText(), "1-128", "the first tab is not named for its range");
+        assertEquals(keys.tab(2).getText(), "129-256", "the second tab is not named for its range");
+        assertEquals(keys.tab(16).getText(), "1921-2048", "the last tab is not named for its range");
 
-        // From a block with one after it
-        if (!next.isEnabled())
+        for (int page : new int[] {1, 2, 9, 16})
         {
-            Components.press(prev);
+            goToPage(page);
 
-            assertTrue(waitFor(next::isEnabled), "precondition: Prev Keyboard did not leave the last block");
+            assertEquals(Components.onTheEventThread(() -> keys.numberOf(1)), String.valueOf(128 * (page - 1) + 1),
+                "tab " + page + " does not start where its range does");
+            assertEquals(Components.onTheEventThread(() -> keys.numberOf(128)), String.valueOf(128 * page),
+                "tab " + page + " does not end where its range does");
         }
 
-        int was = Integer.parseInt(first.getText());
+        assertEquals(Components.onTheEventThread(() -> keys.numberOf(128)), "2048", "2048 is not on the last tab");
 
-        Components.press(next);
+        // On the first tab, where + and - mean pages: on the diagram tab they step through its layouts
+        javax.swing.JTabbedPane main = (javax.swing.JTabbedPane) keyboard();
+        int was = Components.onTheEventThread(main::getSelectedIndex);
 
-        assertTrue(waitFor(() -> first.getText().equals(String.valueOf(was + keys))), "Next Keyboard shows "
-            + first.getText() + " on the first button, not " + (was + keys));
+        Components.onTheEventThread(() ->
+        {
+            main.setSelectedIndex(0);
 
-        int address = was + keys;
+            return null;
+        });
 
-        boolean on = first.isSelected();
+        try
+        {
+            goToPage(1);
 
-        int mark = wire.mark();
+            Keys.press(keyboard(), KeyEvent.VK_EQUALS);
 
-        Components.press(first);
+            assertTrue(waitFor(() -> keys.getPage() == 2), "+ did not bring the second tab forward");
+            assertEquals(Components.onTheEventThread(() -> keys.numberOf(1)), "129", "+ landed on the wrong range");
 
-        assertTrue(waitFor(() -> lastAccessory(mark, address) == (on ? 1 : 0)),
-            "after Next Keyboard, the first button did not switch accessory " + address + ": " + wire.since(mark));
+            Keys.press(keyboard(), KeyEvent.VK_EQUALS, InputEvent.CTRL_DOWN_MASK);
 
-        Components.press(first);
+            assertTrue(waitFor(() -> keys.getPage() == 6), "Control + did not move four tabs");
 
-        Components.press(prev);
+            Keys.press(keyboard(), KeyEvent.VK_MINUS);
 
-        assertTrue(waitFor(() -> first.getText().equals(String.valueOf(was))), "Prev Keyboard did not show the block before");
+            assertTrue(waitFor(() -> keys.getPage() == 5), "- did not bring the tab before forward");
+
+            Keys.press(keyboard(), KeyEvent.VK_MINUS, InputEvent.CTRL_DOWN_MASK);
+
+            assertTrue(waitFor(() -> keys.getPage() == 1), "Control - did not move four tabs back");
+            assertTrue(Components.onTheEventThread(() -> keys.tab(1).isSelected()), "the tab for the range shown is not the one chosen");
+
+            Keys.press(keyboard(), KeyEvent.VK_MINUS);
+
+            assertEquals(keys.getPage(), 1, "- went past the first tab");
+        }
+        finally
+        {
+            Components.onTheEventThread(() ->
+            {
+                main.setSelectedIndex(was);
+
+                return null;
+            });
+        }
     }
 
     /**
      * Backspace brings the next tab of the keyboard forward, and Alt+Backspace the one before.
      *
-     * MUTATION: `getSelectedIndex() + 2` in the BACK_SPACE arm of `LocControlPanelKeyPressed`, and this fails.
+     * MUTATION: `getSelectedIndex() + 2` in the "next keyboard tab" row of `TrainControlUI.KeyShortcuts`, and this fails.
      */
     @Test
     public void testBackspaceCyclesTheKeyboardTabs() throws Exception
@@ -838,67 +866,304 @@ public class testDrivingFromTheKeyboard
     // The accessory keyboard
 
     /**
-     * An accessory button switches its accessory, and the command reaches the railway; a second click switches it back.
+     * A click on a half sends exactly that color, on MM2 and on DCC, and the half then lit is the one clicked.  Red is
+     * the turned position, which goes out as 0; green goes out as 1.
      *
-     * MUTATION: `!b.isSelected()` for the state in `UpdateSwitchState`'s `setAccessoryState`, and this fails.
+     * MUTATION: `!red` for the state in `keyboardKeyClicked`'s `setAccessoryState`, and this fails.
      */
     @Test
-    public void testAnAccessoryButtonSwitchesItsAccessory() throws Exception
+    public void testAClickOnAHalfSendsThatColor() throws Exception
     {
-        JToggleButton button = (JToggleButton) field("SwitchButton1");
+        goToPage(1);
 
-        int address = Integer.parseInt(button.getText());
+        try
+        {
+            for (boolean dcc : new boolean[] {false, true})
+            {
+                chooseProtocol(dcc);
 
-        boolean was = button.isSelected();
+                int address = 5;
 
-        int mark = wire.mark();
+                for (boolean red : new boolean[] {true, false, false, true})
+                {
+                    List<Integer> sent = sentWhile(address, () -> click(address, red));
 
-        Components.press(button);
-
-        assertTrue(waitFor(() -> button.isSelected() != was), "the button did not change");
-        assertTrue(waitFor(() -> model.getAccessoryState(address, keyboardProtocol()) == !was),
-            "accessory " + address + " did not follow its button");
-        assertTrue(waitFor(() -> lastAccessory(mark, address) == (was ? 1 : 0)),
-            "accessory " + address + "'s command did not reach the railway: " + wire.since(mark));
-
-        int back = wire.mark();
-
-        Components.press(button);
-
-        assertTrue(waitFor(() -> model.getAccessoryState(address, keyboardProtocol()) == was),
-            "a second click did not switch accessory " + address + " back");
-        assertTrue(waitFor(() -> lastAccessory(back, address) == (was ? 0 : 1)), "the second command did not reach the railway");
+                    assertEquals(sent, java.util.Collections.singletonList(red ? 0 : 1),
+                        (dcc ? "DCC" : "MM2") + ": a click on the " + (red ? "red" : "green")
+                        + " half did not send exactly " + (red ? "red" : "green"));
+                    assertTrue(waitFor(() -> lit(address, red) && !lit(address, !red)),
+                        "the half clicked is not the one lit");
+                    assertEquals(model.getAccessoryState(address, keyboardProtocol()), red,
+                        "the accessory is not in the position clicked");
+                }
+            }
+        }
+        finally
+        {
+            chooseProtocol(false);
+        }
     }
 
     /**
-     * With the power off, an accessory button asks first; Cancel puts the button back and sends nothing.
+     * Clicking the lit half again sends that color again, directly: one command, and no other color before it.  The
+     * station's count of actuations does not rise, since the position did not change.
      *
-     * MUTATION: let a Cancel through in `keyboardSwitchAllowed` (take out `return refuse(button)`), and this fails.
+     * MUTATION: `if (key > 0 && this.keyboardKeys.isLit(key, red)) return;` at the top of `keyboardKeyClicked`, and
+     * this fails.
+     */
+    @Test
+    public void testClickingTheLitHalfAgainSendsAgainWithNoGreenFirst() throws Exception
+    {
+        goToPage(1);
+
+        int address = 7;
+
+        assertEquals(sentWhile(address, () -> click(address, true)), java.util.Collections.singletonList(0),
+            "precondition: the first click did not send red");
+        assertTrue(waitFor(() -> lit(address, true)), "precondition: red is not lit");
+
+        MarklinAccessory acc = (MarklinAccessory) model.getAccessoryByAddressIfPresent(address, keyboardProtocol());
+
+        assertNotNull(acc, "precondition: the click made no accessory");
+
+        int before = acc.getNumActuations();
+
+        model.receiveMessage(support.Packets.accessoryEcho(acc, true));
+
+        // The station's echo is read on its own thread: wait for it to count before counting again
+        assertTrue(waitFor(() -> acc.getNumActuations() > before), "precondition: the first echo did not count");
+
+        Components.settle();
+
+        int counted = acc.getNumActuations();
+
+        List<Integer> sent = sentWhile(address, () -> click(address, true));
+
+        assertEquals(sent, java.util.Collections.singletonList(0),
+            "re-firing red did not send exactly one red command, and no other color");
+
+        model.receiveMessage(support.Packets.accessoryEcho(acc, true));
+
+        Thread.sleep(500);
+
+        assertEquals(acc.getNumActuations(), counted, "re-firing red counted as an actuation");
+        assertTrue(lit(address, true), "red is not lit after it was fired again");
+
+        click(address, false);
+    }
+
+    /**
+     * An echo from the station repaints its key, and one for an address on another tab shows when that tab is come
+     * back to.
+     *
+     * MUTATION: in `repaintSwitches`, pass `false` for the state to `setKey`, and this fails.
+     */
+    @Test
+    public void testAnEchoRepaintsTheKeyEvenOnAnotherTab() throws Exception
+    {
+        goToPage(2);
+
+        int address = 130;
+
+        sentWhile(address, () -> click(address, true));
+
+        assertTrue(waitFor(() -> lit(address, true)), "precondition: red is not lit");
+
+        MarklinAccessory acc = (MarklinAccessory) model.getAccessoryByAddressIfPresent(address, keyboardProtocol());
+
+        assertNotNull(acc, "precondition: the click made no accessory");
+
+        model.receiveMessage(support.Packets.accessoryEcho(acc, false));
+
+        assertTrue(waitFor(() -> lit(address, false)), "the station put it green and its key still shows red");
+
+        goToPage(1);
+
+        model.receiveMessage(support.Packets.accessoryEcho(acc, true));
+
+        Components.settle();
+
+        goToPage(2);
+
+        assertTrue(waitFor(() -> lit(address, true) && !lit(address, false)),
+            "the station threw it while another tab was showing, and its key shows green on coming back");
+
+        click(address, false);
+    }
+
+    /**
+     * Address 2048 is the last key of the last tab, DCC only, and a click on it goes to the railway.  The MM2 addresses
+     * end at 320: the keys past it do nothing, and a tab wholly past it is DCC.
+     *
+     * MUTATION: `page * KEYS` for `(page - 1) * KEYS` in `AccessoryKeyboard.rangeStart`, and this fails.
+     */
+    @Test
+    public void testAddress2048IsOnTheLastTabAndMM2StopsAt320() throws Exception
+    {
+        AccessoryKeyboard keys = keys();
+
+        try
+        {
+            goToPage(16);
+
+            assertTrue(waitFor(() -> keyboardProtocol() == Accessory.accessoryDecoderType.DCC),
+                "a tab past the MM2 addresses is not DCC");
+
+            int mark = wire.mark();
+
+            click(2048, true);
+
+            assertTrue(waitFor(() -> lastAccessory(mark, 2048) == 0), "a click on 2048 sent nothing: " + wire.since(mark));
+            assertTrue(waitFor(() -> lit(2048, true)), "2048 does not show red");
+
+            click(2048, false);
+
+            goToPage(3);
+            chooseProtocol(false);
+
+            assertTrue(waitFor(() -> keyboardProtocol() == Accessory.accessoryDecoderType.MM2), "MM2 was not chosen");
+            assertTrue(Components.onTheEventThread(() -> keys.half(64, true).isEnabled()), "MM2 320 is not usable");
+            assertFalse(Components.onTheEventThread(() -> keys.half(65, true).isEnabled()), "MM2 321 is usable");
+
+            int quiet = wire.mark();
+
+            click(321, true);
+
+            Thread.sleep(300);
+
+            assertTrue(wire.accessoryCommandsSince(quiet, MarklinAccessory.UIDfromAddress(320, keyboardProtocol())).isEmpty(),
+                "a click past the MM2 addresses sent a command");
+
+            chooseProtocol(true);
+
+            assertTrue(Components.onTheEventThread(() -> keys.half(65, true).isEnabled()), "DCC 321 is not usable");
+        }
+        finally
+        {
+            chooseProtocol(false);
+        }
+    }
+
+    /**
+     * A page number past the last tab (the keyboard once had 32 pages) lands on the last tab.
+     *
+     * MUTATION: take the `Math.min` out of `switchKeyboard`, and this fails.
+     */
+    @Test
+    public void testAPagePastTheLastTabLandsOnTheLast() throws Exception
+    {
+        AccessoryKeyboard keys = keys();
+
+        Components.onTheEventThread(() ->
+        {
+            try
+            {
+                java.lang.reflect.Method m = TrainControlUI.class.getDeclaredMethod("switchKeyboard", int.class);
+
+                m.setAccessible(true);
+                m.invoke(ui, 32);
+            }
+            catch (ReflectiveOperationException e)
+            {
+                throw new IllegalStateException(e);
+            }
+
+            return null;
+        });
+
+        assertTrue(waitFor(() -> keys.getPage() == 16), "page 32 did not land on the last tab");
+        assertEquals(Components.onTheEventThread(() -> keys.numberOf(128)), "2048", "the last tab does not end at 2048");
+        assertEquals((int) (Integer) field("keyboardNumber"), 16, "the window's page is not the last tab");
+
+        goToPage(1);
+    }
+
+    /**
+     * The lit half is a clear color and the other is very light gray; pointed at, the gray half shows a pale hint of its
+     * own color.  Painted, since the look is the claim.
+     *
+     * MUTATION: swap the two hint colors in `AccessoryKeyboard.lookOf`, and this fails.
+     */
+    @Test
+    public void testTheLitHalfIsColoredAndTheOtherIsLightGrayWithAHint() throws Exception
+    {
+        goToPage(1);
+        click(9, true);
+
+        assertTrue(waitFor(() -> lit(9, true)), "precondition: red is not lit");
+
+        AccessoryKeyboard keys = keys();
+
+        java.awt.Color lightGray = new java.awt.Color(0xF0F0F0);
+
+        assertEquals(paintedColor(keys.half(9, true)), new java.awt.Color(0xFF6666), "the lit red half is not the mockup's red");
+        assertEquals(paintedColor(keys.half(9, false)), lightGray, "the half not lit is not very light gray");
+
+        support.Mouse.enter(keys.half(9, false));
+
+        assertEquals(paintedColor(keys.half(9, false)), new java.awt.Color(0xC8EFC8),
+            "pointing at the gray half shows no pale hint of green");
+
+        support.Mouse.exit(keys.half(9, false));
+
+        assertEquals(paintedColor(keys.half(9, false)), lightGray, "the hint stayed after the pointer left");
+
+        click(9, false);
+
+        assertTrue(waitFor(() -> lit(9, false)), "green is not lit");
+        assertEquals(paintedColor(keys.half(9, false)), new java.awt.Color(0x58C858), "the lit green half is not the mockup's green");
+        assertEquals(paintedColor(keys.half(9, true)), lightGray, "the red half stayed lit after green was clicked");
+
+        support.Mouse.enter(keys.half(9, true));
+
+        assertEquals(paintedColor(keys.half(9, true)), new java.awt.Color(0xFBCACA), "pointing at the gray half shows no pale hint of red");
+
+        support.Mouse.exit(keys.half(9, true));
+    }
+
+    /** The color at the middle of a half as it paints. */
+    private static java.awt.Color paintedColor(AbstractButton half) throws Exception
+    {
+        return Components.onTheEventThread(() ->
+        {
+            half.setSize(22, 26);
+
+            java.awt.image.BufferedImage image = new java.awt.image.BufferedImage(22, 26, java.awt.image.BufferedImage.TYPE_INT_RGB);
+
+            half.paint(image.getGraphics());
+
+            return new java.awt.Color(image.getRGB(11, 13));
+        });
+    }
+
+    /**
+     * With the power off, a click asks first; Cancel leaves both halves as they were and sends nothing.
+     *
+     * MUTATION: let a Cancel through in `keyboardSwitchAllowed` (answer `0` for any), and this fails.
      */
     @Test
     public void testWithThePowerOffCancelLeavesTheAccessoryAlone() throws Exception
     {
-        JToggleButton button = powerOffAndTheFirstButton();
+        int address = powerOffOnTheFirstTab();
 
-        int address = Integer.parseInt(button.getText());
-
-        boolean was = button.isSelected();
+        boolean was = lit(address, true);
         boolean state = model.getAccessoryState(address, keyboardProtocol());
 
         int mark = wire.mark();
 
         try (Answering answering = Answering.start(asked -> Answering.press(I18n.t("ui.cancel"))))
         {
-            Components.press(button);
+            click(address, !was);
 
-            assertTrue(answering.awaitAsked(1, WAIT), "with the power off, the accessory button asked nothing");
+            assertTrue(answering.awaitAsked(1, WAIT), "with the power off, the accessory key asked nothing");
             assertEquals(answering.asked().get(0), I18n.t("layout.ui.confirmAccessorySwitchPowerOff"),
-                "the accessory button asked something else");
+                "the accessory key asked something else");
         }
 
         Components.settle();
 
-        assertEquals(button.isSelected(), was, "Cancel left the button changed");
+        assertEquals(lit(address, true), was, "Cancel changed the red half");
+        assertEquals(lit(address, false), !was, "Cancel changed the green half");
         assertEquals(model.getAccessoryState(address, keyboardProtocol()), state, "Cancel switched the accessory");
 
         Thread.sleep(300);
@@ -915,15 +1180,13 @@ public class testDrivingFromTheKeyboard
     @Test
     public void testWithThePowerOffProceedSwitchesAndLeavesThePowerOff() throws Exception
     {
-        JToggleButton button = powerOffAndTheFirstButton();
+        int address = powerOffOnTheFirstTab();
 
-        int address = Integer.parseInt(button.getText());
-
-        boolean was = button.isSelected();
+        boolean was = lit(address, true);
 
         int mark = wire.mark();
 
-        pressAnsweringWith(button, I18n.t("layout.ui.optionProceed"));
+        pressAnsweringWith(address, !was, I18n.t("layout.ui.optionProceed"));
 
         assertTrue(waitFor(() -> model.getAccessoryState(address, keyboardProtocol()) == !was),
             "Proceed did not switch the accessory");
@@ -934,20 +1197,18 @@ public class testDrivingFromTheKeyboard
     /**
      * With the power off, "Turn the power on and proceed" sends the power-on command, and the accessory's after it.
      *
-     * MUTATION: take `this.model.go()` out of `UpdateSwitchState`, and this fails.
+     * MUTATION: take `this.model.go()` out of `keyboardKeyClicked`, and this fails.
      */
     @Test
     public void testWithThePowerOffTurningItOnComesFirst() throws Exception
     {
-        JToggleButton button = powerOffAndTheFirstButton();
+        int address = powerOffOnTheFirstTab();
 
-        int address = Integer.parseInt(button.getText());
-
-        boolean was = button.isSelected();
+        boolean was = lit(address, true);
 
         int mark = wire.mark();
 
-        pressAnsweringWith(button, I18n.t("layout.ui.optionTurnPowerOnAndProceed"));
+        pressAnsweringWith(address, !was, I18n.t("layout.ui.optionTurnPowerOnAndProceed"));
 
         assertTrue(waitFor(() -> lastAccessory(mark, address) == (was ? 1 : 0)), "the accessory's command was not sent");
 
@@ -969,27 +1230,107 @@ public class testDrivingFromTheKeyboard
         assertTrue(go < switched, "the accessory was sent before the power came on: " + sent);
     }
 
-    /** The button pressed, and the question it asks answered by pressing the named option; fails when nothing is asked. */
-    private static void pressAnsweringWith(JToggleButton button, String option) throws Exception
+    /**
+     * What an action sends to one accessory, as the station would be sent it, read at `exec`: the log collapses a line
+     * repeated twice running, so it cannot count a re-fire.  Waits for the first command, then a moment for any more.
+     */
+    private static List<Integer> sentWhile(int address, ThrowingRunnable action) throws Exception
+    {
+        final List<CS2Message> seen = java.util.Collections.synchronizedList(new java.util.ArrayList<>());
+
+        model.setSentMessageObserver(seen::add);
+
+        try
+        {
+            action.run();
+
+            waitFor(() -> !support.AccessoryCommands.positionsTo(seen, uidOf(address)).isEmpty());
+
+            Thread.sleep(300);
+        }
+        finally
+        {
+            model.setSentMessageObserver(null);
+        }
+
+        return support.AccessoryCommands.positionsTo(seen, uidOf(address));
+    }
+
+    private interface ThrowingRunnable
+    {
+        void run() throws Exception;
+    }
+
+    /** A click on a half of the key for an address on the tab showing, as the operator's click does. */
+    private static void click(int address, boolean red) throws Exception
+    {
+        AccessoryKeyboard keys = keys();
+        int key = Components.onTheEventThread(() -> keys.keyOf(address));
+
+        assertTrue(key > 0, "address " + address + " is not on the tab showing");
+
+        Components.press(keys.half(key, red));
+        Components.settle();
+    }
+
+    /** Whether the red or the green half of an address's key is the lit one. */
+    private static boolean lit(int address, boolean red)
+    {
+        AccessoryKeyboard keys = keys0();
+
+        return Components.onTheEventThread(() -> keys.isLit(keys.keyOf(address), red));
+    }
+
+    private static void goToPage(int page) throws Exception
+    {
+        AccessoryKeyboard keys = keys();
+
+        Components.press(keys.tab(page));
+
+        assertTrue(waitFor(() -> keys.getPage() == page), "tab " + page + " did not come forward");
+
+        Components.settle();
+    }
+
+    private static void chooseProtocol(boolean dcc) throws Exception
+    {
+        Components.press((AbstractButton) field(dcc ? "DCC" : "MM2"));
+        Components.settle();
+    }
+
+    private static AccessoryKeyboard keys() throws Exception
+    {
+        return (AccessoryKeyboard) field("keyboardKeys");
+    }
+
+    private static AccessoryKeyboard keys0()
+    {
+        return (AccessoryKeyboard) field0("keyboardKeys");
+    }
+
+    /** The key clicked and the question it asks answered by pressing the named option; fails when nothing is asked. */
+    private static void pressAnsweringWith(int address, boolean red, String option) throws Exception
     {
         try (Answering answering = Answering.start(asked -> Answering.press(option)))
         {
-            Components.press(button);
+            click(address, red);
 
-            assertTrue(answering.awaitAsked(1, WAIT), "with the power off, the accessory button asked nothing");
+            assertTrue(answering.awaitAsked(1, WAIT), "with the power off, the accessory key asked nothing");
         }
     }
 
-    /** The power off, as the railway reports it, and the first accessory button. */
-    private static JToggleButton powerOffAndTheFirstButton() throws Exception
+    /** The power off, as the railway reports it, the first tab showing; answers an address on it. */
+    private static int powerOffOnTheFirstTab() throws Exception
     {
+        goToPage(1);
+
         fromTheRailway(CS2Message.CMD_SYSSUB_STOP);
 
         assertTrue(waitFor(() -> !model.getPowerState()), "precondition: the railway's power-off was not heard");
 
         Components.settle();
 
-        return (JToggleButton) field("SwitchButton1");
+        return 1;
     }
 
     /** A system packet as a Central Station sends one back, read as every packet from it is. */

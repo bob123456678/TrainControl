@@ -469,6 +469,20 @@ public class AutonomyMenu extends JMenu
     }
 
     /**
+     * The session's pages in the order the window shows them, for a menu; the session's own list is name-sorted, which
+     * its links index, and is left as it is.
+     */
+    private java.util.List<LayoutDiagram> shownOrder(AutonomySession session)
+    {
+        java.util.List<LayoutDiagram> out = new java.util.ArrayList<>(session.getPages());
+        final java.util.List<String> shown = ui.getModel().getLayoutList();
+
+        out.sort((a, b) -> Integer.compare(shown.indexOf(a.getName()), shown.indexOf(b.getName())));
+
+        return out;
+    }
+
+    /**
      * Opening the setup editor, one item per page: a submenu, since the question is a list to pick from.  Pages
      * autonomy has been told to ignore are left out: every square on one is grayed and refuses.
      */
@@ -476,7 +490,7 @@ public class AutonomyMenu extends JMenu
     {
         JMenu edit = new JMenu(I18n.t("autosetup.ui.menuEditAutonomy"));
 
-        for (LayoutDiagram page : session.getPages())
+        for (LayoutDiagram page : shownOrder(session))
         {
             final String name = page.getName();
 
@@ -647,7 +661,7 @@ public class AutonomyMenu extends JMenu
     {
         JMenu pages = new JMenu(I18n.t("autosetup.ui.btnExcludePage"));
 
-        for (LayoutDiagram page : session.getPages())
+        for (LayoutDiagram page : shownOrder(session))
         {
             final String name = page.getName();
 

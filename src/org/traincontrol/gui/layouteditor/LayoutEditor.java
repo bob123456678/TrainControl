@@ -44,6 +44,7 @@ import org.traincontrol.gui.RunGates;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.gui.autonomy.AutonomyBanner;
 import org.traincontrol.gui.widgets.PositionAwareJFrame;
+import org.traincontrol.gui.widgets.RowIcons;
 import org.traincontrol.util.I18n;
 
 /**
@@ -404,7 +405,7 @@ public class LayoutEditor extends PositionAwareJFrame
         org.traincontrol.automationui.AutonomySession autonomy = parent.getAutonomySession();
 
         return this.autonomyAsOpened != null && autonomy != null
-            && !this.autonomyAsOpened.similar(autonomy.snapshotSetup());
+            && (autonomy.aGestureOvertookTheRailwaysPause() || !this.autonomyAsOpened.similar(autonomy.snapshotSetup()));
     }
 
     /**
@@ -1307,6 +1308,8 @@ public class LayoutEditor extends PositionAwareJFrame
         {
             if (autonomyPanel != null)
             {
+                findingFilter = autonomyPanel.getFindingFilter();
+
                 this.newComponents.remove(autonomyPanel);
                 autonomyPanel = null;
 
@@ -1363,6 +1366,9 @@ public class LayoutEditor extends PositionAwareJFrame
 
             // The main window cannot be found from a JFrame, which has no owner.
             autonomyPanel.setMainWindow(parent);
+
+            // The filter box's text stays across a page change (FR-073).
+            autonomyPanel.setFindingFilter(findingFilter);
 
             // Where the railway is, so the arrived-from menu and `setFacingAndMove` work here as on the track diagram.
             autonomyPanel.setRunningLayoutSource(
@@ -1424,8 +1430,10 @@ public class LayoutEditor extends PositionAwareJFrame
                     // Carried before the window goes: the user closed nothing
                     final boolean clicked = squareClicked;
 
+                    final String typed = currentFindingFilter();
+
                     parent.autonomyEditorClosedFromTheEditor(
-                        () -> parent.openCarryingTheClick(clicked, () -> parent.openAutonomyEditor(tile)));
+                        () -> parent.openCarryingTheClick(clicked, typed, () -> parent.openAutonomyEditor(tile)));
 
                     dispose();
                 }
@@ -1439,8 +1447,10 @@ public class LayoutEditor extends PositionAwareJFrame
                 // Carried before the window goes: the user closed nothing
                 final boolean clicked = squareClicked;
 
+                final String typed = currentFindingFilter();
+
                 parent.autonomyEditorClosedFromTheEditor(
-                    () -> parent.openCarryingTheClick(clicked, () -> parent.openAutonomyEditor(at, named)));
+                    () -> parent.openCarryingTheClick(clicked, typed, () -> parent.openAutonomyEditor(at, named)));
 
                 dispose();
             });
@@ -1631,7 +1641,7 @@ public class LayoutEditor extends PositionAwareJFrame
                 javax.swing.JPanel foot = new javax.swing.JPanel(new BorderLayout());
                 foot.setOpaque(false);
 
-                javax.swing.JScrollPane list = autonomyPanel.getFindingsPanel();
+                javax.swing.JComponent list = autonomyPanel.getFindingsBox();
 
                 if (list != null)
                 {
@@ -1672,6 +1682,8 @@ public class LayoutEditor extends PositionAwareJFrame
 
         // And the pointer says whether a drag picks
         this.showWhetherADragPicks();
+
+        refreshFindPointItem();
     }
 
     /**
@@ -1697,13 +1709,33 @@ public class LayoutEditor extends PositionAwareJFrame
     /** Scrolls a square into view and flashes it, for a finding or a prompt. */
     public void reveal(org.traincontrol.automationui.TileGraph.TileKey tile)
     {
+        reveal(tile, 0);
+    }
+
+    /** How many times a reveal waits for a freshly opened editor to draw the square, and how long between tries. */
+    private static final int REVEAL_TRIES = 20;
+    private static final int REVEAL_WAIT_MS = 50;
+
+    /** A square of a window that has just opened has no picture yet, and a flash needs one: wait for it (FR-055). */
+    private void reveal(final org.traincontrol.automationui.TileGraph.TileKey tile, final int tried)
+    {
         if (grid == null || tile == null || !layout.getName().equals(tile.getPage())) return;
 
-        LayoutLabel label = grid.getValueAt(tile.getX(), tile.getY());
+        final LayoutLabel label = grid.getValueAt(tile.getX(), tile.getY());
 
         if (label == null) return;
 
         label.scrollRectToVisible(new java.awt.Rectangle(0, 0, label.getWidth(), label.getHeight()));
+
+        if (label.getIcon() == null && tried < REVEAL_TRIES && isDisplayable())
+        {
+            javax.swing.Timer wait = new javax.swing.Timer(REVEAL_WAIT_MS, e -> reveal(tile, tried + 1));
+
+            wait.setRepeats(false);
+            wait.start();
+
+            return;
+        }
 
         // One flash at a time (MT-454), or a walk leaves a trail of yellow squares.
         if (lastRevealed != null && lastRevealed != label) lastRevealed.endFlash();
@@ -1720,11 +1752,28 @@ public class LayoutEditor extends PositionAwareJFrame
      */
     private boolean squareClicked = false;
 
+    /** The findings filter's text between autonomy panels, which a page change rebuilds (FR-073). */
+    private String findingFilter = "";
+
+    private String currentFindingFilter()
+    {
+        return autonomyPanel != null ? autonomyPanel.getFindingFilter() : findingFilter;
+    }
+
+    /** Starts this editor's findings filter with what the editor it replaces held; not saved anywhere. */
+    public void carryTheFindingFilter(String text)
+    {
+        findingFilter = text == null ? "" : text;
+
+        if (autonomyPanel != null) autonomyPanel.setFindingFilter(findingFilter);
+    }
+
     /** The next editor opened by one of this window's reopenings starts knowing a square was clicked. */
     public void carryTheClick()
     {
         squareClicked = true;
     }
+
 
     private LayoutLabel lastRevealed;
 
@@ -3669,8 +3718,10 @@ public class LayoutEditor extends PositionAwareJFrame
         // Carried before the window goes: the user closed nothing
         final boolean clicked = squareClicked;
 
+        final String typed = currentFindingFilter();
+
         parent.autonomyEditorClosedFromTheEditor(
-            () -> parent.openCarryingTheClick(clicked, () -> parent.openAutonomyEditor(tile)));
+            () -> parent.openCarryingTheClick(clicked, typed, () -> parent.openAutonomyEditor(tile)));
 
         dispose();
     }
@@ -4192,24 +4243,20 @@ public class LayoutEditor extends PositionAwareJFrame
     }
     
     /**
-     * Manage Pages: the main window's page actions, run by its own handlers on the page being edited (FR-109).  Built
-     * once; it stays across page and mode switches.
+     * Tools: the page actions that have no icon in the sidebar's strip, run by the main window's handlers on the page
+     * being edited (FR-109).  Built once; it stays across page and mode switches.
      */
     private void mountPageMenu()
     {
         if (getJMenuBar() != null) return;
 
-        javax.swing.JMenu menu = pageMenu = new javax.swing.JMenu(I18n.t("ui.main.toolbar.modifyLayout"));
+        javax.swing.JMenu menu = new javax.swing.JMenu(I18n.t("layout.ui.menuTools"));
 
-        menu.add(pageMenuItem("ui.main.toolbar.addBlackPage", () -> parent.addBlankPageFromTheEditor(this)));
-        menu.add(pageMenuItem("ui.main.toolbar.renameCurrentPage", () -> parent.renamePageFromTheEditor(this)));
-        menu.add(pageMenuItem("ui.main.toolbar.duplicateCurrentPage", () -> parent.duplicatePageFromTheEditor(this)));
-
-        // Changes nothing, so a run does not refuse it: not a `pageMenuItem`
+        // Acts on no page, so a Sort that changes nothing leaves the main window where it was
         javax.swing.JMenuItem sort = new javax.swing.JMenuItem(I18n.t("ui.main.toolbar.sortPages"));
 
         sort.setFocusable(false);
-        sort.addActionListener(e -> JOptionPane.showMessageDialog(this, I18n.t("layout.ui.infoSortPages")));
+        sort.addActionListener(e -> runPageAction(() -> parent.sortPagesFromTheEditor(this), false));
 
         menu.add(sort);
         menu.addSeparator();
@@ -4221,7 +4268,16 @@ public class LayoutEditor extends PositionAwareJFrame
 
         menu.add(combine);
         menu.addSeparator();
-        menu.add(pageMenuItem("ui.main.toolbar.deleteCurrentPage", () -> parent.deletePageFromTheEditor(this)));
+
+        // Beside the page actions, as Adam asked: not in the sidebar (FR-055)
+        findPointItem = new javax.swing.JMenuItem(I18n.t("layout.ui.menuFindAPoint"));
+
+        findPointItem.setFocusable(false);
+        findPointItem.addActionListener(e -> findAPoint());
+
+        menu.add(findPointItem);
+
+        refreshFindPointItem();
 
         javax.swing.JMenuBar bar = new javax.swing.JMenuBar();
 
@@ -4234,13 +4290,52 @@ public class LayoutEditor extends PositionAwareJFrame
         setJMenuBar(bar);
     }
 
-    /** The Manage Pages menu, once mounted. */
-    private javax.swing.JMenu pageMenu;
+    private javax.swing.JMenuItem findPointItem;
 
-    /** Opens Manage Pages with its items showing, for the main window's Manage Pages... (FR-146). */
-    public void openPageMenu()
+    /** Find a Point... is the autonomy editor's: grayed in Track Diagram mode, with the reason as its tooltip. */
+    private void refreshFindPointItem()
     {
-        if (pageMenu != null && pageMenu.isShowing()) pageMenu.doClick(0);
+        if (findPointItem == null) return;
+
+        boolean autonomy = isAutonomyMode();
+
+        findPointItem.setEnabled(autonomy);
+        findPointItem.setToolTipText(I18n.t(autonomy ? "layout.ui.tooltipFindAPoint" : "layout.ui.tooltipFindAPointTrackMode"));
+    }
+
+    /** Control+F and the Tools menu: asks for a point's name, then goes through the finding's door to its square. */
+    private void findAPoint()
+    {
+        if (!isAutonomyMode() || switching || changingPage || parent == null || parent.getModel() == null) return;
+
+        // One prompt at a time
+        for (java.awt.Window owned : getOwnedWindows())
+        {
+            if (owned instanceof FindAPointPrompt && owned.isShowing())
+            {
+                owned.toFront();
+
+                return;
+            }
+        }
+
+        java.util.List<String> pages = parent.getModel().getLayoutList();
+        java.util.List<FindAPointPrompt.Entry> points = new java.util.ArrayList<>();
+
+        // A point on a page that is not there to open is left out
+        for (java.util.Map.Entry<org.traincontrol.automationui.TileGraph.TileKey, String> named
+            : autonomyPanel.namedPoints().entrySet())
+        {
+            if (pages.contains(named.getKey().getPage()))
+            {
+                points.add(new FindAPointPrompt.Entry(named.getKey(), named.getValue()));
+            }
+        }
+
+        new FindAPointPrompt(this, points, tile ->
+        {
+            if (isAutonomyMode()) autonomyPanel.goToNotice(tile, new java.util.ArrayList<>());
+        }).setVisible(true);
     }
 
     private javax.swing.JMenuItem pageMenuItem(String key, Runnable action)
@@ -4249,57 +4344,119 @@ public class LayoutEditor extends PositionAwareJFrame
 
         item.setFocusable(false);
 
-        item.addActionListener(e ->
-        {
-            if (switching || changingPage || parent == null || parent.getModel() == null) return;
-
-            // A run refuses before the name is asked for, in one dialog
-            if (parent.refuseWhileARunHoldsTheSetup(this)) return;
-
-            // The handlers act on the main window's page, which may be another
-            parent.selectLayoutPage(layout.getName());
-
-            action.run();
-        });
+        item.addActionListener(e -> runPageAction(action));
 
         return item;
     }
 
+    /** The check the Tools menu and the strip's icons share before a page action runs. */
+    private void runPageAction(Runnable action)
+    {
+        runPageAction(action, true);
+    }
+
+    /** `onThisPage`: whether the action is about the edited page, which the main window is then put on. */
+    private void runPageAction(Runnable action, boolean onThisPage)
+    {
+        if (switching || changingPage || parent == null || parent.getModel() == null) return;
+
+        // A run refuses before the name is asked for, in one dialog
+        if (parent.refuseWhileARunHoldsTheSetup(this)) return;
+
+        // The handlers act on the main window's page, which may be another
+        if (onThisPage) parent.selectLayoutPage(layout.getName());
+
+        action.run();
+    }
+
     /**
-     * The strip down the side: which page, and which editor.  Hidden when it would offer one choice.
+     * The icons under the Page heading (FR-174): add, rename, duplicate, move up, move down, and delete apart at the
+     * end.  Flat, as the route editor's are.
+     */
+    private javax.swing.JComponent buildPageStrip(java.util.List<String> pages)
+    {
+        int at = pages.indexOf(layout.getName());
+
+        java.awt.Color gray = new java.awt.Color(175, 175, 175);
+
+        javax.swing.JPanel strip = new javax.swing.JPanel();
+
+        strip.setLayout(new javax.swing.BoxLayout(strip, javax.swing.BoxLayout.X_AXIS));
+        strip.setOpaque(false);
+        strip.setAlignmentX(java.awt.Component.LEFT_ALIGNMENT);
+
+        strip.add(pageIcon(RowIcons.plus(14), RowIcons.plus(14, gray), I18n.t("ui.main.toolbar.addBlackPage"), true,
+            () -> parent.addBlankPageFromTheEditor(this)));
+        strip.add(pageIcon(RowIcons.pencil(14), RowIcons.pencil(14, gray), I18n.t("ui.main.toolbar.renameCurrentPage"),
+            true, () -> parent.renamePageFromTheEditor(this)));
+        strip.add(pageIcon(RowIcons.copy(14), RowIcons.copy(14, gray), I18n.t("ui.main.toolbar.duplicateCurrentPage"),
+            true, () -> parent.duplicatePageFromTheEditor(this)));
+
+        boolean first = at <= 0;
+        boolean last = at < 0 || at >= pages.size() - 1;
+
+        strip.add(pageIcon(RowIcons.arrow(14, true), RowIcons.arrow(14, true, gray),
+            I18n.t(first ? "layout.ui.tooltipPageIsFirst" : "layout.ui.tooltipMovePageUp"), !first,
+            () -> parent.movePageFromTheEditor(this, -1)));
+        strip.add(pageIcon(RowIcons.arrow(14, false), RowIcons.arrow(14, false, gray),
+            I18n.t(last ? "layout.ui.tooltipPageIsLast" : "layout.ui.tooltipMovePageDown"), !last,
+            () -> parent.movePageFromTheEditor(this, 1)));
+
+        strip.add(javax.swing.Box.createHorizontalGlue());
+
+        // The handler refuses the last page on the same count
+        boolean onlyOne = pages.size() <= 1;
+
+        strip.add(pageIcon(RowIcons.trash(14), RowIcons.trash(14, gray),
+            I18n.t(onlyOne ? "layout.ui.errorCannotDeleteOnlyRemainingPage" : "ui.main.toolbar.deleteCurrentPage"),
+            !onlyOne, () -> parent.deletePageFromTheEditor(this)));
+
+        return strip;
+    }
+
+    /** One flat icon button of the strip: no border until pointed at, out of the tab order. */
+    private javax.swing.JButton pageIcon(javax.swing.Icon icon, javax.swing.Icon grayed, String tip, boolean enabled,
+        Runnable action)
+    {
+        javax.swing.JButton button = new javax.swing.JButton(icon);
+
+        button.setDisabledIcon(grayed);
+        button.putClientProperty("JButton.buttonType", "toolBarButton");
+        button.setFocusable(false);
+        button.setMargin(new java.awt.Insets(0, 0, 0, 0));
+        button.setToolTipText(tip);
+        button.setEnabled(enabled);
+        button.addActionListener(e -> runPageAction(action));
+
+        return button;
+    }
+
+    /**
+     * The strip down the side: the page icons and list, and which editor.  The editor choice is left out when it would
+     * offer one choice.
      */
     private void mountSidebar()
     {
         java.util.List<String> pages = parent.getModel() == null
             ? new java.util.ArrayList<String>() : parent.getModel().getLayoutList();
 
-        boolean offersPages = pages.size() > 1;
-        boolean offersModes = parent.editableAutonomySession() != null || isAutonomyMode();
-
-        if (!offersPages && !offersModes)
-        {
-            // A page action can leave one page: the strip goes
-            sidebar = null;
-
-            if (getContentPane() != formPane) setContentPane(formPane);
-
-            return;
-        }
+        boolean offersModes = pages.size() > 1 || parent.editableAutonomySession() != null || isAutonomyMode();
 
         sidebar = new javax.swing.JPanel();
         sidebar.setLayout(new javax.swing.BoxLayout(sidebar, javax.swing.BoxLayout.Y_AXIS));
         // Less on the right (MT-097): a list has its own inset.
         sidebar.setBorder(new javax.swing.border.EmptyBorder(8, 8, 8, 2));
 
-        if (offersPages)
-        {
-            sidebar.add(heading(I18n.t("layout.ui.sidebarPages")));
-            sidebar.add(scrollable(buildPageControl(pages)));
-            sidebar.add(javax.swing.Box.createVerticalStrut(12));
-        }
+        sidebar.add(heading(I18n.t("layout.ui.sidebarPages")));
+        sidebar.add(buildPageStrip(pages));
+        sidebar.add(scrollable(buildPageControl(pages)));
+        sidebar.add(javax.swing.Box.createVerticalStrut(12));
 
-        sidebar.add(heading(I18n.t("layout.ui.sidebarMode")));
-        sidebar.add(buildModeControl());
+        if (offersModes)
+        {
+            sidebar.add(heading(I18n.t("layout.ui.sidebarMode")));
+            sidebar.add(buildModeControl());
+        }
 
         pageSettings = new javax.swing.JPanel();
         pageSettings.setLayout(new javax.swing.BoxLayout(pageSettings, javax.swing.BoxLayout.Y_AXIS));
@@ -4835,6 +4992,14 @@ public class LayoutEditor extends PositionAwareJFrame
             if (evt.isControlDown() && evt.getKeyCode() == KeyEvent.VK_D)
             {
                 toggleAddresses();
+
+                return;
+            }
+
+            // Control+F finds a point by name, in the autonomy editor only (FR-055)
+            if (evt.isControlDown() && evt.getKeyCode() == KeyEvent.VK_F)
+            {
+                findAPoint();
 
                 return;
             }

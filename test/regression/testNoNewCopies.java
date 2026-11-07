@@ -27,10 +27,10 @@ import support.CopyScan;
 public class testNoNewCopies
 {
     /** The groups as they stand.  Never raise it. */
-    private static final int GROUPS_ALLOWED = 127;
+    private static final int GROUPS_ALLOWED = 120;
 
     /** The tokens standing in a second or later copy in `test/`, summed over its groups.  Never raise it. */
-    private static final long TEST_COPIED_TOKENS_ALLOWED = 278195;
+    private static final long TEST_COPIED_TOKENS_ALLOWED = 277979;
 
     /** Each group: the classes holding its copies with how many each, and the tokens of its longest copy. */
     private static final String[] GROUPS = {
@@ -77,9 +77,8 @@ public class testNoNewCopies
         "AutonomySettingsTab:11 (315)",
         "AutonomySettingsTab:2 (145)",
         "AutonomyViewerPanel:3 (62)",
-        "CS2File:2 (98)",
+        "CS2File:2 (85)",
         "CS2File:2 (79)",
-        "CS2File:2 (76)",
         "CS2Message:1,LayoutDiagramComponent:2 (101)",
         "CS2Message:1,RouteCommand:1 (91)",
         "CS2Message:2 (242)",
@@ -152,15 +151,9 @@ public class testNoNewCopies
         "TrainControlUI:2 (61)",
         "TrainControlUI:2 (60)",
         "TrainControlUI:2 (60)",
-        "TrainControlUI:3 (168)",
         "TrainControlUI:3 (123)",
         "TrainControlUI:3 (101)",
-        "TrainControlUI:3 (96)",
         "TrainControlUI:3 (95)",
-        "TrainControlUI:3 (75)",
-        "TrainControlUI:3 (66)",
-        "TrainControlUI:4 (294)",
-        "TrainControlUI:4 (276)",
     };
 
     private static final String ADVICE = "Call the method that already does it, or move the code into one both call "

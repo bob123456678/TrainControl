@@ -55,6 +55,22 @@ public class testTheRefusalsAreAskedAtTheDoors
     }
 
     /**
+     * Every page edit that rewrites the index asks the shared refusals first (`refusedAsAPageEdit`): the DOORS list
+     * checks the helper's content, and this checks that its callers call it.
+     *
+     * MUTATION: take the call out of `duplicateOrRenameCurrentLayout` or `reorder`, and this names it.
+     */
+    @Test
+    public void testEveryPageEditCallsTheSharedRefusals() throws Exception
+    {
+        for (String door : new String[] {"    void duplicateOrRenameCurrentLayout(", "    private void reorder("})
+        {
+            assertTrue(code(door).contains("refusedAsAPageEdit("), door.trim() + " does not ask the page edits' shared"
+                + " refusals before it writes");
+        }
+    }
+
+    /**
      * Every door that names a page asks whose file the name is: Rename, Duplicate and Add Blank Page through one
      * method, Duplicate's own choice of name, and Combine Linked Pages.
      *
@@ -144,8 +160,8 @@ public class testTheRefusalsAreAskedAtTheDoors
             "a full sync rewrites the locomotive database under a running railway"},
         {"private void deleteLayoutMenuItemActionPerformed(", SETUP + "|" + EDITOR,
             "deleting a page the running railway or an open editor is using"},
-        {"    void duplicateOrRenameCurrentLayout(", SETUP + "|" + EDITOR,
-            "renaming a page moves what the setup and the editor both point at"},
+        {"    private boolean refusedAsAPageEdit(", SETUP + "|" + EDITOR,
+            "renaming, duplicating, adding and moving pages move what the setup and the editor both point at"},
         {"    void combineLinkedPages(", SETUP + "|" + EDITOR,
             "combining rewrites several pages into one"},
         {"private void AddRouteButtonActionPerformed(", EDITOR,

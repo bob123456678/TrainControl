@@ -23,7 +23,6 @@ import java.awt.event.KeyEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseMotionAdapter;
-import java.awt.font.TextAttribute;
 import java.awt.image.BufferedImage;
 import java.io.BufferedReader;
 import java.io.File;
@@ -107,10 +106,6 @@ import javax.swing.ListModel;
 import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
 import javax.swing.border.MatteBorder;
-import javax.swing.event.AncestorEvent;
-import javax.swing.event.AncestorListener;
-import javax.swing.event.DocumentEvent;
-import javax.swing.event.DocumentListener;
 import javax.swing.filechooser.FileFilter;
 import javax.swing.filechooser.FileNameExtensionFilter;
 import javax.swing.table.DefaultTableCellRenderer;
@@ -141,7 +136,6 @@ import org.traincontrol.gui.locomotive.LocomotiveKeyboardMapping;
 import org.traincontrol.gui.locomotive.LocomotivePlaceholder;
 import org.traincontrol.gui.locomotive.LocomotiveSelector;
 import org.traincontrol.gui.locomotive.LocomotiveStats;
-import org.traincontrol.gui.locomotive.RightClickFunctionMenu;
 import org.traincontrol.gui.locomotive.RightClickMenuListener;
 import org.traincontrol.gui.locomotive.RightClickPageMenu;
 import org.traincontrol.gui.locomotive.UsageChart;
@@ -328,7 +322,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     private static final int CAN_MONITOR_DELAY = 15;
     
     // Total number of keyboards >= 1
-    private static final int NUM_KEYBOARDS = 32;
+    private static final int NUM_KEYBOARDS = AccessoryKeyboard.PAGES;
     
     /** How many locomotive mapping pages a new installation gets: ten, the number the digit keys reach. */
     private static final int DEFAULT_LOC_MAPPINGS = 10;
@@ -355,11 +349,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
     private javax.swing.JCheckBoxMenuItem showPageNumbersMenuItem;
 
+    javax.swing.JMenuItem importLocsFromCSVMenuItem;
+
     javax.swing.JCheckBoxMenuItem restrictionArrowsMenuItem;
 
-    private static final Color COLOR_SWITCH_RED = new Color(255, 204, 204);
-    private static final Color COLOR_SWITCH_GREEN = new Color(204, 255, 204);
-    
     // Internal fields /////////////
     
     // View listener (model) reference
@@ -407,7 +400,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     final List<HashMap<javax.swing.JButton, Locomotive>> locMapping;
     private final HashMap<javax.swing.JToggleButton, Integer> functionMapping;
     private final HashMap<Integer, javax.swing.JToggleButton> rFunctionMapping;
-    private final HashMap<Integer, javax.swing.JToggleButton> switchMapping;
+    private AccessoryKeyboard keyboardKeys;
     
     // Custom labels for mapping pages
     // Package-private for `LocomotiveActions.findSimilarLocs`, which reads it on the event thread to name the pages; no lock
@@ -447,7 +440,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     private int lastLocMappingPainted = 0;
     
     // Number of keys per page
-    private static final int KEYBOARD_KEYS = 64;
+    private static final int KEYBOARD_KEYS = AccessoryKeyboard.KEYS;
 
     /**
      * How much of the debug log is kept.  Roughly a thousand lines - far more than anyone scrolls back
@@ -515,6 +508,77 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     private String railwaySource;
 
     RouteEditorFrame routeEditor;
+
+    /** The Locomotive Settings window while it is open, or null (FR-048). */
+    volatile LocomotiveSettingsFrame locomotiveSettings;
+
+    /**
+     * Opens the Locomotive Settings window on a tab, unless the locomotive cannot be edited (then it says why).  The one door
+     * the menus, the name, the database tile and the function buttons all use.
+     *
+     * @param function the function to show on the Functions tab, or null
+     * @return true when the window is open on the locomotive
+     */
+    public boolean openLocomotiveSettings(Locomotive l, LocomotiveSettingsFrame.Tab tab, Integer function)
+    {
+        // Over the window whose door was pressed (OB-324), and the settings window stands as high as that one
+        final java.awt.Window asking = dialogParent();
+
+        if (l == null || LocomotiveSettings.refuseIfNotEditable(this, l, asking)) return false;
+
+        if (this.locomotiveSettings == null || !this.locomotiveSettings.isDisplayable())
+        {
+            this.locomotiveSettings = new LocomotiveSettingsFrame(this);
+        }
+
+        if (!this.locomotiveSettings.aim(l, tab, function))
+        {
+            return false;
+        }
+
+        this.locomotiveSettings.setAlwaysOnTop(asking.isAlwaysOnTop());
+        this.locomotiveSettings.setVisible(true);
+        this.locomotiveSettings.toFront();
+
+        return true;
+    }
+
+    /** Writes a preset speed saved in the Locomotive Settings window into the loaded setup's copy of the train, if it keeps one. */
+    void recordPresetSpeedInTheSetup(Locomotive l)
+    {
+        org.traincontrol.automationui.AutonomySession session = this.autonomySession;
+
+        if (session == null || !session.updateStoredSpeed(l.getName(), l.getPreferredSpeed())) return;
+
+        try
+        {
+            session.saveWithoutReconciling();
+        }
+        catch (java.io.IOException e)
+        {
+            this.model.log(e);
+        }
+    }
+
+    /** Closes the Locomotive Settings window if it is showing this locomotive, which has left the database. */
+    void locomotiveSettingsClosedFor(Locomotive l)
+    {
+        if (this.locomotiveSettings != null && this.locomotiveSettings.getLocomotive() == l) this.locomotiveSettings.close();
+    }
+
+    /** Tells the open Locomotive Settings window that the locomotive or the power may have changed. */
+    private void tellLocomotiveSettings()
+    {
+        final LocomotiveSettingsFrame window = this.locomotiveSettings;
+
+        if (window != null) javax.swing.SwingUtilities.invokeLater(window::refresh);
+    }
+
+    /** Why a locomotive cannot be edited now ("Stop BR 218 to edit it."), or null when it can. */
+    public String whyNotEditable(Locomotive l)
+    {
+        return LocomotiveSettings.whyNotEditable(this, l);
+    }
 
     /** Delegates to `EditorWindows.everyOpenWindowMaySettle`. */
     public boolean everyOpenWindowMaySettle()
@@ -722,6 +786,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         installShowPageNumbersMenuItem();
 
+        installImportLocsFromCSVMenuItem();
+
         installReturnHomeMenu();
 
         // The windows it opens follow its always-on-top (MT-703).
@@ -760,7 +826,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // Mappings allowing us to programatically access UI components
         this.buttonMapping = new HashMap<>();
         this.labelMapping = new LinkedHashMap<>();
-        this.switchMapping = new HashMap<>();
         this.functionMapping = new HashMap<>();
         this.rFunctionMapping = new HashMap<>();
         this.sliderMapping = new HashMap<>();
@@ -913,99 +978,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         this.labelMapping.put(NButton, NLabel);
         this.labelMapping.put(MButton, MLabel);
         
-        // Map switch addresses to buttons
-        this.switchMapping.put(1,SwitchButton1);
-        this.switchMapping.put(2,SwitchButton2);
-        this.switchMapping.put(3,SwitchButton3);
-        this.switchMapping.put(4,SwitchButton4);
-        this.switchMapping.put(5,SwitchButton5);
-        this.switchMapping.put(6,SwitchButton6);
-        this.switchMapping.put(7,SwitchButton7);
-        this.switchMapping.put(8,SwitchButton8);
-        this.switchMapping.put(9,SwitchButton9);
-        this.switchMapping.put(10,SwitchButton10);
-        this.switchMapping.put(11,SwitchButton11);
-        this.switchMapping.put(12,SwitchButton12);
-        this.switchMapping.put(13,SwitchButton13);
-        this.switchMapping.put(14,SwitchButton14);
-        this.switchMapping.put(15,SwitchButton15);
-        this.switchMapping.put(16,SwitchButton16);
-        this.switchMapping.put(17,SwitchButton17);
-        this.switchMapping.put(18,SwitchButton18);
-        this.switchMapping.put(19,SwitchButton19);
-        this.switchMapping.put(20,SwitchButton20);
-        this.switchMapping.put(21,SwitchButton21);
-        this.switchMapping.put(22,SwitchButton22);
-        this.switchMapping.put(23,SwitchButton23);
-        this.switchMapping.put(24,SwitchButton24);
-        this.switchMapping.put(25,SwitchButton25);
-        this.switchMapping.put(26,SwitchButton26);
-        this.switchMapping.put(27,SwitchButton27);
-        this.switchMapping.put(28,SwitchButton28);
-        this.switchMapping.put(29,SwitchButton29);
-        this.switchMapping.put(30,SwitchButton30);
-        this.switchMapping.put(31,SwitchButton31);
-        this.switchMapping.put(32,SwitchButton32);
-        this.switchMapping.put(33,SwitchButton33);
-        this.switchMapping.put(34,SwitchButton34);
-        this.switchMapping.put(35,SwitchButton35);
-        this.switchMapping.put(36,SwitchButton36);
-        this.switchMapping.put(37,SwitchButton37);
-        this.switchMapping.put(38,SwitchButton38);
-        this.switchMapping.put(39,SwitchButton39);
-        this.switchMapping.put(40,SwitchButton40);
-        this.switchMapping.put(41,SwitchButton41);
-        this.switchMapping.put(42,SwitchButton42);
-        this.switchMapping.put(43,SwitchButton43);
-        this.switchMapping.put(44,SwitchButton44);
-        this.switchMapping.put(45,SwitchButton45);
-        this.switchMapping.put(46,SwitchButton46);
-        this.switchMapping.put(47,SwitchButton47);
-        this.switchMapping.put(48,SwitchButton48);
-        this.switchMapping.put(49,SwitchButton49);
-        this.switchMapping.put(50,SwitchButton50);
-        this.switchMapping.put(51,SwitchButton51);
-        this.switchMapping.put(52,SwitchButton52);
-        this.switchMapping.put(53,SwitchButton53);
-        this.switchMapping.put(54,SwitchButton54);
-        this.switchMapping.put(55,SwitchButton55);
-        this.switchMapping.put(56,SwitchButton56);
-        this.switchMapping.put(57,SwitchButton57);
-        this.switchMapping.put(58,SwitchButton58);
-        this.switchMapping.put(59,SwitchButton59);
-        this.switchMapping.put(60,SwitchButton60);
-        this.switchMapping.put(61,SwitchButton61);
-        this.switchMapping.put(62,SwitchButton62);
-        this.switchMapping.put(63,SwitchButton63);
-        this.switchMapping.put(64,SwitchButton64);
-        
-        // Load actuation count dynamically into tooltip
-        for (JToggleButton j : this.switchMapping.values())
-        {
-            j.addMouseMotionListener(new MouseMotionAdapter()
-            {
-                @Override
-                public void mouseMoved(MouseEvent e)
-                {    
-                    int accAddress = Integer.parseInt(((JToggleButton) e.getSource()).getText());
+        // The accessory keyboard: hand-written, replacing the generated 64 keys (FR-050)
+        mountKeyboardPanel();
 
-                    // Without creating: this runs on every mouse movement over the keyboard, and the creating lookup
-                    // would register an accessory for any address that had none.
-                    Accessory acc = model.getAccessoryByAddressIfPresent(accAddress, getKeyboardProtocol());
-
-                    // No accessory yet means nothing has ever been actuated here, so there is no count
-                    // to show.  Pressing the button still creates it, through the command path.
-                    ((JToggleButton) e.getSource()).setToolTipText(
-                        acc == null ? null : I18n.f(
-                            "acc.ui.tooltip.actuationCount",
-                            acc.getName(),
-                            acc.getNumActuations()
-                        )
-                    );
-                }
-            });
-        }
-        
         // Prevent the tabbed pane from being stupid
         this.KeyboardTab.getInputMap(JComponent.WHEN_FOCUSED)
             .put(KeyStroke.getKeyStroke("LEFT"), "none");
@@ -1678,9 +1653,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /** Shows a plain message from any thread: a modal dialog put up from a worker may never paint. */
-    private void showOnTheEventThread(String message)
+    private void showOnTheEventThread(String message, Component over)
     {
-        Runnable say = () -> javax.swing.JOptionPane.showMessageDialog(this, message);
+        Runnable say = () -> javax.swing.JOptionPane.showMessageDialog(over.isShowing() ? over : this, message);
 
         if (javax.swing.SwingUtilities.isEventDispatchThread())
         {
@@ -1734,12 +1709,12 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      */
     private java.util.Collection<String> settleAbsentPages(java.util.List<String> layoutList,
         java.util.Map<String, String> renamedFromTo,
-        java.util.Collection<String> deliberatelyRemoved)
+        java.util.Collection<String> deliberatelyRemoved, Component over)
     {
         // No local layout, nothing to reconcile (OB-127).
         if (!isLocalLayout())
         {
-            showOnTheEventThread(I18n.t("layout.ui.errorEditingOnlySupportedForLocalFiles"));
+            showOnTheEventThread(I18n.t("layout.ui.errorEditingOnlySupportedForLocalFiles"), over);
 
             return null;
         }
@@ -1753,7 +1728,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         {
             // On the event thread: `combineLinkedPages` really does call this from a worker.
             showOnTheEventThread(I18n.f("layout.ui.errorSavingLayoutWithMessage",
-                LayoutDiagram.getUnreadableIndex().getMessage()));
+                LayoutDiagram.getUnreadableIndex().getMessage()), over);
 
             return null;
         }
@@ -2087,7 +2062,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // Windows.
         try (java.io.FileInputStream file_in =
                 new java.io.FileInputStream(Util.dataPath(TrainControlUI.DATA_FILE_NAME));
-            ObjectInputStream obj_in = new ObjectInputStream(file_in))
+            ObjectInputStream obj_in = new ObjectInputStream(new java.io.BufferedInputStream(file_in)))
         {
             // Read an object
             Object obj = obj_in.readObject();
@@ -2619,6 +2594,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             {
                 if (train != null && train.isAutonomyPaused() == active) changed.add(train);
             }
+
+            setup.noteTheCardsPausesADoorOvertakes(changed, this.activeDiagramConfiguration,
+                settingsAsBuiltFor(this.model == null ? null : this.model.getAutoLayoutIfLoaded()));
 
             try
             {
@@ -3681,7 +3659,13 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     /** Delegates to `RunGates.refuseWhileEditorOpen`. */
     boolean refuseWhileEditorOpen()
     {
-        return RunGates.refuseWhileEditorOpen(this);
+        return RunGates.refuseWhileEditorOpen(this, this);
+    }
+
+    /** The same, said over the window a press read before it left the event thread. */
+    boolean refuseWhileEditorOpen(java.awt.Window asked)
+    {
+        return RunGates.refuseWhileEditorOpen(this, asked);
     }
 
     /** Delegates to `RunGates.whyNoTrainMayBeSent`. */
@@ -3702,7 +3686,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     {
         if (isUnattended() || !wouldRunUnsimulated()) return false;
 
-        return JOptionPane.showOptionDialog(this, I18n.t("autolayout.ui.warnSimulateNotTicked"),
+        return JOptionPane.showOptionDialog(dialogParent(), I18n.t("autolayout.ui.warnSimulateNotTicked"),
             I18n.t("ui.dialogConfirm"), JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE, null,
             YES_NO_OPTS, YES_NO_OPTS[1]) != 0;
     }
@@ -3716,7 +3700,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         if (javax.swing.SwingUtilities.isEventDispatchThread())
         {
-            JOptionPane.showMessageDialog(this, why);
+            JOptionPane.showMessageDialog(dialogParent(), why);
         }
         else
         {
@@ -3738,9 +3722,17 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     /** Refuses to dispatch where an editor, refresh or route has come since the click; true to stop the door. */
     boolean refusedForAnEditorOnItsWay()
     {
+        return refusedForAnEditorOnItsWay(dialogParent());
+    }
+
+    /** The same, said over the window a press read before it left the event thread. */
+    boolean refusedForAnEditorOnItsWay(java.awt.Window asked)
+    {
+        final java.awt.Window over = stillShowing(asked);
+
         if (refreshesUnderWay.get() > 0)
         {
-            JOptionPane.showMessageDialog(this, I18n.t("autosetup.ui.errorDiagramRefreshing"));
+            JOptionPane.showMessageDialog(over, I18n.t("autosetup.ui.errorDiagramRefreshing"));
 
             return true;
         }
@@ -3748,14 +3740,14 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // A route begun since the press: the planning and the dialogs leave room for one (an s88 trigger fires).
         if (aRouteIsExecuting(this.model))
         {
-            JOptionPane.showMessageDialog(this, routeRunningRefusal(executingRouteNames(this.model)));
+            JOptionPane.showMessageDialog(over, routeRunningRefusal(executingRouteNames(this.model)));
 
             return true;
         }
 
         if (!anEditorIsOpenOrOnItsWay()) return false;
 
-        JOptionPane.showMessageDialog(this, I18n.t("autosetup.ui.menuEditorOpen"));
+        JOptionPane.showMessageDialog(over, I18n.t("autosetup.ui.menuEditorOpen"));
 
         return true;
     }
@@ -3787,11 +3779,13 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         if (refusedToSendATrain(false)) return;
 
+        final java.awt.Window asked = dialogParent();
+
         String why = whyThisPathCannotBeTaken(railway, path, train);
 
         if (why != null)
         {
-            JOptionPane.showMessageDialog(this, why);
+            JOptionPane.showMessageDialog(asked, why);
 
             return;
         }
@@ -3819,7 +3813,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 if (!railway.executePathByHand(path, train, train.getPreferredSpeed(), answered, stopsAtClick))
                 {
                     javax.swing.SwingUtilities.invokeLater(() ->
-                        JOptionPane.showMessageDialog(this, I18n.t("autolayout.ui.autoFailedCheckLog")));
+                        JOptionPane.showMessageDialog(stillShowing(asked), I18n.t("autolayout.ui.autoFailedCheckLog")));
                 }
             }
             finally
@@ -4081,6 +4075,12 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     public void openCarryingTheClick(boolean clicked, Runnable open)
     {
         this.editorWindows.openCarryingTheClick(clicked, open);
+    }
+
+    /** Delegates to `EditorWindows.openCarryingTheClick`. */
+    public void openCarryingTheClick(boolean clicked, String findingFilter, Runnable open)
+    {
+        this.editorWindows.openCarryingTheClick(clicked, findingFilter, open);
     }
 
     /** Delegates to `EditorWindows.autonomyEditorClosedFromTheEditor`. */
@@ -4796,6 +4796,17 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         this.CurrentKeyLabel.add(this.currentKeyRow, java.awt.BorderLayout.CENTER);
     }
 
+    /** "Import from CSV..." beside Export to CSV (FR-049), built here because the menu belongs to the generated block. */
+    private void installImportLocsFromCSVMenuItem()
+    {
+        this.importLocsFromCSVMenuItem = new javax.swing.JMenuItem(I18n.t("ui.main.toolbar.importFromCSV"));
+
+        this.importLocsFromCSVMenuItem.addActionListener(event -> LocomotiveCsvDoor.open(this, this));
+
+        this.locomotiveMenu.insert(this.importLocsFromCSVMenuItem,
+            this.locomotiveMenu.getPopupMenu().getComponentIndex(this.exportLocsToCSVMenuItem) + 1);
+    }
+
     /**
      * "Show Page Numbers" in the Preferences menu's Locomotive submenu (FR-128), built here as the form is generated.
      * It is the setting for the page tabs and label as well as the line over the name, so a click re-words them all.
@@ -4964,61 +4975,74 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     {
         javax.swing.SwingUtilities.invokeLater(() ->
         {
-            int tarKeyboard = keyboardNum;
-            
-            // Ensure bounds
-            if (keyboardNum < 1)
-            {
-                tarKeyboard = 1;
-            }
-            
-            if (keyboardNum > TrainControlUI.NUM_KEYBOARDS)
-            {
-                tarKeyboard = TrainControlUI.NUM_KEYBOARDS;
-            }
-            
-            if (tarKeyboard <= TrainControlUI.NUM_KEYBOARDS && tarKeyboard >= 1)
-            {
-                this.keyboardNumber = tarKeyboard;
-            }
+            // Bounds: a page past the last tab lands on the last one, and one before the first on the first
+            this.keyboardNumber = Math.max(1, Math.min(TrainControlUI.NUM_KEYBOARDS, keyboardNum));
 
-            if (this.keyboardNumber == 1)
-            {
-                this.PrevKeyboard.setEnabled(false);
-            }
-            else
-            {
-                this.PrevKeyboard.setEnabled(true);
-            }
-
-            if (this.keyboardNumber == TrainControlUI.NUM_KEYBOARDS)
-            {
-                this.NextKeyboard.setEnabled(false);
-            }
-            else
-            {
-                this.NextKeyboard.setEnabled(true);
-            }
-
-            this.KeyboardNumberLabel.setText(
-                I18n.f("keyboard.ui.labelKeyboardNumber", this.keyboardNumber)
-            );
-
-            Integer offset = this.getKeyboardOffset();
-
-            for (Integer i = 1; i <= TrainControlUI.KEYBOARD_KEYS; i++)
-            {
-                this.switchMapping.get(i).setText((Integer.valueOf(i + offset)).toString());
-
-                // Set the font size dynamically 
-                int fontSize = i + offset > 960 ? 11 : 14;
-                this.switchMapping.get(i).setFont(new java.awt.Font("Segoe UI", java.awt.Font.BOLD, fontSize));
-            }
+            this.keyboardKeys.showPage(this.keyboardNumber);
 
             repaintSwitches();
         });
     }
-    
+
+    /** Puts the hand-written keyboard where the generated one was, at the width that one had. */
+    private void mountKeyboardPanel()
+    {
+        this.keyboardKeys = new AccessoryKeyboard(new AccessoryKeyboard.Listener()
+        {
+            @Override
+            public void pageChosen(int page)
+            {
+                switchKeyboard(page);
+            }
+
+            @Override
+            public void clicked(int address, boolean red)
+            {
+                keyboardKeyClicked(address, red);
+            }
+
+            @Override
+            public String tooltip(int address)
+            {
+                // Without creating: this runs on every mouse movement over the keyboard, and the creating lookup
+                // would register an accessory for any address that had none.
+                Accessory acc = model == null ? null : model.getAccessoryByAddressIfPresent(address, getKeyboardProtocol());
+
+                // No accessory yet means nothing has ever been actuated here, so there is no count to show.
+                return acc == null ? null : I18n.f("acc.ui.tooltip.actuationCount", acc.getName(), acc.getNumActuations());
+            }
+        }, this.keyboardButtonPanel.getPreferredSize().width);
+
+        java.awt.GridBagConstraints at = new java.awt.GridBagConstraints();
+
+        this.KeyboardPanel.removeAll();
+        this.KeyboardPanel.setLayout(new java.awt.GridBagLayout());
+
+        at.gridx = 0;
+        at.anchor = java.awt.GridBagConstraints.NORTHWEST;
+
+        at.gridy = 0;
+        at.insets = new java.awt.Insets(6, 6, 6, 0);
+        this.KeyboardPanel.add(this.KeyboardLabel, at);
+
+        at.gridy = 1;
+        at.insets = new java.awt.Insets(0, 6, 0, 0);
+        this.KeyboardPanel.add(this.keyboardKeys, at);
+
+        at.gridy = 2;
+        at.insets = new java.awt.Insets(6, 6, 0, 0);
+
+        javax.swing.JPanel protocol = new javax.swing.JPanel(new java.awt.FlowLayout(java.awt.FlowLayout.LEFT, 0, 0));
+        protocol.setOpaque(false);
+        protocol.add(this.MM2);
+        protocol.add(this.DCC);
+        this.KeyboardPanel.add(protocol, at);
+
+        at.gridy = 3;
+        at.weighty = 1;
+        this.KeyboardPanel.add(javax.swing.Box.createGlue(), at);
+    }
+
     /**
      * Fetches and scales a resource icon
      * @param size
@@ -6118,11 +6142,13 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     
     public void showLocSelector(boolean doAssign)
     {
+        final java.awt.Window asked = dialogParent();
+
         javax.swing.SwingUtilities.invokeLater(()->
         { 
             if (this.getModel().getLocomotives().isEmpty())
             {
-                JOptionPane.showMessageDialog(this,
+                JOptionPane.showMessageDialog(stillShowing(asked),
                     I18n.t("error.noLocs")
                 ); 
             }
@@ -6500,6 +6526,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // On the EDT: called from the message thread, and setEnabled off it gives an occasionally wrong button.
         powerHeard = true;
 
+        tellLocomotiveSettings();
+
         javax.swing.SwingUtilities.invokeLater(() ->
         {
             if (this.model.getPowerState())
@@ -6532,16 +6560,12 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     {
         javax.swing.SwingUtilities.invokeLater(() -> 
         {
-            int offset = this.getKeyboardOffset();
-            
-            if (offset + 1 <= address && offset + TrainControlUI.KEYBOARD_KEYS >= address)
+            int key = this.keyboardKeys.keyOf(address);
+
+            if (key > 0)
             {
-                JToggleButton key = this.switchMapping.get(address - offset);
-
-                boolean red = this.model.getAccessoryStateIfPresent(address, getKeyboardProtocol());
-
-                key.setSelected(red);
-                paintSwitchKey(key, red);
+                this.keyboardKeys.setKey(key, this.model.getAccessoryStateIfPresent(address, getKeyboardProtocol()),
+                    keyboardAddressExists(address));
             }
             
             // The new editor belongs in this gate too: capture did nothing unless the old editor was also open.
@@ -6648,7 +6672,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             int offset = this.getKeyboardOffset();
             
             // DCC-only addresses
-            if (this.keyboardNumber >= 6)
+            if (!Accessory.isValidLogicalAddress(offset + 1, Accessory.accessoryDecoderType.MM2))
             {
                 this.DCC.setSelected(true);                  
             }
@@ -6659,18 +6683,17 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
             for (int i = 1; i <= TrainControlUI.KEYBOARD_KEYS; i++)
             {
-                JToggleButton key = this.switchMapping.get(i);
-                
-                if (key != null)
-                {           
-                    // Painting is looking: getAccessoryState creates a switch on a miss, registering all 64 addresses.
-                    boolean red = this.model.getAccessoryStateIfPresent(i + offset, getKeyboardProtocol());
-
-                    key.setSelected(red);
-                    paintSwitchKey(key, red);
-                }
+                // Painting is looking: getAccessoryState creates a switch on a miss, registering every address.
+                this.keyboardKeys.setKey(i, this.model.getAccessoryStateIfPresent(i + offset, getKeyboardProtocol()),
+                    keyboardAddressExists(i + offset));
             }
         });
+    }
+
+    /** Whether the protocol chosen on the keyboard has this address; the MM2 ones end at 320. */
+    private boolean keyboardAddressExists(int address)
+    {
+        return Accessory.isValidLogicalAddress(address, getKeyboardProtocol());
     }
     
     /**
@@ -7382,6 +7405,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     @Override
     synchronized public void repaintLoc(boolean force, List<Locomotive> updatedLocs)
     {     
+        tellLocomotiveSettings();
+
         // Before the possibly deferred render: asked once per request, not again when a deferred render finally runs.
         followDirectionChanges(updatedLocs);
 
@@ -13679,432 +13704,451 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // So `letTheWholeWindowDriveTrains` can tell a key it must still deliver from one already brought here.
         this.theKeyTheMapAlreadySaw = evt;
 
-        int keyCode = evt.getKeyCode();
-        boolean altPressed = (evt.getModifiers() & KeyEvent.ALT_MASK) != 0;
-        boolean controlPressed = (evt.getModifiers() & KeyEvent.CTRL_MASK) != 0 || (evt.getModifiers() & KeyEvent.CTRL_DOWN_MASK) != 0;
-
         // The diagram gets first refusal on cut, paste and delete, while the pointer is over one of its squares.
-        if (locomotiveGestureOnDiagram(keyCode, controlPressed)) return;
+        if (locomotiveGestureOnDiagram(evt.getKeyCode(), KeyShortcuts.controlPressed(evt.getModifiers()))) return;
 
-        if (altPressed && keyCode == KeyEvent.VK_G)
-        {
-            go();
-        }
-        else if (altPressed && keyCode == KeyEvent.VK_P)
-        {
-            this.applyPreferredFunctions(this.activeLoc);
-        }
-        else if (altPressed && keyCode == KeyEvent.VK_V)
-        {
-            this.applyPreferredSpeed(this.activeLoc);
-        }
-        else if (altPressed && keyCode == KeyEvent.VK_O)
-        {
-            this.locFunctionsOff(this.activeLoc);
-        }
-        else if (altPressed && keyCode == KeyEvent.VK_S)
-        {
-            this.savePreferredFunctions(this.activeLoc);
-        }
-        else if (altPressed && keyCode == KeyEvent.VK_U)
-        {
-            this.savePreferredSpeed(this.activeLoc);
-        }
-        else if (controlPressed && keyCode == KeyEvent.VK_A)
-        {
-            this.selectLocomotiveActivated(this.currentButton);
-        }
-        else if (controlPressed && keyCode == KeyEvent.VK_F)
-        {
-            this.quickLocSearch();
-        }
-        else if (controlPressed && keyCode == KeyEvent.VK_C)
-        {
-            this.setCopyTarget(this.currentButton, false);
-        }
-        else if (controlPressed && keyCode == KeyEvent.VK_D)
-        {
-            this.getLocAdder().setVisible(true);
-        }
-        else if (controlPressed && keyCode == KeyEvent.VK_N)
-        {
-            this.changeLocNotes(this.getButtonLocomotive(this.currentButton));
-        }
-        else if (controlPressed && keyCode == KeyEvent.VK_L)
-        {
-            this.changeLinkedLocomotives((Locomotive) this.getButtonLocomotive(this.currentButton));
-        }
-        else if (controlPressed && keyCode == KeyEvent.VK_M)
-        {
-            this.toggleMenuBar.setSelected(!this.toggleMenuBar.isSelected());
-            toggleMenuBarActionPerformed(null);
-        }
-        else if (controlPressed && keyCode == KeyEvent.VK_DELETE)
-        {
-            if (this.getButtonLocomotive(this.currentButton) != null)
-            {
-                this.deleteLoc(this.getButtonLocomotive(this.currentButton).getName());
-            }
-        }
-        else if (controlPressed && keyCode == KeyEvent.VK_R)
-        {
-            this.changeLocAddress(this.getButtonLocomotive(this.currentButton));
-        }
-        else if (controlPressed && keyCode == KeyEvent.VK_V) // Paste
-        {
-            if (this.hasCopyTarget())
-            {
-                this.doPaste(this.currentButton, false, false);
-            }
-        }
-        else if (controlPressed && keyCode == KeyEvent.VK_S) // Swap
-        {
-            if (this.hasCopyTarget())
-            {
-                this.doPaste(this.currentButton, true, false);
-            }
-        }
-        else if (controlPressed && keyCode == KeyEvent.VK_X)
-        {
-            this.setCopyTarget(this.currentButton, true);
-        }
-        else if (!controlPressed && keyCode == KeyEvent.VK_DELETE)
-        {
-            // This is the same as clearing the button
-            this.setCopyTarget(this.currentButton, true);
-            this.setCopyTarget(this.currentButton, true);
-        }
-        // A bare letter, not a control chord (OB-197): without `!controlPressed`, Control plus any letter no arm above
-        // catches selected a locomotive button.  Alt is not filtered: the arms above take every Alt chord this window
-        // has.
-        else if (!controlPressed && this.buttonMapping.containsKey(keyCode))
-        {
-            this.displayCurrentButtonLoc(this.buttonMapping.get(evt.getKeyCode()));
-        }
-        else if (keyCode == KeyEvent.VK_UP)
-        {            
-            if (altPressed)
-            {
-                incrementLocSpeed(SPEED_STEP * 2);
-            }
-            else if (controlPressed)
-            {
-                incrementLocSpeed(1);
-            }
-            else
-            {
-                this.UpArrowLetterButtonPressed(null);
-            }
-        }
-        else if (keyCode == KeyEvent.VK_DOWN)
-        {            
-            if (altPressed)
-            {
-                decrementLocSpeed(SPEED_STEP * 2);
-            }
-            else if (controlPressed)
-            {
-                decrementLocSpeed(1);
-            }
-            else
-            {
-                this.DownArrowLetterButtonPressed(null);
-            }
-        }
-        else if (keyCode == KeyEvent.VK_RIGHT && !altPressed)
-        {
-            if (controlPressed)
-            {
-                this.forwardLoc();
-            }
-            else
-            {
-                this.RightArrowLetterButtonPressed(null);
-            }
-        }
-        else if (keyCode == KeyEvent.VK_LEFT && !altPressed)
-        {
-            if (controlPressed)
-            {
-                this.backwardLoc();
-            }
-            else
-            {
-               this.LeftArrowLetterButtonPressed(null); 
-            }
-        }
-        else if (keyCode == KeyEvent.VK_SPACE)
-        {
-            this.SpacebarButtonActionPerformed(null);
-        }
-        else if (keyCode == KeyEvent.VK_0 && !altPressed && !controlPressed)
-        {
-            this.ZeroButtonActionPerformed(null);
-        }
-        else if (keyCode == KeyEvent.VK_1 && !altPressed && !controlPressed)
-        {
-            this.OneButtonActionPerformed(null);
-        }
-        else if (keyCode == KeyEvent.VK_2 && !altPressed && !controlPressed)
-        {
-            this.TwoButtonActionPerformed(null);
-        }
-        else if (keyCode == KeyEvent.VK_3 && !altPressed && !controlPressed)
-        {
-            this.ThreeButtonActionPerformed(null);
-        }
-        else if (keyCode == KeyEvent.VK_4 && !altPressed && !controlPressed)
-        {
-            this.FourButtonActionPerformed(null);
-        }
-        else if (keyCode == KeyEvent.VK_5 && !altPressed && !controlPressed)
-        {
-            this.FiveButtonActionPerformed(null);
-        }
-        else if (keyCode == KeyEvent.VK_6 && !altPressed && !controlPressed)
-        {
-            this.SixButtonActionPerformed(null);
-        }
-        else if (keyCode == KeyEvent.VK_7 && !altPressed && !controlPressed)
-        {
-            this.SevenButtonActionPerformed(null);
-        }
-        else if (keyCode == KeyEvent.VK_8 && !altPressed && !controlPressed)
-        {
-            this.EightButtonActionPerformed(null);
-        }
-        else if (keyCode == KeyEvent.VK_9 && !altPressed && !controlPressed)
-        {
-            this.NineButtonActionPerformed(null);
-        }
-        else if (keyCode == KeyEvent.VK_MINUS || keyCode == KeyEvent.VK_UNDERSCORE || keyCode == KeyEvent.VK_QUOTE || keyCode == KeyEvent.VK_OPEN_BRACKET)
-        {
-            if (this.KeyboardTab.getSelectedIndex() == 1)
-            {
-                int currentIndex = this.LayoutList.getSelectedIndex();
-                
-                if (currentIndex > 0)
-                {
-                     this.LayoutList.setSelectedIndex(currentIndex - 1);
-                     //this.repaintLayout();
-                }
-            }
-            else
-            {
-                if (controlPressed)
-                {
-                    this.switchKeyboard(this.keyboardNumber - 4);
-                }
-                else
-                {
-                    this.PrevKeyboardActionPerformed(null);
-                }
-            }
-        }
-        else if (keyCode == KeyEvent.VK_EQUALS || keyCode == KeyEvent.VK_PLUS || keyCode == KeyEvent.VK_LEFT_PARENTHESIS || keyCode == KeyEvent.VK_CLOSE_BRACKET)
-        {
-            if (this.KeyboardTab.getSelectedIndex() == 1)
-            {
-                int currentIndex = this.LayoutList.getSelectedIndex();
-                
-                if (currentIndex < this.LayoutList.getItemCount() - 1)
-                {
-                     this.LayoutList.setSelectedIndex(currentIndex + 1);
-                }
-            }
-            else
-            {
-                if (controlPressed)
-                {
-                    this.switchKeyboard(this.keyboardNumber + 4);
-                }
-                else
-                {
-                    this.NextKeyboardActionPerformed(null);
-                }
-            } 
-        }
-        else if ((keyCode == KeyEvent.VK_COMMA && altPressed) || (keyCode == KeyEvent.VK_SEMICOLON && altPressed))
-        {
-            this.switchLocMapping(1);    
-        }
-        else if ((keyCode == KeyEvent.VK_PERIOD && altPressed) || (keyCode == KeyEvent.VK_COLON && altPressed))
-        {
-            this.switchLocMapping(this.numLocMappings); 
-        }
-        else if ((keyCode == KeyEvent.VK_COMMA && !altPressed) || (keyCode == KeyEvent.VK_SEMICOLON && !altPressed) || (keyCode == KeyEvent.VK_LEFT && altPressed))
-        {
-            this.PrevLocMappingActionPerformed(null);   
-        }
-        else if ((keyCode == KeyEvent.VK_PERIOD && !altPressed) || (keyCode == KeyEvent.VK_COLON && !altPressed) || (keyCode == KeyEvent.VK_RIGHT && altPressed))
-        {
-            this.NextLocMappingActionPerformed(null);
-        }
-        else if ((keyCode == KeyEvent.VK_NUMPAD0 && !controlPressed && !altPressed) || keyCode == KeyEvent.VK_BACK_QUOTE || (keyCode == KeyEvent.VK_0 && altPressed && !controlPressed))
-        {
-            this.switchF(0);
-        }
-        else if ((keyCode == KeyEvent.VK_NUMPAD1 && !controlPressed && !altPressed) || keyCode == KeyEvent.VK_F1 || (keyCode == KeyEvent.VK_1 && altPressed && !controlPressed))
-        {
-            this.switchF(1);
-        }
-        else if ((keyCode == KeyEvent.VK_NUMPAD2 && !controlPressed && !altPressed) || keyCode == KeyEvent.VK_F2 || (keyCode == KeyEvent.VK_2 && altPressed && !controlPressed))
-        {
-            this.switchF(2);
-        }
-        else if ((keyCode == KeyEvent.VK_NUMPAD3 && !controlPressed && !altPressed) || keyCode == KeyEvent.VK_F3 || (keyCode == KeyEvent.VK_3 && altPressed && !controlPressed))
-        {
-            this.switchF(3);
-        }
-        else if ((keyCode == KeyEvent.VK_NUMPAD4 && !controlPressed && !altPressed) || keyCode == KeyEvent.VK_F4 || (keyCode == KeyEvent.VK_4 && altPressed && !controlPressed))
-        {
-            this.switchF(4);
-        }
-        else if ((keyCode == KeyEvent.VK_NUMPAD5 && !controlPressed && !altPressed) || keyCode == KeyEvent.VK_F5 || (keyCode == KeyEvent.VK_5 && altPressed && !controlPressed))
-        {
-            this.switchF(5);
-        }
-        else if ((keyCode == KeyEvent.VK_NUMPAD6 && !controlPressed && !altPressed) || keyCode == KeyEvent.VK_F6 || (keyCode == KeyEvent.VK_6 && altPressed && !controlPressed))
-        {
-            this.switchF(6);
-        }
-        else if ((keyCode == KeyEvent.VK_NUMPAD7 && !controlPressed && !altPressed) || keyCode == KeyEvent.VK_F7 || (keyCode == KeyEvent.VK_7 && altPressed && !controlPressed))
-        {
-            this.switchF(7);
-        }
-        else if ((keyCode == KeyEvent.VK_NUMPAD8 && !controlPressed && !altPressed) || keyCode == KeyEvent.VK_F8 || (keyCode == KeyEvent.VK_8 && altPressed && !controlPressed))
-        {
-            this.switchF(8);
-        }
-        else if ((keyCode == KeyEvent.VK_NUMPAD9 && !controlPressed && !altPressed) || keyCode == KeyEvent.VK_F9 || (keyCode == KeyEvent.VK_9 && altPressed && !controlPressed))
-        {
-            this.switchF(9);
-        }
-        else if (keyCode == KeyEvent.VK_F10 || ((keyCode == KeyEvent.VK_0 || keyCode == KeyEvent.VK_NUMPAD0) && !altPressed && controlPressed))
-        {
-            this.switchF(10);
-        }
-        else if (keyCode == KeyEvent.VK_F11 || ((keyCode == KeyEvent.VK_1 || keyCode == KeyEvent.VK_NUMPAD1) && !altPressed && controlPressed))
-        {
-            this.switchF(11);
-        }
-        else if (keyCode == KeyEvent.VK_F12 || ((keyCode == KeyEvent.VK_2 || keyCode == KeyEvent.VK_NUMPAD2) && !altPressed && controlPressed))
-        {
-            this.switchF(12);
-        }
-        else if (keyCode == KeyEvent.VK_F13 || ((keyCode == KeyEvent.VK_3 || keyCode == KeyEvent.VK_NUMPAD3) && !altPressed && controlPressed))
-        {
-            this.switchF(13);
-        }
-        else if (keyCode == KeyEvent.VK_F14 || ((keyCode == KeyEvent.VK_4 || keyCode == KeyEvent.VK_NUMPAD4) && !altPressed && controlPressed))
-        {
-            this.switchF(14);
-        }
-        else if (keyCode == KeyEvent.VK_F15 || ((keyCode == KeyEvent.VK_5 || keyCode == KeyEvent.VK_NUMPAD5) && !altPressed && controlPressed))
-        {
-            this.switchF(15);
-        }
-        else if (keyCode == KeyEvent.VK_F16 || ((keyCode == KeyEvent.VK_6 || keyCode == KeyEvent.VK_NUMPAD6) && !altPressed && controlPressed))
-        {
-            this.switchF(16);
-        }
-        else if (keyCode == KeyEvent.VK_F17 || ((keyCode == KeyEvent.VK_7 || keyCode == KeyEvent.VK_NUMPAD7) && !altPressed && controlPressed))
-        {
-            this.switchF(17);
-        }
-        else if (keyCode == KeyEvent.VK_F18 || ((keyCode == KeyEvent.VK_8 || keyCode == KeyEvent.VK_NUMPAD8) && !altPressed && controlPressed))
-        {
-            this.switchF(18);
-        }
-        else if (keyCode == KeyEvent.VK_F19 || ((keyCode == KeyEvent.VK_9 || keyCode == KeyEvent.VK_NUMPAD9) && !altPressed && controlPressed))
-        {
-            this.switchF(19);
-        }
-        else if (keyCode == KeyEvent.VK_F20 || ((keyCode == KeyEvent.VK_0 || keyCode == KeyEvent.VK_NUMPAD0) && altPressed && controlPressed))
-        {
-            this.switchF(20);
-        }
-        else if (keyCode == KeyEvent.VK_F21 || ((keyCode == KeyEvent.VK_1 || keyCode == KeyEvent.VK_NUMPAD1) && altPressed && controlPressed))
-        {
-            this.switchF(21);
-        }
-        else if (keyCode == KeyEvent.VK_F22 || ((keyCode == KeyEvent.VK_2 || keyCode == KeyEvent.VK_NUMPAD2) && altPressed && controlPressed))
-        {
-            this.switchF(22);
-        }
-        else if (keyCode == KeyEvent.VK_F23 || ((keyCode == KeyEvent.VK_3 || keyCode == KeyEvent.VK_NUMPAD3) && altPressed && controlPressed))
-        {
-            this.switchF(23);
-        }
-        else if (keyCode == KeyEvent.VK_F24 || ((keyCode == KeyEvent.VK_4 || keyCode == KeyEvent.VK_NUMPAD4) && altPressed && controlPressed))
-        {
-            this.switchF(24);
-        }
-        else if ((keyCode == KeyEvent.VK_5 || keyCode == KeyEvent.VK_NUMPAD5) && altPressed && controlPressed)
-        {
-            this.switchF(25);
-        }
-        else if ((keyCode == KeyEvent.VK_6 || keyCode == KeyEvent.VK_NUMPAD6) && altPressed && controlPressed)
-        {
-            this.switchF(26);
-        }
-        else if ((keyCode == KeyEvent.VK_7 || keyCode == KeyEvent.VK_NUMPAD7) && altPressed && controlPressed)
-        {
-            this.switchF(27);
-        }
-        else if ((keyCode == KeyEvent.VK_8 || keyCode == KeyEvent.VK_NUMPAD8) && altPressed && controlPressed)
-        {
-            this.switchF(28);
-        }
-        else if ((keyCode == KeyEvent.VK_9 || keyCode == KeyEvent.VK_NUMPAD9) && altPressed && controlPressed)
-        {
-            this.switchF(29);
-        }
-        else if (keyCode == KeyEvent.VK_ESCAPE)
-        {
-            stop();
-        }
-        else if (keyCode == KeyEvent.VK_SHIFT)
-        {
-            ShiftButtonActionPerformed(null);
-        }  
-        else if (keyCode == KeyEvent.VK_ENTER)
-        {
-            AltEmergencyStopActionPerformed(null);
-        }
-        else if ((keyCode == KeyEvent.VK_CAPS_LOCK || keyCode == KeyEvent.VK_BACK_SPACE) && !altPressed)
-        {
-            // Easy tab cycling
-            do
-            {
-                this.KeyboardTab.setSelectedIndex(
-                    (this.KeyboardTab.getSelectedIndex() + 1) 
-                        % this.KeyboardTab.getComponentCount()
-                );
-            }
-            while (!this.KeyboardTab.isEnabledAt(this.KeyboardTab.getSelectedIndex()));
-        } 
-        else if ((keyCode == KeyEvent.VK_CAPS_LOCK || keyCode == KeyEvent.VK_BACK_SPACE) && altPressed)
-        {
-            do
-            {
-                this.KeyboardTab.setSelectedIndex(
-                    Math.floorMod(this.KeyboardTab.getSelectedIndex() - 1, 
-                            this.KeyboardTab.getComponentCount()
-                    )
-                );
-            }
-            while (!this.KeyboardTab.isEnabledAt(this.KeyboardTab.getSelectedIndex()));
-        } 
-        else if (keyCode == KeyEvent.VK_SLASH || keyCode == KeyEvent.VK_LESS)
-        {
-            // Cycle function tabs
-            this.FunctionTabs.setSelectedIndex(
-                (this.FunctionTabs.getSelectedIndex() + 1) 
-                    % this.FunctionTabs.getComponentCount()
-            );
-        }
+        KeyShortcuts.Row row = KeyShortcuts.choose(evt.getKeyCode(), evt.getModifiers(), this.buttonMapping);
+
+        if (row != null) row.run(this, evt);
     }//GEN-LAST:event_LocControlPanelKeyPressed
+
+    /**
+     * Every keyboard shortcut of the main window, one row each: its name, its keys with what must be held, its action.
+     * The first row whose keys match takes the press, even when its action then does nothing, so the order is behavior
+     * where rows overlap.  Keys named here with `Held.ANY` fire whatever else is held; Shift is never asked.
+     *
+     * Nested because the actions call the window's private handlers, whose signatures belong to the GUI Builder.  Bare
+     * letters come from `buttonMapping`, which the keyboard layout swaps; the row itself does not depend on the layout.
+     */
+    public static final class KeyShortcuts
+    {
+        /** What a row's keys need held: true, false, or null for either. */
+        private enum Held
+        {
+            ANY(null, null), ALT(true, null), CONTROL(null, true), NOT_ALT(false, null), NOT_CONTROL(null, false),
+            NEITHER(false, false), ALT_ONLY(true, false), CONTROL_ONLY(false, true), BOTH(true, true);
+
+            private final Boolean alt;
+            private final Boolean control;
+
+            Held(Boolean alt, Boolean control)
+            {
+                this.alt = alt;
+                this.control = control;
+            }
+
+            boolean matches(boolean altPressed, boolean controlPressed)
+            {
+                return (alt == null || alt == altPressed) && (control == null || control == controlPressed);
+            }
+
+            Keys on(int... keyCodes)
+            {
+                return new Keys(this, keyCodes, null);
+            }
+        }
+
+        /** Key codes with what they need held, or else the keys of `or`. */
+        private static final class Keys
+        {
+            private final Held held;
+
+            /** Null for the letters of the keyboard layout: whatever `buttonMapping` holds. */
+            private final int[] keyCodes;
+
+            private final Keys orElse;
+
+            Keys(Held held, int[] keyCodes, Keys orElse)
+            {
+                this.held = held;
+                this.keyCodes = keyCodes;
+                this.orElse = orElse;
+            }
+
+            Keys or(Keys other)
+            {
+                return new Keys(held, keyCodes, orElse == null ? other : orElse.or(other));
+            }
+
+            boolean take(int keyCode, boolean altPressed, boolean controlPressed, Map<Integer, ?> buttonMapping)
+            {
+                return held.matches(altPressed, controlPressed) && names(keyCode, buttonMapping)
+                    || orElse != null && orElse.take(keyCode, altPressed, controlPressed, buttonMapping);
+            }
+
+            private boolean names(int keyCode, Map<Integer, ?> buttonMapping)
+            {
+                if (keyCodes == null) return buttonMapping.containsKey(keyCode);
+
+                for (int each : keyCodes)
+                {
+                    if (each == keyCode) return true;
+                }
+
+                return false;
+            }
+
+            @Override
+            public String toString()
+            {
+                StringBuilder out = new StringBuilder(held.toString());
+
+                if (keyCodes == null) out.append(" a letter of the keyboard layout");
+                else for (int each : keyCodes) out.append(' ').append(KeyEvent.getKeyText(each));
+
+                return orElse == null ? out.toString() : out + ", or " + orElse;
+            }
+        }
+
+        /** One press, as an action reads it. */
+        private static final class Press
+        {
+            private final TrainControlUI ui;
+            private final boolean altPressed;
+            private final boolean controlPressed;
+            private final KeyEvent evt;
+
+            Press(TrainControlUI ui, KeyEvent evt)
+            {
+                this.ui = ui;
+                this.altPressed = KeyShortcuts.altPressed(evt.getModifiers());
+                this.controlPressed = KeyShortcuts.controlPressed(evt.getModifiers());
+                this.evt = evt;
+            }
+        }
+
+        /** One shortcut. */
+        public static final class Row
+        {
+            private final String name;
+            private final Keys keys;
+            private final java.util.function.Consumer<Press> action;
+
+            private Row(String name, Keys keys, java.util.function.Consumer<Press> action)
+            {
+                this.name = name;
+                this.keys = keys;
+                this.action = action;
+            }
+
+            /** The name no other row has. */
+            public String name()
+            {
+                return name;
+            }
+
+            private void run(TrainControlUI ui, KeyEvent evt)
+            {
+                action.accept(new Press(ui, evt));
+            }
+
+            @Override
+            public String toString()
+            {
+                return name + ": " + keys;
+            }
+        }
+
+        private static final List<Row> ROWS = new ArrayList<>();
+
+        /** The keys of functions 0 to 24 with anything held: their digit keys need particular modifiers. */
+        private static final int[] FUNCTION_KEYS = {
+            KeyEvent.VK_BACK_QUOTE, KeyEvent.VK_F1, KeyEvent.VK_F2, KeyEvent.VK_F3, KeyEvent.VK_F4, KeyEvent.VK_F5,
+            KeyEvent.VK_F6, KeyEvent.VK_F7, KeyEvent.VK_F8, KeyEvent.VK_F9, KeyEvent.VK_F10, KeyEvent.VK_F11,
+            KeyEvent.VK_F12, KeyEvent.VK_F13, KeyEvent.VK_F14, KeyEvent.VK_F15, KeyEvent.VK_F16, KeyEvent.VK_F17,
+            KeyEvent.VK_F18, KeyEvent.VK_F19, KeyEvent.VK_F20, KeyEvent.VK_F21, KeyEvent.VK_F22, KeyEvent.VK_F23,
+            KeyEvent.VK_F24};
+
+        /** The speed button of each digit key, by digit. */
+        private static final List<java.util.function.BiConsumer<TrainControlUI, ActionEvent>> SPEED_BUTTONS =
+            Arrays.asList(TrainControlUI::ZeroButtonActionPerformed, TrainControlUI::OneButtonActionPerformed,
+                TrainControlUI::TwoButtonActionPerformed, TrainControlUI::ThreeButtonActionPerformed,
+                TrainControlUI::FourButtonActionPerformed, TrainControlUI::FiveButtonActionPerformed,
+                TrainControlUI::SixButtonActionPerformed, TrainControlUI::SevenButtonActionPerformed,
+                TrainControlUI::EightButtonActionPerformed, TrainControlUI::NineButtonActionPerformed);
+
+        static
+        {
+            row("apply preferred functions", Held.ALT.on(KeyEvent.VK_P),
+                key -> key.ui.applyPreferredFunctions(key.ui.activeLoc));
+            row("apply preferred speed", Held.ALT.on(KeyEvent.VK_V),
+                key -> key.ui.applyPreferredSpeed(key.ui.activeLoc));
+            row("functions off", Held.ALT.on(KeyEvent.VK_O), key -> key.ui.locFunctionsOff(key.ui.activeLoc));
+            row("power on", Held.ALT.on(KeyEvent.VK_G), key -> key.ui.go());
+            row("save preferred functions", Held.ALT.on(KeyEvent.VK_S),
+                key -> key.ui.savePreferredFunctions(key.ui.activeLoc));
+            row("save preferred speed", Held.ALT.on(KeyEvent.VK_U), key -> key.ui.savePreferredSpeed(key.ui.activeLoc));
+            row("copy the button", Held.CONTROL.on(KeyEvent.VK_C),
+                key -> key.ui.setCopyTarget(key.ui.currentButton, false));
+            row("choose a locomotive", Held.CONTROL.on(KeyEvent.VK_A),
+                key -> key.ui.selectLocomotiveActivated(key.ui.currentButton));
+            row("find a locomotive", Held.CONTROL.on(KeyEvent.VK_F), key -> key.ui.quickLocSearch());
+            row("add a locomotive", Held.CONTROL.on(KeyEvent.VK_D), key -> key.ui.getLocAdder().setVisible(true));
+            row("locomotive notes", Held.CONTROL.on(KeyEvent.VK_N),
+                key -> key.ui.changeLocNotes(key.ui.getButtonLocomotive(key.ui.currentButton)));
+            row("linked locomotives", Held.CONTROL.on(KeyEvent.VK_L),
+                key -> key.ui.changeLinkedLocomotives((Locomotive) key.ui.getButtonLocomotive(key.ui.currentButton)));
+            row("show or hide the menu bar", Held.CONTROL.on(KeyEvent.VK_M), key ->
+            {
+                key.ui.toggleMenuBar.setSelected(!key.ui.toggleMenuBar.isSelected());
+                key.ui.toggleMenuBarActionPerformed(null);
+            });
+            row("delete the locomotive", Held.CONTROL.on(KeyEvent.VK_DELETE), key ->
+            {
+                if (key.ui.getButtonLocomotive(key.ui.currentButton) != null)
+                {
+                    key.ui.deleteLoc(key.ui.getButtonLocomotive(key.ui.currentButton).getName());
+                }
+            });
+            row("change the address", Held.CONTROL.on(KeyEvent.VK_R),
+                key -> key.ui.changeLocAddress(key.ui.getButtonLocomotive(key.ui.currentButton)));
+            row("paste onto the button", Held.CONTROL.on(KeyEvent.VK_V), key ->
+            {
+                if (key.ui.hasCopyTarget())
+                {
+                    key.ui.doPaste(key.ui.currentButton, false, false);
+                }
+            });
+            row("swap with the button", Held.CONTROL.on(KeyEvent.VK_S), key ->
+            {
+                if (key.ui.hasCopyTarget())
+                {
+                    key.ui.doPaste(key.ui.currentButton, true, false);
+                }
+            });
+            row("cut the button", Held.CONTROL.on(KeyEvent.VK_X),
+                key -> key.ui.setCopyTarget(key.ui.currentButton, true));
+            row("clear the button", Held.NOT_CONTROL.on(KeyEvent.VK_DELETE), key ->
+            {
+                // This is the same as clearing the button
+                key.ui.setCopyTarget(key.ui.currentButton, true);
+                key.ui.setCopyTarget(key.ui.currentButton, true);
+            });
+            // A bare letter, not a control chord (OB-197): without `NOT_CONTROL`, Control plus any letter no row above
+            // catches selected a locomotive button.  Alt is not filtered: the rows above take every Alt chord this
+            // window has.
+            row("show a letter's button", new Keys(Held.NOT_CONTROL, null, null),
+                key -> key.ui.displayCurrentButtonLoc(key.ui.buttonMapping.get(key.evt.getKeyCode())));
+            row("turn right", Held.NOT_ALT.on(KeyEvent.VK_RIGHT), key ->
+            {
+                if (key.controlPressed)
+                {
+                    key.ui.forwardLoc();
+                }
+                else
+                {
+                    key.ui.RightArrowLetterButtonPressed(null);
+                }
+            });
+            row("turn left", Held.NOT_ALT.on(KeyEvent.VK_LEFT), key ->
+            {
+                if (key.controlPressed)
+                {
+                    key.ui.backwardLoc();
+                }
+                else
+                {
+                    key.ui.LeftArrowLetterButtonPressed(null);
+                }
+            });
+            row("speed up", Held.ANY.on(KeyEvent.VK_UP), key ->
+            {
+                if (key.altPressed)
+                {
+                    key.ui.incrementLocSpeed(SPEED_STEP * 2);
+                }
+                else if (key.controlPressed)
+                {
+                    key.ui.incrementLocSpeed(1);
+                }
+                else
+                {
+                    key.ui.UpArrowLetterButtonPressed(null);
+                }
+            });
+            row("speed down", Held.ANY.on(KeyEvent.VK_DOWN), key ->
+            {
+                if (key.altPressed)
+                {
+                    key.ui.decrementLocSpeed(SPEED_STEP * 2);
+                }
+                else if (key.controlPressed)
+                {
+                    key.ui.decrementLocSpeed(1);
+                }
+                else
+                {
+                    key.ui.DownArrowLetterButtonPressed(null);
+                }
+            });
+
+            for (int digit = 0; digit < SPEED_BUTTONS.size(); digit++)
+            {
+                final java.util.function.BiConsumer<TrainControlUI, ActionEvent> button = SPEED_BUTTONS.get(digit);
+
+                row("speed key " + digit, Held.NEITHER.on(KeyEvent.VK_0 + digit), key -> button.accept(key.ui, null));
+            }
+
+            row("stop the train", Held.ANY.on(KeyEvent.VK_SPACE), key -> key.ui.SpacebarButtonActionPerformed(null));
+            row("previous keyboard or layout page",
+                Held.ANY.on(KeyEvent.VK_MINUS, KeyEvent.VK_UNDERSCORE, KeyEvent.VK_QUOTE, KeyEvent.VK_OPEN_BRACKET),
+                key ->
+            {
+                if (key.ui.KeyboardTab.getSelectedIndex() == 1)
+                {
+                    int currentIndex = key.ui.LayoutList.getSelectedIndex();
+
+                    if (currentIndex > 0)
+                    {
+                        key.ui.LayoutList.setSelectedIndex(currentIndex - 1);
+                        //this.repaintLayout();
+                    }
+                }
+                else
+                {
+                    if (key.controlPressed)
+                    {
+                        key.ui.switchKeyboard(key.ui.keyboardNumber - 4);
+                    }
+                    else
+                    {
+                        key.ui.PrevKeyboardActionPerformed(null);
+                    }
+                }
+            });
+            row("next keyboard or layout page",
+                Held.ANY.on(KeyEvent.VK_EQUALS, KeyEvent.VK_PLUS, KeyEvent.VK_LEFT_PARENTHESIS,
+                    KeyEvent.VK_CLOSE_BRACKET),
+                key ->
+            {
+                if (key.ui.KeyboardTab.getSelectedIndex() == 1)
+                {
+                    int currentIndex = key.ui.LayoutList.getSelectedIndex();
+
+                    if (currentIndex < key.ui.LayoutList.getItemCount() - 1)
+                    {
+                        key.ui.LayoutList.setSelectedIndex(currentIndex + 1);
+                    }
+                }
+                else
+                {
+                    if (key.controlPressed)
+                    {
+                        key.ui.switchKeyboard(key.ui.keyboardNumber + 4);
+                    }
+                    else
+                    {
+                        key.ui.NextKeyboardActionPerformed(null);
+                    }
+                }
+            });
+            row("first locomotive page", Held.ALT.on(KeyEvent.VK_COMMA, KeyEvent.VK_SEMICOLON),
+                key -> key.ui.switchLocMapping(1));
+            row("last locomotive page", Held.ALT.on(KeyEvent.VK_PERIOD, KeyEvent.VK_COLON),
+                key -> key.ui.switchLocMapping(key.ui.numLocMappings));
+            row("previous locomotive page",
+                Held.NOT_ALT.on(KeyEvent.VK_COMMA, KeyEvent.VK_SEMICOLON).or(Held.ALT.on(KeyEvent.VK_LEFT)),
+                key -> key.ui.PrevLocMappingActionPerformed(null));
+            row("next locomotive page",
+                Held.NOT_ALT.on(KeyEvent.VK_PERIOD, KeyEvent.VK_COLON).or(Held.ALT.on(KeyEvent.VK_RIGHT)),
+                key -> key.ui.NextLocMappingActionPerformed(null));
+
+            for (int function = 0; function < 30; function++)
+            {
+                final int fn = function;
+
+                row("function " + fn, functionKeys(fn), key -> key.ui.switchF(fn));
+            }
+
+            row("power off", Held.ANY.on(KeyEvent.VK_ESCAPE), key -> key.ui.stop());
+            row("speed zero", Held.ANY.on(KeyEvent.VK_SHIFT), key -> key.ui.ShiftButtonActionPerformed(null));
+            row("stop every train", Held.ANY.on(KeyEvent.VK_ENTER),
+                key -> key.ui.AltEmergencyStopActionPerformed(null));
+            row("next keyboard tab", Held.NOT_ALT.on(KeyEvent.VK_CAPS_LOCK, KeyEvent.VK_BACK_SPACE), key ->
+            {
+                // Easy tab cycling
+                do
+                {
+                    key.ui.KeyboardTab.setSelectedIndex(
+                        (key.ui.KeyboardTab.getSelectedIndex() + 1)
+                            % key.ui.KeyboardTab.getComponentCount()
+                    );
+                }
+                while (!key.ui.KeyboardTab.isEnabledAt(key.ui.KeyboardTab.getSelectedIndex()));
+            });
+            row("previous keyboard tab", Held.ALT.on(KeyEvent.VK_CAPS_LOCK, KeyEvent.VK_BACK_SPACE), key ->
+            {
+                do
+                {
+                    key.ui.KeyboardTab.setSelectedIndex(
+                        Math.floorMod(key.ui.KeyboardTab.getSelectedIndex() - 1,
+                                key.ui.KeyboardTab.getComponentCount()
+                        )
+                    );
+                }
+                while (!key.ui.KeyboardTab.isEnabledAt(key.ui.KeyboardTab.getSelectedIndex()));
+            });
+            row("next function tab", Held.ANY.on(KeyEvent.VK_SLASH, KeyEvent.VK_LESS), key ->
+            {
+                // Cycle function tabs
+                key.ui.FunctionTabs.setSelectedIndex(
+                    (key.ui.FunctionTabs.getSelectedIndex() + 1)
+                        % key.ui.FunctionTabs.getComponentCount()
+                );
+            });
+        }
+
+        private KeyShortcuts()
+        {
+        }
+
+        private static void row(String name, Keys keys, java.util.function.Consumer<Press> action)
+        {
+            ROWS.add(new Row(name, keys, action));
+        }
+
+        /** Function 0-9 by Alt and a digit or a bare number-pad key, 10-19 by Control, 20-29 by Control and Alt. */
+        private static Keys functionKeys(int fn)
+        {
+            int digit = KeyEvent.VK_0 + fn % 10;
+            int numpad = KeyEvent.VK_NUMPAD0 + fn % 10;
+
+            if (fn < 10) return Held.NEITHER.on(numpad).or(Held.ANY.on(FUNCTION_KEYS[fn])).or(Held.ALT_ONLY.on(digit));
+
+            if (fn < 20) return Held.ANY.on(FUNCTION_KEYS[fn]).or(Held.CONTROL_ONLY.on(digit, numpad));
+
+            Keys both = Held.BOTH.on(digit, numpad);
+
+            return fn < FUNCTION_KEYS.length ? Held.ANY.on(FUNCTION_KEYS[fn]).or(both) : both;
+        }
+
+        /** Every shortcut, in the order they are asked. */
+        public static List<Row> rows()
+        {
+            return Collections.unmodifiableList(ROWS);
+        }
+
+        /** The shortcut this press belongs to, or null if none takes it. */
+        public static Row choose(int keyCode, int modifiers, Map<Integer, ?> buttonMapping)
+        {
+            for (Row row : ROWS)
+            {
+                if (row.keys.take(keyCode, altPressed(modifiers), controlPressed(modifiers), buttonMapping)) return row;
+            }
+
+            return null;
+        }
+
+        static boolean altPressed(int modifiers)
+        {
+            return (modifiers & KeyEvent.ALT_MASK) != 0;
+        }
+
+        static boolean controlPressed(int modifiers)
+        {
+            return (modifiers & KeyEvent.CTRL_MASK) != 0 || (modifiers & KeyEvent.CTRL_DOWN_MASK) != 0;
+        }
+    }
 
     private void WindowClosed(java.awt.event.WindowEvent evt)//GEN-FIRST:event_WindowClosed
     {//GEN-HEADEREND:event_WindowClosed
@@ -14269,13 +14313,15 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         int page = index + 1;
 
-        if (this.LayoutList.getModel().getSize() > index && index >= 0)
+        List<String> byName = this.model.getLayoutListByName();
+
+        if (byName.size() > index && index >= 0 && this.LayoutList.getModel().getSize() > index)
         {
             this.model.logf(
                 "layout.ui.infoJumpingToLayoutPage",
                 page
             );
-            this.LayoutList.setSelectedIndex(index);
+            this.LayoutList.setSelectedItem(byName.get(index));
             this.repaintLayout();
         }
         else
@@ -14328,7 +14374,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 ? "layout.ui.confirmRouteProtectingReservedSignal" : "layout.ui.confirmRouteActiveRoute";
 
         Runnable ask = () -> choice[0] = JOptionPane.showOptionDialog(
-            over == null ? this : over,
+            over == null || !over.isShowing() ? this : over,
             I18n.f(question, route.getName(), conflict),
             I18n.t("layout.ui.dialogPleaseConfirm"),
             JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE, null, options, options[1]);
@@ -14357,7 +14403,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         
     public void childWindowKeyEvent(java.awt.event.KeyEvent evt)
     {
-        this.LocControlPanelKeyPressed(evt);
+        final Component on = evt.getComponent();
+
+        pressFromWindow(on instanceof java.awt.Window ? (java.awt.Window) on : SwingUtilities.getWindowAncestor(on),
+            () -> this.LocControlPanelKeyPressed(evt));
     }
         
     private void ProcessFunction(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ProcessFunction
@@ -14462,10 +14511,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                     }
                     else
                     {
-                        javax.swing.SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(
-                            c,
-                            I18n.f("ui.infoSyncCompleteItemsAdded", r.toString())
-                        ));
+                        final String done = I18n.f(this.model.wasLastSyncPartial() ? "ui.infoSyncCompletePartial"
+                            : "ui.infoSyncCompleteItemsAdded", r.toString());
+
+                        javax.swing.SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(c, done));
                     }
                 }
             }).start();
@@ -14661,13 +14710,15 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      */
     public void changeLinkedLocomotives(Locomotive l)
     {
+        final java.awt.Window asked = dialogParent();
+
         // If the multi unit is defined in the central station, enter a read-only mode
         boolean isCSMultiUnit = (l.getDecoderType() == Locomotive.decoderType.MULTI_UNIT);
         
         if (this.model.isLocLinkedToOthers(l) != null)
         {
             JOptionPane.showMessageDialog(
-                this,
+                asked,
                 I18n.f(
                     "loc.ui.errorLocomotiveAlreadyLinkedCannotBeMultiUnit",
                     this.model.isLocLinkedToOthers(l).getName()
@@ -14678,311 +14729,25 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         // Only for the dialog that can change one: a Central Station multi-unit's list is read-only, nothing is
         // written.
-        if (!isCSMultiUnit && this.model.isAutonomyRunning())
-        {
-            JOptionPane.showMessageDialog(
-                this,
-                I18n.t("autolayout.ui.errorCannotEditMultiUnitsWhileRunning")
-            );
-            return;
-        }
-
-        // Nor while a route drives it or a member (OB-287): a multi-unit's commands drive its members, so changing them
-        // mid-route changes what the route drives.
-        java.util.Set<String> involved = new java.util.LinkedHashSet<>();
-
-        involved.add(l.getName());
-        involved.addAll(l.getLinkedLocomotiveNames().keySet());
-
-        if (!isCSMultiUnit && refuseWhileARouteDrivesAny(this, involved)) return;
+        if (!isCSMultiUnit && this.locomotiveActions.refuseMultiUnitEdit(asked, l, null)) return;
 
         if (this.model.getLocomotives().size() < 2)
         {
             JOptionPane.showMessageDialog(
-                this,
+                asked,
                 I18n.t("loc.ui.errorNeedTwoLocomotivesForMultiUnit")
             );
             return;
         }
 
-        List<Locomotive> allLocomotives = !isCSMultiUnit ? this.model.getLocomotives() : l.getModelMultiUnitLocomotives();
-        Map<String, Double> currentLinkedLocos = !isCSMultiUnit ? l.getLinkedLocomotiveNames() : l.getModelMultiUnitLocomotiveNames();        
-        Map<String, Double> newLinkedLocos = new HashMap<>(currentLinkedLocos);
+        MultiUnitPanel panel = new MultiUnitPanel(this, l, null);
 
-        // Sort allLocomotives to prioritize currentLinkedLocos and then alphabetically by name
-        Collections.sort(allLocomotives, (a, b) ->
-        {
-            boolean aLinked = currentLinkedLocos.containsKey(a.getName());
-            boolean bLinked = currentLinkedLocos.containsKey(b.getName());
-            if (aLinked && !bLinked)
-            {
-                return -1;
-            }
-            else if (!aLinked && bLinked)
-            {
-                return 1;
-            }
-            else
-            {
-                return a.getName().compareToIgnoreCase(b.getName());
-            }
-        });
+        panel.setPreferredSize(new Dimension(600, 540));
 
-        JPanel panel = new JPanel();
-        panel.setLayout(new GridBagLayout());
-        GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(5, 5, 5, 5);
-        gbc.fill = GridBagConstraints.HORIZONTAL;
-        panel.setFont(new Font("Segoe UI", Font.PLAIN, 12));
-
-        JTextField filterField = new JTextField();
-        filterField.setToolTipText(
-            I18n.t("loc.ui.tooltip.filterByLocomotiveName")
-        );
-
-        gbc.gridx = 0;
-        gbc.gridy = 0;
-        gbc.gridwidth = 3;
-        gbc.insets = new Insets(5, 5, 5, 5);
-        panel.add(filterField, gbc);
-
-        JPanel scrollPanel = new JPanel();
-        scrollPanel.setLayout(new GridBagLayout());
-        GridBagConstraints scrollGbc = new GridBagConstraints();
-        scrollGbc.insets = new Insets(5, 5, 5, 5);
-        scrollGbc.fill = GridBagConstraints.HORIZONTAL;
-
-        // Add heading
-        JPanel headingPanel = new JPanel(new GridLayout(1, 3));
-
-        JLabel nameLabel = new JLabel(
-            I18n.t("loc.ui.labelLocomotiveName")
-        );
-        nameLabel.setFont(new Font("Segoe UI", Font.BOLD, 12));
-
-        JLabel multiplierLabel = new JLabel(
-            I18n.t("loc.ui.labelSpeedMultiplierPercent")
-        );
-        multiplierLabel.setToolTipText(
-            I18n.t("loc.ui.tooltip.adjustRelativeSpeed")
-        );
-        multiplierLabel.setFont(new Font("Segoe UI", Font.BOLD, 12));
-
-        JLabel reverseLabel = new JLabel(
-            I18n.t("loc.ui.labelReverse")
-        );
-        reverseLabel.setToolTipText(
-            I18n.t("loc.ui.tooltip.swapDirection")
-        );
-        reverseLabel.setFont(new Font("Segoe UI", Font.BOLD, 12));
-        headingPanel.add(nameLabel);
-        headingPanel.add(multiplierLabel);
-        headingPanel.add(reverseLabel);
-        scrollGbc.gridy = 0;
-        scrollPanel.add(headingPanel, scrollGbc);
-        scrollGbc.gridy++;
-        scrollPanel.add(Box.createVerticalStrut(10), scrollGbc);
-
-        List<JPanel> rowPanels = new ArrayList<>();
-        for (Locomotive loco : allLocomotives)
-        {
-            if (
-                    isCSMultiUnit || // show all the CS MU's locomotives for informational purposes
-                    l.canBeLinkedTo(loco, false) || l.isLinkedTo(loco)) 
-            {
-                JPanel rowPanel = new JPanel(new GridLayout(1, 3, 10, 5));
-                JCheckBox checkBox = new JCheckBox(loco.getName().length() > MAX_MU_SELECTOR_LOC_NAME_LENGTH ?
-                        loco.getName().substring(0, MAX_MU_SELECTOR_LOC_NAME_LENGTH) + "..." : 
-                        loco.getName(), currentLinkedLocos.containsKey(loco.getName())
-                );                 
-                checkBox.setToolTipText(loco.getName());
-                checkBox.setFocusable(false);
-                double multiplierValue = currentLinkedLocos.getOrDefault(loco.getName(), 1.0);
-                boolean isReversed = multiplierValue < 0;
-                JSlider multiplierSlider = new JSlider(0, 200, (int) (Math.abs(multiplierValue) * 100));
-                multiplierSlider.setMajorTickSpacing(50);
-                multiplierSlider.setMinorTickSpacing(50);
-                multiplierSlider.setPaintTicks(true);
-                multiplierSlider.setPaintLabels(true);
-                multiplierSlider.setSnapToTicks(false);
-                multiplierSlider.setPreferredSize(new Dimension(250, 50));
-                multiplierSlider.setFont(new Font("Segoe UI", Font.PLAIN, 12));
-                multiplierSlider.setFocusable(true);
-
-                // Custom label table for specific tick labels
-                java.util.Hashtable<Integer, JLabel> labelTable = new java.util.Hashtable<>();
-                labelTable.put(0, new JLabel("0"));
-                labelTable.put(50, new JLabel("50"));
-                labelTable.put(100, new JLabel("100"));
-                labelTable.put(150, new JLabel("150"));
-                labelTable.put(200, new JLabel("200"));
-                multiplierSlider.setLabelTable(labelTable);
-
-                // Update tooltip to show selected value on hover
-                multiplierSlider.addMouseMotionListener(new MouseMotionAdapter()
-                {
-                    @Override
-                    public void mouseMoved(MouseEvent e)
-                    {
-                        JSlider source = (JSlider) e.getSource();
-                        source.setToolTipText(String.valueOf(source.getValue()) + "%");
-                    }
-                });
-
-                // Add change listener to jump to 1 if the value is 0
-                multiplierSlider.addChangeListener(e ->
-                {
-                    if (multiplierSlider.getValue() == 0)
-                    {
-                        multiplierSlider.setValue(1);
-                    }
-                });
-
-                // Add mouse listener to reset to 100 on double-click
-                multiplierSlider.addMouseListener(new MouseAdapter()
-                {
-                    @Override
-                    public void mouseClicked(MouseEvent e)
-                    {
-                        if (e.getClickCount() == 2)
-                        {
-                            multiplierSlider.setValue(100);
-                        }
-                    }
-                });
-
-                JCheckBox reverseCheckBox = new JCheckBox("", isReversed);
-                reverseCheckBox.setFocusable(false);
-
-                // Central station multi units are read-only
-                if (isCSMultiUnit)
-                {
-                    checkBox.setSelected(true);
-                    checkBox.setEnabled(false);
-                    reverseCheckBox.setEnabled(false);
-                    multiplierSlider.setEnabled(false);
-                    filterField.setVisible(false);
-                }
-                
-                rowPanel.add(checkBox);
-                rowPanel.add(multiplierSlider);
-                rowPanel.add(reverseCheckBox);
-                rowPanels.add(rowPanel);
-
-                scrollGbc.gridy++;
-                scrollPanel.add(rowPanel, scrollGbc);
-                scrollGbc.gridy++;
-                scrollPanel.add(Box.createVerticalStrut(10), scrollGbc);
-            }
-        }
-
-        filterField.getDocument().addDocumentListener(new DocumentListener()
-        {
-            @Override
-            public void insertUpdate(DocumentEvent e)
-            {
-                filter();
-            }
-
-            @Override
-            public void removeUpdate(DocumentEvent e)
-            {
-                filter();
-            }
-
-            @Override
-            public void changedUpdate(DocumentEvent e)
-            {
-                filter();
-            }
-
-            private void filter()
-            {
-                String text = filterField.getText().toLowerCase();
-                scrollPanel.removeAll();
-                scrollGbc.gridy = 0;
-                scrollGbc.gridwidth = 3;
-                scrollPanel.add(headingPanel, scrollGbc);
-                scrollGbc.gridy++;
-                scrollPanel.add(Box.createVerticalStrut(10), scrollGbc);
-
-                boolean hasRows = false;
-
-                for (JPanel rowPanel : rowPanels) {
-                    JCheckBox checkBox = (JCheckBox) rowPanel.getComponent(0);
-                    if (checkBox.getText().toLowerCase().contains(text)) {
-                        scrollGbc.gridy++;
-                        scrollPanel.add(rowPanel, scrollGbc);
-                        scrollGbc.gridy++;
-                        scrollPanel.add(Box.createVerticalStrut(10), scrollGbc);
-                        hasRows = true;
-                    }
-                }
-
-                if (!hasRows)
-                {
-                    headingPanel.setVisible(false);
-                    scrollGbc.gridwidth = 3;
-                    scrollPanel.add(
-                        new JLabel(I18n.t("loc.ui.labelNoLocomotivesFound")),
-                        scrollGbc
-                    );
-                }
-                else
-                {
-                    headingPanel.setVisible(true);
-                }
-
-                scrollPanel.revalidate();
-                scrollPanel.repaint();
-                filterField.requestFocus();
-            }
-        });
-
-        JScrollPane scrollPane = new JScrollPane(scrollPanel);
-        scrollPane.setPreferredSize(new Dimension(600, 500));
-        scrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
-
-        // Make scrolling faster
-        scrollPane.getVerticalScrollBar().setUnitIncrement(scrollPane.getVerticalScrollBar().getUnitIncrement() * 16);
-
-        gbc.gridy = 1;
-        gbc.gridx = 0;
-        gbc.gridwidth = 3;
-        panel.add(scrollPane, gbc);
-
-        // Call filter() once to render initial list
-        filterField.setText("");
-        
-        // Ensure the field is focused
-        filterField.addAncestorListener(new AncestorListener()
-        {
-            @Override
-            public void ancestorRemoved(AncestorEvent event) {}
-
-            @Override
-            public void ancestorMoved(AncestorEvent event) {}
-
-            @Override
-            public void ancestorAdded(AncestorEvent event) {
-                event.getComponent().requestFocusInWindow();
-            }
-        });
-        
-        // sanity check - should never happen unless CS data is corrupt
-        if (isCSMultiUnit && allLocomotives.isEmpty())
-        {
-            headingPanel.setVisible(false);
-            scrollGbc.gridwidth = 3;
-            scrollPanel.add(
-                new JLabel(I18n.t("loc.ui.labelNoLocomotivesFound")),
-                scrollGbc
-            );
-            filterField.setVisible(false);
-        }   
+        Typing.onShown(panel, panel::focusFilter);
 
         int result = JOptionPane.showOptionDialog(
-            this,
+            asked,
             panel,
             I18n.f("loc.ui.dialogLinkLocomotivesToMultiUnit", l.getName()),
             JOptionPane.OK_CANCEL_OPTION,
@@ -14994,50 +14759,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         if (result == JOptionPane.OK_OPTION && !isCSMultiUnit)
         {
-            newLinkedLocos.clear();
-            Component[] components = scrollPanel.getComponents();
-
-            for (Component component : components)
-            {
-                if (component instanceof JPanel && !(component.equals(headingPanel)))
-                {
-                    JPanel rowPanel = (JPanel) component;
-                    JCheckBox checkBox = (JCheckBox) rowPanel.getComponent(0);
-                    JSlider multiplierSlider = (JSlider) rowPanel.getComponent(1);
-                    JCheckBox reverseCheckBox = (JCheckBox) rowPanel.getComponent(2);
-
-                    if (checkBox.isSelected())
-                    {
-                        double multiplier = multiplierSlider.getValue() / 100.0;
-                        if (reverseCheckBox.isSelected())
-                        {
-                            multiplier = -multiplier;
-                        }
-
-                        if (multiplier != 0 && multiplier >= -2 && multiplier <= 2)
-                        {
-                            newLinkedLocos.put(checkBox.getToolTipText(), multiplier);
-                        }
-                    }
-                }
-            }
-
-            // Asked again at OK, of every member before and after: a route can start from its s88 while this is open.
-            involved.addAll(newLinkedLocos.keySet());
-
-            if (refuseWhileARouteDrivesAny(this, involved)) return;
-
-            // One call: syncWithCS2 rebuilds consists off this thread; a two-call form would stage on a shared field.
-            l.setLinkedLocomotives(newLinkedLocos);
-            this.repaintLoc(true, null);
-
-            // Ensure there are no conflicts on the graph
-            if (this.model.hasAutoLayout())
-            {
-                this.model.getAutoLayout().sanitizeMultiUnits(l);
-                this.repaintAutoLocListFull();
-                this.model.getAutoLayout().refreshUI();
-            }
+            this.locomotiveActions.applyLinkedLocomotives(asked, l, panel.chosen());
         }
     }
 
@@ -15078,10 +14800,18 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /** The locomotive operations: find by name, rename or re-address, notes, find similar, and delete. */
-    private final LocomotiveActions locomotiveActions = new LocomotiveActions(this);
+    final LocomotiveActions locomotiveActions = new LocomotiveActions(this);
     
     private void ActiveLocLabelMouseReleased(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_ActiveLocLabelMouseReleased
         
+        // A right-click on the active name edits the locomotive; a left-click still opens the database (FR-048).
+        if (SwingUtilities.isRightMouseButton(evt))
+        {
+            if (this.activeLoc != null) this.openLocomotiveSettings(this.activeLoc, LocomotiveSettingsFrame.Tab.LOCOMOTIVE, null);
+
+            return;
+        }
+
         this.showLocSelector(true);
         
     }//GEN-LAST:event_ActiveLocLabelMouseReleased
@@ -15528,9 +15258,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 {
                     Integer fNumber = this.functionMapping.get(b);
 
-                    RightClickFunctionMenu menu = new RightClickFunctionMenu(this, this.activeLoc, fNumber);
-
-                    menu.showPopup(evt);      
+                    this.openLocomotiveSettings(this.activeLoc, LocomotiveSettingsFrame.Tab.FUNCTIONS, fNumber);
                 };
             });
         }
@@ -15872,10 +15600,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     /**
      * Whether a click on the switch keyboard may go to the railway, asking the operator when it may not: the same two
      * questions the diagram tile and the route door ask (`getActiveAccs`, `Layout.clearsProtection`).  The direction
-     * supplied is the button's, not the accessory's: a keyboard button SETS an absolute state (selected is thrown), so
-     * the green command is the one that leaves it clear.  The button is put back on no.
+     * supplied is the half clicked, not the accessory's: a key SETS an absolute state (red is thrown), so the green
+     * command is the one that leaves it clear.
      */
-    private KeyboardSwitch keyboardSwitchAllowed(int address, javax.swing.JToggleButton button)
+    private KeyboardSwitch keyboardSwitchAllowed(int address, boolean red)
     {
         // The power question, which the diagram tile asks (MT-261): a command sent with the power off does nothing, and
         // the keyboard left the button looking as though it had worked.  Asked first, as the tile does.
@@ -15895,17 +15623,17 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 null, powerOptions, powerOptions[0]);
 
             // Anything but the two yeses is a no, Escape and the close box included.
-            if (answer != 0 && answer != 1) return refuse(button);
+            if (answer != 0 && answer != 1) return KeyboardSwitch.REFUSED;
 
             // The autonomy questions still follow, so this answer is remembered rather than returned here.
             if (answer == 0)
             {
-                return keyboardAutonomyAllows(address, button)
+                return keyboardAutonomyAllows(address, red)
                     ? KeyboardSwitch.POWER_ON_THEN_PROCEED : KeyboardSwitch.REFUSED;
             }
         }
 
-        return keyboardAutonomyAllows(address, button)
+        return keyboardAutonomyAllows(address, red)
             ? KeyboardSwitch.PROCEED : KeyboardSwitch.REFUSED;
     }
 
@@ -15917,20 +15645,12 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         /** Turn the track power on, wait for it, then send it. */
         POWER_ON_THEN_PROCEED,
 
-        /** Do nothing; the button has already been put back. */
+        /** Do nothing; the key was never changed. */
         REFUSED
     }
 
-    /** Puts the flipped toggle back (`setSelected` fires no ActionEvent, so no re-entry) and returns REFUSED. */
-    private KeyboardSwitch refuse(javax.swing.JToggleButton button)
-    {
-        button.setSelected(!button.isSelected());
-
-        return KeyboardSwitch.REFUSED;
-    }
-
     /** The two autonomy questions the diagram tile and the route door both ask; true lets the command through. */
-    private boolean keyboardAutonomyAllows(int address, javax.swing.JToggleButton button)
+    private boolean keyboardAutonomyAllows(int address, boolean red)
     {
         if (!this.model.hasAutoLayout() || !this.model.isAutonomyRunning()) return true;
 
@@ -15945,8 +15665,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         boolean onAPath = layout.getActiveAccs().contains(accessory);
 
-        // Clear, not selected, is the green one - see the javadoc.
-        boolean protecting = layout.clearsProtection(accessory, !button.isSelected());
+        boolean protecting = layout.clearsProtection(accessory, !red);
 
         if (!onAPath && !protecting) return true;
 
@@ -15964,33 +15683,25 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         if (choice == 0) return true;
 
         // Anything but OK is a no, Escape and the close box included: -1 must not fall through to "proceed".
-        refuse(button);
-
         return false;
     }
 
-    /** A keyboard switch key's look: red (pink, underlined) or green.  The caller sets whether it is selected. */
-    private static void paintSwitchKey(javax.swing.JToggleButton key, boolean red)
+    /** A half of a key was clicked: asks what has to be asked, then sends exactly that color, lit already or not (FR-050). */
+    private void keyboardKeyClicked(int address, boolean red)
     {
-        key.setBackground(red ? COLOR_SWITCH_RED : COLOR_SWITCH_GREEN);
+        final int switchId = address;
 
-        Font font = key.getFont();
-        Map<TextAttribute, Object> attributes = new HashMap<>(font.getAttributes());
-        attributes.put(TextAttribute.UNDERLINE, red ? TextAttribute.UNDERLINE_ON : -1);
-        key.setFont(font.deriveFont(attributes));
-    }
+        // Read now: the worker below may wait on the power, and the radio can be changed meanwhile
+        final Accessory.accessoryDecoderType protocol = getKeyboardProtocol();
 
-    private void UpdateSwitchState(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_UpdateSwitchState
-        javax.swing.JToggleButton b = (javax.swing.JToggleButton) evt.getSource();
-        int switchId = Integer.parseInt(b.getText());
-
-        // Asked before the button is repainted: a refusal has to leave it as it was (MT-261).
-        final KeyboardSwitch allowed = keyboardSwitchAllowed(switchId, b);
+        // Asked before the key is repainted: a refusal has to leave it as it was (MT-261).
+        final KeyboardSwitch allowed = keyboardSwitchAllowed(address, red);
 
         if (allowed == KeyboardSwitch.REFUSED) return;
 
-        // The click has already toggled the key's selection
-        paintSwitchKey(b, b.isSelected());
+        int key = this.keyboardKeys.keyOf(address);
+
+        if (key > 0) this.keyboardKeys.setKey(key, red, true);
 
         new Thread(() ->
             {
@@ -16018,8 +15729,15 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                     }
                 }
 
-                this.model.setAccessoryState(switchId, getKeyboardProtocol(), b.isSelected());
+                this.model.setAccessoryState(switchId, protocol, red);
             }).start();
+    }
+
+    /** The generated keys' handler: those keys are no longer shown, and the new ones go through `keyboardKeyClicked`. */
+    private void UpdateSwitchState(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_UpdateSwitchState
+        javax.swing.JToggleButton b = (javax.swing.JToggleButton) evt.getSource();
+
+        keyboardKeyClicked(Integer.parseInt(b.getText()), b.isSelected());
     }//GEN-LAST:event_UpdateSwitchState
 
     private void BulkDisableActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_BulkDisableActionPerformed
@@ -17232,14 +16950,14 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * Asks a yes/no question on the event thread and waits, for worker threads that cannot go on until it is answered.
      * NO_OPTION when the dialog could not be shown: refusing is the safe reading.
      */
-    private int confirmOnEventThread(String message)
+    private int confirmOnEventThread(String message, java.awt.Window asked)
     {
         final int[] answer = new int[]{JOptionPane.NO_OPTION};
 
         try
         {
             Runnable ask = () -> answer[0] = JOptionPane.showOptionDialog(
-                this,
+                stillShowing(asked),
                 message,
                 I18n.t("ui.dialogConfirm"),
                 JOptionPane.YES_NO_OPTION,
@@ -17901,6 +17619,18 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         pressFromTheEditor(editor, this::duplicateLayoutMenuItemActionPerformed);
     }
 
+    /** Move Page Up (-1) or Down (1) from the layout editor, on the main window's selected page (FR-175). */
+    public void movePageFromTheEditor(LayoutEditor editor, int by)
+    {
+        this.layoutFileActions.movePage(by, editor);
+    }
+
+    /** Sort Pages by Name from the layout editor (FR-175). */
+    public void sortPagesFromTheEditor(LayoutEditor editor)
+    {
+        this.layoutFileActions.sortPagesByName(editor);
+    }
+
     /** Combine Linked Pages from the layout editor, from the main window's selected page. */
     public void combinePagesFromTheEditor(LayoutEditor editor)
     {
@@ -17925,6 +17655,73 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
     /** The layout editor a page action is pressed from while its handler runs (`pressFromTheEditor`), or null. */
     private LayoutEditor pageActionFrom;
+
+    /** The window whose door is being pressed (`pressFromWindow`), or null: read by a worker a door may start. */
+    private volatile java.awt.Window askedFrom;
+
+    /**
+     * Runs a door of another window, whose questions and messages hang off that window while the handler runs (OB-324).
+     * A handler that goes on to a worker or a posted task reads `dialogParent` first and carries the answer there.
+     */
+    public void pressFromWindow(java.awt.Window from, Runnable handler)
+    {
+        final java.awt.Window before = askedFrom;
+
+        askedFrom = from;
+
+        try
+        {
+            handler.run();
+        }
+        finally
+        {
+            askedFrom = before;
+        }
+    }
+
+    /** Every item of this menu, in its submenus too, as a press from the window it was opened in (`pressFromWindow`). */
+    public void itemsPressFromWindow(java.awt.Component menu, java.awt.Window from)
+    {
+        if (from == null || from == this) return;
+
+        final java.awt.Component[] parts = menu instanceof javax.swing.JMenu
+            ? ((javax.swing.JMenu) menu).getMenuComponents() : ((java.awt.Container) menu).getComponents();
+
+        for (java.awt.Component part : parts)
+        {
+            if (part instanceof javax.swing.JMenu)
+            {
+                itemsPressFromWindow(part, from);
+            }
+            else if (part instanceof javax.swing.JMenuItem)
+            {
+                final javax.swing.JMenuItem item = (javax.swing.JMenuItem) part;
+                final java.awt.event.ActionListener[] heard = item.getActionListeners();
+
+                for (java.awt.event.ActionListener each : heard) item.removeActionListener(each);
+
+                item.addActionListener(event -> pressFromWindow(from, () ->
+                {
+                    for (java.awt.event.ActionListener each : heard) each.actionPerformed(event);
+                }));
+            }
+        }
+    }
+
+    /** What a question or message hangs off: the window whose door is being pressed, else this one. */
+    public java.awt.Window dialogParent()
+    {
+        return stillShowing(askedFrom);
+    }
+
+    /** This window, where the one a door was pressed from has closed or gone to the taskbar, hiding what it owns. */
+    public java.awt.Window stillShowing(java.awt.Window asked)
+    {
+        final boolean showing = asked != null && asked.isShowing()
+            && (!(asked instanceof java.awt.Frame) || (((java.awt.Frame) asked).getExtendedState() & java.awt.Frame.ICONIFIED) == 0);
+
+        return showing ? asked : this;
+    }
 
     private void duplicateLayoutMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_duplicateLayoutMenuItemActionPerformed
         
@@ -18033,7 +17830,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             // (FR-018).
             // The page being deleted counts as a deliberate removal, so it is not asked about.
             java.util.Collection<String> keepAbsent = settleAbsentPages(layoutList, null,
-                java.util.Arrays.asList(going));
+                java.util.Arrays.asList(going), over);
 
             if (keepAbsent == null) return;
 
@@ -18595,6 +18392,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // dead. One gate covers the editor, the setup, the power and the Simulate warning.
         if (refusedToSendATrain(true)) return;
 
+        // The window that pressed it, for what the workers below have to say
+        final java.awt.Window asked = dialogParent();
+
         // A graceful stop of an earlier run excuses nothing in this one, as in Return Home.
         this.gracefulStopRequested = false;
 
@@ -18635,7 +18435,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                             {
                                 // On the EDT: a modal dialog raised from the worker mispaints or deadlocks.
                                 int dialogResult = confirmOnEventThread(
-                                    I18n.t("route.ui.confirmConditionalRoutesActiveProceed"));
+                                    I18n.t("route.ui.confirmConditionalRoutesActiveProceed"), asked);
 
                                 // Anything but the first option: with a custom option array Escape returns -1, neither
                                 // yes nor no, and dismissing a warning is not agreeing with it.
@@ -18655,7 +18455,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                     if (this.model.getAutoLayout().getLocomotivesToRun().isEmpty())
                     {
                         javax.swing.SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(
-                            this,
+                            stillShowing(asked),
                             I18n.t("autolayout.ui.infoPleaseAddLocomotivesToGraph")
                         ));
                         return;
@@ -18672,7 +18472,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                         {
                             javax.swing.SwingUtilities.invokeAndWait(() ->
                             {
-                                editorCame[0] = refusedForAnEditorOnItsWay();
+                                editorCame[0] = refusedForAnEditorOnItsWay(asked);
 
                                 if (!editorCame[0]) keepAtomicRoutesOnWhileTheRailwayCouldReleaseTrack();
                             });
@@ -18728,8 +18528,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                                         // up on a train, which says so itself.
                                         if (starting.isValid())
                                         {
-                                            javax.swing.SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(this,
-                                                I18n.t("autolayout.ui.errorNothingStarted")));
+                                            javax.swing.SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(
+                                                stillShowing(asked), I18n.t("autolayout.ui.errorNothingStarted")));
                                         }
                                     }
                                 }
@@ -18743,14 +18543,14 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                             else if (this.model.getAutoLayout().isRunning())
                             {
                                 javax.swing.SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(
-                                    this,
+                                    stillShowing(asked),
                                     I18n.t("autolayout.ui.infoWaitForActiveLocomotivesToStop")
                                 ));
                             }
                             else if (!this.model.getAutoLayout().isValid())
                             {
                                 javax.swing.SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(
-                                    this,
+                                    stillShowing(asked),
                                     I18n.t("autolayout.ui.errorLayoutStateInvalidRevalidateJson")
                                 ));
                             }
@@ -18758,7 +18558,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                             {
                                 // Busy but not running (the staging planning window): say why the press was refused.
                                 javax.swing.SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(
-                                    this,
+                                    stillShowing(asked),
                                     describeStagingOutcome(HomeStaging.Outcome.LOCOMOTIVES_RUNNING, null)
                                 ));
                             }
@@ -19272,9 +19072,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * index must not be written.
      */
     java.util.Collection<String> settleTheAbsentPages(java.util.List<String> layoutList,
-        java.util.Map<String, String> renamedFromTo, java.util.Collection<String> deliberatelyRemoved)
+        java.util.Map<String, String> renamedFromTo, java.util.Collection<String> deliberatelyRemoved, Component over)
     {
-        return settleAbsentPages(layoutList, renamedFromTo, deliberatelyRemoved);
+        return settleAbsentPages(layoutList, renamedFromTo, deliberatelyRemoved, over);
     }
 
     /** Whether the picture's tools (wrench, crop mark) are offered: over a locomotive, power off (MT-591). */
@@ -19287,7 +19087,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * Whether the power is known to be on, for the picture's tools.  Until the station says, only where start-up turned
      * it on, since the model takes it as on before it hears.
      */
-    private boolean powerIsOn()
+    boolean powerIsOn()
     {
         return this.model != null && this.model.getPowerState() && (powerHeard || poweredOnAtStartUp);
     }
@@ -20086,6 +19886,15 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         resortAutoLocList();
     }
 
+    /** The window a route was started from, inherited by its thread and the routes it fires; null for none. */
+    private final InheritableThreadLocal<java.awt.Window> routeStartedFrom = new InheritableThreadLocal<>();
+
+    /** Says which window a route this thread goes on to start was started from (OB-324). */
+    void routesStartHereFrom(java.awt.Window from)
+    {
+        routeStartedFrom.set(from);
+    }
+
     @Override
     public boolean confirmRouteConflictMidway(Route r, String accessory, String reason)
     {
@@ -20095,7 +19904,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         if (!(r instanceof org.traincontrol.marklin.MarklinRoute)) return false;
 
         // known != null, so NOTHING_TO_CONFIRM cannot come back here.
-        return askAboutRouteConflict((org.traincontrol.marklin.MarklinRoute) r, this,
+        return askAboutRouteConflict((org.traincontrol.marklin.MarklinRoute) r, stillShowing(routeStartedFrom.get()),
             new String[] {accessory, reason}) == RouteConflict.OVERRIDE;
     }
 
@@ -20166,6 +19975,13 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         }
 
         return resync[0];
+    }
+
+    @Override
+    public void showSyncPartial()
+    {
+        javax.swing.SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(this, I18n.t("ui.startupSyncPartial"),
+            I18n.t("ui.startupSyncPartialTitle"), JOptionPane.WARNING_MESSAGE));
     }
 
     @Override

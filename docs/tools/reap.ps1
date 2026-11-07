@@ -25,11 +25,17 @@
 #
 # Proven rather than assumed: three JVMs side by side - one with this run's id, one with another run's
 # id, one with neither. After this runs, only the first is gone.
+#
+# -Serve reads run ids from its input, one a line, reaps each the same way and answers "reaped <n>", until the input
+# ends: a battery lane reaps before every class, and one PowerShell a lane pays PowerShell's start-up once (FR-167).
 
 param
 (
-    [Parameter(Mandatory = $true)]
-    [string] $RunId
+    [Parameter(Mandatory = $true, ParameterSetName = 'Once')]
+    [string] $RunId,
+
+    [Parameter(Mandatory = $true, ParameterSetName = 'Serve')]
+    [switch] $Serve
 )
 
 # The id is matched WHOLE, not as a prefix (found 2026-08-25, by review).
@@ -44,13 +50,39 @@ param
 #
 # The flag is the last thing on the command line in this harness, but not necessarily: the match
 # anchors on what follows the id instead - a space or the end of the string.
-$mine = Get-CimInstance Win32_Process -Filter "Name='java.exe'" |
-    Where-Object {
-        $_.CommandLine -like "*traincontrol.batteryRun=$RunId" -or
-        $_.CommandLine -like "*traincontrol.batteryRun=$RunId *"
+#
+# Only an id of letters, digits, '.', '_' and '-' is matched: -like reads * ? [ ] as wildcards, and an empty id would
+# match every test JVM.
+function Stop-Run([string] $Id)
+{
+    if ($Id -notmatch '^[A-Za-z0-9._-]+$') { return 0 }
+
+    $mine = @(Get-CimInstance Win32_Process -Filter "Name='java.exe'" |
+        Where-Object {
+            $_.CommandLine -like "*traincontrol.batteryRun=$Id" -or
+            $_.CommandLine -like "*traincontrol.batteryRun=$Id *"
+        })
+
+    foreach ($p in $mine)
+    {
+        Stop-Process -Id $p.ProcessId -Force -ErrorAction SilentlyContinue
     }
 
-foreach ($p in $mine)
+    return $mine.Count
+}
+
+if ($Serve)
 {
-    Stop-Process -Id $p.ProcessId -Force -ErrorAction SilentlyContinue
+    # Trimmed: an id that kept a carriage return would match nothing.
+    while ($null -ne ($line = [Console]::In.ReadLine()))
+    {
+        $n = Stop-Run $line.Trim()
+
+        [Console]::Out.WriteLine("reaped $n")
+        [Console]::Out.Flush()
+    }
+}
+else
+{
+    Stop-Run $RunId | Out-Null
 }

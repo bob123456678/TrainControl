@@ -139,6 +139,11 @@ final class RouteListPanel
      */
     void editRoute(String routeName)
     {
+        // Another window's door hears the refusal over it, on the event thread, ahead of the worker's
+        final java.awt.Window askedFrom = this.ui.dialogParent();
+
+        if (askedFrom != this.ui && this.ui.refuseWhileEditorOpen(askedFrom)) return;
+
         new Thread(()->
         {  
             Route asked = routeName == null ? null : this.ui.getModel().getRoute(routeName);

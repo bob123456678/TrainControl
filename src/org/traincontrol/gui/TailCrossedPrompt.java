@@ -179,9 +179,10 @@ public class TailCrossedPrompt
 
         // In front of the editor where one is showing (MT-575): a door reached from the autonomy editor hands this the
         // main window, and a list hung from it was centered on the window the editor covers.  Not a minimized editor,
-        // which hides what it owns: `openLayoutEditorWindow` answers null for it.
-        Component over = parent instanceof TrainControlUI && ((TrainControlUI) parent).openLayoutEditorWindow() != null
-            ? ((TrainControlUI) parent).openLayoutEditorWindow() : parent;
+        // which hides what it owns: `openLayoutEditorWindow` answers null for it.  Else the window whose door this is.
+        Component over = !(parent instanceof TrainControlUI) ? parent
+            : ((TrainControlUI) parent).openLayoutEditorWindow() != null
+                ? ((TrainControlUI) parent).openLayoutEditorWindow() : ((TrainControlUI) parent).dialogParent();
 
         Reply reply = pick != null ? pick.ask()
             : reply(over, train, shownName(shown, at), choices, preselectedIndex(choices, recorded));
@@ -874,7 +875,8 @@ public class TailCrossedPrompt
                     loop.exit();
                 });
 
-                loop.enter();
+                // No door is asking while it waits: the operator can use other windows meanwhile
+                ui.pressFromWindow(null, loop::enter);
             }
             else
             {
@@ -927,7 +929,20 @@ public class TailCrossedPrompt
 
             panel.add(buttons, java.awt.BorderLayout.SOUTH);
 
-            prompt = new javax.swing.JDialog(ui, I18n.t("autolayout.ui.askArrivalSideTitle"), false);
+            // Over the window whose door this is; that window closing is no answer
+            final java.awt.Window over = ui.dialogParent();
+
+            prompt = new javax.swing.JDialog(over, I18n.t("autolayout.ui.askArrivalSideTitle"),
+                java.awt.Dialog.ModalityType.MODELESS);
+
+            prompt.addComponentListener(new java.awt.event.ComponentAdapter()
+            {
+                @Override
+                public void componentHidden(java.awt.event.ComponentEvent e)
+                {
+                    finish(new Reply(false, null));
+                }
+            });
 
             TrainControlUI.applyWindowIcon(prompt);
 
@@ -949,7 +964,7 @@ public class TailCrossedPrompt
             prompt.pack();
 
             // AT THE TOP OF THE WINDOW, not over the middle of the diagram where the squares to click are.
-            prompt.setLocation(ui.getX() + Math.max(0, (ui.getWidth() - prompt.getWidth()) / 2), ui.getY() + 60);
+            prompt.setLocation(over.getX() + Math.max(0, (over.getWidth() - prompt.getWidth()) / 2), over.getY() + 60);
 
             prompt.setVisible(true);
         }

@@ -423,6 +423,21 @@ public class testLayoutTiles
     }
 
     /**
+     * A sensor square with no sensor bound describes itself with nothing rather than throwing (OB-401).
+     *
+     * MUTATION: drop the null check in toSimpleString's feedback branch, and this throws a NullPointerException.
+     */
+    @Test
+    public void testASensorSquareWithNoSensorDescribesItself() throws Exception
+    {
+        LayoutDiagramComponent sensor = new LayoutDiagramComponent(
+            LayoutDiagramComponent.componentType.FEEDBACK, 0, 0, 0, 0, 7, 12, MM2);
+
+        assertNull(sensor.getFeedback(), "precondition: no sensor is bound");
+        assertEquals(sensor.toSimpleString(), "", "the description of a square with no sensor");
+    }
+
+    /**
      * Any square whose picture is replaced gives up an outstanding flash, not only a switch or a signal.
      *
      * Dropping the flash only inside the accessory-highlight branch misses two ordinary cases: a switch thrown by

@@ -48,7 +48,7 @@ TrainControl uses your computer's language automatically.  To run it in another 
 
 As shown above, you can assign locomotives to any letter on the keyboard, then quickly switch between them.  Easy keyboard shortcuts let you control locomotives.  Thumbnails are automatically downloaded from the CS2/CS3 or can be set manually.  Drag-and-drop locomotives while the power is off.
 
-Right-click a locomotive or function icon to change it or set additional options, such as preferred speed or function presets.
+Right-click a locomotive button for its quick actions, such as function and speed presets, or choose `Locomotive Settings...` (or right-click the locomotive's name) to change its name, address, picture, functions, notes and multi-unit in one window.  A function button's right-click opens the same window on that function.  A locomotive can't be edited while the power is on and it is moving.
 
 ![Right-click menu on a locomotive button, showing options for function presets, preferred speed, and multi-unit setup](assets/ui_right_click.png?raw=true)
 

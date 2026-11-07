@@ -259,6 +259,9 @@ on_the_way_out()
         kill ${LANE_PIDS:-} 2>/dev/null
     fi
 
+    # A lane's reap server ends with its lane; this shell's (the one-lane run, the serial lane) ends here.
+    if [ -n "${REAPD_PID:-}" ]; then stop_the_reaper; fi
+
     if [ -n "${REAPER:-}" ]
     then
         powershell.exe -NoProfile -ExecutionPolicy Bypass -File "$REAPER"             -RunId "${RUN_ID:-}" >/dev/null 2>&1
@@ -533,32 +536,128 @@ source_before=$(sourceprint)
 WORK="$S/build/battery-$$-work"
 
 rm -rf "$WORK"
-mkdir -p "$WORK/verdicts" "$WORK/claims"
+mkdir -p "$WORK/verdicts" "$WORK/claims" "$WORK/hung"
 
 verdict()
 {
     printf "%s\n%s\n" "$1" "$2" > "$WORK/verdicts/$cls"
 }
 
-run_class()
+# ONE POWERSHELL A LOOP OF CLASSES (FR-167): a lane, the one-lane run and the serial lane each start `reap.ps1 -Serve`
+# once and send it the reap before every class, about 0.15 s against 0.6 s or more for a PowerShell a reap.  The HUNG
+# reap, the reruns and the traps start their own.  A server that has gone, or does not answer within a minute, is
+# dropped for one PowerShell a reap.  It ends when its input closes: stop_the_reaper, or the shell holding it ending.
+# REAPD_PID is always read with a default: bash unsets it when the server ends, and `set -u` would end the lane.
+start_the_reaper()
 {
-    local cls="$3"
+    if [ -z "$REAPER" ]; then return; fi
 
-    # Only THIS RUN's leftover JVMs - reap.ps1 says why that is narrower than "every test JVM", and
-    # narrower again than "every java.exe".
-    #
-    # FROM THE SCRIPT'S OWN DIRECTORY, not from the working directory (TS3-A1).
-    #
-    # This read "$(pwd)/tools/reap.ps1" from 2026-08-25 until 2026-09-02, and the file has been at
-    # docs/tools/reap.ps1 since fb3722f5 moved the folder on 2026-08-30 - a commit whose message says
-    # "all eleven referring files repointed" and which missed this one, the script's call to its own
-    # sibling.  With the error going to /dev/null, every battery for four days reaped nothing and said
-    # nothing about it.
+    coproc REAPD { powershell.exe -NoProfile -ExecutionPolicy Bypass -File "$REAPER" -Serve 2>/dev/null; }
+
+    # Kept apart from REAPD, which bash unsets with REAPD_PID.
+    REAP_IN=${REAPD[1]}
+    REAP_OUT=${REAPD[0]}
+}
+
+stop_the_reaper()
+{
+    if [ -z "${REAPD_PID:-}" ]; then return; fi
+
+    exec {REAP_IN}>&- {REAP_OUT}<&-
+
+    kill "$REAPD_PID" 2>/dev/null
+
+    REAPD_PID=""
+}
+
+# Only THIS RUN's leftover JVMs - reap.ps1 says why that is narrower than "every test JVM", and
+# narrower again than "every java.exe".
+#
+# FROM THE SCRIPT'S OWN DIRECTORY, not from the working directory (TS3-A1).
+#
+# This read "$(pwd)/tools/reap.ps1" from 2026-08-25 until 2026-09-02, and the file has been at
+# docs/tools/reap.ps1 since fb3722f5 moved the folder on 2026-08-30 - a commit whose message says
+# "all eleven referring files repointed" and which missed this one, the script's call to its own
+# sibling.  With the error going to /dev/null, every battery for four days reaped nothing and said
+# nothing about it.
+reap_once()
+{
     if [ -n "$REAPER" ]
     then
         powershell.exe -NoProfile -ExecutionPolicy Bypass -File "$REAPER" \
             -RunId "$1" >/dev/null 2>&1
     fi
+}
+
+reap_run()
+{
+    if [ -n "${REAPD_PID:-}" ]
+    then
+        local sent answer
+
+        # A write to a server that has ended is a SIGPIPE, which would end the lane; ignored for the one builtin.
+        trap '' PIPE
+        printf '%s\n' "$1" >&"$REAP_IN" 2>/dev/null
+        sent=$?
+        trap - PIPE
+
+        if [ "$sent" -eq 0 ] && read -t 60 -r answer <&"$REAP_OUT" && [ "${answer%% *}" = reaped ]; then return; fi
+
+        echo "*** the reaper of $1 stopped answering; one PowerShell a reap from here ***" >&2
+
+        stop_the_reaper
+    fi
+
+    reap_once "$1"
+}
+
+# THE WATCHER of one class's JVM ($1, writing to $2), which run_class starts in the background and waits beside: past
+# TC_HANG_GRACE or TC_CLASS_CAP (WATCHED, NOT WAITED FOR, in run_class) it writes why to $3, reaps run $4 and ends the
+# JVM.  A TERM stops it at once between checks, and after them once a reap under way has finished.  It lets go of the
+# lane's reap server, whose life is the lane's.
+watch_class()
+{
+    local stop="" started=$SECONDS summarised="" now
+
+    trap 'stop=1' TERM
+
+    if [ -n "${REAPD_PID:-}" ]; then exec {REAP_IN}>&- {REAP_OUT}<&-; fi
+
+    while [ -z "$stop" ] && kill -0 "$1" 2>/dev/null
+    do
+        sleep 2 &
+
+        if [ -z "$stop" ]; then wait $! 2>/dev/null; fi
+
+        if [ -n "$stop" ]; then kill $! 2>/dev/null; return; fi
+
+        now=$SECONDS
+
+        if [ -z "$summarised" ] && grep -q "Total tests run" "$2" 2>/dev/null; then summarised=$now; fi
+
+        if [ -n "$summarised" ] && [ $((now - summarised)) -ge "${TC_HANG_GRACE:-120}" ]
+        then
+            echo "its JVM did not exit ${TC_HANG_GRACE:-120} s after its summary" > "$3"
+        elif [ $((now - started)) -ge "${TC_CLASS_CAP:-3600}" ]
+        then
+            echo "its JVM was still running after ${TC_CLASS_CAP:-3600} s" > "$3"
+        else
+            continue
+        fi
+
+        reap_once "$4"
+
+        kill -9 "$1" 2>/dev/null
+
+        return
+    done
+}
+
+run_class()
+{
+    local cls="$3"
+
+    reap_run "$1"
 
     # The WHOLE output, not its last few lines (found 2026-08-25).
     #
@@ -577,7 +676,7 @@ run_class()
     # that leaves something running is not a green class, whatever its summary says.
     RUN_OUT="$S/tng-run/$cls.out"
 
-    mkdir -p "$S/tng-run"
+    if [ ! -d "$S/tng-run" ]; then mkdir -p "$S/tng-run"; fi
 
     # EXTRA JVM ARGUMENTS (FR-136 Phase 6): TC_JVM_ARGS adds arguments to every test JVM, for a coverage agent.  Unset, nothing
     # changes.  A "%s" in it becomes the class's name, so each JVM can write a file of its own; the JVM and its arguments split on
@@ -595,47 +694,24 @@ run_class()
 
     local JVM=$!
 
-    HUNG=""
-    started=$(date +%s)
-    summarised=""
+    # THE WATCH IS A PROCESS OF ITS OWN, so this shell sees the JVM's exit at once rather than at its next 2 s poll.  A
+    # HUNG class's reap and kill are the watcher's, and the second `wait` lets it finish them.
+    local said="$WORK/hung/$cls"
 
-    while kill -0 "$JVM" 2>/dev/null
-    do
-        sleep 2
+    if [ -e "$said" ]; then rm -f "$said"; fi
 
-        now=$(date +%s)
+    watch_class "$JVM" "$RUN_OUT" "$said" "$1" &
 
-        if [ -z "$summarised" ] && grep -q "Total tests run" "$RUN_OUT" 2>/dev/null; then summarised=$now; fi
-
-        if [ -n "$summarised" ] && [ $((now - summarised)) -ge "${TC_HANG_GRACE:-120}" ]
-        then
-            HUNG="its JVM did not exit ${TC_HANG_GRACE:-120} s after its summary"
-
-            break
-        fi
-
-        if [ $((now - started)) -ge "${TC_CLASS_CAP:-3600}" ]
-        then
-            HUNG="its JVM was still running after ${TC_CLASS_CAP:-3600} s"
-
-            break
-        fi
-    done
-
-    if [ -n "$HUNG" ]
-    then
-        if [ -n "$REAPER" ]
-        then
-            powershell.exe -NoProfile -ExecutionPolicy Bypass -File "$REAPER" \
-                -RunId "$1" >/dev/null 2>&1
-        fi
-
-        kill -9 "$JVM" 2>/dev/null
-    fi
+    local WATCHER=$!
 
     wait "$JVM" 2>/dev/null
 
-    out=$(cat "$RUN_OUT" 2>/dev/null)
+    kill "$WATCHER" 2>/dev/null
+    wait "$WATCHER" 2>/dev/null
+
+    HUNG=""
+
+    if [ -e "$said" ]; then read -r HUNG < "$said"; fi
 
     if [ -n "$HUNG" ]
     then
@@ -644,9 +720,27 @@ run_class()
         return
     fi
 
+    # ONE GREP of the whole output for every line the verdict asks about, read with bash patterns: a process a
+    # question cost half a second a class.
+    local line lines dialog="" noheap="" oom=""
+
+    lines=$(grep -aE 'Total tests run|Configuration Failures|UNANSWERED DIALOG|Could not reserve enough space|Unable to allocate.*heap|OutOfMemoryError' \
+        "$RUN_OUT" 2>/dev/null)
+
+    summary=""
+    configFailures=""
+
     # The LAST one, because a class can print the word before it finishes - and the last summary is
     # the one that describes the whole run.
-    summary=$(echo "$out" | grep 'Total tests run' | tail -1)
+    while IFS= read -r line
+    do
+        case "$line" in *"Total tests run"*) summary=$line ;; esac
+        case "$line" in *"Configuration Failures"*) configFailures=$line ;; esac
+        case "$line" in *"UNANSWERED DIALOG"*) if [ -z "$dialog" ]; then dialog=$line; fi ;; esac
+        case "$line" in *OutOfMemoryError*) oom=1 ;; esac
+
+        if [[ $line =~ Could\ not\ reserve\ enough\ space|Unable\ to\ allocate.*heap ]]; then noheap=1; fi
+    done <<< "$lines"
 
     # TestNG's summary is TWO lines, and this read one (found 2026-08-25, by review).
     #
@@ -657,9 +751,7 @@ run_class()
     # teardowns in this suite are load-bearing: testBothProtectingSignalsAreThrown puts two of Adam's
     # real signals back to GREEN in its teardown and says why, and testARouteDoesNotThrowSwitchesUnderATrain
     # clears the auto layout in its own.  A teardown that threw would leave the railway changed and be
-    # reported as a clean run.
-    configFailures=$(echo "$out" | grep 'Configuration Failures' | tail -1)
-
+    # reported as a clean run.  (configFailures, read above.)
     if [ -z "$summary" ]
     then
         # A class that produced no summary did not run.  Reported as a failure on purpose: a runner
@@ -673,28 +765,30 @@ run_class()
         # and its other reservation message embeds the size - "Could not reserve enough space for
         # %I64uKB object heap" - so matching the bare sentence matched neither, and the branch was
         # dead for the very incident it was written for.
-        if echo "$out" | grep -q "UNANSWERED DIALOG"
+        if [ -n "$dialog" ]
         then
-            verdict fail "$cls: $(echo "$out" | grep 'UNANSWERED DIALOG' | head -1 | sed 's/^\*\*\* UNANSWERED DIALOG: //; s/ \*\*\*$//')"
-        elif echo "$out" | grep -qE "Could not reserve enough space|Unable to allocate.*heap"
+            dialog=${dialog#'*** UNANSWERED DIALOG: '}
+
+            verdict fail "$cls: ${dialog%' ***'}"
+        elif [ -n "$noheap" ]
         then
             verdict fail "$cls: DID NOT RUN - no heap (machine busy, rerun)"
-        elif echo "$out" | grep -q "OutOfMemoryError"
+        elif [ -n "$oom" ]
         then
             verdict fail "$cls: RAN OUT OF MEMORY - split the class, or raise TC_JAVA_HEAP"
         else
             verdict fail "$cls: DID NOT RUN"
         fi
 
-    elif ! echo "$summary" | grep -q "Failures: 0"
+    elif [[ $summary != *"Failures: 0"* ]]
     then
         verdict fail "$cls: $summary"
 
-    elif [ -n "$configFailures" ] && ! echo "$configFailures" | grep -q "Configuration Failures: 0"
+    elif [ -n "$configFailures" ] && [[ $configFailures != *"Configuration Failures: 0"* ]]
     then
         verdict fail "$cls: $summary / $configFailures"
 
-    elif echo "$summary" | grep -q "Total tests run: 0"
+    elif [[ $summary == *"Total tests run: 0"* ]]
     then
         # ZERO tests is not zero failures (found 2026-08-25, by review).
         #
@@ -708,7 +802,7 @@ run_class()
         # reason: it needs looking at, not alarming about.
         verdict skip "$cls: $summary (no tests in this class)"
 
-    elif echo "$summary" | grep -q "Skips: 0"
+    elif [[ $summary == *"Skips: 0"* ]]
     then
         verdict pass "$cls"
 
@@ -784,7 +878,8 @@ fi
 # ONE LANE (FR-136 Phase 1a): a subshell that takes the next unclaimed class from the queue until there is none.
 #
 # Its own name - this run's with the lane's number - so the reaper ends only its JVMs; its own copies of the two data
-# files, its own preference node, and its own temp folder.  A claim is a `mkdir`, which exactly one lane can win.
+# files, its own preference node, and its own temp folder.  A claim is a file made under noclobber (O_EXCL), which
+# exactly one lane can win and which costs no process.
 # Lane 1 runs in slot 1 and the others in theirs; each but the first gives its slot back when the queue is empty,
 # so a worker's run can start while the last classes finish.
 # A lane's JVM flags: its own run id, data folder, preference node and temp folder.
@@ -827,13 +922,10 @@ take_the_spare_slots()
 # This run's reap, and each lane's: a rerun runs under its lane's id.
 reap_the_run()
 {
-    if [ -n "$REAPER" ]
-    then
-        for id in "$RUN_ID" ${LANE_IDS:-}
-        do
-            powershell.exe -NoProfile -ExecutionPolicy Bypass -File "$REAPER" -RunId "$id" >/dev/null 2>&1
-        done
-    fi
+    for id in "$RUN_ID" ${LANE_IDS:-}
+    do
+        reap_once "$id"
+    done
 }
 
 run_lane()
@@ -855,16 +947,23 @@ run_lane()
     local flags
     flags=$(lane_flags "$k")
 
-    local total
-    total=$(wc -l < "$WORK/queue")
+    local queue claimed
+    mapfile -t queue < "$WORK/queue"
 
     local i=1
 
-    while [ "$i" -le "$total" ]
+    start_the_reaper
+
+    while [ "$i" -le "${#queue[@]}" ]
     do
-        if mkdir "$WORK/claims/$i" 2>/dev/null
+        set -C
+        { : > "$WORK/claims/$i"; } 2>/dev/null
+        claimed=$?
+        set +C
+
+        if [ "$claimed" -eq 0 ]
         then
-            cls=$(sed -n "${i}p" "$WORK/queue")
+            cls=${queue[i - 1]}
 
             echo "$k" > "$WORK/lane-of/$cls"
 
@@ -874,10 +973,9 @@ run_lane()
         i=$((i + 1))
     done
 
-    if [ -n "$REAPER" ]
-    then
-        powershell.exe -NoProfile -ExecutionPolicy Bypass -File "$REAPER" -RunId "$id" >/dev/null 2>&1
-    fi
+    reap_run "$id"
+
+    stop_the_reaper
 
     if [ "$k" -gt 1 ]
     then
@@ -888,20 +986,29 @@ run_lane()
 if [ "$LANES" -le 1 ]
 then
     # ONE CLASS AT A TIME, in name order, as it always was.
+    start_the_reaper
+
     for cls in $(cat "$WORK/classes")
     do
         run_class "$RUN_ID" "$JAVA_FLAGS" "$cls"
     done
+
+    stop_the_reaper
 else
     # THE SERIAL LANE IS SET ASIDE, to run last (below): the classes that need the keyboard focus or the clipboard.
+    # Looked up by name in a table, not by a grep a class.
     SERIAL_LANE=$(serial_lane_classes)
+
+    declare -A in_serial_lane=()
+
+    for listed in $SERIAL_LANE; do in_serial_lane[$listed]=1; done
 
     : > "$WORK/rest"
     : > "$WORK/serial"
 
     for cls in $(cat "$WORK/classes")
     do
-        if echo "$SERIAL_LANE" | grep -qxF "$cls"
+        if [ -n "${in_serial_lane[$cls]:-}" ]
         then
             echo "$cls" >> "$WORK/serial"
         else
@@ -960,12 +1067,16 @@ else
     then
         take_the_spare_slots
 
+        start_the_reaper
+
         for cls in $(cat "$WORK/serial")
         do
             echo "serial lane: $cls"
 
             run_class "$RUN_ID" "$JAVA_FLAGS" "$cls"
         done
+
+        stop_the_reaper
     fi
 fi
 

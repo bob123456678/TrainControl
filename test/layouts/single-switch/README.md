@@ -70,3 +70,7 @@ It also produces something else the suite has never had by hand: **a split squar
 - `ui.testTheAutonomyEditorsBulkDoors`
 - `core.testATrainMustStopAndCannotPassThrough`
 - `core.testWhichTrainsKeepsOneList`
+- `ui.testTheKeyboardAsksDuringAnAutonomyRun`
+- `ui.testAPageWindowsSquaresAskOverIt`
+- `ui.testTheLocomotiveDoorsAskOverTheirWindow`
+- `ui.testATimetableEntryKeepsItsSquaresThroughRenames`

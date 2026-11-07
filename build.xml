@@ -646,6 +646,34 @@
         <test-one-class class="testAnOldSetupReadsAsItDid"/>
         <test-one-class class="testASetupFromANewerBuildOpens"/>
         <test-one-class class="testSetupDumpComparesBuilds"/>
+        <test-one-class class="testTheShortcutTableIsTheOldChain"/>
+        <test-one-class class="testEveryKindOfShortcutOnTheWindow"/>
+        <test-one-class class="testTheEditorsFindingsCanBeFiltered"/>
+        <test-one-class class="testTheKeyboardAsksDuringAnAutonomyRun"/>
+        <test-one-class class="testPagesFollowTheFileOrder"/>
+        <test-one-class class="testTheEditorPageStrip"/>
+        <test-one-class class="testArrowsKeepTheirMeaningInAnyDisplayOrder"/>
+        <test-one-class class="testAPageWindowsSquaresAskOverIt"/>
+        <test-one-class class="testAPageWindowsMenuAsksOverIt"/>
+        <test-one-class class="testAPageWindowsSetupMenuAsksOverIt"/>
+        <test-one-class class="testTheLocomotiveDoorsAskOverTheirWindow"/>
+        <test-one-class class="testTheEditorsDoorsAskOverThem"/>
+        <test-one-class class="testFindAPoint"/>
+        <test-one-class class="testAStationClosedOnEverySideCannotBeSentTo"/>
+        <test-one-class class="testATimetableEntryKeepsItsSquaresThroughRenames"/>
+        <test-one-class class="testLocomotiveCsvImport"/>
+        <test-one-class class="testLocomotiveCsvImportDoor"/>
+        <test-one-class class="testASyncKeepsAnImportedLocomotive"/>
+        <test-one-class class="testACS2RequestsAreAsBefore"/>
+        <test-one-class class="testACS3SyncIsAsBefore"/>
+        <test-one-class class="testCS3InputsParseAsBefore"/>
+        <test-one-class class="testACS3FirmwareIsReadOnce"/>
+        <test-one-class class="testACS3ReadersSurviveFirmwareChanges"/>
+        <test-one-class class="testTheSyncSaysWhenPartOfTheDataWasNotRead"/>
+        <test-one-class class="testTheLocomotiveSettingsWindow"/>
+        <test-one-class class="testTheLocomotiveSettingsMovingRule"/>
+        <test-one-class class="testTheLocomotiveSettingsFunctions"/>
+        <test-one-class class="testThePresetSpeedSurvivesTheSetupDoors"/>
     </target>
     <target name="package-for-store" depends="jar">
         <property name="store.jar.name" value="TrainControl"/>

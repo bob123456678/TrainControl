@@ -164,6 +164,15 @@ public abstract class Locomotive
     {
         return this.preferredFunctions;
     }
+
+    /**
+     * Sets which functions the function preset turns on, for the Functions tab's Preset ticks
+     * @param on one entry per function; extra entries are dropped and missing ones are off
+     */
+    public void setPreferredFunctions(boolean[] on)
+    {
+        this.preferredFunctions = Arrays.copyOf(on, this.functionState.length);
+    }
     
     /**
      * Retrieves the function trigger types
@@ -1449,6 +1458,43 @@ public abstract class Locomotive
     }
     
     /**
+     * The latest day on which the locomotive has a runtime record (yyyy-MM-dd), or null if it has none
+     * @return
+     */
+    public String getLastRunDay()
+    {
+        String last = null;
+
+        for (String day : this.historicalOperatingTime.keySet())
+        {
+            if (last == null || day.compareTo(last) > 0) last = day;
+        }
+
+        return last;
+    }
+
+    /**
+     * Raises the total runtime to at least `wantedMs`, filing only the difference on `day` (FR-049); the other days are
+     * never touched.  Takes the lock runtime tracking takes.
+     * @param wantedMs
+     * @param day yyyy-MM-dd
+     * @return the milliseconds added (0 when the total is already that large)
+     */
+    public long raiseTotalRuntimeTo(long wantedMs, String day)
+    {
+        synchronized (speedMonitor)
+        {
+            long add = wantedMs - this.getTotalRuntime();
+
+            if (add <= 0) return 0;
+
+            this.historicalOperatingTime.merge(day, add, Long::sum);
+
+            return add;
+        }
+    }
+
+    /**
      * On how many different days was the locomotive run
      * @return 
      */
@@ -1533,6 +1579,14 @@ public abstract class Locomotive
         public int[] getTypes()
         {
             return Arrays.copyOf(this.types, this.types.length);
+        }
+
+        /**
+         * @return the function trigger types
+         */
+        public int[] getTriggers()
+        {
+            return Arrays.copyOf(this.triggers, this.triggers.length);
         }
     }
 

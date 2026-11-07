@@ -169,6 +169,7 @@ public class testMappingPagesAndLocomotiveDoors
     @BeforeMethod
     public void lay() throws Exception
     {
+        support.SettingsWindow.closeIfOpen();
         closeStrayDialogs();
 
         one.setStructuredNotes(1950, 1970, RAILWAY, "");
@@ -241,7 +242,7 @@ public class testMappingPagesAndLocomotiveDoors
     /**
      * Full stop and comma turn a page forward and back; with Alt, they go to the last page and the first.
      *
-     * MUTATION: `switchLocMapping(1)` in the Alt+PERIOD arm of `LocControlPanelKeyPressed`, and this fails.
+     * MUTATION: `switchLocMapping(1)` in the "last locomotive page" row of `TrainControlUI.KeyShortcuts`, and this fails.
      */
     @Test
     public void testThePageKeysTurnThePage() throws Exception
@@ -409,7 +410,7 @@ public class testMappingPagesAndLocomotiveDoors
         try (Answering answering = Answering.start(message ->
             message.contains(similar) ? Answering.press(mapTo) : Answering.pressAt(0)))
         {
-            AbstractButton item = rightClickMenuItem(KeyEvent.VK_A, I18n.t("loc.ui.menuFindSimilarLocomotives"));
+            AbstractButton item = findSimilarOnTheNotesTab(KeyEvent.VK_A);
 
             SwingUtilities.invokeLater(item::doClick);
 
@@ -440,7 +441,7 @@ public class testMappingPagesAndLocomotiveDoors
 
         try (Answering answering = Answering.start(message -> Answering.pressAt(0)))
         {
-            AbstractButton item = rightClickMenuItem(KeyEvent.VK_D, I18n.t("loc.ui.menuFindSimilarLocomotives"));
+            AbstractButton item = findSimilarOnTheNotesTab(KeyEvent.VK_D);
 
             SwingUtilities.invokeLater(item::doClick);
 
@@ -749,6 +750,31 @@ public class testMappingPagesAndLocomotiveDoors
 
             return answering.asked();
         }
+    }
+
+    /**
+     * Find Similar Locomotives, where it lives now: the Notes tab of the Locomotive Settings window the key's menu opens.
+     */
+    private static AbstractButton findSimilarOnTheNotesTab(int key) throws Exception
+    {
+        AbstractButton settings = rightClickMenuItem(key, I18n.t("loc.ui.menuLocomotiveSettings"));
+
+        Components.onTheEventThread(() ->
+        {
+            settings.doClick(0);
+
+            return null;
+        });
+
+        assertNotNull(support.SettingsWindow.awaited(), "Locomotive Settings... opened no window");
+
+        support.SettingsWindow.selectTab(2);
+
+        AbstractButton find = support.SettingsWindow.part("settings.findSimilar", JButton.class);
+
+        assertNotNull(find, "the Notes tab has no Find Similar Locomotives");
+
+        return find;
     }
 
     /** Opens a letter key's right-click menu and finds an item in it, in a submenu or not. */

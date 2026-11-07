@@ -436,12 +436,17 @@ public class testTheActiveTickPausesATrain
                     final Object yes = pane.getOptions()[0];
 
                     SwingUtilities.invokeAndWait(() -> pane.setValue(yes));
+
+                    leavingAsked++;
                 }
             }
         }
 
         if (editor.isDisplayable()) SwingUtilities.invokeLater(editor::dispose);
     }
+
+    /** How many times `closeTheEditor` has answered the question about leaving without saving. */
+    private static int leavingAsked;
 
     /** Every item's text on a menu and its submenus, for a failure to show. */
     private static void texts(java.awt.Container menu, List<String> into)
@@ -1510,6 +1515,293 @@ public class testTheActiveTickPausesATrain
         }
     }
 
+    // ----------------------------------------------------- an editor gesture that overtakes a card's change (OB-346)
+
+    /** A step of a claim, on what it is given. */
+    private interface Step<T>
+    {
+        void on(T it) throws Exception;
+    }
+
+    /** The setup as a new session reads it off the disk, for what Cancel or Save left saved. */
+    private static java.util.Set<String> pausedInTheSavedSetup() throws Exception
+    {
+        AutonomySession reread = new AutonomySession(sandbox.getFolder());
+
+        reread.open(support.LayoutSandbox.wiredPages(model));
+
+        return reread.getPausedLocomotives();
+    }
+
+    /**
+     * The crowd stood with every train going (the card's train built paused if asked), the editor opened, the gesture
+     * made in it with the card's train, the editor left, then what is asserted of the card's train.
+     */
+    private static void overTheEditor(boolean builtPaused, Step<java.awt.Window> gesture, Step<java.awt.Window> leave,
+        Step<Locomotive> after) throws Exception
+    {
+        java.awt.Window editor = null;
+
+        try
+        {
+            theNextSetupGestureRebuilds();
+
+            crowd();
+
+            rebuildTheCards();
+
+            if (builtPaused) theCardsTrainBuiltPaused();
+
+            editor = openTheEditor();
+
+            gesture.on(editor);
+
+            leave.on(editor);
+
+            editor = null;
+
+            settleTheRebuild();
+
+            after.on(model.getLocByName(CARD_TRAIN));
+        }
+        finally
+        {
+            if (editor != null) closeTheEditor(editor);
+
+            uncrowd();
+        }
+    }
+
+    /** The trains standing, by name. */
+    private static List<String> theTrainsStanding()
+    {
+        return new ArrayList<>(new java.util.TreeSet<>(session.trainsWhereTheyStand().values()));
+    }
+
+    /** The Is Active tick of the card's train, on the editor's right-click on its own square, and the rebuild it asks for. */
+    private static void clickTheCardTrainsTickInTheEditor(java.awt.Window editor) throws Exception
+    {
+        final String label = I18n.f("autolayout.ui.menuLocomotiveActive", CARD_TRAIN);
+
+        final List<String> offered = new ArrayList<>();
+
+        final javax.swing.JMenuItem tick = editorsTickItem(editorsPanel(editor), square(CARD_TRAIN_SQUARE), label, offered);
+
+        assertNotNull(tick, "precondition: the editor's right-click on " + CARD_TRAIN_SQUARE + " offers no " + label + ": "
+            + offered);
+
+        click(tick);
+
+        settleTheRebuild();
+    }
+
+    /**
+     * A card's pause, then Activate All Trains with no rebuild between, then Cancel: the card's pause stays, in the
+     * train, the setup and the file, though the tool left the setup as the editor opened it.  Cancel asks, as it has
+     * the tool to discard.
+     *
+     * MUTATION: leave out of `setLocomotivesActive` the note of what the door overtakes, and this fails.
+     *
+     * @throws Exception from the window
+     */
+    @Test(timeOut = 180000)
+    public void testTheEditorsCancelKeepsACardsPauseOverActivateAllTrains() throws Exception
+    {
+        final int[] asked = {0};
+
+        overTheEditor(false, editor ->
+        {
+            Locomotive card = model.getLocByName(CARD_TRAIN);
+
+            pressTheCardsButton(card, true);
+
+            clickTheEditorsTickAndSettle(editor, I18n.f("autosetup.ui.menuActivateAllTrains", 1));
+
+            assertFalse(card.isAutonomyPaused(), "precondition: Activate All Trains did not set " + CARD_TRAIN + " going");
+
+            asked[0] = leavingAsked;
+        }, testTheActiveTickPausesATrain::closeTheEditor, card ->
+        {
+            assertEquals(leavingAsked, asked[0] + 1, "Cancel did not ask about discarding the tool (OB-346)");
+
+            assertPausedEverywhere(card, true, "after Activate All Trains and the editor's Cancel");
+
+            assertTrue(pausedInTheSavedSetup().contains(CARD_TRAIN), "the saved setup lost the card's pause: "
+                + pausedInTheSavedSetup());
+        });
+    }
+
+    /**
+     * The mirror: a card sets going a train the setup lists as paused, Deactivate All Trains overtakes it, Cancel: it
+     * stays going, and the tool's pauses of the others go.
+     *
+     * MUTATION: have the door note only a card's pause, not a card's going, and this fails.
+     *
+     * @throws Exception from the window
+     */
+    @Test(timeOut = 180000)
+    public void testTheEditorsCancelKeepsACardsGoingOverDeactivateAllTrains() throws Exception
+    {
+        overTheEditor(true, editor ->
+        {
+            Locomotive card = model.getLocByName(CARD_TRAIN);
+
+            pressTheCardsButton(card, false);
+
+            clickTheEditorsTickAndSettle(editor, I18n.f("autosetup.ui.menuDeactivateAllTrains", theTrainsStanding().size()));
+
+            assertTrue(card.isAutonomyPaused(), "precondition: Deactivate All Trains did not pause " + CARD_TRAIN);
+        }, testTheActiveTickPausesATrain::closeTheEditor, card ->
+        {
+            assertPausedEverywhere(card, false, "after Deactivate All Trains and the editor's Cancel");
+
+            assertFalse(train.isAutonomyPaused(), "the tool's pause of " + HIS_TRAIN + " was kept by Cancel");
+
+            assertFalse(pausedInTheSavedSetup().contains(CARD_TRAIN), "the saved setup lost the card's going: "
+                + pausedInTheSavedSetup());
+        });
+    }
+
+    /**
+     * A card's pause a rebuild has shown, then the editor's Is Active tick of that train, with the setup then as the
+     * editor opened it: Cancel keeps the pause.  The rebuild comes from another train's tick, ticked back.
+     *
+     * MUTATION: leave `aGestureOvertookTheRailwaysPause` out of `hasUnsavedAutonomyWork`, and this fails.
+     *
+     * @throws Exception from the window
+     */
+    @Test(timeOut = 180000)
+    public void testTheEditorsCancelKeepsACardsPauseOverATickThatLeavesTheSetupAsOpened() throws Exception
+    {
+        overTheEditor(false, editor ->
+        {
+            Locomotive card = model.getLocByName(CARD_TRAIN);
+
+            pressTheCardsButton(card, true);
+
+            String label = I18n.f("autolayout.ui.menuLocomotiveActive", HIS_TRAIN);
+
+            clickTheEditorsTickAndSettle(editor, label);
+
+            clickTheEditorsTickAndSettle(editor, label);
+
+            clickTheCardTrainsTickInTheEditor(editor);
+
+            assertFalse(card.isAutonomyPaused(), "precondition: the tick did not set " + CARD_TRAIN + " going");
+
+            assertEquals(session.getPausedLocomotives().size(), 0, "precondition: the setup does not list as the editor"
+                + " opened it: " + session.getPausedLocomotives());
+        }, testTheActiveTickPausesATrain::closeTheEditor,
+            card -> assertPausedEverywhere(card, true, "after the tick and the editor's Cancel"));
+    }
+
+    /**
+     * With an unrelated edit kept and a rebuild between the card and the tick, Cancel keeps the card's pause and undoes
+     * the rest, as it did before OB-346.
+     *
+     * MUTATION: leave what the folds took from the railway out of what Cancel puts back, and this fails.
+     *
+     * @throws Exception from the window
+     */
+    @Test(timeOut = 180000)
+    public void testTheEditorsCancelKeepsACardsPauseOverATickWithAnEditAndARebuildBetween() throws Exception
+    {
+        overTheEditor(false, editor ->
+        {
+            pressTheCardsButton(model.getLocByName(CARD_TRAIN), true);
+
+            clickTheEditorsTickAndSettle(editor, I18n.f("autolayout.ui.menuLocomotiveActive", HIS_TRAIN));
+
+            assertTrue(session.getPausedLocomotives().contains(CARD_TRAIN), "precondition: the rebuild's fold did not take"
+                + " the card's pause: " + session.getPausedLocomotives());
+
+            clickTheCardTrainsTickInTheEditor(editor);
+
+            assertTrue(train.isAutonomyPaused(), "precondition: the unrelated edit is gone");
+        }, testTheActiveTickPausesATrain::closeTheEditor, card ->
+        {
+            assertPausedEverywhere(card, true, "after an edit, a rebuild, the tick and the editor's Cancel");
+
+            assertFalse(train.isAutonomyPaused(), "the editor's own tick of " + HIS_TRAIN + " was kept by its Cancel");
+        });
+    }
+
+    /**
+     * Save keeps the gesture: a card's pause, Activate All Trains, Save, and the train goes, in the train, the setup and
+     * the file.
+     *
+     * MUTATION: have ending the edit session put back what Cancel keeps, and this fails.
+     *
+     * @throws Exception from the window
+     */
+    @Test(timeOut = 180000)
+    public void testTheEditorsSaveKeepsActivateAllTrainsOverACardsPause() throws Exception
+    {
+        overTheEditor(false, editor ->
+        {
+            pressTheCardsButton(model.getLocByName(CARD_TRAIN), true);
+
+            clickTheEditorsTickAndSettle(editor, I18n.f("autosetup.ui.menuActivateAllTrains", 1));
+        }, editor ->
+        {
+            final javax.swing.AbstractButton save = support.Components.withText(editor, I18n.t("layout.ui.saveChanges"));
+
+            SwingUtilities.invokeLater(save::doClick);
+
+            for (long end = System.currentTimeMillis() + 30000; (editor.isDisplayable() || ui.whyLayoutCannotBeEdited() != null)
+                && System.currentTimeMillis() < end; )
+            {
+                Thread.sleep(50);
+            }
+
+            assertFalse(editor.isDisplayable(), "the editor's Save did not close it");
+        }, card ->
+        {
+            assertPausedEverywhere(card, false, "after Activate All Trains and the editor's Save");
+
+            assertFalse(pausedInTheSavedSetup().contains(CARD_TRAIN), "Save did not keep the tool: " + pausedInTheSavedSetup());
+        });
+    }
+
+    /**
+     * With no card pressed, a gesture and its opposite leave the setup as the editor opened it: Cancel asks nothing and
+     * every train goes, as it did before OB-346.
+     *
+     * MUTATION: have the door note every train it flips, not only one whose state the record does not hold, and this fails.
+     *
+     * @throws Exception from the window
+     */
+    @Test(timeOut = 180000)
+    public void testTheEditorsCancelAsksNothingOfAGestureAndItsOppositeWithNoCard() throws Exception
+    {
+        final int[] asked = {0};
+
+        overTheEditor(false, editor ->
+        {
+            int standing = theTrainsStanding().size();
+
+            clickTheEditorsTickAndSettle(editor, I18n.f("autosetup.ui.menuDeactivateAllTrains", standing));
+
+            assertTrue(model.getLocByName(CARD_TRAIN).isAutonomyPaused(), "precondition: Deactivate All Trains did not pause "
+                + CARD_TRAIN);
+
+            clickTheEditorsTickAndSettle(editor, I18n.f("autosetup.ui.menuActivateAllTrains", standing));
+
+            asked[0] = leavingAsked;
+        }, testTheActiveTickPausesATrain::closeTheEditor, card ->
+        {
+            assertEquals(leavingAsked, asked[0], "Cancel asked about a setup as the editor opened it, with no card pressed");
+
+            for (String name : theTrainsStanding())
+            {
+                assertFalse(model.getLocByName(name).isAutonomyPaused(), name + " came out of Cancel paused");
+            }
+
+            assertEquals(session.getPausedLocomotives().size(), 0, "the setup came out of Cancel with "
+                + session.getPausedLocomotives());
+        });
+    }
+
     // ----------------------------------------------------- a locomotive renamed, with a card's change not yet folded (OB-343)
 
     /** What the card's train is called while a claim has it renamed. */
@@ -1792,11 +2084,18 @@ public class testTheActiveTickPausesATrain
     private static javax.swing.JMenuItem editorsTickItem(final AutonomyEditorPanel panel, final String label,
         final List<String> offered) throws Exception
     {
+        return editorsTickItem(panel, mainB, label, offered);
+    }
+
+    /** The same on the editor's right-click on another square. */
+    private static javax.swing.JMenuItem editorsTickItem(final AutonomyEditorPanel panel, final TileKey at, final String label,
+        final List<String> offered) throws Exception
+    {
         final javax.swing.JMenuItem[] tick = new javax.swing.JMenuItem[1];
 
         SwingUtilities.invokeAndWait(() ->
         {
-            javax.swing.JPopupMenu menu = panel.buildTileMenu(mainB, null);
+            javax.swing.JPopupMenu menu = panel.buildTileMenu(at, null);
 
             texts(menu, offered);
 

@@ -28,7 +28,7 @@ public final class RunGates
 
         if (running == null) return false;
 
-        JOptionPane.showMessageDialog(source == null ? ui : source,
+        JOptionPane.showMessageDialog(over(ui, source),
             I18n.f("loc.ui.errorLocomotiveDrivenByARunningRoute", name, running.getName()));
 
         return true;
@@ -95,12 +95,13 @@ public final class RunGates
     }
 
     /**
-     * Over the main window where the source is not showing (MT-703): a menu's item has left its window by the time it
-     * runs, and the message went to Swing's hidden frame, under an always-on-top main window.
+     * Over the source; else the window whose door is being pressed, or the main window (OB-324): where the source is
+     * not showing (MT-703), as a menu's item has left its window by the time it runs, the message went to Swing's
+     * hidden frame, under an always-on-top main window.
      */
     private static Component over(TrainControlUI ui, Component source)
     {
-        return source == null || !source.isShowing() ? ui : source;
+        return source == null || source == ui || !source.isShowing() ? ui.dialogParent() : source;
     }
 
     /**
@@ -108,7 +109,7 @@ public final class RunGates
      * the state it guards against, and loading would save the setup against a diagram somebody is editing (discarding
      * tiles they meant to Cancel) and rebuild the window under the open editor.  True when the caller must not proceed.
      */
-    static boolean refuseWhileEditorOpen(TrainControlUI ui)
+    static boolean refuseWhileEditorOpen(TrainControlUI ui, java.awt.Window asked)
     {
         if (!ui.isLayoutEditorOpen()) return false;
 
@@ -118,12 +119,12 @@ public final class RunGates
         // outright.
         if (javax.swing.SwingUtilities.isEventDispatchThread())
         {
-            JOptionPane.showMessageDialog(ui, I18n.t("autosetup.ui.menuEditorOpen"));
+            JOptionPane.showMessageDialog(ui.stillShowing(asked), I18n.t("autosetup.ui.menuEditorOpen"));
         }
         else
         {
             javax.swing.SwingUtilities.invokeLater(() ->
-                JOptionPane.showMessageDialog(ui, I18n.t("autosetup.ui.menuEditorOpen")));
+                JOptionPane.showMessageDialog(ui.stillShowing(asked), I18n.t("autosetup.ui.menuEditorOpen")));
         }
 
         return true;

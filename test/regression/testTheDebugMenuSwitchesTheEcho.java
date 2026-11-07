@@ -175,26 +175,26 @@ public class testTheDebugMenuSwitchesTheEcho
 
         assertNotNull(turnout, "precondition: the scenario's turnout, accessory 1, is not in the model");
 
-        final javax.swing.AbstractButton key = (javax.swing.AbstractButton) windowField("SwitchButton1");
+        final org.traincontrol.gui.AccessoryKeyboard key = (org.traincontrol.gui.AccessoryKeyboard) windowField("keyboardKeys");
 
-        assertEquals(support.Components.onTheEventThread(key::getText), "1", "precondition: the keyboard does not show"
+        assertEquals(support.Components.onTheEventThread(() -> key.numberOf(1)), "1", "precondition: the keyboard does not show"
             + " accessory 1 on its first key");
 
         try
         {
             model.receiveMessage(support.Packets.accessoryEcho(turnout, false));
 
-            assertTrue(support.Components.waitFor(() -> !selected(key), 10000), "precondition: the key does not show the"
+            assertTrue(support.Components.waitFor(() -> !thrown(key), 10000), "precondition: the key does not show the"
                 + " turnout straight");
 
             model.receiveMessage(support.Packets.accessoryEcho(turnout, true));
 
-            assertTrue(support.Components.waitFor(() -> selected(key), 10000), "the station threw the turnout and its key"
+            assertTrue(support.Components.waitFor(() -> thrown(key), 10000), "the station threw the turnout and its key"
                 + " still shows it straight");
 
             model.receiveMessage(support.Packets.accessoryEcho(turnout, false));
 
-            assertTrue(support.Components.waitFor(() -> !selected(key), 10000), "the station put the turnout straight and"
+            assertTrue(support.Components.waitFor(() -> !thrown(key), 10000), "the station put the turnout straight and"
                 + " its key still shows it thrown");
         }
         finally
@@ -329,9 +329,10 @@ public class testTheDebugMenuSwitchesTheEcho
         return support.Components.onTheEventThread(button::isEnabled);
     }
 
-    private static boolean selected(javax.swing.AbstractButton button)
+    /** Whether the keyboard's first key shows its accessory thrown: the red half is the lit one. */
+    private static boolean thrown(org.traincontrol.gui.AccessoryKeyboard keys)
     {
-        return support.Components.onTheEventThread(button::isSelected);
+        return support.Components.onTheEventThread(() -> keys.isLit(1, true));
     }
 
     private static JMenu debugMenu() throws Exception

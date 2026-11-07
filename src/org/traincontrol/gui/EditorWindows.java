@@ -25,6 +25,9 @@ final class EditorWindows
     {
         if (ui.openEditor != null && ui.openEditor.isDisplayable() && !ui.openEditor.maySettleBeforeExit()) return false;
 
+        if (ui.locomotiveSettings != null && ui.locomotiveSettings.isDisplayable()
+            && !ui.locomotiveSettings.maySettleBeforeExit()) return false;
+
         // A non-modal frame with its own discard question; without it File > Exit would drop typing silently.
         return ui.routeEditor == null || !ui.routeEditor.isDisplayable() || ui.routeEditor.maySettleBeforeExit();
     }
@@ -288,6 +291,7 @@ final class EditorWindows
 
         // Whether a square was clicked in the editor this one replaces, asked now since the build is posted
         final boolean carried = clickCarried;
+        final String filterToCarry = filterCarried;
 
         // Set until the posted build shows the editor; every door that sends a train asks this too
         ui.editorOnItsWay = true;
@@ -322,6 +326,8 @@ final class EditorWindows
                 if (opening != null) editor.setAutonomyMode(opening);
 
                 if (carried) editor.carryTheClick();
+
+                if (filterToCarry != null) editor.carryTheFindingFilter(filterToCarry);
 
                 // Runs after render()'s own posted task shows the editor
                 javax.swing.SwingUtilities.invokeLater(() -> ui.editorOnItsWay = false);
@@ -449,13 +455,23 @@ final class EditorWindows
     /** Whether the editor about to open starts knowing a square was clicked; set only during `openCarryingTheClick`. */
     private boolean clickCarried = false;
 
+    /** The findings filter's text the editor about to open starts with, or null; set only during `openCarryingTheClick`. */
+    private String filterCarried = null;
+
     /**
      * Opens an editor in place of one that closed itself to change page, carrying whether a square had been clicked.
      * Cleared whatever the opening does, so a refused opening cannot hand the click to the next Edit.
      */
     void openCarryingTheClick(boolean clicked, Runnable open)
     {
+        openCarryingTheClick(clicked, null, open);
+    }
+
+    /** As above, also carrying the findings filter's text to the editor that opens (FR-073); null carries none. */
+    void openCarryingTheClick(boolean clicked, String findingFilter, Runnable open)
+    {
         clickCarried = clicked;
+        filterCarried = findingFilter;
 
         try
         {
@@ -464,6 +480,7 @@ final class EditorWindows
         finally
         {
             clickCarried = false;
+            filterCarried = null;
         }
     }
 
