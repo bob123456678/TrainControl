@@ -52,6 +52,10 @@ Right-click a locomotive button for its quick actions, such as function and spee
 
 ![Right-click menu on a locomotive button, showing options for function presets, preferred speed, and multi-unit setup](assets/ui_right_click.png?raw=true)
 
+The Locomotive Settings window, on its `Basic Settings` tab, with the locomotive's name, address, decoder and picture.
+
+![The Locomotive Settings window on its Basic Settings tab, with the name, decoder type, address, preset speed and picture of a locomotive](assets/locomotive_settings.png?raw=true)
+
 ![TrainControl locomotive selector, used to assign a locomotive from the database to a keyboard button](assets/ui_sel_loc.png?raw=true)
 
 Multi-units can be configured in TrainControl, which can be simpler than using the Central Station.
@@ -108,6 +112,10 @@ You need S88 sensors (at least one per station) and digital switches; signals ar
 **Full guide:** [The autonomy editor: a user guide](Automation.md)
 
 ![The autonomy editor: the track diagram with its stations named, a list of things to look at below it, and tools and settings on the right](assets/autonomy_editor3.png?raw=true)
+
+A station's settings are all in one window, beside a picture of the station and a table of what trains may do there.
+
+![The Station Settings window for a station called Bramley, with its name, what trains may do there, which sides trains may arrive from, and a picture of the station](assets/station_settings.png?raw=true)
 
 ![A train running under autonomy on the track diagram: its route ahead in blue, the track it has passed and still holds in dark gray, and a second train standing at its station](assets/autonomy3.png?raw=true)
 

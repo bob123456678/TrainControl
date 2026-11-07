@@ -363,7 +363,7 @@ The simplest arrangement that runs: two stations, one train, one piece of track 
 
 **C. Put the train somewhere.** Right-click Station A and choose `Place a Locomotive Here...`, then pick the train in the `Train` list. This is a statement of fact about your layout: the train really does need to be standing at A.
 
-![Steps A to C on a station's right-click menu: Station Settings..., and Place a Locomotive Here...](assets/automation/04-station-menu.png)
+![Steps A and C on a station's right-click menu: Station Settings..., and Place a Locomotive Here...](assets/automation/04-station-menu.png)
 
 **D. Save.** `Save Changes`, at the bottom of the editor's right-hand column.
 
