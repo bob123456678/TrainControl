@@ -86,4 +86,29 @@ public abstract class PageWindowTest
             model = null;
         }
     }
+
+    /** Every file in the layout's folder, by its path there, with a digest of its bytes. */
+    protected java.util.Map<String, String> fingerprint() throws Exception
+    {
+        java.util.Map<String, String> files = new java.util.TreeMap<>();
+
+        java.nio.file.Path root = sandbox.getFolder().toPath();
+
+        java.security.MessageDigest digest = java.security.MessageDigest.getInstance("SHA-256");
+
+        java.util.List<java.nio.file.Path> found = new java.util.ArrayList<>();
+
+        try (java.util.stream.Stream<java.nio.file.Path> walk = java.nio.file.Files.walk(root))
+        {
+            walk.filter(java.nio.file.Files::isRegularFile).forEach(found::add);
+        }
+
+        for (java.nio.file.Path file : found)
+        {
+            files.put(root.relativize(file).toString().replace('\\', '/'),
+                java.util.Base64.getEncoder().encodeToString(digest.digest(java.nio.file.Files.readAllBytes(file))));
+        }
+
+        return files;
+    }
 }

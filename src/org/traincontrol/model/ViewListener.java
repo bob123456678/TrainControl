@@ -105,6 +105,8 @@ public interface ViewListener
     public boolean wasLastSyncPartial();
     public List<String> getLayoutList();
     public List<String> getLayoutListByName();
+    public String getPageNameForId(int id);
+    public int getPageIdOf(String name);
     public LayoutDiagram getLayout(String name);
     public void syncLocomotive(String name);
     public boolean isFeedbackSet(String name);

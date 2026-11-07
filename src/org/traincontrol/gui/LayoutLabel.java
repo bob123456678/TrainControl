@@ -317,11 +317,11 @@ public final class LayoutLabel extends JLabel
                             {                  
                                 if (parent instanceof LayoutPopupUI)
                                 {
-                                    ((LayoutPopupUI) parent).goToLayoutPage(component.getRawAddress()); 
+                                    ((LayoutPopupUI) parent).followLink(component);
                                 }
                                 else
                                 {
-                                    tcUI.goToLayoutPage(component.getRawAddress());
+                                    tcUI.followLink(component);
                                 }
                             }  
                         }); 

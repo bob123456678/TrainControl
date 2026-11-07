@@ -151,6 +151,101 @@ public class LayoutDiagram
         this.pageId = pageId;
     }
 
+    /** @return the page's ID as a number, 0 when the index gave none or a damaged one (see `pageIdOrPosition`) */
+    public int getPageIdNumber()
+    {
+        return pageIdOrPosition(this.pageId, 0);
+    }
+
+    /**
+     * The pages that share an ID are given IDs of their own, all but one: the page the setup records under the ID keeps
+     * it when it is one of them, otherwise the first by name, and the others take fresh IDs above every one in use, in
+     * name order.  Nothing is written here: the caller decides whether the result goes to a file or stays in memory.
+     *
+     * @param nameToId each page's ID by name
+     * @param setupNames the page names the autonomy setup records under each ID, empty when there is none
+     * @param floor an ID no fresh one may be at or below
+     * @return the IDs after the tie is broken, in the order given
+     */
+    public static Map<String, Integer> dedupeIds(Map<String, Integer> nameToId, Map<Integer, String> setupNames,
+        int floor)
+    {
+        Map<Integer, List<String>> sharing = new TreeMap<>();
+
+        for (Map.Entry<String, Integer> each : nameToId.entrySet())
+        {
+            if (each.getValue() != null) sharing.computeIfAbsent(each.getValue(), k -> new ArrayList<>()).add(each.getKey());
+        }
+
+        int next = floor + 1;
+
+        for (Integer used : sharing.keySet()) if (used >= next) next = used + 1;
+
+        Map<String, Integer> out = new LinkedHashMap<>(nameToId);
+
+        for (Map.Entry<Integer, List<String>> group : sharing.entrySet())
+        {
+            if (group.getValue().size() < 2) continue;
+
+            List<String> names = new ArrayList<>(group.getValue());
+
+            java.util.Collections.sort(names);
+
+            String keeper = names.contains(setupNames.get(group.getKey())) ? setupNames.get(group.getKey()) : names.get(0);
+
+            for (String name : names)
+            {
+                if (!name.equals(keeper)) out.put(name, next++);
+            }
+        }
+
+        return out;
+    }
+
+    /**
+     * The page names the autonomy setup records under each page ID (its `pages` map), read from the file; empty when
+     * the layout has no setup or it cannot be read.
+     *
+     * @param path the layout folder, or null
+     * @return ID to name
+     */
+    public static Map<Integer, String> readSetupPageNames(String path)
+    {
+        Map<Integer, String> out = new TreeMap<>();
+
+        if (path == null) return out;
+
+        try
+        {
+            File setup = new File(Paths.get(path, "config", "autonomy", "setup.json").toString());
+
+            if (!setup.isFile()) return out;
+
+            org.json.JSONObject pages = new org.json.JSONObject(
+                new String(Files.readAllBytes(setup.toPath()), java.nio.charset.StandardCharsets.UTF_8)).optJSONObject("pages");
+
+            if (pages == null) return out;
+
+            for (String id : pages.keySet())
+            {
+                try
+                {
+                    out.put(Integer.valueOf(id), pages.getString(id));
+                }
+                catch (NumberFormatException | org.json.JSONException notAPage)
+                {
+                    // A damaged entry is not a page the setup knows
+                }
+            }
+        }
+        catch (IOException | org.json.JSONException unreadable)
+        {
+            // A setup that cannot be read knows no pages; the tie is then broken by name
+        }
+
+        return out;
+    }
+
     public String getName()
     {
         return this.name;
@@ -1505,6 +1600,10 @@ public class LayoutDiagram
             throw new IOException("The layout index could not be read, so the pages were not renumbered."
                 + "  Nothing was written.  Try again in a moment: " + getUnreadableIndex().getMessage());
         }
+
+        // Pages that share an id are told apart by the rule (the setup's own page keeps it, else name order), not by
+        // where the caller's list happens to put them
+        existing = dedupeIds(existing, readSetupPageNames(path), floor);
 
         // Zero is a real id: the first id issued is one above the floor and above every id already in the file.
         int next = floor + 1;

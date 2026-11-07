@@ -1411,7 +1411,8 @@ public class LayoutGrid
                     }
                     
                     // The address, and the protocol on a second line where it is not MM2
-                    text.setLines(c.getLogicalAddress() + redOrGreen, protocol);
+                    text.setLines(c.isLink() && c.getLinkPageName() != null ? c.getLinkPageName()
+                        : c.getLogicalAddress() + redOrGreen, protocol);
                     
                     container.add(text, gbc);
                     container.setComponentZOrder(text, 0);

@@ -2630,9 +2630,15 @@ public class LayoutEditor extends PositionAwareJFrame
 
                     // A link may be aimed at nothing, which setLogicalAddress cannot express; picking the first page
                     // would be the operator's choice made silently.
-                    if (lc.isLink() && newAddress <= 0)
+                    if (lc.isLink())
                     {
-                        lc.setLinkedPageIndex(-1);
+                        // The picker gives the page's ID plus one, or 0 for no page; `.artikel` beside the ID is the
+                        // page's place in the name-sorted list, which 3.0.8 reads
+                        Integer id = newAddress <= 0 ? null : newAddress - 1;
+
+                        String page = id == null ? null : parent.getModel().getPageNameForId(id);
+
+                        lc.setLinkTarget(id, page, page == null ? -1 : parent.getModel().getLayoutListByName().indexOf(page));
                     }
                     else
                     {

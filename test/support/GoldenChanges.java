@@ -9,7 +9,8 @@ import static org.testng.Assert.assertEquals;
 
 /**
  * A golden with the changes a branch makes on purpose, listed line by line: each row of the list is a golden line
- * number, the line as the golden has it and the line now ("(gone)" when there is none), tab-separated.  A row whose
+ * number, the line as the golden has it and the line now ("(gone)" when there is none, a backslash and n for a line
+ * break), tab-separated.  A row whose
  * line no longer matches the golden fails, so a changed golden cannot pass unnoticed.
  *
  * @author Adam
@@ -37,7 +38,8 @@ public final class GoldenChanges
 
             int at = Integer.parseInt(f[0]) - 1;
             assertEquals(lines.get(at), f[1], changes + " names golden line " + f[0] + " as it was");
-            lines.set(at, f[2].equals("(gone)") ? null : f[2]);
+            // A literal backslash and n in the new line is a line break, so a row can add a line
+            lines.set(at, f[2].equals("(gone)") ? null : f[2].replace("\\n", "\n"));
         }
 
         lines.removeIf(java.util.Objects::isNull);

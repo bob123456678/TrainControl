@@ -14,20 +14,40 @@ that list is what the window and every menu show, for a Central Station layout t
 position (the autonomy setup is keyed by it, which is why `writeLayoutIndex` keeps each page's id and writes the pages
 in the order it is given). The `page=N` line at the top of a page file is preserved exactly as the station wrote it.
 
-**An arrow's meaning is a separate matter, and does not follow the display order.** Adam: *"as far as autonomy configs,
-and file reads go, make sure behavior is unchanged"* and *"make sure there are no cs2 regressions either"*. An arrow's
-number stays a position in the NAME-SORTED list (`getLayoutListByName`), in the file, in memory and in the autonomy
-graph, as 3.0.8 reads it; a Central Station index is not in name order, so reading it as file order would send every
-arrow elsewhere. Anything that turns an arrow's number into a page, or a page into a number, uses
-`getLayoutListByName`; anything shown uses `getLayoutList`.
+**A link goes to a page by the page's ID** (FR-175). Adam: *"each page has an ID, and the ID on the link goes to that
+page with that ID. if pages don't have an ID on a remote layout, we number them in the order they appear and use those
+IDs."* Page position, name order and display order have no bearing on where a link goes.
+
+- **A layout saved by 3.1.0 writes the ID beside the old number:** `.zielseite=<id>` on the arrow's tile line, and
+  `.artikel` still the page's place in the NAME-SORTED list, kept right by every page edit as before, so 3.0.8 reads
+  the same layout correctly (3.0.8 carries a key it does not know through load, save and Duplicate; run on `v3_0_8`).
+  The cost: the name-sorted repoint stays in the writer, and when 3.0.8 re-picks an arrow's page the ID left on it wins
+  in 3.1.0.
+- **An arrow with no ID key** (every earlier version wrote only the number) holds a place in the name-sorted list on a
+  local layout. It resolves exactly as it always did and `MarklinControlStation.attachLinks` attaches the ID in memory;
+  nothing is written until its page is next saved. Two pages sharing the target's ID leave it going by its number until
+  the IDs are told apart. Read as an ID instead, all seven of the sample layout's arrows would change aim.
+- **A layout from the Central Station:** the arrow's number is the page's ID. A page that states no ID is numbered in
+  the order it appears, and pages that share an ID are told apart in memory, by name, the same way at every sync (the
+  first by name keeps it, the others take IDs above the highest), because the station's file cannot be written.
+  This changes where a station arrow goes when IDs and name positions differ. A copy downloaded to a folder is read as
+  a local layout. There is no real station sample with two arrows between pages whose IDs and names sort differently:
+  the station case rests on a stand-in.
+- **Two pages of a local layout that share an ID** are left alone on read and told apart at the next page edit
+  (`writeLayoutIndex`): the page the setup's `pages` map records under the ID keeps it, otherwise the first by name,
+  and the others take fresh IDs. Links to the shared ID go to the same keeper before and after.
+- **A link to a page that is gone** keeps its ID and says so (tooltip and log); the page coming back with its ID brings
+  its links back. An ID that was retired and issued again would revive them, which only happens with no setup to
+  remember the highest ID.
+- **Labels show the page's name:** "Link to page", the right-click item and the picker. The picker lists pages in the
+  order they are shown and hands back the page's ID plus one (0 for no page).
 
 - **The editor's up and down arrows move the selected page** and save at once, as a rename does
   (`LayoutFileActions.movePage`); at the top or bottom the arrow is grayed. **Sort Pages by Name** writes name order
   once, and writes nothing when the pages already are. Both rewrite `gleisbild.cs2` and nothing else, with the writer
   every page edit uses (`writeLayoutIndex`): the order changes, every id and the lines the writer keeps stay, and the
   header block is regenerated, so a `groesse` width a station wrote is dropped, as at every other page edit. Every
-  page file and `setup.json` stay byte for byte as they were, and no arrow is re-aimed, because the name-sorted list
-  does not move. A new page, a copy and a combined page go at the end. A Central Station layout cannot be edited, so its
+  page file and `setup.json` stay byte for byte as they were, and no arrow is re-aimed. A new page, a copy and a combined page go at the end. A Central Station layout cannot be edited, so its
   arrows are refused as other edits are.
 - **A layout in name order shows no change**, and 3.0.8, which sorts by name, reads a rearranged layout with every id
   and every arrow as before.
@@ -38,26 +58,25 @@ station omits carries the zero value) and what the files say: of the index files
 `0 stationer` .. `7 autonom annotated` have stated ids 1..7. Reading it as the page's POSITION would give two pages one
 id, keying both into one space in the autonomy setup.
 
-**A PAGE LINK IS STORED AS A POSITION, and it is the only thing that is.** Adam: *"right
-now, let's make artikel be the sorted index of the page - which i believe is already how it worked."* An arrow tile
-holds the destination's place in the name-sorted list, not its id. So:
+**A PAGE LINK'S NUMBER IS STILL A POSITION in the name-sorted list on a local layout** (Adam: *"right now, let's make
+artikel be the sorted index of the page - which i believe is already how it worked."*), kept beside the ID so that
+3.0.8 reads the layout right. So:
 
-- **Every operation that changes the set of page names re-aims the arrows.** Adding, renaming, duplicating, deleting and
-  combining all move the alphabet, and an arrow follows the page it pointed at; otherwise it would silently come to mean
-  another page (on the five pages of the sample layout, adding one page repoints four of seven arrows). **Combine is
+- **Every operation that changes the set of page names re-aims the number.** Adding, renaming, duplicating, deleting and
+  combining all move the alphabet, and a link follows the page it went to; the ID on it does not change. **Combine is
   covered too**: its copy is written before the re-aim, but the page is then refilled from the corrected sources and
   saved again.
 - **An arrow whose page is deleted points at nothing.** Adam: *"set the ID to -1. This shouldn't throw
   any errors, and simply resolve to nothing when clicked. Then, the user can set it to the right page
-  on their next edit."* Clicking it does nothing and its tooltip says so.
+  on their next edit."* Its number is -1, it keeps the ID, and its tooltip and the log say the page is gone.
 - **An arrow may not point at the page it is drawn on.** Adam: *"make sure links can only go to other
   pages, not themselves."* The page being edited is not offered in the list.
 - **An unpaired link is not marked on the diagram** (Adam: *"Marking links is not needed since we get error
   messages"*): the setup check's errors say where it is.
 
 **A page whose file will not read keeps its place in the list.** It comes back blank with a text tile at 1,1 saying it
-could not be loaded, because the list is what every arrow indexes into: a missing page would re-aim every arrow after
-it. An unhydrated cloud file is enough to cause that. Such a page is never saved, so a blank page is not written over
+could not be loaded, because the name-sorted list is what an old arrow's number indexes into: a missing page would
+re-aim every arrow after it; its own arrows go by their IDs once saved with them. An unhydrated cloud file is enough to cause that. Such a page is never saved, so a blank page is not written over
 the file somebody is trying to recover.
 
 **And its autonomy settings are kept, always.** Adam, asked whether the old "these pages

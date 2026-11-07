@@ -493,10 +493,10 @@ public class testArrowsKeepTheirMeaningInAnyDisplayOrder extends support.PageWin
     }
 
     /**
-     * The arrow picker lists the pages in the order they are shown and stores the name-sorted position of the page
-     * picked, and shows the page at the stored position.
+     * The arrow picker lists the pages in the order they are shown, gives the ID of the page picked, and shows the page
+     * an arrow goes to.
      *
-     * MUTATION: `LayoutEditorAddressPopup` indexes `getLayoutList` instead of `getLayoutListByName`, and this fails.
+     * MUTATION: `LayoutEditorAddressPopup` gives the page's place in the shown list instead of its ID, and this fails.
      */
     @Test
     public void testThePickerShowsPagesInFileOrderAndStoresTheNameSortedPlace() throws Exception
@@ -545,17 +545,20 @@ public class testArrowsKeepTheirMeaningInAnyDisplayOrder extends support.PageWin
 
         final int stored = tile.getRawAddress();
 
-        SwingUtilities.invokeAndWait(() -> picker.setAddress(Integer.toString(stored + 1)));
+        // An old arrow's number is a place in the name-sorted list, so the page it goes to is the one there
+        assertEquals(tile.getLinkPageName(), byName.get(stored), "precondition: the arrow does not go to its number's page");
+
+        SwingUtilities.invokeAndWait(() -> picker.setAddress(Integer.toString(tile.getLogicalAddress())));
 
         assertEquals(String.valueOf(Components.onTheEventThread(choices::getSelectedItem)), byName.get(stored),
-            "the picker shows another page than the name-sorted list has at the arrow's number");
+            "the picker shows another page than the one the arrow goes to");
 
         final String other = shownOrder.get(0);
 
         SwingUtilities.invokeAndWait(() -> choices.setSelectedItem(other));
 
-        assertEquals(Components.onTheEventThread(picker::getAddress), Integer.toString(byName.indexOf(other) + 1),
-            "the picker does not store the name-sorted place of the page picked");
+        assertEquals(Components.onTheEventThread(picker::getAddress), Integer.toString(model.getPageIdOf(other) + 1),
+            "the picker does not give the ID of the page picked");
     }
 
     // ------------------------------------------------------------------------------------------------
@@ -711,30 +714,5 @@ public class testArrowsKeepTheirMeaningInAnyDisplayOrder extends support.PageWin
         for (String name : order) out.append("seite\n .id=").append(ids.get(name)).append("\n .name=").append(name).append("\n");
 
         Files.write(index.toPath(), out.toString().getBytes(StandardCharsets.UTF_8));
-    }
-
-    /** Every file in the layout's folder, by its path there, with a digest of its bytes. */
-    private Map<String, String> fingerprint() throws Exception
-    {
-        Map<String, String> files = new TreeMap<>();
-
-        java.nio.file.Path root = sandbox.getFolder().toPath();
-
-        java.security.MessageDigest digest = java.security.MessageDigest.getInstance("SHA-256");
-
-        List<java.nio.file.Path> found = new ArrayList<>();
-
-        try (java.util.stream.Stream<java.nio.file.Path> walk = Files.walk(root))
-        {
-            walk.filter(Files::isRegularFile).forEach(found::add);
-        }
-
-        for (java.nio.file.Path file : found)
-        {
-            files.put(root.relativize(file).toString().replace('\\', '/'),
-                java.util.Base64.getEncoder().encodeToString(digest.digest(Files.readAllBytes(file))));
-        }
-
-        return files;
     }
 }

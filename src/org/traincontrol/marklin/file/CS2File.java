@@ -179,6 +179,27 @@ public final class CS2File
     {
         return getLayoutMasterURL(this.layoutDataLoc);
     }
+
+    /** Whether the layout is read from the Central Station itself, not from a folder of ours. */
+    public boolean isFromStation()
+    {
+        return getDefaultLayoutDataLoc().equals(this.layoutDataLoc);
+    }
+
+    /** @return the layout folder's path when it is one of ours, null for the station */
+    public String localLayoutFolder()
+    {
+        if (isFromStation()) return null;
+
+        try
+        {
+            return java.nio.file.Paths.get(new URL(this.layoutDataLoc.replaceAll(" ", "%20")).toURI()).toString();
+        }
+        catch (Exception notAFolder)
+        {
+            return null;
+        }
+    }
     
     public static String getLayoutMasterURL(String dataPath)
     {
@@ -2104,6 +2125,8 @@ public final class CS2File
      */
     private List<Map<String, String>> parseLayoutIndex() throws Exception
     {
+        final boolean fromStation = isFromStation();
+
         List<Map<String, String> > l = parseFile(fetchURL(getLayoutMasterURL()));
 
         List<Map<String, String>> out = new ArrayList<>();
@@ -2123,12 +2146,29 @@ public final class CS2File
                 Map<String, String> page = new java.util.LinkedHashMap<>();
                 page.put("name", name);
                 // Through LayoutDiagram's rule, not a second copy: a non-numeric `.id=` must come out as the page's
-                // position, as in readLayoutIndexIds.
+                // position, as in readLayoutIndexIds.  A station's pages that state none are numbered in the order
+                // they appear.
                 page.put("id", String.valueOf(
                     org.traincontrol.base.LayoutDiagram.pageIdOrPosition(m.get("id"), position)));
 
+                if (m.get("id") == null && fromStation) page.put("id", String.valueOf(position));
+
                 out.add(page);
             }
+        }
+
+        // The station's own file cannot be written, so two pages sharing an ID are told apart here, in memory only, by
+        // the same rule every sync (name order breaks the tie)
+        if (fromStation)
+        {
+            Map<String, Integer> byName = new java.util.LinkedHashMap<>();
+
+            for (Map<String, String> page : out) byName.put(page.get("name"), Integer.valueOf(page.get("id")));
+
+            Map<String, Integer> deduped = org.traincontrol.base.LayoutDiagram.dedupeIds(byName,
+                new java.util.TreeMap<Integer, String>(), 0);
+
+            for (Map<String, String> page : out) page.put("id", String.valueOf(deduped.get(page.get("name"))));
         }
 
         return out;
@@ -2557,6 +2597,9 @@ public final class CS2File
                             if (added != null)
                             {
                                 added.setUnmodelledKeys(m);
+
+                                // The page a link goes to, when a 3.1.0 save wrote its ID
+                                added.setLinkPageIdFromFile(m.get("zielseite"));
 
                                 // And the file's own word for the type: the type mapping is many-to-one, so writing the
                                 // canonical word back would collapse every variant the file distinguished.
