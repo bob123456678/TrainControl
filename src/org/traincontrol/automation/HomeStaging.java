@@ -57,22 +57,25 @@ public final class HomeStaging
 
     /**
      * Route work one plan may spend (`spent`), shared out between the passes (OB-230).  Work, not time, so a plan is
-     * the same on any machine at any load (OB-413): about 15 s on the owner's machine, at 0.1 to 0.3 us a unit.  An
-     * arrangement with no solution says NO_PLAN_FOUND within it.
+     * the same on any machine at any load (OB-413).  A unit is 0.08 to 0.09 us on the owner's machine whatever the train
+     * count, so this is about 15 s there.  An arrangement with no solution says NO_PLAN_FOUND within it.
      */
-    private static final long SEARCH_BUDGET = 90000000L;
+    private static final long SEARCH_BUDGET = 175000000L;
+
+    /**
+     * What an edge a route tries costs, in units of one place its train's own-tail walk passes (OB-413): measured, the
+     * edge and its checks take as long as about eight places of the walk, which is most of a route search's time.
+     */
+    private static final int EDGE_COST = 8;
 
     /** The budget this planner uses; a field so a test can shrink it. */
     private long budget = SEARCH_BUDGET;
 
-    /** Route work spent by the search in progress, counted in `firstClearRoute`: routes, edges tried and checked. */
+    /** Route work spent by the search in progress, counted in `firstClearRoute`: routes, edges tried, places walked. */
     private long spent;
 
     /** Whether a pass stopped at its share of the budget or at SEARCH_LIMIT with arrangements still open. */
     private boolean ranOut;
-
-    /** The trains with a length, whose tails each edge a route tries is asked about: part of what an edge costs. */
-    private final int tailed;
 
     /** Expansions allowed per route search.  A point can be revisited under different accessory settings. */
     private static final int ROUTE_SEARCH_LIMIT = 20000;
@@ -158,15 +161,6 @@ public final class HomeStaging
         this.stations = stations;
         this.sensorsSet = sensorsSet;
         this.pointsBySensor = pointsBySensor;
-
-        int withALength = 0;
-
-        for (Locomotive l : new LinkedHashSet<>(start.values()))
-        {
-            if (l.getTrainLength() != null && l.getTrainLength() > 0) withALength++;
-        }
-
-        this.tailed = withALength;
 
     }
 
@@ -1039,7 +1033,10 @@ public final class HomeStaging
         // arrival at a terminus and at a reversing point alike, but a terminus flip turns a backed-in train round to
         // face out, so it is spent; seeding true there would count the same flip twice.
         queue.add(new Candidate(from, new LinkedList<Edge>(),
-            new HashMap<String, Accessory.accessorySetting>(), from.isReversing()));
+            new HashMap<String, Accessory.accessorySetting>(), from.isReversing(), 0));
+
+        // The own-tail walk below returns at once for a train with no length, and costs nothing then.
+        boolean walksItsBody = loc.getTrainLength() != null && loc.getTrainLength() > 0;
 
         while (!queue.isEmpty() && expansions++ < ROUTE_SEARCH_LIMIT)
         {
@@ -1056,7 +1053,7 @@ public final class HomeStaging
             {
                 Point next = e.getEnd();
 
-                this.spent++;
+                this.spent += EDGE_COST;
 
                 // The copy rule is NOT applied here ("menu and autonomy only"): `Layout.bfs` refuses a route passing
                 // another copy of the square it starts or ends at, so the menu and autonomy never offer a lap, but
@@ -1069,8 +1066,6 @@ public final class HomeStaging
                 boolean turned = current.turned || next.isReversing();
 
                 if (!canEnter(next, loc, blocked, state)) continue;
-
-                this.spent += this.tailed * (1 + e.getPlaceIds().size());
 
                 // And not through a square held back by an occupied one (OB-295): `isPathClear` asks FR-001 of every
                 // square a route arrives at, so a plan through one is OB-073's plan.  Asked of the planned state; a
@@ -1098,8 +1093,10 @@ public final class HomeStaging
                 List<Edge> route = new LinkedList<>(current.route);
                 route.add(e);
 
-                // The copy, and the walk of its own body along it below, are most of what a long route costs.
-                this.spent += route.size() * (ownBody == null || ownBody.isEmpty() ? 1 : 2);
+                int places = current.places + e.getPlaceIds().size();
+
+                // The walk of its own body along it below visits every place of the route: most of a search's time.
+                if (walksItsBody) this.spent += places;
 
                 // And not round a loop into its own tail (OB-294), as `Layout.isPathClear` asks it.  Prefix-closed,
                 // like the room rule below: no extension of a route that meets the tail can clear it, so pruning loses
@@ -1159,7 +1156,7 @@ public final class HomeStaging
                 }
 
                 // A terminus may be arrived at but not driven through, so it is never expanded
-                if (!next.isTerminus()) queue.add(new Candidate(next, route, commands, turned));
+                if (!next.isTerminus()) queue.add(new Candidate(next, route, commands, turned, places));
             }
         }
 
@@ -1193,13 +1190,17 @@ public final class HomeStaging
         /** Whether a reversing point has been passed on the way here: part of the STATE, not of the square. */
         private final boolean turned;
 
+        /** The places along `route`, which is what walking it costs (OB-413). */
+        private final int places;
+
         private Candidate(Point at, List<Edge> route, Map<String, Accessory.accessorySetting> commands,
-            boolean turned)
+            boolean turned, int places)
         {
             this.at = at;
             this.route = route;
             this.commands = commands;
             this.turned = turned;
+            this.places = places;
         }
     }
 
