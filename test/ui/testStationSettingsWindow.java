@@ -1806,7 +1806,9 @@ public class testStationSettingsWindow
 
     /**
      * On every station of the page each side's marks sit on that side's axis: the way out with its tip at the edge and the
-     * way in just behind it, pointing in; both inside the station's square, apart, and clear of every next square.
+     * way in just behind it, pointing in; both inside the station's square, apart, and clear of every next square.  A
+     * curve keeps its ways in off the axis, each plainly nearer its own side (Adam: "I7 put
+     * the arrows elsewhere just for the popup").
      *
      * MUTATION: draw the way in a quarter square along the edge, where the diagram puts its arrival chevrons, and this
      * fails.
@@ -1832,6 +1834,8 @@ public class testStationSettingsWindow
 
             inside.grow(1, 1);
 
+            boolean bent = Components.onTheEventThread(() -> isCurve(square));
+
             for (String side : new String[] {"N", "E", "S", "W"})
             {
                 java.awt.Shape out = marks.get("OUT." + side);
@@ -1852,7 +1856,23 @@ public class testStationSettingsWindow
 
                     double off = axis.ptLineDist(middle[0], middle[1]);
 
-                    if (off > 1.0) wrong.add(square + " " + kind + side + " is " + off + " off its axis");
+                    // "I7 put the arrows elsewhere just for the popup": a curve's two ways in leave the axis, kept by their own edge
+                    if (kind.equals("IN.") && bent)
+                    {
+                        double[] own = edgeMiddle(at, side);
+                        double ownGap = Math.hypot(middle[0] - own[0], middle[1] - own[1]);
+
+                        for (String other : new String[] {"N", "E", "S", "W"})
+                        {
+                            double[] there = edgeMiddle(at, other);
+
+                            if (!other.equals(side) && Math.hypot(middle[0] - there[0], middle[1] - there[1]) <= ownGap)
+                            {
+                                wrong.add(square + " IN." + side + " is not plainly near its own side");
+                            }
+                        }
+                    }
+                    else if (off > 1.0) wrong.add(square + " " + kind + side + " is " + off + " off its axis");
 
                     if (!inside.contains(mark.getBounds2D())) wrong.add(square + " " + kind + side + " leaves the station's square");
 
@@ -1885,13 +1905,35 @@ public class testStationSettingsWindow
         assertTrue(wrong.isEmpty(), "marks off their axis or overlapping: " + wrong);
     }
 
+    /** Whether the station is a curve. */
+    private static boolean isCurve(TileKey square)
+    {
+        for (org.traincontrol.automationui.TilePorts.Route road : session.getRoutes(square).values())
+        {
+            if (road.getA().opposite() != road.getB() && road.getA() != road.getB()) return true;
+        }
+
+        return false;
+    }
+
+    private static double[] edgeMiddle(java.awt.Rectangle at, String side)
+    {
+        switch (side)
+        {
+            case "N": return new double[] {at.getCenterX(), at.y};
+            case "S": return new double[] {at.getCenterX(), at.y + at.height};
+            case "E": return new double[] {at.x + at.width, at.getCenterY()};
+            default: return new double[] {at.x, at.getCenterY()};
+        }
+    }
+
     /**
      * Every mark of every station on every page is pressed by a click at its middle, though on a curve a way in's chevron
      * lies inside the box round the way out beside it; and a real click on TopMainR2Inter's way in from the east leaves
-     * May Depart alone.  Two ways in a curve draws on one spot cannot be told apart, and only they are let off.
+     * May Depart alone.  Nothing is let off, the two ways in of a curve included.
      *
      * MUTATION: have `StationPicture.Mark.hit` test the shape's bounds grown by 3 pixels, taking the first mark that
-     * holds the point, and this fails on 8 marks of 4 stations.
+     * holds the point, or put `apartChevron`'s chevron back on the chord, and this fails.
      */
     @Test(timeOut = 300000)
     public void testEveryMarkIsPressedByAClickAtItsMiddle() throws Exception
@@ -1921,8 +1963,6 @@ public class testStationSettingsWindow
         StationDoors.close(first);
 
         List<String> wrong = new java.util.ArrayList<>();
-        List<String> onOneSpot = new java.util.ArrayList<>();
-
         int marks = 0;
 
         for (String page : pages)
@@ -1937,7 +1977,7 @@ public class testStationSettingsWindow
                 {
                     StationSettingsWindow window = StationDoors.open(onPanel, square);
 
-                    marks += Components.onTheEventThread(() -> pressedWrong(window, wrong, onOneSpot));
+                    marks += Components.onTheEventThread(() -> pressedWrong(window, wrong));
 
                     StationDoors.close(window);
                 }
@@ -1951,16 +1991,10 @@ public class testStationSettingsWindow
         assertTrue(marks > 100, "precondition: only " + marks + " marks were clicked");
 
         assertTrue(wrong.isEmpty(), "a click at a mark's middle presses another: " + wrong);
-
-        // The two ways in of a curved station lie on one chord, each behind its way out, and meet in the middle (FR-111)
-        for (String mark : onOneSpot) assertTrue(mark.contains(" IN."), "marks other than two ways in on one spot: " + onOneSpot);
     }
 
-    /**
-     * Each of the window's marks asked what a click at its middle presses; one line in `wrong` per other answer.  Two
-     * marks whose middles lie within a pixel are drawn on one spot, which no click can tell apart: each goes in `onOneSpot`.
-     */
-    private static int pressedWrong(StationSettingsWindow window, List<String> wrong, List<String> onOneSpot)
+    /** Each of the window's marks asked what a click at its middle presses; one line in `wrong` per other answer. */
+    private static int pressedWrong(StationSettingsWindow window, List<String> wrong)
     {
         int asked = 0;
 
@@ -1968,25 +2002,23 @@ public class testStationSettingsWindow
 
         marks.keySet().removeIf(key -> key.startsWith("SQUARE") || key.startsWith("AXIS"));
 
+        List<String> keys = new java.util.ArrayList<>(marks.keySet());
+
+        for (int i = 0; i < keys.size(); i++)
+        {
+            for (int j = i + 1; j < keys.size(); j++)
+            {
+                java.awt.geom.Area both = new java.awt.geom.Area(marks.get(keys.get(i)));
+
+                both.intersect(new java.awt.geom.Area(marks.get(keys.get(j))));
+
+                if (!both.isEmpty()) wrong.add(window.squareForTest() + " " + keys.get(i) + " overlaps " + keys.get(j));
+            }
+        }
+
         for (Map.Entry<String, java.awt.Shape> each : marks.entrySet())
         {
             double[] middle = middleOf(each.getValue());
-
-            boolean together = false;
-
-            for (Map.Entry<String, java.awt.Shape> other : marks.entrySet())
-            {
-                double[] there = middleOf(other.getValue());
-
-                together |= other != each && Math.hypot(there[0] - middle[0], there[1] - middle[1]) < 1;
-            }
-
-            if (together)
-            {
-                onOneSpot.add(window.squareForTest() + " " + each.getKey());
-
-                continue;
-            }
 
             String pressed = window.pictureMarkAtForTest(new java.awt.Point((int) Math.round(middle[0]),
                 (int) Math.round(middle[1])));
