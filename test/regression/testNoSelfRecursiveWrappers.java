@@ -675,8 +675,10 @@ public class testNoSelfRecursiveWrappers
             for (String hit : reachesIntoThePanel(code)) seen.add(hit.substring(0, hit.indexOf(':')));
         }
 
-        assertEquals(seen, new java.util.HashSet<>(java.util.Arrays.asList("session", "promptName", "applyLength")),
-            "the helpers are expected to reach all three through `editor`, which is what shows the pattern matches");
+        // `promptName` has no helper caller since the popup's Rename item moved into the Station Settings window; the
+        // panel's own `promptNameFor` still calls it, so the outside check below still guards it.
+        assertEquals(seen, new java.util.HashSet<>(java.util.Arrays.asList("session", "applyLength")),
+            "the helpers are expected to reach both through `editor`, which is what shows the pattern matches");
 
         List<File> files = javaFilesUnder("src/org/traincontrol/gui");
 
