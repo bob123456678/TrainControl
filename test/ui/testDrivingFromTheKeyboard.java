@@ -944,7 +944,7 @@ public class testDrivingFromTheKeyboard
 
         model.receiveMessage(support.Packets.accessoryEcho(acc, true));
 
-        Thread.sleep(500);
+        keySendingHasFinished();
 
         assertEquals(acc.getNumActuations(), counted, "re-firing red counted as an actuation");
         assertTrue(lit(address, true), "red is not lit after it was fired again");
@@ -1029,7 +1029,7 @@ public class testDrivingFromTheKeyboard
 
             click(321, true);
 
-            Thread.sleep(300);
+            keySendingHasFinished();
 
             assertTrue(wire.accessoryCommandsSince(quiet, MarklinAccessory.UIDfromAddress(320, keyboardProtocol())).isEmpty(),
                 "a click past the MM2 addresses sent a command");
@@ -1277,13 +1277,11 @@ public class testDrivingFromTheKeyboard
                 "the accessory key asked something else");
         }
 
-        Components.settle();
+        keySendingHasFinished();
 
         assertEquals(lit(address, true), was, "Cancel changed the red half");
         assertEquals(lit(address, false), !was, "Cancel changed the green half");
         assertEquals(model.getAccessoryState(address, keyboardProtocol()), state, "Cancel switched the accessory");
-
-        Thread.sleep(300);
 
         assertTrue(wire.accessoryCommandsSince(mark, uidOf(address)).isEmpty(), "Cancel sent the accessory's command");
         assertTrue(wire.systemCommandsSince(mark, CS2Message.CMD_SYSSUB_GO).isEmpty(), "Cancel turned the power on");
@@ -1363,7 +1361,7 @@ public class testDrivingFromTheKeyboard
 
             waitFor(() -> !support.AccessoryCommands.positionsTo(seen, uidOf(address)).isEmpty());
 
-            Thread.sleep(300);
+            keySendingHasFinished();
         }
         finally
         {
@@ -1376,6 +1374,15 @@ public class testDrivingFromTheKeyboard
     private interface ThrowingRunnable
     {
         void run() throws Exception;
+    }
+
+    /** Lets the event thread finish, then waits for the thread a key click hands its command to. */
+    private static void keySendingHasFinished()
+    {
+        Components.settle();
+
+        assertTrue(Components.waitForThreadsNamed(TrainControlUI.KEYBOARD_SWITCH_THREAD, WAIT),
+            "the key's sending thread did not finish");
     }
 
     /** A click on a half of the key for an address on the tab showing, as the operator's click does. */

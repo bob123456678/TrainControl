@@ -502,15 +502,15 @@ public class testATimetableEntryKeepsItsSquaresThroughRenames
     {
         SwingUtilities.invokeLater(() -> ui.openAutonomyEditorOnPage(PAGE));
 
-        for (long end = System.currentTimeMillis() + 60000; open == null && System.currentTimeMillis() < end; )
+        support.Components.waitFor(() ->
         {
-            Thread.sleep(100);
-
             for (java.awt.Window window : java.awt.Window.getWindows())
             {
                 if (window.isShowing() && window instanceof LayoutEditor) open = window;
             }
-        }
+
+            return open != null;
+        }, 60000);
 
         assertNotNull(open, "the autonomy editor did not open on " + PAGE);
 
@@ -683,11 +683,7 @@ public class testATimetableEntryKeepsItsSquaresThroughRenames
 
     private static void untilItHasGone(java.awt.Window editor) throws Exception
     {
-        for (long end = System.currentTimeMillis() + 30000; (editor.isDisplayable() || ui.whyLayoutCannotBeEdited() != null)
-            && System.currentTimeMillis() < end; )
-        {
-            Thread.sleep(50);
-        }
+        support.Components.waitFor(() -> !editor.isDisplayable() && ui.whyLayoutCannotBeEdited() == null, 30000);
 
         assertFalse(editor.isDisplayable(), "the editor did not close");
     }
@@ -705,12 +701,7 @@ public class testATimetableEntryKeepsItsSquaresThroughRenames
     /** Pumps the event queue and gives a coalesced rebuild and the cards after it their turn. */
     private static void settle() throws Exception
     {
-        for (int turn = 0; turn < 10; turn++)
-        {
-            Thread.sleep(50);
-
-            SwingUtilities.invokeAndWait(() -> { });
-        }
+        support.Components.settle();
     }
 
     // ----------------------------------------------------------- what the claims read

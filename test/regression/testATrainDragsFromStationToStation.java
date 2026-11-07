@@ -1434,10 +1434,7 @@ public class testATrainDragsFromStationToStation
 
             later(() -> cancel.invoke(editor));
 
-            for (int wait = 0; wait < 100 && editor.isDisplayable(); wait++)
-            {
-                Thread.sleep(50);
-            }
+            support.Components.waitFor(() -> !editor.isDisplayable(), 5000);
         }
 
         settle();
@@ -1473,28 +1470,20 @@ public class testATrainDragsFromStationToStation
 
         showTheTrains();
 
-        long giveUp = System.currentTimeMillis() + 20000;
+        final Fixture[] found = new Fixture[1];
 
-        while (true)
-        {
-            final Fixture[] found = new Fixture[1];
+        support.Components.waitFor(() -> support.Components.onTheEventThread(() -> (found[0] = look(occupied)) != null), 20000);
 
-            SwingUtilities.invokeAndWait(() -> found[0] = look(occupied));
+        if (found[0] != null) return found[0];
 
-            if (found[0] != null) return found[0];
+        final String[] why = new String[1];
 
-            if (System.currentTimeMillis() > giveUp)
-            {
-                final String[] why = new String[1];
+        SwingUtilities.invokeAndWait(() -> why[0] = diagnose());
 
-                SwingUtilities.invokeAndWait(() -> why[0] = diagnose());
+        fail("precondition: no drawn train, " + (occupied ? "occupied" : "empty")
+            + " station and plain track square on " + PAGE + ": " + why[0]);
 
-                fail("precondition: no drawn train, " + (occupied ? "occupied" : "empty")
-                    + " station and plain track square on " + PAGE + ": " + why[0]);
-            }
-
-            Thread.sleep(100);
-        }
+        return null;
     }
 
     /** The frozen railway stands trains on this page once the locomotive list has arrived; two are needed. */
@@ -1868,10 +1857,7 @@ public class testATrainDragsFromStationToStation
     {
         LayoutLabel start = labelOf(from);
 
-        for (int wait = 0; wait < 100 && !onTheEventThreadValue(() -> start.trainDrawnAt(center(start))); wait++)
-        {
-            Thread.sleep(100);
-        }
+        support.Components.waitFor(() -> support.Components.onTheEventThread(() -> start.trainDrawnAt(center(start))), 10000);
 
         Mouse.drag(start, labelOf(to));
         settle();

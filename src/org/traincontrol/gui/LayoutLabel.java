@@ -57,6 +57,9 @@ public final class LayoutLabel extends JLabel
     private final int size;
     private final TrainControlUI tcUI;
     
+    /** The name of the thread that asks a route tile's conflict question and then runs the route. */
+    public static final String ROUTE_CONFLICT_THREAD = "TrainControl route conflict";
+
     // Temporarily highlight changed tiles
     private static final int HIGHLIGHT_DURATION = 2250;
     private static final int CLICK_TIMEOUT = HIGHLIGHT_DURATION + 250;
@@ -526,7 +529,7 @@ public final class LayoutLabel extends JLabel
                                                 }
 
                                                 component.execSwitching();
-                                            }).start();
+                                            }, ROUTE_CONFLICT_THREAD).start();
 
                                             return;
                                         }

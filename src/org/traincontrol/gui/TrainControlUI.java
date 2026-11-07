@@ -15717,6 +15717,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         return false;
     }
 
+    /** The name of the thread that sends a keyboard key's command, for tests that wait for it to finish. */
+    public static final String KEYBOARD_SWITCH_THREAD = "TrainControl keyboard switch";
+
     /** A half of a key was clicked: asks what has to be asked, then sends exactly that color, lit already or not (FR-050). */
     private void keyboardKeyClicked(int address, boolean red)
     {
@@ -15761,7 +15764,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 }
 
                 this.model.setAccessoryState(switchId, protocol, red);
-            }).start();
+            }, KEYBOARD_SWITCH_THREAD).start();
     }
 
     /** The generated keys' handler: those keys are no longer shown, and the new ones go through `keyboardKeyClicked`. */

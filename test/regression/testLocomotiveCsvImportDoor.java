@@ -145,15 +145,10 @@ public class testLocomotiveCsvImportDoor
 
             SwingUtilities.invokeLater(door::doClick);
 
-            for (long end = System.currentTimeMillis() + 60000; !until.test(seen) && System.currentTimeMillis() < end; )
-            {
-                Thread.sleep(100);
-            }
+            support.Components.waitFor(() -> until.test(seen), 60000);
 
             // WHATEVER ELSE IT POSTS
-            Thread.sleep(500);
-
-            for (int turn = 0; turn < 6; turn++) SwingUtilities.invokeAndWait(() -> { });
+            support.Components.settle();
         }
         finally
         {
@@ -699,11 +694,7 @@ public class testLocomotiveCsvImportDoor
             {
                 new Thread(() -> model.execRoute(route)).start();
 
-                for (long end = System.currentTimeMillis() + 5000; !model.getRoute(route).isExecuting()
-                    && System.currentTimeMillis() < end; )
-                {
-                    Thread.sleep(20);
-                }
+                support.Components.waitFor(() -> model.getRoute(route).isExecuting(), 5000);
 
                 assertNotNull(model.runningRouteDriving(loc), "precondition: the route is not driving the locomotive");
 

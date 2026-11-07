@@ -41,6 +41,16 @@ public class testAPageWindowsSquaresAskOverIt
 
     private static final String PAGE = "1 - Junction";
 
+    /** Lets the event thread finish, then waits for the diagram's switching thread to run what the click queued. */
+    private static void switchingHasFinished()
+    {
+        Components.settle();
+
+        assertTrue(Components.switchingIdle(PATIENCE_MS), "the switching thread did not finish");
+        assertTrue(Components.waitForThreadsNamed(LayoutLabel.ROUTE_CONFLICT_THREAD, PATIENCE_MS),
+            "the route question's thread did not finish");
+    }
+
     private static final TileKey TURNOUT = new TileKey(PAGE, 5, 3);
 
     private static final int ROUTE_ID = 900;
@@ -189,7 +199,7 @@ public class testAPageWindowsSquaresAskOverIt
 
         assertThePowerQuestion(AskingWindows.tileIn(ui, page, TURNOUT), page, I18n.t("ui.cancel"));
 
-        Thread.sleep(300);
+        switchingHasFinished();
 
         assertEquals(turnoutWithThePowerOff().isSwitched(), was, "Cancel threw the turnout");
         assertFalse(model.getPowerState(), "Cancel turned the power on");
@@ -316,7 +326,7 @@ public class testAPageWindowsSquaresAskOverIt
 
             AskingWindows.assertClosingTakesTheQuestion(page);
 
-            Thread.sleep(300);
+            switchingHasFinished();
         }
         finally
         {
@@ -433,7 +443,7 @@ public class testAPageWindowsSquaresAskOverIt
 
         assertTheProtectionQuestion(page, I18n.t("ui.cancel"));
 
-        Thread.sleep(300);
+        switchingHasFinished();
 
         assertTrue(signal.isSwitched(), "Cancel set the protecting signal green");
     }
@@ -676,7 +686,7 @@ public class testAPageWindowsSquaresAskOverIt
 
         assertTheRouteQuestion(page, signal, I18n.t("ui.cancel"));
 
-        Thread.sleep(300);
+        switchingHasFinished();
 
         assertTrue(signal.isSwitched(), "Cancel ran the route");
     }
