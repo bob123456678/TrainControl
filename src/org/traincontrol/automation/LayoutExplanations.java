@@ -57,7 +57,7 @@ final class LayoutExplanations
      *
      * @return the reason, or null where a station can be reached
      */
-    private String whyItReachesNoStation(Point at)
+    String whyItReachesNoStation(Point at)
     {
         if (at == null || owner.canReachAnyDestination(at)) return null;
 

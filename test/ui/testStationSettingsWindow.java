@@ -839,8 +839,11 @@ public class testStationSettingsWindow
             }
         }
 
-        assertFalse(window.drawnForTest(StandingRules.Row.SENT_THROUGH, "both").containsValue(StandingRules.Answer.YES),
-            "both off still shows a way through");
+        for (String tier : new String[] {"auto", "hand"})
+        {
+            assertFalse(window.drawnForTest(StandingRules.Row.SENT_THROUGH, tier).containsValue(StandingRules.Answer.YES),
+                "both off still shows a way through");
+        }
     }
 
     /**
@@ -1599,7 +1602,7 @@ public class testStationSettingsWindow
 
         StationSettingsWindow window = StationDoors.open(panel, square);
 
-        assertTrue(Components.onTheEventThread(() -> window.drawnForTest(StandingRules.Row.SENT_THROUGH, "both"))
+        assertTrue(Components.onTheEventThread(() -> window.drawnForTest(StandingRules.Row.SENT_THROUGH, "hand"))
             .containsValue(StandingRules.Answer.YES), "precondition: trains run through it");
 
         assertTrue(Components.onTheEventThread(() -> window.pictureForTest().getTraces().isEmpty()),
@@ -1807,6 +1810,120 @@ public class testStationSettingsWindow
         assertTrue(sides >= 20, "precondition: only " + sides + " sides were looked at");
 
         assertTrue(wrong.isEmpty(), "marks off their axis or overlapping: " + wrong);
+    }
+
+    /**
+     * Every mark of every station on every page is pressed by a click at its middle, though on a curve a way in's chevron
+     * lies inside the box round the way out beside it; and a real click on TopMainR2Inter's way in from the east leaves
+     * May Depart alone.  Two ways in a curve draws on one spot cannot be told apart, and only they are let off.
+     *
+     * MUTATION: have `StationPicture.Mark.hit` test the shape's bounds grown by 3 pixels, taking the first mark that
+     * holds the point, and this fails on 8 marks of 4 stations.
+     */
+    @Test(timeOut = 300000)
+    public void testEveryMarkIsPressedByAClickAtItsMiddle() throws Exception
+    {
+        Set<String> pages = Components.onTheEventThread(() ->
+        {
+            Set<String> out = new java.util.TreeSet<>();
+
+            for (TileKey each : session.getReducer().getPoints().keySet()) out.add(each.getPage());
+
+            return out;
+        });
+
+        StationSettingsWindow first = StationDoors.open(panel,
+            Components.onTheEventThread(() -> support.AskingWindows.stationNamed(session, "TopMainR2Inter")));
+
+        javax.swing.JComboBox<?> depart = StationDoors.part(first, "station.depart.0", javax.swing.JComboBox.class);
+
+        Object before = Components.onTheEventThread(depart::getSelectedItem);
+
+        clickOn(first, "IN.E");
+        StationDoors.current(first);
+
+        assertEquals(Components.onTheEventThread(depart::getSelectedItem), before,
+            "a click on TopMainR2Inter's way in from the east changed May Depart");
+
+        StationDoors.close(first);
+
+        List<String> wrong = new java.util.ArrayList<>();
+        List<String> onOneSpot = new java.util.ArrayList<>();
+
+        int marks = 0;
+
+        for (String page : pages)
+        {
+            LayoutEditor on = PAGE.equals(page) ? editor : frozen.editorOn(page);
+
+            AutonomyEditorPanel onPanel = Components.onTheEventThread(() -> on.getAutonomyPanel());
+
+            try
+            {
+                for (TileKey square : stationsOn(page))
+                {
+                    StationSettingsWindow window = StationDoors.open(onPanel, square);
+
+                    marks += Components.onTheEventThread(() -> pressedWrong(window, wrong, onOneSpot));
+
+                    StationDoors.close(window);
+                }
+            }
+            finally
+            {
+                if (on != editor) support.FrozenEditor.dispose(on);
+            }
+        }
+
+        assertTrue(marks > 100, "precondition: only " + marks + " marks were clicked");
+
+        assertTrue(wrong.isEmpty(), "a click at a mark's middle presses another: " + wrong);
+
+        // The two ways in of a curved station lie on one chord, each behind its way out, and meet in the middle (FR-111)
+        for (String mark : onOneSpot) assertTrue(mark.contains(" IN."), "marks other than two ways in on one spot: " + onOneSpot);
+    }
+
+    /**
+     * Each of the window's marks asked what a click at its middle presses; one line in `wrong` per other answer.  Two
+     * marks whose middles lie within a pixel are drawn on one spot, which no click can tell apart: each goes in `onOneSpot`.
+     */
+    private static int pressedWrong(StationSettingsWindow window, List<String> wrong, List<String> onOneSpot)
+    {
+        int asked = 0;
+
+        Map<String, java.awt.Shape> marks = new LinkedHashMap<>(window.pictureMarksForTest());
+
+        marks.keySet().removeIf(key -> key.startsWith("SQUARE") || key.startsWith("AXIS"));
+
+        for (Map.Entry<String, java.awt.Shape> each : marks.entrySet())
+        {
+            double[] middle = middleOf(each.getValue());
+
+            boolean together = false;
+
+            for (Map.Entry<String, java.awt.Shape> other : marks.entrySet())
+            {
+                double[] there = middleOf(other.getValue());
+
+                together |= other != each && Math.hypot(there[0] - middle[0], there[1] - middle[1]) < 1;
+            }
+
+            if (together)
+            {
+                onOneSpot.add(window.squareForTest() + " " + each.getKey());
+
+                continue;
+            }
+
+            String pressed = window.pictureMarkAtForTest(new java.awt.Point((int) Math.round(middle[0]),
+                (int) Math.round(middle[1])));
+
+            if (!each.getKey().equals(pressed)) wrong.add(window.squareForTest() + " " + each.getKey() + " presses " + pressed);
+
+            asked++;
+        }
+
+        return asked;
     }
 
     /** The diagram's colors, as 0xRRGGBB: a way out, a shut one, a way in, and a tested path's two lines. */
@@ -2086,7 +2203,7 @@ public class testStationSettingsWindow
         {
             for (StandingRules.Row row : StandingRules.Row.values())
             {
-                for (String tier : row == StandingRules.Row.SENT_THROUGH ? new String[] {"both"} : new String[] {"auto", "hand"})
+                for (String tier : new String[] {"auto", "hand"})
                 {
                     for (StandingRules.Answer answer : window.drawnForTest(row, tier).values())
                     {

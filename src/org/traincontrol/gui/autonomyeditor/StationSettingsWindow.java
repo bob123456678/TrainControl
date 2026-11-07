@@ -1200,14 +1200,24 @@ public final class StationSettingsWindow extends StationWindowBase
             }
         }
 
-        for (StationPicture.Mark mark : picture.marks())
-        {
-            String side = mark.kind == StationPicture.Mark.Kind.NEIGHBOR ? sideOf(mark.square) + "." + mark.side : mark.side.name();
-
-            out.put((mark.kind == StationPicture.Mark.Kind.NEIGHBOR ? "NEXT" : mark.kind.name()) + "." + side, mark.shape);
-        }
+        for (StationPicture.Mark mark : picture.marks()) out.put(keyOf(mark), mark.shape);
 
         return out;
+    }
+
+    /** @return the mark, named as `pictureMarksForTest` names it, that a click at this point of the picture presses */
+    public String pictureMarkAtForTest(java.awt.Point at)
+    {
+        StationPicture.Mark mark = picture.markAtForTest(at);
+
+        return mark == null ? null : keyOf(mark);
+    }
+
+    private String keyOf(StationPicture.Mark mark)
+    {
+        boolean next = mark.kind == StationPicture.Mark.Kind.NEIGHBOR;
+
+        return (next ? "NEXT." + sideOf(mark.square) : mark.kind.name()) + "." + mark.side.name();
     }
 
     private String sideOf(TileKey square)
@@ -1226,7 +1236,7 @@ public final class StationSettingsWindow extends StationWindowBase
         return tile;
     }
 
-    /** What the matrix draws for a row and tier ("auto", "hand", or "both"): side to answer; empty where every cell says No. */
+    /** What the matrix draws for a row and tier ("auto" or "hand"): side to answer; empty where every cell says No. */
     public Map<String, StandingRules.Answer> drawnForTest(StandingRules.Row row, String tier)
     {
         return matrix.drawnFor(row, tier);
