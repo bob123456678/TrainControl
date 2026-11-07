@@ -77,13 +77,14 @@ final class FindAPointPrompt extends JDialog
         setDefaultCloseOperation(DISPOSE_ON_CLOSE);
         org.traincontrol.gui.TrainControlUI.applyWindowIcon(this);
 
-        JPanel content = new JPanel(new BorderLayout(4, 4));
+        JPanel content = new JPanel(new BorderLayout(6, 6));
 
-        content.setBorder(BorderFactory.createEmptyBorder(8, 8, 8, 8));
+        content.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
         JPanel top = new JPanel(new BorderLayout(6, 0));
 
-        top.add(new JLabel(I18n.t("layout.ui.findPointLabel")), BorderLayout.WEST);
+        top.add(org.traincontrol.gui.widgets.UiStyle.label(org.traincontrol.gui.widgets.UiStyle.withoutColon(
+            I18n.t("layout.ui.findPointLabel"))), BorderLayout.WEST);
         top.add(box, BorderLayout.CENTER);
 
         list.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
