@@ -329,16 +329,17 @@ public class testPageLinksGoByPageId extends support.PageWindowTest
 
     /**
      * Two pages of a local layout that share an ID are left alone on read and told apart at the next page edit: the
-     * page the setup records under the ID keeps it, and the other takes a fresh one; with no setup entry the first by
-     * name keeps it.
+     * page the setup records under the ID keeps it, and the other takes a fresh one.  (The app rewrites the setup when
+     * the layout opens, recording the later page of two that share an ID, so the claim reads the setup as it stands
+     * when the edit is made.)
      *
-     * MUTATION: `writeLayoutIndex` lets the later page in the list lose again (the tie broken by list order), and the
-     * page the setup knows loses its ID.
+     * MUTATION: `writeLayoutIndex` lets the later page in the list lose again (the tie broken by list order, not by
+     * the setup), and the page the setup records loses its ID.
      */
     @Test
-    public void testPagesSharingAnIdAreLeftOnReadAndToldApartAtTheNextEdit() throws Exception
+    public void testPagesSharingAnIdAreLeftOnReadAndTheSetupsPageKeepsItAtTheNextEdit() throws Exception
     {
-        // 3 - Top Parking is recorded under ID 2 by the setup; give 4 - Combined the same
+        // 3 - Top Parking and 4 - Combined share ID 2
         String index = new String(Files.readAllBytes(indexFile().toPath()), StandardCharsets.UTF_8).replace("\r", "");
 
         Files.write(indexFile().toPath(), index.replace(" .id=3\n .name=4 - Combined", " .id=2\n .name=4 - Combined")
@@ -350,16 +351,50 @@ public class testPageLinksGoByPageId extends support.PageWindowTest
 
         assertEquals(changedBetween(before, layoutFiles()), "[]", "reading a layout with a shared ID wrote to the index or a page");
 
+        String recorded = LayoutDiagram.readSetupPageNames(sandbox.getFolder().getAbsolutePath()).get(2);
+
+        assertTrue("3 - Top Parking".equals(recorded) || "4 - Combined".equals(recorded), "precondition: the setup records "
+            + recorded + " under the shared ID");
+
         org.traincontrol.automationui.LayoutPageEdit.renameOrDuplicate(model.getLayoutList(), model.getLayout("5 - Test"),
             sandbox.getFolder().getAbsolutePath(), "5 - Test", "5 - Tested", true, false, false, null, model);
 
         Map<String, Integer> ids = idsInTheIndex();
 
-        assertEquals(ids.get("3 - Top Parking"), Integer.valueOf(2), "the page the setup records under the ID lost it");
+        String other = "3 - Top Parking".equals(recorded) ? "4 - Combined" : "3 - Top Parking";
 
-        assertTrue(ids.get("4 - Combined") > 5, "the other page did not take a fresh ID: " + ids);
+        assertEquals(ids.get(recorded), Integer.valueOf(2), "the page the setup records under the ID lost it: " + ids);
+
+        assertTrue(ids.get(other) > 5, "the other page did not take a fresh ID: " + ids);
 
         assertEquals(new java.util.HashSet<>(ids.values()).size(), ids.size(), "an ID is still shared: " + ids);
+    }
+
+    /**
+     * With no setup to say, the page first by name keeps a shared ID, whatever place the pages have in the file.
+     *
+     * MUTATION: as above, the later page in the file loses, and 2 - Bottom (second in the file) loses its ID.
+     */
+    @Test
+    public void testPagesSharingAnIdWithNoSetupKeepItByName() throws Exception
+    {
+        Files.delete(new File(sandbox.getFolder(), "config/autonomy/setup.json").toPath());
+
+        // File order: 3 - Top Parking, then 2 - Bottom, both ID 1
+        Files.write(indexFile().toPath(), ("[gleisbild]\nversion\n .major=1\ngroesse\nseite\n .id=1\n .name=3 - Top Parking\n"
+            + "seite\n .id=1\n .name=2 - Bottom\nseite\n .id=5\n .name=1 - Main\nseite\n .id=3\n .name=4 - Combined\n"
+            + "seite\n .id=4\n .name=5 - Test\n").getBytes(StandardCharsets.UTF_8));
+
+        startTheWindow(5);
+
+        org.traincontrol.automationui.LayoutPageEdit.renameOrDuplicate(model.getLayoutList(), model.getLayout("5 - Test"),
+            sandbox.getFolder().getAbsolutePath(), "5 - Test", "5 - Tested", true, false, false, null, model);
+
+        Map<String, Integer> ids = idsInTheIndex();
+
+        assertEquals(ids.get("2 - Bottom"), Integer.valueOf(1), "the page first by name lost the shared ID: " + ids);
+
+        assertTrue(ids.get("3 - Top Parking") > 5, "the other page did not take a fresh ID: " + ids);
     }
 
     // ------------------------------------------------------------------------------------------------
