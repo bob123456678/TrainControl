@@ -121,7 +121,17 @@ final class LocomotiveActions
 
             if (newAddress != null && !"".equals(newAddress.trim()))
             {
-                Integer proposedAddress = Conversion.parseTypedAddress(newAddress, newDecoderType == decoderType.MFX);
+                Integer proposedAddress;
+
+                try
+                {
+                    proposedAddress = Conversion.parseTypedAddress(newAddress, newDecoderType == decoderType.MFX);
+                }
+                catch (NumberFormatException notANumber)
+                {
+                    JOptionPane.showMessageDialog(source, I18n.t("loc.errorAddressNotNumeric"));
+                    return false;
+                }
 
                 if (proposedAddress != l.getAddress() || newDecoderType != l.getDecoderType())
                 {
@@ -202,7 +212,7 @@ final class LocomotiveActions
 
     /**
      * Makes {@code newLinkedLocos} the members of a multi-unit and tells everything that shows it: the one write the
-     * Set as Multi-Unit dialog and the Locomotive Settings window's Save both go through.
+     * Locomotive Settings window's Multi-Unit tab goes through on Save.
      *
      * @return true when it was written, false when a refusal stopped it
      */

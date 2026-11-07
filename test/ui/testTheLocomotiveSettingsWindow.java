@@ -407,6 +407,87 @@ public class testTheLocomotiveSettingsWindow
     }
 
     /**
+     * A typed address that is not a number, or too long for one, says what Add Locomotive says, and the locomotive is
+     * left as it was.
+     *
+     * MUTATION: drop the NumberFormatException catch around `Conversion.parseTypedAddress` in
+     * `LocomotiveActions.writeNameAndAddress`, and this fails with `Error: For input string`.
+     */
+    @Test
+    public void testAnAddressThatIsNotANumberSaysSo() throws Exception
+    {
+        for (String typed : new String[] { "abc", "99999999999999" })
+        {
+            open(0);
+
+            SettingsWindow.type("settings.address", typed);
+
+            assertEquals(saveAndAnswer(), Arrays.asList(I18n.t("loc.errorAddressNotNumeric")),
+                "the wrong message for the address \"" + typed + "\"");
+            assertEquals(loc.getAddress(), 3401, "a refused address was written");
+            assertEquals(loc.getName(), NAME);
+            assertNotNull(SettingsWindow.showing(), "a refused Save closed the window");
+
+            SettingsWindow.closeIfOpen();
+        }
+    }
+
+    /**
+     * The address box takes digits, A to F and x only, and at most 6 characters, as Add Locomotive's does.
+     *
+     * MUTATION: drop the key listener on `LocomotiveTab.address`, and this fails.
+     */
+    @Test
+    public void testTheAddressBoxFiltersAndCapsWhatIsTyped() throws Exception
+    {
+        open(0);
+
+        JTextField box = SettingsWindow.part("settings.address", JTextField.class);
+
+        SettingsWindow.type("settings.address", "12g-ab!");
+        support.Keys.press(box, java.awt.event.KeyEvent.VK_B);
+
+        assertEquals(SettingsWindow.text("settings.address"), "12ab", "the box kept characters no address has");
+
+        SettingsWindow.type("settings.address", "1234567890");
+        support.Keys.press(box, java.awt.event.KeyEvent.VK_0);
+
+        assertEquals(SettingsWindow.text("settings.address"), "123456", "the box took more than 6 characters");
+    }
+
+    /**
+     * The decoder box shows each type's user label: no raw enum name such as MULTI_UNIT.
+     *
+     * MUTATION: remove the renderer from `LocomotiveTab.decoder`, and this fails.
+     */
+    @Test
+    public void testTheDecoderBoxShowsNoRawEnumNames() throws Exception
+    {
+        open(0);
+
+        @SuppressWarnings("unchecked")
+        JComboBox<Object> box = SettingsWindow.part("settings.decoder", JComboBox.class);
+
+        List<String> shown = Components.onTheEventThread(() ->
+        {
+            List<String> out = new java.util.ArrayList<>();
+
+            for (int i = 0; i < box.getItemCount(); i++)
+            {
+                java.awt.Component c = box.getRenderer().getListCellRendererComponent(new javax.swing.JList<>(), box.getItemAt(i), i,
+                    false, false);
+
+                out.add(((JLabel) c).getText());
+            }
+
+            return out;
+        });
+
+        assertEquals(shown, Arrays.asList("MFX", "MM2", "DCC", I18n.t("loc.multiUnit")),
+            "the decoder box shows " + shown);
+    }
+
+    /**
      * A year that is not a number is refused on the Notes tab, which comes forward, and nothing is written.
      *
      * MUTATION: skip `checkYears` in `save`, and this fails.

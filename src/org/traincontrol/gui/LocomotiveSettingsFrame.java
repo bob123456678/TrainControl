@@ -458,6 +458,18 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
             decoder.setSelectedItem(loadedDecoder);
             speed.setValue(loadedSpeed);
 
+            // The decoder shows each type's user label, not the enum's name
+            decoder.setRenderer(new javax.swing.DefaultListCellRenderer()
+            {
+                @Override
+                public java.awt.Component getListCellRendererComponent(javax.swing.JList<?> list, Object value, int index,
+                    boolean selected, boolean focus)
+                {
+                    return super.getListCellRendererComponent(list,
+                        value == decoderType.MULTI_UNIT ? I18n.t("loc.multiUnit") : value, index, selected, focus);
+                }
+            });
+
             name.setName("settings.name");
             decoder.setName("settings.decoder");
             address.setName("settings.address");
@@ -478,6 +490,17 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
 
             name.getDocument().addDocumentListener(tell);
             address.getDocument().addDocumentListener(tell);
+
+            // The same filter and limit as Add Locomotive's address box
+            address.addKeyListener(new java.awt.event.KeyAdapter()
+            {
+                @Override
+                public void keyReleased(KeyEvent e)
+                {
+                    TrainControlUI.validateInt(e, true);
+                    TrainControlUI.limitLength(e, 6);
+                }
+            });
             decoder.addActionListener(e -> typed());
             speed.addChangeListener(e -> typed());
 
@@ -508,7 +531,7 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
             trash.addActionListener(e -> delete());
 
             // The fields are at the tab's left edge under their heading, the picture at its right under its own, level
-            // with Name; the trash can is under Address, and the divider is midway between it and the next heading
+            // with Name; the divider is midway between Address and the next heading, the trash can at the lower left
             final Insets edge = new Insets(4, 4, 4, 6);
             final Insets inner = new Insets(4, 4, 4, 6);
 
@@ -559,14 +582,11 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
             add(sameAddress, gbc);
 
             gbc.gridx = 0;
-            gbc.gridy = 5;
-            gbc.insets = edge;
-            add(trash, gbc);
-
             gbc.gridy = 6;
             gbc.gridwidth = 2;
             gbc.fill = GridBagConstraints.HORIZONTAL;
-            gbc.insets = new Insets(6, 4, 6, 6);
+            // The row above holds the warning line, so the bottom inset carries its height
+            gbc.insets = new Insets(6, 4, 14 + sameAddress.getPreferredSize().height, 6);
             add(new javax.swing.JSeparator(), gbc);
             gbc.gridwidth = 1;
             gbc.fill = GridBagConstraints.NONE;
@@ -602,6 +622,12 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
             gbc.weightx = 0;
             gbc.weighty = 1;
             add(new JLabel(), gbc);
+
+            gbc.gridy = 10;
+            gbc.weighty = 0;
+            gbc.insets = edge;
+            gbc.anchor = GridBagConstraints.SOUTHWEST;
+            add(trash, gbc);
 
             warnAboutTheSameAddress();
         }

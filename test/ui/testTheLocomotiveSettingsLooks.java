@@ -158,24 +158,24 @@ public class testTheLocomotiveSettingsLooks extends support.SettingsClass
     }
 
     /**
-     * The divider on the first tab sits midway between the trash can above it and the Customize Behavior heading below
-     * it, within 2 pixels.
+     * The divider on the first tab sits midway between the Address field above it and the Customize Behavior heading
+     * below it, within 2 pixels.
      *
      * MUTATION: give the divider's row in `LocomotiveSettingsFrame.LocomotiveTab` a bottom inset of 20, and this fails.
      */
     @Test
-    public void testTheDividerIsMidwayBetweenTheTrashCanAndTheNextHeading() throws Exception
+    public void testTheDividerIsMidwayBetweenAddressAndTheNextHeading() throws Exception
     {
         opened();
 
-        java.awt.Rectangle can = at("settings.trash", javax.swing.JButton.class);
+        java.awt.Rectangle can = at("settings.address", javax.swing.JTextField.class);
         java.awt.Rectangle heading = inWindow(labelFor("loc.ui.settingsCustomizeBehavior"));
         java.awt.Rectangle line = divider();
 
         int above = line.y - (can.y + can.height);
         int below = heading.y - (line.y + line.height);
 
-        assertTrue(Math.abs(above - below) <= 2, "the divider is " + above + " px under the trash can and " + below
+        assertTrue(Math.abs(above - below) <= 2, "the divider is " + above + " px under Address and " + below
             + " px above Customize Behavior");
     }
 
@@ -218,10 +218,11 @@ public class testTheLocomotiveSettingsLooks extends support.SettingsClass
      * The first tab keeps its fields at the left edge and its picture, at least 260 by 130 and wider than tall, at the
      * right, level with Name and ending where Cancel ends, under a blue "Locomotive Icon" heading that starts at the
      * picture's left edge; "Name and Address" heads the fields and "Customize Behavior" heads Preset Speed, each at the
-     * left edge of the labels under it; the trash can is under Address, above the divider and Customize Behavior.
+     * left edge of the labels under it; the trash can is at the tab's lower left, under the divider and Customize Behavior,
+     * level with the bottom of the tab.
      *
      * MUTATION: put the picture back in the first column of `LocomotiveSettingsFrame.LocomotiveTab`, or the trash can
-     * back under the picture, or drop the label, and this fails.
+     * back under Address, or drop the label, and this fails.
      */
     @Test
     public void testThePictureIsAtTheRightAndTheFieldsAndTheTrashCanAtTheLeft() throws Exception
@@ -263,11 +264,17 @@ public class testTheLocomotiveSettingsLooks extends support.SettingsClass
         assertEquals(behaviorHeading.x, presetLabel.x, "Customize Behavior is not at its label's left edge");
         assertTrue(behaviorHeading.y + behaviorHeading.height <= presetLabel.y, "Customize Behavior is not above Preset Speed");
 
-        assertTrue(can.y >= address.y + address.height, "the trash can is not under Address");
+        java.awt.Rectangle tab = inWindow(trash.getParent());
+        int content = tab.y + tab.height - Components.onTheEventThread(() -> trash.getParent().getInsets().bottom);
+
+        assertTrue(address.y + address.height <= line.y && line.y + line.height <= behaviorHeading.y
+            && behaviorHeading.y + behaviorHeading.height <= can.y,
+            "Address, the divider, Customize Behavior and the trash can are not in that order");
         assertTrue(Math.abs(can.x - nameLabel.x) <= 8, "the trash can (x " + can.x + ") is not at the fields' left edge (x "
             + nameLabel.x + ")");
-        assertTrue(can.y + can.height <= line.y && line.y + line.height <= behaviorHeading.y,
-            "the trash can, the divider and Customize Behavior are not in that order");
+        assertTrue(content - (can.y + can.height) <= 8, "the trash can ends " + (content - can.y - can.height)
+            + " px above the tab's content area");
+        assertTrue(can.y + can.height <= cancel.y, "the trash can is not above the Save and Cancel row");
     }
 
     /**

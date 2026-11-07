@@ -27,7 +27,7 @@ import org.traincontrol.util.I18n;
 
 /**
  * The locomotives of one multi-unit as a list: a tick, a speed multiplier and a Reverse tick for each, with a filter.
- * The Set as Multi-Unit dialog and the Multi-Unit tab of the Locomotive Settings window both show it.  A multi-unit the
+ * The Multi-Unit tab of the Locomotive Settings window shows it.  A multi-unit the
  * Central Station defines is shown, not edited.
  */
 final class MultiUnitPanel extends JPanel
