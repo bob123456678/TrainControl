@@ -70,7 +70,6 @@ import java.util.stream.Stream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 import javax.imageio.ImageIO;
-import javax.swing.AbstractAction;
 import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.ButtonGroup;
@@ -131,7 +130,6 @@ import org.traincontrol.gui.layouteditor.LayoutEditor;
 import org.traincontrol.gui.locomotive.AddLocomotive;
 import org.traincontrol.gui.locomotive.CurrentKeyRow;
 import org.traincontrol.gui.locomotive.LocButtonTransferHandler;
-import org.traincontrol.gui.locomotive.LocomotiveFunctionAssign;
 import org.traincontrol.gui.locomotive.LocomotiveKeyboardMapping;
 import org.traincontrol.gui.locomotive.LocomotivePlaceholder;
 import org.traincontrol.gui.locomotive.LocomotiveSelector;
@@ -18684,52 +18682,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     javax.swing.JButton gracefulStopButton()
     {
         return this.gracefulStop;
-    }
-        
-    public void setFunctionIcon(Locomotive l, JButton source, MouseEvent evt)
-    {
-        Window sourceWindow = evt != null ? SwingUtilities.getWindowAncestor((Component) evt.getSource()) : this;
-        
-        javax.swing.SwingUtilities.invokeLater(() -> 
-        {    
-            LocomotiveFunctionAssign edit = new LocomotiveFunctionAssign(l, this, 0, false);
-            // Select the locomotive
-            if (source != null)
-            {
-                source.doClick();
-            }
-            
-            // Create a custom dialog without buttons
-            JDialog dialog = new JDialog(sourceWindow, 
-                                         I18n.f("loc.ui.dialogEditLocomotiveFunctions", l.getName()), 
-                                         Dialog.ModalityType.APPLICATION_MODAL);
-
-            // OB-124.
-            applyWindowIcon(dialog);
-            dialog.getContentPane().add(edit);
-            dialog.pack();
-            dialog.setLocationRelativeTo(sourceWindow);
-            dialog.setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
-            dialog.setResizable(false);
-            
-            // Add Escape key binding to close the dialog
-            KeyStroke escapeKeyStroke = KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0);
-            dialog.getRootPane().getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW)
-                  .put(escapeKeyStroke, "ESCAPE");
-            dialog.getRootPane().getActionMap()
-                  .put("ESCAPE", new AbstractAction() {
-                      @Override
-                      public void actionPerformed(ActionEvent e) {
-                          dialog.dispose();
-                      }
-                  });
-            
-            // A modal setVisible(true) does not return until dismissed, so a focus call after it does nothing; an
-            // invokeLater posted before it runs from the nested event loop once the dialog is on screen.
-            javax.swing.SwingUtilities.invokeLater(edit::focusFno);
-
-            dialog.setVisible(true);
-        });
     }
     
     /** FlatLightLaf's accent blue, written down because the UIManager key has changed name between FlatLaf releases. */

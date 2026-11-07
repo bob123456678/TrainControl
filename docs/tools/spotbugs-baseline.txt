@@ -354,8 +354,6 @@ EI_EXPOSE_REP2	org.traincontrol.gui.layouteditor.LayoutEditorAddressPopup	<init>
 EI_EXPOSE_REP2	org.traincontrol.gui.locomotive.AddLocomotive	<init>	model	1
 EI_EXPOSE_REP2	org.traincontrol.gui.locomotive.AddLocomotive	<init>	parent	1
 EI_EXPOSE_REP2	org.traincontrol.gui.locomotive.LocIconCropDialog$CropPanel	<init>	source	1
-EI_EXPOSE_REP2	org.traincontrol.gui.locomotive.LocomotiveFunctionAssign	<init>	loc	1
-EI_EXPOSE_REP2	org.traincontrol.gui.locomotive.LocomotiveFunctionAssign	<init>	parent	1
 EI_EXPOSE_REP2	org.traincontrol.gui.locomotive.LocomotiveKeyboardMapping	<init>	button	1
 EI_EXPOSE_REP2	org.traincontrol.gui.locomotive.LocomotiveSelector	<init>	model	1
 EI_EXPOSE_REP2	org.traincontrol.gui.locomotive.LocomotiveSelector	<init>	parent	1
@@ -657,7 +655,6 @@ SE_BAD_FIELD	org.traincontrol.gui.layouteditor.LayoutEditorAddressPopup		lc	1
 SE_BAD_FIELD	org.traincontrol.gui.locomotive.CurrentKeyRow		content	1
 SE_BAD_FIELD	org.traincontrol.gui.locomotive.LocIconCropDialog		result	1
 SE_BAD_FIELD	org.traincontrol.gui.locomotive.LocIconCropDialog$CropPanel		source	1
-SE_BAD_FIELD	org.traincontrol.gui.locomotive.LocomotiveFunctionAssign		beforeACopy	1
 SE_BAD_FIELD	org.traincontrol.gui.locomotive.UsageChartPanel		bars	1
 SE_BAD_FIELD	org.traincontrol.marklin.MarklinAccessory		network	1
 SE_BAD_FIELD	org.traincontrol.marklin.MarklinFeedback		network	1

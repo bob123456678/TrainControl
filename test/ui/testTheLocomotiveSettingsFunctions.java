@@ -191,6 +191,43 @@ public class testTheLocomotiveSettingsFunctions
     }
 
     /**
+     * Save is gray while nothing differs from what the locomotive holds, lit once a function's icon or behavior is
+     * changed, and gray again once it is put back: closing then asks nothing, and a change is never left unsavable
+     * (FR-098).
+     *
+     * MUTATION: leave `LocomotiveFunctionsTab.isDirty` answering true, or false, whatever the table shows, and this fails.
+     */
+    @Test
+    public void testSaveFollowsWhetherAFunctionChanged() throws Exception
+    {
+        int was = loc.getFunctionType(F);
+        int icon = (was + 7) % 100 + 1;
+
+        assertFalse(Components.onTheEventThread(SettingsWindow.save()::isEnabled),
+            "Save is lit on a function shown exactly as the locomotive holds it");
+
+        SettingsWindow.pickIcon(F, icon);
+
+        assertTrue(Components.onTheEventThread(SettingsWindow.save()::isEnabled),
+            "Save is gray with another icon chosen: closing would drop a change the operator cannot save");
+
+        SettingsWindow.pickIcon(F, was);
+
+        assertFalse(Components.onTheEventThread(SettingsWindow.save()::isEnabled),
+            "Save stays lit with the icon put back as it was");
+
+        SettingsWindow.pickBehavior(F, 1);
+
+        assertTrue(Components.onTheEventThread(SettingsWindow.save()::isEnabled),
+            "Save is gray with another behavior chosen");
+
+        SettingsWindow.pickBehavior(F, 0);
+
+        assertFalse(Components.onTheEventThread(SettingsWindow.save()::isEnabled),
+            "Save stays lit with the behavior put back as it was");
+    }
+
+    /**
      * The wrench asks for the user's own image: the row shows it, the locomotive does not hold it until Save, and
      * Save writes it for that function only.
      *
