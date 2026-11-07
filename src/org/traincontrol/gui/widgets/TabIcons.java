@@ -4,6 +4,7 @@ import com.formdev.flatlaf.util.UIScale;
 import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Graphics2D;
+import java.awt.Shape;
 import java.awt.geom.Ellipse2D;
 import java.awt.geom.Path2D;
 import java.awt.geom.RoundRectangle2D;
@@ -60,19 +61,19 @@ public final class TabIcons
         });
     }
 
-    /** Two switches, one on and one off: the locomotive's functions. */
+    /** Two switches, one on and one off: the locomotive's functions.  Same size, the knobs the same distance from their ends. */
     public static Icon functions()
     {
         return icon((g, w, h) ->
         {
             g.setColor(INK);
-            g.fill(new RoundRectangle2D.Float(w * 0.04f, h * 0.10f, w * 0.92f, h * 0.38f, h * 0.38f, h * 0.38f));
-            g.setStroke(new BasicStroke(Math.max(1.2f, w * 0.08f)));
+            g.fill(new RoundRectangle2D.Float(w * 0.04f, h * 0.10f, w * 0.92f, h * 0.36f, h * 0.36f, h * 0.36f));
+            g.setStroke(new BasicStroke(w * 0.08f));
             g.draw(new RoundRectangle2D.Float(w * 0.08f, h * 0.58f, w * 0.84f, h * 0.28f, h * 0.28f, h * 0.28f));
             g.setColor(Color.WHITE);
-            g.fill(new Ellipse2D.Float(w * 0.54f, h * 0.15f, h * 0.28f, h * 0.28f));
+            g.fill(new Ellipse2D.Float(w * 0.64f, h * 0.14f, h * 0.28f, h * 0.28f));
             g.setColor(INK);
-            g.fill(new Ellipse2D.Float(w * 0.12f, h * 0.60f, h * 0.24f, h * 0.24f));
+            g.fill(new Ellipse2D.Float(w * 0.08f, h * 0.58f, h * 0.28f, h * 0.28f));
         });
     }
 
@@ -111,39 +112,59 @@ public final class TabIcons
         });
     }
 
-    /** Two locomotives coupled on one rail: the main tab's locomotive, narrowed to fit twice. */
+    /** One locomotive behind another, the front one edged in white, and a plus: several locomotives as one. */
     public static Icon multiUnit()
     {
         return icon((g, w, h) ->
         {
-            g.setColor(INK);
-            narrowLocomotive(g, w, h, 0f);
-            narrowLocomotive(g, w, h, 0.52f);
-            shapes(g, w, h, "0.44 0.66 0.12 0.06", "");
-            shapes(g, w, h, RAIL, "");
+            g.setColor(new Color(150, 150, 150));
+            placed(g, w, h, 0.20f, 0.12f, 0.62f, () -> shapes(g, w, h, LOCOMOTIVE_BOXES, LOCOMOTIVE_WHEELS));
+
+            placed(g, w, h, 0f, 0.26f, 0.74f, () ->
+            {
+                g.setColor(Color.WHITE);
+                g.setStroke(new BasicStroke(w * 0.06f / 0.74f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+
+                for (Shape part : parts(w, h, LOCOMOTIVE_BOXES, LOCOMOTIVE_WHEELS)) g.draw(part);
+
+                g.setColor(INK);
+                shapes(g, w, h, LOCOMOTIVE_BOXES, LOCOMOTIVE_WHEELS);
+            });
+
+            shapes(g, w, h, RAIL + ", 0.74 0.095 0.24 0.07, 0.825 0.01 0.07 0.24", "");
         });
     }
 
-    private static void narrowLocomotive(Graphics2D g, int w, int h, float left)
+    /** Draws in a smaller copy of the icon's box, moved to (left, top) and scaled by {@code scale}. */
+    private static void placed(Graphics2D g, int w, int h, float left, float top, float scale, Runnable draw)
     {
         java.awt.geom.AffineTransform was = g.getTransform();
 
-        g.translate(w * left, h * 0.26f);
-        g.scale(0.48f, 0.74f);
-        shapes(g, w, h, LOCOMOTIVE_BOXES, LOCOMOTIVE_WHEELS);
+        g.translate(w * left, h * top);
+        g.scale(scale, scale);
+        draw.run();
         g.setTransform(was);
     }
 
     /** Fills boxes ("x y width height") and circles ("x y diameter"), as fractions of the icon, in the current color. */
     private static void shapes(Graphics2D g, int w, int h, String boxes, String circles)
     {
+        for (Shape part : parts(w, h, boxes, circles)) g.fill(part);
+    }
+
+    private static java.util.List<Shape> parts(int w, int h, String boxes, String circles)
+    {
+        java.util.List<Shape> out = new java.util.ArrayList<>();
+
         for (String part : (boxes + "," + circles).split(","))
         {
             String[] v = part.trim().split(" ");
 
-            if (v.length == 4) g.fill(new RoundRectangle2D.Float(w * f(v[0]), h * f(v[1]), w * f(v[2]), h * f(v[3]), 3f, 3f));
-            else if (v.length == 3) g.fill(new Ellipse2D.Float(w * f(v[0]), h * f(v[1]), w * f(v[2]), w * f(v[2])));
+            if (v.length == 4) out.add(new RoundRectangle2D.Float(w * f(v[0]), h * f(v[1]), w * f(v[2]), h * f(v[3]), 3f, 3f));
+            else if (v.length == 3) out.add(new Ellipse2D.Float(w * f(v[0]), h * f(v[1]), w * f(v[2]), w * f(v[2])));
         }
+
+        return out;
     }
 
     private static float f(String number)
