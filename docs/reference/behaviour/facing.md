@@ -15,7 +15,7 @@ carriages have not moved.
 
 **Nothing about a placement is recorded until the railway has accepted it.** Every door that puts a train down asks
 `Layout.moveLocomotive`, which refuses when autonomy is running, the locomotive or the point is unknown, or the target
-is not a destination. (The rebuild's put-back, the paste and the Place Locomotive dialog may also stand a train on a
+is not a destination. (The rebuild's put-back, the paste and the train popup's Place may also stand a train on a
 copy of a station trains may not arrive at, where no station copy of the square faces its way: the copy is its
 direction, OB-284, section 7.) The caller honors the refusal: no placement, no facing, no arrival side, nothing saved,
 because the setup survives a restart and the next build would emit the train on a square it was never put on. The log
@@ -64,7 +64,7 @@ offered. Such a square with more than one way out is one copy per way out; with 
 - a square with **three or more ways in** where neither the facing nor the compass opposite separates them;
 - and a dismissed placement prompt, which `placeFacing` treats as "do not place the train".
 
-**Every hand-placement door works it out**: the right-click "Place locomotive" item and the assign dialog too, so the
+**Every hand-placement door works it out**: the right-click "Place locomotive" item and the train popup too, so the
 same placement blocks the same track whichever menu it is made from. Adam: *"the missing arrival side should be set -
 either from the data, by the user, or randomly."*
 
@@ -74,11 +74,11 @@ The doors differ only in **where the question is put**; the rule is one method:
 |---|---|
 | diagram drag and paste | `ArrivalSidePrompt.forPlacement`: a dialog, before anything moves, so a dismissal leaves the railway as it was |
 | right-click "Place ... facing" | the same dialog, on a placement only: turning a train already standing there does not change which way it came in |
-| the assign dialog | a combo in its form, started on the answer and correctable before OK |
+| the train popup (`TrainWindow`) | its own placement is a door like the others: the dialog above, then the tail question; its `Arrived from` dropdown afterwards started on the recorded answer |
 
-`GraphLocAssign` uses a combo because it already HAS a dialog. A value in a combo is seen and can be changed, so it may
-show the assumption the popup declines to make on a may-reverse square. `ArrivalSidePrompt.suggestedFor` is the rule
-without the dialog and `forPlacement` is it plus the question, so the two cannot answer differently. The combo offers
+The train popup's `Arrived from` dropdown is a value that is seen and can be changed, so it may show the assumption
+the placement dialog declines to make on a may-reverse square. `ArrivalSidePrompt.suggestedFor` is the rule without the
+dialog and `forPlacement` is it plus the question, so the two cannot answer differently. The dropdown offers
 **sides and nothing else**: recorded, else derived, else the first side the square has (the "randomly" above).
 
 **Clearing is not offered.** Adam: *"clearing should not be possible, only setting."* The menu lists every side the
@@ -117,7 +117,7 @@ the heading is chosen over the copies a train could leave, so no impossible faci
 departure directions, not arrival ones.  for barred arrival directions, keep the direction.  for barred
 departure directions, turn it to a way trains may arrive in"*): a train facing the way trains may not arrive at the
 landing keeps its heading and stands where autonomy will not start it, told why; a heading no copy can leave by is
-turned to one trains may arrive in. The same rule holds at the editor's Place and the Place Locomotive dialog
+turned to one trains may arrive in. The same rule holds at the editor's Place and the train popup's placement
 (`AutonomySession.departableFacingsFor`).
 
 **A cut train is walked from the square it was cut from** (OB-270; Adam: *"it should be east.

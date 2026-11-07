@@ -44,8 +44,8 @@ Part of the behavior reference: [`../behaviour.md`](../behaviour.md) is the inde
   the moves made (halves, fewest then any, when the first pass moved nobody). On Adam's measured layout, six trains each
   with a way home need the second kind of search. `core.testReturnHomeFindsAPlanOnAFullRailway`.
 - **The same setup gets the same plan every time** (OB-413): the budget counts route work, not time, so a slow or busy
-  machine takes longer but finds what a fast one finds. On Adam's machine a plan takes under 3 s on most setups, and
-  14.5 to 15.6 s where the whole budget is spent, with four to seven trains (a unit of work is 0.08 to 0.09 us there
+  machine takes longer but finds what a fast one finds. The worst case is about 15 s on Adam's machine, and the same
+  plan comes out on any machine: under 3 s on most setups, and 14.5 to 15.6 s where the whole budget is spent, with four to seven trains (a unit of work is 0.08 to 0.09 us there
   whatever the train count). When the budget runs out the log says a shorter plan, or one where none was found, may
   exist. `core.testReturnHomeIsTheSameEveryTime`.
 - **A train that cannot reverse is turned on the way only to go home** (Adam: *"this should
