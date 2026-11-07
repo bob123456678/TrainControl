@@ -108,7 +108,7 @@ A layout is ready to run once three things are done: the diagram matches the tra
 
 - **Guard signals.** In a station's `Station Settings`, `Exit guard` holds signals at red while a train stands there or is on its way, and turns them green as a train leaves, and `Entry guard` turns them red when a train arrives. The pencil beside each picks the signals. They are for the look of it and an extra layer of safety: autonomy stops trains on their sensors either way.
 - **Exclusions.** Keep trains off what they should not use: click track to make it one-way or close it (or `Trains May Depart...`); leave a whole page out with `Exclude Page`; take a station out of service by unticking both `When trains stop here` and `Running through` in its `Station Settings`; untick `May choose this station` (or click `Parking`) for a berth only you and Return Home will use; and keep particular trains from stopping at a station, or from passing a sensor that is not one, with `Which trains` under `Advanced`.
-- **Advanced settings.** A station's `Station Settings` has `Priority`, `Speed into here` and `Unavailable while` under `Advanced`; `Maximum train length` and `May arrive from`, which says which sides it takes trains from, are under `When trains stop here`. Settings for the whole railway (delays, speeds, how many trains run at once) are on the Auto tab: see [Settings](#settings-and-what-each-one-is-for).
+- **Advanced settings.** A station's `Station Settings` has `Priority`, `Speed into here` and `Unavailable while` under `Advanced`; `Maximum train length` and `May arrive from`, which says which sides it takes trains from, are under `When trains stop here`. Settings for the whole layout (delays, speeds, how many trains run at once) are on the Auto tab: see [Settings](#settings-and-what-each-one-is-for).
 
 ---
 
@@ -361,7 +361,7 @@ The simplest arrangement that runs: two stations, one train, one piece of track 
 
 **B. Do the same for B.** Right-click the sensor square at B: the window that is open shows it. A sensor is not a station until you do this; sensors that are only there to track a train through a junction stay as they are, with `Running through` ticked and `When trains stop here` not.
 
-**C. Put the train somewhere.** Right-click Station A and choose `Place a Locomotive Here...`, then pick the train in the `Train` list. This is a statement of fact about your railway: the train really does need to be standing at A.
+**C. Put the train somewhere.** Right-click Station A and choose `Place a Locomotive Here...`, then pick the train in the `Train` list. This is a statement of fact about your layout: the train really does need to be standing at A.
 
 ![Steps A to C on a station's right-click menu: Station Settings..., and Place a Locomotive Here...](assets/automation/04-station-menu.png)
 
