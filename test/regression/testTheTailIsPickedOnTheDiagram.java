@@ -351,11 +351,10 @@ public class testTheTailIsPickedOnTheDiagram
     private static final String PASTE_DOOR = "private void rememberPlacement(";
 
     /**
-     * The three doors that put a train down and ask the tail question (the paste, the right-click Place and the
-     * locomotive dialog), each named by its declaration.
+     * The doors that put a train down and ask the tail question (the paste and the right-click Place), each named by its
+     * declaration.
      */
-    private static final String[] PLACEMENT_DOORS = {PASTE_DOOR, "private void placeFacing(",
-        "public static void commitAndRecord(GraphLocAssign edit)"};
+    private static final String[] PLACEMENT_DOORS = {PASTE_DOOR, "private void placeFacing("};
 
     /** What each door does once its train is down: the tail's side, the save, the question and its answer. */
     private static final String RECORD_TAIL = "static boolean recordTheTail(";
@@ -1221,20 +1220,19 @@ public class testTheTailIsPickedOnTheDiagram
     }
 
     /**
-     * The right-click and locomotive-dialog doors keep every late-answer rule the paste door is claimed for above: the
+     * The right-click door keeps every late-answer rule the paste door is claimed for above: the
      * facing written before the question, the save skipped for a setup let go, only an answer logged, the square named
      * as the diagram names it, and a write only where the answer goes somewhere.  Read, because each door needs a menu
      * or a dialog.
      *
-     * MUTATION: undo any of the five at either door, and this fails naming it.
+     * MUTATION: undo any of the five at the door, and this fails naming it.
      */
     @Test
     public void testTheOtherDoorsKeepTheLateAnswerRules() throws Exception
     {
         String[][] doors = {
             {PLACEMENT_DOORS[1], "session.setFacing(station, facing)",
-                "if (session != null && setupStands)"},
-            {PLACEMENT_DOORS[2], "session.setFacing(tile,", "if (!setupStands) return;"}};
+                "if (session != null && setupStands)"}};
 
         // At each door: the facing before the question, and the door's own save guarded.
         for (String[] door : doors)

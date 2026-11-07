@@ -29,7 +29,6 @@ import org.traincontrol.automationui.TileGraph.Direction;
 import org.traincontrol.automationui.TileGraph.RouteId;
 import org.traincontrol.automationui.TileGraph.TileKey;
 import org.traincontrol.gui.AutonomyViewerPanel;
-import org.traincontrol.gui.GraphLocAssign;
 import org.traincontrol.gui.RunGates;
 import org.traincontrol.gui.TailCrossedPrompt;
 import org.traincontrol.gui.TrainControlUI;
@@ -3521,44 +3520,6 @@ public class AutonomyEditorPanel extends JPanel
         }
 
         return out;
-    }
-
-    /**
-     * The locomotive's own settings on this square's menu, the dialog the track diagram opens: the only place for
-     * arrival and departure functions.  Needs the running layout's Point; the placement is written back to the setup.
-     */
-    void addLocomotiveSettings(javax.swing.JPopupMenu menu, TileKey target)
-    {
-        org.traincontrol.automation.Layout layout =
-            layoutSource == null ? null : layoutSource.get();
-
-        if (layout == null || layout.getLocomotivesToRun().isEmpty()) return;
-
-        final org.traincontrol.automation.Point point = pointOnTheLayout(layout, target);
-
-        if (point == null) return;
-
-        // Offered whether or not a train stands here (MT-101); menuLabelFor says "Place" or "Edit".
-
-        menu.add(item(GraphLocAssign.menuLabelFor(point), () ->
-        {
-            // With this panel's session, for the arrival side.
-            GraphLocAssign edit = new GraphLocAssign(parentWindow(), point, session,
-                runningLayout == null ? null : runningLayout.get());
-
-            // `asDialogContent`, with the arrival side under the form.
-            int answer = JOptionPane.showOptionDialog(owner(), edit.asDialogContent(),
-                I18n.f("autolayout.ui.dialogEditOrAssignLocomotive", describeTile(target)),
-                JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE, null,
-                TrainControlUI.OK_CANCEL_OPTS, TrainControlUI.OK_CANCEL_OPTS[0]);
-
-            if (answer != JOptionPane.OK_OPTION) return;
-
-            // One door for both menus (Adam: *"there needs to be parity across the board"*).
-            GraphLocAssign.commitAndRecord(edit);
-            // And the railway is told.
-            setupChanged();
-        }));
     }
 
     /** The running layout's Point for a square, preferring the copy holding a train. */

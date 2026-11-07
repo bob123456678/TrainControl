@@ -135,6 +135,20 @@ public final class TabIcons
         });
     }
 
+    /** A signal on its mast, the upper lamp lit: the trains autonomy runs. */
+    public static Icon autonomy()
+    {
+        return icon((g, w, h) ->
+        {
+            g.setColor(INK);
+            shapes(g, w, h, "0.30 0.02 0.40 0.62, 0.44 0.60 0.12 0.32, 0.24 0.90 0.52 0.08", "");
+            g.setColor(Color.WHITE);
+            shapes(g, w, h, "", "0.38 0.10 0.24");
+            g.setStroke(new BasicStroke(w * 0.06f));
+            g.draw(new Ellipse2D.Float(w * 0.40f, h * 0.38f, w * 0.20f, w * 0.20f));
+        });
+    }
+
     /** Draws in a smaller copy of the icon's box, moved to (left, top) and scaled by {@code scale}. */
     private static void placed(Graphics2D g, int w, int h, float left, float top, float scale, Runnable draw)
     {

@@ -329,7 +329,7 @@ public final class TrainWindow extends StationWindowBase
 
         if (main == null || model == null) return;
 
-        main.pressFromWindow(this, () -> main.openLocomotiveSettings(model, LocomotiveSettingsFrame.Tab.LOCOMOTIVE, null));
+        main.pressFromWindow(this, () -> main.openLocomotiveSettings(model, LocomotiveSettingsFrame.Tab.AUTONOMY, null));
     }
 
     private void pressActive()

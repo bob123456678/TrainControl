@@ -445,7 +445,7 @@ public class MarklinLocomotive extends Locomotive
             this.numF = getMaxNumF(newDecoderType);
 
             // A decoder change can shrink the function count (MFX 32 to MM2 5), leaving an arrival or departure
-            // function beyond it, which crashes GraphLocAssign (its combo boxes are sized to numF).  Clear through the
+            // function beyond it, which no decoder of the new type has.  Clear through the
             // setter, the only writer that validates; it refuses out-of-range values, so it cannot clamp.
             if (this.getArrivalFunc() != null && this.getArrivalFunc() >= this.numF)
             {

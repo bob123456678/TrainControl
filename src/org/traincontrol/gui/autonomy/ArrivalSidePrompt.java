@@ -87,9 +87,8 @@ public class ArrivalSidePrompt
     /**
      * The side a hand-placed train should be recorded as having arrived from, asking if it must.
      *
-     * Two surfaces: this door asks in a dialog of its own, right for a menu item that places a train with none;
-     * `GraphLocAssign` already has a dialog, so it offers the same choice as a combo.  The rule is `suggestedFor` and
-     * the question is `ask`; this dispatches to both rather than spelling the rule twice.
+     * This door asks in a dialog of its own, right for a menu item that places a train with none.  The rule is
+     * `suggestedFor` and the question is `ask`; this dispatches to both rather than spelling the rule twice.
      *
      * @param layout the running layout, which knows where the neighbors are
      * @param at the point the train is being put down on
@@ -122,8 +121,8 @@ public class ArrivalSidePrompt
      * - **An ordinary station** is answered by the heading (it faces the way it will leave, so it came from behind),
      *   out of the sides this square actually has.
      * - **A may-reverse station** answers NULL, because turning round is what those squares are for.  `forPlacement`
-     *   sends it to the operator; a form can pass `mayReverse` false to get the assumption as a visible starting value
-     *   (`GraphLocAssign` does).
+     *   sends it to the operator; a form can pass `mayReverse` false to get the assumption as a visible starting
+     *   value.
      *
      * @param layout the running layout
      * @param at the point the train is being put down on
@@ -283,8 +282,8 @@ public class ArrivalSidePrompt
     }
 
     /**
-     * What one side is called where an operator reads it, for both surfaces (the dialog's buttons and the combo in
-     * `GraphLocAssign`) so a side is worded the same wherever it is offered.
+     * What one side is called where an operator reads it, for the dialog's buttons and the train window's, so a side is
+     * worded the same wherever it is offered.
      *
      * @param side "N", "S", "E" or "W"
      * @return the operator's name for it

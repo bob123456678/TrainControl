@@ -241,10 +241,11 @@ public class testNoSetupEditDuringARun
     }
 
     /**
-     * The diagram's own Edit Locomotive item, opened at rest, refuses and says so when clicked after a run began.  No
-     * factory builds it, so the factories' refusal does not cover it.
+     * The diagram's own Edit Locomotive item, opened at rest and clicked after a run began, opens Locomotive Settings,
+     * whose Autonomy tab writes into the setup: it opens locked and says so, and a Save leaves the setup's copy of the
+     * train as it was.  No factory builds the item, so the factories' refusal does not cover it.
      *
-     * MUTATION: let the item open its dialog while trains run, and this fails.
+     * MUTATION: have `LocomotiveSettings.why` ignore a run, and this fails.
      */
     @Test
     public void testTheDiagramsEditLocomotiveRefusesOnceTrainsRun() throws Exception
@@ -287,32 +288,49 @@ public class testNoSetupEditDuringARun
             // THE DIAGRAM'S MENU, BUILT AT REST, as showFor builds it
             final javax.swing.JMenuItem edit = theEditLocomotiveItem(ui[0], square, at);
 
-            // WHAT THE DOOR WRITES, taken out first so that a write shows
-            session.getStore().getConfiguration(inUse).getJSONObject("points").getJSONObject(square.toString())
-                .remove(AutonomyBuilder.FACING);
+            // WHAT THE TAB WRITES: an old setup's own copy of the train, which a Save would change
+            final org.json.JSONObject points = session.getStore().getConfiguration(inUse).getJSONObject("points");
+            final int length = ui[0].getModel().getLocByName(standing).getTrainLength() == null ? 0
+                : ui[0].getModel().getLocByName(standing).getTrainLength();
+
+            points.getJSONObject(square.toString()).put("loc", new org.json.JSONObject().put("name", standing)
+                .put("trainLength", length + 5));
 
             // THEN A RUN BEGINS - another train
             final Object[] dispatched = dispatchATrain(ui[0], standing);
 
             driving = (Thread) dispatched[3];
 
-            org.traincontrol.gui.TailCrossedPrompt.answerForTests(org.traincontrol.gui.TailCrossedPrompt.DISMISSED);
+            answeringYes(() -> edit.doClick());
 
-            List<String> asked = answeringYes(() -> edit.doClick());
+            assertNotNull(support.SettingsWindow.awaited(), "the diagram's Edit Locomotive, clicked during a run, opened"
+                + " no Locomotive Settings");
+            assertEquals(support.SettingsWindow.tabShowing(), org.traincontrol.gui.LocomotiveSettingsFrame.Tab.AUTONOMY.ordinal(),
+                "the diagram's Edit Locomotive did not open the Autonomy tab");
 
-            org.json.JSONObject after = session.getStore().getConfiguration(inUse).getJSONObject("points")
-                .getJSONObject(square.toString());
+            support.Components.onTheEventThread(() ->
+            {
+                support.SettingsWindow.part("autonomy.length", javax.swing.JSpinner.class).setValue(length + 1);
 
-            assertFalse(after.has(AutonomyBuilder.FACING), "the diagram's Edit Locomotive, opened at rest and clicked while "
-                + dispatched[0] + " was under way, wrote " + standing + "'s facing into the setup - no setup edit is made"
-                + " during a run (RLV12-C3): " + after);
+                return null;
+            });
 
-            assertTrue(asked.contains(I18n.t("ui.main.errorNoEditsWhileRunning")), "the diagram's Edit Locomotive,"
-                + " clicked during a run, did not say why it did nothing: " + asked);
+            assertEquals(support.Components.onTheEventThread(support.SettingsWindow.part("settings.strip",
+                javax.swing.JLabel.class)::getText), I18n.t("loc.ui.settingsAutonomyStrip"), "Locomotive Settings,"
+                + " opened during a run, does not say it is locked");
+
+            answeringYes(() -> support.SettingsWindow.save().doClick());
+
+            org.json.JSONObject after = points.getJSONObject(square.toString()).getJSONObject("loc");
+
+            assertEquals(after.optInt("trainLength", -1), length + 5, "the Autonomy tab, opened from the diagram's Edit"
+                + " Locomotive while " + dispatched[0] + " was under way, wrote " + standing + "'s length into the setup -"
+                + " no setup edit is made during a run (RLV12-C3): " + after);
+
         }
         finally
         {
-            org.traincontrol.gui.TailCrossedPrompt.answerForTests(null);
+            support.SettingsWindow.closeIfOpen();
 
             if (driving != null) driving.interrupt();
 
@@ -1505,140 +1523,6 @@ public class testNoSetupEditDuringARun
     }
 
     /**
-     * The diagram's Edit Locomotive refuses at OK once a run has begun while its dialog was open.  The run is begun
-     * from the answering thread, as one starts while the dialog holds the window: the scripting door is on no window.
-     *
-     * MUTATION: take the refusal at OK out, and this fails.
-     */
-    @Test
-    public void testTheDiagramsEditLocomotiveRefusesAtOkOnceARunBegins() throws Exception
-    {
-        if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
-
-        final TrainControlUI[] ui = new TrainControlUI[1];
-
-        final support.SandboxedWindow sandboxed = new support.SandboxedWindow();
-
-        final Thread[] driving = new Thread[1];
-
-        final List<String> asked = Collections.synchronizedList(new ArrayList<>());
-        final java.util.concurrent.atomic.AtomicBoolean going = new java.util.concurrent.atomic.AtomicBoolean(true);
-
-        try
-        {
-            sandboxed.hold(support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"))).simulated();
-
-            ui[0] = sandboxed.hold(openTheWindow());
-
-            final AutonomySession session = ui[0].getAutonomySession();
-            final String inUse = session.getStore().getActiveConfiguration();
-            final org.traincontrol.automation.Layout railway = ui[0].getModel().getAutoLayout();
-
-            org.traincontrol.automation.Point at = null;
-
-            for (org.traincontrol.automation.Point p : railway.getPoints())
-            {
-                if (at == null && p.isDestination() && p.getCurrentLocomotive() != null
-                    && session.getStationIndex().squareOf(p.getName()) != null)
-                {
-                    at = p;
-                }
-            }
-
-            assertNotNull(at, "precondition: no station with a train standing on it");
-
-            final TileKey square = session.getStationIndex().squareOf(at.getName());
-            final String standing = at.getCurrentLocomotive().getName();
-
-            // AT REST BEFORE THE MENU IS BUILT: it grays what it offers by the window's state as it is built,
-            // and a red with nothing asked said only that the click met no dialog
-            java.lang.reflect.Method busy = TrainControlUI.class.getDeclaredMethod("isAutonomyBusy");
-
-            busy.setAccessible(true);
-
-            long until = System.currentTimeMillis() + 10000;
-
-            while ((Boolean) busy.invoke(ui[0]) && System.currentTimeMillis() < until) Thread.sleep(100);
-
-            assertFalse((Boolean) busy.invoke(ui[0]), "precondition: the window reads busy before the menu is built");
-
-            final javax.swing.JMenuItem edit = theEditLocomotiveItem(ui[0], square, at);
-
-            session.getStore().getConfiguration(inUse).getJSONObject("points").getJSONObject(square.toString())
-                .remove(AutonomyBuilder.FACING);
-
-            org.traincontrol.gui.TailCrossedPrompt.answerForTests(org.traincontrol.gui.TailCrossedPrompt.DISMISSED);
-
-            // THE ANSWERING: the Edit dialog's OK only after a run has begun; every other dialog answered and recorded
-            final TrainControlUI window = ui[0];
-
-            Thread answering = new Thread(() ->
-            {
-                java.util.Set<Object> handled = Collections.newSetFromMap(new java.util.IdentityHashMap<>());
-
-                support.DialogWatch.until(going::get, 150, dialog ->
-                {
-                    javax.swing.JOptionPane pane = findPane(dialog.getContentPane());
-
-                    if (pane == null || !handled.add(pane)) return;
-
-                    if (pane.getMessage() instanceof java.awt.Component && driving[0] == null)
-                    {
-                        try
-                        {
-                            driving[0] = (Thread) dispatchATrainFrom(window, standing)[3];
-                        }
-                        catch (Exception | AssertionError e)
-                        {
-                            asked.add("could not begin a run: " + e);
-                        }
-                    }
-                    else
-                    {
-                        asked.add(String.valueOf(pane.getMessage()));
-                    }
-
-                    final Object[] options = pane.getOptions();
-
-                    SwingUtilities.invokeLater(() -> pane.setValue(options != null && options.length > 0
-                        ? options[0] : Integer.valueOf(javax.swing.JOptionPane.OK_OPTION)));
-                });
-            }, "answering at OK");
-
-            answering.setDaemon(true);
-            answering.start();
-
-            // WHAT THE CLICK MEETS
-            assertTrue(edit.isEnabled(), "precondition: the diagram's Edit Locomotive is greyed: " + edit.getToolTipText());
-
-            SwingUtilities.invokeAndWait(() -> edit.doClick());
-
-            for (int turn = 0; turn < 6; turn++) SwingUtilities.invokeAndWait(() -> { });
-
-            assertNotNull(driving[0], "precondition: no run began while the Edit dialog was open: " + asked);
-
-            org.json.JSONObject after = session.getStore().getConfiguration(inUse).getJSONObject("points")
-                .getJSONObject(square.toString());
-
-            assertFalse(after.has(AutonomyBuilder.FACING), "the diagram's Edit Locomotive, answered OK after a run began"
-                + " while its dialog was open, wrote " + standing + "'s facing into the setup (RLV13-C9): " + after);
-
-            assertTrue(asked.contains(I18n.t("ui.main.errorNoEditsWhileRunning")), "the diagram's Edit Locomotive,"
-                + " answered OK once a run had begun, did not say why it did nothing: " + asked);
-        }
-        finally
-        {
-            going.set(false);
-
-            org.traincontrol.gui.TailCrossedPrompt.answerForTests(null);
-
-            if (driving[0] != null) driving[0].interrupt();
-
-            sandboxed.close();
-        }
-    }
-
-    /**
      * Presses the editor's button with the gate's question queued before its handler, as a click on the main window is
      * while the handler runs; returns what the gate said, waiting up to 10 seconds for it.
      */
@@ -1702,12 +1586,7 @@ public class testNoSetupEditDuringARun
             }
         });
 
-        java.lang.reflect.Method label = org.traincontrol.gui.GraphLocAssign.class.getDeclaredMethod("menuLabelFor",
-            org.traincontrol.automation.Point.class);
-
-        label.setAccessible(true);
-
-        final javax.swing.JMenuItem edit = itemCalled(menu[0], (String) label.invoke(null, at));
+        final javax.swing.JMenuItem edit = itemCalled(menu[0], I18n.t("autolayout.ui.labelEditLocomotiveAt"));
 
         assertNotNull(edit, "precondition: the diagram's menu at " + square + " has no Edit Locomotive item");
 

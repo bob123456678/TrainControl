@@ -27,7 +27,6 @@ import org.traincontrol.automationui.TileGraph.TileKey;
 import org.traincontrol.automationui.TilePorts.Side;
 import org.traincontrol.base.LayoutDiagramComponent;
 import org.traincontrol.base.Locomotive;
-import org.traincontrol.gui.GraphLocAssign;
 import org.traincontrol.gui.LayoutPopupUI;
 import org.traincontrol.gui.TailCrossedPrompt;
 import org.traincontrol.gui.TrainControlUI;
@@ -1269,91 +1268,6 @@ public class testAPageWindowsMenuAsksOverIt
 
             cancelThe(pick);
         });
-    }
-
-    // ---------------------------------------------------------------- Edit Locomotive
-
-    /** The Edit form's item on a station where his train stands. */
-    private static JMenuItem editItem(Window window, TileKey square, Point standing)
-    {
-        return AskingWindows.itemOf(menuOn(window, square), GraphLocAssign.menuLabelFor(standing));
-    }
-
-    /**
-     * Edit Locomotive asks over the window; Cancel writes nothing and OK writes the train into the setup.
-     *
-     * MUTATION: `ui` for `ui.dialogParent()` at the form in `LayoutRightclickAutonomyMenu`, and it hangs off the main
-     * window.
-     */
-    @Test
-    public void testEditLocomotiveAsksOverTheWindow() throws Exception
-    {
-        Point standing = stands(mainB);
-
-        String title = I18n.f("autolayout.ui.dialogEditOrAssignLocomotive", session.getStationIndex().describe(standing));
-
-        String wasInTheSetup = session.getLocomotiveNameAt(mainB);
-
-        String said = null;
-
-        for (Window window : bothWindows())
-        {
-            Answering.Question question = choose(editItem(window, mainB, standing), message -> Answering.pressAt(1), 1).get(0);
-
-            said = said == null ? question.message : said;
-
-            AskingWindows.assertAsked(question, window, title, said, JOptionPane.PLAIN_MESSAGE,
-                String.valueOf(TrainControlUI.OK_CANCEL_OPTS[0]), String.valueOf(TrainControlUI.OK_CANCEL_OPTS[0]),
-                String.valueOf(TrainControlUI.OK_CANCEL_OPTS[1]));
-
-            assertEquals(session.getLocomotiveNameAt(mainB), wasInTheSetup, "Cancel wrote the setup");
-        }
-
-        choose(editItem(page, mainB, standing), message -> Answering.pressAt(0), 1);
-
-        assertTrue(Components.waitFor(() -> HIS_TRAIN.equals(session.getLocomotiveNameAt(mainB)), PATIENCE_MS),
-            "OK over the page's window did not write the setup");
-    }
-
-    /**
-     * A run begun since the menu opened refuses the form over the window.
-     *
-     * MUTATION: in `RunGates.over`, leave out `source == ui`, and it hangs off the main window.
-     */
-    @Test
-    public void testARunBegunSinceTheMenuOpenedIsSaidOverTheWindow() throws Exception
-    {
-        Point standing = stands(mainB);
-
-        for (Window window : bothWindows())
-        {
-            JMenuItem edit = editItem(window, mainB, standing);
-
-            railway().setStagingInProgress(true);
-
-            AskingWindows.assertSaid(choose(edit, message -> null, 1).get(0), window,
-                I18n.t("ui.main.errorNoEditsWhileRunning"));
-
-            railway().setStagingInProgress(false);
-        }
-    }
-
-    /**
-     * With the main window minimized, the form still shows, over the page.
-     *
-     * MUTATION: `ui` for `ui.dialogParent()` at the form in `LayoutRightclickAutonomyMenu`, and it is hidden with the
-     * main window.
-     */
-    @Test
-    public void testWithTheMainWindowMinimizedTheFormShowsOverThePage() throws Exception
-    {
-        Point standing = stands(mainB);
-
-        JMenuItem edit = editItem(page, mainB, standing);
-
-        AskingWindows.minimize(ui, true);
-
-        assertSame(choose(edit, message -> Answering.pressAt(1), 1).get(0).owner, page, "the form is not the page's");
     }
 
     // ---------------------------------------------------------------- the setup report

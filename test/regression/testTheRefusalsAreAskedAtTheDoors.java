@@ -376,17 +376,15 @@ public class testTheRefusalsAreAskedAtTheDoors
      * throwing when it refuses, and a door that discarded that answer wrote the placement into the setup AND SAVED it,
      * so the next build emitted the train on a square it was never put on.
      *
-     * A named list, and every door on it guards, `GraphLocAssign.commitChanges` too: recording no placement for a
-     * refused move keeps the setup honest but not the locomotive, whose dialog values would be written to a train the
-     * railway refused to place.
+     * A named list, and every door on it guards.
      *
-     * MUTATION: drop the `if (!` from any of the three doors, and this names it.
+     * MUTATION: drop the `if (!` from any of the doors, and this names it.
      */
     @Test
     public void testEveryPlacementDoorUsesTheRailwaysAnswer() throws Exception
     {
-        // The doors, for the report: the diagram menu's Place and Remove items, the diagram's paste door, and the
-        // assign dialog.  Asked of the whole program, so a door that moves to another file is still counted.
+        // The doors, for the report: the diagram menu's Place and Remove items, the diagram's paste door and the
+        // rebuild's put-back.  Asked of the whole program, so a door that moves to another file is still counted.
         List<String> wrong = new ArrayList<>();
 
         String source = SourceOf.allCode();
@@ -401,19 +399,18 @@ public class testTheRefusalsAreAskedAtTheDoors
                 + " being kept");
         }
 
-        if (guarded < 5)
+        if (guarded < 4)
         {
-            wrong.add("only " + guarded + " calls of moveLocomotive use its answer, where the diagram menu's two, the assign"
-                + " dialog's one and the window's paste and put-back made five");
+            wrong.add("only " + guarded + " calls of moveLocomotive use its answer, where the diagram menu's two and the"
+                + " window's paste and put-back made four");
         }
 
-        // And each of the five still does, door by door (FR-136): a total holds when one door drops its guard and a
+        // And each of the four still does, door by door (FR-136): a total holds when one door drops its guard and a
         // guarded call is added elsewhere.
         final String[][] doors =
         {
             {"private void placeFacing(String locName, String pointName,", "the diagram menu's Place"},
             {"private void removeLocomotiveHere(Point current)", "the diagram menu's Remove"},
-            {"public boolean commitChanges()", "the assign dialog"},
             {"    boolean locomotiveGestureOnDiagram(int keyCode, boolean controlPressed)", "the window's paste"},
             {"    static java.util.Set<String> putTheTrainsBack(org.traincontrol.automation.Layout built,"
                 + "\n        java.util.Map<String, String[]> standing, java.util.function.Consumer<String> log,"
@@ -449,7 +446,7 @@ public class testTheRefusalsAreAskedAtTheDoors
         // four doors ask it.
         assertEquals(SourceOf.occurrences("placeableFacingsFor("), 2, "a door chooses a placed train's heading among"
             + " the ways trains may arrive in, which turns round a train that can leave the way it faces (OB-284)");
-        assertTrue(SourceOf.occurrences("departableFacingsFor(") >= 7, "a door no longer asks which headings a train can"
+        assertTrue(SourceOf.occurrences("departableFacingsFor(") >= 5, "a door no longer asks which headings a train can"
             + " leave by (OB-284)");
 
         // And each place still asks it (FR-136): a total holds when one door stops asking and another call is added
@@ -457,7 +454,6 @@ public class testTheRefusalsAreAskedAtTheDoors
         final Object[][] places =
         {
             {"    void placeLocomotive(TileKey tile, String name)", 1},
-            {"public static void commitAndRecord(GraphLocAssign edit)", 2},
             {"private LayoutRightclickAutonomyMenu(TrainControlUI ui,", 1},
             {"static String copyToPlaceOn(", 1},
             {"private java.util.Map<String, org.traincontrol.automationui.TilePorts.Side> placeableFacings(", 1},
@@ -527,8 +523,7 @@ public class testTheRefusalsAreAskedAtTheDoors
         // The calls, whichever file holds them.
         java.util.Collections.sort(found);
 
-        assertEquals(found.toString(), "[moveLocomotive(getLoc(), p.getName(), false, true), "
-            + "moveLocomotive(locName, pointName, false, true), "
+        assertEquals(found.toString(), "[moveLocomotive(locName, pointName, false, true), "
             + "moveLocomotive(locomotive, targetPoint, purge, evenOntoABarredCopy, false), "
             + "moveLocomotive(placing.getName(), point.getName(), false, true), "
             + "moveLocomotive(was.getKey(), back.getName(), false, true, true)]",

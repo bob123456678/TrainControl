@@ -608,7 +608,7 @@ public class RouteCommand implements java.io.Serializable
      * read back by splitting on commas, so a name carrying one comes back as a different locomotive; that is all this
      * refuses.  Brackets are allowed ("bracketed loc names should just be allowed"), since conditions are no longer
      * stored as text.  The rule lives next to the format because several doors must agree: the route editor and the two
-     * rename dialogs ask; `AddLocomotive` and the Central Station sync do not.  A null name is reported usable.
+     * rename dialogs ask, and Add Locomotive; the Central Station sync does not.  A null name is reported usable.
      *
      * @param name
      * @return false when a route could not store this name

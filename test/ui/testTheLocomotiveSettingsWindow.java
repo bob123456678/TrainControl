@@ -128,9 +128,8 @@ public class testTheLocomotiveSettingsWindow
 
         assertNotNull(menu, "the key opened no menu");
 
-        for (String gone : new String[] { "loc.ui.submenuManageLocomotive", "loc.ui.menuEditNameAddressDecoder",
-            "loc.ui.menuEditNotes", "loc.ui.menuFindSimilarLocomotives", "loc.ui.menuDeleteFromDatabase",
-            "loc.ui.menuSetLocalLocomotiveIcon", "loc.ui.menuCustomizeFunctionIcons" })
+        for (String gone : new String[] { "loc.ui.menuFindSimilarLocomotives", "loc.ui.menuDeleteFromDatabase",
+            "loc.ui.menuSetLocalLocomotiveIcon" })
         {
             assertNull(Components.withText(menu, I18n.t(gone)), "the key's menu still offers \"" + I18n.t(gone) + "\"");
         }
@@ -201,8 +200,7 @@ public class testTheLocomotiveSettingsWindow
 
         SwingUtilities.invokeAndWait(() -> menu[0] = new RightClickSelectorMenu(ui, null, other));
 
-        for (String gone : new String[] { "loc.ui.menuEditNotes", "loc.ui.menuFindSimilarLocomotives",
-            "loc.ui.menuEditNameAddressDecoder", "loc.ui.menuSetAsMultiUnit", "loc.ui.menuCustomizeFunctionIcons" })
+        for (String gone : new String[] { "loc.ui.menuFindSimilarLocomotives", "loc.ui.menuSetAsMultiUnit" })
         {
             assertNull(Components.withText(menu[0], I18n.t(gone)), "the tile's menu still offers \"" + I18n.t(gone) + "\"");
         }

@@ -236,10 +236,148 @@ final class LocomotiveActions
     }
 
     /**
+     * Add Locomotive (FR-179): makes a locomotive with the refusals Add Locomotive always asked, in its order (the name,
+     * then the address), says it was added and puts it on the selected key if that key is empty.
+     *
+     * @param source what the messages hang off
+     * @return the new locomotive, or null when something was refused (and said so)
+     */
+    Locomotive addLocomotive(Component source, String locName, String typedAddress, decoderType type)
+    {
+        if (locName.trim().length() == 0)
+        {
+            JOptionPane.showMessageDialog(source, I18n.t("loc.errorNameMissing"));
+            return null;
+        }
+
+        if (locName.length() >= TrainControlUI.MAX_LOC_NAME_DATABASE)
+        {
+            JOptionPane.showMessageDialog(source, I18n.f("loc.errorNameTooLong", TrainControlUI.MAX_LOC_NAME_DATABASE));
+            return null;
+        }
+
+        if (this.ui.getModel().getLocByName(locName) != null)
+        {
+            JOptionPane.showMessageDialog(source, I18n.t("loc.errorNameExists"));
+            return null;
+        }
+
+        // A name is born usable too (MT-270): routes store locomotives by name, comma-separated
+        if (!org.traincontrol.base.RouteCommand.isNameUsable(locName))
+        {
+            JOptionPane.showMessageDialog(source, I18n.t("loc.ui.errorLocomotiveNameUnusable"));
+            return null;
+        }
+
+        int locAddress;
+
+        try
+        {
+            locAddress = Math.abs(Conversion.parseTypedAddress(typedAddress, type == decoderType.MFX));
+        }
+        catch (NumberFormatException e)
+        {
+            JOptionPane.showMessageDialog(source, I18n.t("loc.errorAddressNotNumeric"));
+            return null;
+        }
+
+        // The model's own rule, asked rather than re-stated; the message names the type's range
+        if (!org.traincontrol.marklin.MarklinLocomotive.validateNewAddress(type, locAddress))
+        {
+            JOptionPane.showMessageDialog(source, I18n.t(type == decoderType.MM2 ? "loc.errorMM2AddressOutOfRange"
+                : type == decoderType.DCC ? "loc.errorDCCAddressOutOfRange"
+                : type == decoderType.MFX ? "loc.errorMFXAddressOutOfRange" : "loc.errorAddressOutOfRange"));
+            return null;
+        }
+
+        Locomotive made = type == decoderType.MFX ? this.ui.getModel().newMFXLocomotive(locName, locAddress)
+            : type == decoderType.DCC ? this.ui.getModel().newDCCLocomotive(locName, locAddress)
+            : this.ui.getModel().newMM2Locomotive(locName, locAddress);
+
+        this.ui.getLocSelector().refreshLocSelectorList();
+
+        JOptionPane.showMessageDialog(source, I18n.t("loc.infoAddedSuccessfully"));
+
+        this.ui.mapLocToCurrentButton(locName, true);
+
+        return made;
+    }
+
+    /**
+     * Check Duplicates: writes every address more than one locomotive shares to the log, MFX and the rest apart, and
+     * says whether the typed address is used by a locomotive other than {@code self}.
+     *
+     * @param self the locomotive being edited, or null when adding one
+     */
+    void checkDuplicates(Component source, String typedAddress, decoderType type, Locomotive self)
+    {
+        int locAddress;
+
+        try
+        {
+            locAddress = Conversion.parseTypedAddress(typedAddress, type == decoderType.MFX);
+        }
+        catch (NumberFormatException e)
+        {
+            JOptionPane.showMessageDialog(source, I18n.t("loc.errorAddressNotNumeric"));
+            return;
+        }
+
+        Map<Integer, java.util.Set<Locomotive>> locs = this.ui.getModel().getDuplicateLocAddresses();
+
+        if (!locs.isEmpty())
+        {
+            List<Integer> sortedLocs = new java.util.ArrayList<>(locs.keySet());
+            Collections.sort(sortedLocs, Collections.reverseOrder());
+
+            this.ui.getModel().logf("loc.reportMfxHeader");
+            logShared(locs, sortedLocs, true);
+
+            this.ui.getModel().logf("loc.reportNonMfxHeader");
+            logShared(locs, sortedLocs, false);
+
+            this.ui.getModel().logf("loc.reportDuplicateSummary");
+        }
+        else
+        {
+            this.ui.getModel().logf("loc.reportNoDuplicates");
+        }
+
+        if (locAddress <= 0) return;
+
+        // Every address in use, not the duplicate list, which leaves out an address with one locomotive
+        java.util.Set<Locomotive> using = this.ui.getModel().getLocAddresses().get(locAddress);
+
+        boolean inUse = using != null && using.stream().anyMatch(other -> other != self);
+
+        JOptionPane.showMessageDialog(source, I18n.t(inUse ? "loc.errorAddressInUse" : "loc.infoAddressFree"));
+    }
+
+    /** The report's lines for each shared address, of MFX locomotives or of the rest. */
+    private void logShared(Map<Integer, java.util.Set<Locomotive>> locs, List<Integer> addresses, boolean mfx)
+    {
+        for (Integer addr : addresses)
+        {
+            List<Locomotive> shared = locs.get(addr).stream()
+                .filter(l -> (l.getDecoderType() == decoderType.MFX) == mfx)
+                .collect(Collectors.toList());
+
+            if (shared.size() < 2) continue;
+
+            for (Locomotive l : shared)
+            {
+                this.ui.getModel().log("\t" + l.getName() + " [" + l.getDecoderTypeLabel() + "]");
+            }
+
+            this.ui.getModel().logf("loc.reportAddressSeparator", addr);
+        }
+    }
+
+    /**
      * Shows the user locomotives similar to searchLoc, and maps them to a page if requested
      * @param searchLoc
-     * @param evt 
-     */ 
+     * @param evt
+     */
     void findSimilarLocs(Locomotive searchLoc, MouseEvent evt)
     {
         findSimilarLocs(searchLoc, evt != null ? (Component) evt.getSource() : this.ui);

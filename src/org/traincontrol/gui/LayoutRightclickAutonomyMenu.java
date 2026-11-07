@@ -439,6 +439,18 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
                     menuItem.setEnabled(false);
                     add(menuItem);
 
+                    // The standing train's own settings (FR-048), at rest as Place and Remove are
+                    if (locomotive != null && !ui.aRunHoldsTheSetup())
+                    {
+                        final Locomotive standing = locomotive;
+
+                        menuItem = new JMenuItem(I18n.t("autolayout.ui.labelEditLocomotiveAt"));
+                        menuItem.addActionListener(event -> ui.openLocomotiveSettings(standing,
+                            LocomotiveSettingsFrame.Tab.AUTONOMY, null));
+
+                        add(menuItem);
+                    }
+
                     // Place a different locomotive at this station, FACING a chosen way.  A square is several Points,
                     // one per side a train can arrive by, each leaving only the way its own facing allows, so "put it
                     // here" must pick the copy.  Offered only on a destination.  Which copy the train stands on is its
@@ -496,49 +508,6 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
                         add(menuItem); 
                     }
                     
-                    if (!ui.getModel().getAutoLayout().getLocomotivesToRun().isEmpty() && !ui.aRunHoldsTheSetup())
-                    {
-                        // Edit locomotive
-                        menuItem = new JMenuItem(GraphLocAssign.menuLabelFor(current));
-                        menuItem.addActionListener(event ->
-                        {
-                            // Not while trains run: a click after a run began would write the placement, facing and
-                            // tail into the setup.  Asked at the click and again at OK.
-                            if (refusedWhileRunning()) return;
-
-                            // The setup goes in with it: the dialog works this square's sides out from the build.
-                            GraphLocAssign edit = new GraphLocAssign(ui, current,
-                                ui.getAutonomySession(),
-                                ui.getModel() == null ? null : ui.getModel().getAutoLayout());
-
-                            int dialogResult = JOptionPane.showOptionDialog(
-                                ui.dialogParent(),
-                                // The form with the arrival side under it (`asDialogContent`).
-                                edit.asDialogContent(),
-                                I18n.f("autolayout.ui.dialogEditOrAssignLocomotive",
-                                    stationName(current)),
-                                JOptionPane.OK_CANCEL_OPTION,
-                                JOptionPane.PLAIN_MESSAGE,
-                                null,
-                                TrainControlUI.OK_CANCEL_OPTS,
-                                TrainControlUI.OK_CANCEL_OPTS[0]
-                            );
-
-                            if (dialogResult == JOptionPane.OK_OPTION)
-                            {
-                                if (refusedWhileRunning()) return;
-
-                                // And into the setup, through the shared door, so an assignment survives the next load.
-                                GraphLocAssign.commitAndRecord(edit);
-
-                                ui.updateVisiblePoints();
-                                ui.repaintAutoLocList(false);
-                            }
-                        }); 
-
-                        add(menuItem);
-                    }
-
                     // The train's own window, or placing one by name on an empty station (FR-111)
                     if (here != null)
                     {
@@ -892,7 +861,7 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
     /**
      * Whether the operator marked this square as one trains may turn round at.  Asked of the SETUP, because
      * `canReverse` never reaches the running layout (the builder splits the square); the same answer as
-     * `TrainControlUI.mayTurnHere` and `GraphLocAssign`.
+     * `TrainControlUI.mayTurnHere`.
      *
      * @return true when trains may turn there
      */
