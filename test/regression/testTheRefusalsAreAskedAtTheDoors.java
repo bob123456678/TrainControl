@@ -151,6 +151,9 @@ public class testTheRefusalsAreAskedAtTheDoors
             + " tab's own copy never asked about an editor (RLV12-B1)"},
         {"private void addLocomotiveMenuItemActionPerformed(", AUTONOMY,
             "MT-141: no modification to the locomotive database while the layout is running"},
+        {"    Locomotive addLocomotive(Component source, String locName,", AUTONOMY,
+            "the same, at Add, for every door into Add mode (Ctrl+D, the database window's button) and for a window"
+            + " open when a run began (FR-179)"},
         {"public void promptTrainLength(", AUTONOMY,
             "RSA-A1, MT-141: a train's length is part of the locomotive database, and a run hands the track behind a"
             + " train back by it"},
