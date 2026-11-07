@@ -507,24 +507,25 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
             trash.setContentAreaFilled(false);
             trash.addActionListener(e -> delete());
 
+            // The fields are at the tab's left edge and the picture at its right, level with Name under its label; the
+            // trash can is under Address, and the divider is midway between it and Preset Speed
+            final Insets edge = new Insets(4, 4, 4, 6);
+            final Insets inner = new Insets(4, 4, 4, 6);
+
             GridBagConstraints gbc = new GridBagConstraints();
-            gbc.insets = new Insets(4, 6, 4, 6);
+            gbc.insets = inner;
             gbc.anchor = GridBagConstraints.WEST;
 
-            // The picture, with what it does under it and the trash can that deletes the locomotive
-            gbc.gridx = 0;
+            gbc.gridx = 3;
             gbc.gridy = 0;
-            gbc.gridheight = 7;
-            gbc.anchor = GridBagConstraints.NORTHWEST;
-            JPanel pictureColumn = new JPanel(new BorderLayout(0, 4));
-            JPanel trashRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
-            trashRow.setBorder(BorderFactory.createEmptyBorder(8, 0, 0, 0));
-            trashRow.add(trash);
-            pictureColumn.add(picture, BorderLayout.NORTH);
-            pictureColumn.add(trashRow, BorderLayout.CENTER);
-            add(pictureColumn, gbc);
+            gbc.insets = new Insets(4, 6, 4, 4);
+            gbc.anchor = GridBagConstraints.NORTHEAST;
+            add(UiStyle.heading(I18n.t("loc.ui.settingsLocomotiveIcon")), gbc);
 
-            // Labels on their fields' baseline, and the three fields one width
+            gbc.gridy = 1;
+            gbc.gridheight = 8;
+            add(picture, gbc);
+
             gbc.gridheight = 1;
             gbc.anchor = GridBagConstraints.WEST;
 
@@ -533,41 +534,41 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
 
             for (int i = 0; i < fields.length; i++)
             {
-                gbc.gridy = i;
-                gbc.gridx = 1;
+                gbc.gridy = i + 1;
+                gbc.gridx = 0;
                 gbc.weightx = 0;
                 gbc.fill = GridBagConstraints.NONE;
+                gbc.insets = edge;
                 add(label(I18n.t(labels[i])), gbc);
-                gbc.gridx = 2;
-                gbc.weightx = 1;
+                gbc.gridx = 1;
                 gbc.fill = GridBagConstraints.HORIZONTAL;
+                gbc.insets = inner;
                 add(fields[i], gbc);
             }
 
-            gbc.weightx = 1;
             gbc.fill = GridBagConstraints.NONE;
-            gbc.gridx = 2;
-            gbc.gridy = 3;
-            add(sameAddress, gbc);
-
-            // The divider is midway between the Address row and the Preset Speed row: the room above it is the warning's
-            // row, and the same room is put below it
             gbc.gridx = 1;
             gbc.gridy = 4;
+            add(sameAddress, gbc);
+
+            gbc.gridx = 0;
+            gbc.gridy = 5;
+            gbc.insets = edge;
+            add(trash, gbc);
+
+            gbc.gridy = 6;
             gbc.gridwidth = 2;
             gbc.fill = GridBagConstraints.HORIZONTAL;
-            gbc.insets = new Insets(0, 6, sameAddress.getPreferredSize().height + 8, 6);
+            gbc.insets = new Insets(6, 4, 6, 6);
             add(new javax.swing.JSeparator(), gbc);
-            gbc.insets = new Insets(4, 6, 4, 6);
             gbc.gridwidth = 1;
             gbc.fill = GridBagConstraints.NONE;
 
-            gbc.gridx = 1;
-            gbc.gridy = 5;
-            gbc.weightx = 0;
+            gbc.gridy = 7;
+            gbc.insets = edge;
             add(label(I18n.t("loc.ui.settingsPresetSpeed")), gbc);
-            gbc.gridx = 2;
-            gbc.weightx = 1;
+            gbc.gridx = 1;
+            gbc.insets = inner;
             JPanel speedRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
             speedRow.setOpaque(false);
             speedRow.add(speed);
@@ -577,9 +578,15 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
             speedRow.add(InfoMark.label(I18n.t("loc.ui.settingsPresetSpeedHint")));
             add(speedRow, gbc);
 
-            // The rest of the tab is room
-            gbc.gridx = 1;
-            gbc.gridy = 6;
+            // The room between the fields and the picture, and the rest of the tab below
+            gbc.gridx = 2;
+            gbc.gridy = 1;
+            gbc.weightx = 1;
+            add(new JLabel(), gbc);
+
+            gbc.gridx = 0;
+            gbc.gridy = 8;
+            gbc.weightx = 0;
             gbc.weighty = 1;
             add(new JLabel(), gbc);
 
@@ -714,7 +721,9 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
 
                 if (url == null || url.isEmpty())
                 {
-                    picture.setIcon(null);
+                    // The application's stand-in, as the locomotive buttons and the database show it (FR-054)
+                    picture.setIcon(new javax.swing.ImageIcon(
+                        org.traincontrol.gui.locomotive.LocomotivePlaceholder.image(PICTURE_WIDTH - 2)));
                 }
                 else
                 {

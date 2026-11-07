@@ -560,6 +560,61 @@ public class testTheLocomotiveSettingsWindow
         assertEquals(SettingsWindow.text("settings.name"), THIRD);
     }
 
+    /** How many Locomotive Settings windows are open. */
+    private static long windowsOpen()
+    {
+        return Components.onTheEventThread(() -> java.util.Arrays.stream(java.awt.Window.getWindows())
+            .filter(w -> w instanceof LocomotiveSettingsFrame && w.isDisplayable()).count());
+    }
+
+    /**
+     * There is only ever one Locomotive Settings window: a second locomotive, opened from another door, and a third,
+     * show in the same window; and when it was closed, the next door makes one new window.
+     *
+     * MUTATION: always construct a new frame in `TrainControlUI.openLocomotiveSettings`, and this fails.
+     */
+    @Test
+    public void testOnlyOneLocomotiveSettingsWindowIsEverOpen() throws Exception
+    {
+        open(0);
+
+        assertEquals(windowsOpen(), 1L, "the first door made " + windowsOpen() + " windows");
+
+        LocomotiveSettingsFrame first = SettingsWindow.showing();
+
+        assertTrue(SettingsWindow.open(ui, other, LocomotiveSettingsFrame.Tab.NOTES, null), "the second door did not open");
+        assertEquals(windowsOpen(), 1L, "a second locomotive made another window");
+        assertSame(SettingsWindow.showing(), first, "a second locomotive opened a different window");
+        assertSame(Components.onTheEventThread(first::getLocomotive), other, "the window does not show the second locomotive");
+
+        JPopupMenu[] tile = new JPopupMenu[1];
+
+        SwingUtilities.invokeAndWait(() -> tile[0] = new RightClickSelectorMenu(ui, null, third));
+
+        AbstractButton settings = Components.withText(tile[0], I18n.t("loc.ui.menuLocomotiveSettings"));
+
+        Components.onTheEventThread(() ->
+        {
+            settings.doClick(0);
+
+            return null;
+        });
+
+        Components.settle();
+
+        assertEquals(windowsOpen(), 1L, "the database's door made another window");
+        assertSame(Components.onTheEventThread(first::getLocomotive), third, "the window does not show the third locomotive");
+
+        SettingsWindow.press(SettingsWindow.cancel());
+
+        assertEquals(windowsOpen(), 0L, "Cancel left a window open");
+
+        open(0);
+
+        assertEquals(windowsOpen(), 1L, "opening after a close made " + windowsOpen() + " windows");
+        assertSame(Components.onTheEventThread(SettingsWindow.showing()::getLocomotive), loc, "the new window shows another locomotive");
+    }
+
     /**
      * The application's exit asks about unsaved typing in the window.
      *

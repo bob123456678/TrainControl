@@ -91,7 +91,7 @@ public class testTheLocomotiveSettingsLooks extends support.SettingsClass
     }
 
     /**
-     * The first tab's labels (Name, Decoder Type, Address, Preset Speed) are dark blue and the other tabs' item labels
+     * The first tab's labels (Name, Decoder Type, Address, Preset Speed, Locomotive Icon) are dark blue and the other tabs' item labels
      * and the Functions table's column headings are black, all Semibold 13: nothing else in the window is blue.
      *
      * MUTATION: make `LocomotiveSettingsFrame.label` black, or `UiStyle.style` blue, or the Functions table header's
@@ -102,7 +102,8 @@ public class testTheLocomotiveSettingsLooks extends support.SettingsClass
     {
         opened();
 
-        String[] blue = { "ui.name", "loc.ui.decoderType", "layout.ui.address", "loc.ui.settingsPresetSpeed" };
+        String[] blue = { "ui.name", "loc.ui.decoderType", "layout.ui.address", "loc.ui.settingsPresetSpeed",
+            "loc.ui.settingsLocomotiveIcon" };
         String[] black = { "loc.ui.settingsPresetLabel", "loc.ui.settingsIconsLabel", "loc.ui.labelStartYear",
             "loc.ui.labelEndYear", "loc.ui.labelRailwayName", "loc.ui.labelNotes", "loc.ui.filterList" };
 
@@ -133,7 +134,7 @@ public class testTheLocomotiveSettingsLooks extends support.SettingsClass
         java.util.List<JLabel> blues = Components.all(SettingsWindow.showing().getContentPane(), JLabel.class,
             l -> UiStyle.BLUE.equals(l.getForeground()));
 
-        assertEquals(blues.size(), blue.length, "blue labels are only the first tab's four");
+        assertEquals(blues.size(), blue.length, "blue labels are only the first tab's five");
     }
 
     private static java.awt.Rectangle inWindow(java.awt.Component c)
@@ -143,24 +144,26 @@ public class testTheLocomotiveSettingsLooks extends support.SettingsClass
     }
 
     /**
-     * The divider on the first tab sits midway between the Address field and the Preset Speed spinner, within 2 pixels.
+     * The divider on the first tab sits midway between the trash can above it and the Preset Speed spinner below it,
+     * within 2 pixels.
      *
-     * MUTATION: drop the divider's bottom inset in `LocomotiveSettingsFrame.LocomotiveTab`, and this fails.
+     * MUTATION: give the divider's row in `LocomotiveSettingsFrame.LocomotiveTab` a bottom inset of 20, and this fails.
      */
     @Test
-    public void testTheDividerIsMidwayBetweenAddressAndPresetSpeed() throws Exception
+    public void testTheDividerIsMidwayBetweenTheTrashCanAndPresetSpeed() throws Exception
     {
         opened();
 
-        java.awt.Rectangle address = inWindow(SettingsWindow.part("settings.address", javax.swing.JTextField.class));
+        java.awt.Rectangle can = inWindow(SettingsWindow.part("settings.trash", javax.swing.JButton.class));
         java.awt.Rectangle speed = inWindow(SettingsWindow.part("settings.speed", javax.swing.JSpinner.class));
-        javax.swing.JSeparator divider = Components.find(SettingsWindow.showing().getContentPane(), javax.swing.JSeparator.class, null);
-        java.awt.Rectangle line = inWindow(divider);
+        java.awt.Rectangle line = inWindow(Components.find(SettingsWindow.showing().getContentPane(),
+            javax.swing.JSeparator.class, null));
 
-        int above = line.y - (address.y + address.height);
+        int above = line.y - (can.y + can.height);
         int below = speed.y - (line.y + line.height);
 
-        assertTrue(Math.abs(above - below) <= 2, "the divider is " + above + " px under Address and " + below + " px above Preset Speed");
+        assertTrue(Math.abs(above - below) <= 2, "the divider is " + above + " px under the trash can and " + below
+            + " px above Preset Speed");
     }
 
     /**
@@ -199,37 +202,73 @@ public class testTheLocomotiveSettingsLooks extends support.SettingsClass
     }
 
     /**
-     * The first tab's picture box is at least 260 by 130, wider than tall like a locomotive picture, with the trash can
-     * under it and the fields to its right, level with its top.
+     * The first tab keeps its fields at the left edge and its picture, at least 260 by 130 and wider than tall, at the
+     * right, level with Name and ending where Cancel ends, under a blue "Locomotive Icon" label; the trash can is under
+     * Address, at the fields' left edge, above the divider and Preset Speed.
      *
-     * MUTATION: set `PICTURE_WIDTH` and `PICTURE_HEIGHT` in `LocomotiveSettingsFrame` back to 200 and 90, or move the
-     * trash can's row beside the picture, and this fails.
+     * MUTATION: put the picture back in the first column of `LocomotiveSettingsFrame.LocomotiveTab`, or the trash can
+     * back under the picture, or drop the label, and this fails.
      */
     @Test
-    public void testThePictureBoxIsLargeWithTheTrashCanUnderIt() throws Exception
+    public void testThePictureIsAtTheRightAndTheFieldsAndTheTrashCanAtTheLeft() throws Exception
     {
         opened();
 
         JLabel picture = SettingsWindow.part("settings.picture", JLabel.class);
         javax.swing.JButton trash = SettingsWindow.part("settings.trash", javax.swing.JButton.class);
-        javax.swing.JTextField name = SettingsWindow.part("settings.name", javax.swing.JTextField.class);
-        java.awt.Container root = SettingsWindow.showing().getContentPane();
-
-        java.awt.Rectangle box = Components.onTheEventThread(
-            () -> javax.swing.SwingUtilities.convertRectangle(picture.getParent(), picture.getBounds(), root));
-        java.awt.Rectangle can = Components.onTheEventThread(
-            () -> javax.swing.SwingUtilities.convertRectangle(trash.getParent(), trash.getBounds(), root));
-        java.awt.Rectangle field = Components.onTheEventThread(
-            () -> javax.swing.SwingUtilities.convertRectangle(name.getParent(), name.getBounds(), root));
+        java.awt.Rectangle box = inWindow(picture);
+        java.awt.Rectangle can = inWindow(trash);
+        java.awt.Rectangle name = inWindow(SettingsWindow.part("settings.name", javax.swing.JTextField.class));
+        java.awt.Rectangle address = inWindow(SettingsWindow.part("settings.address", javax.swing.JTextField.class));
+        java.awt.Rectangle speed = inWindow(SettingsWindow.part("settings.speed", javax.swing.JSpinner.class));
+        java.awt.Rectangle nameLabel = inWindow(labelFor("ui.name"));
+        java.awt.Rectangle cancel = inWindow(SettingsWindow.cancel());
+        java.awt.Rectangle line = inWindow(Components.find(SettingsWindow.showing().getContentPane(),
+            javax.swing.JSeparator.class, null));
+        JLabel caption = labelFor("loc.ui.settingsLocomotiveIcon");
 
         assertTrue(box.width >= 260 && box.height >= 130, "the picture box is only " + box.width + " by " + box.height);
         assertTrue(box.width > box.height, "the picture box is not wide like a locomotive picture");
-        assertTrue(can.y >= box.y + box.height, "the trash can (y " + can.y + ") is not under the picture (bottom "
-            + (box.y + box.height) + ")");
-        assertTrue(can.x >= box.x && can.x < box.x + box.width, "the trash can is not under the picture's width");
-        assertTrue(field.x >= box.x + box.width, "the fields are not to the right of the picture");
-        assertTrue(Math.abs(Math.min(field.y, box.y) - box.y) <= 12 && field.y - box.y <= 12,
-            "the first field (y " + field.y + ") is not top-aligned with the picture (y " + box.y + ")");
+        assertTrue(Math.abs(box.x + box.width - (cancel.x + cancel.width)) <= 1, "the picture ends at " + (box.x + box.width)
+            + ", Cancel at " + (cancel.x + cancel.width));
+        assertTrue(name.x + name.width < box.x, "the fields are not left of the picture");
+        assertTrue(nameLabel.x <= 20, "the labels start " + nameLabel.x + " px in");
+        assertTrue(Math.abs(Math.min(name.y, box.y) - box.y) <= 12 && name.y - box.y <= 12,
+            "Name (y " + name.y + ") is not level with the picture (y " + box.y + ")");
+
+        assertNotNull(caption, "no Locomotive Icon label");
+        assertEquals(caption.getForeground(), UiStyle.BLUE, "the Locomotive Icon label is not blue");
+        assertTrue(inWindow(caption).y + inWindow(caption).height <= box.y, "the label is not above the picture");
+
+        assertTrue(can.y >= address.y + address.height, "the trash can is not under Address");
+        assertTrue(Math.abs(can.x - nameLabel.x) <= 8, "the trash can (x " + can.x + ") is not at the fields' left edge (x "
+            + nameLabel.x + ")");
+        assertTrue(can.y + can.height <= line.y && line.y + line.height <= speed.y,
+            "the trash can, the divider and Preset Speed are not in that order");
+    }
+
+    /**
+     * With no picture the box shows the application's stand-in locomotive at the box's width, not stretched.
+     *
+     * MUTATION: show a blank 10 by 10 image instead of `LocomotivePlaceholder.image` for a locomotive without a picture in
+     * `LocomotiveSettingsFrame.LocomotiveTab.refreshPicture`, and this fails.
+     */
+    @Test
+    public void testNoPictureShowsTheStandInLocomotive() throws Exception
+    {
+        opened();
+
+        JLabel picture = SettingsWindow.part("settings.picture", JLabel.class);
+        Icon shown = Components.onTheEventThread(picture::getIcon);
+
+        assertNotNull(shown, "the empty picture box shows nothing");
+
+        int box = Components.onTheEventThread(picture::getWidth);
+
+        assertTrue(shown.getIconWidth() <= box - 2 && shown.getIconHeight() <= picture.getHeight() - 2, "the stand-in does not fit the box");
+        assertEquals(pixels(shown), pixels(new javax.swing.ImageIcon(
+            org.traincontrol.gui.locomotive.LocomotivePlaceholder.image(shown.getIconWidth()))),
+            "the box does not show the application's stand-in locomotive");
     }
 
     /**
