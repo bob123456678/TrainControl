@@ -80,26 +80,6 @@ public class testReturnHomeIsTheSameEveryTime
         return plan.getOutcome() + " " + moves;
     }
 
-    /** A plan with the search's clock stepped this far a read, where the planner still has a clock. */
-    private static HomeStaging.Plan planWithAClockStepping(long step) throws Exception
-    {
-        HomeStaging staging = HomeStaging.snapshot(railway());
-
-        Field clock = null;
-
-        for (Field each : HomeStaging.class.getDeclaredFields()) if (each.getName().equals("clock")) clock = each;
-
-        if (clock != null)
-        {
-            long[] now = {1000};
-
-            clock.setAccessible(true);
-            clock.set(staging, (java.util.function.LongSupplier) () -> now[0] += step);
-        }
-
-        return staging.plan();
-    }
-
     /**
      * Ten replans in this JVM give one plan, and it is the pinned one, which no other JVM can then differ from.
      *
@@ -117,9 +97,10 @@ public class testReturnHomeIsTheSameEveryTime
     }
 
     /**
-     * The clock has no say: the planner reads none, and where one could be stepped, any rate gives the pinned plan.
+     * The clock has no say: the planner reads none, so a slow or busy machine gets the plan a fast one finds, never
+     * NO_PLAN_FOUND where a fast one finds a plan.
      *
-     * MUTATION: put back a fifteen-second deadline read through a `clock` field, and this fails on both counts.
+     * MUTATION: put back a fifteen-second deadline read from `System.currentTimeMillis`, and this fails.
      */
     @Test(timeOut = 300000)
     public void testTheSamePlanWhateverTheClockSays() throws Exception
@@ -132,27 +113,43 @@ public class testReturnHomeIsTheSameEveryTime
             assertFalse(source.contains(clock), "the planner reads the time (" + clock + "), so a slower machine can get a"
                 + " different plan");
         }
-
-        for (long step : new long[] {0, 1, 100, 300})
-        {
-            assertEquals(movesOf(planWithAClockStepping(step)), PINNED, "with the clock stepped " + step + " ms a read");
-        }
     }
 
     /**
-     * A machine slow enough to spend 700 ms or more a step still gets the plan a fast one finds, not NO_PLAN_FOUND.
+     * Seven trains on his railway get the 7-move plan 3.0.8 finds on its clock: the unit tracks time whatever the train
+     * count, so the search from where they stand gets the share of the budget its time would have bought.
      *
-     * MUTATION: put back a fifteen-second deadline read through a `clock` field, and this answers NO_PLAN_FOUND.
+     * MUTATION: count an edge as one unit plus a charge for each train with a length, in a 90 million budget, and this
+     * answers NO_PLAN_FOUND.
      */
     @Test(timeOut = 300000)
-    public void testASlowMachineIsNotRefused() throws Exception
+    public void testSevenTrainsGetThePlanTheClockFound() throws Exception
     {
-        for (long step : new long[] {700, 3000})
-        {
-            HomeStaging.Plan plan = planWithAClockStepping(step);
+        model.parseAuto(built);
 
-            assertEquals(movesOf(plan), PINNED, "a machine taking " + step + " ms a step was answered differently");
-        }
+        Layout layout = model.getAutoLayout();
+
+        String[][] standing = {{"BottomInnerOtherside", "BR 03 1022"}, {"ParkingTrack4", "Re4/4II 11229SBB"},
+            {"TopR1ParkLong", "SBBC 421 378-1"}};
+
+        for (String[] train : standing) layout.getPoint(train[0]).setLocomotive(model.getLocByName(train[1]));
+
+        layout.clearHomeLocomotives();
+        layout.setHomeLocomotive("RampDown (southbound)", "2-8-4 3505 SP");
+        layout.setHomeLocomotive("BottomMainPost (northbound)", "SBBC 421 378-1");
+        layout.setHomeLocomotive("ParkingTrack5", "EN57-947");
+        layout.setHomeLocomotive("TopMainR1", "75 407 DB");
+        layout.setHomeLocomotive("Tunnel (southbound)", "Re4/4II 11229SBB");
+        layout.setHomeLocomotive("BottomMainB (eastbound)", "EN57-203");
+        layout.setHomeLocomotive("BottomInnerOtherside", "BR 03 1022");
+
+        assertEquals(layout.getHomeStations().size(), 7, "precondition: seven homes");
+
+        HomeStaging.Plan plan = HomeStaging.snapshot(layout).plan();
+
+        assertEquals(movesOf(plan), "READY [EN57-203 -> BottomMainB (8), EN57-947 -> ParkingTrack5 (6),"
+            + " SBBC 421 378-1 -> ParkingTrack6 (13), 2-8-4 3505 SP -> RampDown (4), 75 407 DB -> TopMainR1 (7),"
+            + " SBBC 421 378-1 -> BottomMainPost (8), Re4/4II 11229SBB -> Tunnel (5)]", "seven trains");
     }
 
     /**
