@@ -207,24 +207,7 @@ public class testALinkOnAStationGoesByPageId
 
             try
             {
-                String was = support.TestStationAddress.get();
-
-                try
-                {
-                    support.TestStationAddress.set(station.address());
-
-                    model.downloadLayout(copy);
-                }
-                catch (Exception afterThePages)
-                {
-                    // Only the files after the pages may be missing from the stand-in
-                }
-                finally
-                {
-                    support.TestStationAddress.set(was);
-                }
-
-                TrainControlUI.getPrefs().put(TrainControlUI.LAYOUT_OVERRIDE_PATH_PREF, copy.getAbsolutePath());
+                downloadTo(copy);
 
                 Map<String, String> onTheCopy = everyLink();
 
@@ -245,6 +228,76 @@ public class testALinkOnAStationGoesByPageId
         }
 
         assertEquals(problems.toString(), "[]", "a downloaded copy's arrows go elsewhere than the station's");
+    }
+
+    /**
+     * A downloaded copy saves each arrow's number beside its ID, so an arrow of the copy re-aimed in 3.0.8, which
+     * changes only `.artikel` to a place in the name-sorted list, goes to its new page.
+     *
+     * MUTATION: `withLinkPageIds` writes no `.zielartikel`, and on the copy the arrow goes where its station ID says.
+     */
+    @Test
+    public void testADownloadedCopysArrowReAimedIn308GoesToItsNewPage() throws Exception
+    {
+        servingTheGenuineStructure();
+
+        assertEquals(everyLink().get("0 Stations|10,9"), "2 Yard", "precondition: the station's arrow goes elsewhere");
+
+        File copy = Files.createTempDirectory("tc-download").toFile();
+
+        try
+        {
+            downloadTo(copy);
+
+            Map<String, String> onTheCopy = everyLink();
+
+            assertEquals(onTheCopy.get("0 Stations|10,9"), "2 Yard", "precondition: the copy's arrow goes elsewhere: "
+                + onTheCopy);
+
+            // 3.0.8 re-aims it at 1 Goods, second by name
+            File page = new File(copy, "config/gleisbilder/0 Stations.cs2");
+
+            String text = new String(Files.readAllBytes(page.toPath()), StandardCharsets.UTF_8);
+
+            String arrow = " .id=0x90a\n .typ=pfeil\n .drehung=2\n .artikel=2\n";
+
+            assertTrue(text.replace("\r", "").contains(arrow), "precondition: the copy does not hold the arrow as served");
+
+            Files.write(page.toPath(), text.replace("\r", "").replace(arrow, arrow.replace(" .artikel=2\n", " .artikel=1\n"))
+                .getBytes(StandardCharsets.UTF_8));
+
+            assertEquals(everyLink().get("0 Stations|10,9"), "1 Goods", "the copy's arrow re-aimed in 3.0.8 did not go "
+                + "to its new page");
+        }
+        finally
+        {
+            TrainControlUI.getPrefs().put(TrainControlUI.LAYOUT_OVERRIDE_PATH_PREF, "");
+
+            deleteTree(copy);
+        }
+    }
+
+    /** Downloads the station's layout into this folder, and points the layout preference at it. */
+    private void downloadTo(File copy)
+    {
+        String was = support.TestStationAddress.get();
+
+        try
+        {
+            support.TestStationAddress.set(station.address());
+
+            model.downloadLayout(copy);
+        }
+        catch (Exception afterThePages)
+        {
+            // Only the files after the pages may be missing from the stand-in
+        }
+        finally
+        {
+            support.TestStationAddress.set(was);
+        }
+
+        TrainControlUI.getPrefs().put(TrainControlUI.LAYOUT_OVERRIDE_PATH_PREF, copy.getAbsolutePath());
     }
 
     private static final String[] GENUINE_NAMES = {"0 Stations", "1 Goods", "2 Yard", "3 Sensors"};
