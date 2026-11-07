@@ -131,6 +131,42 @@ public class testTheTrainWindow
     // ---------------------------------------------------------------------------------------------------- the window
 
     /**
+     * Blue is for section headings and the train popup has none: its row labels (Train, Active, Facing, Arrived from, Tail
+     * lies) are black Semibold 13, as Station Settings' are, and nothing in it is blue.
+     *
+     * MUTATION: build a row label with `UiStyle.label`, which is blue, and this fails.
+     */
+    @Test(timeOut = 120000)
+    public void testTheRowLabelsAreBlack() throws Exception
+    {
+        AutonomyEditorPanel panel = theEditorsPanel();
+
+        TrainWindow window = StationDoors.openTrain(panel, aSquareWithATrain());
+
+        java.util.List<String> blue = new java.util.ArrayList<>();
+
+        for (javax.swing.JLabel each : Components.all(window, javax.swing.JLabel.class, null))
+        {
+            if (org.traincontrol.gui.widgets.UiStyle.BLUE.equals(each.getForeground())) blue.add(each.getText());
+        }
+
+        assertTrue(blue.isEmpty(), "blue in a window with no section headings: " + blue);
+
+        for (String key : new String[] {"autosetup.ui.trainTrain", "autosetup.ui.trainActive", "autosetup.ui.trainFacing",
+            "autosetup.ui.trainArrived", "autosetup.ui.trainTail"})
+        {
+            java.util.List<javax.swing.JLabel> found = Components.all(window, javax.swing.JLabel.class,
+                label -> I18n.t(key).equals(label.getText()));
+
+            assertEquals(found.size(), 1, key + " is not one label of the window");
+            assertEquals(found.get(0).getForeground(), java.awt.Color.BLACK, key + " is not black");
+            assertEquals(found.get(0).getFont(), org.traincontrol.gui.widgets.UiStyle.LABEL_FONT, key + " is not Semibold 13");
+        }
+
+        StationDoors.close(window);
+    }
+
+    /**
      * Opened and closed, the window changes no setup and dirties nothing.
      *
      * MUTATION: have `fill`'s `train.setSelectedItem` run outside `reading`, so `pressTrain` acts, and this fails.

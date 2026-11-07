@@ -50,7 +50,7 @@ public final class TrainWindow extends StationWindowBase
 
     private final JPanel tail = rowOfChoices("train.tail");
     private final JLabel tailMark = InfoMark.label("");
-    private final JLabel tailLabel = UiStyle.label(I18n.t("autosetup.ui.trainTail"));
+    private final JLabel tailLabel = UiStyle.blackLabel(I18n.t("autosetup.ui.trainTail"));
 
     /** What the window last showed, so the watch redraws only when a train moved. */
     private String shown;
@@ -78,15 +78,15 @@ public final class TrainWindow extends StationWindowBase
 
         int y = 0;
 
-        formRow(form, y++, UiStyle.label(I18n.t("autosetup.ui.trainTrain")), null, train, 1);
+        formRow(form, y++, UiStyle.blackLabel(I18n.t("autosetup.ui.trainTrain")), null, train, 1);
 
         GridBagConstraints c = at(3, 0);
 
         form.add(settings, c);
 
-        formRow(form, y++, UiStyle.label(I18n.t("autosetup.ui.trainActive")), activeMark, active, 1);
-        formRow(form, y++, UiStyle.label(I18n.t("autosetup.ui.trainFacing")), facingMark, facing, 1);
-        formRow(form, y++, UiStyle.label(I18n.t("autosetup.ui.trainArrived")), arrivedMark, arrived, 1);
+        formRow(form, y++, UiStyle.blackLabel(I18n.t("autosetup.ui.trainActive")), activeMark, active, 1);
+        formRow(form, y++, UiStyle.blackLabel(I18n.t("autosetup.ui.trainFacing")), facingMark, facing, 1);
+        formRow(form, y++, UiStyle.blackLabel(I18n.t("autosetup.ui.trainArrived")), arrivedMark, arrived, 1);
         formRow(form, y, tailLabel, tailMark, tail, 1);
 
         assemble(form);
