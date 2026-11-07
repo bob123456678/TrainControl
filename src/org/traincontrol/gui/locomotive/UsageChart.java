@@ -27,6 +27,7 @@ import javax.swing.Icon;
 import javax.swing.SwingConstants;
 import javax.swing.UIManager;
 import org.traincontrol.gui.TrainControlUI;
+import org.traincontrol.gui.widgets.UiStyle;
 import org.traincontrol.model.ViewListener;
 import org.traincontrol.util.I18n;
 
@@ -192,7 +193,7 @@ public class UsageChart extends JFrame
 
     private static JButton pagingButton(String textKey, String name)
     {
-        JButton b = new JButton(I18n.t(textKey));
+        JButton b = UiStyle.button(new JButton(I18n.t(textKey)));
 
         b.setName(name);
         b.setFocusable(false);

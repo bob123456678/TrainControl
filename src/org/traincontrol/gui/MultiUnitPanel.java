@@ -89,16 +89,14 @@ final class MultiUnitPanel extends JPanel
         top.add(filterField, java.awt.BorderLayout.CENTER);
         add(top, gbc);
 
-        JLabel nameLabel = new JLabel(I18n.t("loc.ui.labelLocomotiveName"));
-        nameLabel.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        JLabel nameLabel = org.traincontrol.gui.widgets.UiStyle.label(I18n.t("loc.ui.labelLocomotiveName"));
 
-        JLabel multiplierLabel = new JLabel(I18n.t("loc.ui.labelSpeedMultiplierPercent"));
+        JLabel multiplierLabel = org.traincontrol.gui.widgets.UiStyle.label(
+            I18n.t("loc.ui.labelSpeedMultiplierPercent"));
         multiplierLabel.setToolTipText(I18n.t("loc.ui.tooltip.adjustRelativeSpeed"));
-        multiplierLabel.setFont(new Font("Segoe UI", Font.BOLD, 12));
 
-        JLabel reverseLabel = new JLabel(I18n.t("loc.ui.labelReverse"));
+        JLabel reverseLabel = org.traincontrol.gui.widgets.UiStyle.label(I18n.t("loc.ui.labelReverse"));
         reverseLabel.setToolTipText(I18n.t("loc.ui.tooltip.swapDirection"));
-        reverseLabel.setFont(new Font("Segoe UI", Font.BOLD, 12));
 
         headingPanel.setOpaque(false);
         columns(headingPanel, nameLabel, multiplierLabel, null, reverseLabel);

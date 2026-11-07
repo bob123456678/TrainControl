@@ -125,11 +125,11 @@ public class AutonomyEditorPanel extends JPanel
 
     private final java.util.List<javax.swing.AbstractButton> stretched = new java.util.ArrayList<>();
 
-    // The editor window's conventions: headings Semibold 13 in rgb(0,0,155), buttons bold 11.
+    // The editor window's conventions: headings Semibold 13 in rgb(0,0,155), buttons bold 12.
     static final java.awt.Font FONT_HEADING =
         new java.awt.Font("Segoe UI Semibold", java.awt.Font.PLAIN, 13);
 
-    static final java.awt.Font FONT_BUTTON = new java.awt.Font("Segoe UI", java.awt.Font.BOLD, 11);
+    static final java.awt.Font FONT_BUTTON = org.traincontrol.gui.widgets.UiStyle.BUTTON_FONT;
 
     static final java.awt.Font FONT_CONTROL = new java.awt.Font("Segoe UI", java.awt.Font.PLAIN, 14);
 
@@ -614,11 +614,8 @@ public class AutonomyEditorPanel extends JPanel
 
         // Which tier the check answers for (Adam: **"Radio button Auto or Manual dictates what is in scope for the
         // routing check."**): only which stations a train may be sent to differs.
-        pathTypeLabel = new JLabel(I18n.t("autosetup.ui.labelPathType"));
-
         // The window's blue group heading (OB-217)
-        pathTypeLabel.setFont(AutonomyViewerPanel.FONT_GROUP);
-        pathTypeLabel.setForeground(AutonomyViewerPanel.HEADING_COLOUR);
+        pathTypeLabel = org.traincontrol.gui.widgets.UiStyle.heading(I18n.t("autosetup.ui.labelPathType"));
 
         pathTypeAuto = new javax.swing.JRadioButton(I18n.t("autosetup.ui.pathTypeAuto"), true);
         pathTypeManual = new javax.swing.JRadioButton(I18n.t("autosetup.ui.pathTypeManual"), false);

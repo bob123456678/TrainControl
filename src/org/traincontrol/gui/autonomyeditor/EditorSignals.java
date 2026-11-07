@@ -101,14 +101,14 @@ final class EditorSignals
         final javax.swing.JList<String> list = new javax.swing.JList<>(model);
         final javax.swing.JLabel heading = new javax.swing.JLabel();
 
-        final javax.swing.JButton byClick =
-            new javax.swing.JButton(I18n.t("autosetup.ui.optionClickSignal"));
-        final javax.swing.JButton byAddress =
-            new javax.swing.JButton(I18n.t("autosetup.ui.optionSignalAddress"));
-        final javax.swing.JButton remove =
-            new javax.swing.JButton(I18n.t("autosetup.ui.optionRemoveSignal"));
-        final javax.swing.JButton done =
-            new javax.swing.JButton(I18n.t("autosetup.ui.optionSignalsDone"));
+        final javax.swing.JButton byClick = org.traincontrol.gui.widgets.UiStyle.button(
+            new javax.swing.JButton(I18n.t("autosetup.ui.optionClickSignal")));
+        final javax.swing.JButton byAddress = org.traincontrol.gui.widgets.UiStyle.button(
+            new javax.swing.JButton(I18n.t("autosetup.ui.optionSignalAddress")));
+        final javax.swing.JButton remove = org.traincontrol.gui.widgets.UiStyle.button(
+            new javax.swing.JButton(I18n.t("autosetup.ui.optionRemoveSignal")));
+        final javax.swing.JButton done = org.traincontrol.gui.widgets.UiStyle.button(
+            new javax.swing.JButton(I18n.t("autosetup.ui.optionSignalsDone")));
 
         // How wide the heading wraps - set once the buttons are laid out, below (MT-479).
         final int[] headingWidth = {0};
