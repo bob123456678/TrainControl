@@ -581,12 +581,13 @@ public final class RowIcons
                 g.setColor(colour);
                 g.setStroke(new BasicStroke(Math.max(1.5f, width / 9f), BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
 
-                // From about 8 o'clock counterclockwise round to 11 o'clock, leaving a clear gap before the head
-                g.draw(new java.awt.geom.Arc2D.Float(centre - radius, centre - radius, 2 * radius, 2 * radius, 205, 275,
+                // From about 8 o'clock counterclockwise, stopping where the head takes over
+                g.draw(new java.awt.geom.Arc2D.Float(centre - radius, centre - radius, 2 * radius, 2 * radius, 205, 263,
                     java.awt.geom.Arc2D.OPEN));
 
-                // The head at 11 o'clock, pointing the way the turn goes there: left and a little down
-                double end = Math.toRadians(120);
+                // The head around 11 o'clock, pointing left and a little down.  Its back lies on the radius where the arc
+                // stops, so it stands square to the ring's open edge.
+                double end = Math.toRadians(108);
                 float px = centre + radius * (float) Math.cos(end);
                 float py = centre - radius * (float) Math.sin(end);
                 float dx = (float) -Math.sin(end);
@@ -595,9 +596,9 @@ public final class RowIcons
                 float ny = dx;
                 java.awt.geom.Path2D.Float head = new java.awt.geom.Path2D.Float();
 
-                head.moveTo(px + dx * 0.12f * width, py + dy * 0.12f * width);
-                head.lineTo(px - dx * 0.07f * width + nx * 0.17f * width, py - dy * 0.07f * width + ny * 0.17f * width);
-                head.lineTo(px - dx * 0.07f * width - nx * 0.17f * width, py - dy * 0.07f * width - ny * 0.17f * width);
+                head.moveTo(px + dx * 0.19f * width, py + dy * 0.19f * width);
+                head.lineTo(px + nx * 0.17f * width, py + ny * 0.17f * width);
+                head.lineTo(px - nx * 0.17f * width, py - ny * 0.17f * width);
                 head.closePath();
 
                 g.fill(head);
