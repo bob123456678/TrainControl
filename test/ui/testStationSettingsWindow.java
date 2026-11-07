@@ -1422,6 +1422,216 @@ public class testStationSettingsWindow
         }
     }
 
+    /**
+     * TopMainR1 stands on track that only runs northward: with Both Ways chosen for its own square, the picture's arrows
+     * round it are a way in from the south and a way out to the north, and no arrow is drawn on any other side.
+     *
+     * MUTATION: have `StationPicture` draw a way out at every side it draws a way in and the reverse, as Both Ways says,
+     * and this fails.
+     */
+    @Test(timeOut = 120000)
+    public void testAOneWayStationShowsOnlyTheWayTrainsGo() throws Exception
+    {
+        TileKey square = Components.onTheEventThread(() -> support.AskingWindows.stationNamed(session, "TopMainR1"));
+
+        StationSettingsWindow window = StationDoors.open(panel, square);
+
+        javax.swing.JComboBox<?> depart = StationDoors.part(window, "station.depart.0", javax.swing.JComboBox.class);
+
+        Components.onTheEventThread(() ->
+        {
+            depart.setSelectedItem(I18n.t("autosetup.ui.menuRouteBoth"));
+
+            return null;
+        });
+
+        StationDoors.current(window);
+
+        assertEquals(Components.onTheEventThread(depart::getSelectedItem), I18n.t("autosetup.ui.menuRouteBoth"),
+            "precondition: Both Ways is chosen for the station");
+
+        assertEquals(Components.onTheEventThread(() -> window.pictureWaysForTest(false)), set("S"), "the ways in");
+        assertEquals(Components.onTheEventThread(() -> window.pictureWaysForTest(true)), set("N"), "the ways out");
+
+        assertEquals(sidesWithGreenRound(window), set("N", "S"), "the sides an arrow is drawn at");
+
+        StationDoors.close(window);
+    }
+
+    /**
+     * TopR1ParkLong's track runs on to its east side and stops there: the picture draws a way in and out at the west, and
+     * nothing at the east.
+     *
+     * MUTATION: have `LayoutStandingRules` take a way out as the side opposite the copy's way in, straight on, and this
+     * fails.
+     */
+    @Test(timeOut = 120000)
+    public void testADeadEndSideShowsNoWay() throws Exception
+    {
+        TileKey square = Components.onTheEventThread(() -> support.AskingWindows.stationNamed(session, "TopR1ParkLong"));
+
+        assertTrue(Components.onTheEventThread(() ->
+        {
+            for (org.traincontrol.automationui.TilePorts.Route route : session.getRoutes(square).values())
+            {
+                if (route.getA() == org.traincontrol.automationui.TilePorts.Side.E
+                    || route.getB() == org.traincontrol.automationui.TilePorts.Side.E) return true;
+            }
+
+            return false;
+        }), "precondition: the station's track reaches its east side");
+
+        StationSettingsWindow window = StationDoors.open(panel, square);
+
+        assertEquals(Components.onTheEventThread(() -> window.pictureWaysForTest(false)), set("W"), "the ways in");
+        assertEquals(Components.onTheEventThread(() -> window.pictureWaysForTest(true)), set("W"), "the ways out");
+
+        assertEquals(sidesWithGreenRound(window), set("W"), "the sides an arrow is drawn at");
+
+        StationDoors.close(window);
+    }
+
+    /**
+     * Every station on the frozen railway, on every page: the ways in drawn are the sides where an arriving row of
+     * `Layout.standingRulesAt` is not No, and the ways out the sides where Sent From is (by side on a square of several
+     * copies; on a one-Point square, whose cells are keyed by its way in, whether there is one).
+     *
+     * MUTATION: have `LayoutStandingRules` read a way out from `copy.getCopyFacing()`, which a one-Point square does not
+     * record, and this fails.
+     */
+    @Test(timeOut = 600000)
+    public void testTheWaysAgreeWithWhatIsAllowed() throws Exception
+    {
+        assertNotNull(model.getAutoLayoutIfLoaded(), "precondition: the frozen setup is built");
+
+        List<String> differ = new java.util.ArrayList<>();
+
+        int asked = 0;
+
+        for (String page : Components.onTheEventThread(() -> new java.util.TreeSet<>(model.getLayoutList())))
+        {
+            List<TileKey> stations = Components.onTheEventThread(() ->
+            {
+                List<TileKey> out = new java.util.ArrayList<>();
+
+                for (TileKey each : session.getReducer().getPoints().keySet())
+                {
+                    if (page.equals(each.getPage()) && session.getStore().isStation(each)) out.add(each);
+                }
+
+                return out;
+            });
+
+            if (stations.isEmpty()) continue;
+
+            LayoutEditor on = PAGE.equals(page) ? editor : frozen.editorOn(page);
+
+            try
+            {
+                AutonomyEditorPanel onPanel = Components.onTheEventThread(() -> on.getAutonomyPanel());
+
+                for (TileKey square : stations)
+                {
+                    List<String> copies = Components.onTheEventThread(() ->
+                        new java.util.ArrayList<>(session.getStationIndex().pointNamesAt(square)));
+
+                    StationSettingsWindow window = StationDoors.open(onPanel, square);
+
+                    // The railway the window asked
+                    StandingRules rules = model.getAutoLayoutIfLoaded().standingRulesAt(copies);
+
+                    assertNotNull(rules, square + ": precondition: its copies are on the railway");
+
+                    Set<String> in = new java.util.TreeSet<>();
+
+                    for (StandingRules.Row row : new StandingRules.Row[] {StandingRules.Row.SENT_HERE,
+                        StandingRules.Row.SENT_THROUGH, StandingRules.Row.TURNED_ROUND})
+                    {
+                        for (boolean byHand : new boolean[] {false, true})
+                        {
+                            for (Map.Entry<String, StandingRules.Cell> each : rules.cells(row, byHand).entrySet())
+                            {
+                                if (each.getValue().getAnswer() != StandingRules.Answer.NO) in.add(each.getKey());
+                            }
+                        }
+                    }
+
+                    Set<String> leaving = new java.util.TreeSet<>();
+
+                    for (boolean byHand : new boolean[] {false, true})
+                    {
+                        for (Map.Entry<String, StandingRules.Cell> each
+                            : rules.cells(StandingRules.Row.SENT_FROM, byHand).entrySet())
+                        {
+                            if (each.getValue().getAnswer() != StandingRules.Answer.NO) leaving.add(each.getKey());
+                        }
+                    }
+
+                    Set<String> drawnIn = Components.onTheEventThread(() -> window.pictureWaysForTest(false));
+                    Set<String> drawnOut = Components.onTheEventThread(() -> window.pictureWaysForTest(true));
+
+                    boolean oneCopy = copies.size() == 1;
+
+                    if (!drawnIn.equals(in)) differ.add(square + ": in " + drawnIn + ", allowed " + in);
+
+                    if (oneCopy ? drawnOut.isEmpty() != leaving.isEmpty() : !drawnOut.equals(leaving))
+                    {
+                        differ.add(square + ": out " + drawnOut + ", sent from " + leaving);
+                    }
+
+                    asked++;
+
+                    StationDoors.close(window);
+                }
+            }
+            finally
+            {
+                if (on != editor) support.FrozenEditor.dispose(on);
+            }
+        }
+
+        assertTrue(asked >= 30, "precondition: only " + asked + " stations were asked about");
+
+        assertTrue(differ.isEmpty(), "the picture's ways differ from what is allowed: " + differ);
+    }
+
+    /** The sides of the picture's square with any of the diagram's green beyond them. */
+    private static Set<String> sidesWithGreenRound(StationSettingsWindow window) throws Exception
+    {
+        javax.swing.JComponent ways = StationDoors.part(window, "station.picture.ways", javax.swing.JComponent.class);
+
+        return Components.onTheEventThread(() ->
+        {
+            java.awt.image.BufferedImage image = drawnOn(ways);
+
+            java.awt.Rectangle at = ways.getComponent(0).getBounds();
+
+            Set<String> out = new java.util.TreeSet<>();
+
+            int green = new java.awt.Color(70, 205, 90).getRGB() & 0xffffff;
+
+            for (int y = 0; y < image.getHeight(); y++)
+            {
+                for (int x = 0; x < image.getWidth(); x++)
+                {
+                    if ((image.getRGB(x, y) & 0xffffff) != green) continue;
+
+                    if (y < at.y && x >= at.x && x < at.x + at.width) out.add("N");
+                    if (y >= at.y + at.height && x >= at.x && x < at.x + at.width) out.add("S");
+                    if (x < at.x && y >= at.y && y < at.y + at.height) out.add("W");
+                    if (x >= at.x + at.width && y >= at.y && y < at.y + at.height) out.add("E");
+                }
+            }
+
+            return out;
+        });
+    }
+
+    private static Set<String> set(String... sides)
+    {
+        return new java.util.TreeSet<>(Arrays.asList(sides));
+    }
+
     /** The diagram's real pass, and what its square then wears against what the picture wears. */
     private static org.traincontrol.automationui.TileAnnotation theSameOnBoth(StationSettingsWindow window,
         org.traincontrol.gui.LayoutLabel onTheDiagram, String what) throws Exception

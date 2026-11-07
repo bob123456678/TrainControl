@@ -1375,7 +1375,7 @@ public class TileAnnotation
      * crossed out when trains may not go that way.  `span` is the tile's smaller dimension, which sets the arrowhead
      * size.
      */
-    private void arrow(Graphics2D g, int[] target, double[] heading, boolean allowed, int span)
+    private static void arrow(Graphics2D g, int[] target, double[] heading, boolean allowed, int span)
     {
         double dx = heading[0];
         double dy = heading[1];
@@ -1450,6 +1450,19 @@ public class TileAnnotation
             g.setRenderingHint(RenderingHints.KEY_STROKE_CONTROL,
                 control == null ? RenderingHints.VALUE_STROKE_DEFAULT : control);
         }
+    }
+
+    /**
+     * The diagram's open-direction arrow, for a picture that draws one off a square (FR-111).
+     *
+     * @param g where to draw
+     * @param target where its tip points, less the gap the diagram leaves at a square's edge
+     * @param heading which way it points
+     * @param span the size of square it is drawn for
+     */
+    public static void openArrow(Graphics2D g, int[] target, double[] heading, int span)
+    {
+        arrow(g, target, heading, true, span);
     }
 
     /** How far short of the tile edge an arrowhead stops, so arrows on neighboring tiles stay separate marks. */

@@ -976,6 +976,8 @@ public final class StationSettingsWindow extends StationWindowBase
 
                     matrix.show(rules, shown, line);
 
+                    picture.showWays(error == null ? rules : null);
+
                     matrixPainted = asked;
 
                     if (getPreferredSize().height > getHeight()) pack();
@@ -1024,6 +1026,12 @@ public final class StationSettingsWindow extends StationWindowBase
     public org.traincontrol.automationui.TileAnnotation pictureForTest()
     {
         return picture.drawnForTest();
+    }
+
+    /** @return the sides the picture draws a way out of the station at, or a way in */
+    public java.util.Set<String> pictureWaysForTest(boolean out)
+    {
+        return picture.waysForTest(out);
     }
 
     /** @return the square the window is about */

@@ -1,8 +1,11 @@
 package org.traincontrol.automation;
 
+import java.util.Collections;
 import java.util.EnumMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Set;
+import java.util.TreeSet;
 
 /**
  * What the built railway lets a train do at one square, whoever stands where (FR-111): the answers Station Settings
@@ -74,5 +77,40 @@ public final class StandingRules
     public Map<String, Cell> cells(Row row, boolean byHand)
     {
         return (byHand ? manually : automatically).get(row);
+    }
+
+    private final Set<String> waysOut = new TreeSet<>();
+
+    void wayOut(String side)
+    {
+        waysOut.add(side);
+    }
+
+    /** @return the sides a train may come in by on any trip, sent or chosen: where an arriving row is not No */
+    public Set<String> waysIn()
+    {
+        Set<String> out = new TreeSet<>();
+
+        for (Row row : new Row[] {Row.SENT_HERE, Row.SENT_THROUGH, Row.TURNED_ROUND})
+        {
+            for (Map<Row, Map<String, Cell>> tier : java.util.Arrays.asList(automatically, manually))
+            {
+                for (Map.Entry<String, Cell> each : tier.get(row).entrySet())
+                {
+                    if (each.getValue().getAnswer() != Answer.NO) out.add(each.getKey());
+                }
+            }
+        }
+
+        return out;
+    }
+
+    /**
+     * @return the sides the built railway's track leads a train out by, from a copy with a way out, which is where
+     *     `Row.SENT_FROM` answers yes by hand; `NO_SIDE` where the build did not say where an edge runs
+     */
+    public Set<String> waysOut()
+    {
+        return Collections.unmodifiableSet(waysOut);
     }
 }

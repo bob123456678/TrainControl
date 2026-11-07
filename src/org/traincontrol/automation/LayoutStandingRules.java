@@ -73,7 +73,47 @@ final class LayoutStandingRules
 
         for (String side : exits) leaving(rules, copies, side);
 
+        for (Point copy : copies)
+        {
+            for (Edge out : owner.getNeighbors(copy)) rules.wayOut(sideLeftBy(copy, out));
+        }
+
         return rules;
+    }
+
+    /**
+     * The side of its square a train leaves by along this edge, which the model does not keep (a one-Point square has
+     * no facing): toward the first place the build says the edge runs over.  `NO_SIDE` where it does not say.
+     */
+    private static String sideLeftBy(Point copy, Edge out)
+    {
+        String from = copy.getSquare();
+        String to = out.getPlaceIds().isEmpty() ? null : Layout.tileOf(out.getPlaceIds().get(0));
+
+        int colon = from == null || to == null ? -1 : from.lastIndexOf(':');
+
+        if (colon < 0 || to.lastIndexOf(':') != colon || !to.startsWith(from.substring(0, colon + 1)))
+        {
+            return StandingRules.NO_SIDE;
+        }
+
+        try
+        {
+            String[] a = from.substring(colon + 1).split(",");
+            String[] b = to.substring(colon + 1).split(",");
+
+            int dx = Integer.parseInt(b[0].trim()) - Integer.parseInt(a[0].trim());
+            int dy = Integer.parseInt(b[1].trim()) - Integer.parseInt(a[1].trim());
+
+            if (Math.abs(dx) + Math.abs(dy) != 1) return StandingRules.NO_SIDE;
+
+            // y grows southward on the diagram
+            return dx > 0 ? "E" : dx < 0 ? "W" : dy > 0 ? "S" : "N";
+        }
+        catch (NumberFormatException | ArrayIndexOutOfBoundsException e)
+        {
+            return StandingRules.NO_SIDE;
+        }
     }
 
     /** A train coming in by this side and ending its trip here. */

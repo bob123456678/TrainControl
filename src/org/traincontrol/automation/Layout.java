@@ -6078,7 +6078,7 @@ public class Layout
     }
 
     /** The tile part of a place or block id; looked for after the last colon, as a page name may contain a slash. */
-    private static String tileOf(String id)
+    static String tileOf(String id)
     {
         int slash = id.indexOf('/', Math.max(0, id.lastIndexOf(':')));
 
