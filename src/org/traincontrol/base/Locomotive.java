@@ -1634,6 +1634,9 @@ public abstract class Locomotive
         if (source == null) return;
 
         applyCustomizations(source.captureCustomizations());
+
+        // An icon on a function this locomotive lacks can't be shown, yet would mark it customized for good.
+        this.localFunctionImageURLs.keySet().removeIf(function -> !validF(function));
     }
 
     public void setLocalFunctionImageURLs(Map<Integer, String> urls)
