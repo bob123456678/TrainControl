@@ -20,6 +20,13 @@ public final class TabIcons
 
     private static final Color INK = new Color(51, 51, 51);
 
+    private static final String LOCOMOTIVE_BOXES =
+        "0.06 0.30 0.30 0.44, 0.30 0.42 0.64 0.32, 0.02 0.22 0.38 0.10, 0.64 0.22 0.16 0.22";
+
+    private static final String LOCOMOTIVE_WHEELS = "0.12 0.60 0.26, 0.46 0.64 0.20, 0.70 0.64 0.20";
+
+    private static final String RAIL = "0 0.90 1 0.08";
+
     private TabIcons()
     {
     }
@@ -48,9 +55,8 @@ public final class TabIcons
         return icon((g, w, h) ->
         {
             g.setColor(INK);
-            shapes(g, w, h,
-                "0.06 0.30 0.30 0.44, 0.30 0.42 0.64 0.32, 0.02 0.22 0.38 0.10, 0.64 0.22 0.16 0.22, 0 0.90 1 0.08",
-                "0.12 0.60 0.26, 0.46 0.64 0.20, 0.70 0.64 0.20");
+            shapes(g, w, h, LOCOMOTIVE_BOXES, LOCOMOTIVE_WHEELS);
+            shapes(g, w, h, RAIL, "");
         });
     }
 
@@ -105,17 +111,27 @@ public final class TabIcons
         });
     }
 
-    /** Two cars coupled together: a train made of several locomotives. */
+    /** Two locomotives coupled on one rail: the main tab's locomotive, narrowed to fit twice. */
     public static Icon multiUnit()
     {
         return icon((g, w, h) ->
         {
             g.setColor(INK);
-            shapes(g, w, h, "0.02 0.28 0.40 0.44, 0.58 0.28 0.40 0.44, 0.40 0.46 0.20 0.08",
-                "0.08 0.70 0.18, 0.20 0.70 0.18, 0.64 0.70 0.18, 0.76 0.70 0.18");
-            g.setColor(Color.WHITE);
-            shapes(g, w, h, "0.08 0.36 0.12 0.14, 0.64 0.36 0.12 0.14", "");
+            narrowLocomotive(g, w, h, 0f);
+            narrowLocomotive(g, w, h, 0.52f);
+            shapes(g, w, h, "0.44 0.66 0.12 0.06", "");
+            shapes(g, w, h, RAIL, "");
         });
+    }
+
+    private static void narrowLocomotive(Graphics2D g, int w, int h, float left)
+    {
+        java.awt.geom.AffineTransform was = g.getTransform();
+
+        g.translate(w * left, h * 0.26f);
+        g.scale(0.48f, 0.74f);
+        shapes(g, w, h, LOCOMOTIVE_BOXES, LOCOMOTIVE_WHEELS);
+        g.setTransform(was);
     }
 
     /** Fills boxes ("x y width height") and circles ("x y diameter"), as fractions of the icon, in the current color. */
