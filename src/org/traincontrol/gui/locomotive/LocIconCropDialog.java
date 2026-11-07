@@ -101,7 +101,7 @@ public class LocIconCropDialog extends JDialog
         controls.setBorder(BorderFactory.createEmptyBorder(10, 0, 0, 0));
 
         JPanel zoomRow = new JPanel(new BorderLayout(8, 0));
-        zoomRow.add(new JLabel(I18n.t("loc.ui.cropZoom")), BorderLayout.WEST);
+        zoomRow.add(org.traincontrol.gui.widgets.UiStyle.label(I18n.t("loc.ui.cropZoom")), BorderLayout.WEST);
 
         // Integer ticks over a continuous zoom: the slider's own resolution is the only quantization,
         // and a thousand steps is finer than the pixel it moves the picture by.
@@ -109,7 +109,7 @@ public class LocIconCropDialog extends JDialog
         zoom.setToolTipText(I18n.t("loc.ui.tooltip.cropZoom"));
         zoomRow.add(zoom, BorderLayout.CENTER);
 
-        JButton reset = new JButton(I18n.t("loc.ui.cropReset"));
+        JButton reset = org.traincontrol.gui.widgets.UiStyle.button(new JButton(I18n.t("loc.ui.cropReset")));
         reset.setToolTipText(I18n.t("loc.ui.tooltip.cropReset"));
         zoomRow.add(reset, BorderLayout.EAST);
 
@@ -118,8 +118,8 @@ public class LocIconCropDialog extends JDialog
         JPanel buttons = new JPanel(new FlowLayout(FlowLayout.RIGHT, 6, 0));
         buttons.setBorder(BorderFactory.createEmptyBorder(10, 0, 0, 0));
 
-        JButton ok = new JButton(I18n.t("ui.ok"));
-        JButton cancel = new JButton(I18n.t("ui.cancel"));
+        JButton ok = org.traincontrol.gui.widgets.UiStyle.button(new JButton(I18n.t("ui.ok")));
+        JButton cancel = org.traincontrol.gui.widgets.UiStyle.button(new JButton(I18n.t("ui.cancel")));
 
         buttons.add(cancel);
         buttons.add(Box.createHorizontalStrut(2));
