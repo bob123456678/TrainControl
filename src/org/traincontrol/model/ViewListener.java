@@ -272,6 +272,12 @@ public interface ViewListener
      */
     public RenameProposals getRenameProposals() throws Exception;
     public String exportLocsToCSV();
+
+    /**
+     * Every accessory's actuation count as CSV (FR-178): a header, then one row an accessory, by protocol and address.
+     * @return the file's text
+     */
+    public String exportAccessoryActuationsToCSV();
     public void logf(String key, Object... args);
     public Feedback newFeedback(int id, CANMessage message);
 }

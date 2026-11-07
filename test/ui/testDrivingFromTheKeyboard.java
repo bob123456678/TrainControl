@@ -1196,6 +1196,156 @@ public class testDrivingFromTheKeyboard
     }
 
     /**
+     * Export Counts sits on the MM2/DCC row, at its right, and ends where the last key column ends (FR-178).
+     *
+     * MUTATION: add the button to the `protocol` panel beside DCC in `mountKeyboardPanel`, not at the row's east side,
+     * and this fails.
+     */
+    @Test
+    public void testExportCountsEndsTheProtocolRowUnderTheLastKey() throws Exception
+    {
+        AccessoryKeyboard keys = keys();
+        JButton export = (JButton) field("exportActuationsButton");
+        JRadioButton mm2 = (JRadioButton) field("MM2");
+        java.awt.Container panel = (java.awt.Container) field("KeyboardPanel");
+
+        int[] at = Components.onTheEventThread(() ->
+        {
+            Component lastKey = keys.half(AccessoryKeyboard.COLUMNS, false).getParent().getParent();
+            java.awt.Rectangle button = SwingUtilities.convertRectangle(export.getParent(), export.getBounds(), panel);
+            java.awt.Rectangle key = SwingUtilities.convertRectangle(lastKey.getParent(), lastKey.getBounds(), panel);
+            java.awt.Rectangle radio = SwingUtilities.convertRectangle(mm2.getParent(), mm2.getBounds(), panel);
+
+            return new int[] {button.x + button.width, key.x + key.width, button.y + button.height / 2, radio.y,
+                radio.y + radio.height, button.width};
+        });
+
+        assertTrue(at[5] > 0, "precondition: the keyboard tab was never laid out");
+        assertEquals(at[0], at[1], "Export Counts ends at x " + at[0] + ", the last key column at x " + at[1]);
+        assertTrue(at[2] >= at[3] && at[2] <= at[4], "Export Counts is not on the MM2/DCC row: its middle is at y "
+            + at[2] + ", MM2 from " + at[3] + " to " + at[4]);
+        assertEquals(export.getFont().getStyle(), java.awt.Font.BOLD, "Export Counts is not bold, as buttons are");
+        assertEquals(export.getFont().getSize(), 12, "Export Counts is not 12 point, as buttons are");
+    }
+
+    /**
+     * Export Counts saves, where the operator chooses, a CSV with a row for each accessory: its name, the address on its
+     * key, its protocol, its type and how many times the station has counted it switched (FR-178).
+     *
+     * MUTATION: write the stored address, `a.getAddress()`, for `a.getAddress() + 1` in
+     * `exportAccessoryActuationsToCSV`, and this fails.
+     */
+    @Test
+    public void testExportCountsSavesEachAccessorysCount() throws Exception
+    {
+        goToPage(1);
+        chooseProtocol(false);
+
+        int address = 9;
+
+        click(address, true);
+
+        MarklinAccessory acc = (MarklinAccessory) model.getAccessoryByAddressIfPresent(address,
+            Accessory.accessoryDecoderType.MM2);
+
+        assertNotNull(acc, "precondition: the click made no accessory");
+
+        int before = acc.getNumActuations();
+
+        model.receiveMessage(support.Packets.accessoryEcho(acc, false));
+        model.receiveMessage(support.Packets.accessoryEcho(acc, true));
+
+        // The station's echo is read on its own thread: wait for it to count
+        assertTrue(waitFor(() -> acc.getNumActuations() > before), "precondition: the echoes did not count");
+
+        java.io.File chosen = java.io.File.createTempFile("tc-actuations", ".csv");
+
+        assertTrue(chosen.delete(), "precondition: the temporary file could not be cleared");
+
+        String folder = TrainControlUI.getPrefs().get(TrainControlUI.LAST_USED_FOLDER, null);
+
+        try (Answering answering = Answering.start(message -> null).choosing(chosen))
+        {
+            JButton export = (JButton) field("exportActuationsButton");
+
+            SwingUtilities.invokeLater(export::doClick);
+
+            assertTrue(waitFor(() -> chosen.length() > 0), "Export Counts wrote nothing to the file chosen");
+
+            Components.settle();
+        }
+        finally
+        {
+            if (folder == null) TrainControlUI.getPrefs().remove(TrainControlUI.LAST_USED_FOLDER);
+            else TrainControlUI.getPrefs().put(TrainControlUI.LAST_USED_FOLDER, folder);
+        }
+
+        try
+        {
+            List<String> lines = java.nio.file.Files.readAllLines(chosen.toPath(), java.nio.charset.StandardCharsets.UTF_8);
+
+            assertEquals(lines.get(0), "Name,Address,Protocol,Type,Actuations", "the file's header");
+
+            String row = acc.getName() + "," + address + ",MM2," + Accessory.accessoryTypeToPrettyString(acc.getType())
+                + "," + acc.getNumActuations();
+
+            assertTrue(lines.contains(row), "no row " + row + " in what Export Counts saved: " + lines);
+        }
+        finally
+        {
+            chosen.delete();
+
+            click(address, false);
+        }
+    }
+
+    /**
+     * Pointed at, a key says its accessory's name and actuation count, "<name> actuation count: <n>" in English.
+     *
+     * MUTATION: return null from the keyboard listener's `tooltip` in `TrainControlUI.mountKeyboardPanel`, and this
+     * fails.
+     */
+    @Test
+    public void testAKeySaysItsActuationCount() throws Exception
+    {
+        goToPage(1);
+        chooseProtocol(false);
+
+        int address = 11;
+
+        click(address, true);
+
+        MarklinAccessory acc = (MarklinAccessory) model.getAccessoryByAddressIfPresent(address,
+            Accessory.accessoryDecoderType.MM2);
+
+        assertNotNull(acc, "precondition: the click made no accessory");
+
+        AccessoryKeyboard keys = keys();
+
+        try
+        {
+            String said = Components.onTheEventThread(() ->
+            {
+                AbstractButton half = keys.half(keys.keyOf(address), true);
+
+                return half.getToolTipText(new MouseEvent(half, MouseEvent.MOUSE_MOVED, 0, 0, 2, 2, 0, false));
+            });
+
+            assertEquals(said, I18n.f("acc.ui.tooltip.actuationCount", acc.getName(), acc.getNumActuations()),
+                "pointed at, the key for " + address + " said");
+
+            if (I18n.f("acc.ui.tooltip.actuationCount", "x", 1).equals("x actuation count: 1"))
+            {
+                assertEquals(said, acc.getName() + " actuation count: " + acc.getNumActuations(), "in English");
+            }
+        }
+        finally
+        {
+            click(address, false);
+        }
+    }
+
+    /**
      * The lit half is a clear color and the other is very light gray; pointed at, the gray half shows a pale hint of its
      * own color.  Painted, since the look is the claim.
      *

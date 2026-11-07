@@ -399,6 +399,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     private final HashMap<javax.swing.JToggleButton, Integer> functionMapping;
     private final HashMap<Integer, javax.swing.JToggleButton> rFunctionMapping;
     private AccessoryKeyboard keyboardKeys;
+
+    /** Saves the accessories' actuation counts as CSV (FR-178), at the right of the MM2/DCC row. */
+    private javax.swing.JButton exportActuationsButton;
     
     // Custom labels for mapping pages
     // Package-private for `LocomotiveActions.findSimilarLocs`, which reads it on the event thread to name the pages; no lock
@@ -5141,7 +5144,22 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         protocol.setOpaque(false);
         protocol.add(this.MM2);
         protocol.add(this.DCC);
-        this.KeyboardPanel.add(protocol, at);
+
+        // The row is as wide as the keys, so the button's right edge is the last key column's (FR-178).
+        this.exportActuationsButton = new javax.swing.JButton(I18n.t("acc.ui.exportActuations"));
+        this.exportActuationsButton.setFont(new java.awt.Font("Segoe UI", java.awt.Font.BOLD, 12));
+        this.exportActuationsButton.setToolTipText(I18n.t("acc.ui.tooltip.exportActuations"));
+        this.exportActuationsButton.setFocusable(false);
+        this.exportActuationsButton.addActionListener(event -> ActuationCsvDoor.save(this));
+
+        javax.swing.JPanel row = new javax.swing.JPanel(new java.awt.BorderLayout());
+        row.setOpaque(false);
+        row.add(protocol, java.awt.BorderLayout.WEST);
+        row.add(this.exportActuationsButton, java.awt.BorderLayout.EAST);
+
+        at.fill = java.awt.GridBagConstraints.HORIZONTAL;
+        this.KeyboardPanel.add(row, at);
+        at.fill = java.awt.GridBagConstraints.NONE;
 
         at.gridy = 3;
         at.weighty = 1;
