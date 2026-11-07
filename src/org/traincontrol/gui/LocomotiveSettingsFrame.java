@@ -423,9 +423,10 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
 
     // ------------------------------------------------------------------------------------------------------------
 
+    /** The first tab's labels are blue; the other tabs' item labels are black. */
     private static JLabel label(String text)
     {
-        return UiStyle.label(text);
+        return UiStyle.heading(text);
     }
 
     /** The first tab: picture, name, decoder, address and preset speed, with the trash can. */
@@ -468,6 +469,10 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
             picture.setName("settings.picture");
 
             sameAddress.setForeground(new Color(176, 96, 0));
+            sameAddress.setText(" ");
+
+            // The spinner is as tall as the fields above it
+            speed.setPreferredSize(new Dimension(speed.getPreferredSize().width, name.getPreferredSize().height));
 
             DocumentListener tell = Typing.tell(this::typed);
 
@@ -545,11 +550,15 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
             gbc.gridy = 3;
             add(sameAddress, gbc);
 
+            // The divider is midway between the Address row and the Preset Speed row: the room above it is the warning's
+            // row, and the same room is put below it
             gbc.gridx = 1;
             gbc.gridy = 4;
             gbc.gridwidth = 2;
             gbc.fill = GridBagConstraints.HORIZONTAL;
+            gbc.insets = new Insets(0, 6, sameAddress.getPreferredSize().height + 8, 6);
             add(new javax.swing.JSeparator(), gbc);
+            gbc.insets = new Insets(4, 6, 4, 6);
             gbc.gridwidth = 1;
             gbc.fill = GridBagConstraints.NONE;
 

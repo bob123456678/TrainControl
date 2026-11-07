@@ -91,22 +91,31 @@ public class testTheLocomotiveSettingsLooks extends support.SettingsClass
     }
 
     /**
-     * Every item label and the Functions table's column headings are Semibold 13 in black ("blue for section
-     * headings, black for item text"), and nothing in this window is dark blue: it has no section headings.
+     * The first tab's labels (Name, Decoder Type, Address, Preset Speed) are dark blue and the other tabs' item labels
+     * and the Functions table's column headings are black, all Semibold 13: nothing else in the window is blue.
      *
-     * MUTATION: make `UiStyle.style` set `UiStyle.BLUE` again, or the Functions table header's foreground, and this
-     * fails.
+     * MUTATION: make `LocomotiveSettingsFrame.label` black, or `UiStyle.style` blue, or the Functions table header's
+     * foreground blue, and this fails.
      */
     @Test
-    public void testItemLabelsAreBlackAndNothingIsBlue() throws Exception
+    public void testBasicSettingsLabelsAreBlueAndTheOthersBlack() throws Exception
     {
         opened();
 
-        String[] keys = { "ui.name", "loc.ui.decoderType", "layout.ui.address", "loc.ui.settingsPresetSpeed",
-            "loc.ui.settingsPresetLabel", "loc.ui.settingsIconsLabel", "loc.ui.labelStartYear", "loc.ui.labelEndYear",
-            "loc.ui.labelRailwayName", "loc.ui.labelNotes", "loc.ui.filterList" };
+        String[] blue = { "ui.name", "loc.ui.decoderType", "layout.ui.address", "loc.ui.settingsPresetSpeed" };
+        String[] black = { "loc.ui.settingsPresetLabel", "loc.ui.settingsIconsLabel", "loc.ui.labelStartYear",
+            "loc.ui.labelEndYear", "loc.ui.labelRailwayName", "loc.ui.labelNotes", "loc.ui.filterList" };
 
-        for (String key : keys)
+        for (String key : blue)
+        {
+            JLabel l = labelFor(key);
+
+            assertNotNull(l, "no label for " + key);
+            assertEquals(l.getForeground(), UiStyle.BLUE, key + " is not blue");
+            assertEquals(l.getFont(), UiStyle.LABEL_FONT, key + " is not Semibold 13");
+        }
+
+        for (String key : black)
         {
             JLabel l = labelFor(key);
 
@@ -121,11 +130,72 @@ public class testTheLocomotiveSettingsLooks extends support.SettingsClass
         assertEquals(header.getForeground(), UiStyle.TEXT, "the column headings are not black");
         assertEquals(header.getFont(), UiStyle.LABEL_FONT, "the column headings are not Semibold 13");
 
-        java.util.List<JLabel> blue = Components.all(SettingsWindow.showing().getContentPane(), JLabel.class,
+        java.util.List<JLabel> blues = Components.all(SettingsWindow.showing().getContentPane(), JLabel.class,
             l -> UiStyle.BLUE.equals(l.getForeground()));
 
-        assertTrue(blue.isEmpty(), "dark blue is for section headings and this window has none, yet: "
-            + (blue.isEmpty() ? "" : blue.get(0).getText()));
+        assertEquals(blues.size(), blue.length, "blue labels are only the first tab's four");
+    }
+
+    private static java.awt.Rectangle inWindow(java.awt.Component c)
+    {
+        return Components.onTheEventThread(() -> javax.swing.SwingUtilities.convertRectangle(c.getParent(), c.getBounds(),
+            SettingsWindow.showing().getContentPane()));
+    }
+
+    /**
+     * The divider on the first tab sits midway between the Address field and the Preset Speed spinner, within 2 pixels.
+     *
+     * MUTATION: drop the divider's bottom inset in `LocomotiveSettingsFrame.LocomotiveTab`, and this fails.
+     */
+    @Test
+    public void testTheDividerIsMidwayBetweenAddressAndPresetSpeed() throws Exception
+    {
+        opened();
+
+        java.awt.Rectangle address = inWindow(SettingsWindow.part("settings.address", javax.swing.JTextField.class));
+        java.awt.Rectangle speed = inWindow(SettingsWindow.part("settings.speed", javax.swing.JSpinner.class));
+        javax.swing.JSeparator divider = Components.find(SettingsWindow.showing().getContentPane(), javax.swing.JSeparator.class, null);
+        java.awt.Rectangle line = inWindow(divider);
+
+        int above = line.y - (address.y + address.height);
+        int below = speed.y - (line.y + line.height);
+
+        assertTrue(Math.abs(above - below) <= 2, "the divider is " + above + " px under Address and " + below + " px above Preset Speed");
+    }
+
+    /**
+     * The Preset Speed label, its spinner, the % sign and the (i) share one vertical center, and the spinner is as tall
+     * as the fields above.
+     *
+     * MUTATION: drop the spinner's preferred height in `LocomotiveSettingsFrame.LocomotiveTab`, or add a top inset to the
+     * speed row's panel, and this fails.
+     */
+    @Test
+    public void testThePresetSpeedRowIsCenteredAndAsTallAsTheFields() throws Exception
+    {
+        opened();
+
+        JLabel label = labelFor("loc.ui.settingsPresetSpeed");
+        javax.swing.JSpinner speed = SettingsWindow.part("settings.speed", javax.swing.JSpinner.class);
+        java.awt.Container row = speed.getParent();
+        JLabel percent = Components.find(row, JLabel.class, l -> "%".equals(l.getText()));
+        JLabel info = Components.find(row, JLabel.class, l -> l != percent && l.getIcon() != null || l != percent && l.getText() != null && l.getText().length() > 1);
+
+        assertNotNull(percent, "no % sign");
+        assertNotNull(info, "no (i) mark");
+
+        int center = inWindow(speed).y + inWindow(speed).height / 2;
+
+        for (java.awt.Component c : new java.awt.Component[] { label, percent, info })
+        {
+            java.awt.Rectangle r = inWindow(c);
+
+            assertTrue(Math.abs(r.y + r.height / 2 - center) <= 1, c + " is not on the spinner's center line");
+        }
+
+        int field = inWindow(SettingsWindow.part("settings.name", javax.swing.JTextField.class)).height;
+
+        assertEquals(inWindow(speed).height, field, "the spinner is not as tall as the fields");
     }
 
     /**
