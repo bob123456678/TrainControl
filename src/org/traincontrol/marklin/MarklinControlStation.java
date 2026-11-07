@@ -1950,7 +1950,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
                     if (other.hasLinkedLocomotives())
                     {
                         // ONE CALL: the two-call form stages on an instance field, and this loop runs off the event
-                        // thread while the multi-unit dialog can be staging on it.
+                        // thread while the Multi-Unit tab can be staging on it.
                         other.setLinkedLocomotives(other.getLinkedLocomotiveNames());
                     }
                 }

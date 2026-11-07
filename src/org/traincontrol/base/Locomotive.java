@@ -1928,7 +1928,7 @@ public abstract class Locomotive
     abstract public int setLinkedLocomotives();
 
     // The one-call form is what a caller holding its list should use: the pair below stages on an instance field, and
-    // two threads rebuild consists (a Central Station sync, the multi-unit dialog), so one list could land on the
+    // two threads rebuild consists (a Central Station sync, the Multi-Unit tab), so one list could land on the
     // other's consist.  The pair remains for restoring saved state, where a member cannot be resolved by name until
     // every locomotive has been loaded.
     abstract public int setLinkedLocomotives(Map<String, Double> locList);
