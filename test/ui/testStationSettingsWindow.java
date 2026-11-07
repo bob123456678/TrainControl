@@ -1019,10 +1019,10 @@ public class testStationSettingsWindow
 
     /**
      * Blue is for the section headings alone (Adam: "it looks very blue"); every other label is black Semibold 13
-     * (docs/UI-standards.md), and a label in an off section still grays.  `UiStyle.label` itself stays blue, for the windows
-     * still waiting on his ruling.
+     * (docs/UI-standards.md), and a label in an off section still grays.  `UiStyle.heading` is the blue one and
+     * `UiStyle.label` the black item style.
      *
-     * MUTATION: build a row's label or a label of the table with `UiStyle.label`, and this fails naming it.
+     * MUTATION: build a row's label with `UiStyle.heading`, or a section heading with `UiStyle.label`, and this fails naming it.
      */
     @Test(timeOut = 120000)
     public void testOnlyTheSectionHeadingsAreBlue() throws Exception
@@ -1060,7 +1060,8 @@ public class testStationSettingsWindow
             assertEquals(label.getFont(), UiStyle.LABEL_FONT, key + " is not Semibold 13");
         }
 
-        assertEquals(UiStyle.label("any").getForeground(), UiStyle.BLUE, "UiStyle.label changed, for every window using it");
+        assertEquals(UiStyle.heading("any").getForeground(), UiStyle.BLUE, "UiStyle.heading changed, for every window using it");
+        assertEquals(UiStyle.label("any").getForeground(), java.awt.Color.BLACK, "UiStyle.label changed, for every window using it");
 
         StationDoors.press(window, "station.stops");
         StationDoors.current(window);
