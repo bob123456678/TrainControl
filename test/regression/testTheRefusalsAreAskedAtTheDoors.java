@@ -171,6 +171,12 @@ public class testTheRefusalsAreAskedAtTheDoors
             + "refusal posts its dialog rather than showing it"},
         {"public void doSync(", AUTONOMY,
             "a Central Station sync replaces the databases underneath a running railway"},
+        {"    boolean writeNameAndAddress(Component source, Locomotive l,", AUTONOMY,
+            "renaming or re-addressing a locomotive rewrites the database; the Locomotive Settings window's Save asks"
+            + " here, at the write, as a run can begin while the window is open (MT-141)"},
+        {"    static void open(TrainControlUI ui, Component source)", AUTONOMY,
+            "Import from CSV adds, merges and re-addresses locomotives (FR-049); asked again after its question, as a"
+            + " run can begin behind it"},
         // Not the excluded-page label (`openAutonomyEditorIfItCan`): opening with an editor already open is not refused
         // anywhere (`openLayoutEditor` brings that window forward), and asking the refusal first would show "Close the
         // editor first" in exactly the state that item handles.
@@ -263,22 +269,26 @@ public class testTheRefusalsAreAskedAtTheDoors
     }
 
     /**
-     * The two locomotive doors that ask a modal question ask again after it, before they write:
-     * `refuseWhileARouteDrivesIt` is asked as each door opens, and the edit dialog and delete confirmation then wait
-     * long enough for an s88 trigger to start a route that drives the locomotive. Read from the source, as the other
-     * doors are: a behavioral test would have to hold a modal dialog open while a route starts.
+     * The two locomotive write doors ask whether a route drives the locomotive after anything modal, before they
+     * write: the delete confirmation waits long enough for an s88 trigger to start a route, and the Locomotive
+     * Settings window's Save goes through `writeNameAndAddress`, which asks at the write itself and has no dialog
+     * of its own. Read from the source, as the other doors are: a behavioral test would have to hold a modal dialog
+     * open while a route starts.
      *
-     * MUTATION: take the second `refuseWhileARouteDrivesIt` out of either door, and this fails naming it.
+     * MUTATION: take the second `refuseWhileARouteDrivesIt` out of the delete door, or the only one out of
+     * `writeNameAndAddress`, and this fails naming it.
      */
     @Test
     public void testTheRouteRefusalIsAskedAgainAfterTheDialog() throws Exception
     {
-        // The door, what it is for, and what it writes
+        // The door, what it is for, and what it writes; a door with no question of its own is marked "no dialog" in
+        // its purpose, and must ask before its first write.
         String[][] doors =
         {
-            {"    void changeLocAddress(Locomotive l, MouseEvent evt)", "renaming or re-addressing a locomotive",
+            {"    boolean writeNameAndAddress(Component source, Locomotive l,",
+                "renaming or re-addressing a locomotive (no dialog)",
                 "this.ui.getModel().changeLocAddress(", "this.ui.getModel().renameLoc("},
-            {"    void deleteLoc(String value, MouseEvent evt)", "deleting a locomotive",
+            {"    boolean deleteLoc(String value, Component source)", "deleting a locomotive",
                 "this.ui.activeLoc = null;", "this.ui.cutLocomotive = null;", "this.ui.getModel().deleteLoc("},
         };
 
@@ -300,14 +310,17 @@ public class testTheRefusalsAreAskedAtTheDoors
                 firstWrite = Math.min(firstWrite, at);
             }
 
-            int dialog = body.lastIndexOf("showOptionDialog(", firstWrite);
+            boolean noDialog = door[1].endsWith("(no dialog)");
 
-            assertTrue(dialog >= 0, "precondition: " + door[0] + " no longer asks its question before it writes");
+            int dialog = noDialog ? -1 : body.lastIndexOf("showOptionDialog(", firstWrite);
+
+            assertTrue(noDialog || dialog >= 0,
+                "precondition: " + door[0] + " no longer asks its question before it writes");
 
             // The last time it asks before it writes, which has to be after the question
             int asked = body.lastIndexOf("refuseWhileARouteDrivesIt(", firstWrite);
 
-            if (asked < dialog) wrong.add(door[1] + " (" + door[0] + ")");
+            if (asked < 0 || asked < dialog) wrong.add(door[1] + " (" + door[0] + ")");
         }
 
         assertEquals(wrong.toString(), "[]", "these doors ask whether a running route drives the locomotive only before"

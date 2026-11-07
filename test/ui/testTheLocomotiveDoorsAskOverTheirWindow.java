@@ -16,7 +16,6 @@ import javax.swing.JCheckBox;
 import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
 import javax.swing.JPopupMenu;
-import javax.swing.JTextField;
 import javax.swing.UIManager;
 import static org.testng.Assert.*;
 import org.testng.annotations.AfterClass;
@@ -170,6 +169,11 @@ public class testTheLocomotiveDoorsAskOverTheirWindow
 
     private static final int CTRL = InputEvent.CTRL_DOWN_MASK;
 
+    /** The shortcuts that open the Locomotive Settings window: E and R on its first tab, N on Notes, L on Multi-Unit. */
+    private static final int[] LOCOMOTIVE_KEYS = {KeyEvent.VK_E, KeyEvent.VK_R, KeyEvent.VK_N, KeyEvent.VK_L};
+
+    private static final int[] LOCOMOTIVE_KEYS_TABS = {0, 0, 2, 3};
+
     /** Presses a shortcut in this window, posted so that a question it asks cannot hold this thread. */
     private static void pressKey(Window window, int key) throws Exception
     {
@@ -282,12 +286,52 @@ public class testTheLocomotiveDoorsAskOverTheirWindow
 
     // ---------------------------------------------------------------- Multi-Unit
 
-    /** The chooser's shape over a window, for Control+L, which still reaches the old dialog. */
-    private static void assertTheChooser(Answering.Question question, Window over, String said)
+    /**
+     * Presses a locomotive shortcut in a window and returns the Locomotive Settings window it opened, on this tab and for
+     * this locomotive.
+     */
+    private static LocomotiveSettingsFrame theKeyOpened(Window window, int key, Locomotive loc, int tab) throws Exception
     {
-        AskingWindows.assertAsked(question, over, I18n.f("loc.ui.dialogLinkLocomotivesToMultiUnit", ONE), said,
-            JOptionPane.PLAIN_MESSAGE, String.valueOf(TrainControlUI.OK_CANCEL_OPTS[0]),
-            String.valueOf(TrainControlUI.OK_CANCEL_OPTS[0]), String.valueOf(TrainControlUI.OK_CANCEL_OPTS[1]));
+        pressKey(window, key);
+
+        LocomotiveSettingsFrame opened = SettingsWindow.awaited();
+
+        String name = "Control+" + KeyEvent.getKeyText(key);
+
+        assertNotNull(opened, name + " opened no Locomotive Settings window");
+        assertSame(Components.onTheEventThread(opened::getLocomotive), loc, name + " opened the window for another locomotive");
+        assertEquals(SettingsWindow.tabShowing(), tab, name + " opened the window on another tab");
+
+        return opened;
+    }
+
+    /**
+     * Raises a window, does what opens the Locomotive Settings window from it, and says whether the new window stands on
+     * top.  Read at once: the harness drops a window that stays on top.
+     */
+    private static boolean openedWhileRaised(Window raised, Runnable door)
+    {
+        Components.onTheEventThread(() ->
+        {
+            raised.setAlwaysOnTop(true);
+
+            return null;
+        });
+
+        door.run();
+
+        assertTrue(Components.waitFor(() -> SettingsWindow.showing() != null, 2000), "the window did not open");
+
+        boolean onTop = Components.onTheEventThread(() -> SettingsWindow.showing().isAlwaysOnTop());
+
+        Components.onTheEventThread(() ->
+        {
+            raised.setAlwaysOnTop(false);
+
+            return null;
+        });
+
+        return onTop;
     }
 
     /** The window the multi-unit door opened, on its Multi-Unit tab and for this locomotive. */
@@ -330,25 +374,7 @@ public class testTheLocomotiveDoorsAskOverTheirWindow
 
         JMenuItem settings = AskingWindows.itemOf(menu, I18n.t("loc.ui.menuLocomotiveSettings"));
 
-        Components.onTheEventThread(() ->
-        {
-            database.setAlwaysOnTop(true);
-
-            return null;
-        });
-
-        Mouse.choose(settings);
-
-        assertTrue(Components.waitFor(() -> SettingsWindow.showing() != null, 2000), "the window did not open");
-
-        boolean onTop = Components.onTheEventThread(() -> SettingsWindow.showing().isAlwaysOnTop());
-
-        Components.onTheEventThread(() ->
-        {
-            database.setAlwaysOnTop(false);
-
-            return null;
-        });
+        boolean onTop = openedWhileRaised(database, () -> Mouse.choose(settings));
 
         SettingsWindow.selectTab(3);
 
@@ -382,11 +408,11 @@ public class testTheLocomotiveDoorsAskOverTheirWindow
     }
 
     /**
-     * A locomotive already in another's multi-unit has its Multi-Unit tab say so, from the database and from the main
-     * window; Control+L over a page still refuses over that page, with the old message.
+     * A locomotive already in another's multi-unit has its Multi-Unit tab say so, from the database, the main window
+     * and Control+L over a page.
      *
-     * MUTATION: show the list instead of the sentence in `LocomotiveSettingsFrame.MultiUnitTab`, or `this` for `asked` at
-     * the first message in `changeLinkedLocomotives`, and this fails.
+     * MUTATION: show the list instead of the sentence in `LocomotiveSettingsFrame.MultiUnitTab`, or open another tab in
+     * the "linked locomotives" row of `TrainControlUI.KeyShortcuts`, and this fails.
      */
     @Test
     public void testAlreadyLinkedIsSaidOverTheWindowThatAsked() throws Exception
@@ -397,15 +423,13 @@ public class testTheLocomotiveDoorsAskOverTheirWindow
 
         one.setLinkedLocomotives(linked);
 
-        String said = I18n.f("loc.ui.errorLocomotiveAlreadyLinkedCannotBeMultiUnit", ONE);
         String sentence = I18n.f("loc.ui.settingsPartOfMultiUnit", TWO, ONE);
 
         chooseMultiUnit(database, TWO);
 
         theWindowFor(two);
 
-        assertEquals(Components.all(SettingsWindow.showing().getContentPane(), javax.swing.JLabel.class,
-            label -> sentence.equals(label.getText())).size(), 1, "the tab does not say " + TWO + " belongs to " + ONE);
+        assertTheTabSays(SettingsWindow.showing(), sentence, "the tab does not say " + TWO + " belongs to " + ONE);
 
         SettingsWindow.press(SettingsWindow.cancel());
 
@@ -420,7 +444,11 @@ public class testTheLocomotiveDoorsAskOverTheirWindow
 
         try
         {
-            assertSaidBy(key(page, KeyEvent.VK_L), page, said);
+            LocomotiveSettingsFrame fromThePage = theKeyOpened(page, KeyEvent.VK_L, two, 3);
+
+            assertTheTabSays(fromThePage, sentence, "Control+L over a page: the tab does not say " + TWO + " belongs to " + ONE);
+
+            SettingsWindow.press(SettingsWindow.cancel());
 
             chooseMultiUnit(ui, TWO);
 
@@ -441,7 +469,8 @@ public class testTheLocomotiveDoorsAskOverTheirWindow
 
     /**
      * While autonomy is busy no door opens the window: the database's menu says so over the database, the button's
-     * entry is grayed with the reason as its tooltip, and the shortcuts still say it over theirs.
+     * entry is grayed with the reason as its tooltip, and Control+E, R, N and L say it over the window they were pressed
+     * in.
      *
      * MUTATION: `this` for the asking window in `TrainControlUI.openLocomotiveSettings`, or leave autonomy out of
      * `LocomotiveSettings.why`, and this fails.
@@ -462,13 +491,38 @@ public class testTheLocomotiveDoorsAskOverTheirWindow
 
         Mouse.closeMenus();
 
-        String shortcut = I18n.t("autolayout.ui.errorCannotEditMultiUnitsWhileRunning");
-
-        assertSaidBy(key(database, KeyEvent.VK_L), database, shortcut);
-        assertSaidBy(key(page, KeyEvent.VK_L), page, shortcut);
-        assertSaidBy(key(ui, KeyEvent.VK_L), ui, shortcut);
+        assertEveryLocomotiveKeySays(said);
 
         assertNull(SettingsWindow.showing(), "the window opened while autonomy runs");
+    }
+
+    /** Each of the four locomotive shortcuts, in each window, says this over the window it was pressed in. */
+    private static void assertEveryLocomotiveKeySays(String said)
+    {
+        for (Window window : new Window[] {database, page, ui})
+        {
+            for (int shortcut : LOCOMOTIVE_KEYS) assertSaidBy(key(window, shortcut), window, said);
+        }
+    }
+
+    /** The window shows this sentence once. */
+    private static void assertTheTabSays(LocomotiveSettingsFrame window, String sentence, String message)
+    {
+        assertEquals(Components.all(window.getContentPane(), javax.swing.JLabel.class,
+            label -> sentence.equals(label.getText())).size(), 1, message);
+    }
+
+    /** Presses Save and checks that the one thing said is this, over the Locomotive Settings window itself. */
+    private static void assertSaveSays(LocomotiveSettingsFrame window, String said)
+    {
+        try (Answering answering = Answering.start(message -> Answering.pressAt(0)))
+        {
+            Components.press(SettingsWindow.save());
+
+            AskingWindows.assertSaid(AskingWindows.onlyQuestion(answering, "Save said nothing"), window, said);
+
+            AskingWindows.awaitAnswered();
+        }
     }
 
     /** A route that drives the first locomotive, running long enough for every door to be tried. */
@@ -491,8 +545,8 @@ public class testTheLocomotiveDoorsAskOverTheirWindow
     }
 
     /**
-     * A route that drives the locomotive does not keep the window: it opens from both doors for the stopped locomotive,
-     * and the route's refusal is said at Save over the window itself; the shortcuts still say it over theirs.
+     * A route that drives the locomotive does not keep the window: it opens from both doors and from Control+R for the
+     * stopped locomotive, and the route's refusal is said at Save over the window itself.
      *
      * MUTATION: put a running route into `LocomotiveSettings.why`, and the window does not open and this fails.
      */
@@ -509,23 +563,27 @@ public class testTheLocomotiveDoorsAskOverTheirWindow
 
         SettingsWindow.tickMember(TWO);
 
-        try (Answering answering = Answering.start(message -> Answering.pressAt(0)))
-        {
-            Components.press(SettingsWindow.save());
-
-            AskingWindows.assertSaid(AskingWindows.onlyQuestion(answering, "Save said nothing"), window, said);
-
-            AskingWindows.awaitAnswered();
-        }
+        assertSaveSays(window, said);
 
         SettingsWindow.press(SettingsWindow.cancel());
 
-        assertSaidBy(key(page, KeyEvent.VK_R), page, said);
-        assertSaidBy(key(ui, KeyEvent.VK_R), ui, said);
+        for (Window pressed : new Window[] {page, ui})
+        {
+            LocomotiveSettingsFrame fromTheKey = theKeyOpened(pressed, KeyEvent.VK_R, one, 0);
+
+            SettingsWindow.type("settings.name", ONE + " renamed");
+
+            assertSaveSays(fromTheKey, said);
+
+            SettingsWindow.press(SettingsWindow.cancel());
+        }
+
+        assertEquals(one.getName(), ONE, "a refused rename renamed it");
     }
 
     /**
-     * With fewer than two locomotives the Multi-Unit tab says so, instead of a list; Control+L says it over its window.
+     * With fewer than two locomotives the Multi-Unit tab says so, instead of a list, from the button's menu and from
+     * Control+L.
      *
      * MUTATION: show the list whatever the number of locomotives in `LocomotiveSettingsFrame.MultiUnitTab`, and this
      * fails.
@@ -541,12 +599,15 @@ public class testTheLocomotiveDoorsAskOverTheirWindow
 
             String said = I18n.t("loc.ui.errorNeedTwoLocomotivesForMultiUnit");
 
-            assertEquals(Components.all(SettingsWindow.showing().getContentPane(), javax.swing.JLabel.class,
-                label -> said.equals(label.getText())).size(), 1, "the tab does not say two locomotives are needed");
+            assertTheTabSays(SettingsWindow.showing(), said, "the tab does not say two locomotives are needed");
 
             SettingsWindow.press(SettingsWindow.cancel());
 
-            assertSaidBy(key(ui, KeyEvent.VK_L), ui, said);
+            LocomotiveSettingsFrame fromTheKey = theKeyOpened(ui, KeyEvent.VK_L, one, 3);
+
+            assertTheTabSays(fromTheKey, said, "Control+L: the tab does not say two are needed");
+
+            SettingsWindow.press(SettingsWindow.cancel());
         });
     }
 
@@ -567,29 +628,62 @@ public class testTheLocomotiveDoorsAskOverTheirWindow
     }
 
     /**
-     * A database closed while Control+L's question is up takes the question with it, and nothing is linked.
+     * Control+E, R, N and L open the one Locomotive Settings window for the shown locomotive on the right tab, from the main
+     * window, a page's window and the database, and from a page they stand as high as the page.
      *
-     * MUTATION: `this` for `asked` at the chooser in `changeLinkedLocomotives`, and the question outlives the window.
+     * MUTATION: `this` for the asking window in `TrainControlUI.openLocomotiveSettings`, or another tab in any of the four
+     * rows of `TrainControlUI.KeyShortcuts` (`locomotive settings`, `change the address`, `locomotive notes`, `linked
+     * locomotives`), and this fails.
      */
     @Test
-    public void testADatabaseThatClosesTakesItsQuestionWithIt() throws Exception
+    public void testTheLocomotiveKeysOpenTheWindowOverTheWindowTheyWerePressedIn() throws Exception
     {
-        AskingWindows.pressKey(database, KeyEvent.VK_L, CTRL);
+        for (Window window : new Window[] {ui, page, database})
+        {
+            for (int at = 0; at < LOCOMOTIVE_KEYS.length; at++)
+            {
+                theKeyOpened(window, LOCOMOTIVE_KEYS[at], one, LOCOMOTIVE_KEYS_TABS[at]);
 
-        AskingWindows.assertClosingTakesTheQuestion(database);
+                SettingsWindow.press(SettingsWindow.cancel());
+            }
 
-        assertFalse(one.hasLinkedLocomotives(), "the closed question linked something");
+            // The database lowers itself when it gains focus, so its height is claimed from its menu above
+            if (window != page) continue;
+
+            boolean onTop = openedWhileRaised(window, key(window, KeyEvent.VK_E));
+
+            assertTrue(onTop, "the window stands lower than the page Control+E was pressed in: it opens behind it");
+
+            SettingsWindow.closeIfOpen();
+        }
     }
 
-    /** Control+L over the main window is the chooser still, over the main window; Cancel links nothing. */
+    /**
+     * A locomotive that is moving is not edited from the keyboard: each of the four shortcuts says "Stop it" over the
+     * window it was pressed in, and opens nothing.
+     *
+     * MUTATION: leave `isMoving` out of `LocomotiveSettings.why`, or send one of the four rows around
+     * `openLocomotiveSettings`, and this fails.
+     */
     @Test
-    public void testControlLAsksTheChooserOverTheWindowItWasPressedIn() throws Exception
+    public void testAMovingLocomotiveIsSaidOverTheWindowTheKeyWasPressedIn() throws Exception
     {
-        Answering.Question question = asked(message -> cancel(), key(ui, KeyEvent.VK_L), "Control+L asked nothing");
+        SettingsWindow.power(ui, model, true);
+        one.setSpeed(100);
 
-        assertTheChooser(question, ui, question.message);
+        try
+        {
+            String said = I18n.f("loc.ui.stopToEdit", ONE);
 
-        assertFalse(one.hasLinkedLocomotives(), "Cancel linked something");
+            assertEveryLocomotiveKeySays(said);
+
+            assertNull(SettingsWindow.showing(), "the window opened for a moving locomotive");
+        }
+        finally
+        {
+            one.setSpeed(0);
+            SettingsWindow.power(ui, model, false);
+        }
     }
 
     // ---------------------------------------------------------------- the shortcuts
@@ -674,58 +768,24 @@ public class testTheLocomotiveDoorsAskOverTheirWindow
             "the question is not the page's");
     }
 
-    /**
-     * Control+R asks over the window it was pressed in, the same form from each, and Cancel changes nothing.
-     *
-     * MUTATION: `this.ui` for `this.ui.dialogParent()` at `source` in `changeLocAddress`, and it hangs off the main window.
-     */
-    @Test
-    public void testEditNameAndAddressAsksOverTheWindowItWasPressedIn() throws Exception
-    {
-        for (Window window : new Window[] {ui, page, database})
-        {
-            Answering.Question question = asked(message -> cancel(), key(window, KeyEvent.VK_R), "Control+R asked nothing");
-
-            // The form's fields, which it fills as it opens, are not its words
-            AskingWindows.assertAsked(question, window, I18n.f("loc.ui.dialogChangeNameOrAddress", ONE),
-                AskingWindows.ANY_MESSAGE, JOptionPane.PLAIN_MESSAGE, String.valueOf(TrainControlUI.OK_CANCEL_OPTS[0]),
-                String.valueOf(TrainControlUI.OK_CANCEL_OPTS[0]), String.valueOf(TrainControlUI.OK_CANCEL_OPTS[1]));
-
-            assertTrue(question.message.contains(ONE), "the form does not hold the name: " + question.message);
-        }
-
-        assertEquals(one.getName(), ONE, "Cancel renamed it");
-    }
-
-    /** Types into the form's name field, which holds the name, and presses OK. */
-    private static Answering.Answer renamedTo(String name)
-    {
-        AskingWindows.inTheQuestion(JTextField.class, each -> ONE.equals(each.getText()), field -> field.setText(name));
-
-        return Answering.pressAt(0);
-    }
-
-    /** Control+R in this window, renaming to this; the message that follows, over the same window. */
+    /** Control+R in this window, a name typed in the window that opens and saved; what is said then, over that window. */
     private static void assertARefusedName(Window window, String name, String said) throws Exception
     {
-        try (Answering answering = Answering.start(message -> message.contains(ONE) ? renamedTo(name) : null))
-        {
-            pressKey(window, KeyEvent.VK_R);
+        LocomotiveSettingsFrame opened = theKeyOpened(window, KeyEvent.VK_R, one, 0);
 
-            assertTrue(answering.awaitAsked(2, PATIENCE_MS), "no message followed the name \"" + name + "\": "
-                + answering.asked());
+        SettingsWindow.type("settings.name", name);
 
-            AskingWindows.assertSaid(answering.questions().get(1), window, said);
-        }
+        assertSaveSays(opened, said);
 
-        Components.settle();
+        SettingsWindow.press(SettingsWindow.cancel());
     }
 
     /**
-     * A name refused says why over the window the form was opened in: empty, too long, another's, or with a comma.
+     * A name refused says why over the Locomotive Settings window that Control+R opened from the main window, a page or the
+     * database: empty, too long, another's, or with a comma.
      *
-     * MUTATION: `this.ui` for `this.ui.dialogParent()` at `source` in `changeLocAddress`, and they hang off the main
-     * window.
+     * MUTATION: `this.ui` for `source` at the refusals in `LocomotiveActions.writeNameAndAddress`, or `this` for the
+     * asking window in `LocomotiveSettingsFrame.write`, and they hang off the main window.
      */
     @Test
     public void testARefusedNameIsSaidOverTheWindowThatAsked() throws Exception
@@ -751,8 +811,8 @@ public class testTheLocomotiveDoorsAskOverTheirWindow
     /**
      * While autonomy is busy, Control+R and Control+Delete say so over the window they were pressed in.
      *
-     * MUTATION: `this.ui` for `this.ui.dialogParent()` at `source` in `changeLocAddress` or `deleteLoc`, and they hang
-     * off the main window.
+     * MUTATION: `this` for the asking window in `TrainControlUI.openLocomotiveSettings`, or `this.ui` for
+     * `this.ui.dialogParent()` at `source` in `deleteLoc`, and they hang off the main window.
      */
     @Test
     public void testNoEditsWhileRunningAreSaidOverTheWindowThatAsked() throws Exception
@@ -766,30 +826,6 @@ public class testTheLocomotiveDoorsAskOverTheirWindow
             assertSaidBy(key(window, KeyEvent.VK_R), window, said);
             assertSaidBy(key(window, KeyEvent.VK_DELETE), window, said);
         }
-    }
-
-    /**
-     * Control+N asks over the window it was pressed in, the same form from each, and Cancel writes nothing.
-     *
-     * MUTATION: `this.ui` for `this.ui.dialogParent()` at `source` in `changeLocNotes`, and it hangs off the main window.
-     */
-    @Test
-    public void testNotesAskOverTheWindowItWasPressedIn() throws Exception
-    {
-        Answering.Question fromTheMain = asked(message -> cancel(), key(ui, KeyEvent.VK_N), "Control+N asked nothing");
-
-        String notesWere = String.valueOf(one.getNotes());
-
-        for (Window window : new Window[] {ui, page, database})
-        {
-            AskingWindows.assertAsked(window == ui ? fromTheMain
-                : asked(message -> cancel(), key(window, KeyEvent.VK_N), "Control+N asked nothing"), window,
-                I18n.f("loc.ui.dialogEditLocomotiveInfo", ONE), fromTheMain.message, JOptionPane.PLAIN_MESSAGE,
-                String.valueOf(TrainControlUI.OK_CANCEL_OPTS[0]), String.valueOf(TrainControlUI.OK_CANCEL_OPTS[0]),
-                String.valueOf(TrainControlUI.OK_CANCEL_OPTS[1]));
-        }
-
-        assertEquals(String.valueOf(one.getNotes()), notesWere, "Cancel wrote the notes");
     }
 
     /**

@@ -646,7 +646,6 @@
         <test-one-class class="testAnOldSetupReadsAsItDid"/>
         <test-one-class class="testASetupFromANewerBuildOpens"/>
         <test-one-class class="testSetupDumpComparesBuilds"/>
-        <test-one-class class="testTheShortcutTableIsTheOldChain"/>
         <test-one-class class="testEveryKindOfShortcutOnTheWindow"/>
         <test-one-class class="testTheEditorsFindingsCanBeFiltered"/>
         <test-one-class class="testTheKeyboardAsksDuringAnAutonomyRun"/>
