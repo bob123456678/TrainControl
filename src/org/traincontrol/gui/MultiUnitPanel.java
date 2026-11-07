@@ -359,10 +359,4 @@ final class MultiUnitPanel extends JPanel
     {
         return !readOnly && !chosen().equals(loaded);
     }
-
-    /** Gives the filter the keyboard. */
-    void focusFilter()
-    {
-        filterField.requestFocusInWindow();
-    }
 }

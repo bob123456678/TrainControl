@@ -1,105 +1,18 @@
 package regression;
 
-import java.lang.reflect.Field;
-import java.lang.reflect.Method;
-import java.util.Arrays;
-import javax.swing.SwingUtilities;
-import org.traincontrol.base.Locomotive;
-import org.traincontrol.gui.locomotive.LocomotiveFunctionAssign;
-import org.traincontrol.gui.TrainControlUI;
-import org.traincontrol.marklin.MarklinControlStation;
-import org.traincontrol.marklin.MarklinLocomotive;
-import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
 import org.testng.annotations.Test;
 import support.SourceOf;
 
 /**
- * Cancel on the function editor undoes a Copy Customizations, as it already undoes the two slots.
- *
- * The dialog's Cancel branch claimed everything in it waits for OK, and one thing did not:
- * `copyCustomizationsActionPerformed` writes the other locomotive's function types, triggers and custom flag straight
- * onto this one, deliberately, so the panel can show them at once (as the departure and arrival slots do).  Those two
- * are put back on Cancel and this was not, so the locomotive kept somebody else's functions and icons.  A comment
- * saying *"everything else in this dialog waits for OK"* sat directly above the restore, telling the next reader this
- * door does not exist.
+ * Cancel on the Locomotive Settings window undoes a Copy Icons because the copy never reaches the locomotive before
+ * Save.
  *
  * @author Adam
  */
 public class testCancelUndoesACustomizationCopy
 {
-    /** A copy pressed and then canceled leaves the locomotive exactly as it was. */
-    @Test
-    public void testACancelledCopyLeavesTheFunctionsAlone() throws Exception
-    {
-        Started up = start();
-
-        try
-        {
-            int[] wereTypes = Arrays.copyOf(up.loc.getFunctionTypes(), up.loc.getFunctionTypes().length);
-
-            // The triggers too: `undoCopiedCustomizations` puts back two arrays and a flag, and asserting one array let
-            // a regression that dropped the triggers from either the save or the restore pass.
-            int[] wereTriggers = Arrays.copyOf(
-                up.loc.getFunctionTriggerTypes(), up.loc.getFunctionTriggerTypes().length);
-
-            assertFalse(up.loc.isCustomFunctions(),
-                "precondition: the locomotive counted as customized before anything was copied");
-
-            press(up);
-
-            // THE COPY HAPPENED.  Without this the test below would pass against a button that does
-            // nothing at all.
-            assertTrue(up.loc.isCustomFunctions(),
-                "precondition: Copy Customizations did not copy anything, so there is nothing to undo");
-
-            assertFalse(Arrays.equals(up.loc.getFunctionTypes(), wereTypes),
-                "precondition: the copy left the function types unchanged, so the target's were the same");
-
-            SwingUtilities.invokeAndWait(() -> up.panel.undoCopiedCustomizations());
-
-            assertFalse(up.loc.isCustomFunctions(),
-                "Cancel left the locomotive marked as customized after a Copy Customizations that was"
-                + " cancelled");
-
-            assertEquals(up.loc.getFunctionTypes(), wereTypes,
-                "Cancel left the copied function types on the locomotive; it puts the two autonomy"
-                + " slots back and this door writes through in exactly the same way");
-
-            assertEquals(up.loc.getFunctionTriggerTypes(), wereTriggers,
-                "Cancel put the function types back and left the copied TRIGGERS, which decide when each"
-                + " function fires");
-        }
-        finally
-        {
-            up.close();
-        }
-    }
-
-    /** A copy that was never pressed is not undone into something else. */
-    @Test
-    public void testACancelWithoutACopyChangesNothing() throws Exception
-    {
-        Started up = start();
-
-        try
-        {
-            int[] wereTypes = Arrays.copyOf(up.loc.getFunctionTypes(), up.loc.getFunctionTypes().length);
-
-            SwingUtilities.invokeAndWait(() -> up.panel.undoCopiedCustomizations());
-
-            assertEquals(up.loc.getFunctionTypes(), wereTypes,
-                "a Cancel with no copy behind it rewrote the function types");
-
-            assertFalse(up.loc.isCustomFunctions(), "and it marked the locomotive as customized");
-        }
-        finally
-        {
-            up.close();
-        }
-    }
-
     /**
      * The Locomotive Settings window's Copy Icons works on the window's buffer and never writes onto the locomotive, so
      * Cancel has nothing to undo; pinning the copy's declaration keeps that so.  Read rather than driven: the
@@ -117,121 +30,5 @@ public class testCancelUndoesACustomizationCopy
         assertFalse(source.contains("loc.copyCustomizationsFrom") || source.contains("loc.applyCustomizations")
             || source.contains("loc.setFunctionType") || source.contains("loc.setLocalFunctionImageURL"),
             "the copy writes onto the locomotive before Save, so Cancel would have to undo it");
-    }
-
-    /**
-     * A window, a model, a locomotive, something to copy from, and the panel.
-     */
-    private static final class Started
-    {
-        support.LayoutSandbox sandbox;
-
-        MarklinControlStation model;
-
-        TrainControlUI ui;
-
-        MarklinLocomotive loc;
-
-        LocomotiveFunctionAssign panel;
-
-        void close() throws Exception
-        {
-            if (ui != null)
-            {
-                final TrainControlUI window = ui;
-
-                SwingUtilities.invokeAndWait(() -> window.dispose());
-            }
-
-            if (model != null) model.stop();
-
-            if (sandbox != null) sandbox.close();
-        }
-    }
-
-    /** Presses Copy Customizations. */
-    private static void press(Started up) throws Exception
-    {
-        final Method door = LocomotiveFunctionAssign.class.getDeclaredMethod(
-            "copyCustomizationsActionPerformed", java.awt.event.ActionEvent.class);
-
-        door.setAccessible(true);
-
-        SwingUtilities.invokeAndWait(() ->
-        {
-            try
-            {
-                door.invoke(up.panel, (java.awt.event.ActionEvent) null);
-            }
-            catch (Exception e)
-            {
-                throw new RuntimeException(e);
-            }
-        });
-    }
-
-    /** Builds the fixture: a locomotive with ordinary functions and a copy target with odd ones. */
-    private static Started start() throws Exception
-    {
-        Started up = new Started();
-
-        try
-        {
-            up.sandbox = support.LayoutSandbox.open();
-
-            up.model = support.TestStation.simulated();
-
-            final MarklinControlStation model = up.model;
-            final TrainControlUI[] made = new TrainControlUI[1];
-
-            SwingUtilities.invokeAndWait(() ->
-            {
-                try
-                {
-                    made[0] = new TrainControlUI();
-                    made[0].setViewListener(model, new java.util.concurrent.CountDownLatch(1));
-                }
-                catch (Exception e)
-                {
-                    throw new RuntimeException(e);
-                }
-            });
-
-            up.ui = made[0];
-
-            up.loc = new MarklinLocomotive(up.model, 81, MarklinLocomotive.decoderType.MM2,
-                "Copy Test Loc");
-
-            MarklinLocomotive from = new MarklinLocomotive(up.model, 82,
-                MarklinLocomotive.decoderType.MM2, "Copy Test Source");
-
-            int[] types = new int[from.getNumF()];
-            int[] triggers = new int[from.getNumF()];
-
-            Arrays.fill(types, 32);
-            Arrays.fill(triggers, 1);
-
-            from.setFunctionTypes(types, triggers);
-
-            Field target = TrainControlUI.class.getDeclaredField("copyTarget");
-
-            target.setAccessible(true);
-            target.set(up.ui, (Locomotive) from);
-
-            final Started fixture = up;
-
-            SwingUtilities.invokeAndWait(() ->
-            {
-                fixture.panel = new LocomotiveFunctionAssign(fixture.loc, fixture.ui, 0, true);
-            });
-
-            return up;
-        }
-        catch (Exception e)
-        {
-            up.close();
-
-            throw e;
-        }
     }
 }
