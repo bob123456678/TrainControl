@@ -107,6 +107,7 @@ what a test may rely on and what it may not, opened in one call by `support.Scen
 | `curve-into-platform/` | A station approached round a curve, with a straight station beside it as the control | The side a rail LEAVES by differs from the compass direction of the neighbor |
 | `live-snapshot/` | Adam's whole railway, taken from `git show HEAD:` and frozen | Complex pathing and random movement, against ground truth that cannot move.  The base for mutations |
 | `one-page/` | The sample layout cut down to its first page, with nothing set up | The setup moving onto a one-page layout (`testASetupMovesToAOnePageLayout`) |
+| `saved-by-3-1-0/` | `single-switch` as 3.1.0 saves it with FR-111's new settings | Opening a newer setup in an older build (`docs/tools/old-setups.sh --opens-in`) |
 | `autonomy-bundles/` | Not a railway: three setups Adam exported, imported over another fixture's pages | `testRouteInventory`'s bundle claims, which read his gitignored `tc_backup/` and skipped everywhere else |
 
 **Lengths, train placements and locomotive properties are never in a scenario.**  A test sets them itself, so no two
