@@ -441,6 +441,8 @@ public class testRightClickMenuTipsCanBeHidden
     /** A window with one button that opens a pop-up of three items, on a right-click or on a left-click as asked. */
     private static javax.swing.JButton standIn(boolean onRightClick, javax.swing.JFrame[] frame) throws Exception
     {
+        org.traincontrol.gui.TrainControlUI.installLookAndFeel();
+
         javax.swing.JButton button = new javax.swing.JButton("stand-in");
 
         Components.onTheEventThread(() ->
