@@ -1584,7 +1584,7 @@ public class testARouteDoesNotThrowSwitchesUnderATrain
     @Test
     public void testTheDeleteDialogNamesTheRoutesThatWillLoseCommands() throws Exception
     {
-        String source = SourceOf.declaration("    void deleteLoc(String value, MouseEvent evt)");
+        String source = SourceOf.declaration("    boolean deleteLoc(String value, Component source)");
 
         assertTrue(source.contains("r.commandsDrive(value)"),
             "the delete flow no longer counts the routes that drive this locomotive, so the "
