@@ -8,8 +8,6 @@ import javax.swing.ToolTipManager;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertTrue;
-import org.testng.annotations.AfterClass;
-import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 import org.traincontrol.gui.InfoMark;
 import org.traincontrol.gui.LocomotiveSettingsFrame;
@@ -21,33 +19,15 @@ import support.Components;
 import support.SettingsWindow;
 
 /** What the Locomotive Settings window looks like: its tab icons, its label style, and the (i) marks. */
-public class testTheLocomotiveSettingsLooks
+public class testTheLocomotiveSettingsLooks extends support.SettingsClass
 {
     private static final String NAME = "LK train";
 
-    private static support.SettingsFixture fixture;
-    private static MarklinControlStation model;
-    private static TrainControlUI ui;
 
-    @BeforeClass
-    public static void setUpClass() throws Exception
+    @Override
+    protected String[] made()
     {
-        fixture = support.SettingsFixture.open();
-        model = fixture.model;
-        ui = fixture.ui;
-    }
-
-    @AfterClass(alwaysRun = true)
-    public static void tearDownClass() throws Exception
-    {
-        try
-        {
-            if (fixture != null) fixture.finish(NAME);
-        }
-        finally
-        {
-            if (fixture != null) fixture.closeSandbox();
-        }
+        return new String[] { NAME };
     }
 
     private static JTabbedPane opened() throws Exception

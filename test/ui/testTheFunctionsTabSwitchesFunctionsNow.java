@@ -8,9 +8,6 @@ import javax.swing.JTable;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
-import org.testng.annotations.AfterClass;
-import org.testng.annotations.AfterMethod;
-import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 import org.traincontrol.base.Locomotive;
@@ -28,50 +25,38 @@ import support.WireRecorder;
  * a timed or momentary function fires, and locked when the moving rule locks the window.  Commands are counted on the
  * wire.
  */
-public class testTheFunctionsTabSwitchesFunctionsNow
+public class testTheFunctionsTabSwitchesFunctionsNow extends support.SettingsClass
 {
     private static final String NAME = "FN train";
     private static final int F = 3;
     private static final int FUNCTION = 1;
     private static final long WAIT = 8000;
 
-    private static support.SettingsFixture fixture;
-    private static TrainControlUI ui;
     private static MarklinLocomotive loc;
     private static WireRecorder wire;
 
-    @BeforeClass
-    public static void setUpClass() throws Exception
+    @org.testng.annotations.BeforeClass
+    public static void listen()
     {
-        fixture = support.SettingsFixture.open();
-        ui = fixture.ui;
         wire = WireRecorder.open();
     }
 
-    @AfterClass(alwaysRun = true)
-    public static void tearDownClass() throws Exception
+    @org.testng.annotations.AfterClass(alwaysRun = true)
+    public static void stopListening()
     {
-        try
-        {
-            if (wire != null) wire.close();
-            if (fixture != null) fixture.finish(NAME);
-        }
-        finally
-        {
-            if (fixture != null) fixture.closeSandbox();
-        }
+        if (wire != null) wire.close();
+    }
+
+    @Override
+    protected String[] made()
+    {
+        return new String[] { NAME };
     }
 
     @BeforeMethod
     public void lay() throws Exception
     {
         loc = fixture.layDcc(NAME, 3701, LocomotiveSettingsFrame.Tab.FUNCTIONS);
-    }
-
-    @AfterMethod(alwaysRun = true)
-    public void tidy() throws Exception
-    {
-        fixture.quiet();
     }
 
     private static JTable table()
@@ -91,9 +76,10 @@ public class testTheFunctionsTabSwitchesFunctionsNow
             int y = r.y + r.height / 2;
             long t = System.currentTimeMillis();
 
-            table.dispatchEvent(new MouseEvent(table, MouseEvent.MOUSE_PRESSED, t, 0, x, y, 1, false, MouseEvent.BUTTON1));
-            table.dispatchEvent(new MouseEvent(table, MouseEvent.MOUSE_RELEASED, t, 0, x, y, 1, false, MouseEvent.BUTTON1));
-            table.dispatchEvent(new MouseEvent(table, MouseEvent.MOUSE_CLICKED, t, 0, x, y, 1, false, MouseEvent.BUTTON1));
+            for (int id : new int[] { MouseEvent.MOUSE_PRESSED, MouseEvent.MOUSE_RELEASED, MouseEvent.MOUSE_CLICKED })
+            {
+                table.dispatchEvent(new MouseEvent(table, id, t, 0, x, y, 1, false, MouseEvent.BUTTON1));
+            }
 
             return null;
         });
