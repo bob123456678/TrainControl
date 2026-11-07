@@ -641,7 +641,6 @@
         <test-one-class class="testACS3SyncTakesTheStationsPositions"/>
         <test-one-class class="testACS3IconFollowsTheWebAppsRule"/>
         <test-one-class class="testASystemFrameSaysWhetherItIsForAll"/>
-        <test-one-class class="testTheShortcutTableIsTheOldChain"/>
         <test-one-class class="testEveryKindOfShortcutOnTheWindow"/>
         <test-one-class class="testTheEditorsFindingsCanBeFiltered"/>
         <test-one-class class="testTheKeyboardAsksDuringAnAutonomyRun"/>

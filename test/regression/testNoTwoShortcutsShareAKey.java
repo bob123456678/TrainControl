@@ -1,8 +1,14 @@
 package regression;
 
+import java.awt.event.InputEvent;
+import java.awt.event.KeyEvent;
 import java.io.File;
 import java.io.IOException;
+import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -15,6 +21,7 @@ import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
 import org.testng.annotations.Test;
+import org.traincontrol.gui.TrainControlUI.KeyShortcuts;
 import support.SourceOf;
 
 /**
@@ -306,5 +313,101 @@ public class testNoTwoShortcutsShareAKey
         }
 
         return twice;
+    }
+
+    /** Alt, Control and Shift in both their spellings: every combination is one modifiers value. */
+    private static final int[] MODIFIER_BITS = {InputEvent.ALT_MASK, InputEvent.ALT_DOWN_MASK, InputEvent.CTRL_MASK,
+        InputEvent.CTRL_DOWN_MASK, InputEvent.SHIFT_MASK, InputEvent.SHIFT_DOWN_MASK};
+
+    /**
+     * The main window's table lists every shortcut once: names unique and nonempty, every row chosen by some press (so
+     * no row sits behind another that takes its keys), and each press's key named by its row's listing.  The listing is
+     * printed, so "which keys are taken" is answered off a run.
+     *
+     * MUTATION: name the row "stop every train" "speed zero" too; add a row after "next function tab" that repeats its
+     * keys; put "move onto the button" after a row that takes Control+B.  Each fails here.
+     */
+    @Test
+    public void testTheTableListsEveryShortcutOnce() throws Exception
+    {
+        Set<String> names = new TreeSet<>();
+
+        for (KeyShortcuts.Row row : KeyShortcuts.rows())
+        {
+            assertFalse(row.name().trim().isEmpty(), "a row has no name: " + row);
+            assertTrue(names.add(row.name()), "two rows are called " + row.name());
+
+            System.out.println("  " + row);
+        }
+
+        Map<Integer, Object> letters = new HashMap<>();
+
+        for (int key = KeyEvent.VK_A; key <= KeyEvent.VK_Z; key++) letters.put(key, (char) key);
+
+        Set<String> reached = new HashSet<>();
+
+        for (int key : everyKeyCode())
+        {
+            for (int held = 0; held < 1 << MODIFIER_BITS.length; held++)
+            {
+                int modifiers = 0;
+
+                for (int bit = 0; bit < MODIFIER_BITS.length; bit++)
+                {
+                    if ((held & 1 << bit) != 0) modifiers |= MODIFIER_BITS[bit];
+                }
+
+                KeyShortcuts.Row row = KeyShortcuts.choose(key, modifiers, letters);
+
+                if (row == null) continue;
+
+                reached.add(row.name());
+
+                assertTrue(row.toString().contains(KeyEvent.getKeyText(key)) || letters.containsKey(key),
+                    row + " took " + KeyEvent.getKeyText(key) + " and its listing does not say so");
+            }
+        }
+
+        Set<String> never = new TreeSet<>(names);
+
+        never.removeAll(reached);
+
+        assertEquals(never, new TreeSet<String>(), "no press reaches these rows");
+    }
+
+    /**
+     * The window's key handler is the lookup and what ran before the table, and nothing else.
+     *
+     * MUTATION: add `if (evt.getKeyCode() == KeyEvent.VK_PAUSE) stop();` to `LocControlPanelKeyPressed`, and this fails.
+     */
+    @Test
+    public void testNoKeyHandlingRemainsInTheHandler()
+    {
+        String body = SourceOf.withoutComments(SourceOf.body("private void LocControlPanelKeyPressed("))
+            .replaceAll("\\s+", "");
+
+        assertEquals(body, "this.theKeyTheMapAlreadySaw=evt;"
+            + "if(locomotiveGestureOnDiagram(evt.getKeyCode(),KeyShortcuts.controlPressed(evt.getModifiers())))return;"
+            + "KeyShortcuts.Rowrow=KeyShortcuts.choose(evt.getKeyCode(),evt.getModifiers(),this.buttonMapping);"
+            + "if(row!=null)row.run(this,evt);");
+    }
+
+    /** Every `VK_*` constant of `KeyEvent`, by reflection. */
+    private static List<Integer> everyKeyCode() throws Exception
+    {
+        Set<Integer> codes = new TreeSet<>();
+
+        for (Field field : KeyEvent.class.getFields())
+        {
+            if (field.getName().startsWith("VK_") && Modifier.isStatic(field.getModifiers())
+                && field.getType() == int.class)
+            {
+                codes.add(field.getInt(null));
+            }
+        }
+
+        assertTrue(codes.size() > 150, "only " + codes.size() + " key codes were found by reflection");
+
+        return new ArrayList<>(codes);
     }
 }
