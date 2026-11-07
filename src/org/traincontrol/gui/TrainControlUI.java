@@ -1024,6 +1024,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         mountRoutingLogic();
         layoutMenus.buildDiagramDrawingMenu();
         layoutMenus.buildDiagramExportMenu();
+        layoutMenus.mountRightClickTipsMenu();
 
         this.slidersChangeActiveLocMenuItem.setSelected(prefs.getBoolean(SLIDER_SETTING_PREF, false));
         this.showKeyboardHintsMenuItem.setSelected(prefs.getBoolean(SHOW_KEYBOARD_HINTS_PREF, true));
