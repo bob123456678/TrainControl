@@ -8,10 +8,14 @@ import java.net.DatagramSocket;
 import java.net.PortUnreachableException;
 import java.net.SocketAddress;
 import java.net.SocketException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.logging.Logger;
 import static org.testng.Assert.*;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
@@ -19,6 +23,7 @@ import org.traincontrol.marklin.MarklinControlStation;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 import org.traincontrol.marklin.udp.CS2Message;
 import org.traincontrol.marklin.udp.NetworkProxy;
+import org.traincontrol.util.I18n;
 
 /**
  * Tests for NetworkProxy: the CAN listener's fault handling, and the address it reports.
@@ -50,12 +55,20 @@ public class testNetworkProxy
     private static MarklinControlStation model;
     private static NetworkProxy proxy;
 
+    private static final int ONE_MB_IN_KB = 1024;
+
+    /** What the model logged from before it started, for the listener's start lines. */
+    private static final List<String> LOGGED = Collections.synchronizedList(new ArrayList<>());
+
     // Shared across the ordered tests below: installed by the first, closed by the second
     private static FaultyDatagramSocket faulty;
 
     @BeforeClass
     public static void setUpClass() throws Exception
     {
+        // Kept for the class: the JVM is this class's alone
+        Logger.getLogger(MarklinControlStation.class.getName()).addHandler(support.LogTap.messagesInto(LOGGED));
+
         model = init(null, true, false, false, true);
 
         Field proxyField = MarklinControlStation.class.getDeclaredField("NetworkInterface");
@@ -163,6 +176,49 @@ public class testNetworkProxy
     }
 
     /**
+     * The receive socket holds at least 1 MB, so frames arriving while the listener is held up wait there rather than
+     * being dropped by the operating system, sensor changes included (OB-421).  The default is far smaller.
+     *
+     * MUTATION: in `NetworkProxy.openReceiveSocket`, take out `opened.setReceiveBufferSize(RECEIVE_BUFFER_BYTES)`.
+     */
+    @Test(priority = 0)
+    public void testTheReceiveSocketHasRoomForAStall() throws Exception
+    {
+        assertTrue(support.Components.waitFor(() -> grantedKb(LOGGED) >= 0, 5000),
+            "the listener's start line does not give the receive buffer it was granted: " + LOGGED);
+
+        assertTrue(grantedKb(LOGGED) >= ONE_MB_IN_KB, "the receive socket holds " + grantedKb(LOGGED)
+            + " KB, so a held-up listener loses the station's frames");
+    }
+
+    /**
+     * The receive buffer the last listener start line gives, in KB, or -1 if there is none.  Read from the log rather
+     * than the socket: `getReceiveBufferSize` waits for the listener's `receive` to return, which needs a frame.
+     */
+    private static int grantedKb(List<String> logged)
+    {
+        String[] around = I18n.f("network.canListenerRunning", "\u0001").split("\u0001");
+
+        int kb = -1;
+
+        synchronized (logged)
+        {
+            for (String line : logged)
+            {
+                if (line.startsWith(around[0]) && line.endsWith(around[1]))
+                {
+                    String digits = line.substring(around[0].length(), line.length() - around[1].length())
+                        .replaceAll("[^0-9]", "");
+
+                    if (!digits.isEmpty()) kb = Integer.parseInt(digits);
+                }
+            }
+        }
+
+        return kb;
+    }
+
+    /**
      * Recoverable receive errors must not end the listener.  This is the finding: a single one used to.
      */
     @Test(priority = 1)
@@ -227,11 +283,17 @@ public class testNetworkProxy
     {
         assertTrue(socketOf(proxy).isClosed(), "precondition: the socket is closed");
 
+        LOGGED.clear();
+
         boolean sent = proxy.sendMessage(new CS2Message(CS2Message.CAN_CMD_PING, new byte[0]));
 
         assertTrue(sent, "A8: sending should reopen the socket and succeed");
 
         assertFalse(socketOf(proxy).isClosed(), "A8: the socket should have been reopened");
+
+        // The same MUTATION as testTheReceiveSocketHasRoomForAStall: the reopen goes through the same door
+        assertTrue(support.Components.waitFor(() -> grantedKb(LOGGED) >= ONE_MB_IN_KB, 5000), "the reopened receive"
+            + " socket's listener gives no receive buffer of 1 MB or more: " + LOGGED);
 
         // AND SOMETHING IS LISTENING ON IT AGAIN.
         //

@@ -175,7 +175,7 @@ public class testACS2SyncIsAsBefore
                 for (String line : lines)
                 {
                     // The listener's start is logged by its own thread, in no fixed order with the sync's lines
-                    if (line != null && !line.matches("(?s).*\\d+ ?ms\\b.*") && !line.equals("CAN listener running."))
+                    if (line != null && !line.matches("(?s).*\\d+ ?ms\\b.*") && !line.startsWith("CAN listener running"))
                     {
                         out.add("  " + line);
                     }

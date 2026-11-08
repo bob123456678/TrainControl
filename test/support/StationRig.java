@@ -145,7 +145,7 @@ public final class StationRig implements AutoCloseable
             for (String line : this.logged)
             {
                 // Timings vary, and the listener's start is logged by its own thread, in no fixed order with the sync
-                if (line != null && !line.matches("(?s).*\\d+ ?ms\\b.*") && !line.equals("CAN listener running."))
+                if (line != null && !line.matches("(?s).*\\d+ ?ms\\b.*") && !line.startsWith("CAN listener running"))
                 {
                     out.add(line);
                 }
