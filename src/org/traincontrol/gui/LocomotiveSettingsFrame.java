@@ -308,6 +308,9 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
             tab.setBorder(BorderFactory.createEmptyBorder(PAD, PAD, PAD, PAD));
         }
 
+        // The other tabs' controls carry a 4 pixel inset of their own: the table and its buttons line up with them
+        functionsTab.setBorder(BorderFactory.createEmptyBorder(PAD + 4, PAD + 4, PAD + 4, PAD + 4));
+
         tabs.addTab(I18n.t("loc.ui.settingsTabFunctions"), TabIcons.functions(), functionsTab);
         tabs.addTab(I18n.t("loc.ui.settingsTabNotes"), TabIcons.notes(), notesTab);
         tabs.addTab(I18n.t("loc.ui.settingsTabMultiUnit"), TabIcons.multiUnit(), multiUnitTab);
