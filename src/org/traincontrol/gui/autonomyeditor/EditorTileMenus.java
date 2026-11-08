@@ -166,6 +166,9 @@ final class EditorTileMenus
             // The train's own items, then the hand doors, then the square's window, each group behind a divider (FR-182).
             if (!editor.menuOnly)
             {
+                // A group's divider only when it added something: tidy() takes the heading off an empty section.
+                int before = menu.getComponentCount();
+
                 // Whether it runs (FR-117): read off the train and written to it and the setup together; only at rest.
                 if (standing != null && (editor.parentWindow() == null || !editor.parentWindow().aRunHoldsTheSetup()))
                 {
@@ -185,7 +188,9 @@ final class EditorTileMenus
 
                 if (train != null && !placesOne) menu.add(train);
 
-                menu.addSeparator();
+                if (menu.getComponentCount() > before) menu.addSeparator();
+
+                before = menu.getComponentCount();
 
                 javax.swing.JMenuItem placeSelected = placeSelectedItem(target, trainStanding(target));
 
@@ -199,7 +204,7 @@ final class EditorTileMenus
 
                 if (train != null && placesOne) menu.add(train);
 
-                menu.addSeparator();
+                if (menu.getComponentCount() > before) menu.addSeparator();
             }
 
             // Every setting of the square is in its window (FR-111), which a key opens too.
