@@ -3697,8 +3697,8 @@ public class AutonomyEditorPanel extends JPanel
 
         named.remove(null);
 
-        // Cancel brings the station back as it was, as for a drop onto a train; a plain placement is left as it was
-        if (named.size() > 1) putBackOnDiscard.addAll(named);
+        // Cancel undoes a placement as it undoes a drag: the station, and the train where it stood (MT-914)
+        putBackOnDiscard.addAll(named);
 
         session.placeLocomotive(tile, name);
 
@@ -3888,7 +3888,7 @@ public class AutonomyEditorPanel extends JPanel
             || window.canTrainLandOn(locomotiveAt(from), to);
     }
 
-    /** The trains a Cancel puts back with the setup: every train dragged this session, and any a drop displaced. */
+    /** The trains a Cancel puts back with the setup: every train dragged or placed this session, and any they displaced. */
     private final java.util.Set<String> putBackOnDiscard = new java.util.LinkedHashSet<>();
 
     /** @return the trains the railway must not keep where a drag left them when the edit is thrown away */
