@@ -289,7 +289,7 @@ public class testATrainWithNoWayOutFacesAlongItsTrack
                 + " Tunnel points east, on track that runs north and south: " + caption[0]);
 
             String east = I18n.t("autosetup.ui.facingE");
-            String nowEast = I18n.f("autosetup.ui.menuChangeDirection", I18n.t("autosetup.ui.sideE"));
+            String nowEast = I18n.f("autosetup.ui.menuChangeDirection", org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel.menuSide("E"));
 
             for (javax.swing.JMenuItem item : support.Components.all(menu, javax.swing.JMenuItem.class, null))
             {
@@ -386,8 +386,8 @@ public class testATrainWithNoWayOutFacesAlongItsTrack
 
             String said = menu.getComponentCount() == 0 ? null : ((javax.swing.JMenuItem) menu.getComponent(0)).getText();
 
-            assertEquals(said, I18n.f("autosetup.ui.menuChangeDirection", I18n.t("autosetup.ui.side"
-                + offered.get(0).name())), "precondition: Change Direction does not name TunnelRightPark's one way out");
+            assertEquals(said, I18n.f("autosetup.ui.menuChangeDirection",
+                org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel.menuSide(offered.get(0).name())), "precondition: Change Direction does not name TunnelRightPark's one way out");
 
             assertEquals(shown.getFacing(), offered.get(0), "the locomotive at TunnelRightPark, which the railway cannot"
                 + " stand with east recorded, faces away from the one way out Change Direction names (V348D-C1)");

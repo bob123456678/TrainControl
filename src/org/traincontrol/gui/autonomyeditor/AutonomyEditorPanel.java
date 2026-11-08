@@ -2037,6 +2037,15 @@ public class AutonomyEditorPanel extends JPanel
             + "</body></html>";
     }
 
+    /** A compass word inside a menu item: capitalized in English, whose menus are title case (Adam: "now facing East"). */
+    public static String menuSide(String side)
+    {
+        String word = I18n.t("autosetup.ui.side" + side);
+
+        return "en".equals(I18n.getLocale().getLanguage()) && !word.isEmpty()
+            ? Character.toUpperCase(word.charAt(0)) + word.substring(1) : word;
+    }
+
     /**
      * A tooltip that wraps instead of running off the screen, which Swing does with a long one.
      * @return the same text, wrapped

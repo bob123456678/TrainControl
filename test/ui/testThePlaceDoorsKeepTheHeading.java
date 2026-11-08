@@ -691,7 +691,7 @@ public class testThePlaceDoorsKeepTheHeading
                 for (Side side : Side.values())
                 {
                     // The label "now facing", or a ticked radio where there is no one-click turn
-                    if (I18n.f("autosetup.ui.menuChangeDirection", I18n.t("autosetup.ui.side" + side.name()))
+                    if (I18n.f("autosetup.ui.menuChangeDirection", org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel.menuSide(side.name()))
                         .equals(item.getText())) shown[0] = side;
 
                     if (item.isSelected() && I18n.t("autosetup.ui.facing" + side.name()).equals(item.getText()))

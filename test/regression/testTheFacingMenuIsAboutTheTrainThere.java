@@ -201,7 +201,7 @@ public class testTheFacingMenuIsAboutTheTrainThere
             assertNotNull(menu[0], "no menu for " + onTheRailway + ", standing at " + square + " on the railway");
 
             // The label reads the railway's train: "now facing" its facing, which is the one a click turns from.
-            String label = I18n.f("autosetup.ui.menuChangeDirection", I18n.t("autosetup.ui.side" + facingWas.name()));
+            String label = I18n.f("autosetup.ui.menuChangeDirection", org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel.menuSide(facingWas.name()));
 
             JMenuItem choice = find(menu[0], label);
 

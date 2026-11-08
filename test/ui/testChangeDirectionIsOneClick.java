@@ -362,7 +362,7 @@ public class testChangeDirectionIsOneClick
     {
         try
         {
-            return I18n.f(key, I18n.t("autosetup.ui.side" + side));
+            return I18n.f(key, org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel.menuSide(side));
         }
         catch (java.util.MissingResourceException none)
         {

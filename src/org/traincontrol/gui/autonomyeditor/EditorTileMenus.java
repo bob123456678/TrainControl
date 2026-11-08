@@ -779,7 +779,7 @@ final class EditorTileMenus
         final org.traincontrol.automationui.TilePorts.Side now = facts.current();
 
         String label = now == null ? I18n.t("autosetup.ui.menuChangeDirectionUnknown")
-            : I18n.f("autosetup.ui.menuChangeDirection", I18n.t("autosetup.ui.side" + now.name()));
+            : I18n.f("autosetup.ui.menuChangeDirection", AutonomyEditorPanel.menuSide(now.name()));
 
         if (facings.size() <= 1)
         {
@@ -839,11 +839,11 @@ final class EditorTileMenus
         return buildArrivedFromMenu(target);
     }
 
-    /** "Change Arrived From (currently east)", or without the side where none is recorded. */
+    /** "Change Arrived From (currently East)", or without the side where none is recorded. */
     private static String changeArrivedFromLabel(String recorded)
     {
         return recorded == null ? I18n.t("autosetup.ui.menuChangeArrivedFromUnknown")
-            : I18n.f("autosetup.ui.menuChangeArrivedFrom", I18n.t("autosetup.ui.side" + recorded));
+            : I18n.f("autosetup.ui.menuChangeArrivedFrom", AutonomyEditorPanel.menuSide(recorded));
     }
 
     /** A grayed item whose tooltip says why, which FR-168's setting leaves on. */
