@@ -137,16 +137,39 @@ public class testTheStationIsReachedOverTcp
         return answer;
     }
 
-    /** Sends a datagram to the proxy's UDP socket, as the station's broadcast would arrive. */
-    private void broadcast(byte[] frame) throws Exception
+    private DatagramSocket udpSocket() throws Exception
     {
         java.lang.reflect.Field field = NetworkProxy.class.getDeclaredField("socket");
         field.setAccessible(true);
-        int port = ((DatagramSocket) field.get(this.proxy)).getLocalPort();
+        return (DatagramSocket) field.get(this.proxy);
+    }
+
+    /** Sends a datagram to the proxy's UDP socket, as the station's broadcast would arrive. */
+    private void broadcast(byte[] frame) throws Exception
+    {
+        int port = udpSocket().getLocalPort();
 
         try (DatagramSocket out = new DatagramSocket())
         {
             out.send(new DatagramPacket(frame, frame.length, InetAddress.getByName("127.0.0.1"), port));
+        }
+    }
+
+    /** The datagram waiting in the proxy's UDP socket, read here; empty when none comes within WAIT_MS. */
+    private byte[] unreadDatagram() throws Exception
+    {
+        DatagramSocket socket = udpSocket();
+        DatagramPacket packet = new DatagramPacket(new byte[64], 64);
+        socket.setSoTimeout((int) WAIT_MS);
+
+        try
+        {
+            socket.receive(packet);
+            return Arrays.copyOf(packet.getData(), packet.getLength());
+        }
+        catch (java.net.SocketTimeoutException none)
+        {
+            return new byte[0];
         }
     }
 
@@ -188,8 +211,10 @@ public class testTheStationIsReachedOverTcp
     }
 
     /**
-     * Frames are reassembled at 13 bytes however the stream is cut: a frame split over two reads, and two frames and
-     * part of a third in one, reach the model as three whole frames, once each, in order.
+     * Frames are reassembled at 13 bytes however the stream is cut: a frame split over two writes, and the rest of it
+     * with a whole frame and part of the next in one, reach the model as whole frames, once each, in order.  Each piece
+     * starts with the end of a frame, and the next piece is written only once that frame was heard, so every cut falls
+     * between two reads.
      *
      * MUTATION: in `NetworkProxy.readUntilLost`, `filled += read;` to `filled = read;`.
      */
@@ -199,30 +224,34 @@ public class testTheStationIsReachedOverTcp
         this.station = new TcpStation();
         connect(this.station.port());
 
-        byte[][] frames = {sensor(1001, true), sensor(1002, true), sensor(1001, false)};
-        byte[] stream = new byte[3 * CS2Message.MESSAGE_LENGTH];
+        byte[][] frames = {sensor(1001, true), sensor(1002, true), sensor(1001, false), sensor(1002, false)};
+        byte[] stream = new byte[frames.length * CS2Message.MESSAGE_LENGTH];
 
-        for (int i = 0; i < 3; i++) System.arraycopy(frames[i], 0, stream, i * CS2Message.MESSAGE_LENGTH, 13);
+        for (int i = 0; i < frames.length; i++)
+        {
+            System.arraycopy(frames[i], 0, stream, i * CS2Message.MESSAGE_LENGTH, CS2Message.MESSAGE_LENGTH);
+        }
 
-        // Cut at 5 and 28: the first frame in two pieces, then the rest of it, the second and part of the third
-        int[] cuts = {0, 5, 28, stream.length};
+        // The first frame and 5 bytes of the second; the rest of it, the third and 2 bytes of the fourth; the rest
+        int[] cuts = {0, 18, 41, stream.length};
+
+        // The frame each piece completes: the first, the third, the fourth
+        int[] completes = {0, 2, 3};
 
         for (int i = 0; i + 1 < cuts.length; i++)
         {
             this.station.send(Arrays.copyOfRange(stream, cuts[i], cuts[i + 1]));
 
-            // Long enough for the proxy to read each piece on its own
-            Thread.sleep(200);
+            byte[] whole = frames[completes[i]];
+            assertTrue(Components.waitFor(() -> this.model.heardFrame(whole), WAIT_MS),
+                "frame " + (completes[i] + 1) + " never reached the model whole: " + this.model.heard.size() + " heard");
         }
 
-        assertTrue(Components.waitFor(() -> this.model.heard.size() >= 3, WAIT_MS),
-            "only " + this.model.heard.size() + " of 3 frames reached the model");
-        Thread.sleep(300);
-
+        // Every byte written is now read: nothing more can come
         List<byte[]> heard = new ArrayList<>(this.model.heard);
-        assertEquals(heard.size(), 3, "the model was handed " + heard.size() + " frames for 3");
+        assertEquals(heard.size(), frames.length, "the model was handed " + heard.size() + " frames for " + frames.length);
 
-        for (int i = 0; i < 3; i++)
+        for (int i = 0; i < frames.length; i++)
         {
             assertEquals(heard.get(i), frames[i], "frame " + (i + 1) + " reached the model changed");
         }
@@ -276,8 +305,8 @@ public class testTheStationIsReachedOverTcp
     }
 
     /**
-     * Over TCP the UDP socket is not read, or every frame would arrive twice: a broadcast never reaches the model,
-     * and the same frame over TCP reaches it once.
+     * Over TCP the UDP socket is not read, or every frame would arrive twice: a broadcast is still waiting in it,
+     * unread, after a frame sent later over TCP has been heard, and only the TCP frame reached the model.
      *
      * MUTATION: in `NetworkProxy.ReadMessages.run`, `if (tcp != null)` to `if (false)`.
      */
@@ -295,7 +324,7 @@ public class testTheStationIsReachedOverTcp
         this.station.send(overTcp);
 
         assertTrue(Components.waitFor(() -> this.model.heardFrame(overTcp), WAIT_MS), "the frame over TCP never arrived");
-        Thread.sleep(500);
+        assertTrue(Arrays.equals(unreadDatagram(), overUdp), "over TCP the UDP socket was read too, so frames arrive twice");
         assertFalse(this.model.heardFrame(overUdp), "over TCP the UDP socket was read too, so frames arrive twice");
         assertEquals(this.model.heard.size(), 1,
             "the station's one frame reached the model " + this.model.heard.size() + " times");

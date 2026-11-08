@@ -3,6 +3,7 @@ package core;
 import java.io.File;
 import java.nio.file.Files;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import static org.testng.Assert.assertEquals;
@@ -75,7 +76,8 @@ public class testTheGoldensHoldOverTcp
 
     /**
      * A connected model's pings, power, locomotive and accessory commands reach the TCP station as the frames `exec`
-     * was handed, byte for byte, in order, each once.
+     * was handed, byte for byte, in order, each once: the last frames the station received are those, ending with a
+     * marker frame sent after them.
      */
     @Test(timeOut = 120000)
     public void testTheFramesOverTcpAreTheFramesOfUdp() throws Exception
@@ -93,9 +95,10 @@ public class testTheGoldensHoldOverTcp
                         "precondition: the start-up's ping did not reach the station, so the model is not connected");
 
                     List<CS2Message> sent = Collections.synchronizedList(new ArrayList<>());
-                    Thread.sleep(500);
-                    int mark = station.received().size();
                     rig.model.setSentMessageObserver(sent::add);
+
+                    // Sent last, so that once it is in every frame before it is: one connection keeps their order
+                    CS2Message last = new CS2Message(CS2Message.CAN_CMD_PING, new byte[] {0x46, 0x52});
 
                     try
                     {
@@ -108,24 +111,30 @@ public class testTheGoldensHoldOverTcp
                         loco.setSpeed(0);
                         rig.model.getAccessoryByAddress(5, Accessory.accessoryDecoderType.MM2).turn();
                         rig.model.stop();
-
-                        Thread.sleep(1000);
+                        rig.model.exec(last);
 
                         List<CS2Message> handed = new ArrayList<>(sent);
-                        assertTrue(handed.size() >= 7, "only " + handed.size() + " commands were handed to the network");
-                        assertTrue(Components.waitFor(() -> station.received().size() >= mark + handed.size(), 5000),
-                            "the station received " + (station.received().size() - mark) + " frames for "
-                            + handed.size());
-                        Thread.sleep(300);
+                        assertTrue(handed.size() >= 8, "only " + handed.size() + " commands were handed to the network");
+                        assertTrue(Components.waitFor(() -> station.received().stream()
+                            .anyMatch(f -> Arrays.equals(f.bytes, last.getRawMessage())), 5000),
+                            "the last frame never reached the station");
 
-                        List<TcpStation.Frame> got = station.received().subList(mark, station.received().size());
-                        assertEquals(got.size(), handed.size(), "the station received a different number of frames");
+                        // The frames that end with the last one, as many as were handed over
+                        List<TcpStation.Frame> all = station.received();
+                        int end = all.size();
+
+                        while (!Arrays.equals(all.get(end - 1).bytes, last.getRawMessage())) end--;
+
+                        assertTrue(end >= handed.size(), "the station received fewer frames than were handed over");
+                        List<TcpStation.Frame> got = all.subList(end - handed.size(), end);
 
                         for (int i = 0; i < handed.size(); i++)
                         {
                             assertEquals(got.get(i).bytes, handed.get(i).getRawMessage(),
                                 "frame " + (i + 1) + " over TCP is not the frame the program sent: " + handed.get(i));
                         }
+
+                        assertEquals(all.size(), end, "frames reached the station after the last one handed over");
                     }
                     finally
                     {
