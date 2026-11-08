@@ -660,7 +660,7 @@ public class LayoutDiagramComponent
     {
         try
         {
-            return Integer.valueOf(text);
+            return Integer.parseInt(text);
         }
         catch (NumberFormatException none)
         {
