@@ -29,11 +29,10 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
  * facing" and a click moved P, found on no copy of the square, so T was not turned and the correction was dropped
  * silently.  The same shape one door along: `flipFacing` is keyed on the railway's train, and this menu was not.
  *
- * Asked through the real door, as `testTheTailCanBeGivenInTheEditor` asks it: `AutonomyEditorPanel.buildFacingMenu`,
- * which both surfaces serve, and its item clicked.
+ * Asked through the real door: the editor's right-click menu, whose Change Direction both surfaces serve
+ * (`AutonomyEditorPanel.addFacingItems`), clicked.
  *
- * MUTATION: take the menu's train from the setup again, and the title claim fails; move the setup's train on a click,
- * and the turn claim fails.
+ * MUTATION: move the setup's train on a click, and the turn claim fails.
  *
  * @author Adam
  */
@@ -133,7 +132,8 @@ public class testTheFacingMenuIsAboutTheTrainThere
 
                 if (!loc.getName().equals(session.getLocomotiveNameAt(at))) continue;
 
-                if (session.facingChoices(at).size() < 2) continue;
+                // Two exactly: Change Direction is then one click to the other (FR-181)
+                if (session.facingChoices(at).size() != 2) continue;
 
                 square = at;
                 copy = point;
@@ -194,19 +194,21 @@ public class testTheFacingMenuIsAboutTheTrainThere
 
             final AutonomyEditorPanel panel = editor[0].getAutonomyPanel();
             final TileKey target = square;
-            final javax.swing.JMenu[] menu = new javax.swing.JMenu[1];
+            final javax.swing.JPopupMenu[] menu = new javax.swing.JPopupMenu[1];
 
-            SwingUtilities.invokeAndWait(() -> menu[0] = panel.buildFacingMenu(target));
+            SwingUtilities.invokeAndWait(() -> menu[0] = panel.buildTileMenu(target, null));
 
-            assertNotNull(menu[0], "no Facing menu for " + onTheRailway + ", standing at " + square + " on the railway");
+            assertNotNull(menu[0], "no menu for " + onTheRailway + ", standing at " + square + " on the railway");
 
-            assertEquals(menu[0].getText(), I18n.f("autosetup.ui.menuFacingGroup", onTheRailway), "the Facing menu at "
-                + square + " names the setup's train, " + inTheSetup + ", while the railway has " + onTheRailway
-                + " there (TDY4-C5)");
+            // The label reads the railway's train: "now facing" its facing, which is the one a click turns from.
+            String label = I18n.f("autosetup.ui.menuChangeDirection", I18n.t("autosetup.ui.side" + facingWas.name()));
 
-            JMenuItem choice = find(menu[0], I18n.t("autosetup.ui.facing" + turnTo.name()));
+            JMenuItem choice = find(menu[0], label);
 
-            assertNotNull(choice, "precondition: the menu does not offer " + turnTo);
+            assertNotNull(choice, "the menu at " + square + " has no " + label + " for " + onTheRailway + ", the train"
+                + " the railway has there while the setup has " + inTheSetup + " (TDY4-C5): "
+                + support.Components.all(menu[0], JMenuItem.class, null).stream().map(JMenuItem::getText)
+                    .collect(java.util.stream.Collectors.toList()));
 
             SwingUtilities.invokeAndWait(choice::doClick);
 
@@ -243,8 +245,8 @@ public class testTheFacingMenuIsAboutTheTrainThere
     }
 
     /**
-     * A train standing on a square no track leads out of gets the Facing menu grayed, with the reason in its tooltip,
-     * rather than no menu (OB-347).
+     * A train standing on a square no track leads out of gets Change Direction grayed, with the reason in its tooltip,
+     * rather than no item (OB-347).
      *
      * MUTATION: return null for no facing again, and this fails.
      */
@@ -316,20 +318,23 @@ public class testTheFacingMenuIsAboutTheTrainThere
 
             final AutonomyEditorPanel panel = editor[0].getAutonomyPanel();
             final TileKey target = square;
-            final javax.swing.JMenu[] menu = new javax.swing.JMenu[1];
+            final javax.swing.JPopupMenu menu = new javax.swing.JPopupMenu();
 
-            SwingUtilities.invokeAndWait(() -> menu[0] = panel.buildFacingMenu(target));
+            SwingUtilities.invokeAndWait(() -> panel.addFacingItems(menu, target));
 
-            assertNotNull(menu[0], "the Facing menu is hidden for " + named + " on " + square + ", which no track leads"
-                + " out of - Adam: \"rather than hiding it, grey it out\" (OB-347)");
+            assertTrue(menu.getComponentCount() > 0, "Change Direction is hidden for " + named + " on " + square
+                + ", which no track leads out of - Adam: \"rather than hiding it, grey it out\" (OB-347)");
 
-            assertEquals(menu[0].getText(), I18n.f("autosetup.ui.menuFacingGroup", named));
+            JMenuItem change = (JMenuItem) menu.getComponent(0);
 
-            assertFalse(menu[0].isEnabled(), "the Facing menu on a square with no way out is not greyed (OB-347)");
+            assertTrue(change.getText().startsWith(I18n.t("autosetup.ui.menuChangeDirectionUnknown")), "the first item"
+                + " about " + named + " is not Change Direction: " + change.getText());
 
-            assertTrue(menu[0].getToolTipText() != null && menu[0].getToolTipText().contains(
-                I18n.t("autosetup.ui.hintFacingNoWayOut").substring(0, 20)), "the greyed menu does not say why: "
-                + menu[0].getToolTipText());
+            assertFalse(change.isEnabled(), "Change Direction on a square with no way out is not greyed (OB-347)");
+
+            assertTrue(change.getToolTipText() != null && change.getToolTipText().contains(
+                I18n.t("autosetup.ui.hintFacingNoWayOut").substring(0, 20)), "the greyed item does not say why: "
+                + change.getToolTipText());
         }
         finally
         {
@@ -786,16 +791,10 @@ public class testTheFacingMenuIsAboutTheTrainThere
         return stack.length > 0 && "executePathInternal".equals(stack[0].getMethodName());
     }
 
-    private static JMenuItem find(javax.swing.JMenu menu, String text)
+    /** The item that says this, on the menu or in one of its submenus; null when none does. */
+    private static JMenuItem find(java.awt.Container menu, String text)
     {
-        for (int i = 0; i < menu.getItemCount(); i++)
-        {
-            JMenuItem item = menu.getItem(i);
-
-            if (item != null && text.equals(item.getText())) return item;
-        }
-
-        return null;
+        return support.Components.find(menu, JMenuItem.class, item -> text.equals(item.getText()));
     }
 
     private static void settle() throws Exception

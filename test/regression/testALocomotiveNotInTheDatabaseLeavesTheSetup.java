@@ -126,12 +126,19 @@ public class testALocomotiveNotInTheDatabaseLeavesTheSetup
                 "the list at " + LISTED + " still names " + GONE + ", or lost a locomotive the database holds");
 
             // AND EVERY READER WITH IT: the facing menu, the captions, the placements a build writes
-            final javax.swing.JMenu[] facing = new javax.swing.JMenu[1];
+            final javax.swing.JPopupMenu facing = new javax.swing.JPopupMenu();
 
-            SwingUtilities.invokeAndWait(() -> facing[0] = ui[0].buildAutonomyFacingMenu(STANDS));
+            SwingUtilities.invokeAndWait(() -> ui[0].addAutonomyFacingItems(facing, STANDS));
 
-            assertTrue(facing[0] == null || !String.valueOf(facing[0].getText()).contains(GONE), "the right-click menu at "
-                + STANDS + " still offers " + (facing[0] == null ? null : facing[0].getText()) + " (OB-349)");
+            StringBuilder offered = new StringBuilder();
+
+            for (javax.swing.JMenuItem item : support.Components.all(facing, javax.swing.JMenuItem.class, null))
+            {
+                offered.append('[').append(item.getText()).append(']');
+            }
+
+            assertFalse(offered.toString().contains(GONE),"the right-click menu at " + STANDS + " still offers " + offered
+                + " (OB-349)");
             assertNull(ui[0].autonomyCaptionTextAt(STANDS), "the editor's caption at " + STANDS + " still names a train");
             assertNull(ui[0].autonomyHomeAt(STANDS), "the home caption at " + STANDS + " still names " + GONE);
             assertFalse(session.tilesWithALocomotive().contains(STANDS), "the setup's placements still include " + STANDS);

@@ -152,9 +152,9 @@ public class testNoSelfRecursiveWrappers
      * UpdateFlow's static `whenNoModalDialog` call `TrainControlUI.whenNoModalDialog(`, SessionRuns' `runs()` return
      * `owner.runs()`, LayoutEditorUndo's `undo()` call `editor.undo()`, TrainControlUI's `combineLinkedPages` delegator
      * call `this.combineLinkedPages()` (or a bare `combineLinkedPages()`) instead of
-     * `layoutFileActions.combineLinkedPages()`, EditorTileMenus' `buildFacingMenu` begin
-     * `if (target == null) return editor.buildFacingMenu(target);`, or AutonomyEditorPanel's `buildFacingMenu` return
-     * `buildFacingMenu(target)`.
+     * `layoutFileActions.combineLinkedPages()`, EditorTileMenus' `addFacingItems` begin
+     * `if (target == null) return editor.addFacingItems(menu, target);`, or AutonomyEditorPanel's `addFacingItems` return
+     * `addFacingItems(menu, target)`.
      */
     @Test
     public void testADelegatorAndItsCollaboratorDoNotCallEachOtherForEver() throws Exception
