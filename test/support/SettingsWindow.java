@@ -215,7 +215,10 @@ public final class SettingsWindow
     {
         Components.onTheEventThread(() ->
         {
-            part(name, javax.swing.JTextField.class).setText(value);
+            javax.swing.JComboBox<?> box = part(name, javax.swing.JComboBox.class);
+
+            if (box != null) ((javax.swing.text.JTextComponent) box.getEditor().getEditorComponent()).setText(value);
+            else part(name, javax.swing.JTextField.class).setText(value);
 
             return null;
         });
