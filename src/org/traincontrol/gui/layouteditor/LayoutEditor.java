@@ -4570,6 +4570,7 @@ public class LayoutEditor extends PositionAwareJFrame
 
         sidebar.add(heading(I18n.t("layout.ui.sidebarPages")));
         sidebar.add(buildPageStrip(pages));
+        sidebar.add(javax.swing.Box.createVerticalStrut(CHECKBOX_GAP));
         sidebar.add(scrollable(buildPageControl(pages)));
         sidebar.add(javax.swing.Box.createVerticalStrut(12));
 

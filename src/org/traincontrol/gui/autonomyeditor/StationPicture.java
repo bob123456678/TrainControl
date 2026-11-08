@@ -53,11 +53,11 @@ final class StationPicture extends JPanel
     /** The track diagram's 60 pixel square. */
     static final int SQUARE = 60;
 
-    /** The ways in are drawn smaller than the diagram's, so that a way in and a way out fit on one side's axis. */
+    /** The ways in are drawn smaller than the diagram's, so that a way in and a way out fit on one side. */
     private static final int CHEVRON = 40;
 
-    /** Between a way out's back and the way in's base, along the axis. */
-    private static final double APART = 2;
+    /** How far a way in on a straight side stands off the axis, clear of the station's art and of its way out. */
+    private static final double ALONGSIDE = 20;
 
     /** Where a way in that stands by its edge starts: inward from the edge, and along it beside the way out. */
     private static final double EDGE = 4;
@@ -378,41 +378,30 @@ final class StationPicture extends JPanel
 
         if (!session.arrivalSides(showing).contains(side)) return;
 
-        // Behind the way out's back, measured off the arrowhead itself
-        double back = 0;
+        boolean bent = other != null && other.opposite() != side && other != side;
 
-        for (int i = 0; i < arrow.npoints; i++)
-        {
-            back = Math.max(back, (edge[0] - arrow.xpoints[i]) * away[0] + (edge[1] - arrow.ypoints[i]) * away[1]);
-        }
-
-        double[] inward = {-away[0], -away[1]};
-
-        if (other != null && other.opposite() != side && other != side)
-        {
-            out.add(new Mark(Mark.Kind.IN, showing, side, rules.waysIn().contains(side.name()), apartChevron(at, side, other), null,
-                null));
-
-            return;
-        }
-
-        Path2D chevron = TileAnnotation.arrivalShape(edge[0] + inward[0] * (back + APART), edge[1] + inward[1] * (back + APART),
-            inward, CHEVRON);
-
-        out.add(new Mark(Mark.Kind.IN, showing, side, rules.waysIn().contains(side.name()), chevron, null, null));
+        out.add(new Mark(Mark.Kind.IN, showing, side, rules.waysIn().contains(side.name()), apartChevron(at, side, other, bent),
+            null, null));
     }
 
     /**
-     * A way in on a curved side: it stands by its own edge, pointing straight in, shifted along the edge away from the
-     * curve, beside its way out, so the two ends of a curve never share a spot of the chord (FR-111).
+     * A way in: it stands by its own edge, pointing straight in, beside its way out and off the station's art.  On a
+     * curved side it is shifted along the edge away from the curve, so the two ends of a curve never share a spot of
+     * the chord (FR-111); on a straight side it is shifted off the axis, down or to the east.
      */
-    private static Path2D apartChevron(Rectangle at, Side side, Side other)
+    private static Path2D apartChevron(Rectangle at, Side side, Side other, boolean bent)
     {
         double[] edge = middleOf(at, side);
-        double[] toward = middleOf(at, other);
+        double[] toward = other == null ? edge : middleOf(at, other);
 
         double inX = Math.signum(at.getCenterX() - edge[0]);
         double inY = Math.signum(at.getCenterY() - edge[1]);
+
+        if (!bent)
+        {
+            return TileAnnotation.arrivalShape(edge[0] + inX * EDGE + (inX != 0 ? 0 : ALONGSIDE),
+                edge[1] + inY * EDGE + (inX != 0 ? ALONGSIDE : 0), new double[] {inX, inY}, CHEVRON);
+        }
 
         // Along the edge, away from where the curve goes
         double lateral = inY != 0 ? -Math.signum(toward[0] - edge[0]) : 0;
