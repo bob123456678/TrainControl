@@ -38,8 +38,8 @@ public class NetworkProxy
     // How long to wait after a recoverable receive error, so that a persistent fault cannot spin
     private static final long RECEIVE_ERROR_BACKOFF_MS = 50;
 
-    /** The receive buffer asked for, far above the station's busiest second (OB-421). */
-    private static final int RECEIVE_BUFFER_BYTES = 4 * 1024 * 1024;
+    /** The receive buffer asked for: about 80,000 frames, minutes of the station's busiest traffic (OB-421). */
+    private static final int RECEIVE_BUFFER_BYTES = 1024 * 1024;
     
     // Transmission IP/port
     private final InetAddress transmitIP;
