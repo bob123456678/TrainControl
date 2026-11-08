@@ -307,4 +307,41 @@ public class testTheLogIsStampedAndExports
             assertNull(item.getToolTipText(), "Export Log has a tooltip");
         });
     }
+
+    /**
+     * The File menu reads in four groups with one separator between them, none doubled or at an end (FR-051).
+     * MUTATION: `mountRestoreFromBackup` stops calling `arrangeFileMenu`, and Restore lands after Exit.
+     */
+    @Test(timeOut = 180000)
+    public void testTheFileMenuReadsInFourGroups() throws Exception
+    {
+        inAWindow(ui ->
+        {
+            java.awt.Component[] parts = ((javax.swing.JPopupMenu) item(ui).getParent()).getComponents();
+
+            StringBuilder read = new StringBuilder();
+
+            for (java.awt.Component part : parts)
+            {
+                read.append(part instanceof JMenuItem ? ((JMenuItem) part).getText() : "---").append('|');
+            }
+
+            String[][] groups = {
+                {"ui.main.toolbar.syncDBWithCS", "ui.main.toolbar.changeIP"},
+                {"ui.main.toolbar.backupData", "ui.main.toolbar.restoreData"},
+                {"ui.main.toolbar.exportLog"},
+                {"ui.main.toolbar.exit"}};
+
+            StringBuilder want = new StringBuilder();
+
+            for (int g = 0; g < groups.length; g++)
+            {
+                if (g > 0) want.append("---|");
+
+                for (String key : groups[g]) want.append(I18n.t(key)).append('|');
+            }
+
+            assertEquals(read.toString(), want.toString(), "the File menu is not the four groups, top to bottom");
+        });
+    }
 }

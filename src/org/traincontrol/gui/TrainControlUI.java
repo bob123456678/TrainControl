@@ -4882,7 +4882,70 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         this.exportLogMenuItem = item;
 
-        this.fileMenu.insert(item, this.fileMenu.getPopupMenu().getComponentIndex(this.backupDataMenuItem) + 1);
+        this.fileMenu.add(item);
+
+        arrangeFileMenu();
+    }
+
+    /**
+     * Puts the File menu in its four groups, with one separator between groups and none at the ends: Sync and Change IP;
+     * Backup and Restore; Export Log; Exit.  Called after every insert, so no item lands in the wrong group; an item it
+     * does not know stays, after Export Log.
+     */
+    void arrangeFileMenu()
+    {
+        java.util.List<java.awt.Component> rest = new java.util.ArrayList<>(
+            java.util.Arrays.asList(this.fileMenu.getMenuComponents()));
+
+        rest.removeIf(each -> each instanceof javax.swing.JPopupMenu.Separator);
+
+        java.util.List<java.util.List<java.awt.Component>> groups = new java.util.ArrayList<>();
+
+        groups.add(takeFrom(rest, this.syncMenuItem, this.changeIPMenuItem));
+        groups.add(takeFrom(rest, this.backupDataMenuItem, this.restoreDataMenuItem));
+
+        java.util.List<java.awt.Component> exports = takeFrom(rest, this.exportLogMenuItem);
+
+        groups.add(exports);
+
+        java.util.List<java.awt.Component> exit = takeFrom(rest, this.exitMenuItem);
+
+        exports.addAll(rest);
+
+        this.fileMenu.removeAll();
+
+        boolean first = true;
+
+        for (java.util.List<java.awt.Component> group : groups)
+        {
+            if (group.isEmpty()) continue;
+
+            if (!first) this.fileMenu.addSeparator();
+
+            for (java.awt.Component each : group) this.fileMenu.add(each);
+
+            first = false;
+        }
+
+        if (!exit.isEmpty())
+        {
+            if (!first) this.fileMenu.addSeparator();
+
+            this.fileMenu.add(exit.get(0));
+        }
+    }
+
+    private static java.util.List<java.awt.Component> takeFrom(java.util.List<java.awt.Component> rest,
+        java.awt.Component... wanted)
+    {
+        java.util.List<java.awt.Component> taken = new java.util.ArrayList<>();
+
+        for (java.awt.Component each : wanted)
+        {
+            if (each != null && rest.remove(each)) taken.add(each);
+        }
+
+        return taken;
     }
 
     javax.swing.JMenuItem exportLogMenuItem;
