@@ -50,6 +50,9 @@ public class Layout
     // The deadline is PATH_VALIDATION_MS * (accessories on the path + 1).  Not final so tests can shorten it.
     public static int PATH_VALIDATION_MS = 1000;
 
+    // The longest path validation waits on a station still busy with other accessories, in PATH_VALIDATION_MS periods
+    public static final int PATH_VALIDATION_BUSY_MAX = 60;
+
     // When true, a locomotive departs only once the CS echo shows every accessory on its path set.  Tied to the
     // "Path Integrity Validation" preference in the UI, but respected headless via this flag.  Default on.
     public static boolean PATH_INTEGRITY_VALIDATION = true;
@@ -3524,8 +3527,10 @@ public class Layout
 
     /**
      * Waits up to PATH_VALIDATION_MS * (accessories on the path + 1) for every accessory on the path to reach its
-     * CS-confirmed commanded state, on Accessory.actuationConfirmedMonitor rather than polling.  Must be called WITHOUT
-     * holding the Layout monitor so concurrent path checks are not blocked.
+     * CS-confirmed commanded state, on Accessory.actuationConfirmedMonitor rather than polling.  While the station is
+     * still answering other accessories it waits on, up to PATH_VALIDATION_BUSY_MAX: a CS3 switches one accessory at a
+     * time, about a second each, so ours may be queued behind another train's.  Must be called WITHOUT holding the
+     * Layout monitor so concurrent path checks are not blocked.
      *
      * @return true if all accessories on the path are confirmed at their commanded state
      */
@@ -3557,7 +3562,8 @@ public class Layout
         // Wait on the dedicated actuation monitor until all are confirmed or the timeout elapses.
         // MarklinAccessory notifies it each time a CS echo advances stateAtLastActuation, so we wake and
         // re-check only when a confirmed state actually changed - and exit immediately once all are confirmed.
-        long deadline = System.currentTimeMillis() + PATH_VALIDATION_MS + PATH_VALIDATION_MS * accessories.size();
+        long start = System.currentTimeMillis();
+        long deadline = start + PATH_VALIDATION_MS + PATH_VALIDATION_MS * accessories.size();
 
         synchronized (Accessory.actuationConfirmedMonitor)
         {
@@ -3570,6 +3576,8 @@ public class Layout
                     break;
                 }
 
+                long echoesBefore = Accessory.echoes;
+
                 try
                 {
                     Accessory.actuationConfirmedMonitor.wait(remaining);
@@ -3581,6 +3589,14 @@ public class Layout
                     Thread.currentThread().interrupt();
 
                     return allConfirmed(accessories, desired);
+                }
+
+                // Another accessory answered, so the station is still working: give it two more periods.  An echo of
+                // one of ours does not count, so a path someone else keeps switching back still fails on time.
+                if (Accessory.echoes != echoesBefore && !accessories.contains(Accessory.lastEchoed))
+                {
+                    deadline = Math.max(deadline, Math.min(start + (long) PATH_VALIDATION_MS * PATH_VALIDATION_BUSY_MAX,
+                        System.currentTimeMillis() + 2L * PATH_VALIDATION_MS));
                 }
             }
         }

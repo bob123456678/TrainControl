@@ -425,6 +425,56 @@ public class testAutonomyPathValidation
     }
 
     /**
+     * A station still answering other accessories is waited for: a CS3 switches one at a time, about a second each, so
+     * a path's switches can be answered long after PATH_VALIDATION_MS * (switches + 1).
+     * MUTATION: drop the busy-station extension in `Layout.validatePathActuation`; the path fails at its first deadline.
+     */
+    @Test
+    public void testABusyStationIsWaitedFor() throws Exception
+    {
+        model.go();
+        waitForPower(true, 1000);
+
+        TestPath tp = buildPath(140, "_busy");
+        MarklinAccessory other = model.newSwitch(143, MM2, false);
+
+        // The path's commands go unanswered until the "station" reaches them, after 1.5 s of answering another switch
+        MarklinControlStation.DEBUG_SIMULATE_PACKETS = false;
+
+        Thread station = new Thread(() ->
+        {
+            try
+            {
+                for (int i = 0; i < 30; i++)
+                {
+                    model.receiveMessage(support.Packets.accessoryEcho(other, i % 2 == 0));
+                    Thread.sleep(50);
+                }
+
+                model.receiveMessage(support.Packets.accessoryEcho(tp.acc1, true));
+                model.receiveMessage(support.Packets.accessoryEcho(tp.acc2, true));
+            }
+            catch (InterruptedException ex)
+            {
+                Thread.currentThread().interrupt();
+            }
+        });
+
+        station.start();
+
+        try
+        {
+            assertTrue(tp.layout.configureAndLockPath(tp.path, dummyLoc()),
+                "A path whose switches are answered after a busy station's backlog must pass");
+        }
+        finally
+        {
+            MarklinControlStation.DEBUG_SIMULATE_PACKETS = true;
+            station.join();
+        }
+    }
+
+    /**
      * In pure simulation mode there is no real actuation to confirm, so the guard is bypassed entirely -
      * even a deliberately misconfigured accessory must not cut power.
      */
