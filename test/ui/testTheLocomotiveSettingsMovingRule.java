@@ -753,18 +753,42 @@ public class testTheLocomotiveSettingsMovingRule
 
     /**
      * For a train the setup does not hold, the key menu's Save Current Speed and Alt+U leave the setup's files byte for
-     * byte as they were, during a run and at rest (MT-912).
+     * byte as they were, another train's stored speed included, during a run and at rest (MT-912).
      *
-     * MUTATION: save the setup in `TrainControlUI.recordInTheSetup` whether or not a record changed, and this fails.
+     * MUTATION: drop the name test in `AutonomySession.updateStoredRecord`, and this fails.
      */
     @Test
     public void testAPresetSaveLeavesTheSetupOfAnotherTrainAlone() throws Exception
     {
         assertNotNull(ui.getActiveDiagramConfiguration(), "precondition: this layout has no setup loaded");
 
-        final Map<String, String> before = setupFiles();
+        // Another train standing with an old setup's stored speed, on disk
+        final String other = Components.onTheEventThread(() ->
+        {
+            org.traincontrol.automationui.AutonomySession session = ui.getAutonomySession();
+            org.json.JSONObject points = session.getStore().getConfiguration(ui.getActiveDiagramConfiguration())
+                .getJSONObject("points");
 
-        assertFalse(before.isEmpty(), "precondition: the setup has no files");
+            for (String id : points.keySet())
+            {
+                org.json.JSONObject stored = points.getJSONObject(id).optJSONObject("loc");
+
+                if (stored == null) continue;
+
+                stored.put("speed", 20);
+
+                session.saveWithoutReconciling();
+
+                return stored.getString("name");
+            }
+
+            return null;
+        });
+
+        assertNotNull(other, "precondition: no train stands in the setup");
+        assertFalse(NAME.equals(other), "precondition: the setup holds this train");
+
+        final Map<String, String> before = setupFiles();
 
         int speed = 50;
 
@@ -793,7 +817,8 @@ public class testTheLocomotiveSettingsMovingRule
 
                 Components.settle();
 
-                assertEquals(setupFiles(), before, "a preset save " + (running ? "during a run" : "at rest") + " wrote a setup");
+                assertEquals(setupFiles(), before, "a preset save " + (running ? "during a run" : "at rest")
+                    + " rewrote the setup of a train it does not hold");
             }
             finally
             {
