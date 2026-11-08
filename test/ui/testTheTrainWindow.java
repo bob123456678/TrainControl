@@ -782,17 +782,7 @@ public class testTheTrainWindow
 
             Components.settle();
 
-            org.traincontrol.automation.Layout railway = model.getAutoLayout();
-
-            org.traincontrol.automation.Point copy = railway.getPoint(session.facingsFor(tunnel).keySet().iterator().next());
-
-            org.traincontrol.gui.TailCrossedPrompt.Choice tunnelPre = org.traincontrol.gui.TailCrossedPrompt
-                .choicesFor(railway, copy, "N", 5, null).stream()
-                .filter(choice -> choice.getFarthest().getName().startsWith("TunnelPre")).findFirst().orElse(null);
-
-            assertNotNull(tunnelPre, "precondition: a five-unit train at Tunnel from the north is not offered TunnelPre");
-
-            org.traincontrol.gui.TailCrossedPrompt.answerForTests(tunnelPre.getFarthest().getName());
+            org.traincontrol.gui.TailCrossedPrompt.Choice tunnelPre = tunnelPreIsTheTail(tunnel);
 
             makeActive(name);
 
@@ -806,15 +796,7 @@ public class testTheTrainWindow
             assertEquals(session.getLocomotiveNameAt(tunnel), name, "the item did not put the selected train on Tunnel");
             assertEquals(session.getArrivedFrom(tunnel), "N", "the placement recorded no arrival side, or the wrong one");
 
-            final java.util.List<String> expected = roadNames(tunnelPre.getRoad());
-
-            assertTrue(Components.waitFor(() ->
-            {
-                org.traincontrol.automation.Point standing = model.getAutoLayout().getLocomotiveLocation(train);
-
-                return standing != null && "N".equals(standing.getArrivedFrom())
-                    && expected.equals(roadNames(standing.getArrivedAlong()));
-            }, 20000), "the tail answer was not kept; expected the road " + expected);
+            assertStandsFromTheNorthWithItsTail(train, tunnelPre);
         }
         finally
         {
@@ -822,6 +804,185 @@ public class testTheTrainWindow
 
             train.setTrainLength(lengthWas);
         }
+    }
+
+    /** Answers the tail question with TunnelPre, the tail of a five-unit train come into Tunnel from the north. */
+    private static org.traincontrol.gui.TailCrossedPrompt.Choice tunnelPreIsTheTail(TileKey tunnel) throws Exception
+    {
+        org.traincontrol.automation.Layout railway = model.getAutoLayout();
+
+        org.traincontrol.automation.Point copy = railway.getPoint(session.facingsFor(tunnel).keySet().iterator().next());
+
+        org.traincontrol.gui.TailCrossedPrompt.Choice tunnelPre = org.traincontrol.gui.TailCrossedPrompt
+            .choicesFor(railway, copy, "N", 5, null).stream()
+            .filter(choice -> choice.getFarthest().getName().startsWith("TunnelPre")).findFirst().orElse(null);
+
+        assertNotNull(tunnelPre, "precondition: a five-unit train at Tunnel from the north is not offered TunnelPre");
+
+        org.traincontrol.gui.TailCrossedPrompt.answerForTests(tunnelPre.getFarthest().getName());
+
+        return tunnelPre;
+    }
+
+    /** Waits for the train to stand on the railway come in from the north, its tail along the road chosen. */
+    private static void assertStandsFromTheNorthWithItsTail(Locomotive train,
+        org.traincontrol.gui.TailCrossedPrompt.Choice tail)
+    {
+        final java.util.List<String> expected = roadNames(tail.getRoad());
+
+        assertTrue(Components.waitFor(() ->
+        {
+            org.traincontrol.automation.Point standing = model.getAutoLayout().getLocomotiveLocation(train);
+
+            return standing != null && "N".equals(standing.getArrivedFrom())
+                && expected.equals(roadNames(standing.getArrivedAlong()));
+        }, 20000), "the tail answer was not kept; expected the road " + expected);
+    }
+
+    /**
+     * Placed over another train through the train window's list, the new one stands on Tunnel on the railway with its
+     * side and tail, as on an empty station (`testTheEditorsMenuPlacesTheSelectedTrainWithItsSideAndTail`), and the
+     * train it displaced leaves the setup and the railway, as the diagram's Place does (OB-416).
+     *
+     * MUTATION: name only `name` in `AutonomyEditorPanel.placeLocomotive`'s `placementChanged`, and the rebuild puts the
+     * displaced train back over the new one and this fails.
+     */
+    @Test(timeOut = 180000)
+    public void testTheListOverAnotherTrainTakesItsPlace() throws Exception
+    {
+        AutonomyEditorPanel panel = theEditorsPanel();
+
+        placeOverTheTrainOnTunnel(name ->
+        {
+            TrainWindow window = StationDoors.openTrain(panel, support.StandingTrain.squareNamed(session, "Tunnel"));
+
+            StationDoors.pick(window, "train.train", name);
+
+            return window;
+        });
+    }
+
+    /**
+     * The same through the editor's Place <selected> (OB-416).
+     *
+     * MUTATION: name only `name` in `AutonomyEditorPanel.placeLocomotive`'s `placementChanged`, and the rebuild puts the
+     * displaced train back over the new one and this fails.
+     */
+    @Test(timeOut = 180000)
+    public void testTheEditorsPlaceOverAnotherTrainTakesItsPlace() throws Exception
+    {
+        AutonomyEditorPanel panel = theEditorsPanel();
+
+        placeOverTheTrainOnTunnel(name ->
+        {
+            makeActive(name);
+
+            JMenuItem item = placeItemOn(panel, support.StandingTrain.squareNamed(session, "Tunnel"), name);
+
+            assertNotNull(item, "the editor's menu on Tunnel has no Place " + name);
+
+            Components.onTheEventThread(() -> { item.doClick(); return null; });
+
+            return null;
+        });
+    }
+
+    /** A door that places the named train on Tunnel; returns the window it left open, or null. */
+    private interface PlacingDoor
+    {
+        TrainWindow place(String name) throws Exception;
+    }
+
+    /** Stands a train on the empty Tunnel through the door, then places another over it through the same door. */
+    private void placeOverTheTrainOnTunnel(PlacingDoor door) throws Exception
+    {
+        final TileKey tunnel = support.StandingTrain.squareNamed(session, "Tunnel");
+
+        assertNull(session.getLocomotiveNameAt(tunnel), "precondition: Tunnel is not empty in the setup");
+
+        // `putBack` leaves a train an earlier claim placed standing on the railway, so Tunnel is emptied there too
+        offTheRailwayAt(tunnel);
+
+        TrainWindow window = null;
+
+        String was = aTrainOffTheRailway();
+
+        final Locomotive displaced = model.getLocByName(was);
+
+        org.traincontrol.gui.TailCrossedPrompt.answerForTests(org.traincontrol.gui.TailCrossedPrompt.DISMISSED);
+
+        TrainWindow first = door.place(was);
+
+        if (first != null) StationDoors.close(first);
+
+        assertTrue(Components.waitFor(() -> model.getAutoLayout().getLocomotiveLocation(displaced) != null, 20000),
+            "precondition: " + was + " was not put on Tunnel on the railway");
+
+        Components.settle();
+
+        String name = aTrainOffTheRailway();
+
+        Locomotive train = model.getLocByName(name);
+
+        Integer lengthWas = train.getTrainLength();
+
+        try
+        {
+            train.setTrainLength(5);
+
+            org.traincontrol.gui.TailCrossedPrompt.Choice tunnelPre = tunnelPreIsTheTail(tunnel);
+
+            window = door.place(name);
+
+            assertEquals(session.getLocomotiveNameAt(tunnel), name, "the train was not put on Tunnel in the setup");
+            assertEquals(session.getArrivedFrom(tunnel), "N", "the placement recorded no arrival side, or the wrong one");
+
+            assertStandsFromTheNorthWithItsTail(train, tunnelPre);
+
+            assertFalse(session.placementsAutonomyWillWrite().containsValue(was), was + " is still in the setup");
+
+            assertNull(model.getAutoLayout().getLocomotiveLocation(displaced), was + " still stands on the railway");
+        }
+        finally
+        {
+            org.traincontrol.gui.TailCrossedPrompt.answerForTests(null);
+
+            train.setTrainLength(lengthWas);
+
+            if (window != null) StationDoors.close(window);
+
+            offTheRailwayAt(tunnel);
+        }
+    }
+
+    /** A train neither the setup nor the railway has standing anywhere. */
+    private static String aTrainOffTheRailway()
+    {
+        for (String name : model.getLocList())
+        {
+            if (!session.placementsAutonomyWillWrite().containsValue(name)
+                && model.getAutoLayout().getLocomotiveLocation(model.getLocByName(name)) == null) return name;
+        }
+
+        throw new AssertionError("precondition: every locomotive is placed");
+    }
+
+    /** Lifts whatever stands on this square's copies off the railway alone. */
+    private static void offTheRailwayAt(TileKey square)
+    {
+        Components.onTheEventThread(() ->
+        {
+            for (String copy : session.facingsFor(square).keySet())
+            {
+                org.traincontrol.automation.Point point = model.getAutoLayout().getPoint(copy);
+
+                if (point != null && point.getCurrentLocomotive() != null) model.getAutoLayout().moveLocomotive(null, copy, false);
+            }
+
+            return null;
+        });
+
+        Components.settle();
     }
 
     /**
