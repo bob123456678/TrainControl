@@ -218,10 +218,8 @@ public class testAStopRouteStandsAlone
     }
 
     /**
-     * A route that reaches a split route by two paths - the longer listed first - still counts as cutting the power.
-     * The walk remembered every route it had asked, so the split route, first met too deep to fire its stop,
-     * was not asked again by the shorter path that does; the route was then asked about at the human doors, and Cancel
-     * called off the power cut.
+     * A route that reaches a split route by two paths - the longer listed first - still counts as cutting the power:
+     * the walk must remember the path walked, not every route asked, or Cancel at the human doors called off the cut.
      *
      * MUTATION: remember every route asked rather than the path walked, and this fails.
      */
@@ -387,8 +385,7 @@ public class testAStopRouteStandsAlone
 
     /**
      * A route's emergency stop is sent whatever the model believes about the power: the flag is only the last GO or
-     * STOP echo the Central Station sent, so one lost GO would leave a stop route that fired with nobody present
-     * cutting nothing.  behaviour/routes.md 7a: an emergency stop is obeyed whatever else is true; the flag decides
+     * STOP echo, so one lost GO would leave a stop route cutting nothing.  behaviour/routes.md 7a: the flag decides
      * only whether the notice is shown.
      *
      * MUTATION: send the stop only while the power flag reads on, and this fails.

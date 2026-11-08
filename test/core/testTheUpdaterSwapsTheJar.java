@@ -31,22 +31,20 @@ import org.traincontrol.util.SelfUpdate;
  * application's half is `SelfUpdate`.
  *
  * Nothing here starts TrainControl or the updater, ends this JVM or touches a real jar: every jar is built in a
- * temporary folder, the updater's renames and launcher are handed in, and the lock TrainControl holds until it exits is
- * held by this test instead (except `testALockHeldByAnotherProcessIsSeen`, which starts one plain JVM of its own,
- * `support.HoldsALock`, to hold it across a process boundary).
+ * temporary folder, the updater's renames and launcher are handed in, and the lock TrainControl holds is held by this
+ * test (except `testALockHeldByAnotherProcessIsSeen`, which starts one plain JVM, `support.HoldsALock`).
  *
  * MUTATIONS, each seen red: `backupName` not looking for a free name (the swap claim); `swap` not moving the backup
  * back when the second rename fails (the rollback claim); `waitForTheStart` reading an ended process as started, or
- * ignoring the marker, or `update` rolling back on no word (the three started-marker claims); `rollBack` leaving no
+ * ignoring the marker, or `update` rolling back on no word (the started-marker claims); `rollBack` leaving no
  * note, or a note that says put back when the old jar is not (the ended and half-undone claims); `waitForLock`
- * returning true at once (the lock, timeout, copy and process claims);
- * `whyNotAWholeJar` skipping the jar check (the truncated and HTML claim); `startUpdater` putting the jar itself on the
- * updater's classpath (the copy claim); `startUpdater` not waiting to hear from the updater, or keeping the lock when it
- * does not (the updater-did-not-start claim); `HandOver.exitWith` disarming only after a normal return, or `begin`
- * allowing a second, or `startUpdater` letting go of a lock already held (the one-at-a-time claim);
- * `Request.parse` dropping the Java options (the command-line claim); `downloadTarget` returning the running jar's own
- * name (the download claim); `startUpdater` handing on the jar's folder for TrainControl's working directory (the copy
- * claim).
+ * returning true at once (the lock, timeout, copy and process claims); `whyNotAWholeJar` skipping the jar check (the
+ * truncated and HTML claim); `startUpdater` putting the jar itself on the updater's classpath, or handing on the jar's
+ * folder for TrainControl's working directory (the copy claim); `startUpdater` not waiting to hear from the updater,
+ * or keeping the lock when it does not (the updater-did-not-start claim); `HandOver.exitWith` disarming only after a
+ * normal return, or `begin` allowing a second, or `startUpdater` letting go of a lock already held (the one-at-a-time
+ * claim); `Request.parse` dropping the Java options (the command-line claim); `downloadTarget` returning the running
+ * jar's own name (the download claim).
  */
 public class testTheUpdaterSwapsTheJar
 {
@@ -92,9 +90,8 @@ public class testTheUpdaterSwapsTheJar
 
     /**
      * The old jar is kept under a versioned name, never over a file already there, and the new one takes the old one's
-     * exact name so a shortcut to it keeps working.
-     *
-     * Adam: "take a backup" means the old jar kept, renamed, so the update can be undone by hand.
+     * exact name so a shortcut to it keeps working.  Adam: "take a backup" means the old jar kept, renamed, so the
+     * update can be undone by hand.
      */
     @Test
     public void testTheSwapKeepsTheOldJarAndTakesItsName() throws Exception

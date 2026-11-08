@@ -32,8 +32,6 @@ public class testAMaximisedWindowComesForward
      * behind every other window - and is maximized once it is on screen.
      *
      * MUTATION: maximize it as its remembered state is read, before it is shown, and this fails.
-     *
-     * @throws Exception from the event thread
      */
     @Test
     public void testARememberedMaximisedStateWaitsForTheWindowToBeShown() throws Exception

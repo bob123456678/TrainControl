@@ -25,7 +25,6 @@ public final class HoldsALock
 
     /**
      * @param args the lock file, the ready file, the stop file
-     * @throws Exception from the files
      */
     public static void main(String[] args) throws Exception
     {

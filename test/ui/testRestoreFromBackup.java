@@ -171,8 +171,6 @@ public class testRestoreFromBackup
      *
      * MUTATION: in `RestoreAction.closeWithoutSaving`, close through the window's close box (dispatch WINDOW_CLOSING)
      * instead of `dispose` and `System.exit`, and the exit's save writes the added locomotive back.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testARestorePutsTheBackupBackAndSavesNothingOverIt() throws Exception
@@ -231,8 +229,6 @@ public class testRestoreFromBackup
      * left as it was.
      *
      * MUTATION: make `Archive.readsAsALocomotiveDatabase` answer true, and the broken database is offered for restore.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testABrokenArchiveIsRefusedAndChangesNothing() throws Exception
@@ -302,8 +298,6 @@ public class testRestoreFromBackup
      * what it will not put back; Cancel there leaves everything as it was, with no backup taken.
      *
      * MUTATION: treat any answer but Restore as Restore in `restoreFromBackup`, and a backup is taken.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testTheQuestionSaysWhatGoesWhereAndCancelChangesNothing() throws Exception
@@ -374,8 +368,6 @@ public class testRestoreFromBackup
      * While a route runs the restore refuses with the run's sentence before its chooser opens, as Open Layout does.
      *
      * MUTATION: take `refuseWhileARunHoldsTheSetup` out of the Restore from Backup item's listener.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testARestoreWaitsForARun() throws Exception

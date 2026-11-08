@@ -14,11 +14,9 @@ import support.SourceOf;
  * refusal has to be in the method."*): Execute Timetable and Return Home must not start trains under an open editor,
  * and switching layouts or swapping the layout folder must not replace the diagram during a run.
  *
- * This pins the half that goes wrong: a door that forgets to ask. It does NOT pin the two guards' own bodies:
- * `refuseWhileAutonomyRunning` is `model.isAutonomyRunning()`, asserted behaviorally by `core.testHomeStaging` and
- * `regression.testARouteDoesNotThrowSwitchesUnderATrain`; `refuseWhileEditorOpen` is `isLayoutEditorOpen()`, pinned by
- * shape in `testEditorSurfaceRules`.  A behavioral test would have to raise each refusal's modal dialog, which strands
- * a battery runner.
+ * Pins the half that goes wrong, a door that forgets to ask, not the guards' own bodies (asserted by
+ * `core.testHomeStaging`, `regression.testARouteDoesNotThrowSwitchesUnderATrain` and `testEditorSurfaceRules`); a
+ * behavioral test would have to raise a modal dialog, which strands a battery runner.
  *
  * MUTATION: delete the `refusedToSendATrain(` call from `requestReturnToHome` and the first test fails, naming it.
  *
@@ -375,11 +373,9 @@ public class testTheRefusalsAreAskedAtTheDoors
 
     /**
      * Every door that puts a train down uses the railway's answer (`behaviour/facing.md` section 4: *"nothing about a
-     * placement is recorded until the railway has accepted it"*). `Layout.moveLocomotive` returns false rather than
-     * throwing when it refuses, and a door that discarded that answer wrote the placement into the setup AND SAVED it,
-     * so the next build emitted the train on a square it was never put on.
-     *
-     * A named list, and every door on it guards.
+     * placement is recorded until the railway has accepted it"*): `Layout.moveLocomotive` returns false when it
+     * refuses, and a door that discarded that wrote the placement into the setup AND SAVED it.  A named list, and every
+     * door on it guards.
      *
      * MUTATION: drop the `if (!` from any of the doors, and this names it.
      */

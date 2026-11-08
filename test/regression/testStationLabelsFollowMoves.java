@@ -20,15 +20,12 @@ import org.traincontrol.base.LayoutDiagramComponent.componentType;
 /**
  * A station's NAME survives being moved, wherever it is moved to.
  *
- * Adam: move sensor 1016 down one square and its name turns into the empty placeholder; down one and right one and the
- * name is fine; down one and right two and it is gone again.  A platform's name is written on a separate square beside
- * it (usually below), so nudging the platform down one lands it exactly on its own label.  Everything on a square being
- * built over is dropped, which is right, but a caption is a reference to another square: when what it refers to is what
- * built over it, it is the only copy of a name the same gesture was carrying to safety.
+ * A platform's name is written on a separate square beside it (usually below), so nudging the platform down one lands
+ * it on its own label.  Everything on a square being built over is dropped, but a caption is a reference to another
+ * square: when what it refers to is what built over it, it is the only copy of a name the same gesture was carrying.
  *
- * So these tests are a matrix: the same platform and label moved to every square around it.  The other half is the
- * opposite direction, a label that really is stale must still be dropped, since "keep every caption" passes all the
- * rest.
+ * A matrix: the same platform and label moved to every square around it.  The other half is the opposite direction, a
+ * label that really is stale must still be dropped, since "keep every caption" passes all the rest.
  */
 public class testStationLabelsFollowMoves
 {

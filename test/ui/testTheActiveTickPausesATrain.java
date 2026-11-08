@@ -241,8 +241,6 @@ public class testTheActiveTickPausesATrain
      * BottomMainA, with nobody on it, offers no tick.
      *
      * MUTATION: leave the tick off the diagram's menu, or have it change the train and not the setup, and this fails.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testTheDiagramsTickPausesTheTrainStandingThere() throws Exception
@@ -288,8 +286,6 @@ public class testTheActiveTickPausesATrain
      * it in the setup.
      *
      * MUTATION: leave the tick off the editor's menu, and this fails.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testTheEditorsTickPausesTheTrainStandingThere() throws Exception
@@ -529,8 +525,6 @@ public class testTheActiveTickPausesATrain
      * in.  The tick must tell the window the railway's pauses changed, or the button's "going" reads as no change.
      *
      * MUTATION: leave the railway's settings as built alone when the tick changes a pause, and this fails.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testTheAutoTabsButtonAfterTheTickIsNotUndoneByARebuild() throws Exception
@@ -658,8 +652,6 @@ public class testTheActiveTickPausesATrain
      * (OB-343).
      *
      * MUTATION: have the tick note every train's pause as built, not only the ones it changed, and this fails.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testATrainPausedFromItsCardStaysPausedWhenAnotherTrainsTickIsChanged() throws Exception
@@ -711,8 +703,6 @@ public class testTheActiveTickPausesATrain
      * going whatever is done to another train's Is Active tick.
      *
      * MUTATION: have the tick note every train's pause as built, not only the ones it changed, and this fails.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testATrainSetGoingFromItsCardStaysGoingWhenAnotherTrainsTickIsChanged() throws Exception
@@ -777,8 +767,6 @@ public class testTheActiveTickPausesATrain
      * The same through the autonomy editor's tick, which rebuilds the railway itself (OB-343).
      *
      * MUTATION: have the tick note every train's pause as built, not only the ones it changed, and this fails.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testACardsPauseAndGoingSurviveAnotherTrainsTickInTheEditor() throws Exception
@@ -883,8 +871,6 @@ public class testTheActiveTickPausesATrain
      *
      * MUTATION: leave the record of how the railway was built as it was when a fold writes the railway's settings into
      * the setup, and this fails.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testAPauseTheEditorOpeningTookIntoTheSetupIsUndoneByItsCardForGood() throws Exception
@@ -936,8 +922,6 @@ public class testTheActiveTickPausesATrain
      *
      * MUTATION: leave the record of how the railway was built as it was when a fold writes the railway's settings into
      * the setup, and this fails.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testAPauseOnItsCardAfterTheEditorOpenedSurvivesAnotherTrainsTick() throws Exception
@@ -999,8 +983,6 @@ public class testTheActiveTickPausesATrain
      * record of how the railway was built with it (OB-343).
      *
      * MUTATION: leave the record as the fold left it when the import puts the setup back, and this fails.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testAnOldFileImportThatFailsAfterItsFoldLeavesWhatTheRailwayChangedAlone() throws Exception
@@ -1120,8 +1102,6 @@ public class testTheActiveTickPausesATrain
      * The declined build is stood in for by its fold alone, which is all of it that touches the record.
      *
      * MUTATION: leave what the fold took out of what Cancel puts back, and this fails.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testTheEditorsCancelAfterAFoldItsRebuildMadeKeepsAPauseTheCardMade() throws Exception
@@ -1188,8 +1168,6 @@ public class testTheActiveTickPausesATrain
      * and undoes what the editor changed (OB-343).  The edit here is another train's tick.
      *
      * MUTATION: leave what the folds took from the railway out of what Cancel puts back, and this fails.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testTheEditorsCancelKeepsWhatTheRailwayChangedAloneWhateverWasRebuiltBetween() throws Exception
@@ -1286,8 +1264,6 @@ public class testTheActiveTickPausesATrain
      * refuses, which a claim cannot make cheaply).
      *
      * MUTATION: put the record back with the setup when Cancel restores it, and this fails.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testTheEditorsCancelUndoesATickWhoseRebuildWasRefused() throws Exception
@@ -1331,8 +1307,6 @@ public class testTheActiveTickPausesATrain
      * Cancel's own fold takes a card's pause BY TRAIN and leaves the editor's tick to be undone (OB-343), scenario 1.
      *
      * MUTATION: take the railway's whole list of the paused in a fold, and this fails.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testTheEditorsCancelUndoesATickWhenACardPausedAnotherTrainAfterIt() throws Exception
@@ -1389,8 +1363,6 @@ public class testTheActiveTickPausesATrain
      * card pauses another train in between.
      *
      * MUTATION: take the railway's whole list when the record has none, and this fails.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testTheEditorsCancelKeepsATrainTheSetupHadPausedWhenACardPausedAnotherAfterItsTick() throws Exception
@@ -1459,8 +1431,6 @@ public class testTheActiveTickPausesATrain
      * write the card-paused one into the record as the tool's own change.
      *
      * MUTATION: have the door note in the record every train it names, and this fails.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testTheEditorsCancelKeepsACardsPauseThroughABulkToolOverIt() throws Exception
@@ -1601,8 +1571,6 @@ public class testTheActiveTickPausesATrain
      * the tool to discard.
      *
      * MUTATION: leave out of `setLocomotivesActive` the note of what the door overtakes, and this fails.
-     *
-     * @throws Exception from the window
      */
     @Test(timeOut = 180000)
     public void testTheEditorsCancelKeepsACardsPauseOverActivateAllTrains() throws Exception
@@ -1636,8 +1604,6 @@ public class testTheActiveTickPausesATrain
      * stays going, and the tool's pauses of the others go.
      *
      * MUTATION: have the door note only a card's pause, not a card's going, and this fails.
-     *
-     * @throws Exception from the window
      */
     @Test(timeOut = 180000)
     public void testTheEditorsCancelKeepsACardsGoingOverDeactivateAllTrains() throws Exception
@@ -1667,8 +1633,6 @@ public class testTheActiveTickPausesATrain
      * editor opened it: Cancel keeps the pause.  The rebuild comes from another train's tick, ticked back.
      *
      * MUTATION: leave `aGestureOvertookTheRailwaysPause` out of `hasUnsavedAutonomyWork`, and this fails.
-     *
-     * @throws Exception from the window
      */
     @Test(timeOut = 180000)
     public void testTheEditorsCancelKeepsACardsPauseOverATickThatLeavesTheSetupAsOpened() throws Exception
@@ -1700,8 +1664,6 @@ public class testTheActiveTickPausesATrain
      * the rest, as it did before OB-346.
      *
      * MUTATION: leave what the folds took from the railway out of what Cancel puts back, and this fails.
-     *
-     * @throws Exception from the window
      */
     @Test(timeOut = 180000)
     public void testTheEditorsCancelKeepsACardsPauseOverATickWithAnEditAndARebuildBetween() throws Exception
@@ -1731,8 +1693,6 @@ public class testTheActiveTickPausesATrain
      * the file.
      *
      * MUTATION: have ending the edit session put back what Cancel keeps, and this fails.
-     *
-     * @throws Exception from the window
      */
     @Test(timeOut = 180000)
     public void testTheEditorsSaveKeepsActivateAllTrainsOverACardsPause() throws Exception
@@ -1764,8 +1724,6 @@ public class testTheActiveTickPausesATrain
      * every train goes, as it did before OB-346.
      *
      * MUTATION: have the door note every train it flips, not only one whose state the record does not hold, and this fails.
-     *
-     * @throws Exception from the window
      */
     @Test(timeOut = 180000)
     public void testTheEditorsCancelAsksNothingOfAGestureAndItsOppositeWithNoCard() throws Exception
@@ -1846,8 +1804,6 @@ public class testTheActiveTickPausesATrain
      * how the railway was built, or the rebuild pauses it.
      *
      * MUTATION: leave the record's list of the paused as it was when a locomotive is renamed, and this fails.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testALocomotiveRenamedAfterACardSetItGoingStaysGoing() throws Exception
@@ -1916,8 +1872,6 @@ public class testTheActiveTickPausesATrain
      * Through Cancel (OB-343): a rename must reach what the folds took, or the train comes out paused.
      *
      * MUTATION: leave the names in what the folds took as they were when a locomotive is renamed, and this fails.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testACancelKeepsACardsGoingOfATrainRenamedMeanwhile() throws Exception
@@ -2018,8 +1972,6 @@ public class testTheActiveTickPausesATrain
      * A locomotive deleted with the editor open is not written back by Cancel (OB-343).
      *
      * MUTATION: leave the names the folds noted as they were when a locomotive is deleted, and this fails.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testACancelDoesNotWriteBackADeletedTrainsPause() throws Exception
@@ -2146,8 +2098,6 @@ public class testTheActiveTickPausesATrain
      * paused.
      *
      * MUTATION: have the tool note every train's pause as built, not only the ones it changed, and this fails.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testDeactivateAllTrainsLeavesATrainOffTheLayoutPausedByItsCardPaused() throws Exception
@@ -2197,8 +2147,6 @@ public class testTheActiveTickPausesATrain
      * still listing it as paused, stays going.
      *
      * MUTATION: have the tool note every train's pause as built, not only the ones it changed, and this fails.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testDeactivateAllTrainsLeavesATrainOffTheLayoutSetGoingByItsCardGoing() throws Exception
@@ -2256,8 +2204,6 @@ public class testTheActiveTickPausesATrain
      * FR-126): what keeps the listed train going is the tool taking it off the list itself.
      *
      * MUTATION: leave the trains the setup lists out of what Activate writes, and this fails.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testActivateAllTrainsTakesAGoingTrainOffTheSetupsList() throws Exception
@@ -2644,8 +2590,6 @@ public class testTheActiveTickPausesATrain
      * MUTATION: leave the tab alone when it is opened, leave the paused trains among the active, put a paused train on
      * a station out of use with the paused, put the train on no station before the stations out of use, or order the
      * names with capitals counting, and this fails.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testOpeningTheCommandsTabSortsActiveThenPausedThenTheInactiveStations() throws Exception
@@ -2670,8 +2614,6 @@ public class testTheActiveTickPausesATrain
      * Coming back to the Auto tab sorts too, when the commands tab was the one it was left on (FR-126): the user did open it.
      *
      * MUTATION: sort on the inner tabs' change only, and this fails.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testComingBackToTheAutoTabSortsTheCommandsTabToo() throws Exception
@@ -2710,8 +2652,6 @@ public class testTheActiveTickPausesATrain
      * ones, so a sort at the click would take it behind the trains still active.
      *
      * MUTATION: have the pause button sort the cards, and this fails.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testAPauseClickOnACardDoesNotMoveTheCards() throws Exception
@@ -2757,8 +2697,6 @@ public class testTheActiveTickPausesATrain
      * interval the repaint holds back for.
      *
      * MUTATION: sort the cards in the light repaint a run fires, and this fails.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testARunsRefreshOfTheCardsDoesNotMoveThemEither() throws Exception
@@ -2806,8 +2744,6 @@ public class testTheActiveTickPausesATrain
      * on the layout, those on a station out of use too.
      *
      * MUTATION: leave a train out of either tool, set the train and not the setup, or save nothing, and this fails.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testTheBulkToolsActivateAndDeactivateEveryTrain() throws Exception
@@ -2925,8 +2861,6 @@ public class testTheActiveTickPausesATrain
      *
      * MUTATION: have Activate cover only the trains standing, read the list before the train, or let Deactivate pause
      * the trains on no square, and this fails.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testActivateAllTrainsReachesEveryPausedTrainAndTheToolsReadTheTrain() throws Exception
@@ -3045,8 +2979,6 @@ public class testTheActiveTickPausesATrain
      * setup edit is refused from during a run.  Built at rest and clicked after a run has begun.
      *
      * MUTATION: let a Bulk Tools item through while autonomy runs, and this fails.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testTheBulkToolsAreRefusedWhileAutonomyRuns() throws Exception
@@ -3114,8 +3046,6 @@ public class testTheActiveTickPausesATrain
      *
      * MUTATION: leave the diagram untold when the tools or the tick pause a train, or when a rebuild binds it again,
      * and this fails.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testThePausedGreyOfATrainOnNoPointFollowsTheTools() throws Exception
@@ -3240,7 +3170,6 @@ public class testTheActiveTickPausesATrain
      *
      * @param item the item
      * @return the messages that were put up
-     * @throws Exception from the window
      */
     private static List<String> clickAndDismiss(final javax.swing.JMenuItem item) throws Exception
     {
@@ -3252,7 +3181,6 @@ public class testTheActiveTickPausesATrain
      *
      * @param action what to run
      * @return the messages that were put up
-     * @throws Exception from the window
      */
     private static List<String> runAndDismiss(final Runnable action) throws Exception
     {

@@ -79,7 +79,6 @@ public class testAutoDetect
     
     /**
      * Validates CS3 version detection
-     * @throws Exception 
      */
     @Test
     public void test404() throws Exception

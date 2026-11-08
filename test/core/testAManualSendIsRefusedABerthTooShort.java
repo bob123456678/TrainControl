@@ -20,11 +20,10 @@ import org.traincontrol.marklin.MarklinControlStation;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 
 /**
- * A train is refused a berth it does not fit in, whether or not it has to back into it (MT-262).
+ * A train is refused a berth it does not fit in, whether or not it has to back into it (MT-262).  The room rule
+ * judges every kind of station (a train always rests with its head at the destination sensor), and
+ * `explainDestinations` must not stop at `barredFromAutonomy`.
  *
- * The room rule judges every kind of station: a train always comes to rest with its head at the destination sensor,
- * so its tail extends back over the run (`Layout.isPathClear` asks `measuredRoomToReverseInto` for any path).  And
- * `explainDestinations` must not stop at `barredFromAutonomy`, so a manual-only berth says why the train does not fit.
  * MUTATION: putting the `isTerminus() || isReversing()` fence back around the room rule in
  * `isPathClear` fails `testAThroughBerthTooShortIsRefused`; dropping the length arm from
  * `explainDestinations` fails `testTheWhyNotMovingViewSaysSoForAManualOnlyBerth`.
@@ -93,10 +92,8 @@ public class testAManualSendIsRefusedABerthTooShort
     }
 
     /**
-     * The refusal names the berth, the room found and the train's length.
-     *
-     * Adam: "there is no notice that can help state/debug this."  The two numbers tell the operator whether to shorten
-     * the train, lengthen the berth, or look at what the graph thinks it measured.
+     * The refusal names the berth, the room found and the train's length.  Adam: "there is no notice that can help
+     * state/debug this."
      */
     @Test
     public void testTheRefusalNamesTheBerthAndBothNumbers() throws Exception
@@ -129,9 +126,8 @@ public class testAManualSendIsRefusedABerthTooShort
     }
 
     /**
-     * The manual doors do not offer it, which is where Adam met this: the right-click menu and the locomotive panel
-     * build their lists from `getPossiblePaths`, which vets every candidate through `isPathClear`.  Asked directly
-     * rather than trusting that the two agree.
+     * The manual doors do not offer it: the right-click menu and the locomotive panel build their lists from
+     * `getPossiblePaths`, which vets every candidate through `isPathClear`.  Asked directly rather than trusting that.
      */
     @Test
     public void testTheManualDoorsDoNotOfferIt() throws Exception
@@ -150,10 +146,9 @@ public class testAManualSendIsRefusedABerthTooShort
     }
 
     /**
-     * The why-not-moving view says so, even for a berth autonomy would never choose.
-     *
-     * Adam: "that path is not shown in the 'why not moving' view."  A parking berth is spelled
-     * `autoDestination: false`, and for those `explainDestinations` reported the standing bar and stopped.
+     * The why-not-moving view says so, even for a berth autonomy would never choose.  Adam: "that path is not shown in
+     * the 'why not moving' view."  A parking berth is `autoDestination: false`, and `explainDestinations` stopped at
+     * it.
      */
     @Test
     public void testTheWhyNotMovingViewSaysSoForAManualOnlyBerth() throws Exception
@@ -196,9 +191,8 @@ public class testAManualSendIsRefusedABerthTooShort
     }
 
     /**
-     * An unmeasured run in is still not judged, which is Adam's "generally, allow it".  The widening changes WHERE the
-     * rule applies, not what it does about missing measurements: refusing on absence of information would make every
-     * through platform on an unmeasured layout unreachable.
+     * An unmeasured run in is still not judged, which is Adam's "generally, allow it": refusing on absence of
+     * information would make every through platform on an unmeasured layout unreachable.
      */
     @Test
     public void testAnUnmeasuredThroughBerthIsNotJudged() throws Exception
@@ -213,11 +207,9 @@ public class testAManualSendIsRefusedABerthTooShort
 
     /**
      * The window's reason for a manual-only berth is the BERTH rule as well as the length rule (MT-262: a physical
-     * refusal outranks a preference).
-     *
-     * The fixture separates the two: fifty units of room after the switch, so the length rule admits the train, and a
-     * two-unit train whose body claims the neck of the berth.  The assertion is agreement with `whyABerthCannotHoldIt`
-     * itself rather than a copy of its sentence.
+     * refusal outranks a preference).  The fixture has fifty units of room after the switch, so the length rule admits
+     * the train, and a two-unit train whose body claims the neck of the berth.  The assertion is agreement with
+     * `whyABerthCannotHoldIt` itself, not a copy of its sentence.
      *
      * MUTATION: drop the berth arm from `whyNoRouteFitsTo` and the reason falls back to the standing bar.
      */
@@ -311,9 +303,8 @@ public class testAManualSendIsRefusedABerthTooShort
 
     /**
      * A run into a berth with a switch part way along, and a measured stretch after it, as
-     * `testATrainTooLongIsRefusedTheBerth` builds one.  Whether the berth is a terminus is a parameter;
-     * `roomAfterTheSwitch` is the measured track between the switch and the berth, 0 for
-     * unmeasured.
+     * `testATrainTooLongIsRefusedTheBerth` builds one.  `roomAfterTheSwitch` is the measured track between the switch
+     * and the berth, 0 for unmeasured.
      */
     private Fixture build(int trainLength, int roomAfterTheSwitch, boolean terminus) throws Exception
     {

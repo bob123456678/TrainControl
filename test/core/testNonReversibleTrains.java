@@ -92,13 +92,11 @@ public class testNonReversibleTrains
 
     /**
      * Autonomy never picks a square a train that cannot reverse would have to turn on.  Adam: **"Never, unless it's
-     * part of a 'return home' backing in manoeuvre."**  A TERMINUS copy is refused by `pickPath`'s own filter, a
-     * REVERSING copy by `isSendableDestination`; this asks the door whether the two add up to his sentence (MT-245).
-     * The control is the same train made reversible, with the terminus given a way back out.
+     * part of a 'return home' backing in manoeuvre."**  A TERMINUS copy is refused by `pickPath`'s filter, a REVERSING
+     * copy by `isSendableDestination` (MT-245).  The control is the same train made reversible.
      *
-     * MUTATIONS: deleting `(!end.isTerminus() || loc.isReversible())` from `pickPath` fails this; deleting
-     * `!end.isReversing()` from `isSendableDestination` does not, since the execution tier refuses a reversing point
-     * too.
+     * MUTATIONS: delete `(!end.isTerminus() || loc.isReversible())` from `pickPath`; deleting `!end.isReversing()` from
+     * `isSendableDestination` does not fail, the execution tier refusing a reversing point too.
      */
     @Test
     public void testAutonomyNeverPicksATurningCopyForATrainThatCannotReverse() throws Exception
@@ -200,11 +198,9 @@ public class testNonReversibleTrains
     }
 
     /**
-     * Nobody is prompted unless a MANUAL send reaches a may-reverse point: no prompting in return home or auto, and
-     * prompting in all types of manual.
-     *
-     * `ALWAYS_REVERSE` (autonomy's loop, Return Home) is not null, so it once fell through to the manual branch and
-     * counted as somebody; it counts as nobody now.  The behavior is asserted here and the wiring by the census below.
+     * Nobody is prompted unless a MANUAL send reaches a may-reverse point: none in return home or auto, all manual
+     * types prompt.  `ALWAYS_REVERSE` is not null, so it once fell through to the manual branch; the wiring is the
+     * census below.
      */
     @Test
     public void testOnlyAManualSendIsEverPrompted() throws Exception
@@ -608,14 +604,10 @@ public class testNonReversibleTrains
     }
     /**
      * A square trains MAY turn at is asked about on every copy, not only the turning one (May reverse always prompts in
-     * manual mode).
+     * manual mode): a may-reverse square carries no `reversing` flag (the build splits it), so the question is about
+     * the place, the Points sharing its block.  Autonomy is deliberately not widened.
      *
-     * `reversing` is emitted for a MUST-reverse square and a turning COPY; a may-reverse square carries no flag (the
-     * build splits the square instead), so asking `isReversing()` asked nothing on the copy a path happened not to end
-     * at.  The question is about the place: the Points sharing its block.  Autonomy is deliberately not widened.
-     *
-     * MUTATION: ask `isReversing()` instead of `mayReverseAt` and the second assertion fails; widen the autonomy
-     * branch too and the third does.
+     * MUTATION: ask `isReversing()` instead of `mayReverseAt` (second assertion); widen the autonomy branch (third).
      */
     @Test
     public void testEveryCopyOfAMayReverseSquareIsAskedAbout() throws Exception
@@ -677,12 +669,9 @@ public class testNonReversibleTrains
             + "manual send on the railway would raise a dialog");
     }
     /**
-     * A hand-driven send does not turn a train at a may-reverse point unless somebody says so.  The intent lives in the
-     * leg that has not happened yet, so it is asked and `executePath` takes the answer as a policy.  A true terminus is
-     * never asked about: no unprompted reversals in manual mode unless going to a true terminus (must reverse).
-     *
-     * Run as the rule rather than as a journey, which hangs waiting for an arrival the fixture cannot produce; the
-     * call site is pinned by the test below.
+     * A hand-driven send does not turn a train at a may-reverse point unless somebody says so: the intent is asked and
+     * `executePath` takes the answer as a policy.  A true terminus is never asked about.  Run as the rule, not a
+     * journey (which hangs awaiting an arrival the fixture cannot produce); the call site is pinned below.
      */
     @Test
     public void testAManualSendDoesNotTurnATrainUnasked() throws Exception
@@ -823,12 +812,10 @@ public class testNonReversibleTrains
             + "uses is not the limit the operator set for this square");
     }
     /**
-     * ...but it may BACK INTO one, when the way there turns it round (MT-245): that is why there is a reversing point
-     * at feedback 2013.  The escape is here and not in canRest: whether a train can be turned on the way is a property
-     * of the route.
+     * ...but it may BACK INTO one, when the way there turns it round (MT-245): hence a reversing point at feedback
+     * 2013.  The escape is not in canRest: whether a train can be turned on the way is a property of the route.
      *
-     * MUTATION: dropping the reversesAlongTheWay clause fails this; dropping the whole terminus rule fails the method
-     * above, whose fixture has no reversing point.
+     * MUTATION: drop the reversesAlongTheWay clause; dropping the whole terminus rule fails the method above.
      */
     @Test
     public void testATrainThatCannotReverseMayBackIntoATerminus() throws Exception
@@ -861,17 +848,15 @@ public class testNonReversibleTrains
     }
 
     /**
-     * A train too long for the berth is not backed over the switch, which `validateTrainLength` cannot see: it compares
-     * against a typed maximum, not the track that is there.  The rule reads recorded lengths only: unmeasured track is
-     * unknown, not short.  Two bounds, not one: a four-unit train in a three-unit berth with a two-unit approach is
-     * refused both because of the berth (3<4) and the track that couldn't fit the train while reversing; a train that
-     * isn't reversing is accepted as long as the berth is long enough.  Each is checked on its own with the other made
-     * long enough, and the refusal's SENTENCE is read, since two bounds that refuse everything would pass a pair of
-     * assertFalses.
+     * A train too long for the berth is not backed over the switch, which `validateTrainLength` cannot see (it compares
+     * a typed maximum).  Recorded lengths only: unmeasured track is unknown, not short.  Two bounds: a four-unit train
+     * in a three-unit berth with a two-unit approach is refused for the berth (3<4) and for the track while reversing;
+     * a non-reversing train needs only the berth.  Each is checked with the other made long enough, and the refusal's
+     * SENTENCE is read.
      *
-     * MUTATIONS: dropping the reversal test from `measuredRoomAtTheEndOf` admits the four-unit train at the berth;
-     * dropping `comesToRest` from `whyTooLongForThisRoute` admits it at the turn; and making either bound
-     * unconditional fails the last assertion, where both are long enough.
+     * MUTATIONS: dropping the reversal test from `measuredRoomAtTheEndOf` admits it at the berth; dropping
+     * `comesToRest` from `whyTooLongForThisRoute` admits it at the turn; making either bound unconditional fails the
+     * last assertion.
      */
     @Test
     public void testATrainTooLongForTheBerthIsNotBackedOverTheSwitch() throws Exception
@@ -958,15 +943,12 @@ public class testNonReversibleTrains
 
     /**
      * A reversal on the route splits the run in, and the train has to fit in both halves: an 8 unit train on a 9-unit
-     * runin would just be refused because 3<8, and be OK if the max train length at the berth was set to 8.
+     * runin would just be refused because 3<8, and be OK if the max train length at the berth was set to 8.  Here the
+     * berth beyond the turn measures 4 and the approach 2 + 3 = 5; the refusal reported is the first walking forwards.
      *
-     * His figure is neither of the two the rule produces: the berth beyond the turn measures 4 and the approach behind
-     * it 2 + 3 = 5.  Both refuse an eight-unit train; the refusal reported is the one met first walking forwards, the
-     * approach.  The whole-run-in rule is still tested in the last section, where nothing turns the train.
-     *
-     * MUTATIONS: dropping `comesToRest` from `whyTooLongForThisRoute` fails this, as does applying either bound where
-     * nothing turns round.  Dropping the reversal stop from `measuredRoomAtTheEndOf` does NOT, since every refusal here
-     * is reached at the turn; `testATrainTooLongForTheBerthIsNotBackedOverTheSwitch` holds that half.
+     * MUTATIONS: drop `comesToRest` from `whyTooLongForThisRoute`, or apply either bound where nothing turns round.
+     * Dropping the reversal stop from `measuredRoomAtTheEndOf` does NOT fail this;
+     * `testATrainTooLongForTheBerthIsNotBackedOverTheSwitch` holds that half.
      */
     @Test
     public void testTheRoomIsBoundedAtTheReversalAndAtTheBerth() throws Exception
@@ -1080,15 +1062,11 @@ public class testNonReversibleTrains
 
     /**
      * With a switch on the route, the room is only the track after it (between the switch and the station the length
-     * must be >= length of the train, in any direction for simplicity).  So the binding constraint is
-     * the LAST switch before the destination: a train longer than what is left beyond it stands on the points while
-     * the model records it only at the berth.
+     * must be >= length of the train, in any direction for simplicity): a train longer than what is left beyond the
+     * LAST switch stands on the points.  Same fixture: nine units of run in, four after the switch; a train of eight
+     * passed the old rule.
      *
-     * The same fixture as the test above: nine units of run in, four after the switch.  A train of eight passed the
-     * old rule and fails this one.
-     *
-     * MUTATION: summing the whole path again lets the first assertion pass a train of eight into four units; counting
-     * the switch tile itself makes the third accept a train that does not fit.
+     * MUTATION: sum the whole path again (first assertion); count the switch tile itself (third).
      */
     @Test
     public void testTheRoomIsMeasuredFromTheLastSwitch() throws Exception
@@ -1175,8 +1153,7 @@ public class testNonReversibleTrains
 
     /**
      * A train that cannot reverse is not OFFERED an ordinary terminus by hand (OB-205): 75 407 DB cannot go from Tunnel
-     * to BottomMainC manually when it is not reversible and the terminus is not a parking berth (excluded from
-     * autonomy).
+     * to BottomMainC manually when it is not reversible and the terminus is not a parking berth.
      *
      * MUTATION: dropping `isAutoDestination` from the clause fails the third assertion.
      */
@@ -1231,11 +1208,11 @@ public class testNonReversibleTrains
     }
 
     /**
-     * The operator is asked about a turn at a MAY-turn destination, and not at a real terminus (OB-205).
-     * `AutonomyBuilder` emits the turning copy of a may-turn square with `terminus: true`, so the DOOR is asked: the
-     * same call twice with only what the policy says it asks about different.
+     * The operator is asked about a turn at a MAY-turn destination, not at a real terminus (OB-205): `AutonomyBuilder`
+     * emits the turning copy of a may-turn square with `terminus: true`, so the same call is made twice with only the
+     * policy's answer different.
      *
-     * MUTATION: taking `!reversals.asksAbout(destination)` back out fails the second half.
+     * MUTATION: take `!reversals.asksAbout(destination)` back out (second half).
      */
     @Test
     public void testTheOperatorIsAskedAboutATurnAtAMayTurnDestination() throws Exception

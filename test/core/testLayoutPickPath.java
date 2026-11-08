@@ -450,23 +450,12 @@ public class testLayoutPickPath
     /**
      * Full autonomy does not drive through a reversing point, loop and headshunt included.
      *
-     * This test used to assert the opposite, and the reasoning it carried was sound as far as it went:
-     * a reversing loop or headshunt is a non-station carrying the reversing flag, and being driven
-     * through is its entire purpose, so only berths were barred.
+     * The rule is Adam's: IN FULL AUTONOMY A TRAIN IS ONLY EVER REVERSED AT A TERMINUS.  Turning a train round mid
+     * journey runs the rest of it backwards in service for a train with a locomotive at one end only.  The tier is the
+     * other half: a hand-driven move and the staging planner can still use a headshunt (test below).
      *
-     * What that exemption did in practice was turn a train round in the middle of a journey. For a
-     * train with a locomotive at one end only, the rest of that journey is then run backwards in
-     * service - which is what Adam watched happen, and how this was found. Rather than pick apart
-     * which reversing points are safe for which trains, he set a rule about the railway: IN FULL
-     * AUTONOMY A TRAIN IS ONLY EVER REVERSED AT A TERMINUS.
-     *
-     * The tier is the other half of it, and the test below is the half that keeps this one honest: a
-     * hand-driven move and the staging planner bringing a train home can still use a headshunt. It is
-     * only the unattended case that will not choose one.
-     *
-     * MUTATION: making `pickPath` return null unconditionally passes the refusal and fails the control
-     * above it, which is the whole reason the control is there - the refusal alone is satisfied by any
-     * regression that stops paths being chosen for any reason at all.
+     * MUTATION: making `pickPath` return null unconditionally passes the refusal and fails the control above it: the
+     * refusal alone is satisfied by any regression that stops paths being chosen at all.
      */
     @Test(timeOut = 60000)
     public void testFullAutonomyDoesNotDriveThroughAReversingPoint() throws Exception
@@ -484,12 +473,8 @@ public class testLayoutPickPath
 
         layout.getPoint("START").setLocomotive(loc);
 
-        // THE CONTROL RUNS FIRST.
-        //
-        // With the middle point an ordinary passing point, FAR has to be reachable through it - so a
-        // regression that refused every multi-edge path, or one that broke pickPath outright, cannot
-        // pass the assertion below by doing nothing.  This is the standard the sibling test forty
-        // lines up already keeps, and the file's own javadoc states it in those words.
+        // THE CONTROL RUNS FIRST: with the middle point an ordinary passing point, FAR has to be reachable through it,
+        // so a regression that broke pickPath outright cannot pass the assertion below by doing nothing.
         assertNotNull(layout.pickPath(loc),
             "control: with LOOP an ordinary passing point, FAR is reachable through it and full "
             + "autonomy should choose it.  Nothing about reversing has been set yet, so a refusal "
@@ -583,10 +568,8 @@ public class testLayoutPickPath
     /**
      * And the manual tier still offers it, which is what makes the rule above a tier and not a ban.
      *
-     * A headshunt exists to be driven through. Somebody choosing that move by hand is watching it
-     * happen, and the staging planner uses the same enumeration to bring a train home - so the rule
-     * belongs where autonomy chooses, not where every tier passes through. A first attempt put it in
-     * isPathClear and took both of them out.
+     * A headshunt exists to be driven through, and the staging planner uses the same enumeration, so the rule belongs
+     * where autonomy chooses, not in isPathClear.
      */
     @Test(timeOut = 60000)
     public void testAReversingPointIsStillOfferedByHand() throws Exception
@@ -720,16 +703,10 @@ public class testLayoutPickPath
      * Adam: **"In manual mode, inactive endpoints and intermediates should be refused as
      * well. Just not inactive start points. Inactive really means nothing can pass."**
      *
-     * The destination check is not fenced behind `isAutoRunning`: a hand-driven send cannot finish on a closed square,
-     * any more than a Return Home run can, so the cross drawn on that square means one thing whoever is asking.
-     *
-     * The START stays exempt, and that is the whole of the exception: a train standing on a square that
-     * has been switched off is driven OUT by hand, which is what closing a square around a train is
-     * for.
+     * The destination check is not fenced behind `isAutoRunning`.  The START stays exempt, the whole of the exception:
+     * a train standing on a switched-off square is driven OUT by hand.
      *
      * MUTATION: putting the `isAutoRunning()` fence back on the destination check fails the first half.
-     *
-     * @throws Exception on a failure to build
      */
     @Test(timeOut = 60000)
     public void testAnInactiveEndpointIsRefusedAtEveryDoor() throws Exception

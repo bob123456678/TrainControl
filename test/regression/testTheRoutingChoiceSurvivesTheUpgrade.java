@@ -6,15 +6,13 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
 /**
- * A routing rule chosen before 3.0.0 has to reach the configuration, or wait until it can.  The rule was a
- * java Preference pushed into a static on Layout and is now a per-configuration setting, so an upgrading user's
- * choice has to be carried across; if there is no configuration to carry it into, the old key must survive so that
- * it can be carried tomorrow, or RANDOM takes its place silently, for ever.
+ * A routing rule chosen before 3.0.0 has to reach the configuration, or wait until it can.  It was a java Preference
+ * pushed into a static on Layout and is now a per-configuration setting; with no configuration to carry it into the old
+ * key must survive, or RANDOM takes its place silently, for ever.
  *
- * The success path deletes the key only once persistPathPreference answers true.  The branch above it asked whether
- * the migration was needed by looking at the LIVE layout, which carries what this same method wrote into it on the
- * previous call, so the second call concluded the configuration had answered and deleted the key.  The second call
- * is not exotic: the migration runs from loadAutoLayoutSettings, which has fourteen callers.
+ * The success path deletes the key only once persistPathPreference answers true.  The branch above it once looked at
+ * the LIVE layout, which carries what this method wrote on the previous call, so the second call deleted the key (the
+ * migration runs from loadAutoLayoutSettings, which has fourteen callers).
  */
 public class testTheRoutingChoiceSurvivesTheUpgrade
 {
@@ -25,13 +23,11 @@ public class testTheRoutingChoiceSurvivesTheUpgrade
     private static java.util.prefs.Preferences ourPrefs;
 
     /**
-     * Gives this class its own preference node, so nothing it writes can reach the operator.  Writing to
-     * TrainControlUI's node and restoring afterwards looks safe and is not: TrainControl started DURING a battery run
-     * read the key, migrated it, and stored it into the operator's live configuration over the rule he had chosen.
-     *
-     * So the field is swapped rather than the value.  `prefs` is private static final, which JDK 8 lets us reassign by
-     * clearing the final bit; from JDK 12 that is refused, and this asserts rather than falling back, because a guard
-     * that silently stops guarding is worse than none.
+     * Gives this class its own preference node, so nothing it writes can reach the operator: a TrainControl started
+     * DURING a battery run read the key from TrainControlUI's node and stored it into the operator's live
+     * configuration.  So the field is swapped, not the value: `prefs` is private static final, reassignable on JDK 8 by
+     * clearing the final bit; from JDK 12 this asserts rather than falling back (a guard that silently stops guarding
+     * is worse).
      */
     @BeforeClass
     public void useOurOwnPreferences() throws Exception
@@ -75,14 +71,11 @@ public class testTheRoutingChoiceSurvivesTheUpgrade
     private static final String LEGACY = "AutonomyPathPreference";
 
     /**
-     * A refused routing change puts the dropdown back, without asking twice.  Choosing a rule while trains are running
-     * is refused, and the dropdown used to keep showing the rule the user picked; its two siblings, timetableCapture
-     * and toggleSpecifiedRoutes, restore themselves after the same refusal.
-     *
-     * Asserted: the control ends up on the rule the layout is actually using, and putting it there does not re-enter
-     * the listener that asked for it.  The second is measured by a DEADLINE rather than a value: `setSelectedIndex` on
-     * a JComboBox fires an ActionEvent, so an unguarded restore finds the railway still busy and opens a modal dialog
-     * that never returns on the event thread.
+     * A refused routing change puts the dropdown back, without asking twice: choosing a rule while trains run is
+     * refused, and the dropdown kept the rule picked (its siblings timetableCapture and toggleSpecifiedRoutes restore
+     * themselves).  Asserted: the control ends up on the rule the layout uses, and does not re-enter the listener,
+     * measured by a DEADLINE (`setSelectedIndex` fires an ActionEvent, so an unguarded restore opens a modal dialog
+     * that never returns).
      */
     @Test
     public void testARefusedRoutingChangePutsTheDropdownBack() throws Exception

@@ -506,12 +506,10 @@ public class testTheTailCanBeGivenInTheEditor
     }
 
     /**
-     * The arrival-side menu is not offered for a square no train is standing on.
-     *
-     * The item appears when the SETUP says a locomotive is at the square, but it writes to a Point on the running
-     * layout chosen by `pointOnTheLayout`, which falls back to ANY copy: with a train assigned in the setup and not
-     * placed, the side went onto an empty Point that nothing reads or saves.  The rule matches the method's javadoc:
-     * "a tail belongs to a train, and a square with none has nothing to say".
+     * The arrival-side menu is not offered for a square no train is standing on: the item appears when the SETUP says a
+     * locomotive is there, but it writes to a Point chosen by `pointOnTheLayout`, which falls back to ANY copy, so the
+     * side went onto an empty Point nothing reads or saves.  Matches the method's javadoc: "a tail belongs to a train,
+     * and a square with none has nothing to say".
      */
     @Test
     public void testTheArrivalSideIsNotOfferedForAnEmptySquare() throws Exception

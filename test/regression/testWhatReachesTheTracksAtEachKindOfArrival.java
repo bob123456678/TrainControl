@@ -28,17 +28,12 @@ import org.traincontrol.marklin.MarklinFeedback;
  * Adam: "in your tests for arrival, make sure you check for an emitted reversal command to the tracks."
  *
  * `testTheReversalReachesTheTracks` watches the wire on ONE square kind and makes a COMPARATIVE claim, and
- * `testAReversalCommandIsEmitted` reads `goingForward()`, the application's belief and not the cable; neither covers a
- * terminus.
+ * `testAReversalCommandIsEmitted` reads `goingForward()`, not the cable; neither covers a terminus.  An absolute claim
+ * needs the window: dispatch sets a locomotive's direction as it departs, and `Layout.CB_PRE_ARRIVAL` fires exactly
+ * once, on the last leg, so a mark taken there and a count taken after the run is the arrival and nothing else.
  *
- * What makes an absolute claim possible is the window: dispatch sets a locomotive's direction as it departs, so
- * counting from zero over a whole journey cannot tell an arrival that turned the train from one that did not.
- * `Layout.CB_PRE_ARRIVAL` fires exactly once, on the last leg, after the pre-arrival speed reduction and before the
- * destination's sensor; a mark taken there and a count taken after the run is the arrival and nothing else.
- *
- * The rule these pin is one statement in `Layout.executePath`:
- * `if (arrived.isTerminus() || shouldReverseAt(arrived, arrived, loc, reversals))`.  So three arrivals are worth
- * asking about, with the negative:
+ * The rule is one statement in `Layout.executePath`:
+ * `if (arrived.isTerminus() || shouldReverseAt(arrived, arrived, loc, reversals))`.  Arrivals asked about:
  *
  * | the square | what should reach the tracks |
  * |---|---|
@@ -48,12 +43,9 @@ import org.traincontrol.marklin.MarklinFeedback;
  * | a plain station | none |
  * | a may-reverse square PASSED THROUGH on the way | none at the arrival |
  *
- * A compulsory turn is a terminus by the time the railway sees it (`AutonomyBuilder` emits a `mustReverse` square with
- * `terminus:true`, which `core.testAutonomyDiagramReversal` and `core.testACompulsoryTurnIsChosenLikeAnyOtherStation`
- * assert), so the first row covers it.
- *
- * The train is this class's own and is deleted in teardown; `init()` opens Adam's real locomotive database, so one left
- * behind is one on his railway.
+ * A compulsory turn is a terminus by the time the railway sees it (`AutonomyBuilder` emits `terminus:true`), so the
+ * first row covers it.  The train is this class's own and is deleted in teardown, since `init()` opens Adam's real
+ * locomotive database.
  *
  * @author Adam
  */
@@ -357,10 +349,9 @@ public class testWhatReachesTheTracksAtEachKindOfArrival
     }
 
     /**
-     * Runs the journey and returns the position in the log at its pre-arrival.  The mark is what makes every claim here
-     * absolute: `CB_PRE_ARRIVAL` fires once, on the last leg, so counting from it excludes the direction command
-     * dispatch sends at departure.  `answered` is the reversal policy, or null for the default; `which` names the
-     * journey in a failure.
+     * Runs the journey and returns the position in the log at its pre-arrival: `CB_PRE_ARRIVAL` fires once, on the
+     * last leg, so counting from it excludes the departure's direction command.  `answered` is the reversal policy, or
+     * null for the default; `which` names the journey in a failure.
      */
     private static int run(Ride ride, Layout.ReversalPolicy answered, String which) throws Exception
     {

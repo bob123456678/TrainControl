@@ -310,16 +310,11 @@ public class testTheWashIsNoLongerThanTheTrain
 
     /**
      * A path locked ahead of the train does not move the wash (MT-438): a locked path reserves every Point on it, so an
-     * anchor taken from `Layout.getLocomotiveLocation` could be the destination the train has not reached.
-     * `Layout.whereTheTrainIs` is the one rule for this walk, `DiagramMonitor` and `AutoLocomotiveStatus`.
+     * anchor taken from `Layout.getLocomotiveLocation` could be a destination the train has not reached
+     * (`Layout.whereTheTrainIs` is the one rule).  A LOCK rather than a run, because a lock returns with the train
+     * still standing; the placement AND the arrival record are captured before it and written back.
      *
-     * The test tries candidate destinations until the anchor moves off the square the train stands on, and fails if
-     * none can.  A LOCK rather than a run, because a lock returns with the train still standing; `unlockPath` keeps the
-     * ARRIVAL of the path it is given, so the placement AND the arrival record are captured before the lock and written
-     * back.
-     *
-     * MUTATION: anchor `walkBackFrom` at `getLocomotiveLocation` again and this goes red: the wash moves onto the
-     * locked path ahead, which `edgesCoveredByStandingTrains` does not hold covered.
+     * MUTATION: anchor `walkBackFrom` at `getLocomotiveLocation` again and this goes red.
      */
     @Test(dependsOnMethods = "testALongerTrainCoversMoreOfIt")
     public void testAPathLockedAheadDoesNotMoveTheWash() throws Exception

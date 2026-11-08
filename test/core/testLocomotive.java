@@ -183,20 +183,9 @@ public class testLocomotive
         l.waitForAccessoryState(100, Accessory.accessoryDecoderType.MM2, true);
         assertTrue(model.getAccessoryState(100, Accessory.accessoryDecoderType.MM2));
 
-        // THE MODULE HAS TO EXIST, OR THE WHOLE SUITE PARKS.
-        //
-        // `waitForOccupiedFeedback` is an untimed Object.wait(), and the only thing that can release it
-        // is the `setFeedbackState("1001", true)` on the thread above.  That setter looks the module up
-        // by NAME and returns false without doing anything when it is not in the database - so with 1001
-        // missing the test waited for ever, held the runner's user-wide lock, and had to be killed by
-        // hand.
-        //
-        // 1001 was never created by any test: it came from `LocDB.data`, the live file Adam's own application writes.
-        //
-        // The `assertFalse` below reads like a check that the module is there and is exactly the
-        // opposite - `getFeedbackState` also answers false for a module that does not exist, so it
-        // passed BECAUSE the test was about to hang.  It is kept, after the creation, where it means
-        // what it looks like.
+        // THE MODULE HAS TO EXIST, OR THE WHOLE SUITE PARKS: `waitForOccupiedFeedback` is an untimed Object.wait(),
+        // released only by `setFeedbackState("1001", true)`, which looks the module up by NAME and does nothing when
+        // it is missing.  The `assertFalse` below passes for a missing module too, so it is kept after the creation.
         model.newFeedback(1001, null);
 
         assertTrue(model.setFeedbackState("1001", false),
@@ -903,17 +892,10 @@ public class testLocomotive
     }
 
     /**
-     * A second power-on while a train is already running does not throw away what it has run.
-     *
-     * Runtime is only credited at the next stop, so the clock is a single start timestamp - and
-     * notifyOfPowerStateChange reset it on every power-on it was told about, transitioning or not.
-     * receiveMessage calls it for EVERY locomotive on EVERY system GO, so pressing Go on the Central
-     * Station while trains were running - or clicking a diagram accessory, which turns power on first
-     * - silently discarded everything since the real start.
-     *
-     * Timed rather than mocked because the credit is computed from the wall clock; the margins are
-     * wide enough that only the defect can fail it.  Before the fix the second GO restarted the clock
-     * and the credit was the last 50ms, not the whole 350.
+     * A second power-on while a train is already running does not throw away what it has run: the clock is a single
+     * start timestamp, and notifyOfPowerStateChange is called for EVERY locomotive on EVERY system GO.  Timed rather
+     * than mocked (the credit comes from the wall clock); the second GO must not restart it, or the credit is the last
+     * 50ms, not the whole 350.
      */
     @Test
     public void testARedundantPowerOnKeepsTheRunningTime() throws Exception
@@ -949,17 +931,9 @@ public class testLocomotive
     }
 
     /**
-     * An address with exactly one locomotive on it is not in the duplicate list - the fact the
-     * "check for duplicates" dialog's bug (and its fix) both turn on.
-     *
-     * This cannot, by itself, catch AddLocomotive.java's checkDuplicatesActionPerformed being
-     * reverted to consult getDuplicateLocAddresses instead of getLocAddresses (the actual regression
-     * this class is named for) - that logic is private, inline in a Swing action handler inside a
-     * JDialog, and exercising it means instantiating AddLocomotive, which is GUI-dialog testing outside
-     * test/core's scope here (no test file anywhere in test/ mentions AddLocomotive).  What
-     * this DOES verify, with a control proving the check can detect a presence rather than only its
-     * absence, is the contract the fix depends on: getDuplicateLocAddresses() excludes an address with
-     * exactly one locomotive, and includes one that genuinely has more than one.
+     * An address with exactly one locomotive on it is not in the duplicate list: the contract the "check for
+     * duplicates" dialog depends on, with a control that includes an address with more than one.  The dialog's own
+     * logic is private to a Swing handler and is not driven here.
      */
     @Test
     public void testAnAddressWithOneLocomotiveIsNotReportedFree() throws Exception

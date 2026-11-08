@@ -19,10 +19,8 @@ import org.traincontrol.gui.layouteditor.LayoutEditor;
 /**
  * Moving or copying a whole line of squares at once, and what happens to the setup underneath it.
  *
- * A bulk edit copies the whole line into place with the move flag OFF and deletes the source afterwards, so the one
- * call that carries a square's setup (a move) was never made and reconcile threw the setup away; links show it first
- * because a pairing is mutual.  The line being written ONTO is the other half: its setup is about track that is gone,
- * and reconcile cannot catch it because those squares are occupied.  Two rules, tested apart because they fail apart:
+ * A bulk edit copies the line into place with the move flag OFF and deletes the source, so the call that carries a
+ * square's setup (a move) was never made.  Two rules, tested apart because they fail apart:
  *
  *   - what is VACATED travels, on a move, and stays put on a copy
  *   - what is BUILT OVER is forgotten, on a move and on a copy alike
@@ -309,9 +307,8 @@ public class testLayoutEditorBulkEdits
 
     /**
      * A cut still carries its setup when the paste is not the very next thing the user does: `clipboardWasCut` is the
-     * only thing that carries a group cut's setup, and any edit between the halves (growing the diagram, rotating a
-     * tile) once turned the move into a delete-and-lose.  A source scan cannot see this, since the flag is read and
-     * written in the right places and what is wrong is the order.
+     * only thing that carries a group cut's setup, and an edit between the halves must not turn the move into a
+     * delete-and-lose.  A source scan cannot see this, since what is wrong is the order.
      */
     @Test
     public void testAnEditBetweenTheCutAndThePasteStillCarriesTheSetup() throws Exception
@@ -371,9 +368,8 @@ public class testLayoutEditorBulkEdits
 
     /**
      * A paste that carried nothing does not use up the cut: `cutMoves` returns an empty map after an undo or on another
-     * page, and clearing `clipboardWasCut` then made the next paste destroy the setup it should have carried.  One
-     * square, not a column, because `emptyCutOrigins` counts the column's never-occupied squares as vacated and the
-     * paste would be a real move.
+     * page, and clearing `clipboardWasCut` then destroyed the setup the next paste should carry.  One square, not a
+     * column, because `emptyCutOrigins` counts a column's never-occupied squares as vacated.
      *
      * MUTATION: clearing `clipboardWasCut` unconditionally fails this.
      */
@@ -420,11 +416,9 @@ public class testLayoutEditorBulkEdits
     }
 
     /**
-     * An undone cut is outstanding nowhere, not mostly: `emptyCutOrigins` asked each cut square "are you empty now?"
-     * and a square that was always empty answers yes whether or not the cut was undone, so a column cut then undone
-     * still moved fifteen of its sixteen squares.  The question is now asked of the squares the cut emptied of a tile.
-     *
-     * One assertion, not two: a second (the station did not travel to `9,3`) no implementation can make false.
+     * An undone cut is outstanding nowhere, not mostly: the question is asked of the squares the cut emptied of a
+     * tile, since a square that was always empty answers "empty now" whether or not the cut was undone.  One assertion,
+     * not two: a second (the station did not travel to `9,3`) no implementation can make false.
      *
      * MUTATION: dropping the `clipboardCutHadTiles` check from `emptyCutOrigins` fails this.
      */
@@ -470,8 +464,7 @@ public class testLayoutEditorBulkEdits
     /**
      * One set-up square, a real editor over it, a gesture, and a look at what the setup says after.  A LayoutEditor
      * that never shows itself and an AutonomySession in a temp folder, joined through the reflectively-set
-     * TrainControlUI field, so the call sites under test are the real ones; `folder` names the temp autonomy folder so
-     * a failure says which test left it.
+     * TrainControlUI field; `folder` names the temp autonomy folder so a failure says which test left it.
      */
     private void withEditor(String folder, Gesture gesture, Check check) throws Exception
     {

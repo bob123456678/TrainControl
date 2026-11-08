@@ -27,11 +27,10 @@ import org.traincontrol.util.I18n;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 
 /**
- * The locomotive on a square no track leads out of faces a way its track runs, not east (OB-348).
- *
- * Run at TunnelLeftPark on the frozen `live-snapshot`, with both arrows of 8,7 below it red, through the real window's
- * diagram monitor.  The icon may guess, but it must lie along the track; a recorded facing the track does not run is
- * shown by none of the icon, the caption and Change Direction.  A train can also be put there (OB-350).
+ * The locomotive on a square no track leads out of faces a way its track runs, not east (OB-348).  Run at
+ * TunnelLeftPark on the frozen `live-snapshot`, both arrows of 8,7 below it red, through the real window's diagram
+ * monitor.  The icon may guess but must lie along the track; a recorded facing the track does not run is shown by
+ * none of the icon, the caption and Change Direction.  A train can also be put there (OB-350).
  *
  * MUTATION: take the setup's facing out of `DiagramMonitorDriver.recordedFacingsChanged` and the first claim fails;
  * return null from `AutonomySession.facingWhereNoCopySays` where nothing is recorded and the second does; ask the

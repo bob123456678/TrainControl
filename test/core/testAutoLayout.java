@@ -104,8 +104,7 @@ public class testAutoLayout
     }
     
     /**
-     * A route autonomy activates really is watching its sensor afterwards: `testAutoRoute` asserts the flag, but only
-     * `executeAutoRoute()` parks a thread on the s88.  So this pulses the sensor and asks whether the turnout moved.
+     * A route autonomy activates is really watching its sensor: only `executeAutoRoute()` parks a thread on the s88.
      *
      * MUTATION: delete `r.executeAutoRoute();` from `applyAutonomyRouteActivations` and this fails while
      * `testAutoRoute` stays green.
@@ -160,9 +159,7 @@ public class testAutoLayout
     }
 
     /**
-     * A route autonomy switches off really stops firing.  The other half of the same gap: `testAutoRoute` asserts that
-     * routes outside the list report themselves disabled, which `disable()` makes true by definition; what matters is
-     * that the parked monitor honors it (it tests `enabled` after each feedback wait), asserted with a control first.
+     * A route autonomy switches off really stops firing (the parked monitor tests `enabled` after each wait).
      *
      * MUTATION: take the `r.disable()` out of the non-listed branch of `applyAutonomyRouteActivations`
      * and this fails.
@@ -279,13 +276,9 @@ public class testAutoLayout
     }
 
     /**
-     * An edge's arrival side survives Export JSON and Load JSON: `AutonomyBuilder` writes `entrySide` and
-     * `Layout.fromJSON` reads it, so `Edge.toJSON` has to write it too, or arrival-side reasoning (and so what counts
-     * as a reversal) fails on any exported layout.  Measured over the whole live configuration, because the defect is
-     * that NONE carried it.
+     * An edge's arrival side survives Export JSON and Load JSON, over the whole live configuration.
      *
-     * MUTATION: drop the `entrySide` line from `Edge.toJSON` and this fails, reporting 0 sides written of
-     * however many the layout has.
+     * MUTATION: drop the `entrySide` line from `Edge.toJSON` and this fails, reporting 0 sides written.
      */
     @Test
     public void testAnEdgeKeepsItsArrivalSideThroughTheJSON() throws Exception
@@ -478,7 +471,6 @@ public class testAutoLayout
     
     /**
      * Test connections
-     * @throws java.lang.Exception
      */
     @Test
     public void testConnections() throws Exception
@@ -560,10 +552,8 @@ public class testAutoLayout
     }
 
     /**
-     * A locomotive cannot be in two places, and the model will not represent it.  Setting a locomotive on a Point
-     * clears every other copy of it, so no caller has to remember: a locomotive standing on two copies of one platform
-     * would show on one in the diagram, be cleared from only one by removing it, and make the next build produce a
-     * configuration fromJSON refuses.  A Point with no layout behind it (every Point built by hand) is untouched.
+     * A locomotive cannot be in two places: setting it on a Point clears every other copy of it.  A Point with no
+     * layout behind it (every Point built by hand) is untouched.
      */
     @Test
     public void testALocomotiveCanOnlyBeInOnePlace() throws Exception
@@ -599,10 +589,7 @@ public class testAutoLayout
     }
 
     /**
-     * Clearing a Point does not disturb anything else.
-     *
-     * The sweep only runs when a locomotive is being PUT somewhere.  Setting null is a removal, and a
-     * removal that swept would be a removal that could take a different train off a different platform.
+     * Clearing a Point does not disturb anything else: the sweep runs only when a locomotive is PUT somewhere.
      */
     @Test
     public void testRemovingALocomotiveLeavesTheOthersAlone() throws Exception
@@ -626,17 +613,11 @@ public class testAutoLayout
 
     /**
      * Track answered 0 on purpose is measured track of no length: to the Atomic Routes gate and the release escape it
-     * stands for, and to every other length rule.
-     *
-     * The gate and the escape ask one question, or the gate lets through a railway the escape then releases under a
-     * train.  The route in and the room walk count on past an answered 0, adding nothing, where a stretch nobody
-     * answered still ends them; the walk that claims a standing train's tail walks on over it too
-     * (`testAnAnsweredZeroIsNotMissing.testAStretchAnsweredZeroIsMeasuredTrackOfNoLength`).
+     * stands for, and to every other length rule (the route in and the room walk count on past it; a stretch nobody
+     * answered still ends them).
      *
      * MUTATION: count answered track as unmeasured at the gate, at the escape, in the route in or in the room walk, and
      * this fails.
-     *
-     * @throws Exception from the model
      */
     @Test
     public void testTrackAnsweredZeroIsMeasuredTrack() throws Exception
@@ -737,12 +718,9 @@ public class testAutoLayout
 
     /**
      * Where two roads part behind a standing train, a rail answered 0 is covered as far as the tail reaches, like a
-     * measured one: the claim up to where the rails part, and the tail question's reach along a rail.  Two rails into
-     * RP_P, answered 0 throughout, sharing their last two squares.
+     * measured one.
      *
      * MUTATION: have either decline a rail answered 0, as both declined a rail with no length, and this fails.
-     *
-     * @throws Exception from the model or the reflection
      */
     @Test
     @SuppressWarnings("unchecked")
@@ -808,18 +786,13 @@ public class testAutoLayout
     }
 
     /**
-     * A railway can say which track non-atomic mode could release under a train.
-     *
-     * The one question the atomic-routes gate asks, at all seven of its doors: non-atomic mode releases an edge as soon
-     * as `tailHasProvablyPassed` returns true, immediately when `pathIsUnmeasured` (NO edge on the path has a length).
-     * The claims are commented where each is asserted.
+     * A railway can say which track non-atomic mode could release under a train: the one question the atomic-routes
+     * gate asks, at all seven of its doors.  The claims are commented where each is asserted.
      *
      * MUTATION: drop the de-duplication and the first claim goes red; replace the reachability walk with the rule it
      * replaced and the fourth does; mark only the direct predecessors of a destination and the sixth does; bound the
      * walk at two levels and the seventh does; drop `!back.isActive()` and the eighth does; delete `Collections.sort`
      * and the last does.
-     *
-     * @throws Exception from the model
      */
     @Test
     public void testARailwayCountsItsUnmeasuredDrivableTrack() throws Exception
@@ -964,11 +937,8 @@ public class testAutoLayout
     }
 
     /**
-     * Locking a path reserves every point along it, not only its destination.  The reservation is what holds a junction
-     * the train has passed against a second train that could reach it another way.  Reserving a path and placing a
-     * train are different operations and do not share an entry point: a sweep that took a locomotive off every other
-     * point would leave a train holding C alone, with B free for anyone.  In simulate mode, so no accessory has to
-     * confirm.
+     * Locking a path reserves every point along it, not only its destination: the reservation holds a junction the
+     * train has passed.  Reserving a path and placing a train do not share an entry point.  In simulate mode.
      */
     @Test
     public void testLockingAPathReservesEveryPointOnIt() throws Exception
@@ -1007,12 +977,8 @@ public class testAutoLayout
     }
 
     /**
-     * Two trains cannot be routed onto one square, however many Points that square became.
-     *
-     * A square is emitted as several Points, one per side a train can arrive by, all the same piece of track, so
-     * occupancy is read across all the copies or the westbound copy would read free while a train stood on the
-     * eastbound one.  The block ties the copies together, not the s88: different places share a sensor on a real layout
-     * (a station, its approach guard and a reversing point), so the sensor cannot say which Points are one square.
+     * Two trains cannot be routed onto one square, however many Points that square became: occupancy is read across
+     * all the copies.  The block ties the copies together, not the s88, which different places share on a real layout.
      */
     @Test
     public void testASecondTrainIsNotRoutedOntoAnOccupiedSquare() throws Exception
@@ -1088,11 +1054,8 @@ public class testAutoLayout
     }
 
     /**
-     * Each rule measures a route by the thing it says it measures.
-     *
-     * Two routes to one place: a short one past two stations, and a longer way round past none.  Every preference
-     * should pick a different winner, the only evidence that the setting does anything.  The cost function is exercised
-     * through pickPath's own choice, so this fails if the ranking is wired up wrongly as well as computed wrongly.
+     * Each rule measures a route by the thing it says it measures: two routes to one place, and every preference picks
+     * a different winner.  The cost is exercised through pickPath's own choice.
      */
     @Test
     public void testEachRuleMeasuresWhatItSaysItMeasures() throws Exception
@@ -1275,13 +1238,8 @@ public class testAutoLayout
     }
 
     /**
-     * Where the trains have been survives a setup gesture: `parseAuto` replaces the whole `Layout`, and a diagram edit,
-     * placing a locomotive or loading a configuration all come through there, so `TrainControlUI` carries the history
-     * across.  The carry has to be READABLE, not merely copied: keyed by point NAME, not by `recencyKeyOf` (unique ids
-     * are re-allocated for every Point built).  It asserts the state `recencyOf` reads across a real `parseAuto`;
-     * `testLeastRecentlyVisitedGoesWhereTrainsHaveNotBeen` says the map is read, this that it is still there to read.
-     *
-     * @throws Exception from the fixture
+     * Where the trains have been survives a setup gesture (`parseAuto` replaces the whole `Layout`): the carry is keyed
+     * by point NAME, not `recencyKeyOf`, and must be READABLE across a real `parseAuto`.
      */
     @Test
     public void testTheVisitHistorySurvivesASetupRebuild() throws Exception
@@ -1360,9 +1318,8 @@ public class testAutoLayout
     }
 
     /**
-     * An accessory this layout already has, borrowed rather than created: newSignal would persist an invented signal in
-     * the user's real accessory database.  refreshProtectingSignal resolves the pairing by NAME, so any accessory the
-     * layout carries exercises the same path.
+     * An accessory this layout already has, borrowed rather than created (newSignal would persist an invented signal
+     * in the user's real accessory database).
      *
      * @param which how many to skip, so two tests can each have one of their own
      */
@@ -1387,12 +1344,8 @@ public class testAutoLayout
     }
 
     /**
-     * A protecting signal follows the PLATFORM, not one copy of it.
-     *
-     * The memo that stops a redundant command belongs to the whole square.  Kept per Point, a refresh on one copy that
-     * saw the square claimed through ANOTHER copy would write true into its own memo and nothing would write false
-     * back, leaving the signal GREEN with a train standing at the platform on the next real arrival.  The sequence
-     * below is that poisoning.
+     * A protecting signal follows the PLATFORM, not one copy of it: the memo that stops a redundant command belongs to
+     * the whole square, or a refresh on one copy leaves the signal GREEN with a train standing at the platform.
      */
     @Test
     public void testAProtectingSignalIsRedWheneverThePlatformIsHeld() throws Exception
@@ -1487,9 +1440,7 @@ public class testAutoLayout
 
     /**
      * Switching a protecting signal by hand asks only in the direction that removes protection (MT-256): green with a
-     * train standing there is asked; red there never; either way with the platform empty never.  `clearsProtection` is
-     * the one rule all three doors consult (the diagram tile, the switch keyboard and the route), and the caller
-     * supplies the direction.
+     * train standing there is asked; red there never; either way with the platform empty never.
      *
      * MUTATION: drop `commandingGreen` from `clearsProtection` and the second assertion fails; drop the occupancy half
      * and the third does.
@@ -1557,11 +1508,6 @@ public class testAutoLayout
     /**
      * A square switched out of service refuses trains at every door but its own: inactive endpoints and intermediates
      * are refused in manual mode as well, only an inactive start point is exempt.
-     *
-     * The rule is the same for intermediates and destinations, in manual mode as in autonomy: a destination fenced
-     * behind `isAutoRunning` would let a hand-driven send finish on a closed square that a Return Home run refuses.
-     * The start stays exempt, the whole exception: a train standing on a switched-off square is driven out by hand.
-     * The runtime rule is what stops a train, so it is asserted as well as the walks.
      *
      * MUTATION: put `&& this.isAutoRunning()` back on the destination rule and the second assertion
      * fails; refuse the start too and the third does.
@@ -1667,12 +1613,8 @@ public class testAutoLayout
         return false;
     }
     /**
-     * One signal protecting TWO platforms stays red while either of them is claimed.
-     *
-     * One signal can have a second owner (63 protects R1 **and** R0), which the model and the pairing UI allow.  The
-     * failure to catch is the release, not the claim: the moment one platform empties the obvious code sets the signal
-     * green, and if the other is still occupied the signal lies about an occupied platform.  The test next door is the
-     * other direction (two signals on one platform) and cannot see this.
+     * One signal protecting TWO platforms stays red while either of them is claimed (the release is the failure to
+     * catch).
      *
      * MUTATION: make `refreshOneSignal` ask only the point it was called for, rather than every point that lists the
      * signal, and the third assertion fails.
@@ -1779,12 +1721,8 @@ public class testAutoLayout
     }
 
     /**
-     * Arranging the railway does not throw its signals.
-     *
-     * Every occupancy change refreshes the protecting signals, but setting a layout up before a run must not drive real
-     * ironwork: cutting a locomotive off a platform with Control+X must not throw its signals on the spot.  The wait
-     * for the run to start is not a loss of protection: the memo of what each signal was last told is cleared when a
-     * run begins, so the first arrival commands them for real.
+     * Arranging the railway does not throw its signals: setting a layout up before a run must not drive real
+     * ironwork.  The memo of what each signal was last told is cleared when a run begins.
      */
     @Test
     public void testPlacingATrainByHandDoesNotThrowItsSignals() throws Exception
@@ -1845,11 +1783,7 @@ public class testAutoLayout
     }
 
     /**
-     * One signal, two platforms: red while EITHER is occupied.
-     *
-     * The pairing menu lets two stations pick the same signal, and a signal can only show one aspect.
-     * Asking the square rather than the signal made the second platform going free turn it green while
-     * a train still stood at the first.
+     * One signal, two platforms: red while EITHER is occupied (ask the signal, not the square).
      */
     @Test
     public void testASignalSharedByTwoStationsStaysRedWhileEitherIsHeld() throws Exception
@@ -1890,11 +1824,8 @@ public class testAutoLayout
     }
 
     /**
-     * Everything comes back from a configuration that already had two trains on one square.
-     *
-     * Hand placement is closed, but a FILE is the other door - one written by a version before the rule existed,
-     * hand-edited, or brought from another machine.  fromJSON checks for a duplicate locomotive and not for a
-     * duplicate square, so load itself has to repair a square holding two trains.
+     * Everything comes back from a configuration that already had two trains on one square: a FILE is a door the hand
+     * placement rule does not close, so load itself repairs it.
      */
     @Test
     public void testAConfigurationWithTwoTrainsOnOneSquareIsRepairedOnLoad() throws Exception
@@ -1967,12 +1898,8 @@ public class testAutoLayout
     private static final String SAMPLE_AUTONOMY = "test/sample_autonomy.json";
 
     /**
-     * Every key parseAuto reads off a Point, toJSON writes back - checked by asking the reader.
-     *
-     * A test that names the fields it knows about cannot catch the field nobody thought of.  So the source of truth is
-     * the READER: every key parseAuto looks for on a point is listed here, and the test fails if any is absent from
-     * what toJSON produced; adding a key to both means adding it to this list, which is when somebody has to think
-     * about it.
+     * Every key parseAuto reads off a Point, toJSON writes back, checked by asking the reader: adding a key to both
+     * means adding it to this list.
      */
     @Test
     public void testEveryKeyParseAutoReadsIsAlsoWritten() throws Exception
@@ -2064,12 +1991,11 @@ public class testAutoLayout
             point.setAutoDestination(hadAutoDestination);
         }
 
-        // "terminus", "reversing" and "loc" - checked on a standalone Point rather than the shared sample layout's, so
-        // setLocomotive cannot reach into MarklinControlStation.clearLocomotiveExcept and move a locomotive the rest of
-        // this class depends on (it only does that when the Point has a layout attached).
+        // "terminus", "reversing" and "loc" are checked on a standalone Point, so setLocomotive cannot move a
+        // locomotive the rest of this class depends on.
         //
-        // MUTATION each of the three assertions below catches on its own: delete the corresponding `jsonObj.put(...)`
-        // write in Point.toJSON (terminus, reversing, loc), and export silently drops that flag or locomotive.
+        // MUTATION: delete the corresponding `jsonObj.put(...)` in Point.toJSON and export drops that flag or
+        // locomotive.
         Point standalone = new Point("Terminus check", true, "999");
 
         standalone.setTerminus(true);
@@ -2088,10 +2014,8 @@ public class testAutoLayout
     }
 
     /**
-     * A Point with no block is unchanged - which is every Point of a hand-written configuration.
-     *
-     * Points that share an s88 without sharing a square are ordinary on a real layout, and they must
-     * not start blocking each other: that would refuse paths that have always been safe.
+     * A Point with no block is unchanged (every Point of a hand-written configuration): points that share an s88
+     * without sharing a square must not start blocking each other.
      */
     @Test
     public void testPointsThatMerelyShareASensorDoNotBlockEachOther() throws Exception
@@ -2119,10 +2043,9 @@ public class testAutoLayout
     }
 
     /**
-     * Somewhere to GO is not the same as somewhere to be sent.  A square is emitted as one Point per arrival side, and
-     * a copy can have somewhere to go and nowhere to be DISPATCHED (everything it reaches is a plain point, a reversing
-     * point or parking), while autonomy only ever sends a train to a destination.  On the sample layout Tunnel
-     * (northbound) offers routes and Tunnel (southbound) offers none, so placement has to tell them apart.
+     * Somewhere to GO is not somewhere to be sent: a copy can reach only plain points, reversing points or parking,
+     * while autonomy sends a train only to a destination.  On the sample layout Tunnel (northbound) offers routes and
+     * Tunnel (southbound) offers none.
      */
     @Test
     public void testACopyWithNowhereToBeSentIsNotPlaceable() throws Exception
@@ -2151,10 +2074,8 @@ public class testAutoLayout
     }
 
     /**
-     * Parking does not count as somewhere to be sent.
-     *
-     * A berth is a station autonomy is told not to choose, so a copy whose only reachable station is a
-     * berth is still a copy a train would sit on forever.
+     * Parking does not count as somewhere to be sent: a copy whose only reachable station is a berth is a copy a train
+     * would sit on forever.
      */
     @Test
     public void testParkingDoesNotMakeACopyPlaceable() throws Exception
@@ -2178,14 +2099,9 @@ public class testAutoLayout
     /**
      * A failure part way along a path stops the run, says so, and gives the track back.
      *
-     * **The rule is Adam's**: *"force a graceful stop, alert the user, then unlock."*
-     *
-     * The `RuntimeException` handler removes the locomotive from the maps `getActiveAccs` reads to know which
-     * accessories a route must not throw, so its route protection is gone at that instant and leaving the path locked
-     * would leave the track held by nobody.  So the handler stops everything (which makes releasing safe: `running` is
-     * false, so autonomy dispatches nothing new), tells the operator to look, because this is the one case where the
-     * model frees track a train may physically be standing on, and lets the track go.  That sentence is in all eight
-     * languages.
+     * The rule is Adam's: *"force a graceful stop, alert the user, then unlock."*  The handler stops everything first,
+     * which makes releasing safe, then tells the operator (all eight languages) because the model frees track a train
+     * may be standing on.
      *
      * MUTATION: removing the `unlockPath` call from the handler fails the occupancy assertion; removing
      * `stopLocomotives()` fails the one below it.
@@ -2272,14 +2188,8 @@ public class testAutoLayout
     }
 
     /**
-     * A failure does not release an edge the tail had already given up.
-     *
-     * `unlockPath` reads `releasedEarly` to know which edges the tail released as it passed them, so as not to release
-     * them again; the comment at that lookup says what a second release costs: *"the second release would take away a
-     * claim somebody else made in between"*.  The ordinary ending calls `unlockPath` and clears the map after it; the
-     * failure handler must do the same, or the lookup is null and every early-released edge is released twice
-     * (`atomicRoutes` is `false` on the operator's own configuration, so this is the live branch).  Seeded, not driven:
-     * a real tail needs a train in motion, and what is under test is whether the map is still populated.
+     * A failure does not release an edge the tail had already given up: the handler must clear `releasedEarly` after
+     * `unlockPath`, as the ordinary ending does, or each early-released edge is released twice.  Seeded, not driven.
      *
      * MUTATION: moving `releasedEarly.remove(loc)` back above the release fails this.
      */
@@ -2420,10 +2330,8 @@ public class testAutoLayout
     }
 
     /**
-     * The diagram menu's split: what autonomy would choose, and what it never would (FR-058).  The top-level menu shows
-     * only the active stations that can be chosen in full autonomy; More Destinations lists the points that cannot be
-     * but are still valid.  The menu needs a window, so the predicate it splits on, `isChoosableByAutonomy`, is
-     * asserted.
+     * The diagram menu's split: what autonomy would choose, and what it never would (FR-058).  The menu needs a window,
+     * so the predicate it splits on, `isChoosableByAutonomy`, is asserted.
      *
      * MUTATION: making `isChoosableByAutonomy` ignore `isAutoDestination` puts the parking track in the top-level list
      * and fails this.
@@ -2468,8 +2376,8 @@ public class testAutoLayout
 
     /**
      * A BERTH stays in the base list, and an excluded square leaves the menu (Adam).  The menu asks
-     * `isOfferableToOperator` and not `isChoosableByAutonomy(end, locomotive)`, which would move a terminus out of the
-     * base list.  A berth is offered to a train that cannot reverse, and an ORDINARY terminus is not (OB-205).
+     * `isOfferableToOperator`, not `isChoosableByAutonomy(end, locomotive)`.  A berth is offered to a train that cannot
+     * reverse, and an ORDINARY terminus is not (OB-205).
      *
      * MUTATION: dropping `isAutoDestination()` from `isOfferableToOperator`'s terminus clause fails the first
      * assertion; dropping the clause entirely fails the second; dropping the exclusion clause fails the third; dropping
@@ -2550,15 +2458,9 @@ public class testAutoLayout
     /**
      * A failure during the LOCK PHASE leaves the train where it is standing, and leaves other trains' claims alone.
      *
-     * The fixture has to reach the lock loop: a `null` in an edge's `lockEdges` throws earlier, in `isPathClear`, a
-     * strictly weaker window.  So a config command is mapped to a null state on an accessory that exists: the preview
-     * records it without formatting, and the lock loop's `configureEdge(e, null)` throws inside the try, after
-     * `edgesLocked++`, `setOccupied()` and `reserve()`, so `handleMisconfiguredPath` genuinely runs.
-     *
-     * The handler must not unlock over that recovery: `unlockPath`'s `i == 0` clause would clear the start reservation
-     * just written, and every never-taken edge would be released, cascading to lock edges whose occupancy is a COUNT
-     * shared with other dispatches.  Only the first is asserted: any claim that makes the second observable also makes
-     * `isPathClear` refuse the path.
+     * The fixture has to reach the lock loop (a `null` in `lockEdges` throws earlier, in `isPathClear`): a config
+     * command is mapped to a null state on an accessory that exists, so `configureEdge(e, null)` throws inside the
+     * try and `handleMisconfiguredPath` genuinely runs.  The handler must not unlock over that recovery.
      *
      * MUTATION: removing the `hadItsPath` gate fails the second assertion.
      */
@@ -2654,18 +2556,12 @@ public class testAutoLayout
     }
 
     /**
-     * Autonomy does not send a reversible train to a terminus it could not leave again at its length.
-     *
-     * A may-turn square's turning copy is a terminus whose one way out is back the way the train came: a reversible
-     * train that autonomy turned there at a length no station beyond admits never moved again.  A train that cannot
-     * reverse is already kept out of a terminus; this is the same rule for one that can, at its length.  The terminus
-     * is first by priority and leads only to a station of 2: a train of 4 is sent to the other station, a train of 2 to
+     * Autonomy does not send a reversible train to a terminus it could not leave again at its length.  The terminus is
+     * first by priority and leads only to a station of 2: a train of 4 is sent to the other station, a train of 2 to
      * the terminus, and the Why Not Moving? reasons say the same.
      *
      * MUTATION: drop the new clause from pickPath's terminus filter and the first assertion fails; have it refuse every
      * terminus and the third does; drop it from the yield probe and the last does.
-     *
-     * @throws Exception from the railway
      */
     @Test
     public void testAReversibleTrainIsNotSentToATerminusItCouldNotLeave() throws Exception
@@ -2754,17 +2650,11 @@ public class testAutoLayout
     }
 
     /**
-     * A clear route is found although a shorter one that throws a switch both ways reaches a square on it first.
-     *
-     * The route search must not mark a square visited the first time any route reaches it: a shorter route that sets a
-     * switch one way and then the other (refused for conflicting commands) would hide a clear route reaching the same
-     * square with the switch untouched, and the station beyond would be offered on some openings of the menu and not
-     * others.  Here the short way RV_S - RV_X - RV_E sets the switch STRAIGHT then TURN, the long way RV_S - RV_Y -
-     * RV_W - RV_X - RV_E only TURN.  Asked twelve times, because the answer depends on the order squares are taken in.
+     * A clear route is found although a shorter one that throws a switch both ways reaches a square on it first: the
+     * search must not mark a square visited the first time any route reaches it.  Asked twelve times, because the
+     * answer depends on the order squares are taken in.
      *
      * MUTATION: key the search on the square alone again and this fails.
-     *
-     * @throws Exception from the railway
      */
     @Test
     public void testAClearRouteIsNotHiddenByAConflictingOne() throws Exception
@@ -2811,17 +2701,10 @@ public class testAutoLayout
     }
 
     /**
-     * Two routes of the same length to a station are both offered, every time.
-     *
-     * The route search marks a square when it is taken OFF the queue, not when it is put on, so a square two routes
-     * reach at the same distance is followed on from by both.  Marked when put on the queue, the second way to EQ_X is
-     * dropped whenever the first is taken first, and the menu offers one route to EQ_E on some openings and two on
-     * others.  Here EQ_S - EQ_A - EQ_X - EQ_E and EQ_S - EQ_B - EQ_X - EQ_E, no switches; asked twelve times, because
-     * which way is taken first depends on the order `getNeighbors` shuffles into.
+     * Two routes of the same length to a station are both offered, every time: the search marks a square when it is
+     * taken OFF the queue.  Asked twelve times, because the order depends on how `getNeighbors` shuffles.
      *
      * MUTATION: mark a square when it is put on the queue and this fails.
-     *
-     * @throws Exception from the railway
      */
     @Test
     public void testTwoRoutesOfTheSameLengthAreBothOffered() throws Exception
@@ -2866,18 +2749,11 @@ public class testAutoLayout
     }
 
     /**
-     * Where the only route to a station throws a switch both ways, Why Not Moving? still says so.
-     *
-     * The search keeps a route whose switch commands disagree out of the way of every route whose commands do not, but
-     * still follows it and returns it on reaching the station, because that is how Why Not Moving? learns the reason.
-     * Dropped instead, the station would be explained as if no route led there at all.  Here RC_S - RC_X sets the
-     * switch STRAIGHT, RC_X - RC_Y sets it TURN, and RC_Y - RC_E is the only way on: the conflict arises a square
-     * BEFORE the station, so the route has to be followed on from RC_Y in conflict (on the last edge the claim could
-     * not fail).
+     * Where the only route to a station throws a switch both ways, Why Not Moving? still says so: the search follows a
+     * route whose commands disagree and returns it on reaching the station.  The conflict arises a square BEFORE the
+     * station.
      *
      * MUTATION: drop a route the moment its commands disagree and this fails.
-     *
-     * @throws Exception from the railway
      */
     @Test
     public void testAConflictThatIsAllThereIsIsStillTheReason() throws Exception

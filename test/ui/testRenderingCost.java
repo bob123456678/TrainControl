@@ -320,20 +320,13 @@ public class testRenderingCost
     }
 
     /**
-     * One accessory drawn on several squares keeps a label on every one of them.
+     * One accessory drawn on several squares keeps a label on every one of them: a real layout puts one address on
+     * several tiles, and the control station gives all of them the SAME MarklinAccessory (resolved by address), so each
+     * tile must stay registered with it or it stops being repainted when the accessory is thrown.
      *
-     * A real layout puts one address on several tiles (the sample layout has 162 on four squares of "3 - Top Parking"
-     * and five of "4 - Combined") and the control station gives all of them the SAME MarklinAccessory, because it
-     * resolves by address out of the database.  Each of those tiles has to stay registered with it or it stops being
-     * repainted when the accessory is thrown.
-     *
-     * A pruning rule keyed by SQUARE must not be reused on collections keyed by DEVICE: inside one device's entry "an
-     * older label of this window that is no longer displayable" also matches that device's OTHER squares, and
-     * LayoutGrid registers every label in its build loop and only attaches the container afterwards, so during a build
-     * none of them is displayable and only the last label would survive, and three of four tiles would stop updating.
-     *
-     * A fresh parse rather than the shared fixture, because the accessories have to be shared by address the way the
-     * control station shares them, and the fixture deliberately gives each tile its own.
+     * A pruning rule keyed by SQUARE must not be reused on collections keyed by DEVICE: `LayoutGrid` registers every
+     * label in its build loop and attaches the container afterwards, so during a build none is displayable and only the
+     * last label would survive.  A fresh parse is used, since the fixture gives each tile its own accessory.
      */
     @Test
     public void testEveryTileOfOneAccessoryStaysRegistered() throws Exception
@@ -510,13 +503,9 @@ public class testRenderingCost
         final org.traincontrol.gui.TrainControlUI toClose = ui[0];
         javax.swing.SwingUtilities.invokeAndWait(() -> toClose.dispose());
 
-        // Exactly ONE label per cell, and the bound is a quarter above that (OB-084).
-        //
-        // NOT MEASURED HERE: after construction the diagram goes on rebuilding labels (OB-053); there is nothing stable
-        // to assert.
-        //
-        // MUTATION, run: building a second LayoutLabel for every populated cell in LayoutGrid takes the count to 729
-        // and fails this.
+        // Exactly ONE label per cell, bound a quarter above (OB-084).  Not measured after construction: the diagram
+        // goes on rebuilding labels (OB-053).  MUTATION: a second LayoutLabel per populated cell in LayoutGrid takes
+        // the count to 729 and fails this.
         assertTrue(built[0] <= cells * 5 / 4,
             "the grid built " + built[0]
             + " labels for " + cells + " cells.  Building it constructs exactly one label per cell, "

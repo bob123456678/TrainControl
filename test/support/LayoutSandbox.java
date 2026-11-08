@@ -197,14 +197,12 @@ public final class LayoutSandbox
     }
 
     /**
-     * Parses through this parser and WIRES what came back, which is the pair `syncLayouts` does: parsing alone leaves
-     * every switch and signal with a null accessory, so `TileGraph` refuses to trace through it (see `wiredPages`).
-     * `wireComponents` is the application's own loop, made reachable rather than copied here.
+     * Parses through this parser and WIRES what came back, as `syncLayouts` does: parsing alone leaves every switch and
+     * signal with a null accessory, so `TileGraph` refuses to trace through it (see `wiredPages`).
      *
      * @param model the control station whose accessory, feedback and route databases to wire against
      * @param parser the parser, already pointed at a layout folder
      * @return the pages, wired
-     * @throws Exception if the folder cannot be read
      */
     public static java.util.List<org.traincontrol.base.LayoutDiagram> wired(
         org.traincontrol.marklin.MarklinControlStation model,
@@ -222,11 +220,9 @@ public final class LayoutSandbox
     }
 
     /**
-     * The pages the MODEL parsed, wired to their accessories - not a second parse of the same files.
-     *
-     * Parsing does not attach a tile to its accessory; `MarklinControlStation.syncLayouts` does that in a loop AFTER
-     * the parse.  A second `CS2File` parser bypasses it, so every switch and signal has a null accessory, `TileGraph`
-     * reports `errorTileHasNoAddress` and refuses to trace through, and the railway arrives in pieces.
+     * The pages the MODEL parsed, wired to their accessories: `MarklinControlStation.syncLayouts` attaches them AFTER
+     * the parse, and a second `CS2File` parser bypasses it (null accessories, `errorTileHasNoAddress`, railway in
+     * pieces).
      *
      * @param model the control station, already built with this sandbox open
      * @return its pages, in its own order
@@ -285,10 +281,9 @@ public final class LayoutSandbox
     }
 
     /**
-     * Takes every train off this copy's autonomy configurations, every home with them, and empties the timetable
-     * (FR-136).  Where his trains stand, which are homed where, and the last run's timetable are working state, not the
-     * railway (`test/layouts/live-snapshot/README.md`, "Not invariants"); a test that needs a train standing calls this
-     * and then `standing` for each one it names.
+     * Takes every train, home and timetable entry off this copy's autonomy configurations (FR-136): where trains stand
+     * is working state, not the railway (`test/layouts/live-snapshot/README.md`, "Not invariants"); a test that needs a
+     * train standing calls this, then `standing`.
      *
      * @return this sandbox
      * @throws IOException if a configuration cannot be read or written

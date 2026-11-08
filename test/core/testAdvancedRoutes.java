@@ -178,8 +178,6 @@ public class testAdvancedRoutes
      * with "unrecognised".  The canonical casing is what this program writes, so no existing route changes meaning.
      *
      * MUTATION: any `equalsIgnoreCase` back to `equals` in `parseLine` fails this.
-     *
-     * @throws Exception on a parse failure
      */
     @Test
     public void testACommandParsesWhateverCaseItIsTypedIn() throws Exception
@@ -216,27 +214,18 @@ public class testAdvancedRoutes
 
     /**
      * Asking about an accessory must not create one.  `Route.evaluate` reads an accessory condition through
-     * `getAccessoryState`, whose miss branch calls `newSwitch`, so merely EVALUATING a condition against an address the
-     * Central Station has never mentioned would register that address as a switch, persisted into the database and onto
-     * the keyboard.  Conditions are evaluated on a timer while a route waits.
-     *
-     * **The answer must not change.** `getAccessoryState` creates the switch UNSWITCHED and then returns false, so an
-     * unknown address has always read as "not switched" and routes fire on that.  Removing the side effect must not
-     * flip when a route fires, which is why this asserts the answer as well as the absence.
-     *
-     * @throws Exception on a failure to build
+     * `getAccessoryState`, whose miss branch calls `newSwitch`, so evaluating a condition against an address the
+     * Central Station never mentioned would register it as a switch, persisted into the database.  The answer must not
+     * change: an unknown address has always read "not switched" and routes fire on that.
      */
     @Test
     public void testEvaluatingAConditionDoesNotInventTheAccessory() throws Exception
     {
         final Accessory.accessoryDecoderType proto = Accessory.accessoryDecoderType.MM2;
 
-        // SEARCHED, NOT HARD-CODED - AND IT HAS TO SEARCH PAST THE PROTOCOL.  The real accessory database is open and
-        // holds every MM2 address from 1 to 320 and every DCC address from 1 to 2048; those rows are not damage and
-        // nothing here cleans them up.  They do mean every in-range address is taken, which would make every assertion
-        // below vacuous rather than red, so the search runs past 320 to an address on no track diagram.  An address
-        // above the protocol's range is still one a route condition can carry and getAccessoryState would register,
-        // which is the mechanism under test.
+        // SEARCHED: the real accessory database holds every MM2 address 1-320 and DCC 1-2048, so every in-range address
+        // is taken and the assertions would be vacuous; search past 320 to an address on no track diagram.  A route
+        // condition can still carry it and getAccessoryState would register it, which is the mechanism under test.
         int free = -1;
 
         for (int candidate = 1; candidate <= 4096 && free < 0; candidate++)
@@ -735,14 +724,9 @@ public class testAdvancedRoutes
     }
 
     /**
-     * A name with a bracket is allowed, and survives the way routes are actually stored.
-     *
-     * The rule refused brackets because `NodeExpression.preprocessText` rewrites every bracket into a line break to
-     * find the grouping.  That mattered only while conditions were stored as TEXT; `MarklinRoute.fromJSON` now reads
-     * them through `NodeExpression.fromJSON`, and `fromTextRepresentation` has no caller left in `src/`.
-     *
-     * **Both halves are asserted**, because they now disagree: the text form still cannot carry the name, and the JSON
-     * form can.  That is what makes allowing it safe.
+     * A name with a bracket is allowed, and survives the way routes are actually stored: the old rule existed because
+     * `NodeExpression.preprocessText` rewrites brackets into line breaks, but conditions are now stored as JSON.  Both
+     * halves are asserted, since they disagree: the text form cannot carry the name, the JSON form can.
      *
      * MUTATION: putting the bracket back into `isNameUsable` fails the first assertion.
      */
@@ -833,8 +817,6 @@ public class testAdvancedRoutes
      * and this door, the one a sensor uses, must too.
      *
      * MUTATION: drop the line and this fails.
-     *
-     * @throws Exception from the route thread
      */
     @Test
     public void testARouteStartedWhileItRunsSaysSo() throws Exception
@@ -891,15 +873,9 @@ public class testAdvancedRoutes
     }
 
     /**
-     * A route finishes its commands even if the locomotive it names is deleted while it runs: `deleteLoc` takes every
-     * command that drives that locomotive out of every route, through `Iterator.remove()`, from the event thread, while
-     * `execRoute` is part-way along the same list with 200 ms between commands.  Both list kinds are fail-fast, so
-     * that thread would die mid-route and leave the road half set with nothing in the log.
-     *
-     * The model half is here; the door half - the UI refusing the delete while such a route runs - is
-     * `runningRouteDriving`, asserted below.
-     *
-     * @throws Exception from the route thread
+     * A route finishes its commands even if the locomotive it names is deleted while it runs: `deleteLoc` removes the
+     * commands through `Iterator.remove()` on the event thread while `execRoute` is part-way along the same fail-fast
+     * list, which would kill that thread mid-route.  The door half is `runningRouteDriving`, asserted below.
      */
     @Test
     public void testARouteFinishesWhenItsLocomotiveIsDeletedMidRun() throws Exception
@@ -983,8 +959,6 @@ public class testAdvancedRoutes
      * each executing route's OWN command list.  ONE HOP, because that is all the engine reaches.
      *
      * MUTATION: take the chain walk out of `MarklinControlStation.runningRouteDriving` and the claim below goes red.
-     *
-     * @throws Exception from the route thread
      */
     @Test
     public void testARunningRouteIsDrivingWhatTheRouteItChainsToDrives() throws Exception
@@ -1046,16 +1020,11 @@ public class testAdvancedRoutes
     }
 
     /**
-     * A route is not edited while it runs, so afterwards it is still running and still drives what it drove.
-     * `editRoute` edits by deleting the route and adding a new object under the same id, and what a route is doing
-     * (EXECUTING) lives on the object: the new one would read idle while the old one's thread went on sending, so
-     * `runningRouteDriving` would lose it, the route tile would stop showing it running, and its guard against being
-     * started again on top of itself would be gone.  The flag is set as `MarklinRoute.execRoute` sets it, with no
-     * thread.
+     * A route is not edited while it runs, so afterwards it is still running and still drives what it drove:
+     * `editRoute` deletes and re-adds under the same id, and what a route is doing (EXECUTING) lives on the object.
+     * The flag is set as `MarklinRoute.execRoute` sets it, with no thread.
      *
      * MUTATION: take the refusal out of `MarklinControlStation.editRoute`, and this fails.
-     *
-     * @throws Exception from the model
      */
     @Test
     public void testARunningRouteIsNotEdited() throws Exception
@@ -1093,18 +1062,12 @@ public class testAdvancedRoutes
     }
 
     /**
-     * A Central Station sync does not replace a route while it runs, so afterwards it is still running and still
-     * drives what it drove.  Where the station's definition differs from the one held, the sync does the delete-and-add
-     * `editRoute` does, which refuses while the route runs, because what a route is doing lives on its object.
-     *
-     * The sync's per-route step is asked directly, with the station's description of the same route carrying one more
-     * command, because the whole sync needs a station on the network.  The flag is set as `MarklinRoute.execRoute`
-     * sets it, with no thread.
+     * A Central Station sync does not replace a route while it runs: where the station's definition differs, the sync
+     * does the delete-and-add `editRoute` does, which refuses while the route runs.  The sync's per-route step is
+     * asked directly, since the whole sync needs a station on the network.
      *
      * MUTATION: take the running-route refusal out of `MarklinControlStation.adoptCentralStationRoute`, and this
      * fails.
-     *
-     * @throws Exception from the model
      */
     @Test
     public void testASyncDoesNotReplaceARunningRoute() throws Exception
@@ -1149,14 +1112,11 @@ public class testAdvancedRoutes
     }
 
     /**
-     * Nor where the station has a route of the same NAME under another id: the held route is deleted to make room for
-     * it, and a running one is not - the station's waits for the next sync.  The station's route cannot be added beside
-     * the running one under the same name, so the step adds nothing.
+     * Nor where the station has a route of the same NAME under another id: a running held route is not deleted to
+     * make room, so the step adds nothing and the station's waits for the next sync.
      *
      * MUTATION: take the running-route refusal out of the same-name branch of
      * `MarklinControlStation.adoptCentralStationRoute`, and this fails.
-     *
-     * @throws Exception from the model
      */
     @Test
     public void testASyncDoesNotReplaceARunningRouteOfTheSameName() throws Exception
@@ -1198,16 +1158,11 @@ public class testAdvancedRoutes
     }
 
     /**
-     * Deleting a route takes it out of every route that runs it, so a new route of that name is not run by them.  The
-     * delete's question says how many routes call it, as deleting a locomotive removes the commands that drive it.
-     * Left behind, a command naming a deleted route would run any route later made under that name.
-     *
-     * Through the door's own model method, `deleteRouteAndItsCalls`.  The model's `deleteRoute` is left as it is,
-     * because `editRoute` deletes and re-adds through it, and an edit must not strip a route's callers.
+     * Deleting a route takes it out of every route that runs it, so a new route of that name is not run by them; the
+     * delete's question says how many routes call it.  Through `deleteRouteAndItsCalls`: `deleteRoute` is left alone
+     * because `editRoute` re-adds through it and an edit must not strip a route's callers.
      *
      * MUTATION: take the strip out of `deleteRouteAndItsCalls`, and this fails.
-     *
-     * @throws Exception from the model
      */
     @Test
     public void testADeletedRouteIsNotRunByTheRoutesThatCalledIt() throws Exception
@@ -1267,8 +1222,6 @@ public class testAdvancedRoutes
      * A route whose name carries a leading or trailing space can still be found and deleted.  The two file parsers keep
      * the name exactly as the file has it, so `newRoute` must index it under the name `deleteRoute` deletes by, the
      * route's own.  Central Station route names are typed by people, and a trailing space is invisible.
-     *
-     * @throws Exception from the model
      */
     @Test
     public void testARouteNameWithSpacesAroundItIsUsable() throws Exception
@@ -1298,8 +1251,6 @@ public class testAdvancedRoutes
      * A route tile on the diagram runs the route the database holds now, not the one it was wired to.  `wireComponents`
      * hands the tile the route OBJECT and every door that changes a route replaces that object, so only a full re-wire
      * rebinds the tiles; with the Central Station as the diagram source that happens once a session.
-     *
-     * @throws Exception from the model
      */
     @Test
     public void testARouteTileFollowsTheDatabase() throws Exception
@@ -1431,8 +1382,6 @@ public class testAdvancedRoutes
     /**
      * A route set to fire when its sensor clears fires then, and not when the sensor becomes occupied.  The live
      * railway has some fourteen such routes, and no test had ever fired one.
-     *
-     * @throws Exception from the fixture
      */
     @Test
     public void testAFiresOnClearRouteFiresWhenItsSensorClears() throws Exception
@@ -1473,8 +1422,6 @@ public class testAdvancedRoutes
 
     /**
      * A route set to fire when its sensor becomes occupied does not fire when the sensor clears.
-     *
-     * @throws Exception from the fixture
      */
     @Test
     public void testAFiresOnOccupiedRouteIgnoresTheClearingEdge() throws Exception
@@ -1511,14 +1458,10 @@ public class testAdvancedRoutes
     }
 
     /**
-     * A route's direction and speed commands drive the locomotive, and a speed of -1 stops it at once.
-     *
-     * "At once" is the station's train-stop command for this locomotive: an ordinary speed of 0 stops it too, at the
-     * decoder's own deceleration, and sends no such command.
+     * A route's direction and speed commands drive the locomotive, and a speed of -1 stops it at once: the station's
+     * train-stop command, where an ordinary speed of 0 decelerates and sends no such command.
      *
      * MUTATION: hand the -1 to an ordinary stop (`setSpeed(0)`) and this fails.
-     *
-     * @throws Exception from the fixture
      */
     @Test
     public void testSpeedDirectionAndInstantStopRunThroughARoute() throws Exception
@@ -1571,8 +1514,6 @@ public class testAdvancedRoutes
      * A route that chains to an ordinary route runs that route's commands; the chain stops one route deep, as the
      * changelog for 2.5.3 says (a chained route triggers no further routes); and a route that names itself runs its
      * other commands once and does not loop.
-     *
-     * @throws Exception from the fixture
      */
     @Test
     public void testAChainedRouteRunsAndTheChainStopsAtItsLimit() throws Exception
@@ -1620,8 +1561,6 @@ public class testAdvancedRoutes
     /**
      * A function OFF command, All Functions Off, All Lights On and All Lights On (Autonomy Locomotives Only) each do
      * what they say when a route runs them.
-     *
-     * @throws Exception from the fixture
      */
     @Test
     public void testFunctionOffAndTheLightAndFunctionSweepsRunThroughARoute() throws Exception
@@ -1674,8 +1613,6 @@ public class testAdvancedRoutes
      * A sensor condition and a switch condition hold back a route its own sensor fires, until both hold; a DCC
      * switch's state is read apart from the MM2 switch at the same address; and groups inside a group are evaluated
      * as written.
-     *
-     * @throws Exception from the fixture
      */
     @Test
     public void testSensorAndSwitchConditionsHoldBackAFiredRoute() throws Exception

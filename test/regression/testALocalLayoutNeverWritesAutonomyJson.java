@@ -109,8 +109,6 @@ public class testALocalLayoutNeverWritesAutonomyJson
 
     /**
      * The save writes its other backups, and no autonomy.json among them.
-     *
-     * @throws Exception from the event thread
      */
     @Test
     public void testTheSaveWritesNoAutonomyJson() throws Exception

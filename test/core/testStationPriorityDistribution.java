@@ -23,9 +23,9 @@ import org.traincontrol.marklin.MarklinLocomotive;
  * not journeys: `pickPath` is the whole of the rule under test, so the sampling calls it directly and never starts a
  * locomotive.
  *
- * The fixture is his railway, frozen: `test/test_layout_snapshot` carries the legacy autonomy.json this loads.
- * Priorities are set here, per case, so the file is read and never written.  The assertions are statistical, since
- * `pickPath` shuffles with a Random this test cannot seed, and written to be decisive rather than tight.
+ * The fixture is his railway, frozen (`test/test_layout_snapshot`); priorities are set per case, so the file is read
+ * and never written.  The assertions are statistical, since `pickPath` shuffles with a Random this test cannot seed,
+ * and written to be decisive rather than tight.
  */
 public class testStationPriorityDistribution
 {
@@ -55,9 +55,8 @@ public class testStationPriorityDistribution
     private static support.LayoutSandbox sandbox;
 
     /**
-     * BEFORE THE MODEL, not just before a window (OB-111): MarklinControlStation.init reads the saved layout-path
-     * preference, which on the operator's machine names his own railway.  The layout this class reads is the frozen
-     * snapshot, loaded by hand from JSON; the sandbox is about what init does on the way to giving us a model at all.
+     * BEFORE THE MODEL, not just before a window (OB-111): `MarklinControlStation.init` reads the saved layout-path
+     * preference, which on the operator's machine names his own railway.
      */
     @BeforeClass
     public void connect() throws Exception
@@ -79,9 +78,8 @@ public class testStationPriorityDistribution
         if (sandbox != null) sandbox.close();
     }
     /**
-     * The lengths this class has changed on Adam's own locomotives, and what they were: `MarklinControlStation.init`
-     * opens his real locomotive database and the layout sandbox does not freeze it.  A map rather than a field per
-     * site, because what gets borrowed is "whatever is standing".
+     * The lengths this class has changed on Adam's own locomotives, and what they were: `init` opens his real
+     * locomotive database and the sandbox does not freeze it.
      */
     private static final java.util.Map<org.traincontrol.base.Locomotive, Integer> LENGTHS_WE_CHANGED =
         new java.util.LinkedHashMap<>();
@@ -336,11 +334,9 @@ public class testStationPriorityDistribution
     }
 
     /**
-     * Sets the three priorities under test, and flattens every other station that carries one.
-     *
-     * Without the flattening these cases would not be about A, B and C at all: the snapshot gives BottomMainCTerm,
-     * TopMainR0, TopMainR1 and TopMainR2 priorities of their own, and a banded rule would settle one of those bands
-     * before it ever looked at these three.
+     * Sets the three priorities under test, and flattens every other station that carries one: the snapshot gives
+     * BottomMainCTerm, TopMainR0, TopMainR1 and TopMainR2 priorities of their own, and a banded rule would settle one
+     * of those bands before it looked at these three.
      */
     private static void prioritise(Layout layout, int a, int b, int c)
     {

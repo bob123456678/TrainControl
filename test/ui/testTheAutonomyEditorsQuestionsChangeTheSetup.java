@@ -504,10 +504,9 @@ public class testTheAutonomyEditorsQuestionsChangeTheSetup
     }
 
     /**
-     * Opens the station's Exit Guard Signal window from Station Settings, presses By Address, types this, then presses Done
-     * once every question has been answered and the window lists as many signals as expected (or three seconds later).
-     * The window is a dialog of the editor's own, so it is driven here; its questions are plain ones, which `Answering`
-     * takes.
+     * Opens the station's Exit Guard Signal window from Station Settings, presses By Address, types this, then presses
+     * Done once every question has been answered and the window lists as many signals as expected (or three seconds
+     * later).  The window is a dialog of the editor's own, so it is driven here.
      *
      * @param questions how many questions the address brings: its own, and a refusal if there is one
      */

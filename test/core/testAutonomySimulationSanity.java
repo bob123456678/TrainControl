@@ -117,17 +117,12 @@ public class testAutonomySimulationSanity
     }
 
     /**
-     * Two turns in one session do not add up to a flip of anything: the record names the LAST one.
+     * Two turns in one session do not add up to a flip of anything: the record names the LAST one.  The window writes
+     * the facing ABSOLUTELY, from the side the train came in by at the turn (the stored facing is stale when the drain
+     * reads it; behaviour/editing-while-running.md 6a), so two turns must not cancel.  The shuttle runs: after the
+     * outward leg the record names the east end, after the return the west end, never two entries for one locomotive.
      *
-     * The name is historical: the window now writes the facing ABSOLUTELY, from the side the train came in by at the
-     * square it turned at, because the setup's stored facing is stale at exactly the moment the drain reads it
-     * (behaviour/editing-while-running.md 6a).  An absolute write says the same thing however many times it is applied,
-     * so two turns must not cancel.
-     *
-     * So the same shuttle runs and the record follows the train: after the outward leg it names the east end, after the
-     * return the west end, and never two entries for one locomotive.
-     *
-     * MUTATION: keeping the old toggle - removing the name on the second turn - fails the last assertion.
+     * MUTATION: keeping the old toggle (removing the name on the second turn) fails the last assertion.
      */
     @Test
     public void testTwoTurnsInOneSessionCancel() throws Exception
@@ -376,25 +371,14 @@ public class testAutonomySimulationSanity
     }
 
     /**
-     * A turn the railway makes at the destination is recorded there.
-     *
-     * A reversal at the arrival is the one direction change nothing was following.  Its echo lands inside the run's own
-     * thousand-millisecond pause, while `isRunning()` is still true, so the window takes the baseline-only branch, and
-     * when the run ends the idle reconcile LEVELS the baseline rather than following it.  Both are right for a command
-     * somebody else sent mid-run and wrong for this one, so the graph and the setup would go on saying the train had
-     * not reversed.
-     *
-     * **In this class rather than beside the reversal rules**, because it needs a run that actually ARRIVES: every
-     * `executePath` test elsewhere throws from a callback before the arrival, while this class runs with
-     * `DEBUG_SIMULATE_PACKETS` and a watchdog, which lets a path complete.
-     *
-     * The drain is asserted too: a record read without clearing is re-applied on every refresh, which turns one
-     * reversal into a metronome.
+     * A turn the railway makes at the destination is recorded there.  Its echo lands inside the run's own pause while
+     * `isRunning()` is still true, so the window takes the baseline-only branch and the idle reconcile LEVELS the
+     * baseline rather than following it; the setup would go on saying the train had not reversed.  Lives here because
+     * it needs a run that ARRIVES (`DEBUG_SIMULATE_PACKETS` and a watchdog).  The drain is asserted too: a record read
+     * without clearing is re-applied on every refresh.
      *
      * MUTATION: removing the `reversedOnArrival.put` at the arrival fails the first assertion; making
      * `takeReversalsOnArrival` a plain getter fails the last.
-     *
-     * @throws Exception on a failure to run
      */
     @Test
     public void testATurnAtTheDestinationIsRecordedThere() throws Exception
@@ -822,19 +806,13 @@ public class testAutonomySimulationSanity
     }
 
     /**
-     * Proves the actuation-confirmation guard that testSimulatedAutonomyRaisesNoWarning trusts to stay silent is
-     * actually capable of firing.
+     * Proves the actuation-confirmation guard that testSimulatedAutonomyRaisesNoWarning trusts to stay silent can fire.
+     * The soak runs with "simulate": true, so Layout.configureAndLockPath returns BEFORE validatePathActuation and "no
+     * warning fired" is unfalsifiable there.  This small Layout has simulate OFF and DEBUG_SIMULATE_PACKETS on, with
+     * the path's one accessory driven to the wrong state so it can never confirm.
      *
-     * That soak test runs with "simulate": true (test/autonomy_sanity.json:143), so Layout.configureAndLockPath returns
-     * BEFORE validatePathActuation ever runs and getPathValidationFailureCount() is pinned at 0 whatever the guard
-     * would have found: "no warning fired" there is unfalsifiable.  Simulate mode cannot simply be turned off for the
-     * soak, as it fakes each point's sensor as the train "arrives".  So this is a separate, small Layout built directly
-     * (like testAutonomyPathValidation.java's fixtures) with simulate OFF and DEBUG_SIMULATE_PACKETS still on, so the
-     * real guard runs; the path's one accessory is driven to the wrong state out of band so it can never confirm.
-     *
-     * MUTATION this catches: delete the guard at Layout.java:2604-2609 (or make validatePathActuation return true
-     * unconditionally, or set PATH_INTEGRITY_VALIDATION = false) - the failure below would never be recorded and this
-     * test goes red.
+     * MUTATION: delete the guard in Layout (or make validatePathActuation return true, or PATH_INTEGRITY_VALIDATION =
+     * false); the failure is never recorded.
      */
     @Test
     public void testPathValidationCanActuallyFireOutsideSimulateMode() throws Exception

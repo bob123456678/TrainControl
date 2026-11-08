@@ -74,8 +74,6 @@ public class testTheLoaderDoesNotCallAStationANonStation
     /**
      * A train on the barred copy of BottomMainA is not warned about; a train on a copy of a square that is no station
      * still is.
-     *
-     * @throws Exception from the fixture
      */
     @Test
     public void testATrainOnABarredCopyIsNotCalledOffAStation() throws Exception

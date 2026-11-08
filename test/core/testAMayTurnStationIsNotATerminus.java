@@ -125,11 +125,8 @@ public class testAMayTurnStationIsNotATerminus
 
     /**
      * The half of a compulsory turn that is spelled `reversing` is refused too (Adam, MT-367: "still offered it for
-     * 2-8-4 3505.").
-     *
-     * To a train that cannot reverse the builder's two spellings of a turning copy, `terminus` and `reversing`, say one
-     * thing.  BottomMainC builds to one copy spelled `terminus`, so it is re-spelled `reversing` here for the length of
-     * the claim.
+     * 2-8-4 3505."): to a train that cannot reverse, the builder's two spellings of a turning copy, `terminus` and
+     * `reversing`, say one thing.  BottomMainC builds to one copy spelled `terminus`, re-spelled `reversing` here.
      */
     @Test
     public void testTheReversingCopyOfACompulsoryTurnIsRefusedToo() throws Exception
@@ -237,9 +234,8 @@ public class testAMayTurnStationIsNotATerminus
 
     /**
      * On his railway: autonomy does not choose BottomMainB's turning copy for a reversible train of 4, which no station
-     * reachable from there takes, and does for one of 3, which BottomInner beyond it takes.  The end-to-end validator
-     * turned such a train there in four runs of seven and it never moved again, and Return Home found no plan for
-     * anyone.
+     * reachable from there takes, and does for one of 3, which BottomInner beyond it takes (a train turned there never
+     * moved again, and Return Home found no plan for anyone).
      *
      * MUTATION: drop the clause from `barredFromAutonomy` and the first assertion fails.
      */
@@ -402,12 +398,9 @@ public class testAMayTurnStationIsNotATerminus
 
     /**
      * On his railway the right-click menu offers a standing train the same stations every time it is asked (Adam: "Fix
-     * B1").  Twelve asks of a train standing alone at BottomMainA gave twelve different menus, because the shortest
-     * routes there throw Switches 51 and 99 both ways and the search let them hide the clear ones; Why Not Moving? then
-     * blamed the conflict for a station the next opening offered.
-     *
-     * ALONE, as the validation asked it: the other standing trains shut the lower level off with occupied track, so
-     * they are lifted off for the question and put back after it.
+     * B1"): twelve asks gave twelve menus, because the shortest routes throw Switches 51 and 99 both ways and the
+     * search let them hide the clear ones.  ALONE: the other standing trains shut the lower level off with occupied
+     * track, so they are lifted off for the question and put back.
      *
      * MUTATION: key the route search on the square alone again and this fails.
      */

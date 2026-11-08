@@ -135,8 +135,8 @@ public class testATimetableEntryKeepsItsSquaresThroughRenames
      * The chain in one edit: the name one station gave up taken by another, and Cancel.  The entry the railway changed
      * comes back on the squares it ran over, under the names the setup opened with.
      *
-     * MUTATION: in `restoreSetup`, leave `legsBySquare` false, so the legs are read by the memory as the edit began, and
-     * this fails.
+     * MUTATION: in `restoreSetup`, leave `legsBySquare` false, so the legs are read by the memory as the edit began,
+     * and this fails.
      */
     @Test
     public void testAChainOfRenamesInOneEditThenCancel() throws Exception

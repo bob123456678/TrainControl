@@ -311,15 +311,10 @@ public class testNetworkProxy
         assertTrue(support.Components.waitFor(() -> grantedKb(LOGGED) >= grantable, 5000), "the reopened receive"
             + " socket's listener gives no receive buffer of 1 MB or more: " + LOGGED);
 
-        // AND SOMETHING IS LISTENING ON IT AGAIN.
-        //
-        // This test asserted that transmission came back and stopped there - while the test above it
-        // had just proved the reader count was ZERO, with the helper for asking sitting in this same
-        // class.  So the state the class exists to prevent, "able to transmit but deaf", was reached
-        // and measured as a pass: the socket reopens, no listener is started, and no feedback,
-        // accessory echo or power change is ever seen again.
-        //
-        // Given time to start, the same way the priority-2 test waits for the first one.
+        // AND SOMETHING IS LISTENING ON IT AGAIN.  Asserting only that transmission came back reached the state the
+        // class exists to prevent, "able to transmit but deaf", and measured it as a pass: no listener is started, so
+        // no feedback, accessory echo or power change is ever seen again.  Given time to start, as the priority-2 test
+        // waits.
         long deadline = System.currentTimeMillis() + 5000;
 
         while (countReaderThreads() == 0 && System.currentTimeMillis() < deadline)

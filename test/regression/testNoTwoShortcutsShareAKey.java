@@ -25,15 +25,13 @@ import org.traincontrol.gui.TrainControlUI.KeyShortcuts;
 import support.SourceOf;
 
 /**
- * Two windows, and no Control key doing two things in either of them (FR-066: Control+D was taken twice over, so the
- * answer to "which key" was a list measured off both key handlers; Adam chose **E**).
+ * Two windows, and no Control key doing two things in either of them (FR-066: Control+D was taken twice over; Adam
+ * chose **E**).
  *
  * A source-shape guard that knows only the spellings the two files use, so `testItFoundTheHandlersItThinksItIsReading`
- * asserts a floor on how many it found: a regex that silently stopped matching would otherwise report a clean bill of
- * health.  It does NOT require the two windows to agree, only that neither has two answers to one key.
- *
- * The main window's table must keep filtering Control (OB-197, `testTheFallThroughStillFiltersControl`), because
- * everything this class prints about free keys rests on it.
+ * asserts a floor on how many it found.  It does NOT require the two windows to agree, only that neither has two
+ * answers to one key.  The main window's table must keep filtering Control (OB-197,
+ * `testTheFallThroughStillFiltersControl`), because everything printed about free keys rests on it.
  *
  * @author Adam
  */
@@ -49,9 +47,8 @@ public class testNoTwoShortcutsShareAKey
     private static final String MAIN = "TrainControlUI.java";
 
     /**
-     * Each window's key handlers, so "the editor" means the editor's handlers and not every file that spells a shortcut
-     * the editor's way (FR-136).  `formKeyPressed` is a name more than one window gives its handler, so the editor's is
-     * asked of its class.
+     * Each window's key handlers, so "the editor" means the editor's handlers (FR-136).  `formKeyPressed` is a name
+     * more than one window gives its handler, so the editor's is asked of its class.
      */
     private static final Map<String, String[][]> HANDLERS = new LinkedHashMap<>();
 
@@ -81,13 +78,10 @@ public class testNoTwoShortcutsShareAKey
         "(?:Held\\.CONTROL\\.on\\(|controlPressed\\s*&&\\s*keyCode\\s*==\\s*)KeyEvent\\.VK_([A-Z0-9_]+)");
 
     /**
-     * The keys one file binds twice on purpose, as `File.java#KEY`; each is a claim somebody has to defend.
-     *
-     * **A second binding is not automatically a collision.**  `TrainControlUI.locomotiveGestureOnDiagram` is asked
-     * FIRST and returns true when it has handled the key, so Control+X and Control+V mean the square under the pointer
-     * while it rests on the track diagram, and the locomotive button elsewhere.  Delete is here because the diagram
-     * layer takes it WITHOUT Control and the shortcut table WITH, so they never contend, and the regex sees only the key
-     * name.
+     * The keys one file binds twice on purpose, as `File.java#KEY`; each is a claim somebody has to defend.  A second
+     * binding is not automatically a collision: `TrainControlUI.locomotiveGestureOnDiagram` is asked FIRST and returns
+     * true when it handled the key, and Delete is here because the diagram layer takes it WITHOUT Control and the
+     * shortcut table WITH.
      */
     private static final Set<String> BOUND_TWICE_ON_PURPOSE = new LinkedHashSet<>(java.util.Arrays.asList(
         "TrainControlUI.java#X", "TrainControlUI.java#V", "TrainControlUI.java#DELETE",
@@ -98,9 +92,8 @@ public class testNoTwoShortcutsShareAKey
 
     /**
      * How many Control shortcuts each file is known to bind: a floor rather than a count, so adding one is ordinary
-     * while a regex that stopped matching drops towards nothing and fails.  Measured by running the regexes (20 in the
-     * editor, 15 in the main window) and set a little below; floors of 8 and 12 had let half the editor's handlers go
-     * invisible.
+     * while a regex that stopped matching fails.  Measured (20 in the editor, 15 in the main window) and set a little
+     * below.
      */
     private static final int EDITOR_FLOOR = 17;
 
@@ -199,9 +192,9 @@ public class testNoTwoShortcutsShareAKey
     }
 
     /**
-     * The main window's letter row takes a bare letter and not a Control chord (OB-197): `buttonMapping` holds all 26
-     * letters, so without `Held.NOT_CONTROL` Control plus every letter the rows above do not catch selected a locomotive
-     * button.  Everything this class says about free keys rests on this row, so it is asserted rather than assumed.
+     * The main window's letter row takes a bare letter and not a Control chord (OB-197): without `Held.NOT_CONTROL`
+     * Control plus every letter the rows above do not catch selected a locomotive button.  Everything said about free
+     * keys rests on this row.
      */
     @Test
     public void testTheFallThroughStillFiltersControl() throws IOException

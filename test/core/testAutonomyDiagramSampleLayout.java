@@ -36,13 +36,9 @@ import org.traincontrol.marklin.file.CS2File;
  * The ground truth gate: reduce a real track diagram and compare what comes out against the autonomy configuration
  * somebody wrote for that same layout by hand.
  *
- * It is deliberately NOT a pass/fail equality check.  The two are not supposed to match exactly: the generated graph
- * should be a SUPERSET of Points (every s88 becomes one), trailing moves are absent by default, and lock references are
- * derived from shared tiles, so hand-written conservative locks may have no derived counterpart (a derived lock the
- * author never wrote is worth reading).
- *
- * What matters is the report it prints.  Read that, not the assertion count: the assertions only catch the reduction
- * collapsing entirely.
+ * Not a pass/fail equality check: the generated graph is a SUPERSET of Points (every s88 becomes one), trailing moves
+ * are absent by default, and hand-written conservative locks may have no derived counterpart.  Read the report it
+ * prints, not the assertion count: the assertions only catch the reduction collapsing entirely.
  *
  * @author Adam
  */
@@ -51,10 +47,8 @@ public class testAutonomyDiagramSampleLayout
     private static final String LAYOUT = "test/test_layout";
 
     /**
-     * The two ends of the one doorway between the pages autonomy is looking at.
-     *
-     * Found once in the setup and kept, not written down as coordinates: a stale one skipped every test in this class
-     * from the @BeforeClass while the battery reported it green, because a skip is not a failure.
+     * The two ends of the one doorway between the pages autonomy is looking at.  Found once in the setup and kept, not
+     * written down as coordinates: a stale one skipped every test in this class while the battery reported it green.
      */
     private static TileKey mainLink;
     private static TileKey bottomLink;
@@ -103,14 +97,11 @@ public class testAutonomyDiagramSampleLayout
 
         wireAccessories();
 
-        // Three pages are outside autonomy, excluded the way a user would (only Main and Bottom are used for autonomy):
-        //   "4 - Combined" redraws tiles from the other pages; left in, it would mint a second Point for every sensor
-        // it
-        //   shows and a parallel set of edges.
-        //   "5 - Test" carries a scissors tile (a double slip across two tiles), which disqualifies any page it appears
-        //   on: the disqualification working.
-        //   "3 - Top Parking" is a convenience view; every sensor the hand-built configuration uses is drawn on Main or
-        //   Bottom, so excluding it removes the one genuine pairing ambiguity in this layout.
+        // Three pages are outside autonomy, excluded the way a user would (only Main and Bottom are used):
+        //   "4 - Combined" redraws tiles from the other pages and would mint a second Point per sensor;
+        //   "5 - Test" carries a scissors tile, which disqualifies any page it appears on;
+        //   "3 - Top Parking" is a convenience view whose sensors are all drawn on Main or Bottom, so excluding it
+        //   removes the one genuine pairing ambiguity.
         Set<String> excluded = excludedPages;
 
         for (LayoutDiagram page : pages)
@@ -161,12 +152,9 @@ public class testAutonomyDiagramSampleLayout
     }
 
     /**
-     * The one link tile on a page that points at another named page.
-     *
-     * A link records its destination page as a raw address counting from zero, so the page it means is
-     * `pages.get(getRawAddress())`.  Returns null unless there is EXACTLY one: the file names a destination page and
-     * never a destination tile, so two arrows to one page would be ambiguous, and silently taking the first would hide
-     * that.
+     * The one link tile on a page that points at another named page, or null unless there is EXACTLY one: the file
+     * names a destination page, never a tile, so two arrows to one page would be ambiguous.  A link's raw address
+     * counts from zero: the page it means is `pages.get(getRawAddress())`.
      *
      * @param from the page to search
      * @param to the page the arrow should point at
@@ -208,10 +196,8 @@ public class testAutonomyDiagramSampleLayout
     }
 
     /**
-     * Every sensor that exists on a page autonomy is actually looking at.
-     *
-     * A legacy point whose sensor lives only on an excluded page is out of scope by choice, not missing
-     * by defect, so it is exempted from the completeness checks and reported separately.
+     * Every sensor that exists on a page autonomy is actually looking at: a legacy point whose sensor lives only on an
+     * excluded page is out of scope by choice, so it is exempted from the completeness checks.
      */
     private Set<Integer> derivableSensors()
     {
@@ -248,13 +234,9 @@ public class testAutonomyDiagramSampleLayout
     }
 
     /**
-     * Attaches an accessory to every switch and signal, the way syncLayouts does when the application
-     * loads a layout.
-     *
-     * parseLayout deliberately does not do this - it uses the accessory database only to pick a decoder
-     * protocol - so a diagram parsed in isolation has addresses on its tiles but no Accessory objects
-     * behind them.  Names are built exactly as the application builds them, since the name is what both
-     * the model and the hand-written configuration key on.
+     * Attaches an accessory to every switch and signal, the way syncLayouts does when the application loads a layout.
+     * parseLayout does not (it only picks a decoder protocol), and names are built exactly as the application builds
+     * them, since both the model and the hand-written configuration key on the name.
      */
     private void wireAccessories()
     {
@@ -361,22 +343,13 @@ public class testAutonomyDiagramSampleLayout
     }
 
     /**
-     * A train may not leave a Point by the side it arrived at.
+     * A train may not leave a Point by the side it arrived at: the one rule a Point-and-edge graph cannot state, since
+     * the hand-built configuration encoded direction as one-way edges and doubled Points (TunnelPre to Tunnel but not
+     * back; TunnelReverse is a SECOND Point on the same s88).
      *
-     * The one rule a Point-and-edge graph cannot state: the reduction is honest about the TRACK (joined sensors run
-     * both ways), but leaving by the side you came in on means reversing, which a train does only where the railway has
-     * somewhere for it.  The model has no idea which way a train is pointing, so the hand-built configuration encoded
-     * direction as one-way edges and doubled Points (TunnelPre -> Tunnel but not back; the way out of that sensor is a
-     * SECOND Point on the same s88, TunnelReverse).
-     *
-     * Checked on the BUILT graph, where the answer lives: the builder turns each square into one Point per arrival
-     * side, so leaving by the side you came in at is not a move any single Point has.  Asserting on the reduction would
-     * assert that the track is one-way, which it is not.  A Point emitted as a terminus or reversing point is exempt:
-     * that IS the copy that turns trains round.
-     *
-     * Both reductions are built: as authored most branches are closed and a reversal has no edge to be made of, which
-     * understates the problem badly; with every branch open is the shape a finished setup has, and where the real count
-     * lives.
+     * Checked on the BUILT graph (one Point per arrival side), not the reduction, which would assert the track is
+     * one-way.  A terminus or reversing Point is exempt.  Both reductions are built: as authored most branches are
+     * closed, which understates the problem; with every branch open is where the real count lives.
      */
     @Test
     public void testATrainCannotLeaveBySideItArrivedAt()
@@ -481,13 +454,8 @@ public class testAutonomyDiagramSampleLayout
 
     /**
      * The case the author raised: a train that reached BottomMainA from the Tunnel end must not be able to go straight
-     * back to the Tunnel, since it cannot turn round anywhere between the two (the reversing point is further up the
-     * line).
-     *
-     * Named rather than left to the sweep above because a person can check it by eye against the diagram, and a sweep
-     * that is failing everywhere proves nothing about one square.  Checked against the wide-open reduction as well as
-     * the authored one: as authored the branch back out of BottomMainA is closed by default, so there is no edge for
-     * the reversal to be made of and this would pass without establishing anything.
+     * back to the Tunnel, since it cannot turn round anywhere between.  Checked against the wide-open reduction as
+     * well: as authored the branch back out is closed, so the test would pass without establishing anything.
      */
     @Test
     public void testATrainReachingBottomMainAFromTheTunnelCannotGoBack()
@@ -640,13 +608,9 @@ public class testAutonomyDiagramSampleLayout
     }
 
     /**
-     * The completeness question, asked properly.
-     *
-     * Comparing edges one for one understates the match, because the two graphs cut the railway at different places
-     * (every s88 is a Point here; the hand-built graph skips the sensors nobody bothered with), so one legacy edge
-     * routinely spans several derived ones.  What matters is whether a train could still get from one end to the other:
-     * for every legacy edge, is its destination reachable from its origin in the derived graph?  Anything unreachable
-     * is track the diagram failed to derive or, until links are paired, a route that crosses pages.
+     * The completeness question: for every legacy edge, is its destination reachable from its origin in the derived
+     * graph?  Edges are not compared one for one because the graphs cut the railway at different places.  Anything
+     * unreachable is track the diagram failed to derive or, until links are paired, a route that crosses pages.
      */
     @Test
     public void testEveryLegacyConnectionIsStillReachable()
@@ -676,12 +640,9 @@ public class testAutonomyDiagramSampleLayout
 
         // Now the same question with every switch branch opened both ways.
         //
-        // Switches default to base-to-forks: a train may fan out of a toe but never merge back into one.
-        // That is deliberate, and on a real layout it severs most of the network, because nearly every
-        // route needs a trailing move somewhere.  So the interesting number is not how much is
-        // unreachable under the default - it is how much is STILL unreachable once direction is out of
-        // the way.  Anything left is geometry the engine genuinely cannot express, and that is a defect;
-        // the difference between the two is authoring work, and that is not.
+        // Switches default to base-to-forks, which severs most of a real network.  So the interesting number is how
+        // much is STILL unreachable once direction is out of the way: that is geometry the engine cannot express, a
+        // defect; the difference from the default is authoring work.
         List<String> unreachableWideOpen = unreachableWithEveryBranchOpen();
 
         System.out.println("\n--- reachability of the hand-built connections ---");
@@ -704,17 +665,13 @@ public class testAutonomyDiagramSampleLayout
     }
 
     /**
-     * Can two trains collide?
+     * Can two trains collide?  Two routes can collide if and only if they occupy the same tile, a truth that belongs to
+     * neither graph, so it referees both.
      *
-     * Comparing lock counts tells us nothing: the graphs cut the railway at different places, so 118 hand-written
-     * references and 96 derived ones are not comparable.  What IS comparable is the track: two routes can collide if
-     * and only if they occupy the same tile, and that truth belongs to neither graph, so it can referee both.
-     *
-     * Each hand-built edge is given a physical extent by walking the derived tile graph between its two sensors.  For
-     * every pair of hand-built edges that share tiles, the hand-built configuration is asked whether it knew (does it
-     * lock them against each other, or are they the same edge?); anything it missed is a pair of routes it would run at
-     * once over shared track.  The derived side is checked the other way round: by construction it locks every shared
-     * tile, and a lock derivation that quietly dropped pairs would be the most dangerous defect in the project.
+     * Each hand-built edge is given a physical extent by walking the derived tile graph between its two sensors; for
+     * every pair sharing tiles the hand-built configuration is asked whether it locks them against each other (or they
+     * are the same edge); anything it missed would run at once over shared track.  The derived side is checked the
+     * other way round: a lock derivation that quietly dropped pairs would be the most dangerous defect.
      */
     @Test
     public void testNoTwoRoutesCanOccupyTheSameTrackUnlocked()
@@ -875,10 +832,8 @@ public class testAutonomyDiagramSampleLayout
     }
 
     /**
-     * Whether two derived edges occupy any tile in common.
-     *
-     * An overpass is the exception the whole design turns on: its two routes are at different heights, so
-     * sharing that tile by different routes is not sharing track.
+     * Whether two derived edges occupy any tile in common.  An overpass is the exception: its two routes are at
+     * different heights, so sharing that tile is not sharing track.
      */
     private boolean sharesATile(ReducedEdge a, ReducedEdge b)
     {
@@ -912,9 +867,8 @@ public class testAutonomyDiagramSampleLayout
     /**
      * The tiles between two sensors, but only when a single derived edge joins them.
      *
-     * @return the tiles, or null when several routes or several edges could be meant - in which case any
-     *         answer would be a guess, and a guess here quietly accuses the layout of collision risks it
-     *         does not have
+     * @return the tiles, or null when several routes or edges could be meant (a guess would accuse the layout of
+     *         collision risks it does not have)
      */
     private Set<TileKey> exactExtent(GraphReducer from, int startS88, int endS88)
     {
@@ -1003,12 +957,9 @@ public class testAutonomyDiagramSampleLayout
     }
 
     /**
-     * Whether two hand-built edges are kept apart by something other than a lock reference.
-     *
-     * Sharing a point does it without anybody writing it down: two edges ending at the same point can never both run (a
-     * point holds one train and a path to an occupied destination is refused), nor two leaving the same point, and an
-     * edge and its own reverse are one piece of track.  Only a pair that shares track WITHOUT sharing a point needs a
-     * lock reference, and that is the pair worth reporting.
+     * Whether two hand-built edges are kept apart by something other than a lock reference: sharing a point does it
+     * (a point holds one train), and an edge and its own reverse are one piece of track.  Only a pair that shares track
+     * WITHOUT sharing a point needs a lock reference.
      */
     private boolean sharesAnEndpoint(JSONObject one, JSONObject two)
     {
@@ -1083,15 +1034,9 @@ public class testAutonomyDiagramSampleLayout
     }
 
     /**
-     * Writes the derived graph out as an ordinary autonomy file, so it can be loaded and looked at: the builder already
-     * emits the format a hand-written file uses; the export adds graph coordinates taken from the tiles, so the
-     * rendered graph is laid out like the track it came from.
-     *
-     * Two files, because they answer different questions:
-     *   -derived        what the diagram gives with switches at their default, base to forks: what a user gets on day
-     *                   one, deliberately sparse.
-     *   -derived-open   the same with every branch opened, which is what the layout can express once the trailing moves
-     *                   are enabled: the one to compare against the hand-built file.
+     * Writes the derived graph out as an ordinary autonomy file, with graph coordinates taken from the tiles.  Two
+     * files: -derived (switches at their default, base to forks: sparse, what a user gets on day one) and
+     * -derived-open (every branch opened: the one to compare against the hand-built file).
      */
     @Test
     public void testTheDerivedGraphCanBeExportedForInspection() throws Exception
@@ -1240,11 +1185,8 @@ public class testAutonomyDiagramSampleLayout
 
     /**
      * Reduces the same diagram again with every switch branch traversable both ways, and reports which hand-built
-     * connections are still unreachable.
-     *
-     * This separates the two kinds of gap: a connection that appears here is one the geometry cannot express at all (a
-     * real defect in the port map, the walk, or the pairing); one unreachable only under the default is a trailing move
-     * nobody has opened yet, which is authoring work rather than a fault.
+     * connections are still unreachable: those the geometry cannot express (a real defect), as against a trailing move
+     * nobody has opened yet (authoring work).
      */
     private List<String> unreachableWithEveryBranchOpen()
     {
@@ -1406,10 +1348,8 @@ public class testAutonomyDiagramSampleLayout
     }
 
     /**
-     * Where a sensor lives and what the derived graph joins it to.
-     *
-     * A sensor can carry more than one tile - the same s88 legitimately appears at a station and at its
-     * approach guards - so this lists every tile bearing it, with the sensors each one reaches.
+     * Where a sensor lives and what the derived graph joins it to: the same s88 legitimately appears at a station and
+     * at its approach guards, so every tile bearing it is listed with the sensors it reaches.
      */
     private void describeSensor(GraphReducer from, String label, Integer s88)
     {

@@ -37,28 +37,22 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
 import org.traincontrol.marklin.file.CS2File;
 
 /**
- * What the checker tells the user, against the railway the build actually emits.
- *
- * The checker walks the REDUCED graph and works out arrivals, departures and reachability for itself, while the builder
- * walks the same reduction and emits a Point per arrival side: two answers to one question, agreeing only by having
- * been written to.  This builds the frozen sample diagram, runs the checker, parses the generated configuration into a
- * real Layout, and asks whether the two agree about the same squares:
+ * What the checker tells the user, against the railway the build actually emits.  The checker walks the REDUCED graph
+ * and the builder emits a Point per arrival side: two answers to one question.  The frozen sample diagram is built, the
+ * checker run, the generated configuration parsed into a real Layout, and the two compared on the same squares:
  *
  *   - a trapped arrival is a copy the build emits with no edge out of it;
  *   - a station that reaches nothing is one whose copies reach no other station's copies;
  *   - a station nothing reaches is one no other station's copies reach;
  *   - a facing the build gives a copy is a facing the editor offers for that square.
  *
- * The oracle is the BUILT graph (Points and Edges as parseAuto made them), not the reduction the checker read:
- * `Layout.getNeighbors` knows nothing about arrival sides, entry sides or turn sets.
+ * The oracle is the BUILT graph (Points and Edges as parseAuto made them), not the reduction the checker read.  The
+ * trapped-arrival clause is true by construction now (`AutonomySession.check` reads the built graph), so it is asserted
+ * only against the oracle's filters.  The reachability clauses compare the checker's reach (`BuiltReach`) with Layout's
+ * own route search (`offeredFrom`) over this fixture and every scenario.
  *
- * The trapped-arrival clause is true by construction now, since `AutonomySession.check` reads the built graph; it is
- * asserted only against the oracle's own filters.  The reachability clauses compare the checker's reach, read off the
- * build's JSON (`BuiltReach`), with what Layout's own route search offers a train on the Layout parseAuto made of it
- * (`offeredFrom`), over this fixture and every scenario.
- *
- * The fixture is `test/test_layout`, frozen and wired the way `testAutonomyDiagramSampleLayout` wires it: a diagram
- * parsed alone has addresses on its tiles but no Accessory objects, and two thirds of the track does not connect.
+ * The fixture is `test/test_layout`, frozen and wired as `testAutonomyDiagramSampleLayout` wires it (a diagram parsed
+ * alone has addresses but no Accessory objects).
  *
  * @author Adam
  */
@@ -73,8 +67,6 @@ public class testTheCheckerAgreesWithTheBuild
 
     /**
      * Reads the sample diagram, opens the setup that ships with it, and builds the railway it names.
-     *
-     * @throws Exception when the fixture cannot be read at all, a broken harness rather than a failing guard
      */
     @BeforeClass
     public static void setUpClass() throws Exception
@@ -116,20 +108,14 @@ public class testTheCheckerAgreesWithTheBuild
     }
 
     /**
-     * A square the checker calls trapped is a square the build emits a Point it cannot leave (OB-361).
-     *
-     * The builder's `nodesFor` answers the same question by NOT emitting a way out of the copy, deliberately, so the
-     * sensor is not lost from the graph; the two are one rule with two authors and this is its witness.  Two kinds of
-     * square are excluded because the checker cannot be about them: one with no arrival side at all, and one where
-     * trains may turn round.
+     * A square the checker calls trapped is a square the build emits a Point it cannot leave (OB-361): `nodesFor`
+     * answers the same question by NOT emitting a way out, so the sensor is not lost.  Excluded: squares with no
+     * arrival side, and squares where trains may turn round.
      *
      * Mutation this must fail: in `AutonomySession.check`, delete the `if (isTurnAround(tile)) continue;` that opens
-     * the trapped walk, so the parking berths, whose only copy is the turning one, are named as places a train cannot
-     * leave.
-     *
-     * Two mutations it does not catch: replacing the `graph.exits` filter with `onwards.addAll(departures);`, and
-     * deleting `onwards.remove(arrival);`.  Every trapped square here has NO outgoing reduced edge, so `departures` is
-     * empty; the case the filter exists for (a double curve whose one arm dead-ends) is not drawn on the sample.
+     * the trapped walk (parking berths would be named as places a train cannot leave).  Not caught: replacing the
+     * `graph.exits` filter with `onwards.addAll(departures);`, or deleting `onwards.remove(arrival);` (every trapped
+     * square here has NO outgoing reduced edge; the sample has no double curve with one dead-ended arm).
      */
     @Test
     public void testEveryTrappedArrivalIsACopyTheBuildCannotLeave()
@@ -187,12 +173,11 @@ public class testTheCheckerAgreesWithTheBuild
     }
 
     /**
-     * A station the checker says nothing can reach is one no other station's copies reach.
+     * A station the checker says nothing can reach is one no other station's copies reach, by the parsed Layout's route
+     * search (`offeredFrom`).
      *
-     * The oracle is the parsed Layout's own route search (`offeredFrom`), what a train standing there is offered.
-     *
-     * Mutation this must fail: in `AutonomyChecks.checkStations`, invert the reverse direction so a station is reported
-     * when something CAN reach it (`if (reachable)` in place of `if (!reachable)`).
+     * Mutation this must fail: in `AutonomyChecks.checkStations`, invert the reverse direction (`if (reachable)` in
+     * place of `if (!reachable)`).
      */
     @Test
     public void testTheStationsNothingReachesAreTheOnesTheBuildCannotRouteTo()
@@ -228,14 +213,12 @@ public class testTheCheckerAgreesWithTheBuild
     }
 
     /**
-     * A station the checker says reaches nothing is one whose copies reach no other station.
+     * A station the checker says reaches nothing is one whose copies reach no other station.  The stranded and
+     * reaches-nothing findings are one verdict said two ways, so both are read: `1 - Main:12,11` (BottomSecondary)
+     * arrives by the east side so cannot depart east, and west leads to a trapped copy of TunnelPre.
      *
-     * The stranded and reaches-nothing findings are one verdict said two ways, so both are read here.
-     * `1 - Main:12,11` (BottomSecondary) is one: its one copy arrives by the east side, so it cannot depart east, and
-     * west leads to a trapped copy of TunnelPre.
-     *
-     * Mutation this must fail: in `AutonomyChecks.checkStations`, invert the forward direction so a station is
-     * reported when it CAN reach another (`if (reachesAStation)` in place of `if (!reachesAStation)`).
+     * Mutation this must fail: in `AutonomyChecks.checkStations`, invert the forward direction (`if (reachesAStation)`
+     * in place of `if (!reachesAStation)`).
      */
     @Test
     public void testTheStationsThatReachNothingAreTheOnesTheBuildCannotRouteOutOf()
@@ -342,16 +325,13 @@ public class testTheCheckerAgreesWithTheBuild
     }
 
     /**
-     * Every facing the build gives a copy is a facing the editor would have offered for that square.
+     * Every facing the build gives a copy is a facing the editor would have offered: `AutonomySession.onwardFrom` and
+     * `AutonomyBuilder.facingOf` walk the same routes, and drift offers a facing with no copy (MT-125's defect class).
+     * Accepted: a plain copy, facing the far end of its track; a turning copy, pointing back at its arrival side.
      *
-     * `AutonomySession.onwardFrom` and `AutonomyBuilder.facingOf` walk the same routes; when they drift the menu offers
-     * a facing the build has no copy for (MT-125's defect class).  Two shapes are accepted: a plain copy, its facing
-     * the far end of the track it came in on, and a turning copy, pointing back at the side it came in by (an arrival
-     * side, never offered as a facing).
-     *
-     * Mutation this must fail: in `AutonomyBuilder.facingOf`, answer the compass rule instead of the track
-     * (`if (true) return node.arrival.opposite();` before the route loop).  `testFacingFollowsTheTrack` cannot catch
-     * this one: it reads `facingChoices`, the session's side of the pair.
+     * Mutation this must fail: in `AutonomyBuilder.facingOf`, answer the compass rule instead of the track (`if (true)
+     * return node.arrival.opposite();` before the route loop).  `testFacingFollowsTheTrack` cannot: it reads
+     * `facingChoices`, the session's side of the pair.
      */
     @Test
     public void testEveryFacingTheBuildEmitsIsOneTheEditorOffers()
@@ -474,18 +454,13 @@ public class testTheCheckerAgreesWithTheBuild
     }
 
     /**
-     * The arrival sides of a square are the entry sides of the edges that end on it.
+     * The arrival sides of a square are the entry sides of the edges that end on it.  The consolidated `arrivalSides`
+     * BAILS on a null entry side where the old inline walks skipped it; that cannot presently happen (a null entry side
+     * comes only from a portal's partner, a tunnel or link), and this test is where that is written down.
      *
-     * Three inline copies of this walk were consolidated onto `arrivalSides`; they skipped edges with a null entry
-     * side, while that door BAILS on the whole square when it meets one.  It cannot presently happen (an edge ends at a
-     * feedback tile, and a null entry side comes only from a portal's partner, a tunnel or link), and this test is
-     * where that is written down: the consolidation stays behavior-preserving only while it holds.
-     *
-     * Mutation this must fail: in `StationIndex.arrivalSidesAt`, answer with the first side only
-     * (`if (sides != null && sides.size() > 1) sides = sides.subList(0, 1);`).
-     *
-     * A mutation it does not catch: in `AutonomyBuilder.splitSides`, `continue;` in place of
-     * `return Collections.emptyList();`, because no edge on this layout arrives by no side.
+     * Mutation this must fail: in `StationIndex.arrivalSidesAt`, answer with the first side only.  Not caught: in
+     * `AutonomyBuilder.splitSides`, `continue;` in place of `return Collections.emptyList();` (no edge here arrives by
+     * no side).
      */
     @Test
     public void testTheArrivalSidesDoorAnswersWhatTheEdgesSay()
@@ -647,14 +622,12 @@ public class testTheCheckerAgreesWithTheBuild
     }
 
     /**
-     * On every scenario and the live snapshot, the stations the checker says reach nothing, and those it says nothing
-     * reaches, are the ones the built Layout says so of.
+     * On every scenario and the live snapshot, the stations the checker says reach nothing, and those nothing reaches,
+     * are the ones the built Layout says so of (`1 - Main:2,5` and `1 - Main:2,7` are reached only by TopMainR1Inter's
+     * copy that trains may not stop at).
      *
-     * On the live snapshot the answers once differed: `1 - Main:2,5` and `1 - Main:2,7` are reached only by
-     * TopMainR1Inter's copy that trains may not stop at.
-     *
-     * MUTATION: let `BuiltReach.startsOf` give every copy of a station, and this fails.  Letting `BuiltReach` pass a
-     * Point switched off survives: no scenario has a station reached, or left, only through a closed square.
+     * MUTATION: let `BuiltReach.startsOf` give every copy of a station.  Letting `BuiltReach` pass a Point switched off
+     * survives: no scenario has a station reached only through a closed square.
      */
     @Test
     public void testEveryScenarioIsReachedAsItsBuiltRailwayIs() throws Exception

@@ -65,9 +65,8 @@ public class testAReversalCommandIsEmitted
 
     /**
      * A policy that answers for one square, the way the prompt's does, built here because
-     * `ManualReversalPrompt.forJourney` puts a dialog on the screen. The answer speaks for the square it was asked
-     * about and no other, and `asksAbout` names that square so `shouldReverseAt` can tell a turn the operator has a say
-     * over from a compulsory one.
+     * `ManualReversalPrompt.forJourney` puts a dialog on the screen.  `asksAbout` names the square so `shouldReverseAt`
+     * can tell a turn the operator has a say over from a compulsory one.
      */
     private static Layout.ReversalPolicy answering(final boolean turn, final Point asked)
     {
@@ -120,10 +119,9 @@ public class testAReversalCommandIsEmitted
     }
 
     /**
-     * Makes the destination a square trains MAY turn at, as the build makes one a train can stand on facing on: its
-     * turning copy and a plain copy beside it, one piece of track on one sensor, the plain one reached from the same
-     * approach. A lone turning Point is the end of a line, where a train is turned whatever is answered, so "keep"
-     * could not be asked about.
+     * Makes the destination a square trains MAY turn at, as the build makes one: its turning copy and a plain copy
+     * beside it, one piece of track on one sensor.  A lone turning Point is the end of a line, where a train is turned
+     * whatever is answered, so "keep" could not be asked about.
      */
     private static void withAPlainCopy(Layout layout, String tag, MarklinFeedback sensor, String approach)
         throws Exception
@@ -235,9 +233,7 @@ public class testAReversalCommandIsEmitted
     }
 
     /**
-     * The control: yes keeps the direction, so the test above is not passing on a turn that always happens. A
-     * `switchDirection()` called unconditionally on every arrival would satisfy that test, and turning a train nobody
-     * asked to turn is the worse fault.
+     * The control: yes keeps the direction, so the test above is not passing on a turn that always happens.
      *
      * MUTATION: make `shouldReverse` return true regardless of the answer and this fails.
      */
@@ -303,16 +299,13 @@ public class testAReversalCommandIsEmitted
 
     /**
      * A journey that passes a reversing square on the way to the one that was answered (RampDown, on the way to
-     * BottomMainPost). Measured both ways, same journey: keep direction started forward and ended BACKWARD; reverse
-     * started forward and ended FORWARD. `shouldReverseAt` treats a reversing square nobody was asked about as a
-     * compulsory turn, which is right (a turning copy leaves only by the side the train came in on), and that flip
-     * happens before the answered one, so "No" returns the train to the direction it set off in.
+     * BottomMainPost): keep direction started forward and ended BACKWARD; reverse started forward and ended FORWARD,
+     * since `shouldReverseAt` treats a reversing square nobody was asked about as a compulsory turn, and that flip
+     * happens before the answered one.
      *
-     * This fixture is NOT a shape the builder emits: `AutonomyBuilder` splits a may-turn square into a plain copy for
-     * paths passing onwards and a turning copy for paths backing in, so a real journey only reaches a reversing copy
-     * when backing in there. The canceling pair of turns cannot happen on a built railway; the test is the guard that
-     * the two answers still differ, and `testTheTurnRuleDoesNotChangeTheRealRailway` holds the measurement that settled
-     * it.
+     * This fixture is NOT a shape the builder emits (a real journey only reaches a reversing copy when backing in
+     * there), so the canceling pair of turns cannot happen on a built railway; the test guards that the two answers
+     * still differ.  `testTheTurnRuleDoesNotChangeTheRealRailway` holds the measurement that settled it.
      *
      * MUTATION: make the middle square ordinary and this passes, which is why the two-leg test above did not catch it.
      */

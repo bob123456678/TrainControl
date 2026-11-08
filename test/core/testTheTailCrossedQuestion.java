@@ -261,9 +261,9 @@ public class testTheTailCrossedQuestion
     }
 
     /**
-     * Two copies of one square are one road, not two.  A square a train may turn at is split into a lane copy and a
-     * turning copy (`AutonomyBuilder`), the same metal under two names; counted by name they would be two roads back
-     * from J, putting the question on plain track and offering the same sensor twice.
+     * Two copies of one square are one road, not two: a square a train may turn at is split into a lane copy and a
+     * turning copy (`AutonomyBuilder`), and counted by name they would put the question on plain track and offer the
+     * same sensor twice.
      */
     @Test
     public void testTwoCopiesOfOneSquareAreOneRoad() throws Exception
@@ -342,9 +342,8 @@ public class testTheTailCrossedQuestion
     }
 
     /**
-     * A train with no road still follows the only road back past a square it reaches by two names.  Neighbors counted
-     * by name would read a lane copy and a turning copy of one square as two roads and stop the tail at J; Adam's rule
-     * is to stop where the track SPLITS, and two copies of one square are not a split.
+     * A train with no road still follows the only road back past a square it reaches by two names: Adam's rule is to
+     * stop where the track SPLITS, and two copies of one square are not a split.
      */
     @Test
     public void testATrainWithNoRoadFollowsOneRoadUnderTwoNames() throws Exception
@@ -413,9 +412,8 @@ public class testTheTailCrossedQuestion
     }
 
     /**
-     * Two ends of one square reached from one junction are two roads, and the tail still stops there.  A balloon: from
-     * J one rail reaches square A's west end and a loop its east end.  The builder splits A by arrival side, so those
-     * are two copies with one block, different track; counted by block they would be one road.
+     * Two ends of one square reached from one junction are two roads, and the tail still stops there (a balloon: one
+     * rail reaches A's west end and a loop its east end).  Counted by block they would be one road.
      */
     @Test
     public void testTwoEndsOfOneSquareAreTwoRoads() throws Exception

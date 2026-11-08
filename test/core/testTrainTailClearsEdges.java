@@ -23,13 +23,9 @@ import support.SourceOf;
  * Adam: "I added train lengths to the layout, so make some tests that include various size trains."
  *
  * There is ONE rule, and "cannot be known" means "assume the train is still there": `clearedEdges` is read by
- * `Layout.getActiveAccs`, which `MarklinRoute.heldReason` consults per command, and with atomicRoutes on (Adam's
- * configuration) being reported clear is the ONLY thing that drops an edge's protection, so an early clear lets a route
- * throw a TURNOUT on track the train is still standing on.  The single escape that is not a guess about this train is a
- * path with no measured lengths anywhere, where holding would hold until the route ended.
- *
- * The rule is asked directly (asking it any other way needs a railway, a locomotive with a length and a path with some
- * measured edges); the call site is checked separately, the half that is usually forgotten.
+ * `Layout.getActiveAccs`, and with atomicRoutes on, being reported clear is the ONLY thing that drops an edge's
+ * protection, so an early clear lets a route throw a TURNOUT under a train.  The single escape is a path with no
+ * measured lengths anywhere.  The rule is asked directly; the call site is checked separately.
  *
  * @author Adam
  */
@@ -118,8 +114,7 @@ public class testTrainTailClearsEdges
     }
 
     /**
-     * Unmeasured track HOLDS: nothing better can be known there, so the answer has to be "the train may still be
-     * there".  The consumer is a guard that refuses to throw a turnout under a train.
+     * Unmeasured track HOLDS: the answer has to be "the train may still be there".
      *
      * MUTATION: restoring the escape - release when the last edge had no length and the head has moved
      * on - fails every assertion here.
@@ -155,8 +150,8 @@ public class testTrainTailClearsEdges
     }
 
     /**
-     * The clearing loop asks this rule, and gives it the right three things (a rule tested while nothing calls it, or
-     * calls it with the wrong arguments, is a defect this project has lost before).
+     * The clearing loop asks this rule, and gives it the right three things (a rule tested while nothing calls it is a
+     * defect this project has lost before).
      *
      * MUTATION: passing a constant for the distance behind, or dropping the accumulator that feeds it, fails this.
      */
@@ -184,9 +179,7 @@ public class testTrainTailClearsEdges
     }
 
     /**
-     * ONE rule decides both reporting an edge clear (which stops `heldReason` refusing a route that would set an
-     * accessory on it) and unlocking it (which hands the rails to another train); a second, looser rule for the first
-     * is what this test exists to stop coming back.
+     * ONE rule decides both reporting an edge clear (which stops `heldReason` refusing a route) and unlocking it.
      *
      * MUTATION: reintroducing a separate predicate for the clear, however named, fails the count.
      */
@@ -229,16 +222,11 @@ public class testTrainTailClearsEdges
     }
 
     /**
-     * The gate is proved present, positioned and unique by source alone, but nothing until the clearing loop RUNS: a
-     * mutation that keeps `if (!tailHasProvablyPassed(...))` and deletes the `continue;` inside it leaves every count
-     * and position in `testTheClearAndTheUnlockAskTheSameQuestion` as it was, while an edge the rule refuses to clear
-     * is cleared and unlocked anyway.
-     *
-     * Drives a real three-edge path (100, 100 and an unmeasured 0, with a 250-length train) through the real
-     * `Layout.executePath` in simulate mode, and reads whether the first edge's accessory is still ACTIVE in
-     * `getActiveAccs()` once the path has run.  The control is the same edges with none measured, where
-     * `tailHasProvablyPassed` returns true unconditionally and the edge MUST be cleared; without it, "still held" could
-     * mean only that this harness cannot observe a clear at all.
+     * The gate is proved present, positioned and unique by source alone, but only a RUN proves it works: deleting the
+     * `continue;` inside `if (!tailHasProvablyPassed(...))` leaves every source count as it was.  Drives a real
+     * three-edge path (100, 100 and an unmeasured 0, 250-length train) through `Layout.executePath` in simulate mode
+     * and reads whether the first edge's accessory is still ACTIVE.  The control has none measured, where the edge
+     * MUST be cleared; without it "still held" could mean this harness cannot observe a clear.
      */
     @Test
     public void testAnEdgeTheRuleRefusesToClearStaysHeldWhileARealPathRuns() throws Exception
@@ -288,11 +276,9 @@ public class testTrainTailClearsEdges
     }
 
     /**
-     * An edge a non-atomic run gave back on the way is not given back again when the run ends.  `unlockPath` skips the
-     * edges a run recorded in `releasedEarly`; every other claim seeds that record by reflection, so only this one
-     * notices a missing write: the unlock would release the edge a second time, taking away the claim of whichever
-     * train had locked it since.  This runs a real path, non-atomic and unmeasured, and has another train claim the
-     * first edge at the route's end.
+     * An edge a non-atomic run gave back on the way is not given back again when the run ends: `unlockPath` skips the
+     * edges in `releasedEarly`.  Runs a real path, non-atomic and unmeasured, with another train claiming the first
+     * edge at the route's end.
      *
      * MUTATION: stop recording the early release (`released.add(givenBack)`) and this fails.
      */
@@ -368,12 +354,9 @@ public class testTrainTailClearsEdges
     }
 
     /**
-     * An edge is handed back at the sensor where the train's tail has passed it, not one sensor later.  When the sensor
-     * at the end of edge i answers, the head has entered that sensor's square, so edge i-1 is behind it by edge i less
-     * that square (all of edge i where the edges record no squares, as in a hand-written configuration).
-     *
-     * A-B-C-D, ten units an edge.  At C the head is ten units past the end of A-B, so a five-unit train is clear of it,
-     * and a ten-unit one too (`tailHasProvablyPassed` reads `>=`).  At B nothing behind the head has been passed yet.
+     * An edge is handed back at the sensor where the train's tail has passed it, not one sensor later: when the sensor
+     * at the end of edge i answers, edge i-1 is behind the head by edge i less that square.  A-B-C-D, ten units an
+     * edge: at C a five-unit and a ten-unit train are clear of A-B (`>=`); at B nothing is passed yet.
      *
      * MUTATION: count the head one sensor short again - `headSeenAt` set to where the edge just left ends, rather than
      * to where the edge just driven ends - and this fails.
@@ -413,11 +396,9 @@ public class testTrainTailClearsEdges
     }
 
     /**
-     * But a sensor's own square is not counted behind the head until the next sensor answers: a sensor answers when the
-     * head ENTERS its square, and a release must never be early.
-     *
-     * A-B-C-D, ten units an edge, C's square the last 3 of B-C.  At C the head is known to be 7 past the end of A-B: a
-     * 7-unit train is clear of it; an 8-unit train may still have a unit on it, and A-B is held.
+     * But a sensor's own square is not counted behind the head until the next sensor answers, since a release must
+     * never be early.  A-B-C-D, ten units an edge, C's square the last 3 of B-C: at C a 7-unit train is clear of A-B,
+     * an 8-unit train is not.
      *
      * MUTATION: credit the arriving square at once - `headSeenAt = pathRunTo` - and the 8-unit half fails.
      */
@@ -454,12 +435,9 @@ public class testTrainTailClearsEdges
 
     /**
      * And never before the tail has passed it: not while any of the train still lies on the edge, and not on the
-     * strength of a Point no sensor saw the head reach.
-     *
-     * A-B-C-D, ten units an edge.  An eleven-unit train at C still has a unit on A-B, which is held to the end.  With
-     * no sensor at C the head has only been seen at B, so even a five-unit train's A-B is held at C (at D the run ends
-     * and gives everything back).  The control is the same no-sensor path with nothing measured, where the unmeasured
-     * escape hands A-B back at C whatever the length.
+     * strength of a Point no sensor saw the head reach.  A-B-C-D, ten units an edge: an eleven-unit train at C holds
+     * A-B; with no sensor at C even a five-unit train's A-B is held.  The control is the same path with nothing
+     * measured, where the unmeasured escape hands A-B back at C.
      *
      * MUTATION: move `headSeenAt` at a Point with no sensor too (drop the `seenHere` test), and this fails.
      */
@@ -526,10 +504,9 @@ public class testTrainTailClearsEdges
     }
 
     /**
-     * Builds a fresh A-B-C-D path with the given edge lengths (`model.clearAutoLayout()` first, so two calls in a test
-     * cannot see each other's state), dispatches the first locomotive in the database down it with the given train
-     * length, and records once per leg whether the first edge's accessory is still reported active by
-     * `getActiveAccs()`.
+     * Builds a fresh A-B-C-D path with the given edge lengths (`model.clearAutoLayout()` first), dispatches the first
+     * locomotive down it with the given train length, and records once per leg whether the first edge's accessory is
+     * still reported active by `getActiveAccs()`.
      */
     private List<Boolean> runThreeEdgePath(MarklinAccessory behind, int abLength, int bcLength,
         int cdLength, int trainLength) throws Exception
@@ -619,10 +596,8 @@ public class testTrainTailClearsEdges
     }
 
     /**
-     * A train's length changed while it runs does not shorten what the run holds.  The locomotive's menu could set the
-     * length to 0 mid-run, and from the next sensor every edge the head had finished was given back with the train
-     * still lying on it.  The run reads the length once, when it is dispatched; the same run with the length left at 4
-     * is the control.
+     * A train's length changed while it runs does not shorten what the run holds: the run reads the length once, when
+     * dispatched; the same run with the length left at 4 is the control.
      *
      * MUTATION: let the run read the train's length at every sensor again, and this fails.
      */
@@ -653,7 +628,7 @@ public class testTrainTailClearsEdges
 
     /**
      * The rest of the state a driving thread reads while the event thread or the network writes it is volatile too:
-     * whether the layout is valid, a locomotive's speed, direction, length and reversibility, and a sensor's state.
+     * layout validity, a locomotive's speed, direction, length and reversibility, and a sensor's state.
      *
      * MUTATION: take `volatile` off any one, and this names it.
      */
@@ -776,11 +751,10 @@ public class testTrainTailClearsEdges
     }
 
     /**
-     * A sensor two Points in a row share is no proof the head has reached the second: its wait begins with the sensor
-     * already occupied for the first and returns at once, so crediting the head at the second Point's square handed the
-     * track behind back with the whole train still on it.  A 5-unit train on A-B-C-D, ten units an edge, C's square the
-     * last 3 of B-C, a road over A-B's switch: with the head only entering B's square A-B is held and the road refused,
-     * and with B and C on their own sensors (the control) the same.
+     * A sensor two Points in a row share is no proof the head has reached the second: its wait returns at once, so
+     * crediting the head at the second Point's square handed the track behind back with the train still on it.  A
+     * 5-unit train on A-B-C-D, C's square the last 3 of B-C, a road over A-B's switch: with the head only entering B's
+     * square A-B is held and the road refused; B and C on their own sensors (the control) the same.
      *
      * MUTATION: credit a sensor that already read occupied when its wait began, and this fails.
      */

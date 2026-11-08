@@ -228,10 +228,8 @@ public class testControlStationFaults
     }
 
     /**
-     * A database file that reads, and holds something other than a locomotive list, is unreadable too.
-     *
-     * `restoreState` logged success for any deserialized object, leaving the exit-save guard clear, so the save wrote
-     * an empty database over the file with no copy kept.  Written to a temporary file this test owns.
+     * A database file that reads, and holds something other than a locomotive list, is unreadable too, or the exit
+     * save writes an empty database over it.  Written to a temporary file this test owns.
      *
      * MUTATION: drop `this.databaseLoadFailed = true;` from `restoreState`'s branch for an object that is not a List,
      * and this fails.
@@ -406,11 +404,9 @@ public class testControlStationFaults
         return raw;
     }
     /**
-     * A locomotive database that will not read is not saved over while its copy cannot be kept.
-     *
-     * The save cleared its "unreadable" mark before making the copy, so a failed copy let the save replace the file.
-     * The copy alone is made to fail by a folder at every name it could be given in the next minute; it writes the
-     * database file, so it runs only where the run has its own copy (one.sh, battery.sh).
+     * A locomotive database that will not read is not saved over while its copy cannot be kept.  The copy alone is made
+     * to fail by a folder at every name it could be given in the next minute; it writes the database file, so it runs
+     * only where the run has its own copy (one.sh, battery.sh).
      *
      * MUTATION: clear the mark before the copy, or save on after a failed copy, and this fails.
      */
@@ -473,10 +469,8 @@ public class testControlStationFaults
     }
 
     /**
-     * A UI state file that will not read is not saved over while its copy cannot be kept.
-     *
-     * The same order fault as the database's.  The window is one allocated without its constructor, holding only what
-     * its save reads, over a model that answers nothing.
+     * A UI state file that will not read is not saved over while its copy cannot be kept: the same order fault as the
+     * database's, on a window allocated without its constructor.
      *
      * MUTATION: clear the mark before the copy, or save on after a failed copy, and this fails.
      */
@@ -556,9 +550,8 @@ public class testControlStationFaults
     }
 
     /**
-     * A first sync that fails is asked about until it works (OB-338): the user is asked after each failure, with its
-     * reason, and the sync is repeated while the answer is to try again.  Staged with a sync that fails twice and then
-     * works: two questions each carrying its own reason, three syncs, no exit, and a connection result.
+     * A first sync that fails is asked about until it works (OB-338): staged with a sync that fails twice, two
+     * questions each carrying its own reason, three syncs, no exit, and a connection result.
      *
      * MUTATION: sync only once, or ask with the first failure's reason both times, and this fails.
      */
@@ -702,9 +695,8 @@ public class testControlStationFaults
     }
 
     /**
-     * Nothing is asked without a station to reach, a window to ask in, or in a simulation (OB-338).
-     *
-     * Each is its own case with the other two present, so only one differs; the control is the full case, which asks.
+     * Nothing is asked without a station to reach, a window to ask in, or in a simulation (OB-338): each its own case
+     * with the other two present; the control is the full case, which asks.
      *
      * MUTATION: ask in a simulation, or without a window, or without an address, and this fails.
      */
@@ -759,9 +751,7 @@ public class testControlStationFaults
     }
 
     /**
-     * A failed sync keeps its reason where the start-up can read it (OB-338).
-     *
-     * Pointed at a port nothing listens on: a station that is there and will not talk.
+     * A failed sync keeps its reason where the start-up can read it (OB-338), pointed at a port nothing listens on.
      *
      * MUTATION: leave the field unset in the catch, and this fails.
      */
@@ -795,9 +785,8 @@ public class testControlStationFaults
     }
 
     /**
-     * The traincontrol.failFirstSyncs switch fails the first N syncs, in debug mode only (OB-338).  A real CS3 cannot
-     * be made to fail its first sync on purpose; the switch is read as debug mode is entered (debug(true)), so the
-     * claim arms it the same way and builds no second station.  With debug off the switch is ignored though armed.
+     * The traincontrol.failFirstSyncs switch fails the first N syncs, in debug mode only (OB-338).  It is read as debug
+     * mode is entered, so the claim arms it the same way; with debug off it is ignored though armed.
      *
      * MUTATION: fail in every mode, fail other than N times, or leave the switch's name out of the reason, and this
      * fails.
@@ -859,9 +848,8 @@ public class testControlStationFaults
     }
 
     /**
-     * A simulation never forgets the saved Central Station address (OB-339): forgetting it on no connection wiped it
-     * for someone trying the program out.  Asked of the rule `init` applies, over the starts that matter and the one
-     * that cannot happen.
+     * A simulation never forgets the saved Central Station address (OB-339), asked of the rule `init` applies, over the
+     * starts that matter and the one that cannot happen.
      *
      * MUTATION: forget whenever communication is off, simulation or not, and this fails.
      */
@@ -879,8 +867,7 @@ public class testControlStationFaults
 
     /**
      * The first sync of a start goes through the question, and the start says whether it is a simulation (OB-338).  The
-     * constructor binds the network and the exit ends the process, so its text is read, with the comments out: a bare
-     * sync there, or `init` passing false, would leave every other claim green.
+     * constructor binds the network and the exit ends the process, so its text is read, with the comments out.
      *
      * MUTATION: put the restore path back to `if (syncWithCS2() >= 0)`, or pass anything but `simulate` from `init`,
      * and this fails.
@@ -930,10 +917,9 @@ public class testControlStationFaults
     }
 
     /**
-     * Exit forgets the saved address, then ends the application, once each (OB-338).  Runs the two halves through the
-     * arguments the method takes, on a throwaway node under a test-only path with an exit that only counts.  The
-     * address must be gone before the exit runs, and the exit must run even when the preferences refuse the removal.
-     * Other settings in the node stay.
+     * Exit forgets the saved address, then ends the application, once each (OB-338): on a throwaway node with an exit
+     * that only counts.  The address must be gone before the exit runs, and the exit must run even when the preferences
+     * refuse the removal.
      *
      * MUTATION: drop the `remove`, drop the `exit.run()`, run it before the `remove`, or take the `try` off the
      * `remove`, and this fails.
@@ -1010,10 +996,8 @@ public class testControlStationFaults
     }
 
     /**
-     * The Exit the dialog reaches is the one that forgets the real address and ends with code 1 (OB-338).
-     *
-     * The text is read, with the comments out, as `testTheFirstSyncOfAStartGoesThroughTheQuestion` reads the
-     * constructor's: another node or code would leave the claim above green.
+     * The Exit the dialog reaches is the one that forgets the real address and ends with code 1 (OB-338); the text is
+     * read, with the comments out.
      *
      * MUTATION: wire the constructor to anything but `exitUnconnected`, or pass another node, another code or another
      * exit in the no-argument method, and this fails.
@@ -1032,10 +1016,8 @@ public class testControlStationFaults
     }
 
     /**
-     * The popup answers by its buttons: Resync resyncs, and Exit or the close box leave (OB-338).
-     *
-     * Calls the real `offerResync` from a non-event thread, finds the dialog by its title and answers it three ways;
-     * also reads what it says about the failure, and that it stands over the window and on top of it.
+     * The popup answers by its buttons: Resync resyncs, and Exit or the close box leave (OB-338).  Calls the real
+     * `offerResync` from a non-event thread, and also reads what it says and that it stands over the window.
      *
      * MUTATION: map any of the three answers the other way in `offerResync`, and this fails.
      */

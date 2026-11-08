@@ -33,7 +33,6 @@ public final class FastSimulation implements AutoCloseable
      *
      * @param railway the built railway
      * @return what puts the pace back when closed
-     * @throws Exception from the railway's setters
      */
     public static FastSimulation unpace(Layout railway) throws Exception
     {
@@ -54,8 +53,6 @@ public final class FastSimulation implements AutoCloseable
 
     /**
      * Puts the pace back, the greatest first.
-     *
-     * @throws Exception from the railway's setters
      */
     @Override
     public void close() throws Exception

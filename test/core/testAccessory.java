@@ -29,16 +29,9 @@ public class testAccessory
     }
 
     /**
-     * An edge releases its accessories before it throws any.
-     *
-     * **A three-way turnout is two drives on consecutive addresses.** Commanding the diverging one
-     * before the other has been released puts the ironwork into a combination that routes nowhere -
-     * and on real hardware that is a turnout a train then runs through. `configureEdge` sorts an
-     * edge's commands so releases go first, and nothing tested it.
-     *
-     * The two tests that mention releasing before throwing are in the CS2 and CS3 route parsers,
-     * which is a different question about a different file - so the count of matches looked like
-     * coverage and was not.
+     * An edge releases its accessories before it throws any: a three-way turnout is two drives on consecutive
+     * addresses, and commanding the diverging one first puts the ironwork into a combination that routes nowhere.
+     * `configureEdge` sorts an edge's commands so releases go first.
      *
      * MUTATION: return the plain name comparison, or invert the sign, and this fails.
      */
@@ -68,11 +61,8 @@ public class testAccessory
     }
 
     /**
-     * And `configureEdge` actually uses it.
-     *
-     * The test above pins the rule. Naming a rule moves the defect to the call site, which is this
-     * repository's recurring shape and cost it two defects in one method earlier this year - so the
-     * call is checked too, the way the editor-surface rules are.
+     * And `configureEdge` actually uses it: naming a rule moves the defect to the call site, so the call is checked
+     * too.
      */
     @Test
     public void testTheEdgeConfigurationUsesThatOrdering() throws Exception
@@ -590,21 +580,10 @@ public class testAccessory
         }
     }
     /**
-     * The top address of each protocol is one the protocol has.
-     *
-     * `MAX_MM2_ADDRESS` and `MAX_DCC_ADDRESS` are RAW - they count from zero, and the constant says so
-     * - while the number an operator types counts from one. Two callers disagreed about that: the
-     * diagram editor converted before asking and the route editor did not, so logical MM2 320 and
-     * logical DCC 2048 were accepted in one place and refused in the other.
-     *
-     * **Both ends, because an off-by-one is only visible at the boundary.** A rule that accepted
-     * everything would pass a test that only tried 320; a rule that still counted from zero would pass
-     * one that only tried 321.
-     *
-     * The fix was to state the conversion once, here, rather than as a subtraction at each call site.
-     * `ui.testRouteEditorValidation.testTheTopAddressOfEachProtocolIsAccepted` is the same claim at the
-     * door that disagreed - the rule and the door that asks it, which is the split
-     * `testLocomotiveAddressRules` argues for.
+     * The top address of each protocol is one the protocol has.  `MAX_MM2_ADDRESS` and `MAX_DCC_ADDRESS` are RAW (from
+     * zero) while the number an operator types counts from one.  Both ends are tried, because an off-by-one is only
+     * visible at the boundary.  `ui.testRouteEditorValidation.testTheTopAddressOfEachProtocolIsAccepted` is the same
+     * claim at the door.
      *
      * MUTATION: drop the `- 1` from `isValidLogicalAddress` and the two top addresses are refused.
      */

@@ -230,12 +230,10 @@ public class testAnEditedPlacementSurvivesTheRebuild
     }
 
     /**
-     * A placement NOBODY edited is a record, and a run outran it, so the railway wins.  The setup holds a stale entry
-     * (captured while the train was at PLATFORM; the run took it to SIDING).  The door this reaches production through
-     * has no editor in it: the diagram viewer's right-click autonomy menu ends in `rebuildRunningLayoutFromSetup(true)`
-     * and nothing on that path captures the running layout.  A train modeled at PLATFORM while it stands at SIDING is a
-     * block the next dispatch believes is free.  What tells the cases apart is provenance: the rebuild is told which
-     * trains the setup was just given a new placement for, and this train is not among them.
+     * A placement NOBODY edited is a record, and a run outran it, so the railway wins: the setup holds a stale entry
+     * (the train at PLATFORM; the run took it to SIDING).  The diagram viewer's right-click autonomy menu reaches
+     * `rebuildRunningLayoutFromSetup(true)` with no editor, and a train modeled where it does not stand is a block the
+     * next dispatch believes is free.  Provenance tells the cases apart: this train is not in the edited set.
      *
      * MUTATION: pass MOVED in the edited set and this fails, reporting the train back at PLATFORM.
      */
@@ -285,10 +283,8 @@ public class testAnEditedPlacementSurvivesTheRebuild
     }
 
     /**
-     * A train the last run left on a station is put back on it after the station is renamed.  Where a train stands
-     * after a run lives on the running layout alone, and a rebuild from the diagram's setup menu carries each train by
-     * the name of the Point it stands on, so it is carried by square and copy: the name recorded is traced to the
-     * square it named.
+     * A train the last run left on a station is put back on it after the station is renamed: a rebuild from the
+     * diagram's setup menu carries each train by square and copy, the recorded name traced to the square it named.
      *
      * MUTATION: put the trains back by the names recorded alone, and this fails.
      */
@@ -356,9 +352,8 @@ public class testAnEditedPlacementSurvivesTheRebuild
     }
 
     /**
-     * A train on a square that has since become two copies is put back on the copy facing its way: the one copy of a
-     * station on a one-way line carries the plain name, and made two-way again the square is two copies, each named for
-     * its heading.  A copy is its facing, so the train goes on the copy that faces the way it did.
+     * A train on a square that has since become two copies is put back on the copy facing its way: a copy is its
+     * facing, and two-way squares are two copies each named for its heading.
      *
      * MUTATION: carry a name only to the same copy under the square's new name, and this fails.
      */

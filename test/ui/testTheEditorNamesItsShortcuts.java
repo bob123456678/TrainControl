@@ -355,7 +355,6 @@ public class testTheEditorNamesItsShortcuts
      * The configuration the start-up resume loaded, waited for: the resume is posted behind the window's set-up.
      *
      * @return its name, or null if nothing loaded in fifteen seconds
-     * @throws Exception from the event thread
      */
     private static String theResumedConfiguration() throws Exception
     {
@@ -372,8 +371,6 @@ public class testTheEditorNamesItsShortcuts
 
     /**
      * Stops using autonomy, the way the Autonomy menu does, and lets the window settle.
-     *
-     * @throws Exception from the event thread
      */
     private static void unloadAutonomy() throws Exception
     {
@@ -392,7 +389,6 @@ public class testTheEditorNamesItsShortcuts
      * Loads a configuration the way the Autonomy menu does and lets the window settle.
      *
      * @param name the configuration
-     * @throws Exception from the event thread
      */
     private static void loadConfiguration(final String name) throws Exception
     {
@@ -660,14 +656,10 @@ public class testTheEditorNamesItsShortcuts
     }
 
     /**
-     * Escape that drops a tile picked up to move takes its red outline with it.
+     * Escape that drops a tile picked up to move takes its red outline with it, or it says a tile is picked up when it
+     * is not.  A track tile picked, a hover, then Escape through the editor's own keys.
      *
-     * The red outline is the track editor's "this tile is picked up".  Escape must put back more than the palette's
-     * borders, or the outline - and the pointer's blue one - says a tile is picked up when it is not.
-     *
-     * A track tile clicked to pick it up, a hover so the outline is drawn, then Escape through the editor's own keys.
-     *
-     * MUTATION: let Escape put back only the palette again, and this fails.
+     * MUTATION: let Escape put back only the palette again.
      */
     @Test
     public void testEscapeTakesThePickedUpOutlineWithIt() throws Exception
@@ -745,14 +737,10 @@ public class testTheEditorNamesItsShortcuts
     }
 
     /**
-     * A square the pointer is over shows its hover outline while squares are picked.
+     * A square the pointer is over shows its hover outline while squares are picked: the redraw of the picked squares
+     * and the grip puts every square back first, so it must draw the hover back.
      *
-     * The redraw of the picked squares and the grip puts every square back first, the one under the pointer included,
-     * so it must draw the hover back.
-     *
-     * Three squares picked, then a hover over another.
-     *
-     * MUTATION: let the selection's redraw leave the hover out again, and this fails.
+     * MUTATION: let the selection's redraw leave the hover out again.
      */
     @Test
     public void testTheHoverShowsOverASelection() throws Exception
@@ -871,14 +859,10 @@ public class testTheEditorNamesItsShortcuts
     }
 
     /**
-     * The hover outline is not drawn back on a square the pointer has left.
+     * The hover outline is not drawn back on a square the pointer has left: the keys' square is never forgotten, so
+     * only the square that wore it gets it back.  Three squares picked, a hover, the margin entered, then Escape.
      *
-     * The keys' square is never forgotten, so it is not where the hover goes back once the pointer has left the diagram
-     * for its margin: only the square that wore it.
-     *
-     * Three squares picked, a hover over another, the margin entered, then Escape.
-     *
-     * MUTATION: draw the hover back on the keys' square again, and this fails.
+     * MUTATION: draw the hover back on the keys' square again.
      */
     @Test
     public void testTheHoverIsNotDrawnBackWhereThePointerLeft() throws Exception
@@ -921,14 +905,10 @@ public class testTheEditorNamesItsShortcuts
     }
 
     /**
-     * Escape between a box's press and its release stops the click that follows too.
+     * Escape between a box's press and its release stops the click that follows too: with Shift it would pick the
+     * square, with Control+M's picking pick the tile up.
      *
-     * A press that never left its square ends in a click: with Shift it would pick the square, with Control+M's picking
-     * pick the tile up to move.
-     *
-     * A press, Escape, the release and the click, on one square - with Shift and nothing else held, then with Control+M.
-     *
-     * MUTATION: let the click after a dropped box through again, and this fails.
+     * MUTATION: let the click after a dropped box through again.
      */
     @Test
     public void testEscapeStopsTheClickOfADroppedBox() throws Exception
@@ -990,14 +970,10 @@ public class testTheEditorNamesItsShortcuts
     }
 
     /**
-     * A box being drawn keeps its outline when the pointer enters a square.
+     * A box being drawn keeps its outline when the pointer enters a square: the hover's pass puts every square back, so
+     * it must redraw the box too (nothing picked yet).
      *
-     * The hover's pass puts every square back, so it must redraw the box being drawn too (nothing picked yet), not only
-     * picked squares.
-     *
-     * A box pressed, a square entered and one drag event, then the posted work run.
-     *
-     * MUTATION: redraw only for picked squares again, and this fails.
+     * MUTATION: redraw only for picked squares again.
      */
     @Test
     public void testABoxKeepsItsOutlineAsThePointerEntersASquare() throws Exception
@@ -1148,15 +1124,10 @@ public class testTheEditorNamesItsShortcuts
     }
 
     /**
-     * A page switch forgets the square under the pointer (Adam: *"on page switch - yes, clear the active square"*).
+     * A page switch forgets the square under the pointer (Adam: *"on page switch - yes, clear the active square"*): the
+     * track editor's `lastHoveredX/Y` and the autonomy editor's `autonomyHover` must not be read against the new page.
      *
-     * Delete and the other keys that act on the square under the pointer must not ask the old page's coordinates on the
-     * new page: the track editor's `lastHoveredX/Y`, and the autonomy editor's `autonomyHover`, whose square is read
-     * against the page now showing.
-     *
-     * A square hovered, the autonomy editor's square set as its hover sets it, then a switch to another page.
-     *
-     * MUTATION: let a switch keep either square, and this fails.
+     * MUTATION: let a switch keep either square.
      */
     @Test
     public void testAPageSwitchForgetsTheSquareUnderThePointer() throws Exception
@@ -1240,13 +1211,10 @@ public class testTheEditorNamesItsShortcuts
     }
 
     /**
-     * Two requests to redraw the diagram, made before the first is drawn, draw it once.
+     * Two requests to redraw the diagram, made before the first is drawn, draw it once: the pending redraw reads the
+     * latest state.  Opening autonomy mode makes exactly this pair.
      *
-     * A request made while a redraw is pending must not queue another, since the pending one reads the latest state.
-     * Opening autonomy mode makes exactly this pair: the remembered caption mode's redraw, then the one meant to
-     * follow.
-     *
-     * MUTATION: queue a second redraw for a request made before the first has started, and this fails.
+     * MUTATION: queue a second redraw for a request made before the first has started.
      */
     @Test
     public void testTwoRedrawRequestsBeforeTheFirstIsDrawnDrawOnce() throws Exception
@@ -1300,14 +1268,10 @@ public class testTheEditorNamesItsShortcuts
     }
 
     /**
-     * A click that changes a switch's directions refreshes the autonomy editor once.
+     * A click that changes a switch's directions refreshes the autonomy editor once: the switch's own step and the
+     * click's refresh must not both fire.  A counting listener, one click on a square with several routes.
      *
-     * The switch's own step refreshes (a whole setup check, the list, the strip), and the click refreshes again after
-     * it as it does for every click: only one may.
-     *
-     * A panel with a counting listener, and one click on a square with more than one route.
-     *
-     * MUTATION: let the switch's step refresh as well again, and this fails.
+     * MUTATION: let the switch's step refresh as well again.
      */
     @Test
     public void testAClickOnASwitchRefreshesOnce() throws Exception
@@ -1349,14 +1313,10 @@ public class testTheEditorNamesItsShortcuts
     }
 
     /**
-     * The square under the pointer keeps its hover outline through Escape though it wore another outline, and a square
-     * the pointer left for the palette does not get it back.
+     * The square under the pointer keeps its hover outline through Escape though it wore another outline (tile picked
+     * up, picked, grip), and a square the pointer left for the palette does not get it back.
      *
-     * The blue is drawn on the square the pointer is over while it is over the grid: a square can wear another outline
-     * (a tile picked up, picked, the grip), and nothing takes the blue off a square left for the palette.  A click
-     * picks up the tile under the pointer, then Escape; and two squares picked, a hover, the palette, then Escape.
-     *
-     * MUTATION: draw the blue back from the record again, or wherever the pointer was last, and this fails.
+     * MUTATION: draw the blue back from the record again, or wherever the pointer was last.
      */
     @Test
     public void testTheHoverFollowsThePointerThroughEscape() throws Exception
@@ -1411,16 +1371,11 @@ public class testTheEditorNamesItsShortcuts
     }
 
     /**
-     * A box Escape dropped after its drag left the square it started on leaves that square's next click alone.
+     * A box Escape dropped after its drag left its square leaves that square's next click alone: the click set aside to
+     * ignore must be forgotten at a release off the square (only a left click is ever ignored).  Control+M, a box
+     * dragged two squares on, Escape, release, then a middle click on the first square: the tile turns.
      *
-     * A press whose drag leaves its square ends in no click, so the click set aside to ignore must be forgotten at a
-     * release off the square, or it waits for that square's next click (a middle click that turns the tile, a
-     * right-click's menu).  Only a left click is ever ignored.
-     *
-     * Control+M, a box from a track square dragged two squares on, Escape, the release, then a middle click on the
-     * first square: the tile turns.
-     *
-     * MUTATION: keep the click to ignore past a release off its square again, and this fails.
+     * MUTATION: keep the click to ignore past a release off its square again.
      */
     @Test
     public void testADroppedBoxsDragLeavesTheNextClickAlone() throws Exception
@@ -1584,14 +1539,10 @@ public class testTheEditorNamesItsShortcuts
     }
 
     /**
-     * An undo in the track diagram editor puts the page's tiles back still tied to their switches, signals, sensors and
-     * route buttons.
+     * An undo in the track diagram editor puts the tiles back still tied to their switches, signals, sensors and route
+     * buttons: each undo copy must keep the ties, or after Control+Z every switch counts as unaddressed.
      *
-     * Every undo state is a copy of each tile, and the copy must keep what the address was tied to when the page was
-     * read, or after one Control+Z every switch and signal has no accessory and the setup counts each as unaddressed.
-     * A tile turned, then undone: every tie the page had before, it has after.
-     *
-     * MUTATION: let the copy leave out the accessory, or the sensor, and this fails.
+     * MUTATION: let the copy leave out the accessory, or the sensor.
      */
     @Test
     public void testAnUndoKeepsTheTilesTiedToTheirAccessories() throws Exception
@@ -1640,12 +1591,10 @@ public class testTheEditorNamesItsShortcuts
     }
 
     /**
-     * Control+K keeps the picked squares, the selection's grip and the pointer's blue outline.
+     * Control+K keeps the picked squares, the grip and the pointer's blue outline: the grid's redraw (`setShowGrid`)
+     * must draw the outlines back as the undo's does.
      *
-     * The grid's own redraw (Control+K and the Grid box, through `setShowGrid`) must draw the outlines back as the
-     * undo's redraw does.  Turned off and on again, so the setting ends as it began.
-     *
-     * MUTATION: end `setShowGrid` without drawing the outlines back, and this fails.
+     * MUTATION: end `setShowGrid` without drawing the outlines back.
      */
     @Test
     public void testControlKKeepsTheGripAndThePointersOutline() throws Exception
@@ -1701,14 +1650,11 @@ public class testTheEditorNamesItsShortcuts
     }
 
     /**
-     * The pointer gone off the squares takes its blue outline with it, wherever it went, and a move onto the next
-     * square does not; and the margin keeps the selection's grip.
+     * The pointer gone off the squares takes its blue outline with it, wherever it went (it may go straight onto the
+     * tools column, crossing no margin), a move to the next square does not, and the margin keeps the grip.
      *
-     * A pointer can go straight from a square onto the tools column, crossing no margin: the blue must not stay on the
-     * last square for the Grid box's redraw to draw again, and the margin must not take the grip off with the blue.
-     *
-     * MUTATION: leave the blue where the pointer went off the squares, take it off on a move to the next square, or
-     * have the margin take the grip off, and this fails.
+     * MUTATION: leave the blue where the pointer went off, take it off on a move to the next square, or have the margin
+     * take the grip off.
      */
     @Test
     public void testThePointerOffTheSquaresTakesItsOutlineWithIt() throws Exception
@@ -1810,17 +1756,12 @@ public class testTheEditorNamesItsShortcuts
     }
 
     /**
-     * The pointer gone off the squares from what covers one - an accessory's address label, or a menu that closed over
-     * the tools column - takes its blue outline with it too; so does a square entered and left in one go, and a square
-     * left for the grid's padding.
-     *
-     * An address label passes a square its entry but not its exit; a menu takes the square's exit while the pointer is
-     * still over it, and nothing asks again when it closes.  The pass that takes the outline off is posted, behind the
-     * one the last square's hover posted; and the padding beside the last column is no square.
+     * The pointer gone off the squares from what covers one (an address label, a menu closed over the tools column)
+     * takes its blue outline too, as does a square entered and left in one go, or left for the grid's padding.  The
+     * pass that takes the outline off is posted behind the last hover's; the padding is no square.
      *
      * MUTATION: let an address label keep the square's exit to itself, let the window not hear the pointer arrive off
-     * the squares, take the outline off at once rather than after the hover's pass, or count the padding as a square,
-     * and this fails.
+     * the squares, take the outline off at once, or count the padding as a square.
      */
     @Test
     public void testThePointerOffTheSquaresFromWhatCoversThemTakesItsOutline() throws Exception
@@ -2012,16 +1953,11 @@ public class testTheEditorNamesItsShortcuts
 
     /**
      * The pointer is found off the squares however it gets there, and only from this window: out from under the
-     * right-click menu once it closes, back into the window over a part nothing listens on, or past the edge of the
-     * view from a square cut by it - and not by an arrival in a dialog over the square.  The watch is on the toolkit
-     * while the window is, and gone with it.
-     *
-     * While a menu is open the watch leaves the outline alone, so it must ask again when the menu closes.  The window's
-     * own entry, which AWT hands on only where nothing listens, counts as inside the window; a square half scrolled out
-     * of sight counts only for the part in view.
+     * right-click menu once it closes, back into the window over a part nothing listens on, or past the edge of a
+     * square cut by the view, not by an arrival in a dialog.  The toolkit watch lives with the window.
      *
      * MUTATION: ask nothing when the menu closes, leave the window's own entry out, count the hidden half of a square,
-     * act on an arrival in another window, or leave the watch on the toolkit after dispose - and this fails.
+     * act on an arrival in another window, or leave the watch on the toolkit after dispose.
      */
     @Test
     public void testThePointerIsFoundOffTheSquaresWhereverItGoes() throws Exception
@@ -2378,13 +2314,12 @@ public class testTheEditorNamesItsShortcuts
     }
 
     /**
-     * The click's tooltip line is for the visit: a page switch keeps it gone, so do the editor's own reopenings, and
-     * the next opening through the main window says it again (MT-697).
+     * The click's tooltip line is for the visit: a page switch keeps it gone, as do the editor's own reopenings, and
+     * the next opening through the main window says it again (MT-697).  The class's own editor is put away for the
+     * test.
      *
-     * The class's own editor is put away so the main window opens its own, and built again after.
-     *
-     * MUTATION: let a page switch, or any of the editor's three own reopenings, forget the click or hand on one nobody
-     * made; or keep it in the main window past the editor's closing - and this fails.
+     * MUTATION: let a page switch or any of the three reopenings forget the click or hand on one nobody made; or keep
+     * it in the main window past the editor's closing.
      */
     @Test(timeOut = 300000)
     public void testTheClickLineIsForTheVisit() throws Exception
@@ -2554,12 +2489,9 @@ public class testTheEditorNamesItsShortcuts
     /**
      * While an editor window is open the main window is not kept on top of it, even when the editor switches page in
      * place, and closing the editor puts the operator's setting back (Adam: "when opening the autonomy editor,
-     * temporarily turn off 'always on top' in the main window, then restore it ... seems to have regressed").  A page
-     * or mode switch inside the editor runs the refresh a closing editor runs; it must not put the setting back with
-     * the editor still open.
+     * temporarily turn off 'always on top' in the main window, then restore it ... seems to have regressed").
      *
-     * MUTATION: let the refresh apply the setting whatever is open, or not apply it when the editor goes, and this
-     * fails.
+     * MUTATION: let the refresh apply the setting whatever is open, or not apply it when the editor goes.
      */
     @Test(timeOut = 300000)
     public void testTheMainWindowStaysBelowAnOpenEditor() throws Exception
@@ -2664,8 +2596,8 @@ public class testTheEditorNamesItsShortcuts
     private static final String OTHER_PAGE = "2 - Bottom";
 
     /**
-     * The editor one of the editor's own reopenings opens: a finding on another page, a guard notice on another page, or
-     * a link's other end - each closes the window it is in and has the main window open another.
+     * The editor one of the editor's own reopenings opens: a finding or guard notice on another page, or a link's other
+     * end, each closing its window and having the main window open another.
      *
      * @param from the window the door is in, with nothing unsaved
      * @param door "finding", "notice" or "link"
@@ -2719,8 +2651,7 @@ public class testTheEditorNamesItsShortcuts
     }
 
     /**
-     * The autonomy editor the main window shows after an opening - waited for until it is a new window, built and in
-     * autonomy mode.
+     * The autonomy editor the main window shows after an opening, waited for until it is a new window in autonomy mode.
      *
      * @param opening what opens it, run on the event thread
      * @param not the editor it must not be, or null
@@ -2888,15 +2819,10 @@ public class testTheEditorNamesItsShortcuts
     }
 
     /**
-     * An undo's redraw keeps the selection's grip and the pointer's blue outline.
+     * An undo's redraw keeps the selection's grip and the pointer's blue outline: Control+Z is pressed with the mouse
+     * still, so the redraw must not end with a pass that leaves only the picked squares' yellow.
      *
-     * The redraw a Control+Z asks for must not end with a pass that takes every outline down and puts back only the
-     * picked squares' yellow: the grip and the pointer's square would go gray until the pointer next moved, and
-     * Control+Z is pressed with the mouse still.
-     *
-     * A tile turned so there is something to undo, two squares picked, the pointer over a third, Control+Z.
-     *
-     * MUTATION: end the redraw with the border pass alone again, and this fails.
+     * MUTATION: end the redraw with the border pass alone again.
      */
     @Test
     public void testAnUndoKeepsTheGripAndThePointersOutline() throws Exception
@@ -3029,17 +2955,12 @@ public class testTheEditorNamesItsShortcuts
 
     /**
      * A box Escape dropped and released on its own square after the pointer moved with the button down leaves that
-     * square's next click alone.
+     * square's next click alone: AWT makes no click of a press and release with movement between, so the click set
+     * aside must be forgotten there.  Control+M, a press, the pointer moved (once within the square, once out two
+     * squares and back), Escape, release, then a LEFT click (only the next left click is set aside): the tile is picked
+     * up.  Each step in one event, so a real pointer cannot move the hover between steps.
      *
-     * AWT makes no click of a press and release with any movement between (out and back, or a pixel within the square),
-     * so the click set aside to ignore must be forgotten there, or it swallows that square's next click of any button.
-     *
-     * Control+M, a press on a track square, the pointer moved within it (the second time, out to a square two along and
-     * back), Escape, the release there, then a left click: the tile is picked up.  A LEFT click, because only the very
-     * next left click is ever set aside.  Each in one event, so a real pointer resting over the shown editor cannot
-     * move the hover between the steps.
-     *
-     * MUTATION: keep the click to ignore past a release after the pointer moved, and this fails.
+     * MUTATION: keep the click to ignore past a release after the pointer moved.
      */
     @Test
     public void testAPressThatMovedLeavesTheNextClickAlone() throws Exception
@@ -3142,17 +3063,11 @@ public class testTheEditorNamesItsShortcuts
     }
 
     /**
-     * Only the release's own left click is ignored: any other click that comes first acts, and takes the record with
-     * it.
+     * Only the release's own left click is ignored: any other click that comes first acts and takes the record with it.
+     * Control+M, a still press, Escape, release, then a middle and a left click in one event: the tile turns, and is
+     * picked up.
      *
-     * A press and release on one square with the pointer held still make a left click, and that is the click set aside;
-     * a click of another button acts, and the record goes, so the left click after it acts too.
-     *
-     * Control+M, a press on a track square held still, Escape, the release there, then a middle click and a left click
-     * on that square in the same event: the tile turns, and is picked up.
-     *
-     * MUTATION: ignore a click of any button again, or keep the record past a click that was not the one set aside, and
-     * this fails.
+     * MUTATION: ignore a click of any button again, or keep the record past a click that was not the one set aside.
      */
     @Test
     public void testOnlyTheReleasesOwnClickIsIgnored() throws Exception
@@ -3248,12 +3163,10 @@ public class testTheEditorNamesItsShortcuts
     }
 
     /**
-     * A palette piece held across a page switch leaves the palette's red outline behind with it.
+     * A palette piece held across a page switch leaves the palette's red outline behind: the switch drops the tool, so
+     * the palette must not go on showing it armed.
      *
-     * The switch drops the tool, so the palette must not go on showing the piece armed: the next click on track would
-     * pick it up instead of placing anything.
-     *
-     * MUTATION: let a switch drop the tool without the palette's outline again, and this fails.
+     * MUTATION: let a switch drop the tool without the palette's outline again.
      */
     @Test
     public void testAPageSwitchTakesTheArmedPiecesOutline() throws Exception
@@ -3382,14 +3295,12 @@ public class testTheEditorNamesItsShortcuts
     }
 
     /**
-     * Whether the main window's always-on-top flag reaches the value asked for within a deadline, asked on the event
-     * thread.  Polled rather than slept for: the flag is set by posted work, and how long that waits depends on the
-     * machine.
+     * Whether the main window's always-on-top flag reaches the value asked for within a deadline, polled on the event
+     * thread (the flag is set by posted work of unknown delay).
      *
      * @param wanted the value the flag should have
      * @param millis the longest to wait for it
      * @return whether the flag had the value when last read
-     * @throws Exception from the event thread
      */
     private static boolean alwaysOnTopWithin(boolean wanted, long millis) throws Exception
     {
@@ -3458,10 +3369,10 @@ public class testTheEditorNamesItsShortcuts
     }
 
     /**
-     * Control+O opens Station Settings on the square under the pointer (FR-111), and with the pointer off the diagram and no
-     * finding chosen does nothing (FR-072's other half is `ui.testStationSettingsWindow`).
+     * Control+O opens Station Settings on the square under the pointer (FR-111); with the pointer off the diagram and
+     * no finding chosen it does nothing.
      *
-     * MUTATION: drop the `over != null` branch from the key's handler in `LayoutEditor`, and this fails.
+     * MUTATION: drop the `over != null` branch from the key's handler in `LayoutEditor`.
      */
     @Test
     public void testControlOOpensTheSquareUnderThePointer() throws Exception

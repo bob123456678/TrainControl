@@ -214,12 +214,9 @@ public class testBarredArrivalIsNotADestination
     }
 
     /**
-     * One locomotive, one home - enforced where the home is SET, not only where it is loaded.
-     *
-     * The running layout's `setHomeLocomotive` clears the same locomotive's home from every other Point; the setup-side
-     * editor ends at `setPointProperty(tile, "home", picked)` and nothing sweeps, so two squares could be given the
-     * same home from the menu, silently.  On the next load `rebuildHomeStations` would drop the second it meets (which
-     * depends on `points.values()` order) with only a log line.
+     * One locomotive, one home - enforced where the home is SET, not only where it is loaded: the setup-side editor
+     * ends at `setPointProperty(tile, "home", picked)` and nothing sweeps, so two squares could be given the same home,
+     * and `rebuildHomeStations` would drop one at load by `points.values()` order with only a log line.
      */
     @Test
     public void testALocomotiveHasOneHomeAcrossTheWholeSetup() throws Exception
@@ -280,12 +277,8 @@ public class testBarredArrivalIsNotADestination
 
     /**
      * Clearing every home at once clears them all, and asks the station index once: the single-square setter in a loop
-     * re-derives the station index (a full builder construction on the event thread) per square, and the gesture exists
-     * because sixty-two right-clicks are too many.
-     *
-     * What this pins is the behavior, not the count, since the rebuild is not observable from outside: every home goes,
-     * the count comes back, and the index is still right afterwards, which a bulk path skipping the re-derive gets
-     * wrong.
+     * re-derives the index (a full builder construction on the event thread) per square.  Pinned as behavior, since
+     * the rebuild is not observable: every home goes, the count comes back, and the index is still right afterwards.
      *
      * MUTATION this catches: dropping the `deriveStationIndex()` at the end of `clearEveryHome`, which
      * leaves `getStationIndex` naming squares whose home has gone; and clearing only the first square.
@@ -335,10 +328,9 @@ public class testBarredArrivalIsNotADestination
     }
 
     /**
-     * Every placement goes at once, and the station index is asked once.  The twin of `testEveryHomeGoesAtOnce`:
-     * clearing one placement writes TWO properties (the placement and the facing), so a per-square loop costs two full
-     * builder constructions per square.  Pinned as behavior: every placement goes, the count comes back, the FACING
-     * goes with it, and the session still works afterwards.
+     * Every placement goes at once, and the station index is asked once: the twin of `testEveryHomeGoesAtOnce`, where
+     * clearing one placement writes TWO properties (the placement and the facing).  Every placement goes, the count
+     * comes back, the FACING goes with it, and the session still works afterwards.
      *
      * MUTATION this catches: dropping the `deriveStationIndex()` at the end of `clearEveryPlacement`,
      * or clearing the placement and leaving the facing behind.

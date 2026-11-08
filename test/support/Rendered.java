@@ -42,7 +42,6 @@ public final class Rendered
      * Builds one page's grid and keeps it.
      *
      * @param ui the window, which the tiles ask about covered track and about images
-     * @throws Exception if Swing cannot build it
      */
     public static Rendered open(final LayoutDiagram page, final TrainControlUI ui) throws Exception
     {

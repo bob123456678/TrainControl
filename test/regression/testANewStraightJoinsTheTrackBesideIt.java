@@ -461,11 +461,10 @@ public class testANewStraightJoinsTheTrackBesideIt
 
     /**
      * One page, one editor: drops a tile of the type on the square once for each way round it may be held, and says how
-     * each landed.  The page: an east-west line broken at 2,2, a north-south line broken at 5,2, and four lone pieces of
-     * track for a one-ended tile to face - east of 8,5, south of 2,7, north of 5,6 and west of 8,2.  Nothing is beside
-     * 10,7.  And for a tile that runs through: track east of 11,9 only, north of 6,10 only, and east, north and south of
-     * 12,5 (two ends can be met, or one).  And for the rest: track east and south of 16,2 (a corner), north of 16,6 only,
-     * and west of 18,9 only.
+     * each landed.  The page: an east-west line broken at 2,2, a north-south line broken at 5,2, four lone pieces of
+     * track for a one-ended tile to face (east of 8,5, south of 2,7, north of 5,6, west of 8,2), nothing beside 10,7;
+     * for a tile that runs through, track east of 11,9 only, north of 6,10 only, and east, north and south of 12,5; and
+     * for the rest, east and south of 16,2 (a corner), north of 16,6 only, and west of 18,9 only.
      */
     private static int[] landings(componentType type, int[] helds, int x, int y) throws Exception
     {

@@ -14,36 +14,28 @@ import org.traincontrol.util.Conversion;
  * What the control station would have put on the wire, in order.
  *
  * Adam: **"in your tests for arrival, make sure you check for an emitted reversal command to the tracks."**  The
- * application's own belief about a locomotive - `goingForward()` - answers *was the decision taken* and not *did
- * anything happen*: a `_setDirection` with no `exec` behind it satisfies every assertion about the model while the
- * railway sits still.
+ * model's own belief (`goingForward()`) answers *was the decision taken*, not *did anything happen*.
  *
- * It sees the wire because `MarklinLocomotive.setDirection` ends in `network.exec(new CS2Message(CMD_LOCO_DIRECTION,
- * ...))`, and with no Central Station connected `MarklinControlStation.exec` LOGS the message it would have sent
- * (`DEBUG_LOG_NETWORK` is on by default) through `java.util.logging`.  A handler on that logger sees what would have
- * gone down the cable, and nothing in production changes.  The model has to be in debug
- * (`TestStation.simulatedInDebug()`) or the recorder hears nothing, which is why `size()` is worth asserting first.
+ * It sees the wire because with no Central Station connected `MarklinControlStation.exec` LOGS the message it would
+ * have sent (`DEBUG_LOG_NETWORK` is on by default) through `java.util.logging`; a handler on that logger hears it and
+ * nothing in production changes.  The model has to be in debug (`TestStation.simulatedInDebug()`), which is why
+ * `size()` is worth asserting first.
  *
- * Marks, because the interesting window is the ARRIVAL and not the journey: dispatch sets a locomotive's direction as
- * it departs, so a test that counts from zero cannot tell an arrival that turned the train from one that did not.
- * `Layout.CB_PRE_ARRIVAL` fires once, on the last leg, so a mark taken there and a count taken after the run is exactly
- * the arrival.
+ * Marks, because the interesting window is the ARRIVAL: `Layout.CB_PRE_ARRIVAL` fires once, on the last leg, so a mark
+ * taken there and a count taken after the run is exactly the arrival.
  *
- * The wire drops: `MarklinControlStation.log(String)` skips a message equal to the last, so two IDENTICAL, ADJACENT
- * messages reach this recorder as one line and a count is a lower bound.  That does not weaken the claims that matter:
- * a direction command carries the direction, so the two a double reversal would send are not identical, and every
- * absolute claim is about the ARRIVAL window, where one is expected and zero is the alternative.
+ * The wire drops: `MarklinControlStation.log(String)` skips a message equal to the last, so a count is a lower bound.
+ * That does not weaken the claims that matter: a direction command carries the direction, and every absolute claim is
+ * about the ARRIVAL window, where one is expected and zero is the alternative.
  *
- * Lifted out of `regression.testTheReversalReachesTheTracks`.  {@link #sentSince} parses each logged command into a
- * {@link Sent}, and the filters pick the speed, function, direction, accessory and system (power, stop) commands, to
- * one locomotive or accessory where a UID is given.
+ * {@link #sentSince} parses each logged command into a {@link Sent}, and the filters pick the speed, function,
+ * direction, accessory and system (power, stop) commands, to one locomotive or accessory where a UID is given.
  *
  * @author Adam
  */
 public final class WireRecorder
 {
     /**
-     * What a direction command looks like in the log, built from the constant it IS.
      * What a direction command looks like in the log, built from the constant it IS: `CS2Message.toString` prints the
      * command as HEX ("Command: 0x5"), so a needle typed by hand would drift.
      */
@@ -110,9 +102,8 @@ public final class WireRecorder
     }
 
     /**
-     * How many lines have been logged at all.  Worth asserting non-zero before any other claim: a recorder attached to
-     * a model that is not in debug hears nothing, and every count would then be zero for a reason that has nothing to
-     * do with the railway.
+     * How many lines have been logged at all.  Assert non-zero first: a recorder attached to a model not in debug hears
+     * nothing, and every count would then be zero for no railway reason.
      */
     public int size()
     {
@@ -143,10 +134,8 @@ public final class WireRecorder
     }
 
     /**
-     * One command the control station tried to send, read back from its log line.
-     *
-     * The line is `CS2Message.toString`, which prints the command in hex ("Command: 0x6") and the data as hex bytes
-     * ("Data:   0x00|0x00|0x40|0x05|0x01|0x01"), so both are read back as the station would have been given them.
+     * One command the control station tried to send, read back from its log line (`CS2Message.toString` prints the
+     * command and the data as hex).
      */
     public static final class Sent
     {
@@ -204,10 +193,8 @@ public final class WireRecorder
     }
 
     /**
-     * Every command the control station tried to send since a mark, in order.
-     *
-     * Only the lines it logs for a command it could not send are read: a packet handed to `receiveMessage` can be
-     * logged in the same format, and is not something the program sent.
+     * Every command the control station tried to send since a mark, in order.  Only the lines it logs for a command it
+     * could not send are read: a packet handed to `receiveMessage` can be logged in the same format.
      */
     public List<Sent> sentSince(int from)
     {

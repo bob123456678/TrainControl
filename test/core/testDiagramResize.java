@@ -156,24 +156,11 @@ public class testDiagramResize
     }
 
     /**
-     * A page with nothing on it has bounds a grid can be built from.
-     *
-     * `checkBounds` seeds `minx = sx` and `maxx = 0` outside edit
-     * mode and only ever lowers `minx` for a square that HOLDS something, so a page with no components
-     * keeps both seeds. `LayoutGrid` then computes `maxx - minx + 1 + 1`, which on a thirty-wide page is
-     * -28, and `new LayoutLabel[width][height]` throws NegativeArraySizeException.
-     *
-     * One component anywhere is enough to make it right, because the `x < minx` branch pulls the seed
-     * down to it - so this is the empty page and nothing else. `LayoutEditor.clear()` empties a page and
-     * `saveChanges` has no emptiness guard, and closing the editor calls `setEdit(false)`, which is the
-     * transition that turns the seeds back on.
-     *
-     * The consequence is worse than one exception: the grid is registered in LayoutGrid's static LIVE
-     * map before it finishes building, so a constructor that throws leaves a half-built grid registered
-     * against that panel. The track diagram tab goes blank and stays blank.
-     *
-     * Each axis on its own, because they fail separately: components along one row leave `miny` seeded
-     * while `minx` was pulled down.
+     * A page with nothing on it has bounds a grid can be built from: `checkBounds` seeds `minx = sx` and `maxx = 0`
+     * outside edit mode and only lowers `minx` for a square that HOLDS something, so an empty page (reached by
+     * `LayoutEditor.clear()` then `saveChanges`) made `LayoutGrid` throw NegativeArraySizeException, and, the grid
+     * being registered in the static LIVE map before it finishes building, left the track diagram tab blank.  Each axis
+     * on its own, since they fail separately.
      */
     @Test
     public void testAnEmptyPageHasBoundsAGridCanBeBuiltFrom()
@@ -193,19 +180,12 @@ public class testDiagramResize
     }
 
     /**
-     * A shift moves what this build cannot draw along with the track, by the rule it moves a tile by.
-     *
-     * An element whose type TrainControl does not know is kept as the file had it and written back on save - id and
-     * all, and its id IS its square, x + (y << 8).  The four shifts moved every tile and left these on their old ids, so
-     * the next save put scenery the Central Station draws onto squares the track had moved away from.
-     *
-     * One element at 3,2 and one shift at column or row 1: right and down move it one on, left and up one back.  And one
-     * ON the column or row a left or up shift takes out stays where it is, on what moved into its place, rather than
+     * A shift moves what this build cannot draw along with the track, by the rule it moves a tile by: an element of
+     * unknown type is written back on save with an id that IS its square, x + (y << 8).  One element at 3,2 and one
+     * shift at column or row 1; one ON the column or row a left or up shift takes out stays where it is rather than
      * being deleted unseen.
      *
      * MUTATION: leave the elements out of `shiftRight`, and this fails on its first assertion.
-     *
-     * @throws Exception from the export
      */
     @Test
     public void testAShiftMovesTheElementsItCannotDraw() throws Exception
@@ -237,7 +217,6 @@ public class testDiagramResize
      * @param x the element's column before the shift
      * @param y its row
      * @return the id the export writes for it, or null when it is written with none
-     * @throws Exception from the shift or the export
      */
     private static String idAfter(String shift, int x, int y) throws Exception
     {

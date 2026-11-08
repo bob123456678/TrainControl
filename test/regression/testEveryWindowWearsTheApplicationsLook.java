@@ -19,10 +19,9 @@ import org.testng.annotations.Test;
  * Adam: "Some tests start with the small font in the UI menu bar (suggesting the UI isn't initialized the same way as
  * in the production app), while others have the same font as the production app. Can you make this be consistent?"
  *
- * The look and feel is installed by `MarklinControlStation.init` and by `TrainControlUI`'s constructor, so a window
- * built by a test without either was drawn in Metal.  The fix is in the windows: every top-level window asks for the
- * look and feel before it builds itself, at CLASS LOAD.  The claims measure the SIZE and the window's chrome, not only
- * whether the look and feel is FlatLaf, which was true in every failing case:
+ * The look and feel is installed by `MarklinControlStation.init` and by `TrainControlUI`'s constructor, so every
+ * top-level window asks for it before it builds itself, at CLASS LOAD.  The claims measure the SIZE and the window's
+ * chrome, not only whether the look and feel is FlatLaf, which was true in every failing case:
  *
  * <pre>
  *   a Swing component built, then the install ... scale 1.25, every font 15

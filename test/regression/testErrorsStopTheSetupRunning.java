@@ -22,13 +22,12 @@ import support.SourceOf;
 
 /**
  * An error stops the setup running, and everything that offers to run it asks the same question (OB-090): starting
- * autonomy is refused on any ERROR finding (OB-057), so the diagram strip must not decide what to show from
- * hasBlockingProblems(), which asks the GRAPH only.  There is ONE definition of broken, AutonomySession.errorCount(),
- * which both the refusal and the strip ask.
+ * autonomy is refused on any ERROR finding (OB-057), so the diagram strip must not decide from hasBlockingProblems(),
+ * which asks the GRAPH only.  ONE definition of broken, AutonomySession.errorCount(), serves both.
  *
- * The sample layout is parsed with no Central Station, so every switch is unaddressed and all its errors are blocking
- * graph problems; the state "graph builds cleanly, setup still must not run" cannot be reached.  So the gap is shown as
- * a DELTA, and every assertion is a delta, so none becomes a test about the fixture the first time it is edited.
+ * The sample layout parses with no Central Station, so all its errors are blocking graph problems and "graph builds
+ * cleanly, setup still must not run" cannot be reached; every assertion is therefore a delta, so none becomes a test
+ * about the fixture.
  */
 public class testErrorsStopTheSetupRunning
 {
@@ -150,8 +149,7 @@ public class testErrorsStopTheSetupRunning
      * `TrainControlUI.autonomyHasErrors()`, not the narrower graph-only question (OB-090).
      *
      * MUTATION this catches: change `canStartAutonomy()`'s last term from `!autonomyHasErrors()` to
-     * `autonomyErrorCount() == 0`.  The count is the narrower question: a graph that will not build at all is not an
-     * error it sees, so the Start button stays live over a setup that refuses every press.
+     * `autonomyErrorCount() == 0`; a graph that will not build is not an error that count sees.
      */
     @Test
     public void testTheAffordancesAskTheGuardsOwnQuestion() throws Exception
@@ -186,13 +184,9 @@ public class testErrorsStopTheSetupRunning
             "autonomyHasErrors() no longer asks the session's own question, so the affordances and the "
             + "guard can agree word for word and mean different things.  Body: " + wrapper);
 
-        // THE SAME FOR THE OTHER TWO AFFORDANCES.  The strip's `fixing` flag is a DECISION (a press opens the editor or
-        // clicks Start), so what must match the guard is what DECIDES.  The MENU still reads the count, for its
-        // tooltip; the strip's displayed number comes from setFindings' arguments, and reading it here too was a second
-        // whole walk of the graph on the event thread.
-        //
-        // THE BODY, not the file: a whole-file `contains` is satisfied by the method name appearing in a COMMENT.
-        // Its sibling assertion above extracts the body and strips comments; this is now the strip's only rule.
+        // THE OTHER TWO AFFORDANCES: the strip's `fixing` flag is a DECISION, so what must match the guard is what
+        // DECIDES; the menu still reads the count for its tooltip.  THE BODY, not the file: a whole-file `contains` is
+        // satisfied by the method name appearing in a COMMENT.
         String sync = code("public final void syncRun()");
 
         assertTrue(sync.contains("autonomyHasErrors()"),
@@ -348,10 +342,9 @@ public class testErrorsStopTheSetupRunning
         return session;
     }
     /**
-     * The strip grays the stop it has already carried out, rather than removing it (OB-143): the strip mirrors
-     * whichever real button is ENABLED, and Graceful Stop disables itself at once while autonomy keeps running, so for
-     * that window "neither enabled" must not mean hide.  The case that must NOT change is the last one: "neither
-     * enabled" has causes unrelated to stopping.  The rule is exercised rather than the panel, which needs a window.
+     * The strip grays the stop it has already carried out, rather than removing it (OB-143): Graceful Stop disables
+     * itself at once while autonomy keeps running, so "neither enabled" must not mean hide there; the last case,
+     * "neither enabled" for unrelated causes, must not change.  The rule is exercised rather than the panel.
      *
      * MUTATION: return HIDDEN for the pending case and the third assertion fails; return STOP_PENDING
      * whenever neither is enabled and the last one fails.
@@ -415,11 +408,10 @@ public class testErrorsStopTheSetupRunning
     }
 
     /**
-     * The autonomy strip is not the scroll pane's column header (OB-148): a column header is as wide as the view and
-     * scrolls with it, so every sideways step would repaint a panel as wide as the diagram (Adam: "if a track diagram
-     * is wide, the header above a track diagram flickers while scrolling sideways").  The swap is made at runtime
-     * through GroupLayout.replace (a hand-edited GEN block is how cropOverlay disappeared twice), so this checks that
-     * the swap is still there and the column header is not being set again.
+     * The autonomy strip is not the scroll pane's column header (OB-148): a column header scrolls with the view and
+     * would repaint a panel as wide as the diagram on every sideways step (Adam: "if a track diagram is wide, the
+     * header above a track diagram flickers while scrolling sideways").  The swap is made at runtime through
+     * GroupLayout.replace, so this checks it is still there and the column header is not being set again.
      */
     @Test
     public void testTheStripIsNotTheScrollPanesColumnHeader() throws Exception
@@ -450,12 +442,9 @@ public class testErrorsStopTheSetupRunning
     }
 
     /**
-     * All three "why can't I start" messages name the third reason.
-     *
-     * The guard refuses on `hasErrors()`, which covers a graph that will not build at all, where `autonomyErrorCount()`
-     * is **zero**; a message splitting on the count alone falls through to "wait for trains" that never run.  The
-     * guard, the API's exception and the grayed right-click item's tooltip all need the third arm.  Asked of the
-     * source, since no test can read a tooltip back out of a menu that needs a running model.
+     * All three "why can't I start" messages name the third reason: the guard refuses on `hasErrors()`, which covers a
+     * graph that will not build, where `autonomyErrorCount()` is zero.  The guard, the API's exception and the grayed
+     * item's tooltip all need that arm; asked of the source, since a tooltip cannot be read back without a model.
      *
      * MUTATION this catches: deleting the `autonomyHasErrors()` arm from any one of the three.
      */

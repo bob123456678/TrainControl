@@ -9,9 +9,8 @@ import support.SourceOf;
  *
  * The frame is `setFocusable(false)` and the letter keys are read by KeyListeners on `KeyboardTab` and on the
  * locomotive panel, so `takeTheKeyboard` asks the tabbed pane for it.  The tests ask `getMostRecentFocusOwner`, not
- * `getFocusOwner`: a test JVM's window is usually not the OS's focused window, and `getFocusOwner` answers null for
- * every such window.  Each test presses its letter on the component the window arranged to receive it, so a build that
- * arranged for the wrong component fails at that press.
+ * `getFocusOwner` (null for any window the OS has not focused), and press each letter on the component the window
+ * arranged to receive it.
  */
 public class testTheWindowTakesTheKeyboard
 {
@@ -314,12 +313,11 @@ public class testTheWindowTakesTheKeyboard
     }
 
     /**
-     * OB-170 proper: the keyboard comes back when the window does.  `requestFocusInWindow` does nothing while the
-     * window is not the focused window; this reproduces that without an OS: something else in the window is given the
-     * keyboard after start-up, then the window gains focus.
+     * OB-170 proper: the keyboard comes back when the window does (`requestFocusInWindow` does nothing while the window
+     * is not focused): something else is given the keyboard after start-up, then the window gains focus.
      *
-     * MUTATION this catches: remove the `addWindowFocusListener` block from `takeTheKeyboard` and keep the single
-     * posted request; the press then leaves `currentButton` where it was.
+     * MUTATION: remove the `addWindowFocusListener` block from `takeTheKeyboard` and keep the single posted request;
+     * the press then leaves `currentButton` where it was.
      */
     @Test(timeOut = 300000)
     public void testTheKeyboardComesBackWhenTheWindowGainsFocus() throws Exception
@@ -416,14 +414,11 @@ public class testTheWindowTakesTheKeyboard
     }
 
     /**
-     * Coming to the foreground gives the always-on-top setting back (OB-170): the window is made topmost, raised, and
-     * set back to whatever the operator chose.
+     * Coming to the foreground gives the always-on-top setting back (OB-170): topmost, raised, then set back to what
+     * the operator chose.  Both directions, so `setAlwaysOnTop(false)` unconditionally fails.  The restore is on a
+     * timer, so this waits for it, bounded.
      *
-     * Both directions, because a one-directional test passes on `setAlwaysOnTop(false)` unconditionally.  The restore
-     * is on a timer (handing the flag back in the same breath as the raise loses the raise), so this waits for it, the
-     * wait bounded.
-     *
-     * MUTATION this catches: dropping the restore, or replacing it with a bare `setAlwaysOnTop(false)`.
+     * MUTATION: drop the restore, or replace it with a bare `setAlwaysOnTop(false)`.
      */
     @Test(timeOut = 300000)
     public void testComingToTheForegroundGivesTheOnTopSettingBack() throws Exception
@@ -507,13 +502,11 @@ public class testTheWindowTakesTheKeyboard
     }
 
     /**
-     * An iconified window is un-iconified, without un-maximizing a maximized one: a window in the iconified state
-     * cannot be activated, and the maximized bits live in the same field, so the ICONIFIED bit is cleared rather than
-     * the state replaced.
+     * An iconified window is un-iconified, without un-maximizing a maximized one: the ICONIFIED bit is cleared rather
+     * than the state replaced.
      *
-     * MUTATION this catches: removing the un-iconify entirely.  The maximize half would catch
-     * `setExtendedState(java.awt.Frame.NORMAL)`, but cannot run on THIS window (`setResizable(false)` refuses the
-     * maximized bits), so it is guarded by what the fixture managed to arrange.
+     * MUTATION: removing the un-iconify entirely.  The maximize half cannot run on THIS window (`setResizable(false)`
+     * refuses the maximized bits), so it is guarded by what the fixture managed to arrange.
      */
     @Test(timeOut = 300000)
     public void testComingToTheForegroundUnMinimisesWithoutUnMaximising() throws Exception
@@ -578,14 +571,11 @@ public class testTheWindowTakesTheKeyboard
     }
 
     /**
-     * It does NOT take the caret back from something that already has it: alt-tabbing away from a half-typed station
-     * name and back must not empty the caret out of the field, so `focusTheKeyboard` is conditional.
+     * It does NOT take the caret back from something that already has it (alt-tabbing away from a half-typed station
+     * name and back), so `focusTheKeyboard` is conditional.  The `KeyboardFocusManager` answers null for windows the
+     * OS has not focused, so a fake that answers is installed, restored before the window is disposed.
      *
-     * The focus owner is asked of the `KeyboardFocusManager`, which answers null for every window the OS has not
-     * focused, so this installs one that answers (the only way to put a test JVM in a person's desktop state); the
-     * fake is restored before the window is disposed.
-     *
-     * MUTATION this catches: delete the `isDescendingFrom` early return from `focusTheKeyboard`.
+     * MUTATION: delete the `isDescendingFrom` early return from `focusTheKeyboard`.
      */
     @Test(timeOut = 300000)
     public void testComingBackToTheWindowDoesNotTakeTheCaretBack() throws Exception

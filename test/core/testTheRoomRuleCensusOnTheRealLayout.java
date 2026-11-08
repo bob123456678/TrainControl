@@ -213,11 +213,10 @@ public class testTheRoomRuleCensusOnTheRealLayout
     }
 
     /**
-     * Journeys refused on the way though the berth has room: every route to it turns at a square too short.  Banded,
-     * because `bfs(from, to, exclude)` returns SOME route and the adjacency is keyed by identity hashes, so counts move
-     * about two per cent between JVMs; the ceiling catches the pass-through check coming back.  Zero on this railway.
-     * This census cannot catch the ruling being taken out (its loop is a replica of the rule);
-     * `core.testATrainIsJudgedOnlyWhereItStops` and `core.testNonReversibleTrains` hold it, through the real door.
+     * Journeys refused on the way though the berth has room: every route to it turns at a square too short.  Banded
+     * (counts move about two per cent between JVMs, since `bfs` returns SOME route); the ceiling catches the
+     * pass-through check coming back.  Zero here.  The census cannot catch the ruling being taken out (its loop is a
+     * replica); `core.testATrainIsJudgedOnlyWhereItStops` and `core.testNonReversibleTrains` hold it.
      */
     private static final int REFUSED_ON_THE_WAY_AT_LEAST = 0;
 
@@ -384,13 +383,10 @@ public class testTheRoomRuleCensusOnTheRealLayout
             + offTheEndOfTheRoute);
         System.out.println("  refusals at a square the train turns at: " + refusedAtATurn);
 
-        // Asserted, not only printed: `behaviour/length.md` section 5a says every refusal this ruling adds is bounded
-        // by a switch.
-        //
-        // This measures the railway, not the guard: the loop is a replica of `whyTooLongForThisRoute`, so removing
-        // `comesToRest` from production leaves these numbers where they are and `core.testNonReversibleTrains` is what
-        // fails. A band, for the reason `REFUSED_ON_THE_WAY_AT_LEAST` gives: the floor catches the bound being taken
-        // out, the ceiling its refusing everything.
+        // Asserted, not only printed (`behaviour/length.md` section 5a: every refusal this ruling adds is bounded by a
+        // switch).  This measures the railway, not the guard: the loop is a replica of `whyTooLongForThisRoute`, so
+        // `core.testNonReversibleTrains` is what fails if `comesToRest` is removed.  A band: the floor catches the
+        // bound being taken out, the ceiling its refusing everything.
         assertTrue(refusedAtATurn >= AT_A_TURN_AT_LEAST && refusedAtATurn <= AT_A_TURN_AT_MOST,
             refusedAtATurn + " route-journeys are refused at a square the train turns at, outside the"
             + " measured band of " + AT_A_TURN_AT_LEAST + " to " + AT_A_TURN_AT_MOST + ". Below it,"

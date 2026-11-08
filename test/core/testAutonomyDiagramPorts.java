@@ -20,11 +20,9 @@ import org.traincontrol.automationui.TilePorts.Side;
 /**
  * The port map: which sides of each tile type connect, in each switch position, at each orientation.
  *
- * The table is the seed for the whole autonomy tile graph and was verified by eye against the icon art, so these tests
- * do not re-derive it: they pin the readings that were confirmed, and fail loudly if a tile type is added without being
- * classified (an unmapped type traces as impassable track and silently removes part of the layout from autonomy).
- *
- * No hardware, no UI, no LocDB - TilePorts is pure data.
+ * The table was verified by eye against the icon art, so these tests pin the confirmed readings and fail loudly if a
+ * tile type is added without being classified (an unmapped type traces as impassable track and silently removes part
+ * of the layout from autonomy).  No hardware, no UI, no LocDB - TilePorts is pure data.
  *
  * @author Adam
  */
@@ -75,9 +73,7 @@ public class testAutonomyDiagramPorts
 
     /**
      * The rotation direction, pinned against the art: Java2D's positive angle is clockwise on screen, so orientation 1
-     * is three quarter turns clockwise.  Getting it backwards would still give a self-consistent port map with every
-     * edge wrong.  The values were measured by applying the same transform to the icons
-     * (`docs/plans/portmap-verification.py`, in git history at e5f77c9c^).
+     * is three quarter turns clockwise.  Backwards would still give a self-consistent port map with every edge wrong.
      */
     @Test
     public void testRotationDirectionMatchesTheRenderedArt()
@@ -405,9 +401,8 @@ public class testAutonomyDiagramPorts
 
     /**
      * A route button sits ON the line and the track runs beneath it.  Its art carries no track, so this comes from how
-     * layouts use them: the sample layout's hand-built graph connects straight across every one, and treating them as
-     * decoration would sever every run containing one.  Orientation says nothing, so it conducts both ways like a
-     * crossing without joining two lines that merely meet at it.
+     * layouts use them: treating them as decoration would sever every run containing one.  Orientation says nothing,
+     * so it conducts both ways like a crossing without joining two lines that merely meet at it.
      */
     @Test
     public void testARouteButtonDeclaresItselfTransparentRatherThanClaimingTrack()
@@ -499,12 +494,9 @@ public class testAutonomyDiagramPorts
     }
 
     /**
-     * The whole port table, every tile type at once: `portmap-verification.py` (git history, e5f77c9c^) brought into
-     * the suite, where it is executed rather than kept in step by hand.
-     *
-     * **The union across every state, not state 0:** what a reader wants is which pieces of track the tile joins in any
-     * position at all.  The per-state and per-orientation behavior is pinned by the tests above (how the tile TURNS;
-     * this says what it IS).  A stub is a route whose two sides are the same, so it appears doubled: "NN".
+     * The whole port table, every tile type at once, as the union across every state (which pieces of track the tile
+     * joins in any position).  How a tile TURNS is pinned by the tests above; this says what it IS.  A stub is a route
+     * whose two sides are the same, so it appears doubled: "NN".
      */
     @Test
     public void testTheWholePortTableIsWhatTheMapSaysItIs()
@@ -582,16 +574,12 @@ public class testAutonomyDiagramPorts
 
     /**
      * A DIRECTION THE HARDWARE REFUSES IS NOT OFFERED AS AN ANSWER (Adam: "Green arrows in the direction that can't be
-     * chosen shouldn't be offered.").  On a permanent turnout (every route directed at the toe) "toward the fork" and
-     * "both ways" restrict nothing (OB-057, OB-090).
+     * chosen shouldn't be offered.").  On a permanent turnout "toward the fork" and "both ways" restrict nothing
+     * (OB-057, OB-090).  `TileGraph.directionIsPossible` is the question the MENU asks; `into(toward, from)` builds
+     * `Route(from, toward, toward)`, so the toe is always `getB()`.
      *
-     * `TileGraph.directionIsPossible` is the question the MENU asks; whether a train MOVES is `isPassable`.  The port
-     * map's shape is asserted, not assumed: `into(toward, from)` builds `Route(from, toward, toward)`, so the toe is
-     * always `getB()`.
-     *
-     * MUTATION: make `directionIsPossible` answer true for everything and the fork and both-ways claims fail at every
-     * orientation of every type.  (Dropping its `NONE` case catches nothing: `NONE` falls through to the `TOWARD_B`
-     * arm, true for every one of these routes and for plain track.)
+     * MUTATION: make `directionIsPossible` answer true for everything and the fork and both-ways claims fail.
+     * (Dropping its `NONE` case catches nothing: it falls through to the `TOWARD_B` arm.)
      */
     @Test
     public void testOnlyThePossibleDirectionsAreOffered()

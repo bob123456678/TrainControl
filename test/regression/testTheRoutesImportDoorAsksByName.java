@@ -32,10 +32,9 @@ import org.traincontrol.util.Util;
  * Routes > Import, driven as Adam drives it: the file chooser answered with an export of his routes, the question about
  * automatic firing answered No (MT-496) or Yes (MT-497), and what the door then says and leaves armed read.
  *
- * The file is `exportRoutes()`, the text Routes > Export shows and saves; the Export door itself is not pressed because
- * it also copies the text to the clipboard, which is the machine's and not the run's.  An import deletes every route in
- * the data it runs on, so this runs only where the run has its own copy of the data (one.sh, battery.sh), as
- * `core.testAnImportSaysItsRoutesAreOff` does.
+ * The file is `exportRoutes()`; the Export door itself is not pressed because it copies to the machine's clipboard.
+ * An import deletes every route in the data it runs on, so this runs only where the run has its own copy of the data
+ * (one.sh, battery.sh), as `core.testAnImportSaysItsRoutesAreOff` does.
  *
  * @author Adam
  */
@@ -102,10 +101,9 @@ public class testTheRoutesImportDoorAsksByName
     }
 
     /**
-     * A route saved armed that has no sensor to watch is not armed by Yes (the model arms only a route with one, as the
-     * right-click item does), and the door neither counts it as armed again nor names it in the question.  The door
-     * counted N from the file while the model counted the routes it armed, so the operator was told a route was armed
-     * again that was not.
+     * A route saved armed that has no sensor to watch is not armed by Yes (the model arms only a route with one), and
+     * the door neither counts it as armed again nor names it in the question: it counted N from the file while the
+     * model counted the routes it armed.
      *
      * MUTATION: count from the file again, or name every route saved armed, and this fails.
      */
@@ -158,11 +156,10 @@ public class testTheRoutesImportDoorAsksByName
     }
 
     /**
-     * A route whose name has a letter outside ASCII comes back by the name it was exported with.  Export writes UTF-8;
-     * the door read it in the machine's own character set, which on Java 8 under Windows is a code page, so a route's
-     * locomotive command naming a non-ASCII locomotive named none and was skipped when the route fired.  On a JVM whose
-     * own character set is UTF-8 the two readings agree and this can see nothing, so there it is skipped rather than
-     * passed.
+     * A route whose name has a letter outside ASCII comes back by the name it was exported with: Export writes UTF-8
+     * and the door read it in the machine's character set (a code page on Java 8 under Windows), so a non-ASCII
+     * locomotive command was skipped when the route fired.  On a UTF-8 JVM the two agree and this is skipped rather
+     * than passed.
      *
      * MUTATION: read the file without a character set, and this fails.
      */

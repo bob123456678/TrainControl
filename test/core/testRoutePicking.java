@@ -15,20 +15,19 @@ import org.traincontrol.marklin.MarklinFeedback;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 
 /**
- * Every rule for choosing between routes, measured against a railway where they disagree.  A mirror rule (the same
+ * Every rule for choosing between routes, measured against a railway where they disagree: a mirror rule (the same
  * number negated) looks too simple to get wrong, and one missing minus sign turns "take the scenic way round" into
- * "take the direct one" with nothing complaining.
+ * "take the direct one".
  *
- * The fixture is one junction with two ways across it, arranged so that every rule has a different favorite:
+ * The fixture is one junction with two ways across it, so that every rule has a different favorite:
  *
  * <pre>
  *   the short way:  Start -> ViaStation -> End      2 sensors, 1 station passed, 100 long
  *   the long way:   Start -> Plain1 -> Plain2 -> End  3 sensors, 0 stations passed, 12 long
  * </pre>
  *
- * Fewest-sensors and longest-track both want the short way; fewest-stations and shortest-track both want the long
- * one, so each rule and its mirror must choose differently.  The last test fails when a new rule is added to the enum
- * and not tested here.
+ * Fewest-sensors and longest-track want the short way; fewest-stations and shortest-track want the long one.  The
+ * last test fails when a new rule is added to the enum and not tested here.
  */
 public class testRoutePicking
 {
@@ -138,10 +137,9 @@ public class testRoutePicking
     }
 
     /**
-     * A stretch answered 0 counts 0 in the length a route is chosen by, and one nobody measured still counts 1.  The
-     * floor of 1 keeps an unmeasured railway from tying every route at 0.
-     * Two ways to one end: 4 + 0 + 0 + 4 over two hops answered 0, and 9.  Shortest takes the first and longest the
-     * second; with the hops unanswered, each counts 1 and the first is 10.
+     * A stretch answered 0 counts 0 in the length a route is chosen by, and one nobody measured still counts 1 (the
+     * floor keeps an unmeasured railway from tying every route at 0).  Two ways to one end: 4 + 0 + 0 + 4 over two
+     * hops answered 0, and 9; with the hops unanswered, each counts 1 and the first is 10.
      *
      * MUTATION: count an answered 0 as 1, and this fails.
      */
@@ -299,12 +297,9 @@ public class testRoutePicking
     }
 
     /**
-     * With no lengths recorded, an edge counts as one s88 of track.  The fixture above cannot test this because every
-     * edge in it has a length; with none recorded every route would score zero, tie, and SHORTEST_LENGTH and
-     * LONGEST_LENGTH would return the SAME route.
-     *
-     * BOTH DIRECTIONS, because asserting only that shortest takes the two-edge way is satisfied by a rule that always
-     * takes it, including the tie-break that was already doing so.
+     * With no lengths recorded, an edge counts as one s88 of track: every route would otherwise score zero and tie, and
+     * SHORTEST_LENGTH and LONGEST_LENGTH would return the SAME route.  Asserted in BOTH DIRECTIONS, since a rule that
+     * always takes the two-edge way would satisfy one.
      */
     @Test
     public void testUnmeasuredTrackCountsOneEachAndStillRanks() throws Exception
@@ -409,10 +404,9 @@ public class testRoutePicking
     }
 
     /**
-     * Start with nothing startable leaves the layout NOT running.  runLocomotives sets `running` before it looks at a
-     * locomotive, and both skips (start point inactive, preferred speed outside 1 to 100) return without starting a
-     * thread, so nothing ever clears the flag; moveLocomotive, renamePoint and setSimulate then all refuse until Stop
-     * is pressed.  A preferred speed of 0 is the state of any locomotive placed without the speed dialog.
+     * Start with nothing startable leaves the layout NOT running: `runLocomotives` sets `running` first, and both skips
+     * (start point inactive, preferred speed outside 1 to 100) start no thread, so nothing clears the flag and
+     * moveLocomotive, renamePoint and setSimulate refuse until Stop is pressed.
      */
     @Test
     public void testStartWithNothingStartableDoesNotLeaveTheLayoutRunning() throws Exception
@@ -585,12 +579,9 @@ public class testRoutePicking
         return path.get(0).getEnd().getName();
     }
     /**
-     * Station priority weighed against distance (as a ratio) can send a train past the higher-priority station.  Every
-     * other preference ranks candidates within one priority band, so the fixture has a high-priority station a long way
-     * off and an ordinary one close by.
-     *
-     * BOTH DIRECTIONS, because either alone is satisfied by a constant: under FEWEST_STATIONS (any banded rule) the
-     * important station must still win outright; under the ratio the near one must.
+     * Station priority weighed against distance (as a ratio) can send a train past the higher-priority station; every
+     * other preference ranks within one priority band.  BOTH DIRECTIONS: under FEWEST_STATIONS the important station
+     * must still win outright, under the ratio the near one.
      */
     @Test
     public void testStationPriorityIsWeighedAgainstDistance() throws Exception
@@ -636,12 +627,9 @@ public class testRoutePicking
     }
 
     /**
-     * A de-prioritized station is not reached by the longest route available.  `ratioOf` was
-     * ((priority + 1) * 1000) / length, and Point.setPriority takes negatives: at -1 the numerator was 0, and at -2 and
-     * below dividing by a LARGER length gave a LARGER value, so the most distant station won.
-     *
-     * Two assertions, because the two halves fail apart: the de-prioritized station must lose to an ordinary one at
-     * all, and it must not beat it BY BEING FURTHER.
+     * A de-prioritized station is not reached by the longest route available: `ratioOf` divided by length and
+     * `Point.setPriority` takes negatives, so at -2 and below a LARGER length gave a LARGER value.  Two assertions: it
+     * must lose to an ordinary station at all, and not beat it BY BEING FURTHER.
      */
     @Test
     public void testADePrioritisedStationIsNotReachedByTheLongestRoute() throws Exception

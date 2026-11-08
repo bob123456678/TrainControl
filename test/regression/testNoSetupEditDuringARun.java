@@ -42,10 +42,8 @@ public class testNoSetupEditDuringARun
 {
     /**
      * The pages an old-file import says it left out stay out when the import then fails (OB-302): the exclusion is the
-     * setup's shared half, not the imported configuration, so the import's rollback must not undo it.
-     *
-     * "4 - Combined" repeats "1 - Main"'s sensors and is put back in as a page nobody has decided about, the state the
-     * import acts on.
+     * setup's shared half, so the import's rollback must not undo it.  "4 - Combined" repeats "1 - Main"'s sensors and
+     * is put back as a page nobody has decided about.
      *
      * MUTATION: take the snapshot before the exclusion again, and this fails.
      */
@@ -1090,10 +1088,9 @@ public class testNoSetupEditDuringARun
     }
 
     /**
-     * A send queued ahead of the editor's build is not sent.  The editor is asked for on the event thread and built in
-     * a task posted after it; the event thread is held, as a slow refresh holds it, with an Auto tab double-click and
-     * the editor's request queued behind it.  The gate finds no editor on its way, so what refuses is the editor's
-     * build, which looks at the railway again (testTheGateRefusesWhileAnEditorIsOnItsWay reaches the gate).
+     * A send queued ahead of the editor's build is not sent: the event thread is held, as a slow refresh holds it,
+     * with the editor's request queued behind it.  The gate finds no editor on its way, so what refuses is the
+     * editor's build, which looks at the railway again (testTheGateRefusesWhileAnEditorIsOnItsWay reaches the gate).
      *
      * MUTATION: let the editor's posted build skip its second look at the railway, with the gate seeing only an
      * editor already built, and this fails.
@@ -1186,10 +1183,9 @@ public class testNoSetupEditDuringARun
     }
 
     /**
-     * The one gate counts an editor on its way as open: Edit Layout sets `editorOnItsWay` before it posts the editor's
-     * build, and until that build has run the gate must refuse every door in the editor's own words.  The build's
-     * second look is no substitute: a hand send hands its train to a thread, so the railway can still read idle.
-     * testASendQueuedAheadOfTheEditorsBuildIsNotSent cannot reach this.
+     * The one gate counts an editor on its way as open: Edit Layout sets `editorOnItsWay` before it posts the build,
+     * and until that has run the gate refuses every door in the editor's own words.  The build's second look is no
+     * substitute: a hand send hands its train to a thread, so the railway can still read idle.
      *
      * MUTATION: let the gate see only an editor already built, or let the editor's question forget the editor on its
      * way, and this fails.
@@ -1344,10 +1340,9 @@ public class testNoSetupEditDuringARun
     }
 
     /**
-     * Start pressed ahead of the editor's request does not run under the editor.  The worker comes back to the event
-     * thread for the atomic-routes gate behind an editor asked for in between, so it asks again there.  In this order
-     * the build's own second look refuses; testStartsWorkerLooksAgainOnceTheEditorHasOpened holds the worker on a
-     * question so that the build runs first.
+     * Start pressed ahead of the editor's request does not run under the editor: the worker comes back to the event
+     * thread for the atomic-routes gate and asks again there.  In this order the build's own second look refuses;
+     * testStartsWorkerLooksAgainOnceTheEditorHasOpened holds the worker so that the build runs first.
      *
      * MUTATION: let Start's worker start the trains without asking again whether an editor has come, with the
      * editor's build skipping its second look, and this fails.
@@ -2384,11 +2379,11 @@ public class testNoSetupEditDuringARun
     /**
      * Start Autonomy and Start Timetable, in a session started in simulation with Simulate not ticked in the autonomy
      * settings, warn first (Adam: "adding a warning popup when you start autonomy when the app is in simulate, and
-     * simulate isn't checked"): the trains would wait for sensors no simulation reports.  Declined, nothing starts.
-     * Asked of every door that sends trains, by the one gate, once its own refusals have passed: a press the gate
-     * refuses, the power off, is refused and not asked.
+     * simulate isn't checked"); declined, nothing starts.  Asked by the one gate after its own refusals, so a press
+     * it refuses (power off) is refused and not asked.
      *
-     * MUTATION: start without asking, and this fails.  So does asking before the gate's refusals, or not at a hand send.
+     * MUTATION: start without asking, and this fails.  So does asking before the gate's refusals, or not at a hand
+     * send.
      */
     @Test
     public void testStartingUnsimulatedInASimulationWarnsFirst() throws Exception
@@ -3945,12 +3940,11 @@ public class testNoSetupEditDuringARun
     }
 
     /**
-     * No train is sent while the diagram reloads after a page door: Duplicate Current Page, Add Blank Page and Combine
-     * Linked Pages hand the reset over to a worker, and a Start in between would run the railway built before the door.
-     * The one gate refuses from the door's change until the reset has run, and opens again after.
+     * No train is sent while the diagram reloads after a page door (Duplicate Current Page, Add Blank Page, Combine
+     * Linked Pages): the one gate refuses from the door's change until the reset has run, and opens again after.
      *
-     * MUTATION: leave the refresh out of the gate, count none at the hand-over or none across Combine's worker, and this
-     * fails; never count one down, and its last part fails.
+     * MUTATION: leave the refresh out of the gate, count none at the hand-over or none across Combine's worker, and
+     * this fails; never count one down, and its last part fails.
      */
     @Test
     public void testNoTrainIsSentWhileAPageDoorReloadsTheDiagram() throws Exception
@@ -4335,9 +4329,8 @@ public class testNoSetupEditDuringARun
     /**
      * The Auto tab's settings, Execute Timetable and the capture toggle are grayed while autonomy is busy, each saying
      * why, and given back with their own tooltips once it is not (Adam: "Implement the two grey usability fixes").  A
-     * click on a grayed setting says nothing (its handler hears the mouse a grayed control still gets).  Graceful Stop
-     * offered counts as busy; what Execute Timetable's own press grayed is not given back by the refresh; Activate
-     * Routes is grayed the same way, and a control its owner grayed says why too.
+     * click on a grayed setting says nothing.  Graceful Stop offered counts as busy; what Execute Timetable's own press
+     * grayed is not given back by the refresh; a control its owner grayed says why too.
      *
      * MUTATION: gray nothing, leave the tooltips, put the refusal up on a grayed click or leave a slider where it was
      * let go, ask the railway alone, give back what another owner grayed, gray Activate Routes with no reason, or leave
@@ -4700,7 +4693,6 @@ public class testNoSetupEditDuringARun
      * Runs the window's `refreshWhatWaitsForTheTrains` on the event thread.
      *
      * @param ui the window
-     * @throws Exception from the refresh
      */
     private static void refreshWhatWaits(final TrainControlUI ui) throws Exception
     {

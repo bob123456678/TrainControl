@@ -46,9 +46,8 @@ public class testAStationsSizeIsAnAllowance
     private static final TileKey SWITCH_BEHIND_PARK = new TileKey("1 - Main", 10, 11);
 
     /**
-     * A second station, chosen because the walk really takes a SECOND hop behind it (the park's run in ends at a
-     * three-road fork that stops the tail).  He left the station and TopMainR1Pre unmeasured, so those two are measured
-     * here.
+     * A second station, chosen because the walk really takes a SECOND hop behind it; the station and TopMainR1Pre are
+     * measured here.
      */
     private static final TileKey TWO_HOPS = new TileKey("1 - Main", 5, 4);
     private static final TileKey BEHIND_TWO_HOPS = new TileKey("1 - Main", 5, 5);
@@ -319,10 +318,8 @@ public class testAStationsSizeIsAnAllowance
 
     /**
      * The tail reaches past the first edge behind it when the train is longer than that edge.  Two budgets walk a
-     * standing train's body: the PLACES budget, which claims square by square, and the HOP budget, which decides
-     * whether to walk back another edge; if the hop budget over-spends, the walk stops early and another train is
-     * cleared over metal this one is lying on.  TopMainR1 measured 2 here, his three squares of 1 behind it,
-     * TopMainR1Pre measured 1 here: the first edge holds 5, so a seven-unit train has 2 left that reach the edge
+     * standing train's body, PLACES and HOP; if the hop budget over-spends, the walk stops early and another train is
+     * cleared over metal this one lies on.  The first edge holds 5, so a seven-unit train has 2 left for the edge
      * beyond.
      *
      * MUTATION: charging the first edge twice - `remaining -= chargedHere + segment.getLength()` - stops the walk at
@@ -362,11 +359,9 @@ public class testAStationsSizeIsAnAllowance
     }
 
     /**
-     * The square the train stands on is claimed wherever it stands, not only at some stations.  A piece of rail is two
-     * `Edge` objects, one per direction, and both can report the same way in at the square they meet;
-     * `getNeighborsAndIncoming` sorts the outgoing ones first, so taking the outgoing copy first claimed the track
-     * behind and never the berth.  TopMainR0Park measured 1 here and the square behind it 2; the train is 2, so it lies
-     * on both.
+     * The square the train stands on is claimed wherever it stands, not only at some stations: a piece of rail is two
+     * `Edge` objects and `getNeighborsAndIncoming` sorts the outgoing first, so taking the outgoing copy first claimed
+     * the track behind and never the berth.
      *
      * MUTATION: written against the unfixed walk, it claimed the two tiles behind with the berth itself missing.
      */
@@ -397,8 +392,7 @@ public class testAStationsSizeIsAnAllowance
 
     /**
      * A berth measured on an approach measured nowhere else takes a train that fits on it, and blocks nothing behind:
-     * the arrangement `Automation.md` produces first, because it tells him to measure the station.  The approach into
-     * TunnelLongPark has every square but the berth's taken to 0 for the length of this claim.
+     * the arrangement `Automation.md` produces first.  Every square of the approach but the berth's is taken to 0.
      */
     @Test(dependsOnMethods = "testTheParkIsMeasuredTheWayHeMeasuredIt")
     public void testAMeasuredBerthOnAnUnmeasuredApproachHoldsWhatFits()

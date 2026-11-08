@@ -20,16 +20,10 @@ import org.testng.annotations.Test;
  * Adam: "make sure we have test cases for locomotive exclusions - both on points that are intermediate, and stations -
  * that paths that try to send a locomotive down those are refused."
  *
- * The two rules are not the same rule:
- *   - An excluded **intermediate** point cannot be TRAVERSED: `isPathClear` refuses any path whose interior includes
- * it.
- *   - An excluded **station** cannot be STOPPED AT: it is checked against a path's destination, and the locomotive may
- *     still drive straight through it.
- *
- * That asymmetry is deliberate: blocking passage through excluded stations too was tried and reverted (see the comment
- * at `Layout.isPathClear`), because on Adam's own railway it removed 45% of the reachable station pairs for two
- * locomotives; he uses station exclusions on through routes.  So the third test pins the passage that is allowed, and
- * goes red if somebody "tidies" the two rules into one.
+ * An excluded **intermediate** point cannot be TRAVERSED (`isPathClear`); an excluded **station** cannot be STOPPED AT
+ * and may still be driven through.  The asymmetry is deliberate: blocking passage through stations too was reverted
+ * (see `Layout.isPathClear`), because on Adam's railway it removed 45% of the reachable station pairs.  The third test
+ * pins the passage that is allowed and goes red if the two rules are merged.
  */
 public class testLocomotiveExclusions
 {
@@ -77,12 +71,9 @@ public class testLocomotiveExclusions
     }
 
     /**
-     * A locomotive excluded from a station is not sent there.
-     *
-     * Asked of pickPath, where autonomy CHOOSES, not of getPossiblePaths, which filters only on "is a destination" and
-     * "is something standing there" and deliberately applies no exclusions: it feeds the right-click menu, where the
-     * operator may send a train somewhere autonomy would not pick.  EX_Far is the only place autonomy may choose here,
-     * so refusing it means refusing everything and the assertion is a null.
+     * A locomotive excluded from a station is not sent there.  Asked of pickPath, where autonomy CHOOSES, not of
+     * getPossiblePaths, which applies no exclusions (it feeds the right-click menu).  EX_Far is the only place
+     * autonomy may choose here, so refusing it means refusing everything and the assertion is a null.
      */
     @Test
     public void testAnExcludedStationIsNotChosenAsADestination() throws Exception
@@ -101,12 +92,8 @@ public class testLocomotiveExclusions
     }
 
     /**
-     * ...and may still drive THROUGH an excluded station, the half that is easy to break.
-     *
-     * `Layout.isPathClear` refuses an excluded INTERMEDIATE point and deliberately not an excluded station in the
-     * middle of a path (enforcing both cost 45% of the reachable station pairs on Adam's railway).  This guards against
-     * the two rules being merged.  EX_Through is a station but not one autonomy may choose, so the only thing its
-     * exclusion can affect here is passage.
+     * ...and may still drive THROUGH an excluded station, the half that is easy to break.  EX_Through is a station
+     * autonomy may not choose, so its exclusion can only affect passage.
      */
     @Test
     public void testAnExcludedStationMayStillBeDrivenThrough() throws Exception
@@ -129,13 +116,9 @@ public class testLocomotiveExclusions
     }
 
     /**
-     * Excluding ONE locomotive does not shut the point to the others.
-     *
-     * The tests above ask about a single locomotive, which makes "excluded" and "anybody is excluded"
-     * indistinguishable: `!getExcludedLocs().isEmpty()` in place of `getExcludedLocs().contains(loc)` would stay green
-     * while one operator's exclusion quietly shut a siding to the whole fleet.  Both enforcement points are asked,
-     * passage (`isPathClear`) and stopping (`pickPath`), each placing a DIFFERENT locomotive (placing the second sweeps
-     * the first off; the exclusion lives on the Point and names the Locomotive, so it survives that).
+     * Excluding ONE locomotive does not shut the point to the others: `!getExcludedLocs().isEmpty()` in place of
+     * `getExcludedLocs().contains(loc)` would stay green for a single locomotive.  Both enforcement points are asked,
+     * passage (`isPathClear`) and stopping (`pickPath`), each placing a DIFFERENT locomotive.
      *
      * MUTATION this catches: `!getExcludedLocs().isEmpty()` in place of `contains(loc)`, at either
      * `isPathClear` or `canEnter`'s station rule, fails the half that guards it.
@@ -220,11 +203,8 @@ public class testLocomotiveExclusions
     }
 
     /**
-     * And a locomotive added to the database after the list was made is kept out too, which is the point of the mode:
-     * the list is kept as chosen and read in its mode, not turned into a list of everybody else the day it was made.
-     *
-     * THE CONTROL: the same list keeping the chosen locomotives out lets the new one in, so the last assertion is about
-     * the mode and not about a new locomotive being refused everywhere.
+     * And a locomotive added to the database after the list was made is kept out too: the list is read in its mode.
+     * THE CONTROL: the same list keeping the chosen locomotives out lets the new one in.
      *
      * MUTATION: make an allow-only list a list of exclusions of the locomotives there are when it is set, and this
      * fails.
@@ -438,10 +418,8 @@ public class testLocomotiveExclusions
 
     /**
      * A station whose arrival from one side is barred still lets the trains its list keeps out drive through it that
-     * way.  The copy the builder makes for the barred side is no destination, and read as "not a station" its list
-     * stopped them passing (with an allow-only list, every train it does not name); a station's list says who may not
-     * STOP there, so it is asked of the square, not of the copy.  The control: on a plain sensor the list is still a
-     * wall.
+     * way: a station's list says who may not STOP there, so it is asked of the square, not of the barred side's copy
+     * (no destination).  The control: on a plain sensor the list is still a wall.
      *
      * MUTATION: ask the copy's own destination flag again, in `Layout.isPathClear` or in Return Home's
      * `HomeStaging.canEnter`, and this fails.
@@ -512,9 +490,8 @@ public class testLocomotiveExclusions
     }
 
     /**
-     * An old autonomy.json imported into a configuration leaves the list of a square that allows only the chosen
-     * locomotives as it is: the file's list says who is kept OUT, and gap-filled into an allow-only square with none
-     * chosen it read as the only locomotives let in.  The control: a square with no mode still takes the file's list.
+     * An old autonomy.json imported into a configuration leaves the list of an allow-only square as it is: the file's
+     * list says who is kept OUT.  The control: a square with no mode still takes the file's list.
      *
      * MUTATION: gap-fill the list whatever the square's mode, and this fails.
      */
@@ -584,10 +561,9 @@ public class testLocomotiveExclusions
     }
 
     /**
-     * A line Alpha - Beta - Gamma - Delta, track between, built by the setup's own builder and handed to the model;
-     * Alpha and Delta must turn.  `betaStation`: Beta is a station rather than a plain sensor; `barredFromWest`: a
-     * train arriving at Beta from the west may not stop there; `mode` and `list` are Beta's list's mode (or null) and
-     * names.
+     * A line Alpha - Beta - Gamma - Delta, built by the setup's own builder; Alpha and Delta must turn.
+     * `betaStation`: Beta is a station; `barredFromWest`: arriving at Beta from the west may not stop; `mode` and
+     * `list` are Beta's list's mode (or null) and names.
      */
     private static org.traincontrol.automationui.AutonomySession rsa65Line(String tag, boolean betaStation,
         boolean barredFromWest, String mode, String... list) throws Exception

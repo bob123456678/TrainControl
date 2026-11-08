@@ -153,15 +153,11 @@ public class testAutoLayoutRace
     }
 
     /**
-     * A train already under way does not queue behind one that is still being dispatched.
-     *
-     * `configureAndLockPath` holds the layout monitor across its whole lock loop (claiming a path is atomic), sleeping
-     * CONFIGURE_SLEEP per edge and per accessory, so on a long path it is held for seconds.  `updatePendingS88`, which
-     * every running locomotive calls just before waiting for its next sensor, must not want that monitor: a train held
-     * there could cross and clear its sensor, and `waitForOccupiedFeedback` (it tests a LEVEL) would then wait for an
-     * occupancy of a sensor the train had already passed.
-     *
-     * Driven directly, not through autonomy: the subject is which monitor guards what, not timing.
+     * A train already under way does not queue behind one that is still being dispatched: `configureAndLockPath` holds
+     * the layout monitor across its lock loop (seconds on a long path), and `updatePendingS88`, which every running
+     * locomotive calls before waiting for its next sensor, must not want that monitor, or the train could clear its
+     * sensor and `waitForOccupiedFeedback` (it tests a LEVEL) would wait for a sensor it had already passed.  Driven
+     * directly: the subject is which monitor guards what, not timing.
      */
     @Test
     public void testARunningTrainIsNotBlockedByOneBeingDispatched() throws Exception
@@ -217,12 +213,9 @@ public class testAutoLayoutRace
     }
 
     /**
-     * A train that never arrives is said out loud, and the wait carries on.
-     *
-     * The wait is right to be endless (only a sensor says where a train is, and driving on blind or stopping on a guess
-     * is not safe), but the operator must be told when a locomotive failed to start or took another route.
-     *
-     * The threshold is turned down here rather than waiting three real minutes, as Layout.TIMETABLE_STUCK_MS is.
+     * A train that never arrives is said out loud, and the wait carries on: the wait is rightly endless (only a sensor
+     * says where a train is), but the operator must be told when a locomotive failed to start or took another route.
+     * The threshold is turned down rather than waiting three real minutes, as Layout.TIMETABLE_STUCK_MS is.
      */
     @Test
     public void testALocomotiveWaitingTooLongForASensorSaysSo() throws Exception
@@ -296,11 +289,9 @@ public class testAutoLayoutRace
     }
 
     /**
-     * And it is said ONCE, however the sensor behaves afterwards.
-     *
-     * The wait restarts when the feedback does not stay occupied for minDuration (a flicker is not an arrival).  The
-     * advisory's remaining time carries into the restart by subtraction; past the threshold it is negative, and
-     * flooring it at a millisecond would announce the same train again on every flicker, as "0 minutes".
+     * And it is said ONCE, however the sensor behaves afterwards: the wait restarts on a flicker, and the advisory's
+     * remaining time carries into the restart by subtraction; flooring a negative at a millisecond would announce the
+     * same train on every flicker, as "0 minutes".
      */
     @Test
     public void testTheAdvisoryIsSaidOnceEvenIfTheSensorFlickers() throws Exception
@@ -364,12 +355,8 @@ public class testAutoLayoutRace
     }
 
     /**
-     * And a wait that is SUPPOSED to be endless says nothing at all.
-     *
-     * A route's trigger monitor waits on its sensor for as long as the layout runs, on a locomotive called "Dummy Loc"
-     * that exists only to borrow these utilities; an advisory built into the wait itself would announce, once per
-     * route, that a locomotive nobody owns had failed to arrive.  So the caller asks for the advisory, and this keeps
-     * it so.
+     * And a wait that is SUPPOSED to be endless says nothing at all: a route's trigger monitor waits on its sensor as
+     * long as the layout runs, on a "Dummy Loc" that only borrows these utilities, so the caller asks for the advisory.
      */
     @Test
     public void testAWaitThatIsMeantToBeEndlessStaysQuiet() throws Exception

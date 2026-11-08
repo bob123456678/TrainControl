@@ -173,9 +173,8 @@ public class testAPastedTrainKeepsItsDirection
 
             if (held.isEmpty()) continue;
 
-            // A TERMINUS IS NOT ALWAYS ONE COPY: "terminus" here means authored `mustReverse`, not a dead end, so a
-            // turning station reachable from two directions builds to FOUR (`BottomMainPost {southbound=S, southbound
-            // reverse=N, northbound=N, northbound reverse=S}`).  The property pinned does not depend on the count: **a
+            // A TERMINUS IS NOT ALWAYS ONE COPY: "terminus" here means authored `mustReverse`, so a turning station
+            // reachable from two directions builds to FOUR.  The property pinned does not depend on the count: **a
             // train put down here takes a heading the square can hold, whatever it arrived doing** - "for terminuses,
             // they must reverse on paste".
             Side arriving = opposite(held.values().iterator().next());
@@ -287,19 +286,14 @@ public class testAPastedTrainKeepsItsDirection
             + " sets off from the wrong place - or from nowhere at all");
     }
     /**
-     * WHAT A COMPULSORY-TURN STATION ACTUALLY BUILDS TO: a station autonomy may choose exactly when it is not marked
-     * parking, so a square marked compulsory-turn AND station emits `terminus`, a destination, and that is right
-     * (OB-195; Adam):
+     * A compulsory-turn station builds to `terminus`, a destination autonomy may choose (OB-195; Adam):
      *
      * > *Marking a square as a compulsory turn says what happens when a train ARRIVES, not who may send one there.*
      *
-     * This pins the rule, not a fact about his railway: BottomMainC is the one square where the two markings differ,
-     * and both kinds are asserted present.
+     * Pins the rule, not a fact about his railway: BottomMainC is the one square where the two markings differ.
      *
      * MUTATION: `AutonomyBuilder` writing `autoDestination:false` for a compulsory turn as well fails this at
      * BottomMainC; `stationsAutonomyWillNotChoose` counting `isMustTurnAround` again fails the editor half there.
-     *
-     * @throws Exception on a failure to build
      */
     @Test
     public void testACompulsoryTurnIsAnAutoDestinationExactlyWhenItIsNotParking() throws Exception
@@ -357,12 +351,10 @@ public class testAPastedTrainKeepsItsDirection
     }
 
     /**
-     * THE SAME SETUP BUILDS THE SAME RAILWAY, copy for copy and in the same order (OB-183).  The suspect is the REBUILD
-     * a home change triggers: `AutonomyBuilder.placementCopy` falls back to an order-dependent choice.
+     * THE SAME SETUP BUILDS THE SAME RAILWAY, copy for copy and in the same order (OB-183): the REBUILD a home change
+     * triggers must not fall back to an order-dependent choice in `AutonomyBuilder.placementCopy`.
      *
      * MUTATION: a builder that ordered its copies from a HashMap fails this.
-     *
-     * @throws Exception on a failure to build
      */
     @Test
     public void testARebuildPutsTheCopiesBackInTheSameOrder() throws Exception
@@ -411,7 +403,6 @@ public class testAPastedTrainKeepsItsDirection
      * Every square that builds to at least one copy, with its copies in the order the builder emitted.
      *
      * @return square to copy names
-     * @throws Exception on a failure to build
      */
     private java.util.Map<TileKey, java.util.List<String>> copiesBySquare() throws Exception
     {
@@ -480,20 +471,11 @@ public class testAPastedTrainKeepsItsDirection
     }
 
     /**
-     * A PLACEMENT LANDS ON THE COPY ITS FACING NAMES - the control the method above asked for.
-     *
-     * A square that splits is several `Point`s, and **which one a train is on IS its direction**.
-     * `AutonomyBuilder.placementCopy` picks between them by the stored facing and falls back to the first copy trains
-     * may arrive at when nothing matches, which is not a direction anybody chose: the mechanism behind the "the menu
-     * disagrees with the train" reports.
-     *
-     * Record each facing the square can hold in turn, build, and ask which copy the train is on: it must be the copy
-     * that holds that facing, for every one of them, because a fall-through to copy 0 agrees with the answer exactly
-     * once.
+     * A PLACEMENT LANDS ON THE COPY ITS FACING NAMES: **which copy a train is on IS its direction**, and
+     * `AutonomyBuilder.placementCopy` must pick by the stored facing, not fall back to the first copy.  Each facing the
+     * square can hold is recorded in turn: a fall-through to copy 0 agrees with the answer only once.
      *
      * MUTATION: making `placementCopy` ignore the stored facing fails this on every copy but one.
-     *
-     * @throws Exception on a failure to build
      */
     @Test
     public void testAPlacementLandsOnTheCopyItsFacingNames() throws Exception
@@ -741,10 +723,8 @@ public class testAPastedTrainKeepsItsDirection
     }
 
     /**
-     * How far every Point is from where the train stands, in edges, by this test's own search.
-     *
-     * Breadth-first, so the distances are the true shortest ones whatever order `getNeighbors` shuffles the edges
-     * into.  A turning copy is reached but not driven through, as the rule it checks has it.
+     * How far every Point is from where the train stands, in edges, by this test's own search (breadth-first, so
+     * independent of `getNeighbors` order).  A turning copy is reached but not driven through.
      *
      * @param walked the built railway
      * @param start where the train stands
@@ -865,21 +845,10 @@ public class testAPastedTrainKeepsItsDirection
     }
 
     /**
-     * Everything the setup records about a square reaches the railway, and leaving takes it away.
-     *
-     * Coverage of `arrivedFrom` used to ask only **the setup**, never the **railway**, which is what blocks track.  Two
-     * defects lived in that gap:
-     *
-     * - **The value never arrives.** `parseAuto` applied the side while creating the points and placed the trains
-     *   afterwards, and placing a train clears the side: written, then wiped, on every build.
-     * - **A value arrives that nobody set.** Emptying a square cleared the placement and the facing and left the side
-     *   behind, so the next train inherited the last one's tail.
-     *
-     * So this asserts the round trip at the CONSUMER, in both directions: what is recorded reaches the railway, and
-     * what is removed stops reaching it.  Over several properties, because any property applied in the point loop and
-     * then overwritten by a later pass would fail the same way.
-     *
-     * @throws Exception on a failure to build
+     * Everything the setup records about a square reaches the railway, and leaving takes it away: asserted at the
+     * CONSUMER, in both directions.  Two defects lived in the gap: `parseAuto` placed trains after applying the side
+     * (placing a train clears it), and emptying a square left the side behind for the next train.  Over several
+     * properties, since any property overwritten by a later pass would fail the same way.
      */
     @Test
     public void testWhatTheSetupRecordsIsWhatTheRailwayGets() throws Exception
@@ -958,16 +927,11 @@ public class testAPastedTrainKeepsItsDirection
             + " behind it is blocked on the strength of where a different train came in (IND9-A1)");
     }
     /**
-     * The arrival side survives the BUILD, not just the file.  `parseAuto` applies `arrivedFrom` while creating the
-     * points and places the locomotives in a later pass, and `Point.setLocomotive` drops the arrival side whenever the
-     * occupant changes - right on a running railway, but on a build the occupant always "changes", from nobody to the
-     * train the file names.  So the value was written and then wiped, and **the tail blocking was off after every
-     * restart**.  The survival test asserts the built JSON and the reopened SESSION, the layers either side of the one
-     * that decides; this asserts the railway.
+     * The arrival side survives the BUILD, not just the file: `Point.setLocomotive` drops the arrival side whenever the
+     * occupant changes, and on a build the occupant always "changes", so `parseAuto` must apply `arrivedFrom` after
+     * placing the locomotives.  The survival test covers the layers either side; this asserts the railway.
      *
      * MUTATION: applying arrivedFrom in the point loop again fails this.
-     *
-     * @throws Exception on a failure to build
      */
     @Test
     public void testTheArrivalSideSurvivesTheBuild() throws Exception
@@ -1063,9 +1027,8 @@ public class testAPastedTrainKeepsItsDirection
 
     /**
      * The built Point on this square that is actually holding the train.  **A square is not a Point, and on this
-     * railway it often is not one Point either**: `BottomMainPost` builds to four copies, so `getPoint(baseName)` finds
-     * a copy that is empty or nothing at all.  Asking the station index which copies exist and which has the locomotive
-     * is the question that survives either railway.
+     * railway often not one Point either** (`BottomMainPost` builds to four copies), so ask the station index which
+     * copy has the locomotive.
      *
      * @param square the diagram square
      * @return the occupied copy, or null when no copy of it holds a train

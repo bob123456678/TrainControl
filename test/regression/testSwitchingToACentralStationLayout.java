@@ -8,9 +8,9 @@ import org.traincontrol.base.LayoutDiagram;
 import support.SourceOf;
 
 /**
- * OB-127: a failed switch to a Central Station layout asked about pages that had just been loaded.  The switch stores
- * an EMPTY STRING in the layout-path preference, and `isLocalLayout` and `getLocalLayoutPath` disagreed about what it
- * meant.  Two halves, tested separately because they fail separately: the mechanism, and the agreement.
+ * OB-127: a failed switch to a Central Station layout asked about pages that had just been loaded: the switch stores
+ * an EMPTY STRING in the layout-path preference, and `isLocalLayout` and `getLocalLayoutPath` disagreed about it.
+ * Two halves, tested separately because they fail separately: the mechanism, and the agreement.
  *
  * @author Adam
  */
@@ -75,8 +75,8 @@ public class testSwitchingToACentralStationLayout
     }
 
     /**
-     * A grayed diagram tab is not opened by the program either (OB-128): `setEnabledAt` stops only the user, and Add
-     * Blank Page used to select the tab before asking for a name.  Nine methods now come through one guarded door.
+     * A grayed diagram tab is not opened by the program either (OB-128): `setEnabledAt` stops only the user.  Nine
+     * methods come through one guarded door.
      *
      * MUTATION: dropping the isEnabledAt guard fails this.  Reverting any of the nine call sites to
      * setSelectedIndex fails the structural test below.
@@ -257,8 +257,8 @@ public class testSwitchingToACentralStationLayout
     }
 
     /**
-     * Start is not offered over a layout that lives on the Central Station, which Start refuses.  An `autonomy.json`
-     * can enable the button there, and `canStartAutonomy` used to ask only the button and the setup's errors.
+     * Start is not offered over a layout that lives on the Central Station, which Start refuses (an `autonomy.json`
+     * can enable the button there).
      *
      * MUTATION: take `isRemoteLayout` out of `canStartAutonomy` and this fails.
      */
@@ -414,9 +414,8 @@ public class testSwitchingToACentralStationLayout
     }
 
     /**
-     * The scanner that decides what is code does not lose its place: a CHARACTER LITERAL holding a quote (as in
-     * testARenameReachesTheTimetableOnScreen) and a STRING holding a line-comment marker each hid a window from the
-     * check that keeps the battery off Adam's own railway.
+     * The scanner that decides what is code does not lose its place: a CHARACTER LITERAL holding a quote and a STRING
+     * holding a line-comment marker each hid a window from the check that keeps the battery off Adam's own railway.
      *
      * MUTATION: reading the two in the other order, or dropping the character-literal mode, fails
      * one of the first two assertions; blanking nothing fails the third.
@@ -464,9 +463,8 @@ public class testSwitchingToACentralStationLayout
     }
 
     /**
-     * A class is exempt from the count rule only when its own sandbox is in a setup method.  A file-wide @Before, or a
-     * fixed lookback that reaches over the previous method's body, would let a plain test with three windows and one
-     * sandbox through.
+     * A class is exempt from the count rule only when its own sandbox is in a setup method: a file-wide @Before or a
+     * fixed lookback would let a plain test with three windows and one sandbox through.
      *
      * MUTATION: putting back a fixed-distance lookback fails the first assertion; bounding it so
      * tightly that a method's own annotations fall outside fails the second.
@@ -515,7 +513,6 @@ public class testSwitchingToACentralStationLayout
     /**
      * Nothing in the suite opens the operator's own railway (OB-111): building a `TrainControlUI` or calling
      * `MarklinControlStation.init` reads the layout preference, and a window can raise a MODAL offer no test answers.
-     * Asserted over every test file rather than fixed one class at a time.
      *
      * MUTATION: removing any sandbox, or moving one below the thing it protects, fails this.
      */
@@ -540,13 +537,10 @@ public class testSwitchingToACentralStationLayout
 
             String code = body.replaceAll("(?s)/\\*.*?\\*/", "").replaceAll("//[^\\n]*", "");
 
-            // THE WINDOW is a hard rule: it has no offenders, and it writes the folder and can raise a modal dialog
-            // into the middle of a battery.  The MODEL is a ratchet instead, below: its pre-existing violations would
-            // make a hard rule one somebody deletes rather than obeys.
-            //
-            // QUALIFIED OR NOT, AND EVERY ONE OF THEM, NOT THE FIRST: a class with several test methods needs each
-            // window checked.  THE RAW SOURCE, blanked of strings and comments by one scanner in the order the compiler
-            // reads: a regex that strips comments first loses the closing quote of `"file:///" + x`.
+            // THE WINDOW is a hard rule (no offenders; it writes the folder and can raise a modal dialog); the MODEL
+            // is a ratchet, below.  EVERY window of a class is checked, not the first.  THE RAW SOURCE is blanked of
+            // strings and comments by one scanner in the order the compiler reads: stripping comments first loses the
+            // closing quote of `"file:///" + x`.
             String scan = withoutStringsAndComments(body);
 
             java.util.List<Integer> windows = indicesOf(scan, WINDOW_BUILT);
@@ -843,9 +837,8 @@ public class testSwitchingToACentralStationLayout
     }
 
     /**
-     * A first launch makes a track diagram; every later start still asks.  The half worth writing down is PRESENT
-     * versus READABLE: a database file that exists and will not load is not a first launch, and treating it as empty
-     * replaces a setup with a blank one (`testUiStateIsNotLostWhenUnreadable`).
+     * A first launch makes a track diagram; every later start still asks.  PRESENT versus READABLE: a database file
+     * that exists and will not load is not a first launch (`testUiStateIsNotLostWhenUnreadable`).
      *
      * MUTATION: passing a constant at the call site fails the last assertion.
      */
@@ -895,8 +888,7 @@ public class testSwitchingToACentralStationLayout
     }
 
     /**
-     * Start-up shows the notice on its own window (FR-041), and never hides that window on the way in: the call that
-     * takes the notice down sat in the `finally` of the window build, so it ran on the success path too.  Read rather
+     * Start-up shows the notice on its own window (FR-041), and never hides that window on the way in.  Read rather
      * than run: a test that put a start-up notice on the screen would do it on every battery.
      *
      * MUTATION this catches: putting `connectingFailed()` back in the finally after `latch.countDown()`.
@@ -976,12 +968,9 @@ public class testSwitchingToACentralStationLayout
     }
 
     /**
-     * A sandbox is opened inside a `try`.  Weaker than "closed on every path": it buys a handler to put the close in,
-     * and no early return between the open and that handler can skip it.  `close()` returns the machine-global layout
-     * preference to whatever the operator had; the easy-to-miss ways out are a window constructor that throws,
-     * `MarklinControlStation.init` failing to bind its port, an assertion in the set-up part of a test, and
-     * `SkipException`.  Setup methods are exempt because their `@AfterClass(alwaysRun = true)` teardown runs even when
-     * the set-up threw.
+     * A sandbox is opened inside a `try`: a handler to put `close()` in, which returns the machine-global layout
+     * preference to whatever the operator had.  Setup methods are exempt because their `@AfterClass(alwaysRun = true)`
+     * teardown runs even when the set-up threw.
      *
      * MUTATION: moving any of these opens back above its `try` fails this.
      */

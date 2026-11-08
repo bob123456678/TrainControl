@@ -31,18 +31,13 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
  * should appear at idle and be regenerated if a placement or train/track length is changed."  The guard and the
  * affordance have to ask one question (OB-057, OB-090).
  *
- * The gray is asserted in pixels, because whether a square is grayed is decided when the tile is PAINTED
- * (`support.Rendered`).  The three regeneration claims drive a production door and never ask for a refresh
- * (`support.CoveredMarks.refresh` calls the window's private recompute, so calling it after the gesture would prove
- * only that the recompute works); the test only WAITS (`support.CoveredMarks.settle`), because the marks are worked
- * out on a worker.
+ * The gray is asserted in pixels (`support.Rendered`), since it is decided when the tile is PAINTED.  The three
+ * regeneration claims drive a production door and never ask for a refresh (calling `support.CoveredMarks.refresh`
+ * would prove only that the recompute works); they only WAIT (`support.CoveredMarks.settle`) on the worker.
  *
- * MUTATION, both measured:
- * - Put the `isAutonomyBusy()` fence back on the blocked set in `CoveredTrackView.workOutCoveredTrack`: five of the
- *   seven fail, all but the two controls.
- * - Take `blockedTrackChanged()` out of `TrainControlUI.applyTrainLength`: three fail, the length claim and the two
- *   pixel claims (their reference picture is taken through the same door), so the pixel claims cannot tell that failure
- *   from the fence's; the set-level claim names it.
+ * MUTATION: put the `isAutonomyBusy()` fence back on the blocked set in `CoveredTrackView.workOutCoveredTrack` and
+ * five of seven fail; take `blockedTrackChanged()` out of `TrainControlUI.applyTrainLength` and three fail, which the
+ * pixel claims cannot tell from the fence's but the set-level claim names.
  *
  * @author Adam
  */

@@ -33,21 +33,18 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
  * MT-334's shape, asked of the gray wash that came back (OB-180): the diagram is not rebuilt, and only what changed
  * is redrawn.
  *
- * - **No rebuild.**  The page's tiles are collected as objects before and after the gesture and compared by identity
- *   (as `testTheDiagramIsNotRebuiltForAnArrow` does).
+ * - **No rebuild.**  The page's tiles are compared by identity before and after the gesture.
  *
- * - **Only what changed is redrawn.**  Identity alone would pass a refresh that repaints every tile on every train
- *   movement, so a counting `RepaintManager` records which components were made dirty, and each must be a tile of a
- *   square whose state actually changed.  The changed squares are worked out from the railway, not from the window
- *   (`blockedSquares()`), because asking the window what the right answer is agrees with it whatever it says.
+ * - **Only what changed is redrawn.**  A counting `RepaintManager` records which components were made dirty, and each
+ *   must be a tile of a square whose state changed.  The changed squares come from the railway (`blockedSquares()`),
+ *   not the window, which would agree with itself.
  *
- * The gesture is a TRAIN LENGTH, through the door: `TrainControlUI.applyTrainLength` is everything `promptTrainLength`
- * does once its dialog has answered.  BOTH directions: unmeasuring the train takes the wash off.
+ * The gesture is a TRAIN LENGTH through `TrainControlUI.applyTrainLength`, in BOTH directions.
  *
  * MUTATION: make `repaintTheWashWhereItChanged` repaint every registered tile and
  * `testMeasuringTheTrainRedrawsOnlyTheSquaresThatChanged` fails.  Drop the blocked set from the comparison it makes and
- * `testUnmeasuringTheTrainTakesTheWashOffAgain` fails with nothing redrawn.  Take `blockedTrackChanged()` out of
- * `applyTrainLength` and both fail with nothing redrawn at all.
+ * `testUnmeasuringTheTrainTakesTheWashOffAgain` fails.  Take `blockedTrackChanged()` out of `applyTrainLength` and both
+ * fail with nothing redrawn.
  *
  * @author Adam
  */
@@ -103,10 +100,8 @@ public class testTheGreyDoesNotRebuildTheDiagram
             throw new SkipException("building a page of tiles needs a display");
         }
 
-        // THE FROZEN COPY, NOT THE RAILWAY HE IS OPERATING (OB-111, `test/layouts/live-snapshot`):
-        // `cs2_sample_layout`'s placements and lengths move as Adam runs trains on it, and a class that skips
-        // everything reads as green.  `Scenario.folderFor` is the only naming of a fixture folder that cannot spell its
-        // way out to his own railway.
+        // THE FROZEN COPY, NOT THE RAILWAY HE IS OPERATING (OB-111, `test/layouts/live-snapshot`): `cs2_sample_layout`
+        // moves as Adam runs trains on it.  `Scenario.folderFor` cannot spell its way out to his own railway.
         sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
 
         model = support.TestStation.simulatedWithWindowInDebug();
@@ -421,9 +416,9 @@ public class testTheGreyDoesNotRebuildTheDiagram
     }
 
     /**
-     * A refresh of the station captions that changes nothing lays nothing out again.  `updateStationLabels` revalidated
-     * and repainted each caption's PARENT, the whole page, on every publish of the running diagram (up to five times a
-     * second); a caption that changes revalidates and repaints itself.
+     * A refresh of the station captions that changes nothing lays nothing out again: `updateStationLabels` revalidated
+     * the whole page on every publish of the running diagram (up to five times a second); a caption that changes
+     * revalidates itself.
      *
      * MUTATION: revalidate the captions' parent again, and this fails.
      */
@@ -485,12 +480,9 @@ public class testTheGreyDoesNotRebuildTheDiagram
     }
 
     /**
-     * Refreshing the static autonomy layer with nothing changed redraws no square: `showStaticAutonomyLayer` cleared
-     * every mark and set them all again, so the unchanged-mark check never saw one.  It now clears only the squares
-     * that dropped out.
-     *
-     * LAST IN THE CLASS: it shows the main window's static layer, and the tests about the gray count every square redrawn
-     * - with the layer showing, the main window's own squares are among them.
+     * Refreshing the static autonomy layer with nothing changed redraws no square: it clears only the squares that
+     * dropped out.  LAST IN THE CLASS: it shows the main window's static layer, whose squares would be counted by the
+     * tests about the gray.
      *
      * MUTATION: clear every mark first again, and this fails.
      */

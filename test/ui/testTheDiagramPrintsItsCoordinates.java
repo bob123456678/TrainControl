@@ -7,10 +7,9 @@ import org.traincontrol.gui.widgets.AxisRuler;
 /**
  * FR-057: the column and row numbers around a track diagram.
  *
- * The one thing that can be wrong here and look right is the NUMBER: a diagram is drawn from its left-most and top-most
- * track rather than from zero, so a ruler that printed cell indices would be neat and off by the offset, while every
- * warning names a square as `page:x,y` in the diagram's own numbering.  So the digits are read back off a painted image
- * (into a `BufferedImage`, no window).
+ * The one thing that can be wrong and look right is the NUMBER: a diagram is drawn from its left-most and top-most
+ * track rather than from zero, and every warning names a square as `page:x,y` in the diagram's own numbering.  So the
+ * digits are read back off a painted image (a `BufferedImage`, no window).
  *
  * @author Adam
  */
@@ -93,9 +92,9 @@ public class testTheDiagramPrintsItsCoordinates
     }
 
     /**
-     * Every number sits over its own square, even where the squares are not a tile apart (FR-057).  Positions worked
-     * out as `column * size` are right only while every cell is exactly one tile wide; with the gray grid on each
-     * square wears a border and the error is cumulative.  Cells here are thirty-one pixels apart and thirty wide.
+     * Every number sits over its own square, even where the squares are not a tile apart (FR-057): with the gray grid
+     * on each square wears a border and a `column * size` error is cumulative.  Cells here are thirty-one pixels apart
+     * and thirty wide.
      *
      * MUTATION this catches: going back to `column * size`, or centring on the pitch rather than on the cell.
      */
@@ -131,8 +130,7 @@ public class testTheDiagramPrintsItsCoordinates
 
     /**
      * A column keeps its number when the one cell the ruler measured is not there (OB-172): `paintBorder` skips on
-     * `cell == null || cell.width <= 0`, so one absent square used to delete the label for the whole column (MT-268
-     * checks it by hand).
+     * `cell == null || cell.width <= 0` (MT-268 checks it by hand).
      *
      * MUTATION: going back to a single source per column fails the second assertion, and the first assertion is what
      * stops that mutation passing by drawing nothing at all.
@@ -483,9 +481,8 @@ public class testTheDiagramPrintsItsCoordinates
     }
     /**
      * The diagram container tells Swing its children overlap, so a repaint goes through the parent (OB-172):
-     * `isOptimizedDrawingEnabled` defaults to TRUE, so a dirty caption reaching into the gutter was repainted directly,
-     * over the numbers.  Asserted apart from the paint test above, which proves the ruler is drawn last WHEN the
-     * container paints; this proves the container is what paints.
+     * `isOptimizedDrawingEnabled` defaults to TRUE.  Asserted apart from the paint test above, which proves the ruler
+     * is drawn last WHEN the container paints; this proves the container is what paints.
      *
      * MUTATION: removing the override, so the default true comes back, fails this.
      */

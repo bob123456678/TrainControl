@@ -26,19 +26,13 @@ import org.traincontrol.marklin.file.CS2File;
 
 /**
  * How many Points each of Adam's squares becomes: the guard the two-copies decision rests on
- * (`docs/reference/two-copies-evaluation.md`, in git history 0a5dab2a).  The count was once published wrong because it
- * was taken on a diagram parsed WITHOUT its accessories; this file makes the number true and watched.
- *
- * What it asserts:
+ * (`docs/reference/two-copies-evaluation.md`).  Asserts:
  *
  *   - THE RULE.  Every square emits the Points the setup implies: one per arrival side, plus one turning copy per
  *     arrival side where a train may turn round, less the plain copies that would be dead ends, and no plain copy at
- *     all where turning is compulsory; a square with no arrival side is emitted whole.  Checked square by square
- *     against the emitted names.
- *   - THE CENSUS.  The counts, pinned: a tripwire that goes red when the split fires more, and equally when it fires
- *     less.
- *   - THAT THE CENSUS LOOKED AT A RAILWAY.  The edge count is asserted, because 18 edges is indistinguishable from a
- *     real result by reading.
+ *     all where turning is compulsory; a square with no arrival side is emitted whole.
+ *   - THE CENSUS.  The counts, pinned: red when the split fires more, and equally when it fires less.
+ *   - THAT THE CENSUS LOOKED AT A RAILWAY.  The edge count is asserted, because 18 edges reads like a real result.
  *
  * Read against a `LayoutSandbox` copy of `cs2_sample_layout` (OB-111). His railway is only ever read.
  *
@@ -106,22 +100,19 @@ public class testEverySquareBuildsToTheCopiesTheSetupImplies
     }
 
     /**
-     * Every square emits the Points its own settings imply, stated from what the setup knows (which sides trains arrive
-     * by, whether they may turn round there, whether they must) and checked against what the builder emitted:
+     * Every square emits the Points its own settings imply, stated from what the setup knows and checked against the
+     * builder's names (turning copies carry ", reverse", so this reads the configuration rather than re-deriving the
+     * split):
      *
      *   - no arrival side at all: emitted whole, one Point, no facing to record;
      *   - turning not allowed: one Point per arrival side, none a turning copy;
-     *   - turning compulsory: one Point per arrival side, EVERY one a turning copy (the plain copy is not emitted);
+     *   - turning compulsory: one Point per arrival side, EVERY one a turning copy;
      *   - turning optional: a turning copy per arrival side, plus the plain copies that have somewhere to go other than
      *     back the way they came.
      *
-     * Plain and turning copies are told apart by their emitted names, which carry ", reverse", so this reads the
-     * configuration rather than re-deriving the split.
-     *
-     * MUTATIONS: stopping `AutonomyBuilder.nodesFor` emitting the turning copy fails this, with the squares named,
-     * those that lost their turning copy emitted as NO Point at all.  Dropping `onwards ||` from the plain-copy guard,
-     * or `!must` from it, does NOT: every compulsory turn on this railway is a dead end, so either guard alone is
-     * enough.
+     * MUTATIONS: stopping `AutonomyBuilder.nodesFor` emitting the turning copy fails this, with the squares named.
+     * Dropping `onwards ||` or `!must` from the plain-copy guard does NOT: every compulsory turn on this railway is a
+     * dead end, so either guard alone is enough.
      */
     @Test
     public void testTheCopiesAreWhatTheSquaresSettingsImply() throws Exception
@@ -233,14 +224,13 @@ public class testEverySquareBuildsToTheCopiesTheSetupImplies
     }
 
     /**
-     * The census, the tripwire `two-copies-evaluation.md` asked for: the number its first reason ("it buys nothing on
-     * your railway today") is made of.  Red is not automatically a fault: a square Adam adds, marks may-reverse or
-     * joins to a second approach moves these numbers legitimately; update them here and re-read that document.  What
-     * must not happen is the numbers moving without anybody noticing.
+     * The census, the tripwire `two-copies-evaluation.md` asked for.  Red is not automatically a fault: a square Adam
+     * adds, marks may-reverse or joins to a second approach moves these numbers legitimately; update them here and
+     * re-read that document.
      *
      * MUTATION: `AutonomySession.reversibleTiles` returning nothing takes the turning copy off every may-turn square.
-     * The RULE TEST STAYS GREEN (a square with no turn is correctly emitted as one Point per arrival side) while this
-     * reports fewer split squares and an empty four-copy set: a different railway, which only a census can see.
+     * The RULE TEST STAYS GREEN (a square with no turn is correctly one Point per arrival side) while this reports
+     * fewer split squares: a different railway, which only a census can see.
      */
     @Test
     public void testTheCopyCensusIsWhatItWasMeasuredAt() throws Exception
@@ -306,8 +296,7 @@ public class testEverySquareBuildsToTheCopiesTheSetupImplies
 
     /**
      * And the census looked at a wired railway rather than at rubble: a diagram parsed without its accessories reduces
-     * to 18 edges instead of 128, and the same census then returns 1 split square out of 58, a clean, plausible, wrong
-     * answer.  The edge count is asserted before the counts above mean anything.
+     * to 18 edges instead of 128, and the census then returns 1 split square out of 58, a plausible wrong answer.
      *
      * MUTATION: replacing `LayoutSandbox.wired(model, parser)` in the setup with a bare
      * `parser.parseLayout(new LinkedList&lt;&gt;())` reduces this railway to 18 edges and fails this, and the census

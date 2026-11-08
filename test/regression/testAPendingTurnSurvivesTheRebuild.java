@@ -18,15 +18,10 @@ import org.traincontrol.marklin.MarklinControlStation;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 
 /**
- * A destination turn nobody has managed to write down yet survives a setup rebuild.
- *
- * `Layout.reversedOnArrival` holds the reversals the railway performed at a destination and has not yet drained into
- * the setup.  `rebuildRunningLayoutFromSetup` replaces the `Layout` wholesale, so the carry (OB-183) must keep them: a
- * turn destroyed mid-drain never self-heals (OB-189).
- *
- * The rebuild is RUN, not modeled (a hand-built `Layout` cannot show a call site that does not carry something), and
- * cannot pass vacuously: it is a no-op with no active configuration, with autonomy busy or with no viewer panel, so the
- * `assertNotSame` below says it really happened.
+ * A destination turn nobody has managed to write down yet survives a setup rebuild.  `Layout.reversedOnArrival` holds
+ * reversals not yet drained into the setup, and `rebuildRunningLayoutFromSetup` replaces the `Layout` wholesale, so
+ * the carry (OB-183) must keep them: a turn destroyed mid-drain never self-heals (OB-189).  The rebuild is RUN, and
+ * the `assertNotSame` shows it really happened (it is a no-op with no configuration, autonomy busy or no viewer).
  *
  * MUTATION: take the `takeThePendingTurns()` / `putThePendingTurnsBack(...)` pair out of
  * `RunningLayoutSync.rebuildRunningLayoutFromSetup` and this fails, with the record gone.
@@ -804,8 +799,7 @@ public class testAPendingTurnSurvivesTheRebuild
 
     /**
      * A build keeps both of its captions of a station captioned on two squares (a long platform labeled at both ends),
-     * and a later build's caption still takes an earlier build's place; registering one used to let go of every other
-     * of the same window not on screen.
+     * and a later build's caption still takes an earlier build's place.
      *
      * MUTATION: let a build evict its own caption again, or no caption evict another, and this fails.
      */
@@ -854,10 +848,9 @@ public class testAPendingTurnSurvivesTheRebuild
     }
 
     /**
-     * A station captioned on two pages keeps a caption on each, and both are written (OB-341).  The station map is
-     * keyed by the STATION's square, and a label is let go of only by a successor on the SAME page.  Two detached
-     * labels of one station on two pages under one owner; then the window writes its captions, as it does on every
-     * publish of the running diagram.
+     * A station captioned on two pages keeps a caption on each, and both are written (OB-341): the station map is
+     * keyed by the STATION's square, and a label is let go of only by a successor on the SAME page.
+     *
      * MUTATION: let a later page's label evict another page's, and this fails.
      */
     @Test

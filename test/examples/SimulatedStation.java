@@ -23,7 +23,6 @@ public final class SimulatedStation
      * Opens a station that answers its own commands.
      *
      * @return the station, with sending turned off and the answers simulated
-     * @throws Exception when the station cannot start
      */
     public static MarklinControlStation open() throws Exception
     {

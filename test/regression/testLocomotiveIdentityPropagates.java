@@ -25,10 +25,9 @@ import support.SourceOf;
  * Adam: "we need to make sure that adding/removing/renaming locomotives is propagated across all state", and then
  * which state matters most - "autonomy state, routes, and home locomotives are the most sensitive."
  *
- * A locomotive is held two ways.  Things that hold the OBJECT survive a rename for free but have to be swept on a
- * delete; things that hold the NAME are the reverse.  Neither announces itself, and a sweep is a list one can be
- * missing from.  The source guard at the bottom is the part that lasts: it fails the build when the running layout
- * grows a new collection of locomotives that the deletion sweep says nothing about.
+ * Things that hold the OBJECT survive a rename but must be swept on a delete; things that hold the NAME are the
+ * reverse.  The source guard at the bottom is the part that lasts: it fails the build when the running layout grows a
+ * new collection of locomotives the deletion sweep says nothing about.
  *
  * @author Adam
  */
@@ -68,12 +67,9 @@ public class testLocomotiveIdentityPropagates
     // autonomy state
 
     /**
-     * Every collection in the running layout lets go of a deleted locomotive.
-     *
-     * Six are keyed by the locomotive itself, plus the timetable, which holds it inside its entries:
-     *  - `takingPath` is a claim on a slot in the cap on how many trains may run; left behind it lowers the cap.
-     *  - `locomotivePendingS88` is the sensor a locomotive was heading for; a route condition waits on it for ever.
-     *  - the timetable holds the locomotive itself, so executing it drives something not in the database.
+     * Every collection in the running layout lets go of a deleted locomotive: six keyed by the locomotive itself, plus
+     * the timetable.  `takingPath` is a claim on a slot in the cap on running trains (left behind it lowers the cap);
+     * `locomotivePendingS88` is a sensor a route condition would wait on for ever.
      */
     @Test
     public void testTheRunningLayoutLetsGoOfADeletedLocomotive() throws Exception
@@ -240,11 +236,9 @@ public class testLocomotiveIdentityPropagates
     }
 
     /**
-     * A CONDITION naming a deleted locomotive is reported and left alone.  Conditions are combined with AND, so
-     * removing the dead term makes a route that fires on what is LEFT, a weaker condition than the operator agreed to,
-     * and these routes throw switches and signals ahead of moving trains.  A route that has quietly stopped firing is
-     * safe; one that quietly starts firing is not.  The test above builds its route with null conditions, so it could
-     * not catch a missing conditions sweep.
+     * A CONDITION naming a deleted locomotive is reported and left alone: conditions are ANDed, so removing the dead
+     * term makes a route fire on a weaker condition than the operator agreed to, and these routes throw switches ahead
+     * of moving trains.  The test above has null conditions, so it could not catch a missing conditions sweep.
      */
     @Test
     public void testARouteConditionNamingADeletedLocomotiveIsReportedNotRemoved() throws Exception
@@ -369,8 +363,8 @@ public class testLocomotiveIdentityPropagates
     }
 
     /**
-     * The search for a field keeping the planner sees the declarations a layout would write, and not what is not one:
-     * `List<HomeStaging>` and `Map<String, HomeStaging.Plan>` once went by it.  Driven over made-up declarations.
+     * The search for a field keeping the planner sees the declarations a layout would write, and not what is not one
+     * (`List<HomeStaging>`, `Map<String, HomeStaging.Plan>`).  Driven over made-up declarations.
      *
      * MUTATION: add `private List<HomeStaging> plans = new ArrayList<>();` to `Layout`, and
      * `testEveryLocomotiveHolderIsNamedInTheSweep` fails; narrow `FIELD_DECLARATION` to the plain type and this does.
@@ -398,12 +392,9 @@ public class testLocomotiveIdentityPropagates
     }
 
     /**
-     * Nothing compares a home or a placement against a NAME.
-     *
-     * `String.equals` takes an `Object`, so `loc.getName().equals(point.getHomeLoc())` kept compiling when the home
-     * became a `Locomotive` and answered false for ever.  Two production sites did that quietly: `HomeStaging` treated
-     * every assigned home as positional, and the locomotive status panel misjudged a train at its assigned home.  The
-     * check is textual because it sees what the compiler cannot.
+     * Nothing compares a home or a placement against a NAME: `String.equals` takes an `Object`, so
+     * `loc.getName().equals(point.getHomeLoc())` kept compiling when the home became a `Locomotive` and answered false
+     * for ever.  The check is textual because it sees what the compiler cannot.
      */
     @Test
     public void testNoHomeOrPlacementIsComparedWithAName() throws Exception
@@ -623,11 +614,10 @@ public class testLocomotiveIdentityPropagates
 
     /**
      * Deleting a locomotive rewrites the station labels and the timetable, as renaming one does (OB-081).  A source
-     * rule, because the caption is drawn by a window and the door calling the method that draws it is the property
-     * worth pinning.
+     * rule: the property worth pinning is that the delete door calls the methods that draw them.
      *
-     * MUTATION, stated exactly: removing `updateVisiblePoints()` from the delete door fails the first assertion, and
-     * removing `repaintTimetable()` fails the second.
+     * MUTATION: removing `updateVisiblePoints()` from the delete door fails the first assertion, and removing
+     * `repaintTimetable()` the second.
      */
     @Test
     public void testDeletingALocomotiveRewritesTheStationLabelsToo() throws Exception
@@ -659,12 +649,9 @@ public class testLocomotiveIdentityPropagates
             + "rename fix never reached: " + block);
     }
     /**
-     * Renaming a locomotive rewrites the station labels on the track diagram.
-     *
-     * Adam: "When autonomy is loaded: Renaming a locomotive does not immediately propagate to the labels in the track
-     * diagram viewer."  The refresh block after a rename redrew the buttons, mappings, route list, selector and
-     * callbacks, not the labels beside the stations, which `updateVisiblePoints` reaches.  Read from source because
-     * the alternative is a Swing harness for a repaint; what is pinned is the CALL.
+     * Renaming a locomotive rewrites the station labels on the track diagram (Adam: "When autonomy is loaded: Renaming
+     * a locomotive does not immediately propagate to the labels in the track diagram viewer.").  Read from source; what
+     * is pinned is the CALL to `updateVisiblePoints`.
      */
     @Test
     public void testRenamingALocomotiveRewritesTheStationLabels() throws Exception

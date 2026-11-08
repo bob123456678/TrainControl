@@ -151,14 +151,11 @@ public class testLayoutTimetable
     }
 
     /**
-     * The timetable can be read while it is written.  `getTimetable` hands out the list itself, the event thread
-     * reads it - the timetable window, its menus - and a running train's capture appends to it from that train's own
-     * thread.  A reader part-way along the list when an entry is captured sees the list as it stood when it began, and
-     * nothing is thrown.
+     * The timetable can be read while it is written: `getTimetable` hands out the list itself, the event thread reads
+     * it and a running train's capture appends from its own thread, so a reader sees the list as it stood when it
+     * began.
      *
      * MUTATION: make it a LinkedList again and the read throws ConcurrentModificationException.
-     *
-     * @throws Exception from the fixture
      */
     @Test
     public void testTheTimetableCanBeReadWhileItIsWritten() throws Exception
@@ -339,13 +336,9 @@ public class testLayoutTimetable
     /**
      * An entry that can never execute ends the run, rather than being retried for ever.
      *
-     * This was a characterization test pinning the opposite - T3, a known defect - with a note saying
-     * it must be inverted when the retry loop learned to give up. It has been.
      *
-     * The loop is `while (running && !executePath(...))`, and both the attempt cap and the pause that
-     * bounded it were gated on `timetableSequential` - true only for a return-home plan. So a captured
-     * timetable, which is the parallel kind, retried a refusal that could never change until a human
-     * noticed. Here the refusal is an invalidated layout, which executePath rejects on its first line.
+     * The retry loop's cap and pause were gated on `timetableSequential`, so a captured (parallel) timetable retried
+     * a refusal that could never change.  Here the refusal is an invalidated layout, which executePath rejects at once.
      *
      * The bound is a TIME rather than a count of attempts, because the pause between attempts is the
      * user's own delay setting, anything from a quarter second to tens of them - a count would bound a
@@ -412,10 +405,8 @@ public class testLayoutTimetable
     }
 
     /**
-     * A graceful stop still ends the retry loop, whatever else it does.
-     *
-     * Kept as its own test after T3 was fixed. An unstoppable loop would be far worse than an unbounded
-     * one, and the fix touches exactly the code that ends it.
+     * A graceful stop still ends the retry loop, whatever else it does: an unstoppable loop would be far worse than an
+     * unbounded one.
      */
     @Test(timeOut = 60000)
     public void testAGracefulStopEndsTheRetryLoop() throws Exception
@@ -487,14 +478,11 @@ public class testLayoutTimetable
     }
 
     /**
-     * A timetable entry through a point the railway does not have - one on a page left out of autonomy - is kept as it
-     * was written, not dropped at the load (Adam: "Just keep the entries, and if a path is run that contains
-     * a point on a disabled page, reject it with an error").  Dropped, the next fold wrote the shorter timetable over the
-     * configuration and the entry was gone for good.
+     * A timetable entry through a point the railway does not have (one on a page left out of autonomy) is kept as
+     * written, not dropped at the load (Adam: "Just keep the entries, and if a path is run that contains
+     * a point on a disabled page, reject it with an error"); the next fold would otherwise lose it for good.
      *
      * MUTATION: drop an entry the railway cannot build at the load, and this fails.
-     *
-     * @throws Exception from the layout
      */
     @Test
     public void testAnEntryThroughAPointTheRailwayLacksIsKeptAsWritten() throws Exception
@@ -522,12 +510,10 @@ public class testLayoutTimetable
 
     /**
      * The run stops at an entry the railway cannot run, and says why (Adam: "stop the timetable run upon
-     * encountering an invalid path, and let the user know").  Passed over, a train's later entries started where it was
-     * not.  The entry is left unrun, so the window names it, and nothing after it runs.
+     * encountering an invalid path, and let the user know"): the entry is left unrun, so the window names it, and
+     * nothing after it runs.
      *
      * MUTATION: pass over an entry the railway cannot run, and this fails.
-     *
-     * @throws Exception from the layout
      */
     @Test(timeOut = 60000)
     public void testAnEntryTheRailwayCannotRunStopsTheRunAndSaysWhy() throws Exception
@@ -589,14 +575,11 @@ public class testLayoutTimetable
     }
 
     /**
-     * A route that ends where it starts - a lap - is refused: kept unrunnable when a timetable is read, so the run
-     * stops there and says why, and refused by the run itself whatever door brings it.  No door of the application
-     * offers one; a timetable read from a file can carry one.  Run, it would leave the train on no Point and, in
-     * non-atomic mode, free the station while the train was still on its way there.
+     * A route that ends where it starts (a lap) is refused: kept unrunnable when a timetable is read, and refused by
+     * the run itself whatever door brings it.  Run, it would leave the train on no Point and, in non-atomic mode, free
+     * the station while the train was still on its way.
      *
      * MUTATION: take either refusal out, and this fails.
-     *
-     * @throws Exception from the layout
      */
     @Test(timeOut = 60000)
     public void testALapIsRefused() throws Exception
@@ -674,8 +657,6 @@ public class testLayoutTimetable
      * Where a locomotive's timetable starts is the start of its first entry the railway can run.
      *
      * MUTATION: take the first entry whatever it is, and this fails.
-     *
-     * @throws Exception from the layout
      */
     @Test
     public void testATimetableStartsAtTheFirstEntryTheRailwayCanRun() throws Exception
@@ -703,13 +684,10 @@ public class testLayoutTimetable
     }
 
     /**
-     * A row deleted from the timetable is the entry the operator was shown, removed under the railway's lock - or
-     * nothing (OB-260): a confirmation can stay open while capture appends to the list, so the delete is asked of the
-     * entry, not of the row number.
+     * A row deleted from the timetable is the entry the operator was shown, removed under the railway's lock, or
+     * nothing (OB-260): a confirmation can stay open while capture appends, so the delete is asked of the entry.
      *
      * MUTATION: remove by the row number alone, or without the lock, and this fails.
-     *
-     * @throws Exception from the reflection
      */
     @Test
     public void testADeletedRowIsTheOneShownOrNone() throws Exception
@@ -738,14 +716,10 @@ public class testLayoutTimetable
     }
 
     /**
-     * Clear Timetable empties the list under the railway's lock, as the remove does.
-     *
-     * Capture appends under that lock from locomotive threads, and Clear replaced the list on the event thread without
-     * it: run side by side in a stress test, capture's append threw thousands of times a race.
+     * Clear Timetable empties the list under the railway's lock, as the remove does, since capture appends under that
+     * lock from locomotive threads.
      *
      * MUTATION: clear without the lock, and this fails.
-     *
-     * @throws Exception from the reflection
      */
     @Test
     public void testAClearTakesTheRailwaysLock() throws Exception

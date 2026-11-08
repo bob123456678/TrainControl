@@ -190,10 +190,9 @@ public class testAutonomyPathValidation
             model.setFeedbackState(fb.getName(), false);
         }
 
-        // A destination needs a sensor; the ORIGIN is where the train starts and needs none, so it is the one point
-        // here that is not a station.  FOUR edges, not two: a two-edge run in simulation is over in a second and
-        // unlockPath releases everything at the end, so it could not tell "given back early" from "given back at the
-        // end", which is the whole question.
+        // The ORIGIN needs no sensor, so it is the one point here that is not a station.  FOUR edges, not two: a
+        // two-edge run is over in a second and unlockPath releases everything at the end, so it could not tell "given
+        // back early" from "given back at the end", which is the whole question.
         layout.createPoint("NA_A", false, null);
         layout.createPoint("NA_B", true, first.getName());
         layout.createPoint("NA_C", true, second.getName());
@@ -394,10 +393,9 @@ public class testAutonomyPathValidation
 
         MarklinLocomotive loc = dummyLoc();
 
-        // A freshly-built dummyLoc() already sits at speed 0, so asserting getSpeed() == 0
-        // afterwards proved nothing about handleMisconfiguredPath's loc.setSpeed(0) (Layout.java:2772) -
-        // deleting that production line would leave this test green.  Giving the locomotive a nonzero
-        // speed here means the closing assertion below can only pass if the guard actually stopped it.
+        // A fresh dummyLoc() already sits at speed 0, so asserting getSpeed() == 0 would prove nothing about
+        // handleMisconfiguredPath's loc.setSpeed(0).  A nonzero speed here means the closing assertion can only pass
+        // if the guard stopped it.
         loc.setSpeed(30);
         assertTrue(loc.getSpeed() == 30, "precondition: the locomotive must be moving before the fault");
 
@@ -671,20 +669,11 @@ public class testAutonomyPathValidation
     }
 
     /**
-     * A path does not give up an edge twice, because the second time it may not be its own.  With atomicRoutes off,
-     * executePath releases each edge the moment the train's tail has provably passed it - keeping that edge's own lock
-     * edges held, since a crossing behind the train may still be in use - and unlockPath releases everything again at
-     * the end: two releases per edge, which a boolean could not tell from one.
-     *
-     * The sequence, in the order the railway performs it:
-     *
-     *   A locks an edge with no lock edges of its own.
-     *   A's tail passes it, so it is released early.
-     *   B locks a DIFFERENT edge that names A's edge as a lock edge, so it is protected again.
-     *   A reaches its destination and unlockPath walks A's path.
-     *
-     * The last step must not touch it.  It is not A's any more.  The asymmetry this needs (B's edge names A's, A's
-     * names nothing) is what GraphEdgeEdit writes.
+     * A path does not give up an edge twice, because the second time it may not be its own: with atomicRoutes off,
+     * executePath releases each edge once the tail has passed (keeping its lock edges) and unlockPath releases
+     * everything again at the end.  A locks an edge, releases it early, B locks a DIFFERENT edge naming A's edge as a
+     * lock edge, then A's unlockPath must not touch it.  B's edge naming A's and not the reverse is what
+     * GraphEdgeEdit writes.
      */
     @Test
     public void testAPathDoesNotReleaseAnEdgeItHasAlreadyReleased() throws Exception
@@ -831,13 +820,10 @@ public class testAutonomyPathValidation
     }
 
     /**
-     * Two different locomotives cannot end up on one square, however they are put there.  The sweep in setLocomotive
-     * enforces "one locomotive, one place"; this is the other invariant, "one square, one locomotive", which hand
-     * placement can still break (autonomy is refused by the block occupancy check long before).
-     *
-     * Placing by hand displaces, deliberately: it is a person saying where a train actually is.  But a square is
-     * several Points, so putting a second train on the OTHER copy of an occupied platform left both standing on one
-     * piece of track, and on the diagram a caption naming two trains where the menu can only answer for one.
+     * Two different locomotives cannot end up on one square, however they are put there: "one square, one
+     * locomotive", the invariant hand placement can break (setLocomotive's sweep enforces "one locomotive, one
+     * place").  Placing by hand displaces deliberately, but the OTHER copy of an occupied platform left both trains
+     * on one piece of track.
      */
     @Test
     public void testHandPlacingOnAnOccupiedSquareDisplacesWhoeverIsThere() throws Exception
@@ -881,12 +867,9 @@ public class testAutonomyPathValidation
 
     /**
      * A lock edge refuses a route when another route HOLDS it, and not merely because a train is parked at the point
-     * it leads to.  The two halves are one test on purpose: dropping the parked-train refusal is only safe because the
-     * held-lock refusal exists, so one place shows what it was traded against.
-     *
-     * The parked train cannot be on the track the lock protects: reduction cuts an edge at every sensor, so a Point's
-     * tile is an endpoint of the edges meeting there and part of the path of none of them.  Counted as an obstruction
-     * anyway, a train standing next to a junction was a permanent roadblock, and two such trains deadlocked.
+     * it leads to.  One test on purpose: dropping the parked-train refusal is only safe because the held-lock refusal
+     * exists.  The parked train cannot be on the protected track (reduction cuts an edge at every sensor); counted as
+     * an obstruction, a train next to a junction was a permanent roadblock.
      */
     @Test
     public void testALockEdgeRefusesAHeldRouteButNotAParkedTrain() throws Exception

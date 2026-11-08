@@ -31,11 +31,11 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
 
 /**
  * The turn a train makes at its destination reaches the setup, and reaches it the right way round (OB-190 / OB-189).
- * A real journey on a sandbox copy of the railway (OB-111): the train is turned at its destination the way the manual
- * door does, `TrainControlUI.reconcileFacingWhenIdle` drains, and the SETUP and the RUNNING LAYOUT are asked what they
- * now believe.  The setup's STORED facing for the arrival square is stale at that moment
- * (behaviour/editing-while-running.md 6a); what is reliable is that a train faces the way it will leave
- * (behaviour/facing.md 4), so the facing of a train that has just turned IS the side it arrived by.
+ * A real journey on a sandbox copy of the railway (OB-111): the train is turned at its destination as the manual door
+ * does, `TrainControlUI.reconcileFacingWhenIdle` drains, and the SETUP and the RUNNING LAYOUT are asked what they
+ * believe.  The setup's stored facing for the arrival square is stale then (behaviour/editing-while-running.md 6a);
+ * a train faces the way it will leave (behaviour/facing.md 4), so a train that has just turned faces the side it
+ * arrived by.
  *
  * @author Adam
  */
@@ -175,13 +175,11 @@ public class testTheTurnAtTheDestinationReachesTheDiagram
     }
 
     /**
-     * The turn is written to the setup even when the arrival square has never recorded a facing.
+     * The turn is written to the setup even when the arrival square has never recorded a facing: a square only gets a
+     * `FACING` from `captureFromLayout` (editor open or exit), so `flipFacing` returns null there.
      *
-     * Case 1.  A square only gets a `FACING` from `captureFromLayout`, which runs when the editor is opened or the
-     * program exits, so an arrival square no train was captured on has none, and `flipFacing` returns null.
-     *
-     * MUTATION, run: pivoting the write on `getFacing(tile)` again - which is what `flipFacing` does -
-     * fails this at the first assertion with `facing=null`.
+     * MUTATION, run: pivoting the write on `getFacing(tile)` again fails this at the first assertion with
+     * `facing=null`.
      */
     @Test
     public void testATurnWritesTheFacingEvenWithNothingRecorded() throws Exception
@@ -206,11 +204,10 @@ public class testTheTurnAtTheDestinationReachesTheDiagram
     }
 
     /**
-     * A stale facing does not send the turn the wrong way.  Case 2.  `FACING` is never cleared, so the arrival square
-     * commonly carries the previous occupant's answer; where that stale value is the POST-turn side, flipping it
-     * writes the PRE-turn side as the correction, and `moveOntoFacingCopy` moves the locomotive off the copy that was
-     * right.  The stale value is seeded BEFORE the run: the window refreshes off the run's own completion
-     * announcement, so a value written afterwards can be overtaken by the drain.
+     * A stale facing does not send the turn the wrong way: `FACING` is never cleared, so the arrival square commonly
+     * carries the previous occupant's answer, and flipping a stale POST-turn side writes the PRE-turn side and moves
+     * the locomotive off the right copy.  The stale value is seeded BEFORE the run, since a value written afterwards
+     * can be overtaken by the drain.
      *
      * MUTATION, run: pivoting on `getFacing(tile)` fails this with the facing left on the plain copy's
      * side and the locomotive standing on the plain copy.
@@ -296,12 +293,10 @@ public class testTheTurnAtTheDestinationReachesTheDiagram
     // ---------------------------------------------------------------- the journey
 
     /**
-     * Puts one train on the railway with a journey ahead of it that ends where trains may turn.
-     *
-     * Searched, not named: the search insists on a square the build split into exactly two copies, a plain one and a
-     * turning one, with the journey ending at the PLAIN copy, which is where a manual "no, do not keep the direction"
-     * leaves a train and the one arrival the running layout does not correct for itself.  Every other train is taken
-     * off first.  It fails rather than skipping, since a class that quietly finds no candidate asserts nothing.
+     * Puts one train on the railway with a journey ahead of it that ends where trains may turn.  Searched, not named:
+     * a square the build split into exactly a plain and a turning copy, the journey ending at the PLAIN copy (where a
+     * manual "do not keep the direction" leaves a train, the one arrival the layout does not correct itself).  Every
+     * other train is taken off first.  It fails rather than skipping.
      */
     private static Turn aJourneyEndingInATurn() throws Exception
     {
@@ -457,11 +452,9 @@ public class testTheTurnAtTheDestinationReachesTheDiagram
     }
 
     /**
-     * The running layout stands the turned train on the copy for its new facing, tail and all.
-     *
-     * The move is the half the diagram and the next dispatch read: which copy a train is on IS its direction.  The
-     * arrival side goes with it: `Point.setLocomotive` clears `arrivedFrom` on every change of occupant, which is wrong
-     * for the same train re-stood on a sibling copy, since turning does not move the carriages (behaviour/facing.md 4).
+     * The running layout stands the turned train on the copy for its new facing, tail and all: which copy a train is
+     * on IS its direction.  `Point.setLocomotive` clears `arrivedFrom` on every change of occupant, wrong for the same
+     * train re-stood on a sibling copy, since turning does not move the carriages (behaviour/facing.md 4).
      */
     private static void assertStandsOnTheTurningCopy(Turn turn)
     {

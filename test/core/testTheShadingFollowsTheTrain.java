@@ -129,17 +129,15 @@ public class testTheShadingFollowsTheTrain
     }
 
     /**
-     * The whole journey: standing, away, and home again, with the icons checked at each stop.  One method rather than
-     * four: these are stages of one run on one railway and TestNG does not promise the order.  Stage 4 compares two
-     * returns rather than the start, because the tail is on DIFFERENT track the second time.
+     * The whole journey: standing, away, and home again, with the icons checked at each stop.  One method, since these
+     * are stages of one run and TestNG does not promise the order.  Stage 4 compares two returns rather than the start,
+     * because the tail is on DIFFERENT track the second time.
      *
-     * MUTATIONS that fail it: deleting the `repaintTheWashWhereItChanged(...)` call from
-     * `CoveredTrackView.workOutCoveredTrack` fails stage 2's screen assertion (the old squares were never asked to
-     * redraw) while every model-level assertion here still passes - which is the defect exactly.  Making
-     * `repaintTheWashWhereItChanged` take the intersection of the COVERED sets rather than their symmetric difference
-     * (`changed.retainAll(now.keySet())`) leaves this green: a square the train leaves stops being blocked too, and the
-     * blocked half's own difference redraws it.  Making `Layout.edgesCoveredByStandingTrains` keep the departed train's
-     * edges fails stage 2's model assertion, and leaving `arrivedFrom` set on the square a train drove away from fails
+     * MUTATIONS: deleting the `repaintTheWashWhereItChanged(...)` call from `CoveredTrackView.workOutCoveredTrack`
+     * fails stage 2's screen assertion while every model-level assertion still passes (the defect exactly); making it
+     * take the intersection of the COVERED sets rather than their symmetric difference leaves this green (the blocked
+     * half's own difference redraws the square); making `Layout.edgesCoveredByStandingTrains` keep the departed train's
+     * edges fails stage 2's model assertion; leaving `arrivedFrom` set on the square a train drove away from fails
      * stage 4.
      */
     @Test
@@ -397,10 +395,8 @@ public class testTheShadingFollowsTheTrain
     // ---------------------------------------------------------------- the diagram
 
     /**
-     * Recomputes the wash the way the window does, and waits for the tiles to catch up.
-     *
-     * `refreshCoveredTrack` is the window's own entry point, and the redraw this test exists for is in its `finally`,
-     * so it is gone through rather than round.
+     * Recomputes the wash the way the window does (`refreshCoveredTrack`, whose `finally` holds the redraw this test
+     * exists for), and waits for the tiles to catch up.
      */
     private static Set<TileKey> washAsDrawn() throws Exception
     {
@@ -417,9 +413,8 @@ public class testTheShadingFollowsTheTrain
 
     /**
      * Registers a real tile for each square, so there is something on the diagram to redraw: production `LayoutLabel`s
-     * in the production registry, built from the real page's components and pointed at the real window.  Registered
-     * rather than found because which page the window shows is not something a test should depend on, and a square with
-     * no registered tile is silently skipped by the redraw.
+     * in the production registry.  Registered rather than found because a square with no registered tile is silently
+     * skipped by the redraw.
      */
     private static List<LayoutLabel> labelsFor(Set<TileKey> squares) throws Exception
     {
@@ -511,12 +506,9 @@ public class testTheShadingFollowsTheTrain
     // ---------------------------------------------------------------- the fixture
 
     /**
-     * Leaves one train on the railway, which makes the assertions attributable: with four trains standing about, a
-     * square that stops being shaded could have stopped for a reason nothing in this test did.  The one kept is the
-     * first found standing somewhere that records which way it came in (the tail walk needs that side to choose its
-     * first hop) and that actually covers something, which the railway is simply asked, with the length this class
-     * uses.  A recorded arrival side does not guarantee it: a locomotive at `1 - Main:0,11` recorded a side that
-     * leaves by track the graph cannot follow, so no edge was covered at all.
+     * Leaves one train on the railway, which makes the assertions attributable: the first found standing where it
+     * records its arrival side and that actually covers something (a recorded side does not guarantee it: a locomotive
+     * at `1 - Main:0,11` recorded one that leaves by track the graph cannot follow).
      */
     private static void oneTrainOnly()
     {
@@ -565,13 +557,9 @@ public class testTheShadingFollowsTheTrain
     }
 
     /**
-     * Measures every tile of the reduced graph, because almost nothing on this railway carries a length: the tail walk
-     * stops at the first segment without a positive length, so unmeasured track means nothing is ever covered (the
-     * guards are tested with 1 between BottomMainA and BottomMainPost, unrealistic but enough to show whether they
-     * work).
-     *
-     * Collected first and written afterwards: `setTileLength` rebuilds the reducer, so walking its own collections
-     * while writing to them re-derives the graph under the iterator.
+     * Measures every tile of the reduced graph, because almost nothing on this railway carries a length and the tail
+     * walk stops at the first segment without one.  Collected first and written afterwards: `setTileLength` rebuilds
+     * the reducer under the iterator.
      */
     private static void measureEveryTileAs(int units)
     {

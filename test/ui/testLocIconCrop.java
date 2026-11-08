@@ -491,12 +491,9 @@ public class testLocIconCrop
     }
 
     /**
-     * Pressing OK at full zoom-out does not allocate an image squared in the source: at `zoomFraction = 0` the scale is
-     * half the fit, so the rectangle `contentOf` built was twice the source each way (~134 MB for a 4032 x 3024
-     * photograph) and the OutOfMemoryError in the OK listener left OK doing nothing.
-     *
-     * Asserted on the allocation, not the symptom (an OOM would need a JVM sized to fail): `contentOf` is asked by
-     * reflection what it built, and it must not be bigger than the icon needs.
+     * Pressing OK at full zoom-out does not allocate an image squared in the source: at `zoomFraction = 0` the
+     * rectangle `contentOf` built was twice the source each way (~134 MB for 4032 x 3024), and the OutOfMemoryError
+     * left OK doing nothing.  Asserted on the allocation, by reflection on `contentOf`.
      *
      * MUTATION: allocating `region.width x region.height` again fails the size assertion below.
      */

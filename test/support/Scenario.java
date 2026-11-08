@@ -12,20 +12,15 @@ import org.traincontrol.marklin.MarklinControlStation;
 
 /**
  * A named railway of a known SHAPE, opened in one call (Adam: "a folder in the test folder to house many different
- * scenarios, each linked to a test case", "hand-authored for topology, lengths in code").
+ * scenarios, each linked to a test case", "hand-authored for topology, lengths in code").  A scenario is real CS2
+ * files, checked in and frozen, so a test gets realistic geometry without the operator's live railway.
  *
- * It gives a test realistic geometry without the operator's live railway, whose ground truth moves as he operates
- * it.  A scenario is real CS2 files, checked in, hand-authored for one shape, and frozen.
+ * The TOPOLOGY, station names and s88 addresses are authored in the files (each scenario's `README.md` states which a
+ * test may rely on).  Lengths, train placements and locomotive properties are deliberately NOT: a test sets them
+ * itself (`session.setTileLength`, `loc.setTrainLength`, `point.setLocomotive`).
  *
- * The TOPOLOGY, the station names and the s88 addresses are authored in the files and a test may rely on them (each
- * scenario's `README.md` states which).  Lengths, train placements and locomotive properties are deliberately NOT in
- * the files: a test sets them itself (`session.setTileLength`, `loc.setTrainLength`, `point.setLocomotive`), so no two
- * tests inherit one author's choice.
- *
- * Built ON `LayoutSandbox`, not beside it, so its safety rules (the copy, the preference put back, `setUnattended`)
- * are reached rather than repeated.  The one rule added: a scenario can only name a folder under `test/layouts`.
- *
- * Usage, in `@BeforeClass` and `@AfterClass`:
+ * Built ON `LayoutSandbox`, so its safety rules are reached rather than repeated; the one rule added: a scenario can
+ * only name a folder under `test/layouts`.  Usage, in `@BeforeClass` and `@AfterClass`:
  *
  *     scenario = support.Scenario.open("single-switch");
  *     Layout built = scenario.build();
