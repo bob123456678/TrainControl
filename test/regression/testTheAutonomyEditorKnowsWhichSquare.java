@@ -274,6 +274,14 @@ public class testTheAutonomyEditorKnowsWhichSquare
 
         String branch = body.substring(at, ends);
 
+        // FR-185 sends the shortcuts through `onTheHoveredSquare`; read that door's body as part of the branch.
+        if (branch.contains("onTheHoveredSquare("))
+        {
+            branch += SourceOf.withoutComments(SourceOf.declarationIn(
+                SourceOf.fileDeclaring("public class LayoutEditor extends"),
+                "private void onTheHoveredSquare("));
+        }
+
         // `hoveredSquare()` since OB-198: one question that forgets a label not on the grid it is asked about.
         // `regression.testTheHoveredSquareIsForgotten` asserts the behavior; this checks which door the key goes
         // through.
