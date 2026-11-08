@@ -724,4 +724,555 @@ public class testTheTrainWindow
         assertNotNull(Components.withText(menu, I18n.f("autosetup.ui.menuTrainAt", session.describeTile(square))),
             "the editor's menu has no train window");
     }
+
+    // ------------------------------------------------------------------------------------- Place the selected train
+
+    /** Takes the selected locomotive off its key, as choosing it again does. */
+    private static void nothingIsSelected()
+    {
+        if (ui.getActiveLoc() != null) ui.mapLocToCurrentButton(ui.getActiveLoc().getName());
+
+        assertTrue(Components.waitFor(() -> ui.getActiveLoc() == null, 10000),
+            "precondition: the selected locomotive could not be taken off its key");
+    }
+
+    private static JMenuItem placeItemOn(AutonomyEditorPanel panel, TileKey square, String train) throws Exception
+    {
+        JPopupMenu menu = Components.onTheEventThread(() -> panel.buildTileMenu(square, null));
+
+        return (JMenuItem) Components.withText(menu, I18n.f("layout.ui.menuPlaceLocomotive", train));
+    }
+
+    private static java.util.List<String> roadNames(java.util.List<org.traincontrol.automation.Edge> road)
+    {
+        java.util.List<String> out = new java.util.ArrayList<>();
+
+        if (road != null) for (org.traincontrol.automation.Edge edge : road) out.add(edge.getEnd().getName());
+
+        return out;
+    }
+
+    /**
+     * The editor's station menu places the selected locomotive in one click, through the door the train window uses: it
+     * records the side it came in by and asks where the tail lies, and the answer is kept (Adam: "there should always be
+     * an edit loc, place current (if selected and different), and place new option").  Tunnel, one way in from the north,
+     * and a train of 5.
+     *
+     * MUTATION: have the item call `session.placeLocomotive` instead of `AutonomyEditorPanel.placeLocomotive`, and the
+     * side and the tail are not recorded and this fails.
+     */
+    @Test(timeOut = 180000)
+    public void testTheEditorsMenuPlacesTheSelectedTrainWithItsSideAndTail() throws Exception
+    {
+        AutonomyEditorPanel panel = theEditorsPanel();
+
+        final TileKey tunnel = support.StandingTrain.squareNamed(session, "Tunnel");
+
+        String name = aTrainNotPlaced();
+
+        Locomotive train = model.getLocByName(name);
+
+        Integer lengthWas = train.getTrainLength();
+
+        try
+        {
+            train.setTrainLength(5);
+
+            Components.onTheEventThread(() -> { session.placeLocomotive(tunnel, null); return null; });
+
+            Components.settle();
+
+            org.traincontrol.gui.TailCrossedPrompt.Choice tunnelPre = tunnelPreIsTheTail(tunnel);
+
+            makeActive(name);
+
+            JMenuItem item = placeItemOn(panel, tunnel, name);
+
+            assertNotNull(item, "the editor's menu on Tunnel has no Place " + name);
+            assertTrue(item.isEnabled(), "Place " + name + " is grayed with no route running");
+
+            Components.onTheEventThread(() -> { item.doClick(); return null; });
+
+            assertEquals(session.getLocomotiveNameAt(tunnel), name, "the item did not put the selected train on Tunnel");
+            assertEquals(session.getArrivedFrom(tunnel), "N", "the placement recorded no arrival side, or the wrong one");
+
+            assertStandsFromTheNorthWithItsTail(train, tunnelPre);
+        }
+        finally
+        {
+            org.traincontrol.gui.TailCrossedPrompt.answerForTests(null);
+
+            train.setTrainLength(lengthWas);
+        }
+    }
+
+    /** Answers the tail question with TunnelPre, the tail of a five-unit train come into Tunnel from the north. */
+    private static org.traincontrol.gui.TailCrossedPrompt.Choice tunnelPreIsTheTail(TileKey tunnel) throws Exception
+    {
+        org.traincontrol.automation.Layout railway = model.getAutoLayout();
+
+        org.traincontrol.automation.Point copy = railway.getPoint(session.facingsFor(tunnel).keySet().iterator().next());
+
+        org.traincontrol.gui.TailCrossedPrompt.Choice tunnelPre = org.traincontrol.gui.TailCrossedPrompt
+            .choicesFor(railway, copy, "N", 5, null).stream()
+            .filter(choice -> choice.getFarthest().getName().startsWith("TunnelPre")).findFirst().orElse(null);
+
+        assertNotNull(tunnelPre, "precondition: a five-unit train at Tunnel from the north is not offered TunnelPre");
+
+        org.traincontrol.gui.TailCrossedPrompt.answerForTests(tunnelPre.getFarthest().getName());
+
+        return tunnelPre;
+    }
+
+    /** Waits for the train to stand on the railway come in from the north, its tail along the road chosen. */
+    private static void assertStandsFromTheNorthWithItsTail(Locomotive train,
+        org.traincontrol.gui.TailCrossedPrompt.Choice tail)
+    {
+        final java.util.List<String> expected = roadNames(tail.getRoad());
+
+        assertTrue(Components.waitFor(() ->
+        {
+            org.traincontrol.automation.Point standing = model.getAutoLayout().getLocomotiveLocation(train);
+
+            return standing != null && "N".equals(standing.getArrivedFrom())
+                && expected.equals(roadNames(standing.getArrivedAlong()));
+        }, 20000), "the tail answer was not kept; expected the road " + expected);
+    }
+
+    /**
+     * Placed over another train through the train window's list, the new one stands on Tunnel on the railway with its
+     * side and tail, as on an empty station (`testTheEditorsMenuPlacesTheSelectedTrainWithItsSideAndTail`), and the
+     * train it displaced leaves the setup and the railway, as the diagram's Place does (OB-416).
+     *
+     * MUTATION: name only `name` in `AutonomyEditorPanel.placeLocomotive`'s `placementChanged`, and the rebuild puts the
+     * displaced train back over the new one and this fails.
+     */
+    @Test(timeOut = 180000)
+    public void testTheListOverAnotherTrainTakesItsPlace() throws Exception
+    {
+        AutonomyEditorPanel panel = theEditorsPanel();
+
+        placeOverTheTrainOnTunnel(theList(panel), false);
+    }
+
+    /**
+     * After a run the railway can hold X where the setup names Y: placed over them through the list, the new train
+     * takes the square and both leave it, on the railway and in the setup (OB-416).
+     *
+     * MUTATION: leave `tileMenus.trainStanding(tile)` out of the names `AutonomyEditorPanel.placeLocomotive` gives
+     * `placementChanged`, and the rebuild puts X back over the new train and this fails.
+     */
+    @Test(timeOut = 180000)
+    public void testTheListOverARailwaysOtherTrainTakesItsPlace() throws Exception
+    {
+        placeOverTheTrainOnTunnel(theList(theEditorsPanel()), true);
+    }
+
+    /** The train window's list on Tunnel. */
+    private static PlacingDoor theList(AutonomyEditorPanel panel)
+    {
+        return name ->
+        {
+            TrainWindow window = StationDoors.openTrain(panel, support.StandingTrain.squareNamed(session, "Tunnel"));
+
+            StationDoors.pick(window, "train.train", name);
+
+            return window;
+        };
+    }
+
+    /**
+     * The same through the editor's Place <selected> (OB-416).
+     *
+     * MUTATION: name only `name` in `AutonomyEditorPanel.placeLocomotive`'s `placementChanged`, and the rebuild puts the
+     * displaced train back over the new one and this fails.
+     */
+    @Test(timeOut = 180000)
+    public void testTheEditorsPlaceOverAnotherTrainTakesItsPlace() throws Exception
+    {
+        AutonomyEditorPanel panel = theEditorsPanel();
+
+        placeOverTheTrainOnTunnel(name ->
+        {
+            makeActive(name);
+
+            JMenuItem item = placeItemOn(panel, support.StandingTrain.squareNamed(session, "Tunnel"), name);
+
+            assertNotNull(item, "the editor's menu on Tunnel has no Place " + name);
+
+            Components.onTheEventThread(() -> { item.doClick(); return null; });
+
+            return null;
+        }, false);
+    }
+
+    /**
+     * Cancel after placing over another train brings the station back as it was, as after a drop onto a train: the
+     * displaced train is back in the setup and on the railway, and the placed one is off both (OB-416).
+     *
+     * MUTATION: drop `putBackOnDiscard.addAll(named)` from `AutonomyEditorPanel.placeLocomotive`, and the displaced train
+     * ends nowhere and this fails.
+     */
+    @Test(timeOut = 180000)
+    public void testCancelAfterPlacingOverAnotherTrainPutsTheStationBack() throws Exception
+    {
+        AutonomyEditorPanel panel = theEditorsPanel();
+
+        TileKey full = aSquareWithATrain();
+
+        String was = session.getLocomotiveNameAt(full);
+        String name = aTrainOffTheRailway();
+
+        String wasBefore = where(was);
+        String nameBefore = where(name);
+
+        org.traincontrol.gui.TailCrossedPrompt.answerForTests(org.traincontrol.gui.TailCrossedPrompt.DISMISSED);
+
+        try
+        {
+            makeActive(name);
+
+            JMenuItem item = placeItemOn(panel, full, name);
+
+            assertNotNull(item, "precondition: the editor's menu has no Place " + name + " over " + was);
+
+            Components.onTheEventThread(() -> { item.doClick(); return null; });
+
+            assertTrue(Components.waitFor(() -> model.getAutoLayout().getLocomotiveLocation(model.getLocByName(name)) != null,
+                20000), "precondition: " + name + " was not put on the railway");
+
+            Components.settle();
+
+            cancelTheEditor();
+
+            assertEquals(where(was), wasBefore, "Cancel did not put the displaced train back");
+            assertEquals(where(name), nameBefore, "Cancel did not take the placed train back off");
+        }
+        finally
+        {
+            org.traincontrol.gui.TailCrossedPrompt.answerForTests(null);
+        }
+    }
+
+    /** Where the setup and the railway have this train, with the side it came in by on the railway. */
+    private static String where(String name)
+    {
+        TileKey inSetup = null;
+
+        for (Map.Entry<TileKey, String> each : session.placementsAutonomyWillWrite().entrySet())
+        {
+            if (name.equals(each.getValue())) inSetup = each.getKey();
+        }
+
+        org.traincontrol.automation.Point on = model.getAutoLayout().getLocomotiveLocation(model.getLocByName(name));
+
+        return "setup " + inSetup + ", railway " + (on == null ? null : on.getName() + " from " + on.getArrivedFrom());
+    }
+
+    /** Cancel on the editor, answering Yes to throwing the edits away. */
+    private void cancelTheEditor() throws Exception
+    {
+        final LayoutEditor closing = editor;
+
+        final java.lang.reflect.Method exit = LayoutEditor.class.getDeclaredMethod("confirmExit");
+
+        exit.setAccessible(true);
+
+        try (support.Answering answering = support.Answering.start(message -> support.Answering.press(AskingWindows.YES)))
+        {
+            SwingUtilities.invokeLater(() ->
+            {
+                try
+                {
+                    exit.invoke(closing);
+                }
+                catch (Exception e)
+                {
+                    throw new IllegalStateException(e);
+                }
+            });
+
+            assertTrue(Components.waitFor(() -> !closing.isDisplayable(), 20000), "Cancel did not close the editor");
+        }
+
+        Components.settle();
+
+        editor = null;
+    }
+
+    /** A door that places the named train on Tunnel; returns the window it left open, or null. */
+    private interface PlacingDoor
+    {
+        TrainWindow place(String name) throws Exception;
+    }
+
+    /**
+     * Stands a train on the empty Tunnel through the door, then places another over it through the same door;
+     * `afterARun` first swaps the railway's train there for one the setup does not place.
+     */
+    private void placeOverTheTrainOnTunnel(PlacingDoor door, boolean afterARun) throws Exception
+    {
+        final TileKey tunnel = support.StandingTrain.squareNamed(session, "Tunnel");
+
+        assertNull(session.getLocomotiveNameAt(tunnel), "precondition: Tunnel is not empty in the setup");
+
+        // `putBack` leaves a train an earlier claim placed standing on the railway, so Tunnel is emptied there too
+        offTheRailwayAt(tunnel);
+
+        TrainWindow window = null;
+
+        String was = aTrainOffTheRailway();
+
+        final Locomotive displaced = model.getLocByName(was);
+
+        org.traincontrol.gui.TailCrossedPrompt.answerForTests(org.traincontrol.gui.TailCrossedPrompt.DISMISSED);
+
+        TrainWindow first = door.place(was);
+
+        if (first != null) StationDoors.close(first);
+
+        assertTrue(Components.waitFor(() -> model.getAutoLayout().getLocomotiveLocation(displaced) != null, 20000),
+            "precondition: " + was + " was not put on Tunnel on the railway");
+
+        Components.settle();
+
+        final String onTheRailway = afterARun ? aTrainOffTheRailway() : null;
+
+        if (afterARun)
+        {
+            final String copy = model.getAutoLayout().getLocomotiveLocation(displaced).getName();
+
+            Components.onTheEventThread(() ->
+            {
+                model.getAutoLayout().moveLocomotive(null, copy, false);
+
+                assertTrue(model.getAutoLayout().moveLocomotive(onTheRailway, copy, false),
+                    "precondition: " + onTheRailway + " could not be stood on Tunnel");
+
+                return null;
+            });
+
+            Components.settle();
+
+            assertEquals(session.trainOnTheRailway(tunnel, model.getAutoLayout()), onTheRailway,
+                "precondition: the railway does not hold " + onTheRailway + " on Tunnel");
+            assertEquals(session.getLocomotiveNameAt(tunnel), was, "precondition: the setup does not name " + was);
+        }
+
+        String name = aTrainOffTheRailway();
+
+        Locomotive train = model.getLocByName(name);
+
+        Integer lengthWas = train.getTrainLength();
+
+        try
+        {
+            train.setTrainLength(5);
+
+            org.traincontrol.gui.TailCrossedPrompt.Choice tunnelPre = tunnelPreIsTheTail(tunnel);
+
+            window = door.place(name);
+
+            assertEquals(session.getLocomotiveNameAt(tunnel), name, "the train was not put on Tunnel in the setup");
+            assertEquals(session.getArrivedFrom(tunnel), "N", "the placement recorded no arrival side, or the wrong one");
+
+            assertStandsFromTheNorthWithItsTail(train, tunnelPre);
+
+            assertFalse(session.placementsAutonomyWillWrite().containsValue(was), was + " is still in the setup");
+
+            assertNull(model.getAutoLayout().getLocomotiveLocation(displaced), was + " still stands on the railway");
+
+            if (onTheRailway != null)
+            {
+                assertNull(model.getAutoLayout().getLocomotiveLocation(model.getLocByName(onTheRailway)),
+                    onTheRailway + ", which only the railway had on Tunnel, still stands on the railway");
+            }
+        }
+        finally
+        {
+            org.traincontrol.gui.TailCrossedPrompt.answerForTests(null);
+
+            train.setTrainLength(lengthWas);
+
+            if (window != null) StationDoors.close(window);
+
+            offTheRailwayAt(tunnel);
+        }
+    }
+
+    /** A train neither the setup nor the railway has standing anywhere. */
+    private static String aTrainOffTheRailway()
+    {
+        for (String name : model.getLocList())
+        {
+            if (!session.placementsAutonomyWillWrite().containsValue(name)
+                && model.getAutoLayout().getLocomotiveLocation(model.getLocByName(name)) == null) return name;
+        }
+
+        throw new AssertionError("precondition: every locomotive is placed");
+    }
+
+    /** Lifts whatever stands on this square's copies off the railway alone. */
+    private static void offTheRailwayAt(TileKey square)
+    {
+        Components.onTheEventThread(() ->
+        {
+            for (String copy : session.facingsFor(square).keySet())
+            {
+                org.traincontrol.automation.Point point = model.getAutoLayout().getPoint(copy);
+
+                if (point != null && point.getCurrentLocomotive() != null) model.getAutoLayout().moveLocomotive(null, copy, false);
+            }
+
+            return null;
+        });
+
+        Components.settle();
+    }
+
+    /**
+     * No Place item for the selected train where nothing is selected, or where the selected train already stands.
+     *
+     * MUTATION: drop the `equals(standing)` test or the `isStation` test in `EditorTileMenus.placeSelectedItem`, and the
+     * matching part of this fails.
+     */
+    @Test(timeOut = 120000)
+    public void testTheEditorsMenuHasNoPlaceForNothingOrForTheTrainAlreadyThere() throws Exception
+    {
+        AutonomyEditorPanel panel = theEditorsPanel();
+
+        TileKey full = aSquareWithATrain();
+        TileKey empty = anEmptyStation();
+
+        String standing = session.getLocomotiveNameAt(full);
+        String other = aTrainNotPlaced();
+
+        nothingIsSelected();
+
+        assertNull(placeItemOn(panel, empty, other), "Place was offered with nothing selected");
+        assertNull(placeItemOn(panel, full, standing), "Place was offered with nothing selected, over a train");
+
+        makeActive(standing);
+
+        assertNull(placeItemOn(panel, full, standing), "Place was offered for the train already standing there");
+
+        makeActive(other);
+
+        assertNotNull(placeItemOn(panel, empty, other), "precondition: no Place for a selected train that stands nowhere");
+        assertNotNull(placeItemOn(panel, full, other), "precondition: no Place over another train");
+
+        // Only a station takes a train: a point that is none gets no Place
+        TileKey plain = null;
+
+        for (TileKey each : session.getReducer().getPoints().keySet())
+        {
+            if (PAGE.equals(each.getPage()) && !session.getStore().isStation(each)) plain = each;
+        }
+
+        assertNotNull(plain, "precondition: " + PAGE + " has no point that is not a station");
+
+        assertNull(placeItemOn(panel, plain, other), "Place was offered on a point that is not a station");
+    }
+
+    /**
+     * Which train "stands there" is read off the railway, as the Train at item and the diagram's menu read it: after a
+     * run the railway can hold X where the setup still names Y, and Place X is not offered on X's own square.
+     *
+     * MUTATION: pass `editor.locomotiveAt(target)` instead of `trainStanding(target)` to `placeSelectedItem`, and this
+     * fails.
+     */
+    @Test(timeOut = 180000)
+    public void testAfterARunPlaceReadsTheTrainOnTheRailway() throws Exception
+    {
+        AutonomyEditorPanel panel = theEditorsPanel();
+
+        TileKey full = aSquareWithATrain();
+
+        String inTheSetup = session.getLocomotiveNameAt(full);
+
+        org.traincontrol.automation.Layout railway = model.getAutoLayout();
+
+        org.traincontrol.automation.Point copy = railway.getLocomotiveLocation(model.getLocByName(inTheSetup));
+
+        assertNotNull(copy, "precondition: " + inTheSetup + " is not on the railway");
+
+        String x = aTrainNotPlaced();
+
+        try
+        {
+            Components.onTheEventThread(() ->
+            {
+                railway.moveLocomotive(null, copy.getName(), false);
+
+                assertTrue(railway.moveLocomotive(x, copy.getName(), false), "precondition: " + x + " could not be stood there");
+
+                return null;
+            });
+
+            Components.settle();
+
+            assertEquals(Components.onTheEventThread(() -> session.trainOnTheRailway(full, model.getAutoLayout())), x,
+                "precondition: the railway does not hold " + x + " on the square");
+
+            makeActive(x);
+
+            assertNull(placeItemOn(panel, full, x), "Place " + x + " is offered on the square the railway has it standing on");
+
+            makeActive(inTheSetup);
+
+            assertNotNull(placeItemOn(panel, full, inTheSetup),
+                "Place " + inTheSetup + " is not offered where the railway has another train");
+        }
+        finally
+        {
+            // The railway as the setup has it again, for the claims after this one
+            Components.onTheEventThread(() ->
+            {
+                railway.moveLocomotive(null, copy.getName(), false);
+                railway.moveLocomotive(inTheSetup, copy.getName(), false);
+
+                return null;
+            });
+
+            Components.settle();
+        }
+    }
+
+    /**
+     * While a route runs the item is grayed with the reason, and pressing it anyway places nothing.
+     *
+     * MUTATION: leave the item enabled while `aRunHoldsTheSetup()`, and this fails.
+     */
+    @Test(timeOut = 120000)
+    public void testTheEditorsPlaceFollowsTheRunRule() throws Exception
+    {
+        AutonomyEditorPanel panel = theEditorsPanel();
+
+        TileKey empty = anEmptyStation();
+
+        String name = aTrainNotPlaced();
+
+        makeActive(name);
+
+        regression.testNoSetupEditWhileARouteRuns.aRouteRuns(ui, true);
+
+        try
+        {
+            JMenuItem item = placeItemOn(panel, empty, name);
+
+            assertNotNull(item, "the editor's menu has no Place " + name + " while a route runs; it should be grayed");
+            assertFalse(item.isEnabled(), "Place " + name + " is not grayed while a route runs");
+            assertNotNull(item.getToolTipText(), "the grayed Place says nothing of why");
+
+            StationDoors.pressThoughGrayed(item);
+
+            assertNull(session.getLocomotiveNameAt(empty), "the grayed Place put a train down when pressed");
+        }
+        finally
+        {
+            regression.testNoSetupEditWhileARouteRuns.aRouteRuns(ui, false);
+        }
+
+        assertTrue(placeItemOn(panel, empty, name).isEnabled(), "Place stays grayed once the route is over");
+    }
 }
