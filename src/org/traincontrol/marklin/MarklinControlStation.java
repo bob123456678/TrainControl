@@ -70,6 +70,7 @@ import org.traincontrol.model.View;
 import org.traincontrol.model.ViewListener;
 import org.traincontrol.util.Conversion;
 import org.traincontrol.util.I18n;
+import org.traincontrol.util.QueuedLogHandler;
 import org.traincontrol.util.Util;
 import static org.traincontrol.util.Util.escapeCsv;
 
@@ -372,11 +373,13 @@ public class MarklinControlStation implements ViewListener, ModelListener
             @Override
             public String format(LogRecord record)
             {
-                return String.format("%s %s%n", new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS").format(System.currentTimeMillis()), record.getMessage());
+                // The record's time, not the clock's: the line is written later, from another thread
+                return String.format("%s %s%n", new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS").format(record.getMillis()), record.getMessage());
             }
         });
-        
-        log.addHandler(consoleHandler);
+
+        // Through a queue, so that no thread that logs waits on the console (OB-421)
+        log.addHandler(new QueuedLogHandler(consoleHandler));
         
         // Initialize maps
         this.locDB = new RemoteDeviceCollection<>();
@@ -2796,37 +2799,45 @@ public class MarklinControlStation implements ViewListener, ModelListener
         if (msg == null) return;
         
         CS2Message message = (CS2Message) msg;
-        
+
+        boolean duplicate;
+        int number;
+
         synchronized (this)
         {
             // CS3 seems to send response packets twice.  Ignore the second, within a window: the duplicate follows by
             // milliseconds, while an identical packet an hour later is a second real command and must not be dropped.
-            if (lastPacket != null &&
+            duplicate = lastPacket != null &&
                     (message.isAccessoryCommand() || message.isLocCommand() || message.isFeedbackCommand()) &&
                     message.equals(lastPacket)
-                    && (System.nanoTime() - this.lastPacketAt) < DUPLICATE_WINDOW_NS
-            )
-            {
-                if (this.debug && DEBUG_LOG_NETWORK)
-                {
-                    this.logf("network.skippingDuplicatePacket", message.toString());
-                }
-                
-                return;
-            }
-        
-            this.lastPacketAt = System.nanoTime();
+                    && (System.nanoTime() - this.lastPacketAt) < DUPLICATE_WINDOW_NS;
 
-            numMessagesProcessed +=1;
-            
-            // Prints out each message
-            if (this.debug && DEBUG_LOG_NETWORK)
+            if (!duplicate)
             {
-                this.log(numMessagesProcessed + " " + message.toString());
+                this.lastPacketAt = System.nanoTime();
+
+                numMessagesProcessed +=1;
+
+                lastPacket = message;
             }
-            
-            lastPacket = message;
+
+            number = numMessagesProcessed;
         }
+
+        // Prints out each message, formatted outside the lock (OB-421)
+        if (this.debug && DEBUG_LOG_NETWORK)
+        {
+            if (duplicate)
+            {
+                this.logf("network.skippingDuplicatePacket", message.toString());
+            }
+            else
+            {
+                this.log(number + " " + message.toString());
+            }
+        }
+
+        if (duplicate) return;
                 
         // Send the message to the appropriate listener
         if (message.isFeedbackCommand())

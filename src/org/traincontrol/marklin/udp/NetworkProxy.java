@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
+import java.net.SocketException;
 import org.traincontrol.base.udp.CANMessage;
 import org.traincontrol.model.ModelListener;
 
@@ -36,6 +37,9 @@ public class NetworkProxy
 
     // How long to wait after a recoverable receive error, so that a persistent fault cannot spin
     private static final long RECEIVE_ERROR_BACKOFF_MS = 50;
+
+    /** The receive buffer asked for: about 80,000 frames, minutes of the station's busiest traffic (OB-421). */
+    private static final int RECEIVE_BUFFER_BYTES = 1024 * 1024;
     
     // Transmission IP/port
     private final InetAddress transmitIP;
@@ -66,7 +70,33 @@ public class NetworkProxy
     private static DatagramSocket openReceiveSocket() throws IOException
     {
         // Port 0 asks the operating system for any free port.
-        return ANY_RECEIVE_PORT ? new DatagramSocket() : new DatagramSocket(NetworkProxy.RX_PORT);
+        DatagramSocket opened = ANY_RECEIVE_PORT ? new DatagramSocket() : new DatagramSocket(NetworkProxy.RX_PORT);
+
+        // Room for the frames that arrive while the listener is held up; a full buffer drops them, sensor changes
+        // included (OB-421).  A hint: the operating system may grant less, and the listener runs on whatever it got.
+        try
+        {
+            opened.setReceiveBufferSize(RECEIVE_BUFFER_BYTES);
+        }
+        catch (SocketException refused)
+        {
+            // The default buffer is kept
+        }
+
+        return opened;
+    }
+
+    /** The granted receive buffer in KB, for the listener's start line, or "?" when the socket will not say. */
+    private Object receiveBufferKb()
+    {
+        try
+        {
+            return this.socket.getReceiveBufferSize() / 1024;
+        }
+        catch (SocketException e)
+        {
+            return "?";
+        }
     }
     
     /**
@@ -226,7 +256,8 @@ public class NetworkProxy
             DatagramPacket packet = new DatagramPacket(buffer, buffer.length);
 
             model.logf(
-                "network.canListenerRunning"
+                "network.canListenerRunning",
+                receiveBufferKb()
             );
 
             try

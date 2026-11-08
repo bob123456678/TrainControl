@@ -829,6 +829,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         installImportLocsFromCSVMenuItem();
 
+        installExportLogMenuItem();
+
         installReturnHomeMenu();
 
         // The windows it opens follow its always-on-top (MT-703).
@@ -4836,9 +4838,12 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     @Override
     public void log(String message)
     {
+        // Stamped when logged, not when the event thread gets to it (FR-051); one stamp however many lines it has.
+        final String stamp = LOG_STAMP.format(java.time.LocalTime.now()) + " ";
+
         javax.swing.SwingUtilities.invokeLater(() ->
         {
-            this.debugArea.insert(message + "\n", 0);
+            this.debugArea.insert(stamp + message + "\n", 0);
             this.debugArea.setCaretPosition(0);
 
             // Capped, because every insert at position 0 shifts the whole document, and the cost rose with session age.
@@ -4859,6 +4864,92 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         });
     }             
     
+    private static final java.time.format.DateTimeFormatter LOG_STAMP =
+        java.time.format.DateTimeFormatter.ofPattern("HH:mm:ss");
+
+    /** The log as it shows, newest first, stamps included; event thread. */
+    String logText()
+    {
+        return this.debugArea.getText();
+    }
+
+    /** "Export Log..." in the File menu (FR-051), built here because the menu belongs to the generated block. */
+    private void installExportLogMenuItem()
+    {
+        javax.swing.JMenuItem item = new javax.swing.JMenuItem(I18n.t("ui.main.toolbar.exportLog"));
+
+        item.addActionListener(event -> LogExportDoor.save(this));
+
+        this.exportLogMenuItem = item;
+
+        this.fileMenu.add(item);
+
+        arrangeFileMenu();
+    }
+
+    /**
+     * Puts the File menu in its four groups, with one separator between groups and none at the ends: Sync and Change IP;
+     * Backup and Restore; Export Log; Exit.  Called after every insert, so no item lands in the wrong group; an item it
+     * does not know stays, after Export Log.
+     */
+    void arrangeFileMenu()
+    {
+        java.util.List<java.awt.Component> rest = new java.util.ArrayList<>(
+            java.util.Arrays.asList(this.fileMenu.getMenuComponents()));
+
+        rest.removeIf(each -> each instanceof javax.swing.JPopupMenu.Separator);
+
+        java.util.List<java.util.List<java.awt.Component>> groups = new java.util.ArrayList<>();
+
+        groups.add(takeFrom(rest, this.syncMenuItem, this.changeIPMenuItem));
+        groups.add(takeFrom(rest, this.backupDataMenuItem, this.restoreDataMenuItem));
+
+        java.util.List<java.awt.Component> exports = takeFrom(rest, this.exportLogMenuItem);
+
+        groups.add(exports);
+
+        java.util.List<java.awt.Component> exit = takeFrom(rest, this.exitMenuItem);
+
+        exports.addAll(rest);
+
+        this.fileMenu.removeAll();
+
+        boolean first = true;
+
+        for (java.util.List<java.awt.Component> group : groups)
+        {
+            if (group.isEmpty()) continue;
+
+            if (!first) this.fileMenu.addSeparator();
+
+            for (java.awt.Component each : group) this.fileMenu.add(each);
+
+            first = false;
+        }
+
+        if (!exit.isEmpty())
+        {
+            if (!first) this.fileMenu.addSeparator();
+
+            this.fileMenu.add(exit.get(0));
+        }
+    }
+
+    private static java.util.List<java.awt.Component> takeFrom(java.util.List<java.awt.Component> rest,
+        java.awt.Component... wanted)
+    {
+        java.util.List<java.awt.Component> taken = new java.util.ArrayList<>();
+
+        for (java.awt.Component each : wanted)
+        {
+            if (each != null && rest.remove(each)) taken.add(each);
+        }
+
+        return taken;
+    }
+
+    javax.swing.JMenuItem exportLogMenuItem;
+
     public int getKeyboardOffset()
     {
         return (this.keyboardNumber - 1) * TrainControlUI.KEYBOARD_KEYS;

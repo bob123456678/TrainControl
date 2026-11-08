@@ -737,14 +737,9 @@ final class AutonomyLifecycle
             new RestoreAction(ui).restoreFromBackup();
         });
 
-        int backup = -1;
+        ui.fileMenu().add(ui.restoreDataMenuItem);
 
-        for (int i = 0; i < ui.fileMenu().getMenuComponentCount(); i++)
-        {
-            if (ui.fileMenu().getMenuComponent(i) == ui.backupDataMenuItem()) backup = i;
-        }
-
-        ui.fileMenu().add(ui.restoreDataMenuItem, backup + 1);
+        ui.arrangeFileMenu();
     }
 
     /**

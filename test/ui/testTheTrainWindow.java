@@ -496,33 +496,40 @@ public class testTheTrainWindow
 
         TrainWindow window = StationDoors.openTrain(panel, aSquareWithATrain());
 
-        int[] widths = Components.onTheEventThread(() ->
+        try
         {
-            java.awt.Component list = Components.named(window, "train.train", java.awt.Component.class);
-            java.awt.Component settings = Components.named(window, "train.settings", java.awt.Component.class);
+            int[] widths = Components.onTheEventThread(() ->
+            {
+                java.awt.Component list = Components.named(window, "train.train", java.awt.Component.class);
+                java.awt.Component settings = Components.named(window, "train.settings", java.awt.Component.class);
 
-            assertEquals(settings.getX(), list.getX(), "Locomotive Settings... does not share the Train list's left edge");
+                assertEquals(settings.getX(), list.getX(),
+                    "Locomotive Settings... does not share the Train list's left edge");
 
-            assertTrue(settings.getY() >= list.getY() + list.getHeight(), "Locomotive Settings... is not under the"
-                + " Train list");
+                assertTrue(settings.getY() >= list.getY() + list.getHeight(), "Locomotive Settings... is not under the"
+                    + " Train list");
 
-            window.pack();
+                window.pack();
 
-            int with = window.getWidth();
+                int with = window.getWidth();
 
-            java.awt.Container form = settings.getParent();
+                java.awt.Container form = settings.getParent();
 
-            form.remove(settings);
-            form.revalidate();
+                form.remove(settings);
+                form.revalidate();
 
-            window.pack();
+                window.pack();
 
-            return new int[] {with, window.getWidth()};
-        });
+                return new int[] {with, window.getWidth()};
+            });
 
-        assertEquals(widths[0], widths[1], "Locomotive Settings... sets the train window's width");
-
-        SwingUtilities.invokeAndWait(window::dispose);
+            assertEquals(widths[0], widths[1], "Locomotive Settings... sets the train window's width");
+        }
+        finally
+        {
+            // Even after a failure: a window left open takes the class's later right-clicks
+            SwingUtilities.invokeAndWait(window::dispose);
+        }
     }
 
     // ------------------------------------------------------------------------------------------------------------ menus
