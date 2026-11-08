@@ -1,0 +1,433 @@
+package core;
+
+import java.net.DatagramPacket;
+import java.net.DatagramSocket;
+import java.net.InetAddress;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertFalse;
+import static org.testng.Assert.assertTrue;
+import org.testng.annotations.AfterMethod;
+import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.Test;
+import org.traincontrol.base.udp.CANMessage;
+import org.traincontrol.marklin.udp.CS2Message;
+import org.traincontrol.marklin.udp.NetworkProxy;
+import org.traincontrol.model.ModelListener;
+import org.traincontrol.util.I18n;
+import support.Components;
+import support.Packets;
+import support.TcpStation;
+
+/**
+ * The CAN frames go over TCP when the station accepts a connection, and over UDP when it does not or when the
+ * connection is lost for good (FR-186).  Each claim drives a real `NetworkProxy` against `support.TcpStation` and
+ * reads what reached the model it serves, what reached the station, and what was logged.
+ *
+ * The proxy's UDP socket is on any port (the battery's anyReceivePort), and a datagram sent to it stands in for the
+ * station's UDP broadcast.  No claim sends over UDP, so nothing reaches 15731 on this machine.
+ *
+ * @author Adam
+ */
+public class testTheStationIsReachedOverTcp
+{
+    private static final long WAIT_MS = 5000;
+
+    private NetworkProxy proxy;
+
+    private TcpStation station;
+
+    private Model model;
+
+    /** A model that keeps what it is handed and the keys it is asked to log. */
+    private static final class Model implements ModelListener
+    {
+        final List<byte[]> heard = Collections.synchronizedList(new ArrayList<>());
+        final List<String> keys = Collections.synchronizedList(new ArrayList<>());
+        final List<String> lines = Collections.synchronizedList(new ArrayList<>());
+
+        @Override
+        public void receiveMessage(CANMessage message)
+        {
+            this.heard.add(((CS2Message) message).getRawMessage());
+        }
+
+        @Override
+        public byte[] initMessageBuffer()
+        {
+            return new byte[CS2Message.MESSAGE_LENGTH];
+        }
+
+        @Override
+        public CANMessage createMessage(byte[] raw)
+        {
+            return new CS2Message(raw);
+        }
+
+        @Override
+        public void logf(String key, Object... args)
+        {
+            this.keys.add(key);
+            this.lines.add(I18n.f(key, args));
+        }
+
+        @Override
+        public void log(String message)
+        {
+            this.lines.add(message);
+        }
+
+        @Override
+        public void log(Exception e)
+        {
+            this.lines.add(String.valueOf(e));
+        }
+
+        int count(String key)
+        {
+            return Collections.frequency(new ArrayList<>(this.keys), key);
+        }
+
+        boolean heardFrame(byte[] frame)
+        {
+            synchronized (this.heard)
+            {
+                for (byte[] h : this.heard) if (Arrays.equals(h, frame)) return true;
+            }
+
+            return false;
+        }
+    }
+
+    @BeforeMethod
+    public void setUp()
+    {
+        this.model = new Model();
+        this.proxy = null;
+        this.station = null;
+    }
+
+    @AfterMethod(alwaysRun = true)
+    public void tearDown() throws Exception
+    {
+        if (this.proxy != null) this.proxy.stopListening();
+        if (this.station != null) this.station.close();
+    }
+
+    private NetworkProxy connect(int port) throws Exception
+    {
+        this.proxy = new NetworkProxy(InetAddress.getByName("127.0.0.1"), port);
+        this.proxy.setModel(this.model);
+        return this.proxy;
+    }
+
+    /** A frame as the station would send it: a sensor event. */
+    private static byte[] sensor(int contact, boolean occupied)
+    {
+        return Packets.s88(contact, occupied).getRawMessage();
+    }
+
+    private static byte[] answerTo(byte[] frame)
+    {
+        byte[] answer = Arrays.copyOf(frame, frame.length);
+        answer[1] |= 1;
+        return answer;
+    }
+
+    /** Sends a datagram to the proxy's UDP socket, as the station's broadcast would arrive. */
+    private void broadcast(byte[] frame) throws Exception
+    {
+        java.lang.reflect.Field field = NetworkProxy.class.getDeclaredField("socket");
+        field.setAccessible(true);
+        int port = ((DatagramSocket) field.get(this.proxy)).getLocalPort();
+
+        try (DatagramSocket out = new DatagramSocket())
+        {
+            out.send(new DatagramPacket(frame, frame.length, InetAddress.getByName("127.0.0.1"), port));
+        }
+    }
+
+    private boolean logged(String key, long ms)
+    {
+        return Components.waitFor(() -> this.model.count(key) > 0, ms);
+    }
+
+    /** Sends a ping and waits for the station's answer, so the connection has carried a frame. */
+    private void pingAnswered() throws Exception
+    {
+        CS2Message ping = new CS2Message(CS2Message.CAN_CMD_PING, new byte[0]);
+        assertTrue(this.proxy.sendMessage(ping), "the ping was not sent");
+        assertTrue(Components.waitFor(() -> this.model.heardFrame(answerTo(ping.getRawMessage())), WAIT_MS),
+            "the station's answer to a ping never reached the model: " + this.model.lines);
+    }
+
+    /**
+     * A station that takes a connection is reached over it: the ping arrives there byte for byte, its answer reaches
+     * the model, and the log says TCP.
+     *
+     * MUTATION: in the `NetworkProxy(InetAddress, int)` constructor, take out `useTcp(connectTcp());`.
+     */
+    @Test(timeOut = 30000)
+    public void testTcpIsUsedWhenTheStationAcceptsIt() throws Exception
+    {
+        this.station = new TcpStation().answering(true);
+        connect(this.station.port());
+
+        CS2Message ping = new CS2Message(CS2Message.CAN_CMD_PING, new byte[0]);
+        assertTrue(this.proxy.sendMessage(ping), "the ping was not sent");
+
+        assertTrue(Components.waitFor(() -> this.station.received().size() == 1, WAIT_MS),
+            "the ping never reached the station over TCP: " + this.model.lines);
+        assertEquals(this.station.received().get(0).bytes, ping.getRawMessage(),
+            "the frame on the TCP connection is not the frame UDP would carry");
+        assertTrue(Components.waitFor(() -> this.model.heardFrame(answerTo(ping.getRawMessage())), WAIT_MS),
+            "the station's answer on the connection never reached the model");
+        assertEquals(this.model.count("network.tcpConnected"), 1, "the log does not say TCP: " + this.model.lines);
+        assertEquals(this.model.count("network.tcpUnavailable"), 0, "the log says UDP: " + this.model.lines);
+    }
+
+    /**
+     * Frames are reassembled at 13 bytes however the stream is cut: a frame split over two reads, and two frames and
+     * part of a third in one, reach the model as three whole frames, once each, in order.
+     *
+     * MUTATION: in `NetworkProxy.readUntilLost`, `filled += read;` to `filled = read;`.
+     */
+    @Test(timeOut = 30000)
+    public void testFramesCutAnywhereInTheStreamAreReassembled() throws Exception
+    {
+        this.station = new TcpStation();
+        connect(this.station.port());
+
+        byte[][] frames = {sensor(1001, true), sensor(1002, true), sensor(1001, false)};
+        byte[] stream = new byte[3 * CS2Message.MESSAGE_LENGTH];
+
+        for (int i = 0; i < 3; i++) System.arraycopy(frames[i], 0, stream, i * CS2Message.MESSAGE_LENGTH, 13);
+
+        // Cut at 5 and 28: the first frame in two pieces, then the rest of it, the second and part of the third
+        int[] cuts = {0, 5, 28, stream.length};
+
+        for (int i = 0; i + 1 < cuts.length; i++)
+        {
+            this.station.send(Arrays.copyOfRange(stream, cuts[i], cuts[i + 1]));
+
+            // Long enough for the proxy to read each piece on its own
+            Thread.sleep(200);
+        }
+
+        assertTrue(Components.waitFor(() -> this.model.heard.size() >= 3, WAIT_MS),
+            "only " + this.model.heard.size() + " of 3 frames reached the model");
+        Thread.sleep(300);
+
+        List<byte[]> heard = new ArrayList<>(this.model.heard);
+        assertEquals(heard.size(), 3, "the model was handed " + heard.size() + " frames for 3");
+
+        for (int i = 0; i < 3; i++)
+        {
+            assertEquals(heard.get(i), frames[i], "frame " + (i + 1) + " reached the model changed");
+        }
+    }
+
+    /**
+     * A station that does not take a connection is reached over UDP, as before, and the log says so once, with the
+     * reason.  A closed port on Windows loopback times out (about 2 s) rather than refusing.
+     *
+     * MUTATION: in `NetworkProxy.setModel`, take out `model.logf("network.tcpUnavailable", this.tcpRefusal);`.
+     */
+    @Test(timeOut = 30000)
+    public void testAStationThatRefusesTcpIsReachedOverUdp() throws Exception
+    {
+        connect(TcpStation.closedPort());
+
+        assertTrue(logged("network.canListenerRunning", WAIT_MS), "no UDP listener started: " + this.model.lines);
+        assertEquals(this.model.count("network.tcpUnavailable"), 1,
+            "the fallback to UDP is not said exactly once: " + this.model.lines);
+        assertEquals(this.model.count("network.tcpConnected"), 0, "the log says TCP: " + this.model.lines);
+
+        byte[] frame = sensor(1003, true);
+        broadcast(frame);
+
+        assertTrue(Components.waitFor(() -> this.model.heardFrame(frame), WAIT_MS),
+            "a frame the station broadcast over UDP never reached the model");
+    }
+
+    /**
+     * The same for an address a connection cannot even be tried to, which fails at once.  Nothing is sent: the
+     * address is the limited broadcast.
+     *
+     * MUTATION: in the `NetworkProxy(InetAddress, int)` constructor, take out `this.tcpRefusal = reasonOf(e);`.
+     */
+    @Test(timeOut = 30000)
+    public void testAnUnreachableStationIsReachedOverUdp() throws Exception
+    {
+        this.proxy = new NetworkProxy(InetAddress.getByName("255.255.255.255"), NetworkProxy.TCP_PORT);
+        this.proxy.setModel(this.model);
+
+        assertTrue(logged("network.canListenerRunning", WAIT_MS), "no UDP listener started: " + this.model.lines);
+        assertEquals(this.model.count("network.tcpUnavailable"), 1,
+            "the fallback to UDP is not said exactly once: " + this.model.lines);
+
+        byte[] frame = sensor(1004, true);
+        broadcast(frame);
+
+        assertTrue(Components.waitFor(() -> this.model.heardFrame(frame), WAIT_MS),
+            "a frame the station broadcast over UDP never reached the model");
+    }
+
+    /**
+     * Over TCP the UDP socket is not read, or every frame would arrive twice: a broadcast never reaches the model,
+     * and the same frame over TCP reaches it once.
+     *
+     * MUTATION: in `NetworkProxy.ReadMessages.run`, `if (tcp != null)` to `if (false)`.
+     */
+    @Test(timeOut = 30000)
+    public void testOverTcpNoFrameArrivesTwice() throws Exception
+    {
+        this.station = new TcpStation();
+        connect(this.station.port());
+        assertTrue(Components.waitFor(() -> this.station.connections() == 1, WAIT_MS), "precondition: no connection");
+
+        byte[] frame = sensor(1005, true);
+        broadcast(frame);
+        this.station.send(frame);
+
+        assertTrue(Components.waitFor(() -> this.model.heardFrame(frame), WAIT_MS), "the frame over TCP never arrived");
+        Thread.sleep(500);
+        assertEquals(this.model.heard.size(), 1,
+            "the station's one frame reached the model " + this.model.heard.size() + " times");
+    }
+
+    /**
+     * A connection the station closes is replaced by a new one, and both are logged; what is sent after goes on the
+     * new connection and its answer is heard.
+     *
+     * MUTATION: in `NetworkProxy.recover`, `boolean retry = this.carried;` to `boolean retry = false;`.
+     */
+    @Test(timeOut = 30000)
+    public void testALostConnectionIsReplaced() throws Exception
+    {
+        this.station = new TcpStation().answering(true);
+        connect(this.station.port());
+        pingAnswered();
+
+        this.station.drop();
+
+        assertTrue(logged("network.tcpReconnected", 15000), "no new connection: " + this.model.lines);
+        assertEquals(this.model.count("network.tcpLostReconnecting"), 1, "the loss is not logged: " + this.model.lines);
+        assertEquals(this.station.connections(), 2, "the station was not connected to again");
+
+        byte[] frame = new CS2Message(CS2Message.CAN_CMD_PING, new byte[0]).getRawMessage();
+        this.model.heard.clear();
+        this.proxy.sendMessage(new CS2Message(frame));
+
+        assertTrue(Components.waitFor(() -> this.station.receivedOn(2).size() >= 1, WAIT_MS),
+            "a send after the reconnect never reached the station");
+        assertTrue(Components.waitFor(() -> this.model.heardFrame(answerTo(frame)), WAIT_MS),
+            "the answer on the new connection never reached the model");
+    }
+
+    /**
+     * When no new connection can be made, UDP takes over for the rest of the session, logged, and the station's
+     * broadcasts are heard again.  Three tries of up to 2 s each, after pauses of 1, 2 and 3 s.
+     *
+     * MUTATION: in `NetworkProxy.recover`, put `if (true) return;` before the block that sets `this.tcp = null`.
+     */
+    @Test(timeOut = 60000)
+    public void testAConnectionThatCannotBeReplacedFallsBackToUdp() throws Exception
+    {
+        this.station = new TcpStation().answering(true);
+        connect(this.station.port());
+        pingAnswered();
+
+        this.station.close();
+
+        assertTrue(logged("network.tcpReconnectFailed", 30000), "no fallback to UDP: " + this.model.lines);
+        assertTrue(logged("network.canListenerRunning", WAIT_MS), "no UDP listener started: " + this.model.lines);
+
+        byte[] frame = sensor(1006, true);
+        broadcast(frame);
+
+        assertTrue(Components.waitFor(() -> this.model.heardFrame(frame), WAIT_MS),
+            "after the fallback a frame broadcast over UDP never reached the model: deaf");
+    }
+
+    /**
+     * A command sent as the connection is lost is not lost with it: it is sent again on the new connection.
+     *
+     * MUTATION: in `NetworkProxy.takeUnconfirmed`, `if (u.at - this.lastHeardAt >= 0) again.add(u);` to
+     * `if (false) again.add(u);`.
+     */
+    @Test(timeOut = 30000)
+    public void testACommandSentAsTheConnectionIsLostIsSentAgain() throws Exception
+    {
+        this.station = new TcpStation();
+        connect(this.station.port());
+
+        // Carried a frame, so a loss is reconnected
+        this.station.send(sensor(1007, true));
+        assertTrue(Components.waitFor(() -> this.model.heard.size() == 1, WAIT_MS), "precondition: nothing carried");
+
+        byte[] command = Packets.powerStop().getRawMessage();
+
+        this.station.drop();
+        this.proxy.sendMessage(new CS2Message(command));
+
+        assertTrue(logged("network.tcpReconnected", 15000), "no new connection: " + this.model.lines);
+        assertTrue(Components.waitFor(() ->
+            this.station.receivedOn(2).stream().anyMatch(f -> Arrays.equals(f, command)), WAIT_MS),
+            "the command sent as the connection was lost never reached the station: " + this.model.lines);
+    }
+
+    /**
+     * A connection that hangs, open but carrying nothing, is found by a send that goes unanswered for 15 s, and
+     * replaced; the unanswered frame is sent again on the new connection.
+     *
+     * MUTATION: in `NetworkProxy.readUntilLost`, take out `return I18n.f("network.tcpNoAnswer", ...)`.
+     */
+    @Test(timeOut = 60000)
+    public void testAHungConnectionIsFoundAndReplaced() throws Exception
+    {
+        this.station = new TcpStation();
+        connect(this.station.port());
+
+        this.station.send(sensor(1008, true));
+        assertTrue(Components.waitFor(() -> this.model.heard.size() == 1, WAIT_MS), "precondition: nothing carried");
+
+        // This station never answers
+        byte[] ping = new CS2Message(CS2Message.CAN_CMD_PING, new byte[0]).getRawMessage();
+        this.proxy.sendMessage(new CS2Message(ping));
+
+        assertTrue(logged("network.tcpReconnected", 30000), "the hung connection was not replaced: " + this.model.lines);
+        assertTrue(this.model.lines.stream().anyMatch(l -> l.contains(I18n.f("network.tcpNoAnswer", 15))),
+            "the log does not say why: " + this.model.lines);
+        assertTrue(Components.waitFor(() ->
+            this.station.receivedOn(2).stream().anyMatch(f -> Arrays.equals(f, ping)), WAIT_MS),
+            "the unanswered ping was not sent again on the new connection");
+    }
+
+    /**
+     * Stopping closes the connection, so the station sees it end, and ends the listener.
+     *
+     * MUTATION: in `NetworkProxy.stopListening`, take out `closeQuietly(this.tcp);`.
+     */
+    @Test(timeOut = 30000)
+    public void testStoppingClosesTheConnectionAndEndsTheListener() throws Exception
+    {
+        this.station = new TcpStation();
+        connect(this.station.port());
+        assertTrue(logged("network.canListenerRunningTcp", WAIT_MS), "precondition: no TCP listener");
+
+        java.lang.reflect.Field field = NetworkProxy.class.getDeclaredField("reader");
+        field.setAccessible(true);
+        Thread reader = (Thread) field.get(this.proxy);
+
+        this.proxy.stopListening();
+
+        assertTrue(Components.waitFor(() -> this.station.ended(1), WAIT_MS), "the station's connection is still open");
+        reader.join(WAIT_MS);
+        assertFalse(reader.isAlive(), "the listener thread is still running");
+        assertEquals(this.model.count("network.canListenerClosed"), 1, "the end is not logged: " + this.model.lines);
+    }
+}
