@@ -130,8 +130,10 @@ public class testChangeDirectionIsOneClick
 
         JMenuItem change = topLevel(editorMenu(square), changeDirection(now));
 
-        assertTrue(change.isEnabled() && !(change instanceof JMenu), "Change Direction at " + square + " is not one"
-            + " click to " + other);
+        assertFalse(change instanceof JMenu, "Change Direction at " + square + " is a submenu, not one click");
+
+        assertTrue(change.isEnabled(), "Change Direction at " + square + " is grayed where the train can face "
+            + other + " too");
 
         support.Mouse.choose(change);
 
@@ -161,8 +163,10 @@ public class testChangeDirectionIsOneClick
 
         JMenuItem change = topLevel(support.StationDoors.diagramMenu(ui, square), changeDirection(now));
 
-        assertTrue(change.isEnabled() && !(change instanceof JMenu), "the track diagram's Change Direction at " + square
-            + " is not one click to " + other);
+        assertFalse(change instanceof JMenu, "the track diagram's Change Direction at " + square + " is a submenu, not"
+            + " one click");
+
+        assertTrue(change.isEnabled(), "the track diagram's Change Direction at " + square + " is grayed");
 
         support.Mouse.choose(change);
 
@@ -344,13 +348,13 @@ public class testChangeDirectionIsOneClick
     {
         TileKey square = stationsWithATrain().get(0);
 
-        session.setArrivedFrom(square, "X");
         standing(square).setArrivedFrom("X");
+        session.setArrivedFrom(square, "X");
 
-        for (JPopupMenu menu : new JPopupMenu[] {support.StationDoors.diagramMenu(ui, square), editorMenu(square)})
-        {
-            topLevel(menu, changeArrivedFrom("N"));
-        }
+        String north = changeArrivedFrom("N");
+
+        topLevel(support.StationDoors.diagramMenu(ui, square), north);
+        topLevel(editorMenu(square), north);
     }
 
     // ---------------------------------------------------------------- the doors
