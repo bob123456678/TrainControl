@@ -1290,7 +1290,7 @@ public class testATrainDragsFromStationToStation
 
             TileKey a = trains.get(0);
 
-            String placed = aTrainStandingNowhere();
+            String placed = support.StandingTrain.standingNowhere(model, session);
 
             for (boolean placeFirst : new boolean[] {true, false})
             {
@@ -1324,27 +1324,10 @@ public class testATrainDragsFromStationToStation
         }
     }
 
-    /** A train neither the setup nor the railway has standing anywhere. */
-    private static String aTrainStandingNowhere()
-    {
-        for (String name : model.getLocList())
-        {
-            if (!session.placementsAutonomyWillWrite().containsValue(name)
-                && model.getAutoLayout().getLocomotiveLocation(model.getLocByName(name)) == null) return name;
-        }
-
-        throw new AssertionError("precondition: every locomotive stands somewhere");
-    }
-
     /** Puts a train on a square through the editor's train window, as the user picks it from the list. */
     private static void placeFromTheList(String train, TileKey square) throws Exception
     {
-        org.traincontrol.gui.autonomyeditor.TrainWindow window = support.StationDoors.openTrain(editor.getAutonomyPanel(),
-            square);
-
-        support.StationDoors.pick(window, "train.train", train);
-
-        support.StationDoors.close(window);
+        support.StationDoors.placeFromTheList(editor.getAutonomyPanel(), square, train);
 
         settle();
     }

@@ -938,12 +938,7 @@ public class testTheTrainWindow
 
             Components.onTheEventThread(() -> { item.doClick(); return null; });
 
-            assertTrue(Components.waitFor(() -> model.getAutoLayout().getLocomotiveLocation(model.getLocByName(name)) != null,
-                20000), "precondition: " + name + " was not put on the railway");
-
-            Components.settle();
-
-            cancelTheEditor();
+            cancelOnceOnTheRailway(name);
 
             assertEquals(where(was), wasBefore, "Cancel did not put the displaced train back");
             assertEquals(where(name), nameBefore, "Cancel did not take the placed train back off");
@@ -967,6 +962,17 @@ public class testTheTrainWindow
         org.traincontrol.automation.Point on = model.getAutoLayout().getLocomotiveLocation(model.getLocByName(name));
 
         return "setup " + inSetup + ", railway " + (on == null ? null : on.getName() + " from " + on.getArrivedFrom());
+    }
+
+    /** Waits for the placed train to stand on the railway, then Cancels the editor. */
+    private void cancelOnceOnTheRailway(String name) throws Exception
+    {
+        assertTrue(Components.waitFor(() -> model.getAutoLayout().getLocomotiveLocation(model.getLocByName(name)) != null,
+            20000), "precondition: " + name + " was not put on the railway");
+
+        Components.settle();
+
+        cancelTheEditor();
     }
 
     /** Cancel on the editor, answering Yes to throwing the edits away. */
@@ -1103,13 +1109,7 @@ public class testTheTrainWindow
     /** A train neither the setup nor the railway has standing anywhere. */
     private static String aTrainOffTheRailway()
     {
-        for (String name : model.getLocList())
-        {
-            if (!session.placementsAutonomyWillWrite().containsValue(name)
-                && model.getAutoLayout().getLocomotiveLocation(model.getLocByName(name)) == null) return name;
-        }
-
-        throw new AssertionError("precondition: every locomotive is placed");
+        return support.StandingTrain.standingNowhere(model, session);
     }
 
     /** Lifts whatever stands on this square's copies off the railway alone. */
@@ -1310,22 +1310,14 @@ public class testTheTrainWindow
 
         try
         {
-            TrainWindow window = StationDoors.openTrain(panel, empty);
+            StationDoors.placeFromTheList(panel, empty, name);
 
-            StationDoors.pick(window, "train.train", name);
-
-            StationDoors.close(window);
-
-            assertTrue(Components.waitFor(() -> model.getAutoLayout().getLocomotiveLocation(model.getLocByName(name)) != null,
-                20000), "precondition: " + name + " was not put on the railway");
-
-            Components.settle();
-
-            cancelTheEditor();
+            cancelOnceOnTheRailway(name);
 
             assertEquals(station(empty), stationBefore, "Cancel did not bring the station back as the editor opened it");
             assertEquals(where(name), nameBefore, "Cancel did not take the placed train back off");
-            assertTrue(Components.onTheEventThread(() -> session.snapshotSetup()).similar(opened),
+            // Of this train only: the closing fold writes in what earlier claims left standing on the railway alone
+            assertEquals(mentions(Components.onTheEventThread(() -> session.snapshotSetup()), name), mentions(opened, name),
                 "Cancel left something of the placement in the setup");
         }
         finally
@@ -1448,11 +1440,7 @@ public class testTheTrainWindow
 
         try
         {
-            TrainWindow window = StationDoors.openTrain(panel, empty);
-
-            StationDoors.pick(window, "train.train", name);
-
-            StationDoors.close(window);
+            StationDoors.placeFromTheList(panel, empty, name);
 
             saveTheEditor();
 
@@ -1468,6 +1456,12 @@ public class testTheTrainWindow
 
             offTheRailwayAt(empty);
         }
+    }
+
+    /** How often a setup names this train. */
+    private static int mentions(org.json.JSONObject setup, String name)
+    {
+        return setup.toString().split(java.util.regex.Pattern.quote(org.json.JSONObject.quote(name)), -1).length - 1;
     }
 
     /** The editor's Save, pressed, which closes it. */

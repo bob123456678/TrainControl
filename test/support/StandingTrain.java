@@ -52,6 +52,18 @@ public final class StandingTrain
         }
     }
 
+    /** A train neither the setup nor the railway has standing anywhere; fails when every one stands somewhere. */
+    public static String standingNowhere(MarklinControlStation model, AutonomySession session)
+    {
+        for (String name : model.getLocList())
+        {
+            if (!session.placementsAutonomyWillWrite().containsValue(name)
+                && model.getAutoLayout().getLocomotiveLocation(model.getLocByName(name)) == null) return name;
+        }
+
+        throw new AssertionError("precondition: every locomotive is placed");
+    }
+
     /** Loads a configuration without folding the running layout into it first, answering yes to what it asks. */
     public static void reloadWithoutFolding(TrainControlUI ui, String configuration) throws Exception
     {
