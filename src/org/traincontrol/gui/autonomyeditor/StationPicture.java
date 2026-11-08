@@ -55,9 +55,11 @@ final class StationPicture extends JPanel
 
     /**
      * The ways out are drawn a little larger than the diagram's, and the station's icon smaller, so the arrows are what
-     * the picture is read for.
+     * the picture is read for; on a curve, where both point at the icon, smaller and the icon whole, so it still shows.
      */
     private static final int ARROW = 70;
+
+    private static final int CURVE_ARROW = 48;
 
     private static final float ICON = 0.85f;
 
@@ -238,7 +240,8 @@ final class StationPicture extends JPanel
 
         TileAnnotation diagram = session.staticAnnotations(Collections.singleton(tile), true, true).get(tile);
 
-        drawn = new TileAnnotation(null, -1, false, diagram == null ? null : diagram.getBadge(), false).withSmallerIcon(ICON);
+        drawn = new TileAnnotation(null, -1, false, diagram == null ? null : diagram.getBadge(), false)
+            .withSmallerIcon(diagram != null && diagram.isCurved() ? 1f : ICON);
 
         square.setAutonomyAnnotation(drawn);
 
@@ -375,18 +378,19 @@ final class StationPicture extends JPanel
 
         int[] tip = {(int) Math.round(edge[0]), (int) Math.round(edge[1])};
 
-        // Long enough for `arrowShape`, which asks for at least a pixel
-        double[] heading = {away[0] * SQUARE, away[1] * SQUARE};
+        boolean bent = other != null && other.opposite() != side && other != side;
+
+        // As long as the arrow's span, which painting reads back from it
+        int span = bent ? CURVE_ARROW : ARROW;
+        double[] heading = {away[0] * span, away[1] * span};
 
         boolean leaves = rules.waysOut().contains(side.name());
 
-        java.awt.Polygon arrow = TileAnnotation.arrowShape(tip, heading, leaves, ARROW);
+        java.awt.Polygon arrow = TileAnnotation.arrowShape(tip, heading, leaves, span);
 
         out.add(new Mark(Mark.Kind.OUT, showing, side, leaves, arrow, tip, heading));
 
         if (!session.arrivalSides(showing).contains(side)) return;
-
-        boolean bent = other != null && other.opposite() != side && other != side;
 
         out.add(new Mark(Mark.Kind.IN, showing, side, rules.waysIn().contains(side.name()), apartChevron(at, side, other, bent),
             null, null));
@@ -643,7 +647,11 @@ final class StationPicture extends JPanel
 
                 for (Mark mark : marks())
                 {
-                    if (mark.kind == Mark.Kind.OUT) TileAnnotation.paintArrow(g2, mark.target, mark.heading, mark.open, ARROW);
+                    if (mark.kind == Mark.Kind.OUT)
+                    {
+                        TileAnnotation.paintArrow(g2, mark.target, mark.heading, mark.open,
+                            (int) Math.round(Math.hypot(mark.heading[0], mark.heading[1])));
+                    }
 
                     if (mark.kind == Mark.Kind.IN) TileAnnotation.paintArrival(g2, (Path2D) mark.shape, mark.open, CHEVRON);
                 }

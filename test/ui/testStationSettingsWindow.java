@@ -2275,6 +2275,12 @@ public class testStationSettingsWindow
         {
             int kind = each.currentSegment(at);
 
+            // A curved outline (a next square's round mark) has no corners to average: its middle is its box's
+            if (kind == java.awt.geom.PathIterator.SEG_CUBICTO || kind == java.awt.geom.PathIterator.SEG_QUADTO)
+            {
+                return new double[] {shape.getBounds2D().getCenterX(), shape.getBounds2D().getCenterY()};
+            }
+
             if (kind == java.awt.geom.PathIterator.SEG_MOVETO || kind == java.awt.geom.PathIterator.SEG_LINETO)
             {
                 x += at[0];
