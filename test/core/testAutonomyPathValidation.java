@@ -465,27 +465,45 @@ public class testAutonomyPathValidation
     }
 
     /**
-     * A Stop ends the wait at once, rather than after the station's backlog, so the run can stop.
-     * MUTATION: in `Layout.validatePathActuation`, take `this.control.getPowerEpoch() != power` out of the loop's test.
+     * A Stop at the station ends the wait at once, rather than after the station's backlog, and the train goes back
+     * unrun without counting against the accessories.
+     * MUTATION: in `Layout.validatePathActuation`, take `this.control.getPowerEpoch() != power` out of the loop's test;
+     * the wait runs on.  Or call `handleMisconfiguredPath` whatever ended the wait; the failure is counted.
      */
     @Test
     public void testAStopEndsTheWait() throws Exception
     {
-        long[] outcome;
+        TestPath tp = buildPath(160, "_stopped");
 
         try
         {
-            outcome = behindABusyStation(buildPath(160, "_stopped"), 165, 200,
-                () -> model.receiveMessage(support.Packets.powerStop()));
+            assertEndedUncounted(tp, behindABusyStation(tp, 165, 200, () -> model.receiveMessage(support.Packets.powerStop())));
         }
         finally
         {
             model.go();
             waitForPower(true, 1000);
         }
+    }
 
-        assertEquals(outcome[0], 0L, "A path still waiting at a Stop must not be released");
-        assertTrue(outcome[1] < 3000, "The Stop must end the wait at once: it took " + outcome[1] + " ms");
+    /**
+     * And so does stopping every train where it is, as a reload or an Unload does.
+     * MUTATION: in `Layout.validatePathActuation`, take `this.stopsOrdered.get() != stops` out of the loop's test.
+     */
+    @Test
+    public void testStoppingEveryTrainEndsTheWait() throws Exception
+    {
+        TestPath tp = buildPath(170, "_halted");
+
+        assertEndedUncounted(tp, behindABusyStation(tp, 175, 200, tp.layout::stopEveryTrainWhereItIs));
+    }
+
+    private static void assertEndedUncounted(TestPath tp, long[] outcome)
+    {
+        assertEquals(outcome[0], 0L, "A path still waiting when the trains are stopped must not be released");
+        assertTrue(outcome[1] < 3000, "The stop must end the wait at once: it took " + outcome[1] + " ms");
+        assertEquals(tp.layout.getPathValidationFailureCount(), 0,
+            "A stop is not a misconfigured path, so it must not count toward the accessories warning");
     }
 
     /**

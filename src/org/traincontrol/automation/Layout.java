@@ -3519,10 +3519,21 @@ public class Layout
         // Layout monitor).  If not, stop the locomotive and release its locks (returning false so
         // executePath does not run it); power is left on and autonomy re-attempts the path organically on
         // its next cycle, so no explicit retry is needed here.
-        if (!this.validatePathActuation(path))
+        int stops = this.stopsOrdered.get();
+        int power = this.control.getPowerEpoch();
+
+        if (!this.validatePathActuation(path, stops, power))
         {
-            this.handleMisconfiguredPath(path, loc);
-            this.takingPath.remove(loc);
+            // A Stop or a power change ended the wait: the train goes back unrun, as executePath gives one back, and
+            // nothing is counted against the accessories.
+            if (this.stopsOrdered.get() != stops) giveBackUnrun(path, loc, "autolayout.log.notSentAfterTheStop");
+            else if (this.control.getPowerEpoch() != power) giveBackUnrun(path, loc, "autolayout.log.notSentPowerOff");
+            else
+            {
+                this.handleMisconfiguredPath(path, loc);
+                this.takingPath.remove(loc);
+            }
+
             return false;
         }
 
@@ -3536,9 +3547,11 @@ public class Layout
      * second each, so ours may be queued behind another train's (OB-425).  A Stop or a power change ends the wait.
      * Must be called WITHOUT holding the Layout monitor so concurrent path checks are not blocked.
      *
+     * @param stops `stopsOrdered()` as read before the path was configured
+     * @param power the power epoch as read then
      * @return true if all accessories on the path are confirmed at their commanded state
      */
-    private boolean validatePathActuation(List<Edge> path)
+    private boolean validatePathActuation(List<Edge> path, int stops, int power)
     {
         List<Accessory> accessories = new ArrayList<>();
         List<Boolean> desired = new ArrayList<>();
@@ -3567,9 +3580,6 @@ public class Layout
         // power change or a stopped run ends the wait at once instead of after the station's backlog.
         long start = System.currentTimeMillis();
         long deadline = start + PATH_VALIDATION_MS + PATH_VALIDATION_MS * accessories.size();
-        int stops = this.stopsOrdered.get();
-        int power = this.control.getPowerEpoch();
-
         synchronized (Accessory.actuationConfirmedMonitor)
         {
             while (!allConfirmed(accessories, desired))
