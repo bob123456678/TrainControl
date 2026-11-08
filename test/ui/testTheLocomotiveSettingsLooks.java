@@ -135,6 +135,38 @@ public class testTheLocomotiveSettingsLooks extends support.SettingsClass
     }
 
     /**
+     * The undo arrow beside the preset buttons is a ring open at the upper left, with its head at 12 o'clock pointing
+     * straight left: ring at 175 degrees and not at 158, the head's tip drawn left of 12 o'clock on the ring's line.
+     *
+     * MUTATION: begin the ring in `RowIcons.revert` at 150 degrees, or draw the old head at 11 o'clock, and this fails.
+     */
+    @Test
+    public void testTheUndoArrowIsARingOpenAtTheUpperLeft() throws Exception
+    {
+        int size = 90;
+        BufferedImage img = new BufferedImage(size, size, BufferedImage.TYPE_INT_ARGB);
+
+        org.traincontrol.gui.widgets.RowIcons.revert(size, java.awt.Color.BLACK).paintIcon(null, img.getGraphics(), 0, 0);
+
+        double c = size / 2.0;
+        double r = size * 0.30;
+
+        assertTrue(opaque(img, c, r, 175), "the ring does not run round to 175 degrees");
+        assertTrue(!opaque(img, c, r, 158), "the ring runs on past 168 degrees: the gap is too small");
+        assertTrue(opaque(img, c, r, 270), "the ring is missing at 6 o'clock");
+        assertTrue(img.getRGB((int) (c - size * 0.15), (int) (c - r)) >>> 24 > 127, "no head left of 12 o'clock");
+        assertTrue(img.getRGB((int) (c - size * 0.10), (int) (c - r - size * 0.13)) >>> 24 <= 127,
+            "the head is not square to the ring: it fans out above its tip");
+    }
+
+    private static boolean opaque(BufferedImage img, double c, double r, double degrees)
+    {
+        double a = Math.toRadians(degrees);
+
+        return img.getRGB((int) Math.round(c + r * Math.cos(a)), (int) Math.round(c - r * Math.sin(a))) >>> 24 > 127;
+    }
+
+    /**
      * Blue is for section headings: exactly "Name and Address", "Customize Behavior" and "Locomotive Icon" on the first
      * tab, "Notes" over the Notes tab's text box, and the Autonomy tab's two are dark blue, and every item label there
      * and on the other tabs, and the Functions table's column headings, are black, all Semibold 13.

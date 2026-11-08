@@ -587,9 +587,8 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
     }
 
     /**
-     * The Sync button: the same sync the key menu used to offer, at once and not on Save.  Afterwards the window takes
-     * the locomotive's new values, but never over what was typed: a field the operator changed, a Functions or
-     * Multi-Unit tab with edits in it, keeps them.
+     * The Sync button: the same sync the key menu used to offer, at once and not on Save.  Afterwards the whole window
+     * is reloaded from the locomotive, overwriting anything typed.
      */
     private void syncNow()
     {
@@ -604,22 +603,13 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
     {
         if (loc != synced || adding || !isDisplayable()) return;
 
-        locomotiveTab.takeLocomotive();
+        int shown = tabs.getSelectedIndex();
+        Dimension size = getSize();
 
-        if (!functionsTab.isDirty())
-        {
-            functionsTab = new LocomotiveFunctionsTab(main, loc, this::changed);
-            functionsTab.setBorder(BorderFactory.createEmptyBorder(PAD, PAD, PAD, PAD));
-            tabs.setComponentAt(Tab.FUNCTIONS.ordinal(), functionsTab);
-        }
+        build();
 
-        if (!multiUnitTab.isDirty())
-        {
-            multiUnitTab = new MultiUnitTab();
-            multiUnitTab.setBorder(BorderFactory.createEmptyBorder(PAD, PAD, PAD, PAD));
-            tabs.setComponentAt(Tab.MULTI_UNIT.ordinal(), multiUnitTab);
-        }
-
+        tabs.setSelectedIndex(shown);
+        setSize(size);
         refresh();
     }
 
@@ -672,12 +662,12 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
         final JLabel crop = new JLabel(new LocIconActions.CropMark());
         final JLabel revert = new JLabel(new LocIconActions.RevertMark());
 
-        private String loadedName = adding ? "" : loc.getName();
-        private String loadedAddress = adding ? "" : Integer.toString(loc.getAddress());
+        private final String loadedName = adding ? "" : loc.getName();
+        private final String loadedAddress = adding ? "" : Integer.toString(loc.getAddress());
 
         // DCC is what Add Locomotive started on
-        private decoderType loadedDecoder = adding ? decoderType.DCC : loc.getDecoderType();
-        private int loadedSpeed = adding ? 0 : loc.getPreferredSpeed();
+        private final decoderType loadedDecoder = adding ? decoderType.DCC : loc.getDecoderType();
+        private final int loadedSpeed = adding ? 0 : loc.getPreferredSpeed();
         private String shownPicture = "";
 
         LocomotiveTab()
@@ -1028,23 +1018,6 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
 
             sync.setEnabled(connected);
             sync.setToolTipText(connected ? null : I18n.t("loc.ui.settingsSyncNoStation"));
-        }
-
-        /**
-         * Takes the locomotive's values after a sync, field by field: one the operator has changed keeps what was typed
-         * and the value it is compared with, so Save still writes it.
-         */
-        void takeLocomotive()
-        {
-            if (name.getText().equals(loadedName)) name.setText(loadedName = loc.getName());
-
-            if (address.getText().equals(loadedAddress)) address.setText(loadedAddress = Integer.toString(loc.getAddress()));
-
-            if (decoder.getSelectedItem() == loadedDecoder) decoder.setSelectedItem(loadedDecoder = loc.getDecoderType());
-
-            if (speedValue() == loadedSpeed) speed.setValue(loadedSpeed = loc.getPreferredSpeed());
-
-            warnAboutTheSameAddress();
         }
 
         boolean nameChanged()

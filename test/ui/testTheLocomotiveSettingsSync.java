@@ -10,7 +10,6 @@ import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertNotSame;
 import static org.testng.Assert.assertNull;
-import static org.testng.Assert.assertSame;
 import static org.testng.Assert.assertTrue;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
@@ -247,14 +246,14 @@ public class testTheLocomotiveSettingsSync extends support.SettingsClass
     }
 
     /**
-     * What the operator typed survives a sync: a name being edited keeps its text, and a Functions tab with a change
-     * in it keeps its table, while the untouched address still follows the locomotive.
+     * A sync reloads the whole window from the locomotive and overwrites what was typed: the typed name and the edited
+     * Functions table are replaced by the synced values, Save goes gray, and the tab selected and the window's place
+     * stay.
      *
-     * MUTATION: set every field and rebuild every tab in `afterSync` and `takeLocomotive` whatever is dirty, and this
-     * fails.
+     * MUTATION: keep dirty fields and tabs in `LocomotiveSettingsFrame.afterSync` (rebuild nothing), and this fails.
      */
     @Test
-    public void testSyncKeepsWhatWasTyped() throws Exception
+    public void testSyncReloadsTheWholeWindowOverTheTyping() throws Exception
     {
         connected(true);
 
@@ -267,16 +266,23 @@ public class testTheLocomotiveSettingsSync extends support.SettingsClass
 
         JTable before = SettingsWindow.part("functions.table", JTable.class);
 
+        assertTrue(Components.onTheEventThread(SettingsWindow.save()::isEnabled), "precondition: nothing is typed");
         assertTrue(loc.setAddress(loc.getAddress() + 1, decoderType.DCC), "precondition: the address was refused");
 
         SettingsWindow.selectTab(0);
-        Components.press(button);
+
+        java.awt.Point where = Components.onTheEventThread(() -> SettingsWindow.showing().getLocation());
+
+        Components.press(sync());
 
         awaitLook(() -> SettingsWindow.text("settings.address").equals(Integer.toString(loc.getAddress())));
 
-        assertEquals(SettingsWindow.text("settings.name"), "SY typed name", "a sync wiped the typed name");
-        assertSame(SettingsWindow.part("functions.table", JTable.class), before, "a sync dropped the edited Functions tab");
-        assertTrue(Components.onTheEventThread(SettingsWindow.save()::isEnabled), "a sync dropped the unsaved changes");
+        assertEquals(SettingsWindow.text("settings.name"), NAME, "the typed name survived the sync");
+        assertNotSame(SettingsWindow.part("functions.table", JTable.class), before, "the edited Functions tab survived");
+        assertFalse(Components.onTheEventThread(SettingsWindow.save()::isEnabled), "Save is lit after a reload");
+        assertEquals(SettingsWindow.tabShowing(), 0, "the sync changed the tab shown");
+        assertEquals(Components.onTheEventThread(() -> SettingsWindow.showing().getLocation()), where,
+            "the sync moved the window");
     }
 
     /**
