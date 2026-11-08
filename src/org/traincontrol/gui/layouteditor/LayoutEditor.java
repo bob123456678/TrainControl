@@ -852,6 +852,14 @@ public class LayoutEditor extends PositionAwareJFrame
         return new org.traincontrol.automationui.TileGraph.TileKey(layout.getName(), x, y);
     }
 
+    /** A Control shortcut's prompt, given `hoveredSquare` where there is one and an autonomy panel to ask. */
+    private void onTheHoveredSquare(java.util.function.Consumer<org.traincontrol.automationui.TileGraph.TileKey> prompt)
+    {
+        org.traincontrol.automationui.TileGraph.TileKey over = hoveredSquare();
+
+        if (over != null && autonomyPanel != null) prompt.accept(over);
+    }
+
     public void receiveMoveEvent(MouseEvent e, LayoutLabel label)
     {
         // No placement preview in autonomy mode, but the blue outline (OB-091) says which square a right-click acts on.
@@ -5164,9 +5172,7 @@ public class LayoutEditor extends PositionAwareJFrame
             // are unset in this mode (MT-258).
             if (evt.isControlDown() && evt.getKeyCode() == KeyEvent.VK_H)
             {
-                org.traincontrol.automationui.TileGraph.TileKey over = hoveredSquare();
-
-                if (over != null && autonomyPanel != null) autonomyPanel.promptHomeFor(over);
+                onTheHoveredSquare(over -> autonomyPanel.promptHomeFor(over));
 
                 return;
             }
@@ -5175,9 +5181,7 @@ public class LayoutEditor extends PositionAwareJFrame
             if (evt.isControlDown() && evt.getKeyCode() == KeyEvent.VK_S)
             {
                 // `hoveredSquare` (MT-258), which refuses a label a page change left (OB-198).
-                org.traincontrol.automationui.TileGraph.TileKey over = hoveredSquare();
-
-                if (over != null && autonomyPanel != null) autonomyPanel.promptNameFor(over);
+                onTheHoveredSquare(over -> autonomyPanel.promptNameFor(over));
 
                 return;
             }
@@ -5186,9 +5190,7 @@ public class LayoutEditor extends PositionAwareJFrame
             // (OB-197, `regression.testNoTwoShortcutsShareAKey`).
             if (evt.isControlDown() && evt.getKeyCode() == KeyEvent.VK_E)
             {
-                org.traincontrol.automationui.TileGraph.TileKey over = hoveredSquare();
-
-                if (over != null && autonomyPanel != null) autonomyPanel.promptLengthFor(over);
+                onTheHoveredSquare(over -> autonomyPanel.promptLengthFor(over));
 
                 return;
             }
@@ -5196,9 +5198,7 @@ public class LayoutEditor extends PositionAwareJFrame
             // Control+N shows a station's name on the square under the pointer (FR-086, MT-397).
             if (evt.isControlDown() && evt.getKeyCode() == KeyEvent.VK_N)
             {
-                org.traincontrol.automationui.TileGraph.TileKey over = hoveredSquare();
-
-                if (over != null && autonomyPanel != null) autonomyPanel.showStationNameFor(over);
+                onTheHoveredSquare(over -> autonomyPanel.showStationNameFor(over));
 
                 return;
             }
@@ -5222,12 +5222,7 @@ public class LayoutEditor extends PositionAwareJFrame
             // lists what is free).
             if (evt.isControlDown() && evt.getKeyCode() == KeyEvent.VK_B)
             {
-                org.traincontrol.automationui.TileGraph.TileKey over = hoveredSquare();
-
-                if (over != null && autonomyPanel != null)
-                {
-                    autonomyPanel.promptMaxTrainLengthFor(over);
-                }
+                onTheHoveredSquare(over -> autonomyPanel.promptMaxTrainLengthFor(over));
 
                 return;
             }

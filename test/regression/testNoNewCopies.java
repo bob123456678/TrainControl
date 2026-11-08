@@ -27,7 +27,7 @@ import support.CopyScan;
 public class testNoNewCopies
 {
     /** The groups as they stand.  Never raise it. */
-    private static final int GROUPS_ALLOWED = 103;
+    private static final int GROUPS_ALLOWED = 102;
 
     /** The tokens standing in a second or later copy in `test/`, summed over its groups.  Never raise it. */
     private static final long TEST_COPIED_TOKENS_ALLOWED = 274734;
@@ -85,7 +85,6 @@ public class testNoNewCopies
         "LayoutDiagramComponent:2 (189)",
         "LayoutDiagramComponent:2 (171)",
         "LayoutEditor:2 (73)",
-        "LayoutEditor:3 (86)",
         "LayoutEditorRightclickMenu:2 (65)",
         "LayoutEditorUndo:2 (84)",
         "LayoutEditorUndo:2 (67)",
