@@ -643,12 +643,17 @@ public class testTheStationIsReachedOverTcp
         }
     }
 
-    /** The station closes; the loss is found and the contact is asked over UDP within 1 s, and answered there. */
-    private void closedAndAskedOverUdp(DatagramSocket wire, int contact) throws Exception
+    /**
+     * The station closes; the loss is found and the contact is asked over UDP within 1 s, and answered there.  Returns
+     * when the loss was seen logged.
+     */
+    private long closedAndAskedOverUdp(DatagramSocket wire, int contact) throws Exception
     {
         this.station.close();
         assertTrue(logged("network.tcpLostReconnecting", WAIT_MS), "the loss was not found: " + this.model.lines);
+        long lossSeen = System.nanoTime();
         askedAndAnsweredOverUdp(wire, contact, 1000);
+        return lossSeen;
     }
 
     /** The next datagram on the wire, within `ms`, asks for the contact; it is answered with the station's state. */
@@ -749,9 +754,9 @@ public class testTheStationIsReachedOverTcp
     }
 
     /**
-     * A UDP copy lagging past the first resync's answer is put right by a second pass half a second later, not left
-     * wrong until a reconnect try fails (a refused connect takes 2 s on Windows loopback); also when some of the first
-     * pass's queries go unanswered, here four on a device the station does not have.
+     * A UDP copy lagging past the first resync's answer is put right by a second pass half a second after the loss,
+     * asked by 0.8 s, not left wrong until a reconnect try fails; also when some of the first pass's queries go
+     * unanswered, here four on a device the station does not have.
      *
      * MUTATION: in `NetworkProxy.recover`, `resync(false, 2);` to `resync(false, 1);`.  And: in `NetworkProxy.resync`,
      * `n + 1 < passes ? start + RESYNC_AGAIN_NS : 0` to `0` (the first pass waits out its unanswered queries).
@@ -768,7 +773,7 @@ public class testTheStationIsReachedOverTcp
 
             assertTrue(Components.waitFor(() -> this.model.heard.size() == 6, WAIT_MS), "precondition: not carried");
 
-            closedAndAskedOverUdp(wire, 1602);
+            long lossSeen = closedAndAskedOverUdp(wire, 1602);
 
             for (int c = 1690; c < 1694; c++)
             {
@@ -779,8 +784,8 @@ public class testTheStationIsReachedOverTcp
             assertTrue(Components.waitFor(() -> Boolean.TRUE.equals(this.model.lastState(1602)), WAIT_MS),
                 "precondition: the late copy was not delivered");
 
-            // The second pass, before a reconnect try could fail and resync
-            askedAndAnsweredOverUdp(wire, 1602, 1800);
+            // The second pass, due 0.5 s after the loss: by 0.8 s, before the first reconnect try (1 s) could cancel it
+            askedAndAnsweredOverUdp(wire, 1602, Math.max(1, 800 - (System.nanoTime() - lossSeen) / 1000000L));
             assertEndsAtTheStationsState(1602);
         }
     }
