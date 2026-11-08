@@ -48,7 +48,7 @@ TrainControl uses your computer's language automatically.  To run it in another 
 
 As shown above, you can assign locomotives to any letter on the keyboard, then quickly switch between them.  Easy keyboard shortcuts let you control locomotives.  Thumbnails are automatically downloaded from the CS2/CS3 or can be set manually.  Drag-and-drop locomotives while the power is off.
 
-Right-click a locomotive button for its quick actions, such as function and speed presets, or choose `Locomotive Settings...` (or right-click the locomotive's name) to change its name, address, picture, functions, notes and multi-unit in one window.  A function button's right-click opens the same window on that function.  `Add Locomotive` (Ctrl+D) opens it too, ready for a new locomotive, and `Check Duplicates` is on its `Basic Settings` tab.  A locomotive can't be edited while autonomy is running or while it is moving with the power on: the window then opens grayed out.  To copy locomotives between TrainControl installations, use `Export to CSV` and `Import from CSV...` on the `Locomotives` menu.
+Right-click a locomotive button for its quick actions, such as function and speed presets, or choose `Locomotive Settings...` (or right-click the locomotive's name) to change its name, address, picture, functions, notes and multi-unit in one window.  A function button's right-click opens the same window on that function.  `Add Locomotive` (Ctrl+D) opens it too, ready for a new locomotive.  If another locomotive already uses the same address, a warning triangle shows next to `Address` on the `Basic Settings` tab; click it to see which.  A locomotive can't be edited while autonomy is running or while it is moving with the power on: the window then opens grayed out.  To copy locomotives between TrainControl installations, use `Export to CSV` and `Import from CSV...` on the `Locomotives` menu.
 
 ![Right-click menu on a locomotive button, showing options for function presets, preferred speed, and multi-unit setup](assets/ui_right_click.png?raw=true)
 
@@ -436,7 +436,9 @@ Tab icons provided by Freepik.
             - A locomotive can't be edited while autonomy is running or while it is moving with the power on, so the window then opens grayed out, but you can still save the speed and function presets from their hotkeys and the key menu.
             - The `Functions` tab lists every function in one table, with its behavior, icon and `Preset` tick, and a play icon that switches the function on the layout.
             - The `Autonomy` tab holds the locomotive's `Train Length`, `Reversible`, `Active`, `Departure Function` and `Arrival Function`.
-            - `Add Locomotive` (Ctrl+D) opens the same window, and `Check Duplicates` is now on `Basic Settings` for every locomotive.
+            - `Add Locomotive` (Ctrl+D) opens the same window, and a warning triangle next to `Address` now shows by itself when another locomotive uses the same address, in place of `Check Duplicates`.
+            - `Sync settings & functions w/ Central Station` has moved from the key menu to the `Basic Settings` tab, under the picture.
+            - The `Railway Name` box on the `Notes` tab lists the names your other locomotives already use, and you can still type a new one.
             - `Import from CSV...` on the `Locomotives` menu reads a file saved by `Export to CSV`, adding new locomotives and merging the ones you have, after showing you what will change.
             - `Export to CSV` now writes a `LastRun` column, and an imported running time is used only when its last run is later than yours.
         - Autonomy
