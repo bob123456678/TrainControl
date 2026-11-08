@@ -7993,9 +7993,10 @@ public class AutonomySession
     }
 
     /**
-     * Puts a value saved in the Locomotive Settings window over the stale copy an old-format setup keeps of a standing
-     * train under `key` (as `Point.toJSON` names it), which a load would otherwise read back.  Every configuration is
-     * walked, excluded pages included; a record that stores no such key, or already stores this value, is left alone.
+     * Puts a value saved for a locomotive (its Settings window, Save Current Speed as Preset) over the stale copy an
+     * old-format setup keeps of a standing train under `key` (as `Point.toJSON` names it), which a load would otherwise
+     * read back.  Every configuration is walked, excluded pages included; a record that stores no such key, or already
+     * stores this value, is left alone.
      *
      * @param value the value, or null to remove the key, which a load reads as "keep the train's own"
      * @return true when a stored record was changed
@@ -8009,28 +8010,7 @@ public class AutonomySession
             org.json.JSONObject configuration = store.getConfiguration(name);
             org.json.JSONObject points = configuration == null ? null : configuration.optJSONObject("points");
 
-            if (points == null) continue;
-
-            for (String id : new ArrayList<>(points.keySet()))
-            {
-                org.json.JSONObject point = points.optJSONObject(id);
-                org.json.JSONObject stored = point == null ? null : point.optJSONObject("loc");
-
-                if (stored == null || !locomotive.equals(stored.optString("name", null)) || !stored.has(key)) continue;
-
-                if (value != null)
-                {
-                    if (String.valueOf(stored.opt(key)).equals(String.valueOf(value))) continue;
-
-                    stored.put(key, value);
-                }
-                else
-                {
-                    stored.remove(key);
-                }
-
-                changed = true;
-            }
+            changed |= AutonomyCompanionStore.updateRecordInPoints(points, locomotive, key, value);
         }
 
         if (changed) dirty = true;

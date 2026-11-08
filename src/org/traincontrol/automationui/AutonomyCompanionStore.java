@@ -1183,13 +1183,28 @@ public class AutonomyCompanionStore
      */
     private void repairTheUnfinishedEditNote(String from, String to)
     {
-        if (from == null || from.equals(to) || !beforeEditFile().isFile()) return;
+        if (from == null || from.equals(to)) return;
+
+        rewriteTheUnfinishedEditNote(note -> { repairLocomotiveInSetup(note, from, to); return true; });
+    }
+
+    /**
+     * Puts a value saved for a locomotive over its stored copies in the pre-edit note, as `updateRecordInSetup` does:
+     * a preset saved with the editor open is the train's, so the revert after a crash keeps it.
+     */
+    public void updateRecordInTheUnfinishedEditNote(String locomotive, String key, Object value)
+    {
+        rewriteTheUnfinishedEditNote(note -> updateRecordInSetup(note, locomotive, key, value));
+    }
+
+    /** Applies a change to the pre-edit note, if one reads, and writes it back when the change says it changed. */
+    private void rewriteTheUnfinishedEditNote(java.util.function.Predicate<JSONObject> change)
+    {
+        if (!beforeEditFile().isFile()) return;
 
         JSONObject note = unfinishedEdit();
 
-        if (note == null) return;
-
-        repairLocomotiveInSetup(note, from, to);
+        if (note == null || !change.test(note)) return;
 
         // In place, not through rememberBeforeEdit: its atomic Files.move(REPLACE_EXISTING) needs DELETE access, which
         // a OneDrive lock withholds, and it swallows the failure.  Serialized BEFORE the stream is opened, since
@@ -1240,6 +1255,83 @@ public class AutonomyCompanionStore
 
             if (configuration != null) repairLocomotiveIn(configuration, from, to);
         }
+    }
+
+    /**
+     * `AutonomySession.updateStoredRecord`'s write over a snapshot in snapshotSetup's shape (the editor's Cancel
+     * snapshot, the pre-edit note), changed in place.
+     *
+     * @return true when a record was changed
+     */
+    public static boolean updateRecordInSetup(JSONObject setup, String locomotive, String key, Object value)
+    {
+        JSONObject copies = setup == null ? null : setup.optJSONObject("configurations");
+
+        if (copies == null) return false;
+
+        boolean changed = false;
+
+        for (String name : copies.keySet())
+        {
+            JSONObject configuration = copies.optJSONObject(name);
+
+            if (configuration == null) continue;
+
+            changed |= updateRecordInPoints(configuration.optJSONObject("points"), locomotive, key, value);
+        }
+
+        return changed;
+    }
+
+    /** The same over a page snapshot (what snapshotPage returns and the editor's undo holds), changed in place. */
+    @SuppressWarnings("unchecked")
+    public static void updateRecordInPageSnapshot(Map<String, Object> snapshot, String locomotive, String key,
+        Object value)
+    {
+        Object configurations = snapshot == null ? null : snapshot.get("configurations");
+
+        if (!(configurations instanceof Map)) return;
+
+        for (Object points : ((Map<String, JSONObject>) configurations).values())
+        {
+            if (points instanceof JSONObject) updateRecordInPoints((JSONObject) points, locomotive, key, value);
+        }
+    }
+
+    /**
+     * Puts `value` under `key` in each standing-train record of `points` that names `locomotive` and already stores
+     * that key with another value; null removes the key.
+     *
+     * @return true when a record was changed
+     */
+    public static boolean updateRecordInPoints(JSONObject points, String locomotive, String key, Object value)
+    {
+        if (points == null) return false;
+
+        boolean changed = false;
+
+        for (String id : new ArrayList<>(points.keySet()))
+        {
+            JSONObject point = points.optJSONObject(id);
+            JSONObject stored = point == null ? null : point.optJSONObject("loc");
+
+            if (stored == null || !locomotive.equals(stored.optString("name", null)) || !stored.has(key)) continue;
+
+            if (value != null)
+            {
+                if (String.valueOf(stored.opt(key)).equals(String.valueOf(value))) continue;
+
+                stored.put(key, value);
+            }
+            else
+            {
+                stored.remove(key);
+            }
+
+            changed = true;
+        }
+
+        return changed;
     }
 
     /** One configuration's placements, homes and exclusion lists. */

@@ -345,6 +345,26 @@ public class LayoutEditor extends PositionAwareJFrame
     }
 
     /**
+     * Puts a value saved for a locomotive (its preset speed) into the snapshots Cancel and Ctrl+Z put back, as the
+     * setup's own copies took it: it is the train's, not this window's work, so neither undoes it nor asks about it.
+     */
+    public void autonomyRecordUpdated(String locomotive, String key, Object value)
+    {
+        org.traincontrol.automationui.AutonomyCompanionStore
+            .updateRecordInSetup(this.autonomyAsOpened, locomotive, key, value);
+
+        java.util.List<java.util.Map<String, Object>> held = new java.util.ArrayList<>(this.previousCaptions);
+
+        held.addAll(this.previousCaptionsRedo);
+
+        for (java.util.Map<String, Object> was : held)
+        {
+            org.traincontrol.automationui.AutonomyCompanionStore
+                .updateRecordInPageSnapshot(was, locomotive, key, value);
+        }
+    }
+
+    /**
      * Takes the undo point, in memory (for Cancel) and on disk (OB-108, for a restart after the process dies with an
      * editor open), always together: a page or mode switch moves both.
      * @param live the session to snapshot, or null when there is none
@@ -412,7 +432,7 @@ public class LayoutEditor extends PositionAwareJFrame
 
     /**
      * Throws away this window's autonomy edits, putting the opening setup back in memory and on disk (MT-406), as the
-     * per-gesture save already wrote them.  Lifted trains come back; moved ones stay moved.
+     * per-gesture save already wrote them.  Lifted, dragged and placed trains go back where the setup had them.
      * @return null when it worked, or the reason it did not
      */
     private String discardAutonomyWork()
@@ -4618,6 +4638,22 @@ public class LayoutEditor extends PositionAwareJFrame
             {
                 return true;
             }
+
+            /** Fills the strip's fixed height, so a short list ends in empty rows. */
+            @Override
+            public boolean getScrollableTracksViewportHeight()
+            {
+                return getParent() instanceof javax.swing.JViewport && getParent().getHeight() > getPreferredSize().height;
+            }
+
+            /** -1 in the empty rows, not the last page: the look and feel selects a pressed row through this. */
+            @Override
+            public int locationToIndex(java.awt.Point location)
+            {
+                int row = super.locationToIndex(location);
+
+                return row >= 0 && getCellBounds(row, row).contains(location) ? row : -1;
+            }
         };
 
         pageList.setSelectionMode(javax.swing.ListSelectionModel.SINGLE_SELECTION);
@@ -4636,7 +4672,7 @@ public class LayoutEditor extends PositionAwareJFrame
             @Override
             public void mouseMoved(java.awt.event.MouseEvent e)
             {
-                int row = pageList.locationToIndex(e.getPoint());
+                int row = pageRowAt(e.getPoint());
 
                 pageList.setToolTipText(row < 0 ? null : pageList.getModel().getElementAt(row));
             }
@@ -4648,7 +4684,7 @@ public class LayoutEditor extends PositionAwareJFrame
             @Override
             public void mouseClicked(MouseEvent e)
             {
-                int row = pageList.locationToIndex(e.getPoint());
+                int row = pageRowAt(e.getPoint());
 
                 // Not while one is in flight.
                 if (row < 0 || switching || changingPage) return;
@@ -4662,6 +4698,12 @@ public class LayoutEditor extends PositionAwareJFrame
         });
 
         return pageList;
+    }
+
+    /** @return the page row under the point, or -1 in the empty rows below the last page */
+    private int pageRowAt(java.awt.Point point)
+    {
+        return pageList.locationToIndex(point);
     }
 
     /**
@@ -4730,7 +4772,7 @@ public class LayoutEditor extends PositionAwareJFrame
     }
 
     /**
-     * The page list, borderless with no horizontal bar: as tall as its rows up to `SIDEBAR_TABS_BEFORE_SCROLLING`, and
+     * The page list, borderless with no horizontal bar: as tall as its rows, between `SIDEBAR_ROWS_AT_LEAST` and `SIDEBAR_TABS_BEFORE_SCROLLING`, and
      * shorter, scrolling, when the window is too short for it and the controls under it.  No taller in either mode
      * (OB-383): the strip's spare room goes below it.
      */
@@ -4747,7 +4789,8 @@ public class LayoutEditor extends PositionAwareJFrame
         scroll.getVerticalScrollBar().setUnitIncrement(24);
 
         // 24, as pageList.setFixedCellHeight, so whole rows show.
-        int height = Math.min(column.getPreferredSize().height, SIDEBAR_TABS_BEFORE_SCROLLING * 24);
+        int rows = Math.max(column.getPreferredSize().height, SIDEBAR_ROWS_AT_LEAST * 24);
+        int height = Math.min(rows, SIDEBAR_TABS_BEFORE_SCROLLING * 24);
 
         scroll.setPreferredSize(new java.awt.Dimension(SIDEBAR_WIDTH - 16, height));
         scroll.setMaximumSize(new java.awt.Dimension(SIDEBAR_WIDTH - 16, height));
@@ -4780,6 +4823,9 @@ public class LayoutEditor extends PositionAwareJFrame
 
     /** How many pages the strip shows before scrolling (MT-056). */
     private static final int SIDEBAR_TABS_BEFORE_SCROLLING = 20;
+
+    /** The strip's height in rows however few pages there are; the rows past the last page stay empty. */
+    public static final int SIDEBAR_ROWS_AT_LEAST = 6;
 
     /** The air under a blue heading, as the form leaves. */
     public static final int HEADING_GAP = 6;

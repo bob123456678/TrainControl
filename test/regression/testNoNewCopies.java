@@ -27,10 +27,10 @@ import support.CopyScan;
 public class testNoNewCopies
 {
     /** The groups as they stand.  Never raise it. */
-    private static final int GROUPS_ALLOWED = 118;
+    private static final int GROUPS_ALLOWED = 117;
 
     /** The tokens standing in a second or later copy in `test/`, summed over its groups.  Never raise it. */
-    private static final long TEST_COPIED_TOKENS_ALLOWED = 275397;
+    private static final long TEST_COPIED_TOKENS_ALLOWED = 275352;
 
     /** Each group: the classes holding its copies with how many each, and the tokens of its longest copy. */
     private static final String[] GROUPS = {
@@ -140,7 +140,6 @@ public class testNoNewCopies
         "TrainControlUI:4 (192)", // the form-accessor runs the gui collaborators read through, lately AutonomyLifecycle
         "TrainControlUI:2 (93)",
         "TrainControlUI:2 (89)",
-        "TrainControlUI:2 (83)",
         "TrainControlUI:2 (81)",
         "TrainControlUI:2 (79)",
         "TrainControlUI:2 (69)",

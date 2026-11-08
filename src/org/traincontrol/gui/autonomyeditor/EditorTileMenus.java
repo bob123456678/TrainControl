@@ -5,7 +5,6 @@ import org.traincontrol.base.LayoutDiagramComponent;
 import org.traincontrol.automationui.TileGraph.Direction;
 import org.traincontrol.automationui.TileGraph.RouteId;
 import org.traincontrol.automationui.TileGraph.TileKey;
-import org.traincontrol.gui.RunGates;
 import org.traincontrol.gui.TailCrossedPrompt;
 import org.traincontrol.util.I18n;
 
@@ -427,8 +426,7 @@ final class EditorTileMenus
 
     /**
      * Place Bramley, for the locomotive selected on the main window; null where none is selected, it already stands
-     * here (on the railway, as the Train at item reads it), or the square is no station.  Grayed while a run holds the
-     * setup, as the train window is.
+     * here (on the railway, as the Train at item reads it), the square is no station, or a run holds the setup (MT-914).
      */
     private javax.swing.JMenuItem placeSelectedItem(final TileKey target, String standing)
     {
@@ -436,23 +434,15 @@ final class EditorTileMenus
 
         org.traincontrol.base.Locomotive selected = main == null ? null : main.getActiveLoc();
 
-        if (selected == null || selected.getName().equals(standing) || !editor.session.getStore().isStation(target))
+        if (selected == null || selected.getName().equals(standing) || !editor.session.getStore().isStation(target)
+            || main.aRunHoldsTheSetup())
         {
             return null;
         }
 
         final String name = selected.getName();
 
-        javax.swing.JMenuItem item = editor.item(I18n.f("layout.ui.menuPlaceLocomotive", name),
-            () -> editor.placeLocomotive(target, name));
-
-        if (main.aRunHoldsTheSetup())
-        {
-            item.setEnabled(false);
-            item.setToolTipText(AutonomyEditorPanel.wrapped(I18n.t(RunGates.NO_EDITS_WHILE_RUNNING)));
-        }
-
-        return item;
+        return editor.item(I18n.f("layout.ui.menuPlaceLocomotive", name), () -> editor.placeLocomotive(target, name));
     }
 
     /** Train at Bramley..., or Place a Locomotive Here... on an empty station; null on an empty square of neither kind. */

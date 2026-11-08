@@ -752,6 +752,149 @@ public class testTheLocomotiveSettingsMovingRule
     }
 
     /**
+     * For a train the setup does not hold, the key menu's Save Current Speed and Alt+U leave the setup's files byte for
+     * byte as they were, another train's stored speed included, during a run and at rest (MT-912).
+     *
+     * MUTATION: drop the name test in `AutonomyCompanionStore.updateRecordInPoints`, and this fails.
+     */
+    @Test
+    public void testAPresetSaveLeavesTheSetupOfAnotherTrainAlone() throws Exception
+    {
+        assertNotNull(ui.getActiveDiagramConfiguration(), "precondition: this layout has no setup loaded");
+
+        // Another train standing with an old setup's stored speed, on disk
+        final String other = Components.onTheEventThread(() ->
+        {
+            org.traincontrol.automationui.AutonomySession session = ui.getAutonomySession();
+            org.json.JSONObject points = session.getStore().getConfiguration(ui.getActiveDiagramConfiguration())
+                .getJSONObject("points");
+
+            for (String id : points.keySet())
+            {
+                org.json.JSONObject stored = points.getJSONObject(id).optJSONObject("loc");
+
+                if (stored == null) continue;
+
+                stored.put("speed", 20);
+
+                session.saveWithoutReconciling();
+
+                return stored.getString("name");
+            }
+
+            return null;
+        });
+
+        assertNotNull(other, "precondition: no train stands in the setup");
+        assertFalse(NAME.equals(other), "precondition: the setup holds this train");
+
+        final Map<String, String> before = setupFiles();
+
+        int speed = 50;
+
+        for (boolean running : new boolean[] { true, false })
+        {
+            autonomy(running);
+
+            try
+            {
+                loc.setSpeed(++speed);
+
+                Mouse.choose(lit(SettingsWindow.rightClickKey(key), I18n.t("loc.ui.menuSaveSpeedAsPreset")));
+
+                final int menu = speed;
+
+                assertTrue(Components.waitFor(() -> loc.getPreferredSpeed() == menu, WAIT), "the key menu did not save the speed");
+
+                loc.setSpeed(++speed);
+
+                support.Keys.press((Component) field("KeyboardTab"), java.awt.event.KeyEvent.VK_U,
+                    java.awt.event.InputEvent.ALT_DOWN_MASK);
+
+                final int altU = speed;
+
+                assertTrue(Components.waitFor(() -> loc.getPreferredSpeed() == altU, WAIT), "Alt+U did not save the speed");
+
+                Components.settle();
+
+                assertEquals(setupFiles(), before, "a preset save " + (running ? "during a run" : "at rest")
+                    + " rewrote the setup of a train it does not hold");
+            }
+            finally
+            {
+                autonomy(false);
+            }
+        }
+    }
+
+    private static Map<String, String> setupFiles() throws Exception
+    {
+        return support.StandingTrain.setupFiles(fixture.sandbox.getFolder());
+    }
+
+    /**
+     * A locked window says under its strip that the key menu's Save Current Speed as Preset still sets the preset, in
+     * the menu's own words: for a moving train, for a window open when autonomy starts and for one opened during a run.
+     * The line goes with the strip, and fits the window.
+     *
+     * MUTATION: leave `presetHint` out of `LocomotiveSettingsFrame.showStrip`, and this fails.
+     */
+    @Test
+    public void testALockedWindowPointsToTheKeyMenusPresetSave() throws Exception
+    {
+        SettingsWindow.open(ui, loc, LocomotiveSettingsFrame.Tab.LOCOMOTIVE, null);
+        SettingsWindow.awaited();
+
+        final JLabel hint = SettingsWindow.part("settings.stripPreset", JLabel.class);
+
+        assertFalse(Components.onTheEventThread(hint::isVisible), "the line is up for a train at rest");
+        assertTrue(Components.onTheEventThread(hint::getText).contains(I18n.f("loc.ui.settingsPresetDuringARun",
+            I18n.t("loc.ui.menuSaveSpeedAsPreset"))), "the line does not name the menu's item");
+
+        run(loc);
+
+        assertTrue(Components.waitFor(() -> Components.onTheEventThread(hint::isVisible), WAIT), "no line for a moving train");
+        assertTrue(Components.onTheEventThread(() ->
+        {
+            hint.getParent().doLayout();
+
+            return hint.getWidth() >= hint.getPreferredSize().width;
+        }), "the line is clipped");
+
+        loc.setSpeed(0);
+
+        Components.onTheEventThread(() ->
+        {
+            ui.repaintLoc(true, null);
+
+            return null;
+        });
+
+        assertTrue(Components.waitFor(() -> !Components.onTheEventThread(hint::isVisible), WAIT), "the line stayed up after the train stopped");
+
+        autonomy(true);
+
+        try
+        {
+            assertTrue(Components.waitFor(() -> Components.onTheEventThread(hint::isVisible), WAIT), "no line when autonomy started");
+
+            SettingsWindow.closeIfOpen();
+
+            SettingsWindow.open(ui, loc, LocomotiveSettingsFrame.Tab.LOCOMOTIVE, null);
+            SettingsWindow.awaited();
+
+            assertTrue(Components.onTheEventThread(SettingsWindow.part("settings.stripPreset", JLabel.class)::isVisible),
+                "a window opened during a run has no line");
+        }
+        finally
+        {
+            autonomy(false);
+
+            SettingsWindow.closeIfOpen();
+        }
+    }
+
+    /**
      * The rule's own comment says what it asks: its reasons are the enum's, and a route is not one.
      *
      * MUTATION: add a ROUTE reason to `LocomotiveSettings.Why`, and this fails.

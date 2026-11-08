@@ -21,8 +21,8 @@ import support.Components;
  * Settings leave the saved setup, and the train after a reload, as they are when the same values are written straight
  * onto the locomotive, which the dialog's OK was shown to do on b51f7e3a.  On the frozen copy of Adam's railway, with a train standing on BottomMainB.
  *
- * MUTATION: let `AutonomySession.updateStoredRecord` add a key the setup's record of the train lacks (drop its
- * `!stored.has(key)`), and the saved setup differs and this fails.
+ * MUTATION: let `AutonomyCompanionStore.updateRecordInPoints` add a key the setup's record of the train lacks (drop
+ * its `!stored.has(key)`), and the saved setup differs and this fails.
  */
 public class testTheAutonomyTabSavesWhatTheDialogDid
 {

@@ -71,6 +71,14 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
 
     private final JTabbedPane tabs = new JTabbedPane();
     private final JLabel strip = new JLabel();
+
+    /**
+     * Under the strip whenever it is up: the key menu's Save Current Speed as Preset still works (MT-912).  Wrapped to
+     * a width the tabs exceed, so a window opened locked is no wider for it.
+     */
+    private final JLabel presetHint = new JLabel("<html><div style='width:360px'>"
+        + I18n.f("loc.ui.settingsPresetDuringARun", I18n.t("loc.ui.menuSaveSpeedAsPreset")) + "</div></html>");
+
     private final JButton save = footerButton(I18n.t("loc.ui.settingsSave"), "settings.save");
     private final JButton cancel = footerButton(I18n.t("ui.cancel"), "settings.cancel");
 
@@ -104,11 +112,18 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
         TrainControlUI.applyWindowIcon(this);
 
         strip.setName("settings.strip");
-        strip.setOpaque(true);
-        strip.setBackground(new Color(255, 243, 205));
-        strip.setForeground(new Color(102, 77, 3));
+        presetHint.setName("settings.stripPreset");
+
+        for (JLabel line : new JLabel[] { strip, presetHint })
+        {
+            line.setOpaque(true);
+            line.setBackground(new Color(255, 243, 205));
+            line.setForeground(new Color(102, 77, 3));
+            line.setVisible(false);
+        }
+
         strip.setBorder(BorderFactory.createEmptyBorder(6, 12, 6, 12));
-        strip.setVisible(false);
+        presetHint.setBorder(BorderFactory.createEmptyBorder(0, 12, 6, 12));
 
         tabs.setName("settings.tabs");
 
@@ -139,7 +154,12 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
 
         JPanel content = new JPanel(new BorderLayout());
 
-        content.add(strip, BorderLayout.NORTH);
+        JPanel top = new JPanel(new BorderLayout());
+
+        top.add(strip, BorderLayout.NORTH);
+        top.add(presetHint, BorderLayout.SOUTH);
+
+        content.add(top, BorderLayout.NORTH);
         content.add(tabs, BorderLayout.CENTER);
         content.add(footer, BorderLayout.SOUTH);
 
@@ -233,7 +253,7 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
         if (adding)
         {
             setTitle(I18n.t("loc.ui.addLocomotive"));
-            strip.setVisible(false);
+            showStrip(false);
             fit();
 
             return;
@@ -261,9 +281,15 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
 
         if (reason != null) strip.setText(reason);
 
-        strip.setVisible(reason != null);
+        showStrip(reason != null);
 
         fit();
+    }
+
+    private void showStrip(boolean up)
+    {
+        strip.setVisible(up);
+        presetHint.setVisible(up);
     }
 
     private void fit()
@@ -295,7 +321,7 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
 
         if (strip.isVisible() != blocked)
         {
-            strip.setVisible(blocked);
+            showStrip(blocked);
 
             // The strip takes its room from the tabs: the window is not resized under the operator
             getContentPane().revalidate();
@@ -581,6 +607,7 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
 
             name.setName("settings.name");
             checkDuplicates.setName("settings.checkDuplicates");
+            sameAddress.setName("settings.sameAddress");
             decoder.setName("settings.decoder");
             address.setName("settings.address");
             speed.setName("settings.speed");
@@ -659,7 +686,7 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
             trash.addActionListener(e -> delete());
 
             // The fields are at the tab's left edge under their heading, the picture at its right under its own, level
-            // with Name; the divider is midway between Address and the next heading, the trash can at the lower left
+            // with Name; the divider is midway between Check Duplicates and the next heading, the trash can at the lower left
             final Insets edge = new Insets(4, 4, 4, 6);
             final Insets inner = new Insets(4, 4, 4, 6);
 
@@ -719,15 +746,35 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
             gbc.gridx = 1;
             gbc.gridy = 4;
 
-            // Check Duplicates and the warning share the row under the address
-            JPanel under = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+            // Check Duplicates and the warning share the row under the address.  The warning takes only the room left
+            // and ends in "..." (OB-417): it never widens the grid, which would squeeze the labels.
+            JPanel button = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+            button.setOpaque(false);
+            button.add(checkDuplicates);
+            button.add(javax.swing.Box.createHorizontalStrut(4));
+            button.add(InfoMark.label(I18n.t("loc.ui.settingsCheckDuplicatesHint")));
+            JPanel under = new JPanel(new java.awt.BorderLayout(10, 0))
+            {
+                @Override
+                public java.awt.Dimension getPreferredSize()
+                {
+                    return new java.awt.Dimension(button.getPreferredSize().width, super.getPreferredSize().height);
+                }
+
+                @Override
+                public java.awt.Dimension getMinimumSize()
+                {
+                    return getPreferredSize();
+                }
+            };
             under.setOpaque(false);
-            under.add(checkDuplicates);
-            under.add(javax.swing.Box.createHorizontalStrut(4));
-            under.add(InfoMark.label(I18n.t("loc.ui.settingsCheckDuplicatesHint")));
-            under.add(javax.swing.Box.createHorizontalStrut(10));
-            under.add(sameAddress);
+            under.add(button, java.awt.BorderLayout.WEST);
+            under.add(sameAddress, java.awt.BorderLayout.CENTER);
+            gbc.gridwidth = 2;
+            gbc.fill = GridBagConstraints.HORIZONTAL;
             add(under, gbc);
+            gbc.gridwidth = 1;
+            gbc.fill = GridBagConstraints.NONE;
 
             if (adding)
             {
@@ -744,8 +791,8 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
             gbc.gridy = 6;
             gbc.gridwidth = 2;
             gbc.fill = GridBagConstraints.HORIZONTAL;
-            // The row above holds the warning line, so the bottom inset carries its height
-            gbc.insets = new Insets(6, 4, 14 + under.getPreferredSize().height, 6);
+            // As much air under the line as over it, with the heading's own top inset
+            gbc.insets = new Insets(6, 4, 6, 6);
             add(new javax.swing.JSeparator(), gbc);
             gbc.gridwidth = 1;
             gbc.fill = GridBagConstraints.NONE;
@@ -859,6 +906,7 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
             }
 
             sameAddress.setText(also == null ? " " : I18n.f("loc.ui.settingsAlsoUsedBy", also));
+            sameAddress.setToolTipText(also == null ? null : sameAddress.getText());
         }
 
         boolean nameChanged()

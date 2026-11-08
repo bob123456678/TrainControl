@@ -1267,6 +1267,72 @@ public class testATrainDragsFromStationToStation
     }
 
     /**
+     * A train placed from the train window's list and a drag, in either order, are both undone by Cancel, in the
+     * setup, the file and the railway (MT-914): placed on an empty station then a drag, or a drag then a placement on
+     * the square the drag left.
+     *
+     * MUTATION: put `if (named.size() > 1)` back before `putBackOnDiscard.addAll(named)` in
+     * `AutonomyEditorPanel.placeLocomotive`, and the placed train stays in both orders and this fails.
+     */
+    @Test(timeOut = 400000)
+    public void testCancelUndoesAPlacementAndADragInEitherOrder() throws Exception
+    {
+        org.json.JSONObject asFound = began();
+
+        TailCrossedPrompt.answerForTests(TailCrossedPrompt.DISMISSED);
+
+        try
+        {
+            java.util.List<TileKey> trains = trainSquares();
+            java.util.List<TileKey> empty = emptyStations();
+
+            assertTrue(!trains.isEmpty() && empty.size() >= 2, "precondition: a train and two empty stations are needed");
+
+            TileKey a = trains.get(0);
+
+            String placed = support.StandingTrain.standingNowhere(model, session);
+
+            for (boolean placeFirst : new boolean[] {true, false})
+            {
+                reopenedFrom(asFound);
+
+                String before = storesOn(a, empty.get(0), empty.get(1));
+
+                TileKey placedOn = placeFirst ? empty.get(1) : a;
+
+                if (placeFirst) placeFromTheList(placed, placedOn);
+
+                dragTrain(a, empty.get(0));
+
+                assertNotNull(session.getLocomotiveNameAt(empty.get(0)), "precondition: the drag did not land");
+
+                if (!placeFirst) placeFromTheList(placed, placedOn);
+
+                assertEquals(session.getLocomotiveNameAt(placedOn), placed, "precondition: the list did not place " + placed);
+
+                cancelTheEditor();
+
+                assertEquals(storesOn(a, empty.get(0), empty.get(1)), before,
+                    (placeFirst ? "placed, then dragged" : "dragged, then placed") + ": Cancel did not undo both");
+            }
+        }
+        finally
+        {
+            TailCrossedPrompt.answerForTests(null);
+
+            putBack(asFound);
+        }
+    }
+
+    /** Puts a train on a square through the editor's train window, as the user picks it from the list. */
+    private static void placeFromTheList(String train, TileKey square) throws Exception
+    {
+        support.StationDoors.placeFromTheList(editor.getAutonomyPanel(), square, train);
+
+        settle();
+    }
+
+    /**
      * A sensor the railway has, made a station in the setup with no rebuild, is no destination yet: the mark is red.
      *
      * MUTATION: dropping the destination question from `TrainControlUI.canTrainLandOn` leaves it green with nothing

@@ -177,6 +177,16 @@ public final class StationDoors
         Components.settle();
     }
 
+    /** Puts a train on a square through the editor's train window, picked from its list, and closes the window. */
+    public static void placeFromTheList(AutonomyEditorPanel panel, TileKey square, String train) throws Exception
+    {
+        TrainWindow window = openTrain(panel, square);
+
+        pick(window, "train.train", train);
+
+        close(window);
+    }
+
     /** The text of a named label or field. */
     public static String text(Component window, String name)
     {

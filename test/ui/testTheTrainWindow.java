@@ -938,12 +938,7 @@ public class testTheTrainWindow
 
             Components.onTheEventThread(() -> { item.doClick(); return null; });
 
-            assertTrue(Components.waitFor(() -> model.getAutoLayout().getLocomotiveLocation(model.getLocByName(name)) != null,
-                20000), "precondition: " + name + " was not put on the railway");
-
-            Components.settle();
-
-            cancelTheEditor();
+            cancelOnceOnTheRailway(name);
 
             assertEquals(where(was), wasBefore, "Cancel did not put the displaced train back");
             assertEquals(where(name), nameBefore, "Cancel did not take the placed train back off");
@@ -967,6 +962,17 @@ public class testTheTrainWindow
         org.traincontrol.automation.Point on = model.getAutoLayout().getLocomotiveLocation(model.getLocByName(name));
 
         return "setup " + inSetup + ", railway " + (on == null ? null : on.getName() + " from " + on.getArrivedFrom());
+    }
+
+    /** Waits for the placed train to stand on the railway, then Cancels the editor. */
+    private void cancelOnceOnTheRailway(String name) throws Exception
+    {
+        assertTrue(Components.waitFor(() -> model.getAutoLayout().getLocomotiveLocation(model.getLocByName(name)) != null,
+            20000), "precondition: " + name + " was not put on the railway");
+
+        Components.settle();
+
+        cancelTheEditor();
     }
 
     /** Cancel on the editor, answering Yes to throwing the edits away. */
@@ -1103,13 +1109,7 @@ public class testTheTrainWindow
     /** A train neither the setup nor the railway has standing anywhere. */
     private static String aTrainOffTheRailway()
     {
-        for (String name : model.getLocList())
-        {
-            if (!session.placementsAutonomyWillWrite().containsValue(name)
-                && model.getAutoLayout().getLocomotiveLocation(model.getLocByName(name)) == null) return name;
-        }
-
-        throw new AssertionError("precondition: every locomotive is placed");
+        return support.StandingTrain.standingNowhere(model, session);
     }
 
     /** Lifts whatever stands on this square's copies off the railway alone. */
@@ -1239,9 +1239,10 @@ public class testTheTrainWindow
     }
 
     /**
-     * While a route runs the item is grayed with the reason, and pressing it anyway places nothing.
+     * While a route runs the item is not offered at all (Adam: "hide the Place during a run"), and it is back once the
+     * route is over; one offered at rest and pressed during the run places nothing.
      *
-     * MUTATION: leave the item enabled while `aRunHoldsTheSetup()`, and this fails.
+     * MUTATION: offer the item while `aRunHoldsTheSetup()`, grayed or not, and this fails.
      */
     @Test(timeOut = 120000)
     public void testTheEditorsPlaceFollowsTheRunRule() throws Exception
@@ -1254,25 +1255,265 @@ public class testTheTrainWindow
 
         makeActive(name);
 
+        JMenuItem atRest = placeItemOn(panel, empty, name);
+
+        assertNotNull(atRest, "precondition: the editor's menu has no Place " + name + " at rest");
+
         regression.testNoSetupEditWhileARouteRuns.aRouteRuns(ui, true);
 
         try
         {
-            JMenuItem item = placeItemOn(panel, empty, name);
+            assertNull(placeItemOn(panel, empty, name), "the editor's menu offers Place " + name + " while a route runs");
 
-            assertNotNull(item, "the editor's menu has no Place " + name + " while a route runs; it should be grayed");
-            assertFalse(item.isEnabled(), "Place " + name + " is not grayed while a route runs");
-            assertNotNull(item.getToolTipText(), "the grayed Place says nothing of why");
+            StationDoors.pressThoughGrayed(atRest);
 
-            StationDoors.pressThoughGrayed(item);
-
-            assertNull(session.getLocomotiveNameAt(empty), "the grayed Place put a train down when pressed");
+            assertNull(session.getLocomotiveNameAt(empty), "a Place offered at rest put a train down during the run");
         }
         finally
         {
             regression.testNoSetupEditWhileARouteRuns.aRouteRuns(ui, false);
         }
 
-        assertTrue(placeItemOn(panel, empty, name).isEnabled(), "Place stays grayed once the route is over");
+        JMenuItem after = placeItemOn(panel, empty, name);
+
+        assertNotNull(after, "Place is not offered again once the route is over");
+        assertTrue(after.isEnabled(), "Place is grayed once the route is over");
+    }
+
+    // ------------------------------------------------------------------------------------- Cancel undoes a placement
+
+    /**
+     * Cancel undoes a train placed on an empty station from the train window's list, as it undoes a drag (MT-914): the
+     * station is as the editor opened it, in the setup and on the railway, and the train, which stood nowhere, stands
+     * nowhere again with nothing of the placement left on the railway's copies of the square.
+     *
+     * MUTATION: put `if (named.size() > 1)` back before `putBackOnDiscard.addAll(named)` in
+     * `AutonomyEditorPanel.placeLocomotive`, and the train stays on the station and this fails.
+     */
+    @Test(timeOut = 180000)
+    public void testCancelAfterPlacingOnAnEmptyStationPutsItBack() throws Exception
+    {
+        AutonomyEditorPanel panel = theEditorsPanel();
+
+        TileKey empty = anEmptyStation();
+
+        offTheRailwayAt(empty);
+
+        String name = aTrainOffTheRailway();
+
+        org.json.JSONObject opened = Components.onTheEventThread(() -> session.snapshotSetup());
+
+        String nameBefore = where(name);
+        String stationBefore = station(empty);
+
+        org.traincontrol.gui.TailCrossedPrompt.answerForTests(org.traincontrol.gui.TailCrossedPrompt.DISMISSED);
+
+        try
+        {
+            StationDoors.placeFromTheList(panel, empty, name);
+
+            cancelOnceOnTheRailway(name);
+
+            assertEquals(station(empty), stationBefore, "Cancel did not bring the station back as the editor opened it");
+            assertEquals(where(name), nameBefore, "Cancel did not take the placed train back off");
+            // Of this train only: the closing fold writes in what earlier claims left standing on the railway alone
+            assertEquals(mentions(Components.onTheEventThread(() -> session.snapshotSetup()), name), mentions(opened, name),
+                "Cancel left something of the placement in the setup");
+        }
+        finally
+        {
+            org.traincontrol.gui.TailCrossedPrompt.answerForTests(null);
+
+            offTheRailwayAt(empty);
+        }
+    }
+
+    /**
+     * A train that stood on another station, placed on an empty one through the editor's Place <selected>, is back on
+     * its own after Cancel, come in by the same side with its tail along the same road, in the setup and on the railway
+     * (MT-914): a train of 5 on Tunnel from the north, its tail on TunnelPre, as a first editor left it.
+     *
+     * MUTATION: put `if (named.size() > 1)` back before `putBackOnDiscard.addAll(named)` in
+     * `AutonomyEditorPanel.placeLocomotive`, and the train stays on the empty station and this fails.
+     */
+    @Test(timeOut = 240000)
+    public void testCancelPutsAPlacedTrainBackWithItsSideAndTail() throws Exception
+    {
+        AutonomyEditorPanel first = theEditorsPanel();
+
+        final TileKey tunnel = support.StandingTrain.squareNamed(session, "Tunnel");
+
+        offTheRailwayAt(tunnel);
+
+        String name = aTrainOffTheRailway();
+
+        Locomotive train = model.getLocByName(name);
+
+        Integer lengthWas = train.getTrainLength();
+
+        TileKey empty = null;
+
+        try
+        {
+            train.setTrainLength(5);
+
+            org.traincontrol.gui.TailCrossedPrompt.Choice tunnelPre = tunnelPreIsTheTail(tunnel);
+
+            makeActive(name);
+
+            JMenuItem onTunnel = placeItemOn(first, tunnel, name);
+
+            assertNotNull(onTunnel, "precondition: the editor's menu on Tunnel has no Place " + name);
+
+            Components.onTheEventThread(() -> { onTunnel.doClick(); return null; });
+
+            assertStandsFromTheNorthWithItsTail(train, tunnelPre);
+
+            Components.settle();
+
+            assertNotNull(session.getArrivedAlong(tunnel), "precondition: the setup recorded no tail on Tunnel");
+
+            // Saved, as the closing fold writes what the railway holds into the setup; then a second editor opens
+            saveTheEditor();
+
+            AutonomyEditorPanel panel = theEditorsPanel();
+
+            empty = anEmptyStation();
+
+            offTheRailwayAt(empty);
+
+            String nameBefore = whereWithItsTail(name);
+            String tunnelBefore = station(tunnel);
+            String emptyBefore = station(empty);
+
+            org.traincontrol.gui.TailCrossedPrompt.answerForTests(org.traincontrol.gui.TailCrossedPrompt.DISMISSED);
+
+            JMenuItem item = placeItemOn(panel, empty, name);
+
+            assertNotNull(item, "precondition: the editor's menu has no Place " + name + " on an empty station");
+
+            Components.onTheEventThread(() -> { item.doClick(); return null; });
+
+            final TileKey target = empty;
+
+            assertTrue(Components.waitFor(() -> target.equals(session.getStationIndex().squareOf(
+                model.getAutoLayout().getLocomotiveLocation(train))), 20000), "precondition: " + name
+                + " was not moved onto " + target + " on the railway");
+
+            Components.settle();
+
+            cancelTheEditor();
+
+            assertEquals(whereWithItsTail(name), nameBefore, "Cancel did not put the train back with its side and tail");
+            assertEquals(station(tunnel), tunnelBefore, "Cancel did not bring Tunnel back as the editor opened it");
+            assertEquals(station(empty), emptyBefore, "Cancel did not empty the station again");
+        }
+        finally
+        {
+            org.traincontrol.gui.TailCrossedPrompt.answerForTests(null);
+
+            train.setTrainLength(lengthWas);
+
+            offTheRailwayAt(tunnel);
+
+            if (empty != null) offTheRailwayAt(empty);
+        }
+    }
+
+    /**
+     * Save instead of Cancel keeps a placement on an empty station, in the setup and on the railway.
+     *
+     * MUTATION: have the Save button's autonomy branch call `discardAutonomyWork()` before it closes, and this fails.
+     */
+    @Test(timeOut = 180000)
+    public void testSaveKeepsAPlacementOnAnEmptyStation() throws Exception
+    {
+        AutonomyEditorPanel panel = theEditorsPanel();
+
+        TileKey empty = anEmptyStation();
+
+        offTheRailwayAt(empty);
+
+        String name = aTrainOffTheRailway();
+
+        org.traincontrol.gui.TailCrossedPrompt.answerForTests(org.traincontrol.gui.TailCrossedPrompt.DISMISSED);
+
+        try
+        {
+            StationDoors.placeFromTheList(panel, empty, name);
+
+            saveTheEditor();
+
+            assertEquals(session.getLocomotiveNameAt(empty), name, "Save did not keep the placement in the setup");
+
+            assertTrue(Components.waitFor(() -> empty.equals(session.getStationIndex().squareOf(
+                model.getAutoLayout().getLocomotiveLocation(model.getLocByName(name)))), 20000),
+                "Save did not keep " + name + " on " + empty + " on the railway: " + where(name));
+        }
+        finally
+        {
+            org.traincontrol.gui.TailCrossedPrompt.answerForTests(null);
+
+            offTheRailwayAt(empty);
+        }
+    }
+
+    /** How often a setup names this train. */
+    private static int mentions(org.json.JSONObject setup, String name)
+    {
+        return setup.toString().split(java.util.regex.Pattern.quote(org.json.JSONObject.quote(name)), -1).length - 1;
+    }
+
+    /** The editor's Save, pressed, which closes it. */
+    private void saveTheEditor() throws Exception
+    {
+        final LayoutEditor closing = editor;
+
+        AbstractButton save = Components.withText(closing, I18n.t("layout.ui.saveChanges"));
+
+        assertNotNull(save, "precondition: the editor has no Save button");
+
+        StationDoors.pressAndAnswer(save, message -> null);
+
+        assertTrue(Components.waitFor(() -> !closing.isDisplayable(), 20000), "precondition: Save did not close the editor");
+
+        Components.settle();
+
+        editor = null;
+    }
+
+    /** {@link #where} with the road the train's tail lies along on the railway. */
+    private static String whereWithItsTail(String name)
+    {
+        org.traincontrol.automation.Point on = model.getAutoLayout().getLocomotiveLocation(model.getLocByName(name));
+
+        return where(name) + " along " + (on == null ? null : roadNames(on.getArrivedAlong()));
+    }
+
+    /** What the setup and the railway's copies hold on a square: the train, its facing, its side and its tail. */
+    private static String station(TileKey square)
+    {
+        return Components.onTheEventThread(() ->
+        {
+            StringBuilder out = new StringBuilder("setup " + session.getLocomotiveNameAt(square));
+
+            for (String property : new String[] {"facing", "arrivedFrom", "arrivedAlong"})
+            {
+                out.append(' ').append(property).append('=').append(session.getPointProperty(square, property));
+            }
+
+            for (String copy : new java.util.TreeSet<>(session.facingsFor(square).keySet()))
+            {
+                org.traincontrol.automation.Point point = model.getAutoLayout().getPoint(copy);
+
+                if (point == null) continue;
+
+                out.append("; ").append(copy).append(' ').append(point.getCurrentLocomotive() == null ? null
+                    : point.getCurrentLocomotive().getName()).append(" from ").append(point.getArrivedFrom())
+                    .append(" along ").append(roadNames(point.getArrivedAlong()));
+            }
+
+            return out.toString();
+        });
     }
 }
