@@ -27,15 +27,13 @@ import support.CopyScan;
 public class testNoNewCopies
 {
     /** The groups as they stand.  Never raise it. */
-    private static final int GROUPS_ALLOWED = 102;
+    private static final int GROUPS_ALLOWED = 97;
 
     /** The tokens standing in a second or later copy in `test/`, summed over its groups.  Never raise it. */
     private static final long TEST_COPIED_TOKENS_ALLOWED = 274734;
 
     /** Each group: the classes holding its copies with how many each, and the tokens of its longest copy. */
     private static final String[] GROUPS = {
-        "ArrivalSidePrompt:1,FacingPrompt:1 (69)",
-        "ArrivalSidePrompt:1,FacingPrompt:1 (60)",
         "AutonomyBuilder:1,AutonomyChecks:1 (75)",
         "AutonomyBuilder:2 (64)",
         "AutonomyChecks:2 (63)",
@@ -88,7 +86,6 @@ public class testNoNewCopies
         "LayoutEditorRightclickMenu:2 (65)",
         "LayoutEditorUndo:2 (84)",
         "LayoutEditorUndo:2 (67)",
-        "LayoutFileActions:2 (74)",
         "LayoutLabel:2 (63)",
         "LocIconActions:3 (83)",
         "LocIconActions:3 (75)",
@@ -118,8 +115,6 @@ public class testNoNewCopies
         "TileAnnotation:3,TileOverlay:1 (86)",
         "TileGraph:1,TilePorts:1 (80)",
         "TileGraph:1,TileSelection:1 (72)",
-        "TileGraph:2 (65)",
-        "TileGraph:2 (64)",
         "TrainControlUI:2 (225)",
         "TrainControlUI:2 (209)",
         "TrainControlUI:4 (192)", // the form-accessor runs the gui collaborators read through, lately AutonomyLifecycle
