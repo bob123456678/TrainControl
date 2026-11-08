@@ -281,8 +281,6 @@ public class testARouteDoesNotThrowSwitchesUnderATrain
      * train crosses, still is.
      *
      * MUTATION: refuse every command on a locked accessory again, whatever it sets, and this fails.
-     *
-     * @throws Exception from the dispatch
      */
     @Test
     public void testARouteMaySetTheSettingThePathAlreadyHolds() throws Exception
@@ -363,8 +361,6 @@ public class testARouteDoesNotThrowSwitchesUnderATrain
      *
      * MUTATION: ask the protecting-signal rule whatever the path holds, or let a held green through whatever the guard
      * shows, and this fails.
-     *
-     * @throws Exception from the dispatch
      */
     @Test
     public void testARouteMaySetAGuardTheGreenItsPathHolds() throws Exception
@@ -459,8 +455,6 @@ public class testARouteDoesNotThrowSwitchesUnderATrain
      * not turn it red in front of the train, and may set the green it shows.
      *
      * MUTATION: leave the guard out of what the first edge holds, and both claims fail.
-     *
-     * @throws Exception from the dispatch
      */
     @Test
     public void testARouteMayNotTurnRedTheGuardATrainLeavingATerminusHolds() throws Exception
@@ -1137,8 +1131,6 @@ public class testARouteDoesNotThrowSwitchesUnderATrain
      *
      * MUTATION: have the override skip the held switch, have a route with a stop ask, or have the guarded run throw the
      * held switch or drop the stop, and this fails.
-     *
-     * @throws Exception from the model
      */
     @Test
     public void testOKFiresEveryCommandOfTheRoute() throws Exception
@@ -1604,8 +1596,6 @@ public class testARouteDoesNotThrowSwitchesUnderATrain
      *
      * MUTATION this catches: dropping the `heldReason` null check so every accessory is skipped while autonomy runs
      * fails this test and leaves the one above green.
-     *
-     * @throws Exception
      */
     @Test
     public void testAnAutomaticRouteWithNoConflictStillSetsItsAccessory() throws Exception

@@ -65,8 +65,6 @@ public class testAPasteDoesNotTurnTheTrainRound
     /**
      * Opens the frozen railway and stands the train where Adam described it.  The snapshot has this locomotive already
      * ON BottomMainB, the square being pasted onto, so the fixture moves it.
-     *
-     * @throws Exception when the railway cannot be read, a broken harness rather than a failing guard
      */
     @BeforeClass
     public static void setUpClass() throws Exception

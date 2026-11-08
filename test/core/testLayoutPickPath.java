@@ -728,8 +728,6 @@ public class testLayoutPickPath
      * for.
      *
      * MUTATION: putting the `isAutoRunning()` fence back on the destination check fails the first half.
-     *
-     * @throws Exception on a failure to build
      */
     @Test(timeOut = 60000)
     public void testAnInactiveEndpointIsRefusedAtEveryDoor() throws Exception

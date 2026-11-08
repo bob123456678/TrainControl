@@ -65,8 +65,6 @@ public final class SandboxedWindow
 
     /**
      * Puts the folder back, then disposes the window held and closes the sandbox held.
-     *
-     * @throws Exception from the dispose, which runs on the event thread
      */
     public void close() throws Exception
     {

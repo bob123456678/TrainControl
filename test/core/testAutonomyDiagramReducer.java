@@ -335,8 +335,6 @@ public class testAutonomyDiagramReducer
      *
      * MUTATION: drop the running total and the first claim fails; make an unmeasured stretch answer empty too and the
      * second does.
-     *
-     * @throws Exception on a failure to build the fixture
      */
     @Test
     public void testTheEditorStopsAskingOnceTheStretchIsMeasured() throws Exception

@@ -26,8 +26,6 @@ public class testALocomotiveIconIsCachedForTheSizeItWasAskedAt
      *
      * MUTATION: build the key in `TrainControlUI.getLocImageMaxHeight` as `url + size` for every limit; whichever
      * kind of request comes first then answers the other, and the second picture of each pair has the wrong size.
-     *
-     * @throws Exception from the window or the picture
      */
     @Test
     public void testPlainAndLimitedAreTwoPictures() throws Exception

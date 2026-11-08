@@ -400,8 +400,6 @@ public class testReturnHomeOnRealLayout
      *
      * MUTATION: drop `&& this.movedAlong.containsKey(l)` from `turnedByThePlan` in `HomeStaging` and this goes red on
      * the real railway, together with both claims in `testHomeStaging`.
-     *
-     * @throws Exception from the model
      */
     @Test
     public void testATrainOnATurningSquareCanStillBeBroughtHome() throws Exception

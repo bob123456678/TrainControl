@@ -74,8 +74,6 @@ public class testParseCS2Layout
      *
      * MUTATION: narrow the block-name arm in `parseFile` back to `^[a-z]+$` and the parser's count
      * falls to zero while the index reader still says two.
-     *
-     * @throws Exception on a failure to read
      */
     @Test
     public void testACapitalisedBlockNameIsStillABlock() throws Exception

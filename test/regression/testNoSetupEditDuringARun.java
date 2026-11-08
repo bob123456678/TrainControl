@@ -4700,7 +4700,6 @@ public class testNoSetupEditDuringARun
      * Runs the window's `refreshWhatWaitsForTheTrains` on the event thread.
      *
      * @param ui the window
-     * @throws Exception from the refresh
      */
     private static void refreshWhatWaits(final TrainControlUI ui) throws Exception
     {

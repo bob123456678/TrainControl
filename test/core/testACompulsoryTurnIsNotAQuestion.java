@@ -332,7 +332,6 @@ public class testACompulsoryTurnIsNotAQuestion
      * @param gammaMay whether the end of the line is marked "may" rather than "must"
      * @param betaMay whether the middle station is marked "may"
      * @return the setup
-     * @throws Exception from the setup
      */
     private static AutonomySession aLine(File folder, String tag, int address, boolean gammaMay, boolean betaMay)
         throws Exception
@@ -642,8 +641,6 @@ public class testACompulsoryTurnIsNotAQuestion
      * the end of the line with its next journey routed back.
      *
      * MUTATION: leave a copy with no block out of `Layout.noCopyFacesOnFrom` again, and this fails.
-     *
-     * @throws Exception from the railway
      */
     @Test
     public void testTheEndOfALineMarkedMayTurnsATrainNobodyIsAskedAbout() throws Exception
@@ -693,8 +690,6 @@ public class testACompulsoryTurnIsNotAQuestion
      * turn is asked before the recorded answer.
      *
      * MUTATION: answer the recorded "keep" before the compulsory turn, and this fails.
-     *
-     * @throws Exception from the railway
      */
     @Test
     public void testAKeepRecordedWhereTheRailwayTurnsEveryTrainPlaysBackTurned() throws Exception
@@ -748,8 +743,6 @@ public class testACompulsoryTurnIsNotAQuestion
      *
      * MUTATION: leave a turned train for the idle drain again, or stand it on another copy than the drain's, and this
      * fails.
-     *
-     * @throws Exception from the railway
      */
     @Test
     public void testATrainTurnedAtAPlainCopyIsStoodFacingItsWayAtOnce() throws Exception
@@ -815,8 +808,6 @@ public class testACompulsoryTurnIsNotAQuestion
      * false;` (the recorded turn not played back) and this fails: the second entry never starts.  Leaving a turned
      * train for the idle drain again (`else if (restandAfterTheTurn) ...` to `else if (false) ...` in `Layout`) is an
      * equivalent mutant here: the turn is made on the turning copy, which already faces the way the train came in.
-     *
-     * @throws Exception from the railway
      */
     @Test
     public void testATimetableRecordedWithATurnPlaysBack() throws Exception
@@ -916,8 +907,6 @@ public class testACompulsoryTurnIsNotAQuestion
      * fails at the idle drain: the drain moves the train onto the other side's plain copy.  Dropping `reversals !=
      * ALWAYS_REVERSE` from `restandAfterTheTurn` in `Layout` is an equivalent mutant: a plan turns a train on a turning
      * copy, which `Layout.copyAfterTheTurn` answers with itself.
-     *
-     * @throws Exception from the railway
      */
     @Test
     public void testATrainAPlanTurnsStaysWhereItsNextLegStarts() throws Exception
@@ -973,8 +962,6 @@ public class testACompulsoryTurnIsNotAQuestion
      * where no door could any more.
      *
      * MUTATION: play a recorded turn back wherever it was recorded, and this fails.
-     *
-     * @throws Exception from the railway
      */
     @Test
     public void testARecordedTurnIsNotMadeWhereTheStationNoLongerTurnsTrains() throws Exception
@@ -1038,8 +1025,6 @@ public class testACompulsoryTurnIsNotAQuestion
      * which door sent it.  On its way, the railway names the copy it will stand on, and the drain then moves nothing.
      *
      * MUTATION: re-stand a train turned on a turning copy that already faces its way, and this fails.
-     *
-     * @throws Exception from the railway
      */
     @Test
     public void testATrainTurnedByHandOnATurningCopyStaysOnIt() throws Exception
@@ -1103,8 +1088,6 @@ public class testACompulsoryTurnIsNotAQuestion
      * the railway, and the railway is built again from the setup.
      *
      * MUTATION: ask the entry's start by copy again, in the window's check or in the entry's own, and this fails.
-     *
-     * @throws Exception from the railway
      */
     @Test
     public void testAnEntryFromATurningCopyRunsAfterTheExitAndTheStart() throws Exception
@@ -1200,8 +1183,6 @@ public class testACompulsoryTurnIsNotAQuestion
      * the way its decoder does not drive.
      *
      * MUTATION: count any copy of the start square as the start, and this fails.
-     *
-     * @throws Exception from the railway
      */
     @Test
     public void testATrainFacingTheOtherWayIsNotAtItsEntrysStart() throws Exception
@@ -1276,8 +1257,6 @@ public class testACompulsoryTurnIsNotAQuestion
      * train could be routed onto it.  The entry runs from the copy the train stands on now.
      *
      * MUTATION: stand the train on the entry's start copy again, and this fails.
-     *
-     * @throws Exception from the railway
      */
     @Test
     public void testAnEntryFromATurningCopyLeavesATrainFromTheOtherSideItsTail() throws Exception

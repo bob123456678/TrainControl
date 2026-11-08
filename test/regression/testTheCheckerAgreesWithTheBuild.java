@@ -73,8 +73,6 @@ public class testTheCheckerAgreesWithTheBuild
 
     /**
      * Reads the sample diagram, opens the setup that ships with it, and builds the railway it names.
-     *
-     * @throws Exception when the fixture cannot be read at all, a broken harness rather than a failing guard
      */
     @BeforeClass
     public static void setUpClass() throws Exception

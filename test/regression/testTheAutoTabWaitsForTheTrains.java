@@ -41,8 +41,6 @@ public class testTheAutoTabWaitsForTheTrains
      *
      *
      * MUTATION: leave Start's buttons as they are when nothing started, or say nothing, and this fails.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testAStartThatStartsNothingGivesTheAutoTabBack() throws Exception
@@ -192,8 +190,6 @@ public class testTheAutoTabWaitsForTheTrains
      * toggle would be offered and then refused.  Given back at the train's arrival.
      *
      * MUTATION: leave the Auto tab to the train's departure, or never count the hand send down, and this fails.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testAHandSendGreysTheAutoTabFromItsClick() throws Exception
@@ -340,8 +336,6 @@ public class testTheAutoTabWaitsForTheTrains
      * the Edit button's code opens the editor used last, the track diagram's after it.
      *
      * MUTATION: send the button to the Edit button's code, and this fails.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testTheSettingsTabOpensTheAutonomyEditor() throws Exception
@@ -415,8 +409,6 @@ public class testTheAutoTabWaitsForTheTrains
      * Autonomy Setup, and a page switch; then the close gives both back.
      *
      * MUTATION: ask the window's flag, not its editor windows, and this fails.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testAnEditorStaysOneThroughItsSwitches() throws Exception
@@ -609,8 +601,6 @@ public class testTheAutoTabWaitsForTheTrains
      * and a close asks *"throw away everything changed since you last saved"* - the opposite of what was just done.
      *
      * MUTATION: keep the old undo point at a Save and Continue, and this fails.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testASaveAtASwitchLeavesNothingToAskAtTheClose() throws Exception
@@ -713,8 +703,6 @@ public class testTheAutoTabWaitsForTheTrains
      * Driven through the real door with a page the model does not have, chosen in the page list with its listeners off.
      *
      * MUTATION: let the build's failure leave its frame, and this fails.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testAnEditorThatFailsToBuildLeavesNoFrame() throws Exception
@@ -758,8 +746,6 @@ public class testTheAutoTabWaitsForTheTrains
      * page list with its listeners off.
      *
      * MUTATION: catch only exceptions there again, and this fails.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testAnEditorWhoseBuildRaisesAnErrorGivesEditBack() throws Exception
@@ -834,8 +820,6 @@ public class testTheAutoTabWaitsForTheTrains
      * Driven through the real door with a page whose size, asked by the drawing, raises an `AssertionError`.
      *
      * MUTATION: let `render`'s catch take exceptions only again, and this fails.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testAnEditorWhoseDrawingRaisesAnErrorGivesEditBack() throws Exception
@@ -902,8 +886,6 @@ public class testTheAutoTabWaitsForTheTrains
      * `AssertionError`.
      *
      * MUTATION: let `arriveAt`'s catch take exceptions only again, and this fails.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testAPageSwitchThatRaisesAnErrorGivesTheWindowUp() throws Exception
@@ -1020,8 +1002,6 @@ public class testTheAutoTabWaitsForTheTrains
      * gap.
      *
      * MUTATION: keep the undo history at a Save and Continue, and this fails.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testATrackSaveAtASwitchLeavesNothingToAskAtTheClose() throws Exception
@@ -1205,7 +1185,6 @@ public class testTheAutoTabWaitsForTheTrains
      *
      * @param ui the window
      * @param editor the editor
-     * @throws Exception from the event thread
      */
     private static void waitForTheSwitch(TrainControlUI ui, org.traincontrol.gui.layouteditor.LayoutEditor editor) throws Exception
     {
@@ -1237,8 +1216,6 @@ public class testTheAutoTabWaitsForTheTrains
      * (OB-313).  Asked at the checkbox size a 100% display gives: the look and feel's own 12-point Segoe UI.
      *
      * MUTATION: hold the button to the checkbox again, and this fails.
-     *
-     * @throws Exception from the window or reflection
      */
     @Test
     public void testTheStripsButtonsAreAsTallAsThePagesOwn() throws Exception
@@ -1387,8 +1364,6 @@ public class testTheAutoTabWaitsForTheTrains
      * to 200% scaling, where the ink sits, turned back by the frame's angle, must be the same each time.
      *
      * MUTATION: draw the arc with `drawArc` on whole pixels again, and this fails.
-     *
-     * @throws Exception from the reflection
      */
     @Test
     public void testTheTurningMarkTurnsAboutItsOwnCentre() throws Exception
@@ -1493,8 +1468,6 @@ public class testTheAutoTabWaitsForTheTrains
      * at.
      *
      * MUTATION: drop the closed-window return from `LayoutEditor.arriveAt`, and this fails.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testClosingTheEditorMidSwitchGivesTheButtonsBack() throws Exception
@@ -1586,7 +1559,6 @@ public class testTheAutoTabWaitsForTheTrains
     /**
      * @param ui the window
      * @return its editor once it is showing, within twenty seconds, or null
-     * @throws Exception from the event thread
      */
     private static org.traincontrol.gui.layouteditor.LayoutEditor theEditor(TrainControlUI ui) throws Exception
     {

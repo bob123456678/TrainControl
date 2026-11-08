@@ -234,8 +234,6 @@ public class testTheLengthGuardsOnTheRealLayout
      * Without this the refusal above passes on a railway that offers BottomMainPost to nobody - and the
      * claim this file used to make had no control of that kind at the berth it was about, which is how
      * it stayed green while being false.
-     *
-     * @throws Exception on a failure to build
      */
     @Test
     public void testAOneUnitTrainIsStillAdmittedToTheOneUnitBerth() throws Exception

@@ -91,8 +91,6 @@ public class testATrainIsDispatchedOnce
      * map is replaced by one that reads, as the route is written, the answer a reader would find.
      *
      * MUTATION: write the route before the answer again, and this fails.
-     *
-     * @throws Exception from the fixture or reflection
      */
     @Test
     public void testTheRouteIsNeverSeenWithoutItsAnswer() throws Exception
@@ -218,8 +216,6 @@ public class testATrainIsDispatchedOnce
      * locked and two threads drove one train.  So the lock asks again, in the monitor where the claim is taken.
      *
      * MUTATION: take the check out of `configureAndLockPath` and this fails.
-     *
-     * @throws Exception on a failure to build the fixture
      */
     @Test
     public void testTheLockRefusesALocomotiveAlreadyClaimingARoute() throws Exception
@@ -302,8 +298,6 @@ public class testATrainIsDispatchedOnce
      * is read, the winner let go, and its run finished by setting the sensor it waits for.
      *
      * MUTATION: put back the caller's `takingPath.remove(loc, path)` and this fails.
-     *
-     * @throws Exception on a failure to build the fixture or to finish the winner's run
      */
     @Test
     public void testARefusedDuplicateLeavesTheWinnersClaim() throws Exception
@@ -388,8 +382,6 @@ public class testATrainIsDispatchedOnce
      * `Layout.getLastPointsReached` is that choice, and every carry across a reload reads it.
      *
      * MUTATION: keep it at its last milestone whatever that is, and this fails.
-     *
-     * @throws Exception from the dispatch
      */
     @Test
     public void testATrainUnderWayIsWhereItWasLastSeen() throws Exception
@@ -472,8 +464,6 @@ public class testATrainIsDispatchedOnce
      * retired, so no train it sent would get under way).  The seam runs where the lookup would land.
      *
      * MUTATION: assign the parsed railway without making it the current one, and this fails.
-     *
-     * @throws Exception from the parse
      */
     @Test
     public void testARailwayLoadedIsCurrentThoughOneWasBuiltDuringItsParse() throws Exception
@@ -519,8 +509,6 @@ public class testATrainIsDispatchedOnce
      *
      * MUTATION: skip wherever the point has an occupant, write each point's occupant, or write a point's side for
      * whichever train the fold writes there, and this fails.
-     *
-     * @throws Exception from reflection
      */
     @Test
     public void testATrainIsReadWhereItWasLastSeenThoughAnotherPassesThere() throws Exception
@@ -620,8 +608,6 @@ public class testATrainIsDispatchedOnce
      *
      * MUTATION: keep it on the point another stands on, or write a kept train the railway does not show, and this
      * fails.
-     *
-     * @throws Exception from reflection
      */
     @Test
     public void testATrainWhoseLastStationAnotherHasStoppedOnIsKeptOnTheStationAheadItHolds() throws Exception
@@ -713,8 +699,6 @@ public class testATrainIsDispatchedOnce
      *
      * MUTATION: decide against the map as it is rewritten, keep a train on a station another is kept at, or on the
      * first point ahead it holds, and this fails.
-     *
-     * @throws Exception from reflection
      */
     @Test
     public void testTheStationAheadIsNotAnotherTrainsKeptPoint() throws Exception
@@ -814,8 +798,6 @@ public class testATrainIsDispatchedOnce
      * it and locked for A.
      *
      * MUTATION: pass over another's kept point with no way to move that one on, and this fails.
-     *
-     * @throws Exception from reflection
      */
     @Test
     public void testATrainBoundForAnothersKeptStationTakesItAndTheOtherGoesOn() throws Exception
@@ -887,8 +869,6 @@ public class testATrainIsDispatchedOnce
      * K1 set off from KP towards KS1 and K2 towards KS2, each past no sensor, and KP was released behind both.
      *
      * MUTATION: leave two trains kept at one point, and this fails.
-     *
-     * @throws Exception from reflection
      */
     @Test
     public void testTwoTrainsLastSeenAtOneStationAreBothKept() throws Exception
@@ -978,8 +958,6 @@ public class testATrainIsDispatchedOnce
      * P4; moving a train on one step only would leave A on Z's station and the fold would write it nowhere.
      *
      * MUTATION: move a train on one step only, and this fails.
-     *
-     * @throws Exception from reflection
      */
     @Test
     public void testAChainOfTrainsUnderWayIsMovedOnAlongIt() throws Exception
@@ -1058,8 +1036,6 @@ public class testATrainIsDispatchedOnce
      * off the railway.
      *
      * MUTATION: keep trains apart by point rather than by square, and this fails.
-     *
-     * @throws Exception from reflection
      */
     @Test
     public void testATrainUnderWayIsNotKeptOnTheSquareAStandingTrainStandsOn() throws Exception
@@ -1119,8 +1095,6 @@ public class testATrainIsDispatchedOnce
      * the other the station ahead it holds.  Both kept there, the fold would write two trains on one square.
      *
      * MUTATION: keep trains apart by point rather than by square, and this fails.
-     *
-     * @throws Exception from reflection
      */
     @Test
     public void testTwoTrainsUnderWayAreNotKeptOnOneSquare() throws Exception
@@ -1190,8 +1164,6 @@ public class testATrainIsDispatchedOnce
      * the train kept there.
      *
      * MUTATION: prefer by name alone, and this fails.
-     *
-     * @throws Exception from reflection
      */
     @Test
     public void testTheTrainItsStationStillRecordsKeepsIt() throws Exception
@@ -1468,8 +1440,6 @@ public class testATrainIsDispatchedOnce
      * autonomy is busy, which counts the planning, and `whereTheAnswerGoes` must ask that, not `isRunning` alone.
      *
      * MUTATION: let `whereTheAnswerGoes` answer while a staging flow owns the railway, and this fails.
-     *
-     * @throws Exception from the fixture
      */
     @Test
     public void testATailAnsweredWhileReturnHomePlansIsNotWritten() throws Exception
@@ -1509,8 +1479,6 @@ public class testATrainIsDispatchedOnce
      * every wait, and a journey whose railway has gone ends there.
      *
      * MUTATION: let a retirement wake nothing, or let the wait go on past its railway, and this fails.
-     *
-     * @throws Exception from the railway
      */
     @Test
     public void testARetiredRailwaysJourneyEndsWithItsRailway() throws Exception
@@ -1587,8 +1555,6 @@ public class testATrainIsDispatchedOnce
      * unrun, and the train stands where it was.
      *
      * MUTATION: let a claim completed after the Yes go on to run, and this fails.
-     *
-     * @throws Exception from the railway
      */
     @Test
     public void testTheYesStopsATrainStillClaimingItsRoute() throws Exception
@@ -1652,8 +1618,6 @@ public class testATrainIsDispatchedOnce
      * asked of the Yes as every other speed is.
      *
      * MUTATION: let the departure write its speed whatever the Yes said, and this fails.
-     *
-     * @throws Exception from the railway
      */
     @Test
     public void testTheYesStopsATrainAtItsDeparture() throws Exception
@@ -1700,8 +1664,6 @@ public class testATrainIsDispatchedOnce
      * leg's, or then the pre-arrival speed.
      *
      * MUTATION: let the next leg's speed, or the pre-arrival speed, be written whatever the Yes said, and this fails.
-     *
-     * @throws Exception from the railway
      */
     @Test
     public void testTheYesIsNotUndoneAtTheNextSensor() throws Exception
@@ -1759,8 +1721,6 @@ public class testATrainIsDispatchedOnce
      *
      * MUTATION: let autonomy's thread send the route it chose without asking whether the railway still runs, and this
      * fails.
-     *
-     * @throws Exception from the railway
      */
     @Test
     public void testTheYesStopsATrainStillChoosingItsRoute() throws Exception
@@ -1810,8 +1770,6 @@ public class testATrainIsDispatchedOnce
      * The reload's door stops the trains through the railway's own stop, the one every journey asks.
      *
      * MUTATION: let the door stop the trains itself, one speed at a time, and this fails.
-     *
-     * @throws Exception on a failure to read the source
      */
     @Test
     public void testTheReloadsYesIsTheRailwaysOwnStop() throws Exception
@@ -1829,7 +1787,6 @@ public class testATrainIsDispatchedOnce
      *
      * @param name the constant's name in Layout
      * @return its value
-     * @throws Exception when Layout has no such constant
      */
     private static int layoutConstant(String name) throws Exception
     {
@@ -1980,8 +1937,6 @@ public class testATrainIsDispatchedOnce
      * sensor must be kept apart, or the first arrival ends both journeys.
      *
      * MUTATION: let a route wait on a sensor another train's route is waiting on, and this fails.
-     *
-     * @throws Exception from the railway
      */
     @Test
     public void testARouteMayNotWaitOnASensorAnotherTrainAwaits() throws Exception
@@ -2060,8 +2015,6 @@ public class testATrainIsDispatchedOnce
      * pressed, and a stop ordered since starts nothing.
      *
      * MUTATION: let a timetable start after a stop ordered since it was chosen, and this fails.
-     *
-     * @throws Exception from the railway
      */
     @Test
     public void testTheYesEndsAReturnHomeStillPlanning() throws Exception
@@ -2145,8 +2098,6 @@ public class testATrainIsDispatchedOnce
      * says so in the log.
      *
      * MUTATION: let a journey chosen before a stop claim its route, or send it without a word, and this fails.
-     *
-     * @throws Exception from the railway
      */
     @Test
     public void testAJourneyChosenBeforeTheYesIsNotSent() throws Exception
@@ -2242,8 +2193,6 @@ public class testATrainIsDispatchedOnce
      * thread outlives its railway and then stops the train.
      *
      * MUTATION: let the wait ignore what it is told to give up on, or let a retirement not wake it, and this fails.
-     *
-     * @throws Exception from the locomotive
      */
     @Test
     public void testATurnsResumeWaitGivesUpWhenItIsTold() throws Exception
@@ -2306,8 +2255,6 @@ public class testATrainIsDispatchedOnce
      * claimed alone here, with the advisory lowered so the wait is untimed at once.
      *
      * MUTATION: take the wake out of Unload's retirement, a load made current, or a railway built, and this fails.
-     *
-     * @throws Exception from the railway
      */
     @Test
     public void testEachRetirementWakesAnUntimedWait() throws Exception
@@ -2401,8 +2348,6 @@ public class testATrainIsDispatchedOnce
      * the power on.
      *
      * MUTATION: take the wait out of autonomy's loop (`waitWhileThePowerIsOff` in `runLocomotive`), and this fails.
-     *
-     * @throws Exception from the railway
      */
     @Test
     public void testAutonomySendsNothingWhileThePowerIsOff() throws Exception
@@ -2484,8 +2429,6 @@ public class testATrainIsDispatchedOnce
      *
      * MUTATION: take the wait out of the timetable's own loop (`waitWhileThePowerIsOff` in `executeTimetableInternal`),
      * and this fails.
-     *
-     * @throws Exception from the railway
      */
     @Test
     public void testATimetableStartsNothingWhileThePowerIsOff() throws Exception
@@ -2557,8 +2500,6 @@ public class testATrainIsDispatchedOnce
      * power cut as the route is set: the train is given no speed, and the journey is not under way.
      *
      * MUTATION: drop the power's second question, after the route is set, and this fails.
-     *
-     * @throws Exception from the railway
      */
     @Test
     public void testAJourneyIsNotSetGoingIfThePowerWentOffWhileItsRouteWasSet() throws Exception
@@ -2628,8 +2569,6 @@ public class testATrainIsDispatchedOnce
      * and the log says why.
      *
      * MUTATION: ask only whether the power is on now, and this fails.
-     *
-     * @throws Exception from the railway
      */
     @Test
     public void testAJourneyIsNotSetGoingIfThePowerWentOffAndOnWhileItsRouteWasSet() throws Exception
@@ -2713,8 +2652,6 @@ public class testATrainIsDispatchedOnce
      * the cuts stop.
      *
      * MUTATION: count an attempt the power cut as a refusal again, and this fails.
-     *
-     * @throws Exception from the railway
      */
     @Test
     public void testPowerCutsDoNotEndAReturnHomeLeg() throws Exception
@@ -2843,8 +2780,6 @@ public class testATrainIsDispatchedOnce
      * yet, with the power on.
      *
      * MUTATION: let a second STOP while the power is off move it, or leave it even while off, and this fails.
-     *
-     * @throws Exception reflection
      */
     @Test
     public void testThePowersEpochIsOddWhileThePowerIsOff() throws Exception
@@ -2891,8 +2826,6 @@ public class testATrainIsDispatchedOnce
      * alone: odd at dispatch, then on again 300 ms into the route; the state reads on throughout.
      *
      * MUTATION: ask only whether the power is on now, not whether its epoch moved since dispatch, and this fails.
-     *
-     * @throws Exception from the railway
      */
     @Test
     public void testAJourneyDispatchedAsThePowerWentOffIsGivenBack() throws Exception
@@ -3000,8 +2933,6 @@ public class testATrainIsDispatchedOnce
      * unmeasured, the release comes one sensor on.
      *
      * MUTATION: let a journey count a sensor it has passed as one it still waits on, and this fails.
-     *
-     * @throws Exception from the railway
      */
     @Test
     public void testASensorAJourneyHasPassedIsFreeAgain() throws Exception
@@ -3087,8 +3018,6 @@ public class testATrainIsDispatchedOnce
      * hand-over, and the check let on to its second read only once the hand-over has finished.
      *
      * MUTATION: read the journeys before the claims again, and this fails.
-     *
-     * @throws Exception from the railway
      */
     @Test
     public void testTheSensorRuleSeesATrainHandingOver() throws Exception
@@ -3105,8 +3034,6 @@ public class testATrainIsDispatchedOnce
      * second dispatch must refuse.
      *
      * MUTATION: ask the journeys before the claims again, and this fails.
-     *
-     * @throws Exception from the railway
      */
     @Test
     public void testATrainHandingOverIsStillUnderWay() throws Exception
@@ -3121,8 +3048,6 @@ public class testATrainIsDispatchedOnce
      * A train handing over from claim to journey is counted, for the cap on trains out.
      *
      * MUTATION: count the journeys before the claims again, and this fails.
-     *
-     * @throws Exception from the railway
      */
     @Test
     public void testATrainHandingOverIsCounted() throws Exception
@@ -3144,8 +3069,6 @@ public class testATrainIsDispatchedOnce
      * here at its end: the first train locked, not yet a journey.
      *
      * MUTATION: leave the claims out of the sensor rule, and this fails.
-     *
-     * @throws Exception from the railway
      */
     @Test
     public void testARouteMayNotWaitOnASensorAClaimAwaits() throws Exception
@@ -3400,8 +3323,6 @@ public class testATrainIsDispatchedOnce
      * `testASensorAJourneyHasPassedIsFreeAgain` holds to.
      *
      * MUTATION: free the sensor when the head reaches it, and this fails.
-     *
-     * @throws Exception from the railway
      */
     @Test
     public void testASensorIsHeldUntilTheRailToItIsGivenBack() throws Exception
@@ -3476,8 +3397,6 @@ public class testATrainIsDispatchedOnce
      * asked.
      *
      * MUTATION: take the journeys' lock in the Yes again, and this fails.
-     *
-     * @throws Exception from the railway
      */
     @Test
     public void testTheYesWaitsForNoLockAnArrivalHolds() throws Exception
@@ -3540,8 +3459,6 @@ public class testATrainIsDispatchedOnce
      * the count - so a Yes between the two is seen either way - and clears it again where the count has moved.
      *
      * MUTATION: return without clearing it, and this fails.
-     *
-     * @throws Exception from the railway
      */
     @Test
     public void testATimetableTheCountRefusesLeavesNothingRunning() throws Exception
@@ -3595,8 +3512,6 @@ public class testATrainIsDispatchedOnce
      * door can start the next run while it is still there.  Held at its last line, where it says its path is finished.
      *
      * MUTATION: count an entry not at all, and this fails.
-     *
-     * @throws Exception from the railway
      */
     @Test
     public void testAnEntryIsRunningUntilItHasLeft() throws Exception
@@ -3706,8 +3621,6 @@ public class testATrainIsDispatchedOnce
      * paused between refusals that nothing counted would let the run read idle and the next run begin.
      *
      * MUTATION: let a stop not wake a pausing entry, or count it not at all, and this fails.
-     *
-     * @throws Exception from the railway
      */
     @Test
     public void testAnEntryTheYesFoundRefusingLeavesWithItsRun() throws Exception
@@ -3818,8 +3731,6 @@ public class testATrainIsDispatchedOnce
      * sensor asks it before it throws a switch, and a train in neither map had its route's switches missing.
      *
      * MUTATION: read the journeys before the claims in `getActiveAccs`, and this fails.
-     *
-     * @throws Exception from the railway
      */
     @Test
     public void testTheRouteGuardSeesATrainHandingOver() throws Exception
@@ -3903,8 +3814,6 @@ public class testATrainIsDispatchedOnce
      * named so that another comes first), which would leave the track behind the start claimed by nobody.
      *
      * MUTATION: read the journeys before the claims for the path a train holds, and this fails.
-     *
-     * @throws Exception from the railway
      */
     @Test
     public void testTheTailRuleSeesATrainHandingOver() throws Exception
@@ -3920,8 +3829,6 @@ public class testATrainIsDispatchedOnce
      * Where a train handing over from claim to journey is, for the tail overlay, is its start.
      *
      * MUTATION: read the journeys before the claims for the path a train holds, and this fails.
-     *
-     * @throws Exception from the railway
      */
     @Test
     public void testWhereATrainHandingOverIsIsItsStart() throws Exception
@@ -4070,8 +3977,6 @@ public class testATrainIsDispatchedOnce
      * arrived, the loop pausing before the second, held with the pause's monitor taken.
      *
      * MUTATION: count the loop not at all, or pause it in a sleep no stop wakes, and this fails.
-     *
-     * @throws Exception from the railway
      */
     @Test
     public void testATimetablesLoopIsRunningUntilItHasStopped() throws Exception
@@ -4218,8 +4123,6 @@ public class testATrainIsDispatchedOnce
      * meanwhile, with the count read before the Yes; then the Yes is let go.
      *
      * MUTATION: let the timetable set `running` and read the count with nothing held, and this fails.
-     *
-     * @throws Exception from the railway
      */
     @Test
     public void testTheYesAndATimetablesStartCannotStraddle() throws Exception

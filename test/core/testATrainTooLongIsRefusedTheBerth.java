@@ -355,7 +355,6 @@ public class testATrainTooLongIsRefusedTheBerth
      * @param trainLength how long the train is
      * @param roomAfterTheSwitch how much measured track lies between the switch and the berth
      * @return whether isPathClear allowed it
-     * @throws Exception on a failure to build
      */
     private boolean admitted(int trainLength, int roomAfterTheSwitch) throws Exception
     {

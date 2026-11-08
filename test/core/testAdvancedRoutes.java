@@ -178,8 +178,6 @@ public class testAdvancedRoutes
      * with "unrecognised".  The canonical casing is what this program writes, so no existing route changes meaning.
      *
      * MUTATION: any `equalsIgnoreCase` back to `equals` in `parseLine` fails this.
-     *
-     * @throws Exception on a parse failure
      */
     @Test
     public void testACommandParsesWhateverCaseItIsTypedIn() throws Exception
@@ -223,8 +221,6 @@ public class testAdvancedRoutes
      * **The answer must not change.** `getAccessoryState` creates the switch UNSWITCHED and then returns false, so an
      * unknown address has always read as "not switched" and routes fire on that.  Removing the side effect must not
      * flip when a route fires, which is why this asserts the answer as well as the absence.
-     *
-     * @throws Exception on a failure to build
      */
     @Test
     public void testEvaluatingAConditionDoesNotInventTheAccessory() throws Exception
@@ -833,8 +829,6 @@ public class testAdvancedRoutes
      * and this door, the one a sensor uses, must too.
      *
      * MUTATION: drop the line and this fails.
-     *
-     * @throws Exception from the route thread
      */
     @Test
     public void testARouteStartedWhileItRunsSaysSo() throws Exception
@@ -898,8 +892,6 @@ public class testAdvancedRoutes
      *
      * The model half is here; the door half - the UI refusing the delete while such a route runs - is
      * `runningRouteDriving`, asserted below.
-     *
-     * @throws Exception from the route thread
      */
     @Test
     public void testARouteFinishesWhenItsLocomotiveIsDeletedMidRun() throws Exception
@@ -983,8 +975,6 @@ public class testAdvancedRoutes
      * each executing route's OWN command list.  ONE HOP, because that is all the engine reaches.
      *
      * MUTATION: take the chain walk out of `MarklinControlStation.runningRouteDriving` and the claim below goes red.
-     *
-     * @throws Exception from the route thread
      */
     @Test
     public void testARunningRouteIsDrivingWhatTheRouteItChainsToDrives() throws Exception
@@ -1054,8 +1044,6 @@ public class testAdvancedRoutes
      * thread.
      *
      * MUTATION: take the refusal out of `MarklinControlStation.editRoute`, and this fails.
-     *
-     * @throws Exception from the model
      */
     @Test
     public void testARunningRouteIsNotEdited() throws Exception
@@ -1103,8 +1091,6 @@ public class testAdvancedRoutes
      *
      * MUTATION: take the running-route refusal out of `MarklinControlStation.adoptCentralStationRoute`, and this
      * fails.
-     *
-     * @throws Exception from the model
      */
     @Test
     public void testASyncDoesNotReplaceARunningRoute() throws Exception
@@ -1155,8 +1141,6 @@ public class testAdvancedRoutes
      *
      * MUTATION: take the running-route refusal out of the same-name branch of
      * `MarklinControlStation.adoptCentralStationRoute`, and this fails.
-     *
-     * @throws Exception from the model
      */
     @Test
     public void testASyncDoesNotReplaceARunningRouteOfTheSameName() throws Exception
@@ -1206,8 +1190,6 @@ public class testAdvancedRoutes
      * because `editRoute` deletes and re-adds through it, and an edit must not strip a route's callers.
      *
      * MUTATION: take the strip out of `deleteRouteAndItsCalls`, and this fails.
-     *
-     * @throws Exception from the model
      */
     @Test
     public void testADeletedRouteIsNotRunByTheRoutesThatCalledIt() throws Exception
@@ -1267,8 +1249,6 @@ public class testAdvancedRoutes
      * A route whose name carries a leading or trailing space can still be found and deleted.  The two file parsers keep
      * the name exactly as the file has it, so `newRoute` must index it under the name `deleteRoute` deletes by, the
      * route's own.  Central Station route names are typed by people, and a trailing space is invisible.
-     *
-     * @throws Exception from the model
      */
     @Test
     public void testARouteNameWithSpacesAroundItIsUsable() throws Exception
@@ -1298,8 +1278,6 @@ public class testAdvancedRoutes
      * A route tile on the diagram runs the route the database holds now, not the one it was wired to.  `wireComponents`
      * hands the tile the route OBJECT and every door that changes a route replaces that object, so only a full re-wire
      * rebinds the tiles; with the Central Station as the diagram source that happens once a session.
-     *
-     * @throws Exception from the model
      */
     @Test
     public void testARouteTileFollowsTheDatabase() throws Exception
@@ -1431,8 +1409,6 @@ public class testAdvancedRoutes
     /**
      * A route set to fire when its sensor clears fires then, and not when the sensor becomes occupied.  The live
      * railway has some fourteen such routes, and no test had ever fired one.
-     *
-     * @throws Exception from the fixture
      */
     @Test
     public void testAFiresOnClearRouteFiresWhenItsSensorClears() throws Exception
@@ -1473,8 +1449,6 @@ public class testAdvancedRoutes
 
     /**
      * A route set to fire when its sensor becomes occupied does not fire when the sensor clears.
-     *
-     * @throws Exception from the fixture
      */
     @Test
     public void testAFiresOnOccupiedRouteIgnoresTheClearingEdge() throws Exception
@@ -1517,8 +1491,6 @@ public class testAdvancedRoutes
      * decoder's own deceleration, and sends no such command.
      *
      * MUTATION: hand the -1 to an ordinary stop (`setSpeed(0)`) and this fails.
-     *
-     * @throws Exception from the fixture
      */
     @Test
     public void testSpeedDirectionAndInstantStopRunThroughARoute() throws Exception
@@ -1571,8 +1543,6 @@ public class testAdvancedRoutes
      * A route that chains to an ordinary route runs that route's commands; the chain stops one route deep, as the
      * changelog for 2.5.3 says (a chained route triggers no further routes); and a route that names itself runs its
      * other commands once and does not loop.
-     *
-     * @throws Exception from the fixture
      */
     @Test
     public void testAChainedRouteRunsAndTheChainStopsAtItsLimit() throws Exception
@@ -1620,8 +1590,6 @@ public class testAdvancedRoutes
     /**
      * A function OFF command, All Functions Off, All Lights On and All Lights On (Autonomy Locomotives Only) each do
      * what they say when a route runs them.
-     *
-     * @throws Exception from the fixture
      */
     @Test
     public void testFunctionOffAndTheLightAndFunctionSweepsRunThroughARoute() throws Exception
@@ -1674,8 +1642,6 @@ public class testAdvancedRoutes
      * A sensor condition and a switch condition hold back a route its own sensor fires, until both hold; a DCC
      * switch's state is read apart from the MM2 switch at the same address; and groups inside a group are evaluated
      * as written.
-     *
-     * @throws Exception from the fixture
      */
     @Test
     public void testSensorAndSwitchConditionsHoldBackAFiredRoute() throws Exception

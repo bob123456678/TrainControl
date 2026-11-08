@@ -94,8 +94,6 @@ public class testADirectionChangeIsNotSwallowed
      * The exception is asserted too - a turn the railway made at a destination must be WRITTEN before
      * the leveling wipes the evidence of it, and "levels everything" would silently undo
      * that.
-     *
-     * @throws Exception on a failure to read the source
      */
     @Test
     public void testTheBaselineIsLevelledWhenTheRailwayGoesIdle() throws Exception

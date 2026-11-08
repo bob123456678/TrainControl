@@ -478,7 +478,6 @@ public class testAutoLayout
     
     /**
      * Test connections
-     * @throws java.lang.Exception
      */
     @Test
     public void testConnections() throws Exception
@@ -635,8 +634,6 @@ public class testAutoLayout
      *
      * MUTATION: count answered track as unmeasured at the gate, at the escape, in the route in or in the room walk, and
      * this fails.
-     *
-     * @throws Exception from the model
      */
     @Test
     public void testTrackAnsweredZeroIsMeasuredTrack() throws Exception
@@ -741,8 +738,6 @@ public class testAutoLayout
      * RP_P, answered 0 throughout, sharing their last two squares.
      *
      * MUTATION: have either decline a rail answered 0, as both declined a rail with no length, and this fails.
-     *
-     * @throws Exception from the model or the reflection
      */
     @Test
     @SuppressWarnings("unchecked")
@@ -818,8 +813,6 @@ public class testAutoLayout
      * replaced and the fourth does; mark only the direct predecessors of a destination and the sixth does; bound the
      * walk at two levels and the seventh does; drop `!back.isActive()` and the eighth does; delete `Collections.sort`
      * and the last does.
-     *
-     * @throws Exception from the model
      */
     @Test
     public void testARailwayCountsItsUnmeasuredDrivableTrack() throws Exception
@@ -1280,8 +1273,6 @@ public class testAutoLayout
      * across.  The carry has to be READABLE, not merely copied: keyed by point NAME, not by `recencyKeyOf` (unique ids
      * are re-allocated for every Point built).  It asserts the state `recencyOf` reads across a real `parseAuto`;
      * `testLeastRecentlyVisitedGoesWhereTrainsHaveNotBeen` says the map is read, this that it is still there to read.
-     *
-     * @throws Exception from the fixture
      */
     @Test
     public void testTheVisitHistorySurvivesASetupRebuild() throws Exception
@@ -2664,8 +2655,6 @@ public class testAutoLayout
      *
      * MUTATION: drop the new clause from pickPath's terminus filter and the first assertion fails; have it refuse every
      * terminus and the third does; drop it from the yield probe and the last does.
-     *
-     * @throws Exception from the railway
      */
     @Test
     public void testAReversibleTrainIsNotSentToATerminusItCouldNotLeave() throws Exception
@@ -2763,8 +2752,6 @@ public class testAutoLayout
      * RV_W - RV_X - RV_E only TURN.  Asked twelve times, because the answer depends on the order squares are taken in.
      *
      * MUTATION: key the search on the square alone again and this fails.
-     *
-     * @throws Exception from the railway
      */
     @Test
     public void testAClearRouteIsNotHiddenByAConflictingOne() throws Exception
@@ -2820,8 +2807,6 @@ public class testAutoLayout
      * which way is taken first depends on the order `getNeighbors` shuffles into.
      *
      * MUTATION: mark a square when it is put on the queue and this fails.
-     *
-     * @throws Exception from the railway
      */
     @Test
     public void testTwoRoutesOfTheSameLengthAreBothOffered() throws Exception
@@ -2876,8 +2861,6 @@ public class testAutoLayout
      * not fail).
      *
      * MUTATION: drop a route the moment its commands disagree and this fails.
-     *
-     * @throws Exception from the railway
      */
     @Test
     public void testAConflictThatIsAllThereIsIsStillTheReason() throws Exception

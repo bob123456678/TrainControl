@@ -883,8 +883,6 @@ public class testMessageBundles
      *
      * MUTATION: take a form's key out of any bundle, or give a key one of the four roads sees an empty value in one
      * language, and this fails naming it.
-     *
-     * @throws Exception reading the sources and bundles
      */
     @Test
     public void testEveryKeyAScreenAsksForIsInEveryLanguageWithAValue() throws Exception
@@ -1003,8 +1001,6 @@ public class testMessageBundles
      * callers, none can be missed.  A plural ending may be nothing.
      *
      * MUTATION: give any key an empty value in one language, and this fails naming it.
-     *
-     * @throws Exception reading the bundles
      */
     @Test
     public void testEveryKeyHasAValueInEveryLanguage() throws Exception
@@ -1076,8 +1072,6 @@ public class testMessageBundles
      * differently leaves a reader looking for a button that is not there.  The Exit button is the File menu's item.
      *
      * MUTATION: word either name in the sentence otherwise than its button's label, in any language, and this fails.
-     *
-     * @throws Exception reading the bundles
      */
     @Test
     public void testTheFailedSyncPopupNamesItsButtonsAsLabelled() throws Exception
@@ -1113,8 +1107,6 @@ public class testMessageBundles
      * a turnout with no address's red arrow.
      *
      * MUTATION: say again that everything runs both ways, in any language, and this fails.
-     *
-     * @throws Exception from the bundles
      */
     @Test
     public void testNothingToOpenSaysWhatStaysOneWay() throws Exception
@@ -1213,8 +1205,6 @@ public class testMessageBundles
      * The right-click menu's Bulk Tools item says what it places: *Place All Trains at Their Homes*.
      *
      * MUTATION: put the old words back, and this fails.
-     *
-     * @throws Exception from reading the bundle
      */
     @Test
     public void testPlaceAllSaysTrains() throws Exception
@@ -1232,8 +1222,6 @@ public class testMessageBundles
      * saves nothing while anything runs, and says so).
      *
      * MUTATION: leave the settings out of the English sentence again, and this fails.
-     *
-     * @throws Exception from reading the bundle
      */
     @Test
     public void testTheExitWarningNamesEverythingItLeavesUnsaved() throws Exception

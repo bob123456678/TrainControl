@@ -355,7 +355,6 @@ public class testTheEditorNamesItsShortcuts
      * The configuration the start-up resume loaded, waited for: the resume is posted behind the window's set-up.
      *
      * @return its name, or null if nothing loaded in fifteen seconds
-     * @throws Exception from the event thread
      */
     private static String theResumedConfiguration() throws Exception
     {
@@ -372,8 +371,6 @@ public class testTheEditorNamesItsShortcuts
 
     /**
      * Stops using autonomy, the way the Autonomy menu does, and lets the window settle.
-     *
-     * @throws Exception from the event thread
      */
     private static void unloadAutonomy() throws Exception
     {
@@ -392,7 +389,6 @@ public class testTheEditorNamesItsShortcuts
      * Loads a configuration the way the Autonomy menu does and lets the window settle.
      *
      * @param name the configuration
-     * @throws Exception from the event thread
      */
     private static void loadConfiguration(final String name) throws Exception
     {
@@ -3389,7 +3385,6 @@ public class testTheEditorNamesItsShortcuts
      * @param wanted the value the flag should have
      * @param millis the longest to wait for it
      * @return whether the flag had the value when last read
-     * @throws Exception from the event thread
      */
     private static boolean alwaysOnTopWithin(boolean wanted, long millis) throws Exception
     {

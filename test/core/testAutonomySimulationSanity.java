@@ -393,8 +393,6 @@ public class testAutonomySimulationSanity
      *
      * MUTATION: removing the `reversedOnArrival.put` at the arrival fails the first assertion; making
      * `takeReversalsOnArrival` a plain getter fails the last.
-     *
-     * @throws Exception on a failure to run
      */
     @Test
     public void testATurnAtTheDestinationIsRecordedThere() throws Exception

@@ -204,7 +204,6 @@ public final class LayoutSandbox
      * @param model the control station whose accessory, feedback and route databases to wire against
      * @param parser the parser, already pointed at a layout folder
      * @return the pages, wired
-     * @throws Exception if the folder cannot be read
      */
     public static java.util.List<org.traincontrol.base.LayoutDiagram> wired(
         org.traincontrol.marklin.MarklinControlStation model,

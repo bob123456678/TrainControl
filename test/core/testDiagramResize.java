@@ -204,8 +204,6 @@ public class testDiagramResize
      * being deleted unseen.
      *
      * MUTATION: leave the elements out of `shiftRight`, and this fails on its first assertion.
-     *
-     * @throws Exception from the export
      */
     @Test
     public void testAShiftMovesTheElementsItCannotDraw() throws Exception
@@ -237,7 +235,6 @@ public class testDiagramResize
      * @param x the element's column before the shift
      * @param y its row
      * @return the id the export writes for it, or null when it is written with none
-     * @throws Exception from the shift or the export
      */
     private static String idAfter(String shift, int x, int y) throws Exception
     {

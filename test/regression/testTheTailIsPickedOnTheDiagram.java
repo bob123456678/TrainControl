@@ -325,8 +325,6 @@ public class testTheTailIsPickedOnTheDiagram
      * pastes.
      *
      * MUTATION: read any of them after the question again, and this fails.
-     *
-     * @throws Exception on a failure to read the source
      */
     @Test
     public void testThePasteReadsItsLandingBeforeTheQuestionIsAsked() throws Exception
@@ -778,7 +776,6 @@ public class testTheTailIsPickedOnTheDiagram
      * @param meanwhile what happens in the wait
      * @param click true to click TunnelPre, false to cancel
      * @return what the answer found
-     * @throws Exception from the event thread
      */
     private LateAnswer pasteAndAnswerLate(org.traincontrol.base.Locomotive train, java.util.concurrent.Callable<Void> meanwhile,
         boolean click) throws Exception
@@ -2120,8 +2117,6 @@ public class testTheTailIsPickedOnTheDiagram
      * HTML had no width and the question was over 1,000 px wide.
      *
      * MUTATION: take the width off the question's HTML, and this fails.
-     *
-     * @throws Exception from the event thread
      */
     @Test
     public void testTheListQuestionFitsTheScreen() throws Exception

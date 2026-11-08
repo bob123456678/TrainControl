@@ -283,8 +283,6 @@ public class testWhyStuck
 
     /**
      * By hand, the menu's own reason outranks being too short (MT-262).
-     *
-     * @throws Exception from the railway
      */
     @Test
     public void testByHandTheMenusReasonOutranksBeingTooShort() throws Exception
@@ -527,8 +525,6 @@ public class testWhyStuck
      *
      * MUTATION: dropping any limb from either side fails this - each case is barred for exactly one reason, and the
      * clean case pins the other direction.
-     *
-     * @throws Exception on a failure to reach either method
      */
     @Test
     public void testTheDashAgreesWithTheRule() throws Exception
@@ -670,8 +666,6 @@ public class testWhyStuck
      *
      * MUTATION: drop the reason, give it by hand, offer turning round where neither copy reaches a station, or leave
      * the closed side out of the either-way sentence, and this fails.
-     *
-     * @throws Exception from the railway
      */
     @Test
     public void testACopyThatReachesNoStationSaysSo() throws Exception
@@ -730,8 +724,6 @@ public class testWhyStuck
      * refusal, and turning back this sentence again).
      *
      * MUTATION: offer turning round wherever another copy reaches a station, and this fails.
-     *
-     * @throws Exception from the railway
      */
     @Test
     public void testTurningRoundIsOfferedOnlyOntoACopyATrainMayStartFrom() throws Exception
@@ -764,8 +756,6 @@ public class testWhyStuck
      * back.  The claim beside this one switches a copy off, which a built railway never does to one copy alone.
      *
      * MUTATION: offer turning round onto any copy that reaches a station, and this fails.
-     *
-     * @throws Exception from the railway
      */
     @Test
     public void testTurningRoundIsNotOfferedOntoACopyThatIsNoStation() throws Exception
@@ -795,8 +785,6 @@ public class testWhyStuck
      *
      * MUTATION: offer "open that side" wherever the other copy is barred, or give the refusal without its reason, and
      * this fails.
-     *
-     * @throws Exception from the railway
      */
     @Test
     public void testOpeningASideIsNotOfferedWhereEveryTrainTurns() throws Exception
@@ -935,8 +923,6 @@ public class testWhyStuck
      * without a word.
      *
      * MUTATION: look it up as `AutoLocomotiveStatus.class.getResource("resources/info.gif")` and this fails.
-     *
-     * @throws Exception on a failure to reach the mark
      */
     @Test
     public void testTheWhyMarkLoads() throws Exception

@@ -35,8 +35,6 @@ public class testAThreeWayIsLitOnce
 
     /**
      * The three-way ends the highlight in the commanded color.
-     *
-     * @throws Exception from the event thread
      */
     @Test
     public void testAThreeWayCommandedAndCheckedIsLitAsCommanded() throws Exception

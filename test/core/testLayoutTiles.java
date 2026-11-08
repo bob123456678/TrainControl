@@ -211,8 +211,6 @@ public class testLayoutTiles
      * BEFORE it was thrown, staying that way until that accessory changed again.
      *
      * Both orders are asked, because each one is a separate restore and the fix is a separate line.
-     *
-     * @throws Exception from the event thread
      */
     @Test
     public void testTheFlashAndTheAccessoryHighlightDoNotUndoEachOther() throws Exception
@@ -293,8 +291,6 @@ public class testLayoutTiles
      * running: it would fire 2.25 seconds after ITS start, part-way through the second highlight, and put the plain
      * icon back over it - the tile would stop looking highlighted while it still was.  Counted rather than looked at,
      * because what distinguishes the two is how many restores happen, not which picture is up.
-     *
-     * @throws Exception from the event thread
      */
     @Test
     public void testASecondHighlightStopsTheFirstsRestore() throws Exception
@@ -349,8 +345,6 @@ public class testLayoutTiles
      * keep the new yellow.  The test above counts restores; this one looks at the picture.
      *
      * MUTATION: end the first highlight after laying the second's yellow again, and this fails.
-     *
-     * @throws Exception from the event thread
      */
     @Test
     public void testASecondHighlightIsDrawnYellow() throws Exception
@@ -447,8 +441,6 @@ public class testLayoutTiles
      * drawn clear with a train standing on it.
      *
      * Asked of a FEEDBACK square, which takes no accessory branch at all.
-     *
-     * @throws Exception from the event thread
      */
     @Test
     public void testAnyReplacedPictureGivesUpAnOutstandingFlash() throws Exception
@@ -516,7 +508,6 @@ public class testLayoutTiles
      *
      * @param label the label
      * @return whether it went up
-     * @throws Exception while waiting
      */
     private static boolean awaitHighlight(LayoutLabel label) throws Exception
     {
@@ -539,7 +530,6 @@ public class testLayoutTiles
      * One highlight is run and waited out, so what follows is the ordinary case.
      *
      * @return the label
-     * @throws Exception from the event thread
      */
     private static LayoutLabel warmedSignalLabel() throws Exception
     {
@@ -569,7 +559,6 @@ public class testLayoutTiles
      * @param label the label
      * @param previous what it was showing
      * @return what it is showing now
-     * @throws Exception while waiting
      */
     private static Icon awaitIconChange(LayoutLabel label, Icon previous) throws Exception
     {
@@ -590,7 +579,6 @@ public class testLayoutTiles
      * set - the constructor loads it asynchronously, so it is waited for.
      *
      * @return the label
-     * @throws Exception from the event thread
      */
     private static LayoutLabel drawnSignalLabel() throws Exception
     {
@@ -621,8 +609,6 @@ public class testLayoutTiles
      * is asked is `everyOpenWindowMaySettle`, the decision rather than the predicate under it, with the discard dialog
      * answered through the route editor's test hook.  Here rather than in a class of its own because it needs exactly
      * what this one already opens: the real main window, on a sandbox.
-     *
-     * @throws Exception from the event thread
      */
     @Test
     public void testTheExitAsksEveryOpenWindow() throws Exception
@@ -683,8 +669,6 @@ public class testLayoutTiles
      * not restore a minimized window.
      *
      * MUTATION: ask without bringing the route editor back, and this fails.
-     *
-     * @throws Exception from the event thread
      */
     @Test
     public void testTheExitBringsAMinimisedRouteEditorBackBeforeItAsks() throws Exception
@@ -744,8 +728,6 @@ public class testLayoutTiles
      * fails with a message that has no remedy - the typing cannot be kept at all.
      *
      * Asked of the question Save now puts, on all three states.
-     *
-     * @throws Exception from the event thread
      */
     @Test
     public void testTheRouteEditorNoticesItsRouteMoving() throws Exception

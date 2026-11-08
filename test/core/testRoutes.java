@@ -1914,8 +1914,6 @@ public class testRoutes
      * asked about the two sensors beyond the next one before anything is reached.
      *
      * MUTATION: ask which Point holds the train again, and this fails.
-     *
-     * @throws Exception from the railway
      */
     @Test
     public void testARunningTrainIsAtTheSensorItLastReached() throws Exception
@@ -2040,8 +2038,6 @@ public class testRoutes
      * of a sensor the train has not reached.
      *
      * MUTATION: wait for the sensor ahead again, or not at all, and this fails.
-     *
-     * @throws Exception from the railway
      */
     @Test
     public void testATrainIsAtTheSensorItHasJustReachedNotTheOneBefore() throws Exception
@@ -2130,8 +2126,6 @@ public class testRoutes
      * seconds).  A sensor the run has already recorded is not waited for.
      *
      * MUTATION: wait while the pending sensor reads occupied, recorded or not, and this fails.
-     *
-     * @throws Exception from the railway
      */
     @Test
     public void testATurningTrainIsAnsweredWithoutWaitingForTheTurn() throws Exception

@@ -787,8 +787,6 @@ public class testDiagramLooksRight
      * knows, so there is nothing to restore.
      *
      * MUTATION: putting back the branch that stripped the "Point:" prefix fails this with "Bahnhof".
-     *
-     * @throws Exception if Swing cannot build the grid
      */
     @Test
     public void testAnOldPointLabelIsDrawnAsWritten() throws Exception
@@ -932,8 +930,6 @@ public class testDiagramLooksRight
      * leaves.
      *
      * MUTATION: lift the square of a running train again, and this fails.
-     *
-     * @throws Exception from the event thread
      */
     @Test
     public void testTheTrainIconDoesNotPaintOutACaption() throws Exception
@@ -1065,8 +1061,6 @@ public class testDiagramLooksRight
      *
      * MUTATION: dropping the onDiagramChanged call from the listener fails the rebuild assertion; dropping the
      * preference write fails the last one.
-     *
-     * @throws Exception on a failure to build the panel
      */
     @Test
     public void testTheCaptionChoiceRemembersItselfAndRebuilds() throws Exception
@@ -1137,8 +1131,6 @@ public class testDiagramLooksRight
      * Parked Locs labels only the stations a locomotive is parked at (OB-312).
      *
      * MUTATION: put the placeholder back, and this fails.
-     *
-     * @throws Exception from the editor
      */
     @Test
     public void testParkedLocsLabelsOnlyWhereATrainIsParked() throws Exception
@@ -1217,8 +1209,6 @@ public class testDiagramLooksRight
      * does not widen the editor (OB-368).
      *
      * MUTATION: dropping the `choice.setMaximumSize` line in LayoutEditor fails the width assertion.
-     *
-     * @throws Exception from the editor
      */
     @Test
     public void testTheDirectionsBoxKeepsTheLabelsBoxWidthInEveryLanguage() throws Exception
@@ -1410,8 +1400,6 @@ public class testDiagramLooksRight
      * width should be the width of the dropdown").
      *
      * MUTATION: dropping `choice.setMinimumSize` in LayoutEditor widens Save and Cancel past the boxes in Danish.
-     *
-     * @throws Exception from the editor
      */
     @Test
     public void testTheRightColumnIsAsWideAsItsDropdowns() throws Exception
@@ -1457,8 +1445,6 @@ public class testDiagramLooksRight
      *
      * MUTATION: put `autosetup.ui.toolWhy` in messages_da.properties back to "Hvorfor kører det ikke?": red in
      * Danish.
-     *
-     * @throws Exception from the editor
      */
     @Test
     public void testTheRightColumnsButtonsReadInFull() throws Exception
@@ -1498,8 +1484,6 @@ public class testDiagramLooksRight
      *
      * MUTATION: pin the column in `LayoutEditor.setAutonomyMode` to 150 pixels again: red, as English's widest text
      * needs 144.
-     *
-     * @throws Exception from the editor
      */
     @Test
     public void testTheRightColumnEndsWhereItsTextEnds() throws Exception
@@ -3095,8 +3079,6 @@ public class testDiagramLooksRight
      * counted.
      *
      * MUTATION: put any one of the old icons back and this fails.
-     *
-     * @throws Exception reading the icons
      */
     @Test
     public void testTheCurveAndSwitchTilesAreMirrorImages() throws Exception
@@ -3245,8 +3227,6 @@ public class testDiagramLooksRight
      * the label's corners, a halo leaves them black and puts white only round the letters.
      *
      * MUTATION: put the box back and this fails.
-     *
-     * @throws Exception from Swing
      */
     @Test
     public void testAnAddressHasAHaloAndNoBox() throws Exception
@@ -3679,8 +3659,6 @@ public class testDiagramLooksRight
     /**
      * The mark beside "No available paths" on the Auto tab is the light gray every (i) mark wears, not blue: the card's
      * own icon, read off the class that draws it.
-     *
-     * @throws Exception from reading the icons
      */
     @Test
     public void testTheNoPathsMarkIsTheInfoMarksGray() throws Exception
@@ -4493,8 +4471,6 @@ public class testDiagramLooksRight
      * Medium and Large in that order, and they are 30, 46 and 60.
      *
      * MUTATION: give Medium Large's size, and this fails.
-     *
-     * @throws Exception reflection
      */
     @Test
     public void testTheMediumSizeIsBetweenSmallAndLarge() throws Exception
@@ -4530,8 +4506,6 @@ public class testDiagramLooksRight
      * and a signal.
      *
      * MUTATION: look for a 46 pixel icon set, or cache a Medium picture under its Large one's key, and this fails.
-     *
-     * @throws Exception from reading the art
      */
     @Test
     public void testAMediumSquareIsTheLargeArtScaledDown() throws Exception
@@ -4595,8 +4569,6 @@ public class testDiagramLooksRight
      * The Medium pop-up button opens the page in a window at the Medium size (FR-122): its squares 46 pixels across.
      *
      * MUTATION: leave the button's handler empty again, and this fails.
-     *
-     * @throws Exception reflection, the event thread
      */
     @Test
     public void testTheMediumButtonOpensAMediumPopUp() throws Exception
@@ -4645,8 +4617,6 @@ public class testDiagramLooksRight
      *
      * MUTATION: build the title from the page alone, or leave a rename or an unload out of the places that set it
      * again, and this fails.
-     *
-     * @throws Exception reflection, the store, the event thread
      */
     @Test(priority = 1)
     public void testAPopUpTitleNamesTheLoadedConfiguration() throws Exception
@@ -4718,8 +4688,6 @@ public class testDiagramLooksRight
      * for through the window's own futures (pumping the event thread does not wait for the worker that posts it).
      *
      * MUTATION: set either title from the page alone (`popup.getLayoutTitle() + ...`) in the render, and this fails.
-     *
-     * @throws Exception reflection, the event thread
      */
     @Test(priority = 1)
     public void testALocomotiveRenderKeepsTheConfigurationInAPopUpTitle() throws Exception
@@ -4802,8 +4770,6 @@ public class testDiagramLooksRight
 
     /**
      * Until every locomotive render the window has queued is finished and the event thread has run what each posted.
-     *
-     * @throws Exception reflection, the event thread, a render that does not finish
      */
     @SuppressWarnings("unchecked")
     private void waitForTheRender() throws Exception
@@ -4846,7 +4812,6 @@ public class testDiagramLooksRight
      * run on its own reaches it first.
      *
      * @return its name, or null if nothing loaded in fifteen seconds
-     * @throws Exception from the event thread
      */
     private static String theResumedConfiguration() throws Exception
     {
@@ -4863,8 +4828,6 @@ public class testDiagramLooksRight
 
     /**
      * Stops using autonomy, the way the Autonomy menu does.
-     *
-     * @throws Exception from the event thread
      */
     private void unloadAutonomy() throws Exception
     {
@@ -4883,7 +4846,6 @@ public class testDiagramLooksRight
      * Opens a pop-up with the Medium button and waits for it.
      *
      * @return the window
-     * @throws Exception reflection, the event thread
      */
     private org.traincontrol.gui.LayoutPopupUI openAMediumPopUp() throws Exception
     {
@@ -4920,7 +4882,6 @@ public class testDiagramLooksRight
      * Loads a configuration the way the Autonomy menu does.
      *
      * @param name the configuration
-     * @throws Exception from the event thread
      */
     private void loadConfiguration(final String name) throws Exception
     {
@@ -4935,7 +4896,6 @@ public class testDiagramLooksRight
      * @param popup the window
      * @param configuration the one loaded, or null for none
      * @param when what has just happened, for the message
-     * @throws Exception from the event thread
      */
     private void popUpTitleIs(final org.traincontrol.gui.LayoutPopupUI popup, String configuration, String when)
         throws Exception
@@ -4971,8 +4931,6 @@ public class testDiagramLooksRight
      *
      * MUTATION: leave the main window's scroll bars at their pixel step, step a whole square, or step every size as
      * Small, and this fails.
-     *
-     * @throws Exception reflection, the event thread
      */
     @Test
     public void testTheDiagramScrollsHalfASquareAtATime() throws Exception
@@ -5061,8 +5019,6 @@ public class testDiagramLooksRight
      * Medium button's window steps 23 pixels each way.
      *
      * MUTATION: leave the pop-up's scroll bars at their pixel step, or step it down only, and this fails.
-     *
-     * @throws Exception reflection, the event thread
      */
     @Test
     public void testAPoppedOutDiagramScrollsHalfASquareAtATime() throws Exception
@@ -5099,8 +5055,6 @@ public class testDiagramLooksRight
     /**
      * Lets a size or page change finish on the main window: the posted repaint, the grid renderer's job behind it, and
      * what that job posts in turn.
-     *
-     * @throws Exception reflection, the event thread
      */
     private static void settleTheDiagram() throws Exception
     {
@@ -5127,8 +5081,6 @@ public class testDiagramLooksRight
      * switch was given, as on the track diagram, draws it.
      *
      * MUTATION: let a square draw its train whatever its switch says, and this fails.
-     *
-     * @throws Exception reflection
      */
     @Test
     public void testTheEditorsShowTrainsSwitchHidesItsTrains() throws Exception
@@ -5264,8 +5216,6 @@ public class testDiagramLooksRight
      * same spot as the (i): `AutoLocomotiveStatus.markFor` chooses the card's mark.
      *
      * MUTATION: put the teal back, or the house away, and this fails.
-     *
-     * @throws Exception reflection
      */
     @Test
     public void testATrainAtHomeShowsAHouseNotTeal() throws Exception
@@ -5330,8 +5280,6 @@ public class testDiagramLooksRight
      * every label on the diagram is built.
      *
      * MUTATION: build the labels without the halo, and this fails.
-     *
-     * @throws Exception from reading the source
      */
     @Test
     public void testTheGridGivesEveryLabelThatIsNotAPillAHalo() throws Exception
@@ -5359,8 +5307,6 @@ public class testDiagramLooksRight
      * at 60.
      *
      * MUTATION: put the old tunnel art back, and this fails.
-     *
-     * @throws Exception from reading the art
      */
     @Test
     public void testTheTunnelsWallIsWider() throws Exception
@@ -5410,8 +5356,6 @@ public class testDiagramLooksRight
      * a lighter stripe between two straights.
      *
      * MUTATION: put the old Large signal back, or draw the link's shaft pure black to its edge, and this fails.
-     *
-     * @throws Exception from reading the art
      */
     @Test
     public void testTheLinkAndTheSignalsMeetTheStraightWithNoSeam() throws Exception
@@ -5460,8 +5404,6 @@ public class testDiagramLooksRight
      * alike: the drawn art is symmetric (FR-135).
      *
      * MUTATION: put the old Small link or signal art back, and this fails.
-     *
-     * @throws Exception from reading the art
      */
     @Test
     public void testTheLinkAndTheSignalsBarAreSymmetric() throws Exception
@@ -5506,8 +5448,6 @@ public class testDiagramLooksRight
      * where the shipped art had them (FR-135).
      *
      * MUTATION: draw both lamps in the same end, and this fails.
-     *
-     * @throws Exception from reading the art
      */
     @Test
     public void testTheSignalsLampsAreInTheirOwnEnds() throws Exception

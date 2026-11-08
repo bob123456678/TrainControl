@@ -379,8 +379,6 @@ public class testNoSelfRecursiveWrappers
      * rewrite that drops the collaborator's name leaves a method calling itself.
      *
      * MUTATION: make any of them call its own name instead of the collaborator's, and this fails.
-     *
-     * @throws Exception if the source cannot be read
      */
     @Test
     public void testASessionDelegatorDoesNotCallItself() throws Exception
@@ -447,8 +445,6 @@ public class testNoSelfRecursiveWrappers
      * make Layout.whyNoRouteFitsTo call `whyNoRouteFitsTo(loc, start, end)`, and this fails; so does making
      * LayoutExplanations' `explainCannotStart(loc, byHand)` hand to `explainCannotStart(loc, false)`, or
      * StandingTrains' six-argument `walkOneTail` call `walkOneTail(` with six arguments.
-     *
-     * @throws Exception if the source cannot be read
      */
     @Test
     public void testARailwayDelegatorAndItsHelperDoNotCallEachOtherForEver() throws Exception
@@ -499,8 +495,6 @@ public class testNoSelfRecursiveWrappers
      *
      * MUTATION: have any other class of the package call `layout.points.put(`, `owner.edges.remove(` or assign
      * `layout.points = `, and this fails; so does dropping `final` from either declaration in Layout.
-     *
-     * @throws Exception if the source cannot be read
      */
     @Test
     public void testOnlyTheRailwayAssignsItsEdgesAndPoints() throws Exception
@@ -548,8 +542,6 @@ public class testNoSelfRecursiveWrappers
      *
      * MUTATION: add a statement of its own before the call in any of the panel's delegators, or make one call another
      * helper, and this fails.
-     *
-     * @throws Exception if the source cannot be read
      */
     @Test
     public void testAnEditorPanelDelegatorIsOneCallToItsHelper() throws Exception
@@ -651,8 +643,6 @@ public class testNoSelfRecursiveWrappers
      *
      * MUTATION: in LayoutEditor, add `autonomyPanel.session.getStore();` or `autonomyPanel.promptName(over);` and this
      * fails.
-     *
-     * @throws Exception if the source cannot be read
      */
     @Test
     public void testOnlyTheEditorsHelpersReachIntoThePanel() throws Exception

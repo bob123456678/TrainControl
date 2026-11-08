@@ -26,8 +26,6 @@ public class testTheRouteEditorListsWhatStopsASave
      * A blank route has no name and no command: Save names both, under the sentence, in the Details list.
      *
      * MUTATION: put the problems back into the message's text, and this fails.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testTheProblemsAreListedUnderOneSentence() throws Exception

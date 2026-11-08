@@ -95,8 +95,6 @@ public class testTheGreyNamesTheRoadOnADoubleCurve
 
     /**
      * Two units in ParkingTrack7 gray the double curve's E-S road and leave its N-W road alone.
-     *
-     * @throws Exception from the fixture
      */
     @Test
     public void testATailOnOneRoadOfADoubleCurveGreysThatRoadOnly() throws Exception

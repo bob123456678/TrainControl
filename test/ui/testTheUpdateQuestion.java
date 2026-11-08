@@ -138,8 +138,6 @@ public class testTheUpdateQuestion
 
     /**
      * A real modal dialog on screen is seen, and is not once it has closed.
-     *
-     * @throws Exception from the event thread
      */
     @Test
     public void testAModalDialogIsSeen() throws Exception
@@ -188,8 +186,6 @@ public class testTheUpdateQuestion
     /**
      * Run from a folder of classes, as an IDE or this test runs it, there is no jar to replace; a jar in a folder that
      * can be written is one.
-     *
-     * @throws Exception from the files
      */
     @Test
     public void testRunningFromClassesIsNoJar() throws Exception
@@ -230,8 +226,6 @@ public class testTheUpdateQuestion
 
     /**
      * Download & Update is refused while autonomy, a timetable, Return Home or a route is running, and allowed at rest.
-     *
-     * @throws Exception from the model
      */
     @Test
     public void testTheUpdateIsRefusedWhileTrainsRun() throws Exception

@@ -298,8 +298,6 @@ public class testAPastedTrainKeepsItsDirection
      *
      * MUTATION: `AutonomyBuilder` writing `autoDestination:false` for a compulsory turn as well fails this at
      * BottomMainC; `stationsAutonomyWillNotChoose` counting `isMustTurnAround` again fails the editor half there.
-     *
-     * @throws Exception on a failure to build
      */
     @Test
     public void testACompulsoryTurnIsAnAutoDestinationExactlyWhenItIsNotParking() throws Exception
@@ -361,8 +359,6 @@ public class testAPastedTrainKeepsItsDirection
      * a home change triggers: `AutonomyBuilder.placementCopy` falls back to an order-dependent choice.
      *
      * MUTATION: a builder that ordered its copies from a HashMap fails this.
-     *
-     * @throws Exception on a failure to build
      */
     @Test
     public void testARebuildPutsTheCopiesBackInTheSameOrder() throws Exception
@@ -411,7 +407,6 @@ public class testAPastedTrainKeepsItsDirection
      * Every square that builds to at least one copy, with its copies in the order the builder emitted.
      *
      * @return square to copy names
-     * @throws Exception on a failure to build
      */
     private java.util.Map<TileKey, java.util.List<String>> copiesBySquare() throws Exception
     {
@@ -492,8 +487,6 @@ public class testAPastedTrainKeepsItsDirection
      * once.
      *
      * MUTATION: making `placementCopy` ignore the stored facing fails this on every copy but one.
-     *
-     * @throws Exception on a failure to build
      */
     @Test
     public void testAPlacementLandsOnTheCopyItsFacingNames() throws Exception
@@ -878,8 +871,6 @@ public class testAPastedTrainKeepsItsDirection
      * So this asserts the round trip at the CONSUMER, in both directions: what is recorded reaches the railway, and
      * what is removed stops reaching it.  Over several properties, because any property applied in the point loop and
      * then overwritten by a later pass would fail the same way.
-     *
-     * @throws Exception on a failure to build
      */
     @Test
     public void testWhatTheSetupRecordsIsWhatTheRailwayGets() throws Exception
@@ -966,8 +957,6 @@ public class testAPastedTrainKeepsItsDirection
      * that decides; this asserts the railway.
      *
      * MUTATION: applying arrivedFrom in the point loop again fails this.
-     *
-     * @throws Exception on a failure to build
      */
     @Test
     public void testTheArrivalSideSurvivesTheBuild() throws Exception

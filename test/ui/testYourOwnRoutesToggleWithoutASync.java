@@ -82,8 +82,6 @@ public class testYourOwnRoutesToggleWithoutASync
 
     /**
      * One of his own routes, from its own right-click item: no sync.  One the station carried: a sync.
-     *
-     * @throws Exception from the event thread or reflection
      */
     @Test
     public void testTogglingOneOfYourOwnRoutesDoesNotSync() throws Exception
@@ -123,8 +121,6 @@ public class testYourOwnRoutesToggleWithoutASync
 
     /**
      * And from Bulk Enable, over a search that matches only his own routes.
-     *
-     * @throws Exception from the event thread or reflection
      */
     @Test
     public void testTheBulkToggleOverYourOwnRoutesDoesNotSync() throws Exception

@@ -192,8 +192,6 @@ public class testTheImportDoorReadsAnOldFile
      * words).
      *
      * MUTATION: put the left-behind lines back into the report's text, and this fails.
-     *
-     * @throws Exception from the window or the import
      */
     @Test
     public void testTheReportListsWhatItCouldNotDoUnderItsCounts() throws Exception

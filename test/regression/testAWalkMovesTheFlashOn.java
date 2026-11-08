@@ -104,8 +104,6 @@ public class testAWalkMovesTheFlashOn
      * Two reveals in a row: the first square is back to its own icon the moment the second is revealed.
      *
      * MUTATION: drop the `endFlash` call from `reveal` and the first square is still yellow.
-     *
-     * @throws Exception from the event thread
      */
     @Test
     public void testRevealingASquareEndsThePreviousFlash() throws Exception

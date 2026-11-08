@@ -655,8 +655,6 @@ public class testTheLayoutEditorManagesPages
      *
      * MUTATION: the duplicate hands the layout actions no editor (`pageActionFrom` as null in
      * `duplicateOrRenameCurrentLayout`), so the editor is refused as an open one, and this fails.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testDuplicateShowsTheCopyInTheSameWindow() throws Exception
@@ -703,8 +701,6 @@ public class testTheLayoutEditorManagesPages
      *
      * MUTATION: the combine arrives on the page it left (`editor.arriveOn(null)` in `combineOnAWorker`), and this
      * fails.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testCombineShowsTheCombinedPageInTheSameWindow() throws Exception
@@ -753,8 +749,6 @@ public class testTheLayoutEditorManagesPages
      *
      * MUTATION: the editor's own run refusal dropped (`runPageAction`) and Combine's asked over the main window
      * (`refuseWhileARunHoldsTheSetup(this.ui)` in `combineLinkedPages`), and this fails.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testDuplicateAndCombineRefuseWhileARouteRunsInOneDialog() throws Exception
@@ -768,8 +762,6 @@ public class testTheLayoutEditorManagesPages
      * off the editor, and leave the window as it was.
      *
      * MUTATION: Combine's name asked over the main window (`showInputDialog(this.ui, ...)`), and this fails.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testCombineAndDuplicateAskOverTheEditor() throws Exception
@@ -828,8 +820,6 @@ public class testTheLayoutEditorManagesPages
      *
      * MUTATION: the "nothing linked" message shown over the main window (`showMessageDialog(this.ui, ...)` in
      * `combineLinkedPages`), and this fails.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testCombineWithNoLinksSaysSoOverTheEditor() throws Exception
@@ -871,8 +861,6 @@ public class testTheLayoutEditorManagesPages
      *
      * MUTATION: the editor opens its Tools menu after Manage Pages... (a `doClick` on the menu from
      * `LayoutMenus.openManagePages`), and this fails.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testManagePagesOpensTheEditorWithNoMenuOpen() throws Exception
@@ -936,8 +924,6 @@ public class testTheLayoutEditorManagesPages
      *
      * MUTATION: Manage Pages... grayed with an editor open (`setEnabled(live)` in `applyLayoutEditingAvailability`),
      * and this fails.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testManagePagesBringsTheOpenEditorForward() throws Exception
@@ -976,8 +962,6 @@ public class testTheLayoutEditorManagesPages
      *
      * MUTATION: Manage Pages... left out of the run's graying (`greyForTheRun(managePagesItem, ...)` in
      * `guardLayoutMenu`), and this fails.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testManagePagesIsGrayedWhenTheHiddenMenuWouldBe() throws Exception

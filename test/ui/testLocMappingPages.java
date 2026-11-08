@@ -924,8 +924,6 @@ public class testLocMappingPages
      * the name or back in parentheses, leave the full stop off, put a line between them, put the decoder pill back
      * beside the page's words, join the type and the address into one text, draw the divider outside its pill, or set
      * the page's words in any font or color but the label's, and this fails.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testTheLineIsAKeycapAndTwoPillsForEveryDecoder() throws Exception
@@ -1108,8 +1106,6 @@ public class testLocMappingPages
      * MUTATION: cut the name by letters instead of by width, leave the ellipsis off, let a pill grow past 18 px, draw
      * the page's words wider than the room they were given, take the decoder pill's width out of that room, cut the
      * "5. ", or set any of the pills' fonts back to 11 point, and this fails.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testAWidePageNameGivesWayAndTheRestDoesNot() throws Exception
@@ -1262,8 +1258,6 @@ public class testLocMappingPages
      * MUTATION: draw any outline, fill or line round the page's words, draw them in anything but the label's navy, put
      * the decoder pill beside them, draw the divider to the pill's edge, draw the keycap's edge one pixel all round, or
      * take the decoder's navy from anywhere but rgb(0,0,115), and this fails.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testTheShapesAreThoseAdamChose() throws Exception
@@ -1383,8 +1377,6 @@ public class testLocMappingPages
      *
      * MUTATION: set the pills' fonts to 14 point, set the page's words to a size the slot cannot hold, or move the
      * baseline down a pixel or two, and this fails.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testTwelvePointTextFitsTheEighteenPixelsCleanly() throws Exception
@@ -1501,8 +1493,6 @@ public class testLocMappingPages
      *
      * MUTATION: default the preference on, leave the item out of the submenu or out of the form's menu, take the number
      * out of the tooltip, let an unnamed page show nothing, or let it read "5.", and this fails.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testPageNumbersAreOffUntilAskedFor() throws Exception
@@ -1570,8 +1560,6 @@ public class testLocMappingPages
      *
      * MUTATION: leave the choice out of the handler, leave it out of what the row says, or have the handler store the
      * opposite, and this fails.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testTheItemSwitchesTheNumbersAndKeepsTheChoice() throws Exception
@@ -1658,8 +1646,6 @@ public class testLocMappingPages
      *
      * MUTATION: leave the item's start-up state out of the start-up block, or word the tabs or the label without asking
      * it, and this fails.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testThePreferenceIsReadAtStartUp() throws Exception
@@ -1799,8 +1785,6 @@ public class testLocMappingPages
      * MUTATION: show the number whatever the setting, never show it, word an unnamed page "5." or leave it out, cut the
      * number or the "Page 5" with the name, ask the caller to cut an unnamed page, or lose a name's trim, and this
      * fails.
-     *
-     * @throws Exception from the rule
      */
     @Test
     public void testTheRuleWordsAPageThreeWays() throws Exception
@@ -1878,8 +1862,6 @@ public class testLocMappingPages
      *
      * MUTATION: show the number whatever the setting, never show it, word an unnamed page "5." or by its name's cut,
      * let the tabs ignore the setting, cut the "5. " with the name, or change the tab's tooltip, and this fails.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testThePageTabsFollowTheRule() throws Exception
@@ -1915,8 +1897,6 @@ public class testLocMappingPages
      *
      * MUTATION: show the number whatever the setting, never show it, word an unnamed page "5.", put the name back on a
      * line of its own over "Page 5", cut the forty letters short or not at all, or cut the "5. ", and this fails.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testThePageLabelFollowsTheRuleAndMovesNothing() throws Exception
@@ -1986,8 +1966,6 @@ public class testLocMappingPages
      *
      * MUTATION: leave the tabs or the label out of the handler, or word them from the setting as it was before the
      * click, and this fails.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testTheItemRetitlesTheTabsAndTheLabelAtOnce() throws Exception
@@ -2063,8 +2041,6 @@ public class testLocMappingPages
      *
      * MUTATION: show nothing, or "Page 5", for a name with no room, drop the full stop, cut "Page 5" with the room, or
      * leave the "5. " off the cut name, and this fails.
-     *
-     * @throws Exception from the row
      */
     @Test
     public void testANameWithNoRoomLeavesTheNumberAloneAndAnUnnamedPageIsWhole() throws Exception
@@ -2130,8 +2106,6 @@ public class testLocMappingPages
      *
      * MUTATION: leave the tabs, the arrows or the locomotive out of the English text, or leave a language's
      * untranslated, and this fails.
-     *
-     * @throws Exception from reading the bundles
      */
     @Test
     public void testTheTooltipSaysWhereTheNumbersGo() throws Exception

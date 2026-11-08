@@ -75,8 +75,6 @@ public class testATrainCoversTheTrackBehindIt
      * **`return mayReverse;` restores the whole defect with every other test green**, which is why this exists.  It
      * asserts the two halves the door depends on: a square with several sides asks, and a square with fewer does not,
      * whatever the mark says.
-     *
-     * @throws Exception on a failure to build
      */
     @Test
     public void testWouldAskAgreesWithWhatThePromptDoes() throws Exception
@@ -617,8 +615,6 @@ public class testATrainCoversTheTrackBehindIt
      * tail lies across while the diagram shows it gray (OB-280).
      *
      * MUTATION: take the by-place test out of `isPathClear` and this fails.
-     *
-     * @throws Exception on a failure to build the fixture
      */
     @Test
     public void testATailBlocksEveryCopyOfTheRailItLiesOn() throws Exception
@@ -692,8 +688,6 @@ public class testATrainCoversTheTrackBehindIt
      *
      * MUTATION: stop the walk spending the standing square on that rail and this fails (the track behind is claimed);
      * so does stopping it claiming that square (`places.put(own, loc)`), which the overlay and `anotherTailOn` read.
-     *
-     * @throws Exception on a failure to build the fixture
      */
     @Test
     public void testATurnedTrainSpendsTheSquareItStandsOn() throws Exception
@@ -795,8 +789,6 @@ public class testATrainCoversTheTrackBehindIt
      * The twin is named to sort first; the control names it to sort last.
      *
      * MUTATION: take the first arriving rail again, and this fails.
-     *
-     * @throws Exception on a failure to build the fixture
      */
     @Test
     public void testTheFirstStepTakesThePlainCopyOverItsTurningTwin() throws Exception
@@ -817,7 +809,6 @@ public class testATrainCoversTheTrackBehindIt
      * @param tag unique to this layout
      * @param twinSuffix the turning copy's name after the square's
      * @return whether N's square and the rail from M are both claimed
-     * @throws Exception on a failure to build the fixture
      */
     private boolean claimsPastTheNeighbour(String tag, String twinSuffix) throws Exception
     {
@@ -883,8 +874,6 @@ public class testATrainCoversTheTrackBehindIt
      * (OB-278).
      *
      * MUTATION: let the fork rule keep the first rail it meets again and this fails.
-     *
-     * @throws Exception on a failure to build the fixture
      */
     @Test
     public void testATrainOnASquareEmittedOnceSpendsItFirst() throws Exception
@@ -941,8 +930,6 @@ public class testATrainCoversTheTrackBehindIt
      * difference between the old set and the new one, else the redraw would repaint nothing with every test green.
      *
      * MUTATION: making the walk keep the departed train's edges fails the second assertion.
-     *
-     * @throws Exception on a failure to build
      */
     @Test
     public void testMovingATrainLeavesTheOldTrackToBeRedrawn() throws Exception
@@ -990,8 +977,6 @@ public class testATrainCoversTheTrackBehindIt
      * **And BOTH MARKS go through this one comparison.**  A square changes what it draws when its road changes AND when
      * it starts or stops being blocked, and the two do not move together (starting autonomy changes every blocked
      * square and no covered one), so one pass must diff both rather than a second refresh path someone forgets to call.
-     *
-     * @throws Exception on a failure to read the source
      */
     @Test
     public void testTheRefreshRedrawsWhatChanged() throws Exception

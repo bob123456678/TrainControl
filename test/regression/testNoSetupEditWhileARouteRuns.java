@@ -57,8 +57,6 @@ public class testNoSetupEditWhileARouteRuns
      * a route runs, and offers them at rest - Start Autonomy and Edit Locomotive, which are not setup edits, both times.
      *
      * MUTATION: ask `isAutonomyBusy` alone for any of them again, and this fails naming it.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testTheDiagramsMenuOffersNoSetupEditWhileARouteRuns() throws Exception
@@ -156,8 +154,6 @@ public class testNoSetupEditWhileARouteRuns
      *
      * MUTATION: take the refusal out of the right-click Place or Remove, or let `refusedWhileRunning` in either menu ask
      * autonomy alone, and this fails naming it.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testItemsOfferedAtRestRefuseOnceARouteRuns() throws Exception
@@ -311,8 +307,6 @@ public class testNoSetupEditWhileARouteRuns
      * takes the train off.
      *
      * MUTATION: let the diagram's keys ask `isAutonomyBusy` alone again, and this fails.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testTheDiagramsKeysWaitForARoute() throws Exception
@@ -371,8 +365,6 @@ public class testNoSetupEditWhileARouteRuns
      *
      * MUTATION: let `whyAutonomyEditorCannotOpen`, `openLayoutEditor`, the editor's mode tab or its Save ask autonomy
      * alone again, and this fails naming it.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testTheEditorsWaitForARoute() throws Exception
@@ -489,8 +481,6 @@ public class testNoSetupEditWhileARouteRuns
      * reason, and give it back at rest.
      *
      * MUTATION: let either menu's guard ask autonomy alone again, and this fails.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testTheMenusAreGreyedWhileARouteRuns() throws Exception
@@ -588,8 +578,6 @@ public class testNoSetupEditWhileARouteRuns
      *
      * MUTATION: give any of them another sentence again (`whyTheSetupIsHeld`, or the wait sentence on a setting), and
      * this fails naming the control.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testAGreyedControlSaysWhatItsDoorSays() throws Exception
@@ -852,8 +840,6 @@ public class testNoSetupEditWhileARouteRuns
      *
      * MUTATION: let any of them ask autonomy alone again, and this fails naming it; so does
      * `RunGates.refuseWhileARunHoldsTheSetup` giving a door another sentence.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testTheSetupAndPageDoorsWaitForARoute() throws Exception
@@ -1009,8 +995,6 @@ public class testNoSetupEditWhileARouteRuns
      *
      * MUTATION: take `heldByARun` out of `tileClicked`, of one of the five shortcuts, of `moveCaption` or of
      * `setPageExcluded`, and this fails naming the gesture.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testTheEditorsGesturesWaitForARoute() throws Exception
@@ -1344,8 +1328,6 @@ public class testNoSetupEditWhileARouteRuns
      * naming it.
      *
      * MUTATION: give any one of these doors its own sentence back (`whyTheSetupIsHeld` with its old key), and this fails.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testDoorsOfDifferentFilesRefuseWithOneSentence() throws Exception
@@ -1464,8 +1446,6 @@ public class testNoSetupEditWhileARouteRuns
      * with the sentence that names a route.
      *
      * MUTATION: ask `isAutonomyBusy` alone again in any of them, and this fails naming it.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testTheAutoTabAndTheTimetableWaitForARoute() throws Exception
@@ -1663,8 +1643,6 @@ public class testNoSetupEditWhileARouteRuns
      *
      * MUTATION: send the enable button, `loadByRequest` or the banner to `load` directly, or have Export ask
      * `isAutonomyBusy` alone, and this fails naming the door.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testTheLoadAndExportDoorsWaitForARoute() throws Exception
@@ -1941,8 +1919,6 @@ public class testNoSetupEditWhileARouteRuns
      * autonomy etc if a route is still running"*).  At rest the gate does not say it.
      *
      * MUTATION: take the route question out of `whyNoTrainMayBeSent`, and this fails naming the door.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testNoRunStartsWhileARouteRuns() throws Exception
@@ -2034,8 +2010,6 @@ public class testNoSetupEditWhileARouteRuns
      * posted body asks again - which refuses, says so, gives the button back and runs nothing.
      *
      * MUTATION: take the route question out of `refusedForAnEditorOnItsWay`, and this fails.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testARouteBegunAfterThePressStopsTheRun() throws Exception

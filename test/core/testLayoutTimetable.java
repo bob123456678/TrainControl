@@ -157,8 +157,6 @@ public class testLayoutTimetable
      * nothing is thrown.
      *
      * MUTATION: make it a LinkedList again and the read throws ConcurrentModificationException.
-     *
-     * @throws Exception from the fixture
      */
     @Test
     public void testTheTimetableCanBeReadWhileItIsWritten() throws Exception
@@ -493,8 +491,6 @@ public class testLayoutTimetable
      * configuration and the entry was gone for good.
      *
      * MUTATION: drop an entry the railway cannot build at the load, and this fails.
-     *
-     * @throws Exception from the layout
      */
     @Test
     public void testAnEntryThroughAPointTheRailwayLacksIsKeptAsWritten() throws Exception
@@ -526,8 +522,6 @@ public class testLayoutTimetable
      * not.  The entry is left unrun, so the window names it, and nothing after it runs.
      *
      * MUTATION: pass over an entry the railway cannot run, and this fails.
-     *
-     * @throws Exception from the layout
      */
     @Test(timeOut = 60000)
     public void testAnEntryTheRailwayCannotRunStopsTheRunAndSaysWhy() throws Exception
@@ -595,8 +589,6 @@ public class testLayoutTimetable
      * non-atomic mode, free the station while the train was still on its way there.
      *
      * MUTATION: take either refusal out, and this fails.
-     *
-     * @throws Exception from the layout
      */
     @Test(timeOut = 60000)
     public void testALapIsRefused() throws Exception
@@ -674,8 +666,6 @@ public class testLayoutTimetable
      * Where a locomotive's timetable starts is the start of its first entry the railway can run.
      *
      * MUTATION: take the first entry whatever it is, and this fails.
-     *
-     * @throws Exception from the layout
      */
     @Test
     public void testATimetableStartsAtTheFirstEntryTheRailwayCanRun() throws Exception
@@ -708,8 +698,6 @@ public class testLayoutTimetable
      * entry, not of the row number.
      *
      * MUTATION: remove by the row number alone, or without the lock, and this fails.
-     *
-     * @throws Exception from the reflection
      */
     @Test
     public void testADeletedRowIsTheOneShownOrNone() throws Exception
@@ -744,8 +732,6 @@ public class testLayoutTimetable
      * it: run side by side in a stress test, capture's append threw thousands of times a race.
      *
      * MUTATION: clear without the lock, and this fails.
-     *
-     * @throws Exception from the reflection
      */
     @Test
     public void testAClearTakesTheRailwaysLock() throws Exception

@@ -125,8 +125,6 @@ public class testAPausedTrainStaysPaused
      * The railway's file lists the paused trains, and a file read back pauses those and sets every other train going.
      *
      * MUTATION: leave the list out of the file, or leave a train the file does not list as it was, and this fails.
-     *
-     * @throws Exception from the railway
      */
     @Test
     public void testThePauseIsWrittenWithTheRailwayAndReadBack() throws Exception
@@ -340,8 +338,6 @@ public class testAPausedTrainStaysPaused
      * the Auto tab's button - is taken into the setup by the fold, and taken out by it too.
      *
      * MUTATION: leave the setup's list out of what is built, or out of what the fold takes, and this fails.
-     *
-     * @throws Exception from the railway
      */
     @Test
     public void testTheSetupKeepsThePauseAndTheRailwayReadsIt() throws Exception
@@ -427,8 +423,6 @@ public class testAPausedTrainStaysPaused
      * writing.
      *
      * MUTATION: leave the record as it was after a fold, and this fails.
-     *
-     * @throws Exception from the railway
      */
     @Test
     public void testAFoldBringsTheRecordOfHowTheRailwayWasBuiltUpToDate() throws Exception
@@ -510,8 +504,6 @@ public class testAPausedTrainStaysPaused
      * edit goes; outside an edit session, putting a snapshot back is exactly that.
      *
      * MUTATION: leave what the fold took out of the restore, or keep the edit, and this fails.
-     *
-     * @throws Exception from the railway
      */
     @Test
     public void testAnEditSessionsRestoreKeepsWhatTheRailwayChangedAlone() throws Exception
@@ -632,8 +624,6 @@ public class testAPausedTrainStaysPaused
      * the record do not have stays, and a record with no list at all is every train gained.
      *
      * MUTATION: put the railway's whole list in the setup in a fold, and this fails.
-     *
-     * @throws Exception from the railway
      */
     @Test
     public void testAFoldTakesThePausedListByTrain() throws Exception
@@ -680,8 +670,6 @@ public class testAPausedTrainStaysPaused
      * turned off).
      *
      * MUTATION: leave a loss out of what Cancel puts back, or a setting the railway stopped writing, and this fails.
-     *
-     * @throws Exception from the railway
      */
     @Test
     public void testAnEditSessionsRestoreKeepsACardsUnpauseAndAStoppedSimulation() throws Exception
@@ -755,8 +743,6 @@ public class testAPausedTrainStaysPaused
      *
      * MUTATION: take only the settings that differ from an empty record, or leave the pauses out of what Cancel keeps,
      * and this fails.
-     *
-     * @throws Exception from the railway
      */
     @Test
     public void testAFoldWithNoRecordTakesEverySettingAndCancelKeepsIt() throws Exception

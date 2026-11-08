@@ -114,8 +114,6 @@ public class testReturnHomeSetsTheSwitchesOnTheWayHome
 
     /**
      * Return Home brings the train to its home platform, and the turnout on its way reads as the way home set it.
-     *
-     * @throws Exception from the event thread
      */
     @Test
     public void testReturnHomeRunsTheTrainHomeThroughTheTurnout() throws Exception
