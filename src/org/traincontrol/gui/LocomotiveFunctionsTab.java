@@ -284,22 +284,18 @@ final class LocomotiveFunctionsTab extends JPanel
 
         gbc.gridy = 0;
         gbc.gridx = 0;
-        panel.add(org.traincontrol.gui.widgets.UiStyle.label(I18n.t("loc.ui.settingsPresetLabel")), gbc);
-        gbc.gridx = 1;
         panel.add(useCurrent, gbc);
-        gbc.gridx = 2;
+        gbc.gridx = 1;
         panel.add(clearPreset, gbc);
 
-        // Beside the Preset row; the sentence also says the play icons act at once
-        gbc.gridx = 3;
+        // Beside the preset row; the sentence also says the play icons act at once
+        gbc.gridx = 2;
         panel.add(org.traincontrol.gui.InfoMark.label(I18n.t("loc.ui.settingsFunctionsHint")), gbc);
 
         gbc.gridy = 1;
         gbc.gridx = 0;
-        panel.add(org.traincontrol.gui.widgets.UiStyle.label(I18n.t("loc.ui.settingsIconsLabel")), gbc);
-        gbc.gridx = 1;
         panel.add(copyIcons, gbc);
-        gbc.gridx = 2;
+        gbc.gridx = 1;
         panel.add(resetAll, gbc);
 
         JPanel left = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
@@ -484,6 +480,7 @@ final class LocomotiveFunctionsTab extends JPanel
         b.setDisabledIcon(RowIcons.revert(size, new java.awt.Color(175, 175, 175)));
         b.putClientProperty("JButton.buttonType", "toolBarButton");
         b.setFocusable(false);
+        b.setCursor(java.awt.Cursor.getPredefinedCursor(java.awt.Cursor.HAND_CURSOR));
         b.setToolTipText(I18n.t(tipKey));
         b.setName(name);
 

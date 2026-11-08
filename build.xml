@@ -675,6 +675,7 @@
         <test-one-class class="testThePresetSpeedSurvivesTheSetupDoors"/>
         <test-one-class class="testTheFunctionsTabSwitchesFunctionsNow"/>
         <test-one-class class="testTheLocomotiveSettingsLooks"/>
+        <test-one-class class="testTheLocomotiveSettingsRailwayBox"/>
         <test-one-class class="testStandingRulesAnswerAsTheDoorsDo"/>
         <test-one-class class="testStationSettingsWindow"/>
         <test-one-class class="testTheTrainWindow"/>
@@ -693,6 +694,7 @@
         <test-one-class class="testSavedDataLeavesAFolderOutsideARunAlone"/>
         <test-one-class class="testAPresetSaveOnALayoutWithoutASetup"/>
         <test-one-class class="testChangeDirectionIsOneClick"/>
+        <test-one-class class="testTheLocomotiveSettingsSync"/>
     </target>
     <target name="package-for-store" depends="jar">
         <property name="store.jar.name" value="TrainControl"/>

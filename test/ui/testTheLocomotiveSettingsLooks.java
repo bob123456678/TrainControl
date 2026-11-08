@@ -91,12 +91,119 @@ public class testTheLocomotiveSettingsLooks extends support.SettingsClass
     }
 
     /**
+     * The Autonomy tab's icon is the main window's sidebar Autonomy picture at the tab icon size: its silhouette agrees
+     * with the sidebar's, scaled to the same height, on nine pixels in ten.
+     *
+     * MUTATION: load another picture in `TabIcons.autonomy`, or draw the old signal, and this fails.
+     */
+    @Test
+    public void testTheAutonomyTabShowsTheSidebarPicture() throws Exception
+    {
+        JTabbedPane tabs = opened();
+        Icon tab = Components.onTheEventThread(() -> tabs.getIconAt(LocomotiveSettingsFrame.Tab.AUTONOMY.ordinal()));
+        int w = tab.getIconWidth();
+        int h = tab.getIconHeight();
+
+        BufferedImage sidebar = new BufferedImage(TrainControlUI.TAB_ICON_AUTONOMY.getIconWidth(),
+            TrainControlUI.TAB_ICON_AUTONOMY.getIconHeight(), BufferedImage.TYPE_INT_ARGB);
+
+        TrainControlUI.TAB_ICON_AUTONOMY.paintIcon(null, sidebar.getGraphics(), 0, 0);
+
+        BufferedImage expected = new BufferedImage(w, h, BufferedImage.TYPE_INT_ARGB);
+        java.awt.Graphics2D g = expected.createGraphics();
+
+        g.setRenderingHint(java.awt.RenderingHints.KEY_INTERPOLATION, java.awt.RenderingHints.VALUE_INTERPOLATION_BICUBIC);
+        g.drawImage(sidebar, 0, 0, w, h, null);
+        g.dispose();
+
+        BufferedImage drawn = new BufferedImage(w, h, BufferedImage.TYPE_INT_ARGB);
+
+        tab.paintIcon(null, drawn.getGraphics(), 0, 0);
+
+        int same = 0;
+
+        for (int y = 0; y < h; y++)
+        {
+            for (int x = 0; x < w; x++)
+            {
+                if ((expected.getRGB(x, y) >>> 24 > 127) == (drawn.getRGB(x, y) >>> 24 > 127)) same++;
+            }
+        }
+
+        assertTrue(same * 10 >= w * h * 9, "the tab's icon is not the sidebar's picture: " + same + " of " + (w * h)
+            + " pixels agree");
+    }
+
+    /**
+     * The undo arrow beside the preset buttons is a ring open at the upper left, with its head at 12 o'clock pointing
+     * straight left: ring at 175 degrees and not at 158, the head's tip drawn left of 12 o'clock on the ring's line.
+     *
+     * MUTATION: begin the ring in `RowIcons.revert` at 150 degrees, or draw the old head at 11 o'clock, and this fails.
+     */
+    @Test
+    public void testTheUndoArrowIsARingOpenAtTheUpperLeft() throws Exception
+    {
+        int size = 90;
+        BufferedImage img = new BufferedImage(size, size, BufferedImage.TYPE_INT_ARGB);
+
+        org.traincontrol.gui.widgets.RowIcons.revert(size, java.awt.Color.BLACK).paintIcon(null, img.getGraphics(), 0, 0);
+
+        double c = size / 2.0;
+        double r = size * 0.30;
+
+        assertTrue(opaque(img, c, r, 175), "the ring does not run round to 175 degrees");
+        assertTrue(!opaque(img, c, r, 158), "the ring runs on past 168 degrees: the gap is too small");
+        assertTrue(opaque(img, c, r, 270), "the ring is missing at 6 o'clock");
+        assertTrue(img.getRGB((int) (c - size * 0.15), (int) (c - r)) >>> 24 > 127, "no head left of 12 o'clock");
+        assertTrue(img.getRGB((int) (c - size * 0.10), (int) (c - r - size * 0.13)) >>> 24 <= 127,
+            "the head is not square to the ring: it fans out above its tip");
+    }
+
+    private static boolean opaque(BufferedImage img, double c, double r, double degrees)
+    {
+        double a = Math.toRadians(degrees);
+
+        return img.getRGB((int) Math.round(c + r * Math.cos(a)), (int) Math.round(c - r * Math.sin(a))) >>> 24 > 127;
+    }
+
+    /**
+     * The Functions tab's two button rows carry no "Preset" or "Icons" label in front of them: the buttons start at the
+     * table's left edge, and only (i) marks share their rows.
+     *
+     * MUTATION: put a label back in front of Save Current Functions as Preset in `LocomotiveFunctionsTab`, and this
+     * fails.
+     */
+    @Test
+    public void testTheFunctionsTabHasNoPresetOrIconsLabels() throws Exception
+    {
+        opened();
+
+        java.awt.Container pane = SettingsWindow.showing().getContentPane();
+        javax.swing.JButton save = SettingsWindow.part("functions.useCurrent", javax.swing.JButton.class);
+        javax.swing.JTable table = SettingsWindow.part("functions.table", javax.swing.JTable.class);
+
+        for (JLabel l : Components.all(save.getParent(), JLabel.class, null))
+        {
+            assertTrue(l.getIcon() != null && l.getIcon() == InfoMark.icon(), "a label \"" + l.getText()
+                + "\" stands in the button rows");
+        }
+
+        int buttons = Components.onTheEventThread(() -> javax.swing.SwingUtilities.convertPoint(save.getParent(), save.getX(), 0,
+            pane).x);
+        int edge = Components.onTheEventThread(() -> javax.swing.SwingUtilities.convertPoint(table.getParent(), table.getX(), 0,
+            pane).x);
+
+        assertTrue(Math.abs(buttons - edge) <= 1, "the buttons start at " + buttons + " and the table at " + edge);
+    }
+
+    /**
      * Blue is for section headings: exactly "Name and Address", "Customize Behavior" and "Locomotive Icon" on the first
-     * tab and the Autonomy tab's two are dark blue, and every item label there and on the other tabs, and the Functions
-     * table's column headings, are black, all Semibold 13.
+     * tab, "Notes" over the Notes tab's text box, and the Autonomy tab's two are dark blue, and every item label there
+     * and on the other tabs, and the Functions table's column headings, are black, all Semibold 13.
      *
      * MUTATION: make `LocomotiveSettingsFrame.label` build a blue `UiStyle.heading`, or `UiStyle.style` blue, or the
-     * Functions table header's foreground blue, and this fails.
+     * Functions table header's foreground blue, or drop `styleHeading(notesCaption)` from
+     * `LocomotiveNotesPanel.styleCaptions`, and this fails.
      */
     @Test
     public void testOnlyTheSectionHeadingsAreBlue() throws Exception
@@ -104,10 +211,11 @@ public class testTheLocomotiveSettingsLooks extends support.SettingsClass
         opened();
 
         String[] blue = { "loc.ui.settingsNameAndAddress", "loc.ui.settingsCustomizeBehavior",
-            "loc.ui.settingsLocomotiveIcon", "loc.ui.settingsAutonomyHeading", "loc.ui.settingsAutonomyFunctionsHeading" };
+            "loc.ui.settingsLocomotiveIcon", "loc.ui.labelNotes", "loc.ui.settingsAutonomyHeading",
+            "loc.ui.settingsAutonomyFunctionsHeading" };
         String[] black = { "ui.name", "loc.ui.decoderType", "layout.ui.address", "loc.ui.settingsPresetSpeed",
-            "loc.ui.settingsPresetLabel", "loc.ui.settingsIconsLabel", "loc.ui.labelStartYear",
-            "loc.ui.labelEndYear", "loc.ui.labelRailwayName", "loc.ui.labelNotes", "loc.ui.filterList",
+            "loc.ui.labelStartYear",
+            "loc.ui.labelEndYear", "loc.ui.labelRailwayName", "loc.ui.filterList",
             "autolayout.ui.trainLength", "autolayout.ui.reversible", "autosetup.ui.trainActive",
             "autolayout.ui.departureFunction", "autolayout.ui.arrivalFunction" };
 
@@ -138,7 +246,7 @@ public class testTheLocomotiveSettingsLooks extends support.SettingsClass
         java.util.List<JLabel> blues = Components.all(SettingsWindow.showing().getContentPane(), JLabel.class,
             l -> UiStyle.BLUE.equals(l.getForeground()));
 
-        assertEquals(blues.size(), blue.length, "the blue labels are not just the five headings");
+        assertEquals(blues.size(), blue.length, "the blue labels are not just the six headings");
     }
 
     /** Where a named part of the window is, in the window's own coordinates. */
@@ -160,24 +268,24 @@ public class testTheLocomotiveSettingsLooks extends support.SettingsClass
     }
 
     /**
-     * The divider on the first tab sits midway between the Check Duplicates row above it and the Customize Behavior
-     * heading below it, within 2 pixels.
+     * The divider on the first tab sits midway between the Address row above it and the Customize Behavior heading
+     * below it, within 2 pixels.
      *
      * MUTATION: give the divider's row in `LocomotiveSettingsFrame.LocomotiveTab` a bottom inset of 20, and this fails.
      */
     @Test
-    public void testTheDividerIsMidwayBetweenCheckDuplicatesAndTheNextHeading() throws Exception
+    public void testTheDividerIsMidwayBetweenTheAddressRowAndTheNextHeading() throws Exception
     {
         opened();
 
-        java.awt.Rectangle can = at("settings.checkDuplicates", javax.swing.JButton.class);
+        java.awt.Rectangle can = at("settings.address", javax.swing.JTextField.class);
         java.awt.Rectangle heading = inWindow(labelFor("loc.ui.settingsCustomizeBehavior"));
         java.awt.Rectangle line = divider();
 
         int above = line.y - (can.y + can.height);
         int below = heading.y - (line.y + line.height);
 
-        assertTrue(Math.abs(above - below) <= 2, "the divider is " + above + " px under Check Duplicates and " + below
+        assertTrue(Math.abs(above - below) <= 2, "the divider is " + above + " px under Address and " + below
             + " px above Customize Behavior");
     }
 

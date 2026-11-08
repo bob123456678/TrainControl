@@ -112,24 +112,31 @@ public class testATypedAddressIsReadTheSameAtEveryDoor
     }
 
     /**
-     * Check Duplicates: the same reading, so a hex address is found in use and a DCC hex one is not a number.
+     * The duplicate warning reads the address the same way: a hex address is found in use, and a DCC hex one is not a
+     * number, so it warns of nothing.
      *
-     * MUTATION: `Conversion.parseTypedAddress` reading "0x" as hex whatever the decoder (its `mfx &&` dropped) answers
-     * "in use" for the DCC hex address instead of "not a number".
+     * MUTATION: `Conversion.parseTypedAddress` reading "0x" as hex whatever the decoder (its `mfx &&` dropped) warns of
+     * the DCC hex address.
      */
     @Test
-    public void testCheckDuplicatesTakesHexOnlyForMfx() throws Exception
+    public void testTheDuplicateWarningTakesHexOnlyForMfx() throws Exception
     {
         model.newMFXLocomotive(CHECKED, 0xCF8);
 
-        assertEquals(check("0xCF8", true), one("loc.errorAddressInUse"),
-            "the MFX locomotive's address, typed as hex, was not found in use");
-        assertEquals(check("3320", true), one("loc.errorAddressInUse"),
-            "the MFX locomotive's address, typed as decimal, was not found in use");
-        assertEquals(check("0xCFA", true), one("loc.infoAddressFree"),
-            "a free address, typed as hex, was not free");
-        assertEquals(check("0xCF8", false), one("loc.errorAddressNotNumeric"),
-            "a DCC address typed as hex was not refused as not a number");
+        // A DCC locomotive at the number the hex spells, so a hex reading of a DCC address would warn
+        model.newDCCLocomotive(DCC, 0xCF8);
+
+        try
+        {
+            assertTrue(warns("0xCF8", true), "the MFX locomotive's address, typed as hex, was not found in use");
+            assertTrue(warns("3320", true), "the MFX locomotive's address, typed as decimal, was not found in use");
+            assertTrue(!warns("0xCFA", true), "a free address, typed as hex, was in use");
+            assertTrue(!warns("0xCF8", false), "a DCC address typed as hex warned");
+        }
+        finally
+        {
+            model.deleteLoc(DCC);
+        }
     }
 
     /**
@@ -162,12 +169,29 @@ public class testATypedAddressIsReadTheSameAtEveryDoor
         return typeAndPress(name, address, mfx, "settings.save", "Add said nothing");
     }
 
-    /**
-     * Types into Add Locomotive and presses Check Duplicates.
-     */
-    private static List<String> check(String address, boolean mfx) throws Exception
+    /** Types an address into Add Locomotive and says whether its duplicate warning shows. */
+    private static boolean warns(String address, boolean mfx) throws Exception
     {
-        return typeAndPress(null, address, mfx, "settings.checkDuplicates", "Check Duplicates said nothing");
+        assertTrue(Components.onTheEventThread(ui::openAddLocomotive), "Add Locomotive did not open");
+        assertNotNull(support.SettingsWindow.awaited(), "Add Locomotive is not on screen");
+
+        try
+        {
+            support.SettingsWindow.type("settings.address", address);
+
+            Components.select(support.SettingsWindow.part("settings.decoder", javax.swing.JComboBox.class),
+                mfx ? Locomotive.decoderType.MFX : Locomotive.decoderType.DCC);
+
+            Components.settle();
+
+            javax.swing.JLabel triangle = support.SettingsWindow.part("settings.sameAddress", javax.swing.JLabel.class);
+
+            return Components.onTheEventThread(() -> triangle.getIcon() != null);
+        }
+        finally
+        {
+            support.SettingsWindow.closeIfOpen();
+        }
     }
 
     /** Types the name (unless null) and the address into Add Locomotive, presses the button, gives what was asked. */

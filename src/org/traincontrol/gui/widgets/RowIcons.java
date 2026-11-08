@@ -606,7 +606,7 @@ public final class RowIcons
     }
 
     /**
-     * A loop with an arrow pointing counterclockwise: put back what was.
+     * A ring open at the upper left with an arrowhead at 12 o'clock pointing left: put back what was.
      *
      * @param size how many pixels square
      * @param colour its color
@@ -623,26 +623,21 @@ public final class RowIcons
                 float centre = width * 0.5f;
 
                 g.setColor(colour);
-                g.setStroke(new BasicStroke(Math.max(1.5f, width / 9f), BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+                g.setStroke(new BasicStroke(Math.max(1.5f, width / 9f), BasicStroke.CAP_BUTT, BasicStroke.JOIN_ROUND));
 
-                // From about 8 o'clock counterclockwise, stopping where the head takes over
-                g.draw(new java.awt.geom.Arc2D.Float(centre - radius, centre - radius, 2 * radius, 2 * radius, 205, 263,
+                // Counterclockwise from the upper left round to 12 o'clock, where the head takes over
+                g.draw(new java.awt.geom.Arc2D.Float(centre - radius, centre - radius, 2 * radius, 2 * radius, 168, 282,
                     java.awt.geom.Arc2D.OPEN));
 
-                // The head around 11 o'clock, pointing left and a little down.  Its back lies on the radius where the arc
-                // stops, so it stands square to the ring's open edge.
-                double end = Math.toRadians(108);
-                float px = centre + radius * (float) Math.cos(end);
-                float py = centre - radius * (float) Math.sin(end);
-                float dx = (float) -Math.sin(end);
-                float dy = (float) -Math.cos(end);
-                float nx = -dy;
-                float ny = dx;
+                // The head at 12 o'clock pointing straight left along the tangent; its base straddles the ring's end,
+                // square to it
+                float px = centre;
+                float py = centre - radius;
                 java.awt.geom.Path2D.Float head = new java.awt.geom.Path2D.Float();
 
-                head.moveTo(px + dx * 0.19f * width, py + dy * 0.19f * width);
-                head.lineTo(px + nx * 0.17f * width, py + ny * 0.17f * width);
-                head.lineTo(px - nx * 0.17f * width, py - ny * 0.17f * width);
+                head.moveTo(px - 0.20f * width, py);
+                head.lineTo(px, py + 0.17f * width);
+                head.lineTo(px, py - 0.17f * width);
                 head.closePath();
 
                 g.fill(head);
