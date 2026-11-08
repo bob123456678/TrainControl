@@ -5102,7 +5102,8 @@ public class MarklinControlStation implements ViewListener, ModelListener
         try
         {
             // Delegate the hard part
-            proxy = new NetworkProxy(InetAddress.getByName(initIP));
+            proxy = new NetworkProxy(InetAddress.getByName(initIP),
+                simulate ? NetworkProxy.simulationTcpPort() : NetworkProxy.TCP_PORT);
 
             // Initialize the central station
             model = new MarklinControlStation(proxy, showUI ? ui : null, autoPowerOn, debug, simulate);
