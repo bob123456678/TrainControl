@@ -182,39 +182,23 @@ public class testTheTrainWindow
     }
 
     /**
-     * The train window's buttons wear the application's button font, Segoe UI Bold 12, as every other window's do.
+     * The train window's Locomotive Settings button wears the application's button font, Segoe UI Bold 12, as every other
+     * window's buttons do (the tail's Pick button is held in testTheTailCanBeGivenInTheEditor).
      *
-     * MUTATION: give `train.settings` or `train.tailPick` a Plain 13 font again in `TrainWindow`, and this fails.
+     * MUTATION: give `train.settings` a Plain 13 font again in `TrainWindow`, and this fails.
      */
     @Test(timeOut = 120000)
     public void testTheWindowsButtonsWearTheButtonFont() throws Exception
     {
         AutonomyEditorPanel panel = theEditorsPanel();
 
-        boolean sawPick = false;
+        TrainWindow window = StationDoors.openTrain(panel, aSquareWithATrain());
 
-        for (Map.Entry<TileKey, String> each : session.trainsWhereTheyStand().entrySet())
-        {
-            if (!PAGE.equals(each.getKey().getPage()) || !session.getStore().isStation(each.getKey())) continue;
+        javax.swing.JButton settings = StationDoors.part(window, "train.settings", javax.swing.JButton.class);
 
-            TrainWindow window = StationDoors.openTrain(panel, each.getKey());
+        assertEquals(settings.getFont(), org.traincontrol.gui.widgets.UiStyle.BUTTON_FONT, "train.settings is not Bold 12");
 
-            java.util.List<javax.swing.JButton> buttons = Components.all(window, javax.swing.JButton.class,
-                b -> "train.settings".equals(b.getName()) || "train.tailPick".equals(b.getName()));
-
-            for (javax.swing.JButton b : buttons)
-            {
-                assertEquals(b.getFont(), org.traincontrol.gui.widgets.UiStyle.BUTTON_FONT, b.getName() + " is not Bold 12");
-
-                sawPick |= "train.tailPick".equals(b.getName());
-            }
-
-            StationDoors.close(window);
-
-            if (sawPick) break;
-        }
-
-        assertTrue(sawPick, "precondition: no train window on this railway shows the tail row's Pick button");
+        StationDoors.close(window);
     }
 
     /**

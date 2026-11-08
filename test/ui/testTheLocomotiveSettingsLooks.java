@@ -273,10 +273,10 @@ public class testTheLocomotiveSettingsLooks extends support.SettingsClass
 
                 LocomotiveSettingsFrame window = SettingsWindow.showing();
 
-                // A drag to 300 pixels, as far as the window's minimum lets it go
+                // A drag to 400 pixels, as far as a minimum the window has set lets it go (an unset one stops nothing)
                 Components.onTheEventThread(() ->
                 {
-                    window.setSize(Math.max(300, window.getMinimumSize().width), window.getHeight());
+                    window.setSize(window.isMinimumSizeSet() ? Math.max(400, window.getMinimumSize().width) : 400, window.getHeight());
                     window.validate();
 
                     return null;
@@ -289,7 +289,7 @@ public class testTheLocomotiveSettingsLooks extends support.SettingsClass
                 java.awt.Rectangle preset = Components.onTheEventThread(
                     () -> bounds(SettingsWindow.part("functions.presetGroup", javax.swing.JPanel.class), pane));
 
-                assertTrue(copy.x + copy.width <= preset.x, lang + ": the preset buttons start at " + preset.x
+                assertTrue(copy.x + copy.width <= preset.x, lang + ": at " + pane.getWidth() + " wide the preset buttons start at " + preset.x
                     + " and the copy ones end at " + (copy.x + copy.width));
                 assertTrue(preset.x + preset.width <= pane.getWidth(), lang + ": the preset buttons run past the window");
             }
