@@ -257,32 +257,77 @@ public class testTheLogIsStampedAndExports
         });
     }
 
+    /** What the door said when the chooser was told to save to `target`, which it cannot write. */
+    private static String saidWhenWritingFails(TrainControlUI ui, File target) throws Exception
+    {
+        try (support.Answering answering = support.Answering.start(message -> null).choosing(target))
+        {
+            SwingUtilities.invokeLater(item(ui)::doClick);
+
+            assertTrue(answering.awaitAsked(1, 60000), "a failed write said nothing");
+
+            assertTrue(cancelTheChooserThatCameBack(), "the chooser did not come back for another place");
+
+            support.Components.settle();
+
+            assertEquals(answering.asked().size(), 1, "the failed write was not said once: " + answering.asked());
+
+            return answering.asked().get(0);
+        }
+    }
+
+    /** The message names the file and gives `reason`, which is more than the path. */
+    private static void assertSaysWhy(String said, File target, String reason)
+    {
+        assertTrue(said.contains(target.getAbsolutePath()), "the message does not name the file: " + said);
+
+        assertTrue(said.contains(reason), "the message gives no plain reason (" + reason + "): " + said);
+
+        assertEquals(said.indexOf(target.getAbsolutePath()), said.lastIndexOf(target.getAbsolutePath()),
+            "the message names the file twice: " + said);
+    }
+
     /**
-     * MUTATION: `LogExportDoor` swallows the write error, and this fails.
+     * MUTATION: `LogExportDoor` swallows the write error, or says `e.getMessage()` (which is only the path for a
+     * missing folder), and this fails.
      */
     @Test(timeOut = 180000)
-    public void testAFileThatCannotBeWrittenIsSaidPlainly() throws Exception
+    public void testAMissingFolderIsSaidPlainly() throws Exception
     {
         inAWindow(ui ->
         {
             File missing = new File(new File(temporaryFolder(), "no-such-folder"), "log.txt");
 
-            try (support.Answering answering = support.Answering.start(message -> null).choosing(missing))
+            assertSaysWhy(saidWhenWritingFails(ui, missing), missing, I18n.t("ui.reasonFolderMissing"));
+
+            assertFalse(missing.exists(), "a file appeared");
+        });
+    }
+
+    /**
+     * MUTATION: as above; for a file the user may not write, `e.getMessage()` is only the path.
+     */
+    @Test(timeOut = 180000)
+    public void testAFileThatMayNotBeWrittenIsSaidPlainly() throws Exception
+    {
+        inAWindow(ui ->
+        {
+            File locked = new File(temporaryFolder(), "locked-log.txt");
+
+            Files.write(locked.toPath(), new byte[] {1});
+
+            assertTrue(locked.setReadOnly(), "precondition: the file cannot be made read-only");
+
+            try
             {
-                SwingUtilities.invokeLater(item(ui)::doClick);
+                assertSaysWhy(saidWhenWritingFails(ui, locked), locked, I18n.t("ui.reasonNoPermission"));
 
-                assertTrue(answering.awaitAsked(1, 60000), "a failed write said nothing");
-
-                assertTrue(cancelTheChooserThatCameBack(), "the chooser did not come back for another place");
-
-                support.Components.settle();
-
-                assertEquals(answering.asked().size(), 1, "the failed write was not said once: " + answering.asked());
-
-                assertTrue(answering.asked().get(0).contains(missing.getAbsolutePath()),
-                    "the message does not name the file: " + answering.asked().get(0));
-
-                assertFalse(missing.exists(), "a file appeared");
+                assertEquals(Files.readAllBytes(locked.toPath()).length, 1, "the locked file was changed");
+            }
+            finally
+            {
+                locked.setWritable(true);
+                locked.delete();
             }
         });
     }

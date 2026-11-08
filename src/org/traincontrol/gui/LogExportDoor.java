@@ -22,7 +22,7 @@ final class LogExportDoor
         String name = "TrainControl-log-" + new SimpleDateFormat("yyyy-MM-dd-HHmm").format(new Date()) + ".txt";
 
         File saved = SaveToFileDoor.save(ui, text.getBytes(StandardCharsets.UTF_8), "txt", name,
-            (file, e) -> I18n.f("ui.errorLogNotSaved", file.getAbsolutePath(), e.getMessage()));
+            (file, e) -> I18n.f("ui.errorLogNotSaved", file.getAbsolutePath(), SaveToFileDoor.reason(file, e)));
 
         if (saved != null) ui.log(I18n.f("ui.infoLogSaved", saved.getAbsolutePath()));
     }
