@@ -169,6 +169,33 @@ public class testTheTailCanBeGivenInTheEditor
         }
     }
 
+    /**
+     * The train window's tail row, where the tail has a choice, ends in a Pick button in the application's button font,
+     * Segoe UI Bold 12, as the Locomotive Settings button above it.
+     *
+     * MUTATION: give `train.tailPick` a Plain 13 font again in `TrainWindow.addTailChoices`, and this fails.
+     */
+    @Test
+    public void testTheTrainWindowsPickButtonWearsTheButtonFont() throws Exception
+    {
+        Fixture f = Fixture.open();
+
+        try
+        {
+            org.traincontrol.gui.autonomyeditor.TrainWindow window = support.StationDoors.openTrain(f.panel, f.tile);
+
+            javax.swing.JButton pick = support.StationDoors.part(window, "train.tailPick", javax.swing.JButton.class);
+
+            assertEquals(pick.getFont(), org.traincontrol.gui.widgets.UiStyle.BUTTON_FONT, "Pick is not Bold 12");
+
+            support.StationDoors.close(window);
+        }
+        finally
+        {
+            f.close();
+        }
+    }
+
     /** Choosing a sensor from the menu records the road from it, in the setup and on the running railway. */
     @Test
     public void testChoosingASensorFromTheMenuRecordsItsRoad() throws Exception

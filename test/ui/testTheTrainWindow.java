@@ -182,6 +182,26 @@ public class testTheTrainWindow
     }
 
     /**
+     * The train window's Locomotive Settings button wears the application's button font, Segoe UI Bold 12, as every other
+     * window's buttons do (the tail's Pick button is held in testTheTailCanBeGivenInTheEditor).
+     *
+     * MUTATION: give `train.settings` a Plain 13 font again in `TrainWindow`, and this fails.
+     */
+    @Test(timeOut = 120000)
+    public void testTheWindowsButtonsWearTheButtonFont() throws Exception
+    {
+        AutonomyEditorPanel panel = theEditorsPanel();
+
+        TrainWindow window = StationDoors.openTrain(panel, aSquareWithATrain());
+
+        javax.swing.JButton settings = StationDoors.part(window, "train.settings", javax.swing.JButton.class);
+
+        assertEquals(settings.getFont(), org.traincontrol.gui.widgets.UiStyle.BUTTON_FONT, "train.settings is not Bold 12");
+
+        StationDoors.close(window);
+    }
+
+    /**
      * Opened and closed, the window changes no setup and dirties nothing.
      *
      * MUTATION: have `fill`'s `train.setSelectedItem` run outside `reading`, so `pressTrain` acts, and this fails.

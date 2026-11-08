@@ -67,7 +67,7 @@ public final class TrainWindow extends StationWindowBase
 
         settings.setName("train.settings");
         settings.putClientProperty("JButton.buttonType", "toolBarButton");
-        settings.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        settings.setFont(org.traincontrol.gui.widgets.UiStyle.BUTTON_FONT);
         settings.setFocusable(false);
         settings.addActionListener(e -> pressSettings());
 
@@ -252,7 +252,7 @@ public final class TrainWindow extends StationWindowBase
 
         pick.setName("train.tailPick");
         pick.putClientProperty("JButton.buttonType", "toolBarButton");
-        pick.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        pick.setFont(org.traincontrol.gui.widgets.UiStyle.BUTTON_FONT);
         pick.setFocusable(false);
         pick.setEnabled(!readOnly);
         pick.addActionListener(e -> actAlone(() -> editor.armTailPick(tile)));

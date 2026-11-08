@@ -167,11 +167,10 @@ public class testTheLocomotiveSettingsLooks extends support.SettingsClass
     }
 
     /**
-     * The Functions tab's two button rows carry no "Preset" or "Icons" label in front of them: the buttons start at the
-     * table's left edge, and only (i) marks share their rows.
+     * The Functions tab's buttons carry no "Preset" or "Icons" label in front of them: the copy button starts at the
+     * table's left edge, and only (i) marks share their row.
      *
-     * MUTATION: put a label back in front of Save Current Functions as Preset in `LocomotiveFunctionsTab`, and this
-     * fails.
+     * MUTATION: put a label back in front of Copy Icons in `LocomotiveFunctionsTab`, and this fails.
      */
     @Test
     public void testTheFunctionsTabHasNoPresetOrIconsLabels() throws Exception
@@ -179,21 +178,131 @@ public class testTheLocomotiveSettingsLooks extends support.SettingsClass
         opened();
 
         java.awt.Container pane = SettingsWindow.showing().getContentPane();
-        javax.swing.JButton save = SettingsWindow.part("functions.useCurrent", javax.swing.JButton.class);
+        javax.swing.JButton copy = SettingsWindow.part("functions.copyIcons", javax.swing.JButton.class);
         javax.swing.JTable table = SettingsWindow.part("functions.table", javax.swing.JTable.class);
 
-        for (JLabel l : Components.all(save.getParent(), JLabel.class, null))
+        for (JLabel l : Components.all(copy.getParent().getParent(), JLabel.class, null))
         {
             assertTrue(l.getIcon() != null && l.getIcon() == InfoMark.icon(), "a label \"" + l.getText()
-                + "\" stands in the button rows");
+                + "\" stands in the button row");
         }
 
-        int buttons = Components.onTheEventThread(() -> javax.swing.SwingUtilities.convertPoint(save.getParent(), save.getX(), 0,
+        int buttons = Components.onTheEventThread(() -> javax.swing.SwingUtilities.convertPoint(copy.getParent(), copy.getX(), 0,
             pane).x);
         int edge = Components.onTheEventThread(() -> javax.swing.SwingUtilities.convertPoint(table.getParent(), table.getX(), 0,
             pane).x);
 
         assertTrue(Math.abs(buttons - edge) <= 1, "the buttons start at " + buttons + " and the table at " + edge);
+    }
+
+    /**
+     * The Functions tab has one row of buttons: Copy Icons and its revert on the left, Save Current Functions as Preset
+     * and its revert on the right, the row ending where the table does; and the table starts where the Notes tab's
+     * labels do.
+     *
+     * MUTATION: put the preset buttons back on a row of their own above the copy ones in
+     * `LocomotiveFunctionsTab.buttons`, or take the extra inset off `functionsTab` in `LocomotiveSettingsFrame.build`,
+     * and this fails.
+     */
+    @Test
+    public void testTheFunctionsButtonsAreOneRowWithThePresetOnTheRight() throws Exception
+    {
+        opened();
+        SettingsWindow.selectTab(LocomotiveSettingsFrame.Tab.FUNCTIONS.ordinal());
+        Components.settle();
+
+        java.awt.Container pane = SettingsWindow.showing().getContentPane();
+        javax.swing.JButton copy = SettingsWindow.part("functions.copyIcons", javax.swing.JButton.class);
+        javax.swing.JButton reset = SettingsWindow.part("functions.resetAll", javax.swing.JButton.class);
+        javax.swing.JButton preset = SettingsWindow.part("functions.useCurrent", javax.swing.JButton.class);
+        javax.swing.JButton clear = SettingsWindow.part("functions.clearPreset", javax.swing.JButton.class);
+        javax.swing.JTable table = SettingsWindow.part("functions.table", javax.swing.JTable.class);
+
+        java.awt.Rectangle c = Components.onTheEventThread(() -> bounds(copy, pane));
+        java.awt.Rectangle r = Components.onTheEventThread(() -> bounds(reset, pane));
+        java.awt.Rectangle p = Components.onTheEventThread(() -> bounds(preset, pane));
+        java.awt.Rectangle k = Components.onTheEventThread(() -> bounds(clear, pane));
+        java.awt.Rectangle t = Components.onTheEventThread(() -> bounds(javax.swing.SwingUtilities.getAncestorOfClass(javax.swing.JScrollPane.class, table), pane));
+
+        for (java.awt.Rectangle each : new java.awt.Rectangle[] {r, p, k})
+        {
+            assertTrue(Math.abs(c.getCenterY() - each.getCenterY()) <= 2, "the buttons are not in one row: " + c + " " + each);
+        }
+
+        assertTrue(c.x + c.width <= r.x, "Copy Icons is not left of its revert");
+        assertTrue(r.x + r.width < p.x, "the preset buttons are not right of the copy ones");
+        assertTrue(p.x + p.width <= k.x, "Clear Preset is not right of Save Current Functions");
+
+        java.awt.Container presetRow = preset.getParent();
+        java.awt.Rectangle presetGroup = Components.onTheEventThread(() -> bounds(presetRow, pane));
+
+        assertTrue(Math.abs(presetGroup.x + presetGroup.width - (t.x + t.width)) <= 1, "the preset buttons end at "
+            + (presetGroup.x + presetGroup.width) + " and the table at " + (t.x + t.width));
+
+        SettingsWindow.selectTab(LocomotiveSettingsFrame.Tab.NOTES.ordinal());
+        Components.settle();
+
+        javax.swing.JLabel startYear = Components.find(pane, JLabel.class,
+            l -> UiStyle.withoutColon(I18n.t("loc.ui.labelStartYear")).equals(l.getText()));
+
+        assertNotNull(startYear, "precondition: no Start Year label on Notes");
+
+        int labels = Components.onTheEventThread(() -> bounds(startYear, pane).x);
+
+        assertEquals(t.x, labels, "the Functions table does not start where the Notes labels do");
+    }
+
+    /**
+     * Dragged as narrow as the window lets it go, the Functions tab's two button groups still do not overlap, in each
+     * language.
+     *
+     * MUTATION: drop `keepTheFunctionsRowApart` from `LocomotiveSettingsFrame.fit`, and this fails.
+     */
+    @Test
+    public void testTheFunctionsRowNeverOverlapsAtTheNarrowestWindow() throws Exception
+    {
+        try
+        {
+            for (String lang : new String[] {"en", "de", "pl", "fr", "es"})
+            {
+                I18n.setLocale(new java.util.Locale(lang));
+
+                opened();
+                SettingsWindow.selectTab(LocomotiveSettingsFrame.Tab.FUNCTIONS.ordinal());
+                Components.settle();
+
+                LocomotiveSettingsFrame window = SettingsWindow.showing();
+
+                // A drag to 400 pixels, as far as a minimum the window has set lets it go (an unset one stops nothing)
+                Components.onTheEventThread(() ->
+                {
+                    window.setSize(window.isMinimumSizeSet() ? Math.max(400, window.getMinimumSize().width) : 400, window.getHeight());
+                    window.validate();
+
+                    return null;
+                });
+                Components.settle();
+
+                java.awt.Container pane = window.getContentPane();
+                java.awt.Rectangle copy = Components.onTheEventThread(
+                    () -> bounds(SettingsWindow.part("functions.copyGroup", javax.swing.JPanel.class), pane));
+                java.awt.Rectangle preset = Components.onTheEventThread(
+                    () -> bounds(SettingsWindow.part("functions.presetGroup", javax.swing.JPanel.class), pane));
+
+                assertTrue(copy.x + copy.width <= preset.x, lang + ": at " + pane.getWidth() + " wide the preset buttons start at " + preset.x
+                    + " and the copy ones end at " + (copy.x + copy.width));
+                assertTrue(preset.x + preset.width <= pane.getWidth(), lang + ": the preset buttons run past the window");
+            }
+        }
+        finally
+        {
+            I18n.setLocale(java.util.Locale.ENGLISH);
+        }
+    }
+
+    private static java.awt.Rectangle bounds(java.awt.Component c, java.awt.Container pane)
+    {
+        return javax.swing.SwingUtilities.convertRectangle(c.getParent(), c.getBounds(), pane);
     }
 
     /**

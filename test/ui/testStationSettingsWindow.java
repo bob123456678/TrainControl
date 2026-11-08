@@ -1,5 +1,7 @@
 package ui;
 
+import java.awt.Color;
+import java.awt.image.BufferedImage;
 import java.nio.file.Files;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
@@ -14,6 +16,7 @@ import javax.swing.JTextField;
 import javax.swing.KeyStroke;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
+import static org.testng.Assert.assertNotEquals;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertSame;
@@ -33,6 +36,8 @@ import org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel;
 import org.traincontrol.gui.autonomyeditor.StationPreset;
 import org.traincontrol.gui.autonomyeditor.StationSettingsWindow;
 import org.traincontrol.gui.layouteditor.LayoutEditor;
+import org.traincontrol.gui.locomotive.SegmentedControl;
+import org.traincontrol.gui.widgets.PillButton;
 import org.traincontrol.gui.widgets.UiStyle;
 import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.util.I18n;
@@ -1181,10 +1186,10 @@ public class testStationSettingsWindow
     }
 
     /**
-     * The presets look like buttons, not text: a border, Bold 12, and starting where the Name box starts, on the row of
+     * The presets look like pills, not text: drawn as pills, Bold 12, and starting where the Name box starts, on the row of
      * their black "Presets" label; and the lit one can be told from the others.
      *
-     * MUTATION: put `JButton.buttonType` `toolBarButton` back on them, or a gap before the first, or drop the label, and
+     * MUTATION: put `JButton.buttonType` `toolBarButton` back on them, make them plain `JToggleButton`s, or a gap before the first, or drop the label, and
      * this fails.
      */
     @Test(timeOut = 120000)
@@ -1204,7 +1209,7 @@ public class testStationSettingsWindow
                     javax.swing.JToggleButton.class);
 
                 assertNull(button.getClientProperty("JButton.buttonType"), preset + " is a flat toolbar button");
-                assertTrue(button.isBorderPainted() && button.isContentAreaFilled(), preset + " draws no button");
+                assertTrue(button instanceof org.traincontrol.gui.widgets.PillButton, preset + " is not a pill");
                 assertEquals(button.getFont(), new java.awt.Font("Segoe UI", java.awt.Font.BOLD, 12), preset + " is not Bold 12");
             }
 
@@ -2535,6 +2540,164 @@ public class testStationSettingsWindow
     private static double numberOf(Object stored)
     {
         return Double.parseDouble(String.valueOf(stored));
+    }
+
+    /**
+     * The lit pill is filled with the theme's accent and the others are not.
+     *
+     * MUTATION: make `PillButton.fillColor` ignore `isSelected()`, and this fails.
+     */
+    @Test(timeOut = 120000)
+    public void testTheLitPillIsFilledWithTheBlue() throws Exception
+    {
+        StationSettingsWindow window = StationDoors.open(panel, aStation());
+
+        StationDoors.press(window, "station.preset.TERMINUS");
+        StationDoors.current(window);
+
+        Color blue = Components.onTheEventThread(SegmentedControl::accent);
+
+        for (StationPreset preset : StationPreset.values())
+        {
+            PillButton pill = StationDoors.part(window, "station.preset." + preset.name(), PillButton.class);
+            Color inside = Components.onTheEventThread(() -> middleLeft(drawn(pill), pill));
+
+            if (preset == StationPreset.TERMINUS) assertEquals(inside, blue, "the lit pill is not filled with the blue");
+            else assertNotEquals(inside, blue, preset + " is filled with the blue though it is not lit");
+        }
+    }
+
+    /**
+     * The ends are round: each corner shows the background, the middle of the left end does not.
+     *
+     * MUTATION: make `PillButton.paintComponent` fill a plain rectangle, and this fails.
+     */
+    @Test(timeOut = 120000)
+    public void testThePillsHaveRoundEnds() throws Exception
+    {
+        StationSettingsWindow window = StationDoors.open(panel, aStation());
+
+        StationDoors.press(window, "station.preset.PARKING");
+        StationDoors.current(window);
+
+        for (StationPreset preset : StationPreset.values())
+        {
+            PillButton pill = StationDoors.part(window, "station.preset." + preset.name(), PillButton.class);
+            BufferedImage shot = Components.onTheEventThread(() -> drawn(pill));
+            int w = shot.getWidth() - 1;
+            int h = shot.getHeight() - 1;
+
+            for (int[] corner : new int[][] {{0, 0}, {w, 0}, {0, h}, {w, h}})
+            {
+                assertEquals(shot.getRGB(corner[0], corner[1]) & 0xffffff, BACKGROUND.getRGB() & 0xffffff,
+                    preset + " has a square corner");
+            }
+
+            assertNotEquals(shot.getRGB(1, h / 2) & 0xffffff, BACKGROUND.getRGB() & 0xffffff,
+                preset + " has no body at the middle of its end");
+        }
+    }
+
+    /**
+     * Pressing a pill still sets its preset and lights it, a read-only pill stays legible and a lit one still reads as
+     * lit, and an enabled pill shows the hand cursor.
+     *
+     * MUTATION: have `pressPreset` apply nothing, `PillButton.fillColor` use a gray fill when not enabled, or drop
+     * `setCursor` from the constructor, and this fails.
+     */
+    @Test(timeOut = 120000)
+    public void testThePillsStillPressAndReadWhenReadOnly() throws Exception
+    {
+        StationSettingsWindow window = StationDoors.open(panel, aStation());
+
+        for (StationPreset preset : StationPreset.values())
+        {
+            StationDoors.press(window, "station.preset." + preset.name());
+            StationDoors.current(window);
+
+            assertEquals(window.litPresetForTest(), preset, preset + " did not light when pressed");
+        }
+
+        PillButton lit = StationDoors.part(window, "station.preset.REVERSING_POINT", PillButton.class);
+        PillButton unlit = StationDoors.part(window, "station.preset.STATION", PillButton.class);
+
+        assertEquals(toolkitCursor(lit).getType(), java.awt.Cursor.HAND_CURSOR, "no hand cursor on an enabled pill");
+
+        // A pill nobody has enabled or disabled: the constructor alone sets the hand
+        assertEquals(toolkitCursor(Components.onTheEventThread(() -> new PillButton("fresh"))).getType(),
+            java.awt.Cursor.HAND_CURSOR, "a new pill has no hand cursor");
+
+        Components.onTheEventThread(() -> { lit.setEnabled(false); unlit.setEnabled(false); return null; });
+
+        Color blue = Components.onTheEventThread(SegmentedControl::accent);
+
+        assertEquals(Components.onTheEventThread(() -> middleLeft(drawn(lit), lit)), blue, "a read-only lit pill no longer reads as lit");
+
+        for (PillButton pill : new PillButton[] {lit, unlit})
+        {
+            BufferedImage shot = Components.onTheEventThread(() -> drawn(pill));
+            Color fill = new Color(shot.getRGB(6, shot.getHeight() / 2));
+
+            assertTrue(strongestContrast(shot, fill) > 0.45, "the text of a read-only " + pill.getName() + " is hard to read");
+        }
+    }
+
+    /** The cursor the toolkit shows: the component's own field, not what an override of getCursor answers. */
+    private static java.awt.Cursor toolkitCursor(java.awt.Component c) throws Exception
+    {
+        java.lang.reflect.Field f = java.awt.Component.class.getDeclaredField("cursor");
+
+        f.setAccessible(true);
+
+        return (java.awt.Cursor) f.get(c);
+    }
+
+    private static final Color BACKGROUND = new Color(250, 0, 250);
+
+    private static BufferedImage drawn(JComponent part)
+    {
+        return drawn(part, BACKGROUND);
+    }
+
+    /** The component painted over a flat background, off screen. */
+    private static BufferedImage drawn(JComponent part, Color background)
+    {
+        BufferedImage out = new BufferedImage(Math.max(1, part.getWidth()), Math.max(1, part.getHeight()),
+            BufferedImage.TYPE_INT_RGB);
+        java.awt.Graphics2D g = out.createGraphics();
+
+        g.setColor(background);
+        g.fillRect(0, 0, out.getWidth(), out.getHeight());
+        part.paint(g);
+        g.dispose();
+
+        return out;
+    }
+
+    private static Color middleLeft(BufferedImage shot, JComponent part)
+    {
+        return new Color(shot.getRGB(6, shot.getHeight() / 2) & 0xffffff);
+    }
+
+    /** The largest luminance gap, 0 to 1, between the fill and any pixel inside the pill's middle band. */
+    private static double strongestContrast(BufferedImage shot, Color fill)
+    {
+        double best = 0;
+
+        for (int y = 3; y < shot.getHeight() - 3; y++)
+        {
+            for (int x = shot.getWidth() / 4; x < 3 * shot.getWidth() / 4; x++)
+            {
+                best = Math.max(best, Math.abs(luma(new Color(shot.getRGB(x, y))) - luma(fill)));
+            }
+        }
+
+        return best;
+    }
+
+    private static double luma(Color c)
+    {
+        return (0.299 * c.getRed() + 0.587 * c.getGreen() + 0.114 * c.getBlue()) / 255;
     }
 
     private static TileKey aStation()

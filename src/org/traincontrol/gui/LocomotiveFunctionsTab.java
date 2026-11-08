@@ -4,8 +4,6 @@ import java.awt.BorderLayout;
 import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
-import java.awt.GridBagConstraints;
-import java.awt.GridBagLayout;
 import java.awt.Insets;
 import java.awt.event.MouseEvent;
 import java.io.File;
@@ -94,6 +92,7 @@ final class LocomotiveFunctionsTab extends JPanel
     /** The standard icons, null until loaded. */
     private final ImageIcon[] standardIcons;
 
+    private JPanel buttonRow;
     private final JTable table;
     private final TableModel model = new TableModel();
     private final IconCell iconRenderer;
@@ -200,7 +199,8 @@ final class LocomotiveFunctionsTab extends JPanel
         scroll.setPreferredSize(new Dimension(560, 280));
 
         add(scroll, BorderLayout.CENTER);
-        add(buttons(), BorderLayout.SOUTH);
+        buttonRow = buttons();
+        add(buttonRow, BorderLayout.SOUTH);
 
         loadStandardIcons();
     }
@@ -242,8 +242,6 @@ final class LocomotiveFunctionsTab extends JPanel
 
     private JPanel buttons()
     {
-        JPanel panel = new JPanel(new GridBagLayout());
-
         JButton useCurrent = button(I18n.t("loc.ui.menuSaveFunctionsAsPreset"));
 
         useCurrent.setName("functions.useCurrent");
@@ -270,38 +268,36 @@ final class LocomotiveFunctionsTab extends JPanel
         refreshReverts();
         resetAll.addActionListener(e -> resetEverything());
 
-        // One width for the buttons in a column, so their edges line up.
-        int width = Math.max(useCurrent.getPreferredSize().width, copyIcons.getPreferredSize().width);
+        // One row: the copy on the left, the preset on the right
+        JPanel copyGroup = group(copyIcons, resetAll);
+        JPanel presetGroup = group(useCurrent, clearPreset, org.traincontrol.gui.InfoMark.label(I18n.t("loc.ui.settingsFunctionsHint")));
 
-        for (JButton b : new JButton[] { useCurrent, copyIcons })
+        copyGroup.setName("functions.copyGroup");
+        presetGroup.setName("functions.presetGroup");
+
+        JPanel row = new JPanel(new BorderLayout(12, 0));
+
+        row.add(copyGroup, BorderLayout.WEST);
+        row.add(presetGroup, BorderLayout.EAST);
+
+        return row;
+    }
+
+    /** Components side by side with a 4 pixel gap and none at the ends, so the row's edges line up with the table's. */
+    private static JPanel group(java.awt.Component... parts)
+    {
+        JPanel panel = new JPanel();
+
+        panel.setLayout(new javax.swing.BoxLayout(panel, javax.swing.BoxLayout.X_AXIS));
+
+        for (int i = 0; i < parts.length; i++)
         {
-            b.setPreferredSize(new Dimension(width, b.getPreferredSize().height));
+            if (i > 0) panel.add(javax.swing.Box.createHorizontalStrut(4));
+
+            panel.add(parts[i]);
         }
 
-        GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(2, 0, 2, 4);
-        gbc.anchor = GridBagConstraints.WEST;
-
-        gbc.gridy = 0;
-        gbc.gridx = 0;
-        panel.add(useCurrent, gbc);
-        gbc.gridx = 1;
-        panel.add(clearPreset, gbc);
-
-        // Beside the preset row; the sentence also says the play icons act at once
-        gbc.gridx = 2;
-        panel.add(org.traincontrol.gui.InfoMark.label(I18n.t("loc.ui.settingsFunctionsHint")), gbc);
-
-        gbc.gridy = 1;
-        gbc.gridx = 0;
-        panel.add(copyIcons, gbc);
-        gbc.gridx = 1;
-        panel.add(resetAll, gbc);
-
-        JPanel left = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
-        left.add(panel);
-
-        return left;
+        return panel;
     }
 
     /** The Copy Icons button names, and is lit by, the locomotive on the clipboard now. */
@@ -450,6 +446,12 @@ final class LocomotiveFunctionsTab extends JPanel
     void commitEdit()
     {
         if (table.isEditing()) table.getCellEditor().stopCellEditing();
+    }
+
+    /** The width the button row needs to keep its two groups apart, inside the tab's border. */
+    int buttonRowWidth()
+    {
+        return buttonRow.getPreferredSize().width + getInsets().left + getInsets().right;
     }
 
     /** Redraws the table and the revert icons from the locomotive. */

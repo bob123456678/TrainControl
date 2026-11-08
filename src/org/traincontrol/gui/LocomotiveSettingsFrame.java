@@ -308,6 +308,9 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
             tab.setBorder(BorderFactory.createEmptyBorder(PAD, PAD, PAD, PAD));
         }
 
+        // The other tabs' controls carry a 4 pixel inset of their own: the table and its buttons line up with them
+        functionsTab.setBorder(BorderFactory.createEmptyBorder(PAD + 4, PAD + 4, PAD + 4, PAD + 4));
+
         tabs.addTab(I18n.t("loc.ui.settingsTabFunctions"), TabIcons.functions(), functionsTab);
         tabs.addTab(I18n.t("loc.ui.settingsTabNotes"), TabIcons.notes(), notesTab);
         tabs.addTab(I18n.t("loc.ui.settingsTabMultiUnit"), TabIcons.multiUnit(), multiUnitTab);
@@ -386,7 +389,19 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
 
         pack();
 
+        keepTheFunctionsRowApart();
+
         if (first) setLocationRelativeTo(main);
+    }
+
+    /** The window is never narrower than the Functions tab's button row needs, so its two groups cannot overlap. */
+    private void keepTheFunctionsRowApart()
+    {
+        if (adding || functionsTab == null) return;
+
+        int chrome = getWidth() - functionsTab.getWidth();
+
+        setMinimumSize(new java.awt.Dimension(functionsTab.buttonRowWidth() + chrome, 0));
     }
 
     /** Re-reads the moving rule and the locomotive: the window is told whenever either may have changed. */
@@ -420,6 +435,7 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
         locomotiveTab.refreshPicture();
         functionsTab.setBlocked(blocked);
         functionsTab.refresh();
+        keepTheFunctionsRowApart();
         changed();
     }
 
