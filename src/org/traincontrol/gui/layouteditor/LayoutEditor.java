@@ -4645,6 +4645,15 @@ public class LayoutEditor extends PositionAwareJFrame
             {
                 return getParent() instanceof javax.swing.JViewport && getParent().getHeight() > getPreferredSize().height;
             }
+
+            /** -1 in the empty rows, not the last page: the look and feel selects a pressed row through this. */
+            @Override
+            public int locationToIndex(java.awt.Point location)
+            {
+                int row = super.locationToIndex(location);
+
+                return row >= 0 && getCellBounds(row, row).contains(location) ? row : -1;
+            }
         };
 
         pageList.setSelectionMode(javax.swing.ListSelectionModel.SINGLE_SELECTION);
@@ -4694,9 +4703,7 @@ public class LayoutEditor extends PositionAwareJFrame
     /** @return the page row under the point, or -1 in the empty rows below the last page */
     private int pageRowAt(java.awt.Point point)
     {
-        int row = pageList.locationToIndex(point);
-
-        return row >= 0 && pageList.getCellBounds(row, row).contains(point) ? row : -1;
+        return pageList.locationToIndex(point);
     }
 
     /**
