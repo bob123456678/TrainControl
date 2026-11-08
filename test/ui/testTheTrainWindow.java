@@ -120,6 +120,19 @@ public class testTheTrainWindow
         throw new AssertionError("precondition: no empty station on " + PAGE);
     }
 
+    private static TileKey aPlainSensor()
+    {
+        for (TileKey each : session.getReducer().getPoints().keySet())
+        {
+            if (PAGE.equals(each.getPage()) && !session.getStore().isStation(each) && session.getLocomotiveNameAt(each) == null)
+            {
+                return each;
+            }
+        }
+
+        throw new AssertionError("precondition: no sensor that is not a station on " + PAGE);
+    }
+
     private static String aTrainNotPlaced()
     {
         for (String name : model.getLocList())
@@ -445,6 +458,55 @@ public class testTheTrainWindow
         SwingUtilities.invokeAndWait(frame::dispose);
     }
 
+    /**
+     * Locomotive Settings... sits under the Train list, at its left edge, and never sets the window's width (Adam: "move
+     * the <wrench> locomotive settings label somewhere that doesn't widen the whole window").
+     *
+     * MUTATION: put the button back in a column of its own beside the list, and this fails.
+     */
+    @Test(timeOut = 120000)
+    public void testLocomotiveSettingsDoesNotWidenTheWindow() throws Exception
+    {
+        AutonomyEditorPanel panel = theEditorsPanel();
+
+        TrainWindow window = StationDoors.openTrain(panel, aSquareWithATrain());
+
+        try
+        {
+            int[] widths = Components.onTheEventThread(() ->
+            {
+                java.awt.Component list = Components.named(window, "train.train", java.awt.Component.class);
+                java.awt.Component settings = Components.named(window, "train.settings", java.awt.Component.class);
+
+                assertEquals(settings.getX(), list.getX(),
+                    "Locomotive Settings... does not share the Train list's left edge");
+
+                assertTrue(settings.getY() >= list.getY() + list.getHeight(), "Locomotive Settings... is not under the"
+                    + " Train list");
+
+                window.pack();
+
+                int with = window.getWidth();
+
+                java.awt.Container form = settings.getParent();
+
+                form.remove(settings);
+                form.revalidate();
+
+                window.pack();
+
+                return new int[] {with, window.getWidth()};
+            });
+
+            assertEquals(widths[0], widths[1], "Locomotive Settings... sets the train window's width");
+        }
+        finally
+        {
+            // Even after a failure: a window left open takes the class's later right-clicks
+            SwingUtilities.invokeAndWait(window::dispose);
+        }
+    }
+
     // ------------------------------------------------------------------------------------------------------------ menus
 
     /**
@@ -525,6 +587,266 @@ public class testTheTrainWindow
         Mouse.closeMenus();
     }
 
+    /** Whether any item of the menu, its submenus included, is Edit <name>... for any name. */
+    private static boolean offersEdit(java.awt.Container menu)
+    {
+        String[] around = I18n.f("autolayout.ui.menuEditLocomotive", "#TRAIN#").split("#TRAIN#", -1);
+
+        return Components.find(menu, JMenuItem.class, item -> item.getText() != null
+            && item.getText().startsWith(around[0]) && item.getText().endsWith(around[1])) != null;
+    }
+
+    /**
+     * The diagram's menu over a train is grouped as Adam drew it (FR-182): under the station's name the train's own items,
+     * Is Active first and Train at last; behind a divider Place, Remove and Edit <name>..., and nothing else; behind
+     * another, Station Settings.  "Edit Locomotive doesn't exist in the same grouping as any of the autonomy options".
+     *
+     * MUTATION: add Edit back beside the station's name, and this fails.
+     */
+    @Test(timeOut = 120000)
+    public void testTheDiagramsMenuOverATrainIsGrouped() throws Exception
+    {
+        TileKey full = aSquareWithATrain();
+
+        String train = session.getLocomotiveNameAt(full);
+        String active = aTrainNotPlaced();
+
+        makeActive(active);
+
+        AskingWindows.showThePageOf(ui, full);
+
+        java.util.List<java.util.List<String>> groups = groups(AskingWindows.menuOn(ui, ui, full));
+
+        Mouse.closeMenus();
+
+        java.util.List<String> own = groupWith(groups, said("autolayout.ui.menuLocomotiveActive", train));
+
+        assertEquals(own.indexOf(said("autolayout.ui.menuLocomotiveActive", train)), 1, "Is Active is not right below"
+            + " the station's name: " + groups);
+
+        assertTrue(own.get(2).startsWith(said("autosetup.ui.menuChangeDirectionUnknown", null)), "Change Direction does"
+            + " not follow Is Active: " + groups);
+
+        assertEquals(own.get(own.size() - 1), said("autosetup.ui.menuTrainAt", session.describeTile(full)), "Train at"
+            + " is not the last of the train's own items: " + groups);
+
+        java.util.List<String> hand = groupWith(groups, said("autolayout.ui.menuEditLocomotive", train));
+
+        assertEquals(hand, java.util.Arrays.asList(said("layout.ui.menuPlaceLocomotive", active),
+            said("layout.ui.menuRemoveLocomotive", train), said("autolayout.ui.menuEditLocomotive", train)),
+            "Place, Remove and Edit are not a group of their own: " + groups);
+
+        assertEquals(groups.get(groups.indexOf(hand) + 1).get(0), I18n.t("autosetup.ui.menuStationSettings"),
+            "Station Settings does not follow Place, Remove and Edit behind a divider: " + groups);
+    }
+
+    /**
+     * Over an empty station the two ways to put a train there are a group of their own, Station Settings behind a
+     * divider, on the track diagram and in the autonomy editor (FR-182).
+     *
+     * MUTATION: put the editor's Station Settings back above Place, and this fails.
+     */
+    @Test(timeOut = 120000)
+    public void testAnEmptyStationsMenusAreGrouped() throws Exception
+    {
+        TileKey empty = anEmptyStation();
+
+        String active = aTrainNotPlaced();
+
+        makeActive(active);
+
+        AskingWindows.showThePageOf(ui, empty);
+
+        java.util.List<java.util.List<String>> diagram = groups(AskingWindows.menuOn(ui, ui, empty));
+
+        Mouse.closeMenus();
+
+        AutonomyEditorPanel panel = theEditorsPanel();
+
+        java.util.List<java.util.List<String>> inTheEditor = groups(Components.onTheEventThread(()
+            -> panel.buildTileMenu(empty, null)));
+
+        for (java.util.List<java.util.List<String>> groups : java.util.Arrays.asList(diagram, inTheEditor))
+        {
+            java.util.List<String> hand = groupWith(groups, I18n.t("autosetup.ui.menuPlaceHere"));
+
+            int place = hand.indexOf(said("layout.ui.menuPlaceLocomotive", active));
+
+            assertEquals(hand.subList(Math.max(0, place), hand.size()), java.util.Arrays.asList(
+                said("layout.ui.menuPlaceLocomotive", active), I18n.t("autosetup.ui.menuPlaceHere")),
+                "Place and Place a Locomotive Here... are not together at the end of their group: " + groups);
+
+            assertEquals(groups.get(groups.indexOf(hand) + 1).get(0), I18n.t("autosetup.ui.menuStationSettings"),
+                "Station Settings does not follow the Place items behind a divider: " + groups);
+        }
+    }
+
+    /**
+     * The autonomy editor's station menu is grouped the same way, with no Edit (FR-182): the train's own items, then
+     * Place and Remove, then Station Settings.
+     *
+     * MUTATION: put Station Settings back above the train's items, and this fails.
+     */
+    @Test(timeOut = 120000)
+    public void testTheEditorsStationMenuIsGrouped() throws Exception
+    {
+        AutonomyEditorPanel panel = theEditorsPanel();
+
+        TileKey full = aSquareWithATrain();
+
+        String train = session.getLocomotiveNameAt(full);
+        String active = aTrainNotPlaced();
+
+        makeActive(active);
+
+        java.util.List<java.util.List<String>> groups = groups(Components.onTheEventThread(()
+            -> panel.buildTileMenu(full, null)));
+
+        java.util.List<String> own = groupWith(groups, said("autolayout.ui.menuLocomotiveActive", train));
+
+        assertEquals(own.get(0), said("autolayout.ui.menuLocomotiveActive", train), "Is Active is not the first of the"
+            + " train's own items: " + groups);
+
+        assertEquals(own.get(own.size() - 1), said("autosetup.ui.menuTrainAt", session.describeTile(full)), "Train at"
+            + " is not the last of the train's own items: " + groups);
+
+        java.util.List<String> hand = groups.get(groups.indexOf(own) + 1);
+
+        assertEquals(hand, java.util.Arrays.asList(said("layout.ui.menuPlaceLocomotive", active),
+            said("autosetup.ui.menuRemoveLocomotive", train)), "Place and Remove do not follow the train's own items"
+            + " as a group: " + groups);
+
+        assertEquals(groups.get(groups.indexOf(hand) + 1).get(0), I18n.t("autosetup.ui.menuStationSettings"),
+            "Station Settings does not follow Place and Remove behind a divider: " + groups);
+    }
+
+    /**
+     * The editor's menu starts with the square's name and a divider on an empty station, a plain sensor and a station
+     * with a train (FR-182), and no divider stands twice in a row or at the end.
+     *
+     * MUTATION: add the divider after the train's own items in `EditorTileMenus.buildTileMenu` when they added none,
+     * and this fails.
+     */
+    @Test(timeOut = 120000)
+    public void testTheEditorsMenuStartsWithItsHeading() throws Exception
+    {
+        AutonomyEditorPanel panel = theEditorsPanel();
+
+        for (final TileKey square : new TileKey[] {anEmptyStation(), aPlainSensor(), aSquareWithATrain()})
+        {
+            final JPopupMenu menu = Components.onTheEventThread(() -> panel.buildTileMenu(square, null));
+
+            java.util.List<String> shape = Components.onTheEventThread(() ->
+            {
+                java.util.List<String> out = new java.util.ArrayList<>();
+
+                for (java.awt.Component part : menu.getComponents())
+                {
+                    out.add(part instanceof javax.swing.JSeparator ? "----" : part instanceof JMenuItem
+                        ? (part.isEnabled() ? "" : "(heading) ") + ((JMenuItem) part).getText() : "?");
+                }
+
+                return out;
+            });
+
+            String name = session.getStore().getPointName(square);
+
+            assertTrue(shape.size() > 2 && shape.get(0).startsWith("(heading) ") && "----".equals(shape.get(1)),
+                "the editor's menu on " + square + " does not start with its heading and a divider: " + shape);
+
+            if (name != null && !name.trim().isEmpty())
+            {
+                assertEquals(shape.get(0), "(heading) " + name.trim(), "the editor's menu on " + square + " is not headed"
+                    + " with its name: " + shape);
+            }
+
+            for (int at = 1; at < shape.size(); at++)
+            {
+                assertFalse("----".equals(shape.get(at)) && "----".equals(shape.get(at - 1)), "the editor's menu on "
+                    + square + " has two dividers in a row: " + shape);
+            }
+
+            assertFalse("----".equals(shape.get(shape.size() - 1)), "the editor's menu on " + square + " ends in a"
+                + " divider: " + shape);
+        }
+    }
+
+    /**
+     * The train popup's row is "Arrived", not "Arrived from" (FR-182): its choices already say "From the East (right)",
+     * so the label must not end in the word they begin with, in any language.
+     *
+     * MUTATION: put "Arrived from" back, and this fails.
+     */
+    @Test(timeOut = 120000)
+    public void testTheArrivedRowDoesNotSayFromTwice() throws Exception
+    {
+        for (String language : new String[] {"en", "da", "de", "es", "fr", "it", "nl", "pl"})
+        {
+            java.util.ResourceBundle bundle = java.util.ResourceBundle.getBundle("org.traincontrol.resources.messages",
+                new java.util.Locale(language));
+
+            String[] label = bundle.getString("autosetup.ui.trainArrived").trim().split("\\s+");
+
+            for (String side : new String[] {"N", "E", "S", "W"})
+            {
+                String choice = bundle.getString("autolayout.ui.side" + side).trim().split("\\s+")[0];
+
+                assertFalse(label[label.length - 1].equalsIgnoreCase(choice), language + ": the row says \""
+                    + bundle.getString("autosetup.ui.trainArrived") + "\" before a choice that says \""
+                    + bundle.getString("autolayout.ui.side" + side) + "\"");
+            }
+        }
+    }
+
+    /** The menu's own items, by text, in the groups its dividers make; empty groups left out. */
+    private static java.util.List<java.util.List<String>> groups(final JPopupMenu menu)
+    {
+        return Components.onTheEventThread(() ->
+        {
+            java.util.List<java.util.List<String>> out = new java.util.ArrayList<>();
+
+            java.util.List<String> group = new java.util.ArrayList<>();
+
+            for (java.awt.Component part : menu.getComponents())
+            {
+                if (part instanceof javax.swing.JSeparator && !group.isEmpty())
+                {
+                    out.add(group);
+
+                    group = new java.util.ArrayList<>();
+                }
+                else if (part instanceof JMenuItem)
+                {
+                    group.add(((JMenuItem) part).getText());
+                }
+            }
+
+            if (!group.isEmpty()) out.add(group);
+
+            return out;
+        });
+    }
+
+    private static java.util.List<String> groupWith(java.util.List<java.util.List<String>> groups, String item)
+    {
+        for (java.util.List<String> group : groups) if (group.contains(item)) return group;
+
+        throw new AssertionError("the menu has no \"" + item + "\": " + groups);
+    }
+
+    /** The message, or a line no menu says where this build's bundle has no such key. */
+    private static String said(String key, String name)
+    {
+        try
+        {
+            return name == null ? I18n.t(key) : I18n.f(key, name);
+        }
+        catch (java.util.MissingResourceException none)
+        {
+            return "(no " + key + ")";
+        }
+    }
+
     /** Makes this locomotive the active one, as choosing it on a key does; mapping it again would take it off. */
     private static void makeActive(String name)
     {
@@ -555,14 +877,14 @@ public class testTheTrainWindow
 
         JPopupMenu menu = AskingWindows.menuOn(ui, ui, full);
 
-        for (String item : new String[] {I18n.t("autolayout.ui.labelEditLocomotiveAt"),
+        for (String item : new String[] {I18n.f("autolayout.ui.menuEditLocomotive", train),
             I18n.f("layout.ui.menuPlaceLocomotive", ui.getActiveLoc().getName()),
             I18n.f("autosetup.ui.menuTrainAt", session.describeTile(full))})
         {
             assertTrue(AskingWindows.hasItem(menu, item), "the diagram's menu over a train has no \"" + item + "\"");
         }
 
-        Mouse.choose(AskingWindows.itemOf(menu, I18n.t("autolayout.ui.labelEditLocomotiveAt")));
+        Mouse.choose(AskingWindows.itemOf(menu, I18n.f("autolayout.ui.menuEditLocomotive", train)));
 
         Components.settle();
 
@@ -597,28 +919,12 @@ public class testTheTrainWindow
 
         AskingWindows.showThePageOf(ui, full);
 
-        final java.lang.reflect.Field staging = TrainControlUI.class.getDeclaredField("stagingFlowActive");
+        JPopupMenu running = runningMenuOn(full);
 
-        staging.setAccessible(true);
+        assertTrue(AskingWindows.hasItem(running, I18n.f("autolayout.ui.menuEditLocomotive", train)),
+            "the running menu over a train has no Edit Locomotive...");
 
-        try
-        {
-            Components.onTheEventThread(() -> { staging.set(ui, true); return null; });
-
-            JPopupMenu running = AskingWindows.menuOn(ui, ui, full);
-
-            assertTrue(AskingWindows.hasItem(running, I18n.t("autolayout.ui.menuStopAutonomyGracefully")),
-                "precondition: this is not the running menu");
-
-            assertTrue(AskingWindows.hasItem(running, I18n.t("autolayout.ui.labelEditLocomotiveAt")),
-                "the running menu over a train has no Edit Locomotive...");
-
-            Mouse.closeMenus();
-        }
-        finally
-        {
-            Components.onTheEventThread(() -> { staging.set(ui, false); return null; });
-        }
+        Mouse.closeMenus();
 
         model.getAutoLayout().setStagingInProgress(true);
 
@@ -628,7 +934,7 @@ public class testTheTrainWindow
 
             JPopupMenu held = AskingWindows.menuOn(ui, ui, full);
 
-            Mouse.choose(AskingWindows.itemOf(held, I18n.t("autolayout.ui.labelEditLocomotiveAt")));
+            Mouse.choose(AskingWindows.itemOf(held, I18n.f("autolayout.ui.menuEditLocomotive", train)));
 
             Components.settle();
 
@@ -645,6 +951,59 @@ public class testTheTrainWindow
             model.getAutoLayout().setStagingInProgress(false);
 
             support.SettingsWindow.closeIfOpen();
+        }
+    }
+
+    /** The diagram's menu over the square while autonomy runs, its run flag set and put back around the right-click. */
+    private static JPopupMenu runningMenuOn(TileKey square) throws Exception
+    {
+        final java.lang.reflect.Field staging = TrainControlUI.class.getDeclaredField("stagingFlowActive");
+
+        staging.setAccessible(true);
+
+        try
+        {
+            Components.onTheEventThread(() -> { staging.set(ui, true); return null; });
+
+            JPopupMenu running = AskingWindows.menuOn(ui, ui, square);
+
+            assertTrue(AskingWindows.hasItem(running, I18n.t("autolayout.ui.menuStopAutonomyGracefully")),
+                "precondition: this is not the running menu");
+
+            return running;
+        }
+        finally
+        {
+            Components.onTheEventThread(() -> { staging.set(ui, false); return null; });
+        }
+    }
+
+    /**
+     * On the menu shown while autonomy runs, Edit <name>... is never in a group with the autonomy items (FR-182): not
+     * with Stop, Is Active or Train at.
+     *
+     * MUTATION: drop the divider before Edit in `LayoutRightclickAutonomyMenu.addWhileRunning`, and this fails.
+     */
+    @Test(timeOut = 120000)
+    public void testDuringARunEditIsApartFromTheAutonomyItems() throws Exception
+    {
+        TileKey full = aSquareWithATrain();
+
+        String train = session.getLocomotiveNameAt(full);
+
+        AskingWindows.showThePageOf(ui, full);
+
+        java.util.List<java.util.List<String>> groups = groups(runningMenuOn(full));
+
+        Mouse.closeMenus();
+
+        java.util.List<String> edit = groupWith(groups, said("autolayout.ui.menuEditLocomotive", train));
+
+        for (String autonomy : new String[] {I18n.t("autolayout.ui.menuStopAutonomyGracefully"),
+            said("autolayout.ui.menuLocomotiveActive", train), said("autosetup.ui.menuTrainAt", session.describeTile(full))})
+        {
+            assertFalse(edit.contains(autonomy), "Edit is in a group with \"" + autonomy + "\" on the running menu: "
+                + groups);
         }
     }
 
@@ -669,7 +1028,7 @@ public class testTheTrainWindow
 
         assertFalse(AskingWindows.hasItem(menu, I18n.f("layout.ui.menuPlaceLocomotive", train)),
             "the diagram's menu offers to place the train already standing there");
-        assertTrue(AskingWindows.hasItem(menu, I18n.t("autolayout.ui.labelEditLocomotiveAt")),
+        assertTrue(AskingWindows.hasItem(menu, I18n.f("autolayout.ui.menuEditLocomotive", train)),
             "the diagram's menu lost Edit Locomotive... with its own train selected");
         assertTrue(AskingWindows.hasItem(menu, I18n.f("autosetup.ui.menuTrainAt", session.describeTile(full))),
             "the diagram's menu lost the train window with its own train selected");
@@ -694,7 +1053,7 @@ public class testTheTrainWindow
 
         JPopupMenu menu = AskingWindows.menuOn(ui, ui, empty);
 
-        assertFalse(AskingWindows.hasItem(menu, I18n.t("autolayout.ui.labelEditLocomotiveAt")),
+        assertFalse(offersEdit(menu),
             "the diagram's menu offers Edit Locomotive... where no train stands");
         assertTrue(AskingWindows.hasItem(menu, I18n.f("layout.ui.menuPlaceLocomotive", ui.getActiveLoc().getName())),
             "the diagram's menu over an empty station cannot place the selected locomotive");
@@ -719,7 +1078,7 @@ public class testTheTrainWindow
 
         JPopupMenu menu = Components.onTheEventThread(() -> panel.buildTileMenu(square, null));
 
-        assertNull(Components.withText(menu, I18n.t("autolayout.ui.labelEditLocomotiveAt")),
+        assertFalse(offersEdit(menu),
             "the editor's menu offers Edit Locomotive...");
         assertNotNull(Components.withText(menu, I18n.f("autosetup.ui.menuTrainAt", session.describeTile(square))),
             "the editor's menu has no train window");

@@ -83,9 +83,9 @@ public class testNoSetupEditWhileARouteRuns
             final String active = makeAnotherTrainActive(ui, train);
 
             final TrainControlUI window = ui;
-            final javax.swing.JMenu[] facing = new javax.swing.JMenu[1];
+            final javax.swing.JPopupMenu facing = new javax.swing.JPopupMenu();
 
-            SwingUtilities.invokeAndWait(() -> facing[0] = window.buildAutonomyFacingMenu(square));
+            SwingUtilities.invokeAndWait(() -> window.addAutonomyFacingItems(facing, square));
 
             Map<String, String> setupItems = new java.util.LinkedHashMap<>();
 
@@ -94,7 +94,11 @@ public class testNoSetupEditWhileARouteRuns
             setupItems.put("Is Active", I18n.f("autolayout.ui.menuLocomotiveActive", train));
             setupItems.put("Segment Length", I18n.t("autosetup.ui.menuSetLength"));
 
-            if (facing[0] != null) setupItems.put("Facing", facing[0].getText());
+            // Change Direction and the other items about the train (FR-181)
+            for (int i = 0; i < facing.getComponentCount(); i++)
+            {
+                setupItems.put("Facing " + i, ((javax.swing.JMenuItem) facing.getComponent(i)).getText());
+            }
 
             String start = I18n.t("autolayout.ui.menuStartAutonomy");
 
@@ -137,7 +141,7 @@ public class testNoSetupEditWhileARouteRuns
 
             // And Edit Locomotive, whose Save refuses the setup's part during a run (Adam: "there should always be an
             // edit loc")
-            assertTrue(running.contains(I18n.t("autolayout.ui.labelEditLocomotiveAt")), "no Edit Locomotive while a"
+            assertTrue(running.contains(I18n.f("autolayout.ui.menuEditLocomotive", train)), "no Edit Locomotive while a"
                 + " route runs: " + running);
         }
         finally
@@ -2377,35 +2381,7 @@ public class testNoSetupEditWhileARouteRuns
     private static javax.swing.JPopupMenu diagramMenu(final TrainControlUI ui, final TileKey square, Point standing)
         throws Exception
     {
-        final Class<?> menuClass = Class.forName("org.traincontrol.gui.LayoutRightclickAutonomyMenu");
-
-        final java.lang.reflect.Method gather = menuClass.getDeclaredMethod("gatherPathOptions", TrainControlUI.class,
-            Point.class);
-
-        gather.setAccessible(true);
-
-        final java.lang.reflect.Constructor<?> make = menuClass.getDeclaredConstructor(TrainControlUI.class,
-            TileKey.class, TileKey.class, Class.forName("org.traincontrol.gui.LayoutRightclickAutonomyMenu$PathOptions"));
-
-        make.setAccessible(true);
-
-        final Object options = gather.invoke(null, ui, standing);
-
-        final javax.swing.JPopupMenu[] menu = new javax.swing.JPopupMenu[1];
-
-        SwingUtilities.invokeAndWait(() ->
-        {
-            try
-            {
-                menu[0] = (javax.swing.JPopupMenu) make.newInstance(ui, square, square, options);
-            }
-            catch (ReflectiveOperationException failed)
-            {
-                throw new IllegalStateException(failed);
-            }
-        });
-
-        return menu[0];
+        return support.StationDoors.diagramMenu(ui, square, standing);
     }
 
     /** The text of every item at the top of a menu. */

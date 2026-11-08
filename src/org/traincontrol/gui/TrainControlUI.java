@@ -2945,17 +2945,17 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     private String lastCapturedFeedbackCommand;
     private long lastCapturedFeedbackCommandTime;
 
-    /** The "{loc} Is Facing..." submenu for a square; null when it has no locomotive or only one facing. */
-    public javax.swing.JMenu buildAutonomyFacingMenu(
+    /** Adds Change Direction and the other items about the train on a square (FR-181); false when none stands there. */
+    public boolean addAutonomyFacingItems(javax.swing.JPopupMenu menu,
         org.traincontrol.automationui.TileGraph.TileKey tile)
     {
         // Through the same door, so the panel exists and is wired to the current session
-        if (buildAutonomyTileMenu(tile) == null) return null;
+        if (buildAutonomyTileMenu(tile) == null) return false;
 
         // The session is told where the railway is before it is asked to change anything on it.
         wireTheRailwayIntoTheMenus();
 
-        return autonomyTileMenus == null ? null : autonomyTileMenus.buildFacingMenu(tile);
+        return autonomyTileMenus != null && autonomyTileMenus.addFacingItems(menu, tile);
     }
 
     /** Whether the track diagram's menu offers Station Settings on this square; no while an editor holds the setup. */
@@ -6512,6 +6512,16 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      */
     public void syncLocomotive(Locomotive l)
     {
+        syncLocomotive(l, null);
+    }
+
+    /**
+     * As {@link #syncLocomotive(Locomotive)}, then runs {@code after} on the event thread once the sync is over.
+     * @param l
+     * @param after what to do afterwards, or null
+     */
+    public void syncLocomotive(Locomotive l, Runnable after)
+    {
         if (l != null)
         {
             javax.swing.SwingUtilities.invokeLater(() -> {
@@ -6520,6 +6530,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 repaintLoc(true, null);
                 this.repaintLayout();
                 this.repaintMappings(Collections.singletonList(l), true);
+
+                if (after != null) after.run();
             });
         }   
     }

@@ -580,7 +580,10 @@ public class TileAnnotation
         NEVER,
 
         /** Picked to be set with others in Station Settings (FR-052), in a color no other mark uses. */
-        TOGETHER
+        TOGETHER,
+
+        /** Can be picked for Bulk Edit: the editor's light gray grid line, no wash. */
+        PICKABLE
     }
 
     /** Marks this square for a tool; carried through `isBlank`, `equals` and `hashCode` as `needsALength` is. */
@@ -607,7 +610,7 @@ public class TileAnnotation
     /** The mark's wash, under the badge so its icon stays sharp; none where it cannot go now or is clickable. */
     private void paintToolFill(Graphics2D g, int width, int height)
     {
-        if (toolMark == ToolMark.NOT_NOW || toolMark == ToolMark.CLICKABLE) return;
+        if (toolMark == ToolMark.NOT_NOW || toolMark == ToolMark.CLICKABLE || toolMark == ToolMark.PICKABLE) return;
 
         java.awt.Composite before = g.getComposite();
 
@@ -624,6 +627,15 @@ public class TileAnnotation
      */
     private void paintToolBorder(Graphics2D g, int width, int height)
     {
+        if (toolMark == ToolMark.PICKABLE)
+        {
+            g.setStroke(new BasicStroke(1f));
+            g.setColor(markColour());
+            g.drawRect(0, 0, width - 1, height - 1);
+
+            return;
+        }
+
         if (toolMark == ToolMark.CLICKABLE || toolMark == ToolMark.TOGETHER)
         {
             // Thicker than a selection's, a tenth of the square, so it reads at a glance across the diagram
@@ -672,6 +684,7 @@ public class TileAnnotation
             case CAN_GO: return MARK_GREEN;
             case NEVER: return TRACE_MANUAL;
             case TOGETHER: return MARK_TEAL;
+            case PICKABLE: return Color.LIGHT_GRAY;
             default: return MARK_GRAY;
         }
     }

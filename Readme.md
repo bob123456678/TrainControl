@@ -48,7 +48,7 @@ TrainControl uses your computer's language automatically.  To run it in another 
 
 As shown above, you can assign locomotives to any letter on the keyboard, then quickly switch between them.  Easy keyboard shortcuts let you control locomotives.  Thumbnails are automatically downloaded from the CS2/CS3 or can be set manually.  Drag-and-drop locomotives while the power is off.
 
-Right-click a locomotive button for its quick actions, such as function and speed presets, or choose `Locomotive Settings...` (or right-click the locomotive's name) to change its name, address, picture, functions, notes and multi-unit in one window.  A function button's right-click opens the same window on that function.  `Add Locomotive` (Ctrl+D) opens it too, ready for a new locomotive, and `Check Duplicates` is on its `Basic Settings` tab.  A locomotive can't be edited while autonomy is running or while it is moving with the power on: the window then opens grayed out.  To copy locomotives between TrainControl installations, use `Export to CSV` and `Import from CSV...` on the `Locomotives` menu.
+Right-click a locomotive button for its quick actions, such as function and speed presets, or choose `Locomotive Settings...` (or right-click the locomotive's name) to change its name, address, picture, functions, notes and multi-unit in one window.  A function button's right-click opens the same window on that function.  `Add Locomotive` (Ctrl+D) opens it too, ready for a new locomotive.  If another locomotive already uses the same address, a warning triangle shows next to `Address` on the `Basic Settings` tab; click it to see which.  A locomotive can't be edited while autonomy is running or while it is moving with the power on: the window then opens grayed out.  To copy locomotives between TrainControl installations, use `Export to CSV` and `Import from CSV...` on the `Locomotives` menu.
 
 ![Right-click menu on a locomotive button, showing options for function presets, preferred speed, and multi-unit setup](assets/ui_right_click.png?raw=true)
 
@@ -436,16 +436,19 @@ Tab icons provided by Freepik.
             - A locomotive can't be edited while autonomy is running or while it is moving with the power on, so the window then opens grayed out, but you can still save the speed and function presets from their hotkeys and the key menu.
             - The `Functions` tab lists every function in one table, with its behavior, icon and `Preset` tick, and a play icon that switches the function on the layout.
             - The `Autonomy` tab holds the locomotive's `Train Length`, `Reversible`, `Active`, `Departure Function` and `Arrival Function`.
-            - `Add Locomotive` (Ctrl+D) opens the same window, and `Check Duplicates` is now on `Basic Settings` for every locomotive.
+            - `Add Locomotive` (Ctrl+D) opens the same window, and a warning triangle next to `Address` now shows by itself when another locomotive uses the same address, in place of `Check Duplicates`.
+            - `Sync settings & functions w/ Central Station` has moved from the key menu to the `Basic Settings` tab, under the picture.
+            - The `Railway Name` box on the `Notes` tab lists the names your other locomotives already use, and you can still type a new one.
             - `Import from CSV...` on the `Locomotives` menu reads a file saved by `Export to CSV`, adding new locomotives and merging the ones you have, after showing you what will change.
             - `Export to CSV` now writes a `LastRun` column, and an imported running time is used only when its last run is later than yours.
         - Autonomy
             - `Station Settings` puts all of a station's settings in one window, opened from a station's right-click menu or with Ctrl+O, beside a picture of the station and a table of what trains may do there.
-            - Two boxes, `When trains stop here` and `Running through`, replace the `Station (...)` choices, and the `Station`, `Terminus`, `Parking` and `Reversing Point` buttons set the usual combinations and light up when your settings match one.
-            - A station with only `When trains stop here` ticked can't be run through by autonomy or by a trip you send, though it doesn't make the train turn round, and `Return Home` may still run through it.
-            - `Pick Stations`, under `Path Type` in the autonomy editor, lets you click several stations and change them all in one `Station Settings` window.
-            - `Train at` *station* is a window for the train standing there, with its locomotive, `Active`, `Facing`, `Arrived from` and `Tail lies`, and `Locomotive Settings...` opens the `Autonomy` tab.
-            - On the track diagram, a station's right-click menu now always has `Edit Locomotive...` when a train is standing there, `Place` *locomotive* when another one is selected, and `Place a Locomotive Here...`.
+            - Two boxes, `Trains can stop here` and `Trains can pass through`, replace the `Station (...)` choices, and the `Station`, `Terminus`, `Parking` and `Reversing Point` buttons set the usual combinations and light up when your settings match one.
+            - A station with only `Trains can stop here` ticked can't be run through by autonomy or by a trip you send, though it doesn't make the train turn around, and `Return Home` may still run through it.
+            - `Bulk Edit...`, under `Path Type` in the autonomy editor, lets you click several stations and change them all in one `Station Settings` window.
+            - `Train at` *station* is a window for the train standing there, with its locomotive, `Active`, `Facing`, `Arrived` and `Tail lies`, and `Locomotive Settings...` opens the `Autonomy` tab.
+            - On the track diagram, a station's right-click menu now always has `Edit` *locomotive* `...` when a train is standing there, `Place` *locomotive* when another one is selected, and `Place a Locomotive Here...`, together under their own divider.
+            - A station's right-click menu turns the train standing there around in one click with `Change Direction (now facing` *East* `)`, and changes the side it came in by with `Change Arrived From (currently` *West* `)`.
             - While autonomy is running, a station's right-click menu on the track diagram has `Is Active` to pause or resume the train standing there.
             - Double-click a finding under `Things to look at`, or press Ctrl+O, to open `Station Settings` for its station.
             - A `Filter` box above `Things to look at` narrows the list as you type.

@@ -306,4 +306,36 @@ public final class StationDoors
 
         return Answering.pressAt(0);
     }
+
+    /**
+     * The track diagram's right-click menu on a square, built as a right-click builds it: the paths gathered off the
+     * event thread, the menu made on it.  Call it off the event thread.
+     */
+    public static javax.swing.JPopupMenu diagramMenu(final org.traincontrol.gui.TrainControlUI ui, final TileKey square)
+        throws Exception
+    {
+        return diagramMenu(ui, square, Components.onTheEventThread(() -> ui.getAutonomyPointForTile(square)));
+    }
+
+    /** The same, for the railway's Point the menu is about. */
+    public static javax.swing.JPopupMenu diagramMenu(final org.traincontrol.gui.TrainControlUI ui, final TileKey square,
+        org.traincontrol.automation.Point standing) throws Exception
+    {
+        final Class<?> menuClass = Class.forName("org.traincontrol.gui.LayoutRightclickAutonomyMenu");
+
+        final java.lang.reflect.Method gather = menuClass.getDeclaredMethod("gatherPathOptions",
+            org.traincontrol.gui.TrainControlUI.class, org.traincontrol.automation.Point.class);
+
+        gather.setAccessible(true);
+
+        final java.lang.reflect.Constructor<?> make = menuClass.getDeclaredConstructor(
+            org.traincontrol.gui.TrainControlUI.class, TileKey.class, TileKey.class,
+            Class.forName("org.traincontrol.gui.LayoutRightclickAutonomyMenu$PathOptions"));
+
+        make.setAccessible(true);
+
+        final Object options = gather.invoke(null, ui, standing);
+
+        return Components.onTheEventThread(() -> (javax.swing.JPopupMenu) make.newInstance(ui, square, square, options));
+    }
 }

@@ -651,40 +651,11 @@ public class testThePlaceDoorsKeepTheHeading
     /** Right-clicks the square on the track diagram and chooses Place (the active train), as the steps do. */
     private static void placeByRightClick(TileKey square) throws Exception
     {
-        final Class<?> menuClass = Class.forName("org.traincontrol.gui.LayoutRightclickAutonomyMenu");
-
-        final Method gather = menuClass.getDeclaredMethod("gatherPathOptions", TrainControlUI.class, Point.class);
-
-        gather.setAccessible(true);
-
-        final java.lang.reflect.Constructor<?> make = menuClass.getDeclaredConstructor(TrainControlUI.class,
-            TileKey.class, TileKey.class, Class.forName("org.traincontrol.gui.LayoutRightclickAutonomyMenu$PathOptions"));
-
-        make.setAccessible(true);
-
-        final Point[] standing = new Point[1];
-
-        SwingUtilities.invokeAndWait(() -> standing[0] = ui.getAutonomyPointForTile(square));
-
-        final Object options = gather.invoke(null, ui, standing[0]);
-
-        final javax.swing.JMenuItem[] place = new javax.swing.JMenuItem[1];
+        final javax.swing.JPopupMenu menu = support.StationDoors.diagramMenu(ui, square);
 
         final String label = I18n.f("layout.ui.menuPlaceLocomotive", HIS_TRAIN);
 
-        SwingUtilities.invokeAndWait(() ->
-        {
-            try
-            {
-                javax.swing.JPopupMenu menu = (javax.swing.JPopupMenu) make.newInstance(ui, square, square, options);
-
-                place[0] = itemNamed(menu, label);
-            }
-            catch (ReflectiveOperationException failed)
-            {
-                throw new IllegalStateException(failed);
-            }
-        });
+        final javax.swing.JMenuItem[] place = {support.Components.onTheEventThread(() -> itemNamed(menu, label))};
 
         assertNotNull(place[0], "the right-click menu on " + name(square) + " has no " + label + " item");
 
@@ -704,28 +675,29 @@ public class testThePlaceDoorsKeepTheHeading
             + "; showing: " + showing());
     }
 
-    /** Which way the diagram's *... Is Facing* menu on this square says the train there faces. */
+    /** Which way the diagram's Change Direction on this square says the train there faces (FR-181). */
     private static Side facingShown(TileKey square) throws Exception
     {
         final Side[] shown = new Side[1];
 
         SwingUtilities.invokeAndWait(() ->
         {
-            javax.swing.JMenu menu = ui.buildAutonomyFacingMenu(square);
+            javax.swing.JPopupMenu menu = new javax.swing.JPopupMenu();
 
-            if (menu == null) return;
+            ui.addAutonomyFacingItems(menu, square);
 
-            for (java.awt.Component child : menu.getMenuComponents())
+            for (javax.swing.JMenuItem item : support.Components.all(menu, javax.swing.JMenuItem.class, null))
             {
-                if (!(child instanceof javax.swing.JRadioButtonMenuItem)) continue;
-
-                javax.swing.JRadioButtonMenuItem item = (javax.swing.JRadioButtonMenuItem) child;
-
-                if (!item.isSelected()) continue;
-
                 for (Side side : Side.values())
                 {
-                    if (I18n.t("autosetup.ui.facing" + side.name()).equals(item.getText())) shown[0] = side;
+                    // The label "now facing", or a ticked radio where there is no one-click turn
+                    if (I18n.f("autosetup.ui.menuChangeDirection", org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel.menuSide(side.name()))
+                        .equals(item.getText())) shown[0] = side;
+
+                    if (item.isSelected() && I18n.t("autosetup.ui.facing" + side.name()).equals(item.getText()))
+                    {
+                        shown[0] = side;
+                    }
                 }
             }
         });
@@ -733,19 +705,31 @@ public class testThePlaceDoorsKeepTheHeading
         return shown[0];
     }
 
-    /** Chooses a heading on the diagram's *... Is Facing* menu, as the steps turn a train. */
+    /** Turns the train to a heading with the diagram's Change Direction, as the steps turn a train. */
     private static void turnTo(TileKey square, Side heading) throws Exception
     {
+        if (facingShown(square) == heading) return;
+
         final javax.swing.JMenuItem[] item = new javax.swing.JMenuItem[1];
 
         SwingUtilities.invokeAndWait(() ->
         {
-            javax.swing.JMenu menu = ui.buildAutonomyFacingMenu(square);
+            javax.swing.JPopupMenu menu = new javax.swing.JPopupMenu();
 
-            if (menu != null) item[0] = itemNamed(menu, I18n.t("autosetup.ui.facing" + heading.name()));
+            if (!ui.addAutonomyFacingItems(menu, square)) return;
+
+            // The radio where there is no one-click turn, else the one click
+            item[0] = itemNamed(menu, I18n.t("autosetup.ui.facing" + heading.name()));
+
+            java.awt.Component change = menu.getComponent(0);
+
+            if (item[0] == null && change.isEnabled() && !(change instanceof javax.swing.JMenu))
+            {
+                item[0] = (javax.swing.JMenuItem) change;
+            }
         });
 
-        assertNotNull(item[0], "the Facing menu on " + name(square) + " offers no " + heading);
+        assertNotNull(item[0], "Change Direction on " + name(square) + " cannot turn the train to " + heading);
 
         SwingUtilities.invokeLater(item[0]::doClick);
 

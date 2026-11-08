@@ -199,6 +199,64 @@ public class testTheFunctionButtonMenu
         assertNull(SettingsWindow.showing(), "a right click on a grayed function button opened the window");
     }
 
+    /** Whether the Functions table has this function's row selected and wholly inside what it shows. */
+    private static boolean rowOnShow(JTable table, int row)
+    {
+        return Components.onTheEventThread(() -> table.getSelectedRow() == row
+            && table.getVisibleRect().contains(table.getCellRect(row, 0, true)));
+    }
+
+    /**
+     * A right click on a high function button opens the window with that function's row selected and scrolled into view;
+     * with the window already open on another tab, or scrolled elsewhere, a right click on another function brings that
+     * row into view too.
+     *
+     * MUTATION: drop the `scrollRectToVisible` from `LocomotiveFunctionsTab.select`, or ask for it before the tab is
+     * laid out, and this fails.
+     */
+    @Test
+    public void testARightClickScrollsToThatFunction() throws Exception
+    {
+        final int high = 28;
+
+        rightClick(button(high));
+
+        assertNotNull(SettingsWindow.awaited(), "a right click on F" + high + " opened no window");
+
+        JTable table = SettingsWindow.part("functions.table", JTable.class);
+
+        assertTrue(Components.waitFor(() -> rowOnShow(table, high), WAIT), "F" + high + " is not selected and on show");
+
+        // Already open on another tab: switched to Functions, and the row brought in
+        SettingsWindow.selectTab(0);
+
+        Components.onTheEventThread(() ->
+        {
+            table.scrollRectToVisible(table.getCellRect(0, 0, true));
+
+            return null;
+        });
+
+        rightClick(button(25));
+
+        assertTrue(Components.waitFor(() -> SettingsWindow.tabShowing() == 1, WAIT), "the window stayed on its other tab");
+        assertTrue(Components.waitFor(() -> rowOnShow(SettingsWindow.part("functions.table", JTable.class), 25), WAIT),
+            "F25 is not selected and on show after the tab changed");
+
+        // Scrolled to the bottom, then a function at the top
+        Components.onTheEventThread(() ->
+        {
+            table.scrollRectToVisible(table.getCellRect(high, 0, true));
+
+            return null;
+        });
+
+        rightClick(button(F));
+
+        assertTrue(Components.waitFor(() -> rowOnShow(SettingsWindow.part("functions.table", JTable.class), F), WAIT),
+            "F" + F + " is not on show after the table was scrolled to the bottom");
+    }
+
     /**
      * The presets act on the train that is showing, from the key menu where they live now: Save Current Functions
      * keeps what is on, Turn Off Functions switches them off, Apply puts the saved ones back, and the speed pair does
