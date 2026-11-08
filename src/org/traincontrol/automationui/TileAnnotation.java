@@ -500,6 +500,15 @@ public class TileAnnotation
 
     private boolean allowedToo = false;
 
+    /** Draws the station's icon at this share of its size, for a picture whose arrows are read first (FR-111). */
+    public TileAnnotation withSmallerIcon(float share)
+    {
+        this.iconShare = share;
+        return this;
+    }
+
+    private float iconShare = 1f;
+
     /**
      * Grays the square as one autonomy takes no notice of, but still draws its length and outline (OB-353); no arrows.
      */
@@ -1668,8 +1677,8 @@ public class TileAnnotation
 
         // A station takes a bigger badge than a passing point (20px against 17px on the graph); `classicBox` with the
         // classic icons.
-        int size = classic ? classicBox(Math.min(width, height), badge.isStation())
-            : Math.max(badge.isStation() ? 11 : 8, Math.min(width, height) / (badge.isStation() ? 2 : 3));
+        int size = Math.round(iconShare * (classic ? classicBox(Math.min(width, height), badge.isStation())
+            : Math.max(badge.isStation() ? 11 : 8, Math.min(width, height) / (badge.isStation() ? 2 : 3))));
 
         // A STATION WHOSE TRACK RUNS OUT IS A TERMINUS, whatever its turning setting (FR-118): the square, with the
         // classic icons.
@@ -1838,7 +1847,7 @@ public class TileAnnotation
     {
         int tile = Math.min(width, height);
 
-        int h = Math.max(7, Math.round(tile * ICON_SHARE));
+        int h = Math.max(7, Math.round(tile * ICON_SHARE * iconShare));
 
         boolean large = tile >= LARGE_TILE;
 
@@ -2266,8 +2275,8 @@ public class TileAnnotation
 
         // FR-118's size for every square with its icons.  With the classic ones a station's mark's size, and a sensor's a
         // pixel more all round than its mark
-        double across = shapes ? Math.round(tile * 0.47f)
-            : classicBox(tile, badge.isStation()) + (badge.isStation() ? 0 : Math.round(tile / 15f));
+        double across = iconShare * (shapes ? Math.round(tile * 0.47f)
+            : classicBox(tile, badge.isStation()) + (badge.isStation() ? 0 : Math.round(tile / 15f)));
 
         // A CLASSIC STATION'S IS SOLID ORANGE WITH A WHITE X - filled, as a named station's mark is, where a sensor's
         // stays the white circle ringed in orange

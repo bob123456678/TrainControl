@@ -1359,34 +1359,47 @@ public final class StationSettingsWindow extends StationWindowBase
         }
     };
 
-    /** What a click on a mark does, and does it when pressed: one method, so the tooltip says what the click does. */
+    /**
+     * What a mark means and what a click on it does, and does it when pressed: one method, so the tooltip says what the
+     * click does.  While a run holds the setup, the meaning and why nothing can change.
+     */
     private String pictureClick(StationPicture.Mark mark, boolean press)
     {
-        if (whyHeld() != null) return whyHeld();
+        String held = whyHeld();
 
-        switch (mark.kind)
-        {
-            case OUT: return wayOut(mark, press);
-            case IN: return wayIn(mark, press);
-            default: return nextSquare(mark, press);
-        }
+        String[] said = mark.kind == StationPicture.Mark.Kind.OUT ? wayOut(mark, press && held == null)
+            : mark.kind == StationPicture.Mark.Kind.IN ? wayIn(mark, press && held == null)
+            : nextSquare(mark, press && held == null);
+
+        String then = held != null ? held : said[1];
+
+        return said[0] == null ? then : said[0] + "  " + then;
+    }
+
+    /** What a mark means, or null, and what its click does or why it can't. */
+    private static String[] said(String means, String click)
+    {
+        return new String[] {means, click};
     }
 
     /** A way out toggles that side among the open arms, as May Depart's choice for its track. */
-    private String wayOut(StationPicture.Mark mark, boolean press)
+    private String[] wayOut(StationPicture.Mark mark, boolean press)
     {
         Map<RouteId, TilePorts.Route> routes = editor.session.getRoutes(tile);
         List<TilePorts.Side> arms = AutonomyEditorPanel.armsOf(routes);
 
         int at = arms.indexOf(mark.side);
 
-        if (at < 0) return I18n.t("autosetup.ui.stationPicCannot");
+        if (at < 0) return said(null, I18n.t("autosetup.ui.stationPicCannot"));
 
         int mask = editor.armMask(tile, routes, arms);
         boolean set = (mask & 1 << at) != 0;
 
         // Open here, but the railway takes no train out this way: the track around is what to change
-        if (set && !mark.open) return I18n.t("autosetup.ui.stationPicOutBeyond");
+        if (set && !mark.open)
+        {
+            return said(I18n.t("autosetup.ui.stationPicMeansOutShut"), I18n.t("autosetup.ui.stationPicOutBeyond"));
+        }
 
         for (Map.Entry<RouteId, TilePorts.Route> each : routes.entrySet())
         {
@@ -1399,20 +1412,23 @@ public final class StationSettingsWindow extends StationWindowBase
             int answer = choice == null ? -1
                 : departAnswers.get(each.getKey()).indexOf(TileGraph.answerFor(road, arms, mask ^ 1 << at));
 
-            if (answer < 0 || !choice.isEnabled()) return I18n.t("autosetup.ui.stationPicCannot");
+            if (answer < 0 || !choice.isEnabled()) return said(null, I18n.t("autosetup.ui.stationPicCannot"));
 
             if (press) choice.setSelectedIndex(answer);
 
-            return I18n.t(set ? "autosetup.ui.stationPicOutOpen" : "autosetup.ui.stationPicOutShut");
+            return said(I18n.t(set ? "autosetup.ui.stationPicMeansOutOpen" : "autosetup.ui.stationPicMeansOutShut"),
+                I18n.t(set ? "autosetup.ui.stationPicOutOpen" : "autosetup.ui.stationPicOutShut"));
         }
 
-        return I18n.t("autosetup.ui.stationPicCannot");
+        return said(null, I18n.t("autosetup.ui.stationPicCannot"));
     }
 
     /** A way in ticks or unticks that side's May Arrive From box. */
-    private String wayIn(StationPicture.Mark mark, boolean press)
+    private String[] wayIn(StationPicture.Mark mark, boolean press)
     {
         boolean barred = editor.session.getBarredArrivals(tile).contains(mark.side);
+
+        String means = I18n.t(barred || !mark.open ? "autosetup.ui.stationPicMeansInShut" : "autosetup.ui.stationPicMeansInOpen");
 
         // Open, and still no train may stop coming this way: the table's reason
         if (!barred && !mark.open)
@@ -1420,25 +1436,25 @@ public final class StationSettingsWindow extends StationWindowBase
             StandingRules.Cell why = shownRules == null ? null : shownRules.cells(StandingRules.Row.SENT_HERE, true)
                 .get(mark.side.name());
 
-            return why == null ? I18n.t("autosetup.ui.stationPicCannot") : why.getWhy();
+            return said(means, why == null ? I18n.t("autosetup.ui.stationPicCannot") : why.getWhy());
         }
 
         JCheckBox box = arriveBoxes.get(mark.side);
 
         if (box == null || !box.isEnabled())
         {
-            return editor.session.arrivalSides(tile).size() == 1
+            return said(means, editor.session.arrivalSides(tile).size() == 1
                 ? I18n.f("autosetup.ui.hintOneWayIn", I18n.t("autosetup.ui.side" + mark.side.name()))
-                : I18n.t(box == null ? "autosetup.ui.stationPicCannot" : "autosetup.ui.stationPicInKept");
+                : I18n.t(box == null ? "autosetup.ui.stationPicCannot" : "autosetup.ui.stationPicInKept"));
         }
 
         if (press) box.doClick();
 
-        return I18n.t(barred ? "autosetup.ui.stationPicInShut" : "autosetup.ui.stationPicInOpen");
+        return said(means, I18n.t(barred ? "autosetup.ui.stationPicInShut" : "autosetup.ui.stationPicInOpen"));
     }
 
     /** A next square's arrow, set as its right-click menu's Trains May Depart sets it: its one track, or that arm. */
-    private String nextSquare(StationPicture.Mark mark, boolean press)
+    private String[] nextSquare(StationPicture.Mark mark, boolean press)
     {
         final TileKey square = mark.square;
 
@@ -1449,7 +1465,7 @@ public final class StationSettingsWindow extends StationWindowBase
 
         int at = arms.indexOf(mark.side);
 
-        if (!editor.session.canCarryDirection(square) || at < 0) return I18n.f("autosetup.ui.stationPicNextCannot", name);
+        if (!editor.session.canCarryDirection(square) || at < 0) return said(null, I18n.f("autosetup.ui.stationPicNextCannot", name));
 
         int mask = editor.armMask(square, routes, arms);
         final boolean open = (mask & 1 << at) != 0;
@@ -1459,7 +1475,10 @@ public final class StationSettingsWindow extends StationWindowBase
             final Map.Entry<RouteId, TilePorts.Route> only = routes.entrySet().iterator().next();
             final Direction wanted = TileGraph.answerFor(only.getValue(), arms, mask ^ 1 << at);
 
-            if (!TileGraph.directionIsPossible(wanted, only.getValue())) return I18n.f("autosetup.ui.stationPicNextCannot", name);
+            if (!TileGraph.directionIsPossible(wanted, only.getValue()))
+            {
+                return said(null, I18n.f("autosetup.ui.stationPicNextCannot", name));
+            }
 
             if (press) actAlone(() -> editor.setRunDirection(square, only.getKey(), wanted));
         }
@@ -1468,7 +1487,8 @@ public final class StationSettingsWindow extends StationWindowBase
             actAlone(() -> editor.setArm(square, mark.side, !open));
         }
 
-        return I18n.f(open ? "autosetup.ui.stationPicNextOpen" : "autosetup.ui.stationPicNextShut", name);
+        return said(I18n.f(open ? "autosetup.ui.stationPicMeansNextOpen" : "autosetup.ui.stationPicMeansNextShut", name),
+            I18n.t(open ? "autosetup.ui.stationPicNextOpen" : "autosetup.ui.stationPicNextShut"));
     }
 
     // ------------------------------------------------------------------------------------------------- the matrix
