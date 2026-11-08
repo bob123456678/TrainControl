@@ -131,6 +131,8 @@ element
  .id=0x614
  .typ=pfeil
  .artikel=0
+ .zielseite=5
+ .zielartikel=0
 element
  .id=0x704
  .typ=gerade
@@ -268,6 +270,8 @@ element
  .id=0x914
  .typ=pfeil
  .artikel=0
+ .zielseite=5
+ .zielartikel=0
 element
  .id=0xa04
  .typ=gerade

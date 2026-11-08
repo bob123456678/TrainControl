@@ -2,6 +2,8 @@
 version
  .major=1
 groesse
+traincontrol
+ .linksByPageId=1
 seite
  .id=5
  .name=1 - Main

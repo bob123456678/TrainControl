@@ -630,6 +630,8 @@ element
  .typ=pfeil
  .drehung=1
  .artikel=0
+ .zielseite=5
+ .zielartikel=0
 element
  .id=0x90d
  .typ=gerade

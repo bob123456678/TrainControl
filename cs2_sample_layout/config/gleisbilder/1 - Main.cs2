@@ -5,6 +5,8 @@ element
  .typ=pfeil
  .drehung=1
  .artikel=2
+ .zielseite=2
+ .zielartikel=2
 element
  .id=0x100
  .typ=rechtsweiche
@@ -437,6 +439,8 @@ element
  .typ=pfeil
  .drehung=2
  .artikel=1
+ .zielseite=1
+ .zielartikel=1
 element
  .id=0x510
  .typ=signal
@@ -482,6 +486,8 @@ element
  .typ=pfeil
  .drehung=3
  .artikel=2
+ .zielseite=2
+ .zielartikel=2
 element
  .id=0x605
  .typ=gerade
