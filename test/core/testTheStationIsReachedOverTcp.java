@@ -73,7 +73,12 @@ public class testTheStationIsReachedOverTcp
         public void receiveMessage(CANMessage message)
         {
             this.heard.add(((CS2Message) message).getRawMessage());
+
+            if (((CS2Message) message).answersAResync()) this.resyncAnswers.incrementAndGet();
         }
+
+        // How many frames the proxy marked as answers to its own queries
+        final java.util.concurrent.atomic.AtomicInteger resyncAnswers = new java.util.concurrent.atomic.AtomicInteger();
 
         @Override
         public byte[] initMessageBuffer()
@@ -705,7 +710,8 @@ public class testTheStationIsReachedOverTcp
      * device 1 (the CS3 answers those itself, "occupied" for all), not a contact the model knows with no event, and
      * not on a device an answer named rather than an event.
      *
-     * MUTATION: in `NetworkProxy`, `FIRST_QUERIED_DEVICE = 2` to `= 0`.  And: in `NetworkProxy.resync`,
+     * MUTATION: in `NetworkProxy.deliverTcp`, `marked(model.createMessage(frame), answer)` to
+     * `marked(model.createMessage(frame), false)`.  And: in `NetworkProxy`, `FIRST_QUERIED_DEVICE = 2` to `= 0`.  And: in `NetworkProxy.resync`,
      * `this.sensorDevice.get(contact)` to `this.sensorDevice.getOrDefault(contact, FIRST_QUERIED_DEVICE)`.  And: in
      * `NetworkProxy.learn`, take out `|| frame[9] == frame[10]`.
      */
@@ -726,6 +732,8 @@ public class testTheStationIsReachedOverTcp
         assertTrue(Components.waitFor(() -> this.model.heardFrame(answer(TcpStation.LINK_S88, 1301, true)), WAIT_MS),
             "the Link S88's contact was not asked over the new connection");
         assertEquals(this.station.queries().size(), 1, "other queries reached the station");
+        assertEquals(this.model.resyncAnswers.get(), 1, "the station's answer was not marked as the resync's, or the "
+            + "device 1 frame was");
         assertEquals(Arrays.toString(this.station.queries().get(0)), "[2, 1301]", "the query is not for 2/1301");
     }
 
@@ -742,9 +750,11 @@ public class testTheStationIsReachedOverTcp
 
     /**
      * A UDP copy lagging past the first resync's answer is put right by a second pass half a second later, not left
-     * wrong until a reconnect try fails (a refused connect takes 2 s on Windows loopback).
+     * wrong until a reconnect try fails (a refused connect takes 2 s on Windows loopback); also when some of the first
+     * pass's queries go unanswered, here four on a device the station does not have.
      *
-     * MUTATION: in `NetworkProxy.recover`, `resync(false, 2);` to `resync(false, 1);`.
+     * MUTATION: in `NetworkProxy.recover`, `resync(false, 2);` to `resync(false, 1);`.  And: in `NetworkProxy.resync`,
+     * `n + 1 < passes ? start + RESYNC_AGAIN_NS : 0` to `0` (the first pass waits out its unanswered queries).
      */
     @Test(timeOut = 30000)
     public void testALateUdpCopyAfterTheUdpResyncIsPutRightByASecondPass() throws Exception
@@ -754,9 +764,16 @@ public class testTheStationIsReachedOverTcp
             connectedToASilentStation();
             this.station.sensor(1602, true);
             this.station.sensor(1602, false);
-            assertTrue(Components.waitFor(() -> this.model.heardFrame(linkS88(1602, false)), WAIT_MS), "precondition");
+            for (int c = 1690; c < 1694; c++) this.station.send(TcpStation.event(3, c, true));
+
+            assertTrue(Components.waitFor(() -> this.model.heard.size() == 6, WAIT_MS), "precondition: not carried");
 
             closedAndAskedOverUdp(wire, 1602);
+
+            for (int c = 1690; c < 1694; c++)
+            {
+                assertTrue(Arrays.equals(nextOn(wire, 1000), query(3, c)), "contact " + c + " not asked: " + this.model.lines);
+            }
 
             broadcast(linkS88(1602, true));
             assertTrue(Components.waitFor(() -> Boolean.TRUE.equals(this.model.lastState(1602)), WAIT_MS),

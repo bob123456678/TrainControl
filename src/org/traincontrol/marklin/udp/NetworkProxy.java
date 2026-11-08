@@ -607,19 +607,6 @@ public class NetworkProxy
         return true;
     }
 
-    /** Hands one frame to the model; a frame the model cannot take must not stop reception. */
-    private void deliver(byte[] frame)
-    {
-        try
-        {
-            model.receiveMessage(model.createMessage(frame));
-        }
-        catch (Exception e)
-        {
-            model.log(e);
-        }
-    }
-
     /** Makes UDP the live transport, or sets its datagrams aside; once this returns, none is delivered unless live. */
     private void setUdpLive(boolean live)
     {
@@ -651,43 +638,59 @@ public class NetworkProxy
                 return;
             }
 
-            learn(buffer);
+            boolean answer = learn(buffer);
 
             // Send message to listener
-            model.receiveMessage(model.createMessage(buffer));
+            model.receiveMessage(marked(model.createMessage(buffer), answer));
         }
     }
 
     /** Delivers a TCP frame. */
     private void deliverTcp(byte[] frame)
     {
-        learn(frame);
-        deliver(frame);
+        boolean answer = learn(frame);
+
+        try
+        {
+            model.receiveMessage(marked(model.createMessage(frame), answer));
+        }
+        catch (Exception e)
+        {
+            model.log(e);
+        }
+    }
+
+    /** A message, marked as the answer to a resync's query when it is one, so the model can tell it from an event. */
+    private static CANMessage marked(CANMessage message, boolean answer)
+    {
+        if (answer && message instanceof CS2Message) ((CS2Message) message).markAnswersAResync();
+
+        return message;
     }
 
     /**
      * In TCP mode, notes a contact's device from a sensor event, a change of state; a frame with the state unchanged is
-     * an answer to a query, counted for the resync that asked.
+     * an answer to a query, counted for the resync that asked.  True for such an answer.
      */
-    private void learn(byte[] frame)
+    private boolean learn(byte[] frame)
     {
-        if (this.tcpPort <= 0 || command(frame) != CS2Message.CMD_ACC_SENSOR || frame[4] != 8) return;
+        if (this.tcpPort <= 0 || command(frame) != CS2Message.CMD_ACC_SENSOR || frame[4] != 8) return false;
 
         int contact = ((frame[7] & 0xFF) << 8) | (frame[8] & 0xFF);
 
         if (frame[9] != frame[10])
         {
             this.sensorDevice.put(contact, ((frame[5] & 0xFF) << 8) | (frame[6] & 0xFF));
-            return;
+            return false;
         }
 
         synchronized (this.resyncLock)
         {
-            if (this.awaiting != null && this.awaiting.remove(contact))
-            {
-                this.answered++;
-                this.resyncLock.notifyAll();
-            }
+            if (this.awaiting == null || !this.awaiting.remove(contact)) return false;
+
+            this.answered++;
+            this.resyncLock.notifyAll();
+            return true;
         }
     }
 
@@ -708,7 +711,7 @@ public class NetworkProxy
             {
                 long start = System.nanoTime();
 
-                if (!askOnce(overTcp, epoch)) return;
+                if (!askOnce(overTcp, epoch, n + 1 < passes ? start + RESYNC_AGAIN_NS : 0)) return;
 
                 if (n + 1 < passes && !waitFor(start + RESYNC_AGAIN_NS, epoch, false)) return;
             }
@@ -718,8 +721,11 @@ public class NetworkProxy
         asking.start();
     }
 
-    /** One pass: the queries, paced, then up to RESYNC_WAIT_NS for the answers, logged.  False once superseded. */
-    private boolean askOnce(boolean overTcp, int epoch)
+    /**
+     * One pass: the queries, paced, then the answers awaited until `until`, or for RESYNC_WAIT_NS when 0; logged, also
+     * when a new transport cut it short, but not after a stop.  False once superseded.
+     */
+    private boolean askOnce(boolean overTcp, int epoch, long until)
     {
         List<byte[]> queries = new ArrayList<>();
         Set<Integer> asked = ConcurrentHashMap.newKeySet();
@@ -747,9 +753,18 @@ public class NetworkProxy
             this.answered = 0;
         }
 
+        int sent = 0;
+        boolean current = true;
+
         for (byte[] query : queries)
         {
-            if (this.stopRequested || this.liveEpoch.get() != epoch) return false;
+            if (this.stopRequested || this.liveEpoch.get() != epoch)
+            {
+                current = false;
+                break;
+            }
+
+            sent++;
 
             if (overTcp)
             {
@@ -766,7 +781,7 @@ public class NetworkProxy
             LockSupport.parkNanos(RESYNC_PACE_NS);
         }
 
-        if (!waitFor(System.nanoTime() + RESYNC_WAIT_NS, epoch, true)) return false;
+        if (current) current = waitFor(until != 0 ? until : System.nanoTime() + RESYNC_WAIT_NS, epoch, true);
 
         int got;
 
@@ -776,8 +791,9 @@ public class NetworkProxy
             this.awaiting = null;
         }
 
-        model.logf("network.sensorsResynced", queries.size(), got, skipped);
-        return true;
+        if (!this.stopRequested) model.logf("network.sensorsResynced", sent, got, skipped);
+
+        return current;
     }
 
     /** Waits until `deadline`, or until every query is answered when `answers`; false on a stop or a new transport. */
