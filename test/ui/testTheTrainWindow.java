@@ -724,4 +724,169 @@ public class testTheTrainWindow
         assertNotNull(Components.withText(menu, I18n.f("autosetup.ui.menuTrainAt", session.describeTile(square))),
             "the editor's menu has no train window");
     }
+
+    // ------------------------------------------------------------------------------------- Place the selected train
+
+    /** Takes the selected locomotive off its key, as choosing it again does. */
+    private static void nothingIsSelected()
+    {
+        if (ui.getActiveLoc() != null) ui.mapLocToCurrentButton(ui.getActiveLoc().getName());
+
+        assertTrue(Components.waitFor(() -> ui.getActiveLoc() == null, 10000),
+            "precondition: the selected locomotive could not be taken off its key");
+    }
+
+    private static JMenuItem placeItemOn(AutonomyEditorPanel panel, TileKey square, String train) throws Exception
+    {
+        JPopupMenu menu = Components.onTheEventThread(() -> panel.buildTileMenu(square, null));
+
+        return (JMenuItem) Components.withText(menu, I18n.f("layout.ui.menuPlaceLocomotive", train));
+    }
+
+    private static java.util.List<String> roadNames(java.util.List<org.traincontrol.automation.Edge> road)
+    {
+        java.util.List<String> out = new java.util.ArrayList<>();
+
+        if (road != null) for (org.traincontrol.automation.Edge edge : road) out.add(edge.getEnd().getName());
+
+        return out;
+    }
+
+    /**
+     * The editor's station menu places the selected locomotive in one click, through the door the train window uses: it
+     * records the side it came in by and asks where the tail lies, and the answer is kept (Adam: "there should always be
+     * an edit loc, place current (if selected and different), and place new option").  Tunnel, one way in from the north,
+     * and a train of 5.
+     *
+     * MUTATION: have the item call `session.placeLocomotive` instead of `AutonomyEditorPanel.placeLocomotive`, and the
+     * side and the tail are not recorded and this fails.
+     */
+    @Test(timeOut = 180000)
+    public void testTheEditorsMenuPlacesTheSelectedTrainWithItsSideAndTail() throws Exception
+    {
+        AutonomyEditorPanel panel = theEditorsPanel();
+
+        final TileKey tunnel = support.StandingTrain.squareNamed(session, "Tunnel");
+
+        String name = aTrainNotPlaced();
+
+        Locomotive train = model.getLocByName(name);
+
+        Integer lengthWas = train.getTrainLength();
+
+        try
+        {
+            train.setTrainLength(5);
+
+            Components.onTheEventThread(() -> { session.placeLocomotive(tunnel, null); return null; });
+
+            Components.settle();
+
+            org.traincontrol.automation.Layout railway = model.getAutoLayout();
+
+            org.traincontrol.automation.Point copy = railway.getPoint(session.facingsFor(tunnel).keySet().iterator().next());
+
+            org.traincontrol.gui.TailCrossedPrompt.Choice tunnelPre = org.traincontrol.gui.TailCrossedPrompt
+                .choicesFor(railway, copy, "N", 5, null).stream()
+                .filter(choice -> choice.getFarthest().getName().startsWith("TunnelPre")).findFirst().orElse(null);
+
+            assertNotNull(tunnelPre, "precondition: a five-unit train at Tunnel from the north is not offered TunnelPre");
+
+            org.traincontrol.gui.TailCrossedPrompt.answerForTests(tunnelPre.getFarthest().getName());
+
+            makeActive(name);
+
+            JMenuItem item = placeItemOn(panel, tunnel, name);
+
+            assertNotNull(item, "the editor's menu on Tunnel has no Place " + name);
+            assertTrue(item.isEnabled(), "Place " + name + " is grayed with no route running");
+
+            Components.onTheEventThread(() -> { item.doClick(); return null; });
+
+            assertEquals(session.getLocomotiveNameAt(tunnel), name, "the item did not put the selected train on Tunnel");
+            assertEquals(session.getArrivedFrom(tunnel), "N", "the placement recorded no arrival side, or the wrong one");
+
+            final java.util.List<String> expected = roadNames(tunnelPre.getRoad());
+
+            assertTrue(Components.waitFor(() ->
+            {
+                org.traincontrol.automation.Point standing = model.getAutoLayout().getLocomotiveLocation(train);
+
+                return standing != null && "N".equals(standing.getArrivedFrom())
+                    && expected.equals(roadNames(standing.getArrivedAlong()));
+            }, 20000), "the tail answer was not kept; expected the road " + expected);
+        }
+        finally
+        {
+            org.traincontrol.gui.TailCrossedPrompt.answerForTests(null);
+
+            train.setTrainLength(lengthWas);
+        }
+    }
+
+    /**
+     * No Place item for the selected train where nothing is selected, or where the selected train already stands.
+     *
+     * MUTATION: drop the `selected == null` test or the `equals(standing)` test in `EditorTileMenus.placeSelectedItem`,
+     * and the matching half of this fails.
+     */
+    @Test(timeOut = 120000)
+    public void testTheEditorsMenuHasNoPlaceForNothingOrForTheTrainAlreadyThere() throws Exception
+    {
+        AutonomyEditorPanel panel = theEditorsPanel();
+
+        TileKey full = aSquareWithATrain();
+        TileKey empty = anEmptyStation();
+
+        String standing = session.getLocomotiveNameAt(full);
+        String other = aTrainNotPlaced();
+
+        nothingIsSelected();
+
+        assertNull(placeItemOn(panel, empty, other), "Place was offered with nothing selected");
+        assertNull(placeItemOn(panel, full, standing), "Place was offered with nothing selected, over a train");
+
+        makeActive(standing);
+
+        assertNull(placeItemOn(panel, full, standing), "Place was offered for the train already standing there");
+
+        makeActive(other);
+
+        assertNotNull(placeItemOn(panel, empty, other), "precondition: no Place for a selected train that stands nowhere");
+        assertNotNull(placeItemOn(panel, full, other), "precondition: no Place over another train");
+    }
+
+    /**
+     * While a route runs the item is grayed with the reason, and clicking it places nothing.
+     *
+     * MUTATION: leave the item enabled while `aRunHoldsTheSetup()`, and this fails.
+     */
+    @Test(timeOut = 120000)
+    public void testTheEditorsPlaceFollowsTheRunRule() throws Exception
+    {
+        AutonomyEditorPanel panel = theEditorsPanel();
+
+        TileKey empty = anEmptyStation();
+
+        String name = aTrainNotPlaced();
+
+        makeActive(name);
+
+        regression.testNoSetupEditWhileARouteRuns.aRouteRuns(ui, true);
+
+        try
+        {
+            JMenuItem item = placeItemOn(panel, empty, name);
+
+            assertNotNull(item, "the editor's menu has no Place " + name + " while a route runs; it should be grayed");
+            assertFalse(item.isEnabled(), "Place " + name + " is not grayed while a route runs");
+            assertNotNull(item.getToolTipText(), "the grayed Place says nothing of why");
+        }
+        finally
+        {
+            regression.testNoSetupEditWhileARouteRuns.aRouteRuns(ui, false);
+        }
+
+        assertTrue(placeItemOn(panel, empty, name).isEnabled(), "Place stays grayed once the route is over");
+    }
 }
