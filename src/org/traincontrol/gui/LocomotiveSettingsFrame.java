@@ -744,8 +744,8 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
             gbc.gridy = 6;
             gbc.gridwidth = 2;
             gbc.fill = GridBagConstraints.HORIZONTAL;
-            // The row above holds the warning line, so the bottom inset carries its height
-            gbc.insets = new Insets(6, 4, 14 + under.getPreferredSize().height, 6);
+            // As much air under the line as over it, with the heading's own top inset
+            gbc.insets = new Insets(6, 4, 6, 6);
             add(new javax.swing.JSeparator(), gbc);
             gbc.gridwidth = 1;
             gbc.fill = GridBagConstraints.NONE;

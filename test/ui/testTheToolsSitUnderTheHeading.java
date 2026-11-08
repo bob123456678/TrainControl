@@ -4,6 +4,7 @@ import java.awt.Component;
 import java.awt.Container;
 import javax.swing.SwingUtilities;
 import static org.testng.Assert.assertNotNull;
+import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertTrue;
 import org.testng.SkipException;
 import org.testng.annotations.AfterClass;
@@ -229,6 +230,57 @@ public class testTheToolsSitUnderTheHeading
 
         assertTrue(autonomy[0] == track[0] && back[0] == track[0], "the page list moves between modes: top at "
             + track[0] + ", " + autonomy[0] + ", " + back[0]);
+
+        close(editor);
+
+        editor = null;
+    }
+
+    /**
+     * A one-page list is still `SIDEBAR_ROWS_AT_LEAST` rows tall, filled to the bottom with empty rows, and a click or
+     * hover in the empty rows names no page.
+     *
+     * MUTATION: drop the `Math.max` in `scrollable`, or `getScrollableTracksViewportHeight` from the list, or the bounds
+     * check in `pageRowAt`, and this fails.
+     */
+    @Test
+    public void testOnePageStillShowsEmptyRows() throws Exception
+    {
+        editor = shown(null);
+
+        final LayoutEditor on = editor;
+
+        SwingUtilities.invokeAndWait(() ->
+        {
+            try
+            {
+                java.lang.reflect.Method build = LayoutEditor.class.getDeclaredMethod("buildPageControl", java.util.List.class);
+                java.lang.reflect.Method wrap = LayoutEditor.class.getDeclaredMethod("scrollable", javax.swing.JComponent.class);
+                java.lang.reflect.Method rowAt = LayoutEditor.class.getDeclaredMethod("pageRowAt", java.awt.Point.class);
+
+                build.setAccessible(true);
+                wrap.setAccessible(true);
+                rowAt.setAccessible(true);
+
+                javax.swing.JList<?> list = (javax.swing.JList<?>) build.invoke(on, java.util.Collections.singletonList(PAGE));
+                javax.swing.JScrollPane scroll = (javax.swing.JScrollPane) wrap.invoke(on, list);
+
+                scroll.setSize(scroll.getPreferredSize());
+                scroll.doLayout();
+                scroll.getViewport().doLayout();
+
+                int rows = LayoutEditor.SIDEBAR_ROWS_AT_LEAST * 24;
+
+                assertEquals(scroll.getPreferredSize().height, rows, "the one-page list's height");
+                assertEquals(list.getHeight(), scroll.getViewport().getHeight(), "the list does not fill its rows");
+                assertEquals(rowAt.invoke(on, new java.awt.Point(10, 12)), 0, "the page's own row");
+                assertEquals(rowAt.invoke(on, new java.awt.Point(10, rows - 12)), -1, "an empty row names a page");
+            }
+            catch (ReflectiveOperationException e)
+            {
+                throw new AssertionError(e);
+            }
+        });
 
         close(editor);
 

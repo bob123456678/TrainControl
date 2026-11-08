@@ -4618,6 +4618,13 @@ public class LayoutEditor extends PositionAwareJFrame
             {
                 return true;
             }
+
+            /** Fills the strip's fixed height, so a short list ends in empty rows. */
+            @Override
+            public boolean getScrollableTracksViewportHeight()
+            {
+                return getParent() instanceof javax.swing.JViewport && getParent().getHeight() > getPreferredSize().height;
+            }
         };
 
         pageList.setSelectionMode(javax.swing.ListSelectionModel.SINGLE_SELECTION);
@@ -4636,7 +4643,7 @@ public class LayoutEditor extends PositionAwareJFrame
             @Override
             public void mouseMoved(java.awt.event.MouseEvent e)
             {
-                int row = pageList.locationToIndex(e.getPoint());
+                int row = pageRowAt(e.getPoint());
 
                 pageList.setToolTipText(row < 0 ? null : pageList.getModel().getElementAt(row));
             }
@@ -4648,7 +4655,7 @@ public class LayoutEditor extends PositionAwareJFrame
             @Override
             public void mouseClicked(MouseEvent e)
             {
-                int row = pageList.locationToIndex(e.getPoint());
+                int row = pageRowAt(e.getPoint());
 
                 // Not while one is in flight.
                 if (row < 0 || switching || changingPage) return;
@@ -4662,6 +4669,14 @@ public class LayoutEditor extends PositionAwareJFrame
         });
 
         return pageList;
+    }
+
+    /** @return the page row under the point, or -1 in the empty rows below the last page */
+    private int pageRowAt(java.awt.Point point)
+    {
+        int row = pageList.locationToIndex(point);
+
+        return row >= 0 && pageList.getCellBounds(row, row).contains(point) ? row : -1;
     }
 
     /**
@@ -4730,7 +4745,7 @@ public class LayoutEditor extends PositionAwareJFrame
     }
 
     /**
-     * The page list, borderless with no horizontal bar: as tall as its rows up to `SIDEBAR_TABS_BEFORE_SCROLLING`, and
+     * The page list, borderless with no horizontal bar: as tall as its rows, between `SIDEBAR_ROWS_AT_LEAST` and `SIDEBAR_TABS_BEFORE_SCROLLING`, and
      * shorter, scrolling, when the window is too short for it and the controls under it.  No taller in either mode
      * (OB-383): the strip's spare room goes below it.
      */
@@ -4747,7 +4762,8 @@ public class LayoutEditor extends PositionAwareJFrame
         scroll.getVerticalScrollBar().setUnitIncrement(24);
 
         // 24, as pageList.setFixedCellHeight, so whole rows show.
-        int height = Math.min(column.getPreferredSize().height, SIDEBAR_TABS_BEFORE_SCROLLING * 24);
+        int rows = Math.max(column.getPreferredSize().height, SIDEBAR_ROWS_AT_LEAST * 24);
+        int height = Math.min(rows, SIDEBAR_TABS_BEFORE_SCROLLING * 24);
 
         scroll.setPreferredSize(new java.awt.Dimension(SIDEBAR_WIDTH - 16, height));
         scroll.setMaximumSize(new java.awt.Dimension(SIDEBAR_WIDTH - 16, height));
@@ -4780,6 +4796,9 @@ public class LayoutEditor extends PositionAwareJFrame
 
     /** How many pages the strip shows before scrolling (MT-056). */
     private static final int SIDEBAR_TABS_BEFORE_SCROLLING = 20;
+
+    /** The strip's height in rows however few pages there are; the rows past the last page stay empty. */
+    public static final int SIDEBAR_ROWS_AT_LEAST = 6;
 
     /** The air under a blue heading, as the form leaves. */
     public static final int HEADING_GAP = 6;
