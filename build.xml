@@ -695,6 +695,7 @@
         <test-one-class class="testAPresetSaveOnALayoutWithoutASetup"/>
         <test-one-class class="testChangeDirectionIsOneClick"/>
         <test-one-class class="testTheLocomotiveSettingsSync"/>
+        <test-one-class class="testAStuckConsoleDoesNotStopTheRailway"/>
     </target>
     <target name="package-for-store" depends="jar">
         <property name="store.jar.name" value="TrainControl"/>
