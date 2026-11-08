@@ -1100,11 +1100,20 @@ fi
 # failures (10) is the tree or the machine, not flakes, and is not rerun; TC_RERUN=0 turns it off.
 mkdir -p "$WORK/first"
 
+# A CLASS THAT LEFT THE LANE'S SAVED DATA CHANGED IS NOT RERUN: its rerun starts from what it left, so a class that
+# rewrites a file with the same bytes would pass the second time and read as flaky.  It stays failed, and not in the
+# flake log (nothing about it is intermittent).
+is_rerunnable()
+{
+    [ "$(sed -n 1p "$WORK/verdicts/$1" 2>/dev/null)" = fail ] \
+        && ! sed -n 2p "$WORK/verdicts/$1" | grep -q 'saved data left changed'
+}
+
 firsts=0
 
 for cls in $(cat "$WORK/classes")
 do
-    if [ "$(sed -n 1p "$WORK/verdicts/$cls" 2>/dev/null)" = fail ]; then firsts=$((firsts + 1)); fi
+    if is_rerunnable "$cls"; then firsts=$((firsts + 1)); fi
 done
 
 if [ "${TC_RERUN:-1}" != 0 ] && [ "$firsts" -gt 0 ] && [ "$firsts" -le "${TC_RERUN_MAX:-10}" ]
@@ -1113,7 +1122,7 @@ then
 
     for cls in $(cat "$WORK/classes")
     do
-        if [ "$(sed -n 1p "$WORK/verdicts/$cls" 2>/dev/null)" != fail ]; then continue; fi
+        if ! is_rerunnable "$cls"; then continue; fi
 
         mv "$WORK/verdicts/$cls" "$WORK/first/$cls"
 

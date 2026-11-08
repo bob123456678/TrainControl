@@ -1,5 +1,6 @@
 package support;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -107,13 +108,49 @@ public final class SavedData
             throw new IllegalStateException(e);
         }
 
+        // Anything else at the top of the data folder (RestoreAction's `name-restored` folders), but not the run's temp
+        if (isolated())
+        {
+            File[] top = new File(Util.dataPath("")).listFiles();
+
+            if (top != null)
+            {
+                for (File entry : top)
+                {
+                    if (!"tmp".equals(entry.getName()) && !prints.containsKey(entry.getPath())
+                        && !isRoot(entry.getName()))
+                    {
+                        prints.put(entry.getPath(), "present");
+                    }
+                }
+            }
+        }
+
         return prints;
     }
 
-    /** Every saved file that exists now, in path order. */
+    private static boolean isRoot(String name)
+    {
+        return java.util.Arrays.asList(ROOTS).contains(name);
+    }
+
+    /**
+     * Whether this run has a data folder of its own (`traincontrol.dataDir`, which the runners give it).  Without one
+     * the data files are the operator's, so nothing here reads, deletes or writes them.
+     */
+    public static boolean isolated()
+    {
+        String folder = System.getProperty(Util.DATA_DIR_PROPERTY);
+
+        return folder != null && !folder.trim().isEmpty();
+    }
+
+    /** Every saved file that exists now, in path order; none outside an isolated run. */
     private static List<Path> files() throws IOException
     {
         List<Path> all = new ArrayList<>();
+
+        if (!isolated()) return all;
 
         for (String root : ROOTS)
         {

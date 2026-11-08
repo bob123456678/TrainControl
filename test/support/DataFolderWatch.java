@@ -25,7 +25,7 @@ public class DataFolderWatch implements ISuiteListener
     @Override
     public void onStart(ISuite suite)
     {
-        if (!isolated()) return;
+        if (!SavedData.isolated()) return;
 
         try
         {
@@ -67,13 +67,6 @@ public class DataFolderWatch implements ISuiteListener
         {
             throw new IllegalStateException("could not read the saved data", e);
         }
-    }
-
-    private static boolean isolated()
-    {
-        String folder = System.getProperty(org.traincontrol.util.Util.DATA_DIR_PROPERTY);
-
-        return folder != null && !folder.trim().isEmpty();
     }
 
     private static String classes(ISuite suite)
