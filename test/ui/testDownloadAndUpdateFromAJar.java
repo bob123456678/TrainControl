@@ -182,6 +182,9 @@ public class testDownloadAndUpdateFromAJar
         TrainControlUI.LATEST_DOWNLOAD_DIGEST = null;
     }
 
+    /** The update rewrites the run's saved data, which the next classes in the lane read. */
+    private static final support.SavedData FOUND = support.SavedData.take();
+
     @AfterClass(alwaysRun = true)
     public static void tearDownClass() throws Exception
     {
@@ -207,7 +210,14 @@ public class testDownloadAndUpdateFromAJar
         }
         finally
         {
-            if (sandbox != null) sandbox.close();
+            try
+            {
+                if (sandbox != null) sandbox.close();
+            }
+            finally
+            {
+                FOUND.putBack();
+            }
         }
     }
 

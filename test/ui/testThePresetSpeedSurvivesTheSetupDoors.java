@@ -81,6 +81,9 @@ public class testThePresetSpeedSurvivesTheSetupDoors
         support.StandingTrain.standOn(model, session, TRAIN, square);
     }
 
+    /** The window's Save rewrites the run's saved data, which the next classes in the lane read. */
+    private static final support.SavedData FOUND = support.SavedData.take();
+
     @AfterClass(alwaysRun = true)
     public static void tearDownClass() throws Exception
     {
@@ -92,7 +95,14 @@ public class testThePresetSpeedSurvivesTheSetupDoors
         }
         finally
         {
-            if (fixture != null) fixture.closeSandbox();
+            try
+            {
+                if (fixture != null) fixture.closeSandbox();
+            }
+            finally
+            {
+                FOUND.putBack();
+            }
         }
     }
 
