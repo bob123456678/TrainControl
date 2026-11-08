@@ -91,10 +91,8 @@ public class testEveryWindowWearsTheIcon
     }
 
     /**
-     * And the incantation is written in ONE place.
-     *
-     * The windows missing the icon were missing it because the rule was copied rather than called, so adding a window
-     * meant remembering a line nobody had written down as a rule.
+     * And the incantation is written in ONE place, so adding a window means calling it, not remembering a line nobody
+     * wrote down as a rule.
      *
      * MUTATION: spelling the resource out again in any window fails this.
      */

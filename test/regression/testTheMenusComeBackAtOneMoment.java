@@ -138,10 +138,10 @@ public class testTheMenusComeBackAtOneMoment
     /**
      * "Combine linked pages" sits immediately after "Duplicate Current Page".
      *
-     * Appending put it at the BOTTOM of Manage Pages, past Delete, in the group about destroying a page; combining
-     * pages is the same kind of act as duplicating one.  Found by searching for the item rather than by index, which
-     * moves whenever somebody adds an item in the designer.  Both adjacent claims are needed: "after Duplicate" alone
-     * passes for an item at the bottom of a menu whose last entry is Duplicate, "not last" alone for one in the middle.
+     * Combining pages is the same kind of act as duplicating one.  Found by searching for the item rather than by
+     * index, which moves whenever somebody adds an item in the designer.  Both adjacent claims are needed: "after
+     * Duplicate" alone passes for an item at the bottom of a menu whose last entry is Duplicate, "not last" alone for
+     * one in the middle.
      *
      * MUTATION: move `modifyLocalLayoutMenu.add(combineLinkedPagesMenuItem)` below Delete in
      * `initComponents` and this fails, naming where the item landed.

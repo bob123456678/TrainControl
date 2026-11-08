@@ -6,11 +6,10 @@ import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.util.I18n;
 
 /**
- * The timetable's column headings, before there is anything to put under them (Adam: "the timetable entry has default
- * table heading when blank.  make sure these are always set.").  The form designer gives every new JTable four columns
- * called "Title 1" through "Title 4", and the real headings were installed only by repaintTimetable, which needs a
- * running Layout, so a fresh installation showed the placeholder.  The headings do not depend on the data, so they are
- * set on their own.
+ * The timetable's column headings, before there is anything to put under them.  The form designer gives every new
+ * JTable four columns called "Title 1" through "Title 4", and the real headings were installed only by
+ * repaintTimetable, which needs a running Layout, so a fresh installation showed the placeholder.  The headings do not
+ * depend on the data, so they are set on their own.
  *
  * MUTATION: take the prepareTimetableColumns call out of the constructor and the table
  * comes back with four columns named after nothing.

@@ -8,8 +8,7 @@ import org.traincontrol.util.Util;
 
 /**
  * Turns off Always on Top in a test run's own preference node, before any test runs, so the windows a run opens stay
- * behind whatever Adam is using (Adam: "The windows popping up on my screen are annoying, so we should either make them
- * not always on top (unless the test is testing that)").  A claim about Always on Top sets the setting itself.
+ * behind whatever the operator is using.  A claim about Always on Top sets the setting itself.
  *
  * The app also puts windows on top in code and can leave them there (a route's confirmation), so it then turns back any
  * window still on top after `STUCK_MS`, unless one of the run's classes is about Always on Top: its source names

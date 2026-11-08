@@ -16,9 +16,9 @@ import org.traincontrol.automation.Point;
 /**
  * A turnout, and the two routes that share its metal.  Every hand-built fixture is a straight chain of ordinary points
  * (`test/README.md`'s survey), so the lock-edge machinery (two routes over one piece of metal are mutually exclusive,
- * which stops a route being cleared under a train standing on the other arm) was exercised only against the operator's
- * live railway.  `test/layouts/single-switch` is a checked-in railway of that shape: a west end, an approach, and the
- * two platforms the switch divides; the approach splits into two Points, trains arriving at it from both sides.
+ * which stops a route being cleared under a train standing on the other arm) needs this one.
+ * `test/layouts/single-switch` is a checked-in railway of that shape: a west end, an approach, and the two platforms
+ * the switch divides; the approach splits into two Points, trains arriving at it from both sides.
  *
  * The lengths are not here: Adam asked for topology in the files and lengths in code, so a test that needs measured
  * track measures it itself and no two tests inherit one author's numbers.

@@ -129,11 +129,8 @@ public class testParseWebServer
         }
         finally
         {
-            // IN A FINALLY, so an assertion above does not leak the server.
-            //
-            // This was the last statement of the method, which stops it only when the test
-            // passes.  A failure left an HttpServer bound for the life of the JVM - and every
-            // class after this one in a battery shares that JVM's machine.
+            // IN A FINALLY: an assertion failing above would otherwise leave an HttpServer bound for the life of the
+            // JVM, which every class after this one in a battery shares.
             server.stopServer();
         }
     }

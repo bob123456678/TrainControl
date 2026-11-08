@@ -17,11 +17,9 @@ import org.traincontrol.marklin.MarklinControlStation;
 /**
  * The road a standing train arrived along is kept, so its tail is the same after a save, a load or a rebuild.
  *
- * Adam: "why not ask the user to specify the last sensor it crossed from a list of possible sensors?  Then state will
- * always be fully consistent."  `Point.arrivedAlong` lived in memory only, so every rebuild of the running layout put a
- * driven train back with its side and not its road, and its tail stopped at the first fork again.  The road is now
- * written with the point (`Point.toJSON`), read back by `Layout.fromJSON`, and carried across a rebuild with the train
- * (`TrainControlUI.whereTheTrainsAre` / `putTheTrainsBack`).
+ * `Point.arrivedAlong` lived in memory only, so a rebuild of the running layout lost the road a train arrived by.  The
+ * road is now written with the point (`Point.toJSON`), read back by `Layout.fromJSON`, and carried across a rebuild
+ * with the train (`TrainControlUI.whereTheTrainsAre` / `putTheTrainsBack`).
  *
  * The fixture is `testATailFollowsTheRouteItCameIn`'s shape on sensors of its own: A -> J -> S with C -> J making J a
  * junction, the platform's approach one unit and the train three, so two units lie back past J along the road it came

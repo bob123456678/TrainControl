@@ -10,9 +10,8 @@ import org.traincontrol.util.I18n;
  * Every routing rule explains itself on the control that chooses it.
  *
  * Each rule has an explanation written for it and translated into all eight languages
- * (`autolayout.ui.tooltip.pathPreferenceFEWEST_STATIONS` and its siblings); until OB-163 nothing read them.  A rule
- * whose text nobody can see is a rule whose missing text nobody notices, hence this asks the CONTROL, not the
- * properties file.
+ * (`autolayout.ui.tooltip.pathPreferenceFEWEST_STATIONS` and its siblings).  A rule whose text nobody can see is a rule
+ * whose missing text nobody notices, hence this asks the CONTROL, not the properties file.
  *
  * MUTATION this catches: reverting the tooltip to the general sentence fails every rule; adding a
  * rule to ROUTING_ORDER without writing its explanation fails that rule.

@@ -24,7 +24,7 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
 /**
  * An import of routes says that they arrive with their automatic firing off, and how to turn it on.  Every route read
  * from a file is disarmed (Adam: "they should not be armed. The user can choose to do this when they are ready."),
- * pinned in `testRoutes`; what was missing was any word of it.
+ * pinned in `testRoutes`.
  *
  * Runs only where the run has its own copy of the data: an import deletes every route the model holds before it adds
  * the file's, and in a run sharing `LocDB.data` that would be the operator's routes.  `one.sh` and `battery.sh` give
@@ -235,8 +235,7 @@ public class testAnImportSaysItsRoutesAreOff
     }
 
     /**
-     * The refusal of a file naming a route twice says what repeats: the name, the number, or a route with no name.  It
-     * named both though only one repeated.
+     * The refusal of a file naming a route twice says what repeats: the name, the number, or a route with no name.
      *
      * MUTATION: name both again, and this fails.
      */

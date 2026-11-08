@@ -19,7 +19,7 @@ public class testHomeAssignmentRules
 {
     /**
      * Rule 1: the list keeps a home naming a locomotive autonomy no longer runs.  A non-editable combo cannot preselect
-     * a value its model does not hold, so leaving the name out opened the dialog on "None" and OK cleared the home.
+     * a value its model does not hold, so the name must be in the list or OK clears the home.
      */
     @Test
     public void testTheHomeListKeepsAHomeAutonomyNoLongerRuns()
@@ -111,10 +111,9 @@ public class testHomeAssignmentRules
             "nothing asks homeBrokenBy about a station's actual home, so the exclusion warning is "
             + "unreachable - which is the exact fault DD-A6 found");
 
-        // whyNotAHome, not canBeHome: canBeHome answers false for two unrelated reasons, and rolling them together
-        // warned "no train can come to rest here" about a square that is two places.  The message key is named as well
-        // as the method, because the method alone is satisfied by a panel that consults it and then acts on the wrong
-        // half.
+        // whyNotAHome, not canBeHome: canBeHome answers false for two unrelated reasons, which must not be rolled
+        // together.  The message key is named as well as the method, because the method alone is satisfied by a panel
+        // that consults it and then acts on the wrong half.
         assertTrue(source.contains("HomeStaging.whyNotAHome"),
             "rule 2's warning - a home the locomotive cannot reach - is decided by "
             + "HomeStaging.whyNotAHome, and nothing in the panel consults it any more");

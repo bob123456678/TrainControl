@@ -13,13 +13,9 @@ public class CS3TestServer
 {
     private HttpServer server;
     /**
-     * Zero until the first start, then whatever the machine gave us.
-     *
-     * This was 8080 - a constant, with no setter, no argument and no property, handed straight to the
-     * socket - which is the single most contended port on a developer machine. The suite has already
-     * paid for a fixed port twice on the UDP side and written the argument down both times, in
-     * `battery.sh`: a bind failure comes out of `@BeforeClass` as "Total tests run: 16, Failures: 0,
-     * Skips: 16", which reads as a class nobody wrote tests for.
+     * Zero until the first start, then whatever the machine gave us: a fixed port collides on a developer machine, and
+     * a bind failure comes out of `@BeforeClass` as "Total tests run: 16, Failures: 0, Skips: 16", which reads as a
+     * class nobody wrote tests for (`battery.sh`).
      *
      * **Kept after the first bind, because a restart has to land on the same number.**
      * `testParseWebServer` stops the server and starts it again to serve a different firmware version,

@@ -135,8 +135,7 @@ public class testWhichSquaresTheRoomRuleClosesOff
 
     /**
      * (square, length) pairs that offer a train nothing at all where a one-unit train has somewhere to go, so the
-     * square is closed by the room rule rather than by the shape of the track. 0 since MT-333: the squares that did it
-     * were squares on the way.
+     * square is closed by the room rule rather than by the shape of the track.
      */
     private static final int STRANDED = 0;
 

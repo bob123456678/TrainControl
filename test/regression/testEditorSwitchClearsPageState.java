@@ -65,7 +65,7 @@ public class testEditorSwitchClearsPageState
         String source = arriveAtSource();
 
         // Through takeTheUndoPoint, which takes BOTH halves: the in-memory snapshot Cancel restores and the on-disk
-        // note a restart restores.  They were separate statements and drifted, so asking for the call asks for both.
+        // note a restart restores, so asking for the call asks for both.
         assertTrue(source.contains("takeTheUndoPoint("),
             "arriveAt does not re-take the setup undo point, so Cancel after a switch is undoing "
             + "against the wrong starting point");
@@ -108,8 +108,8 @@ public class testEditorSwitchClearsPageState
 
     /**
      * Leaving autonomy mode puts the track palette back (OB-017).  Autonomy mode EMPTIES the palette panel and gives it
-     * a different layout, and leaving only removed the autonomy column, enough while coming back meant a new window;
-     * since the editor stopped closing, the teardown left an empty palette under a heading reading "Autonomy Tools".
+     * a different layout; the teardown must put both back, or an empty palette stays under a heading reading
+     * "Autonomy Tools".
      */
     @Test
     public void testLeavingAutonomyModeRebuildsThePalette() throws Exception

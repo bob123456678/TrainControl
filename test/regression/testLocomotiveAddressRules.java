@@ -9,10 +9,9 @@ import support.SourceOf;
 
 /**
  * What counts as a valid locomotive address, asked once and answered in one place.
- * `MarklinLocomotive.validateNewAddress` is the rule; the Add Locomotive dialog once wrote it out again (three
- * upper-bound-only `if` blocks, no MULTI_UNIT branch), so address 0 passed the dialog.  These tests pin the rule, which
- * the dialog now asks; the lower bound is the pair that matters, since the drifted copy would pass every upper-bound
- * test.
+ * `MarklinLocomotive.validateNewAddress` is the rule, and the Add Locomotive dialog asks it rather than writing it out
+ * again.  These tests pin the rule; the lower bound is the pair that matters, since a drifted copy would pass every
+ * upper-bound test.
  */
 public class testLocomotiveAddressRules
 {

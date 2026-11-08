@@ -14,10 +14,9 @@ import org.traincontrol.gui.TrainControlUI;
 public class testDiagramDrawingSettings
 {
     /**
-     * The arrows are ON by default, and the default is what is actually asked. The stored value is removed first: a
-     * test that only called the accessor read whatever an earlier run had written into this machine's preferences, so a
-     * stored false kept answering after the default changed to true. The previous value is put back, since these are
-     * the real preferences of whoever runs the suite.
+     * The arrows are ON by default, and the default is what is actually asked.  The stored value is removed first, so
+     * an earlier run's stored value cannot answer for the default, and put back after, since these are the real
+     * preferences of whoever runs the suite.
      */
     @Test
     public void testTheArrowsAreOnByDefault()
@@ -190,9 +189,8 @@ public class testDiagramDrawingSettings
 
         // The editor's code is not one file, so the claim asks the whole program: the accessor is named by its
         // declaration, the drawing's own read in TrainControlUI and the session's static annotation, and nothing else.
-        // A fourth place is either legitimate (count it here) or the editor reading the viewer's setting. Place by
-        // place as well (FR-136): a total of three holds when the session's read goes and the editor gains one in the
-        // same change.
+        // A fourth place is either legitimate (count it here) or the editor reading the viewer's setting.  Counted
+        // place by place (FR-136), so a read that goes and one the editor gains in the same change do not cancel.
         String readers = "something else now reads the ordinary diagram's preference besides its accessor, the"
             + " window's drawing and the session's static annotation - if it is the autonomy editor, that is exactly"
             + " what Adam asked not to happen: the editor is where these are being decided, and it has its own control"

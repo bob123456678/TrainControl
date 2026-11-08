@@ -26,8 +26,7 @@ import org.traincontrol.model.View;
  * recorded is about what the railway did, not which code path said so.
  *
  * A recording View is installed over the model's own, because asserting on a log line is a different claim: the
- * announcement used to live inside the `isDebug` block, and a capture that depends on a logging setting is the defect
- * wearing a disguise.
+ * announcement must not depend on the debug setting: a capture that does is the defect wearing a disguise.
  *
  * MUTATION: take `this.network.feedbackChanged(this.getName(), val)` out of
  * `MarklinFeedback.setState` and the first test fails; move it back inside the `isDebug` block and the
@@ -52,8 +51,8 @@ public class testAFeedbackChangeIsAnnounced
         // The sandbox first, before the model: init reads the layout preference.
         sandbox = support.LayoutSandbox.open();
 
-        // NOT in debug, deliberately: the announcement used to sit inside the `isDebug` block, and a
-        // test run with debug on could not tell that apart from an announcement that always happens.
+        // NOT in debug, deliberately: a test run with debug on could not tell an announcement that depends on debug
+        // from one that always happens.
         model = support.TestStation.simulated();
 
         View recorder = (View) Proxy.newProxyInstance(View.class.getClassLoader(),
@@ -203,8 +202,8 @@ public class testAFeedbackChangeIsAnnounced
     }
 
     /**
-     * And it announces with debug off, where the announcement used to live: announcing only in debug would make the
-     * route capture depend on a logging setting.
+     * And it announces with debug off: announcing only in debug would make the route capture depend on a logging
+     * setting.
      */
     @Test
     public void testItIsAnnouncedWithDebugOff() throws Exception

@@ -23,19 +23,16 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
  * Adam: "we need more tests that just run the layout normally, change one thing, and confirm that sticks. this is how I
  * caught all the recent bugs..."
  *
- * The defects found this way (the arrival side wiped when the train was placed on top of it, the facing that came back
- * as a different copy's, the caption mode remembered as a word and not as an effect, the tail left on a square whose
- * occupant had changed) are all one shape: nothing REFUSED the change; it was accepted, looked right, and was gone by
- * the time anybody looked again, because something downstream rebuilt over it.  A test that sets a value and reads it
- * back cannot see that; what does is the round trip an operator makes: write it, then save, build, run, capture, save
- * again, reload from disk, and ask whether it is still what you said.
+ * Defects of this shape accept a change, look right, and lose it later when something downstream rebuilds over it.  A
+ * test that sets a value and reads it back cannot see that; the round trip an operator makes can: write it, save,
+ * build, run, capture, save again, reload from disk, and ask whether it is still what you said.
  *
  * The steps are all load-bearing and each has eaten a value at least once:
  *
  * | | |
  * |---|---|
  * | **save** | writes the configuration out |
- * | **build** | `buildConfiguration` + `parseAuto` - where placement used to clear the arrival side |
+ * | **build** | `buildConfiguration` + `parseAuto` |
  * | **capture** | folds the running layout back over the setup - where a departed train left its tail |
  * | **reload** | a fresh `AutonomySession` off the disk - where nothing that was never written survives |
  *
@@ -58,10 +55,8 @@ public class testOneChangeSticks
     @BeforeClass
     public static void setUpClass() throws Exception
     {
-        // THE FROZEN COPY, NOT THE RAILWAY HE IS OPERATING (OB-111), opened BEFORE the model is built.  The SHAPE is
-        // what this class is about; where his trains stand, how long they are and which side they came in by are not,
-        // and reading those off the live folder is how `testTheLengthGuardsOnTheRealLayout` came to assert the 2-8-4 at
-        // BottomMainB when it is at BottomMainA now.
+        // THE FROZEN COPY, NOT THE LIVE RAILWAY (OB-111), opened BEFORE the model is built.  The shape is what this
+        // class checks; trains, lengths and sides drift on the live copy, so they are not asserted.
         sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
 
         model = support.TestStation.simulated();
@@ -101,9 +96,8 @@ public class testOneChangeSticks
     }
 
     /**
-     * The arrival side, which is the one that has been lost twice.  Kept apart because it is written by the arrival, by
-     * three operator doors and by nothing else, and the old defect was the build applying it BEFORE placing the
-     * locomotive, so placing the train wiped the side that had just been set.
+     * The arrival side, kept apart because the build must apply it after placing the locomotive, or placing a train
+     * wipes the side just set.
      */
     @Test
     public void testTheArrivalSideSurvivesTheRoundTrip() throws Exception

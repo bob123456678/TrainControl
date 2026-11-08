@@ -25,9 +25,8 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
  * Mass Assign Locomotive Train Lengths' prompt has the keyboard in the real editor window - on the first train, after a
  * length is refused, and on the next train (MT-474).
  *
- * Adam: "Works, make sure the text field is focused by default."  `core.testMassAssignLengths` asks the same of a
- * panel with no window round it, which is not where he met it.  A desktop that will not give the editor the keyboard at
- * all says so as a skip; the naming claims type their answer into the prompt, so there they fail.
+ * Adam: "Works, make sure the text field is focused by default."  A desktop that will not give the editor the keyboard
+ * at all says so as a skip; the naming claims type their answer into the prompt, so there they fail.
  *
  * On the frozen railway (OB-111).  The two trains measured here are given back their lengths afterwards.
  *

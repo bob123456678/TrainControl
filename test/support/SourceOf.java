@@ -12,9 +12,8 @@ import java.util.Map;
 
 /**
  * The program's source, as text, for the tests that read it - found by what a declaration says, never by which file
- * holds it.  A claim that opened one named file went "not found" when the declaration moved or, worse, a negative claim
- * stayed green over a file the code had left (FR-136).  Here a declaration is looked for in every `.java` file under
- * `src/`, must be there exactly once, and a negative claim asks {@link #allCode()}.
+ * holds it (FR-136).  A declaration is looked for in every `.java` file under `src/`, must be there exactly once, and
+ * a negative claim asks {@link #allCode()}.
  *
  * The rules every method shares:
  * <ul>

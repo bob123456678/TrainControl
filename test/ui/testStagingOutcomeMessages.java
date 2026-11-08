@@ -10,11 +10,9 @@ import org.traincontrol.gui.TrainControlUI;
 /**
  * Every reason a return home is refused has its own sentence.
  *
- * describeStagingOutcome is a switch with a `default` arm, and the default says "no return plan
- * found" - which is the right thing for exactly one outcome and the wrong thing for every other. An
- * outcome added without a case therefore does not fail; it silently tells the operator the search ran
- * out of room, whatever actually happened. POSITION_AMBIGUOUS was added in this round and would have
- * done precisely that.
+ * describeStagingOutcome is a switch with a `default` arm, and the default says "no return plan found" - which is the
+ * right thing for exactly one outcome and the wrong thing for every other.  An outcome added without a case therefore
+ * does not fail; it silently tells the operator the search ran out of room, whatever actually happened.
  *
  * READY is exempt, and only READY: describeStagingPlan is reached from behind `if
  * (!plan.isPossible())`, so a plan that exists never asks for a sentence.

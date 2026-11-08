@@ -36,8 +36,8 @@ public class testTheRoutePlayButton
             "the play button is not on the RIGHT side of the cell, which is where Adam asked for it "
             + "and where the route's name is not: " + button + " in " + cell);
 
-        // BIG ENOUGH TO HIT (MT-217): the first version made the pressable box the same thirteen pixels square as the
-        // glyph and Adam still could not press it, so what is asserted is how much of the target there is.
+        // BIG ENOUGH TO HIT (MT-217): the pressable box is wider than the glyph, so what is asserted is how much of the
+        // target there is.
         assertTrue(button.height >= cell.height - 2,
             "the pressable strip is " + button.height + " pixels tall in a " + cell.height
             + "-pixel row, so there is a band above or below the button where a click misses - which "
@@ -53,9 +53,7 @@ public class testTheRoutePlayButton
     }
 
     /**
-     * The glyph is inside the strip that presses it, and smaller than it: the mark is the size Adam asked for ("about
-     * the same height as the text") and the target is the size a target has to be; one number for both made the button
-     * unhittable.
+     * The glyph is drawn at the size asked for; the target is wider, so it is easy to press.
      */
     @Test
     public void testTheGlyphSitsInsideTheStrip()
@@ -210,9 +208,8 @@ public class testTheRoutePlayButton
             + "again - which lies the other way, telling the operator a slow route has finished when "
             + "pressing it again would still be refused");
 
-        // THE ROUTE CELL'S OWN PAINTING, not the whole window (FR-077).  The Return Home button turns an
-        // arc while its plan is worked out, on purpose and on a different control; what this guards is
-        // the route play button's spinner, which lived in the renderer that paints `paintingRoute`.
+        // THE ROUTE CELL'S OWN PAINTING, not the whole window (FR-077). The Return Home arc is allowed; this guards the
+        // route play button's spinner in the renderer that paints `paintingRoute`.
         String cell = SourceOf.withoutComments(SourceOf.declaration(
             "public class CustomTableRenderer extends DefaultTableCellRenderer"));
 

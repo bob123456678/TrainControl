@@ -124,8 +124,7 @@ public class testASecondImportFillsGapsAndDoesNotOverwrite
     /**
      * A second import of the same file counts in {4} the squares that had a name, once each, and says again the old
      * points that shared a square.  Names are shared by every configuration, so such a square was counted once for each
-     * old point on it: the frozen railway's file, imported twice, said 18 squares already had a name, of the 16 it had
-     * named.
+     * old point on it.
      *
      * MUTATION: count a square named before the import once for each old point on it, or leave its further points
      * unsaid, and this fails.
@@ -168,7 +167,7 @@ public class testASecondImportFillsGapsAndDoesNotOverwrite
 
     /**
      * One old point that shared a square, or one thing left behind, is said in the singular, in the form each language
-     * takes for the number (`I18n.countForm`): the dialog said "1 old points" and "1 things" (Adam: "Fix them").
+     * takes for the number (`I18n.countForm`).
      *
      * MUTATION: give either sentence one form for every number, and this fails.
      */
@@ -240,10 +239,9 @@ public class testASecondImportFillsGapsAndDoesNotOverwrite
     }
 
     /**
-     * An old autonomy.json is imported into the configuration named at the prompt, and the one in use is left as it was
-     * (Adam: "(a)", choosing between honoring the name and not asking for one).  The Import asks for a configuration
-     * name, and on a layout that already had configurations the placements, homes and facings were written into the one
-     * in use, the name thrown away.
+     * An old autonomy.json is imported into the configuration named at the prompt, and the one in use is left as it
+     * was.  The Import asks for a configuration name: on a layout that already had configurations, the placements,
+     * homes and facings were written into the one in use, the name thrown away.
      *
      * MUTATION: write into the configuration in use, or have the door import before choosing, and this fails.
      */

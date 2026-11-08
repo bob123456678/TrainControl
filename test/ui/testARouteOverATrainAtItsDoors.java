@@ -156,7 +156,6 @@ public class testARouteOverATrainAtItsDoors
 
         onARouteOverATrain((underTheTrain, otherSwitch) ->
         {
-            // STEP 2: the route, with an s88 trigger, armed.
             MarklinRoute route = new MarklinRoute(model, ROUTE, 84907, commands(true), Integer.parseInt(ROUTE_S88),
                 MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED, true, null);
 
@@ -166,7 +165,6 @@ public class testARouteOverATrainAtItsDoors
             {
                 Thread.sleep(500);
 
-                // STEP 3: the sensor set.
                 model.setFeedbackState(ROUTE_S88, true);
 
                 long until = System.currentTimeMillis() + POWER_PATIENCE_MS;

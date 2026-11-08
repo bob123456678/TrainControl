@@ -114,8 +114,7 @@ public class testEscapeClosesTheEditor
     }
 
     /**
-     * And the autonomy editor, the same window with the autonomy column showing: this half had NO Escape handling at
-     * all.
+     * And the autonomy editor, the same window with the autonomy column showing.
      */
     @Test
     public void testEscapeClosesTheAutonomyEditor() throws Exception
@@ -144,9 +143,8 @@ public class testEscapeClosesTheEditor
     // ---------------------------------------------------------------- letting go first
 
     /**
-     * An armed tool is put down, and the window stays open: the button stayed pressed and the tool armed, so the next
-     * click on the diagram was swallowed by the gesture (a click that falls through to `cycle()` CHANGES a square).
-     * Closing instead would throw the gesture away through the unsaved-work prompt.
+     * An armed tool is put down, and the window stays open: a click that falls through to `cycle()` CHANGES a square,
+     * and closing instead would throw the gesture away through the unsaved-work prompt.
      */
     @Test
     public void testEscapePutsAnArmedToolDownRatherThanClosing() throws Exception

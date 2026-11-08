@@ -33,7 +33,7 @@ public class testCS3NotFoundDetection
         folder.deleteOnExit();
     }
 
-    /** The pre-2.6.0 answer: a 200, with the refusal in the body; with this, `return false` no longer passes. */
+    /** A 200 with the refusal in the body: `return false` must not pass. */
     @Test
     public void testAnErrorObjectInTheBodyCountsAsNotFound() throws Exception
     {

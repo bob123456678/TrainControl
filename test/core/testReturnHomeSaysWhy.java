@@ -18,9 +18,7 @@ import org.traincontrol.marklin.MarklinLocomotive;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 
 /**
- * A Return Home plan that fails says, in the log, why each train cannot get home (FR-078; Adam: "if a return home plan
- * fails, state the reason why the layout doesn't allow a locomotive to go to its home in the log (length, blocked,
- * etc.)"; MT-346: "seems OK, just needs to be easier for the user to debug").
+ * A Return Home plan that fails says, in the log, why each train cannot get home (FR-078, MT-346).
  *
  * Each claim finds the sentence for the rule that actually refused and checks it carries the numbers or names the
  * operator would act on.  The log is read as well as the plan, since a reason never written is what the request was
@@ -312,8 +310,7 @@ public class testReturnHomeSaysWhy
     }
 
     /**
-     * The reasons name squares, not the direction copies the builder made of them (Adam: the copy machinery is masked
-     * from the user).
+     * The reasons name squares, not the direction copies the builder made of them.
      */
     @Test
     public void testTheReasonsNameSquaresNotCopies()

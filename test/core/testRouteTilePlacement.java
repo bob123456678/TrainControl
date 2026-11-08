@@ -167,8 +167,7 @@ public class testRouteTilePlacement
     }
 
     /**
-     * Four ways in is a crossing, not a fault (Adam: "I am inclined to treat it as a static crossing under the hood.");
-     * this keeps the three-arm rule from growing into "any busy button".
+     * Four ways in is a crossing, not a fault; this keeps the three-arm rule from growing into "any busy button".
      */
     @Test
     public void testFourWaysIntoARouteTileIsACrossing() throws Exception

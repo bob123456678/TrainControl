@@ -16,16 +16,10 @@ import org.testng.annotations.Test;
 /**
  * Nothing is left in the message bundles that no screen asks for.
  *
- * Eight files, translated, maintained: 118 of the lines were the text of windows that left the build (`GraphViewer`'s
- * menus, `GraphEdgeEdit`'s labels, the old route editor's commands), and the live keys sat among them, so somebody
- * reading the bundle could not tell which half was the screen.
- *
  * **What counts as asking for a key:** the exact key spelled as a string literal anywhere in `src/` or `test/`, or a
  * key beginning with one of the five prefixes `BUILDERS` names - the five places the code builds a key by
- * concatenation.  The first version let ANY literal that was a prefix shield a key, and that hid 119 dead keys
- * (`"autolayout."` inside an `assertFalse(...startsWith(...))` shielded ninety-eight on its own).  The narrow rule has
- * the opposite risk, a builder written in future and not added here reporting its keys as dead, and that is the
- * direction to fail in: a visible failure that names the keys.
+ * concatenation.  The narrow rule's risk is a builder written in future and not added here reporting its keys as
+ * dead, and that is the direction to fail in: a visible failure that names the keys.
  *
  * **The floors stop this reporting a clean bill of health about nothing:** a regex that stopped matching literals would
  * call every key dead, which is loud, while one that matched everything would call every key live, which is silent;
@@ -41,7 +35,7 @@ public class testEveryMessageKeyIsAskedFor
     /** The bundle the other seven are translations of. */
     private static final String BUNDLE = "src/org/traincontrol/resources/messages.properties";
 
-    /** How many unreferenced keys are allowed to stand: zero since the 237 the deleted windows left behind came out. */
+    /** How many unreferenced keys are allowed to stand. */
     private static final int EXPECTED = 0;
 
     /**
@@ -92,10 +86,9 @@ public class testEveryMessageKeyIsAskedFor
     };
 
     /**
-     * A block comment, or a line comment, with any string literals inside it.  Commented-out code asks for nothing: two
-     * keys read as live because only a disabled menu inside a block comment named them.  Strings are not stripped
-     * first, so a `"//"` inside a literal can start a false comment; that removes literals rather than inventing them,
-     * the safe direction (a live key reported dead, loudly).
+     * A block comment, or a line comment, with any string literals inside it.  Commented-out code asks for nothing.
+     * Strings are not stripped first, so a `"//"` inside a literal can start a false comment; that removes literals
+     * rather than inventing them, the safe direction (a live key reported dead, loudly).
      */
     private static final Pattern COMMENT = Pattern.compile(
         "/\\*.*?\\*/|//[^\\n]*", Pattern.DOTALL);

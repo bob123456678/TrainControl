@@ -160,7 +160,7 @@ public class testAMovedTileCarriesItsSetup
 
         assertTrue(appeared.isEmpty(), "moving a tile added errors to the setup: " + appeared);
 
-        // AND BACK AGAIN, which is where Adam reports losing the locomotive.
+        // AND BACK AGAIN.
         List<LayoutDiagram> now = pagesIn(folder);
 
         LayoutDiagram samePage = diagram(now, from.getPage());

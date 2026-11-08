@@ -129,8 +129,7 @@ public class testLayoutFolderRobustness
     }
 
     /**
-     * A setup file that cannot be read leaves the layout alone.  Adam: "make a similar test to ensure autonomy is
-     * unloaded (or regenerated, if the app is running) gracefully if its config files are corrupt or manually removed."
+     * A setup file that cannot be read leaves the layout alone.
      * The store reads before it clears, so a file it cannot parse leaves the previous contents in place and reports the
      * failure, instead of handing the caller a blank setup that the next save would write over the real one.
      */

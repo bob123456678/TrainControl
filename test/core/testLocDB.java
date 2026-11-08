@@ -25,20 +25,9 @@ public class testLocDB
     public static MarklinControlStation model;
     
     /**
-     * The locomotive CSV is produced without a window.
-     *
-     * **A method that needed the one thing a headless session does not have.** Nine of its ten
-     * columns come from the locomotive; the tenth, button mappings, is a fact about the main window,
-     * and it was read through `this.view` with no check. `view` is null whenever the model was built
-     * with `showUI` false - which is exactly how the documented programmatic API starts, and how this
-     * very test class starts. So an API user asking for the CSV got a bare NullPointerException
-     * instead of the nine columns that were never in doubt.
-     *
-     * Every neighboring method in that class already asks whether there is a view. This one did not,
-     * which is this codebase's recurring shape rather than an isolated slip.
-     *
-     * **Empty, not refused.** A button mapping is a fact about a window; a session with no window has
-     * none. That is the answer, not an error.
+     * The locomotive CSV is produced without a window: nine of its ten columns come from the locomotive, the tenth
+     * (button mappings) from the main window, and `view` is null whenever the model is built with `showUI` false,
+     * as the documented programmatic API and this class do.  The mappings come out empty, not refused.
      *
      * MUTATION: take the null check out and this throws rather than failing an assertion - which is
      * the defect exactly, so the throw is the evidence.
@@ -54,19 +43,14 @@ public class testLocDB
 
         assertNotNull(csv, "no CSV came back at all");
 
-        // THE HEADER, which is the part that proves the method ran rather than that a locomotive
-        // happened to be present.
+        // THE HEADER proves the method ran rather than that a locomotive happened to be present.
         assertTrue(csv.startsWith("Name,ButtonMappings"),
             "the CSV does not begin with its own header row: " + csv.substring(0,
                 Math.min(80, csv.length())));
 
-        // AND A NAMED LOCOMOTIVE IN IT, so the row loop is actually reached - a header-only CSV
-        // would pass the assertion above without ever touching the line that threw.
-        //
-        // By name rather than by counting lines: `escapeCsv` quotes a notes field that contains a
-        // newline, and a quoted newline is a legal CSV row that spans two lines.  Counting them said
-        // 197 rows for 173 locomotives, and the twenty-four extra were notes, not a
-        // defect - the count was the wrong question, asked confidently.
+        // AND A NAMED LOCOMOTIVE IN IT, so the row loop is reached: a header-only CSV would pass the assertion above.
+        // By name rather than by counting lines: `escapeCsv` quotes a notes field that contains a newline, which
+        // makes a row that spans two lines.
         assertFalse(model.getLocList().isEmpty(),
             "precondition: the database has to hold a locomotive, or the row loop never runs and "
             + "the line that used to throw is never reached");
@@ -288,9 +272,7 @@ public class testLocDB
     @AfterClass(alwaysRun = true)
     public static void tearDownClass() throws Exception
     {
-        // testRenameLoc creates "New locomotive test 2" (MFX 20) and renames it to "New
-        // locomotive test 2 copy" - nothing ever deleted either name, so one of them was left in the
-        // restored DB image for whatever ran next in this JVM.
+        // testRenameLoc leaves one of these two names in the DB image restored for whatever runs next in this JVM.
         if (model != null) model.deleteLoc("New locomotive test 2");
         if (model != null) model.deleteLoc("New locomotive test 2 copy");
     }

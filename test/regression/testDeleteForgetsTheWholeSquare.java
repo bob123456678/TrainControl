@@ -206,11 +206,8 @@ public class testDeleteForgetsTheWholeSquare
     }
 
     /**
-     * Forgetting squares nothing was ever written about reports that nothing changed.  `moveTiles` computed the answer
-     * as `builtOver != null && !builtOver.isEmpty()`, true before it had looked at anything, and four call sites read
-     * it as "something was forgotten, so write the setup to disk": deleting a piece of plain track rebuilt the graph
-     * over every page and wrote every file of the setup, once per picked square by `deleteSelection` (the Delete key
-     * and **Delete Selected**).
+     * Forgetting squares nothing was ever written about reports no change, so the caller does not rewrite the whole
+     * setup.
      *
      * MUTATION: put `return builtOver != null && !builtOver.isEmpty();` back at the top of `AutonomySession.moveTiles`
      * and the first claim fails; make `Kept.forget` return false always and the second does.

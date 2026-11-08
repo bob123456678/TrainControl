@@ -81,9 +81,6 @@ public class testTheFrozenRailwayIsStillTheRailway
     {
         Layout built = scenario.build();
 
-        // REFROZEN from Adam's measured layout (`e36df979`): his one-way marks, compulsory turn at BottomMainC and
-        // barred arrivals take arrival sides away, and an arrival side that is gone is an edge and a copy that are not
-        // built.  The five pages are byte-identical to the first freeze, so this is the setup moving, not the diagram.
         int reduced = scenario.getSession().getReducer().getEdges().size();
 
         // WHAT A REFRESH OF THE SNAPSHOT CHANGES (FR-136): all three figures, here and in its README.

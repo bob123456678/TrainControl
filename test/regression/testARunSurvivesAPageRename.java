@@ -23,20 +23,17 @@ import support.SourceOf;
 /**
  * What a run did is folded into the setup BEFORE a page is renamed, not after.
  *
- * Stopping autonomy captures nothing (`captureFromLayout` has three callers and none is the stop button), so between
- * the end of a run and the next configuration load, exit, or diagram edit, where the trains ended up lives only in the
- * running Layout. A rename triggers the diagram-edit capture, and the session refuses a capture while its pages are
- * stale: run, stop, rename a page, and every placement the run produced is discarded on every page. That is worse than
- * losing settings: occupancy is derived from placements (`Point.isOccupied` is `currentLoc != null`, and `isPathClear`
- * never consults the s88), so the rebuilt configuration puts the trains back where they were before the run and Start
- * can route one into a block that is physically occupied.
+ * Stopping autonomy captures nothing, so between the end of a run and the next configuration load, exit, or diagram
+ * edit, where the trains ended up lives only in the running Layout.  A rename triggers the diagram-edit capture, and
+ * the session refuses a capture while its pages are stale: run, stop, rename a page, and every placement the run
+ * produced is discarded on every page.  The rebuilt configuration then puts the trains back where they were before the
+ * run, and Start can route one into a block that is physically occupied.
  *
  * The fix is an ORDER: capture while the naming and the store still agree, and let `renamePage` carry the captured
- * entries across. The stale flag stays as a backstop for the capture that follows. This test cannot press the menu
- * item, so it does what the window does in the same order and shows the ORDER decides the outcome (capture-then-rename
- * keeps the run, rename-then-capture loses it); `testTheWindowCallsThemInThatOrder` checks that the window follows it,
- * against `TrainControlUI.duplicateOrRenameCurrentLayout`, because a test that mirrors the sequence proves the sequence
- * works, not that anybody follows it.
+ * entries across.  This test cannot press the menu item, so it does what the window does in the same order and shows
+ * the ORDER decides the outcome (capture-then-rename keeps the run, rename-then-capture loses it);
+ * `testTheWindowCallsThemInThatOrder` checks that the window follows it, because a test that mirrors the sequence
+ * proves the sequence works, not that anybody follows it.
  */
 public class testARunSurvivesAPageRename
 {

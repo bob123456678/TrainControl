@@ -108,9 +108,8 @@ public class testFiftyLocomotiveMappingPages
         final int ceiling = TrainControlUI.MAX_LOC_MAPPINGS;
 
         // AT THE CEILING BY REFLECTION, NOT BY FILLING: `addLocMappingPage` writes the page count into the user-wide
-        // Java Preferences on every successful add, and filling to fifty once left fifty in Adam's own settings.
-        // Setting the count directly touches no preference.  A deliberately broken run (the guard deleted) can still
-        // leave 51 behind.
+        // Java Preferences on every successful add.  Setting the count directly touches no preference.  A deliberately
+        // broken run (the guard deleted) can still leave 51 behind.
         setPages(ceiling);
 
         assertEquals(pages(), ceiling,

@@ -72,8 +72,7 @@ public class testTheDiagramIsNotRebuiltForAnArrow
         }
 
         // THE FROZEN COPY, NOT THE RAILWAY HE IS OPERATING (OB-111, `test/layouts/live-snapshot`): the SHAPE is what
-        // this class is about; where his trains stand, how long they are and which side they came in by are not, and
-        // reading those off the live folder made a fixture that says something different every week.
+        // this class is about; where his trains stand, how long they are and which side they came in by are not.
         sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
 
         model = support.TestStation.simulatedInDebug();

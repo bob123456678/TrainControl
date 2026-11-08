@@ -174,7 +174,7 @@ public class testOpenLayoutLeavesTheOldTrainsBehind
 
     /**
      * The trains of the railway that was open stay in the locomotive database once another railway is open, each with
-     * the address, length and icon it had (OB-363; Adam: "Locs can stay in the DB.").
+     * the address, length and icon it had (OB-363).
      *
      * MUTATION: in `TrainControlUI.sourceIsNow`, delete each standing train from the database before the clear.
      */
