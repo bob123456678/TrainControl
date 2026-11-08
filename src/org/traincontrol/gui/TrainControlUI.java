@@ -557,7 +557,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         return true;
     }
 
-    /** Writes a preset speed saved in the Locomotive Settings window into the loaded setup's copy of the train, if it keeps one. */
+    /** Writes a saved preset speed into the loaded setup's copy of the train, if it keeps one. */
     void recordPresetSpeedInTheSetup(Locomotive l)
     {
         recordInTheSetup(l, java.util.Collections.singletonMap("speed",
@@ -6460,13 +6460,22 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         }
     }
     
+    /**
+     * Save Current Speed as Preset, from the key menu and Alt+U: at any time, a run included, and into the setup's copy
+     * of the train as the Locomotive Settings window's Save does (MT-912).
+     */
     public void savePreferredSpeed(Locomotive l)
     {
         if (l != null)
         {
             new Thread(() ->
             {
-                this.model.getLocByName(l.getName()).savePreferredSpeed();
+                Locomotive saved = this.model.getLocByName(l.getName());
+
+                saved.savePreferredSpeed();
+
+                // The session is the event thread's
+                javax.swing.SwingUtilities.invokeLater(() -> recordPresetSpeedInTheSetup(saved));
             }).start();
         }
     }

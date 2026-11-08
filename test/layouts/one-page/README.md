@@ -19,3 +19,4 @@ ship with MT-380 on the dev branch.
 
 - `regression.testASetupMovesToAOnePageLayout`
 - `ui.testPageLinksGoByPageId`
+- `ui.testAPresetSaveOnALayoutWithoutASetup`
