@@ -2195,18 +2195,6 @@ public final class CS2File
         });
     }
 
-    private List<String> parseLayoutList() throws Exception
-    {
-        List<String> out = new ArrayList<>();
-
-        for (Map<String, String> page : parseLayoutIndex())
-        {
-            out.add(page.get("name"));
-        }
-
-        return out;
-    }
-
     /**
      * The pages named in gleisbild.cs2 as name and id, in file order, so an autonomy setup survives a page rename.  A
      * page with no `.id` has id ZERO, the CS2 convention that an omitted key is zero (see

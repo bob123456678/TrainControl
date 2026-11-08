@@ -56,7 +56,6 @@ public final class MarklinLocomotiveCsv
     public static final class Move
     {
         public String name;
-        public Row row;
         /** Decoder and address before and after, as "MFX 5". */
         public String from;
         public String to;
@@ -342,7 +341,6 @@ public final class MarklinLocomotiveCsv
                 Move move = new Move();
 
                 move.name = loc.getName();
-                move.row = row;
                 move.from = where.get(loc.getName());
                 move.to = target;
                 plan.moves.add(move);
