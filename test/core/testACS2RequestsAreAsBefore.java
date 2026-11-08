@@ -26,7 +26,7 @@ public class testACS2RequestsAreAsBefore
 {
     private static final String GOLDEN = "test/baseline/cs2_requests_golden.txt";
 
-    private static final byte[] CS2_DEVICE = "[geraet]\ngeraet\n .produkt=Central Station 2\n"
+    static final byte[] CS2_DEVICE = "[geraet]\ngeraet\n .produkt=Central Station 2\n"
         .getBytes(StandardCharsets.UTF_8);
 
     @Test
@@ -50,7 +50,7 @@ public class testACS2RequestsAreAsBefore
     }
 
     /** test/layout with the CS2 locomotive and route files, as a station's folder. */
-    private static File railway(File to) throws Exception
+    static File railway(File to) throws Exception
     {
         new File(to, "config/gleisbilder").mkdirs();
 

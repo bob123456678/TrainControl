@@ -52,7 +52,13 @@ public final class TcpStation implements AutoCloseable
 
     public TcpStation() throws IOException
     {
-        this.server = new ServerSocket(0, 50, InetAddress.getByName("127.0.0.1"));
+        this("127.0.0.1");
+    }
+
+    /** On a loopback address of the test's own, so that a test can also take UDP 15731 there without a clash. */
+    public TcpStation(String address) throws IOException
+    {
+        this.server = new ServerSocket(0, 50, InetAddress.getByName(address));
 
         Thread accepting = new Thread(this::accept, "tcp-station-accept");
         accepting.setDaemon(true);
