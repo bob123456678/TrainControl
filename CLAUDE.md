@@ -86,6 +86,8 @@ Not: `// OB-271 (2026-09-14): Adam reported ... Round 112 found ...; RSA61-B2 wi
   - `redgreen.sh (--base <commit> | --patch <file>) <claim>...` runs a claim red on the old code or a mutation,
     then green.
   - `env.sh <worktree>` sets up a worktree's `LocDB.data` and scratch folder and prints its `TC_SCRATCH`.
+  - `codesize.py [<ref>] [--vs <base>] [--packages]` reports files, lines (code, comment, blank), file sizes and
+    concentration, and the copy and comment guards' pins, at a revision or two side by side, in seconds.
   - `support.DialogWatchdog` ends a test JVM stuck behind an unanswered modal dialog after 60 s (`TC_DIALOG_WATCH`)
     and reports its class with the dialog's title and text.
   - `regression.testNoNewCopies` fails on a new copy of 60 tokens or more, naming where; merge it, don't re-pin it.
