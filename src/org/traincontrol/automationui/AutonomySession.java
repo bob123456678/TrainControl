@@ -880,7 +880,7 @@ public class AutonomySession
     }
 
     /** A pair of stored Point names: a timetable leg's two ends, or one step of a train's road. */
-    private static final class NamedLeg
+    static final class NamedLeg
     {
         private final org.json.JSONObject leg;
         private final org.json.JSONArray step;
@@ -905,7 +905,7 @@ public class AutonomySession
     }
 
     /** Every stored name pair; a load drops the entry whole where one names a Point it does not build. */
-    private static List<NamedLeg> legsOf(org.json.JSONObject configuration)
+    static List<NamedLeg> legsOf(org.json.JSONObject configuration)
     {
         return new ArrayList<>(keyedLegsOf(configuration).values());
     }

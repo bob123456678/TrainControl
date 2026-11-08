@@ -113,6 +113,45 @@ public class testReturnHomeShowsItIsWorking
             + " the calculation it was put up for");
     }
 
+    /**
+     * And the mark stops with its window, as Start's does: a window closed while the plan is worked out leaves no timer
+     * repainting it.  Last, since it closes the window.
+     *
+     * MUTATION: drop the `isDisplayable()` check from `showReturnHomeWorking`'s timer and this fails.
+     */
+    @Test(dependsOnMethods = "testTheButtonTurnsWhileThePlanIsWorkedOut", alwaysRun = true)
+    public void testTheMarkStopsWithItsWindow() throws Exception
+    {
+        java.lang.reflect.Method show = TrainControlUI.class.getDeclaredMethod("showReturnHomeWorking", boolean.class);
+        java.lang.reflect.Field spinner = TrainControlUI.class.getDeclaredField("returnHomeSpinner");
+
+        show.setAccessible(true);
+        spinner.setAccessible(true);
+
+        final javax.swing.Timer[] timer = {null};
+
+        SwingUtilities.invokeAndWait(() ->
+        {
+            try
+            {
+                show.invoke(ui, true);
+                timer[0] = (javax.swing.Timer) spinner.get(ui);
+            }
+            catch (ReflectiveOperationException e)
+            {
+                throw new IllegalStateException(e);
+            }
+        });
+
+        assertTrue(timer[0] != null && timer[0].isRunning(), "precondition: the mark did not start turning");
+
+        SwingUtilities.invokeAndWait(() -> ui.dispose());
+
+        assertTrue(waitFor(() -> !timer[0].isRunning(), 2000),
+            "the window was closed with Return Home's mark turning and its timer is still running, repainting a"
+            + " button nobody can see");
+    }
+
     private static void powerOn() throws Exception
     {
         try

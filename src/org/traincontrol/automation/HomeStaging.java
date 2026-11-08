@@ -1280,26 +1280,11 @@ public final class HomeStaging
             Map<Edge, Locomotive> covered = this.coveredByAMove.computeIfAbsent(road,
                 r -> this.layout.edgesATailWouldCover(end, train, r));
 
-            if (covered.containsKey(edge)) return false;
-
             Map<String, Locomotive> places = this.placesByAMove.computeIfAbsent(road,
                 r -> this.layout.placesATailWouldCover(end, train, r));
 
-            // AND EVERY OTHER COPY OF THE SAME METAL, as `Layout.isPathClear` asks it.
-            if (Layout.anotherTailOn(edge, mover, places) != null) return false;
-
-            for (Edge sharing : edge.getLockEdges())
-            {
-                if (!covered.containsKey(sharing)) continue;
-                if (!sharing.getLockEdges().contains(edge)) continue;
-                if (!edge.getPlaceIds().isEmpty() && !sharing.getPlaceIds().isEmpty()
-                    && !Layout.tailLiesOn(edge, train, places))
-                {
-                    continue;
-                }
-
-                return false;
-            }
+            // The same question as for a train that has not moved, asked of the tail this move left
+            if (liesAcross(edge, train, covered, places)) return false;
         }
 
         return true;
@@ -1323,7 +1308,7 @@ public final class HomeStaging
             // are still asked about, as `Layout.isPathClear` asks them since the same change.
             if (train.equals(mover)) continue;
 
-            if (liesAcrossAtStart(edge, train, each.getValue(), this.placesCoveredAtStart.get(train))) lyingAcross.add(train);
+            if (liesAcross(edge, train, each.getValue(), this.placesCoveredAtStart.get(train))) lyingAcross.add(train);
         }
 
         for (Locomotive train : lyingAcross)
@@ -1334,8 +1319,11 @@ public final class HomeStaging
         return true;
     }
 
-    /** Whether this train's tail, as it stood at the start of the plan, lies over metal this edge runs on (OB-184). */
-    private static boolean liesAcrossAtStart(Edge edge, Locomotive train, Map<Edge, Locomotive> covered,
+    /**
+     * Whether this train's tail lies over metal this edge runs on (OB-184), for a tail at the start of the plan and one
+     * a planned move left (OB-228) alike.
+     */
+    private static boolean liesAcross(Edge edge, Locomotive train, Map<Edge, Locomotive> covered,
         Map<String, Locomotive> places)
     {
         if (places == null) places = java.util.Collections.emptyMap();

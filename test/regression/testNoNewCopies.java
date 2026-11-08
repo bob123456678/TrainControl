@@ -27,17 +27,16 @@ import support.CopyScan;
 public class testNoNewCopies
 {
     /** The groups as they stand.  Never raise it. */
-    private static final int GROUPS_ALLOWED = 97;
+    private static final int GROUPS_ALLOWED = 94;
 
     /** The tokens standing in a second or later copy in `test/`, summed over its groups.  Never raise it. */
-    private static final long TEST_COPIED_TOKENS_ALLOWED = 274582;
+    private static final long TEST_COPIED_TOKENS_ALLOWED = 274558;
 
     /** Each group: the classes holding its copies with how many each, and the tokens of its longest copy. */
     private static final String[] GROUPS = {
         "AutonomyBuilder:1,AutonomyChecks:1 (75)",
         "AutonomyBuilder:2 (64)",
         "AutonomyChecks:2 (63)",
-        "AutonomyCompanionStore:1,AutonomySession:2 (99)",
         "AutonomyCompanionStore:2 (67)",
         "AutonomyCompanionStore:2 (65)",
         "AutonomyCompanionStore:2 (63)",
@@ -55,6 +54,7 @@ public class testNoNewCopies
         "AutonomySession:2 (70)",
         "AutonomySession:2 (68)",
         "AutonomySession:2 (67)",
+        "AutonomySession:2 (67)",
         "AutonomySession:2 (64)",
         "AutonomySession:2 (64)",
         "AutonomySession:2 (63)",
@@ -71,8 +71,7 @@ public class testNoNewCopies
         "CurrentKeyRow:1,TileAnnotation:1 (89)",
         "EditorMassAssign:2 (74)",
         "FeedbackEvents:1,FullAutonomyExample:1 (60)",
-        "HomeStaging:2 (72)",
-        "HomeStaging:2 (64)",
+        "HomeStaging:2 (60)",
         "ImageUtil:2 (113)",
         "Layout:1,TrainControlUI:1 (94)",
         "Layout:2 (85)",
@@ -119,9 +118,7 @@ public class testNoNewCopies
         "TrainControlUI:2 (209)",
         "TrainControlUI:4 (192)", // the form-accessor runs the gui collaborators read through, lately AutonomyLifecycle
         "TrainControlUI:2 (93)",
-        "TrainControlUI:2 (89)",
         "TrainControlUI:2 (81)",
-        "TrainControlUI:2 (79)",
         "TrainControlUI:2 (69)",
         "TrainControlUI:2 (67)",
         "TrainControlUI:2 (62)",
