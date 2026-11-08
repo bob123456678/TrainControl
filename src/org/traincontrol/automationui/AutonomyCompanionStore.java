@@ -189,19 +189,35 @@ public class AutonomyCompanionStore
     /** The squares that make a station unavailable while occupied, in the order they were added. */
     public List<TileKey> getBlockingPoints(TileKey station)
     {
+        return listOf(blockedPoints, station);
+    }
+
+    /** A station's list in one of the square-to-squares maps, as a copy without nulls; empty for none. */
+    private static List<TileKey> listOf(Map<TileKey, List<TileKey>> map, TileKey station)
+    {
         List<TileKey> out = new ArrayList<>();
 
         if (station == null) return out;
 
-        List<TileKey> keys = blockedPoints.get(station);
+        List<TileKey> keys = map.get(station);
 
-        if (keys == null) return out;
+        if (keys != null) for (TileKey key : keys) if (key != null) out.add(key);
 
-        for (TileKey key : keys)
+        return out;
+    }
+
+    /** Every station with a list in one of the square-to-squares maps, against that list as `listOf` gives it. */
+    private static Map<TileKey, List<TileKey>> listsOf(Map<TileKey, List<TileKey>> map)
+    {
+        Map<TileKey, List<TileKey>> out = new LinkedHashMap<>();
+
+        for (TileKey station : map.keySet())
         {
-            TileKey blocker = key;
+            if (station == null) continue;
 
-            if (blocker != null) out.add(blocker);
+            List<TileKey> squares = listOf(map, station);
+
+            if (!squares.isEmpty()) out.put(station, squares);
         }
 
         return out;
@@ -234,20 +250,7 @@ public class AutonomyCompanionStore
     /** Every station held back by something, against the squares watched for it. */
     public Map<TileKey, List<TileKey>> getBlockingPoints()
     {
-        Map<TileKey, List<TileKey>> out = new LinkedHashMap<>();
-
-        for (TileKey key : blockedPoints.keySet())
-        {
-            TileKey station = key;
-
-            if (station == null) continue;
-
-            List<TileKey> blockers = getBlockingPoints(station);
-
-            if (!blockers.isEmpty()) out.put(station, blockers);
-        }
-
-        return out;
+        return listsOf(blockedPoints);
     }
 
     /** The square of the first signal protecting a station, or null. */
@@ -261,22 +264,7 @@ public class AutonomyCompanionStore
     /** The squares of every signal protecting a station, in the order they were paired. */
     public List<TileKey> getProtectingSignals(TileKey station)
     {
-        List<TileKey> out = new ArrayList<>();
-
-        if (station == null) return out;
-
-        List<TileKey> keys = stationSignals.get(station);
-
-        if (keys == null) return out;
-
-        for (TileKey key : keys)
-        {
-            TileKey signal = key;
-
-            if (signal != null) out.add(signal);
-        }
-
-        return out;
+        return listOf(stationSignals, station);
     }
 
     /** Pairs one signal with a station; a null signal unpairs everything. */
@@ -316,34 +304,13 @@ public class AutonomyCompanionStore
     /** Every station that has protecting signals, against those signals' squares. */
     public Map<TileKey, List<TileKey>> getProtectingSignals()
     {
-        Map<TileKey, List<TileKey>> out = new LinkedHashMap<>();
-
-        for (TileKey key : stationSignals.keySet())
-        {
-            TileKey station = key;
-
-            if (station == null) continue;
-
-            List<TileKey> signals = getProtectingSignals(station);
-
-            if (!signals.isEmpty()) out.put(station, signals);
-        }
-
-        return out;
+        return listsOf(stationSignals);
     }
 
     /** The squares of every signal guarding the way into a station (FR-096), in the order they were paired. */
     public List<TileKey> getEntrySignals(TileKey station)
     {
-        List<TileKey> out = new ArrayList<>();
-
-        if (station == null) return out;
-
-        List<TileKey> keys = entrySignals.get(station);
-
-        if (keys != null) for (TileKey key : keys) if (key != null) out.add(key);
-
-        return out;
+        return listOf(entrySignals, station);
     }
 
     /** Replaces every signal guarding the way into a station (FR-096); empty or null unpairs. */
@@ -379,18 +346,7 @@ public class AutonomyCompanionStore
     /** Every station with entry-guard signals, against those signals' squares (FR-096). */
     public Map<TileKey, List<TileKey>> getEntrySignals()
     {
-        Map<TileKey, List<TileKey>> out = new LinkedHashMap<>();
-
-        for (TileKey station : entrySignals.keySet())
-        {
-            if (station == null) continue;
-
-            List<TileKey> signals = getEntrySignals(station);
-
-            if (!signals.isEmpty()) out.put(station, signals);
-        }
-
-        return out;
+        return listsOf(entrySignals);
     }
 
     /**
@@ -2742,6 +2698,16 @@ public class AutonomyCompanionStore
         return out;
     }
 
+    /** Whether a square, or any square on its list, is on the page. */
+    private static boolean mentionsPage(TileKey key, List<TileKey> held, String page)
+    {
+        if (isOnPage(key, page)) return true;
+
+        if (held != null) for (TileKey one : held) if (isOnPage(one, page)) return true;
+
+        return false;
+    }
+
     /** The same, for a map of squares to LISTS of squares. */
     private static Map<TileKey, List<TileKey>> onPageEitherEnd(
         Map<TileKey, List<TileKey>> from, String page, boolean lists)
@@ -2750,21 +2716,7 @@ public class AutonomyCompanionStore
 
         for (Map.Entry<TileKey, List<TileKey>> entry : from.entrySet())
         {
-            boolean mentions = isOnPage(entry.getKey(), page);
-
-            if (!mentions && entry.getValue() != null)
-            {
-                for (TileKey held : entry.getValue())
-                {
-                    if (isOnPage(held, page))
-                    {
-                        mentions = true;
-                        break;
-                    }
-                }
-            }
-
-            if (mentions) out.put(entry.getKey(), entry.getValue());
+            if (mentionsPage(entry.getKey(), entry.getValue(), page)) out.put(entry.getKey(), entry.getValue());
         }
 
         return out;
@@ -2801,21 +2753,7 @@ public class AutonomyCompanionStore
         {
             Map.Entry<TileKey, List<TileKey>> pair = pairs.next();
 
-            boolean mentions = isOnPage(pair.getKey(), page);
-
-            if (!mentions && pair.getValue() != null)
-            {
-                for (TileKey held : pair.getValue())
-                {
-                    if (isOnPage(held, page))
-                    {
-                        mentions = true;
-                        break;
-                    }
-                }
-            }
-
-            if (mentions) pairs.remove();
+            if (mentionsPage(pair.getKey(), pair.getValue(), page)) pairs.remove();
         }
 
         if (was != null) into.putAll(was);
@@ -4803,20 +4741,18 @@ public class AutonomyCompanionStore
      */
     private void readSquareMap(JSONObject root, String field, Map<TileKey, String> into)
     {
-        JSONObject object = root.optJSONObject(field);
-
-        if (object == null) return;
-
-        for (String key : object.keySet())
-        {
-            TileKey tile = parseTileKey(fromStored(key));
-
-            if (tile != null) into.put(tile, object.getString(key));
-        }
+        readSquareValues(root, field, into, JSONObject::getString);
     }
 
     /** The same, for the one field whose values are numbers. */
     private void readSquareIntMap(JSONObject root, String field, Map<TileKey, Integer> into)
+    {
+        readSquareValues(root, field, into, JSONObject::getInt);
+    }
+
+    /** The two above: each key translated as it arrives, its value read only where the key parses. */
+    private <V> void readSquareValues(JSONObject root, String field, Map<TileKey, V> into,
+        java.util.function.BiFunction<JSONObject, String, V> value)
     {
         JSONObject object = root.optJSONObject(field);
 
@@ -4826,7 +4762,7 @@ public class AutonomyCompanionStore
         {
             TileKey tile = parseTileKey(fromStored(key));
 
-            if (tile != null) into.put(tile, object.getInt(key));
+            if (tile != null) into.put(tile, value.apply(object, key));
         }
     }
 

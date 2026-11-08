@@ -27,7 +27,7 @@ import support.CopyScan;
 public class testNoNewCopies
 {
     /** The groups as they stand.  Never raise it. */
-    private static final int GROUPS_ALLOWED = 110;
+    private static final int GROUPS_ALLOWED = 103;
 
     /** The tokens standing in a second or later copy in `test/`, summed over its groups.  Never raise it. */
     private static final long TEST_COPIED_TOKENS_ALLOWED = 274734;
@@ -40,15 +40,11 @@ public class testNoNewCopies
         "AutonomyBuilder:2 (64)",
         "AutonomyChecks:2 (63)",
         "AutonomyCompanionStore:1,AutonomySession:2 (99)",
-        "AutonomyCompanionStore:2 (85)",
-        "AutonomyCompanionStore:2 (77)",
-        "AutonomyCompanionStore:2 (71)",
         "AutonomyCompanionStore:2 (67)",
         "AutonomyCompanionStore:2 (65)",
         "AutonomyCompanionStore:2 (63)",
-        "AutonomyCompanionStore:2 (61)",
         "AutonomyCompanionStore:3 (136)",
-        "AutonomyCompanionStore:3 (86)",
+        "AutonomyCompanionStore:3 (85)",
         "AutonomyCompanionStore:5 (185)",
         "AutonomyEditorPanel:1,EditorPrompts:1 (80)",
         "AutonomyEditorPanel:2 (66)",
@@ -56,14 +52,11 @@ public class testNoNewCopies
         "AutonomyEditorPanel:4 (146)",
         "AutonomyEditorPanel:4 (98)",
         "AutonomyMenu:2 (64)",
-        "AutonomySession:2 (93)",
-        "AutonomySession:2 (77)",
         "AutonomySession:2 (76)",
-        "AutonomySession:2 (71)",
+        "AutonomySession:2 (75)",
         "AutonomySession:2 (70)",
         "AutonomySession:2 (68)",
         "AutonomySession:2 (67)",
-        "AutonomySession:2 (66)",
         "AutonomySession:2 (64)",
         "AutonomySession:2 (64)",
         "AutonomySession:2 (63)",
