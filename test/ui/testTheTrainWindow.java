@@ -458,6 +458,48 @@ public class testTheTrainWindow
         SwingUtilities.invokeAndWait(frame::dispose);
     }
 
+    /**
+     * Locomotive Settings... sits under the Train list, at its left edge, and never sets the window's width (Adam: "move
+     * the <wrench> locomotive settings label somewhere that doesn't widen the whole window").
+     *
+     * MUTATION: put the button back in a column of its own beside the list, and this fails.
+     */
+    @Test(timeOut = 120000)
+    public void testLocomotiveSettingsDoesNotWidenTheWindow() throws Exception
+    {
+        AutonomyEditorPanel panel = theEditorsPanel();
+
+        TrainWindow window = StationDoors.openTrain(panel, aSquareWithATrain());
+
+        int[] widths = Components.onTheEventThread(() ->
+        {
+            java.awt.Component list = Components.named(window, "train.train", java.awt.Component.class);
+            java.awt.Component settings = Components.named(window, "train.settings", java.awt.Component.class);
+
+            assertEquals(settings.getX(), list.getX(), "Locomotive Settings... does not share the Train list's left edge");
+
+            assertTrue(settings.getY() >= list.getY() + list.getHeight(), "Locomotive Settings... is not under the"
+                + " Train list");
+
+            window.pack();
+
+            int with = window.getWidth();
+
+            java.awt.Container form = settings.getParent();
+
+            form.remove(settings);
+            form.revalidate();
+
+            window.pack();
+
+            return new int[] {with, window.getWidth()};
+        });
+
+        assertEquals(widths[0], widths[1], "Locomotive Settings... sets the train window's width");
+
+        SwingUtilities.invokeAndWait(window::dispose);
+    }
+
     // ------------------------------------------------------------------------------------------------------------ menus
 
     /**
