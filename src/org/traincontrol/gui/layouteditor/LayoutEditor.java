@@ -412,7 +412,7 @@ public class LayoutEditor extends PositionAwareJFrame
 
     /**
      * Throws away this window's autonomy edits, putting the opening setup back in memory and on disk (MT-406), as the
-     * per-gesture save already wrote them.  Lifted trains come back; moved ones stay moved.
+     * per-gesture save already wrote them.  Lifted, dragged and placed trains go back where the setup had them.
      * @return null when it worked, or the reason it did not
      */
     private String discardAutonomyWork()
