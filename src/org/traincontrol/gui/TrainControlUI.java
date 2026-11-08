@@ -16979,34 +16979,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      */
     void showReturnHomeWorking(boolean working)
     {
-        if (this.returnHomeButton == null) return;
-
-        if (working)
+        if (this.returnHomeButton != null)
         {
-            if (this.returnHomeSpinner != null) return;
-
-            final TurningArc arc = new TurningArc(
-                Math.max(10, this.returnHomeButton.getFontMetrics(this.returnHomeButton.getFont()).getAscent()));
-
-            this.returnHomeButton.setIcon(arc);
-            this.returnHomeButton.setDisabledIcon(arc);
-
-            this.returnHomeSpinner = new javax.swing.Timer(60, e ->
-            {
-                arc.advance();
-                this.returnHomeButton.repaint();
-            });
-
-            this.returnHomeSpinner.start();
-        }
-        else
-        {
-            if (this.returnHomeSpinner != null) this.returnHomeSpinner.stop();
-
-            this.returnHomeSpinner = null;
-
-            this.returnHomeButton.setIcon(null);
-            this.returnHomeButton.setDisabledIcon(null);
+            this.returnHomeSpinner = turningMark(this.returnHomeButton, this.returnHomeSpinner, working, null);
         }
     }
 
@@ -17025,43 +17000,56 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     {
         if (this.startAutonomy == null) return;
 
-        if (running)
+        this.runningSpinner = turningMark(this.startAutonomy, this.runningSpinner, running, () ->
         {
-            if (this.runningSpinner != null) return;
+            if (this.autonomyOverlayToggle != null) this.autonomyOverlayToggle.repaintRunningMark();
+        });
+    }
 
-            final TurningArc arc = new TurningArc(
-                Math.max(10, this.startAutonomy.getFontMetrics(this.startAutonomy.getFont()).getAscent()));
+    /**
+     * Puts a turning mark on a button, its disabled icon too, or takes it off; returns the timer turning it, or null.
+     * One already turning is kept, and the timer stops with this window.  `alsoRepaint` is any other surface showing the
+     * same mark, or null.
+     */
+    private javax.swing.Timer turningMark(javax.swing.JButton button, javax.swing.Timer timer, boolean on,
+        Runnable alsoRepaint)
+    {
+        if (!on)
+        {
+            if (timer != null) timer.stop();
 
-            this.startAutonomy.setIcon(arc);
-            this.startAutonomy.setDisabledIcon(arc);
+            button.setIcon(null);
+            button.setDisabledIcon(null);
 
-            this.runningSpinner = new javax.swing.Timer(60, e ->
+            return null;
+        }
+
+        if (timer != null) return timer;
+
+        final TurningArc arc = new TurningArc(Math.max(10, button.getFontMetrics(button.getFont()).getAscent()));
+
+        button.setIcon(arc);
+        button.setDisabledIcon(arc);
+
+        timer = new javax.swing.Timer(60, e ->
+        {
+            if (!isDisplayable())
             {
-                if (!isDisplayable())
-                {
-                    ((javax.swing.Timer) e.getSource()).stop();
+                ((javax.swing.Timer) e.getSource()).stop();
 
-                    return;
-                }
+                return;
+            }
 
-                arc.advance();
+            arc.advance();
 
-                this.startAutonomy.repaint();
+            button.repaint();
 
-                if (this.autonomyOverlayToggle != null) this.autonomyOverlayToggle.repaintRunningMark();
-            });
+            if (alsoRepaint != null) alsoRepaint.run();
+        });
 
-            this.runningSpinner.start();
-        }
-        else
-        {
-            if (this.runningSpinner != null) this.runningSpinner.stop();
+        timer.start();
 
-            this.runningSpinner = null;
-
-            this.startAutonomy.setIcon(null);
-            this.startAutonomy.setDisabledIcon(null);
-        }
+        return timer;
     }
 
     public boolean isShowingSomethingRuns()

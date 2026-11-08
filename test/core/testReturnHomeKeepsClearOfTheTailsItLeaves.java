@@ -253,7 +253,7 @@ public class testReturnHomeKeepsClearOfTheTailsItLeaves
      * (OB-073's shape, as OB-228 was): where BOTH edges carry places from the build, the lock alone is not enough; the
      * tail has to lie on a place the mover's edge runs over, or the planner is stricter than its railway.
      *
-     * MUTATION, both run: dropping the lock-edge loop from `passesTheTailsOfTrainsItHasMoved` fails the first
+     * MUTATION, both run: dropping the lock-edge loop from `liesAcross` fails the first
      * arrangement. Dropping the `tailLiesOn` continue instead fails all four claims in this class, the control first:
      * `createEdge` locks edges that share a point, so without the refinement a tail anywhere closes every road that
      * touches its own.
@@ -294,7 +294,7 @@ public class testReturnHomeKeepsClearOfTheTailsItLeaves
 
     /**
      * The tail of a train that never moves closes the roads over its metal, locked or not (OB-184): A is already home,
-     * so its tail is the one it left at the START of the plan, seen only by `liesAcrossAtStart` through
+     * so its tail is the one it left at the START of the plan, seen only by `liesAcross` through
      * `Layout.tailLiesOn`.
      *
      * MUTATION: make `Layout.tailLiesOn` return false. Both refusals go READY (the planner offers a move

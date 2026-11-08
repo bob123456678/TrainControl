@@ -184,7 +184,7 @@ public class testHomeStaging
             "the route search does not consult the covered track, so the rule exists and nothing calls"
             + " it - which is what a half-finished refactor leaves behind");
 
-        String atStart = SourceOf.declaration("private static boolean liesAcrossAtStart(");
+        String atStart = SourceOf.declaration("private static boolean liesAcross(");
 
         assertTrue(atStart.contains("sharing.getLockEdges().contains(edge)"),
             "the planner sweeps lock edges without checking they are SYMMETRIC. Sharing a tile is"
@@ -208,9 +208,9 @@ public class testHomeStaging
             "the runtime no longer asks whether another train's tail lies on the metal an edge runs over (AUT-B1)");
 
         assertTrue(SourceOf.declaration("private boolean passesTheTailsOfTrainsItHasMoved(")
-            .contains("if (Layout.anotherTailOn(edge, mover, places) != null) return false;"),
-            "the planner's check of the tails its own moves leave does not ask by place, so it plans onto a copy of"
-            + " the rail the runtime refuses (AUT-B1)");
+            .contains("if (liesAcross(edge, train, covered, places)) return false;"),
+            "the planner's check of the tails its own moves leave no longer asks `liesAcross`, the by-place question"
+            + " pinned below, so it can plan onto a copy of the rail the runtime refuses (AUT-B1)");
 
         // EVERY TRAIN on those places, not the first, each asked against its own record.
         assertTrue(atStart.contains("return Layout.tailLiesOn(edge, train, places);"),

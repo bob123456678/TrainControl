@@ -2290,49 +2290,18 @@ public class AutonomyCompanionStore
 
     /**
      * Every Point name a configuration stores by name (its timetable's legs and each standing train's road) through a
-     * rename, in place.  Everything else in it is keyed by square.
+     * rename, in place: the entries `AutonomySession.legsOf` reads, so an undo puts back all the rename changed.
+     * Everything else in it is keyed by square.
      */
     static void renameStoredPoints(JSONObject configuration, java.util.function.UnaryOperator<String> rename)
     {
-        JSONObject globals = configuration.optJSONObject("globals");
-
-        JSONArray table = globals == null ? null : globals.optJSONArray("timetable");
-
-        List<JSONObject> entries = new ArrayList<>();
-
-        for (int i = 0; table != null && i < table.length(); i++) entries.add(table.optJSONObject(i));
-
-        for (JSONObject entry : entries)
+        for (AutonomySession.NamedLeg leg : AutonomySession.legsOf(configuration))
         {
-            JSONArray path = entry == null ? null : entry.optJSONArray("path");
-
-            for (int j = 0; path != null && j < path.length(); j++)
+            for (int end = 0; end < 2; end++)
             {
-                JSONObject leg = path.optJSONObject(j);
+                String name = leg.get(end), renamed = rename.apply(name);
 
-                for (String end : new String[] {"start", "end"})
-                {
-                    if (leg != null && leg.opt(end) instanceof String) leg.put(end, rename.apply(leg.getString(end)));
-                }
-            }
-        }
-
-        JSONObject points = configuration.optJSONObject("points");
-
-        for (String id : points == null ? java.util.Collections.<String>emptySet() : points.keySet())
-        {
-            JSONObject point = points.optJSONObject(id);
-
-            JSONArray road = point == null ? null : point.optJSONArray("arrivedAlong");
-
-            for (int j = 0; road != null && j < road.length(); j++)
-            {
-                JSONArray step = road.optJSONArray(j);
-
-                for (int k = 0; step != null && k < step.length(); k++)
-                {
-                    if (step.opt(k) instanceof String) step.put(k, rename.apply(step.getString(k)));
-                }
+                if (!renamed.equals(name)) leg.set(end, renamed);
             }
         }
     }
