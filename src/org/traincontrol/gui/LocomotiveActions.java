@@ -31,7 +31,7 @@ import org.traincontrol.util.I18n;
  * locomotive by name, writing a locomotive's name and address, finding similar locomotives and mapping them to a
  * page, and deleting one from the database.
  *
- * Every field stays on `TrainControlUI`; the dialogs are owned by the clicked component or the window, as before.
+ * Every field stays on `TrainControlUI`; the dialogs are owned by the clicked component or the window.
  */
 final class LocomotiveActions
 {
@@ -104,10 +104,8 @@ final class LocomotiveActions
                     return false;
                 }
 
-                // Routes store locomotives by name in a comma-separated text format, so renaming into a name with a
-                // comma rewrites every command and condition into something that re-parses as a different
-                // locomotive.  (Brackets are allowed: Adam's ruling.)  The route editor refuses these names at both
-                // its doors; this is the third way in.
+                // Routes store locomotives by name in a comma-separated text format, so a name with a comma would
+                // re-parse as a different locomotive; the route editor's two doors ask the same rule.
                 if (!org.traincontrol.base.RouteCommand.isNameUsable(newName))
                 {
                     JOptionPane.showMessageDialog(source, I18n.t("loc.ui.errorLocomotiveNameUnusable"));
@@ -350,11 +348,7 @@ final class LocomotiveActions
         }
     }
 
-    /**
-     * Shows the user locomotives similar to searchLoc, and maps them to a page if requested
-     * @param searchLoc
-     * @param evt
-     */
+    /** Shows the user locomotives similar to searchLoc, and maps them to a page if requested. */
     void findSimilarLocs(Locomotive searchLoc, MouseEvent evt)
     {
         findSimilarLocs(searchLoc, evt != null ? (Component) evt.getSource() : this.ui);

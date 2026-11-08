@@ -43,11 +43,7 @@ final class MultiUnitPanel extends JPanel
     private final Runnable onChange;
     private Map<String, Double> loaded;
 
-    /**
-     * @param ui the main window
-     * @param l the multi-unit being shown
-     * @param onChange told whenever a tick or a number changes, or null
-     */
+    /** @param onChange told whenever a tick or a number changes, or null */
     MultiUnitPanel(TrainControlUI ui, Locomotive l, Runnable onChange)
     {
         super(new GridBagLayout());

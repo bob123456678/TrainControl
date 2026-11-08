@@ -1457,10 +1457,7 @@ public abstract class Locomotive
         return this.historicalOperatingTime.values().stream().reduce(0L, Long::sum);
     }
     
-    /**
-     * The latest day on which the locomotive has a runtime record (yyyy-MM-dd), or null if it has none
-     * @return
-     */
+    /** The latest day on which the locomotive has a runtime record (yyyy-MM-dd), or null if it has none. */
     public String getLastRunDay()
     {
         String last = null;
@@ -1476,7 +1473,6 @@ public abstract class Locomotive
     /**
      * Raises the total runtime to at least `wantedMs`, filing only the difference on `day` (FR-049); the other days are
      * never touched.  Takes the lock runtime tracking takes.
-     * @param wantedMs
      * @param day yyyy-MM-dd
      * @return the milliseconds added (0 when the total is already that large)
      */

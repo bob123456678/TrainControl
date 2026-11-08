@@ -20,13 +20,7 @@ final class LocomotiveMenuItems
     {
     }
 
-    /**
-     * Locomotive Settings..., which opens the window on its first tab; a locomotive that cannot be edited opens locked.
-     *
-     * @param ui the main window
-     * @param loc the locomotive
-     * @return the item
-     */
+    /** Locomotive Settings..., which opens the window on its first tab; a locomotive that cannot be edited opens locked. */
     static JMenuItem settings(TrainControlUI ui, Locomotive loc)
     {
         JMenuItem item = new JMenuItem(I18n.t("loc.ui.menuLocomotiveSettings"));

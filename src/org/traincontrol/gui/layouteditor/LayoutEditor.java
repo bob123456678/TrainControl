@@ -1899,9 +1899,8 @@ public class LayoutEditor extends PositionAwareJFrame
     /**
      * The square a press lands on a train of, for dragging it (FR-160): the one whose drawn train covers the point, else
      * the square pressed near its middle while the setup stands a train there that the picture has not drawn, as
-     * happens between a wipe of the diagram and the next picture.  Else a press there would fall to the caption.
-     * @param e the press
-     * @return the square, or null
+     * happens between a wipe of the diagram and the next picture.  Else a press there would fall to the caption.  Null
+     * where there is none.
      */
     LayoutLabel trainStandingUnder(MouseEvent e)
     {
@@ -4388,7 +4387,7 @@ public class LayoutEditor extends PositionAwareJFrame
         // Hidden with its item in Track Diagram mode, so no separator hangs under nothing
         findPointSeparator = menu.getMenuComponent(menu.getMenuComponentCount() - 1);
 
-        // Beside the page actions, as Adam asked: not in the sidebar (FR-055)
+        // Beside the page actions, not in the sidebar (FR-055)
         findPointItem = new javax.swing.JMenuItem(I18n.t("layout.ui.menuFindAPoint"));
 
         findPointItem.setFocusable(false);

@@ -6608,7 +6608,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
     /**
      * As {@link #syncLocomotive(Locomotive)}, then runs {@code after} on the event thread once the sync is over.
-     * @param l
      * @param after what to do afterwards, or null
      */
     public void syncLocomotive(Locomotive l, Runnable after)

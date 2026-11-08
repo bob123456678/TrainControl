@@ -2195,18 +2195,6 @@ public final class CS2File
         });
     }
 
-    private List<String> parseLayoutList() throws Exception
-    {
-        List<String> out = new ArrayList<>();
-
-        for (Map<String, String> page : parseLayoutIndex())
-        {
-            out.add(page.get("name"));
-        }
-
-        return out;
-    }
-
     /**
      * The pages named in gleisbild.cs2 as name and id, in file order, so an autonomy setup survives a page rename.  A
      * page with no `.id` has id ZERO, the CS2 convention that an omitted key is zero (see
@@ -2692,7 +2680,7 @@ public final class CS2File
                             {
                                 added.setUnmodelledKeys(m);
 
-                                // The page a link goes to, when a 3.1.0 save wrote its ID
+                                // The page a link goes to, when the file gives its ID
                                 added.setLinkPageIdFromFile(m.get("zielseite"), m.get("zielartikel"));
 
                                 // And the file's own word for the type: the type mapping is many-to-one, so writing the

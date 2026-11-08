@@ -2795,10 +2795,7 @@ public class AutonomyEditorPanel extends JPanel
     }
 
     /**
-     * Adds the station menu's items about the train standing here (FR-181): Change Direction, Change Arrived From and,
-     * where there is a choice, how far back its tail reaches; the same items on the editor's menu and the track diagram's.
-     * @param menu the menu to add them to
-     * @param target the square
+     * Delegates to `EditorTileMenus.addFacingItems`, for the editor's menu and the track diagram's (FR-181).
      * @return whether a locomotive stands here, so anything was added
      */
     public boolean addFacingItems(javax.swing.JPopupMenu menu, final TileKey target)

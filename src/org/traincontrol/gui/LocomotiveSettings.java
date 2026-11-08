@@ -23,12 +23,7 @@ public final class LocomotiveSettings
         MOVING, AUTONOMY
     }
 
-    /**
-     * Whether the power is on and the locomotive, or a multi-unit it belongs to, has a speed above zero.
-     *
-     * @param ui the main window
-     * @param l the locomotive
-     */
+    /** Whether the power is on and the locomotive, or a multi-unit it belongs to, has a speed above zero. */
     public static boolean isMoving(TrainControlUI ui, Locomotive l)
     {
         return ui != null && ui.powerIsOn() && hasSpeed(ui, l);

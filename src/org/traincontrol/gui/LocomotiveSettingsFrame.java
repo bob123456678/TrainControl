@@ -636,7 +636,7 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
     }
 
     /**
-     * The Sync button: the same sync the key menu used to offer, at once and not on Save.  Afterwards the whole window
+     * The Sync button: syncs the locomotive with the Central Station at once, not on Save.  Afterwards the whole window
      * is reloaded from the locomotive, overwriting anything typed.
      */
     private void syncNow()
@@ -1238,8 +1238,8 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
     }
 
     /**
-     * The fifth tab: what autonomy needs to know of the train.  A setup that
-     * keeps its own copy of a standing train has that copy changed too, or the next load would undo the Save.
+     * The fifth tab: what autonomy needs to know of the train.  A setup that keeps its own copy of a standing train has
+     * that copy changed too, or the next load would undo the Save.
      */
     private final class AutonomyTab extends JPanel
     {
