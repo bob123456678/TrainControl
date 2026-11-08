@@ -327,4 +327,82 @@ public class testTheLocomotiveSettingsSync extends support.SettingsClass
         assertTrue(Components.onTheEventThread(() -> shared.getY() + shared.getHeight()
             <= SettingsWindow.showing().tabsForTest().getY()), "the strips overlap the tabs");
     }
+
+    /**
+     * Everything in the window that is clicked as an icon shows the hand cursor: the trash can, the picture's marks, the
+     * Functions tab's undo arrows, the strip's close button, and the duplicate triangle once it shows.  The (i) marks,
+     * which only explain, keep the arrow.
+     *
+     * MUTATION: drop `trash.setCursor` from `LocomotiveTab`, or the cursor from `revertButton` in
+     * `LocomotiveFunctionsTab`, or the triangle's cursor in `warnAboutTheSameAddress`, and this fails.
+     */
+    @Test
+    public void testClickableIconsShowTheHandCursor() throws Exception
+    {
+        fixture.model.newDCCLocomotive(TWIN, 1931);
+
+        SettingsWindow.type("settings.address", "1931");
+        Components.settle();
+
+        for (String name : new String[] { "settings.trash", "settings.wrench", "settings.crop", "settings.revert",
+            "settings.sameAddress", "functions.resetAll", "functions.clearPreset", "settings.sharedClose" })
+        {
+            java.awt.Component c = SettingsWindow.part(name, java.awt.Component.class);
+
+            assertNotNull(c, "no " + name);
+            assertEquals((int) Components.onTheEventThread(() -> c.getCursor().getType()), java.awt.Cursor.HAND_CURSOR,
+                name + " does not show the hand cursor");
+        }
+
+        java.awt.Component info = Components.find(SettingsWindow.showing().getContentPane(), JLabel.class,
+            l -> org.traincontrol.gui.InfoMark.icon() == l.getIcon());
+
+        assertNotNull(info, "no (i)");
+        assertEquals((int) Components.onTheEventThread(() -> info.getCursor().getType()), java.awt.Cursor.DEFAULT_CURSOR,
+            "an (i) shows a hand");
+    }
+
+    /**
+     * A locomotive's own Basic Settings: the address's (i) ends where the dropdown does, there is no Check Duplicates
+     * button, and a preset speed of 0 is the way to clear a preset: the (i) says so, and Save with 0 leaves none.
+     *
+     * MUTATION: put the (i) back right of the fields, restore the button, or drop the 0 sentence from the Preset Speed
+     * (i) text, and this fails.
+     */
+    @Test
+    public void testAnEditedLocomotiveHasNoCheckButtonAndPresetZeroClears() throws Exception
+    {
+        assertNull(SettingsWindow.part("settings.checkDuplicates", JButton.class), "Check Duplicates is still a button");
+
+        int overhang = SettingsWindow.addressHintOverhang();
+
+        assertTrue(Math.abs(overhang) <= 1, "the (i) ends " + overhang + " px from where the dropdown ends");
+
+        java.awt.Container pane = SettingsWindow.showing().getContentPane();
+
+        String wrapped = org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel.wrapped(I18n.t("loc.ui.settingsPresetSpeedHint"));
+
+        assertNotNull(Components.find(pane, JLabel.class, l -> wrapped.equals(l.getToolTipText())),
+            "the Preset Speed (i) is missing");
+        assertTrue(I18n.t("loc.ui.settingsPresetSpeedHint").contains(" 0 "), "the Preset Speed (i) does not say what 0 does");
+
+        loc.setPreferredSpeed(30);
+        fixture.quiet();
+        fixture.show(loc, LocomotiveSettingsFrame.Tab.LOCOMOTIVE);
+
+        javax.swing.JSpinner speed = SettingsWindow.part("settings.speed", javax.swing.JSpinner.class);
+
+        assertEquals(Components.onTheEventThread(speed::getValue), 30, "the window does not show the preset");
+
+        Components.onTheEventThread(() ->
+        {
+            speed.setValue(0);
+
+            return null;
+        });
+
+        SettingsWindow.press(SettingsWindow.save());
+
+        assertTrue(Components.waitFor(() -> loc.getPreferredSpeed() == 0, WAIT), "Save with 0 did not clear the preset");
+    }
 }

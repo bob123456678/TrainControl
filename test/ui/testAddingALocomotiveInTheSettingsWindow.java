@@ -1,9 +1,11 @@
 package ui;
 
+import java.util.Collections;
 import java.util.List;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
@@ -69,10 +71,11 @@ public class testAddingALocomotiveInTheSettingsWindow extends support.SettingsCl
     }
 
     /**
-     * Add Locomotive opens the window on its first tab alone, titled Add Locomotive, with blank fields, DCC chosen as the
-     * old window chose it, the three decoders it offered, and Add for Save.
+     * Add Locomotive opens the window on the Basic Settings content with no tab strip, titled Add Locomotive, with blank
+     * fields, DCC chosen as the old window chose it, the three decoders it offered, and Add for Save.
      *
-     * MUTATION: offer every decoder in Add, as Save does (`decoderType.values()` in `LocomotiveTab`), and this fails.
+     * MUTATION: offer every decoder in Add, as Save does (`decoderType.values()` in `LocomotiveTab`), or show the tab
+     * strip in Add (`showInTheMiddle(tabs)` for `adding` in `LocomotiveSettingsFrame.build`), and this fails.
      */
     @Test
     public void testAddOpensBlankWithAddForSave() throws Exception
@@ -82,8 +85,9 @@ public class testAddingALocomotiveInTheSettingsWindow extends support.SettingsCl
         LocomotiveSettingsFrame window = SettingsWindow.showing();
 
         assertEquals(Components.onTheEventThread(window::getTitle), I18n.t("loc.ui.addLocomotive"));
-        assertEquals(Components.onTheEventThread(() -> window.tabsForTest().getTabCount()), Integer.valueOf(1),
-            "Add shows more than Basic Settings");
+        assertFalse(Components.onTheEventThread(() -> window.tabsForTest().isShowing()), "Add shows a tab strip");
+        assertTrue(Components.onTheEventThread(SettingsWindow.part("settings.name", javax.swing.JTextField.class)::isShowing),
+            "Add does not show the Basic Settings content");
         assertEquals(SettingsWindow.text("settings.name"), "", "the name is not blank");
         assertEquals(SettingsWindow.text("settings.address"), "", "the address is not blank");
 
@@ -170,6 +174,9 @@ public class testAddingALocomotiveInTheSettingsWindow extends support.SettingsCl
         assertEquals(window.getLocomotive(), made, "the window does not show the locomotive Add made");
         assertEquals(Components.onTheEventThread(() -> window.tabsForTest().getTabCount()), Integer.valueOf(5),
             "the new locomotive is shown without all its tabs");
+        assertTrue(Components.onTheEventThread(() -> window.tabsForTest().isShowing()), "the new locomotive's tabs are hidden");
+        assertTrue(Components.onTheEventThread(() -> window.tabsForTest().getIconAt(4) != null),
+            "the new locomotive's tabs have no icons");
         assertEquals(Components.onTheEventThread(window::getTitle), I18n.f("loc.ui.settingsTitle", MADE));
         assertEquals(SettingsWindow.save().getText(), I18n.t("loc.ui.settingsSave"), "the button still says Add");
     }
@@ -214,11 +221,12 @@ public class testAddingALocomotiveInTheSettingsWindow extends support.SettingsCl
     }
 
     /**
-     * An address another locomotive uses, one with a name wider than the window, shows the warning triangle and never
-     * squeezes the labels: every label and the heading keep their full width, and the triangle sits inside the window.
+     * An address another locomotive uses, one with a name wider than the window, shows the warning triangle right of the
+     * Address label and never squeezes the labels or shifts the field column: every label and the heading keep their
+     * full width, the fields stay where they were, and the triangle sits inside the window.
      *
-     * MUTATION: give the triangle's label no fixed size in `LocomotiveTab`, or put the long name back in the row under
-     * Address (OB-417), and this fails.
+     * MUTATION: put the long name back in the row under Address (OB-417), or give the triangle's label no fixed size
+     * in `LocomotiveTab`, or move it beside the field instead of the label, and this fails.
      */
     @Test
     public void testASharedAddressTriangleNeverSqueezesTheLabels() throws Exception
@@ -230,20 +238,29 @@ public class testAddingALocomotiveInTheSettingsWindow extends support.SettingsCl
 
         java.awt.Container pane = SettingsWindow.showing().getContentPane();
         javax.swing.JLabel triangle = SettingsWindow.part("settings.sameAddress", javax.swing.JLabel.class);
+        javax.swing.JComboBox<?> decoder = SettingsWindow.part("settings.decoder", JComboBox.class);
 
         assertNull(Components.onTheEventThread(triangle::getIcon), "precondition: the triangle is up with no shared address");
 
         int[] widths = labelWidths(pane);
+        int fieldX = Components.onTheEventThread(() -> decoder.getX());
+        int fieldWidth = Components.onTheEventThread(() -> decoder.getWidth());
 
-        Components.select(SettingsWindow.part("settings.decoder", JComboBox.class), decoderType.DCC);
+        Components.select(decoder, decoderType.DCC);
         SettingsWindow.type("settings.address", "3911");
         Components.settle();
 
         assertNotNull(Components.onTheEventThread(triangle::getIcon), "precondition: the shared address has no triangle");
-        assertEquals(Components.onTheEventThread(triangle::getToolTipText), I18n.t("loc.ui.settingsAlsoUsedByTipOne"),
-            "the triangle does not say who is meant");
 
         assertEquals(labelWidths(pane), widths, "the triangle changed the labels' widths");
+        assertEquals(Components.onTheEventThread(() -> decoder.getX()), Integer.valueOf(fieldX), "the fields moved");
+        assertEquals(Components.onTheEventThread(() -> decoder.getWidth()), Integer.valueOf(fieldWidth), "the fields resized");
+
+        javax.swing.JLabel address = Components.find(pane, javax.swing.JLabel.class,
+            l -> org.traincontrol.gui.widgets.UiStyle.withoutColon(I18n.t("layout.ui.address")).equals(l.getText()));
+
+        assertTrue(Components.onTheEventThread(() -> triangle.getParent() == address.getParent()
+            && triangle.getX() >= address.getX() + address.getWidth()), "the triangle is not right of the Address label");
 
         for (String key : new String[] { "loc.ui.settingsNameAndAddress", "ui.name", "loc.ui.decoderType",
             "layout.ui.address" })
@@ -263,6 +280,25 @@ public class testAddingALocomotiveInTheSettingsWindow extends support.SettingsCl
 
         assertTrue(right <= Components.onTheEventThread(pane::getWidth), "the triangle ends at " + right
             + " px, outside the window");
+    }
+
+    /**
+     * The address's (i) ends where the Decoder Type dropdown above it ends, within a pixel, and there is no Check
+     * Duplicates button on the tab.
+     *
+     * MUTATION: put the (i) back in its own column right of the fields in `LocomotiveTab`, or restore the Check
+     * Duplicates button, and this fails.
+     */
+    @Test
+    public void testTheAddressHintEndsWhereTheDropdownEnds() throws Exception
+    {
+        openAdd();
+
+        assertNull(SettingsWindow.part("settings.checkDuplicates", JButton.class), "Check Duplicates is still a button");
+
+        int overhang = SettingsWindow.addressHintOverhang();
+
+        assertTrue(Math.abs(overhang) <= 1, "the (i) ends " + overhang + " px from where the dropdown ends");
     }
 
     /** The widths of the first tab's labels, in order, as laid out now. */
@@ -305,8 +341,9 @@ public class testAddingALocomotiveInTheSettingsWindow extends support.SettingsCl
         javax.swing.JLabel text = SettingsWindow.part("settings.sharedText", javax.swing.JLabel.class);
 
         assertEquals(Components.onTheEventThread(strip::isVisible), Boolean.FALSE, "the strip is up before a click");
-        assertEquals(Components.onTheEventThread(SettingsWindow.part("settings.sameAddress", javax.swing.JLabel.class)::getToolTipText),
-            I18n.f("loc.ui.settingsAlsoUsedByTipMany", 2), "the tooltip does not count the locomotives");
+        String reason = Components.onTheEventThread(SettingsWindow.part("settings.sameAddress", javax.swing.JLabel.class)::getToolTipText);
+
+        assertTrue(reason.contains(DCC_A) && reason.contains(DCC_B), "the tooltip does not name the locomotives: " + reason);
 
         support.Mouse.click(SettingsWindow.part("settings.sameAddress", javax.swing.JLabel.class));
         Components.settle();
@@ -363,15 +400,15 @@ public class testAddingALocomotiveInTheSettingsWindow extends support.SettingsCl
     }
 
     /**
-     * Check Duplicates on Basic Settings writes the old window's report: under the MFX heading each shared MFX address's
-     * locomotives and its separator, under the other heading the rest's, then the summary.  Asked of an Add and of a
-     * locomotive's own settings, which counts only other locomotives at its address as using it.
+     * Opening the window runs the old Check Duplicates report once, to the log: under the MFX heading each shared MFX
+     * address's locomotives and its separator, under the other heading the rest's, then the summary.  Typing does not
+     * write it again; the next opening does.
      *
-     * MUTATION: count the locomotive itself among those using its address in `LocomotiveActions.checkDuplicates`, and
-     * this fails.
+     * MUTATION: write the report on every keystroke, or never, from `LocomotiveSettingsFrame` (`reportDuplicatesOnce`),
+     * and this fails.
      */
     @Test
-    public void testCheckDuplicatesWritesTheOldReport() throws Exception
+    public void testOpeningTheWindowWritesTheDuplicateReportOnce() throws Exception
     {
         fixture.forget(MFX_A, MFX_B, DCC_A, DCC_B, ALONE);
 
@@ -383,7 +420,7 @@ public class testAddingALocomotiveInTheSettingsWindow extends support.SettingsCl
         Locomotive dccB = model.newDCCLocomotive(DCC_B, 1901);
         Locomotive alone = model.newDCCLocomotive(ALONE, 1907);
 
-        openAdd();
+        fixture.quiet();
 
         List<String> logged = java.util.Collections.synchronizedList(new java.util.ArrayList<>());
         java.util.logging.Handler tap = support.LogTap.messagesInto(logged);
@@ -393,8 +430,7 @@ public class testAddingALocomotiveInTheSettingsWindow extends support.SettingsCl
 
         try
         {
-            assertEquals(type("", "1901", decoderType.DCC, "settings.checkDuplicates"),
-                java.util.Collections.singletonList(I18n.t("loc.errorAddressInUse")), "a shared address is not in use");
+            openAdd();
 
             List<String> report = new java.util.ArrayList<>(logged);
 
@@ -407,18 +443,20 @@ public class testAddingALocomotiveInTheSettingsWindow extends support.SettingsCl
             assertShared(report.subList(mfx, rest), I18n.f("loc.reportAddressSeparator", 0xCE7), mfxA, mfxB);
             assertShared(report.subList(rest, end), I18n.f("loc.reportAddressSeparator", 1901), dccA, dccB);
 
-            // And from a locomotive's own settings: its own address is free when no other uses it
+            // Typing checks the address, not the whole database
+            SettingsWindow.type("settings.address", "1901");
+            SettingsWindow.type("settings.address", "1902");
+            Components.settle();
+
+            assertEquals(Collections.frequency(logged, I18n.t("loc.reportDuplicateSummary")), 1,
+                "typing wrote the report again");
+
+            // The next opening writes it once more
             fixture.quiet();
             fixture.show(alone, LocomotiveSettingsFrame.Tab.LOCOMOTIVE);
 
-            try (Answering answering = Answering.start(message -> Answering.pressAt(0)))
-            {
-                Components.press(SettingsWindow.part("settings.checkDuplicates", JButton.class));
-
-                assertTrue(answering.awaitAsked(1, WAIT), "Check Duplicates said nothing");
-                assertEquals(answering.asked(), java.util.Collections.singletonList(I18n.t("loc.infoAddressFree")),
-                    "a locomotive's own address counted as used by another");
-            }
+            assertEquals(Collections.frequency(logged, I18n.t("loc.reportDuplicateSummary")), 2,
+                "the next opening did not write the report");
         }
         finally
         {

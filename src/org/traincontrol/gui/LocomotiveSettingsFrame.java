@@ -73,6 +73,7 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
     private Locomotive loc;
 
     private final JTabbedPane tabs = new JTabbedPane();
+    private final JPanel content = new JPanel(new BorderLayout());
     private final JLabel strip = new JLabel();
 
     /** Under the lock strip, when the warning triangle was clicked: who else has this address and decoder (OB-417). */
@@ -90,6 +91,9 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
     private MultiUnitTab multiUnitTab;
     private AutonomyTab autonomyTab;
     private boolean blocked;
+
+    /** Whether this opening of the window has written the duplicate report to the log. */
+    private boolean reported;
 
     /** Whether the window is Add Locomotive's: no locomotive yet, the first tab alone and Add for Save. */
     private boolean adding;
@@ -135,6 +139,7 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
         closeShared.setName("settings.sharedClose");
         closeShared.setToolTipText(I18n.t("autosetup.ui.stationClose"));
         closeShared.setFocusable(false);
+        closeShared.setCursor(java.awt.Cursor.getPredefinedCursor(java.awt.Cursor.HAND_CURSOR));
         closeShared.setForeground(STRIP_TEXT);
         closeShared.putClientProperty("JButton.buttonType", "toolBarButton");
         closeShared.addActionListener(e -> showShared(false));
@@ -168,8 +173,6 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
 
         footer.setBorder(BorderFactory.createEmptyBorder(6, PAD, PAD, PAD));
         footer.add(buttons, BorderLayout.EAST);
-
-        JPanel content = new JPanel(new BorderLayout());
 
         JPanel top = new JPanel(new BorderLayout());
 
@@ -225,6 +228,7 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
         if (function != null && tab == Tab.FUNCTIONS) functionsTab.select(function);
 
         refresh();
+        reportDuplicatesOnce();
 
         return true;
     }
@@ -246,8 +250,18 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
         watch.start();
 
         refresh();
+        reportDuplicatesOnce();
 
         return true;
+    }
+
+    /** The first check of an opening also writes the whole-database duplicate report to the log. */
+    private void reportDuplicatesOnce()
+    {
+        if (reported) return;
+
+        reported = true;
+        main.locomotiveActions.reportDuplicates();
     }
 
     /** @return the locomotive the window is showing, or null */
@@ -267,18 +281,22 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
 
         locomotiveTab = new LocomotiveTab();
         locomotiveTab.setBorder(BorderFactory.createEmptyBorder(PAD, PAD, PAD, PAD));
-        tabs.addTab(I18n.t("loc.ui.settingsTabLocomotive"), TabIcons.locomotive(), locomotiveTab);
 
         save.setText(I18n.t(adding ? "ui.add" : "loc.ui.settingsSave"));
 
+        // Add shows the first tab's content with no tab strip: one tab alone only takes room
         if (adding)
         {
+            showInTheMiddle(locomotiveTab);
             setTitle(I18n.t("loc.ui.addLocomotive"));
             showStrip(false);
             fit();
 
             return;
         }
+
+        showInTheMiddle(tabs);
+        tabs.addTab(I18n.t("loc.ui.settingsTabLocomotive"), TabIcons.locomotive(), locomotiveTab);
 
         functionsTab = new LocomotiveFunctionsTab(main, loc, this::changed);
         notesTab = new NotesTab();
@@ -305,6 +323,19 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
         showStrip(reason != null);
 
         fit();
+    }
+
+    /** Puts what the window shows between the strips and the footer: the tab strip, or Add's one page. */
+    private void showInTheMiddle(java.awt.Component what)
+    {
+        java.awt.Component now = ((BorderLayout) content.getLayout()).getLayoutComponent(BorderLayout.CENTER);
+
+        if (now == what) return;
+
+        if (now != null) content.remove(now);
+
+        content.add(what, BorderLayout.CENTER);
+        content.revalidate();
     }
 
     private void showStrip(boolean up)
@@ -427,6 +458,8 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
     public void dispose()
     {
         watch.stop();
+
+        reported = false;
 
         super.dispose();
     }
@@ -651,7 +684,6 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
         final JTextField name = new JTextField(16);
         final JComboBox<decoderType> decoder = new JComboBox<>(adding
             ? new decoderType[] { decoderType.MFX, decoderType.MM2, decoderType.DCC } : decoderType.values());
-        final JButton checkDuplicates = new JButton(I18n.t("ui.checkDuplicates"));
         final JTextField address = new JTextField(16);
         final JSpinner speed = typedAtOnce(new JSpinner(new SpinnerNumberModel(0, 0, 100, 1)));
         final JLabel sameAddress = new JLabel();
@@ -692,7 +724,6 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
             });
 
             name.setName("settings.name");
-            checkDuplicates.setName("settings.checkDuplicates");
             sameAddress.setName("settings.sameAddress");
             decoder.setName("settings.decoder");
             address.setName("settings.address");
@@ -706,7 +737,6 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
             // Always the icon's size, so the row does not change width when the triangle appears
             sameAddress.setPreferredSize(new Dimension(RowIcons.warning(16).getIconWidth() + 4,
                 RowIcons.warning(16).getIconHeight()));
-            sameAddress.setCursor(java.awt.Cursor.getPredefinedCursor(java.awt.Cursor.HAND_CURSOR));
             sameAddress.addMouseListener(new MouseAdapter()
             {
                 @Override
@@ -755,11 +785,6 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
                 });
             }
 
-            checkDuplicates.setFont(BUTTON_FONT);
-            checkDuplicates.setFocusable(false);
-            checkDuplicates.addActionListener(e -> main.locomotiveActions.checkDuplicates(LocomotiveSettingsFrame.this,
-                address.getText(), (decoderType) decoder.getSelectedItem(), loc));
-
             // The picture and the marks that change it, which apply at once.
             picture.setPreferredSize(new Dimension(PICTURE_WIDTH, PICTURE_HEIGHT));
             picture.setBorder(BorderFactory.createLineBorder(new Color(204, 204, 204)));
@@ -782,6 +807,7 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
 
             trash.setToolTipText(I18n.t("loc.ui.menuDeleteFromDatabase"));
             trash.setFocusable(false);
+            trash.setCursor(java.awt.Cursor.getPredefinedCursor(java.awt.Cursor.HAND_CURSOR));
             trash.setBorderPainted(false);
             trash.setContentAreaFilled(false);
             trash.addActionListener(e -> delete());
@@ -837,44 +863,47 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
 
             for (int i = 0; i < fields.length; i++)
             {
+                JComponent labelCell = label(I18n.t(labels[i]));
+                JComponent fieldCell = fields[i];
+
+                if (fields[i] == address)
+                {
+                    // The duplicate warning sits beside the label, its room always held so the columns never shift
+                    // (OB-417); the (i) ends where the dropdown above ends, so the field is shortened by its width
+                    JPanel labelRow = new JPanel(new BorderLayout(4, 0));
+                    labelRow.setOpaque(false);
+                    labelRow.add(labelCell, BorderLayout.WEST);
+                    labelRow.add(sameAddress, BorderLayout.CENTER);
+                    labelCell = labelRow;
+
+                    JLabel addressHint = InfoMark.label(I18n.t("loc.ui.settingsAddressHint"));
+
+                    addressHint.setName("settings.addressHint");
+                    address.setPreferredSize(new Dimension(name.getPreferredSize().width
+                        - addressHint.getPreferredSize().width - 4, name.getPreferredSize().height));
+
+                    JPanel addressRow = new JPanel(new BorderLayout(4, 0));
+                    addressRow.setOpaque(false);
+                    addressRow.add(address, BorderLayout.CENTER);
+                    addressRow.add(addressHint, BorderLayout.EAST);
+                    fieldCell = addressRow;
+                }
+
                 gbc.gridy = i + 1;
                 gbc.gridx = 0;
                 gbc.weightx = 0;
                 gbc.fill = GridBagConstraints.NONE;
                 gbc.insets = edge;
-                add(label(I18n.t(labels[i])), gbc);
+                add(labelCell, gbc);
                 gbc.gridx = 1;
                 gbc.fill = GridBagConstraints.HORIZONTAL;
                 gbc.insets = inner;
-                add(fields[i], gbc);
+                add(fieldCell, gbc);
             }
 
             gbc.fill = GridBagConstraints.NONE;
-
-            JLabel addressHint = InfoMark.label(I18n.t("loc.ui.settingsAddressHint"));
-
-            addressHint.setName("settings.addressHint");
-            gbc.gridx = 2;
-            gbc.gridy = 3;
-            add(addressHint, gbc);
-
             gbc.gridx = 1;
             gbc.gridy = 4;
-
-            // Check Duplicates, its (i) and the warning triangle share the row under the address.  The triangle's room
-            // is always held, so showing it never widens the grid and squeezes the labels (OB-417).
-            JPanel under = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
-            under.setOpaque(false);
-            under.add(checkDuplicates);
-            under.add(javax.swing.Box.createHorizontalStrut(4));
-            under.add(InfoMark.label(I18n.t("loc.ui.settingsCheckDuplicatesHint")));
-            under.add(javax.swing.Box.createHorizontalStrut(6));
-            under.add(sameAddress);
-            gbc.gridwidth = 2;
-            gbc.fill = GridBagConstraints.HORIZONTAL;
-            add(under, gbc);
-            gbc.gridwidth = 1;
-            gbc.fill = GridBagConstraints.NONE;
 
             if (adding)
             {
@@ -1005,8 +1034,10 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
             }
 
             sameAddress.setIcon(also.isEmpty() ? null : RowIcons.warning(16));
-            sameAddress.setToolTipText(also.isEmpty() ? null : also.size() == 1
-                ? I18n.t("loc.ui.settingsAlsoUsedByTipOne") : I18n.f("loc.ui.settingsAlsoUsedByTipMany", also.size()));
+            sameAddress.setToolTipText(also.isEmpty() ? null : org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel
+                .wrapped(I18n.f("loc.ui.settingsAlsoUsedBy", String.join(", ", also))));
+            sameAddress.setCursor(java.awt.Cursor.getPredefinedCursor(
+                also.isEmpty() ? java.awt.Cursor.DEFAULT_CURSOR : java.awt.Cursor.HAND_CURSOR));
 
             setSharers(also);
         }

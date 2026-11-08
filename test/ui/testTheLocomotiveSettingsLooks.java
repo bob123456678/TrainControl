@@ -167,6 +167,36 @@ public class testTheLocomotiveSettingsLooks extends support.SettingsClass
     }
 
     /**
+     * The Functions tab's two button rows carry no "Preset" or "Icons" label in front of them: the buttons start at the
+     * table's left edge, and only (i) marks share their rows.
+     *
+     * MUTATION: put a label back in front of Save Current Functions as Preset in `LocomotiveFunctionsTab`, and this
+     * fails.
+     */
+    @Test
+    public void testTheFunctionsTabHasNoPresetOrIconsLabels() throws Exception
+    {
+        opened();
+
+        java.awt.Container pane = SettingsWindow.showing().getContentPane();
+        javax.swing.JButton save = SettingsWindow.part("functions.useCurrent", javax.swing.JButton.class);
+        javax.swing.JTable table = SettingsWindow.part("functions.table", javax.swing.JTable.class);
+
+        for (JLabel l : Components.all(save.getParent(), JLabel.class, null))
+        {
+            assertTrue(l.getIcon() != null && l.getIcon() == InfoMark.icon(), "a label \"" + l.getText()
+                + "\" stands in the button rows");
+        }
+
+        int buttons = Components.onTheEventThread(() -> javax.swing.SwingUtilities.convertPoint(save.getParent(), save.getX(), 0,
+            pane).x);
+        int edge = Components.onTheEventThread(() -> javax.swing.SwingUtilities.convertPoint(table.getParent(), table.getX(), 0,
+            pane).x);
+
+        assertTrue(Math.abs(buttons - edge) <= 1, "the buttons start at " + buttons + " and the table at " + edge);
+    }
+
+    /**
      * Blue is for section headings: exactly "Name and Address", "Customize Behavior" and "Locomotive Icon" on the first
      * tab, "Notes" over the Notes tab's text box, and the Autonomy tab's two are dark blue, and every item label there
      * and on the other tabs, and the Functions table's column headings, are black, all Semibold 13.
@@ -184,7 +214,7 @@ public class testTheLocomotiveSettingsLooks extends support.SettingsClass
             "loc.ui.settingsLocomotiveIcon", "loc.ui.labelNotes", "loc.ui.settingsAutonomyHeading",
             "loc.ui.settingsAutonomyFunctionsHeading" };
         String[] black = { "ui.name", "loc.ui.decoderType", "layout.ui.address", "loc.ui.settingsPresetSpeed",
-            "loc.ui.settingsPresetLabel", "loc.ui.settingsIconsLabel", "loc.ui.labelStartYear",
+            "loc.ui.labelStartYear",
             "loc.ui.labelEndYear", "loc.ui.labelRailwayName", "loc.ui.filterList",
             "autolayout.ui.trainLength", "autolayout.ui.reversible", "autosetup.ui.trainActive",
             "autolayout.ui.departureFunction", "autolayout.ui.arrivalFunction" };
@@ -238,24 +268,24 @@ public class testTheLocomotiveSettingsLooks extends support.SettingsClass
     }
 
     /**
-     * The divider on the first tab sits midway between the Check Duplicates row above it and the Customize Behavior
-     * heading below it, within 2 pixels.
+     * The divider on the first tab sits midway between the Address row above it and the Customize Behavior heading
+     * below it, within 2 pixels.
      *
      * MUTATION: give the divider's row in `LocomotiveSettingsFrame.LocomotiveTab` a bottom inset of 20, and this fails.
      */
     @Test
-    public void testTheDividerIsMidwayBetweenCheckDuplicatesAndTheNextHeading() throws Exception
+    public void testTheDividerIsMidwayBetweenTheAddressRowAndTheNextHeading() throws Exception
     {
         opened();
 
-        java.awt.Rectangle can = at("settings.checkDuplicates", javax.swing.JButton.class);
+        java.awt.Rectangle can = at("settings.address", javax.swing.JTextField.class);
         java.awt.Rectangle heading = inWindow(labelFor("loc.ui.settingsCustomizeBehavior"));
         java.awt.Rectangle line = divider();
 
         int above = line.y - (can.y + can.height);
         int below = heading.y - (line.y + line.height);
 
-        assertTrue(Math.abs(above - below) <= 2, "the divider is " + above + " px under Check Duplicates and " + below
+        assertTrue(Math.abs(above - below) <= 2, "the divider is " + above + " px under Address and " + below
             + " px above Customize Behavior");
     }
 
