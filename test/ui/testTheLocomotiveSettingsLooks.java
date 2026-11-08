@@ -94,7 +94,7 @@ public class testTheLocomotiveSettingsLooks extends support.SettingsClass
      * The Autonomy tab's icon is the main window's sidebar Autonomy picture at the tab icon size: its silhouette agrees
      * with the sidebar's, scaled to the same height, on nine pixels in ten.
      *
-     * MUTATION: load another picture in `TabIcons.autonomy`, or draw the old signal, and this fails.
+     * MUTATION: have `TabIcons.autonomy` fill nothing, or draw the old signal, and this fails.
      */
     @Test
     public void testTheAutonomyTabShowsTheSidebarPicture() throws Exception

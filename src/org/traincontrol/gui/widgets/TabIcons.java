@@ -135,53 +135,37 @@ public final class TabIcons
         });
     }
 
-    /** The main window's Autonomy tab picture, drawn at the tab icon size from the original at every scale. */
+    /**
+     * The main window's Autonomy tab picture, a triangle ring round a filled one, drawn for the tab's size: the
+     * picture's own gap is under a pixel at 20, so a shrunk copy smeared the inside.
+     */
     public static Icon autonomy()
     {
-        return new Icon()
+        return icon((g, w, h) ->
         {
-            private final java.awt.image.BufferedImage original = load();
+            g.setColor(INK);
 
-            private java.awt.image.BufferedImage load()
-            {
-                try
-                {
-                    return javax.imageio.ImageIO.read(org.traincontrol.gui.TrainControlUI.class
-                        .getResource("resources/tabs/autonomy.png"));
-                }
-                catch (java.io.IOException | IllegalArgumentException e)
-                {
-                    return null;
-                }
-            }
+            java.awt.geom.Area ring = new java.awt.geom.Area(play(w, h, 0));
 
-            @Override
-            public int getIconWidth()
-            {
-                return original == null ? UIScale.scale(SIZE)
-                    : Math.round((float) UIScale.scale(SIZE) * original.getWidth() / original.getHeight());
-            }
+            ring.subtract(new java.awt.geom.Area(play(w, h, 0.07)));
+            g.fill(ring);
+            g.fill(play(w, h, 0.12));
+        });
+    }
 
-            @Override
-            public int getIconHeight()
-            {
-                return UIScale.scale(SIZE);
-            }
+    /** The picture's triangle, moved in by {@code inset} of the icon's height on every side (about its in-centre). */
+    private static Shape play(int w, int h, double inset)
+    {
+        double centre = 0.4317, radius = 0.1897, k = (radius - inset) / radius;
 
-            @Override
-            public void paintIcon(java.awt.Component c, java.awt.Graphics g, int x, int y)
-            {
-                if (original == null) return;
+        Path2D p = new Path2D.Double();
 
-                Graphics2D g2 = (Graphics2D) g.create();
+        p.moveTo(w * (centre + (0.242 - centre) * k), h * (0.5 - 0.34 * k));
+        p.lineTo(w * (centre + (0.242 - centre) * k), h * (0.5 + 0.34 * k));
+        p.lineTo(w * (centre + (0.793 - centre) * k), h * 0.5);
+        p.closePath();
 
-                g2.setRenderingHint(java.awt.RenderingHints.KEY_INTERPOLATION,
-                    java.awt.RenderingHints.VALUE_INTERPOLATION_BICUBIC);
-                g2.setRenderingHint(java.awt.RenderingHints.KEY_RENDERING, java.awt.RenderingHints.VALUE_RENDER_QUALITY);
-                g2.drawImage(original, x, y, getIconWidth(), getIconHeight(), null);
-                g2.dispose();
-            }
-        };
+        return p;
     }
 
     /** Draws in a smaller copy of the icon's box, moved to (left, top) and scaled by {@code scale}. */
