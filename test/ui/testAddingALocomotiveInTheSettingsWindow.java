@@ -31,13 +31,14 @@ public class testAddingALocomotiveInTheSettingsWindow extends support.SettingsCl
     private static final String DCC_A = "AD dcc a";
     private static final String DCC_B = "AD dcc b";
     private static final String ALONE = "AD alone";
+    private static final String LONG = "AD a locomotive whose name alone is wider than the whole Add window";
 
     private static final long WAIT = 10000;
 
     @Override
     protected String[] made()
     {
-        return new String[] { MADE, MFX_A, MFX_B, DCC_A, DCC_B, ALONE };
+        return new String[] { MADE, MFX_A, MFX_B, DCC_A, DCC_B, ALONE, LONG };
     }
 
     private static void openAdd() throws Exception
@@ -210,6 +211,52 @@ public class testAddingALocomotiveInTheSettingsWindow extends support.SettingsCl
         {
             fixture.model.getAutoLayout().setStagingInProgress(false);
         }
+    }
+
+    /**
+     * An address another locomotive uses, one with a name wider than the window, gets its "Also used by" note, and the
+     * note never squeezes the labels: every label and the heading keep their full width, and the note ends inside the
+     * window.
+     *
+     * MUTATION: drop `getPreferredSize` from the row under Address in `LocomotiveTab` (OB-417), and this fails.
+     */
+    @Test
+    public void testASharedAddressNoteNeverSqueezesTheLabels() throws Exception
+    {
+        fixture.forget(LONG);
+        fixture.model.newDCCLocomotive(LONG, 3911);
+
+        openAdd();
+
+        Components.select(SettingsWindow.part("settings.decoder", JComboBox.class), decoderType.DCC);
+        SettingsWindow.type("settings.address", "3911");
+        Components.settle();
+
+        javax.swing.JLabel note = SettingsWindow.part("settings.sameAddress", javax.swing.JLabel.class);
+
+        assertEquals(Components.onTheEventThread(note::getText), I18n.f("loc.ui.settingsAlsoUsedBy", LONG),
+            "precondition: the shared address has no note");
+
+        java.awt.Container pane = SettingsWindow.showing().getContentPane();
+
+        for (String key : new String[] { "loc.ui.settingsNameAndAddress", "ui.name", "loc.ui.decoderType",
+            "layout.ui.address" })
+        {
+            String text = org.traincontrol.gui.widgets.UiStyle.withoutColon(I18n.t(key));
+            javax.swing.JLabel label = Components.find(pane, javax.swing.JLabel.class, l -> text.equals(l.getText()));
+
+            assertNotNull(label, "no label " + text);
+
+            int[] w = Components.onTheEventThread(() -> new int[] { label.getWidth(), label.getPreferredSize().width });
+
+            assertTrue(w[0] >= w[1], text + " is squeezed to " + w[0] + " of its " + w[1] + " px");
+        }
+
+        int right = Components.onTheEventThread(() -> javax.swing.SwingUtilities.convertPoint(note.getParent(),
+            note.getX() + note.getWidth(), 0, pane).x);
+
+        assertTrue(right <= Components.onTheEventThread(pane::getWidth), "the note ends at " + right
+            + " px, outside the window");
     }
 
     /**
