@@ -155,9 +155,12 @@ public class testTheStationIsReachedOverTcp
         return Components.waitFor(() -> this.model.count(key) > 0, ms);
     }
 
-    /** Sends a ping and waits for the station's answer, so the connection has carried a frame. */
-    private void pingAnswered() throws Exception
+    /** Connected to a station that answers, over a connection that has carried a frame, so a loss is retried. */
+    private void connectedAndAnswered() throws Exception
     {
+        this.station = new TcpStation().answering(true);
+        connect(this.station.port());
+
         CS2Message ping = new CS2Message(CS2Message.CAN_CMD_PING, new byte[0]);
         assertTrue(this.proxy.sendMessage(ping), "the ping was not sent");
         assertTrue(Components.waitFor(() -> this.model.heardFrame(answerTo(ping.getRawMessage())), WAIT_MS),
@@ -168,23 +171,18 @@ public class testTheStationIsReachedOverTcp
      * A station that takes a connection is reached over it: the ping arrives there byte for byte, its answer reaches
      * the model, and the log says TCP.
      *
-     * MUTATION: in the `NetworkProxy(InetAddress, int)` constructor, take out `useTcp(connectTcp());`.
+     * MUTATION: in the `NetworkProxy(InetAddress, int)` constructor, `if (tcpPort > 0)` to `if (tcpPort < 0)`.
      */
     @Test(timeOut = 30000)
     public void testTcpIsUsedWhenTheStationAcceptsIt() throws Exception
     {
-        this.station = new TcpStation().answering(true);
-        connect(this.station.port());
+        // Sends a ping and waits for the station's answer to reach the model
+        connectedAndAnswered();
 
-        CS2Message ping = new CS2Message(CS2Message.CAN_CMD_PING, new byte[0]);
-        assertTrue(this.proxy.sendMessage(ping), "the ping was not sent");
-
-        assertTrue(Components.waitFor(() -> this.station.received().size() == 1, WAIT_MS),
-            "the ping never reached the station over TCP: " + this.model.lines);
-        assertEquals(this.station.received().get(0).bytes, ping.getRawMessage(),
+        assertEquals(this.station.received().size(), 1, "the station received other than the one ping");
+        assertEquals(this.station.received().get(0).bytes,
+            new CS2Message(CS2Message.CAN_CMD_PING, new byte[0]).getRawMessage(),
             "the frame on the TCP connection is not the frame UDP would carry");
-        assertTrue(Components.waitFor(() -> this.model.heardFrame(answerTo(ping.getRawMessage())), WAIT_MS),
-            "the station's answer on the connection never reached the model");
         assertEquals(this.model.count("network.tcpConnected"), 1, "the log does not say TCP: " + this.model.lines);
         assertEquals(this.model.count("network.tcpUnavailable"), 0, "the log says UDP: " + this.model.lines);
     }
@@ -240,17 +238,8 @@ public class testTheStationIsReachedOverTcp
     public void testAStationThatRefusesTcpIsReachedOverUdp() throws Exception
     {
         connect(TcpStation.closedPort());
-
-        assertTrue(logged("network.canListenerRunning", WAIT_MS), "no UDP listener started: " + this.model.lines);
-        assertEquals(this.model.count("network.tcpUnavailable"), 1,
-            "the fallback to UDP is not said exactly once: " + this.model.lines);
+        assertReachedOverUdpAndSaidOnce();
         assertEquals(this.model.count("network.tcpConnected"), 0, "the log says TCP: " + this.model.lines);
-
-        byte[] frame = sensor(1003, true);
-        broadcast(frame);
-
-        assertTrue(Components.waitFor(() -> this.model.heardFrame(frame), WAIT_MS),
-            "a frame the station broadcast over UDP never reached the model");
     }
 
     /**
@@ -264,16 +253,26 @@ public class testTheStationIsReachedOverTcp
     {
         this.proxy = new NetworkProxy(InetAddress.getByName("255.255.255.255"), NetworkProxy.TCP_PORT);
         this.proxy.setModel(this.model);
+        assertReachedOverUdpAndSaidOnce();
+    }
 
-        assertTrue(logged("network.canListenerRunning", WAIT_MS), "no UDP listener started: " + this.model.lines);
+    private void assertReachedOverUdpAndSaidOnce() throws Exception
+    {
+        assertReachedOverUdp();
         assertEquals(this.model.count("network.tcpUnavailable"), 1,
             "the fallback to UDP is not said exactly once: " + this.model.lines);
+    }
 
-        byte[] frame = sensor(1004, true);
+    /** A UDP listener runs, and a frame the station broadcasts reaches the model. */
+    private void assertReachedOverUdp() throws Exception
+    {
+        assertTrue(logged("network.canListenerRunning", WAIT_MS), "no UDP listener started: " + this.model.lines);
+
+        byte[] frame = sensor(1003, true);
         broadcast(frame);
 
         assertTrue(Components.waitFor(() -> this.model.heardFrame(frame), WAIT_MS),
-            "a frame the station broadcast over UDP never reached the model");
+            "a frame the station broadcast over UDP never reached the model: deaf");
     }
 
     /**
@@ -289,12 +288,15 @@ public class testTheStationIsReachedOverTcp
         connect(this.station.port());
         assertTrue(Components.waitFor(() -> this.station.connections() == 1, WAIT_MS), "precondition: no connection");
 
-        byte[] frame = sensor(1005, true);
-        broadcast(frame);
-        this.station.send(frame);
+        // Two different frames, so that which way each came is known
+        byte[] overUdp = sensor(1005, true);
+        byte[] overTcp = sensor(1005, false);
+        broadcast(overUdp);
+        this.station.send(overTcp);
 
-        assertTrue(Components.waitFor(() -> this.model.heardFrame(frame), WAIT_MS), "the frame over TCP never arrived");
+        assertTrue(Components.waitFor(() -> this.model.heardFrame(overTcp), WAIT_MS), "the frame over TCP never arrived");
         Thread.sleep(500);
+        assertFalse(this.model.heardFrame(overUdp), "over TCP the UDP socket was read too, so frames arrive twice");
         assertEquals(this.model.heard.size(), 1,
             "the station's one frame reached the model " + this.model.heard.size() + " times");
     }
@@ -308,9 +310,7 @@ public class testTheStationIsReachedOverTcp
     @Test(timeOut = 30000)
     public void testALostConnectionIsReplaced() throws Exception
     {
-        this.station = new TcpStation().answering(true);
-        connect(this.station.port());
-        pingAnswered();
+        connectedAndAnswered();
 
         this.station.drop();
 
@@ -337,20 +337,12 @@ public class testTheStationIsReachedOverTcp
     @Test(timeOut = 60000)
     public void testAConnectionThatCannotBeReplacedFallsBackToUdp() throws Exception
     {
-        this.station = new TcpStation().answering(true);
-        connect(this.station.port());
-        pingAnswered();
+        connectedAndAnswered();
 
         this.station.close();
 
         assertTrue(logged("network.tcpReconnectFailed", 30000), "no fallback to UDP: " + this.model.lines);
-        assertTrue(logged("network.canListenerRunning", WAIT_MS), "no UDP listener started: " + this.model.lines);
-
-        byte[] frame = sensor(1006, true);
-        broadcast(frame);
-
-        assertTrue(Components.waitFor(() -> this.model.heardFrame(frame), WAIT_MS),
-            "after the fallback a frame broadcast over UDP never reached the model: deaf");
+        assertReachedOverUdp();
     }
 
     /**
@@ -362,22 +354,33 @@ public class testTheStationIsReachedOverTcp
     @Test(timeOut = 30000)
     public void testACommandSentAsTheConnectionIsLostIsSentAgain() throws Exception
     {
-        this.station = new TcpStation();
-        connect(this.station.port());
-
-        // Carried a frame, so a loss is reconnected
-        this.station.send(sensor(1007, true));
-        assertTrue(Components.waitFor(() -> this.model.heard.size() == 1, WAIT_MS), "precondition: nothing carried");
+        connectedAndCarried();
 
         byte[] command = Packets.powerStop().getRawMessage();
 
         this.station.drop();
         this.proxy.sendMessage(new CS2Message(command));
 
-        assertTrue(logged("network.tcpReconnected", 15000), "no new connection: " + this.model.lines);
+        assertSentOnTheNewConnection(command, 15000);
+    }
+
+    /** Connected to a station that never answers, over a connection that has carried a frame, so a loss is retried. */
+    private void connectedAndCarried() throws Exception
+    {
+        this.station = new TcpStation();
+        connect(this.station.port());
+
+        this.station.send(sensor(1007, true));
+        assertTrue(Components.waitFor(() -> this.model.heard.size() == 1, WAIT_MS), "precondition: nothing carried");
+    }
+
+    /** A new connection is made, and the frame arrives on it. */
+    private void assertSentOnTheNewConnection(byte[] frame, long ms)
+    {
+        assertTrue(logged("network.tcpReconnected", ms), "no new connection: " + this.model.lines);
         assertTrue(Components.waitFor(() ->
-            this.station.receivedOn(2).stream().anyMatch(f -> Arrays.equals(f, command)), WAIT_MS),
-            "the command sent as the connection was lost never reached the station: " + this.model.lines);
+            this.station.receivedOn(2).stream().anyMatch(f -> Arrays.equals(f, frame)), WAIT_MS),
+            "the frame the station may have missed never reached it on the new connection: " + this.model.lines);
     }
 
     /**
@@ -389,22 +392,14 @@ public class testTheStationIsReachedOverTcp
     @Test(timeOut = 60000)
     public void testAHungConnectionIsFoundAndReplaced() throws Exception
     {
-        this.station = new TcpStation();
-        connect(this.station.port());
+        connectedAndCarried();
 
-        this.station.send(sensor(1008, true));
-        assertTrue(Components.waitFor(() -> this.model.heard.size() == 1, WAIT_MS), "precondition: nothing carried");
-
-        // This station never answers
         byte[] ping = new CS2Message(CS2Message.CAN_CMD_PING, new byte[0]).getRawMessage();
         this.proxy.sendMessage(new CS2Message(ping));
 
-        assertTrue(logged("network.tcpReconnected", 30000), "the hung connection was not replaced: " + this.model.lines);
+        assertSentOnTheNewConnection(ping, 30000);
         assertTrue(this.model.lines.stream().anyMatch(l -> l.contains(I18n.f("network.tcpNoAnswer", 15))),
             "the log does not say why: " + this.model.lines);
-        assertTrue(Components.waitFor(() ->
-            this.station.receivedOn(2).stream().anyMatch(f -> Arrays.equals(f, ping)), WAIT_MS),
-            "the unanswered ping was not sent again on the new connection");
     }
 
     /**

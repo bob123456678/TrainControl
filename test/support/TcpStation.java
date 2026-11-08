@@ -142,8 +142,11 @@ public final class TcpStation implements AutoCloseable
         }
     }
 
+    /** The client connected last, waited for: a client's connect returns before this side has accepted it. */
     private Socket last()
     {
+        Components.waitFor(() -> !this.clients.isEmpty(), 5000);
+
         synchronized (this.clients)
         {
             if (this.clients.isEmpty()) throw new IllegalStateException("no client has connected");

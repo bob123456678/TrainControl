@@ -7,6 +7,7 @@ import java.util.Collections;
 import java.util.List;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertTrue;
+import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 import org.traincontrol.base.Accessory;
 import org.traincontrol.base.Locomotive;
@@ -22,7 +23,8 @@ import support.TcpStation;
  * the program handed the network, byte for byte and in order: the bytes `testUdpMessagesReachTheWire` shows a datagram
  * carries.
  *
- * MUTATION: in `NetworkProxy.writeTcp`, write `message` twice, and the frames claim fails.
+ * MUTATION: in `NetworkProxy.writeTcp`, write `message` twice, and the frames claim fails; have
+ * `NetworkProxy.simulationTcpPort` return 0, and each golden over TCP fails on its connection count.
  *
  * @author Adam
  */
@@ -33,63 +35,42 @@ public class testTheGoldensHoldOverTcp
         void run() throws Exception;
     }
 
-    private static void overTcp(Golden golden) throws Exception
+    /** Each golden, by name, with TCP accepted (true) or refused. */
+    @DataProvider(name = "goldens")
+    public static Object[][] goldens()
     {
-        try (TcpStation station = new TcpStation().answering(true))
-        {
-            TcpStation.forSimulations(station.port(), () ->
-            {
-                golden.run();
-                return null;
-            });
+        String[] names = {"CS2 requests", "CS2 sync", "CS3 sync"};
+        Object[][] runs = new Object[names.length * 2][];
 
-            assertTrue(station.connections() > 0, "no model connected over TCP, so the golden ran over UDP");
+        for (int i = 0; i < runs.length; i++) runs[i] = new Object[] {names[i / 2], i % 2 == 0};
+
+        return runs;
+    }
+
+    private static Golden golden(String name)
+    {
+        switch (name)
+        {
+            case "CS2 requests": return () -> new testACS2RequestsAreAsBefore().testTheRequestsOfACS2AreAsBefore();
+            case "CS2 sync": return () -> new testACS2SyncIsAsBefore().testASyncWithACS2IsAsBefore();
+            default: return () -> new testACS3SyncIsAsBefore().testASyncWithACS3IsAsBefore();
         }
     }
 
-    private static void overUdpAfterTcpFailed(Golden golden) throws Exception
+    @Test(dataProvider = "goldens", timeOut = 300000)
+    public void testTheGoldenIsAsBefore(String name, boolean tcpAccepted) throws Exception
     {
-        TcpStation.forSimulations(TcpStation.closedPort(), () ->
+        try (TcpStation station = new TcpStation().answering(true))
         {
-            golden.run();
-            return null;
-        });
-    }
+            TcpStation.forSimulations(tcpAccepted ? station.port() : TcpStation.closedPort(), () ->
+            {
+                golden(name).run();
+                return null;
+            });
 
-    @Test(timeOut = 300000)
-    public void testTheCS2RequestsAreAsBeforeOverTcp() throws Exception
-    {
-        overTcp(() -> new testACS2RequestsAreAsBefore().testTheRequestsOfACS2AreAsBefore());
-    }
-
-    @Test(timeOut = 300000)
-    public void testTheCS2RequestsAreAsBeforeOverUdpAfterTcpFailed() throws Exception
-    {
-        overUdpAfterTcpFailed(() -> new testACS2RequestsAreAsBefore().testTheRequestsOfACS2AreAsBefore());
-    }
-
-    @Test(timeOut = 300000)
-    public void testTheCS2SyncIsAsBeforeOverTcp() throws Exception
-    {
-        overTcp(() -> new testACS2SyncIsAsBefore().testASyncWithACS2IsAsBefore());
-    }
-
-    @Test(timeOut = 300000)
-    public void testTheCS2SyncIsAsBeforeOverUdpAfterTcpFailed() throws Exception
-    {
-        overUdpAfterTcpFailed(() -> new testACS2SyncIsAsBefore().testASyncWithACS2IsAsBefore());
-    }
-
-    @Test(timeOut = 300000)
-    public void testTheCS3SyncIsAsBeforeOverTcp() throws Exception
-    {
-        overTcp(() -> new testACS3SyncIsAsBefore().testASyncWithACS3IsAsBefore());
-    }
-
-    @Test(timeOut = 300000)
-    public void testTheCS3SyncIsAsBeforeOverUdpAfterTcpFailed() throws Exception
-    {
-        overUdpAfterTcpFailed(() -> new testACS3SyncIsAsBefore().testASyncWithACS3IsAsBefore());
+            assertEquals(station.connections() > 0, tcpAccepted, tcpAccepted
+                ? "no model connected over TCP, so the golden ran over UDP" : "a model connected to the TCP station");
+        }
     }
 
     /**
