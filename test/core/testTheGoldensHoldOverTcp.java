@@ -55,7 +55,7 @@ public class testTheGoldensHoldOverTcp
     /**
      * A station whose type the start-up did not learn runs on UDP as before: no TCP connection, the golden unchanged.
      *
-     * MUTATION: in `MarklinControlStation.init`, take out `model.isCS3() && `.
+     * MUTATION: in `MarklinControlStation.init`, take out `model.isCS3() && model.getNetworkCommState()` (and its `&&`).
      */
     @Test(dataProvider = "goldens", timeOut = 300000)
     public void testTheGoldenIsAsBefore(String name) throws Exception

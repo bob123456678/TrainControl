@@ -233,6 +233,14 @@ public class testTheStationIsReachedOverTcp
         assertTrue(Components.waitFor(() -> this.model.heard.size() == 1, WAIT_MS), "precondition: nothing carried");
     }
 
+    /** Connected over TCP to a station that sends nothing unless told. */
+    private void connectedToASilentStation() throws Exception
+    {
+        this.station = new TcpStation(STATION);
+        connect(this.station.port());
+        assertTrue(logged("network.tcpConnected", WAIT_MS), "precondition: no connection: " + this.model.lines);
+    }
+
     /** UDP 15731 at the station's address: what the proxy sends over UDP. */
     private static DatagramSocket udpWire() throws Exception
     {
@@ -378,9 +386,7 @@ public class testTheStationIsReachedOverTcp
     @Test(timeOut = 30000)
     public void testOverTcpNoFrameArrivesTwice() throws Exception
     {
-        this.station = new TcpStation(STATION);
-        connect(this.station.port());
-        assertTrue(logged("network.tcpConnected", WAIT_MS), "precondition: no connection: " + this.model.lines);
+        connectedToASilentStation();
 
         byte[] both = sensor(1005, true);
         byte[] udpOnly = sensor(1006, true);
@@ -547,9 +553,7 @@ public class testTheStationIsReachedOverTcp
     @Test(timeOut = 30000)
     public void testAStaleUdpCopyIsNotReplayedWhenTcpIsLost() throws Exception
     {
-        this.station = new TcpStation(STATION);
-        connect(this.station.port());
-        assertTrue(logged("network.tcpConnected", WAIT_MS), "precondition: no connection: " + this.model.lines);
+        connectedToASilentStation();
 
         byte[] occupied = sensor(1111, true);
         byte[] clear = sensor(1111, false);
@@ -625,9 +629,7 @@ public class testTheStationIsReachedOverTcp
     {
         try (DatagramSocket wire = udpWire())
         {
-            this.station = new TcpStation(STATION);
-            connect(this.station.port());
-            assertTrue(logged("network.tcpConnected", WAIT_MS), "precondition: no connection: " + this.model.lines);
+            connectedToASilentStation();
 
             List<byte[]> sent = new ArrayList<>();
 

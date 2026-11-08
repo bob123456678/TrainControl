@@ -233,9 +233,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     /** Whether a simulation echoes every command sent, as a Central Station would; debug and simulation only. */
     public static final String ECHO_COMMANDS_PREF = "EchoSentCommandsWhenSimulating";
 
-    /** "Use UDP Only": a CS3 is reached over UDP as before, not over TCP (FR-186); read at connect. */
-    public static final String UDP_ONLY_PREF = "UseUdpOnly";
-
     /** Whether the diagram shows the captions of stations autonomy cannot choose.  On by default. */
     public static final String SHOW_INACTIVE_LABELS_PREF = "ShowInactiveLabels";
 
@@ -820,6 +817,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                     + MENU_FONT_STEP)));
         }
     }
+
+    /** "Use UDP Only": a CS3 is reached over UDP as before, not over TCP (FR-186); read at connect. */
+    public static final String UDP_ONLY_PREF = "UseUdpOnly";
 
     public TrainControlUI()
     {
