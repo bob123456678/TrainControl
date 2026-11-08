@@ -1,13 +1,9 @@
 package support;
 
 import java.io.File;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import javax.swing.SwingUtilities;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;
-import org.traincontrol.util.Util;
 
 /**
  * The program started with its window on a throwaway copy of a railway, closed as the window's close box closes it, and
@@ -35,26 +31,16 @@ public final class Restart
     /** How long the window is given to load the setup's active configuration. */
     private static final long LOAD_MS = 30000;
 
-    /** The data files a restart saves; see `Util.dataPath`. */
-    private static final String[] SAVED = {MarklinControlStation.DATA_FILE_NAME, TrainControlUI.DATA_FILE_NAME};
-
     private final LayoutSandbox sandbox;
 
-    /** Each saved file's bytes before the first start, null where there was none. */
-    private final byte[][] savedBefore = new byte[SAVED.length][];
+    private final SavedData found;
 
     private MarklinControlStation model;
 
     private Restart(LayoutSandbox sandbox) throws java.io.IOException
     {
         this.sandbox = sandbox;
-
-        for (int i = 0; i < SAVED.length; i++)
-        {
-            Path file = Paths.get(Util.dataPath(SAVED[i]));
-
-            savedBefore[i] = Files.exists(file) ? Files.readAllBytes(file) : null;
-        }
+        this.found = SavedData.take();
     }
 
     /**
@@ -137,24 +123,12 @@ public final class Restart
         {
             try
             {
-                putBack();
+                found.putBack();
             }
             finally
             {
                 sandbox.close();
             }
-        }
-    }
-
-    /** Writes each saved file back as `open` found it, or deletes it where there was none. */
-    private void putBack() throws java.io.IOException
-    {
-        for (int i = 0; i < SAVED.length; i++)
-        {
-            Path file = Paths.get(Util.dataPath(SAVED[i]));
-
-            if (savedBefore[i] == null) Files.deleteIfExists(file);
-            else Files.write(file, savedBefore[i]);
         }
     }
 

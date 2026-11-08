@@ -689,7 +689,7 @@ run_class()
     fi
 
     # NO UPDATE CHECK: support.NoUpdateCheck turns it off in the lane's preference node before any test (FR-136)
-    "$JAVA" $2 $extra -cp "$CP" org.testng.TestNG -listener support.NoUpdateCheck,support.WindowsNotOnTop,support.DialogWatchdog -testclass "$cls" \
+    "$JAVA" $2 $extra -cp "$CP" org.testng.TestNG -listener support.NoUpdateCheck,support.WindowsNotOnTop,support.DialogWatchdog,support.DataFolderWatch -testclass "$cls" \
         -d "$S/tng-run/$cls" > "$RUN_OUT" 2>&1 &
 
     local JVM=$!
@@ -722,9 +722,9 @@ run_class()
 
     # ONE GREP of the whole output for every line the verdict asks about, read with bash patterns: a process a
     # question cost half a second a class.
-    local line lines dialog="" noheap="" oom=""
+    local line lines dialog="" noheap="" oom="" leftData=""
 
-    lines=$(grep -aE 'Total tests run|Configuration Failures|UNANSWERED DIALOG|Could not reserve enough space|Unable to allocate.*heap|OutOfMemoryError' \
+    lines=$(grep -aE 'Total tests run|Configuration Failures|UNANSWERED DIALOG|SAVED DATA LEFT CHANGED|Could not reserve enough space|Unable to allocate.*heap|OutOfMemoryError' \
         "$RUN_OUT" 2>/dev/null)
 
     summary=""
@@ -737,6 +737,7 @@ run_class()
         case "$line" in *"Total tests run"*) summary=$line ;; esac
         case "$line" in *"Configuration Failures"*) configFailures=$line ;; esac
         case "$line" in *"UNANSWERED DIALOG"*) if [ -z "$dialog" ]; then dialog=$line; fi ;; esac
+        case "$line" in *"SAVED DATA LEFT CHANGED"*) if [ -z "$leftData" ]; then leftData=$line; fi ;; esac
         case "$line" in *OutOfMemoryError*) oom=1 ;; esac
 
         if [[ $line =~ Could\ not\ reserve\ enough\ space|Unable\ to\ allocate.*heap ]]; then noheap=1; fi
@@ -787,6 +788,13 @@ run_class()
     elif [ -n "$configFailures" ] && [[ $configFailures != *"Configuration Failures: 0"* ]]
     then
         verdict fail "$cls: $summary / $configFailures"
+
+    elif [ -n "$leftData" ]
+    then
+        # support.DataFolderWatch: the classes after this one in the lane read the same data folder
+        leftData=${leftData#'*** SAVED DATA LEFT CHANGED '}
+
+        verdict fail "$cls: saved data left changed ${leftData%' ***'}"
 
     elif [[ $summary == *"Total tests run: 0"* ]]
     then
