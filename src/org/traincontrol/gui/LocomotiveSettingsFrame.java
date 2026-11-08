@@ -607,6 +607,7 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
 
             name.setName("settings.name");
             checkDuplicates.setName("settings.checkDuplicates");
+            sameAddress.setName("settings.sameAddress");
             decoder.setName("settings.decoder");
             address.setName("settings.address");
             speed.setName("settings.speed");
@@ -685,7 +686,7 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
             trash.addActionListener(e -> delete());
 
             // The fields are at the tab's left edge under their heading, the picture at its right under its own, level
-            // with Name; the divider is midway between Address and the next heading, the trash can at the lower left
+            // with Name; the divider is midway between Check Duplicates and the next heading, the trash can at the lower left
             final Insets edge = new Insets(4, 4, 4, 6);
             final Insets inner = new Insets(4, 4, 4, 6);
 
@@ -745,15 +746,35 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
             gbc.gridx = 1;
             gbc.gridy = 4;
 
-            // Check Duplicates and the warning share the row under the address
-            JPanel under = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+            // Check Duplicates and the warning share the row under the address.  The warning takes only the room left
+            // and ends in "..." (OB-417): it never widens the grid, which would squeeze the labels.
+            JPanel button = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+            button.setOpaque(false);
+            button.add(checkDuplicates);
+            button.add(javax.swing.Box.createHorizontalStrut(4));
+            button.add(InfoMark.label(I18n.t("loc.ui.settingsCheckDuplicatesHint")));
+            JPanel under = new JPanel(new java.awt.BorderLayout(10, 0))
+            {
+                @Override
+                public java.awt.Dimension getPreferredSize()
+                {
+                    return new java.awt.Dimension(button.getPreferredSize().width, super.getPreferredSize().height);
+                }
+
+                @Override
+                public java.awt.Dimension getMinimumSize()
+                {
+                    return getPreferredSize();
+                }
+            };
             under.setOpaque(false);
-            under.add(checkDuplicates);
-            under.add(javax.swing.Box.createHorizontalStrut(4));
-            under.add(InfoMark.label(I18n.t("loc.ui.settingsCheckDuplicatesHint")));
-            under.add(javax.swing.Box.createHorizontalStrut(10));
-            under.add(sameAddress);
+            under.add(button, java.awt.BorderLayout.WEST);
+            under.add(sameAddress, java.awt.BorderLayout.CENTER);
+            gbc.gridwidth = 2;
+            gbc.fill = GridBagConstraints.HORIZONTAL;
             add(under, gbc);
+            gbc.gridwidth = 1;
+            gbc.fill = GridBagConstraints.NONE;
 
             if (adding)
             {
@@ -770,8 +791,8 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
             gbc.gridy = 6;
             gbc.gridwidth = 2;
             gbc.fill = GridBagConstraints.HORIZONTAL;
-            // The row above holds the warning line, so the bottom inset carries its height
-            gbc.insets = new Insets(6, 4, 14 + under.getPreferredSize().height, 6);
+            // As much air under the line as over it, with the heading's own top inset
+            gbc.insets = new Insets(6, 4, 6, 6);
             add(new javax.swing.JSeparator(), gbc);
             gbc.gridwidth = 1;
             gbc.fill = GridBagConstraints.NONE;
@@ -885,6 +906,7 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
             }
 
             sameAddress.setText(also == null ? " " : I18n.f("loc.ui.settingsAlsoUsedBy", also));
+            sameAddress.setToolTipText(also == null ? null : sameAddress.getText());
         }
 
         boolean nameChanged()

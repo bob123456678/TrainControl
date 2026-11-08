@@ -160,24 +160,24 @@ public class testTheLocomotiveSettingsLooks extends support.SettingsClass
     }
 
     /**
-     * The divider on the first tab sits midway between the Address field above it and the Customize Behavior heading
-     * below it, within 2 pixels.
+     * The divider on the first tab sits midway between the Check Duplicates row above it and the Customize Behavior
+     * heading below it, within 2 pixels.
      *
      * MUTATION: give the divider's row in `LocomotiveSettingsFrame.LocomotiveTab` a bottom inset of 20, and this fails.
      */
     @Test
-    public void testTheDividerIsMidwayBetweenAddressAndTheNextHeading() throws Exception
+    public void testTheDividerIsMidwayBetweenCheckDuplicatesAndTheNextHeading() throws Exception
     {
         opened();
 
-        java.awt.Rectangle can = at("settings.address", javax.swing.JTextField.class);
+        java.awt.Rectangle can = at("settings.checkDuplicates", javax.swing.JButton.class);
         java.awt.Rectangle heading = inWindow(labelFor("loc.ui.settingsCustomizeBehavior"));
         java.awt.Rectangle line = divider();
 
         int above = line.y - (can.y + can.height);
         int below = heading.y - (line.y + line.height);
 
-        assertTrue(Math.abs(above - below) <= 2, "the divider is " + above + " px under Address and " + below
+        assertTrue(Math.abs(above - below) <= 2, "the divider is " + above + " px under Check Duplicates and " + below
             + " px above Customize Behavior");
     }
 
