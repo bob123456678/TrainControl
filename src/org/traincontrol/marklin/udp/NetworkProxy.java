@@ -16,6 +16,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.LockSupport;
@@ -102,6 +103,12 @@ public class NetworkProxy
     /** The gap between two sensor queries: the Link S88 answers each within about 20 ms, 60 take 0.3 s. */
     private static final long RESYNC_PACE_NS = 5L * 1000000L;
 
+    /** How long a resync waits for its answers after the last query. */
+    private static final long RESYNC_WAIT_NS = 1000L * 1000000L;
+
+    /** When a second UDP pass starts after the first: before the first reconnect try, 1 s on, sets UDP aside. */
+    private static final long RESYNC_AGAIN_NS = 500L * 1000000L;
+
     /**
      * The first device whose sensors are queried.  Device 0 never answers, and the CS3 answers device 1 itself with
      * "occupied" for every contact, which is false; the Link S88 is device 2.
@@ -162,6 +169,14 @@ public class NetworkProxy
 
     // Each s88 contact's device, learned from the station's events; kept in TCP mode only
     private final Map<Integer, Integer> sensorDevice = new ConcurrentHashMap<>();
+
+    // Woken by an answer, a change of live transport and a stop: what a resync waits on
+    private final Object resyncLock = new Object();
+
+    // The contacts the running resync pass asked and has not had answered, or null; guarded by resyncLock
+    private Set<Integer> awaiting;
+
+    private int answered;
 
     // The TCP listener thread, while there is one
     private volatile Thread tcpReader;
@@ -376,6 +391,7 @@ public class NetworkProxy
             this.replacing = false;
             this.unconfirmed.clear();
             notifyAll();
+            wakeResync();
 
             if (this.socket != null && !this.socket.isClosed()) this.socket.close();
         }
@@ -612,6 +628,16 @@ public class NetworkProxy
             this.udpLive = live;
             this.liveEpoch.incrementAndGet();
         }
+
+        wakeResync();
+    }
+
+    private void wakeResync()
+    {
+        synchronized (this.resyncLock)
+        {
+            this.resyncLock.notifyAll();
+        }
     }
 
     /** Delivers a UDP frame while UDP is live; while TCP runs, sets it aside. */
@@ -639,27 +665,64 @@ public class NetworkProxy
         deliver(frame);
     }
 
-    /** In TCP mode, notes a contact's device from a sensor event: a change of state, so not an answer to a query. */
+    /**
+     * In TCP mode, notes a contact's device from a sensor event, a change of state; a frame with the state unchanged is
+     * an answer to a query, counted for the resync that asked.
+     */
     private void learn(byte[] frame)
     {
-        if (this.tcpPort <= 0 || command(frame) != CS2Message.CMD_ACC_SENSOR || frame[4] != 8 || frame[9] == frame[10])
+        if (this.tcpPort <= 0 || command(frame) != CS2Message.CMD_ACC_SENSOR || frame[4] != 8) return;
+
+        int contact = ((frame[7] & 0xFF) << 8) | (frame[8] & 0xFF);
+
+        if (frame[9] != frame[10])
         {
+            this.sensorDevice.put(contact, ((frame[5] & 0xFF) << 8) | (frame[6] & 0xFF));
             return;
         }
 
-        this.sensorDevice.put(((frame[7] & 0xFF) << 8) | (frame[8] & 0xFF), ((frame[5] & 0xFF) << 8) | (frame[6] & 0xFF));
+        synchronized (this.resyncLock)
+        {
+            if (this.awaiting != null && this.awaiting.remove(contact))
+            {
+                this.answered++;
+                this.resyncLock.notifyAll();
+            }
+        }
     }
 
     /**
      * Asks each sensor the model knows for its state, on the transport just made live, as frames missed meanwhile are
      * gone.  The station answers with the state as it answers, on the same transport and after any event it sent
      * before, so no answer overtakes a newer event.  Only a contact whose device an event showed is asked, and never
-     * device 0 or 1.  Paced, on a thread of its own that stops when the live transport changes.
+     * device 0 or 1.  `passes` above 1 asks again RESYNC_AGAIN_NS after each start, for a UDP copy that lands after
+     * the answer.  On a thread of its own that stops when the live transport changes.
      */
-    private void resync(boolean overTcp)
+    private void resync(boolean overTcp, int passes)
     {
         int epoch = this.liveEpoch.get();
+
+        Thread asking = new Thread(() ->
+        {
+            for (int n = 0; n < passes; n++)
+            {
+                long start = System.nanoTime();
+
+                if (!askOnce(overTcp, epoch)) return;
+
+                if (n + 1 < passes && !waitFor(start + RESYNC_AGAIN_NS, epoch, false)) return;
+            }
+        }, "cs2-s88-resync");
+
+        asking.setDaemon(true);
+        asking.start();
+    }
+
+    /** One pass: the queries, paced, then up to RESYNC_WAIT_NS for the answers, logged.  False once superseded. */
+    private boolean askOnce(boolean overTcp, int epoch)
+    {
         List<byte[]> queries = new ArrayList<>();
+        Set<Integer> asked = ConcurrentHashMap.newKeySet();
         int skipped = 0;
 
         for (Integer contact : model.knownSensors())
@@ -672,39 +735,98 @@ public class NetworkProxy
             }
             else
             {
+                asked.add(contact);
                 queries.add(new CS2Message(CS2Message.CMD_ACC_SENSOR, new byte[]
                     {(byte) (device >> 8), (byte) (int) device, (byte) (contact >> 8), (byte) (int) contact}).getRawMessage());
             }
         }
 
-        model.logf("network.sensorsResynced", queries.size(), skipped);
-
-        if (queries.isEmpty()) return;
-
-        Thread asking = new Thread(() ->
+        synchronized (this.resyncLock)
         {
-            for (byte[] query : queries)
+            this.awaiting = asked;
+            this.answered = 0;
+        }
+
+        for (byte[] query : queries)
+        {
+            if (this.stopRequested || this.liveEpoch.get() != epoch) return false;
+
+            if (overTcp)
             {
-                if (this.stopRequested || this.liveEpoch.get() != epoch) return;
-
-                if (overTcp)
-                {
-                    sendMessage(query);
-                }
-                else
-                {
-                    synchronized (this)
-                    {
-                        sendUdp(query);
-                    }
-                }
-
-                LockSupport.parkNanos(RESYNC_PACE_NS);
+                sendQuery(query);
             }
-        }, "cs2-s88-resync");
+            else
+            {
+                synchronized (this)
+                {
+                    sendUdp(query);
+                }
+            }
 
-        asking.setDaemon(true);
-        asking.start();
+            LockSupport.parkNanos(RESYNC_PACE_NS);
+        }
+
+        if (!waitFor(System.nanoTime() + RESYNC_WAIT_NS, epoch, true)) return false;
+
+        int got;
+
+        synchronized (this.resyncLock)
+        {
+            got = this.answered;
+            this.awaiting = null;
+        }
+
+        model.logf("network.sensorsResynced", queries.size(), got, skipped);
+        return true;
+    }
+
+    /** Waits until `deadline`, or until every query is answered when `answers`; false on a stop or a new transport. */
+    private boolean waitFor(long deadline, int epoch, boolean answers)
+    {
+        synchronized (this.resyncLock)
+        {
+            try
+            {
+                for (long left = deadline - System.nanoTime(); left > 0 && !this.stopRequested
+                    && this.liveEpoch.get() == epoch && !(answers && this.awaiting.isEmpty());
+                    left = deadline - System.nanoTime())
+                {
+                    this.resyncLock.wait(Math.max(1, left / 1000000L));
+                }
+            }
+            catch (InterruptedException e)
+            {
+                Thread.currentThread().interrupt();
+                return false;
+            }
+        }
+
+        return !this.stopRequested && this.liveEpoch.get() == epoch;
+    }
+
+    /**
+     * Writes a sensor query to the connection.  Not kept to send again, and no start of the answer clock: a resync
+     * runs again on the next live transport, and a query left unanswered says nothing of the connection.
+     */
+    private synchronized void sendQuery(byte[] query)
+    {
+        Socket connection = this.tcp;
+
+        if (connection == null || this.replacing) return;
+
+        try
+        {
+            OutputStream out = connection.getOutputStream();
+            out.write(query);
+            out.flush();
+        }
+        catch (IOException e)
+        {
+            // As in sendMessage: the listener, woken by the close, replaces the connection
+            this.replacing = true;
+            this.lostBecause = reasonOf(e);
+            closeQuietly(connection);
+        }
     }
 
     /** The TCP listener: reads the connection, and each that replaces it, until a stop or UDP takes over. */
@@ -797,7 +919,7 @@ public class NetworkProxy
         setUdpLive(true);
 
         model.logf(retry ? "network.tcpLostReconnecting" : "network.tcpLostUsingUdp", reason);
-        resync(false);
+        resync(false, 2);
 
         IOException failed = null;
         int[] counts;
@@ -825,14 +947,14 @@ public class NetworkProxy
 
                 model.logf("network.tcpReconnected");
                 logResent(counts);
-                resync(true);
+                resync(true, 1);
                 return;
             }
             catch (IOException e)
             {
                 failed = e;
                 setUdpLive(true);
-                resync(false);
+                resync(false, 1);
             }
         }
 

@@ -94,9 +94,15 @@ public class MarklinFeedback extends Feedback
                                    
                 if (id == this.UID && this.readyForUpdate(System.currentTimeMillis()))
                 {
+                    boolean was = this.isSet();
+
                     this._setState((state == 1));
                                         
                     this.updateTiles();
+
+                    // An answer to a query (old state the same as new) that changes nothing is no event: a resync asks
+                    // every sensor, and the route editor's capture must not take them
+                    if (m.getData()[4] == m.getData()[5] && was == (state == 1)) return;
 
                     // And anything watching for one, which today is the route editor's capture
                     this.network.feedbackChanged(this.getName(), state == 1);

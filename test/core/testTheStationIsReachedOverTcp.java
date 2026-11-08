@@ -48,7 +48,10 @@ public class testTheStationIsReachedOverTcp
 {
     private static final long WAIT_MS = 5000;
 
-    private static final String STATION = "127.0.0.86";
+    /** A loopback address of this run's own, so two runs at once (two worktrees) cannot take each other's frames. */
+    private static final String STATION = "127." + (16 + java.util.concurrent.ThreadLocalRandom.current().nextInt(239)) + "."
+        + java.util.concurrent.ThreadLocalRandom.current().nextInt(256) + "."
+        + (1 + java.util.concurrent.ThreadLocalRandom.current().nextInt(254));
 
     private NetworkProxy proxy;
 
@@ -501,7 +504,9 @@ public class testTheStationIsReachedOverTcp
 
         assertTrue(logged("network.tcpReconnected", 15000), "no new connection: " + this.model.lines);
         assertEquals(this.model.count("network.tcpLostReconnecting"), 1, "the loss is not logged: " + this.model.lines);
-        assertEquals(this.station.connections(), 2, "the station was not connected to again");
+        // A client's connect returns before the station side has counted the accept
+        assertTrue(Components.waitFor(() -> this.station.connections() == 2, WAIT_MS),
+            "the station was not connected to again");
 
         byte[] frame = ping(2);
         this.proxy.sendMessage(new CS2Message(frame));
@@ -628,16 +633,50 @@ public class testTheStationIsReachedOverTcp
             broadcastSetAside(linkS88(1201, false));
             assertEquals(this.model.lastState(1201), Boolean.TRUE, "precondition: the UDP frame was delivered over TCP");
 
-            this.station.close();
-            assertTrue(logged("network.tcpLostReconnecting", WAIT_MS), "the loss was not found: " + this.model.lines);
-
-            assertTrue(Arrays.equals(nextOn(wire, 1000), query(TcpStation.LINK_S88, 1201)),
-                "the sensor was not asked for its state over UDP within 1 s of the loss: " + this.model.lines);
-
-            broadcast(answer(TcpStation.LINK_S88, 1201, false));
-            assertTrue(Components.waitFor(() -> Boolean.FALSE.equals(this.model.lastState(1201)), WAIT_MS),
-                "the sensor did not end at the station's state: " + this.model.states(1201));
+            closedAndAskedOverUdp(wire, 1201);
+            assertEndsAtTheStationsState(1201);
         }
+    }
+
+    /** The station closes; the loss is found and the contact is asked over UDP within 1 s, and answered there. */
+    private void closedAndAskedOverUdp(DatagramSocket wire, int contact) throws Exception
+    {
+        this.station.close();
+        assertTrue(logged("network.tcpLostReconnecting", WAIT_MS), "the loss was not found: " + this.model.lines);
+        askedAndAnsweredOverUdp(wire, contact, 1000);
+    }
+
+    /** The next datagram on the wire, within `ms`, asks for the contact; it is answered with the station's state. */
+    private void askedAndAnsweredOverUdp(DatagramSocket wire, int contact, long ms) throws Exception
+    {
+        assertTrue(Arrays.equals(nextOn(wire, ms), query(TcpStation.LINK_S88, contact)),
+            "contact " + contact + " was not asked over UDP within " + ms + " ms: " + this.model.lines);
+        broadcast(answer(TcpStation.LINK_S88, contact, this.station.occupied(contact)));
+    }
+
+    private void assertEndsAtTheStationsState(int contact)
+    {
+        assertTrue(Components.waitFor(() -> Boolean.valueOf(this.station.occupied(contact)).equals(
+            this.model.lastState(contact)), WAIT_MS), "the sensor did not end at the station's state: "
+            + this.model.states(contact));
+    }
+
+    /** The station drops the connection; a new one is made and its resync logs the counts. */
+    private void droppedAndResynced(int asked, int answered, int skipped)
+    {
+        try
+        {
+            this.station.drop();
+        }
+        catch (java.io.IOException e)
+        {
+            throw new IllegalStateException(e);
+        }
+
+        assertTrue(logged("network.tcpReconnected", 15000), "no new connection: " + this.model.lines);
+        assertTrue(loggedAfter("network.tcpReconnected", I18n.f("network.sensorsResynced", asked, answered, skipped)),
+            "the new connection's resync did not log " + asked + " asked, " + answered + " answered, " + skipped
+            + " skipped: " + this.model.lines);
     }
 
     /**
@@ -682,18 +721,73 @@ public class testTheStationIsReachedOverTcp
         this.station.send(answer(1, 1301, true));
         assertTrue(Components.waitFor(() -> this.model.heard.size() == 4, WAIT_MS), "precondition: not carried");
 
-        this.station.drop();
-
-        assertTrue(logged("network.tcpReconnected", 15000), "no new connection: " + this.model.lines);
-        assertTrue(Components.waitFor(() -> this.model.count("network.sensorsResynced") == 2, WAIT_MS),
-            "no resync after the loss and after the reconnect: " + this.model.lines);
-        assertEquals(Collections.frequency(this.model.lines, I18n.f("network.sensorsResynced", 1, 3)), 2,
-            "not exactly one sensor asked and three skipped: " + this.model.lines);
+        droppedAndResynced(1, 1, 3);
 
         assertTrue(Components.waitFor(() -> this.model.heardFrame(answer(TcpStation.LINK_S88, 1301, true)), WAIT_MS),
             "the Link S88's contact was not asked over the new connection");
         assertEquals(this.station.queries().size(), 1, "other queries reached the station");
         assertEquals(Arrays.toString(this.station.queries().get(0)), "[2, 1301]", "the query is not for 2/1301");
+    }
+
+    /** Whether, within WAIT_MS, `line` is logged after the line of `key`. */
+    private boolean loggedAfter(String key, String line)
+    {
+        return Components.waitFor(() ->
+        {
+            List<String> lines = new ArrayList<>(this.model.lines);
+            int from = lines.indexOf(I18n.f(key));
+            return from >= 0 && lines.subList(from, lines.size()).contains(line);
+        }, WAIT_MS);
+    }
+
+    /**
+     * A UDP copy lagging past the first resync's answer is put right by a second pass half a second later, not left
+     * wrong until a reconnect try fails (a refused connect takes 2 s on Windows loopback).
+     *
+     * MUTATION: in `NetworkProxy.recover`, `resync(false, 2);` to `resync(false, 1);`.
+     */
+    @Test(timeOut = 30000)
+    public void testALateUdpCopyAfterTheUdpResyncIsPutRightByASecondPass() throws Exception
+    {
+        try (DatagramSocket wire = udpWire())
+        {
+            connectedToASilentStation();
+            this.station.sensor(1602, true);
+            this.station.sensor(1602, false);
+            assertTrue(Components.waitFor(() -> this.model.heardFrame(linkS88(1602, false)), WAIT_MS), "precondition");
+
+            closedAndAskedOverUdp(wire, 1602);
+
+            broadcast(linkS88(1602, true));
+            assertTrue(Components.waitFor(() -> Boolean.TRUE.equals(this.model.lastState(1602)), WAIT_MS),
+                "precondition: the late copy was not delivered");
+
+            // The second pass, before a reconnect try could fail and resync
+            askedAndAnsweredOverUdp(wire, 1602, 1800);
+            assertEndsAtTheStationsState(1602);
+        }
+    }
+
+    /**
+     * A resync says how many sensors answered, here none (the station ignores a device it does not have), and its
+     * queries are not commands: the next drop sends none of them again.
+     *
+     * MUTATION: in `NetworkProxy.askOnce`, log `queries.size()` for `got`.  And: in `NetworkProxy.sendQuery`, add
+     * `keep(query, System.nanoTime(), true);` before the write.
+     */
+    @Test(timeOut = 30000)
+    public void testAResyncSaysHowManyAnsweredAndIsNotSentAgain() throws Exception
+    {
+        connectedToASilentStation();
+        this.station.send(TcpStation.event(3, 1401, true));
+        assertTrue(Components.waitFor(() -> this.model.heardFrame(TcpStation.event(3, 1401, true)), WAIT_MS),
+            "precondition: not carried");
+
+        droppedAndResynced(1, 0, 0);
+        this.station.drop();
+
+        assertTrue(logged("network.tcpLostUsingUdp", WAIT_MS), "the second loss was not found: " + this.model.lines);
+        assertEquals(this.model.count("network.framesSentAgain"), 0, "a query counted as a command: " + this.model.lines);
     }
 
     /**
