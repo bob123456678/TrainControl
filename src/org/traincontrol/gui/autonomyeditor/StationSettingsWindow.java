@@ -415,12 +415,9 @@ public final class StationSettingsWindow extends StationWindowBase
 
         for (StationPreset preset : StationPreset.values())
         {
-            JToggleButton button = new JToggleButton(I18n.t(preset.labelKey));
+            JToggleButton button = new org.traincontrol.gui.widgets.PillButton(I18n.t(preset.labelKey));
 
             button.setName("station.preset." + preset.name());
-            button.setFont(BUTTON_FONT);
-            button.setFocusable(false);
-            button.setMargin(new Insets(2, 8, 2, 8));
             button.setToolTipText(AutonomyEditorPanel.wrapped(I18n.t(preset.tipKey)));
             button.addActionListener(e -> pressPreset(preset));
 
