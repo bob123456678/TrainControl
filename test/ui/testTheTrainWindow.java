@@ -852,14 +852,33 @@ public class testTheTrainWindow
     {
         AutonomyEditorPanel panel = theEditorsPanel();
 
-        placeOverTheTrainOnTunnel(name ->
+        placeOverTheTrainOnTunnel(theList(panel), false);
+    }
+
+    /**
+     * After a run the railway can hold X where the setup names Y: placed over them through the list, the new train
+     * takes the square and both leave it, on the railway and in the setup (OB-416).
+     *
+     * MUTATION: leave `tileMenus.trainStanding(tile)` out of the names `AutonomyEditorPanel.placeLocomotive` gives
+     * `placementChanged`, and the rebuild puts X back over the new train and this fails.
+     */
+    @Test(timeOut = 180000)
+    public void testTheListOverARailwaysOtherTrainTakesItsPlace() throws Exception
+    {
+        placeOverTheTrainOnTunnel(theList(theEditorsPanel()), true);
+    }
+
+    /** The train window's list on Tunnel. */
+    private static PlacingDoor theList(AutonomyEditorPanel panel)
+    {
+        return name ->
         {
             TrainWindow window = StationDoors.openTrain(panel, support.StandingTrain.squareNamed(session, "Tunnel"));
 
             StationDoors.pick(window, "train.train", name);
 
             return window;
-        });
+        };
     }
 
     /**
@@ -884,7 +903,7 @@ public class testTheTrainWindow
             Components.onTheEventThread(() -> { item.doClick(); return null; });
 
             return null;
-        });
+        }, false);
     }
 
     /** A door that places the named train on Tunnel; returns the window it left open, or null. */
@@ -893,8 +912,11 @@ public class testTheTrainWindow
         TrainWindow place(String name) throws Exception;
     }
 
-    /** Stands a train on the empty Tunnel through the door, then places another over it through the same door. */
-    private void placeOverTheTrainOnTunnel(PlacingDoor door) throws Exception
+    /**
+     * Stands a train on the empty Tunnel through the door, then places another over it through the same door;
+     * `afterARun` first swaps the railway's train there for one the setup does not place.
+     */
+    private void placeOverTheTrainOnTunnel(PlacingDoor door, boolean afterARun) throws Exception
     {
         final TileKey tunnel = support.StandingTrain.squareNamed(session, "Tunnel");
 
@@ -920,6 +942,29 @@ public class testTheTrainWindow
 
         Components.settle();
 
+        final String onTheRailway = afterARun ? aTrainOffTheRailway() : null;
+
+        if (afterARun)
+        {
+            final String copy = model.getAutoLayout().getLocomotiveLocation(displaced).getName();
+
+            Components.onTheEventThread(() ->
+            {
+                model.getAutoLayout().moveLocomotive(null, copy, false);
+
+                assertTrue(model.getAutoLayout().moveLocomotive(onTheRailway, copy, false),
+                    "precondition: " + onTheRailway + " could not be stood on Tunnel");
+
+                return null;
+            });
+
+            Components.settle();
+
+            assertEquals(session.trainOnTheRailway(tunnel, model.getAutoLayout()), onTheRailway,
+                "precondition: the railway does not hold " + onTheRailway + " on Tunnel");
+            assertEquals(session.getLocomotiveNameAt(tunnel), was, "precondition: the setup does not name " + was);
+        }
+
         String name = aTrainOffTheRailway();
 
         Locomotive train = model.getLocByName(name);
@@ -942,6 +987,12 @@ public class testTheTrainWindow
             assertFalse(session.placementsAutonomyWillWrite().containsValue(was), was + " is still in the setup");
 
             assertNull(model.getAutoLayout().getLocomotiveLocation(displaced), was + " still stands on the railway");
+
+            if (onTheRailway != null)
+            {
+                assertNull(model.getAutoLayout().getLocomotiveLocation(model.getLocByName(onTheRailway)),
+                    onTheRailway + ", which only the railway had on Tunnel, still stands on the railway");
+            }
         }
         finally
         {

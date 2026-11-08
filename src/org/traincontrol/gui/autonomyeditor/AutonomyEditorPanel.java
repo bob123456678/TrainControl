@@ -3691,8 +3691,11 @@ public class AutonomyEditorPanel extends JPanel
         final boolean sameSquare = wasOn != null && session.getStationIndex() != null
             && tile.equals(session.getStationIndex().squareOf(wasOn));
 
-        // The train standing here leaves the setup with this placement
-        final String displaced = locomotiveAt(tile);
+        // The trains standing here leave with this placement: the setup's, and after a run the railway's
+        final java.util.Set<String> named = new java.util.LinkedHashSet<>(
+            java.util.Arrays.asList(name, locomotiveAt(tile), tileMenus.trainStanding(tile)));
+
+        named.remove(null);
 
         session.placeLocomotive(tile, name);
 
@@ -3706,9 +3709,9 @@ public class AutonomyEditorPanel extends JPanel
 
         if (side != null) session.setArrivedFrom(tile, side);
 
-        // Named (MT-337): only the rebuild puts the train on the railway.  The displaced one too, as Remove names it, or
-        // the rebuild puts it back over this one (OB-416).
-        placementChanged(java.util.Arrays.asList(name, displaced));
+        // Named (MT-337): only the rebuild puts the train on the railway.  The displaced ones too, as Remove names its
+        // train, or the rebuild puts them back over this one (OB-416).
+        placementChanged(named);
 
         if (side != null && trainBeingDropped == null) askWhereTheTailIsOnceBuilt(tile, name, side, roadBefore, sameSquare,
             sideBefore);
