@@ -150,12 +150,10 @@ public class testTheOwnTailArithmetic
     }
 
     /**
-     * A route that comes back over its own earlier track - a reversing loop, out and back through one switch - is judged
-     * like a return to the body: the head may come back to a place the route ran over only once the tail has left it.
-     * With no body at all, so nothing but the route's own timing can refuse it.
-     *
-     * Out over Q (2) and the switch, round the loop - L1 (3), L2 (3) - and back through the switch to Q: six units from
-     * leaving the switch to coming back to it.
+     * A route that comes back over its own earlier track - a reversing loop, out and back through one switch - is
+     * judged like a return to the body: the head may come back to a place the route ran over only once the tail has
+     * left it.  No body, so only the route's own timing can refuse it.  Out over Q (2), round L1 (3), L2 (3) and back:
+     * six units.
      *
      * MUTATION: stop timing the route's own places, and this fails.
      */
@@ -178,9 +176,8 @@ public class testTheOwnTailArithmetic
     }
 
     /**
-     * A place the route ran over is free once the tail passes its FAR end, the end the head left by: timed from
-     * the near end, a return to a measured square was allowed that square's length more than there is.  One edge over Q
-     * (1), D (2), E (3) and back to D, nothing behind the head: from leaving D to coming back to it the head runs E's 3.
+     * A place the route ran over is free once the tail passes its FAR end, the end the head left by: timed from the
+     * near end, a return to a measured square was allowed that square's length more than there is.
      *
      * MUTATION: time a route's own place from where the head reached it, and this fails - the figure is 5, and a
      * four-unit train goes.
@@ -204,11 +201,9 @@ public class testTheOwnTailArithmetic
     }
 
     /**
-     * The note counts what Mass Assign Lengths would ask for on the way round - the pieces the build marks on each edge's
-     * places - once each, and nothing where it would ask for nothing (OB-297).
-     *
-     * Out over X, the switch (3) and Y, and back onto the body at B.  With X and Y in two pieces still to measure, the note
-     * says two; in one piece, one; with nothing to measure, nothing - whatever the places themselves measure.
+     * The note counts what Mass Assign Lengths would ask for on the way round - the pieces the build marks on each
+     * edge's places - once each, and nothing where it would ask for nothing (OB-297), whatever the places themselves
+     * measure.
      *
      * MUTATION: count the runtime's own pieces instead of the marks, or count a piece once per place, and this fails.
      */
@@ -263,9 +258,8 @@ public class testTheOwnTailArithmetic
     }
 
     /**
-     * The stretch the train comes back in counts among those with no length: the note named only the
-     * stretches wholly between leaving and coming back, and a way round whose last stretch had nothing measured said
-     * nothing of it.
+     * The stretch the train comes back in counts among those with no length: the note named only the stretches wholly
+     * between leaving and coming back.
      *
      * MUTATION: count only the stretches wholly between, and this fails.
      */
@@ -336,13 +330,10 @@ public class testTheOwnTailArithmetic
     }
 
     /**
-     * Where a stretch of the way round has nothing measured on it, the refusal says how many, and that measuring them is
-     * the way past - and a stretch whose length is stored on one of its squares is not one of them.
-     *
-     * The grain is the edge, sensor to sensor: on a fully measured railway many squares carry no length of their own, a
-     * short piece drawn over several squares having fewer units than squares, and counting squares told Adam's that 21
-     * of its squares on the way round had none.  Coarser than the pieces lengths are given in: an edge
-     * measured only at its switch is not counted.
+     * Where a stretch of the way round has nothing measured on it, the refusal says how many, and that measuring them
+     * is the way past; a stretch whose length is stored on one of its squares is not one of them.  The grain is the
+     * edge, sensor to sensor (a short piece over several squares has fewer units than squares), but coarser than the
+     * pieces lengths are given in: an edge measured only at its switch is not counted.
      */
     @Test
     public void testAPartlyMeasuredWayRoundSaysSo() throws Exception

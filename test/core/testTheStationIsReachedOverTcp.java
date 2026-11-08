@@ -36,11 +36,10 @@ import support.TcpStation;
 /**
  * A CS3's CAN frames go over TCP once the proxy is asked, and over UDP when the station does not take the connection
  * or it is lost for good (FR-186).  Each claim drives a real `NetworkProxy` against `support.TcpStation` and reads
- * what reached the model it serves, what reached the station over TCP and over UDP, and what was logged.
+ * what reached the model, the station over TCP and UDP, and the log.
  *
- * The station is on a loopback address of this class's own, so a claim can take UDP 15731 there to read what the
- * proxy sends over UDP without a clash with another test.  The proxy's UDP socket is on any port (the battery's
- * anyReceivePort), and a datagram sent to it stands in for the station's UDP broadcast.
+ * The station is on a loopback address of this class's own, so a claim can take UDP 15731 without a clash with
+ * another test; a datagram sent to the proxy's UDP socket (any port) stands in for the station's broadcast.
  *
  * @author Adam
  */
@@ -381,9 +380,8 @@ public class testTheStationIsReachedOverTcp
 
     /**
      * Frames are reassembled at 13 bytes however the stream is cut: a frame split over two writes, and the rest of it
-     * with a whole frame and part of the next in one, reach the model as whole frames, once each, in order.  Each piece
-     * starts with the end of a frame, and the next piece is written only once that frame was heard, so every cut falls
-     * between two reads.
+     * with a whole frame and part of the next, reach the model as whole frames, once each, in order.  The next piece
+     * is written only once the previous frame was heard, so every cut falls between two reads.
      *
      * MUTATION: in `NetworkProxy.readUntilLost`, `filled += read;` to `filled = read;`.
      */

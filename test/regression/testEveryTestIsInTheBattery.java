@@ -9,14 +9,11 @@ import static org.testng.Assert.*;
 import org.testng.annotations.Test;
 
 /**
- * Every test class is in `ant test`, and this is what notices when one is not.
+ * Every test class is in `ant test`, and this notices when one is not.  `build.xml` names each test class on its own
+ * line (one class per JVM, since `NetworkProxy` binds a fixed UDP port); forgetting one now fails.
  *
- * `build.xml` names each test class on its own line, because `NetworkProxy` binds a fixed UDP port and only one
- * control station can exist per JVM, so the battery runs one class per JVM with no wildcard.  A hand-kept list of
- * everything falls behind; it is still kept by hand, but forgetting it now fails.
- *
- * `testAutoDetect` is the one deliberate omission: it probes the network for a real Central Station.  Anything else
- * left out is added to the exclusion below WITH ITS REASON, so the next reader can tell a decision from an oversight.
+ * `testAutoDetect` is the one deliberate omission (it probes the network for a real Central Station).  Anything else
+ * left out is added to the exclusion below WITH ITS REASON.
  *
  * @author Adam
  */
@@ -112,14 +109,10 @@ public class testEveryTestIsInTheBattery
     }
 
     /**
-     * NO TEST BUILDS ITS PAGES WITHOUT WIRING THEM.
-     *
-     * `CS2File.parseLayout` builds the components, but what attaches each to a live `Accessory` is
-     * `MarklinControlStation.wireComponents`, in a loop after the parse.  A test that calls `parseLayout` directly
-     * skips it, every switch and signal has a null accessory, and `TileGraph` refuses to trace through, so the railway
-     * falls to pieces (on the sample layout, with the wiring: switches and signals with an accessory 221 of 222 against
-     * 0, reduced edges 128 against 18, isolated points 3 against 51), and an assertion about a square with no edges is
-     * usually an assertion about null.  `support.LayoutSandbox.wired(model, parser)` is the recipe.
+     * NO TEST BUILDS ITS PAGES WITHOUT WIRING THEM.  `CS2File.parseLayout` builds the components, but
+     * `MarklinControlStation.wireComponents` attaches each to a live `Accessory`; without it every switch and signal
+     * has a null accessory and `TileGraph` refuses to trace through.  `support.LayoutSandbox.wired(model, parser)` is
+     * the recipe.
      *
      * MUTATION: writing `parser.parseLayout(new LinkedList<MarklinAccessory>())` in any test outside the excused list
      * fails this.
@@ -127,15 +120,9 @@ public class testEveryTestIsInTheBattery
     @Test
     public void testNoTestParsesALayoutWithoutWiringIt() throws Exception
     {
-        // THE GUARD SEARCHES FOR A CALL AND CANNOT SEE CONTEXT, so three files are excused by name.
-        //
-        // `testParseCS2Layout` is testing the PARSER: an unwired parse is the thing under test there.
-        //
-        // `LayoutSandbox` is the CURE: the wiring helper contains the call by definition, and its javadoc quotes the
-        // wrong form to explain it.  This file quotes it too, in the search below.
-        //
-        // `testTimetableOnDerivedGraph` spells the call with `java.util.LinkedList` and wires the pages by hand
-        // straight after (`wireAccessories(pages)`, with the reason written beside it).
+        // Excused by name, since the guard cannot see context: `testParseCS2Layout` tests the PARSER; `LayoutSandbox`
+        // is the CURE and quotes the wrong form in its javadoc; `testTimetableOnDerivedGraph` wires the pages by hand
+        // straight after the call.
         java.util.List<String> excused = java.util.Arrays.asList(
             "testParseCS2Layout.java", "LayoutSandbox.java", "testEveryTestIsInTheBattery.java",
             "testTimetableOnDerivedGraph.java");
@@ -184,12 +171,12 @@ public class testEveryTestIsInTheBattery
     }
 
     /**
-     * The search for an unwired parse sees the spellings tests use, and not a wired one: the guard once looked for two
-     * exact spellings, so `new java.util.LinkedList<MarklinAccessory>()` went by it.  This drives the same search over
-     * made-up lines, so it cannot go quiet unnoticed.
+     * The search for an unwired parse sees the spellings tests use, and not a wired one: driven over made-up lines, so
+     * it cannot go quiet unnoticed.
      *
-     * MUTATION: put an unwired parse spelled `new java.util.LinkedList<MarklinAccessory>()` in a test outside the excused
-     * list and `testNoTestParsesALayoutWithoutWiringIt` fails; narrow `UNWIRED_PARSE` to the plain spelling and this does.
+     * MUTATION: put an unwired parse spelled `new java.util.LinkedList<MarklinAccessory>()` in a test outside the
+     * excused list and `testNoTestParsesALayoutWithoutWiringIt` fails; narrow `UNWIRED_PARSE` to the plain spelling and
+     * this does.
      */
     @Test
     public void testTheUnwiredParseSearchSeesEverySpelling()
@@ -214,12 +201,8 @@ public class testEveryTestIsInTheBattery
     }
 
     /**
-     * Every test-SHAPED method carries an annotation, not just the class.
-     *
-     * The check above answers "is this FILE in the battery" by whether `@Test` appears anywhere, which is also true of
-     * a file where one method quietly lost its `@Test` (five methods in one class never ran).  Permissive about WHICH
-     * annotation: a lifecycle hook (`@AfterClass`) on a method named like a test is legitimate.  What must never happen
-     * is a `public void testX()` with no TestNG annotation above it at all.
+     * Every test-SHAPED method carries an annotation, not just the class: a `public void testX()` with no TestNG
+     * annotation above it never runs.  Permissive about WHICH annotation (a lifecycle hook is legitimate).
      *
      * MUTATION: removing the annotation from any `public void testX(...)` method, leaving the method
      * itself in place, fails this and names the file and method.
@@ -326,10 +309,8 @@ public class testEveryTestIsInTheBattery
         return false;
     }
     /**
-     * The build file with everything between comment delimiters removed.  Deliberately crude, blanking spans rather
-     * than parsing XML (a real parser would be a second thing that can be wrong about a file this test reads
-     * literally).  An unterminated comment swallows the rest of the file, as ant would, so a class after one is
-     * correctly reported as missing.
+     * The build file with everything between comment delimiters removed, deliberately crude (blanking spans rather than
+     * parsing XML).  An unterminated comment swallows the rest of the file, as ant would.
      */
     private static String withoutXmlComments(String xml)
     {

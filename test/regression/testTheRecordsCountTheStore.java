@@ -17,19 +17,15 @@ import org.testng.annotations.Test;
  * Every count the reference documents quote is the count the store holds: each one is read out of the document and
  * compared with the thing it describes, and the failure message says what to write instead.
  *
- * ROWS ARE NOT FINDINGS: a finding written up in two documents has a row for each, so the `finding` table holds more
- * rows than findings.  Both are checked here, against the catalogue's rows and its distinct refs.
+ * ROWS ARE NOT FINDINGS: a finding written up in two documents has a row for each, so both counts are checked, against
+ * the catalogue's rows and its distinct refs.  The review total is not a constant of this test: the README's four
+ * countable things are asked whether they agree with each other.
  *
- * The review total is not a constant of this test: a guard whose expectation is its subject's own claim checks nothing
- * but its own arithmetic.  What the README states is four countable things, and this asks whether they agree with each
- * other.
+ * MUTATION: change by one any number a claim below reads, and the matching claim names it.  For the spelled-out total,
+ * edit the WORDS ("Two hundred and eight" to "Two hundred and nine"), since an earlier claim catches every digit edit.
  *
- * MUTATION: change by one any number a claim below reads, and the matching claim names it.  For the spelled-out
- * total, the edit is the WORDS ("Two hundred and eight" to "Two hundred and nine"), because every edit to the digits
- * is caught by an earlier claim first.
- *
- * THE STORE ALSO HANDS OUT THE NEXT ROUND (FR-136): `catalog-findings.py --next PREFIX` reads it from the store and
- * `--check-unused REF` refuses one already there.  The claims that run it need `python` on the path, as the tool does.
+ * The store also hands out the next round (FR-136): `catalog-findings.py --next PREFIX` and `--check-unused REF`; the
+ * claims that run them need `python` on the path.
  *
  * @author Adam
  */
@@ -69,9 +65,8 @@ public class testTheRecordsCountTheStore
     }
 
     /**
-     * The review-document arithmetic in `docs/reviews/README.md` agrees with itself.  Which files counted as reviews
-     * is a judgment no test can make; how the four numbers the README states relate is arithmetic, and that is where
-     * it went wrong (two for-Adam notes are the difference between the files git counts and the reviews it means).
+     * The review-document arithmetic in `docs/reviews/README.md` agrees with itself: which files counted as reviews is
+     * a judgment no test can make, but how the four numbers relate is arithmetic.
      */
     @Test
     public void testTheDeletedReviewsAddUp() throws Exception
@@ -161,9 +156,8 @@ public class testTheRecordsCountTheStore
 
     /**
      * The store holds the record whole: every test once, in tag order, each record's text opening with its own anchor,
-     * and every comment on a test or an issue the store holds, numbered from nought without a gap.  A store merged
-     * badly, or written past the API, leaves a comment on nothing, a gap in a test's comments, or two records for one
-     * tag.  Read through `triagedb.py text`: there is no SQLite driver on the classpath.
+     * and every comment numbered from nought without a gap.  Read through `triagedb.py text`: there is no SQLite driver
+     * on the classpath.
      *
      * MUTATION: in `triagedb._records`, leave out each tag's first comment (`if r["seq"] == 0: continue` in the
      * comments loop), and this names the gap.
@@ -250,9 +244,8 @@ public class testTheRecordsCountTheStore
     // ---------------------------------------------------------------- the next round comes from the store (FR-136)
 
     /**
-     * Loads `catalog-findings.py` and `triagedb` as modules, for the claims that call its functions.  Stand-in refs
-     * are written with a tilde (`ZZ~A1`) and turned into dashes by `fix`, because `testEveryCitationResolves` reads
-     * every finding-shaped id in this file as a citation.
+     * Loads `catalog-findings.py` and `triagedb` as modules.  Stand-in refs are written with a tilde (`ZZ~A1`) and
+     * turned into dashes by `fix`, because `testEveryCitationResolves` reads every finding-shaped id as a citation.
      */
     private static final String LOAD = String.join("\n",
         "import importlib.util, io, os, sys, tempfile",

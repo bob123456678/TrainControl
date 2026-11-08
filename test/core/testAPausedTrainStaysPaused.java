@@ -418,9 +418,7 @@ public class testAPausedTrainStaysPaused
 
     /**
      * A fold brings the record of how the railway was built up to date with what it takes (OB-343): left behind, a
-     * pause the fold took and then undone on the railway read to the next fold as the railway unchanged from how it was
-     * built, and the setup's older answer stood.  The settings fold, the whole fold, and a setting the railway stopped
-     * writing.
+     * pause the fold took and then undone on the railway read as unchanged, and the setup's older answer stood.
      *
      * MUTATION: leave the record as it was after a fold, and this fails.
      */
@@ -499,9 +497,8 @@ public class testAPausedTrainStaysPaused
     }
 
     /**
-     * An edit session's Cancel puts the setup back and keeps what the railway changed alone while it was open (OB-343):
-     * the settings a fold took from the railway are the railway's, not the edit's, to undo.  The pause stays and the
-     * edit goes; outside an edit session, putting a snapshot back is exactly that.
+     * An edit session's Cancel puts the setup back and keeps what the railway changed alone while it was open
+     * (OB-343): the settings a fold took are the railway's, not the edit's, to undo.
      *
      * MUTATION: leave what the fold took out of the restore, or keep the edit, and this fails.
      */

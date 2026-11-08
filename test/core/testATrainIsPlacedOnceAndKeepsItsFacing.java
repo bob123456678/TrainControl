@@ -23,8 +23,7 @@ import support.SourceOf;
 
 /**
  * A locomotive stands in one place, a home and an arrival side keep the way its train faces, and a station demoted
- * keeps its settings.  One of the topic classes split from the former `testAutonomyDiagramSession` (FR-136).  The
- * session and layout folder every claim starts from are built by `AutonomySessionFixture`.
+ * keeps its settings (FR-136).  The session and layout folder come from `AutonomySessionFixture`.
  *
  * @author Adam
  */
@@ -33,8 +32,8 @@ public class testATrainIsPlacedOnceAndKeepsItsFacing extends AutonomySessionFixt
 
     /**
      * A copy of a square nothing arrives at is no arrival, so a side barred while trains did arrive does not shut it
-     * (its first half).  Such a square has one copy per way out, each named after the side its train would have come in
-     * by; a bar reaching one shut it as no station, a bar the editor no longer shows and cannot clear.
+     * (its first half).  Such a square has one copy per way out, named after the side its train would have come in
+     * by; a bar reaching one shut it as no station, a bar the editor cannot clear.
      *
      * MUTATION: let a bar reach such a copy, and this fails.
      */
@@ -113,9 +112,9 @@ public class testATrainIsPlacedOnceAndKeepsItsFacing extends AutonomySessionFixt
     }
 
     /**
-     * The same on a feedback double curve whose two arcs each lead out one way: each copy stands for a train facing its
-     * way out, and so came in by the OTHER end of that arc, which here is no way out at all.  A copy given the side it
-     * leaves by instead of the side behind it builds two copies with no way out, and the placed train is stranded.
+     * The same on a feedback double curve whose two arcs each lead out one way: each copy came in by the OTHER end of
+     * its arc, which here is no way out.  A copy given the side it leaves by builds two copies with no way out, and
+     * the placed train is stranded.
      *
      * MUTATION: give each copy the side it leaves by, and this fails.
      */
@@ -226,9 +225,8 @@ public class testATrainIsPlacedOnceAndKeepsItsFacing extends AutonomySessionFixt
 
     /**
      * A station no track arrives at records which way the train placed on it faces, and offers it only the way out it
-     * faces (*"Go with a."*).  Built whole, a train placed on it by hand was offered both ways out and could drive off
-     * the way it does not face, since the runtime never commands a direction and the copy IS the facing.  Three
-     * stations in a row, the track either side of the middle one made one-way away from it.
+     * faces (*"Go with a."*): the runtime never commands a direction and the copy IS the facing.  Three stations in a
+     * row, the track either side of the middle one one-way away from it.
      *
      * MUTATION: emit the square whole again, and this fails.
      */
@@ -559,10 +557,9 @@ public class testATrainIsPlacedOnceAndKeepsItsFacing extends AutonomySessionFixt
     }
 
     /**
-     * A NEW occupant does not inherit the old one's tail.  Handing a square straight from one train to another is where
-     * the stale value is least visible, and `GraphLocAssign.commitAndRecord` relies on the clear happening here.  The
-     * same locomotive re-placed is asserted first: it is NOT a change of occupant, and a clear would throw away a side
-     * that is still true.
+     * A NEW occupant does not inherit the old one's tail; `GraphLocAssign.commitAndRecord` relies on the clear
+     * happening here.  The same locomotive re-placed is asserted first: it is NOT a change of occupant, and a clear
+     * would throw away a side that is still true.
      *
      * MUTATION: dropping the occupant-change clear in `placeLocomotive` fails the last assertion; clearing
      * unconditionally fails the middle one.
@@ -1240,10 +1237,10 @@ public class testATrainIsPlacedOnceAndKeepsItsFacing extends AutonomySessionFixt
     }
 
     /**
-     * A station demoted and promoted again has every setting it had as a station (OB-291): the caption, the sides it
-     * bars arrivals by, its exit guard, its entry guards, and the turn flag older setups spell "terminus", through the
-     * editor's own `setUsage`.  The caption sits two squares below the platform, where the placer never puts one, so
-     * one placed afresh on promotion cannot pass for the one kept.
+     * A station demoted and promoted again has every setting it had (OB-291): the caption, the sides it bars arrivals
+     * by, its exit and entry guards, and the turn flag older setups spell "terminus", through the editor's `setUsage`.
+     * The caption sits two squares below the platform, where the placer never puts one, so a fresh one cannot pass for
+     * the kept one.
      *
      * MUTATION: clear any of the five on demotion again, and this fails naming it.
      */
@@ -1279,8 +1276,7 @@ public class testATrainIsPlacedOnceAndKeepsItsFacing extends AutonomySessionFixt
 
     /**
      * A double-curve station whose track runs out on the contact's curve is a terminus facing that way: `deadEndSide`
-     * must ask the contact's curve, not the square's first road.  Every orientation, the side past the contact's
-     * curve's second end left with no track is the badge's dead end.
+     * must ask the contact's curve, not the square's first road, in every orientation.
      *
      * MUTATION: ask the first road again, and this fails.
      */
@@ -1439,9 +1435,7 @@ public class testATrainIsPlacedOnceAndKeepsItsFacing extends AutonomySessionFixt
 
     /**
      * A demoted station's settings are kept and IGNORED while it is not a station: nothing builds, checks or draws
-     * them.  Each would misbehave on a plain point (a caption lights a station's name, a guard is thrown red over a
-     * square nothing is sent to, the old turn flag turns every train round), so the readers ask whether the square is a
-     * station.
+     * them (a caption would light a name, a guard throw red, the old turn flag turn every train round).
      *
      * MUTATION: hand the build every square's exit guards again, station or not, and this fails.
      */
@@ -1661,8 +1655,8 @@ public class testATrainIsPlacedOnceAndKeepsItsFacing extends AutonomySessionFixt
     }
 
     /**
-     * The bulk clear touches exactly the squares the findings call homes.  `homeTiles()`, `tilesWithAHome()`,
-     * `homesElsewhere()` and `shutTiles()` are one walk, and a qualification added to one alone would have the button
+     * The bulk clear touches exactly the squares the findings call homes: `homeTiles()`, `tilesWithAHome()`,
+     * `homesElsewhere()` and `shutTiles()` are one walk, and a qualification added to one alone would make the button
      * act on a set the findings never mentioned.
      *
      * MUTATION: give either method a filter the other does not have and the first assertion fails.
@@ -1704,9 +1698,8 @@ public class testATrainIsPlacedOnceAndKeepsItsFacing extends AutonomySessionFixt
     }
     /**
      * A facing that follows the track moves the locomotive on the running layout too (*"flipFacing should also update
-     * the running layout."*).  The copy a locomotive stands on decides where it can go next, and `captureFromLayout`
-     * derives the facing from that copy and writes it back over the setup.  Asserted as both in one call, since either
-     * alone passes while the other is wrong.
+     * the running layout."*): `captureFromLayout` derives the facing from the copy and writes it back over the setup.
+     * Asserted as both in one call, since either alone passes while the other is wrong.
      *
      * MUTATION: drop the `moveOntoFacingCopy` call and the layout half fails; drop the `setFacing` and the setup half
      * does.

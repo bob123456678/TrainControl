@@ -336,10 +336,7 @@ public class testARouteDrivenLocomotiveIsNotEdited
     /**
      * A Central Station sync does not re-address a locomotive a running route drives (OB-287): a route sends its
      * commands by NAME with delays between them, so a sync landing part-way along would send the rest to a different
-     * decoder.  The delete and edit doors refuse the same change; the sync is the door nobody opens by hand.
-     *
-     * The sync's address step is asked directly, with the Central Station's description of the locomotive at another
-     * address, because the whole sync needs a station on the network.  Autonomy is idle throughout.
+     * decoder.  The sync's address step is asked directly, since the whole sync needs a station on the network.
      *
      * MUTATION: drop `|| this.runningRouteDriving(l.getName()) != null` from `adoptCentralStationAddress`, and this
      * fails.

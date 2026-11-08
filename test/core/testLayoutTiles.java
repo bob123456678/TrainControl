@@ -202,15 +202,9 @@ public class testLayoutTiles
 
 
     /**
-     * The two highlights do not put each other's stale picture back.
-     *
-     * A tile has two independent "restore the icon later" timers over it: the accessory highlight in `setImage`,
-     * 2.25 seconds when a switch or signal changes from anywhere but a click here, and the flash the route editor's
-     * *Highlight on Diagram* starts for five seconds.  Each captured whatever icon it found and set it back when it
-     * fired, so whichever fired last won - and a switch thrown during a flash ended up drawn in the position it had
-     * BEFORE it was thrown, staying that way until that accessory changed again.
-     *
-     * Both orders are asked, because each one is a separate restore and the fix is a separate line.
+     * The two highlights do not put each other's stale picture back: the accessory highlight in `setImage` (2.25 s) and
+     * the route editor's *Highlight on Diagram* flash (5 s) each restore the icon they captured, so a switch thrown
+     * during a flash ended up drawn as BEFORE it was thrown.  Both orders are asked.
      */
     @Test
     public void testTheFlashAndTheAccessoryHighlightDoNotUndoEachOther() throws Exception
@@ -285,12 +279,9 @@ public class testLayoutTiles
     }
 
     /**
-     * A second accessory highlight stops the first, so only one restore ever fires.
-     *
-     * A three-way drives twice, 350 ms apart, and each drive highlights the tile.  The first timer must not be left
-     * running: it would fire 2.25 seconds after ITS start, part-way through the second highlight, and put the plain
-     * icon back over it - the tile would stop looking highlighted while it still was.  Counted rather than looked at,
-     * because what distinguishes the two is how many restores happen, not which picture is up.
+     * A second accessory highlight stops the first, so only one restore fires: the first timer would otherwise fire
+     * part-way through the second highlight and put the plain icon back.  Counted, since what distinguishes the two is
+     * how many restores happen.
      */
     @Test
     public void testASecondHighlightStopsTheFirstsRestore() throws Exception
@@ -303,13 +294,9 @@ public class testLayoutTiles
 
         int before = label.accessoryRestores();
 
-        // THE SECOND DRIVE HAS TO LAND INSIDE THE FIRST HIGHLIGHT.
-        //
-        // The hold is HIGHLIGHT_HOLD_MS (2250 ms today).  If getting here takes longer - `awaitHighlight` plus two
-        // `invokeAndWait` hops, on a machine running the whole battery - the first timer has already fired and been
-        // counted, and the assertion below sees two restores with the fix in place: a flake in a class about timers
-        // reads as the defect it was written to catch.  So the window is measured rather than assumed, and a machine
-        // too slow to make it says so and skips.
+        // The second drive has to land inside the first highlight (HIGHLIGHT_HOLD_MS, 2250 ms): on a slow machine the
+        // first timer would already have fired and the assertion would see two restores with the fix in place.  So the
+        // window is measured, and a machine too slow to make it says so and skips.
         long armed = System.currentTimeMillis();
 
         SwingUtilities.invokeAndWait(() -> label.updateImage(true));
@@ -432,15 +419,9 @@ public class testLayoutTiles
     }
 
     /**
-     * Any square whose picture is replaced gives up an outstanding flash, not only a switch or a signal.
-     *
-     * Dropping the flash only inside the accessory-highlight branch misses two ordinary cases: a switch thrown by
-     * clicking its own flashed tile (the click exclusion skips that branch) and a square the route editor flashes that
-     * is not a switch or signal at all, such as an s88 named by a condition.  There the flash timer would put back the
-     * picture the tile had before, seconds later: a switch drawn in the position it was thrown out of, or a sensor
-     * drawn clear with a train standing on it.
-     *
-     * Asked of a FEEDBACK square, which takes no accessory branch at all.
+     * Any square whose picture is replaced gives up an outstanding flash, not only a switch or signal: a switch thrown
+     * by clicking its own flashed tile skips the accessory branch, and the route editor flashes squares such as an s88
+     * named by a condition.  Asked of a FEEDBACK square, which takes no accessory branch.
      */
     @Test
     public void testAnyReplacedPictureGivesUpAnOutstandingFlash() throws Exception
@@ -502,9 +483,8 @@ public class testLayoutTiles
     }
 
     /**
-     * Waits for an accessory highlight to go up, which happens a pass or two after `updateImage` is called.
-     *
-     * The timer nulls the field when it fires, so this cannot answer yes about a highlight that ended long ago.
+     * Waits for an accessory highlight to go up, a pass or two after `updateImage`.  The timer nulls the field when it
+     * fires, so this cannot answer yes about a highlight that ended long ago.
      *
      * @param label the label
      * @return whether it went up
@@ -522,12 +502,8 @@ public class testLayoutTiles
     }
 
     /**
-     * A drawn signal tile whose picture has settled: its image loaded, one highlight run and expired.
-     *
-     * **The first highlight on a fresh label is not the one to measure.**  The picture is made on a worker and set
-     * through `invokeLater`, so the overlay and the image can land in either order while a label is new - which is
-     * not what happens on a drawn diagram, where the image is already there and the switch changing is one event.
-     * One highlight is run and waited out, so what follows is the ordinary case.
+     * A drawn signal tile whose picture has settled: image loaded, one highlight run and expired (on a fresh label the
+     * image and overlay land in either order, unlike a drawn diagram).
      *
      * @return the label
      */
@@ -573,10 +549,8 @@ public class testLayoutTiles
     }
 
     /**
-     * A signal tile with its picture loaded, on a label that is not an editor's.
-     *
-     * The highlight branch in `setImage` requires `isSignal()` or `isSwitch()`, `edit == false`, and an icon already
-     * set - the constructor loads it asynchronously, so it is waited for.
+     * A signal tile with its picture loaded, on a label that is not an editor's: the highlight branch in `setImage`
+     * needs `isSignal()` or `isSwitch()`, `edit == false` and an icon already set (loaded asynchronously).
      *
      * @return the label
      */
@@ -720,14 +694,9 @@ public class testLayoutTiles
     }
 
     /**
-     * The route editor notices its route being changed or deleted underneath it.
-     *
-     * This window is not modal and does not hold the route: Enable/Disable in the route list, a delete, an import or
-     * another editor can change it while it is open, and Save is a delete-and-re-add of everything the window holds.
-     * Without that, a toggle made while an editor is open is silently undone by its Save, and after a delete the Save
-     * fails with a message that has no remedy - the typing cannot be kept at all.
-     *
-     * Asked of the question Save now puts, on all three states.
+     * The route editor notices its route being changed or deleted underneath it: the window is not modal, and Save is a
+     * delete-and-re-add of everything it holds, so a toggle made meanwhile is silently undone and after a delete Save
+     * fails with no remedy.  Asked of the question Save now puts, on all three states.
      */
     @Test
     public void testTheRouteEditorNoticesItsRouteMoving() throws Exception

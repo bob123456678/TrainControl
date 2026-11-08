@@ -15,15 +15,10 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
  * The limit on how many trains may be out at once is a limit, not a suggestion.
  *
  * The cap was counted from the locomotives REGISTERED as running, and a locomotive is not registered until its path is
- * locked, its accessories thrown and the wait for them to confirm has finished (up to a second per accessory, holding
- * no lock).  Two trains taking routes that do not touch could both cross that gap: each checked the cap, each saw the
- * other uncounted, and both went.  The track was never at risk, but a cap is often set for something the model cannot
- * see (what a booster will carry, how much the operator wants to watch), and quietly running more trains than asked
- * for is not small.
- *
- * The race is made deterministic rather than provoked with threads: a train that has locked its path but is not yet
- * registered is exactly the state the gap consists of.  A timing test would pass on a fast machine while the bug was
- * still there.
+ * locked, its accessories thrown and confirmed.  Two trains on routes that do not touch could both cross that gap,
+ * each seeing the other uncounted, and a cap is often set for something the model cannot see (what a booster will
+ * carry).  The race is made deterministic, not provoked with threads: a train that has locked its path but is not yet
+ * registered is exactly the state the gap consists of.
  */
 public class testMaxActiveTrains
 {
@@ -142,18 +137,11 @@ public class testMaxActiveTrains
     /**
      * It binds only while the railway is running itself: a hand dispatch is exempt (Adam: the cap "stays enforced only
      * under full autonomy").  The guard is `maxActiveTrains > 0 && isAutoRunning() && trainsUnderway() >=
-     * maxActiveTrains`, and the middle clause is the whole of this claim: `isAutoRunning()` is the flag
-     * `runLocomotives()` sets and `stopLocomotives()` clears, so a train dispatched by hand is neither counted nor
-     * refused.  Deliberate (behaviour/tiers-and-choice.md section 1): a cap is a preference about how much railway the
-     * operator wants moving, not a fact about what the track will hold, unlike the length rules, which bind in every
-     * tier.
-     *
-     * "Only under full autonomy" is not quite what the fence says: `executeTimetableInternal` sets `running` too, so a
-     * timetable, and Return Home, are capped.  No test can tell those apart from here, so the claim is: nothing running
-     * means no cap.  The wording is Adam's to settle; `behaviour/tiers-and-choice.md` section 1 records it.
-     *
-     * Every claim above starts by calling `runLocomotives()`, so all three would pass with the `isAutoRunning()` clause
-     * deleted and the cap refusing hand dispatches for ever.
+     * maxActiveTrains`, and the middle clause is the whole of this claim, deliberate (behaviour/tiers-and-choice.md
+     * section 1): a cap is a preference about how much railway the operator wants moving, unlike the length rules.
+     * `executeTimetableInternal` sets `running` too, so a timetable and Return Home are capped; the claim is only
+     * "nothing running means no cap", wording that is Adam's to settle.  The claims above all start with
+     * `runLocomotives()`, so they would pass with the clause deleted.
      *
      * MUTATION: take `this.isAutoRunning() &&` out of the guard in `Layout.isPathClear` and this is the only test in
      * the class that fails.
@@ -193,10 +181,10 @@ public class testMaxActiveTrains
     }
 
     /**
-     * A train sent by hand while a run is going is not refused by the cap.  behaviour/tiers-and-choice.md 1: a hand
-     * dispatch is *"neither counted nor refused, however many trains a run already has out"*; the exemption rested on
-     * the running flag alone, which a run sets, so a hand send made during one was refused.  A run going, a cap of one
-     * reached by the first train's claim, and the second sent by hand down a route that touches nothing: it arrives.
+     * A train sent by hand while a run is going is not refused by the cap (behaviour/tiers-and-choice.md 1: a hand
+     * dispatch is *"neither counted nor refused, however many trains a run already has out"*).  A run going, a cap of
+     * one reached by the first train's claim, and the second sent by hand down a route that touches nothing: it
+     * arrives.
      *
      * MUTATION: let the cap refuse a train on a hand send again, and this fails.
      */

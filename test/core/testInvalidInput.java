@@ -164,23 +164,8 @@ public class testInvalidInput
     // The autonomy configuration file
 
     /**
-     * Reading a version out of a release name survives the name (C5).
-     *
-     * parseReleaseVersion did getString("name").split("v")[1], which assumes the release name contains
-     * exactly one "v" and that it is the one in front of the number. Two ways that goes wrong, and only
-     * the first was filed:
-     *
-     * - **no "v" at all** - split returns one element and [1] throws;
-     * - **any other "v" earlier in the name** - "TrainControl Preview v3.0.0" splits into three pieces
-     *   and [1] is "iew ", which is not an exception, is not a version, and is then compared against
-     *   the running one as though it were.
-     *
-     * The second is the worse half: the caller catches Exception, so a throw degrades to "could not
-     * fetch update info" in the log, while garbage degrades to nothing at all - the comparison quietly
-     * decides there is no update and the user is never told about a release that exists.
-     *
-     * Release names are chosen by hand at tag time, which is what makes this reachable: it is one typed
-     * word away, on the release that announces every future release.
+     * Reading a version out of a release name survives the name (C5): a name with no "v", or an earlier "v"
+     * ("TrainControl Preview v3.0.0"), must not throw or yield garbage that quietly decides there is no update.
      */
     @Test
     public void testAReleaseVersionIsReadOutOfAnyName()

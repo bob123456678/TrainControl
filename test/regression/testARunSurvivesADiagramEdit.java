@@ -229,21 +229,11 @@ public class testARunSurvivesADiagramEdit
     }
 
     /**
-     * The window's own capture method actually captures - and refuses while trains are moving (A105).
-     *
-     * `runThenEdit` above tests the RULE and `testTheWindowCapturesBeforeItOpensTheEditor` tests that
-     * the window asks for it, by reading the source. Nothing ran `captureRunningLayout` itself. It is
-     * six conditions and a call, and every one of the six is a way for the fix to be silently absent:
-     * the whole body is `if (...) return;` followed by the thing that matters.
-     *
-     * Both directions, because either alone is satisfiable by a broken method. A capture that always
-     * runs would pass the first assertion and lose the "not while running" rule, which exists because
-     * a snapshot of a moving railway is a snapshot of a state no longer true by the time it lands. A
-     * capture that never runs would pass the second.
-     *
-     * Driven through the private method by reflection rather than through the window's menus: the
-     * doors that call it are dialogs and a page change, and this is a claim about the method they all
-     * share.
+     * The window's own capture method actually captures, and refuses while trains are moving: `runThenEdit` tests the
+     * RULE and `testTheWindowCapturesBeforeItOpensTheEditor` reads the source, but nothing ran `captureRunningLayout`
+     * itself.  Both directions, since either alone is satisfiable by a broken method; the "not while running" rule
+     * exists because a snapshot of a moving railway is stale when it lands.  Driven by reflection: the doors that call
+     * it are dialogs, and this is a claim about the method they share.
      *
      * MUTATION this catches: deleting the `captureFromLayout` call fails the first assertion; deleting
      * `|| this.model.getAutoLayout().isRunning()` from the guard fails the second.
@@ -278,11 +268,8 @@ public class testARunSurvivesADiagramEdit
 
         try
         {
-            // THE MODEL TOO, which the guard reads first.
-            //
-            // A bare window has none - setViewListener wires it, and that starts the threads a window
-            // needs to be a window.  The field is what captureRunningLayout actually asks, so it is
-            // what this sets: the claim is about the method's six conditions, not about start-up.
+            // THE MODEL TOO, which the guard reads first: a bare window has none (setViewListener wires it), and the
+            // field is what captureRunningLayout asks, so it is what this sets.
             set(ui[0], "model", model);
             set(ui[0], "autonomySession", session);
             set(ui[0], "activeDiagramConfiguration", active);
@@ -315,14 +302,9 @@ public class testARunSurvivesADiagramEdit
                 + "the train back where it started - which is OB-144, through the method every door "
                 + "that fixes it calls");
 
-            // and NOT while the railway is moving
-            //
-            // ON THE CURRENT LAYOUT, not the one above.  whereItIsAfterARebuild calls parseAuto, which
-            // REPLACES the Layout object - so a second move made on the old one, and a running flag
-            // set on the old one, are made to something the window no longer holds.  The window then
-            // captures the new layout, which nothing has touched, and the assertion passes whatever
-            // the guard does.  It did: mutating the guard away left this test green until the second
-            // half was rewritten to re-read.
+            // and NOT while the railway is moving.  Re-read the layout: whereItIsAfterARebuild calls parseAuto, which
+            // REPLACES the Layout object, so a flag set on the old one is invisible to the window and the assertion
+            // would pass whatever the guard does.
             org.traincontrol.automation.Layout current = model.getAutoLayout();
 
             assertNotNull(current, "the rebuild left no layout");
@@ -378,8 +360,7 @@ public class testARunSurvivesADiagramEdit
     }
 
     /**
-     * Where the setup says a locomotive is, asked the way the editor's close asks it - by rebuilding
-     * the running layout from what was saved.
+     * Where the setup says a locomotive is, asked as the editor's close asks it: by rebuilding the running layout.
      *
      * @param session the setup
      * @param locName the locomotive

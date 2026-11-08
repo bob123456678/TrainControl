@@ -114,9 +114,8 @@ public class testAPasteDoesNotTurnTheTrainRound
     }
 
     /**
-     * The trap this file is about is present on this railway: otherwise the claims below would pass on a square with
-     * nothing to get wrong.  The distances come from a breadth-first walk done here, so a builder change that stops
-     * emitting the turning copy, or moves it, fails this rather than silently retiring the other claims.
+     * The trap this file is about is present on this railway, or the claims below would pass on a square with nothing
+     * to get wrong.  Distances come from a breadth-first walk done here.
      */
     @Test
     public void testTheSquareCanGetThisWrong()
@@ -206,11 +205,8 @@ public class testAPasteDoesNotTurnTheTrainRound
     }
 
     /**
-     * The direction it gives is the one the drive leaves it in, not the reverse of it.
-     *
-     * East is the side of `BottomMainB (eastbound)`, where a train that drove down the line stands; west is that of
-     * `BottomMainB (eastbound, reverse)`, the same arrival after turning round.  Asked of the square rather than
-     * written as E, so it stays right if he re-lays that end of the railway.
+     * The direction it gives is the one the drive leaves it in, not the reverse of it: east is the side of `BottomMainB
+     * (eastbound)`, west that of `BottomMainB (eastbound, reverse)`.  Asked of the square, not written as E.
      */
     @Test
     public void testItFacesTheWayTheDriveLeavesIt()
@@ -229,9 +225,8 @@ public class testAPasteDoesNotTurnTheTrainRound
     }
 
     /**
-     * A terminus still turns a train round on paste: "for terminuses, they must reverse on paste".  Preferring the
-     * plain copy must not reach for one that is not there, since a compulsory turn is emitted as turning copies ONLY.
-     * Over every named square, because "the plain copy exists" is not visible at any single station.
+     * A terminus still turns a train round on paste: "for terminuses, they must reverse on paste".  Over every named
+     * square, since "the plain copy exists" is not visible at any single station.
      */
     @Test
     public void testASquareThatOnlyTurnsStillTurns()
@@ -276,13 +271,9 @@ public class testAPasteDoesNotTurnTheTrainRound
     }
 
     /**
-     * No square anywhere on the railway answers twice differently, by either route to an answer.
-     *
-     * The claim above covers the square Adam reported, which the train can be DRIVEN to.  The no-path arm is reached by
-     * a train that is not standing on the railway at all (`walkTo` has nowhere to start), as in
-     * `testAPastedTrainKeepsItsDirection`, a real case: a locomotive brought into autonomy for the first time.  Every
-     * square here with more than one copy can be driven to from TopMainR2Inter, measured.  Both arms are asserted to
-     * have run.
+     * No square anywhere on the railway answers twice differently, by either route to an answer: a driven train, or one
+     * not standing on the railway at all (`walkTo` has nowhere to start, as in `testAPastedTrainKeepsItsDirection`).
+     * Both arms are asserted to have run.
      */
     @Test
     public void testNoSquareAnswersTwiceDifferently()
@@ -350,10 +341,8 @@ public class testAPasteDoesNotTurnTheTrainRound
     }
 
     /**
-     * Put down on the square it is already standing on, a train keeps the copy it is on.
-     *
-     * `sameSquare` exists because the menus offer a train the square it is on; the old walk only tested the copies it
-     * ARRIVED at, never the one it set off from, and turned the train round for accepting that offer.
+     * Put down on the square it is already standing on, a train keeps the copy it is on: `sameSquare` exists because
+     * the menus offer that square, and the walk only tested the copies it ARRIVED at.
      */
     @Test
     public void testPastingOntoItsOwnSquareDoesNotTurnIt()
@@ -370,13 +359,9 @@ public class testAPasteDoesNotTurnTheTrainRound
     }
 
     /**
-     * A train that IS on the railway but cannot be driven there keeps the heading it has.
-     *
-     * The no-path claims above use a train that is not on the railway at all, so `facingOf` answers null and the code
-     * falls through to the first departable copy; the line implementing Adam's ruling, "Option 1 is fine as long as
-     * the direction isnt flipped", was never executed by a test.  This uses a placed train on a square the target
-     * cannot be reached from, with a heading BottomMainB can hold: without the rule the answer is whichever departable
-     * copy is first in build order.
+     * A train that IS on the railway but cannot be driven there keeps the heading it has (Adam: "Option 1 is fine as
+     * long as the direction isnt flipped").  The no-path claims above use a train off the railway, so `facingOf`
+     * answers null; this one is placed on a square the target cannot be reached from.
      */
     @Test
     public void testAStrandedTrainKeepsTheHeadingItHas()
@@ -547,12 +532,9 @@ public class testAPasteDoesNotTurnTheTrainRound
     }
 
     /**
-     * A may-reverse square asks which way the train should face; an ordinary one does not.
-     *
-     * Adam: "If pasting at a 'may reverse' square, ask what direction the train should face."  The walk cannot answer
-     * there, since turning round is what the square is FOR and both headings are reachable.  Claimed here is the
-     * DECISION, not the dialog (driving `JOptionPane` from a test hung this suite once).  `facingsFor` answers per
-     * COPY, so a square with three copies facing east hands east back three times; the offering must collapse them.
+     * A may-reverse square asks which way the train should face; an ordinary one does not (Adam: "If pasting at a 'may
+     * reverse' square, ask what direction the train should face.").  Claimed here is the DECISION, not the dialog;
+     * `facingsFor` answers per COPY, so the offering must collapse copies facing the same way.
      */
     @Test
     public void testOnlyAMayReverseSquareAsksWhichWayItFaces() throws Exception
@@ -625,8 +607,7 @@ public class testAPasteDoesNotTurnTheTrainRound
     }
 
     /**
-     * The facing question's buttons say where the train points, not where it came from (OB-215).  The prompt borrowed
-     * the arrival-side labels, which answer the opposite question about the other end of the train.  Asked of every
+     * The facing question's buttons say where the train points, not where it came from (OB-215): asked of every
      * heading against the arrival label for the same compass point, in the running language.
      */
     @Test
@@ -649,15 +630,9 @@ public class testAPasteDoesNotTurnTheTrainRound
     }
 
     /**
-     * A cut train's remembered heading is preferred only while it is off the railway.
-     *
-     * The branch sits in `locomotiveGestureOnDiagram`, a private key handler needing a shown window, a hovered tile and
-     * a loaded clipboard, whose paste can raise a modal facing prompt (the shape of test that hung this suite).  So
-     * this pins two things and claims nothing else:
-     *   - the QUESTION the branch asks of the landing: `facingsFor` says which headings a square can hold, and a
-     *     remembered heading it cannot hold must not be forced on it;
-     *   - the SHAPE of the branch: all three conditions are still in it, notably "and only while the train is actually
-     *     off the railway", which a later edit would drop.
+     * A cut train's remembered heading is preferred only while it is off the railway.  The branch sits in a private key
+     * handler needing a shown window, so this pins two things: the QUESTION it asks (`facingsFor`: a heading the square
+     * cannot hold must not be forced on it) and the SHAPE of the branch, with all three conditions still in it.
      */
     @Test
     public void testTheClipboardHeadingIsOnlyTakenWhileTheTrainIsLifted() throws Exception

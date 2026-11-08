@@ -504,10 +504,8 @@ public class testTheTrainIsShownAsALine
 
     /**
      * A running train's line is the orange of a standing train's: the see-through orange laid over its own dark gray
-     * run line came out a brown, rgb(178,94,38), where over the track it is rgb(209,125,69); it should match the
-     * standing color.  The covered square painted standing, and then running with the run's reached line along the road
-     * the tail lies on: the
-     * commonest orange of each within a few shades of the other.
+     * run line came out a brown, where it should match the standing color (commonest orange of each, within a few
+     * shades).
      *
      * MUTATION: draw the line over the run in the standing orange again, and this fails.
      */
@@ -559,9 +557,8 @@ public class testTheTrainIsShownAsALine
     }
 
     /**
-     * A standing train's own square is one orange.  The line is drawn again over a run line, but the overlay of a
-     * standing train's own square has none, and drawn there the second line lay over the first (rgb(239,134,65) beside
-     * rgb(209,125,69)).  The same on the part of a run's first or last square its run line does not reach.
+     * A standing train's own square is one orange: its overlay has no run line, and the second line must not lie over
+     * the first.  The same on the part of a run's first or last square its run line does not reach.
      *
      * MUTATION: draw the second line over the whole of any square with an overlay again, and this fails.
      */
@@ -643,9 +640,8 @@ public class testTheTrainIsShownAsALine
 
     /**
      * Where coaches are chosen, a train is drawn as whole coaches, one to a square, each stopping short of the square's
-     * edge, so the gaps fall at the joins on a curve as on a straight and no coach is cut short (T2 of the look's train
-     * tails).  A dash pattern would restart at every square and leave a stub, and shape must stay continuous across
-     * curves; one coach to a square has neither problem.
+     * edge, so the gaps fall at the joins on a curve as on a straight (T2 of the look's train tails); a dash pattern
+     * would restart at every square and leave a stub.
      *
      * MUTATION: draw the line edge to edge again and this fails.
      */
@@ -677,10 +673,8 @@ public class testTheTrainIsShownAsALine
     }
 
     /**
-     * The train's line is see-through: the track it lies on shows through it.  Adam: "can we change to the see through
-     * tail line".  Read off the picture as the commonest orange pixel (the line's own color where it crosses what is
-     * under it) rather than off the constant: a solid line's commonest pixel is the solid color, as bright as 245 or
-     * 255.
+     * The train's line is see-through.  Adam: "can we change to the see through tail line".  Read off the picture as
+     * the commonest orange pixel, not off the constant: a solid line's commonest pixel is the solid color.
      *
      * MUTATION: draw it solid, or make the soft orange the default, and this fails.
      */
@@ -815,11 +809,8 @@ public class testTheTrainIsShownAsALine
     }
 
     /**
-     * The train's line ends rounded where the train ends, not cut off flat on the square's edge.
-     *
-     * Each of the train's end squares - covered, beside a covered square, with a side whose square beside the train
-     * does not reach - is painted at the large size: nothing orange on that side's edge, where a line cut off there
-     * lays its whole width.
+     * The train's line ends rounded where the train ends, not cut off flat on the square's edge: each of the train's
+     * end squares is painted at the large size, with nothing orange on the edge of a side the train does not reach.
      *
      * MUTATION: run the line to the edge at the train's end as it runs between squares, and this fails.
      */
@@ -906,9 +897,8 @@ public class testTheTrainIsShownAsALine
 
     /**
      * A square whose own line did not change is redrawn when the square beside it changed: the train's last square ends
-     * rounded only while the train goes no further, so a train grown by a square has to redraw the square that was its
-     * last.  Asked of the window's own refresh, through a tile registered for that square, with Swing's repaint
-     * requests recorded.
+     * rounded only while the train goes no further.  Asked of the window's own refresh, with Swing's repaint requests
+     * recorded.
      *
      * MUTATION: redraw only the squares whose roads changed, and this fails.
      */

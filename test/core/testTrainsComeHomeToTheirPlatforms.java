@@ -23,16 +23,11 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
  * Five trains go out from ordinary platforms, come back, and face the way they set off.
  *
  * Adam: "we should have trains on regular stations that need to go home, not parked trains that need to go park
- * somewhere else."  These stand on plain through platforms (no parking flag, no compulsory reversal), each is homed
- * where it starts, the railway runs itself for a while, and then everybody is sent home.
+ * somewhere else."  Each is homed where it starts, the railway runs itself for a while, and then everybody is sent
+ * home.  Facing is the Point, not the square: which copy a train stands on IS its facing.
  *
- * Facing is the Point, not the square: a square entered from two directions is one Point per arrival side, and which
- * copy a train stands on IS its facing, so "the same direction" is asserted as the same Point.
- *
- * It runs against a frozen copy (`test/operator_layout`, Adam: "let's get the current diagram frozen in the test"), not
- * the live `cs2_sample_layout`, which is his real railway and would make the test say something different on every run.
- * To refresh it, copy the folder over and say so in the commit.  `LayoutSandbox.open(folder)` copies whatever it is
- * given.
+ * It runs against a frozen copy (`test/operator_layout`, Adam: "let's get the current diagram frozen in the test"),
+ * not the live `cs2_sample_layout`.  To refresh it, copy the folder over and say so in the commit.
  *
  * @author Adam
  */
@@ -555,8 +550,8 @@ public class testTrainsComeHomeToTheirPlatforms
 
     /**
      * The copy of a square a train may be sent to and does not have to reverse at, ORDINARY PREFERRED over the first
-     * found.  The square is the exact name or the name and a bracket: `startsWith` alone matched TunnelCenterPark for
-     * "Tunnel".  Returns the first copy trains may be sent to if every copy reverses, null if none accepts a train.
+     * found.  The square is the exact name or the name and a bracket (`startsWith` alone matched TunnelCenterPark for
+     * "Tunnel").  Returns the first copy trains may be sent to if every copy reverses, null if none accepts a train.
      */
     private static Point ordinaryCopy(String station)
     {

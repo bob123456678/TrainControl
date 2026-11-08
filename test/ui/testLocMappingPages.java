@@ -12,24 +12,17 @@ import org.traincontrol.gui.TrainControlUI;
 import support.SourceOf;
 
 /**
- * A ceiling of fifty locomotive mapping pages, with an error message if exceeded.
- *
- * Two halves, and the second is the one worth having.  A guard that only the interface consults is a guard the next
- * caller does not have, so the predicate is tested, AND the menu that offers the action is asked whether it actually
- * grays.
- *
- * The refusal inside `addLocMappingPage` is a modal dialog, which in a test is a hang rather than a failure, so that
- * one is read rather than run.
+ * A ceiling of fifty locomotive mapping pages, with an error message if exceeded.  The predicate is tested, and so is
+ * the menu that offers the action, which must actually gray.  The refusal inside `addLocMappingPage` is a modal
+ * dialog (a hang in a test), so that one is read rather than run.
  *
  * @author Adam
  */
 public class testLocMappingPages
 {
     /**
-     * Fifty is the last page, and a state that already holds more is not talked out of it.
-     *
-     * The cap is on ADDING only: an installation set up before it can hold any number of pages, and clamping on load
-     * would silently throw away the mappings past the fiftieth.
+     * Fifty is the last page, and a state that already holds more is not talked out of it: the cap is on ADDING only,
+     * and clamping on load would silently throw away the mappings past the fiftieth.
      *
      * MUTATION: `<=` in place of `<` fails the second case (fifty-one pages allowed); reading
      * MIN_LOC_MAPPINGS instead of MAX fails the first.
@@ -62,9 +55,8 @@ public class testLocMappingPages
     }
 
     /**
-     * The menu that offers the page stops offering it at the ceiling.  Built for real rather than read, because this is
-     * where a person meets the rule: the button that offers an action asks that action's own question (OB-057).  Grayed
-     * rather than removed, as Delete is.
+     * The menu that offers the page stops offering it at the ceiling, built for real: the button that offers an action
+     * asks that action's own question (OB-057).  Grayed rather than removed, as Delete is.
      *
      * MUTATION: dropping the `canAddLocMappingPage` test from the menu leaves the item enabled and
      * fails the second assertion.
@@ -104,12 +96,8 @@ public class testLocMappingPages
     }
 
     /**
-     * Adding refuses on its own, without the menu's help.
-     *
-     * `addLocMappingPage` is public, and the graying above is one caller's manners rather than the rule.  Read rather
-     * than run because the refusal is a modal dialog.  Comments are stripped first: the guard has a comment above it
-     * that names `canAddLocMappingPage`, and a check that kept comments would pass on the prose after the code had
-     * gone.
+     * Adding refuses on its own, without the menu's help.  Read rather than run because the refusal is a modal
+     * dialog; comments are stripped first so prose naming `canAddLocMappingPage` cannot pass after the code is gone.
      *
      * MUTATION: deleting the guard from the method fails this while both tests above stay green.
      */
@@ -131,14 +119,9 @@ public class testLocMappingPages
     }
 
     /**
-     * Loading a state that already has too many pages does NOT throw the extra ones away.
-     *
-     * `setViewListener` grows the page count to fit whatever the saved state holds, past the ceiling and without
-     * asking, and it has to: the only way to honor a limit while loading is to drop the mappings above it, and they are
-     * somebody's railway.  Adding stops at fifty and loading does not; this tells the next tidy-up why.
-     *
-     * Read rather than run: standing this up needs a control station, a saved state and a window, and what can silently
-     * break is a ceiling being introduced into that loop - which is visible.
+     * Loading a state that already has too many pages does NOT throw the extra ones away: `setViewListener` grows the
+     * page count past the ceiling without asking, since the mappings above it are somebody's railway.  Read rather
+     * than run: standing this up needs a control station, a saved state and a window.
      *
      * MUTATION: adding `&& this.numLocMappings < MAX_LOC_MAPPINGS` to the growth loop fails this.
      */
@@ -159,12 +142,9 @@ public class testLocMappingPages
     }
 
     /**
-     * A page may be called "3", and the two sentinels in the name map do not make it a duplicate.
-     *
-     * `saveState` writes the active page number and the active button's key code into `pageNames` under keys -1 and -2,
-     * as strings, and they survive a load.  `containsValue` saw them, so naming a page "81" (the key code of Q) was
-     * refused as a duplicate of a page that does not exist.  Asked of the predicate, not the dialog, which is modal and
-     * would hang a battery.
+     * A page may be called "3", and the two sentinels in the name map do not make it a duplicate: `saveState` writes
+     * the active page number and key code into `pageNames` under keys -1 and -2, so naming a page "81" (the key code
+     * of Q) was refused as a duplicate.  Asked of the predicate, not the modal dialog.
      *
      * MUTATION this catches: `namesOfPages()` dropping the `< 1` test, which is `containsValue` again.
      */
@@ -206,9 +186,8 @@ public class testLocMappingPages
     }
 
     /**
-     * The autonomy menu grays itself, and says which of the two reasons it is: no layout at all, and a layout straight
-     * from the Central Station, which has nowhere to keep a setup (OB-057).  Driven through the menu, so what is
-     * asserted is what the operator would see.
+     * The autonomy menu grays itself and says which of the two reasons it is: no layout at all, or a layout straight
+     * from the Central Station, which has nowhere to keep a setup (OB-057).  Driven through the menu.
      *
      * MUTATION this catches: dropping either half of `setEnabled(hasLayout && local)`, or swapping the
      * two tooltip arms.
@@ -915,15 +894,13 @@ public class testLocMappingPages
     }
 
     /**
-     * The line over the locomotive's name is a keycap, the page's words and a decoder pill, for every kind of decoder
-     * (FR-128).  The design Adam chose: the key's letter on a keycap, then the page as plain words, "5. Example", with
-     * no pill, then a solid decoder pill with the type and the address parted by a white line, floated to the right.
-     * Driven through `repaintLoc` and read from the row's own layout, so there is no second account of it to drift.
+     * The line over the locomotive's name is a keycap, the page's words ("5. Example", no pill) and a solid decoder
+     * pill with the type and the address parted by a white line, floated right, for every kind of decoder (FR-128).
+     * Driven through `repaintLoc` and read from the row's own layout.
      *
-     * MUTATION: put the word Page back in the page's words (draw `getTooltip`'s page words there), put the number after
-     * the name or back in parentheses, leave the full stop off, put a line between them, put the decoder pill back
-     * beside the page's words, join the type and the address into one text, draw the divider outside its pill, or set
-     * the page's words in any font or color but the label's, and this fails.
+     * MUTATION: put the word Page back in the page's words, put the number after the name or in parentheses, leave the
+     * full stop off, put the decoder pill beside the page's words, join the type and the address into one text, or
+     * set the page's words in any font or color but the label's, and this fails.
      */
     @Test
     public void testTheLineIsAKeycapAndTwoPillsForEveryDecoder() throws Exception
@@ -1098,14 +1075,13 @@ public class testLocMappingPages
     }
 
     /**
-     * A wide page name is cut with an ellipsis and nothing else is, and the line never leaves its slot (FR-128).  The
-     * page NAME takes what room is left and gives way; the keycap, the page number and the decoder pill are never cut.
-     * The slot is 296 by 18 and nothing below it may move.  Measured with the widest decoder text, the multi-unit's,
-     * because it leaves the least room.
+     * A wide page name is cut with an ellipsis and nothing else is, and the line never leaves its slot of 296 by 18
+     * (FR-128): the NAME gives way; the keycap, the number and the pill are never cut.  Measured with the multi-unit's
+     * decoder text, which leaves the least room.
      *
-     * MUTATION: cut the name by letters instead of by width, leave the ellipsis off, let a pill grow past 18 px, draw
-     * the page's words wider than the room they were given, take the decoder pill's width out of that room, cut the
-     * "5. ", or set any of the pills' fonts back to 11 point, and this fails.
+     * MUTATION: cut the name by letters instead of by width, leave the ellipsis off, let a pill grow past 18 px, take
+     * the decoder pill's width out of the name's room, cut the "5. ", or set a pill's font back to 11 point, and this
+     * fails.
      */
     @Test
     public void testAWidePageNameGivesWayAndTheRestDoesNot() throws Exception
@@ -1250,14 +1226,13 @@ public class testLocMappingPages
     }
 
     /**
-     * What is painted is the design Adam chose: a keycap with a heavier bottom edge, the page as plain words in the
-     * label's navy with nothing round them, and a decoder pill that is solid navy at the slot's right edge, with a
-     * white line between its type and its address (FR-128).  Read from the pixels the row paints, over a background
-     * that is nothing else, so a fill that is not meant to be there shows as a change from it.
+     * What is painted (FR-128): a keycap with a heavier bottom edge, the page as plain words in the label's navy, and
+     * a solid navy decoder pill at the slot's right edge with a white line between type and address.  Read from the
+     * pixels over a plain background, so a stray fill shows.
      *
      * MUTATION: draw any outline, fill or line round the page's words, draw them in anything but the label's navy, put
-     * the decoder pill beside them, draw the divider to the pill's edge, draw the keycap's edge one pixel all round, or
-     * take the decoder's navy from anywhere but rgb(0,0,115), and this fails.
+     * the decoder pill beside them, draw the divider to the pill's edge, or take the decoder's navy from anywhere but
+     * rgb(0,0,115), and this fails.
      */
     @Test
     public void testTheShapesAreThoseAdamChose() throws Exception
@@ -1487,9 +1462,8 @@ public class testLocMappingPages
     }
 
     /**
-     * "Show Page Numbers" is a checkbox in the Preferences menu's Locomotive submenu, off until it is asked for, and
-     * with it off the line over the locomotive's name has the page's name and no number (FR-128).  The preference is
-     * removed before the window is built, so what is read is the default.
+     * "Show Page Numbers" is a checkbox in the Preferences menu's Locomotive submenu, off by default, and with it off
+     * the line over the locomotive's name has the page's name and no number (FR-128).
      *
      * MUTATION: default the preference on, leave the item out of the submenu or out of the form's menu, take the number
      * out of the tooltip, let an unnamed page show nothing, or let it read "5.", and this fails.
@@ -1555,8 +1529,7 @@ public class testLocMappingPages
 
     /**
      * Ticking the item shows the number and keeps the choice, and unticking takes it off (FR-128).  The preference is
-     * SET before the window is built, not toggled, so the first click is known to be the one from off to on;
-     * `Panel.close` puts back what was there.
+     * SET before the window is built, not toggled, so the first click is known to go from off to on.
      *
      * MUTATION: leave the choice out of the handler, leave it out of what the row says, or have the handler store the
      * opposite, and this fails.
@@ -1641,8 +1614,7 @@ public class testLocMappingPages
 
     /**
      * The preference is read at start-up, as the other ticks in the Locomotive submenu are (FR-128): a window built
-     * with it on has the item ticked and the number in front of the name, and one built with it off has neither.  Set,
-     * not toggled, and put back.
+     * with it on has the item ticked and the number in front of the name, one built with it off has neither.
      *
      * MUTATION: leave the item's start-up state out of the start-up block, or word the tabs or the label without asking
      * it, and this fails.
@@ -1712,8 +1684,8 @@ public class testLocMappingPages
     }
 
     /**
-     * Adam's rule, written out again for the claims to hold the program to: for page 5 with the name N, "Page 5" with no
-     * name, "N" with the numbers off, "5. N" with them on - and only the NAME cut, to the room the place has for it.
+     * Adam's rule for the claims to hold the program to: page 5 with the name N reads "Page 5" with no name, "N" with
+     * the numbers off, "5. N" with them on, and only the NAME is cut.
      *
      * @param page the page
      * @param name its name, or null for none
@@ -1778,13 +1750,12 @@ public class testLocMappingPages
     }
 
     /**
-     * The rule itself, with no window: for page 5 with the name N, "Page 5" with no name, "N" with the numbers off, "5.
-     * N" with them on - and only the NAME is the caller's to cut (FR-128).  Asked by name, so this class still compiles
-     * - and fails, in words - on a window without the rule.
+     * The rule itself, with no window: "Page 5" with no name, "N" with the numbers off, "5. N" with them on, and only
+     * the NAME is the caller's to cut (FR-128).  Asked by name, so this class compiles and fails in words on a window
+     * without the rule.
      *
      * MUTATION: show the number whatever the setting, never show it, word an unnamed page "5." or leave it out, cut the
-     * number or the "Page 5" with the name, ask the caller to cut an unnamed page, or lose a name's trim, and this
-     * fails.
+     * number or the "Page 5" with the name, or lose a name's trim, and this fails.
      */
     @Test
     public void testTheRuleWordsAPageThreeWays() throws Exception
@@ -1856,9 +1827,8 @@ public class testLocMappingPages
     }
 
     /**
-     * The page tabs are worded by the one rule (FR-128): the tabs shown with "Show Locomotive Pages as Tabs" ticked, in
-     * a window built with the numbers off and again with them on - set before the window, not toggled.  A tab has room
-     * for fourteen letters of the NAME, and the "5. " in front of those is not one of them.
+     * The page tabs are worded by the one rule (FR-128), in a window built with the numbers off and again with them
+     * on.  A tab has room for fourteen letters of the NAME, and the "5. " in front is not one of them.
      *
      * MUTATION: show the number whatever the setting, never show it, word an unnamed page "5." or by its name's cut,
      * let the tabs ignore the setting, cut the "5. " with the name, or change the tab's tooltip, and this fails.
@@ -1891,9 +1861,8 @@ public class testLocMappingPages
     }
 
     /**
-     * The page label between the arrows is worded by the one rule, in one line, and moves nothing (FR-128): it is a
-     * generated component in a fixed layout, and this reads that nothing around it moved or was resized, whatever the
-     * page is called.
+     * The page label between the arrows is worded by the one rule, in one line, and moves nothing around it
+     * (FR-128), whatever the page is called.
      *
      * MUTATION: show the number whatever the setting, never show it, word an unnamed page "5.", put the name back on a
      * line of its own over "Page 5", cut the forty letters short or not at all, or cut the "5. ", and this fails.
@@ -1960,9 +1929,9 @@ public class testLocMappingPages
     }
 
     /**
-     * Ticking or unticking the item words the page tabs and the page label again at once (FR-128).  The tab and the
-     * label are read in the SAME event-thread task as the click: the renders the click also asks for land on the event
-     * thread later and would word the tabs on their own, which would hide a handler that left it to them.
+     * Ticking or unticking the item words the page tabs and the page label again at once (FR-128).  Both are read in
+     * the SAME event-thread task as the click: later renders would word them on their own and hide a handler that
+     * left it to them.
      *
      * MUTATION: leave the tabs or the label out of the handler, or word them from the setting as it was before the
      * click, and this fails.
@@ -2100,9 +2069,8 @@ public class testLocMappingPages
     }
 
     /**
-     * The item's tooltip says where the number goes: on the page tabs, beside the page arrows and over the locomotive's
-     * name (FR-128), in every language the program has.  Read from the files, not through the bundle, because the
-     * bundle chooses by the machine's language.
+     * The item's tooltip says where the number goes: the page tabs, beside the page arrows and over the locomotive's
+     * name (FR-128), in every language.  Read from the files, because the bundle chooses by the machine's language.
      *
      * MUTATION: leave the tabs, the arrows or the locomotive out of the English text, or leave a language's
      * untranslated, and this fails.

@@ -20,13 +20,10 @@ import static regression.testTheImportDoorReadsAnOldFile.answeringYes;
 import static regression.testTheImportDoorReadsAnOldFile.openTheWindow;
 
 /**
- * The Auto tab waits for the trains at both ends of a run it did not see coming: a Start that starts
- * nothing gives it back, and a hand send grays it from its click.  The rule itself, and a whole run, are claimed in
- * `regression.testNoSetupEditDuringARun` (`testTheAutoTabIsGreyedWhileAutonomyIsBusy`,
- * `testARunGreysTheAutoTabAndItsStopGivesItBack`), whose helpers these share.
- *
- * Its own class because each of these drives a real run in its window, and that class already holds thirty-nine windows:
- * every window a test opens keeps its threads, and a class of many runs out of heap.
+ * The Auto tab waits for the trains at both ends of a run it did not see coming: a Start that starts nothing gives it
+ * back, and a hand send grays it from its click.  The rule itself, and a whole run, are claimed in
+ * `regression.testNoSetupEditDuringARun`, whose helpers these share.  Its own class: each test drives a real run in
+ * its window, and every window keeps its threads, so a class of many runs out of heap.
  *
  * @author Adam
  */
@@ -35,10 +32,8 @@ public class testTheAutoTabWaitsForTheTrains
 
     /**
      * A Start that starts nothing gives Start and the Auto tab back: every train to run was skipped (here each with no
-     * speed, as on a station out of service), and the railway must clear its own flag, or Start stays grayed with
-     * Graceful Stop offered over nothing and the Auto tab, which counts that offer as a run, says to wait for trains
+     * speed), and the railway must clear its own flag, or Start stays grayed and the Auto tab says to wait for trains
      * that are not moving.
-     *
      *
      * MUTATION: leave Start's buttons as they are when nothing started, or say nothing, and this fails.
      */
@@ -186,8 +181,7 @@ public class testTheAutoTabWaitsForTheTrains
 
     /**
      * A hand send grays the Auto tab from its click, not once its train sets off: the dispatch sets the route first
-     * (seconds on a long one), and until the railway's first refresh the settings, Execute Timetable and the capture
-     * toggle would be offered and then refused.  Given back at the train's arrival.
+     * (seconds on a long one), so the settings would be offered and then refused.  Given back at the train's arrival.
      *
      * MUTATION: leave the Auto tab to the train's departure, or never count the hand send down, and this fails.
      */
@@ -399,14 +393,10 @@ public class testTheAutoTabWaitsForTheTrains
     /**
      * An editor stays one editor through its own switches, and is counted open until it closes.
      *
-     * Each switch hands over through the main window's own teardown (`autonomyEditorClosed` for the autonomy editor,
-     * the refresh's `layoutRefreshCompleteInternal` for the track editor), which gives Edit and Edit Autonomy Paths
-     * back, and the switch's posted arrival grays them again.  A press in between opens a second editor, and closing
-     * the newer leaves a gate that asked only the newest letting Start run trains with the other still open.  So open
-     * is asked of the editor windows, and neither button is offered while one is there.
-     *
-     * Watched through Autonomy Setup to Track Diagram (with both buttons pressed in the hand-over's gap), back to
-     * Autonomy Setup, and a page switch; then the close gives both back.
+     * Each switch hands over through the main window's teardown, which gives Edit and Edit Autonomy Paths back until
+     * the posted arrival grays them again; a press in between opens a second editor, and closing the newer would let
+     * Start run trains with the other still open.  So open is asked of the editor windows.  Watched through Autonomy
+     * Setup to Track Diagram (both buttons pressed in the gap), back, and a page switch.
      *
      * MUTATION: ask the window's flag, not its editor windows, and this fails.
      */
@@ -595,10 +585,8 @@ public class testTheAutoTabWaitsForTheTrains
     }
 
     /**
-     * A Save and Continue at a switch leaves nothing to ask at a close in the switch's gap.
-     *
-     * The save must take the undo point again, or until the switch arrives the window still thinks it has unsaved work
-     * and a close asks *"throw away everything changed since you last saved"* - the opposite of what was just done.
+     * A Save and Continue at a switch leaves nothing to ask at a close in the switch's gap: the save must take the undo
+     * point again, or the close asks *"throw away everything changed since you last saved"*.
      *
      * MUTATION: keep the old undo point at a Save and Continue, and this fails.
      */
@@ -694,13 +682,9 @@ public class testTheAutoTabWaitsForTheTrains
     }
 
     /**
-     * An editor that fails to build leaves no frame behind.
-     *
-     * `initComponents` makes the frame before the rest of the build runs.  The main window counts every editor frame of
-     * its own, so a frame left by a build that threw (a page gone in a reload, the one route found) keeps Edit and Edit
-     * Autonomy Paths grayed and the gate saying "Close the editor first" for the session.
-     *
-     * Driven through the real door with a page the model does not have, chosen in the page list with its listeners off.
+     * An editor that fails to build leaves no frame behind: the main window counts every editor frame, so one left by a
+     * build that threw keeps Edit grayed for the session.  Driven through the real door with a page the model does not
+     * have, chosen in the page list with its listeners off.
      *
      * MUTATION: let the build's failure leave its frame, and this fails.
      */
@@ -737,13 +721,9 @@ public class testTheAutoTabWaitsForTheTrains
     }
 
     /**
-     * An editor whose build raises an Error, rather than an exception, gives Edit back and opens the gate.
-     *
-     * The fix disposes the frame and throws on, and `openLayoutEditor`'s catch gives Edit back; it must take an Error
-     * too, or Edit stays grayed and every train is refused "Close the editor first" for the session.
-     *
-     * Driven through the real door with a page the model has, whose first use raises an `AssertionError`, chosen in the
-     * page list with its listeners off.
+     * An editor whose build raises an Error, rather than an exception, gives Edit back and opens the gate:
+     * `openLayoutEditor`'s catch must take an Error too.  Driven with a page whose first use raises an
+     * `AssertionError`.
      *
      * MUTATION: catch only exceptions there again, and this fails.
      */
@@ -810,14 +790,8 @@ public class testTheAutoTabWaitsForTheTrains
     }
 
     /**
-     * An editor whose posted build - the drawing, after the frame is made - raises an Error gives Edit back and opens
-     * the gate.
-     *
-     * `openLayoutEditor`'s catch takes Errors, which covers the construction; the drawing runs later, in `render`'s
-     * posted body, whose catch must take them too, or the hidden frame stays counted and every train is refused "Close
-     * the editor first" for the session.
-     *
-     * Driven through the real door with a page whose size, asked by the drawing, raises an `AssertionError`.
+     * An editor whose posted build (the drawing, after the frame is made) raises an Error gives Edit back and opens
+     * the gate: `render`'s catch must take Errors too.  Driven with a page whose size raises an `AssertionError`.
      *
      * MUTATION: let `render`'s catch take exceptions only again, and this fails.
      */
@@ -879,11 +853,7 @@ public class testTheAutoTabWaitsForTheTrains
 
     /**
      * A page switch that raises an Error gives the window up, as one that throws an exception does: `arriveAt` must
-     * catch more than `RuntimeException`, or the window is left half switched (one page shown, wired to another) and
-     * counted as an open editor for the session.
-     *
-     * The track editor opened on a page, then switched to a page whose size, asked by the drawing, raises an
-     * `AssertionError`.
+     * catch more than `RuntimeException`, or the window is left half switched and counted as an open editor.
      *
      * MUTATION: let `arriveAt`'s catch take exceptions only again, and this fails.
      */
@@ -993,13 +963,9 @@ public class testTheAutoTabWaitsForTheTrains
     }
 
     /**
-     * A Save and Continue at the track editor's switch leaves nothing to ask at a close in the switch's gap.
-     *
-     * The track editor asks a close about its undo history, which the save must clear as the arrival does, or a close
-     * right after the save asks *"Are you sure you want to close the editor without saving changes?"*.
-     *
-     * A tile turned through the editor's own `rotate`, then Autonomy Setup, Save and Continue, and the close in the
-     * gap.
+     * A Save and Continue at the track editor's switch leaves nothing to ask at a close in the switch's gap: the save
+     * must clear the undo history as the arrival does, or the close asks *"Are you sure you want to close the editor
+     * without saving changes?"*.  A tile is turned through `rotate`, then Autonomy Setup, Save and Continue.
      *
      * MUTATION: keep the undo history at a Save and Continue, and this fails.
      */

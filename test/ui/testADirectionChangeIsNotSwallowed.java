@@ -22,19 +22,12 @@ import support.SourceOf;
  * When the run finished, the next echo carried that same direction, `was == forward` was true, and
  * there was nothing left to follow.
  *
- * **The ruling this was written under has since been withdrawn, and the mechanism kept**.
- * `ca0265f4` wanted a mid-run reversal to surface after the run; Adam reversed that nine hours later -
- * *"reversals during the run should be ignored and not queued.  Only count reversals when nothing is
- * running.  That way, there is no backlog."* - and `bc6120f1` implemented it. So the sentence that
- * used to stand here, that the change was "not deferred until it was safe; it was swallowed", now
- * describes the intended behavior rather than the defect.
+ * The ruling this was written under has since been withdrawn and the mechanism kept: Adam, *"reversals during the run
+ * should be ignored and not queued.  Only count reversals when nothing is running.  That way, there is no backlog."*
  *
- * **What is still worth pinning is the ordering, and it is only half the rule.** Recording before the
- * guard writes a direction the window has not acted on, which corrupts the baseline whichever ruling
- * is in force. The other half is `reconcileFacingWhenIdle`, which levels that baseline when the
- * railway goes idle; the two together are what "no backlog" means, and deleting the reconcile would
- * leave both methods here green while restoring the backlog. That is asserted below rather than left
- * to this comment.
+ * What is still pinned is the ordering, which is only half the rule: recording before the guard writes a direction the
+ * window has not acted on, which corrupts the baseline.  The other half, `reconcileFacingWhenIdle`, levels it when the
+ * railway goes idle, and is asserted below.
  *
  * **Why this is checked as an ordering rather than run.**  `followDirectionChanges` is an instance
  * method of the main window and reads three things a test cannot cheaply stand up: a built layout, a
@@ -80,20 +73,11 @@ public class testADirectionChangeIsNotSwallowed
     }
 
     /**
-     * The other half of "no backlog": the baseline is leveled when the railway goes idle.
-     *
-     * The ordering above stops a mid-run change being recorded as acted-on. On its own that is not the
-     * ruling Adam gave - it leaves the pre-run direction in the map, so the first echo after the run
-     * reads a difference and follows a reversal the railway already made. `reconcileFacingWhenIdle` is
-     * what closes that: it brings the baseline level with the live state once nothing is running.
-     *
-     * **Deleting it would leave both methods above green while restoring the backlog**, which is why
-     * this asserts the pair rather than trusting a comment to connect them. Source-level for the same
-     * reason the ordering is: the behavior is a race between an echo and a repaint.
-     *
-     * The exception is asserted too - a turn the railway made at a destination must be WRITTEN before
-     * the leveling wipes the evidence of it, and "levels everything" would silently undo
-     * that.
+     * The other half of "no backlog": the baseline is leveled when the railway goes idle.  `reconcileFacingWhenIdle`
+     * brings it level with the live state once nothing is running; deleting it would leave both methods above green
+     * while restoring the backlog.  Source-level, since the behavior is a race between an echo and a repaint.  The
+     * exception is asserted too: a turn the railway made at a destination must be WRITTEN before the leveling wipes the
+     * evidence of it.
      */
     @Test
     public void testTheBaselineIsLevelledWhenTheRailwayGoesIdle() throws Exception
@@ -103,21 +87,9 @@ public class testADirectionChangeIsNotSwallowed
             + " it half-prevents is back: the pre-run direction stays in the baseline and the first"
             + " echo after the run re-follows a reversal the railway already made (REG8-C4)");
 
-        // INSIDE THE METHOD, not across the file.
-        //
-        // These two offsets were taken with `ui.indexOf` over the whole of TrainControlUI.java, and
-        // `takeReversalsOnArrival()` appears TWICE in it: once in `takeThePendingTurns`, which has
-        // nothing to do with this rule, and once here. `indexOf` returns the first, so the comparison
-        // was between two lines in two different methods and was satisfied by their accident of
-        // position. The ordering INSIDE this method - the whole claim - was never looked at.
-        //
-        // Measured: the drain in `reconcileFacingWhenIdle` was replaced with an empty map, so that no
-        // destination turn reached the graph at all - strictly worse than the ordering defect this
-        // describes - and this class stayed green while
-        // `regression.testTheTurnAtTheDestinationReachesTheDiagram` went red on two of four.
-        //
-        // Scoped the way `testTheRunningGuardComesBeforeTheRecording` below already scopes its own,
-        // which is the idiom this class had and this method did not use.
+        // INSIDE THE METHOD, not across the file: `takeReversalsOnArrival()` appears twice in TrainControlUI.java (also
+        // in `takeThePendingTurns`), so an `indexOf` over the whole file compared lines in two different methods.
+        // Scoped as `testTheRunningGuardComesBeforeTheRecording` below scopes its own.
         String body = SourceOf.declaration("    void reconcileFacingWhenIdle()");
 
         int levels = body.indexOf("lastSeenDirection.put(loc.getName(), loc.goingForward())");

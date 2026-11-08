@@ -18,11 +18,8 @@ import org.traincontrol.automationui.TileGraph.TileKey;
 import org.traincontrol.base.LayoutDiagram;
 
 /**
- * A page's id is its identity, and it survives what happens to other pages: nothing one page does can change another
- * page's id (MT-135).
- *
- * The autonomy setup is keyed by page ID on disk, and ids once were each page's place in a sorted list, so any change
- * to the set of names renumbered other pages and reattached their settings to whatever page took the number.
+ * A page's id is its identity, and it survives what happens to other pages (MT-135): the autonomy setup is keyed by
+ * page ID on disk, and ids were once each page's place in a sorted list, so renaming or deleting renumbered others.
  *
  * @author Adam
  */
@@ -236,11 +233,9 @@ public class testPageIdsAreDurable
     }
 
     /**
-     * A retired id stays retired for longer than one write.
-     *
-     * `next` is derived from the ids present in the FILE, so the write after the one that drops a page would hand its
-     * id to a new page.  The index cannot record the floor itself without a new field in `gleisbild.cs2`, which real
-     * hardware reads, so the autonomy setup passes it in (OB-067).
+     * A retired id stays retired for longer than one write: `next` is derived from the ids in the FILE, so the write
+     * after the one that drops a page would hand its id to a new page.  The index cannot record the floor itself
+     * (`gleisbild.cs2` is read by real hardware), so the autonomy setup passes it in (OB-067).
      */
     @Test
     public void testARetiredIdIsNotHandedOutTwoWritesLater() throws IOException
@@ -293,14 +288,11 @@ public class testPageIdsAreDurable
     }
 
     /**
-     * Every held field is declared, and a save with a page absent loses none of them.
+     * Every held field is declared, and a save with a page absent loses none (OB-067): the held-entries map of field
+     * names and SHAPES is checked by behavior: put something on a page, take its file away, load and save.
      *
-     * The held-entries mechanism (OB-067) is one map of field names and SHAPES, which only behavior can check: put
-     * something on a page, take that page's file away, load and save, and it is all still in the file.
-     *
-     * Each of these fails it: not merging "blockedPoints" back; downgrading `captions` from SQUARE_VALUE to PLAIN
-     * (caught only because the fixture puts a caption on a LOADED page pointing at a station on the absent one);
-     * removing a field from `HELD_FIELDS`.
+     * Each fails it: not merging "blockedPoints" back; downgrading `captions` from SQUARE_VALUE to PLAIN (a caption on
+     * a LOADED page pointing at a station on the absent one); removing a field from `HELD_FIELDS`.
      */
     @Test
     public void testASaveWhileAPageIsAbsentLosesNothingOfIt() throws IOException
@@ -710,13 +702,10 @@ public class testPageIdsAreDurable
     }
 
     /**
-     * The index says which pages a write would drop, counting only SURPRISES (FR-018).
+     * The index says which pages a write would drop, counting only SURPRISES (FR-018): a delete or rename is on
+     * purpose.
      *
-     * A delete and a rename both make a page absent on purpose; asking about those would make the dialog worthless in
-     * the case it fires most often.
-     *
-     * MUTATION: dropping either the `deliberatelyRemoved` or the `renamedFromTo` test from
-     * pagesTheIndexWouldDrop fails this.
+     * MUTATION: dropping either the `deliberatelyRemoved` or the `renamedFromTo` test from pagesTheIndexWouldDrop.
      */
     @Test
     public void testTheIndexSaysWhichPagesAWriteWouldDrop() throws IOException
@@ -796,18 +785,13 @@ public class testPageIdsAreDurable
     }
 
     /**
-     * Told a page is gone for good, the setup lets go of it and of nothing else (FR-018).
+     * Told a page is gone for good, the setup lets go of it and of nothing else (FR-018).  Two absent pages, only one
+     * pruned: (1) an entry on a live page whose VALUE points at the gone page goes too; (2) the OTHER absent page keeps
+     * everything; (3) entries on the gone page go, the live page's own settings stay.
      *
-     * Two absent pages, only one pruned: with one, emptying the whole hold and filtering it give the same file.
-     * Asserted in order:
-     *   1. An entry on a page still here whose VALUE points at the gone page goes too; releasing it into memory would
-     *      put the gone page's id in a page-NAME field.
-     *   2. The OTHER absent page keeps everything.
-     *   3. Entries on the gone page go, and the live page's own settings stay.
-     *
-     * MUTATIONS, each fails this test: checking only the key and not the value leaves the caption behind; clearing the
-     * hold outright rather than filtering it takes the other absent page with it; dropping the `pageNamesWhenWritten`
-     * removal leaves the deleted page reported as merely not loaded, so the operator is asked about it on every save.
+     * MUTATIONS: checking only the key and not the value leaves the caption behind; clearing the hold rather than
+     * filtering takes the other absent page too; dropping the `pageNamesWhenWritten` removal leaves the deleted page
+     * reported as not loaded.
      */
     @Test
     public void testAPageSaidToBeGoneStopsBeingHeld() throws IOException
@@ -901,13 +885,10 @@ public class testPageIdsAreDurable
     }
 
     /**
-     * Two pages cannot come out of one write holding the same id.
+     * Two pages cannot come out of one write holding the same id: `setPageIds` inverts name-to-id so the second page
+     * silently wins, and `pageIdConflicts` fires only when an id's name changed.  The later claimant loses.
      *
-     * Nothing compared them: `setPageIds` inverts name-to-id so the second page silently wins the number, and
-     * `pageIdConflicts` fires only when an id's name changed.  The later claimant loses; refusing the write would
-     * leave a page that cannot be saved.
-     *
-     * MUTATION: removing the `issued` gate from the allocation loop fails this test.
+     * MUTATION: removing the `issued` gate from the allocation loop.
      */
     @Test
     public void testTwoPagesCannotShareAnId() throws IOException
@@ -942,16 +923,12 @@ public class testPageIdsAreDurable
     }
 
     /**
-     * A deleted page stops being reported as one that merely did not load.
+     * A deleted page stops being reported as one that merely did not load: unless `deletePage` clears the setup's
+     * record of its name, `pagesNotLoaded` names it for ever and every editor save warns.  FR-018 cannot clear it (a
+     * deleted page is not in the index).
      *
-     * The setup's record of what that page id was CALLED survives every reload, so unless `deletePage` clears it,
-     * `pagesNotLoaded` names the deleted page for ever, `AutonomySession.pagesSafeToJudge` stays false, and every
-     * editor save raises a warning about it.  FR-018 cannot clear it: a deleted page is not in the index.
-     *
-     * MUTATION: removing the `pageNameToId` / `pageIdToName` removals from `deletePage` fails this.
-     *
-     * Not the `pageNamesWhenWritten` line: it is inert here, since `sharedFields` rebuilds the "pages" map from the
-     * live index.
+     * MUTATION: removing the `pageNameToId` / `pageIdToName` removals from `deletePage`.  (Not the
+     * `pageNamesWhenWritten` line: inert here, `sharedFields` rebuilds "pages" from the live index.)
      */
     @Test
     public void testADeletedPageIsNotReportedAsMerelyMissing() throws IOException
@@ -989,13 +966,10 @@ public class testPageIdsAreDurable
     }
 
     /**
-     * A page named after another page's id keeps its own held settings when that other page goes.
+     * A page named after another page's id keeps its own held settings when that other page goes: `forgetHeldPages`
+     * matches held keys against ids, not NAMES (declaring the page NAMED "5" gone would delete page ID 5's entries).
      *
-     * `forgetHeldPages` matches held keys against the ids written for the pages, not their NAMES: declaring the page
-     * NAMED "5" gone would delete every held entry of the page with ID 5, and names can never match a legitimate held
-     * key (`pageIsHere` answers true for any bare unrecognized name).
-     *
-     * MUTATION: putting the page names back into `parts` fails this test.
+     * MUTATION: putting the page names back into `parts`.
      */
     @Test
     public void testDeletingAPageNamedAfterAnIdLeavesThatIdAlone() throws IOException

@@ -1201,9 +1201,8 @@ public class testALegacyImportBringsWhatItCanAndSaysWhatItLeaves extends Autonom
     }
     /**
      * The import NAMES the signals it will no longer drive, rather than counting them: the new model drives a signal
-     * only where the operator pairs it with a station.  Named, not compared, because deciding which is already paired
-     * needs the reduction the import is about to replace; naming one already paired costs a glance, omitting one leaves
-     * a signal that lies for as long as the railway runs.
+     * only where the operator pairs it with a station.  Naming one already paired costs a glance; omitting one leaves a
+     * signal that lies for as long as the railway runs.
      *
      * MUTATION: removing the signal block fails the second assertion; the first is the control that
      * stops it passing by reporting nothing at all.
@@ -1307,9 +1306,9 @@ public class testALegacyImportBringsWhatItCanAndSaysWhatItLeaves extends Autonom
             "a command with no acc at all");
     }
     /**
-     * A legacy import says it is leaving hand-written locks behind.  `GraphReducer.deriveLocks` reproduces locks from
-     * shared tiles but not the conservative kind between edges that share none, after which two trains may move at once
-     * where the file forbade it.  Counted, not compared: naming locks the geometry already covers errs the safe way.
+     * A legacy import says it is leaving hand-written locks behind: `GraphReducer.deriveLocks` does not reproduce the
+     * conservative kind between edges that share no tile.  Counted, not compared: naming locks the geometry already
+     * covers errs the safe way.
      *
      * MUTATION: removing the `withLocks` block from `whatALegacyImportLeaves` fails the second
      * assertion, and the first is what stops that passing by reporting nothing at all.
@@ -1353,8 +1352,7 @@ public class testALegacyImportBringsWhatItCanAndSaysWhatItLeaves extends Autonom
     }
     /**
      * A modern export coming back through the legacy door is spotted by each of its three keys (`detectImportFormat`
-     * calls any file whose `points` is an ARRAY legacy).  Each key is asserted separately: a test of only
-     * `autoDestination` would pass on a wrong key name.
+     * calls any file whose `points` is an ARRAY legacy), each asserted separately.
      *
      * MUTATION: renaming any of the three keys in `whatALegacyImportLeaves` fails its own assertion
      * here.

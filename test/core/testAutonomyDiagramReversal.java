@@ -25,35 +25,25 @@ import org.traincontrol.base.LayoutDiagramComponent.componentType;
 import org.traincontrol.marklin.MarklinAccessory;
 
 /**
- * Turning round: one sensor, two things a train may do there.
- *
- * The shape under test is taken from the sample layout.  BottomMainC and BottomMainCTerm
- * are both stations and both s88 4; both are entered from BottomMainCPre; one leaves to BottomMainPost carrying on, the
- * other to TunnelReversePre having turned round.  A single Point per sensor cannot say that, since arriving from the
- * west and going on east is the same edge set as arriving from the west and backing out west again.
- *
- * The track built here is that junction:
+ * Turning round: one sensor, two things a train may do there.  From the sample layout: BottomMainC and BottomMainCTerm
+ * are both stations and both s88 4, both entered from BottomMainCPre; one leaves to BottomMainPost carrying on, the
+ * other to TunnelReversePre having turned round.  A single Point per sensor cannot say that.
  *
  *     F11 --- x --- SW --- x --- F4 --- x --- F12        (the running line, west to east)
  *                    |
  *                   F18                                  (a siding, trailing off behind F4)
  *
- * The switch faces east, so a train running WEST out of F4 can take the siding, and one running east out of F11
- * cannot.  Reaching F18 from F11 therefore means stopping at F4 and turning round.
+ * The switch faces east, so a train running WEST out of F4 can take the siding and one running east out of F11
+ * cannot: reaching F18 from F11 means stopping at F4 and turning round.
  *
  * @author Adam
  */
 public class testAutonomyDiagramReversal
 {
     /**
-     * Nothing marked, and the impossible move is already gone.
-     *
-     * With one Point per sensor, F11 -> F4 and F4 -> F18 both existed, so a path to the siding was offered although the
-     * second leg leaves by the side the first arrived at.  Splitting every square by arrival side is what removes it,
-     * so the marking is not what fixes it.
-     *
-     * Running west, the siding is straight ahead and needs no reversal at all; running east it is
-     * behind the train.  Two copies, and only one of them can reach it.
+     * Nothing marked, and the impossible move is already gone: with one Point per sensor, F11 -> F4 and F4 -> F18 both
+     * existed though the second leg leaves by the side the first arrived at.  Splitting by arrival side removes it, not
+     * the marking.  Running west the siding is straight ahead; running east it is behind the train.
      */
     @Test
     public void testWithoutTheMarkTheReversalIsSimplyNotOffered() throws IOException
@@ -334,12 +324,9 @@ public class testAutonomyDiagramReversal
     }
 
     /**
-     * Marking nothing changes nothing.  The split is opt-in per tile, so a configuration that uses none of this comes
-     * out byte for byte as an unconfigured builder's.
-     *
-     * The pair, not the half: an empty mark set is already the field's initializer, so asserting only that could not
-     * fail.  Marking a real tile shows the comparison is live: if the builder ignored the set entirely, the first
-     * assertion would fail and the second go on passing.
+     * Marking nothing changes nothing: the split is opt-in per tile, so an unconfigured configuration comes out byte
+     * for byte as an unconfigured builder's.  The pair, not the half (an empty mark set is already the initializer);
+     * marking a real tile shows the comparison is live.
      */
     @Test
     public void testAnUnmarkedLayoutIsUntouched() throws IOException
@@ -444,12 +431,9 @@ public class testAutonomyDiagramReversal
     // the track
 
     /**
-     * The running line with a siding trailing off behind the junction sensor.
-     *
-     * SWITCH_LEFT at orientation 0 has its toe south, straight ahead north and its branch west; ports rotate by (4 -
-     * orientation) quarter turns clockwise (see TilePorts.ports), so orientation 1 puts the toe EAST, straight west,
-     * branch south.  A train running west out of F4 meets the toe and may diverge into the siding, while a train
-     * running east out of F11 meets the same switch trailing, so the siding is reachable only by turning round at F4.
+     * The running line with a siding trailing off behind the junction sensor.  SWITCH_LEFT at orientation 1 puts the
+     * toe EAST, straight west, branch south (ports rotate by (4 - orientation) quarter turns, see TilePorts.ports), so
+     * the siding is reachable only by turning round at F4.
      */
     private LayoutDiagram junction() throws IOException
     {

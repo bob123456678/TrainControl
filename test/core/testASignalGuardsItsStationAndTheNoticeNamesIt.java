@@ -113,13 +113,11 @@ public class testASignalGuardsItsStationAndTheNoticeNamesIt extends AutonomySess
     }
 
     /**
-     * A signal on an excluded page is still reported gone.
+     * A signal on an excluded page is still reported gone: a pairing whose station is on a switched-off page is not in
+     * play, but `protectingSignalNames` resolves signals through the graph, which does not carry an excluded page, so
+     * the signal really is dropped and the platform unprotected.
      *
-     * The two sides of a pairing are not symmetric: a pairing whose station is on a switched-off page is not in play,
-     * but `protectingSignalNames` resolves signals through the graph, which does not carry an excluded page, so a
-     * signal on one really is dropped from the built configuration and the platform really is unprotected.
-     *
-     * MUTATION this catches: putting the signal-side `continue` back.
+     * MUTATION: putting the signal-side `continue` back.
      */
     @Test
     public void testASignalOnAnExcludedPageIsStillReportedGone() throws Exception
@@ -717,13 +715,11 @@ public class testASignalGuardsItsStationAndTheNoticeNamesIt extends AutonomySess
     }
 
     /**
-     * Clicking a notice copies its text to the clipboard as plain text, for sharing (MT-767).
+     * Clicking a notice copies its text to the clipboard as plain text (MT-767).  Read back after a sentinel is put
+     * there, so a copy that never happens fails.  Windows opens the clipboard to one program at a time, so each use
+     * waits and a dropped copy is made again; skipped only when another program holds it for the whole wait.
      *
-     * Read back after a sentinel is put there first, so a copy that never happens fails.  Windows opens the clipboard
-     * to one program at a time, so each use waits for it and a click whose copy was dropped on a busy clipboard is made
-     * again; skipped only when another program holds the clipboard for the whole wait.
-     *
-     * MUTATION: take the copy out of the list's selection listener, and this fails.
+     * MUTATION: take the copy out of the list's selection listener.
      */
     @Test
     public void testClickingANoticeCopiesItsTextToTheClipboard() throws Exception

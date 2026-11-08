@@ -93,11 +93,9 @@ public class testAHandSendIsRefusedWhileTheSetupIsBroken
 
     /**
      * The two run doors that move trains without Start - Execute Timetable and Return Home - ask it too, before they
-     * gray anything or dispatch: a timetable run and a Return Home run drive over the railway the same setup built, and
-     * with the graph broken both drove trains over the stale railway the operator had just been told "cannot be used
-     * yet".
+     * gray anything or dispatch: with the graph broken both drove trains over the stale railway.
      *
-     * MUTATION: take the refusal out of either run door, and this fails naming it.
+     * MUTATION: take the refusal out of either run door.
      */
     @Test
     public void testTheRunDoorsAskItToo() throws Exception
@@ -289,19 +287,13 @@ public class testAHandSendIsRefusedWhileTheSetupIsBroken
     }
 
     /**
-     * A setup that is there and will not read is said to be unreadable, with the reason - not called a layout with no
-     * folder to keep one in.
+     * A setup that is there and will not read is said to be unreadable, with the reason, not called a layout with no
+     * folder to keep one in: `getAutonomySession` once caught every failure and returned null, so an unparsable
+     * setup.json, one from a newer TrainControl, or an unreadable configuration all read as "needs a local layout
+     * folder".  A real window and its Autonomy menu, on a sandboxed copy whose setup.json is not JSON; nothing is
+     * pressed, and the file is as it was (an unreadable setup may not be written over).
      *
-     * `getAutonomySession` caught every failure to open the setup and handed back null, which every door read as "this
-     * layout cannot hold a setup": the editor's refusal said it needs a local layout folder, on a layout stored on this
-     * computer.  A setup.json that will not parse, one written by a newer TrainControl and a configuration that will
-     * not read all arrived that way, with the reason only in the log.
-     *
-     * Asked of a real window and its Autonomy menu, on a sandboxed copy whose setup.json is not JSON.  Nothing is
-     * pressed, so no dialog is raised; and the file is as it was afterwards, since an unreadable setup may not be
-     * written over.
-     *
-     * MUTATION: forget the reason in `getAutonomySession`'s catch, and this fails.
+     * MUTATION: forget the reason in `getAutonomySession`'s catch.
      */
     @Test
     public void testASetupThatWillNotReadIsNotCalledMissing() throws Exception
@@ -404,11 +396,10 @@ public class testAHandSendIsRefusedWhileTheSetupIsBroken
 
     /**
      * The right-click menu asks the setup once where Start is offered: the Return Home item is handed the hand doors'
-     * sentence, worked out only where Start is grayed.  `AutonomySession.check()` is not cached and the menu is built
-     * on the event thread; the item asked the whole check twice more on every right-click.  Start offered means the
-     * setup has no errors, so the sentence is then null without asking.
+     * sentence, worked out only where Start is grayed (`AutonomySession.check()` is not cached and the menu is built on
+     * the event thread).  Start offered means no errors, so the sentence is null without asking.
      *
-     * MUTATION: have the item ask the setup itself again, and this fails.
+     * MUTATION: have the item ask the setup itself again.
      */
     @Test
     public void testTheMenuAsksTheSetupOnceWhereStartIsOffered() throws Exception

@@ -23,14 +23,14 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
  * (`followDirectionChanges`), which a simulation sends back only if it echoes packets (Adam: *"You don't need to add
  * that workaround - we can just require the test to echo packets."*).
  *
- * On the frozen `live-snapshot`, at BottomMainA, with this class's own train standing there facing east.  A reversal
- * made while a route runs with autonomy idle is followed once the route has finished; two reversals leave the facing
- * as it was.  A followed turn turns the train's icon too (MT-759).  While autonomy or Return Home runs, a direction
- * command from the throttle or the Central Station changes neither.
+ * On the frozen `live-snapshot`, at BottomMainA, this class's own train facing east.  A reversal made while a route
+ * runs with autonomy idle is followed once the route has finished; two reversals leave the facing as it was; a followed
+ * turn turns the icon too (MT-759).  While autonomy or Return Home runs, a direction command from the throttle or the
+ * Central Station changes neither.
  *
- * MUTATION: take `followDirectionChanges` out of `TrainControlUI.repaintLoc`, and this fails.  Take the
- * `routeFinished` call out of `MarklinRoute`, or `turnsHeldByARoute` out of `followTheTurn`, and the route tests fail.
- * Take the `refreshUI` out of `AutonomySession.moveOntoFacingCopy`, and the icon is left facing east in three.
+ * MUTATION: take `followDirectionChanges` out of `TrainControlUI.repaintLoc`; the `routeFinished` call out of
+ * `MarklinRoute` or `turnsHeldByARoute` out of `followTheTurn` (route tests); the `refreshUI` out of
+ * `AutonomySession.moveOntoFacingCopy` (icon left facing east in three).
  *
  * @author Adam
  */

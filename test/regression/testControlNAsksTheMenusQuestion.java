@@ -157,11 +157,8 @@ public class testControlNAsksTheMenusQuestion
 
     /**
      * A station square showing another station's only name asks before it shows its own, and No leaves that name where
-     * it is; Yes still shows its own.
-     *
-     * Otherwise the other station is named nowhere on the diagram, which the setup's checks call an error
-     * (`AutonomyChecks.checkStationLabels`).  Driven through Control+N and answered through
-     * `answerTakeAnotherNameForTests`, so no dialog is put on screen.
+     * it is; Yes still shows its own.  Otherwise the other station is named nowhere, which the setup's checks call an
+     * error (`AutonomyChecks.checkStationLabels`).  Answered through `answerTakeAnotherNameForTests`, so no dialog.
      *
      * MUTATION: drop the question from `promptStationLabel`'s station branch, and the No half fails.
      */

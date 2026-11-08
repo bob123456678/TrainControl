@@ -18,21 +18,16 @@ import org.traincontrol.base.Locomotive;
 
 /**
  * A tail lying across one road of a switch closes the other road, which is a different Edge.
- *
- * `Layout.isPathClear` refuses a path over an edge a standing train's tail covers, and then over any edge that SHARES
+ * `Layout.isPathClear` refuses a path over an edge a standing train's tail covers, then over any edge that SHARES
  * METAL with a covered one.  Adam: EN57-203 *"is allowed to traverse a blocked/shaded switch (60) to get from
  * TunnelLeftPark to BottomMainC, even though it should not be possible."*  Coverage is recorded per EDGE, so the other
  * pair of a switch's arms was never in the covered set.  `testATrainCoversTheTrackBehindIt` exercises only the DIRECT
- * hit and `testTwoRoutesShareOneSwitch` a route HOLD (`Edge.isOccupied`), a reservation a standing train does not take
- * out; nothing went red when the shared-metal branch was removed.
+ * hit and `testTwoRoutesShareOneSwitch` a route HOLD; nothing went red when the shared-metal branch was removed.
  *
- * It has to be this fixture: the relation is derived by `GraphReducer` from SHARED TILES, so it needs a turnout, and
- * `single-switch` is the only railway in the library that has one.
- *
- * The controls are the point: a refusal proves nothing on its own, since the railway refuses paths for a dozen
- * reasons.  So on the same built railway the branch road is NOT itself covered, the covered edge really is the main
- * road, the two are lock partners in both directions, and the identical path is CLEARED the moment the tail is taken
- * away.
+ * The fixture is `single-switch`, the only railway with a turnout (`GraphReducer` derives the relation from SHARED
+ * TILES).  The controls are the point, since the railway refuses paths for a dozen reasons: the branch road is NOT
+ * itself covered, the covered edge really is the main road, the two are lock partners both ways, and the identical
+ * path is CLEARED the moment the tail is taken away.
  *
  * MUTATION: in `Layout.isPathClear`, change `if (lyingAcross == null)` above the `for (Edge sharing :
  * e.getLockEdges())` loop to `if (lyingAcross == null && Boolean.parseBoolean("false"))`.

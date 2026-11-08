@@ -21,21 +21,15 @@ import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.util.I18n;
 
 /**
- * Every language fits in the window it was translated for.
+ * Every language fits in the window it was translated for: `testMessageBundles` checks that strings are CORRECT,
+ * nothing else checks their LENGTH (German and Polish run half again as long as English).  A Swing component narrower
+ * than its text draws it clipped, so one comparison per component, on a window laid out at the size the form declares.
  *
- * `testMessageBundles` checks that strings are CORRECT; nothing else checks their LENGTH, and German and Polish
- * routinely run half again as long as the English. A Swing component narrower than the text it holds draws it clipped
- * with an ellipsis, so this makes one comparison per component, on a window laid out at the size the form declares.
+ * ONE sandbox around the whole class, fingerprinting `cs2_sample_layout` and failing on a single moved byte: a sandbox
+ * per window let a disposed window's scheduled work write to Adam's real railway.
  *
- * ONE sandbox around the whole class, and this test fingerprints `cs2_sample_layout` itself and fails if a single byte
- * moved: a sandbox opened per window let work scheduled by a disposed window write to Adam's real railway after the
- * preference was put back.
- *
- * Cannot see: panels that fill from a railway (the window has no model), and a container that overflows (a panel wider
- * than the window, or a component past its parent's edge; scroll panes legitimately hold wider content). The tab titles
- * are IMAGES, so they read the same in every language and nothing here measures them. Of the text-bearing components
- * inspected, only the ones the locale changes say anything about translation length; `LOCALISED_FLOOR` keeps that count
- * from quietly becoming none.
+ * Cannot see: panels filled from a railway, containers that overflow (scroll panes legitimately hold wider content),
+ * and the tab titles (IMAGES).  `LOCALISED_FLOOR` keeps the count of locale-changed components from becoming none.
  *
  * @author Adam
  */
@@ -75,12 +69,11 @@ public class testEveryLanguageFits
     }
 
     /**
-     * The rule can fail: the eight-language walk cannot carry its own control (a real string could only be made too
-     * long by editing a bundle), so the RULE is controlled here, on a component this method owns: a short string in 80
-     * pixels fits, the same label with a long one does not.
+     * The rule can fail: the eight-language walk cannot carry its own control, so the RULE is controlled on a component
+     * this method owns: a short string in 80 pixels fits, the same label with a long one does not.
      *
-     * MUTATION: comparing `getPreferredSize().width` against `getWidth()` again fails the second assertion, because
-     * `setPreferredSize` is how the fixture fixes the width and that is the case that comparison cannot see.
+     * MUTATION: comparing `getPreferredSize().width` against `getWidth()` again fails the second assertion
+     * (`setPreferredSize` is how the fixture fixes the width, which that comparison cannot see).
      */
     @Test
     public void testTheClippingRuleCanActuallyFail()
@@ -402,12 +395,10 @@ public class testEveryLanguageFits
     }
 
     /**
-     * How wide this component's TEXT actually is, rather than how wide the component asked to be.  Comparing
-     * `getPreferredSize().width` against `getWidth()` cannot see a component whose preferred size was SET
-     * (`TrainControlUI` does so on 100 labels and buttons) or a free layout that grants the preferred width so the
-     * overflow lands on the panel.  HTML text is left to the old rule: a markup label wraps in a view hierarchy, so
-     * Swing's own preferred size is the best number available.  Returns the width the text needs, including insets,
-     * icon and gap.
+     * How wide this component's TEXT actually is, not how wide it asked to be: `getPreferredSize().width` cannot see a
+     * component whose preferred size was SET (`TrainControlUI` does on 100 labels and buttons).  HTML text keeps the
+     * old rule (a markup label wraps in a view hierarchy).  Returns the width the text needs, with insets, icon and
+     * gap.
      */
     private static int requiredWidth(Component c, String text)
     {

@@ -45,9 +45,9 @@ public class testTheImportDoorReadsAnOldFile
 
     /**
      * An old autonomy.json imported into a new configuration: the message says it placed his four trains (MT-491), the
-     * log says the 176 pieces of track it ran one way were left as the diagram has them (MT-501), ParkingTrack7 arrives
-     * as a station trains can stop at but autonomy does not choose (MT-502), Load Autonomy is as it was (MT-582), and
-     * the configuration in use is untouched.
+     * log says the 176 pieces of one-way track were left as the diagram has them (MT-501), ParkingTrack7 arrives as a
+     * station trains can stop at but autonomy does not choose (MT-502), Load Autonomy is as it was (MT-582), and the
+     * configuration in use is untouched.
      *
      * MUTATION: import into the configuration in use, untick Load Autonomy, carry the old file's directions, or place
      * the trains facing a guessed way, and this fails.
@@ -187,9 +187,8 @@ public class testTheImportDoorReadsAnOldFile
     }
 
     /**
-     * The import's report is its counts and where they went, with what it could not do in a scrolling Details list
-     * under them and in the log, in a popup no wider than about 640 px (his MT-491 file made a report of over 100
-     * words).
+     * The import's report is its counts and where they went, with what it could not do in a scrolling Details list and
+     * in the log, in a popup no wider than about 640 px.
      *
      * MUTATION: put the left-behind lines back into the report's text, and this fails.
      */
@@ -410,9 +409,7 @@ public class testTheImportDoorReadsAnOldFile
 
     /**
      * A second import into a configuration where one of its trains has been moved since does not stand that train on
-     * two squares: it stays where it was moved to, and the message says it was not placed.  Otherwise the square the
-     * train had left reads as a gap, and a configuration naming one train twice is refused whole
-     * (`checkDuplicateLocomotive`).
+     * two squares: it stays where it was moved to, and the message says it was not placed.
      *
      * MUTATION: start the one-place check empty again, and this fails.
      */
@@ -516,7 +513,7 @@ public class testTheImportDoorReadsAnOldFile
 
     /**
      * An old file the import cannot finish reading leaves the setup as it was: no configuration made of it, the one in
-     * use still chosen, and nothing saved.  Otherwise the next start would resume the half-imported configuration.
+     * use still chosen, and nothing saved.
      *
      * MUTATION: save before the file is read to its end, or leave the new configuration chosen on a failure, and this
      * fails.
@@ -581,9 +578,8 @@ public class testTheImportDoorReadsAnOldFile
 
     /**
      * An import while autonomy runs is refused before it asks for anything, whatever it would be imported into, as
-     * Delete beside it is (Adam: *"There should be no setup edit possible during a run"*).  Into a configuration not in
-     * use it would change shared names the next fold reads the running railway through, and the reload it asks may be
-     * declined.  The trains are "moving" as a Return Home in progress makes them: the flag the window asks.
+     * Delete beside it is (Adam: *"There should be no setup edit possible during a run"*).  The trains are "moving" as
+     * a Return Home in progress makes them: the flag the window asks.
      *
      * MUTATION: let an import into another configuration in while autonomy runs, and this fails.
      */
@@ -648,8 +644,7 @@ public class testTheImportDoorReadsAnOldFile
 
     /**
      * A bundle imported into the configuration in use, by its name, is refused and changes nothing: it is imported
-     * under another name and chosen from there (OB-183).  An old file under that name is not refused: it fills gaps and
-     * places no train, as the claims below say.
+     * under another name and chosen from there (OB-183).  An old file under that name is not refused (next claim).
      *
      * MUTATION: import into the configuration in use again, or refuse and then ask to replace it anyway, and
      * this fails.
@@ -719,8 +714,7 @@ public class testTheImportDoorReadsAnOldFile
 
     /**
      * An old file imported into the configuration in use, by its name, fills what it does not have and places none of
-     * the file's trains: where a train stands is the running railway's to say (OB-183).  The question asked says the
-     * file's trains are not placed.
+     * the file's trains: where a train stands is the running railway's to say (OB-183).
      *
      * MUTATION: refuse the name again, place the file's trains on the running railway, leave the capture to the reload,
      * or ask the question any configuration is asked, and this fails.
@@ -1133,8 +1127,7 @@ public class testTheImportDoorReadsAnOldFile
 
     /**
      * Reloading the configuration running while a declined setup edit waits keeps every train where the run left it,
-     * and the edit is then carried.  Rebuilt from the setup alone, a moved train would be modeled on the square it had
-     * left.
+     * and the edit is then carried.
      *
      * MUTATION: reload without carrying the trains, or leave the flag up, and this fails.
      */
@@ -1222,7 +1215,7 @@ public class testTheImportDoorReadsAnOldFile
 
     /**
      * The reload after a track-diagram edit or a page operation, while a declined setup edit waits, keeps every train
-     * where the run left it.  That reset forgets the configuration's name first, so carrying must not depend on a named
+     * where the run left it.  The reset forgets the configuration's name first, so carrying must not depend on a named
      * load.
      *
      * MUTATION: carry the trains only for a load that names the configuration running, and this fails.
@@ -1351,8 +1344,8 @@ public class testTheImportDoorReadsAnOldFile
 
     /**
      * A reload of the configuration running, confirmed while autonomy is busy and a declined setup edit waits, replaces
-     * the running layout with every train carried across (door c).  It must not go to the editor doors' rebuild, which
-     * does nothing while autonomy reads busy.  Busy as a Return Home in progress makes it: the flag the window asks.
+     * the running layout with every train carried across (door c), not through the editor doors' rebuild, which does
+     * nothing while busy.
      *
      * MUTATION: send the reload through a door that refuses while busy, and this fails.
      */
@@ -1477,9 +1470,8 @@ public class testTheImportDoorReadsAnOldFile
     }
 
     /**
-     * Saving a route while autonomy runs leaves the run alone.  A route is no page of the diagram, so the route
-     * editor's Save must not complete a diagram edit: its reset forgets the configuration running and its reload asks
-     * to abandon the run.  Running as `isRunning` reads it, set after the move since a move is refused while running.
+     * Saving a route while autonomy runs leaves the run alone: a route is no page of the diagram, so the route
+     * editor's Save must not complete a diagram edit.  Running as `isRunning` reads it, set after the move.
      *
      * MUTATION: complete a diagram edit after the route editor's Save, and this fails.
      */
@@ -1594,10 +1586,8 @@ public class testTheImportDoorReadsAnOldFile
 
     /**
      * A reload the operator confirms while a train is under way is made, with that train where it set off.  A layout
-     * holding a path is folded with each train under way written on one point, so the Auto tab's settings and a
-     * captured timetable are kept too, as are the destination turns the railway has made and not yet written down.
-     * Folding every point's occupant would place the train on each square of its path, and the rebuild would be
-     * refused.
+     * holding a path is folded with each train under way written on one point, so the Auto tab's settings, a captured
+     * timetable and the destination turns not yet written down are kept too.
      *
      * MUTATION: fold each point's occupant, read each point's occupant, or leave the turns on the old railway, and this
      * fails.
@@ -1758,8 +1748,7 @@ public class testTheImportDoorReadsAnOldFile
 
     /**
      * Choosing another configuration while a train is under way leaves the configuration running with that train on one
-     * square, where it set off.  Folding a layout that holds a path would place it on every square of its path, and the
-     * configuration would then refuse to load.
+     * square, where it set off.
      *
      * MUTATION: fold a layout that holds a path, and this fails.
      */
@@ -1836,8 +1825,8 @@ public class testTheImportDoorReadsAnOldFile
 
     /**
      * Choosing another configuration while a setup edit waits, where the configuration running cannot be used with that
-     * edit, is refused and says why.  Here the edit places a train twice, so the configuration running stays loaded
-     * with its errors.  The choice must not go ahead, or the flag would stay up over the configuration chosen.
+     * edit, is refused and says why: the configuration running stays loaded with its errors and the flag does not stay
+     * up over the configuration chosen.
      *
      * MUTATION: load the configuration chosen whether or not the one running was carried, and this fails.
      */
@@ -1953,9 +1942,8 @@ public class testTheImportDoorReadsAnOldFile
 
     /**
      * A switch of railway forgets the railway it leaves: the flag a declined edit raised, and the name of the
-     * configuration the reset forgot.  Choosing the folder already in use reloads the same railway and forgets nothing.
-     * Driven through `initializeTrackDiagram`: first over the same folder, then over a source named differently, then
-     * back to the first.
+     * configuration the reset forgot.  Choosing the folder already in use forgets nothing.  Driven through
+     * `initializeTrackDiagram`: the same folder, a source named differently, then back.
      *
      * MUTATION: forget the railway on every switch, or on none, or leave the source switched to unrecorded, and this
      * fails.
@@ -2080,9 +2068,9 @@ public class testTheImportDoorReadsAnOldFile
     }
 
     /**
-     * Unload retires the railway it unloads: a train its thread was driving, stopped by Unload's Yes between two
-     * sensors, is not driven on at the next one.  The refresh that railway fires as its last thread ends builds no
-     * empty railway: asking the model for its layout makes one, and `hasAutoLayout` then answers yes about nothing.
+     * Unload retires the railway it unloads: a train its thread was driving is not driven on at the next sensor, and
+     * the refresh the railway fires as its last thread ends builds no empty railway (`hasAutoLayout` would answer yes
+     * about nothing).
      *
      * MUTATION: drop the railway at Unload without retiring it, or ask `getAutoLayout` for the Return Home button's
      * layout, and this fails.
@@ -2195,7 +2183,7 @@ public class testTheImportDoorReadsAnOldFile
 
     /**
      * Unload forgets the railway it unloads: the flag, and the name the reset forgot.  Nothing then builds an empty
-     * railway, as asking the model for its layout would, so `hasAutoLayout` does not answer yes about nothing.
+     * railway, so `hasAutoLayout` does not answer yes about nothing.
      *
      * MUTATION: leave the flag up at Unload, or ask `getAutoLayout` for the layout in the panel's list or before the
      * carry, and this fails.
@@ -2325,10 +2313,8 @@ public class testTheImportDoorReadsAnOldFile
     }
 
     /**
-     * Stop Using Autonomy keeps what the run did: the configuration loaded again has a train the run moved where it was
-     * moved, the Auto tab's settings as they were, and a train under way at Unload once, where it set off.  Unload
-     * folds before it clears the model; cleared first, the next load would build every train back where the file had
-     * it.
+     * Stop Using Autonomy keeps what the run did: a train the run moved where it was moved, the Auto tab's settings,
+     * and a train under way once, where it set off.  Unload folds before it clears the model.
      *
      * MUTATION: leave Unload's fold out, or fold each point's occupant, and this fails.
      */
@@ -2406,9 +2392,8 @@ public class testTheImportDoorReadsAnOldFile
     }
 
     /**
-     * A reload confirmed while Return Home runs keeps the configuration's own timetable.  Return Home borrows the
-     * timetable for its plan; the fold a reload makes with a train under way must not write that plan into the
-     * configuration.
+     * A reload confirmed while Return Home runs keeps the configuration's own timetable: the fold must not write
+     * Return Home's borrowed plan into it.
      *
      * MUTATION: fold the timetable the railway holds, and this fails.
      */
@@ -2489,9 +2474,8 @@ public class testTheImportDoorReadsAnOldFile
 
     /**
      * The folder the Central Station's layout is downloaded into is the source a later switch compares with.  The
-     * Download door never reaches `initializeTrackDiagram`, so it must record the source itself: otherwise choosing
-     * that folder again reads as a switch to another railway and every train the run moved stands back where it set
-     * off.
+     * Download door never reaches `initializeTrackDiagram`, so it must record the source itself, or choosing that
+     * folder again reads as a switch and every moved train stands back where it set off.
      *
      * MUTATION: leave the door's source unrecorded, and this fails.
      */
@@ -2567,9 +2551,8 @@ public class testTheImportDoorReadsAnOldFile
     }
 
     /**
-     * Stop Using Autonomy while a declined edit waits keeps where the trains stand, and the edit.  Its fold would take
-     * the edit away, so the trains must be kept another way: with nothing, the next load builds every moved train back
-     * where the file had it.
+     * Stop Using Autonomy while a declined edit waits keeps where the trains stand, and the edit: its fold would take
+     * the edit away, so the trains must be kept another way.
      *
      * MUTATION: keep nothing at Unload while an edit waits, or fold the whole running layout then, and this fails.
      */
@@ -2628,8 +2611,7 @@ public class testTheImportDoorReadsAnOldFile
 
     /**
      * A turn the railway owes when Stop Using Autonomy is confirmed during a run is written into the configuration it
-     * leaves: the train faces the way it came in (OB-189).  Turns are written only while the railway is idle, so Unload
-     * must not drop the owed ones with the railway.
+     * leaves: the train faces the way it came in (OB-189).
      *
      * MUTATION: leave the turns on the railway Unload drops, and this fails.
      */
@@ -2837,8 +2819,7 @@ public class testTheImportDoorReadsAnOldFile
     /**
      * A click on a train drawn on the diagram is a click on the station it stands on, to Test a Path and to Why Not
      * Moving? (OB-354).  Adam: *"if clicking on a locomotive in test a path / why not moving, make it register a click
-     * on the station."*  The train is drawn over the station's caption, which keeps a left click to itself, so a click
-     * on the train must not stop at the caption.
+     * on the station."*
      *
      * MUTATION: take the click where it lands, and this fails.
      */
@@ -3178,10 +3159,9 @@ public class testTheImportDoorReadsAnOldFile
     }
 
     /**
-     * MT-779, as the user does it: through the Autonomy menu's own items and dialogs, on a sandbox copy of the railway:
-     * Export, Import that file under a new name, Import the old 2.7.4c file under another, Import it again and answer
-     * Yes, choose each imported configuration, delete both under Manage, and choose your own again.  Yours stays in
-     * use.
+     * MT-779, as the user does it, through the Autonomy menu's own items and dialogs: Export, Import that file under a
+     * new name, Import the old 2.7.4c file under another, Import it again and answer Yes, choose each imported
+     * configuration, delete both under Manage, and choose your own again.  Yours stays in use.
      *
      * MUTATION: make an import switch to the configuration it brought in, drop the sentence saying which configuration
      * the old file went into, say something else for a bundle, write an empty file at Export, or have Delete take the
@@ -3354,8 +3334,8 @@ public class testTheImportDoorReadsAnOldFile
     }
 
     /**
-     * The Import... item of the Configuration menu, opened at rest and clicked once autonomy runs, refuses and says
-     * what to do instead: nothing is asked or imported, and the menu opened again grays the submenu that holds it.
+     * The Import... item of the Configuration menu, clicked once autonomy runs, refuses and says what to do instead:
+     * nothing is asked or imported, and the menu opened again grays the submenu that holds it.
      *
      * MUTATION: drop the refusal from Import, or leave the Configuration submenu live while autonomy runs, and this
      * fails.
@@ -3561,9 +3541,8 @@ public class testTheImportDoorReadsAnOldFile
     }
 
     /**
-     * Writing the turns the railway owes during a run leaves a train that turned and has set off again on its path.
-     * Its locked path records it on its start, so a write that took it for standing there would sweep it off every
-     * other point of its path.
+     * Writing the turns the railway owes during a run leaves a train that turned and has set off again on its path
+     * (its locked path records it on its start).
      *
      * MUTATION: write a turn for a train under way, and this fails.
      */
@@ -3704,9 +3683,8 @@ public class testTheImportDoorReadsAnOldFile
     }
 
     /**
-     * A train's arrival after Unload builds no railway.  The arrival callback must not ask the model for its railway to
-     * decide whether to switch the train's functions off: that builds an empty one, and `hasAutoLayout` then answers
-     * yes about nothing.  The callbacks are fired here as the train's thread fires them.
+     * A train's arrival after Unload builds no railway: the arrival callback must not ask the model for its railway
+     * (`hasAutoLayout` would answer yes about nothing).  The callbacks are fired as the train's thread fires them.
      *
      * MUTATION: ask `getAutoLayout` in the arrival or the departure callback, and this fails.
      */
@@ -3768,9 +3746,8 @@ public class testTheImportDoorReadsAnOldFile
     }
 
     /**
-     * Nothing the station labels ask after Unload builds a railway: the update a train's arrival or a placement posts
-     * can land after Unload has cleared the model.  This runs the label code itself, so it does not depend on that
-     * timing.
+     * Nothing the station labels ask after Unload builds a railway: the label code is run directly, independent of the
+     * timing of a posted update.
      *
      * MUTATION: ask `getAutoLayout` in the labels' arrow, their tile lookups or their update, and this fails.
      */
@@ -3847,8 +3824,7 @@ public class testTheImportDoorReadsAnOldFile
 
     /**
      * Stop Using Autonomy while a declined edit waits writes what the railway owns: the train, the side and road of its
-     * tail, the facing of the copy it stands on, and the settings the railway changed since it was built.  It writes
-     * nothing of the setup's: not a square whose tile is gone, not a home's facing.
+     * tail, the facing of the copy it stands on, and the settings changed since it was built; nothing of the setup's.
      *
      * MUTATION: write no tail or no facing, or none of the settings, prune squares gone or clear a home's facing in
      * that write, and this fails.
@@ -5035,8 +5011,7 @@ public class testTheImportDoorReadsAnOldFile
 
     /**
      * A train the run moved onto a station is still on it after that station is renamed from the diagram's setup menu:
-     * the rebuild the rename makes puts each train back by the name the rename gave the Point it stands on.  Put back
-     * by the name recorded alone, the train would be left where the setup last had it and its station would read free.
+     * the rebuild puts each train back by the name the rename gave its Point.
      *
      * MUTATION: put the trains back at the door by the names recorded alone, and this fails.
      */
@@ -5096,8 +5071,7 @@ public class testTheImportDoorReadsAnOldFile
 
     /**
      * Clear empties the timetable the configuration keeps as well as the one running, at once: the fold keeps the
-     * entries of a page ticked out of autonomy for its return, so a Clear that emptied only the running timetable would
-     * come back.
+     * entries of a page ticked out of autonomy.
      *
      * MUTATION: clear the running timetable alone, and this fails.
      */

@@ -281,8 +281,7 @@ public class testADeclinedSetupEditSaysSoAndSurvivesTheExit
 
     /**
      * A setup edit whose load is declined (a link unpaired) puts nothing back and records nothing over the railway it
-     * did not replace: every train whose copy the edit renamed was once taken off that railway and recorded where
-     * nothing kept it.
+     * did not replace.
      *
      * MUTATION: put the trains back whatever the load did, and this fails.
      */
@@ -379,8 +378,7 @@ public class testADeclinedSetupEditSaysSoAndSurvivesTheExit
     }
 
     /**
-     * A train the rebuild records where it stands (its turning taken away, no copy facing its way) is drawn there: the
-     * diagram once learned which trains stand on no Point inside the load, before the record.
+     * A train the rebuild records where it stands (its turning taken away, no copy facing its way) is drawn there.
      *
      * MUTATION: leave the diagram untold after the record, and this fails.
      */
@@ -462,9 +460,9 @@ public class testADeclinedSetupEditSaysSoAndSurvivesTheExit
     }
 
     /**
-     * An edit made while the setup cannot be built survives the next fold of the railway built before it: the railway
-     * was not replaced and nothing marked the setup newer, so the editor's opening and closing, Export, New
-     * Configuration and the exit wrote that railway's settings back over the edit.
+     * An edit made while the setup cannot be built survives the next fold of the railway built before it: nothing
+     * marked the setup newer, so the editor, Export, New Configuration and the exit wrote the railway's settings over
+     * it.
      *
      * MUTATION: leave the setup unmarked when the load is declined, and this fails.
      */

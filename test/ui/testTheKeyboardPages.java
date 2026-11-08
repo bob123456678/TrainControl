@@ -57,14 +57,9 @@ import support.Mouse;
  * The locomotive keyboard's pages as the operator works them: deleting a page from the page menu, jumping to a
  * locomotive with Quick Find, mapping the unassigned locomotives, and dragging a locomotive from one key to another.
  *
- * Every claim starts from six empty pages with no names.  The page count is a preference, so the class puts Adam's
- * value back (or removes it, when he has none) and never saves the window's state.
- *
- * A real pointer drag hands the drag to the operating system and never gives it back.  So a drag is made the way Swing
- * makes it, against the real handler and each component's own drop target: the pick-up, the pointer resting over a
- * page control, the drop on a key, and the end of a drag dropped nowhere.
- *
- * MUTATION: each claim names the change to the program that turns it red.
+ * Every claim starts from six empty pages with no names; the page count is a preference, so the class puts Adam's
+ * value back and never saves the window's state.  A real pointer drag hands the drag to the operating system, so a
+ * drag is made the way Swing makes it, against the real handler and each component's own drop target.
  *
  * @author Adam
  */

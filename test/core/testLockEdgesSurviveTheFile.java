@@ -14,16 +14,12 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
 import org.traincontrol.marklin.MarklinLocomotive;
 
 /**
- * A configuration loaded from a file arrives with its lock edges, and they protect the track.
+ * A configuration loaded from a file arrives with its lock edges, and they protect the track.  Nothing else asked
+ * whether `Layout.fromJSON` produces any: delete the `addLockEdge` call in its loader and every file-loaded
+ * configuration comes up with no crossing protection, the builder's `lockedges` silently dropped.
  *
- * `getLockEdges` appeared nowhere in `test/`: `testAutonomyPathValidation` adds the lock itself on a graph it built, so
- * nothing asked whether `Layout.fromJSON` produces any.  Delete the `addLockEdge` call in its loader and the suite
- * stays green while every file-loaded configuration comes up with no crossing protection, the builder's `lockedges`
- * silently dropped: protection absent rather than wrong, shown as two trains meeting on a shared throat.
- *
- * **Both halves, and the second is the one worth having:** that the list is populated is referential integrity; that a
- * held lock actually refuses a path is the protection, and a loader could pass the first by attaching the edges to the
- * wrong copy.
+ * Both halves, and the second is the one worth having: that the list is populated is referential integrity; that a
+ * held lock actually refuses a path is the protection (a loader could attach the edges to the wrong copy).
  *
  * MUTATION this catches: removing the `addLockEdge` call from `Layout.fromJSON` fails both assertions; attaching the
  * lock to the wrong edge fails the second.
@@ -122,12 +118,9 @@ public class testLockEdgesSurviveTheFile
     /**
      * A places list with a hole in it is not read as a shorter places list.  The entries are read POSITIONALLY: the
      * last is the square the edge arrives at, where a standing train's measurement is an allowance rather than track
-     * (`walkStandingTrains`, `whyABerthCannotHoldIt`).  The loader used to skip an entry with no `at`, which renumbers
-     * the list: drop the FINAL entry and the tile behind the berth becomes "the berth", and every rule downstream is
-     * out by one tile on the permitting side.
-     *
-     * A build never writes one, so this is a hand-edited or truncated file.  The answer is the one a file with no
-     * places gets: fall back to the whole edge, which refuses more rather than less.
+     * (`walkStandingTrains`, `whyABerthCannotHoldIt`), so skipping an entry with no `at` puts every rule one tile out
+     * on the permitting side.  A build never writes one (a hand-edited or truncated file); the answer is that of a file
+     * with no places: the whole edge, which refuses more rather than less.
      *
      * MUTATION: restoring `if (place == null || !place.has("at")) continue;` gives this edge two places, with the wrong
      * one last.
@@ -159,14 +152,10 @@ public class testLockEdgesSurviveTheFile
     }
 
     /**
-     * The square two hops share is charged to the train once, not twice.  A standing train's body is walked back edge
-     * by edge, and the square the walk turns at is the end of the edge just left and a place on the edge behind it;
-     * charged twice, the tail stops one square's length short and the track under the back end of the train is claimed
-     * by nobody, which clears a second train onto it.
-     *
-     * There is one budget: what the finer walk charges IS what the hop costs, and the edge's own length is kept only
-     * for a file with no places.  The fixture is the smallest thing with the shape: LE Stand is reached from LE Behind
-     * over an edge that names the junction among its places, and the edge out of LE Stand names it too.  A five-unit
+     * The square two hops share is charged to the train once, not twice: charged twice, the tail stops one square
+     * short and the track under the back end is claimed by nobody, which clears a second train onto it.  There is one
+     * budget (the edge's own length is kept only for a file with no places).  The fixture: LE Stand is reached from LE
+     * Behind over an edge naming the junction among its places, and the edge out of LE Stand names it too; a five-unit
      * train at LE Stand reaches past the junction into the tile behind it.
      *
      * MUTATION: restoring `remaining -= segment.getLength()` (or dropping the already-charged test) stops `LE:behind`
@@ -232,14 +221,10 @@ public class testLockEdgesSurviveTheFile
 
     /**
      * A square whose placement the loader dropped hands no tail to whoever reserves it next.  A file outliving the
-     * fleet is a case Adam ruled on ("drop the train and keep the rest"), and the drop promised that the next save
-     * writes the file back without the phantom, but the side and the road were written onto the square anyway and
-     * reloaded on every start.  `Point.reserve` sets an occupant and nothing else, so the first locked path ending
-     * there gave the reserving train the file's side and road, and `walkStandingTrains` claimed track along a road that
-     * train never drove.
-     *
-     * Three doors, three claims: the load does not apply a side to an empty square, the save does not write one, and a
-     * reservation clears whatever it found.
+     * fleet is a case Adam ruled on ("drop the train and keep the rest"), but the side and road were written onto the
+     * square anyway, and `Point.reserve` (which sets an occupant and nothing else) gave the next reserving train the
+     * file's side and road.  Three doors, three claims: the load does not apply a side to an empty square, the save
+     * does not write one, and a reservation clears whatever it found.
      */
     @Test
     public void testADroppedPlacementLeavesNoTailBehind() throws Exception

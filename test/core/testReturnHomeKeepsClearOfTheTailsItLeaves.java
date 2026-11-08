@@ -15,12 +15,9 @@ import org.traincontrol.base.Locomotive;
 import org.traincontrol.marklin.MarklinControlStation;
 
 /**
- * A Return Home plan never sends a train over a tail an earlier move of the same plan left behind (OB-228): the
- * planner modeled only the tails of trains that had not moved yet.
- *
- * Asked the way the railway would: each move is driven onto the layout as a run leaves a train, and before each move
- * the edges the trains already standing cover are asked of `Layout.edgesCoveredByStandingTrains`, the runtime's own
- * walk.
+ * A Return Home plan never sends a train over a tail an earlier move of the same plan left behind (OB-228): the planner
+ * modeled only the tails of trains that had not moved yet.  Each move is driven onto the layout as a run leaves a
+ * train, and before each the edges the standing trains cover are asked of `Layout.edgesCoveredByStandingTrains`.
  *
  * @author Adam
  */
@@ -250,13 +247,11 @@ public class testReturnHomeKeepsClearOfTheTailsItLeaves
 
     /**
      * A road that shares metal with a parked train's tail is refused, and the build's places say when it does not
-     * (OB-073's shape, as OB-228 was): where BOTH edges carry places from the build, the lock alone is not enough; the
-     * tail has to lie on a place the mover's edge runs over, or the planner is stricter than its railway.
+     * (OB-073's shape, as OB-228): where BOTH edges carry places, the tail has to lie on a place the mover's edge runs
+     * over, or the planner is stricter than its railway.
      *
-     * MUTATION, both run: dropping the lock-edge loop from `liesAcross` fails the first
-     * arrangement. Dropping the `tailLiesOn` continue instead fails all four claims in this class, the control first:
-     * `createEdge` locks edges that share a point, so without the refinement a tail anywhere closes every road that
-     * touches its own.
+     * MUTATION: dropping the lock-edge loop from `liesAcross` fails the first arrangement; dropping the `tailLiesOn`
+     * continue fails all four claims, the control first (`createEdge` locks edges sharing a point).
      */
     @Test
     public void testARoadSharingMetalWithAParkedTailIsRefused() throws Exception

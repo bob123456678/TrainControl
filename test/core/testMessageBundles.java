@@ -459,9 +459,7 @@ public class testMessageBundles
 
     /**
      * Every word of an English route-command kind starts with a capital (OB-142), a hyphenated pair counting as two
-     * words ("Three-Way", not "Three-way").
-     *
-     * **English only, deliberately**: how a language capitalizes interface labels is that language's business.
+     * words ("Three-Way", not "Three-way").  English only, deliberately.
      *
      * MUTATION: change any of these back to sentence case and this fails, naming the key.
      */
@@ -637,15 +635,9 @@ public class testMessageBundles
         return null;
     }
     /**
-     * The terminus error names the menu that actually closes a side.
-     *
-     * The sentence once said "Bar one way in with the arrows", and the arrows are the DEPARTURE setting: following it
-     * did not clear the error.
-     *
-     * **An error that stops the railway has to name a control the reader can find.**  Each bundle's sentence quotes its
-     * OWN `menuArrivalsGroup` label, and this keeps the two in step: rename the menu and the error goes on naming a
-     * control that is no longer there.  Compared without the trailing ellipsis, so a cosmetic change to the label does
-     * not fail this.
+     * The terminus error names the menu that actually closes a side.  Each bundle's sentence quotes its OWN
+     * `menuArrivalsGroup` label, so renaming the menu cannot leave the error naming a control that is gone; compared
+     * without the trailing ellipsis.
      *
      * MUTATION: putting `menuConnections` in the message instead fails every bundle.
      */
@@ -692,8 +684,7 @@ public class testMessageBundles
 
     /**
      * The line a switch click leaves in the message strip names the menu its arms are ticked in ("Trains May
-     * Depart...", not the old "Connections and direction"), by the name that menu has in each language.  Compared
-     * without the trailing ellipsis, as the terminus error's menu is.
+     * Depart..."), by the name that menu has in each language, compared without the trailing ellipsis.
      *
      * MUTATION: put the old heading back in any bundle, and this fails.
      */
@@ -743,8 +734,8 @@ public class testMessageBundles
      * The two train-length warnings name what they are about (OB-153, OB-154): {train} and {station} both belong in
      * autosetup.ui.checkNoTrainLength, and autosetup.ui.checkNoMaxTrainLength must name the station (FR-046).
      *
-     * BOTH HALVES, because either alone passes while the bug is present: a message that says {1} with nothing supplying
-     * it renders the literal text "{1}", and panels that pass an argument no message asks for change nothing at all.
+     * BOTH HALVES, because either alone passes: a message saying {1} with nothing supplying it renders the literal
+     * "{1}", and an argument no message asks for changes nothing.
      */
     @Test
     public void testTheLengthWarningsNameTheTrainAndTheStation() throws Exception
@@ -806,17 +797,13 @@ public class testMessageBundles
             + "longer covers its {1} (OB-153)");
     }
     /**
-     * Nothing asks for a key the bundle does not have.
+     * Nothing asks for a key the bundle does not have: a key renamed in the bundle and not at its call site puts the
+     * raw key on screen, where an operator is being told what went wrong.
      *
-     * A key present in the bundle that nothing asks for is noise.  **The direction that costs an OPERATOR something is
-     * the other one**: a key renamed in the bundle and not at its call site puts the raw key on screen, where a person
-     * is being told what went wrong.
-     *
-     * Literal calls only, which is all a textual rule can see.  Six families are built by concatenation (a route kind,
-     * a setting word, a side, a facing, and two path preferences, each a name appended to a prefix) and are listed here
+     * Literal calls only, which is all a textual rule can see.  Six families built by concatenation are listed here
      * rather than skipped quietly, so a seventh cannot be added without noticing this test would not see it.
      *
-     * MUTATION this catches: renaming any key in `messages.properties` without its call site.
+     * MUTATION: renaming any key in `messages.properties` without its call site.
      */
     @Test
     public void testNothingAsksForAKeyThatIsNotThere() throws Exception
@@ -874,12 +861,9 @@ public class testMessageBundles
     }
 
     /**
-     * Every message key a screen asks for is in every language, with a value - the mechanical half of MT-468; the
-     * reading of the sentences is MT-291.
-     *
-     * Every bundle, every key a screen asks for, by any of four roads: I18n, the generated reads, the form entries, and
-     * a key held in a constant handed to I18n by name.  A key asked for by any other road is held by
-     * `testEveryKeyHasAValueInEveryLanguage`.
+     * Every message key a screen asks for is in every language, with a value: the mechanical half of MT-468 (the
+     * reading of the sentences is MT-291).  Four roads: I18n, the generated reads, the form entries, and a constant
+     * handed to I18n by name; any other road is held by `testEveryKeyHasAValueInEveryLanguage`.
      *
      * MUTATION: take a form's key out of any bundle, or give a key one of the four roads sees an empty value in one
      * language, and this fails naming it.
@@ -994,11 +978,8 @@ public class testMessageBundles
     }
 
     /**
-     * Every key of the English bundle has a value in every language - not only the keys a road above can see asked for.
-     *
-     * The roads above find a key only as the first argument of I18n, a generated read, a form entry or a constant;
-     * about 340 are asked another way (a ternary, a switch, a helper, the log).  Asked of the bundle instead of the
-     * callers, none can be missed.  A plural ending may be nothing.
+     * Every key of the English bundle has a value in every language, including the keys no road above can see (a
+     * ternary, a switch, a helper, the log).  A plural ending may be nothing.
      *
      * MUTATION: give any key an empty value in one language, and this fails naming it.
      */
@@ -1032,8 +1013,7 @@ public class testMessageBundles
     }
 
     /**
-     * The findings that name the turning setting quote it as its menu item says it.  French and Italian quoted
-     * words the menu does not use, and the terminus finding named "may turn round", which no menu item is called.
+     * The findings that name the turning setting quote it as its menu item says it, in every language.
      *
      * MUTATION: quote the setting in any words but the menu item's, in any language, and this fails.
      */
@@ -1066,10 +1046,8 @@ public class testMessageBundles
     }
 
     /**
-     * The popup for a failed first sync names its two buttons as they are labeled, in every language (OB-338).
-     *
-     * Its text says "choose Resync ... or Exit", and a translator who renders the sentence's word and the button's
-     * differently leaves a reader looking for a button that is not there.  The Exit button is the File menu's item.
+     * The popup for a failed first sync names its two buttons as they are labeled, in every language (OB-338); the Exit
+     * button is the File menu's item.
      *
      * MUTATION: word either name in the sentence otherwise than its button's label, in any language, and this fails.
      */

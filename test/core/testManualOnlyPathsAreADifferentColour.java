@@ -28,18 +28,14 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
 import support.ProgramConstants;
 
 /**
- * A simulated path to a station autonomy will never choose is drawn in a color of its own.
+ * A simulated path to a station autonomy will never choose is drawn in a color of its own (Adam: "just use a different
+ * color going to manual-only points. yellow is currently forward, and orange is backwards-path, not the chevron
+ * arrows.").  A leg whose DESTINATION is a parking berth, or a square that turns every train it takes, is the third
+ * color, since "the track is passable" and "autonomy will ever use it" are different answers.
  *
- * Adam: "just use a different color going to manual-only points. yellow is currently forward, and orange is backwards-
- * path, not the chevron arrows."  So this is about the editor's path tracing only, not the arrival chevrons or the
- * one-way restriction arrows.  A leg whose DESTINATION is a parking berth, or a square that turns every train it
- * takes, is drawn in a third color, because "the track is passable" and "autonomy will ever use it" are different
- * answers.
- *
- * Read off the painted pixels, not off the source: `paint` is called for real and the line's own color is read back
- * out of the image, since a test that inspected the flag would pass with all three drawn identically.  The exact
- * shades are asserted for the two that already existed, so redefining one of them into the new one cannot pass; the
- * new one is asserted only to differ from both, from the chevron on top of it, and from gray.
+ * Read off the painted pixels: `paint` is called for real and the line's color is read back from the image.  The exact
+ * shades are asserted for the two that existed, and the new one only to differ from both, from the chevron on top of
+ * it, and from gray.
  *
  * @author Adam
  */
@@ -171,12 +167,9 @@ public class testManualOnlyPathsAreADifferentColour
     // Where the flag comes from
 
     /**
-     * The editor's own path test marks the leg that ends at a manual-only station, and only that leg.
-     *
-     * The flag is set at the one place a leg's destination is known, `AutonomyEditorPanel.trace`, which the "test a
-     * path" and "why is this train stuck" tools both call.  Two clicks on two real squares, the second marked as
-     * parking.  Both directions are asserted: the run OUT ends at the parking berth and is manual-only, the run BACK
-     * ends at the ordinary station and is not, so a flag set from the wrong end fails one of them.
+     * The editor's own path test marks the leg that ends at a manual-only station, and only that leg.  The flag is set
+     * in `AutonomyEditorPanel.trace`.  Both directions are asserted: the run OUT ends at the parking berth and is
+     * manual-only, the run BACK is not, so a flag set from the wrong end fails one.
      */
     @Test
     public void testTheEditorMarksTheLegThatEndsAtAManualOnlyStation() throws Exception

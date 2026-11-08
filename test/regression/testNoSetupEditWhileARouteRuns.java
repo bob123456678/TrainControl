@@ -1636,10 +1636,9 @@ public class testNoSetupEditWhileARouteRuns
 
     /**
      * Every door a user loads a configuration through, and Export, refuse while a route runs with autonomy idle, saying
-     * why before anything is asked: the enable button, the Autonomy menu's list, and the diagram's Load this
-     * configuration.  The railway is the same object afterwards, the route is still running, and nothing was exported;
-     * at rest each one goes ahead.  While autonomy itself is busy the loads keep their offer to stop the trains, and
-     * Export says the wait sentence.  Unload, which also replaces the railway, is refused the same way.
+     * why before anything is asked: the railway is the same object afterwards and nothing was exported; at rest each
+     * goes ahead.  While autonomy itself is busy the loads keep their offer to stop the trains.  Unload is refused the
+     * same way.
      *
      * MUTATION: send the enable button, `loadByRequest` or the banner to `load` directly, or have Export ask
      * `isAutonomyBusy` alone, and this fails naming the door.
@@ -2005,9 +2004,8 @@ public class testNoSetupEditWhileARouteRuns
 
     /**
      * A route that begins after the press and before the dispatch still stops the run: the last-moment question every
-     * run door asks (`refusedForAnEditorOnItsWay`) says a route is running and refuses, and answers no at rest.
-     * Execute Timetable end to end: pressed with no route running, with the route begun in the same event before its
-     * posted body asks again - which refuses, says so, gives the button back and runs nothing.
+     * run door asks (`refusedForAnEditorOnItsWay`) refuses, and answers no at rest.  Execute Timetable is run end to
+     * end with the route begun in the same event before its posted body asks again.
      *
      * MUTATION: take the route question out of `refusedForAnEditorOnItsWay`, and this fails.
      */

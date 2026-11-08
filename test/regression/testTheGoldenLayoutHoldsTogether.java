@@ -27,16 +27,12 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
 import org.traincontrol.marklin.file.CS2File;
 
 /**
- * Adam's own railway, read and checked, and never written to.  Every other test runs against `test/test_layout`, a
- * frozen copy, so the suite otherwise knows only what was true on the day the copy was taken.
+ * Adam's own railway, read and checked, and never written to.  Every other test runs against a frozen copy, so this is
+ * what knows the real one.  What it asserts is deliberately narrow: things that must be true of ANY layout.
  *
- * What this asserts is deliberately narrow: things that must be true of ANY layout.  It is not a ratchet on his data.
- *
- * The `@AfterClass` check is about this suite, not the railway.  It runs LAST, after every `@Test`, because a
- * fingerprint taken as the first `@Test` could not see a write made by a later one.
- *
- * Failed, not skipped, when the folder is not there: `cs2_sample_layout` is tracked, so the battery always has it
- * (FR-136).
+ * The `@AfterClass` check is about this suite, not the railway, and runs LAST (a fingerprint taken as the first
+ * `@Test` could not see a later write).  Failed, not skipped, when the folder is not there: `cs2_sample_layout` is
+ * tracked (FR-136).
  *
  * @author Adam
  */
@@ -55,10 +51,8 @@ public class testTheGoldenLayoutHoldsTogether
     private static Map<String, String> before;
 
     /**
-     * A COPY of the golden layout, which is what everything below actually reads: the real folder is the one in this
-     * repository that is not recoverable, and a fingerprint is an alarm rather than a guard.  `init` reads the layout
-     * preference too, so the sandbox must be open BEFORE it and not merely before the window (OB-111).  The copy is
-     * byte-for-byte his railway, so the questions are answered by the same data.
+     * A COPY of the golden layout, which is what everything below reads: the real folder is not recoverable.  The
+     * sandbox must be open BEFORE `init`, which reads the layout preference too (OB-111).
      */
     private static support.LayoutSandbox sandbox;
 
@@ -111,16 +105,11 @@ public class testTheGoldenLayoutHoldsTogether
     }
 
     /**
-     * Reading Adam's railway does not write to it.  A `@Test` that fingerprinted first compared against itself before
-     * its siblings ran; declared `@AfterClass` it runs once, after every `@Test`, so `after` sees whatever any of them
-     * did.
+     * Reading Adam's railway does not write to it.  Declared `@AfterClass`, it runs after every `@Test`, so `after`
+     * sees whatever any of them did.  A write by ANOTHER class (one JVM per class) is caught by the fingerprint around
+     * the whole run in `docs/tools/battery.sh`, which `ant test` does not use.  Content, not timestamp.
      *
-     * The scope: the suite runs one JVM per class, so a write by ANOTHER class happened before `before` was taken and
-     * this cannot see it.  That protection lives in `docs/tools/battery.sh`, which fingerprints the folder around the
-     * whole run (and `ant test` does not use it).  Every file by content, not timestamp: a file rewritten with
-     * identical bytes is not a problem.
-     *
-     * MUTATION this catches: have any `@Test` above call `store.save()` once.
+     * MUTATION: have any `@Test` above call `store.save()` once.
      */
     @AfterClass(alwaysRun = true)
     public void testNothingWroteToTheGoldenLayout() throws Exception
@@ -153,8 +142,7 @@ public class testTheGoldenLayoutHoldsTogether
 
     /**
      * What the reversal-length guard can actually judge on the real railway (FR-136 1b).  This measures rather than
-     * demands: how much he has measured changes as he works.  What it refuses is armed and unable to answer anything.
-     * The count is put in the message either way.
+     * demands, since how much he has measured changes as he works; the count is put in the message either way.
      */
     @Test
     public void testWhatTheReversalGuardCanJudgeHere()
@@ -210,9 +198,9 @@ public class testTheGoldenLayoutHoldsTogether
             + " squares with a length, and " + measured + " of those named carry one");
     }
     /**
-     * Every square the setup names is a square the diagram still draws.  The one direction of difference that is always
-     * a defect: a setting for track that does not exist means the diagram failed to read something real, or the setup
-     * is keyed to a page that has moved.  Squares on excluded pages are still checked, because they are still drawn.
+     * Every square the setup names is a square the diagram still draws: a setting for track that does not exist means
+     * the diagram failed to read something real, or the setup is keyed to a page that has moved.  Excluded pages are
+     * still drawn, so still checked.
      */
     @Test
     public void testEverySquareTheSetupNamesIsOnTheDiagram()
@@ -251,10 +239,9 @@ public class testTheGoldenLayoutHoldsTogether
     }
 
     /**
-     * The setup's record of the page numbering agrees with the index on disk.  The setup is keyed by page ID in the
-     * file and by page NAME in memory, and `"pages"` translates; when it disagrees with `gleisbild.cs2` every key
-     * resolves to the wrong page, silently (MT-135).  A page the record knows and the index does not is normal
-     * (FR-018); the pairs they both have must say the same thing.
+     * The setup's record of the page numbering agrees with the index on disk: the setup is keyed by page ID in the file
+     * and page NAME in memory, and a disagreement with `gleisbild.cs2` resolves every key to the wrong page (MT-135).
+     * A page the record knows and the index does not is normal (FR-018).
      */
     @Test
     public void testTheSetupAndTheIndexAgreeAboutTheNumbering()
@@ -301,8 +288,7 @@ public class testTheGoldenLayoutHoldsTogether
 
     /**
      * Every square a configuration says something about is a square the diagram draws.  Configurations key by page NAME
-     * on disk and are never translated, so they survive a rename only because the application rekeys them in memory
-     * first; nothing in the file format states that dependency.
+     * and survive a rename only because the application rekeys them in memory; the file format does not state that.
      */
     @Test
     public void testEverySquareAConfigurationNamesIsOnTheDiagram()

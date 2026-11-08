@@ -94,9 +94,7 @@ public class testARunningTrainHasOneTail
 
         // AND THE DEPARTURE SQUARE KEEPS A ROAD, or two of the claims below cannot fail: `moveLocomotive` clears
         // `arrivedFrom` and `arrivedAlong` on a change of occupant and only a completed run writes them, so a
-        // hand-placed train's square records no road and the tail walk meets the fork rule there.  A train that had
-        // DRIVEN in would carry the record, as on Adam's railway; the lock's `reserve` does not clear it, because the
-        // occupant does not change.
+        // hand-placed train's square records no road and the tail walk meets the fork rule there.
         start.setArrivedFrom("W");
         start.setArrivedAlong(java.util.Arrays.asList(layout.getEdge("TR_B", "TR_A")));
 
@@ -174,18 +172,14 @@ public class testARunningTrainHasOneTail
 
     /**
      * A milestone part-way along a run is ordinary block, and so is the square a train comes to rest on (OB-278).
-     *
      * Every square a body lies over is spent, the one it stands on first (Adam: *"the 2 length tile with the s88
-     * consumes 2 units of the train"*), so the running train and the train at rest are the same arithmetic, and this
-     * asks both.
+     * consumes 2 units of the train"*), so the running train and the train at rest are the same arithmetic.
      *
-     * Two units, and the milestone measures two, so the train's whole body is the milestone and nothing is left to
-     * reach `MR_B>MR_A` with.  The first claim is what makes the second one about the rule: a walk that produced
-     * nothing at all would satisfy a negative claim on its own.
+     * Two units, and the milestone measures two, so nothing is left to reach `MR_B>MR_A` with.  The first claim makes
+     * the second one about the rule: a walk that produced nothing would satisfy a negative claim on its own.
      *
-     * MUTATION: leaving the square a train stands on unspent in `Layout.walkOneTail` fails the second claim and the
-     * third, each naming `MR_B>MR_A` - one unit survives the milestone and the walk carries on to the leg behind the
-     * departure square.
+     * MUTATION: leaving the square a train stands on unspent in `Layout.walkOneTail` fails the second and third claims,
+     * each naming `MR_B>MR_A`.
      */
     @Test
     public void testAMidRunMilestoneIsNotAnAllowance() throws Exception

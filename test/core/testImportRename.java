@@ -472,12 +472,9 @@ public class testImportRename
 
     /**
      * A locomotive the Central Station has never heard of is left alone.
-     *
-     * An empty proposal list used to pass this test just as well as a correct one, since
-     * nothing forced the loop below to run over anything.  "IR mismatch" guarantees at least one real
-     * proposal (the floor assertion below proves the loop actually ran), and "IR unknown" is a DCC
-     * locomotive at an address the CS3 fixture never mentions - DCC_BASE (0xc000) plus 999, and the
-     * fixture's only DCC locomotive is at 112 - so its UID cannot collide with anything parsed.
+     * "IR mismatch" guarantees at least one real proposal (the floor assertion proves the loop ran), and "IR unknown"
+     * is a DCC locomotive at an address the CS3 fixture never mentions (DCC_BASE plus 999; the fixture's only DCC
+     * locomotive is at 112), so its UID cannot collide with anything parsed.
      */
     @Test
     public void testUnknownLocomotiveIsNotProposed() throws Exception

@@ -252,12 +252,9 @@ public class testReturnHomeOnRealLayout
                 + describe(layout));
         }
 
-        // The pre-round block above is skipped when already home, and each round below
-        // `continue`s past everything when the random stop also happens to land at home - so nothing
-        // counted whether a single round ever actually reached planReturnToHome()/executeTimetable().
-        // MUTATION this catches: make Layout.planReturnToHome() always return a plan with
-        // isPossible() == false - if every round this run happens to land at home, the mutation is
-        // never exercised and the whole test stays green regardless.
+        // The pre-round block above is skipped when already home, and a round that lands at home `continue`s past
+        // everything, so nothing counted whether a round ever reached planReturnToHome()/executeTimetable().
+        // MUTATION this catches: make Layout.planReturnToHome() always return a plan with isPossible() == false.
         int meaningfulRounds = 0;
 
         for (int round = 1; round <= ROUNDS; round++)
@@ -390,10 +387,7 @@ public class testReturnHomeOnRealLayout
     /**
      * A train standing on a square that turns trains can still be brought home (MT-463): the real-railway meeting of
      * the rule `behaviour/return-home.md` section 6, whose two halves `core.testHomeStaging` covers on hand-built
-     * fixtures.
-     *
-     * THE PLACEMENTS ARE STAGED, NOT WAITED FOR: each train is put on a turning square through the same
-     * `moveLocomotive` door the operator uses, and put back afterwards.
+     * fixtures.  The placements are staged through the `moveLocomotive` door the operator uses, and put back.
      *
      * THE CONTROL: each train is asked twice on the same square, as it is and unable to reverse; both must produce a
      * plan.  A train whose own control fails is passed over and named.

@@ -37,9 +37,8 @@ public class testWhyStuck
 
     /**
      * By hand, a station beyond a headshunt is somewhere to go, as the right-click menu says it is (MT-434):
-     * `reversesAlongTheWay` is autonomy's rule and must not be asked by hand.
-     *
-     * A -> R -> B, R a reversing square, nothing measured.  On its own sensors.
+     * `reversesAlongTheWay` is autonomy's rule and must not be asked by hand.  A -> R -> B, R a reversing square,
+     * nothing measured, on its own sensors.
      */
     @Test
     public void testByHandAStationBeyondAHeadshuntIsSomewhereToGo() throws Exception
@@ -220,9 +219,8 @@ public class testWhyStuck
 
     /**
      * By hand, a station the right-click menu does not offer is not listed as somewhere to go (MT-434, OB-205): the
-     * button and the explanation must answer the one question the same way.
-     *
-     * THE CONTROL is the same station with nothing set: offered, and nothing said against it.
+     * button and the explanation answer the one question the same way.  The control is the same station with nothing
+     * set: offered, and nothing said against it.
      */
     @Test
     public void testByHandAStationTheMenuDoesNotOfferSaysWhy() throws Exception
@@ -515,13 +513,10 @@ public class testWhyStuck
     }
 
     /**
-     * THE DASH AND THE RULE, swept limb by limb rather than on the one that was missed.
-     *
-     * `AutoLocomotiveStatus.notChosenByAutonomy` is a deliberate lock-free copy of `Layout.barredFromAutonomy` (the
-     * rule is `synchronized` on the Layout and this runs on the event thread three times per repaint), so the two can
-     * only be kept together by a test that asks both.  A test that builds one case cannot notice a limb that was never
-     * written, so this compares the two ANSWERS over every case.  Both are reached by reflection: the copy is private,
-     * and the rule is private because everything public that reaches it takes the monitor this copy exists to avoid.
+     * THE DASH AND THE RULE, swept limb by limb: `AutoLocomotiveStatus.notChosenByAutonomy` is a deliberate lock-free
+     * copy of `Layout.barredFromAutonomy` (the rule takes the Layout monitor, this runs on the event thread three times
+     * per repaint), so only a test that compares both ANSWERS over every case keeps them together.  Both are reached by
+     * reflection.
      *
      * MUTATION: dropping any limb from either side fails this - each case is barred for exactly one reason, and the
      * clean case pins the other direction.
@@ -607,8 +602,8 @@ public class testWhyStuck
     }
 
     /**
-     * Runs something that declares a checked exception, failing the test if it throws: `setReversing` and `setTerminus`
-     * declare `Exception`, which a `Runnable` cannot carry.
+     * Runs something that declares a checked exception, failing the test if it throws (`setReversing` and
+     * `setTerminus` declare `Exception`, which a `Runnable` cannot carry).
      *
      * @param body what to run
      */
@@ -661,8 +656,7 @@ public class testWhyStuck
 
     /**
      * A train on a copy of a station that has a way out but reaches no station autonomy may choose is told so (OB-299),
-     * not given every station's own reason.  By hand it is not a reason: a train sent by hand may go where autonomy
-     * never sends one.
+     * not given every station's own reason; by hand it is not a reason.
      *
      * MUTATION: drop the reason, give it by hand, offer turning round where neither copy reaches a station, or leave
      * the closed side out of the either-way sentence, and this fails.
@@ -720,8 +714,7 @@ public class testWhyStuck
 
     /**
      * Turning round is offered only onto a copy a train may be started from: where the square's other copy reaches a
-     * station but is switched off, the train is told what would help instead (turning onto that copy would give its
-     * refusal, and turning back this sentence again).
+     * station but is switched off, the train is told what would help instead.
      *
      * MUTATION: offer turning round wherever another copy reaches a station, and this fails.
      */
@@ -751,9 +744,8 @@ public class testWhyStuck
     }
 
     /**
-     * Turning round is not offered onto a copy that is no station - the copy of a square trains may not arrive at -
-     * even where it reaches a station: turned round onto it, the next Why not Moving? refuses it and sends the operator
-     * back.  The claim beside this one switches a copy off, which a built railway never does to one copy alone.
+     * Turning round is not offered onto a copy that is no station (a square trains may not arrive at), even where it
+     * reaches a station.  The claim beside this one switches a copy off, which a built railway never does to one copy.
      *
      * MUTATION: offer turning round onto any copy that reaches a station, and this fails.
      */
@@ -780,8 +772,8 @@ public class testWhyStuck
 
     /**
      * Where the other way reaches a station only across a side trains may not arrive by, and every train turns round at
-     * that square, the train is told that side is closed and not told to open it: opened there, a terminus reached from
-     * two sides is the error that refuses the whole setup.
+     * that square, the train is told that side is closed, not to open it: a terminus reached from two sides refuses the
+     * whole setup.
      *
      * MUTATION: offer "open that side" wherever the other copy is barred, or give the refusal without its reason, and
      * this fails.
@@ -886,12 +878,9 @@ public class testWhyStuck
     }
 
     /**
-     * A platform's several arrival sides are described by the platform, not by the model's spelling.
-     *
-     * The index maps every emitted Point back to its square, but a configuration built by a different run of the
-     * builder is not in the map, and the fallback must not be the internal name: "BottomMainA (northbound)" is not a
-     * place on anybody's railway, least of all in the hover that explains why a train is not moving.  Only the suffixes
-     * the builder itself emits come off: a station genuinely called "Yard (upper)" must keep its name.
+     * A platform's several arrival sides are described by the platform, not by the model's spelling: a configuration
+     * built by a different run of the builder is not in the index, and the fallback must not be "BottomMainA
+     * (northbound)".  Only the builder's own suffixes come off: a station called "Yard (upper)" keeps its name.
      */
     @Test
     public void testAnArrivalSideIsDescribedByItsStation() throws Exception
@@ -916,11 +905,8 @@ public class testWhyStuck
     }
 
     /**
-     * The (i) a card shows when hovering explains why it is not moving is a picture that loads.
-     *
-     * `AutoLocomotiveStatus` lives in `gui.autonomy` and the picture in `gui/resources`, so its lookup is anchored on
-     * `TrainControlUI` as every other is; a path relative to its own package finds nothing, and the card loses its mark
-     * without a word.
+     * The (i) a card shows when hovering explains why it is not moving is a picture that loads: its lookup is anchored
+     * on `TrainControlUI` as every other is, or the card loses its mark without a word.
      *
      * MUTATION: look it up as `AutoLocomotiveStatus.class.getResource("resources/info.gif")` and this fails.
      */

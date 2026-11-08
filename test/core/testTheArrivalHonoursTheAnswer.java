@@ -166,14 +166,10 @@ public class testTheArrivalHonoursTheAnswer
     }
 
     /**
-     * A train that declines the turn is not left standing on the copy that expected it to turn.
-     *
-     * The path offered to a may-turn square routinely ends on the TURNING copy (`StationIndex.distinctDestinations`
-     * keeps the first path per square), so a train that declines the turn would face one way while the Point it stands
-     * on says the other, and its next dispatch would read the wrong outgoing edges. The mirror case, a train that DOES
-     * turn, is re-stood by `AutonomySession.faceTheWayItCameIn`.
-     *
-     * Driven through `executePath` rather than by asking the rule, so the call site is covered.
+     * A train that declines the turn is not left standing on the copy that expected it to turn: the path offered to a
+     * may-turn square routinely ends on the TURNING copy (`StationIndex.distinctDestinations`).  The mirror case, a
+     * train that DOES turn, is re-stood by `AutonomySession.faceTheWayItCameIn`.  Driven through `executePath`, so the
+     * call site is covered.
      */
     @Test
     public void testDecliningTheTurnDoesNotLeaveItOnTheTurningCopy() throws Exception
@@ -459,9 +455,8 @@ public class testTheArrivalHonoursTheAnswer
     }
 
     /**
-     * A train arriving on a railway retired on its way is not turned: the milestones' check stops such a train, but
-     * Unload could land in the pause between the last check and the turn, leaving the train facing the other way from
-     * the folded record. The railway is retired from the arrival's own callback, between the last check and the turn.
+     * A train arriving on a railway retired on its way is not turned: Unload could land between the milestones' last
+     * check and the turn.  The railway is retired from the arrival's own callback.
      *
      * MUTATION: turn a train at its destination without asking whether its railway is still the current one, and this
      * fails.
@@ -570,8 +565,7 @@ public class testTheArrivalHonoursTheAnswer
 
     /**
      * A train that kept its direction is stood on the plain copy without the square ever reading empty (the platform's
-     * exit-guard signal follows the square and was commanded GREEN then RED over the standing train): it is put on the
-     * plain copy, with the side and road it came in by, before it is taken off the turning one.
+     * exit-guard signal would be commanded GREEN then RED over the standing train).
      *
      * MUTATION: take the train off the turning copy before putting it on the plain one, and this fails.
      */
@@ -849,8 +843,8 @@ public class testTheArrivalHonoursTheAnswer
 
     /**
      * A train told to keep its direction at a square it may turn at is turned all the same where no copy of that square
-     * faces on from the way it came (MT-245): such a square is a compulsory turn in all but its flag.  Two shapes, each
-     * sent with the answer keep: no other copy at all, and a plain copy the train's approach cannot reach.
+     * faces on from the way it came (MT-245): a compulsory turn in all but its flag.  Two shapes: no other copy at all,
+     * and a plain copy the train's approach cannot reach.
      *
      * MUTATION: take the compulsory turn out of `Layout.turnsOnArrival`, and this fails.
      */
@@ -960,9 +954,8 @@ public class testTheArrivalHonoursTheAnswer
     }
 
     /**
-     * The operator is not asked about a destination where no copy faces on from the train's approach, since the answer
-     * could not be honored there, and still is where one does. Asked of `ManualReversalPrompt.destinationAskedAbout`,
-     * because asking puts up a modal dialog.
+     * The operator is not asked about a destination where no copy faces on from the train's approach, and still is
+     * where one does.  Asked of `ManualReversalPrompt.destinationAskedAbout`, because asking puts up a modal dialog.
      *
      * MUTATION: ask about such a destination again, and this fails.
      */
@@ -1023,8 +1016,7 @@ public class testTheArrivalHonoursTheAnswer
 
     /**
      * A timetable recorded by hand through a may-turn square plays back what was decided there: the entry keeps the
-     * answer the arrival was given and is played back with it, so playback does not turn a train the recording did not
-     * (the next entry starts on the plain copy).
+     * answer the arrival was given, so playback does not turn a train the recording did not.
      *
      * MUTATION: record no answer, or play every entry back as autonomy again, and this fails.
      */

@@ -165,13 +165,10 @@ public class testACaptionStaysWithItsSquare extends AutonomySessionFixture
     }
 
     /**
-     * The session says which pages the migration rewrote, and how many names it took.
+     * The session says which pages the migration rewrote, and how many names it took: the migration edits files the
+     * user owns (a `.cs2.bak` is kept) and a success is its one-way half.  `TrainControlUI` logs both at start-up.
      *
-     * The migration edits files the user owns (a `Point:` name is taken into the setup and emptied out of the `.cs2`,
-     * `saveChanges` keeps a `.cs2.bak`) and a success is its one-way half, so both are reported.  `TrainControlUI`
-     * writes these two into the log at start-up; what is asserted here is that the session has them to write.
-     *
-     * MUTATION: dropping either `migratedPages.add` or `migratedCaptions++` fails this.
+     * MUTATION: dropping either `migratedPages.add` or `migratedCaptions++`.
      */
     @Test
     public void testTheSessionSaysWhichPagesTheMigrationRewrote() throws Exception
@@ -381,13 +378,11 @@ public class testACaptionStaysWithItsSquare extends AutonomySessionFixture
     }
 
     /**
-     * A caption is never placed outside the area the RUNNING diagram draws, with the page in edit mode too.
+     * A caption is never placed outside the area the RUNNING diagram draws, with the page in edit mode too: the
+     * autonomy editor puts the shared page into edit mode (bounds = whole page), so the area is worked out from the
+     * components alone (`testACaptionIsNeverPlacedOutsideTheDrawnArea` builds its page with edit mode off).
      *
-     * The autonomy editor puts the shared page object into edit mode, where its bounds are the whole page; the area is
-     * worked out from the components alone, as the running grid does (`testACaptionIsNeverPlacedOutsideTheDrawnArea`
-     * builds its page with edit mode off).
-     *
-     * MUTATION: read the page's own bounds in `placeCaption`, and this fails.
+     * MUTATION: read the page's own bounds in `placeCaption`.
      */
     @Test
     public void testACaptionIsNeverPlacedOutsideTheAreaTheRunningDiagramDrawsWithThePageInEditMode() throws Exception
@@ -673,14 +668,11 @@ public class testACaptionStaysWithItsSquare extends AutonomySessionFixture
     }
 
     /**
-     * A page's captions can be taken away and put back exactly.
+     * A page's captions can be taken away and put back exactly: the track editor's undo holds them, a caption belonging
+     * to the setup, not the tile.  Driven through session.snapshotPage/restorePage as LayoutEditor calls them, since
+     * captionsOnPage would round-trip against itself even if `AutonomyCompanionStore.kept()` stopped carrying captions.
      *
-     * This is what the track diagram editor's undo holds on to: a caption belongs to the setup, not the tile, so it
-     * cannot ride in the editor's snapshot of components.  Driven through session.snapshotPage/restorePage, which is
-     * what LayoutEditor calls: captionsOnPage round-trips against itself and would stay green if
-     * AutonomyCompanionStore.kept() stopped carrying captions through the real snapshot.
-     *
-     * MUTATION: remove "captions" from kept() - restorePage then puts the plaque's TILE back with no name on it.
+     * MUTATION: remove "captions" from kept(); restorePage then puts the TILE back with no name.
      */
     @Test
     public void testAPagesCaptionsRoundTripThroughASnapshot() throws Exception

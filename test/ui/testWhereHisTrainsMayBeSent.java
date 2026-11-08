@@ -111,9 +111,8 @@ public class testWhereHisTrainsMayBeSent
 
     /**
      * A send the right-click refuses says why in a message that belongs to the main window: with the power off, "-> a
-     * station" on his train's right-click tells him to turn the power on, in front of the window he is using.  A
-     * refusal parented on the popup menu belongs to Swing's hidden frame and, with Window Always on Top ticked (the
-     * default), opens beneath the main window and holds every window with nothing to show why.
+     * station" tells him to turn the power on.  A refusal parented on the popup menu belongs to Swing's hidden frame
+     * and opens beneath the main window (Window Always on Top is the default).
      *
      * MUTATION: parent the refusal on the menu again, and this fails.
      */
@@ -184,7 +183,7 @@ public class testWhereHisTrainsMayBeSent
 
     /**
      * No message on either right-click menu (the diagram's autonomy menu, the track-diagram editor's) belongs to the
-     * menu itself, and none on the autonomy viewer panel to the panel; the setup's tidy report is a message too.  The
+     * menu itself, none on the autonomy viewer panel to the panel, and the setup's tidy report is a message too.  The
      * claim above drives one refusal; the rest are read here.
      *
      * MUTATION: put `this` back as any one of their owners, a tidy report's included, and this fails naming the line.
@@ -379,10 +378,9 @@ public class testWhereHisTrainsMayBeSent
 
     /**
      * A train turned at Tunnel (come in from the south, facing south) is not offered any way south through the points a
-     * three-unit train in TunnelRightPark lies across; with that train one unit long, it is (MT-495).
-     *
-     * Read off the right-click's own list of routes, every path it offers in the menu and under its More item, because
-     * BottomMainAPre, the square the way south runs through, is no station and so no destination is named after it.
+     * three-unit train in TunnelRightPark lies across; with that train one unit long, it is (MT-495).  Read off the
+     * right-click's own list of routes (menu and More item), since BottomMainAPre is no station and names no
+     * destination.
      *
      * MUTATION: stop the turned train's way out at its own tail, and this fails.
      */
@@ -566,11 +564,8 @@ public class testWhereHisTrainsMayBeSent
     /**
      * With the stretch between BottomSecondary and TunnelPre answered 0 in the editor, 75 407 DB (5 long) placed at
      * RampDown facing south is offered Tunnel and goes there; standing there, the track held behind it reaches back
-     * past TunnelPre and BottomSecondary onto the track towards RampDown (MT-586).
-     *
-     * The 0 is given as the steps give it (Shift-click the stretch on 1 - Main, Segment Length..., 0, OK); the running
-     * railway is then rebuilt, as closing the editor saving the change rebuilds it.  The gray behind a standing train
-     * is the track the railway holds for it, read here from the railway.
+     * past TunnelPre and BottomSecondary onto the track towards RampDown (MT-586).  The 0 is given as the steps give it
+     * (Shift-click the stretch on 1 - Main, Segment Length..., 0, OK) and the running railway is rebuilt.
      *
      * MUTATION: stop the measured way in at the stretch answered 0, and this fails.
      */

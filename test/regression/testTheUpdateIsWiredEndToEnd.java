@@ -19,10 +19,9 @@ import support.SourceOf;
 
 /**
  * One-click updates are wired together end to end (FR-125): `core.testTheUpdaterSwapsTheJar` hands the updater its
- * launcher, mover and starter, so it says nothing about the real ones or the places that call them.  The callers
- * cannot be run without starting TrainControl or ending this JVM, so their order is read from the source, as
- * `regression.testEditorSurfaceRules` reads `WindowClosed`'s: that catches a line moved or dropped, not one that
- * behaves differently at the same place.
+ * launcher, mover and starter, so it says nothing about the real ones or their callers.  The callers cannot be run
+ * without starting TrainControl or ending this JVM, so their order is read from the source: that catches a line moved
+ * or dropped, not one that behaves differently at the same place.
  */
 public class testTheUpdateIsWiredEndToEnd
 {

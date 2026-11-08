@@ -15,17 +15,10 @@ import org.traincontrol.marklin.MarklinControlStation;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 
 /**
- * Capture, tested the way the operator meets it: a real configuration, real autonomy, real trains.
- *
- * The earlier `testTimetableCapture` (kept as a faster unit test of the flag) built its own two-point Layout and could
- * only see the model, not the REDRAW that repaints the timetable.  So this does the whole thing:
- *
- * - a real configuration, through `model.parseAuto`, which is what loading one does
- * - capture switched on where the window switches it, on `model.getAutoLayout()`
- * - `AutonomyRefreshCallback.attach`, which is the same call the window makes
- * - `runLocomotives()`, so autonomy picks its own paths rather than being handed one
- *
- * and then asks the two questions: did anything get captured, and was anybody told.
+ * Capture, tested the way the operator meets it: a real configuration (`model.parseAuto`), capture switched on where
+ * the window switches it, `AutonomyRefreshCallback.attach` as the window calls it, and `runLocomotives()` so autonomy
+ * picks its own paths.  The unit test `testTimetableCapture` sees only the model, not the REDRAW that repaints the
+ * timetable.  Asks two questions: did anything get captured, and was anybody told.
  */
 public class testTimetableCaptureThroughARealRun
 {
@@ -335,12 +328,9 @@ public class testTimetableCaptureThroughARealRun
     }
 
     /**
-     * Takes every train off, so this test starts from a railway nobody else has arranged.
-     *
-     * `autonomy_sanity.json` places three trains on a railway with one single-track corridor, the arrangement least
-     * likely to produce a moving train on a loaded machine, so the test starts empty and places its own.  Through
-     * `moveLocomotive(null, ..., true)`, the door the diagram's Cut uses, so the state is one the application can also
-     * be in.
+     * Takes every train off, so this test starts from a railway nobody else has arranged: `autonomy_sanity.json` places
+     * three trains on a railway with one single-track corridor, the arrangement least likely to produce a moving train
+     * on a loaded machine.  Through `moveLocomotive(null, ..., true)`, the door the diagram's Cut uses.
      *
      * @param layout the freshly parsed railway
      */

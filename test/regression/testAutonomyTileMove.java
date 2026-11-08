@@ -10,12 +10,10 @@ import org.traincontrol.automationui.TileGraph.TileKey;
 import org.traincontrol.automationui.TilePorts;
 
 /**
- * Moving a tile on the diagram takes its whole setup with it. Everything the setup holds is keyed by SQUARE, so a tile
- * that moves would leave the lot behind on coordinates that now hold no track, and the next reconcile would find a
- * station on a square with no sensor and drop it for good.
- *
- * These tests are on the store rather than on the editor, where a key is a key. The awkward case is the group drag,
- * where every source square lands on another source square, which is why the whole set moves in one call.
+ * Moving a tile on the diagram takes its whole setup with it: everything the setup holds is keyed by SQUARE, so a tile
+ * that moves would leave the lot behind and the next reconcile would drop a station for good.  On the store rather
+ * than the editor.  The awkward case is the group drag, where every source square lands on another source square, so
+ * the whole set moves in one call.
  */
 public class testAutonomyTileMove
 {
@@ -187,14 +185,11 @@ public class testAutonomyTileMove
     }
 
     /**
-     * Undoing an edit on one page puts back the far end of a pairing it broke (B5). A portal's two halves are stored
-     * symmetrically and are normally on DIFFERENT pages, as are protecting signals and blocked points; `move` and
-     * `forget` reach both halves, so the snapshot must record entries that MENTION the page being restored, not only
-     * the key's square. Otherwise undo brings the track back while the other page still points at the square it just
-     * emptied, `reconcile` cannot see it (both squares exist), and unpairing from that side is a no-op.
-     *
-     * The sibling test above, testRestoringOnePageDoesNotTouchAnother, is the boundary: point NAMES have no square on
-     * the value side, so nothing about them is captured by the other page's snapshot.
+     * Undoing an edit on one page puts back the far end of a pairing it broke (B5): portal halves, protecting signals
+     * and blocked points are stored symmetrically and normally on DIFFERENT pages, so the snapshot must record entries
+     * that MENTION the page being restored, not only the key's square (`reconcile` cannot see the other page's stale
+     * pointer).  The sibling test testRestoringOnePageDoesNotTouchAnother is the boundary: point NAMES have no square
+     * on the value side.
      *
      * MUTATION: filtering the snapshot on the key alone again fails this.
      */
@@ -458,15 +453,10 @@ public class testAutonomyTileMove
     }
 
     /**
-     * A snapshot is a COPY, so an edit that changes something in place cannot change the snapshot too. `snapshotPage`
-     * copies each map entry by entry and shares the VALUES, which is right for strings and numbers; two collections
-     * hold something mutable: `stationSignals` maps a station to a LIST that `forgetTiles` empties in place with
-     * `removeAll`, and `configurations` maps a name to a JSONObject that `setPointProperty` writes into directly. Undo
-     * would then restore what it captured, by then the edit, and the failure is quiet: the diagram goes back and the
-     * setup silently does not.
-     *
-     * Restore copies too, in the other direction: an undo that hands the store the snapshot's own lists leaves the two
-     * sharing again, and the next edit corrupts a snapshot still held for a second undo.
+     * A snapshot is a COPY, so an edit that changes something in place cannot change the snapshot too: two collections
+     * hold something mutable (`stationSignals` maps a station to a LIST that `forgetTiles` empties in place;
+     * `configurations` maps a name to a JSONObject that `setPointProperty` writes into).  Restore copies too, or the
+     * next edit corrupts a snapshot still held for a second undo.
      */
     @Test
     public void testASnapshotDoesNotShareWhatTheStoreCanStillChange()

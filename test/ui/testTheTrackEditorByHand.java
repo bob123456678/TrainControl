@@ -160,8 +160,8 @@ public class testTheTrackEditorByHand
     }
 
     /**
-     * Control+Z takes the last edit back and Control+Y does it again, and the editor's own menu shows the stack: Undo
-     * on after an edit, Redo on after an undo.  Discarded, the file is as it was.
+     * Control+Z takes the last edit back and Control+Y does it again, and the editor's own menu shows the stack.
+     * Discarded, the file is as it was.
      *
      * MUTATION: make Control+Z call `redo`, or Control+Y call `undo`, and the heading is wrong after the key; leave the
      * menu's Undo always on and the untouched editor offers it.
@@ -1171,8 +1171,7 @@ public class testTheTrackEditorByHand
 
     /**
      * Switching the editor between Track Diagram and Autonomy Setup a few times leaves no listener behind on the
-     * diagram's viewport: each entry floats a new strip that follows the viewport's size, and leaving must let go of
-     * it.
+     * diagram's viewport.
      *
      * MUTATION: drop the `autonomyBanner.letGoOfTheDiagram()` call in LayoutEditor.setAutonomyMode and the count grows
      * with each round trip.
@@ -1237,10 +1236,8 @@ public class testTheTrackEditorByHand
     }
 
     /**
-     * The track editor's Text Labels box says whether the page's text is shown, after the autonomy editor has hidden it.
-     *
-     * The autonomy editor's unticked Text Labels box hides the page's text (FR-133) and closing it leaves it hidden, so
-     * the next track editor must open with its box unticked too (OB-364).
+     * The track editor's Text Labels box says whether the page's text is shown, after the autonomy editor has hidden it
+     * (FR-133, OB-364).
      *
      * MUTATION: drop the `showTextCheckbox.setSelected(!l.getEditHideText())` line in the LayoutEditor constructor and
      * the box opens ticked over hidden text.

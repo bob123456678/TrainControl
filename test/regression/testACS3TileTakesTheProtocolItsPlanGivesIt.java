@@ -30,8 +30,8 @@ import support.StandInStation;
  * will not read, in whole or in part, costs no page (OB-402).
  *
  * The fixture `test/cs3_v261` is Adam's CS3 plus (2.6.1): W 14 (DCC) and W 15 (MM2) are both address 25 on the grid
- * page Main Layout, at (4,7) and (5,9); W 11 (DCC, a double slip on Main Layout) and W 1R (MM2, on the free plan page
- * Startpackung) are both address 1.  A stand-in station serves it and counts the requests.
+ * page Main Layout, at (4,7) and (5,9); W 11 (DCC, a double slip) and W 1R (MM2, on the free page Startpackung) are
+ * both address 1.  A stand-in station serves it and counts the requests.
  *
  * MUTATION: make `resolveTwoProtocolTiles` return at once, and W 15 and W 1R read as DCC.
  *

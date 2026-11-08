@@ -24,27 +24,17 @@ import support.StationRig;
  * A new CS3 firmware that renames, removes or retypes a key, or answers with something else altogether, changes nothing
  * the application already holds that it could not read, and the sync goes on with what it could (FR-169).
  *
- * Each test syncs well, arms the routes, and keeps what is held (support.HeldState: routes with their commands, lock and
- * auto flag, locomotives with their functions, types, triggers and members, pages, accessories).  Then a mutated answer is
- * served, and the sync must succeed and leave what is held exactly as it was where the answer could not be read; then a
- * good sync must give the right result again.  A list that cannot be read, or that has no way to match its records, skips
- * that import whole; a record missing what it needs is skipped alone.
+ * Each test syncs well, arms the routes, and keeps what is held (support.HeldState).  Then a mutated answer is served:
+ * the sync must succeed and leave what is held as it was where the answer could not be read, and a good sync must give
+ * the right result again.  A list that cannot be read, or has no way to match its records, skips that import whole; a
+ * record missing what it needs is skipped alone.
  *
- * MUTATION: have CS2File.readList return an empty list instead of throwing UnreadableAnswerException, and
- * testAnAnswerThatCannotBeReadChangesNothingHeld finds the routes replaced.  Read a locomotive's `funktionen` with
- * optJSONArray, and testALocomotiveThatCannotBeReadIsSkippedAndTheHeldOneKept finds its functions overwritten.  Read a
- * multi-unit's `lokname` with optString, and the same test finds the members gone.  Read `dectyp` with optString and a
- * default, and testAnEmptyDatabaseIsNotFilledWithGuesses finds every locomotive stored as MM2.
- * Skip the record-level answer ("boolean unnameable = false" in parseLocomotivesCS3), and
- * testOneLocomotiveWithoutAnInternalNameCostsOnlyWhatNamesIt finds the units that name it with fewer members; the same in
- * parseRoutesCS3, and it finds the route that names it rewritten without that locomotive.  Read a `typ` with optString, or
- * drop the missing-`lok` check, and testARouteItemThatCannotBeReadKeepsTheHeldRoute
- * finds routes emptied or a train command dropped.  Unlock the routes whatever skipped (canTellDeleted), and
- * testARouteWithNoIdLeavesTheLocksAlone finds the deleted route unlocked.  Drop the partial flag that records set, and
- * the tests find the sync not saying part was unread.  Refuse a route list with switch items and none carrying `stellung`, or six empty routes (a check in
- * parseRoutesCS3(boolean)), and testAHonestRailwayIsImportedAsBeforeAtEverySync finds the 13-switch route and the empty
- * routes refused.  Read the direction 1.5 as backward, or refuse a direction that is left out, and
- * testADirectionThatCannotBeReadKeepsTheHeldRoute finds the route rewritten or skipped.
+ * MUTATION (each test names what it finds): CS2File.readList returning an empty list instead of throwing
+ * UnreadableAnswerException; reading `funktionen` with optJSONArray, a multi-unit's `lokname` or `dectyp` with
+ * optString; skipping the record-level answer in parseLocomotivesCS3 or parseRoutesCS3; reading a `typ` with optString
+ * or dropping the missing-`lok` check; unlocking routes whatever skipped (canTellDeleted); dropping the partial flag;
+ * accepting a route list with switch items and none carrying `stellung`, or six empty routes; reading the direction 1.5
+ * as backward, or refusing a direction left out.
  *
  * @author Adam
  */

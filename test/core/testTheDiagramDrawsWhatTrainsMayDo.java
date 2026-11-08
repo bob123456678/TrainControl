@@ -141,12 +141,11 @@ public class testTheDiagramDrawsWhatTrainsMayDo extends AutonomySessionFixture
     }
 
     /**
-     * A run whose squares say different things is brought to one, its narrowest (what a train finds), and every square
-     * of it stores that, as its first square draws it (OB-361): the first draws it closed and the rest draw nothing, on
-     * the track diagram as in the editor, and the log says it once.
+     * A run whose squares say different things is brought to one, its narrowest (what a train finds), stored on every
+     * square and drawn at its first square (OB-361), on the diagram and in the editor; the log says it once.
      *
-     * MUTATION: leave a run's squares as they were stored, draw a square that follows its run, or draw the first
-     * square's own direction, and this fails.
+     * MUTATION: leave a run's squares as stored, draw a square that follows its run, or draw the first square's own
+     * direction.
      */
     @Test
     public void testARunThatSaysTwoThingsIsBroughtToWhatATrainFinds() throws Exception
@@ -249,12 +248,11 @@ public class testTheDiagramDrawsWhatTrainsMayDo extends AutonomySessionFixture
     }
 
     /**
-     * Track laid on a blank square beside a one-way run takes the run's direction and is saved with the edit, so the
-     * next open has nothing to correct.  The store holds nothing about the blank square, so the save must not depend on
-     * what the store forgot: the drop is done as the track diagram editor does it (tile placed, then `forgetTiles` on
-     * its square, a save when that says something changed).
+     * Track laid on a blank square beside a one-way run takes the run's direction and is saved with the edit.  The
+     * store holds nothing about the blank square, so the drop is done as the editor does it (tile placed,
+     * `forgetTiles`, a save when that says something changed).
      *
-     * MUTATION: answer only what the store forgot again, and this fails.
+     * MUTATION: answer only what the store forgot again.
      */
     @Test
     public void testTrackLaidBesideAOneWayRunIsSavedWithTheEdit() throws Exception
@@ -420,13 +418,11 @@ public class testTheDiagramDrawsWhatTrainsMayDo extends AutonomySessionFixture
     }
 
     /**
-     * Every arrow sits on its rail, the green and the red alike: a Y's toe arrow is as wide each side of the toe, and a
-     * straight's arrows as tall above as below (the lit pixels of a 30-pixel tile from 9 to 20, about 15.0) -
-     * "your down arrow on the Y may still be slightly off center".  An outline rounded to the pixel grid hangs half a
-     * pixel right and down (9 to 21).
+     * Every arrow sits on its rail: a Y's toe arrow as wide each side of the toe, a straight's as tall above as below
+     * (lit pixels of a 30-pixel tile 9 to 20) - "your down arrow on the Y may still be slightly off center".  An
+     * outline rounded to the pixel grid hangs half a pixel right and down (9 to 21).
      *
-     * MUTATION: stroke an arrow's outline on the pixel grid again, or anchor the arrows half a pixel over, and this
-     * fails.
+     * MUTATION: stroke an arrow's outline on the pixel grid again, or anchor the arrows half a pixel over.
      */
     @Test
     public void testTheArrowsSitOnTheArtsCentreLine()
@@ -892,12 +888,9 @@ public class testTheDiagramDrawsWhatTrainsMayDo extends AutonomySessionFixture
     }
 
     /**
-     * A plain square marked out of service draws its cross while trains are running, not only while the setup is being
-     * edited.
-     *
-     * The running diagram badges a square only when it is worth badging (a station, trains turn round here, autonomy is
-     * not using it); a plain sensor switched off must still get the cross the editor draws, as it says "nothing may
-     * pass here" when a train does not arrive.
+     * A plain square marked out of service draws its cross while trains are running, not only while editing: the
+     * running diagram badges a square only when worth it, but a plain sensor switched off must get the cross, as it
+     * says "nothing may pass here".
      *
      * MUTATION: dropping the `|| shut` term from `worthABadge` fails this and nothing else.
      */
@@ -942,14 +935,11 @@ public class testTheDiagramDrawsWhatTrainsMayDo extends AutonomySessionFixture
     }
 
     /**
-     * And the running graph is told, so trains do not simply drive through it.
+     * And the running graph is told, so trains do not drive through it: the editor's **Out of service** writes `active`
+     * and nothing else, so the builder must not drop that property for a non-station, and `Layout.isPathClear` needs
+     * the flag to refuse a path through an inactive point.
      *
-     * The editor offers **Out of service** on every square, station or not, and its handler writes `active` and nothing
-     * else: no direction, no arrow, so the builder must not drop that property for anything that is not a station.
-     * `Layout.isPathClear` refuses a path whose intermediate point is inactive, which is what the cross means, and it
-     * can only do that if the flag reaches the graph.
-     *
-     * MUTATION: putting back `if ("active".equals(key) && !point.isStation()) continue;` fails this.
+     * MUTATION: putting back `if ("active".equals(key) && !point.isStation()) continue;`.
      */
     @Test
     public void testAShutPlainSquareReachesTheRunningGraph() throws Exception
@@ -1029,15 +1019,12 @@ public class testTheDiagramDrawsWhatTrainsMayDo extends AutonomySessionFixture
     }
 
     /**
-     * A ROAD THE OPERATOR HAS SHUT DRAWS NO ARROW, EVEN WHERE THE BLADES WOULD HAVE ONE.
+     * A road the operator has shut draws no arrow, even where the blades would have one: `directionMarks` must not
+     * override the authored answer merely because it is not `NONE`.  On a permanent turnout every route is directed at
+     * the toe, so `TOWARD_A` permits only an entry the blades refuse: nothing passes, and no arrow may point at the
+     * toe.
      *
-     * `directionMarks` is what the diagram draws.  It must not override the authored answer merely because it is not
-     * `NONE`: that holds for the DEFAULT, `BOTH`, but not for the case that matters.  On a permanent turnout every
-     * route is directed at the toe, so `TOWARD_A` (toward the fork) permits only an entry the blades refuse: nothing
-     * passes, which is what an operator who shuts that arm means, and no arrow may point at the toe.
-     *
-     * MUTATION: drop the `isPassable` branch from `directionMarks` and the shut route draws an arrow again; make
-     * `isPassable` answer true for everything and the same claim fails.
+     * MUTATION: drop the `isPassable` branch from `directionMarks`; make `isPassable` answer true for everything.
      */
     @Test
     public void testAShutRouteDrawsNoArrow() throws IOException
@@ -1166,11 +1153,10 @@ public class testTheDiagramDrawsWhatTrainsMayDo extends AutonomySessionFixture
     }
 
     /**
-     * A station on a double-curve sensor is drawn on the curve that carries the contact (MT-712).  Which curve has the
-     * contact is read off the art itself, the white inside the contact's ring at the middle of its curve, so the claim
-     * cannot agree with a wrong rule about which road that is.
+     * A station on a double-curve sensor is drawn on the curve that carries the contact (MT-712), read off the art (the
+     * white inside the contact's ring), so the claim cannot agree with a wrong rule about which road that is.
      *
-     * MUTATION: badge the square's first road again, and this fails.
+     * MUTATION: badge the square's first road again.
      */
     @Test
     public void testADoubleCurveStationIsDrawnOnTheCurveWithTheContact() throws Exception
@@ -1454,9 +1440,9 @@ public class testTheDiagramDrawsWhatTrainsMayDo extends AutonomySessionFixture
 
     /**
      * The station ingress arrows follow the same switch as the travel restrictions: "Couple the station ingress arrows
-     * to this setting in the track viewer, but be careful not to disturb their behavior in the editor."  A chevron
-     * saying which way into a platform is shut is the same kind of statement as a one-way arrow.  The preference is set
-     * through the key the code reads and put back afterwards: these are the real preferences of whoever runs the suite.
+     * to this setting in the track viewer, but be careful not to disturb their behavior in the editor."  The preference
+     * is set through the key the code reads and put back afterwards (they are the real preferences of whoever runs the
+     * suite).
      *
      * MUTATION: drawing the arrivals unconditionally fails the first half.
      */
@@ -1603,11 +1589,10 @@ public class testTheDiagramDrawsWhatTrainsMayDo extends AutonomySessionFixture
     }
 
     /**
-     * A sensor with no name is named as it becomes a station (FR-120), through the editor's own answer to the station
-     * menu, `setUsage`, with its question answered here: Cancel, a blank name, and a name another square has leave the
-     * square a sensor; a free name makes it a station; a square with a name already is not asked.
+     * A sensor with no name is named as it becomes a station (FR-120), through the editor's `setUsage`: Cancel, a blank
+     * name, or a name another square has leave a sensor; a free name makes a station; a named square is not asked.
      *
-     * MUTATION: make an unnamed sensor a station without asking, or take a name another square has, and this fails.
+     * MUTATION: make an unnamed sensor a station without asking, or take a name another square has.
      */
     @Test
     public void testAnUnnamedSensorIsNamedAsItBecomesAStation() throws Exception
@@ -1738,13 +1723,12 @@ public class testTheDiagramDrawsWhatTrainsMayDo extends AutonomySessionFixture
     }
 
     /**
-     * Show Trains redraws every square in its window, not only the squares whose annotation it changes: the trains'
-     * icons are drawn from the railway by squares that ask the switch as they paint, and where the railway has a train
-     * and the setup places none (the setup unable to build, the last valid railway kept) no annotation changes.  The
-     * panel here shares its window with a square it knows nothing about, standing for such a square: each click of the
-     * switch, off and back on, asks for that square to be redrawn.
+     * Show Trains redraws every square in its window, not only those whose annotation it changes: the trains' icons are
+     * drawn from the railway by squares that ask the switch as they paint, and where the setup places no train (setup
+     * unable to build) no annotation changes.  A panel shares its window with a square it knows nothing about: each
+     * click of the switch asks for it to be redrawn.
      *
-     * MUTATION: drop the switch's redraw of its window, and this fails.
+     * MUTATION: drop the switch's redraw of its window.
      */
     @Test
     public void testShowTrainsRedrawsEverySquareInItsWindow() throws Exception

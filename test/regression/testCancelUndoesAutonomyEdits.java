@@ -23,12 +23,10 @@ import org.traincontrol.marklin.MarklinControlStation;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 
 /**
- * Cancel in the autonomy editor undoes the setup edits made in it (MT-406): a one-way run or any other edit to arrows
- * must not persist after Cancel.  Every setup gesture rebuilds the running layout through `AutonomyViewerPanel.load`,
- * which SAVES the setup and so clears the session's unsaved flag; Cancel's `mayLeave` must therefore consult the
- * snapshot `LayoutEditor` takes when it opens (`autonomyAsOpened`), not that flag.
- *
- * On the frozen railway, never `cs2_sample_layout` (OB-111).  Each claim puts the setup back as it found it.
+ * Cancel in the autonomy editor undoes the setup edits made in it (MT-406).  Every setup gesture rebuilds the running
+ * layout through `AutonomyViewerPanel.load`, which SAVES the setup and clears the unsaved flag, so Cancel's `mayLeave`
+ * must consult the snapshot `LayoutEditor` takes when it opens (`autonomyAsOpened`), not that flag.  On the frozen
+ * railway, never `cs2_sample_layout` (OB-111); each claim puts the setup back as it found it.
  *
  * @author Adam
  */
@@ -547,10 +545,8 @@ public class testCancelUndoesAutonomyEdits
 
     /**
      * A setup edit declined during a run is not removed by the next door that folds the running layout back: the exit
-     * save skips its fold while the flag is set, and `captureRunningLayout`, the same fold at every other door, must
-     * too.  The race is set up as the state it leaves behind (the home written without a rebuild, and the flag the
-     * declined rebuild sets); the fold is called directly, not through `openLayoutEditor`, which also writes the
-     * operator's last-editor preference.
+     * save skips its fold while the flag is set, and `captureRunningLayout` must too.  The state is set up as the race
+     * leaves it and the fold called directly, not through `openLayoutEditor`.
      */
     @Test
     public void testADeclinedEditSurvivesTheNextCapture() throws Exception
@@ -681,11 +677,9 @@ public class testCancelUndoesAutonomyEdits
     }
 
     /**
-     * A pre-edit note with a value of the wrong type inside it is refused, and the setup and the session survive it:
-     * `restoreSetup` reads the note with strict accessors, so a wrong type must not throw part way through with nothing
-     * to put back.  The wrong type is a page name that is a list, in the first field the read takes.  Asked of a
-     * session of its own over the sandbox's files: the revert says it did nothing, the setup is as it was, and the note
-     * is kept and reported as unusable.  The note is taken away however this ends.
+     * A pre-edit note with a value of the wrong type inside it (a page name that is a list) is refused, and the setup
+     * and the session survive: `restoreSetup` reads with strict accessors and must not throw part way with nothing to
+     * put back.  The revert says it did nothing, and the note is kept and reported as unusable.
      *
      * MUTATION: let the throw out of `AutonomySession.revertUnfinishedEdit` again, and this fails.
      */
@@ -1148,10 +1142,9 @@ public class testCancelUndoesAutonomyEdits
     }
 
     /**
-     * A fold between Cancel's discard and the hand-over behind it keeps the setup as it was.  A door that folds the
-     * railway into the configuration while Cancel's handler ran (Export, which folds before its chooser opens, or the
-     * exit) must not find the window gone and write the discarded edit back.  The fold is queued as such a click is,
-     * before Cancel's tail, and called directly as `testDiscardOnTheWayOutPutsTheHomeBack` does.
+     * A fold between Cancel's discard and the hand-over behind it keeps the setup as it was: a door that folds the
+     * railway into the configuration while Cancel's handler ran (Export, the exit) must not find the window gone and
+     * write the discarded edit back.  The fold is queued as such a click is, before Cancel's tail.
      *
      * MUTATION: leave the railway to the hand-over after a discard, and this fails.
      */

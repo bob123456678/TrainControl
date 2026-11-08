@@ -148,13 +148,9 @@ public class testNoSelfRecursiveWrappers
      * A delegator and the collaborator it hands to do not call each other for ever (FR-136): a StackOverflowError the
      * compiler accepts.  Methods are told apart by name AND number of arguments.
      *
-     * MUTATION: in BackupAction, make `writeTheBackup` call `this.ui.backupData()`, and this fails; so does making
-     * UpdateFlow's static `whenNoModalDialog` call `TrainControlUI.whenNoModalDialog(`, SessionRuns' `runs()` return
-     * `owner.runs()`, LayoutEditorUndo's `undo()` call `editor.undo()`, TrainControlUI's `combineLinkedPages` delegator
-     * call `this.combineLinkedPages()` (or a bare `combineLinkedPages()`) instead of
-     * `layoutFileActions.combineLinkedPages()`, EditorTileMenus' `addFacingItems` begin
-     * `if (target == null) return editor.addFacingItems(menu, target);`, or AutonomyEditorPanel's `addFacingItems` return
-     * `addFacingItems(menu, target)`.
+     * MUTATION: in BackupAction, make `writeTheBackup` call `this.ui.backupData()`, and this fails; so does any other
+     * delegator calling its own name instead of its collaborator's (SessionRuns' `runs()`, LayoutEditorUndo's `undo()`,
+     * EditorTileMenus' `addFacingItems`, ...).
      */
     @Test
     public void testADelegatorAndItsCollaboratorDoNotCallEachOtherForEver() throws Exception
@@ -178,9 +174,7 @@ public class testNoSelfRecursiveWrappers
 
     /**
      * Reads an owner's source and its collaborator's: no delegator hands to a method that calls back into it, and no
-     * method of the owner named like one of the collaborator's calls its own name instead.  The owner calls the
-     * collaborator through `<field>.` (or `Class.` for a static); the collaborator calls the owner through `backPrefix`
-     * or `OwnerClass.`.
+     * owner method named like one of the collaborator's calls its own name instead.
      */
     private static void assertNoLoopBetween(List<String> owner, List<String> helper, String field, String helperClass,
         String ownerClass, String backPrefix)
@@ -437,14 +431,12 @@ public class testNoSelfRecursiveWrappers
     };
 
     /**
-     * The railway's delegators and the helpers they hand to do not call each other for ever (FR-136).  Both loops are
-     * read: a delegator calling its own name instead of the helper's, and a helper's method calling back into the
-     * delegator that leads to it; so are the helpers' own hand-offs between overloads.
+     * The railway's delegators and the helpers they hand to do not call each other for ever (FR-136): a delegator
+     * calling its own name, a helper calling back into the delegator that leads to it, and the helpers' own overload
+     * hand-offs are all read.
      *
      * MUTATION: make LayoutExplanations.explainCannotStart(Locomotive) end `return owner.explainCannotStart(loc);`, or
-     * make Layout.whyNoRouteFitsTo call `whyNoRouteFitsTo(loc, start, end)`, and this fails; so does making
-     * LayoutExplanations' `explainCannotStart(loc, byHand)` hand to `explainCannotStart(loc, false)`, or
-     * StandingTrains' six-argument `walkOneTail` call `walkOneTail(` with six arguments.
+     * make Layout.whyNoRouteFitsTo call `whyNoRouteFitsTo(loc, start, end)`, and this fails.
      */
     @Test
     public void testARailwayDelegatorAndItsHelperDoNotCallEachOtherForEver() throws Exception
@@ -490,11 +482,10 @@ public class testNoSelfRecursiveWrappers
 
     /**
      * Only the railway assigns its `edges` and `points` (FR-136): Layout writes them under its monitor and builds the
-     * adjacency beside them, so a write from another class would skip both.  No other file of the package assigns
-     * either through another object or calls a mutator on it, and Layout declares both `final`.
+     * adjacency beside them.  No other file of the package assigns or mutates either through another object, and Layout
+     * declares both `final`.
      *
-     * MUTATION: have any other class of the package call `layout.points.put(`, `owner.edges.remove(` or assign
-     * `layout.points = `, and this fails; so does dropping `final` from either declaration in Layout.
+     * MUTATION: have any other class call `layout.points.put(` or assign `layout.points = `, or drop `final`.
      */
     @Test
     public void testOnlyTheRailwayAssignsItsEdgesAndPoints() throws Exception
@@ -595,9 +586,7 @@ public class testNoSelfRecursiveWrappers
 
     /**
      * What a file reaches into an AutonomyEditorPanel for: each `session`, `promptName(` or `applyLength(` taken from
-     * an expression of that type: a name the file declares with the type (field, parameter, local), a call of
-     * `getAutonomyPanel()` or `liveSetupPanel()`, or a cast to the type.  `promptNameFor(` and `applyLengthAnswer(` are
-     * other names and do not match.
+     * an expression of that type (a declared name, a `getAutonomyPanel()` or `liveSetupPanel()` call, or a cast).
      *
      * @param code a file's text without comments
      * @return one entry per hit, "member: the text around it"
@@ -699,14 +688,11 @@ public class testNoSelfRecursiveWrappers
     }
 
     /**
-     * Whether a line calls the wrapper's own name from inside its own body, qualified or not.  Besides
-     * `this.syncWithCS2()`, the mechanical rewrite also produces the UNQUALIFIED spelling (inside a lambda, or once
-     * `this.` is tidied away), so a bare occurrence of the name, preceded by neither a dot nor a word character, is
-     * checked too: it matches `-> name(` and `name(` but not `this.model.name(`, the call the wrapper is supposed to
-     * make.
+     * Whether a line calls the wrapper's own name from inside its own body, qualified or not: the mechanical rewrite
+     * also produces the UNQUALIFIED spelling (in a lambda, or once `this.` is tidied away), so a bare occurrence
+     * preceded by neither a dot nor a word character is checked too.
      *
-     * MUTATION this catches: change the recursive call this file already guards against from `this.syncWithCS2();` to
-     * the unqualified `syncWithCS2();`, which the substring check on `"this." + name + "("` no longer matches.
+     * MUTATION: change the guarded recursive call from `this.syncWithCS2();` to the unqualified `syncWithCS2();`.
      */
     private static boolean callsItself(String line, String name, int arity)
     {
@@ -728,8 +714,7 @@ public class testNoSelfRecursiveWrappers
     }
 
     /**
-     * How many arguments a call carries.  Commas inside a nested call are not separators, so depth is tracked; good
-     * enough to tell `name(a)` from `name(a, b)`, and the alternative is a Java parser.
+     * How many arguments a call carries; commas inside a nested call are not separators, so depth is tracked.
      *
      * @param args the text between the brackets
      * @return the number of top-level arguments

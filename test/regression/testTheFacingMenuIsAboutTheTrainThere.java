@@ -24,10 +24,10 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
 /**
  * After a run, the Facing menu is about the train the railway has on the square, and turns that one.
  *
- * After a run the setup still names each square's pre-run occupant (behaviour/editing-while-running.md 6a).  The menu
- * took its train from the setup: with P placed in the setup and T standing there on the railway, it was titled "P is
- * facing" and a click moved P, found on no copy of the square, so T was not turned and the correction was dropped
- * silently.  The same shape one door along: `flipFacing` is keyed on the railway's train, and this menu was not.
+ * After a run the setup still names each square's pre-run occupant (behaviour/editing-while-running.md 6a), and the
+ * menu took its train from the setup: with P placed in the setup and T standing there on the railway, a click moved P,
+ * found on no copy of the square, so T was not turned and the correction was dropped silently.  `flipFacing` is keyed
+ * on the railway's train, and this menu was not.
  *
  * Asked through the real door: the editor's right-click menu, whose Change Direction both surfaces serve
  * (`AutonomyEditorPanel.addFacingItems`), clicked.

@@ -28,15 +28,13 @@ import org.traincontrol.marklin.MarklinControlStation;
  * The facing an import of a 2.8.1 file gives a train is the way the file ran it, and where the file cannot say, a guess
  * trains may arrive in over the finished setup.
  *
- * A 2.8.1 graph states direction as one-way edges: where a point's edges all leave the square by one side, that is the
- * way the train drives.  Where it has none the old format cannot say which way a train points, so the import chooses,
- * and it chose the first copy the build emits (N, E, S, W), barred or not: at BottomMainA, with arrivals from the east
- * barred, the westbound copy, which is no station.  The build honors a recorded facing even where only such a copy
- * holds it (the copy IS the direction), so the guess put an imported train where autonomy will not start it.  A guess
- * is not a fact, and the one guess autonomy can start is a way trains may arrive.
+ * A 2.8.1 graph states direction as one-way edges.  Where a point has none the import guessed the first copy the build
+ * emits, barred or not (at BottomMainA, with arrivals from the east barred, the westbound copy, which is no station),
+ * and the build honors a recorded facing even where only such a copy holds it.  A guess is not a fact, and the one
+ * guess autonomy can start is a way trains may arrive.
  *
  * On a fresh configuration over the frozen railway, with only BottomMainA carrying a train in the file and its edges
- * taken out, so the file cannot say and the import has to guess.
+ * taken out, so the import has to guess.
  *
  * MUTATION: have the import take the first copy's facing again and this fails.
  *
@@ -142,12 +140,9 @@ public class testAnImportedFacingGuessCanStart
     }
 
     /**
-     * The guess is made over the setup the import leaves, after it has marked the squares trains turn round at.
-     *
-     * A square trains must turn at has only turning copies, which face the other way from its plain ones.  Guessed
-     * before the mark, the way trains may arrive was asked of the plain copies, and at a terminus with one side barred
-     * the guess was the facing only the barred turning copy holds.  BottomMainA, arrivals from the east barred, its
-     * legacy point marked a terminus, its edges taken out.
+     * The guess is made over the setup the import leaves, after it has marked the squares trains turn round at: a
+     * square trains must turn at has only turning copies, which face the other way from its plain ones.  BottomMainA,
+     * arrivals from the east barred, its legacy point marked a terminus, its edges taken out.
      *
      * MUTATION: guess inside the points loop again, before the mark, and this fails.
      */
@@ -281,10 +276,8 @@ public class testAnImportedFacingGuessCanStart
     /**
      * The old file's one-way running is carried onto the diagram, so on a fresh upgrade every train can stand the way
      * the file ran it.  Adam: "Carry the old file's directions onto the diagram - yes, to the extent possible."
-     *
-     * Without it the diagram's defaults decide: a switch lets trains out of its toe only, so TopMainR1Inter, reached
-     * from the north in the old graph, could be arrived at from the east only and the train the file ran east was stood
-     * facing north.
+     * Without it the diagram's defaults decide (TopMainR1Inter, reached from the north in the old graph, could be
+     * arrived at from the east only).
      *
      * MUTATION: carry nothing, and this fails.
      */
@@ -337,8 +330,8 @@ public class testAnImportedFacingGuessCanStart
 
     /**
      * Onto a diagram whose directions have been set, nothing is carried: it is counted, and the diagram is left as it
-     * is.  A direction left at its default is stored as nothing, so filling the gaps cannot tell track the operator
-     * left running both ways on purpose from track nobody has looked at (MT-491).
+     * is.  A default direction is stored as nothing, so filling the gaps cannot tell track left running both ways on
+     * purpose from track nobody has looked at (MT-491).
      *
      * MUTATION: carry onto a diagram whose directions have been set, and this fails.
      */
@@ -376,9 +369,8 @@ public class testAnImportedFacingGuessCanStart
      * A direction the operator set is kept, and where it keeps a train from standing the way the file ran it, the
      * import says so (Adam: "to the extent possible"; OB-270).  Every piece of track the old file's edges run one way
      * is set the other way round beforehand; TopMainR1Inter then cannot hold the east the file ran its train, and the
-     * import names it.  A baseline, the same file onto a diagram tuned by one direction no old edge crosses, shows the
-     * log's count leaving out the operator's own roads: nothing is written either way, so that count is the only place
-     * the operator's-own rule shows.
+     * import names it.  The baseline, a diagram tuned by one direction no old edge crosses, shows the log's count
+     * leaving out the operator's own roads (nothing is written either way).
      *
      * MUTATION: overwrite a direction the operator set, and this fails; so does dropping the operator's-own `continue`
      * in `SessionImport.carryTheOldDirections`.

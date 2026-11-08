@@ -16,18 +16,14 @@ import org.testng.annotations.Test;
  * An arrow on the diagram points at the same page after the page list changes.  A link tile holds a POSITION in the
  * name-sorted page list (Adam: "let's make artikel be the sorted index of the page"), so adding, renaming,
  * duplicating, deleting or combining a page changes what every arrow means, and
- * `LayoutDiagram.writeIndexAndKeepLinksAimed` re-aims them.
- *
- * The first version resolved the destination against the list the CALLER handed in, and four of the five gestures
- * hand over a list that is not sorted (a rename puts the new name in the old slot; an add, a duplicate and a combine
- * append).  So it is driven at `writeIndexAndKeepLinksAimed` directly, where an unsorted list can be handed over.
+ * `LayoutDiagram.writeIndexAndKeepLinksAimed` re-aims them.  Four of the five gestures hand over a list that is not
+ * sorted, so it is driven at `writeIndexAndKeepLinksAimed` directly.
  */
 public class testTheArrowsKeepTheirAim
 {
     /**
-     * Adding a page whose name sorts into the MIDDLE leaves every arrow on the same page.  The name is the one
-     * Combine Linked Pages offers by default (`"<page> and neighbors"`), which sorts right after the page it was made
-     * from rather than last, so the caller's appended list differs from the sorted one.
+     * Adding a page whose name sorts into the MIDDLE leaves every arrow on the same page (Combine Linked Pages' default
+     * name sorts right after its source, so the caller's appended list differs from the sorted one).
      *
      * MUTATION: re-aim against `layoutList` as handed in, instead of a sorted copy, and this fails with
      * the arrow on "2 - Bottom".
@@ -111,13 +107,9 @@ public class testTheArrowsKeepTheirAim
     }
 
     /**
-     * Add Page leaves the page it was invoked from aimed correctly, ON DISK.  The tests above drive the rule; these
-     * drive the gesture, because the first fix repaired the arithmetic and left the sequence alone: all three of Add,
-     * Duplicate and Rename wrote a page file before the arrows were corrected.  Asserted on the FILE, because the
-     * in-memory correction is thrown away by the refresh that follows each gesture.
-     *
-     * Add Page blanks the CURRENT page's object to write it out as the new blank page, so a re-aim that ran after that
-     * saw a page with no tiles and the original file was never corrected.
+     * Add Page leaves the page it was invoked from aimed correctly, ON DISK: the tests above drive the rule, these the
+     * gesture.  Asserted on the FILE (the in-memory correction is thrown away by the refresh).  Add Page blanks the
+     * CURRENT page's object to write the new blank page, so a re-aim after that saw a page with no tiles.
      *
      * MUTATION: move the re-aim back below `page.saveChanges(newLayoutName, duplicate)` and this fails
      * with the arrow still on 2.

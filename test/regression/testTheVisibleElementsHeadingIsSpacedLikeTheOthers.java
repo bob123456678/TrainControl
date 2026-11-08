@@ -145,12 +145,9 @@ public class testTheVisibleElementsHeadingIsSpacedLikeTheOthers
     }
 
     /**
-     * The autonomy editor, shrunk as far as it will go in both directions, still shows every control (OB-342): HEIGHT
-     * shows Cancel, the last control, and the status line; WIDTH, the status line's minimum must not be its text's (the
-     * sentence here is longer than any language's, so the claim does not depend on the railway's words); SCALE, the
-     * floor is in pixels and the window is not, so it is asked at 100%, 125% and 150% (`flatlaf.uiScale`), with the
-     * look and feel installed again and put back at the end.  Asked at each of the three diagram sizes, of every
-     * control outside the scroll panes.
+     * The autonomy editor, shrunk as far as it will go, still shows every control (OB-342): HEIGHT shows Cancel and the
+     * status line; WIDTH, the status line's minimum must not be its text's; SCALE, the floor is in pixels, so it is
+     * asked at 100%, 125% and 150% (`flatlaf.uiScale`, look and feel put back at the end).
      *
      * MUTATION: take out the floor the window's own layout asks for in `sizeForDiagram`, or give the status line in
      * `AutonomyEditorPanel` its text's width as its minimum again, and this fails.
@@ -494,10 +491,9 @@ public class testTheVisibleElementsHeadingIsSpacedLikeTheOthers
     }
 
     /**
-     * An autonomy editor on a 768-pixel screen (720 pixels of work area, under Windows' 48-pixel taskbar) is no taller
-     * than the work area, and Save Changes and Cancel lie wholly inside its content, as it opens and shrunk to its
-     * smallest size (OB-399; Adam: "ensure the autonomy editor window has a min height to prevent the cancel button from
-     * being hidden").  The smallest size is the column's own height, so it fits the screen rather than being cut to it.
+     * An autonomy editor on a 768-pixel screen (720 pixels of work area) is no taller than the work area, and Save
+     * Changes and Cancel lie wholly inside its content, as it opens and shrunk to its smallest size (OB-399; Adam:
+     * "ensure the autonomy editor window has a min height to prevent the cancel button from being hidden").
      *
      * MUTATION: give `AutonomyEditorPanel` its 640-pixel preferred and 240-pixel minimum height again, and this fails.
      */

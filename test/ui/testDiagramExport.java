@@ -213,9 +213,8 @@ public class testDiagramExport
      * draw the same thing - a shortcut that quietly exported a different page would be worse than the
      * question it removes.
      *
-     * Reaching the active-page path means going through `activeLayoutPage()` itself, by reflection since it is private
-     * and the rest of `exportDiagram` is a chain of modal dialogs and a file chooser, after pointing the real selector
-     * at a page the way choosing one from the toolbar does.
+     * Reaching the active-page path goes through `activeLayoutPage()` itself, by reflection (it is private), after
+     * pointing the real selector at a page the way the toolbar does.
      *
      * Mutation this must fail: swap the endpoints so the shortcut asks for a DIFFERENT page than the selector shows,
      * or revert `activeLayoutPage()` to always answer the same page regardless of the selector.
@@ -319,16 +318,12 @@ public class testDiagramExport
 
     /**
      * The column and row numbers are part of the grid: on with it, off without (OB-179), in BOTH WINDOWS and both
-     * directions of the switch (a test of the ON case alone passes for a grid that always carries a ruler).
-     * `testTheDiagramPrintsItsCoordinates` covers what `AxisRuler` DRAWS; this covers whether anybody put one on the
-     * diagram.
+     * directions of the switch.  `testTheDiagramPrintsItsCoordinates` covers what `AxisRuler` DRAWS; this covers
+     * whether anybody put one on the diagram.  THE RETIRED KEY IS SET TO FALSE THROUGHOUT.
      *
-     * THE RETIRED KEY IS SET TO FALSE THROUGHOUT.
-     *
-     * MUTATION this catches: removing the `setBorder` from `LayoutGrid`, restoring the retired
-     * preference as a second term of `coordinatesVisible`, dropping the `LayoutEditor.showGrid()` term
-     * so the numbers stop following the grid, or dropping the `master instanceof LayoutEditor` term -
-     * which is the one that put a ruler on the running diagram.
+     * MUTATION: removing the `setBorder` from `LayoutGrid`, restoring the retired preference as a second term of
+     * `coordinatesVisible`, dropping the `LayoutEditor.showGrid()` term, or dropping the `master instanceof
+     * LayoutEditor` term (which put a ruler on the running diagram).
      */
     @Test
     public void testTheCoordinateRulerIsPartOfTheGrid() throws Exception
@@ -438,12 +433,9 @@ public class testDiagramExport
     }
 
     /**
-     * Building a grid over a panel retires the grid that was there.  Four places in the application build a
-     * `LayoutGrid` over an existing panel, and three called `discard()` on the outgoing one first.  A grid that is not
-     * discarded keeps two timers armed, firing into a panel that now belongs to somebody else: the grace timer drops
-     * a spinner into the middle of the page the NEW grid has just drawn, and the extra component pushes the tiles
-     * along (FlowLayout), so the last row comes out short.  Three out of four is what a rule looks like just before it
-     * is missed at the fourth, so the rule moved into the constructor and this checks it is there.
+     * Building a grid over a panel retires the grid that was there: a grid that is not `discard()`ed keeps two timers
+     * armed, firing into a panel that now belongs to somebody else (a spinner on the page the NEW grid drew, a short
+     * last row).  The rule lives in the constructor, and this checks it is there.
      */
     @Test
     public void testANewGridRetiresTheOneItReplaces() throws Exception
@@ -479,12 +471,9 @@ public class testDiagramExport
 
 
     /**
-     * A replaced grid is not kept alive by the table that retires it (MT-134): a WeakHashMap keyed by the panel
-     * collects an entry only when nothing else reaches the KEY, and a LayoutGrid reaches its own panel, so while the
-     * value was the grid itself every entry kept its own key alive.
-     *
-     * The collection is asked for in a bounded loop, since a garbage collector may take its time and a test that
-     * demands the first `gc()` collect fails on a fast machine for no reason.
+     * A replaced grid is not kept alive by the table that retires it (MT-134): a WeakHashMap entry is collected only
+     * when nothing reaches the KEY, and a LayoutGrid reaches its own panel.  The collection is asked for in a bounded
+     * loop, since a garbage collector may take its time.
      */
     @Test
     public void testAReplacedGridIsNotRetained() throws Exception
@@ -530,11 +519,9 @@ public class testDiagramExport
     }
 
     /**
-     * A dozen editors opened and closed leave nothing behind (FR-012).  A heap measurement is noise, so the exact
-     * property is asked for directly: after a dozen cycles, ELEVEN of the twelve grids must be reachable from nothing.
-     * Asking `testAReplacedGridIsNotRetained`'s question twelve times is not redundant, since the leak retained one
-     * page per cycle and a single replacement is the case most likely to be fixed by accident.  The collection is asked
-     * for in a bounded loop, as there.
+     * A dozen editors opened and closed leave nothing behind (FR-012): after a dozen cycles, ELEVEN of the twelve grids
+     * must be reachable from nothing (a heap measurement is noise).  Repeated, since the leak retained one page per
+     * cycle.  The collection is asked for in a bounded loop, as above.
      */
     @Test
     public void testADozenEditorCyclesRetainNothing() throws Exception

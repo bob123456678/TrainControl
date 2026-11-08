@@ -66,15 +66,10 @@ public class testATrainCoversTheTrackBehindIt
     }
 
     /**
-     * `wouldAsk` answers exactly when the prompt would ask.
-     *
-     * The paste door abandons a placement when the arrival-side question came back null AND the prompt would have asked
-     * one.  That second half has to be the same condition the prompt itself uses, or the door is guessing: null means
-     * "declined", "no side to choose between" and "could not show the dialog", and only the first is a refusal.
-     *
-     * **`return mayReverse;` restores the whole defect with every other test green**, which is why this exists.  It
-     * asserts the two halves the door depends on: a square with several sides asks, and a square with fewer does not,
-     * whatever the mark says.
+     * `wouldAsk` answers exactly when the prompt would ask.  The paste door abandons a placement when the question
+     * came back null AND the prompt would have asked one: null also means "no side to choose" or "could not show the
+     * dialog".  `return mayReverse;` restores the defect with every other test green: a square with several sides
+     * asks and one with fewer does not, whatever the mark says.
      */
     @Test
     public void testWouldAskAgreesWithWhatThePromptDoes() throws Exception
@@ -778,15 +773,10 @@ public class testATrainCoversTheTrackBehindIt
     }
 
     /**
-     * The tail's first step takes the rail from the neighbor's plain copy, not from its turning twin.
-     *
-     * Rails arriving at a standing copy from a neighbor N come from the copies of N that face it: N's plain copy and,
-     * where trains may turn at N, its turning copy.  Both come in by the same side, and `getNeighborsAndIncoming` lists
-     * them sorted by name; a turning copy is named by the opposite heading plus ", reverse", so it sorts first whenever
-     * the plain heading is southbound or westbound.  From a turning copy every rail leads back, so a walk that took the
-     * first stops without claiming N's square or the road beyond it.
-     *
-     * The twin is named to sort first; the control names it to sort last.
+     * The tail's first step takes the rail from the neighbor's plain copy, not its turning twin.  Both come in by the
+     * same side and `getNeighborsAndIncoming` sorts them by name; the turning copy (", reverse") sorts first when the
+     * plain heading is southbound or westbound, and from it every rail leads back, so a walk that took it would not
+     * claim N's square.  The twin is named to sort first; the control names it to sort last.
      *
      * MUTATION: take the first arriving rail again, and this fails.
      */
@@ -967,16 +957,10 @@ public class testATrainCoversTheTrackBehindIt
     }
 
     /**
-     * And the refresh redraws exactly that difference, in both directions.
-     *
-     * Read from the source, because the redraw needs a window and a registry of live tiles. What is pinned is the SHAPE
-     * the test above proves is needed: the previous set is kept, the two are compared, and the labels for what changed
-     * are asked to re-apply the wash.  A square that has just become covered needs the mark put on, and one that has
-     * stopped being covered needs it taken off.
-     *
-     * **And BOTH MARKS go through this one comparison.**  A square changes what it draws when its road changes AND when
-     * it starts or stops being blocked, and the two do not move together (starting autonomy changes every blocked
-     * square and no covered one), so one pass must diff both rather than a second refresh path someone forgets to call.
+     * And the refresh redraws exactly that difference, in both directions.  Read from the source, since the redraw
+     * needs a window and live tiles: the previous set is kept, the two are compared, and the labels that changed
+     * re-apply the wash.  BOTH marks (covered and blocked) go through this one comparison, since they do not move
+     * together (starting autonomy changes every blocked square and no covered one).
      */
     @Test
     public void testTheRefreshRedrawsWhatChanged() throws Exception
@@ -994,10 +978,9 @@ public class testATrainCoversTheTrackBehindIt
         assertTrue(ui.contains("changed = squaresWhoseRoadsChanged(before, now)"),
             "the covered squares are no longer compared road by road, so a train that moves leaves its line behind");
 
-        // THE UNION, THEN WHAT DID NOT CHANGE TAKEN BACK OUT (MT-309).  The covered set is a map of square to the ROADS
-        // of it a train is lying across (the mark is a line along one road), so a square can stay covered while what it
-        // draws changes: the redraw walks the union of the two sets and drops the squares whose answer is the same, not
-        // the plain symmetric difference.
+        // THE UNION, THEN WHAT DID NOT CHANGE TAKEN BACK OUT (MT-309): a square can stay covered while what it draws
+        // changes (the covered set maps a square to the ROADS a train lies across), so the redraw walks the union of
+        // the two sets and drops the squares whose answer is the same, not the plain symmetric difference.
         assertTrue(diff.contains("changed.addAll(now.keySet())"),
             "the redraw no longer walks both sets, so one of the two directions is not being"
             + " repainted - either the mark is not put on, or it is not taken off");
@@ -1006,10 +989,8 @@ public class testATrainCoversTheTrackBehindIt
             "the redraw repaints every square in either set rather than the ones that changed, which"
             + " is the whole-diagram repaint the targeted one exists to avoid (MT-334)");
 
-        // AND THE GRAY IS DIFFED IN THE SAME PASS, in both directions, BY ROAD (OB-208): the gray is per road, like the
-        // line (a double curve on a covered edge fades only the arc the edge runs over), so a square can stay gray
-        // while what it fades changes.  It is compared the way the line is: the union of both sets, and a square added
-        // wherever its roads differ.  Each direction is asked for below.
+        // AND THE GRAY IS DIFFED IN THE SAME PASS, both directions, BY ROAD (OB-208): a double curve on a covered edge
+        // fades only its arc, so a square can stay gray while what it fades changes; compared as the line is.
         assertTrue(diff.contains("new java.util.HashSet<>(was.keySet())"),
             "the grey diff no longer starts from the old set, so a square that has stopped being blocked"
             + " is not redrawn - the grey stays on track nothing blocks, on every square once a train moves");

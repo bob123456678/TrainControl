@@ -501,10 +501,8 @@ public class testRouteEditorValidation
     }
 
     /**
-     * FR-068 (MT-320): a nested group that is NOT the first term can be built, with Group Selected.  Four
-     * conditions joined by "or" become `3 or (4 and (1 or 2))`: grouping 4, 1 and 2 and choosing All on the new
-     * caption nests them under "and", and grouping 1 and 2 inside that and choosing At least one nests them under "or"
-     * again, each step through the button and the caption.
+     * FR-068 (MT-320): a nested group that is not the first term can be built, with Group Selected: four "or"
+     * conditions become `3 or (4 and (1 or 2))`, each step through the button and the caption.
      *
      * MUTATION: in `ConditionOutline.run`, refuse a run that does not start at its group's first item (`from > 0`),
      * and Group Selected is grayed for 4, 1 and 2.
@@ -828,13 +826,12 @@ public class testRouteEditorValidation
     }
 
     /**
-     * FR-144: "1 or 2 or 3 and 4", arriving mixed, becomes "(1 or 2 or 3) and 4" by selecting the first three
-     * conditions and pressing Group Selected: the new group keeps the word that joined them.
-     * Alt+Up then moves 4 past the whole group and Alt+Down back, every line keeping its level; Ungroup lifts the
-     * three back out, joined by their parent's "and", so it never makes a mixed level.
+     * FR-144: "1 or 2 or 3 and 4", arriving mixed, becomes "(1 or 2 or 3) and 4" by Group Selected on the first three,
+     * keeping the word that joined them.  Alt+Up and Alt+Down move 4 past the whole group; Ungroup never makes a
+     * mixed level.
      *
-     * MUTATION: in `ConditionOutline.grouped`, join the wrapped items by the parent's word left once the run is out
-     * (`group.getWord()`) rather than the first word inside the run, and the group joins by "and".
+     * MUTATION: in `ConditionOutline.grouped`, join the wrapped items by the parent's word (`group.getWord()`), and the
+     * group joins by "and".
      * MUTATION: drop the group branch of `ConditionOutline.moved`, and 4 trades places with 3 inside the group.
      */
     @Test
@@ -933,13 +930,12 @@ public class testRouteEditorValidation
 
     /**
      * FR-147: a right-click on a condition offers Insert Condition Above and Below and the condition's own actions,
-     * each enabled exactly where it does something; Insert joins a new condition at the line's level by its word and
-     * selects it; a right-click on the trash works no trash; below the lines it offers Add Condition.
+     * each enabled exactly where it does something; Insert joins a new condition by the line's level word and selects
+     * it; below the lines it offers Add Condition.
      *
      * MUTATION: in `ConditionOutline.inserted`, join the new condition with `Joiner.AND` always, and "21 or 22 and 1"
      * is flagged.
-     * MUTATION: in `offerRowMenu`, add Duplicate before `table.addOwnItems(menu)`, and it sits above Group Selected
-     * (Duplicate sits between dividers of its own, above Delete).
+     * MUTATION: in `offerRowMenu`, add Duplicate before `table.addOwnItems(menu)`, and it sits above Group Selected.
      */
     @Test
     public void testARightClickInsertsAConditionAndOffersTheLinesActions() throws Exception
@@ -2882,10 +2878,8 @@ public class testRouteEditorValidation
     }
 
     /**
-     * FR-161: Undo (Ctrl+Z or its button) takes back each edit to the conditions in turn - a group made, an address
-     * typed, a condition added, one deleted, one moved - and Redo (Ctrl+Y or its button) makes them again.  A new edit
-     * after an Undo leaves nothing to redo, and a route loaded has nothing to undo; the buttons are grayed when there is
-     * nothing for them to do.
+     * FR-161: Undo takes back each edit to the conditions in turn and Redo makes them again; a new edit after an Undo
+     * leaves nothing to redo, a loaded route has nothing to undo, and the buttons are grayed when idle.
      *
      * MUTATION: in `ConditionTable.showChanges`, drop the `remember(before)` call, and Undo has nothing to take back.
      * MUTATION: in `History.step`, drop the push of `now` onto the other side, and Redo has nothing to make again.
@@ -2998,9 +2992,8 @@ public class testRouteEditorValidation
     }
 
     /**
-     * MT-868: the trash on a line inside a selection of several deletes every selected condition, as one edit that one
-     * Undo brings back; the trash on a line outside the selection deletes that line alone, and with Shift or Ctrl held
-     * it only selects.  The Delete key deletes the selection too, but not while a cell is being edited.
+     * MT-868: the trash inside a selection of several deletes them all as one edit; outside it deletes that line alone,
+     * and with Shift or Ctrl held only selects.  The Delete key deletes the selection, but not while a cell is edited.
      *
      * MUTATION: in `HandledTable.changeSelection`, drop `|| isMark(column)`, and the press selects its line alone,
      * so the trash on 22 deletes 22 only.
@@ -3061,9 +3054,8 @@ public class testRouteEditorValidation
     }
 
     /**
-     * MT-868: Ungroup lifts every nested group a selected condition is in, as one edit: conditions in two sibling
-     * groups lift both, and a condition at the top level beside a group's conditions lifts that group.  A group inside
-     * another one selected stays a group.
+     * MT-868: Ungroup lifts every nested group a selected condition is in, as one edit; a group inside another one
+     * selected stays a group.
      *
      * MUTATION: in `ConditionOutline.ungroupables`, return only the first group, and of two sibling groups only the
      * first is lifted.
@@ -3340,9 +3332,8 @@ public class testRouteEditorValidation
     }
 
     /**
-     * OB-396: Group Selected applies to two or more conditions that are a run of one group and not all of it, and
-     * wraps them in a group with the rule they already had, so the conditions mean the same (by truth table) and the
-     * new caption names the parent's rule; for one condition, or a whole group, it is grayed.  Ctrl+G does the same.
+     * OB-396: Group Selected wraps two or more conditions that are a run of one group, and not all of it, in a group
+     * with the rule they already had (same truth table); grayed for one condition or a whole group.  Ctrl+G does it.
      *
      * MUTATION: in `ConditionOutline.run`, drop `|| to - from + 1 == items.size()`, and Group Selected is offered on
      * a whole group.
@@ -3556,10 +3547,9 @@ public class testRouteEditorValidation
     }
 
     /**
-     * FR-162: the commands have the conditions' handles.  A grip with its tooltip at the left of every row, and no
-     * arrows; a selection painted on the row's own cells, never the handle or the marks; a drag by a handle in a
-     * selection moves every selected row to where it is let go, and one outside it moves its own row, each left
-     * selected; and the trash on a row in a selection deletes the selection.
+     * FR-162: the commands have the conditions' handles: a grip at the left of every row, no arrows; selection painted
+     * on the row's cells only; a drag from a selected row moves every selected row, from outside moves its own; the
+     * trash in a selection deletes it.
      *
      * MUTATION: in `CommandTable.chosenRows`, answer only `getSelectedRow()`, and the drag from 12 in the selection of
      * 12 and 13 moves 12 alone.
@@ -3861,11 +3851,9 @@ public class testRouteEditorValidation
     }
 
     /**
-     * FR-163: Undo (Ctrl+Z on the commands, or the Undo under them) takes back each edit to the commands in turn: a
-     * capture, a target typed, a command added by Add Command, one inserted, a drag, Move Up, Alt+Up, Duplicate, the copy
-     * mark, the trash, the menu's Delete and the Delete key; Redo (Ctrl+Y, or its button) makes them again.  A route
-     * opened, and a target committed as it was, leave nothing to undo; a new edit leaves nothing to redo.  Each table's
-     * Undo takes back its own edits only, and the last hundred are kept.
+     * FR-163: Undo takes back each edit to the commands in turn (capture, typed target, add, insert, drag, moves,
+     * Duplicate, copy mark, trash, Delete) and Redo makes them again.  A route opened or a target committed as it was
+     * leaves nothing to undo; each table undoes its own edits only, the last hundred kept.
      *
      * MUTATION: in `CommandTable.noteEdit`, drop `history.remember(shown)`, and Undo has nothing to take back.
      * MUTATION: in `Entry.sameAs`, answer false, and a target committed as it was is offered to undo.
@@ -4419,10 +4407,9 @@ public class testRouteEditorValidation
     }
 
     /**
-     * OB-396: in every language, at the packed width and at the window's narrowest: the heading at the left in full,
-     * the notice at the section's right on the heading's line or, where both do not fit, on the line under it, never
-     * over the heading; the reading on a line of its own under them, above the table.  In English at the packed width
-     * they share one line; with a notice too long to share the line, at the narrowest it wraps.
+     * OB-396: in every language, packed and at the narrowest width: the heading at the left in full, the notice at the
+     * section's right on its line or the line under, never over the heading; the reading on its own line above the
+     * table.
      *
      * MUTATION: in `HeadingLine.doLayout`, set the notice at x 0 rather than `width - note.width`, and it is not at
      * the section's right.
@@ -4738,10 +4725,9 @@ public class testRouteEditorValidation
     private static final String PRACTICAL = "OB396 practical ";
 
     /**
-     * OB-396: every kind of condition the editor offers, alone and in nine shapes up to four levels deep, is stored in
-     * a route of a real model and opened in the real editor.  Each is checked against the shape written here by hand,
-     * not against the editor's own reading of it.  The deeper shapes then take a user's edits through the gestures,
-     * each checked the same way; every shape ends with Save and a reopen that shows it again.
+     * OB-396: every kind of condition, alone and in nine shapes up to four levels deep, is stored in a route and
+     * opened in the real editor, each checked against the shape written here by hand; the deeper shapes then take
+     * edits through the gestures, and every shape ends with Save and a reopen.
      *
      * MUTATION: in `ConditionOutline.grouped`, join the wrapped items by `opposite(word)`, and Group Selected on F5off
      * and S12 in shape 2 captions the new group "At least one" inside the outer "all".

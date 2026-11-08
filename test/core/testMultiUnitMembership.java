@@ -38,14 +38,9 @@ public class testMultiUnitMembership
     private static MarklinControlStation model;
 
     /**
-     * A member whose name contains a comma and a space keeps it, and is still found.  Flattening a CS2 file's array
-     * block through HashMap.toString() and rewriting its ", " separator back to "," cannot tell the separator from a ",
-     * " INSIDE a value, and exactly one array key carries free text: lokname, the name of a multi-unit member.  "BR 50,
-     * Ep. III" would be stored as "BR 50,Ep. III", match no locomotive in the database, and be dropped from its
-     * consist, so commanding the head would move one engine of two.
-     *
-     * Driven through parseFile rather than a whole sync: the defect is in the flattening, and the recovery below is the
-     * exact expression parseLocomotives uses to read it back.
+     * A member whose name contains a comma and a space keeps it, and is still found: flattening a CS2 file's array
+     * block through HashMap.toString() cannot tell the separator from a ", " inside lokname, so "BR 50, Ep. III" would
+     * match no locomotive and be dropped from its consist.  Driven through parseFile, where the defect is.
      */
     @Test
     public void testAMemberNameWithACommaSurvivesTheParse() throws Exception
@@ -98,18 +93,12 @@ public class testMultiUnitMembership
     // What a reader of the consist can see while it is being rebuilt (raised to A by NSV).
 
     /**
-     * Rebuilding a consist does not change the map somebody is already reading.
+     * Rebuilding a consist does not change the map somebody is already reading: `getLinkedLocomotives()` is read with
+     * no lock (the save path), so a save during a rebuild that emptied the map would write a locomotive with NO
+     * members.
      *
-     * The save path is the reader that matters: `MarklinSimpleComponent` reads `getLinkedLocomotives()` with no lock,
-     * and `restoreState` rebuilds every consist from that field, so a save that reads the map while a rebuild has
-     * emptied it writes a locomotive with NO members into `locdb.data` and the consist is gone after the next start.
-     * The rebuild runs off the event thread inside `syncWithCS2`; the save runs on the window-closing path and on
-     * Backup Data's own thread, and nothing serializes them.
-     *
-     * A race cannot be asserted, so the property that removes it is: a map that is replaced rather than edited
-     * (`clear()` then `putAll()` on the live map leaves a window in which it is empty) leaves whatever a reader is
-     * holding as it was.  Rebuilt with DIFFERENT contents on purpose: refilling with the same two members leaves the
-     * live map equal to what it was, so the broken code would pass.
+     * A race cannot be asserted, so the property that removes it is: a map replaced rather than edited leaves whatever
+     * a reader holds as it was.  Rebuilt with DIFFERENT contents on purpose, or the broken code would pass.
      *
      * MUTATION: go back to `this.linkedLocomotives.clear(); this.linkedLocomotives.putAll(staged);` and
      * the first assertion fails, reporting 1 member in a map that was read when it had 2.
@@ -153,10 +142,8 @@ public class testMultiUnitMembership
     }
 
     /**
-     * The consist handed out is a snapshot, not the live map.  Returning the field itself from `getLinkedLocomotives()`
-     * would let any caller empty a consist by accident and share one instance with the rebuild.  Nothing in the tree
-     * mutates it (checked across `src/` and `test/`), so an unmodifiable view costs nothing and closes the door for the
-     * next caller.
+     * The consist handed out is a snapshot, not the live map: nothing in the tree mutates it, so an unmodifiable view
+     * costs nothing and stops a caller emptying a consist by accident.
      *
      * MUTATION: return `this.linkedLocomotives` unwrapped and this fails.
      */
@@ -190,14 +177,9 @@ public class testMultiUnitMembership
     }
 
     /**
-     * Applying a list in one call does not touch what another thread has staged.  `preSetLinkedLocomotives` writes an
-     * instance field and `setLinkedLocomotives()` reads it back with nothing between them; two threads rebuild consists
-     * (`syncWithCS2` off the event thread and the multi-unit dialog on it), so one thread's list could be overwritten
-     * before its own apply read it.
-     *
-     * What is asserted is that the one-call form does not go through the field at all: a list staged and not yet
-     * applied is still there afterwards, which is the property a second thread needs (the interleaving itself cannot be
-     * asserted).
+     * Applying a list in one call does not touch what another thread has staged: `preSetLinkedLocomotives` writes an
+     * instance field, and two threads rebuild consists.  Asserted: the one-call form does not go through the field at
+     * all, so a list staged and not yet applied is still there afterwards.
      *
      * MUTATION: make `setLinkedLocomotives(Map)` do `preSetLinkedLocomotives(locList); return
      * setLinkedLocomotives();` and the last assertion fails, because the staged member has become the
@@ -319,15 +301,10 @@ public class testMultiUnitMembership
     }
 
     /**
-     * `setSpeed` clamps its own argument the way it clamps its members'.  `_setSpeed` is wrapped in `if (speed
-     * >= 0 && speed <= 100)` with no `else`, so an out-of-range value is DISCARDED and `getSpeed()` still reports
-     * whatever it was, and the head then re-transmits that old speed while every member is sent `min(speed x
-     * multiplier, 100)`: the failure the member-loop clamp is for ("the two engines of one consist pulled against each
-     * other"), one level up.  A negative argument scaled by a multiplier stays negative and is ignored the same way.
-     *
-     * `setSpeed` is public and is reached from a route, from autonomy and from the throttle, so this is worth having
-     * even with the command's own clamp in place: "ignored, and the previous speed re-sent" is the worst of the three
-     * possible answers to a bad number.
+     * `setSpeed` clamps its own argument the way it clamps its members': `_setSpeed` discards an out-of-range value, so
+     * `getSpeed()` reports the old one and the head re-transmits it while every member is sent a clamped new one (the
+     * two engines of one consist pulled against each other).  A negative argument scaled by a multiplier is ignored the
+     * same way.  `setSpeed` is public (routes, autonomy, throttle), so worth pinning even with the command's own clamp.
      *
      * MUTATION: take the clamp back out of `setSpeed` and both halves fail.
      */
@@ -377,10 +354,9 @@ public class testMultiUnitMembership
 
     /**
      * A function inside the consist's range is SENT to every locomotive in it, head included (Adam, MT-359: "Send to
-     * all, keep the cap.").  Passing the number through each member's own `setF` would let its `validF` refuse anything
-     * its own decoder does not list; whether a decoder does something with f6 is the station's business.  Read off what
-     * the locomotives asked the station to send, through the observer on `exec`: in a test the network is off, and the
-     * recorded function state cannot show a command for a function the decoder does not list.
+     * all, keep the cap.").  Read off what the locomotives asked the station to send, through the observer on `exec`:
+     * in a test the network is off, and the recorded state cannot show a command for a function the decoder does not
+     * list.
      */
     @Test
     public void testAFunctionInTheConsistsRangeIsSentToEveryLocomotive()

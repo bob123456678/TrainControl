@@ -100,11 +100,9 @@ public class testCancelRestoresPlacements
     }
 
     /**
-     * The order Cancel actually happens in.  The editor works on the LIVE LayoutDiagram objects the session holds, and
-     * Cancel re-reads the pages from disk into NEW objects, leaving the session holding the discarded version (see
-     * testDiscardedEditsDoNotDeleteSetup); this asks whether a PLACEMENT survives that.  Place a train, take the
-     * snapshot, empty the page the way the editor's delete does, save as an edit saves, restore, and read the answer
-     * off disk, where the next session reads it.
+     * The order Cancel actually happens in: Cancel re-reads the pages from disk into NEW objects, leaving the session
+     * holding the discarded version (see testDiscardedEditsDoNotDeleteSetup); does a PLACEMENT survive that?  Place a
+     * train, snapshot, empty the page as the editor's delete does, save, restore, read the answer off disk.
      */
     @Test
     public void testCancelSurvivesTheSessionHoldingTheEmptiedPage() throws IOException
@@ -158,9 +156,8 @@ public class testCancelRestoresPlacements
      * save state"): the setup is written after every gesture, the diagram only at Save, so a crash leaves a setup keyed
      * to squares the user dragged.  The crash is played by opening a new session on the same folder.
      *
-     * MUTATION: making `rememberBeforeEdit` return false without writing the sidecar - so the note is
-     * never taken - fails this test.  So does dropping the `forgetBeforeEdit` from `endEditSession`,
-     * on the control below.
+     * MUTATION: making `rememberBeforeEdit` return false without writing the sidecar fails this test.  So does
+     * dropping the `forgetBeforeEdit` from `endEditSession`, on the control below.
      */
     @Test
     public void testAnEditThatNeverFinishedIsPutBack() throws IOException
@@ -202,11 +199,10 @@ public class testCancelRestoresPlacements
     }
 
     /**
-     * A locomotive renamed while the note exists is renamed in the note too.  `LayoutEditor.autonomyLocomotiveRenamed`
-     * sweeps the snapshot Cancel restores and both undo stacks; the fourth holder is the note on disk, which survives
-     * the crash: `revertUnfinishedEdit` restores it and saves it, and a configuration naming a locomotive that is not
-     * in the database is refused by `parseAuto`, which invalidates the whole layout.  The repair sits on the store's
-     * own `repairLocomotive` funnel because the note outlives the window that wrote it.
+     * A locomotive renamed while the note exists is renamed in the note too: the note on disk is the fourth holder
+     * (beside the snapshot and both undo stacks) and survives a crash, and a configuration naming a locomotive not in
+     * the database is refused by `parseAuto`, invalidating the whole layout.  The repair sits on `repairLocomotive`
+     * because the note outlives the window that wrote it.
      *
      * MUTATION: dropping the `repairTheUnfinishedEditNote` call from `repairLocomotive` fails this.
      */
@@ -285,10 +281,9 @@ public class testCancelRestoresPlacements
     }
 
     /**
-     * A pre-edit note that is not the right shape is refused, not applied.  `restoreSetup` clears the store and then
-     * reads, which is unsafe once the contract moves from memory to a FILE written by another run or build: `{}` threw
-     * after the clear, and a version 99 note was accepted where `load()` refuses exactly that.  So `unfinishedEdit`
-     * makes the same checks `load()` makes, because a note that cannot be applied protects nothing.
+     * A pre-edit note that is not the right shape is refused, not applied: `restoreSetup` clears the store and then
+     * reads, so a `{}` note threw after the clear and a version 99 note was accepted.  `unfinishedEdit` makes the same
+     * checks `load()` makes.
      *
      * MUTATION: removing the shape and version checks from `unfinishedEdit` fails this test on the first note.
      */

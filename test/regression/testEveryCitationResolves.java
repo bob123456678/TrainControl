@@ -19,20 +19,10 @@ import org.testng.annotations.Test;
  * Adam: *"update our MT triage database to catalog each review item.  Now, no reference will ever be stale or lost, but
  * useless prose will go away."*
  *
- * Comments cite review findings to say *why*, and the prose is deleted once it has stopped earning its place.  That is
- * only safe if every id a comment names still resolves to something, which is what this holds.
- *
- * Some do not: they cluster into whole prefixes whose declaring document is gone.  They are rolled at the foot of
- * `triagedb.py findings` (`ref` and four dashes, the citing files being in the `dead_citation` table), so the
- * citation leads somewhere even though the finding does not, and this holds the count.  A new one is a comment pointing
- * at nothing, and the point of catching it here is the day it is written.
- *
- * Do not read a high count as license to delete the documents: every fall came from teaching the catalog a spelling the
- * review folder already used.  An id that resolves to nothing may mean the finding is gone, or only that this file
- * cannot see it.
- *
- * It asks the catalog, not the prose: searching every `.md` under `docs/` passes if anything mentions the id at all,
- * and goes vacuous the moment the paragraph is deleted.
+ * Some ids do not resolve: they cluster into whole prefixes whose declaring document is gone.  They are rolled at the
+ * foot of `triagedb.py findings` (`ref` and four dashes; the citing files are in the `dead_citation` table), and this
+ * holds the count: a new one is a comment pointing at nothing.  Do not read a high count as license to delete the
+ * documents.  It asks the catalog, not the prose, which would go vacuous once the paragraph is deleted.
  *
  * @author Adam
  */
@@ -138,15 +128,10 @@ public class testEveryCitationResolves
     }
 
     /**
-     * No comment cites a LINE NUMBER.
-     *
-     * `CommandRow` states the rule: *"By method name, not by line: ... a stale line number in a javadoc outlives every
-     * edit above it with nothing able to notice."*  Checking that the cited line still holds the quoted phrase would
-     * rot exactly as the citations did, so the shape itself is refused: a name is a thing the compiler and every search
-     * can follow.
-     *
-     * Two exemptions: the rule's own counter-example (`CommandRow` quotes the bad citation to explain the rule) and a
-     * git revision (`git show master:path/File.java:111` names a revision of a file, not a line of the tree).
+     * No comment cites a LINE NUMBER.  `CommandRow` states the rule: *"By method name, not by line: ... a stale line
+     * number in a javadoc outlives every edit above it with nothing able to notice."*  Checking the cited line would
+     * rot as the citations did, so the shape itself is refused.  Exempt: the rule's own counter-example in
+     * `CommandRow` and a git revision (`git show master:path/File.java:111`).
      *
      * MUTATION: write `// see Layout.java:1234` in any source comment and this fails, naming the file.
      */
@@ -204,20 +189,13 @@ public class testEveryCitationResolves
     private static final int SUBLETTERED = 2;
 
     /**
-     * No cataloged finding carries a sub-letter its document does not write.
+     * No cataloged finding carries a sub-letter its document does not write.  A parser once read a mutation table as
+     * findings (`X8V-validation.md` opens with a Method table keyed `A1a`), so fifteen findings entered the catalog
+     * that the document never made.  The guard is narrow because "every cataloged ref appears in its document" is red
+     * on arrival (sixty documents declare a prefix and number headings `### A1`); no legitimate row has a SUB-LETTER.
      *
-     * A parser once read a mutation table as findings: `catalog-findings.py` accepted any table row whose first cell
-     * looked like `A1a`, and `X8V-validation.md` opens with a Method table keyed exactly that way, so fifteen findings
-     * entered the catalog that the document never made.  The guard is narrow because the obvious check (every cataloged
-     * ref must appear in its document) is red on arrival: sixty documents declare a prefix and number their headings
-     * `### A1`.  What no legitimate row has is a SUB-LETTER (`A1a`, `B2b`): twelve of 2,486 rows carry one, eleven of
-     * them X8V's, so a sub-lettered ref whose document does not write it out is the signature of this fault and of
-     * nothing else.
-     *
-     * This reads the catalogue as the test above does.  With every review document
-     * deleted, `resolvable` is zero by design and the `document == null` skip fires for every row, so the `unwritten`
-     * assertion cannot fail and the count ratchet is the live half; the document arm revives when a review folder is
-     * added back through `--add`.
+     * With every review document deleted, `resolvable` is zero by design and the `unwritten` assertion cannot fail, so
+     * the count ratchet is the live half; the document arm revives when a review folder is added back through `--add`.
      *
      * MUTATION: add a sub-lettered finding to the store and the RATCHET names the count; the document
      * arm names the row itself only while some review document is present to be read.
@@ -331,11 +309,9 @@ public class testEveryCitationResolves
     }
 
     /**
-     * The sub-letter check can still see a document that does not write a ref, driven with made-up documents.
-     *
-     * The real arm above compares nothing while every review document is deleted, so a break in the comparison would
-     * never show.  This runs the same `subLetteredIn` over a folder made here: one that writes its ref, one that does
-     * not, one row whose document is gone, and a row with no sub-letter.
+     * The sub-letter check can still see a document that does not write a ref, driven with made-up documents: the real
+     * arm above compares nothing while every review document is deleted, so a break in the comparison would never show.
+     * This runs `subLetteredIn` over a folder made here (writes its ref, does not, document gone, no sub-letter).
      *
      * MUTATION: break the `body.contains` comparison in `subLetteredIn`, and this fails while the arm above stays
      * green.

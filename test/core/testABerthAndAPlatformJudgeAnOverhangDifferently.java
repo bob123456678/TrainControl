@@ -24,22 +24,18 @@ import org.traincontrol.marklin.MarklinControlStation;
  * govern that this is OK, or simply make a rule that parking berths cant block any other edges, but not make that
  * check for active stations").
  *
- * At a station autonomy may choose, a train is PASSING: it fits if it fits past the last switch, as before, or
- * within its own approach.  At a parking berth, a train is STAYING, and a berth is not worth a road: it must foul no
- * track that is not a way in or out of that square.  The failure this class exists to catch is the relaxation
- * leaking: a rule that stopped asking WHICH KIND OF SQUARE it is standing at would admit the berth case along with
- * the platform one, so the berth claims are the mutation target.
+ * At a station autonomy may choose a train is PASSING: it fits past the last switch, or within its own approach.  At a
+ * parking berth it is STAYING and must foul no track that is not a way in or out of that square.  The failure to catch
+ * is the relaxation leaking to berths, so the berth claims are the mutation target.
  *
- * The figures are his measured railway (the snapshot refrozen from `e36df979`), not figures set here.  The platform
- * is Tunnel: the approach from TunnelPre measures 4 with 2 past the switch, at a platform that holds five.  The berth
- * is TunnelLongPark, 3 past its switch on an approach of 7.  One setting of his is taken off, the berth's capacity:
- * he gave every berth a maximum equal to the room past its switch, so `Point.validateTrainLength` (asked first in
- * `whyTooLongForThisRoute`, and tested where it is the subject) refuses an overhang before the berth rule is asked.
+ * The figures are his measured railway (snapshot refrozen from `e36df979`): the platform Tunnel (approach from
+ * TunnelPre 4, 2 past the switch, holds five) and the berth TunnelLongPark (3 past its switch, approach 7).  The
+ * berth's capacity is taken off, since `Point.validateTrainLength` (asked first in `whyTooLongForThisRoute`) would
+ * refuse an overhang before the berth rule is asked.
  *
- * MUTATION: drop the `isAutoDestination` test so the relaxation applies everywhere, and the berth claim
- * at one unit past the room fails. Remove the relaxation and the platform claim at the approach's length
- * fails. Make the relaxation unbounded - any length at a station - and the claim one unit past the
- * approach fails. Make the berth check always answer null and the direct claim at the bottom fails.
+ * MUTATION: drop the `isAutoDestination` test (berth claim one unit past the room); remove the relaxation (platform
+ * claim at the approach's length); make it unbounded (claim one unit past the approach); make the berth check always
+ * answer null (direct claim at the bottom).
  *
  * @author Adam
  */

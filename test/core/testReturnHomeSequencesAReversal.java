@@ -263,13 +263,11 @@ public class testReturnHomeSequencesAReversal
 
     /**
      * A train STANDING on a reversing point has already turned, and the reachability proof must agree:
-     * `firstClearRoute` sets off with `turned = from.isReversing()` and `connected` used `false`.  `connected` is what
-     * `plan()` consults to declare a locomotive UNREACHABLE, so a proof stricter than the executor refuses a journey it
-     * would have routed and blames the railway.  The smallest separating shape: the train stands on the reversing point
-     * itself.
+     * `firstClearRoute` sets off with `turned = from.isReversing()`, and `connected` (which `plan()` consults to
+     * declare a locomotive UNREACHABLE) must not be stricter than the executor.
      *
-     * MUTATION: putting `turned.add(false)` back in `connected` fails this - the outcome goes to
-     * IMPOSSIBLE with the locomotive named as blocked.
+     * MUTATION: putting `turned.add(false)` back in `connected` fails this - the outcome goes to IMPOSSIBLE with the
+     * locomotive named as blocked.
      */
     @Test
     public void testATrainStandingOnAReversingPointHasAlreadyTurned() throws Exception
@@ -314,9 +312,7 @@ public class testReturnHomeSequencesAReversal
     /**
      * Two berths with nothing between them that turns a train, and the planner now takes it (Adam: "Return home is
      * manual, take the rule out and say why.").  The train is driven NOSE FIRST into a berth it cannot reverse out of;
-     * it gets home, which is what he asked for, as at `firstClearRoute`'s arrival test.  The `turned` seeding is
-     * untouched: at a reversing point the arrival flip leaves the train trailing, at a terminus it is spent, and the
-     * flag still decides how a route is described.
+     * the `turned` seeding is untouched.
      *
      * MUTATION: putting `mustBackIn` back at `firstClearRoute`'s arrival test returns this to `NO_PLAN_FOUND`.
      */
@@ -360,12 +356,12 @@ public class testReturnHomeSequencesAReversal
     }
 
     /**
-     * A journey that has to STOP somewhere on the way is not an impossible journey.  `connected` will not travel
-     * THROUGH a terminus, right for a single path, but it is what `plan()` consults to declare a locomotive UNREACHABLE
-     * and the plan ends a move at any station.  A proof may be looser than the search, never tighter.
+     * A journey that has to STOP somewhere on the way is not an impossible journey: `connected` will not travel THROUGH
+     * a terminus, right for a single path, but `plan()` ends a move at any station.  A proof may be looser than the
+     * search, never tighter.
      *
-     * MUTATION: restoring `if (!next.isTerminus())` in `connected` makes the outcome IMPOSSIBLE again
-     * and fails the first assertion.
+     * MUTATION: restoring `if (!next.isTerminus())` in `connected` makes the outcome IMPOSSIBLE again and fails the
+     * first assertion.
      */
     @Test
     public void testAJourneyThatMustStopOnTheWayIsNotImpossible() throws Exception
@@ -409,10 +405,8 @@ public class testReturnHomeSequencesAReversal
     }
 
     /**
-     * Two trains whose only way home is the same single square, one at a time: no other fixture here has a home that
-     * takes TWO moves to reach (`ringWith` has every station one hop from every other).  Neither berth can be reached
-     * in one path, so each train stops at the ramp first and only one fits on it; the plan is a queue.  `misplaced`
-     * gives no credit for getting closer, so a move to the ramp ranks level with shuffling a train somewhere useless.
+     * Two trains whose only way home is the same single square, one at a time: neither berth can be reached in one
+     * path, so each train stops at the ramp first and only one fits on it; the plan is a queue.
      *
      * No mutation is named: the search scores `cost + misplaced(next)` and has no separate staging estimate to swap.
      */
@@ -501,9 +495,8 @@ public class testReturnHomeSequencesAReversal
 
     /**
      * A home autonomy will never choose is still a home (Adam: "Can Be Chosen in Full Autonomy - does not apply to
-     * returning home, of course.  these should be allowed.").  `HomeStaging` never consulted `autoDestination`, but
-     * "already true and untested" is how a rule gets removed by somebody tidying up.  The sibling above pins the flag
-     * on a staging stop; this pins it on the destination itself.
+     * returning home, of course.  these should be allowed.").  `HomeStaging` never consulted `autoDestination`; this
+     * pins it on the destination itself (the sibling above pins it on a staging stop).
      *
      * MUTATION: adding `&& at.isAutoDestination()` to `canRest` fails this.
      */
