@@ -89,6 +89,15 @@ public class testADeclinedSetupEditSaysSoAndSurvivesTheExit
         }
     }
 
+    /** The window's save changes the run's saved data; the classes after this one in the lane read it. */
+    private static final support.SavedData FOUND = support.SavedData.take();
+
+    @AfterClass(alwaysRun = true, dependsOnMethods = "tearDownClass")
+    public static void putTheDataBack() throws Exception
+    {
+        FOUND.putBack();
+    }
+
     /** A rebuild refused because the railway is busy logs the sentence, and records that it was refused (MT-267). */
     @Test
     public void testTheRefusedRebuildSaysSo() throws Exception

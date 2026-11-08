@@ -148,6 +148,15 @@ public class testTheOldAutonomyTabIsGone
         }
     }
 
+    /** The backup it makes changes the run's saved data; the classes after this one in the lane read it. */
+    private static final support.SavedData FOUND = support.SavedData.take();
+
+    @AfterClass(alwaysRun = true, dependsOnMethods = "tearDownClass")
+    public static void putTheDataBack() throws Exception
+    {
+        FOUND.putBack();
+    }
+
     /**
      * A Central Station layout's window has no Load Autonomy Configuration tab.
      */
