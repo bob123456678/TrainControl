@@ -228,7 +228,7 @@ final class LayoutMenus
 
     /**
      * Layouts > Manage Pages...: opens the layout editor as Edit does, or brings the open one forward (FR-146); the
-     * page actions are the icons down its left side.  It stands in for the Manage Pages menu, hidden on Adam's word.
+     * page actions are the icons down its left side.  It stands in for the hidden Manage Pages menu.
      */
     void mountManagePages()
     {

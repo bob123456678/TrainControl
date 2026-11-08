@@ -466,7 +466,8 @@ final class LayoutFileActions
     }
 
     /**
-     * Writes the index in a new page order: every page keeps its id, and no page file and not the setup is touched.  Refused as the other page edits are.
+     * Writes the index in a new page order: every page keeps its id, and no page file and not the setup is touched.
+     * Refused as the other page edits are.
      *
      * @param order the pages in the order to write, worked out from the pages as they are when the write goes ahead
      *        (a page may have been added meanwhile); null when there is nothing to change

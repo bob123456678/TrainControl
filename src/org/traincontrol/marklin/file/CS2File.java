@@ -2680,7 +2680,7 @@ public final class CS2File
                             {
                                 added.setUnmodelledKeys(m);
 
-                                // The page a link goes to, when a 3.1.0 save wrote its ID
+                                // The page a link goes to, when the file gives its ID
                                 added.setLinkPageIdFromFile(m.get("zielseite"), m.get("zielartikel"));
 
                                 // And the file's own word for the type: the type mapping is many-to-one, so writing the

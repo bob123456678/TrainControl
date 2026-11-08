@@ -56,8 +56,6 @@ final class DiagramLocGestures
      * tail's side at a square trains may turn at, the heading, the sensors the tail crossed) the drag asks nothing and
      * takes the rule's own answer.
      *
-     * @param train the train to put down
-     * @param to the station square
      * @return whether the train now stands on that square in the setup
      */
     boolean dropByPaste(Locomotive train, org.traincontrol.automationui.TileGraph.TileKey to)

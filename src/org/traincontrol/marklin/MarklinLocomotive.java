@@ -1160,16 +1160,11 @@ public class MarklinLocomotive extends Locomotive
     /** Validates a list of member names and publishes the consist it describes. */
     private int applyLinkedLocomotives(Map<String, Double> preLinkedLocomotives)
     {              
-        // Staged in a local map and swapped in one step, rather than clearing the live map and
-        // refilling it in place.  setSpeed and setDirection iterate linkedLocomotives under this
-        // locomotive's monitor; rebuilding it unsynchronized let a fan-out land mid-rebuild and either
-        // throw ConcurrentModificationException or command the head alone.  That was tolerable while
-        // only the Locomotive Settings window's Multi-Unit tab rebuilt consists - a deliberate action on a consist the user is
-        // editing - but a Central Station sync now rebuilds them too, automatically, and a consist can
-        // be driven manually at the same time.
-        //
-        // The validation itself stays outside the lock: canBeLinkedTo logs through the UI, and holding
-        // a locomotive's monitor across that is its own hazard.
+        // Staged in a local map and swapped in one step, never refilled in place: setSpeed and setDirection iterate
+        // linkedLocomotives under this locomotive's monitor, and a Central Station sync rebuilds consists while one can
+        // be driven, so a fan-out landing mid-rebuild would throw ConcurrentModificationException or command the head
+        // alone.  The validation stays outside the lock: canBeLinkedTo logs through the UI, and holding a locomotive's
+        // monitor across that is its own hazard.
         Map<Locomotive, Double> staged = new LinkedHashMap<>();
 
         // Multi-units defined in the Central Station cannot be linked to other locomotives

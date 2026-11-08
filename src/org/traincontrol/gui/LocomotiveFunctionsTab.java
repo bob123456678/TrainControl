@@ -823,7 +823,7 @@ final class LocomotiveFunctionsTab extends JPanel
         return out;
     }
 
-    /** Lays icons out across the width, as the old function editor's dropdown did. */
+    /** Lays icons out across the width, in rows of equal cells. */
     private static void gridLayout(JList<?> list)
     {
         list.setLayoutOrientation(JList.HORIZONTAL_WRAP);
@@ -969,7 +969,7 @@ final class LocomotiveFunctionsTab extends JPanel
 
             if (editing)
             {
-                // The grid the old function editor's dropdown used.
+                // The dropdown's list as a grid of icons
                 BasicComboPopup popup = (BasicComboPopup) combo.getAccessibleContext().getAccessibleChild(0);
                 JScrollPane scrollPane = (JScrollPane) popup.getComponent(0);
                 JList<?> list = (JList<?>) scrollPane.getViewport().getView();

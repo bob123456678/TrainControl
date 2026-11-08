@@ -1252,8 +1252,7 @@ public class LayoutDiagramComponent
 
             // The logical address, which is what the file parser derives (rawAddress / 2, floored) and
             // what every consumer of getAddress() assumes - syncLayouts passes it as the logical address
-            // and getAddress() - 1 as the raw one.  This used to be set to address * 2 as well, leaving
-            // the two fields equal and getAddress() returning double the truth.
+            // and getAddress() - 1 as the raw one.  Never address * 2: getAddress() would return double the truth.
             this.address = address;
 
             if (this.isUncoupler() && isGreen)

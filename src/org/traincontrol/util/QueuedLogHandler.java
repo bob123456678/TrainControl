@@ -56,9 +56,7 @@ public final class QueuedLogHandler extends Handler
         }
     }
 
-    /**
-     * @param target the handler that writes, called only from this handler's own thread
-     */
+    /** @param target the handler that writes, called only from this handler's own thread */
     public QueuedLogHandler(Handler target)
     {
         this.target = target;

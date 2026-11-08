@@ -76,11 +76,10 @@ public class testCommentsStayLean
     };
 
     /** Comment lines carrying a history marker, as they stand.  Lower it whenever some go; never raise it. */
-    private static final int HISTORY_ALLOWED = 1;
+    private static final int HISTORY_ALLOWED = 0;
 
     /** WHICH files carry them, so that a swap between files fails and names both.  Files at zero are not listed. */
     private static final String[] HISTORY_BY_FILE = {
-        "src/org/traincontrol/base/LayoutDiagramComponent.java (1)",
     };
 
     /** Runs of more than 15 `//` lines plus non-javadoc block comments over 15 lines, as they stand.  Never raise it. */
