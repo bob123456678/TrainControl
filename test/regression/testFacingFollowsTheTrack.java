@@ -26,7 +26,7 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
  * Two assertions.  The RULE (every facing offered for a square is a side that square's own track uses) is
  * layout-independent and sweeps every square, but it reads the same map the facings are built from, so it cannot fail
  * by itself.  The TABLE (five named squares and where a train standing on each can be pointing, worked out from the
- * track rather than the code) pins the rule the bug was about, the curve MT-125 was reported on first.
+ * track rather than the code) pins the rule, the curve MT-125 is about.
  *
  * @author Adam
  */

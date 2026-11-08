@@ -20,8 +20,8 @@ import support.Scenario;
  * is route work, not time.
  *
  * His frozen railway with its own four trains standing as saved, and the homes the old-setups proof gives them in its
- * fourth round: the arrangement where the search used to pick 4 moves or 8 by how fast it ran.  The plan pinned below
- * is the 4-move one, which the build before also gave whenever its first search ran out of time.
+ * fourth round: an arrangement with a 4-move plan and an 8-move one.  The plan pinned below is the 4-move one, which
+ * the build before also gave whenever its first search ran out of time.
  *
  * @author Adam
  */

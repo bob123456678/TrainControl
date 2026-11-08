@@ -183,7 +183,7 @@ public class testChangeDirectionIsOneClick
 
     /**
      * Where the track allows one facing, Change Direction is shown with the same words, grayed, with the reason as its
-     * tooltip, on both menus (Adam: "gray with same text and reason in a tooltip works").
+     * tooltip, on both menus.
      */
     @Test
     public void testOneWayIsGrayedWithItsReason() throws Exception
@@ -314,7 +314,7 @@ public class testChangeDirectionIsOneClick
     }
 
     /**
-     * In English the side is capitalized, as the menus are title case (Adam: "now facing East"); English is the base
+     * In English the side is capitalized, as the menus are title case; English is the base
      * bundle, with no messages_en of its own.
      *
      * MUTATION: have `menuSide` capitalize only where the language is "en", and this fails.

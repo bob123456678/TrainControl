@@ -209,10 +209,9 @@ public class testTheBulkClearSaysWhatCancelDoes
     }
 
     /**
-     * The two length clears carry their sentence on the menu too, and it is the editor's one.  The track-length and
-     * maximum pairs were built by copying the `page == null` choice into four places, so a swapped pair of keys would
-     * show a clear promising a Cancel on the surface that has none.  Asked of the built menu, on the editor surface,
-     * where Cancel is real.
+     * The two length clears carry their sentence on the menu too, and it is the editor's one: a swapped pair of keys
+     * would show a clear promising a Cancel on the surface that has none.  Asked of the built menu, on the editor
+     * surface, where Cancel is real.
      */
     @Test
     public void testTheLengthClearsCarryTheEditorsSentence() throws Exception

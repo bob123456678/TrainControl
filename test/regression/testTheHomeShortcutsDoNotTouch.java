@@ -6,9 +6,8 @@ import org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel;
 import support.SourceOf;
 
 /**
- * OB-188: the two shortcut buttons in the set-home dialog touch each other: "add some spacing between the two
- * buttons, as they currently touch."  The strip was laid out with `new FlowLayout(FlowLayout.LEFT, 0, 0)`, a
- * horizontal gap of zero, so the two read as one wide control.
+ * OB-188: the two shortcut buttons in the set-home dialog must not touch: a horizontal gap of zero makes the two read
+ * as one wide control.
  *
  * Measured rather than read: the defect is a distance in pixels, and a test that looked for a number in the source
  * would pass for a gap written into a layout nothing uses.

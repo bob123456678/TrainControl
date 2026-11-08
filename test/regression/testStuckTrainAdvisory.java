@@ -25,7 +25,8 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
  *
  * So the quota is passed in by the CALLER rather than read inside the wait: "this train was dispatched and is on its
  * way" is a fact the dispatch loop has and the wait does not.  The quota is a second rather than Adam's ten, which only
- * matters for watching a real railway by hand; FEEDBACK_ADVISORY_MS is a public volatile field so a test can shrink it.
+ * matters for watching a real railway by hand; FEEDBACK_ADVISORY_MS is a public volatile field so a test can shrink
+ * it.
  */
 public class testStuckTrainAdvisory
 {
@@ -224,12 +225,9 @@ public class testStuckTrainAdvisory
     }
 
     /**
-     * A sensor that makes and lets go does not restart the clock.  The wait starts again on a flicker, and the elapsed
-     * time in the advisory must still be measured from when the train was SENT; the restart carried a REMAINDER of the
-     * quota instead of the origin, so a train missing for five and a half minutes was announced after "0 minutes".
-     *
-     * This watches the number the hook is handed rather than the sentence, because the sentence rounds to whole
-     * minutes and every number in a test this short rounds to zero.
+     * A sensor that makes and lets go does not restart the clock: the advisory is measured from when the train was
+     * SENT.  This watches the number the hook is handed, since the sentence rounds to whole minutes and every number
+     * here rounds to zero.
      */
     @Test
     public void testAFlickerDoesNotRestartTheClock() throws Exception

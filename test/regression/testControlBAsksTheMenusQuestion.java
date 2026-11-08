@@ -173,7 +173,7 @@ public class testControlBAsksTheMenusQuestion
     }
 
     /**
-     * The tooltip Adam asked for exists, in every language: `core.testMessageBundles` checks that a key present in one
+     * The tooltip exists in every language: `core.testMessageBundles` checks that a key present in one
      * bundle is present in all, so what is left is whether the key is used at all.
      */
     @Test

@@ -18,10 +18,10 @@ import org.testng.annotations.Test;
  * The four arrow buttons do what their own tooltips say a Control or Alt click does.
  *
  * `ui.main.tooltip.switchDir` says "(+Control to force reverse)" and `incrSpeed` "(+Control to fine-tune, +Alt for 2x
- * increment)", but the listeners never looked at the `ActionEvent`; only the keyboard delivered it.  Driven at the
- * listeners with events that carry the modifiers (`doClick()` cannot carry a mask, and a `KeyEvent` would go to the key
- * handler, which was never the wrong half); the keyboard's own arms pass `null` for the plain case, so `null` is tested
- * too.  The window is built but not displayed, since `display()` takes the keyboard away from whatever Adam is doing.
+ * increment)".  Driven at the listeners with events that carry the modifiers (`doClick()` cannot carry a mask, and a
+ * `KeyEvent` would go to the key handler); the keyboard's own arms pass `null` for the plain case, so `null` is tested
+ * too.  The window is built but not displayed, since `display()` takes the keyboard away from whatever the operator is
+ * doing.
  *
  * @author Adam
  */

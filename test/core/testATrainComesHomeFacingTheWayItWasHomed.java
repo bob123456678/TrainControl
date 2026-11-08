@@ -23,7 +23,7 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
 
 /**
  * Return Home brings a train back facing the way it was homed, not merely onto the square (MT-165): a copy of the home
- * square is a facing, and the planner used to take any copy as home.
+ * square is a facing, so any copy of the square is not enough.
  *
  * The fixture: the frozen operator layout with BottomMainA's east bar lifted, as it stood at `2958fcf3`; the live
  * layout bars arrivals from the east there again, leaving the facing no choice.
@@ -226,10 +226,10 @@ public class testATrainComesHomeFacingTheWayItWasHomed
     }
 
     /**
-     * A home is set facing the way the train faces ON THE RAILWAY, not the way the setup last said (*"Direction it is
-     * facing when home is set."*). The setup's FACING names the heading a train set off with until a capture writes the
-     * arrival back, so after a run that turned the train at this square the home was saved facing the way it no longer
-     * faces. `facingOf` has the running-layout-first reading for this staleness; the home door is its sibling.
+     * A home is set facing the way the train faces ON THE RAILWAY, not the way the setup last said.  The setup's FACING
+     * names the heading a train set off with until a capture writes the arrival back, so after a run that turned the
+     * train at this square the home was saved facing the way it no longer faces.  `facingOf` has the running-layout-first
+     * reading for this staleness; the home door is its sibling.
      *
      * MUTATION: read the setup's facing alone again and this fails.
      */

@@ -15,10 +15,9 @@ import org.traincontrol.gui.TrainControlUI;
 /**
  * The repair that runs after a killed test JVM does what its javadoc says.
  *
- * Two killed JVMs left the machine-global layout preference naming a folder under `%TEMP%`, the key the APPLICATION
- * reads, so Adam's own window would have opened a test fixture as though it were his railway.  A marker file, a repair
- * that runs at the next sandbox open, and a shutdown hook were added for that, and ninety-seven test classes depend on
- * that machinery with nothing asserting any of it.
+ * A killed test JVM can leave the machine-global layout preference naming a folder under `%TEMP%`, the key the
+ * APPLICATION reads, so Adam's own window would open a test fixture as though it were his railway.  Ninety-seven test
+ * classes depend on the marker file, the repair at the next sandbox open and the shutdown hook, and this asserts them.
  *
  * Nothing here touches the real preference: `repairALeakedPreference` and `putBack` take the preference node as a
  * parameter, so this hands them a node of their own.  Mutating the machinery any other way writes the key that damaged

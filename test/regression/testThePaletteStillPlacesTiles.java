@@ -12,12 +12,11 @@ import org.traincontrol.base.LayoutDiagramComponent.componentType;
  * Picking a tile out of "new components" and clicking a square puts that tile on the square, and stays in place mode
  * until escape is pressed or another action taken (OB-169).
  *
- * The square Adam was clicking already had track on it: pressing on a square that carries a component picks the tile
- * up to be dragged, which threw away the palette selection.  On an EMPTY square a press picks nothing up, so the test
- * places over occupied track.
+ * Pressing on a square that carries a component picks the tile up to be dragged, which would throw away the palette
+ * selection; on an EMPTY square a press picks nothing up, so the test places over occupied track.
  *
  * The gesture is driven through the editor's own three handlers in the order a mouse produces them - beginDrag,
- * endDrag, receiveClickEvent - rather than through executeTool, which was never the broken part.
+ * endDrag, receiveClickEvent - rather than through executeTool.
  */
 public class testThePaletteStillPlacesTiles
 {

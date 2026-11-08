@@ -219,8 +219,7 @@ public class testAPassingTrainMayStandAcrossThePoints
 
     /**
      * And after a rebuild the three units still close B and C: the road comes back with the train
-     * (`TrainControlUI.putTheTrainsBack` once carried the side and not the road).  Adam: "Then state will always be
-     * fully consistent."
+     * (`TrainControlUI.putTheTrainsBack` carries the road back with the train).
      */
     @Test
     public void testTheRoadIsKeptAcrossARebuild() throws Exception

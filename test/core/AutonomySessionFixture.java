@@ -19,9 +19,9 @@ import org.traincontrol.automationui.TileGraph.RouteId;
 import org.traincontrol.automationui.TileGraph.TileKey;
 
 /**
- * The fixtures every topic class split from the former `testAutonomyDiagramSession` shares (FR-136 Phase 3): a
- * temporary layout folder and a fresh `AutonomySession` over it, built before each claim and deleted after, and the
- * pages and builders that more than one topic builds on.
+ * The fixtures the autonomy session topic classes share (FR-136): a temporary layout folder and a fresh
+ * `AutonomySession` over it, built before each claim and deleted after, and the pages and builders that more than one
+ * topic builds on.
  *
  * @author Adam
  */

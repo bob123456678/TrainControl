@@ -15,8 +15,7 @@ import org.traincontrol.base.LayoutDiagram;
 import org.traincontrol.base.LayoutDiagramComponent.componentType;
 
 /**
- * Inserting or removing a row or a column, and what happens to the setup on the squares that move.  Adam: "Mostly OK
- * after shifting, but links still got unlinked.  Seems the coordinate mapping there may be an issue."
+ * Inserting or removing a row or a column, and what happens to the setup on the squares that move.
  *
  * A shift hands moveTiles a map of every square in the range and where it is going, so the same rules apply as for a
  * drag; the difference is SHAPE: every source lands on another source, and the one destination outside the range is the

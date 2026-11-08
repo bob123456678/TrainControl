@@ -220,9 +220,8 @@ public class testTheReversalReachesTheTracks
     /**
      * Answering no puts a direction command on the wire; answering yes puts none.
      *
-     * This is the assertion Adam asked for: `goingForward()` is the application's belief about the train, and a belief
-     * with no message behind it would look like a working reversal from inside the process and like a dead one from the
-     * platform.
+     * `goingForward()` is the application's belief about the train, and a belief with no message behind it looks like a
+     * working reversal from inside the process and a dead one from the platform.
      *
      * MUTATION: replace `switchDirection()` in the arrival block with `_setDirection` and the model's
      * direction still flips - every assertion in `testAReversalCommandIsEmitted` passes - while this

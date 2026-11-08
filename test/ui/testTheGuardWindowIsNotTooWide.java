@@ -23,7 +23,7 @@ import org.traincontrol.util.I18n;
 /**
  * The Exit and Entry Guard Signal windows put their sentence on two lines rather than one wide one (MT-479): "the
  * editor window for entry/exit guards is much too wide.  make the sentence split over 2 lines so the window isn't too
- * wide."  The heading was a plain label, so the window was as wide as its sentence.
+ * wide."
  *
  * The real window, opened through the method the menu item calls, on a panel with a station of its own.  Two claims:
  * the entry window is narrower than its sentence on one line; and neither window's first sentence (the one before a

@@ -131,7 +131,7 @@ public class testTheShadingIsRedrawnWhenATrainMoves
 
         train.setTrainLength(60);
 
-        // THE PAGE THE WASH IS ACTUALLY ON: insisting on page one failed at the test's own precondition.
+        // THE PAGE THE WASH IS ACTUALLY ON.
         TileKey somewhereCovered = placeSoSomethingIsCovered(built, null, train);
 
         assertNotNull(somewhereCovered,

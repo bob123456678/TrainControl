@@ -24,10 +24,7 @@ import org.traincontrol.base.LayoutDiagram;
 import org.traincontrol.base.LayoutDiagramComponent;
 
 /**
- * The setup check is worked out once per event, and the configuration build works out its names once (Adam: "Do 1 and
- * 2").  Measured on his railway before this: one click on a switch in the autonomy editor ran the setup check twenty
- * times over five events, and a track editor Save twenty-four times over seven, each asking again of a setup nobody had
- * touched; every check builds the whole configuration, and the build sorted every Point again for each copy it named.
+ * The setup check is worked out once per event, and the configuration build works out its names once.
  *
  * The findings are kept for the rest of the event that asked, and only while everything the check reads is as it was:
  * a new event always checks afresh, and a change inside the event (the setup, a train's length, a label on the

@@ -9,11 +9,10 @@ import org.testng.annotations.Test;
 import org.traincontrol.gui.autonomy.AutonomyBanner;
 
 /**
- * OB-191: "why not moving" painted the paths and then said nothing; the fault is in the LAYING OUT of the banner's
- * scroll pane, since the message was composed, handed over and made room for.  Measured in the mounting the editor
- * uses: `LayoutEditor` floats this banner over the bottom of the diagram's viewport (`AutonomyBanner.floatOver`), which
- * gives it the viewport's width and its own preferred height; a test that set that height itself would be choosing the
- * answer.  And asserted in ink: the geometry says WHY, the pixels are what Adam is looking at.
+ * OB-191: "why not moving" painted the paths and then said nothing.  The fault is in the LAYING OUT of the banner's
+ * scroll pane, since the message was composed, handed over and made room for.  The test measures the banner in the
+ * mounting the editor uses (`AutonomyBanner.floatOver`: the viewport's width and the banner's own preferred height)
+ * and asserts the ink on screen.
  *
  * MUTATION: put `middle.fill = java.awt.GridBagConstraints.HORIZONTAL` back in `AutonomyBanner`'s constructor and the
  * first two go red - the first quoting the five pixels, the second reporting no ink at all.
@@ -24,9 +23,8 @@ public class testTheWhyAnswerIsOnScreen
 {
 
     /**
-     * The application's look and feel, before this class stands anything up.  Adam: *"I still see tests popping up with
-     * the small font in the menu bar."*  This class builds a bare Swing window, which is nobody's to fix but this
-     * one's; without it the window is drawn in Metal, not the window the operator sees.
+     * The application's look and feel, set before this class stands anything up: without it this bare Swing window is
+     * drawn in Metal, not the window the operator sees.
      * `regression.testEveryWindowWearsTheApplicationsLook` holds this in place.
      */
     @BeforeClass

@@ -13,10 +13,9 @@ import org.traincontrol.base.Locomotive;
 import org.traincontrol.marklin.MarklinControlStation;
 
 /**
- * A route refusal names the square, not the direction copy the builder made of it (Adam: the whole "copy" business
- * "needs to be masked from the user").  EN57-947 was refused BottomMainB with "Disallowed because 75 407 DB is
- * standing across Tunnel (southbound) -> BottomMainAPre (eastbound)": the headings are how the builder tells the
- * directions of one square apart, and nothing on the diagram carries them.
+ * A route refusal names the square, not the direction copy the builder made of it.  EN57-947 was refused BottomMainB
+ * with "Disallowed because 75 407 DB is standing across Tunnel (southbound) -> BottomMainAPre (eastbound)": the
+ * headings are how the builder tells the directions of one square apart, and nothing on the diagram carries them.
  *
  * Named the way the builder names copies, so the claims are about the words a person would read: a station out of
  * service at the end of a route, and one part-way along it.  And a control: a name that only LOOKS like a copy (a

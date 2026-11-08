@@ -62,9 +62,8 @@ public class testACompulsoryTurnIsChosenLikeAnyOtherStation
     }
 
     /**
-     * A compulsory turn autonomy may choose is not reported as one it will not choose: the set once carried every
-     * compulsory turn whatever the switch said, so the editor said autonomy would leave the square alone while sending
-     * trains to it.
+     * A compulsory turn autonomy may choose is not reported as one it will not choose: the editor must not say
+     * autonomy leaves the square alone while it sends trains there.
      *
      * MUTATION: putting `|| isMustTurnAround(tile)` back into `AutonomySession.stationsAutonomyWillNotChoose` fails
      * this and passes everything else here.

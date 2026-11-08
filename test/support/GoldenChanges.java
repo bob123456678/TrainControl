@@ -10,8 +10,8 @@ import static org.testng.Assert.assertEquals;
 /**
  * A golden with the changes a branch makes on purpose, listed line by line: each row of the list is a golden line
  * number, the line as the golden has it and the line now ("(gone)" when there is none, a backslash and n for a line
- * break), tab-separated.  A row whose
- * line no longer matches the golden fails, so a changed golden cannot pass unnoticed.
+ * break), tab-separated.  A row whose line no longer matches the golden fails, so a changed golden cannot pass
+ * unnoticed.
  *
  * @author Adam
  */

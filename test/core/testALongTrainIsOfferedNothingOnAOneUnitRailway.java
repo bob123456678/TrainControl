@@ -17,14 +17,11 @@ import org.traincontrol.automationui.TileGraph.TileKey;
 import org.traincontrol.marklin.MarklinLocomotive;
 
 /**
- * A railway where every section really is one unit, and what the room rule says on it. The claim moved here from
- * `core.testTheLengthGuardsOnTheRealLayout`, where it was start-dependent (it asserted about ONE square) and measured
- * the wrong thing: that test set every TILE to one unit, but a section is not a tile (the run into `RampDown` is
- * eighteen tiles), so a nine-unit train fit and was correctly offered
- * (`testTheLengthGuardsOnTheRealLayout.testRampDownIsOfferedPastTheOneUnitItOnlyPasses`).
+ * A railway where every section really is one unit, and what the room rule says on it.  A section is not a tile (it
+ * can be many), so a test that set every TILE to one unit measured the wrong thing.
  *
- * `single-switch` fixes both: every edge is two to four tiles, five squares a train may stand on and three berths, and
- * the claim is asserted from EVERY start square. Three measurements, one train, opposite answers: nothing measured
+ * `single-switch` has every edge two to four tiles, five squares a train may stand on and three berths, and the claim
+ * is asserted from EVERY start square.  Three measurements, one train, opposite answers: nothing measured
  * admits everything (*"generally, allow it"*), one unit per section refuses the nine-unit train everywhere, and the
  * one-unit train is still welcome on the same railway. Without the third, the middle one would pass on a railway that
  * offers nothing to anybody.

@@ -16,7 +16,7 @@ import org.traincontrol.base.LayoutDiagram;
 import org.traincontrol.base.LayoutDiagramComponent.componentType;
 
 /**
- * MT-062: delete and the line inserts, which had not had the move audit.
+ * MT-062: delete and the line inserts.
  *
  * Everything the setup holds is keyed by SQUARE, so any operation that relocates or destroys track has to tell the
  * setup.  `testAutonomyStoreSettingsMatrix` pins the RULES; this pins that delete and insert produce the right moves

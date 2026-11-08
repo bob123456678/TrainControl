@@ -158,7 +158,7 @@ public class testDownloadUpdateFetchesTheNewVersion
 
     /**
      * The notice naming where the download went is no wider than about 640 px: the path, one long word, wraps where it
-     * must (it made the notice over 1,200 px wide).
+     * must.
      *
      * MUTATION: show the notice as plain text again, and this fails.
      */

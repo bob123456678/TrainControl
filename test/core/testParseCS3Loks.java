@@ -123,9 +123,8 @@ public class testParseCS3Loks
         List<MarklinLocomotive> fromCs3V260 =
             parser.parseLocomotivesCS3(parseJSONArray(fetchURL(cs3_loks_v260)));
 
-        // MUTATION this catches: any of the four parse methods returning an empty list - previously
-        // nothing here checked the results at all, so a parser that silently produced nothing would
-        // still pass this test.  Counts match the fixtures pinned by testCS3/testCS3_v260/testLoaded.
+        // MUTATION this catches: any of the four parse methods returning an empty list.  Counts match the fixtures
+        // pinned by testCS3/testCS3_v260/testLoaded.
         assertFalse(fromCs2.isEmpty(), "parseLocomotives returned nothing for " + cs2_loks);
         assertFalse(fromCs2FromCs3.isEmpty(), "parseLocomotives returned nothing for " + cs2_loks_from_cs3);
         assertFalse(fromCs3.isEmpty(), "parseLocomotivesCS3 returned nothing for " + cs3_loks);

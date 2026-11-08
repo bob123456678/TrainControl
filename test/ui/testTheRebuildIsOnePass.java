@@ -12,8 +12,7 @@ import support.SourceOf;
 /**
  * A refresh arrives all at once rather than in installments.
  *
- * Adam: "Can we get the diagrams to re-render with less flickering?  Same goes for the main UI when the hourglass
- * expires - it seems that some components appear faster than others.  Best to do a single pass."
+ * Refreshes must land in one pass, not in visible installments, or the diagram and main window flicker.
  *
  * Two causes, neither slowness.  The diagram: `LayoutGrid` emptied the panel at the top of the build and put the
  * replacement in at the bottom, after every tile, image decode and caption; decoding pumps the event queue, so paints

@@ -18,9 +18,9 @@ import org.testng.ITestResult;
  *
  * A modal dialog no test answers holds the test thread, the JVM and its slot until the class cap (an hour).  This
  * watches for one: when the same modal dialog has been showing, and no test method has started or finished, for
- * `traincontrol.dialogWatchdog` seconds (the environment's `TC_DIALOG_WATCH`, else 60), it prints one line naming the dialog's title and text and halts
- * the JVM with status 3.  The runners (docs/tools/one.sh, battery.sh) name it with TestNG's `-listener` and report the
- * class as failed with that line; the other methods of the class are not run.
+ * `traincontrol.dialogWatchdog` seconds (the environment's `TC_DIALOG_WATCH`, else 60), it prints one line naming the
+ * dialog's title and text and halts the JVM with status 3.  The runners (docs/tools/one.sh, battery.sh) name it with
+ * TestNG's `-listener` and report the class as failed with that line; the other methods of the class are not run.
  *
  * Test code only: it reads the open windows and touches nothing in production.
  */

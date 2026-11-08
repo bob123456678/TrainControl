@@ -20,9 +20,7 @@ public class testRouteEditorRoundTripCases
     // MT-003
 
     /**
-     * A condition that BEGINS with a bracket comes back whole (MT-003): `(A or B) and C` used to come back as `A or B`,
-     * silently, so the route still loaded and ran and did half of what it said. A bracket in the middle survived, which
-     * is why this went unseen.
+     * A condition that BEGINS with a bracket comes back whole (MT-003), not as its first part alone.
      */
     @Test
     public void testAConditionStartingWithABracketSurvives() throws Exception

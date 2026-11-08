@@ -120,10 +120,9 @@ public class testRouteEditorShading
 
     /**
      * Highlight on Diagram survives a route that drives a locomotive.  The button gathers the addresses a route touches
-     * so it can flash them, and asked every command for its address; `RouteCommand.getAddress()` is an
-     * `Integer.parseInt` over a key only accessory and feedback commands carry, so a locomotive speed, direction or
-     * function command threw out of the button.  `hasAddress()` exists for this.  Driven through the button, because
-     * that is what was reported.
+     * so it can flash them, and `RouteCommand.getAddress()` is an `Integer.parseInt` over a key only accessory and
+     * feedback commands carry, so a locomotive speed, direction or function command must not be asked; `hasAddress()`
+     * exists for this.  Driven through the button.
      *
      * MUTATION this catches: taking `hasAddress()` back out of either loop.
      */

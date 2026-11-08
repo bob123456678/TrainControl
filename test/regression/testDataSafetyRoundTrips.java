@@ -51,9 +51,8 @@ public class testDataSafetyRoundTrips
     /**
      * Export the setup, re-import it, and get the same setup - with the files untouched.
      *
-     * The named regression is that the block field was not written, so a bundle exported before 18 August came back
-     * without the sensor each Point was about.  Anything keyed by square survives an export only if the export writes
-     * it, and the way that fails is silent: the file is valid JSON and imports without complaint.
+     * Anything keyed by square (the block field, the sensor each Point is about) survives an export only if the export
+     * writes it, and the way that fails is silent: the file is valid JSON and imports without complaint.
      */
     @Test
     public void testTheExportedBundleComesBackWholeAndChangesNothing() throws IOException

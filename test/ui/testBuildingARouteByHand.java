@@ -88,12 +88,10 @@ public class testBuildingARouteByHand
     }
 
     /**
-     * Scenario 1: a yard entry route made from nothing.  Add Route on the Routes tab opens a new route's editor; the
-     * route is named, given two switches, a signal set to green with a delay, a three-way point set left and a call to
-     * the yard's lighting route, each chosen in its cells; its conditions are built as "sensor 5 on, and either switch
-     * 20 turned or sensor 6 off" by adding three, grouping the last two and choosing At least one on the new group's
-     * caption; it is set to fire automatically when a train leaves sensor 7, and saved.  The model then holds exactly
-     * that route, under a local id, one route more than before, and the route list shows it.
+     * Scenario 1: a yard entry route made from nothing.  Add Route opens a new route's editor; the route is named,
+     * given two switches, a signal, a three-way point and a call to the yard's lighting route, with conditions "sensor
+     * 5 on, and either switch 20 turned or sensor 6 off", set to fire automatically on sensor 7, and saved.  The model
+     * then holds exactly that route, under a local id, and the route list shows it.
      *
      * MUTATION: in `ConditionOutline.toExpression`, join every level by AND, and the saved conditions read "Feedback
      * 5,1 & (20,1 & Feedback 6,0)".
@@ -221,9 +219,8 @@ public class testBuildingARouteByHand
 
     /**
      * Scenario 5: a mistake caught, then fixed.  A siding route ticked to fire automatically, with its sensor left at 0
-     * and its first switch given no address, is refused by Save, naming both; Go Back and Fix leaves the editor open and
-     * the model without it.  With the address typed, Save still refuses, naming only the sensor; with the sensor typed
-     * too, Save takes the route, and the model holds it as corrected.
+     * and its first switch given no address, is refused by Save, naming both; once the address is typed Save still
+     * refuses, naming only the sensor, and with the sensor typed too the model holds the route as corrected.
      *
      * MUTATION: in `RouteEditorFrame.everythingWrong`, drop the `frameAutomaticNeedsSensor` refusal, and the first
      * refusal names only the row.

@@ -10,10 +10,7 @@ public final class WindowField
     {
     }
 
-    /**
-     * @param name the field's name on {@link TrainControlUI}
-     * @return its value
-     */
+    /** The value of the named field of {@link TrainControlUI}. */
     @SuppressWarnings("unchecked")
     public static <T> T of(TrainControlUI ui, String name)
     {

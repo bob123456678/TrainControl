@@ -14,8 +14,7 @@ import org.traincontrol.marklin.MarklinControlStation;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 
 /**
- * Whether a square has a way through it: the question MT-367 turned on, asked directly (Adam: "make it public and add
- * the tests.").
+ * Whether a square has a way through it: the question MT-367 turned on, asked directly.
  *
  * The three shapes are the three answers the rule has:
  *
@@ -104,8 +103,8 @@ public class testWhatHasAWayThrough
     }
 
     /**
-     * And a may-turn square answers true from the copy that turns, because its sibling does not (the case MT-367 was
-     * reported against).  What tells a may-turn copy from a real terminus is the other copy.
+     * And a may-turn square answers true from the copy that turns, because its sibling does not.  What tells a may-turn
+     * copy from a real terminus is the other copy.
      */
     @Test
     public void testAMayTurnSquareAnswersFromEitherCopy()

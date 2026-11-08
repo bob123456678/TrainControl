@@ -24,9 +24,8 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
  * Where a placed train came in from, as the rule works it out, and the lengths a train is offered.
  *
  * `Layout.edgesCoveredByStandingTrains` walks back from a standing train along the side it came in by and blocks that
- * track for everything else.  Three doors put a train down by hand and only the diagram's drag and paste worked the
- * side out.  This drives the DOOR and not the rule: `testATrainCoversTheTrackBehindIt` pins `forPlacement` and
- * `wouldAsk`, and the rule was never wrong, it was never CALLED.
+ * track for everything else.  This drives the DOOR and not the rule: `testATrainCoversTheTrackBehindIt` pins
+ * `forPlacement` and `wouldAsk`, and the rule was never wrong, it was never CALLED.
  *
  * ON THE FROZEN SNAPSHOT, never `cs2_sample_layout`.
  *

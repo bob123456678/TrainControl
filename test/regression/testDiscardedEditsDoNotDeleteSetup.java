@@ -17,8 +17,7 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
 
 /**
  * Edits the user threw away do not take their stations with them: experimenting with multi-select in the diagram editor
- * (selecting, dragging, deleting) and saving nothing once cost a whole page every station, locomotive placement, facing
- * and reversing flag.
+ * (selecting, dragging, deleting) and saving nothing must leave every station, placement, facing and reversing flag.
  *
  * The editor works on the LIVE diagram objects the autonomy session holds, so mid-edit the session's idea of the layout
  * is the half-finished one, and reconciling deletes the settings of every square no longer there. Cancel reverts by

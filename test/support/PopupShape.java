@@ -38,10 +38,6 @@ public final class PopupShape
         this.details = details;
     }
 
-    /**
-     * @param pane a showing option pane
-     * @return its shape
-     */
     public static PopupShape of(JOptionPane pane)
     {
         Window window = SwingUtilities.getWindowAncestor(pane);

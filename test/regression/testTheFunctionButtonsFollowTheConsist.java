@@ -243,7 +243,7 @@ public class testTheFunctionButtonsFollowTheConsist
             if (built[0] == null) throw new AssertionError("this sandbox builds no autonomy session at all");
 
             // The session gone and the railway graph still there - the moment between a reset and the event
-            // thread's rebuild, which is when a message used to build one itself.
+            // thread's rebuild.
             session.set(ui, null);
 
             // On an ordinary thread, the way a locomotive message arrives.

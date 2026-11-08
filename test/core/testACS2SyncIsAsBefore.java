@@ -36,9 +36,8 @@ import support.StandInStation;
  * (dev at 0d2d9a24): a mismatch writes what this run saw to `build/cs2_sync_actual.txt`, which is how it was made.
  *
  * One change is on purpose and listed line by line in `test/baseline/cs2_sync_golden_changes.tsv`: at an address with
- * a switch tile and a signal tile (54 and 68 in the railway with both), every tile holds the database's accessory, which
- * is no longer re-created for each tile of the other kind.  So those tiles are live, 68 keeps the switch the first
- * railway made rather than becoming a signal, and the "Adding" lines of the re-creations are gone.
+ * a switch tile and a signal tile (54 and 68 in the railway with both), every tile holds the database's accessory, so
+ * those tiles are live, and 68 keeps its switch rather than becoming a signal.  The "Adding" lines are gone.
  *
  * And on purpose: a saved arrow writes the ID of the page it goes to beside its number (` .zielseite=`, FR-175), and
  * that number again (` .zielartikel=`), so each arrow in the saved pages gains those lines, listed after the line they

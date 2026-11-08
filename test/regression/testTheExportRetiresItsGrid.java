@@ -16,12 +16,10 @@ import org.testng.annotations.Test;
 /**
  * An export that fails hands its grid back, exactly as one that works does.  The export builds a grid into a panel
  * nobody will ever show, and every caption it registers stays in the window's label table for the rest of the session
- * unless the grid is retired.  The discard sat after the paint with no `finally`, and the wait for tile images or the
- * paint under `invokeAndWait` can leave by the other door.
+ * unless the grid is retired; the wait for tile images or the paint under `invokeAndWait` can leave by the other door.
  *
- * Driven, not read: a source-shape version passed against the unfixed file, because the paint's own `try`/`finally`
- * sits between the two.  And made to fail through a seam, not by an interrupt, which lands at whichever statement it
- * reaches so the render sometimes threw before the grid existed; `stumbleForTest` throws at one known point, after the
+ * Driven, not read, and made to fail through a seam rather than an interrupt, which lands at whichever statement it
+ * reaches, so the render sometimes threw before the grid existed; `stumbleForTest` throws at one known point, after the
  * grid is built and its captions registered.
  *
  * @author Adam
@@ -80,8 +78,8 @@ public class testTheExportRetiresItsGrid
     }
 
     /**
-     * And the export that works still hands them back: the fix moves the discard into a `finally`, and a mistake there
-     * would take the working path with it.
+     * And the export that works still hands them back: the discard is in a `finally`, and a mistake there would take
+     * the working path with it.
      */
     @Test
     public void testAnExportThatWorksStillHandsThemBack() throws Exception
