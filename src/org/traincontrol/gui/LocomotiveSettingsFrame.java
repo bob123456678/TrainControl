@@ -1008,7 +1008,8 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
     /** The third tab: years, railway and notes, and Find Similar Locomotives. */
     private final class NotesTab extends JPanel
     {
-        final LocomotiveNotesPanel panel = new LocomotiveNotesPanel(loc, 8, 50, LocomotiveSettingsFrame.this::changed);
+        final LocomotiveNotesPanel panel = new LocomotiveNotesPanel(loc,
+            LocomotiveNotesPanel.railwayNames(main.getModel().getLocomotives()), 8, 50, LocomotiveSettingsFrame.this::changed);
 
         NotesTab()
         {
