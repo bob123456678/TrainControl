@@ -71,6 +71,14 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
 
     private final JTabbedPane tabs = new JTabbedPane();
     private final JLabel strip = new JLabel();
+
+    /**
+     * Under the strip whenever it is up: the key menu's Save Current Speed as Preset still works (MT-912).  Wrapped to
+     * a width the tabs exceed, so a window opened locked is no wider for it.
+     */
+    private final JLabel presetHint = new JLabel("<html><div style='width:360px'>"
+        + I18n.f("loc.ui.settingsPresetDuringARun", I18n.t("loc.ui.menuSaveSpeedAsPreset")) + "</div></html>");
+
     private final JButton save = footerButton(I18n.t("loc.ui.settingsSave"), "settings.save");
     private final JButton cancel = footerButton(I18n.t("ui.cancel"), "settings.cancel");
 
@@ -104,11 +112,18 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
         TrainControlUI.applyWindowIcon(this);
 
         strip.setName("settings.strip");
-        strip.setOpaque(true);
-        strip.setBackground(new Color(255, 243, 205));
-        strip.setForeground(new Color(102, 77, 3));
+        presetHint.setName("settings.stripPreset");
+
+        for (JLabel line : new JLabel[] { strip, presetHint })
+        {
+            line.setOpaque(true);
+            line.setBackground(new Color(255, 243, 205));
+            line.setForeground(new Color(102, 77, 3));
+            line.setVisible(false);
+        }
+
         strip.setBorder(BorderFactory.createEmptyBorder(6, 12, 6, 12));
-        strip.setVisible(false);
+        presetHint.setBorder(BorderFactory.createEmptyBorder(0, 12, 6, 12));
 
         tabs.setName("settings.tabs");
 
@@ -139,7 +154,12 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
 
         JPanel content = new JPanel(new BorderLayout());
 
-        content.add(strip, BorderLayout.NORTH);
+        JPanel top = new JPanel(new BorderLayout());
+
+        top.add(strip, BorderLayout.NORTH);
+        top.add(presetHint, BorderLayout.SOUTH);
+
+        content.add(top, BorderLayout.NORTH);
         content.add(tabs, BorderLayout.CENTER);
         content.add(footer, BorderLayout.SOUTH);
 
@@ -233,7 +253,7 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
         if (adding)
         {
             setTitle(I18n.t("loc.ui.addLocomotive"));
-            strip.setVisible(false);
+            showStrip(false);
             fit();
 
             return;
@@ -261,9 +281,15 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
 
         if (reason != null) strip.setText(reason);
 
-        strip.setVisible(reason != null);
+        showStrip(reason != null);
 
         fit();
+    }
+
+    private void showStrip(boolean up)
+    {
+        strip.setVisible(up);
+        presetHint.setVisible(up);
     }
 
     private void fit()
@@ -295,7 +321,7 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
 
         if (strip.isVisible() != blocked)
         {
-            strip.setVisible(blocked);
+            showStrip(blocked);
 
             // The strip takes its room from the tabs: the window is not resized under the operator
             getContentPane().revalidate();
