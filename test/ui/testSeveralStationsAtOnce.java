@@ -107,7 +107,7 @@ public class testSeveralStationsAtOnce
 
         click(three.get(1));
 
-        assertNull(mark(three.get(1)), "a station clicked again is still marked picked");
+        assertEquals(mark(three.get(1)), TileAnnotation.ToolMark.PICKABLE, "a station clicked again is still marked picked");
 
         assertEquals(window.squaresForTest(), Arrays.asList(three.get(0), three.get(2)),
             "the window still sets a station clicked again");
