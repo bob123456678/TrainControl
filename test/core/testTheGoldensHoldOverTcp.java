@@ -88,7 +88,6 @@ public class testTheGoldensHoldOverTcp
                 try (support.StationRig rig = new support.StationRig(Files.createTempDirectory("tc-tcp-start").toFile(),
                     answer, false, true))
                 {
-                    assertTrue(rig.model.getNetworkCommState(), "precondition: the start-up sync failed");
                     check.accept(rig);
                 }
 
@@ -128,6 +127,7 @@ public class testTheGoldensHoldOverTcp
             {
                 try
                 {
+                    assertTrue(rig.model.getNetworkCommState(), "precondition: the start-up sync failed");
                     assertTrue(!rig.model.isCS3(), "precondition: the stand-in was taken for a CS3");
                     assertEquals(proxyField(rig, "tcpReader"), null, "a CS2's proxy started a TCP listener");
                 }
@@ -152,9 +152,30 @@ public class testTheGoldensHoldOverTcp
         try (TcpStation station = new TcpStation())
         {
             startedAgainst(StandInStation.cs3("260", CS3_INFO), true, station, rig ->
-                assertTrue(rig.model.isCS3(), "precondition: the stand-in was not taken for a CS3"));
+                assertTrue(rig.model.isCS3() && rig.model.getNetworkCommState(), "precondition: no CS3 synced"));
 
             assertEquals(station.connections(), 0, "a CS3 was connected to over TCP with Use UDP Only set");
+        }
+    }
+
+    /**
+     * A CS3 whose start-up sync failed is not connected to over TCP: it runs as an unconnected station does.  The
+     * stand-in says it is a CS3 and then answers nothing more.
+     *
+     * MUTATION: in `MarklinControlStation.init`, take out `model.getNetworkCommState()` (and its `&&`).
+     */
+    @Test(timeOut = 120000)
+    public void testACS3WhoseSyncFailedTriesNoTcp() throws Exception
+    {
+        java.util.function.BiFunction<String, Integer, byte[]> cs3 = StandInStation.cs3("260", CS3_INFO);
+
+        try (TcpStation station = new TcpStation())
+        {
+            startedAgainst((path, n) -> path.equals("/config/geraet.vrs") || path.equals("/app/api/info")
+                ? cs3.apply(path, n) : null, false, station, rig ->
+                assertTrue(rig.model.isCS3() && !rig.model.getNetworkCommState(), "precondition: the sync did not fail"));
+
+            assertEquals(station.connections(), 0, "a CS3 whose sync failed was connected to over TCP");
         }
     }
 

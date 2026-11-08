@@ -2789,6 +2789,12 @@ public class MarklinControlStation implements ViewListener, ModelListener
         return new CS2Message(raw);
     }
         
+    @Override
+    public List<Integer> knownSensors()
+    {
+        return this.feedbackDB.getItemIds();
+    }
+
     /**
      * Receives a network messages from the CS2 for interpretation
      * @param msg

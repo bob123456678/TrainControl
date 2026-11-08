@@ -19,7 +19,8 @@ import org.traincontrol.marklin.udp.NetworkProxy;
  * keeps every 13-byte frame a client writes, with the number of the connection it came on (1 for the first), and
  * sends frames or raw bytes to the client connected last.  With `answering` on it answers each frame as a station does,
  * with the same frame and the response bit set.  `drop` closes the client's connection; `refuse` stops accepting, so
- * the next connect fails.
+ * the next connect fails.  It is also a Link S88, device LINK_S88: it keeps its contacts' states, reports a change as
+ * the event a station sends, and answers a sensor query for its device with the current state, as Adam's CS3 does.
  *
  * @author Adam
  */
@@ -49,6 +50,12 @@ public final class TcpStation implements AutoCloseable
     private final java.util.Set<Integer> ended = java.util.concurrent.ConcurrentHashMap.newKeySet();
 
     private volatile boolean answering;
+
+    /** The Link S88's device number on Adam's CS3. */
+    public static final int LINK_S88 = 2;
+
+    // The contacts' states; with each write, guarded by this, so an answer and an event go out in the order they happen
+    private final java.util.Map<Integer, Boolean> sensors = new java.util.HashMap<>();
 
     public TcpStation() throws IOException
     {
@@ -116,6 +123,83 @@ public final class TcpStation implements AutoCloseable
             OutputStream out = client.getOutputStream();
             out.write(bytes);
             out.flush();
+        }
+    }
+
+    /** A sensor event as a station sends it: `device`'s contact changed to `occupied`. */
+    public static byte[] event(int device, int contact, boolean occupied)
+    {
+        return sensorFrame(device, contact, !occupied, occupied);
+    }
+
+    private static byte[] sensorFrame(int device, int contact, boolean was, boolean is)
+    {
+        return new CS2Message(CS2Message.CMD_ACC_SENSOR, 0x7b34, true, new byte[]
+        {
+            (byte) (device >> 8), (byte) device, (byte) (contact >> 8), (byte) contact,
+            (byte) (was ? 1 : 0), (byte) (is ? 1 : 0), 0, 0
+        }).getRawMessage();
+    }
+
+    /** A contact changes, and the event goes to the client connected last; while none is connected it is lost. */
+    public synchronized void sensor(int contact, boolean occupied)
+    {
+        this.sensors.put(contact, occupied);
+
+        try
+        {
+            send(event(LINK_S88, contact, occupied));
+        }
+        catch (IOException | IllegalStateException lost)
+        {
+            // As on a real connection that is down
+        }
+    }
+
+    /** A contact changes and no event reaches anyone: the change a resync must find. */
+    public synchronized void sensorUnseen(int contact, boolean occupied)
+    {
+        this.sensors.put(contact, occupied);
+    }
+
+    /** A contact's state as this station knows it. */
+    public synchronized boolean occupied(int contact)
+    {
+        return Boolean.TRUE.equals(this.sensors.get(contact));
+    }
+
+    /** The sensor queries received, as {device, contact}, in order. */
+    public List<int[]> queries()
+    {
+        List<int[]> out = new ArrayList<>();
+
+        for (Frame f : received())
+        {
+            if (isQuery(f.bytes)) out.add(new int[] {((f.bytes[5] & 0xff) << 8) | (f.bytes[6] & 0xff),
+                ((f.bytes[7] & 0xff) << 8) | (f.bytes[8] & 0xff)});
+        }
+
+        return out;
+    }
+
+    private static boolean isQuery(byte[] frame)
+    {
+        return (frame[1] & 0xff) == (CS2Message.CMD_ACC_SENSOR << 1) && frame[4] == 4;
+    }
+
+    /** Answers a query for this device with the contact's state; another device's is ignored, as a station does. */
+    private synchronized void answerQuery(Socket client, byte[] query) throws IOException
+    {
+        int device = ((query[5] & 0xff) << 8) | (query[6] & 0xff);
+        int contact = ((query[7] & 0xff) << 8) | (query[8] & 0xff);
+
+        if (device != LINK_S88) return;
+
+        boolean state = occupied(contact);
+
+        synchronized (client)
+        {
+            client.getOutputStream().write(sensorFrame(device, contact, state, state));
         }
     }
 
@@ -201,7 +285,11 @@ public final class TcpStation implements AutoCloseable
                     byte[] copy = Arrays.copyOf(frame, frame.length);
                     this.received.add(new Frame(number, copy));
 
-                    if (this.answering)
+                    if (isQuery(copy))
+                    {
+                        answerQuery(client, copy);
+                    }
+                    else if (this.answering)
                     {
                         copy = Arrays.copyOf(copy, copy.length);
                         copy[1] |= 1;

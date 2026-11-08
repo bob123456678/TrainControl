@@ -15,8 +15,10 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.LockSupport;
 import org.traincontrol.base.udp.CANMessage;
 import org.traincontrol.model.ModelListener;
 import org.traincontrol.util.I18n;
@@ -82,7 +84,7 @@ public class NetworkProxy
      */
     private static final long TCP_ANSWER_LIMIT_MS = 15000;
 
-    /** A send unanswered this long makes the connection suspect: a system frame (Stop) then goes over UDP as well. */
+    /** A send unanswered this long makes the connection suspect: a Stop then goes over UDP as well. */
     private static final long TCP_SUSPECT_MS = 1000;
 
     /** How often a TCP read wakes to check the answer limit. */
@@ -97,17 +99,14 @@ public class NetworkProxy
     /** The most frames kept to send again on a replacement connection; the oldest go first. */
     private static final int UNCONFIRMED_LIMIT = 1000;
 
+    /** The gap between two sensor queries: the Link S88 answers each within about 20 ms, 60 take 0.3 s. */
+    private static final long RESYNC_PACE_NS = 5L * 1000000L;
+
     /**
-     * How far behind the last TCP frame a held datagram is still compared with TCP's own frames when the connection is
-     * lost.  A UDP copy reaches this PC within milliseconds of the TCP one, or a few hundred behind on Wi-Fi.
+     * The first device whose sensors are queried.  Device 0 never answers, and the CS3 answers device 1 itself with
+     * "occupied" for every contact, which is false; the Link S88 is device 2.
      */
-    private static final long OVERLAP_NS = 2000L * 1000000L;
-
-    /** The most datagrams held while TCP runs; the oldest go first. */
-    private static final int HELD_LIMIT = 20000;
-
-    /** How long a switch to holding waits for its marker to come back through the UDP socket. */
-    private static final long MARKER_WAIT_MS = 1000;
+    private static final int FIRST_QUERIED_DEVICE = 2;
 
     // Transmission IP/port
     private final InetAddress transmitIP;
@@ -147,23 +146,22 @@ public class NetworkProxy
     private volatile boolean stopRequested;
 
     /**
-     * While TCP runs, the UDP socket is still read but its datagrams are held, not delivered, or every frame would
-     * arrive twice.  When the connection is lost, those TCP never carried go to the model, in order, and UDP is
-     * delivered live again.  Guards held, tcpTail, holding and marker.
+     * One transport is live at a time.  While TCP runs, the UDP socket stays bound, so a second copy of the program
+     * still finds the port taken, and its datagrams are read and set aside, never delivered.  Guards udpLive and
+     * udpSetAside.
      */
     private final Object udpLock = new Object();
 
-    private final ArrayDeque<Received> held = new ArrayDeque<>();
+    private boolean udpLive = true;
 
-    // The frames TCP delivered within OVERLAP_NS of its last one, to tell the held copies of them
-    private final ArrayDeque<Received> tcpTail = new ArrayDeque<>();
+    // How many datagrams were set aside while TCP ran
+    private long udpSetAside;
 
-    private boolean holding;
+    // Changes whenever the live transport does, so a resync for an earlier one stops
+    private final AtomicInteger liveEpoch = new AtomicInteger();
 
-    // The datagram this proxy sends itself to switch to holding: UDP frames queued before it are delivered
-    private byte[] marker;
-
-    private CountDownLatch markerPassed;
+    // Each s88 contact's device, learned from the station's events; kept in TCP mode only
+    private final Map<Integer, Integer> sensorDevice = new ConcurrentHashMap<>();
 
     // The TCP listener thread, while there is one
     private volatile Thread tcpReader;
@@ -183,19 +181,6 @@ public class NetworkProxy
             this.frame = frame;
             this.at = at;
             this.written = written;
-        }
-    }
-
-    /** One frame and when it was received. */
-    private static final class Received
-    {
-        final byte[] frame;
-        final long at;
-
-        Received(byte[] frame, long at)
-        {
-            this.frame = frame;
-            this.at = at;
         }
     }
 
@@ -269,10 +254,12 @@ public class NetworkProxy
         startTcp();
     }
 
-    /** Connects, switches UDP to holding, and starts the TCP listener; on a failure logs it and stays on UDP. */
+    /** Connects and starts the TCP listener, UDP set aside from before the connect; on a failure logs it, UDP live. */
     private void startTcp()
     {
         Socket connected;
+
+        setUdpLive(false);
 
         try
         {
@@ -280,11 +267,11 @@ public class NetworkProxy
         }
         catch (IOException e)
         {
+            setUdpLive(true);
             model.logf("network.tcpUnavailable", reasonOf(e));
             return;
         }
 
-        enterHolding();
         useTcp(connected);
         model.logf("network.tcpConnected");
 
@@ -476,7 +463,7 @@ public class NetworkProxy
         if (connection == null && !this.replacing) return sendUdp(message);
 
         // A Stop must not wait for a replacement or a connection that may be hung: over UDP at once, and kept too
-        if (isSystemFrame(message) && suspect()) sendUdp(message);
+        if (isUrgentStop(message) && suspect()) sendUdp(message);
 
         if (this.replacing)
         {
@@ -500,10 +487,24 @@ public class NetworkProxy
         return true;
     }
 
-    /** Whether a frame is a system command (Stop, Go, Halt), as CS2Message reads the command. */
-    private static boolean isSystemFrame(byte[] message)
+    /** A frame's command, as CS2Message reads it. */
+    private static int command(byte[] frame)
     {
-        return message.length > 1 && (((message[0] & 0x01) << 7) | ((message[1] & 0xFF) >> 1)) == CS2Message.CMD_SYSTEM;
+        return ((frame[0] & 0x01) << 7) | ((frame[1] & 0xFF) >> 1);
+    }
+
+    /**
+     * Stop, Halt or a locomotive's emergency stop: what may overtake.  Go may not, or the power comes on before a speed
+     * 0 sent ahead of it.
+     */
+    private static boolean isUrgentStop(byte[] frame)
+    {
+        if (frame.length < 10 || command(frame) != CS2Message.CMD_SYSTEM || frame[4] < 5) return false;
+
+        int sub = frame[9] & 0xFF;
+
+        return sub == CS2Message.CMD_SYSSUB_STOP || sub == CS2Message.CMD_SYSSUB_HALT
+            || sub == CS2Message.CMD_SYSSUB_TRAINSTOP;
     }
 
     /** Whether the connection is being replaced, or a frame sent on it has gone unanswered for TCP_SUSPECT_MS.  Holds this. */
@@ -603,154 +604,107 @@ public class NetworkProxy
         }
     }
 
-    /**
-     * Switches UDP from delivering to holding.  Datagrams already queued in the socket predate the switch, so they are
-     * still delivered: a marker sent to the socket itself ends them.  Without it back within MARKER_WAIT_MS, holding
-     * starts anyway.
-     */
-    private void enterHolding()
+    /** Makes UDP the live transport, or sets its datagrams aside; once this returns, none is delivered unless live. */
+    private void setUdpLive(boolean live)
     {
-        byte[] mark = new byte[8];
-        java.util.concurrent.ThreadLocalRandom.current().nextBytes(mark);
-        CountDownLatch passed = new CountDownLatch(1);
-
         synchronized (this.udpLock)
         {
-            this.held.clear();
-            this.tcpTail.clear();
-            this.marker = mark;
-            this.markerPassed = passed;
-        }
-
-        try
-        {
-            DatagramSocket own = this.socket;
-            own.send(new DatagramPacket(mark, mark.length, InetAddress.getLoopbackAddress(), own.getLocalPort()));
-            passed.await(MARKER_WAIT_MS, TimeUnit.MILLISECONDS);
-        }
-        catch (IOException e)
-        {
-            // Holding starts below
-        }
-        catch (InterruptedException e)
-        {
-            Thread.currentThread().interrupt();
-        }
-
-        synchronized (this.udpLock)
-        {
-            this.holding = true;
-            this.marker = null;
+            this.udpLive = live;
+            this.liveEpoch.incrementAndGet();
         }
     }
 
-    /** What the UDP listener does with a datagram of `length` bytes: false when it was this proxy's marker. */
-    private boolean isMarker(byte[] buffer, int length)
+    /** Delivers a UDP frame while UDP is live; while TCP runs, sets it aside. */
+    private void deliverUdp(byte[] buffer)
     {
         synchronized (this.udpLock)
         {
-            if (this.marker == null || length != this.marker.length) return false;
-
-            for (int i = 0; i < length; i++) if (buffer[i] != this.marker[i]) return false;
-
-            this.holding = true;
-            this.marker = null;
-            this.markerPassed.countDown();
-            return true;
-        }
-    }
-
-    /** Delivers a UDP frame, or holds it while TCP runs. */
-    private void deliverOrHold(byte[] buffer)
-    {
-        synchronized (this.udpLock)
-        {
-            if (this.holding)
+            if (!this.udpLive)
             {
-                long now = System.nanoTime();
-                this.held.addLast(new Received(Arrays.copyOf(buffer, buffer.length), now));
-
-                while (this.held.size() > HELD_LIMIT || (!this.held.isEmpty()
-                    && this.held.peekFirst().at - (this.lastTcpAt - OVERLAP_NS) < 0 && this.lastTcpAt != 0))
-                {
-                    this.held.pollFirst();
-                }
-
+                this.udpSetAside++;
                 return;
             }
-        }
 
-        // Send message to listener
-        model.receiveMessage(model.createMessage(buffer));
+            learn(buffer);
+
+            // Send message to listener
+            model.receiveMessage(model.createMessage(buffer));
+        }
     }
 
-    // System.nanoTime of the last frame TCP delivered, 0 before one; guarded by udpLock
-    private long lastTcpAt;
-
-    /** Delivers a TCP frame and remembers it, to tell the held UDP copy of it later. */
+    /** Delivers a TCP frame. */
     private void deliverTcp(byte[] frame)
     {
-        synchronized (this.udpLock)
-        {
-            long now = System.nanoTime();
-            this.lastTcpAt = now;
-            this.tcpTail.addLast(new Received(Arrays.copyOf(frame, frame.length), now));
-
-            while (this.tcpTail.peekFirst().at - (now - OVERLAP_NS) < 0) this.tcpTail.pollFirst();
-        }
-
+        learn(frame);
         deliver(frame);
     }
 
-    /**
-     * When the connection is lost: the held datagrams TCP never carried go to the model, in order, and UDP is
-     * delivered live from here.  A held datagram older than OVERLAP_NS behind the last TCP frame is dropped, and one
-     * that matches a TCP frame of that span, in order, is TCP's own frame again: neither is replayed, so a state
-     * TCP already moved past is never applied again.
-     */
-    private void releaseHeld()
+    /** In TCP mode, notes a contact's device from a sensor event: a change of state, so not an answer to a query. */
+    private void learn(byte[] frame)
     {
-        synchronized (this.udpLock)
+        if (this.tcpPort <= 0 || command(frame) != CS2Message.CMD_ACC_SENSOR || frame[4] != 8 || frame[9] == frame[10])
         {
-            for (byte[] frame : unmatched()) deliver(frame);
-
-            this.held.clear();
-            this.tcpTail.clear();
-            this.holding = false;
-            this.marker = null;
+            return;
         }
+
+        this.sensorDevice.put(((frame[7] & 0xFF) << 8) | (frame[8] & 0xFF), ((frame[5] & 0xFF) << 8) | (frame[6] & 0xFF));
     }
 
-    /** The held frames, from OVERLAP_NS behind the last TCP frame, that do not match TCP's frames in order.  Holds udpLock. */
-    private List<byte[]> unmatched()
+    /**
+     * Asks each sensor the model knows for its state, on the transport just made live, as frames missed meanwhile are
+     * gone.  The station answers with the state as it answers, on the same transport and after any event it sent
+     * before, so no answer overtakes a newer event.  Only a contact whose device an event showed is asked, and never
+     * device 0 or 1.  Paced, on a thread of its own that stops when the live transport changes.
+     */
+    private void resync(boolean overTcp)
     {
-        long from = this.lastTcpAt == 0 ? Long.MIN_VALUE : this.lastTcpAt - OVERLAP_NS;
-        List<Received> tail = new ArrayList<>(this.tcpTail);
-        List<byte[]> out = new ArrayList<>();
-        int next = 0;
+        int epoch = this.liveEpoch.get();
+        List<byte[]> queries = new ArrayList<>();
+        int skipped = 0;
 
-        for (Received h : this.held)
+        for (Integer contact : model.knownSensors())
         {
-            if (this.lastTcpAt != 0 && h.at - from < 0) continue;
+            Integer device = this.sensorDevice.get(contact);
 
-            int match = -1;
-
-            for (int k = next; k < tail.size() && match < 0; k++)
+            if (device == null || device < FIRST_QUERIED_DEVICE)
             {
-                if (Arrays.equals(tail.get(k).frame, h.frame)) match = k;
-            }
-
-            if (match >= 0)
-            {
-                next = match + 1;
+                skipped++;
             }
             else
             {
-                out.add(h.frame);
+                queries.add(new CS2Message(CS2Message.CMD_ACC_SENSOR, new byte[]
+                    {(byte) (device >> 8), (byte) (int) device, (byte) (contact >> 8), (byte) (int) contact}).getRawMessage());
             }
         }
 
-        return out;
+        model.logf("network.sensorsResynced", queries.size(), skipped);
+
+        if (queries.isEmpty()) return;
+
+        Thread asking = new Thread(() ->
+        {
+            for (byte[] query : queries)
+            {
+                if (this.stopRequested || this.liveEpoch.get() != epoch) return;
+
+                if (overTcp)
+                {
+                    sendMessage(query);
+                }
+                else
+                {
+                    synchronized (this)
+                    {
+                        sendUdp(query);
+                    }
+                }
+
+                LockSupport.parkNanos(RESYNC_PACE_NS);
+            }
+        }, "cs2-s88-resync");
+
+        asking.setDaemon(true);
+        asking.start();
     }
 
     /** The TCP listener: reads the connection, and each that replaces it, until a stop or UDP takes over. */
@@ -824,8 +778,9 @@ public class NetworkProxy
 
     /**
      * Replaces a lost connection: up to TCP_RECONNECT_TRIES new ones, then UDP for the rest of the session.  A
-     * connection that never carried a frame goes straight to UDP.  UDP is delivered live meanwhile, and frames the
-     * station may not have are sent again.
+     * connection that never carried a frame goes straight to UDP.  UDP is live meanwhile, frames the station may not
+     * have are sent again, and the sensors are resynced on each transport made live.  Locomotive and accessory echoes
+     * missed meanwhile are not replayed: this program commands those, as when a datagram is lost.
      */
     private void recover(Socket lost, String reason)
     {
@@ -839,9 +794,10 @@ public class NetworkProxy
             this.lostBecause = null;
         }
 
-        releaseHeld();
+        setUdpLive(true);
 
         model.logf(retry ? "network.tcpLostReconnecting" : "network.tcpLostUsingUdp", reason);
+        resync(false);
 
         IOException failed = null;
         int[] counts;
@@ -852,10 +808,9 @@ public class NetworkProxy
 
             try
             {
-                Socket fresh = connectTcp();
+                setUdpLive(false);
 
-                // UDP held again from here; the new connection is read only once that holds
-                enterHolding();
+                Socket fresh = connectTcp();
 
                 synchronized (this)
                 {
@@ -870,12 +825,14 @@ public class NetworkProxy
 
                 model.logf("network.tcpReconnected");
                 logResent(counts);
+                resync(true);
                 return;
             }
             catch (IOException e)
             {
                 failed = e;
-                releaseHeld();
+                setUdpLive(true);
+                resync(false);
             }
         }
 
@@ -1044,11 +1001,7 @@ public class NetworkProxy
                         // in the tail, a stale command re-applied that the duplicate-suppression window cannot catch.
                         if (packet.getLength() == buffer.length)
                         {
-                            deliverOrHold(buffer);
-                        }
-                        else
-                        {
-                            isMarker(buffer, packet.getLength());
+                            deliverUdp(buffer);
                         }
 
                         // Reset the length of the packet just in case

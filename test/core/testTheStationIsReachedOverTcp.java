@@ -11,6 +11,11 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeSet;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.LockSupport;
 import static org.testng.Assert.assertEquals;
@@ -58,6 +63,9 @@ public class testTheStationIsReachedOverTcp
         final List<String> keys = Collections.synchronizedList(new ArrayList<>());
         final List<String> lines = Collections.synchronizedList(new ArrayList<>());
 
+        // Contacts the model knows without an event, as a layout's
+        final List<Integer> alsoKnown = Collections.synchronizedList(new ArrayList<>());
+
         @Override
         public void receiveMessage(CANMessage message)
         {
@@ -74,6 +82,46 @@ public class testTheStationIsReachedOverTcp
         public CANMessage createMessage(byte[] raw)
         {
             return new CS2Message(raw);
+        }
+
+        /** As the control station: every contact it has had a sensor frame for, and the layout's. */
+        @Override
+        public List<Integer> knownSensors()
+        {
+            TreeSet<Integer> known = new TreeSet<>(this.alsoKnown);
+
+            synchronized (this.heard)
+            {
+                for (byte[] h : this.heard) if (isSensorFrame(h)) known.add(contactOf(h));
+            }
+
+            return new ArrayList<>(known);
+        }
+
+        /** A contact's states as the model was handed them, each run of one state counted once. */
+        List<Boolean> states(int contact)
+        {
+            List<Boolean> out = new ArrayList<>();
+
+            synchronized (this.heard)
+            {
+                for (byte[] h : this.heard)
+                {
+                    if (!isSensorFrame(h) || contactOf(h) != contact) continue;
+
+                    boolean occupied = h[10] == 1;
+
+                    if (out.isEmpty() || out.get(out.size() - 1) != occupied) out.add(occupied);
+                }
+            }
+
+            return out;
+        }
+
+        Boolean lastState(int contact)
+        {
+            List<Boolean> all = states(contact);
+            return all.isEmpty() ? null : all.get(all.size() - 1);
         }
 
         @Override
@@ -147,10 +195,41 @@ public class testTheStationIsReachedOverTcp
         return connect(STATION, port);
     }
 
-    /** A frame as the station would send it: a sensor event. */
+    /** A frame as the station would send it: a sensor event, from device 0, so never asked for. */
     private static byte[] sensor(int contact, boolean occupied)
     {
         return Packets.s88(contact, occupied).getRawMessage();
+    }
+
+    /** A sensor event from the Link S88, whose contacts a resync asks. */
+    private static byte[] linkS88(int contact, boolean occupied)
+    {
+        return TcpStation.event(TcpStation.LINK_S88, contact, occupied);
+    }
+
+    private static boolean isSensorFrame(byte[] h)
+    {
+        return (h[1] & 0xfe) == CS2Message.CMD_ACC_SENSOR << 1 && h[4] == 8;
+    }
+
+    private static int contactOf(byte[] h)
+    {
+        return ((h[7] & 0xff) << 8) | (h[8] & 0xff);
+    }
+
+    /** The query a resync sends for a contact. */
+    private static byte[] query(int device, int contact)
+    {
+        return new CS2Message(CS2Message.CMD_ACC_SENSOR,
+            new byte[] {(byte) (device >> 8), (byte) device, (byte) (contact >> 8), (byte) contact}).getRawMessage();
+    }
+
+    /** A station's answer to a query: old and new state both the current one. */
+    private static byte[] answer(int device, int contact, boolean occupied)
+    {
+        byte s = (byte) (occupied ? 1 : 0);
+        return new CS2Message(CS2Message.CMD_ACC_SENSOR, 0x7b34, true, new byte[]
+            {(byte) (device >> 8), (byte) device, (byte) (contact >> 8), (byte) contact, s, s, 0, 0}).getRawMessage();
     }
 
     private static byte[] ping(int tag)
@@ -183,16 +262,17 @@ public class testTheStationIsReachedOverTcp
         }
     }
 
-    /** Broadcasts a frame and waits until the proxy holds it, as it does every UDP frame while TCP runs. */
-    private void broadcastHeld(byte[] frame) throws Exception
+    /** Broadcasts a frame and waits until the proxy has read it and set it aside, as it does every datagram over TCP. */
+    private void broadcastSetAside(byte[] frame) throws Exception
     {
         Object lock = field("udpLock");
-        java.util.Collection<?> held = (java.util.Collection<?>) field("held");
-        int before;
+        java.lang.reflect.Field count = NetworkProxy.class.getDeclaredField("udpSetAside");
+        count.setAccessible(true);
+        long before;
 
         synchronized (lock)
         {
-            before = held.size();
+            before = count.getLong(this.proxy);
         }
 
         broadcast(frame);
@@ -201,9 +281,16 @@ public class testTheStationIsReachedOverTcp
         {
             synchronized (lock)
             {
-                return held.size() > before;
+                try
+                {
+                    return count.getLong(this.proxy) > before;
+                }
+                catch (IllegalAccessException e)
+                {
+                    throw new IllegalStateException(e);
+                }
             }
-        }, WAIT_MS), "the proxy did not hold the broadcast frame: " + this.model.lines);
+        }, WAIT_MS), "the proxy did not set the broadcast frame aside: " + this.model.lines);
     }
 
     private boolean logged(String key, long ms)
@@ -378,10 +465,10 @@ public class testTheStationIsReachedOverTcp
     }
 
     /**
-     * Over TCP the UDP copy of a frame is held, not delivered, or every frame would arrive twice: a frame broadcast and
-     * also sent over TCP reaches the model once, and a frame only broadcast not at all while TCP runs.
+     * Over TCP the UDP copy of a frame is set aside, not delivered, or every frame would arrive twice: a frame
+     * broadcast and also sent over TCP reaches the model once, and a frame only broadcast not at all while TCP runs.
      *
-     * MUTATION: in `NetworkProxy.enterHolding` and `isMarker`, `this.holding = true;` to `this.holding = false;`.
+     * MUTATION: in `NetworkProxy.startTcp`, take out `setUdpLive(false);`.
      */
     @Test(timeOut = 30000)
     public void testOverTcpNoFrameArrivesTwice() throws Exception
@@ -390,8 +477,8 @@ public class testTheStationIsReachedOverTcp
 
         byte[] both = sensor(1005, true);
         byte[] udpOnly = sensor(1006, true);
-        broadcastHeld(both);
-        broadcastHeld(udpOnly);
+        broadcastSetAside(both);
+        broadcastSetAside(udpOnly);
         this.station.send(both);
 
         assertTrue(Components.waitFor(() -> this.model.heardFrame(both), WAIT_MS), "the frame over TCP never arrived");
@@ -523,57 +610,301 @@ public class testTheStationIsReachedOverTcp
     }
 
     /**
-     * A sensor change the station broadcast while TCP was failing, and that TCP never carried, reaches the model when
-     * the loss is found: the held UDP frames TCP did not deliver are handed over.
+     * A sensor change only UDP carried, while TCP was failing, is put right once the loss is found: UDP is live at
+     * once and the sensor is asked for its state over it, within a second, before any reconnect.
      *
-     * MUTATION: in `NetworkProxy.releaseHeld`, take out `for (byte[] frame : unmatched()) deliver(frame);`.
+     * MUTATION: in `NetworkProxy.recover`, take out the `resync(false);` after the loss is logged.
      */
     @Test(timeOut = 30000)
-    public void testAFrameOnlyUdpCarriedReachesTheModelWhenTcpIsLost() throws Exception
+    public void testASensorChangedOnlyOverUdpIsPutRightWhenTcpIsLost() throws Exception
     {
-        connectedAndCarried();
+        try (DatagramSocket wire = udpWire())
+        {
+            connectedToASilentStation();
+            this.station.sensor(1201, true);
+            assertTrue(Components.waitFor(() -> this.model.heardFrame(linkS88(1201, true)), WAIT_MS), "precondition");
 
-        byte[] clear = sensor(1007, false);
-        broadcastHeld(clear);
-        assertFalse(this.model.heardFrame(clear), "precondition: the UDP frame was delivered while TCP ran");
+            this.station.sensorUnseen(1201, false);
+            broadcastSetAside(linkS88(1201, false));
+            assertEquals(this.model.lastState(1201), Boolean.TRUE, "precondition: the UDP frame was delivered over TCP");
 
-        this.station.close();
+            this.station.close();
+            assertTrue(logged("network.tcpLostReconnecting", WAIT_MS), "the loss was not found: " + this.model.lines);
 
-        assertTrue(Components.waitFor(() -> this.model.heardFrame(clear), WAIT_MS),
-            "the sensor clear broadcast during the outage was thrown away: " + this.model.lines);
+            assertTrue(Arrays.equals(nextOn(wire, 1000), query(TcpStation.LINK_S88, 1201)),
+                "the sensor was not asked for its state over UDP within 1 s of the loss: " + this.model.lines);
+
+            broadcast(answer(TcpStation.LINK_S88, 1201, false));
+            assertTrue(Components.waitFor(() -> Boolean.FALSE.equals(this.model.lastState(1201)), WAIT_MS),
+                "the sensor did not end at the station's state: " + this.model.states(1201));
+        }
     }
 
     /**
-     * A stale state is never replayed: the UDP copy of an "occupied" that TCP delivered before its "clear" is held,
-     * and when TCP is lost it is matched to TCP's own frame and dropped, so the sensor stays clear.
+     * A sensor that changed while the connection was down, carried by neither TCP nor UDP, ends at the station's
+     * state: asked over the new connection.
      *
-     * MUTATION: in `NetworkProxy.unmatched`, `if (Arrays.equals(tail.get(k).frame, h.frame)) match = k;` to
-     * `if (false) match = k;`.
+     * MUTATION: in `NetworkProxy.recover`, take out `resync(true);`.
      */
     @Test(timeOut = 30000)
-    public void testAStaleUdpCopyIsNotReplayedWhenTcpIsLost() throws Exception
+    public void testASensorChangedDuringADropIsPutRightOnTheNewConnection() throws Exception
+    {
+        connectedToASilentStation();
+        this.station.sensor(1202, true);
+        assertTrue(Components.waitFor(() -> this.model.heardFrame(linkS88(1202, true)), WAIT_MS), "precondition");
+
+        this.station.drop();
+        this.station.sensorUnseen(1202, false);
+
+        assertTrue(logged("network.tcpReconnected", 15000), "no new connection: " + this.model.lines);
+        assertTrue(Components.waitFor(() -> Boolean.FALSE.equals(this.model.lastState(1202)), WAIT_MS),
+            "the sensor did not end at the station's state: " + this.model.states(1202) + " " + this.model.lines);
+    }
+
+    /**
+     * Only a contact whose device an event showed is asked, and only on a device that answers truly: not device 0, not
+     * device 1 (the CS3 answers those itself, "occupied" for all), not a contact the model knows with no event, and
+     * not on a device an answer named rather than an event.
+     *
+     * MUTATION: in `NetworkProxy`, `FIRST_QUERIED_DEVICE = 2` to `= 0`.  And: in `NetworkProxy.resync`,
+     * `this.sensorDevice.get(contact)` to `this.sensorDevice.getOrDefault(contact, FIRST_QUERIED_DEVICE)`.  And: in
+     * `NetworkProxy.learn`, take out `|| frame[9] == frame[10]`.
+     */
+    @Test(timeOut = 30000)
+    public void testOnlySensorsSeenOnATruthfulDeviceAreAsked() throws Exception
+    {
+        connectedToASilentStation();
+        this.model.alsoKnown.add(1304);
+
+        this.station.sensor(1301, true);
+        this.station.send(sensor(1302, true));
+        this.station.send(TcpStation.event(1, 1303, true));
+        this.station.send(answer(1, 1301, true));
+        assertTrue(Components.waitFor(() -> this.model.heard.size() == 4, WAIT_MS), "precondition: not carried");
+
+        this.station.drop();
+
+        assertTrue(logged("network.tcpReconnected", 15000), "no new connection: " + this.model.lines);
+        assertTrue(Components.waitFor(() -> this.model.count("network.sensorsResynced") == 2, WAIT_MS),
+            "no resync after the loss and after the reconnect: " + this.model.lines);
+        assertEquals(Collections.frequency(this.model.lines, I18n.f("network.sensorsResynced", 1, 3)), 2,
+            "not exactly one sensor asked and three skipped: " + this.model.lines);
+
+        assertTrue(Components.waitFor(() -> this.model.heardFrame(answer(TcpStation.LINK_S88, 1301, true)), WAIT_MS),
+            "the Link S88's contact was not asked over the new connection");
+        assertEquals(this.station.queries().size(), 1, "other queries reached the station");
+        assertEquals(Arrays.toString(this.station.queries().get(0)), "[2, 1301]", "the query is not for 2/1301");
+    }
+
+    /**
+     * A stale state is never applied after a newer one.  UDP copies lagging TCP's frames, doubled as the CS3 sends
+     * some, are set aside while TCP runs: a contact TCP took occupied then clear, with UDP's occupied twice after;
+     * one TCP took clear then occupied, UDP's clear twice; one whose clear's UDP copy never came.  After a drop and
+     * the resync each has only TCP's states, ending at the station's.
+     *
+     * MUTATION: in `NetworkProxy.deliverUdp`, `if (!this.udpLive)` to `if (false)`.
+     */
+    @Test(timeOut = 30000)
+    public void testAStaleUdpCopyIsNeverAppliedAfterANewerState() throws Exception
     {
         connectedToASilentStation();
 
-        byte[] occupied = sensor(1111, true);
-        byte[] clear = sensor(1111, false);
-        broadcastHeld(occupied);
-        this.station.send(occupied);
-        this.station.send(clear);
-        assertTrue(Components.waitFor(() -> this.model.heardFrame(clear), WAIT_MS), "precondition: TCP did not carry");
+        int[] contacts = {1111, 1112, 1500};
+        boolean[][] tcp = {{true, false}, {false, true}, {true, false}};
+        boolean[][] udp = {{true, true, false}, {false, false, true}, {true}};
 
-        this.station.close();
+        for (int c = 0; c < contacts.length; c++)
+        {
+            for (boolean state : tcp[c]) this.station.sensor(contacts[c], state);
 
+            byte[] last = linkS88(contacts[c], tcp[c][tcp[c].length - 1]);
+            assertTrue(Components.waitFor(() -> this.model.heardFrame(last), WAIT_MS), "precondition: TCP did not carry");
+
+            for (boolean state : udp[c]) broadcastSetAside(linkS88(contacts[c], state));
+        }
+
+        this.station.drop();
+        assertTrue(logged("network.tcpReconnected", 15000), "no new connection: " + this.model.lines);
+
+        for (int c = 0; c < contacts.length; c++)
+        {
+            byte[] truth = answer(TcpStation.LINK_S88, contacts[c], this.station.occupied(contacts[c]));
+            assertTrue(Components.waitFor(() -> this.model.heardFrame(truth), WAIT_MS), "no resync of " + contacts[c]);
+            assertEquals(this.model.states(contacts[c]), Arrays.asList(tcp[c][0], tcp[c][1]),
+                "contact " + contacts[c] + " was handed a stale state");
+        }
+    }
+
+    /**
+     * UDP copies that arrive after the loss was found are live again, and may be stale: a contact TCP took occupied
+     * then clear, whose occupied's copy comes late, reads occupied until the resync puts it back to clear.
+     *
+     * MUTATION: as testASensorChangedDuringADropIsPutRightOnTheNewConnection.
+     */
+    @Test(timeOut = 30000)
+    public void testALateUdpCopyAfterTheLossIsPutRightByTheResync() throws Exception
+    {
+        connectedToASilentStation();
+        this.station.sensor(1600, true);
+        this.station.sensor(1600, false);
+        assertTrue(Components.waitFor(() -> this.model.heardFrame(linkS88(1600, false)), WAIT_MS), "precondition");
+
+        this.station.drop();
         assertTrue(logged("network.tcpLostReconnecting", WAIT_MS), "the loss was not found: " + this.model.lines);
-        assertEquals(this.model.times(occupied), 1, "the stale occupied was replayed after the clear");
-        assertTrue(Arrays.equals(this.model.heard.get(this.model.heard.size() - 1), clear),
-            "the sensor's last state is not the clear TCP delivered");
+        broadcast(linkS88(1600, true));
+        assertTrue(Components.waitFor(() -> this.model.times(linkS88(1600, true)) == 2, WAIT_MS),
+            "precondition: the late copy was not delivered");
+
+        assertTrue(logged("network.tcpReconnected", 15000), "no new connection: " + this.model.lines);
+        assertTrue(Components.waitFor(() -> Boolean.FALSE.equals(this.model.lastState(1600)), WAIT_MS),
+            "the sensor ended at the late copy's stale state: " + this.model.states(1600));
+    }
+
+    /**
+     * Twenty Link S88 contacts change every 10 ms in turn, each change on TCP and as a UDP copy 100 ms later, through
+     * three drops, the last with every contact changed while nothing carried it: every contact ends at the station's
+     * state.
+     *
+     * MUTATION: as testASensorChangedDuringADropIsPutRightOnTheNewConnection.
+     */
+    @Test(timeOut = 120000)
+    public void testEverySensorEndsAtTheStationsStateThroughDrops() throws Exception
+    {
+        connectedToASilentStation();
+
+        final int first = 1700;
+        final int count = 20;
+        final AtomicBoolean feeding = new AtomicBoolean(true);
+        ScheduledExecutorService udp = Executors.newSingleThreadScheduledExecutor();
+
+        Thread feeder = new Thread(() ->
+        {
+            for (int k = 0; feeding.get() && k < 6000; k++)
+            {
+                int contact = first + k % count;
+                boolean occupied = (k / count) % 2 == 0;
+                this.station.sensor(contact, occupied);
+
+                byte[] copy = linkS88(contact, occupied);
+                udp.schedule(() -> broadcastQuietly(copy), 100, TimeUnit.MILLISECONDS);
+
+                // A change every 10 ms, as a busy layout reports
+                LockSupport.parkNanos(10000000L);
+            }
+        }, "tcp-claim-feeder");
+
+        try
+        {
+            feeder.start();
+
+            for (int drop = 1; drop <= 3; drop++)
+            {
+                final int want = drop * 150;
+                assertTrue(Components.waitFor(() -> this.model.heard.size() >= want, 20000), "stalled at drop " + drop);
+
+                if (drop == 3)
+                {
+                    feeding.set(false);
+                    feeder.join(WAIT_MS);
+                }
+
+                this.station.drop();
+
+                if (drop == 3)
+                {
+                    for (int c = first; c < first + count; c++) this.station.sensorUnseen(c, !this.station.occupied(c));
+                }
+
+                final int reconnects = drop;
+                assertTrue(Components.waitFor(() -> this.model.count("network.tcpReconnected") >= reconnects, 15000),
+                    "no reconnect after drop " + drop + ": " + this.model.lines);
+            }
+
+            assertTrue(Components.waitFor(() ->
+            {
+                for (int c = first; c < first + count; c++)
+                {
+                    if (!Boolean.valueOf(this.station.occupied(c)).equals(this.model.lastState(c))) return false;
+                }
+
+                return true;
+            }, WAIT_MS), "a sensor did not end at the station's state: " + this.model.lines);
+        }
+        finally
+        {
+            feeding.set(false);
+            udp.shutdownNow();
+        }
+    }
+
+    private void broadcastQuietly(byte[] frame)
+    {
+        try
+        {
+            broadcast(frame);
+        }
+        catch (Exception closed)
+        {
+            // The proxy was stopped
+        }
+    }
+
+    /**
+     * A proxy never asked for TCP, as a CS2's is, hears the station's UDP frames as before, and keeps no sensor's
+     * device: it never asks a sensor anything.
+     *
+     * MUTATION: in `NetworkProxy.deliverUdp`, `if (!this.udpLive)` to `if (!this.udpLive || this.tcpPort == 0)`.  And:
+     * in `NetworkProxy.learn`, take out `this.tcpPort <= 0 || `.
+     */
+    @Test(timeOut = 30000)
+    public void testAProxyNeverAskedForTcpHearsUdp() throws Exception
+    {
+        this.proxy = new NetworkProxy(InetAddress.getByName("127.0.0.1"));
+        this.proxy.setModel(this.model);
+        assertReachedOverUdp();
+
+        byte[] event = linkS88(1801, true);
+        broadcast(event);
+        assertTrue(Components.waitFor(() -> this.model.heardFrame(event), WAIT_MS), "the event was not heard");
+        assertTrue(((Map<?, ?>) field("sensorDevice")).isEmpty(), "a proxy in UDP mode learned a sensor's device");
+    }
+
+    /**
+     * Frames the station has answered are not kept to send again, so a busy connection never reaches the limit:
+     * after 1,200 answered sends, a drop logs no command as not sent.
+     *
+     * MUTATION: in `NetworkProxy.writeTcp`, take out the loop that drops the frames taken as received.
+     */
+    @Test(timeOut = 60000)
+    public void testAnsweredFramesAreNotKeptToTheLimit() throws Exception
+    {
+        connectedAndAnswered();
+
+        for (int batch = 0; batch < 2; batch++)
+        {
+            for (int n = 0; n < 600; n++) this.proxy.sendMessage(new CS2Message(numbered(batch + 1, n)));
+
+            byte[] last = answerTo(numbered(batch + 1, 599));
+            assertTrue(Components.waitFor(() -> this.model.heardFrame(last), WAIT_MS), "batch " + batch + " not answered");
+
+            // Waiting is the point: a frame heard past the margin after the batch makes the batch count as received
+            Components.waitFor(() -> false, 400);
+            this.station.send(sensor(1009 + batch, true));
+            byte[] heard = sensor(1009 + batch, true);
+            assertTrue(Components.waitFor(() -> this.model.heardFrame(heard), WAIT_MS), "precondition: not heard");
+        }
+
+        this.station.drop();
+
+        assertTrue(logged("network.tcpReconnected", 15000), "no new connection: " + this.model.lines);
+        assertEquals(this.model.count("network.framesDropped"), 0, "answered frames were counted as not sent: "
+            + this.model.lines);
     }
 
     /**
      * A Stop sent while the connection is being replaced goes out over UDP at once, not after the tries.
      *
-     * MUTATION: in `NetworkProxy.sendMessage`, take out `if (isSystemFrame(message) && suspect()) sendUdp(message);`.
+     * MUTATION: in `NetworkProxy.sendMessage`, take out `if (isUrgentStop(message) && suspect()) sendUdp(message);`.
      */
     @Test(timeOut = 30000)
     public void testAStopDuringAReconnectGoesOutAtOnce() throws Exception
@@ -589,6 +920,35 @@ public class testTheStationIsReachedOverTcp
 
             assertTrue(Arrays.equals(nextOn(wire, 1000), stop),
                 "the Stop did not reach the station over UDP within 1 s of being sent: " + this.model.lines);
+        }
+    }
+
+    /**
+     * A Go sent while the connection is replaced does not overtake a speed 0 sent before it: it is no Stop, so it
+     * waits for the new connection, in order, and nothing goes over UDP.
+     *
+     * MUTATION: in `NetworkProxy.isUrgentStop`, add `|| sub == CS2Message.CMD_SYSSUB_GO`.
+     */
+    @Test(timeOut = 30000)
+    public void testAGoDuringAReconnectWaitsBehindEarlierCommands() throws Exception
+    {
+        try (DatagramSocket wire = udpWire())
+        {
+            connectedAndCarried();
+            this.station.drop();
+            assertTrue(logged("network.tcpLostReconnecting", WAIT_MS), "the loss was not found: " + this.model.lines);
+
+            byte[] stopTrain = new CS2Message(CS2Message.CMD_LOCO_VELOCITY, new byte[] {0, 0, 0, 5, 0, 0}).getRawMessage();
+            byte[] go = Packets.powerGo().getRawMessage();
+            this.proxy.sendMessage(new CS2Message(stopTrain));
+            this.proxy.sendMessage(new CS2Message(go));
+
+            // Waiting is the point: nothing may go over UDP
+            assertEquals(nextOn(wire, 1000), null, "the Go went over UDP, ahead of the speed 0");
+
+            assertTrue(Components.waitFor(() -> this.station.receivedOn(2).size() >= 2, 15000), "not sent: " + this.model.lines);
+            assertEquals(this.station.receivedOn(2).get(0), stopTrain, "the speed 0 was not first");
+            assertEquals(this.station.receivedOn(2).get(1), go, "the Go was not second");
         }
     }
 
@@ -619,7 +979,7 @@ public class testTheStationIsReachedOverTcp
 
     /**
      * A station that takes the connection but never sends on it is left for UDP once a send goes unanswered for
-     * 15 s: what was sent over TCP goes over UDP once each, and a frame broadcast meanwhile reaches the model.
+     * 15 s: what was sent over TCP goes over UDP once each, and the station's broadcasts are heard.
      *
      * MUTATION: in `NetworkProxy.recover`, `for (Unconfirmed u : again) sendUdp(u.frame);` to
      * `for (Unconfirmed u : again) { sendUdp(u.frame); sendUdp(u.frame); }`.
@@ -639,12 +999,12 @@ public class testTheStationIsReachedOverTcp
 
             for (byte[] frame : sent) this.proxy.sendMessage(new CS2Message(frame));
 
-            byte[] occupied = sensor(1010, true);
-            broadcastHeld(occupied);
-
             assertTrue(logged("network.tcpLostUsingUdp", 25000), "no fallback to UDP: " + this.model.lines);
+
+            byte[] occupied = sensor(1010, true);
+            broadcast(occupied);
             assertTrue(Components.waitFor(() -> this.model.heardFrame(occupied), WAIT_MS),
-                "the frame broadcast during the silence never reached the model");
+                "a frame broadcast after the fallback never reached the model");
 
             for (int i = 0; i < sent.size(); i++)
             {
