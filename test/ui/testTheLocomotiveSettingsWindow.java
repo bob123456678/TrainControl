@@ -119,7 +119,7 @@ public class testTheLocomotiveSettingsWindow
      * and has neither the Manage Locomotive submenu nor any of the entries that moved into the window.
      *
      * MUTATION: put the Manage Locomotive submenu back in `RightClickMenuListener`, or drop `settings(...)` from it,
-     * and this fails.
+     * or add the Sync w/ Central Station item back to it, and this fails.
      */
     @Test
     public void testTheKeyMenuOpensTheWindowAndHoldsOnlyWhatStays() throws Exception
@@ -129,14 +129,14 @@ public class testTheLocomotiveSettingsWindow
         assertNotNull(menu, "the key opened no menu");
 
         for (String gone : new String[] { "loc.ui.menuFindSimilarLocomotives", "loc.ui.menuDeleteFromDatabase",
-            "loc.ui.menuSetLocalLocomotiveIcon" })
+            "loc.ui.menuSetLocalLocomotiveIcon", "loc.ui.menuSyncCentralStation" })
         {
             assertNull(Components.withText(menu, I18n.t(gone)), "the key's menu still offers \"" + I18n.t(gone) + "\"");
         }
 
         for (String stays : new String[] { "loc.ui.menuAssignLocomotive", "loc.ui.menuApplySavedFunctionPreset",
             "loc.ui.menuSaveFunctionsAsPreset", "loc.ui.menuSaveSpeedAsPreset", "loc.ui.menuTurnOffFunctions",
-            "loc.ui.menuSyncCentralStation", "loc.ui.menuSetAsMultiUnit", "loc.ui.menuClearButtonCut",
+            "loc.ui.menuSetAsMultiUnit", "loc.ui.menuClearButtonCut",
             "loc.ui.menuClearButton" })
         {
             assertNotNull(Components.withText(menu, I18n.t(stays)), "the key's menu lost \"" + I18n.t(stays) + "\"");

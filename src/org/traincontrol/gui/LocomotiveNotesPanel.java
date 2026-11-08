@@ -6,6 +6,7 @@ import java.awt.GridBagLayout;
 import java.awt.Insets;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
+import javax.swing.JComboBox;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
@@ -23,7 +24,8 @@ final class LocomotiveNotesPanel extends JPanel
 {
     private final JTextField startYear;
     private final JTextField endYear;
-    private final JTextField railway;
+    private final JComboBox<String> railway;
+    private final JTextField railwayText;
     private final JTextArea notes;
 
     private String loadedStart;
@@ -31,20 +33,24 @@ final class LocomotiveNotesPanel extends JPanel
     private String loadedRailway;
     private String loadedNotes;
     private final java.util.List<JLabel> captions = new java.util.ArrayList<>();
+    private JLabel notesCaption;
 
     /**
      * @param l the locomotive whose notes are shown
+     * @param railways the railway names to offer, as {@link #railwayNames} lists them
      * @param textRows the height of the notes box
      * @param textColumns the width of the notes box
      * @param onChange told whenever anything is typed, or null
      */
-    LocomotiveNotesPanel(Locomotive l, int textRows, int textColumns, Runnable onChange)
+    LocomotiveNotesPanel(Locomotive l, java.util.List<String> railways, int textRows, int textColumns, Runnable onChange)
     {
         super(new GridBagLayout());
 
         this.startYear = new JTextField(10);
         this.endYear = new JTextField(10);
-        this.railway = new JTextField(30);
+        this.railway = new JComboBox<>(railways.toArray(new String[0]));
+        this.railway.setEditable(true);
+        this.railwayText = (JTextField) railway.getEditor().getEditorComponent();
         this.notes = new JTextArea(textRows, textColumns);
 
         startYear.setToolTipText(I18n.t("loc.ui.tooltip.StartYear"));
@@ -52,6 +58,10 @@ final class LocomotiveNotesPanel extends JPanel
         startYear.setName("notes.startYear");
         endYear.setName("notes.endYear");
         railway.setName("notes.railway");
+        railwayText.setFont(startYear.getFont());
+        railway.setFont(startYear.getFont());
+        railway.setPreferredSize(new java.awt.Dimension(startYear.getPreferredSize().width * 3,
+            startYear.getPreferredSize().height + 2));
         notes.setName("notes.text");
 
         startYear.addKeyListener(new KeyAdapter()
@@ -74,7 +84,7 @@ final class LocomotiveNotesPanel extends JPanel
             }
         });
 
-        railway.addKeyListener(new KeyAdapter()
+        railwayText.addKeyListener(new KeyAdapter()
         {
             @Override
             public void keyReleased(KeyEvent e)
@@ -93,7 +103,7 @@ final class LocomotiveNotesPanel extends JPanel
 
             startYear.getDocument().addDocumentListener(tell);
             endYear.getDocument().addDocumentListener(tell);
-            railway.getDocument().addDocumentListener(tell);
+            railwayText.getDocument().addDocumentListener(tell);
             notes.getDocument().addDocumentListener(tell);
         }
 
@@ -124,12 +134,31 @@ final class LocomotiveNotesPanel extends JPanel
         gbc.gridx = 0;
         gbc.gridy++;
         gbc.gridwidth = 2;
-        add(caption(I18n.t("loc.ui.labelNotes")), gbc);
+        notesCaption = caption(I18n.t("loc.ui.labelNotes"));
+        add(notesCaption, gbc);
 
         gbc.gridy++;
         gbc.weighty = 1;
         gbc.fill = GridBagConstraints.BOTH;
         add(new JScrollPane(notes), gbc);
+    }
+
+    /**
+     * Every railway name set on any of these locomotives, trimmed, once each, sorted without regard to case; names
+     * differing only in case show the first spelling found.
+     */
+    static java.util.List<String> railwayNames(java.util.Collection<? extends Locomotive> locomotives)
+    {
+        java.util.Map<String, String> found = new java.util.TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+
+        for (Locomotive l : locomotives)
+        {
+            String name = l.getStructuredNotes().getRailway();
+
+            if (name != null && !name.trim().isEmpty()) found.putIfAbsent(name.trim(), name.trim());
+        }
+
+        return new java.util.ArrayList<>(found.values());
     }
 
     private JLabel caption(String text)
@@ -141,7 +170,10 @@ final class LocomotiveNotesPanel extends JPanel
         return l;
     }
 
-    /** Sets the captions in the owner's label style, without the colon the older dialog puts after them. */
+    /**
+     * Sets the captions in the owner's label style, without the colon the older dialog puts after them; the Notes
+     * caption is a section heading, blue, over its box.
+     */
     void styleCaptions()
     {
         for (JLabel l : captions)
@@ -149,6 +181,8 @@ final class LocomotiveNotesPanel extends JPanel
             l.setText(org.traincontrol.gui.widgets.UiStyle.withoutColon(l.getText()));
             org.traincontrol.gui.widgets.UiStyle.style(l);
         }
+
+        org.traincontrol.gui.widgets.UiStyle.styleHeading(notesCaption);
     }
 
     /** Shows what the locomotive holds now, and makes that what {@link #isDirty} compares against. */
@@ -163,7 +197,8 @@ final class LocomotiveNotesPanel extends JPanel
 
         startYear.setText(loadedStart);
         endYear.setText(loadedEnd);
-        railway.setText(loadedRailway);
+        railway.setSelectedItem(loadedRailway);
+        railwayText.setText(loadedRailway);
         notes.setText(loadedNotes);
         notes.setCaretPosition(0);
     }
@@ -172,7 +207,7 @@ final class LocomotiveNotesPanel extends JPanel
     boolean isDirty()
     {
         return !startYear.getText().equals(loadedStart) || !endYear.getText().equals(loadedEnd)
-            || !railway.getText().equals(loadedRailway) || !notes.getText().equals(loadedNotes);
+            || !railwayText.getText().equals(loadedRailway) || !notes.getText().equals(loadedNotes);
     }
 
     /**
@@ -201,7 +236,7 @@ final class LocomotiveNotesPanel extends JPanel
         int start = years[0];
         int end = years[1];
 
-        String trimmed = railway.getText().trim();
+        String trimmed = railwayText.getText().trim();
         String rail = trimmed.substring(0, Math.min(trimmed.length(), TrainControlUI.MAX_LOC_RAILWAY_NAME));
         String text = notes.getText().substring(0, Math.min(notes.getText().length(), TrainControlUI.MAX_LOC_NOTES_LENGTH));
 

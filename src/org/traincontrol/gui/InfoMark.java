@@ -20,11 +20,37 @@ public final class InfoMark
     {
     }
 
+    /** The disk's dark pixels become this gray, so the mark does not draw the eye; alpha is kept. */
+    static final int GRAY = 0xCCCCCC;
+
     private static ImageIcon load()
     {
         java.net.URL url = TrainControlUI.class.getResource("resources/info.gif");
 
-        return url == null ? null : new ImageIcon(url);
+        if (url == null) return null;
+
+        try
+        {
+            java.awt.image.BufferedImage read = javax.imageio.ImageIO.read(url);
+            java.awt.image.BufferedImage out = new java.awt.image.BufferedImage(read.getWidth(), read.getHeight(),
+                java.awt.image.BufferedImage.TYPE_INT_ARGB);
+
+            int[] pixels = read.getRGB(0, 0, read.getWidth(), read.getHeight(), null, 0, read.getWidth());
+
+            for (int i = 0; i < pixels.length; i++)
+            {
+                // The dark disk (a GIF's pixels are one gray or white, so any channel tells)
+                if ((pixels[i] & 0xff) < 128) pixels[i] = (pixels[i] & 0xff000000) | GRAY;
+            }
+
+            out.setRGB(0, 0, read.getWidth(), read.getHeight(), pixels, 0, read.getWidth());
+
+            return new ImageIcon(out);
+        }
+        catch (java.io.IOException | RuntimeException ex)
+        {
+            return new ImageIcon(url);
+        }
     }
 
     /** The one icon; null when the image is missing, which setIcon accepts. */

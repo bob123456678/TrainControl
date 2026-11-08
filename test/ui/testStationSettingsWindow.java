@@ -1094,6 +1094,41 @@ public class testStationSettingsWindow
     // -------------------------------------------------------------------------------------------------------------- look
 
     /**
+     * The form reads Changing direction first, over both sections, which are named "Trains can stop here" and "Trains can
+     * pass through"; the table says "Turned around here"; the Home locomotive row has its (i), saying what a home is for.
+     *
+     * MUTATION: put the Changing direction row back under "Trains can pass through", or the old section names or "Turned
+     * round here" in the bundle, or drop the home row's mark, and this fails.
+     */
+    @Test(timeOut = 120000)
+    public void testChangingDirectionHeadsBothSectionsAndTheWordsAreNew() throws Exception
+    {
+        StationSettingsWindow window = StationDoors.open(panel, aStation());
+
+        StationDoors.current(window);
+
+        javax.swing.JCheckBox stops = StationDoors.part(window, "station.stops", javax.swing.JCheckBox.class);
+        javax.swing.JCheckBox through = StationDoors.part(window, "station.runsThrough", javax.swing.JCheckBox.class);
+
+        assertEquals(stops.getText(), "Trains can stop here");
+        assertEquals(through.getText(), "Trains can pass through");
+
+        javax.swing.JPanel form = StationDoors.part(window, "station.form", javax.swing.JPanel.class);
+
+        int turning = cornerIn(form, labelSaying(window, I18n.t("autosetup.ui.stationTurning"))).y;
+
+        assertTrue(turning < cornerIn(form, stops).y && cornerIn(form, stops).y < cornerIn(form, through).y,
+            "Changing direction is not above both sections");
+
+        assertNotNull(labelSaying(window, "Turned around here"), "the table does not say Turned around here");
+
+        assertTrue(Components.onTheEventThread(() -> window.flyoverForTest("home")).contains("Return Home sends it back here"),
+            "the Home locomotive row has no (i) saying what a home is for");
+
+        StationDoors.close(window);
+    }
+
+    /**
      * Blue is for the section headings alone (Adam: "it looks very blue"); every other label is black Semibold 13
      * (docs/UI-standards.md), and a label in an off section still grays.
      *
@@ -1146,10 +1181,11 @@ public class testStationSettingsWindow
     }
 
     /**
-     * The presets look like buttons, not text: a border, Bold 12, and starting where the row labels start; and the lit one
-     * can be told from the others.
+     * The presets look like buttons, not text: a border, Bold 12, and starting where the Name box starts, on the row of
+     * their black "Presets" label; and the lit one can be told from the others.
      *
-     * MUTATION: put `JButton.buttonType` `toolBarButton` back on them, or a gap before the first, and this fails.
+     * MUTATION: put `JButton.buttonType` `toolBarButton` back on them, or a gap before the first, or drop the label, and
+     * this fails.
      */
     @Test(timeOut = 120000)
     public void testThePresetsLookLikeButtons() throws Exception
@@ -1176,14 +1212,23 @@ public class testStationSettingsWindow
 
             java.awt.image.BufferedImage drawn = drawnOn(form);
 
-            int labelRow = rowOf(form, labelSaying(window, I18n.t("autosetup.ui.stationName")));
-            int presetRow = rowOf(form, StationDoors.part(window, "station.preset.STATION", javax.swing.JToggleButton.class));
+            javax.swing.JToggleButton first = StationDoors.part(window, "station.preset.STATION", javax.swing.JToggleButton.class);
+            javax.swing.JLabel presets = labelSaying(window, I18n.t("autosetup.ui.stationPresets"));
 
-            int labelStarts = firstInk(drawn, labelRow, form.getBackground());
-            int presetStarts = firstInk(drawn, presetRow, form.getBackground());
+            assertEquals(presets.getForeground(), java.awt.Color.BLACK, "the Presets label is not black");
+            assertEquals(presets.getFont(), UiStyle.LABEL_FONT, "the Presets label is not Semibold 13");
+            assertEquals(rowOf(form, presets), rowOf(form, first), "the Presets label is not beside the buttons");
 
-            assertTrue(Math.abs(labelStarts - presetStarts) <= 2, "the presets start at " + presetStarts
-                + " and the row labels at " + labelStarts);
+            assertTrue(cornerIn(form, presets).x < cornerIn(form, first).x, "the label is not left of the buttons");
+
+            assertEquals(cornerIn(form, first).x, cornerIn(form, StationDoors.part(window, "station.name",
+                javax.swing.JTextField.class)).x, "the presets do not start where the Name box starts");
+
+            javax.swing.JToggleButton last = StationDoors.part(window, "station.preset.REVERSING_POINT",
+                javax.swing.JToggleButton.class);
+
+            assertTrue(javax.swing.SwingUtilities.convertRectangle(last.getParent(), last.getBounds(), form).getMaxX()
+                <= form.getWidth(), "the last button runs off the form");
 
             return null;
         });
@@ -1255,6 +1300,12 @@ public class testStationSettingsWindow
 
             return null;
         });
+    }
+
+    /** Where a part's top left corner is, in the form's pixels. */
+    private static java.awt.Point cornerIn(java.awt.Component form, java.awt.Component part)
+    {
+        return Components.onTheEventThread(() -> javax.swing.SwingUtilities.convertPoint(part, 0, 0, form));
     }
 
     private static javax.swing.JLabel labelSaying(java.awt.Component window, String text)
@@ -1806,13 +1857,13 @@ public class testStationSettingsWindow
     }
 
     /**
-     * On every station of the page each side's marks sit on that side's axis: the way out with its tip at the edge and the
-     * way in just behind it, pointing in; both inside the station's square, apart, and clear of every next square.  A
-     * curve keeps its ways in off the axis, each plainly nearer its own side (Adam: "I7 put
-     * the arrows elsewhere just for the popup").
+     * On every station of the page each side's way out sits on that side's axis with its tip at the edge, and its way in
+     * beside it, pointing in, off the axis and the station's art (Adam: "the yellow/grey egress arrows should be offset
+     * from the station"); both inside the station's square, apart, and clear of every next square.  A curve keeps its ways
+     * in each plainly nearer its own side (Adam: "I7 put the arrows elsewhere just for the popup").
      *
-     * MUTATION: draw the way in a quarter square along the edge, where the diagram puts its arrival chevrons, and this
-     * fails.
+     * MUTATION: draw a straight side's way in on the axis again (`apartChevron` without `ALONGSIDE`), or a quarter square
+     * along the edge, where the diagram puts its arrival chevrons, and this fails.
      */
     @Test(timeOut = 300000)
     public void testTheMarksOfASideLineUp() throws Exception
@@ -1872,6 +1923,10 @@ public class testStationSettingsWindow
                                 wrong.add(square + " IN." + side + " is not plainly near its own side");
                             }
                         }
+                    }
+                    else if (kind.equals("IN."))
+                    {
+                        if (off < 12.0) wrong.add(square + " IN." + side + " sits " + off + " from the axis, on the station");
                     }
                     else if (off > 1.0) wrong.add(square + " " + kind + side + " is " + off + " off its axis");
 

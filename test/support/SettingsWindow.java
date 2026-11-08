@@ -215,7 +215,10 @@ public final class SettingsWindow
     {
         Components.onTheEventThread(() ->
         {
-            part(name, javax.swing.JTextField.class).setText(value);
+            javax.swing.JComboBox<?> box = part(name, javax.swing.JComboBox.class);
+
+            if (box != null) ((javax.swing.text.JTextComponent) box.getEditor().getEditorComponent()).setText(value);
+            else part(name, javax.swing.JTextField.class).setText(value);
 
             return null;
         });
@@ -408,5 +411,17 @@ public final class SettingsWindow
     public static String titleFor(String locomotive)
     {
         return I18n.f("loc.ui.settingsTitle", locomotive);
+    }
+
+    /** How far right of the Decoder Type dropdown's right edge the Address (i) ends, in pixels (0 when they line up). */
+    public static int addressHintOverhang()
+    {
+        java.awt.Container pane = showing().getContentPane();
+        javax.swing.JLabel hint = part("settings.addressHint", javax.swing.JLabel.class);
+        javax.swing.JComboBox<?> decoder = part("settings.decoder", javax.swing.JComboBox.class);
+
+        return Components.onTheEventThread(() -> javax.swing.SwingUtilities.convertRectangle(hint.getParent(),
+            hint.getBounds(), pane).x + hint.getWidth() - javax.swing.SwingUtilities.convertRectangle(decoder.getParent(),
+            decoder.getBounds(), pane).x - decoder.getWidth());
     }
 }

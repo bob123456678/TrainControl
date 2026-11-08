@@ -27,7 +27,7 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
 /**
  * The farthest sensor a standing train's tail has crossed can be given in the autonomy editor, from the right-click
  * menu or by clicking the sensor on the diagram.  Each claim puts the setup back as it found it (OB-111).  Asked
- * through the real doors: the menu `AutonomyEditorPanel.buildFacingMenu` serves both surfaces, and the diagram click
+ * through the real doors: the items `AutonomyEditorPanel.addFacingItems` adds on both surfaces, and the diagram click
  * is `tileClicked`.
  *
  * @author Adam
@@ -104,24 +104,64 @@ public class testTheTailCanBeGivenInTheEditor
 
         try
         {
+            // menu() fails where the train's menu does not ask how far back its tail reaches
             List<String> texts = texts(f.menu());
-
-            int heading = texts.indexOf(I18n.t("autosetup.ui.headingTailCrossed"));
-
-            assertTrue(heading >= 0, "the menu of a train whose tail can have crossed a sensor past a junction does not"
-                + " ask how far back it reaches. Items: " + texts);
 
             for (TailCrossedPrompt.Choice choice : f.choices())
             {
-                assertTrue(texts.subList(heading, texts.size()).contains(choice.getLabel()),
+                assertTrue(texts.contains(choice.getLabel()),
                     "the menu does not offer " + choice.getLabel() + ", a sensor the tail can have crossed. Items: " + texts);
             }
 
-            assertTrue(texts.subList(heading, texts.size()).contains(I18n.t("autosetup.ui.tailCrossedNotKnown")),
+            assertTrue(texts.contains(I18n.t("autosetup.ui.tailCrossedNotKnown")),
                 "the menu does not offer Not Known. Items: " + texts);
 
-            assertTrue(texts.subList(heading, texts.size()).contains(I18n.t("autosetup.ui.menuPickTailCrossed")),
+            assertTrue(texts.contains(I18n.t("autosetup.ui.menuPickTailCrossed")),
                 "the editor's menu does not offer picking the sensor on the diagram. Items: " + texts);
+        }
+        finally
+        {
+            f.close();
+        }
+    }
+
+    /**
+     * How far back the tail reaches is a submenu on the station's own menu, in the editor and on the track diagram, only
+     * where there is a choice: the same train made too short to reach past the junction is not asked (FR-181).
+     *
+     * MUTATION: let `tailFacts` answer where `TailCrossedPrompt.wouldAsk` says no, and this fails.
+     */
+    @Test
+    public void testTheTailIsAskedOnlyWhereThereIsAChoice() throws Exception
+    {
+        Fixture f = Fixture.open();
+
+        try
+        {
+            final String title = I18n.f("autosetup.ui.menuTailCrossedGroup", f.train.getName());
+
+            assertTrue(offers(editorMenu(f), title), "the editor's menu at " + f.tile + " does not ask how far back the"
+                + " tail of " + f.train.getName() + " reaches: no " + title);
+
+            f.train.setTrainLength(1);
+
+            Point point = f.standing();
+
+            assertFalse(TailCrossedPrompt.wouldAsk(model.getAutoLayout(), point, point.getArrivedFrom(), 1),
+                "precondition: a train of one unit at " + f.tile + " still has two roads back");
+
+            assertFalse(offers(editorMenu(f), title), "the editor's menu asks how far back the tail of a train reaches"
+                + " where there is only one answer");
+
+            f.closeTheEditorForTheDiagram();
+
+            assertFalse(offers(support.StationDoors.diagramMenu(ui, f.tile), title), "the track diagram's menu asks how"
+                + " far back the tail of a train reaches where there is only one answer");
+
+            f.train.setTrainLength(LONG);
+
+            assertTrue(offers(support.StationDoors.diagramMenu(ui, f.tile), title), "the track diagram's menu at "
+                + f.tile + " does not ask how far back the tail reaches: no " + title);
         }
         finally
         {
@@ -740,15 +780,21 @@ public class testTheTailCanBeGivenInTheEditor
                 session::baseNameOf);
         }
 
+        /** The "...'s Tail Reaches Back To..." submenu of the train's items (FR-181); fails where there is none. */
         javax.swing.JMenu menu() throws Exception
         {
-            final javax.swing.JMenu[] menu = new javax.swing.JMenu[1];
+            final javax.swing.JPopupMenu items = new javax.swing.JPopupMenu();
 
-            SwingUtilities.invokeAndWait(() -> menu[0] = panel.buildFacingMenu(tile));
+            SwingUtilities.invokeAndWait(() -> panel.addFacingItems(items, tile));
 
-            assertNotNull(menu[0], "precondition: no facing menu for the train at " + tile);
+            final String title = I18n.f("autosetup.ui.menuTailCrossedGroup", train.getName());
 
-            return menu[0];
+            javax.swing.JMenu tail = support.Components.find(items, javax.swing.JMenu.class, m -> title.equals(m.getText()));
+
+            assertNotNull(tail, "the menu of a train whose tail can have crossed a sensor past a junction does not ask how"
+                + " far back it reaches: no " + title + " at " + tile);
+
+            return tail;
         }
 
         void arm() throws Exception
@@ -807,6 +853,22 @@ public class testTheTailCanBeGivenInTheEditor
                 session.restoreSetup(asFound);
             }
         }
+    }
+
+    private static javax.swing.JPopupMenu editorMenu(Fixture f)
+    {
+        return support.Components.onTheEventThread(() -> f.panel.buildTileMenu(f.tile, null));
+    }
+
+    /** Whether the menu itself, not a submenu of it, has an item saying this. */
+    private static boolean offers(javax.swing.JPopupMenu menu, String text)
+    {
+        for (java.awt.Component part : menu.getComponents())
+        {
+            if (part instanceof JMenuItem && text.equals(((JMenuItem) part).getText())) return true;
+        }
+
+        return false;
     }
 
     private static List<String> texts(javax.swing.JMenu menu)

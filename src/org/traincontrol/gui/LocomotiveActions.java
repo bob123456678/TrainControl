@@ -306,26 +306,9 @@ final class LocomotiveActions
         return made;
     }
 
-    /**
-     * Check Duplicates: writes every address more than one locomotive shares to the log, MFX and the rest apart, and
-     * says whether the typed address is used by a locomotive other than {@code self}.
-     *
-     * @param self the locomotive being edited, or null when adding one
-     */
-    void checkDuplicates(Component source, String typedAddress, decoderType type, Locomotive self)
+    /** Writes every address more than one locomotive shares to the log, MFX and the rest apart. */
+    void reportDuplicates()
     {
-        int locAddress;
-
-        try
-        {
-            locAddress = Conversion.parseTypedAddress(typedAddress, type == decoderType.MFX);
-        }
-        catch (NumberFormatException e)
-        {
-            JOptionPane.showMessageDialog(source, I18n.t("loc.errorAddressNotNumeric"));
-            return;
-        }
-
         Map<Integer, java.util.Set<Locomotive>> locs = this.ui.getModel().getDuplicateLocAddresses();
 
         if (!locs.isEmpty())
@@ -345,15 +328,6 @@ final class LocomotiveActions
         {
             this.ui.getModel().logf("loc.reportNoDuplicates");
         }
-
-        if (locAddress <= 0) return;
-
-        // Every address in use, not the duplicate list, which leaves out an address with one locomotive
-        java.util.Set<Locomotive> using = this.ui.getModel().getLocAddresses().get(locAddress);
-
-        boolean inUse = using != null && using.stream().anyMatch(other -> other != self);
-
-        JOptionPane.showMessageDialog(source, I18n.t(inUse ? "loc.errorAddressInUse" : "loc.infoAddressFree"));
     }
 
     /** The report's lines for each shared address, of MFX locomotives or of the rest. */

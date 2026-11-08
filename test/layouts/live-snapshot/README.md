@@ -196,3 +196,5 @@ not fix it. Name the square.
 - `regression.testTheAutonomyTabSavesWhatTheDialogDid`
 - `ui.testTheLocomotiveSettingsAutonomyTab`
 - `ui.testRightClickMenuTipsCanBeHidden`
+- `ui.testChangeDirectionIsOneClick`
+- `regression.testTheLogIsStampedAndExports`

@@ -2,7 +2,6 @@ package org.traincontrol.gui.autonomyeditor;
 
 import java.awt.FlowLayout;
 import java.awt.Font;
-import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.Window;
 import java.util.List;
@@ -80,9 +79,8 @@ public final class TrainWindow extends StationWindowBase
 
         formRow(form, y++, UiStyle.blackLabel(I18n.t("autosetup.ui.trainTrain")), null, train, 1);
 
-        GridBagConstraints c = at(3, 0);
-
-        form.add(settings, c);
+        // Under the list, in its column, so the button never sets the window's width
+        form.add(settings, at(2, y++));
 
         formRow(form, y++, UiStyle.blackLabel(I18n.t("autosetup.ui.trainActive")), activeMark, active, 1);
         formRow(form, y++, UiStyle.blackLabel(I18n.t("autosetup.ui.trainFacing")), facingMark, facing, 1);

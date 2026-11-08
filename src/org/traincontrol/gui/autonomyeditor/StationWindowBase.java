@@ -53,7 +53,15 @@ abstract class StationWindowBase extends JDialog
     /** The width the reason at the top wraps at, for a window that keeps its width; 0 leaves it on one line. */
     int stripWrapsAt;
 
-    private final JLabel strip = new JLabel()
+    private final JLabel strip = new Banner();
+
+    /** The yellow banner naming the stations picked together; hidden for one. */
+    private final JLabel picked = new Banner();
+
+    private final JPanel banners = new JPanel(new BorderLayout());
+
+    /** A yellow banner, as the app's other notices, wrapped at `stripWrapsAt`. */
+    private final class Banner extends JLabel
     {
         @Override
         public Dimension getPreferredSize()
@@ -64,7 +72,7 @@ abstract class StationWindowBase extends JDialog
 
             return asked;
         }
-    };
+    }
 
     /** Asks again every second: a run starting or stopping raises no single event. */
     private final javax.swing.Timer watch = new javax.swing.Timer(1000, e -> watched());
@@ -105,12 +113,20 @@ abstract class StationWindowBase extends JDialog
             }
         });
 
+        for (JLabel banner : new JLabel[] {strip, picked})
+        {
+            banner.setOpaque(true);
+            banner.setBackground(new Color(255, 243, 205));
+            banner.setForeground(new Color(102, 77, 3));
+            banner.setBorder(BorderFactory.createEmptyBorder(6, 12, 6, 12));
+            banner.setVisible(false);
+        }
+
         strip.setName("station.strip");
-        strip.setOpaque(true);
-        strip.setBackground(new Color(255, 243, 205));
-        strip.setForeground(new Color(102, 77, 3));
-        strip.setBorder(BorderFactory.createEmptyBorder(6, 12, 6, 12));
-        strip.setVisible(false);
+        picked.setName("station.picked");
+
+        banners.add(picked, BorderLayout.NORTH);
+        banners.add(strip, BorderLayout.CENTER);
 
         // Escape closes; a field's own Escape is tried first, and puts back what it held
         getRootPane().registerKeyboardAction(e -> closeWindow(), KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0),
@@ -141,7 +157,7 @@ abstract class StationWindowBase extends JDialog
 
         JPanel root = new JPanel(new BorderLayout());
 
-        root.add(strip, BorderLayout.NORTH);
+        root.add(banners, BorderLayout.NORTH);
         root.add(content, BorderLayout.CENTER);
         root.add(footer, BorderLayout.SOUTH);
 
@@ -263,6 +279,19 @@ abstract class StationWindowBase extends JDialog
         showTheStrip();
 
         if (getHeight() > 0 && getPreferredSize().height > getHeight()) pack();
+    }
+
+    /** Names the stations picked together in the yellow banner at the top; null takes it down. */
+    final void sayWhichArePicked(String said)
+    {
+        picked.setText(said == null ? "" : AutonomyEditorPanel.wrappedAt(said, stripWrapsAt));
+
+        if (picked.isVisible() != (said != null))
+        {
+            picked.setVisible(said != null);
+
+            if (getContentPane() != null) getContentPane().revalidate();
+        }
     }
 
     private void showTheStrip()
