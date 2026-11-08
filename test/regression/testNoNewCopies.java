@@ -27,7 +27,7 @@ import support.CopyScan;
 public class testNoNewCopies
 {
     /** The groups as they stand.  Never raise it. */
-    private static final int GROUPS_ALLOWED = 115;
+    private static final int GROUPS_ALLOWED = 110;
 
     /** The tokens standing in a second or later copy in `test/`, summed over its groups.  Never raise it. */
     private static final long TEST_COPIED_TOKENS_ALLOWED = 274734;
@@ -37,13 +37,8 @@ public class testNoNewCopies
         "ArrivalSidePrompt:1,FacingPrompt:1 (69)",
         "ArrivalSidePrompt:1,FacingPrompt:1 (60)",
         "AutonomyBuilder:1,AutonomyChecks:1 (75)",
-        "AutonomyBuilder:2 (80)",
-        "AutonomyBuilder:2 (78)",
         "AutonomyBuilder:2 (64)",
-        "AutonomyBuilder:4 (84)",
-        "AutonomyChecks:2 (83)",
         "AutonomyChecks:2 (63)",
-        "AutonomyChecks:3 (108)",
         "AutonomyCompanionStore:1,AutonomySession:2 (99)",
         "AutonomyCompanionStore:2 (85)",
         "AutonomyCompanionStore:2 (77)",

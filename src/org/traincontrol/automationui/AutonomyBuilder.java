@@ -564,17 +564,7 @@ public class AutonomyBuilder
             }
         }
 
-        for (int copy = 0; copy < nodes.size(); copy++)
-        {
-            if (!nodes.get(copy).reverse && arrivalAllowed(nodes.get(copy))) return copy;
-        }
-
-        for (int copy = 0; copy < nodes.size(); copy++)
-        {
-            if (arrivalAllowed(nodes.get(copy))) return copy;
-        }
-
-        return 0;
+        return startableCopy(nodes);
     }
 
     /** The facing a square's home was set with, or null when the setup does not say */
@@ -741,6 +731,20 @@ public class AutonomyBuilder
     {
         return !name.equals(base) && taken.contains(name);
     }
+
+    /** Edges by their start square, then their end: the order the build writes edges and locks in. */
+    private static final Comparator<ReducedEdge> BY_START_THEN_END = new Comparator<ReducedEdge>()
+    {
+        @Override
+        public int compare(ReducedEdge a, ReducedEdge b)
+        {
+            int byStart = a.getStart().toString().compareTo(b.getStart().toString());
+
+            if (byStart != 0) return byStart;
+
+            return a.getEnd().toString().compareTo(b.getEnd().toString());
+        }
+    };
 
     /** Every square's name, for nodeName, worked out once by each caller from its own uniqueNames(). */
     private static Set<String> namesTaken(Map<TileKey, String> names)
@@ -981,18 +985,7 @@ public class AutonomyBuilder
         root.put("points", pointList);
 
         List<ReducedEdge> edges = new ArrayList<>(reducer.getEdges());
-        Collections.sort(edges, new Comparator<ReducedEdge>()
-        {
-            @Override
-            public int compare(ReducedEdge a, ReducedEdge b)
-            {
-                int byStart = a.getStart().toString().compareTo(b.getStart().toString());
-
-                if (byStart != 0) return byStart;
-
-                return a.getEnd().toString().compareTo(b.getEnd().toString());
-            }
-        });
+        Collections.sort(edges, BY_START_THEN_END);
 
         JSONArray edgeList = new JSONArray();
 
@@ -1104,18 +1097,7 @@ public class AutonomyBuilder
             if (locked != null)
             {
                 List<ReducedEdge> sorted = new ArrayList<>(locked);
-                Collections.sort(sorted, new Comparator<ReducedEdge>()
-                {
-                    @Override
-                    public int compare(ReducedEdge a, ReducedEdge b)
-                    {
-                        int byStart = a.getStart().toString().compareTo(b.getStart().toString());
-
-                        if (byStart != 0) return byStart;
-
-                        return a.getEnd().toString().compareTo(b.getEnd().toString());
-                    }
-                });
+                Collections.sort(sorted, BY_START_THEN_END);
 
                 for (ReducedEdge other : sorted)
                 {
@@ -1184,17 +1166,7 @@ public class AutonomyBuilder
     {
         Map<String, TileKey> out = new LinkedHashMap<>();
 
-        Map<TileKey, String> names = uniqueNames();
-
-        Set<String> taken = namesTaken(names);
-
-        for (Map.Entry<TileKey, String> entry : names.entrySet())
-        {
-            for (Node node : nodesFor(entry.getKey()))
-            {
-                out.put(nodeName(entry.getValue(), node, taken), entry.getKey());
-            }
-        }
+        forEachEmittedName((name, square, base, node) -> out.put(name, square));
 
         return out;
     }
@@ -1208,17 +1180,7 @@ public class AutonomyBuilder
     {
         Map<String, String> out = new LinkedHashMap<>();
 
-        Map<TileKey, String> names = uniqueNames();
-
-        Set<String> taken = namesTaken(names);
-
-        for (Map.Entry<TileKey, String> entry : names.entrySet())
-        {
-            for (Node node : nodesFor(entry.getKey()))
-            {
-                out.put(nodeName(entry.getValue(), node, taken), entry.getValue());
-            }
-        }
+        forEachEmittedName((name, square, base, node) -> out.put(name, base));
 
         return out;
     }
@@ -1251,19 +1213,10 @@ public class AutonomyBuilder
     {
         Map<String, TilePorts.Side> out = new LinkedHashMap<>();
 
-        Map<TileKey, String> names = uniqueNames();
-
-        Set<String> taken = namesTaken(names);
-
-        for (Map.Entry<TileKey, String> entry : names.entrySet())
+        forEachEmittedName((name, square, base, node) ->
         {
-            for (Node node : nodesFor(entry.getKey()))
-            {
-                if (node.arrival == null) continue;
-
-                out.put(nodeName(entry.getValue(), node, taken), facingOf(node));
-            }
-        }
+            if (node.arrival != null) out.put(name, facingOf(node));
+        });
 
         return out;
     }
@@ -1276,19 +1229,10 @@ public class AutonomyBuilder
     {
         Map<String, TilePorts.Side> out = new LinkedHashMap<>();
 
-        Map<TileKey, String> names = uniqueNames();
-
-        Set<String> taken = namesTaken(names);
-
-        for (Map.Entry<TileKey, String> entry : names.entrySet())
+        forEachEmittedName((name, square, base, node) ->
         {
-            for (Node node : nodesFor(entry.getKey()))
-            {
-                if (node.arrival == null) continue;
-
-                out.put(nodeName(entry.getValue(), node, taken), node.arrival);
-            }
-        }
+            if (node.arrival != null) out.put(name, node.arrival);
+        });
 
         return out;
     }
@@ -1309,6 +1253,23 @@ public class AutonomyBuilder
     {
         Set<String> out = new java.util.LinkedHashSet<>();
 
+        forEachEmittedName((name, square, base, node) ->
+        {
+            if (node.reverse) out.add(name);
+        });
+
+        return out;
+    }
+
+    /** What `forEachEmittedName` hands each emitted Point: its name, its square, the square's name and its copy. */
+    private interface EmittedName
+    {
+        void visit(String name, TileKey square, String base, Node node);
+    }
+
+    /** Every Point this builder would emit, in the build's order, split copies included. */
+    private void forEachEmittedName(EmittedName visitor)
+    {
         Map<TileKey, String> names = uniqueNames();
 
         Set<String> taken = namesTaken(names);
@@ -1317,11 +1278,9 @@ public class AutonomyBuilder
         {
             for (Node node : nodesFor(entry.getKey()))
             {
-                if (node.reverse) out.add(nodeName(entry.getValue(), node, taken));
+                visitor.visit(nodeName(entry.getValue(), node, taken), entry.getKey(), entry.getValue(), node);
             }
         }
-
-        return out;
     }
 
     /**

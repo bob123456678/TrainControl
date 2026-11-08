@@ -494,13 +494,16 @@ public class AutonomyChecks
      */
     static List<Finding> checkTrainsFacingTrackTowardsThem(GraphReducer reducer, Set<TileKey> squares)
     {
+        return onePerSquare(reducer, squares, Severity.WARNING, TRAIN_FACES_TRACK_TOWARDS_IT);
+    }
+
+    /** One finding per square, about the square, whose name is the sentence's `{0}`. */
+    private static List<Finding> onePerSquare(GraphReducer reducer, Set<TileKey> squares, Severity severity,
+        String key)
+    {
         List<Finding> findings = new ArrayList<>();
 
-        for (TileKey tile : squares)
-        {
-            findings.add(new Finding(Severity.WARNING, TRAIN_FACES_TRACK_TOWARDS_IT,
-                nameOf(reducer, tile), tile));
-        }
+        for (TileKey tile : squares) findings.add(new Finding(severity, key, nameOf(reducer, tile), tile));
 
         return findings;
     }
@@ -527,15 +530,7 @@ public class AutonomyChecks
     /** An ERROR per station at the end of a line trains may not turn at: a train sent there could never leave. */
     static List<Finding> checkStationsAtTheEndOfALine(GraphReducer reducer, Set<TileKey> squares)
     {
-        List<Finding> findings = new ArrayList<>();
-
-        for (TileKey tile : squares)
-        {
-            findings.add(new Finding(Severity.ERROR, STATION_AT_THE_END_OF_A_LINE,
-                nameOf(reducer, tile), tile));
-        }
-
-        return findings;
+        return onePerSquare(reducer, squares, Severity.ERROR, STATION_AT_THE_END_OF_A_LINE);
     }
 
     /**
@@ -619,15 +614,7 @@ public class AutonomyChecks
      */
     private static List<Finding> checkTurning(GraphReducer reducer, Set<TileKey> mayTurnOnDeadEnd)
     {
-        List<Finding> findings = new ArrayList<>();
-
-        for (TileKey tile : mayTurnOnDeadEnd)
-        {
-            findings.add(new Finding(Severity.NOTICE, MAY_TURN_ON_DEAD_END,
-                nameOf(reducer, tile), tile));
-        }
-
-        return findings;
+        return onePerSquare(reducer, mayTurnOnDeadEnd, Severity.NOTICE, MAY_TURN_ON_DEAD_END);
     }
 
     /**
@@ -712,17 +699,9 @@ public class AutonomyChecks
     private static List<Finding> checkStationsWithoutSignals(GraphReducer reducer,
         Set<TileKey> stationsWithoutSignal)
     {
-        List<Finding> findings = new ArrayList<>();
+        if (stationsWithoutSignal == null) return new ArrayList<>();
 
-        if (stationsWithoutSignal == null) return findings;
-
-        for (TileKey tile : stationsWithoutSignal)
-        {
-            findings.add(new Finding(Severity.NOTICE, NO_SIGNAL_PAIRED,
-                nameOf(reducer, tile), tile));
-        }
-
-        return findings;
+        return onePerSquare(reducer, stationsWithoutSignal, Severity.NOTICE, NO_SIGNAL_PAIRED);
     }
 
     /**
@@ -731,19 +710,10 @@ public class AutonomyChecks
      */
     private static List<Finding> checkFacings(GraphReducer reducer, Set<TileKey> facingsImpossible)
     {
-        List<Finding> findings = new ArrayList<>();
+        if (facingsImpossible == null) return new ArrayList<>();
 
-        if (facingsImpossible == null) return findings;
-
-        for (TileKey tile : facingsImpossible)
-        {
-            // AN ERROR: the train cannot be stood on a copy facing another way, so nothing is sent until it is put
-            // right
-            findings.add(new Finding(Severity.ERROR, FACING_IMPOSSIBLE,
-                nameOf(reducer, tile), tile));
-        }
-
-        return findings;
+        // AN ERROR: the train cannot be stood on a copy facing another way, so nothing is sent until it is put right
+        return onePerSquare(reducer, facingsImpossible, Severity.ERROR, FACING_IMPOSSIBLE);
     }
 
     /** One finding per station and signal: the station is `{0}` and the signal's name `{1}`. */
@@ -768,17 +738,9 @@ public class AutonomyChecks
 
     private static List<Finding> checkProtectingSignals(GraphReducer reducer, Set<TileKey> signalsGone)
     {
-        List<Finding> findings = new ArrayList<>();
+        if (signalsGone == null) return new ArrayList<>();
 
-        if (signalsGone == null) return findings;
-
-        for (TileKey tile : signalsGone)
-        {
-            findings.add(new Finding(Severity.WARNING, SIGNAL_GONE,
-                nameOf(reducer, tile), tile));
-        }
-
-        return findings;
+        return onePerSquare(reducer, signalsGone, Severity.WARNING, SIGNAL_GONE);
     }
 
     /**
