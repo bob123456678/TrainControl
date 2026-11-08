@@ -1176,7 +1176,7 @@ for cls in $(cat "$WORK/classes")
 do
     if [ ! -f "$WORK/verdicts/$cls" ]
     then
-        fail=$((fail+1)); failed="$failed\n  $cls: DID NOT RUN - no verdict (its lane was stopped)"
+        fail=$((fail+1)); failed="$failed"$'\n'"  $cls: DID NOT RUN - no verdict (its lane was stopped)"
 
         continue
     fi
@@ -1197,7 +1197,7 @@ do
 
         if [ "$kind" = pass ]
         then
-            flaky=$((flaky+1)); flakies="$flakies\n  $first (passed on its rerun)"
+            flaky=$((flaky+1)); flakies="$flakies"$'\n'"  $first (passed on its rerun)"
 
             continue
         fi
@@ -1205,8 +1205,8 @@ do
 
     case "$kind" in
         pass) pass=$((pass+1)) ;;
-        skip) skip=$((skip+1)); skipped="$skipped\n  $said" ;;
-        *) fail=$((fail+1)); failed="$failed\n  $said" ;;
+        skip) skip=$((skip+1)); skipped="$skipped"$'\n'"  $said" ;;
+        *) fail=$((fail+1)); failed="$failed"$'\n'"  $said" ;;
     esac
 done
 
@@ -1240,12 +1240,13 @@ REPORTED=1
 reap_the_run
 
 echo "classes green: $pass   classes with failures: $fail   classes that tested nothing: $skip"
-echo -e "$failed"
+# printf, not `echo -e`: a verdict can hold a Windows path, whose backslashes echo -e would read as escapes
+printf '%s\n' "$failed"
 
 if [ "$flaky" -gt 0 ]
 then
     echo "classes that failed, then passed alone (flaky, in $FLAKES): $flaky"
-    echo -e "$flakies"
+    printf '%s\n' "$flakies"
 fi
 
 if [ "$skip" -gt 0 ]
@@ -1253,7 +1254,7 @@ then
     echo ""
     echo "These classes reported no failures because they ran nothing.  A skipped class is not a"
     echo "green class - check whether the skip is deliberate (needing a display) or a broken setup:"
-    echo -e "$skipped"
+    printf '%s\n' "$skipped"
 fi
 
 # THE TREE MOVED WHILE THIS RAN (E8V-C5), which is not a failure and is not nothing either.

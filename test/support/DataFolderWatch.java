@@ -6,6 +6,7 @@ import org.testng.ISuite;
 import org.testng.ISuiteListener;
 import org.testng.xml.XmlClass;
 import org.testng.xml.XmlTest;
+import org.traincontrol.util.Util;
 
 /**
  * Says which class left the run's saved data changed (`SavedData`): the classes after it in a battery lane read the
@@ -60,7 +61,16 @@ public class DataFolderWatch implements ISuiteListener
 
             if (!changed.isEmpty())
             {
-                System.out.println(MARKER + " by " + classes(suite) + ": " + String.join(", ", changed) + " ***");
+                java.nio.file.Path root = java.nio.file.Paths.get(Util.dataPath("")).toAbsolutePath();
+
+                TreeSet<String> named = new TreeSet<>();
+
+                for (String name : changed)
+                {
+                    named.add(root.relativize(java.nio.file.Paths.get(name).toAbsolutePath()).toString().replace('\\', '/'));
+                }
+
+                System.out.println(MARKER + " by " + classes(suite) + ": " + String.join(", ", named) + " ***");
             }
         }
         catch (java.io.IOException e)
