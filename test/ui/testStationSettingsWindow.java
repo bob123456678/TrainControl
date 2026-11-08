@@ -2623,6 +2623,10 @@ public class testStationSettingsWindow
 
         assertEquals(toolkitCursor(lit).getType(), java.awt.Cursor.HAND_CURSOR, "no hand cursor on an enabled pill");
 
+        // A pill nobody has enabled or disabled: the constructor alone sets the hand
+        assertEquals(toolkitCursor(Components.onTheEventThread(() -> new PillButton("fresh"))).getType(),
+            java.awt.Cursor.HAND_CURSOR, "a new pill has no hand cursor");
+
         Components.onTheEventThread(() -> { lit.setEnabled(false); unlit.setEnabled(false); return null; });
 
         Color blue = Components.onTheEventThread(SegmentedControl::accent);

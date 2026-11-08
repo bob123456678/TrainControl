@@ -252,6 +252,54 @@ public class testTheLocomotiveSettingsLooks extends support.SettingsClass
         assertEquals(t.x, labels, "the Functions table does not start where the Notes labels do");
     }
 
+    /**
+     * Dragged as narrow as the window lets it go, the Functions tab's two button groups still do not overlap, in each
+     * language.
+     *
+     * MUTATION: drop `keepTheFunctionsRowApart` from `LocomotiveSettingsFrame.fit`, and this fails.
+     */
+    @Test
+    public void testTheFunctionsRowNeverOverlapsAtTheNarrowestWindow() throws Exception
+    {
+        try
+        {
+            for (String lang : new String[] {"en", "de", "pl", "fr", "es"})
+            {
+                I18n.setLocale(new java.util.Locale(lang));
+
+                opened();
+                SettingsWindow.selectTab(LocomotiveSettingsFrame.Tab.FUNCTIONS.ordinal());
+                Components.settle();
+
+                LocomotiveSettingsFrame window = SettingsWindow.showing();
+
+                // A drag to 300 pixels, as far as the window's minimum lets it go
+                Components.onTheEventThread(() ->
+                {
+                    window.setSize(Math.max(300, window.getMinimumSize().width), window.getHeight());
+                    window.validate();
+
+                    return null;
+                });
+                Components.settle();
+
+                java.awt.Container pane = window.getContentPane();
+                java.awt.Rectangle copy = Components.onTheEventThread(
+                    () -> bounds(SettingsWindow.part("functions.copyGroup", javax.swing.JPanel.class), pane));
+                java.awt.Rectangle preset = Components.onTheEventThread(
+                    () -> bounds(SettingsWindow.part("functions.presetGroup", javax.swing.JPanel.class), pane));
+
+                assertTrue(copy.x + copy.width <= preset.x, lang + ": the preset buttons start at " + preset.x
+                    + " and the copy ones end at " + (copy.x + copy.width));
+                assertTrue(preset.x + preset.width <= pane.getWidth(), lang + ": the preset buttons run past the window");
+            }
+        }
+        finally
+        {
+            I18n.setLocale(java.util.Locale.ENGLISH);
+        }
+    }
+
     private static java.awt.Rectangle bounds(java.awt.Component c, java.awt.Container pane)
     {
         return javax.swing.SwingUtilities.convertRectangle(c.getParent(), c.getBounds(), pane);

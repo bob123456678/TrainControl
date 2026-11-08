@@ -389,7 +389,19 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
 
         pack();
 
+        keepTheFunctionsRowApart();
+
         if (first) setLocationRelativeTo(main);
+    }
+
+    /** The window is never narrower than the Functions tab's button row needs, so its two groups cannot overlap. */
+    private void keepTheFunctionsRowApart()
+    {
+        if (adding || functionsTab == null) return;
+
+        int chrome = getWidth() - functionsTab.getWidth();
+
+        setMinimumSize(new java.awt.Dimension(functionsTab.buttonRowWidth() + chrome, 0));
     }
 
     /** Re-reads the moving rule and the locomotive: the window is told whenever either may have changed. */
@@ -423,6 +435,7 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
         locomotiveTab.refreshPicture();
         functionsTab.setBlocked(blocked);
         functionsTab.refresh();
+        keepTheFunctionsRowApart();
         changed();
     }
 

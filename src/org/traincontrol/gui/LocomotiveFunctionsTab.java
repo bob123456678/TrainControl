@@ -92,6 +92,7 @@ final class LocomotiveFunctionsTab extends JPanel
     /** The standard icons, null until loaded. */
     private final ImageIcon[] standardIcons;
 
+    private JPanel buttonRow;
     private final JTable table;
     private final TableModel model = new TableModel();
     private final IconCell iconRenderer;
@@ -198,7 +199,8 @@ final class LocomotiveFunctionsTab extends JPanel
         scroll.setPreferredSize(new Dimension(560, 280));
 
         add(scroll, BorderLayout.CENTER);
-        add(buttons(), BorderLayout.SOUTH);
+        buttonRow = buttons();
+        add(buttonRow, BorderLayout.SOUTH);
 
         loadStandardIcons();
     }
@@ -444,6 +446,12 @@ final class LocomotiveFunctionsTab extends JPanel
     void commitEdit()
     {
         if (table.isEditing()) table.getCellEditor().stopCellEditing();
+    }
+
+    /** The width the button row needs to keep its two groups apart, inside the tab's border. */
+    int buttonRowWidth()
+    {
+        return buttonRow.getPreferredSize().width + getInsets().left + getInsets().right;
     }
 
     /** Redraws the table and the revert icons from the locomotive. */

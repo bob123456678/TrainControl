@@ -191,19 +191,30 @@ public class testTheTrainWindow
     {
         AutonomyEditorPanel panel = theEditorsPanel();
 
-        TrainWindow window = StationDoors.openTrain(panel, aSquareWithATrain());
+        boolean sawPick = false;
 
-        java.util.List<javax.swing.JButton> buttons = Components.all(window, javax.swing.JButton.class,
-            b -> "train.settings".equals(b.getName()) || "train.tailPick".equals(b.getName()));
-
-        assertTrue(buttons.size() >= 1, "precondition: the window has no Locomotive Settings button");
-
-        for (javax.swing.JButton each : buttons)
+        for (Map.Entry<TileKey, String> each : session.trainsWhereTheyStand().entrySet())
         {
-            assertEquals(each.getFont(), org.traincontrol.gui.widgets.UiStyle.BUTTON_FONT, each.getName() + " is not Bold 12");
+            if (!PAGE.equals(each.getKey().getPage()) || !session.getStore().isStation(each.getKey())) continue;
+
+            TrainWindow window = StationDoors.openTrain(panel, each.getKey());
+
+            java.util.List<javax.swing.JButton> buttons = Components.all(window, javax.swing.JButton.class,
+                b -> "train.settings".equals(b.getName()) || "train.tailPick".equals(b.getName()));
+
+            for (javax.swing.JButton b : buttons)
+            {
+                assertEquals(b.getFont(), org.traincontrol.gui.widgets.UiStyle.BUTTON_FONT, b.getName() + " is not Bold 12");
+
+                sawPick |= "train.tailPick".equals(b.getName());
+            }
+
+            StationDoors.close(window);
+
+            if (sawPick) break;
         }
 
-        StationDoors.close(window);
+        assertTrue(sawPick, "precondition: no train window on this railway shows the tail row's Pick button");
     }
 
     /**
