@@ -2037,6 +2037,15 @@ public class AutonomyEditorPanel extends JPanel
             + "</body></html>";
     }
 
+    /** A compass word inside a menu item: capitalized in English, whose menus are title case (Adam: "now facing East"). */
+    public static String menuSide(String side)
+    {
+        String word = I18n.t("autosetup.ui.side" + side);
+
+        return "en".equals(I18n.getLocale().getLanguage()) && !word.isEmpty()
+            ? Character.toUpperCase(word.charAt(0)) + word.substring(1) : word;
+    }
+
     /**
      * A tooltip that wraps instead of running off the screen, which Swing does with a long one.
      * @return the same text, wrapped
@@ -2769,9 +2778,8 @@ public class AutonomyEditorPanel extends JPanel
         this.runningLayout = source;
     }
     /**
-     * The "arrived from" submenu: where the tail of the train standing here lies, built once for both the autonomy
-     * editor and the track diagram viewer (`TrainControlUI.buildAutonomyTileMenu`), offering the railway's sides
-     * (`ArrivalSidePrompt.sidesOf`).
+     * The "arrived from" sides as a list: where the tail of the train standing here lies, offering the railway's sides
+     * (`ArrivalSidePrompt.sidesOf`).  The station menu shows it where one click cannot change the side.
      *
      * @param target the square
      * @return the menu, or null when no train is standing here
@@ -2782,14 +2790,15 @@ public class AutonomyEditorPanel extends JPanel
     }
 
     /**
-     * The "{loc} Is Facing..." submenu, or null unless a locomotive stands there, for the track diagram's menu; grayed
-     * with the reason where no facing can be chosen (OB-347).
+     * Adds the station menu's items about the train standing here (FR-181): Change Direction, Change Arrived From and,
+     * where there is a choice, how far back its tail reaches; the same items on the editor's menu and the track diagram's.
+     * @param menu the menu to add them to
      * @param target the square
-     * @return the submenu, or null
+     * @return whether a locomotive stands here, so anything was added
      */
-    public javax.swing.JMenu buildFacingMenu(final TileKey target)
+    public boolean addFacingItems(javax.swing.JPopupMenu menu, final TileKey target)
     {
-        return tileMenus.buildFacingMenu(target);
+        return tileMenus.addFacingItems(menu, target);
     }
 
     /** Writes the road the tail lies along (null for Not Known) to the setup and to the train on the railway. */
@@ -2935,15 +2944,19 @@ public class AutonomyEditorPanel extends JPanel
         return true;
     }
 
-    /** One of the three exclusive answers to "what may a train do here", as a radio item. */
+    /**
+     * One of the exclusive answers to a question about the square, as a radio item; with no group, a plain item that
+     * writes the setup the same way, such as Change Direction (FR-181).
+     */
     javax.swing.JMenuItem radio(javax.swing.ButtonGroup group, String text, String tooltipKey,
         boolean on, final Runnable action)
     {
-        javax.swing.JRadioButtonMenuItem menuItem = new javax.swing.JRadioButtonMenuItem(text, on);
+        javax.swing.JMenuItem menuItem = group == null ? new javax.swing.JMenuItem(text)
+            : new javax.swing.JRadioButtonMenuItem(text, on);
 
         if (tooltipKey != null) menuItem.setToolTipText(wrapped(I18n.t(tooltipKey)));
 
-        group.add(menuItem);
+        if (group != null) group.add(menuItem);
 
         menuItem.addActionListener(e ->
         {

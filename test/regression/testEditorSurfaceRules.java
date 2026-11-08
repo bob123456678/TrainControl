@@ -34,10 +34,10 @@ public class testEditorSurfaceRules
         + "\n        final java.util.List<org.traincontrol.automationui.TileGraph.TileKey> outline)";
 
     /**
-     * The facing menu appears even when the square holds one facing: "no menu" reads as a fault, so `buildFacingMenu`
-     * never returns null for want of choices.  The menu shows the one facing, ticked, and a disabled line saying why
-     * there is nothing to choose, because a facing must be one the BUILD can hold.  Checked as the gate: opening the
-     * menu needs a window and a session.
+     * Change Direction appears even when the square holds one facing: "no item" reads as a fault, so `addFacingItems`
+     * always adds it where a train stands.  With one facing or none it is grayed, with the reason as its tooltip, because
+     * a facing must be one the BUILD can hold (FR-181).  Checked as the gate: opening the menu needs a window and a
+     * session.
      */
     @Test
     public void testTheFacingMenuAppearsWithASingleChoice() throws Exception
@@ -45,8 +45,13 @@ public class testEditorSurfaceRules
         // The vanishing is asked of the whole program, so a copy of the menu in another file cannot bring it back
         String code = SourceOf.allCode().replaceAll("\\s+", " ");
 
-        String source = SourceOf.declaration("    javax.swing.JMenu buildFacingMenu(final TileKey target)")
+        String source = SourceOf.declaration("    private javax.swing.JMenuItem changeDirectionItem(")
             .replaceAll("\\s+", " ");
+
+        assertTrue(SourceOf.declaration("    boolean addFacingItems(javax.swing.JPopupMenu menu, final TileKey target)")
+            .replaceAll("\\s+", " ").contains("if (facts == null) return false; menu.add(changeDirectionItem(target, facts));"),
+            "Change Direction is not added wherever a train stands, so a square with nothing to choose shows no item"
+            + " rather than the reason (FR-181)");
 
         assertFalse(code.contains("if (facings.size() <= 1) return null;"),
             "the facing menu still vanishes when a square holds one facing, so the operator is given "
@@ -56,14 +61,9 @@ public class testEditorSurfaceRules
         assertFalse(code.contains("if (facings.isEmpty()) return null;"),
             "the menu is hidden on a square with NO facing, where Adam asked for it greyed (OB-347)");
 
-        assertTrue(source.contains("if (facings.isEmpty()) { facingMenu.setEnabled(false);")
-                && source.contains("autosetup.ui.hintFacingNoWayOut"),
-            "the menu on a square with NO facing is not greyed with its reason (OB-347)");
-
-        assertTrue(source.contains("if (facings.size() == 1)")
-                && source.contains("autosetup.ui.facingOnlyOne"),
-            "the single-choice case has no line explaining itself, so the menu shows one radio and "
-            + "no reason - which is the same silence in a different shape");
+        assertTrue(source.contains("if (facings.size() <= 1) { return grayed(label, facings.isEmpty() ? "
+                + "\"autosetup.ui.hintFacingNoWayOut\" : \"autosetup.ui.hintFacingOnlyOne\");"),
+            "Change Direction on a square with one facing or NO facing is not greyed with its reason (OB-347, FR-181)");
     }
     /**
      * Every door that gives a locomotive a name asks `RouteCommand.isNameUsable` (MT-270): Add Locomotive,
@@ -230,17 +230,17 @@ public class testEditorSurfaceRules
             + "the opposite of what was just chosen");
     }
 
-    /** The submenu itself is built once: a second `menuFacingGroup` heading is `buildFacingMenu` reimplemented. */
+    /** Change Direction is built once: a second `menuChangeDirection` label is `addFacingItems` reimplemented. */
     @Test
     public void testTheFacingSubmenuIsBuiltOnce() throws Exception
     {
         // Counted over the whole program's code, so a second copy built in another file is counted too
-        int built = SourceOf.occurrences("menuFacingGroup");
+        int built = SourceOf.occurrences("\"autosetup.ui.menuChangeDirection\"");
 
         assertEquals(built, 1,
-            "the \"{loc} Is Facing...\" submenu is assembled " + built + " times. One of them is "
-            + "buildFacingMenu, which exists precisely so that the track diagram and the editor offer "
-            + "the same menu rather than two that drift apart");
+            "the \"Change Direction (now facing ...)\" item is assembled " + built + " times. One of them is "
+            + "addFacingItems, which exists precisely so that the track diagram and the editor offer "
+            + "the same items rather than two sets that drift apart");
     }
 
     /**
@@ -1078,13 +1078,13 @@ public class testEditorSurfaceRules
             + " train arrived by at all (OB-204)");
     }
     /**
-     * One menu holds both ends of the train, headed, and the viewer gets it too.
+     * One builder adds both ends of the train, each item naming its question, and the viewer gets them too.
      *
-     * Adam's rule: the "arrived from" setting lives in the '<locomotive> is facing' menu for both surfaces,
-     * *"with clear intro headings for each set of options."*
+     * The arrived-from setting is offered on both surfaces beside the facing; since FR-181 each item's own label says
+     * which end it is about ("Change Direction (now facing ...)", "Change Arrived From (currently ...)").
      *
-     * The viewer's route is `TrainControlUI.facingMenuFor`, which asks for the facing menu and nothing else, so this
-     * asserts what that menu contains.  One menu also removes the ability to drift.
+     * The viewer's route is `TrainControlUI.addAutonomyFacingItems`, which asks for these items and nothing else, so
+     * this asserts what the builder adds.  One builder also removes the ability to drift.
      *
      * MUTATION: adding the tail menu separately in the editor again fails the last assertion.
      *
@@ -1093,15 +1093,16 @@ public class testEditorSurfaceRules
     @Test
     public void testTheFacingMenuHoldsBothEndsOfTheTrain() throws Exception
     {
-        String facing = codeOf("    javax.swing.JMenu buildFacingMenu(final TileKey target)");
+        String facing = codeOf("    boolean addFacingItems(javax.swing.JPopupMenu menu, final TileKey target)");
 
-        assertTrue(facing.contains("buildArrivedFromMenu(target)"),
-            "the facing menu does not carry the arrival side, so the track diagram viewer - which asks"
-            + " for this menu and no other - still cannot set it (Adam, 2026-09-07)");
+        assertTrue(facing.contains("changeArrivedFromItem(target)") && facing.contains("tailCrossedMenu(target"),
+            "the facing items do not carry the arrival side or the tail, so the track diagram viewer - which asks"
+            + " for these and no other - still cannot set them (Adam, 2026-09-07)");
 
-        assertTrue(facing.contains("headingFacing") && facing.contains("headingArrivedFrom"),
-            "one or both sets of compass points has no heading. Two sets one after another read as"
-            + " eight ways of saying one thing, and they are opposite ends of the train");
+        assertTrue(codeOf("    private static String changeArrivedFromLabel(String recorded)")
+                .contains("autosetup.ui.menuChangeArrivedFrom"),
+            "the arrival side's item does not say it is about the arrival side. Two sets of compass points"
+            + " one after another read as eight ways of saying one thing, and they are opposite ends of the train");
 
         // AND IT IS NOT ALSO ADDED SEPARATELY, which is what put it in one surface and not the other.  Asked of the
         // whole program.
@@ -1186,7 +1187,7 @@ public class testEditorSurfaceRules
 
         String panel = codeOf("    FacingFacts facingFacts(final TileKey target)") + codeOf("    void chooseFacing(final TileKey target,");
 
-        assertTrue(codeOf("    javax.swing.JMenu buildFacingMenu(final TileKey target)").contains("facingFacts(target)")
+        assertTrue(codeOf("    boolean addFacingItems(javax.swing.JPopupMenu menu, final TileKey target)").contains("facingFacts(target)")
             && SourceOf.withoutComments(SourceOf.declaration("public final class TrainWindow extends StationWindowBase"))
                 .contains("facingFacts(tile)"), "the facing menu or the train window works out the facing itself again");
 

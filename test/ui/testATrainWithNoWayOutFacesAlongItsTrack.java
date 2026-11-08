@@ -31,7 +31,7 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
  *
  * Run at TunnelLeftPark on the frozen `live-snapshot`, with both arrows of 8,7 below it red, through the real window's
  * diagram monitor.  The icon may guess, but it must lie along the track; a recorded facing the track does not run is
- * shown by none of the icon, the caption and the Is Facing menu.  A train can also be put there (OB-350).
+ * shown by none of the icon, the caption and Change Direction.  A train can also be put there (OB-350).
  *
  * MUTATION: take the setup's facing out of `DiagramMonitorDriver.recordedFacingsChanged` and the first claim fails;
  * return null from `AutonomySession.facingWhereNoCopySays` where nothing is recorded and the second does; ask the
@@ -174,7 +174,7 @@ public class testATrainWithNoWayOutFacesAlongItsTrack
 
     /**
      * A recorded facing the track does not run is shown by none of the three: the icon lies along the track, the
-     * caption has no east arrow, and the Is Facing menu is grayed.
+     * caption has no east arrow, and Change Direction is grayed.
      */
     @Test
     public void testAFacingTheTrackDoesNotRunIsShownNowhere() throws Exception
@@ -222,14 +222,15 @@ public class testATrainWithNoWayOutFacesAlongItsTrack
             openTheEditor(editor, page);
 
             final AutonomyEditorPanel panel = editor[0].getAutonomyPanel();
-            final javax.swing.JMenu[] menu = new javax.swing.JMenu[1];
+            final javax.swing.JPopupMenu menu = new javax.swing.JPopupMenu();
 
-            SwingUtilities.invokeAndWait(() -> menu[0] = panel.buildFacingMenu(PLATFORM));
+            SwingUtilities.invokeAndWait(() -> panel.addFacingItems(menu, PLATFORM));
 
-            assertNotNull(menu[0], "precondition: no Is Facing menu for the train on TunnelLeftPark");
+            assertTrue(menu.getComponentCount() > 0, "precondition: no Change Direction for the train on TunnelLeftPark");
 
-            assertFalse(menu[0].isEnabled(), "the Is Facing menu on TunnelLeftPark, which no track leads out of, is open"
-                + " with east ticked, on track that runs north and south, while the icon lies along it (V348-C1)");
+            assertFalse(menu.getComponent(0).isEnabled(), "Change Direction on TunnelLeftPark, which no track leads out"
+                + " of, is offered with east recorded, on track that runs north and south, while the icon lies along it"
+                + " (V348-C1)");
         }
         finally
         {
@@ -274,29 +275,27 @@ public class testATrainWithNoWayOutFacesAlongItsTrack
             openTheEditor(editor, model.getLayout(PAGE));
 
             final String[] caption = new String[1];
-            final javax.swing.JMenu[] menu = new javax.swing.JMenu[1];
+            final javax.swing.JPopupMenu menu = new javax.swing.JPopupMenu();
 
             SwingUtilities.invokeAndWait(() ->
             {
                 caption[0] = ui.autonomyCaptionTextAt(tunnel);
-                menu[0] = editor[0].getAutonomyPanel().buildFacingMenu(tunnel);
+                editor[0].getAutonomyPanel().addFacingItems(menu, tunnel);
             });
 
-            assertNotNull(menu[0], "precondition: no Is Facing menu for the train placed at Tunnel");
+            assertTrue(menu.getComponentCount() > 0, "precondition: no Change Direction for the train placed at Tunnel");
 
             assertTrue(caption[0] == null || !caption[0].contains(StationCaption.ARROW_E), "precondition: the caption at"
                 + " Tunnel points east, on track that runs north and south: " + caption[0]);
 
             String east = I18n.t("autosetup.ui.facingE");
+            String nowEast = I18n.f("autosetup.ui.menuChangeDirection", org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel.menuSide("E"));
 
-            for (java.awt.Component item : menu[0].getMenuComponents())
+            for (javax.swing.JMenuItem item : support.Components.all(menu, javax.swing.JMenuItem.class, null))
             {
-                if (!(item instanceof javax.swing.JRadioButtonMenuItem)) continue;
-
-                javax.swing.JRadioButtonMenuItem radio = (javax.swing.JRadioButtonMenuItem) item;
-
-                assertFalse(radio.isSelected() && east.equals(radio.getText()), "the Is Facing menu at Tunnel ticks east,"
-                    + " on track that runs north and south, where the caption shows no arrow (V348B-C3)");
+                assertFalse(nowEast.equals(item.getText()) || item.isSelected() && east.equals(item.getText()), "Change"
+                    + " Direction at Tunnel says east, on track that runs north and south, where the caption shows no"
+                    + " arrow (V348B-C3)");
             }
         }
         finally
@@ -355,7 +354,7 @@ public class testATrainWithNoWayOutFacesAlongItsTrack
 
     /**
      * On a square with one way out, a train the railway cannot stand - its recorded facing off the track - faces that
-     * way out, which the Is Facing menu ticks.
+     * way out, which Change Direction names.
      *
      * MUTATION: guess the track's first way before the facing the square offers, and this fails at TunnelRightPark,
      * whose one way out is south on track that runs from the north.
@@ -381,25 +380,17 @@ public class testATrainWithNoWayOutFacesAlongItsTrack
 
             openTheEditor(editor, model.getLayout(PAGE));
 
-            final javax.swing.JMenu[] menu = new javax.swing.JMenu[1];
+            final javax.swing.JPopupMenu menu = new javax.swing.JPopupMenu();
 
-            SwingUtilities.invokeAndWait(() -> menu[0] = editor[0].getAutonomyPanel().buildFacingMenu(square));
+            SwingUtilities.invokeAndWait(() -> editor[0].getAutonomyPanel().addFacingItems(menu, square));
 
-            String ticked = null;
+            String said = menu.getComponentCount() == 0 ? null : ((javax.swing.JMenuItem) menu.getComponent(0)).getText();
 
-            for (java.awt.Component item : menu[0] == null ? new java.awt.Component[0] : menu[0].getMenuComponents())
-            {
-                if (item instanceof javax.swing.JRadioButtonMenuItem && ((javax.swing.JRadioButtonMenuItem) item).isSelected())
-                {
-                    ticked = ((javax.swing.JRadioButtonMenuItem) item).getText();
-                }
-            }
-
-            assertEquals(ticked, I18n.t("autosetup.ui.facing" + offered.get(0).name()), "precondition: the Is Facing"
-                + " menu does not tick TunnelRightPark's one way out");
+            assertEquals(said, I18n.f("autosetup.ui.menuChangeDirection",
+                org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel.menuSide(offered.get(0).name())), "precondition: Change Direction does not name TunnelRightPark's one way out");
 
             assertEquals(shown.getFacing(), offered.get(0), "the locomotive at TunnelRightPark, which the railway cannot"
-                + " stand with east recorded, faces away from the one way out the Is Facing menu ticks (V348D-C1)");
+                + " stand with east recorded, faces away from the one way out Change Direction names (V348D-C1)");
         }
         finally
         {
@@ -727,39 +718,11 @@ public class testATrainWithNoWayOutFacesAlongItsTrack
     {
         makeItTheActiveTrain();
 
-        final Class<?> menuClass = Class.forName("org.traincontrol.gui.LayoutRightclickAutonomyMenu");
-
-        final java.lang.reflect.Method gather = menuClass.getDeclaredMethod("gatherPathOptions", TrainControlUI.class,
-            Point.class);
-
-        gather.setAccessible(true);
-
-        final java.lang.reflect.Constructor<?> make = menuClass.getDeclaredConstructor(TrainControlUI.class,
-            TileKey.class, TileKey.class, Class.forName("org.traincontrol.gui.LayoutRightclickAutonomyMenu$PathOptions"));
-
-        make.setAccessible(true);
-
-        final Point[] standing = new Point[1];
-
-        SwingUtilities.invokeAndWait(() -> standing[0] = ui.getAutonomyPointForTile(PLATFORM));
-
-        final Object options = gather.invoke(null, ui, standing[0]);
-
-        final javax.swing.JMenuItem[] place = new javax.swing.JMenuItem[1];
+        final javax.swing.JPopupMenu menu = support.StationDoors.diagramMenu(ui, PLATFORM);
 
         final String label = I18n.f("layout.ui.menuPlaceLocomotive", OUR_TRAIN);
 
-        SwingUtilities.invokeAndWait(() ->
-        {
-            try
-            {
-                place[0] = itemNamed((javax.swing.JPopupMenu) make.newInstance(ui, PLATFORM, PLATFORM, options), label);
-            }
-            catch (ReflectiveOperationException failed)
-            {
-                throw new IllegalStateException(failed);
-            }
-        });
+        final javax.swing.JMenuItem[] place = {support.Components.onTheEventThread(() -> itemNamed(menu, label))};
 
         assertNotNull(place[0], "the right-click menu on TunnelLeftPark has no " + label + " item");
 

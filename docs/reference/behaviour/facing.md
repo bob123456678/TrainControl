@@ -44,9 +44,9 @@ offered. Such a square with more than one way out is one copy per way out; with 
 
   `core.testACurvedPlatformRecordsASideTheBuildUses`, on the `curve-into-platform` scenario with a straight platform
   as the control.
-- It can be **set** afterwards from the **"<locomotive> is facing"** menu, in the editor and on the track diagram, under
-  its own heading in the same menu, because the two are opposite ends of one train, and because a second submenu is
-  what would give the editor a setting the viewer did not have.
+- It can be **set** afterwards with **Change Arrived From (currently ...)** on the station's menu, beside Change Direction,
+  in the editor and on the track diagram, from the one builder (`EditorTileMenus.addFacingItems`), so the editor never
+  has a setting the viewer has not (FR-181).
 - **The sides offered are the ones the BUILD splits on**, not the compass direction of the neighboring point: a reduced
   edge can run several tiles and turn corners, so a rail leaving north and curving east reaches a neighbor lying east.
 - Not knowing is a legitimate answer, and it does **not** mean nothing is blocked: where the geometry leaves only one

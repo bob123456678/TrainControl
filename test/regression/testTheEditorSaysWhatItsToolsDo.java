@@ -979,7 +979,11 @@ public class testTheEditorSaysWhatItsToolsDo
                                 for (AutonomyEditorPanel panel : new AutonomyEditorPanel[] {own, diagrams})
                                 {
                                     tipsIn(panel.buildTileMenu(tile, null), tips);
-                                    tipsIn(panel.buildFacingMenu(tile), tips);
+                                    javax.swing.JPopupMenu facing = new javax.swing.JPopupMenu();
+
+                                    panel.addFacingItems(facing, tile);
+
+                                    tipsIn(facing, tips);
                                     tipsIn(panel.buildArrivedFromMenu(tile), tips);
                                 }
                             }

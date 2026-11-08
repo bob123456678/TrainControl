@@ -1586,7 +1586,8 @@ public class testNoSetupEditDuringARun
             }
         });
 
-        final javax.swing.JMenuItem edit = itemCalled(menu[0], I18n.t("autolayout.ui.labelEditLocomotiveAt"));
+        final javax.swing.JMenuItem edit = itemCalled(menu[0],
+            I18n.f("autolayout.ui.menuEditLocomotive", at.getCurrentLocomotive().getName()));
 
         assertNotNull(edit, "precondition: the diagram's menu at " + square + " has no Edit Locomotive item");
 
