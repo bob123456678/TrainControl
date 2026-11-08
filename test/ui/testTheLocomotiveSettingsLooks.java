@@ -512,4 +512,31 @@ public class testTheLocomotiveSettingsLooks extends support.SettingsClass
 
         assertEquals(ToolTipManager.sharedInstance().getDismissDelay(), was);
     }
+
+    /**
+     * Every (i) is light gray (#CCCCCC) with a white "i" and clear corners, so it does not draw the eye (Adam).
+     *
+     * MUTATION: return the untinted image from `InfoMark.load`, and the disk is dark and this fails.
+     */
+    @Test
+    public void testTheInfoMarkIsLightGray()
+    {
+        javax.swing.ImageIcon icon = InfoMark.icon();
+
+        java.awt.image.BufferedImage image = new java.awt.image.BufferedImage(icon.getIconWidth(), icon.getIconHeight(),
+            java.awt.image.BufferedImage.TYPE_INT_ARGB);
+
+        icon.paintIcon(null, image.getGraphics(), 0, 0);
+
+        int[] all = image.getRGB(0, 0, image.getWidth(), image.getHeight(), null, 0, image.getWidth());
+
+        long gray = java.util.Arrays.stream(all).filter(p -> p >>> 24 != 0 && (p & 0xffffff) == 0xCCCCCC).count();
+        long white = java.util.Arrays.stream(all).filter(p -> p >>> 24 != 0 && (p & 0xffffff) == 0xFFFFFF).count();
+        long dark = java.util.Arrays.stream(all).filter(p -> p >>> 24 != 0).count() - gray - white;
+
+        assertEquals(dark, 0, "pixels of the mark are neither the gray disk nor the white i");
+        assertTrue(gray > 60, "the disk is not #CCCCCC: " + gray + " pixels");
+        assertTrue(white > 5, "the i is not white: " + white + " pixels");
+        assertEquals(image.getRGB(0, 0) >>> 24, 0, "the corner is not clear");
+    }
 }

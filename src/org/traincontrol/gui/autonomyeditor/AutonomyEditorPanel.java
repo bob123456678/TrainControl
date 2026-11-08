@@ -6062,7 +6062,10 @@ public class AutonomyEditorPanel extends JPanel
     {
         if (tool == Tool.STATIONS)
         {
-            return stationPicks.contains(tile) ? org.traincontrol.automationui.TileAnnotation.ToolMark.TOGETHER : null;
+            if (stationPicks.contains(tile)) return org.traincontrol.automationui.TileAnnotation.ToolMark.TOGETHER;
+
+            return offersStationSettings(tile) && tile.equals(leaderOf(tile))
+                ? org.traincontrol.automationui.TileAnnotation.ToolMark.PICKABLE : null;
         }
 
         if (tool == Tool.TEST)

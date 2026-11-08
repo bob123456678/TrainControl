@@ -101,6 +101,9 @@ public final class StationSettingsWindow extends StationWindowBase
 
     private final JTextField name = field("station.name", 16);
 
+    /** The Name row's label and field, left out for several stations. */
+    private final List<JComponent> nameRow = new ArrayList<>();
+
     private final Map<StationPreset, JToggleButton> presets = new EnumMap<>(StationPreset.class);
 
     private final JLabel closedLine = new RoomyLabel();
@@ -405,6 +408,9 @@ public final class StationSettingsWindow extends StationWindowBase
 
         typedRow("autosetup.ui.stationName", null, name, name, otherControls, this::nameInStore, this::applyTypedName);
 
+        nameRow.addAll(rowsFrom(row - 2));
+        nameRow.remove(problems.get(name));
+
         JPanel strip = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
 
         for (StationPreset preset : StationPreset.values())
@@ -414,6 +420,7 @@ public final class StationSettingsWindow extends StationWindowBase
             button.setName("station.preset." + preset.name());
             button.setFont(BUTTON_FONT);
             button.setFocusable(false);
+            button.setMargin(new Insets(2, 8, 2, 8));
             button.setToolTipText(AutonomyEditorPanel.wrapped(I18n.t(preset.tipKey)));
             button.addActionListener(e -> pressPreset(preset));
 
@@ -423,13 +430,35 @@ public final class StationSettingsWindow extends StationWindowBase
             strip.add(button);
         }
 
-        wide(strip);
+        JLabel presetsLabel = UiStyle.blackLabel(I18n.t("autosetup.ui.stationPresets"));
+
+        presetsLabel.setName("station.presetsLabel");
+        form.add(presetsLabel, at(0, row));
+
+        GridBagConstraints presetsAt = at(2, row++);
+
+        presetsAt.gridwidth = 2;
+
+        form.add(strip, presetsAt);
 
         closedLine.setName("station.closedLine");
         closedLine.setFont(REGULAR);
         closedLine.setForeground(new Color(170, 0, 0));
         closedLine.setVisible(false);
         wide(closedLine);
+
+        ActionListener turned = e -> pressTurning();
+
+        turnNever.addActionListener(turned);
+        turnMay.addActionListener(turned);
+        turnMust.addActionListener(turned);
+
+        JPanel turning = oneOf(throughSection, turnNever, turnMay, turnMust);
+
+        turning.add(turnMixed);
+
+        // Above both sections, as it applies to either
+        rowOf("autosetup.ui.stationTurning", "turning", turning, null, throughSection);
 
         section(stops, mark("stops"), stopsMixed);
         stops.addActionListener(e -> pressBoxes(stops));
@@ -471,26 +500,15 @@ public final class StationSettingsWindow extends StationWindowBase
 
         home.setName("station.home");
         home.addActionListener(e -> pressHome());
-        rowOf("autosetup.ui.stationHome", null, home, null, stopSection);
+        rowOf("autosetup.ui.stationHome", "home", home, null, stopSection);
         perStation.addAll(rowsFrom(row - 1));
+        fly("home", AutonomyEditorPanel.wrapped(I18n.t("autosetup.ui.stationHomeTip")));
 
         section(runsThrough, mark("runsThrough"), throughMixed);
         runsThrough.addActionListener(e -> pressBoxes(runsThrough));
 
         rowOf("autosetup.ui.stationDepart", "depart", depart, null, throughSection);
         perStation.addAll(rowsFrom(row - 1));
-
-        ActionListener turned = e -> pressTurning();
-
-        turnNever.addActionListener(turned);
-        turnMay.addActionListener(turned);
-        turnMust.addActionListener(turned);
-
-        JPanel turning = oneOf(throughSection, turnNever, turnMay, turnMust);
-
-        turning.add(turnMixed);
-
-        rowOf("autosetup.ui.stationTurning", "turning", turning, null, throughSection);
 
         advanced.setName("station.advanced");
         advanced.setIcon(RowIcons.arrow(14, false));
@@ -900,6 +918,8 @@ public final class StationSettingsWindow extends StationWindowBase
         setTitle(I18n.f("autosetup.ui.titleStationSettings", many
             ? I18n.f("autosetup.ui.stationsPicked", several.size()) : editor.describeTile(tile)));
 
+        sayWhichArePicked(many ? I18n.f("autosetup.ui.stationsPickedNamed", namesOf(several)) : null);
+
         severalLine.setText(many ? AutonomyEditorPanel.wrappedAt(I18n.f("autosetup.ui.stationSeveral", several.size()),
             wrapWithin(formWidth - 8)) : "");
 
@@ -1035,6 +1055,8 @@ public final class StationSettingsWindow extends StationWindowBase
     {
         severalLine.setVisible(many);
         sideColumn.setVisible(!many);
+
+        for (JComponent part : nameRow) part.setVisible(!many);
 
         for (JComponent part : perStation) part.setVisible(!many && (advancedOpen || !advancedRows.contains(part)));
     }

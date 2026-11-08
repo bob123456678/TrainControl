@@ -59,7 +59,7 @@ public class testTheEditorPageStrip extends support.PageWindowTest
      * order add, rename, duplicate, up, down, then a gap and delete, each without text, border or focus.
      *
      * MUTATION: put Delete before Down in `buildPageStrip`, or build the buttons without `toolBarButton`, and this
-     * fails.
+     * fails; so does taking the strut under the strip out of `mountSidebar` (the list then touches the icons).
      */
     @Test
     public void testTheStripIsFlatOrderedAndUnderThePageHeadingInTheTrackEditor() throws Exception
@@ -130,6 +130,14 @@ public class testTheEditorPageStrip extends support.PageWindowTest
 
             assertTrue(bounds(heading, editor).y < at[0].y && at[0].y < bounds(list, editor).y,
                 "the strip is not between the Page heading and the list (autonomy " + autonomy + ")");
+
+            // Air between the icons and the first page
+            java.awt.Container icons = strip.get(0).getParent();
+            java.awt.Component pages = SwingUtilities.getAncestorOfClass(javax.swing.JScrollPane.class, list);
+
+            int air = Components.onTheEventThread(() -> pages.getY() - (icons.getY() + icons.getHeight()));
+
+            assertTrue(air >= 4, "the page list sits " + air + " pixels under the icons (autonomy " + autonomy + ")");
 
             // Flat: no border drawn until pointed at
             assertEquals("toolBarButton", String.valueOf(strip.get(0).getClientProperty("JButton.buttonType")));

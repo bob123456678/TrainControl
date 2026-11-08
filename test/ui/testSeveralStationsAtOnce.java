@@ -107,7 +107,7 @@ public class testSeveralStationsAtOnce
 
         click(three.get(1));
 
-        assertNull(mark(three.get(1)), "a station clicked again is still marked picked");
+        assertEquals(mark(three.get(1)), TileAnnotation.ToolMark.PICKABLE, "a station clicked again is still marked picked");
 
         assertEquals(window.squaresForTest(), Arrays.asList(three.get(0), three.get(2)),
             "the window still sets a station clicked again");
@@ -117,6 +117,107 @@ public class testSeveralStationsAtOnce
         for (TileKey each : three) assertNull(mark(each), each + " is still marked once the tool is down");
 
         assertNull(StationDoors.showing(StationSettingsWindow.class), "the window stayed open once the picks were dropped");
+    }
+
+    /**
+     * Several stations show a yellow banner at the top naming every one in full, like the app's other yellow notices,
+     * and leave out the Name row; with one station left the banner goes and the Name row is back.
+     *
+     * MUTATION: stop calling `sayWhichArePicked` in `fill`, or leave the Name row out of `showForHowMany`, and this fails.
+     */
+    @Test(timeOut = 120000)
+    public void testSeveralStationsAreNamedInAYellowBannerAndHaveNoNameRow() throws Exception
+    {
+        List<TileKey> three = stations(3);
+
+        StationSettingsWindow window = pick(three);
+
+        javax.swing.JLabel banner = StationDoors.part(window, "station.picked", javax.swing.JLabel.class);
+
+        assertTrue(on(banner::isShowing), "no banner names the stations picked");
+        assertEquals(on(banner::getBackground), StationDoors.part(window, "station.strip", javax.swing.JLabel.class)
+            .getBackground(), "the banner is not the yellow of the window's other notice");
+
+        for (TileKey each : three)
+        {
+            String named = on(() -> session.getStore().getPointName(each));
+
+            assertTrue(on(banner::getText).contains(named), "the banner leaves out " + named + ": " + on(banner::getText));
+        }
+
+        assertFalse(showing(window, "station.name"), "the Name box shows for several stations");
+        assertFalse(on(() -> Components.find(window, javax.swing.JLabel.class,
+            l -> I18n.t("autosetup.ui.stationName").equals(l.getText())).isShowing()), "the Name label shows for several");
+
+        click(three.get(1));
+        click(three.get(2));
+
+        StationDoors.current(window);
+
+        assertFalse(on(banner::isShowing), "the banner stays for one station");
+        assertTrue(showing(window, "station.name"), "the Name box is gone for one station");
+    }
+
+    /**
+     * The tool is called Bulk Edit...; while it is on every square a click can pick wears the editor's light gray grid
+     * line, a pick keeps its own mark over it, squares that cannot be picked wear nothing, and nothing is outlined once
+     * the tool is down.
+     *
+     * MUTATION: have `toolMark` answer null for a station that is not picked, or PICKABLE for a square that cannot be
+     * picked, or leave the mark on when the tool goes down, or color PICKABLE otherwise than `Color.LIGHT_GRAY`, and this
+     * fails.
+     */
+    @Test(timeOut = 120000)
+    public void testBulkEditOutlinesWhatCanBePickedInLightGray() throws Exception
+    {
+        assertEquals(StationDoors.part(panel, "autonomy.pickStations", AbstractButton.class).getText(), "Bulk Edit...");
+
+        List<TileKey> tiles = Components.onTheEventThread(() ->
+        {
+            List<TileKey> out = new ArrayList<>();
+
+            for (TileKey each : session.getGraph().getTiles().keySet())
+            {
+                if (PAGE.equals(each.getPage())) out.add(each);
+            }
+
+            return out;
+        });
+
+        for (TileKey each : tiles) assertNull(mark(each), "precondition: " + each + " is marked with the tool down");
+
+        StationDoors.press(panel, "autonomy.pickStations");
+
+        TileKey picked = stations(1).get(0);
+
+        click(picked);
+
+        int outlined = 0;
+        int bare = 0;
+
+        for (TileKey each : tiles)
+        {
+            boolean can = on(() -> panel.offersStationSettings(each));
+
+            TileAnnotation.ToolMark expected = each.equals(picked) ? TileAnnotation.ToolMark.TOGETHER
+                : can ? TileAnnotation.ToolMark.PICKABLE : null;
+
+            assertEquals(mark(each), expected, each + " is marked wrongly while Bulk Edit is on");
+
+            if (expected == TileAnnotation.ToolMark.PICKABLE) outlined++;
+            else if (expected == null) bare++;
+        }
+
+        assertTrue(outlined > 5 && bare > 5, "precondition: " + outlined + " outlined and " + bare + " bare squares");
+
+        java.awt.image.BufferedImage square = drawn(bare(false).markedByATool(TileAnnotation.ToolMark.PICKABLE));
+
+        assertEquals(square.getRGB(0, 30) & 0xFFFFFF, java.awt.Color.LIGHT_GRAY.getRGB() & 0xFFFFFF, "the outline is not light gray");
+        assertEquals(square.getRGB(30, 30) & 0xFFFFFF, 0xFFFFFF, "the outline washes the square");
+
+        StationDoors.press(panel, "autonomy.pickStations");
+
+        for (TileKey each : tiles) assertNull(mark(each), each + " is still marked after Bulk Edit ended");
     }
 
     /**
