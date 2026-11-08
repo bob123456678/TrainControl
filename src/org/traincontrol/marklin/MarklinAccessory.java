@@ -200,6 +200,8 @@ public class MarklinAccessory extends Accessory
                 // waiters are undisturbed, and it fires only now that the confirmed state is current.
                 synchronized (Accessory.actuationConfirmedMonitor)
                 {
+                    Accessory.echoes++;
+                    Accessory.lastEchoed = this;
                     Accessory.actuationConfirmedMonitor.notifyAll();
                 }
 

@@ -47,8 +47,15 @@ public class Layout
     // ms to wait between configuration commands
     public static final int CONFIGURE_SLEEP = 150;
 
-    // The deadline is PATH_VALIDATION_MS * (accessories on the path + 1).  Not final so tests can shorten it.
+    // Path validation's first deadline is PATH_VALIDATION_MS * (accessories on the path + 1), longer while the station
+    // is busy (validatePathActuation).  Not final so tests can shorten it.
     public static int PATH_VALIDATION_MS = 1000;
+
+    // The longest path validation waits on a station still busy switching, in PATH_VALIDATION_MS periods
+    public static final int PATH_VALIDATION_BUSY_MAX = 60;
+
+    // How often path validation looks for a Stop or a power change while it waits, in ms
+    private static final long STOP_CHECK_MS = 250;
 
     // When true, a locomotive departs only once the CS echo shows every accessory on its path set.  Tied to the
     // "Path Integrity Validation" preference in the UI, but respected headless via this flag.  Default on.
@@ -3512,10 +3519,21 @@ public class Layout
         // Layout monitor).  If not, stop the locomotive and release its locks (returning false so
         // executePath does not run it); power is left on and autonomy re-attempts the path organically on
         // its next cycle, so no explicit retry is needed here.
-        if (!this.validatePathActuation(path))
+        int stops = this.stopsOrdered.get();
+        int power = this.control.getPowerEpoch();
+
+        if (!this.validatePathActuation(path, stops, power))
         {
-            this.handleMisconfiguredPath(path, loc);
-            this.takingPath.remove(loc);
+            // A Stop or a power change ended the wait: the train goes back unrun, as executePath gives one back, and
+            // nothing is counted against the accessories.
+            if (this.stopsOrdered.get() != stops) giveBackUnrun(path, loc, "autolayout.log.notSentAfterTheStop");
+            else if (this.control.getPowerEpoch() != power) giveBackUnrun(path, loc, "autolayout.log.notSentPowerOff");
+            else
+            {
+                this.handleMisconfiguredPath(path, loc);
+                this.takingPath.remove(loc);
+            }
+
             return false;
         }
 
@@ -3524,12 +3542,16 @@ public class Layout
 
     /**
      * Waits up to PATH_VALIDATION_MS * (accessories on the path + 1) for every accessory on the path to reach its
-     * CS-confirmed commanded state, on Accessory.actuationConfirmedMonitor rather than polling.  Must be called WITHOUT
-     * holding the Layout monitor so concurrent path checks are not blocked.
+     * CS-confirmed commanded state, on Accessory.actuationConfirmedMonitor rather than polling.  While the station is
+     * still answering it waits on, up to PATH_VALIDATION_BUSY_MAX: a CS3 switches one accessory at a time, about a
+     * second each, so ours may be queued behind another train's (OB-425).  A Stop or a power change ends the wait.
+     * Must be called WITHOUT holding the Layout monitor so concurrent path checks are not blocked.
      *
+     * @param stops `stopsOrdered()` as read before the path was configured
+     * @param power the power epoch as read then
      * @return true if all accessories on the path are confirmed at their commanded state
      */
-    private boolean validatePathActuation(List<Edge> path)
+    private boolean validatePathActuation(List<Edge> path, int stops, int power)
     {
         List<Accessory> accessories = new ArrayList<>();
         List<Boolean> desired = new ArrayList<>();
@@ -3554,25 +3576,26 @@ public class Layout
             return true;
         }
 
-        // Wait on the dedicated actuation monitor until all are confirmed or the timeout elapses.
-        // MarklinAccessory notifies it each time a CS echo advances stateAtLastActuation, so we wake and
-        // re-check only when a confirmed state actually changed - and exit immediately once all are confirmed.
-        long deadline = System.currentTimeMillis() + PATH_VALIDATION_MS + PATH_VALIDATION_MS * accessories.size();
-
+        // Woken by every CS echo (MarklinAccessory notifies the monitor), and at least every STOP_CHECK_MS so a Stop, a
+        // power change or a stopped run ends the wait at once instead of after the station's backlog.
+        long start = System.currentTimeMillis();
+        long deadline = start + PATH_VALIDATION_MS + PATH_VALIDATION_MS * accessories.size();
         synchronized (Accessory.actuationConfirmedMonitor)
         {
             while (!allConfirmed(accessories, desired))
             {
                 long remaining = deadline - System.currentTimeMillis();
 
-                if (remaining <= 0)
+                if (remaining <= 0 || this.stopsOrdered.get() != stops || this.control.getPowerEpoch() != power)
                 {
                     break;
                 }
 
+                long echoesBefore = Accessory.echoes;
+
                 try
                 {
-                    Accessory.actuationConfirmedMonitor.wait(remaining);
+                    Accessory.actuationConfirmedMonitor.wait(Math.min(remaining, STOP_CHECK_MS));
                 }
                 catch (InterruptedException ex)
                 {
@@ -3581,6 +3604,17 @@ public class Layout
                     Thread.currentThread().interrupt();
 
                     return allConfirmed(accessories, desired);
+                }
+
+                // The station answered, so it is still working: give it two more periods.  One of ours answering in
+                // the wrong state does not count, so a path someone else keeps switching back still fails on time.
+                Accessory echoed = Accessory.lastEchoed;
+                int ours = accessories.indexOf(echoed);
+
+                if (Accessory.echoes != echoesBefore && (ours < 0 || echoed.isConfirmedAt(desired.get(ours))))
+                {
+                    deadline = Math.max(deadline, Math.min(start + (long) PATH_VALIDATION_MS * PATH_VALIDATION_BUSY_MAX,
+                        System.currentTimeMillis() + 2L * PATH_VALIDATION_MS));
                 }
             }
         }
