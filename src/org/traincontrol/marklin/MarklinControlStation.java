@@ -5102,8 +5102,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
         try
         {
             // Delegate the hard part
-            proxy = new NetworkProxy(InetAddress.getByName(initIP),
-                simulate ? NetworkProxy.simulationTcpPort() : NetworkProxy.TCP_PORT);
+            proxy = new NetworkProxy(InetAddress.getByName(initIP));
 
             // Initialize the central station
             model = new MarklinControlStation(proxy, showUI ? ui : null, autoPowerOn, debug, simulate);
@@ -5234,6 +5233,14 @@ public class MarklinControlStation implements ViewListener, ModelListener
             }
         }
                         
+        // TCP for a CS3 the start-up sync found, unless "Use UDP Only" is on (FR-186): a CS2, or a station whose type is
+        // not known, runs on UDP exactly as before
+        if (model.isCS3() && model.getNetworkCommState()
+            && !TrainControlUI.getPrefs().getBoolean(TrainControlUI.UDP_ONLY_PREF, false))
+        {
+            proxy.connectOverTcp(simulate ? NetworkProxy.simulationTcpPort() : NetworkProxy.TCP_PORT);
+        }
+
         // Start execution
         proxy.setModel(model);
         

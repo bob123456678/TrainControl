@@ -12,27 +12,31 @@ import java.net.Socket;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import org.traincontrol.base.udp.CANMessage;
 import org.traincontrol.model.ModelListener;
 import org.traincontrol.util.I18n;
 
 /**
- *  This class facilitates communication with the Marklin CS2/CS3: over one TCP connection to the station's port 15731
- *  when it accepts one, otherwise over UDP as before (FR-186).  Both carry the same 13-byte frames, sent the same and
- *  handed to the same model.receiveMessage.
+ *  This class facilitates communication with the Marklin CS2/CS3 over UDP, and with a CS3 over one TCP connection to
+ *  its port 15731 once connectOverTcp is asked and the station takes it (FR-186).  Both carry the same 13-byte frames,
+ *  sent the same and handed to the same model.receiveMessage.
  */
 public class NetworkProxy
 {
     // Ports as defined in the marklin protocol
     public static final int RX_PORT = 15730;
     public static final int TX_PORT = 15731;
-    
+
     /** The station's TCP port: the same frames as a stream, resent when lost and in order. */
     public static final int TCP_PORT = 15731;
-
+    
     // UDP socket used to send and receive packets.  volatile because sendMessage can replace it after
-    // a failure while the reader thread is looping on it.  Bound in TCP mode too, unread, so that a second copy of
-    // TrainControl still cannot start.
+    // a failure while the reader thread is looping on it.
     private volatile DatagramSocket socket;
 
     /**
@@ -78,18 +82,42 @@ public class NetworkProxy
      */
     private static final long TCP_ANSWER_LIMIT_MS = 15000;
 
+    /** A send unanswered this long makes the connection suspect: a system frame (Stop) then goes over UDP as well. */
+    private static final long TCP_SUSPECT_MS = 1000;
+
     /** How often a TCP read wakes to check the answer limit. */
     private static final int TCP_READ_WAKE_MS = 1000;
 
+    /**
+     * A frame counts as received once the connection carried something this long after it was sent: an answer to an
+     * earlier frame can arrive after a later one went out, so a newer frame needs this margin.
+     */
+    private static final long CONFIRM_MARGIN_NS = 250L * 1000000L;
+
     /** The most frames kept to send again on a replacement connection; the oldest go first. */
     private static final int UNCONFIRMED_LIMIT = 1000;
+
+    /**
+     * How far behind the last TCP frame a held datagram is still compared with TCP's own frames when the connection is
+     * lost.  A UDP copy reaches this PC within milliseconds of the TCP one, or a few hundred behind on Wi-Fi.
+     */
+    private static final long OVERLAP_NS = 2000L * 1000000L;
+
+    /** The most datagrams held while TCP runs; the oldest go first. */
+    private static final int HELD_LIMIT = 20000;
+
+    /** How long a switch to holding waits for its marker to come back through the UDP socket. */
+    private static final long MARKER_WAIT_MS = 1000;
 
     // Transmission IP/port
     private final InetAddress transmitIP;
     private final int transmitPort;
     
-    // The station's TCP port, 0 for UDP only
-    private final int tcpPort;
+    // The station's TCP port, once connectOverTcp is asked; 0 before
+    private volatile int tcpPort;
+
+    // Set by connectOverTcp before there is a model: setModel connects
+    private boolean tcpWanted;
 
     // The TCP connection, null in UDP mode
     private volatile Socket tcp;
@@ -116,21 +144,55 @@ public class NetworkProxy
     // Whether the current connection has carried a frame; one that never has is not worth reconnecting
     private volatile boolean carried;
 
-    // Why the first connection failed, logged once there is a model; null when it did not fail
-    private String tcpRefusal;
-
     private volatile boolean stopRequested;
+
+    /**
+     * While TCP runs, the UDP socket is still read but its datagrams are held, not delivered, or every frame would
+     * arrive twice.  When the connection is lost, those TCP never carried go to the model, in order, and UDP is
+     * delivered live again.  Guards held, tcpTail, holding and marker.
+     */
+    private final Object udpLock = new Object();
+
+    private final ArrayDeque<Received> held = new ArrayDeque<>();
+
+    // The frames TCP delivered within OVERLAP_NS of its last one, to tell the held copies of them
+    private final ArrayDeque<Received> tcpTail = new ArrayDeque<>();
+
+    private boolean holding;
+
+    // The datagram this proxy sends itself to switch to holding: UDP frames queued before it are delivered
+    private byte[] marker;
+
+    private CountDownLatch markerPassed;
+
+    // The TCP listener thread, while there is one
+    private volatile Thread tcpReader;
 
     // Model listener class reference
     private ModelListener model;
 
-    /** One frame and when it was sent. */
+    /** One frame and when it was sent; `written` once it went onto a connection, so the station may have it. */
     private static final class Unconfirmed
     {
         final byte[] frame;
         long at;
+        boolean written;
 
-        Unconfirmed(byte[] frame, long at)
+        Unconfirmed(byte[] frame, long at, boolean written)
+        {
+            this.frame = frame;
+            this.at = at;
+            this.written = written;
+        }
+    }
+
+    /** One frame and when it was received. */
+    private static final class Received
+    {
+        final byte[] frame;
+        final long at;
+
+        Received(byte[] frame, long at)
         {
             this.frame = frame;
             this.at = at;
@@ -138,7 +200,7 @@ public class NetworkProxy
     }
 
     /**
-     * Constructor: tries TCP first, as a real station is reached.
+     * Constructor
      * 
      * @param transmitIP - the IP to send to
      * 
@@ -146,32 +208,9 @@ public class NetworkProxy
      */
     public NetworkProxy(InetAddress transmitIP) throws IOException
     {
-        this(transmitIP, TCP_PORT);
-    }
-
-    /**
-     * @param transmitIP the station's address
-     * @param tcpPort the station's TCP port, or 0 for UDP only
-     * @throws IOException when the UDP socket cannot be bound (a second copy of TrainControl)
-     */
-    public NetworkProxy(InetAddress transmitIP, int tcpPort) throws IOException
-    {
         this.socket = openReceiveSocket();
         this.transmitIP = transmitIP;
         this.transmitPort = NetworkProxy.TX_PORT;
-        this.tcpPort = tcpPort;
-
-        if (tcpPort > 0)
-        {
-            try
-            {
-                useTcp(connectTcp());
-            }
-            catch (IOException e)
-            {
-                this.tcpRefusal = reasonOf(e);
-            }
-        }
     }
 
     /**
@@ -205,6 +244,54 @@ public class NetworkProxy
         }
 
         return opened;
+    }
+
+    /**
+     * Moves the frames onto a TCP connection to the station's port when it takes one; otherwise UDP carries on as
+     * before, and the log says why.  Asked for a CS3 only, so a CS2 runs exactly as before (FR-186).  Before setModel,
+     * setModel connects.  A port of 0 does nothing.
+     */
+    public void connectOverTcp(int port)
+    {
+        synchronized (this)
+        {
+            if (port <= 0 || this.tcp != null || this.tcpPort > 0) return;
+
+            this.tcpPort = port;
+
+            if (this.model == null)
+            {
+                this.tcpWanted = true;
+                return;
+            }
+        }
+
+        startTcp();
+    }
+
+    /** Connects, switches UDP to holding, and starts the TCP listener; on a failure logs it and stays on UDP. */
+    private void startTcp()
+    {
+        Socket connected;
+
+        try
+        {
+            connected = connectTcp();
+        }
+        catch (IOException e)
+        {
+            model.logf("network.tcpUnavailable", reasonOf(e));
+            return;
+        }
+
+        enterHolding();
+        useTcp(connected);
+        model.logf("network.tcpConnected");
+
+        Thread reading = new Thread(this::readTcp, "cs2-can-listener-tcp");
+        reading.setDaemon(true);
+        this.tcpReader = reading;
+        reading.start();
     }
 
     /** A connection to the station's TCP port; keepalive is on, though Java 8 cannot shorten its 2 hours. */
@@ -287,7 +374,8 @@ public class NetworkProxy
     /**
      * Closes the socket, which is what ends the listener.  Nothing needs this while the application runs (the thread is
      * a daemon); it lets a caller that finishes with a control station give the port back.  The TCP connection is
-     * closed first and not under the lock, which a send stuck in a write may hold; a later send uses UDP.
+     * closed first, not under the lock, which a send stuck in a write may hold, and again under it, in case a reconnect
+     * had just put up a new one; a later send uses UDP.
      */
     public void stopListening()
     {
@@ -296,6 +384,7 @@ public class NetworkProxy
 
         synchronized (this)
         {
+            closeQuietly(this.tcp);
             this.tcp = null;
             this.replacing = false;
             this.unconfirmed.clear();
@@ -319,18 +408,19 @@ public class NetworkProxy
             "network.initializingCanListener",
             this.getIP()
         );
-
-        if (this.tcp != null)
-        {
-            model.logf("network.tcpConnected");
-        }
-        else if (this.tcpRefusal != null)
-        {
-            model.logf("network.tcpUnavailable", this.tcpRefusal);
-        }
         
         // Start reader.
         listen();
+
+        boolean wanted;
+
+        synchronized (this)
+        {
+            wanted = this.tcpWanted;
+            this.tcpWanted = false;
+        }
+
+        if (wanted) startTcp();
     }
 
     /**
@@ -381,32 +471,48 @@ public class NetworkProxy
      */
     synchronized private boolean sendMessage(byte[] message)
     {
-        if (this.replacing)
-        {
-            keep(message, System.nanoTime());
-            return true;
-        }
-
         Socket connection = this.tcp;
 
-        if (connection != null)
-        {
-            try
-            {
-                writeTcp(connection, message);
-            }
-            catch (IOException e)
-            {
-                // The listener, woken by the close, replaces the connection and sends this frame on what replaces it
-                this.replacing = true;
-                this.lostBecause = reasonOf(e);
-                closeQuietly(connection);
-            }
+        if (connection == null && !this.replacing) return sendUdp(message);
 
+        // A Stop must not wait for a replacement or a connection that may be hung: over UDP at once, and kept too
+        if (isSystemFrame(message) && suspect()) sendUdp(message);
+
+        if (this.replacing)
+        {
+            keep(message, System.nanoTime(), false);
             return true;
         }
 
-        return sendUdp(message);
+        try
+        {
+            writeTcp(connection, message);
+        }
+        catch (IOException e)
+        {
+            // The listener, woken by the close, replaces the connection and sends this frame on what replaces it
+            this.unconfirmed.peekLast().written = false;
+            this.replacing = true;
+            this.lostBecause = reasonOf(e);
+            closeQuietly(connection);
+        }
+
+        return true;
+    }
+
+    /** Whether a frame is a system command (Stop, Go, Halt), as CS2Message reads the command. */
+    private static boolean isSystemFrame(byte[] message)
+    {
+        return message.length > 1 && (((message[0] & 0x01) << 7) | ((message[1] & 0xFF) >> 1)) == CS2Message.CMD_SYSTEM;
+    }
+
+    /** Whether the connection is being replaced, or a frame sent on it has gone unanswered for TCP_SUSPECT_MS.  Holds this. */
+    private boolean suspect()
+    {
+        long first = this.firstUnansweredAt;
+
+        return this.replacing || (first != 0 && first - this.lastHeardAt > 0
+            && System.nanoTime() - first > TCP_SUSPECT_MS * 1000000L);
     }
 
     /** Writes one frame to the connection and keeps it until the connection carries something after it. */
@@ -414,15 +520,18 @@ public class NetworkProxy
     {
         long now = System.nanoTime();
 
-        // Frames sent before the last bytes heard are taken as received
-        while (!this.unconfirmed.isEmpty() && this.unconfirmed.peekFirst().at - this.lastHeardAt < 0)
+        // Frames sent well before the last bytes heard are taken as received
+        while (!this.unconfirmed.isEmpty() && this.unconfirmed.peekFirst().at + CONFIRM_MARGIN_NS - this.lastHeardAt < 0)
         {
             this.unconfirmed.pollFirst();
         }
 
-        if (this.unconfirmed.isEmpty()) this.firstUnansweredAt = now;
+        // The first send since the connection last carried anything starts the answer clock
+        long first = this.firstUnansweredAt;
 
-        keep(message, now);
+        if (first == 0 || first - this.lastHeardAt <= 0) this.firstUnansweredAt = now;
+
+        keep(message, now, true);
 
         OutputStream out = connection.getOutputStream();
         out.write(message);
@@ -430,7 +539,7 @@ public class NetworkProxy
     }
 
     /** Adds a frame to `unconfirmed`, dropping the oldest at the limit. */
-    private void keep(byte[] message, long at)
+    private void keep(byte[] message, long at, boolean written)
     {
         if (this.unconfirmed.size() >= UNCONFIRMED_LIMIT)
         {
@@ -438,7 +547,7 @@ public class NetworkProxy
             this.unconfirmedDropped++;
         }
 
-        this.unconfirmed.addLast(new Unconfirmed(java.util.Arrays.copyOf(message, message.length), at));
+        this.unconfirmed.addLast(new Unconfirmed(Arrays.copyOf(message, message.length), at, written));
     }
 
     /** Sends a datagram, as before TCP. */
@@ -480,7 +589,7 @@ public class NetworkProxy
         
         return true;
     }
-    
+
     /** Hands one frame to the model; a frame the model cannot take must not stop reception. */
     private void deliver(byte[] frame)
     {
@@ -494,10 +603,163 @@ public class NetworkProxy
         }
     }
 
-    /** Reads the TCP connection, and each that replaces it, until a stop or UDP takes over. */
-    private void readTcp(byte[] frame)
+    /**
+     * Switches UDP from delivering to holding.  Datagrams already queued in the socket predate the switch, so they are
+     * still delivered: a marker sent to the socket itself ends them.  Without it back within MARKER_WAIT_MS, holding
+     * starts anyway.
+     */
+    private void enterHolding()
     {
+        byte[] mark = new byte[8];
+        java.util.concurrent.ThreadLocalRandom.current().nextBytes(mark);
+        CountDownLatch passed = new CountDownLatch(1);
+
+        synchronized (this.udpLock)
+        {
+            this.held.clear();
+            this.tcpTail.clear();
+            this.marker = mark;
+            this.markerPassed = passed;
+        }
+
+        try
+        {
+            DatagramSocket own = this.socket;
+            own.send(new DatagramPacket(mark, mark.length, InetAddress.getLoopbackAddress(), own.getLocalPort()));
+            passed.await(MARKER_WAIT_MS, TimeUnit.MILLISECONDS);
+        }
+        catch (IOException e)
+        {
+            // Holding starts below
+        }
+        catch (InterruptedException e)
+        {
+            Thread.currentThread().interrupt();
+        }
+
+        synchronized (this.udpLock)
+        {
+            this.holding = true;
+            this.marker = null;
+        }
+    }
+
+    /** What the UDP listener does with a datagram of `length` bytes: false when it was this proxy's marker. */
+    private boolean isMarker(byte[] buffer, int length)
+    {
+        synchronized (this.udpLock)
+        {
+            if (this.marker == null || length != this.marker.length) return false;
+
+            for (int i = 0; i < length; i++) if (buffer[i] != this.marker[i]) return false;
+
+            this.holding = true;
+            this.marker = null;
+            this.markerPassed.countDown();
+            return true;
+        }
+    }
+
+    /** Delivers a UDP frame, or holds it while TCP runs. */
+    private void deliverOrHold(byte[] buffer)
+    {
+        synchronized (this.udpLock)
+        {
+            if (this.holding)
+            {
+                long now = System.nanoTime();
+                this.held.addLast(new Received(Arrays.copyOf(buffer, buffer.length), now));
+
+                while (this.held.size() > HELD_LIMIT || (!this.held.isEmpty()
+                    && this.held.peekFirst().at - (this.lastTcpAt - OVERLAP_NS) < 0 && this.lastTcpAt != 0))
+                {
+                    this.held.pollFirst();
+                }
+
+                return;
+            }
+        }
+
+        // Send message to listener
+        model.receiveMessage(model.createMessage(buffer));
+    }
+
+    // System.nanoTime of the last frame TCP delivered, 0 before one; guarded by udpLock
+    private long lastTcpAt;
+
+    /** Delivers a TCP frame and remembers it, to tell the held UDP copy of it later. */
+    private void deliverTcp(byte[] frame)
+    {
+        synchronized (this.udpLock)
+        {
+            long now = System.nanoTime();
+            this.lastTcpAt = now;
+            this.tcpTail.addLast(new Received(Arrays.copyOf(frame, frame.length), now));
+
+            while (this.tcpTail.peekFirst().at - (now - OVERLAP_NS) < 0) this.tcpTail.pollFirst();
+        }
+
+        deliver(frame);
+    }
+
+    /**
+     * When the connection is lost: the held datagrams TCP never carried go to the model, in order, and UDP is
+     * delivered live from here.  A held datagram older than OVERLAP_NS behind the last TCP frame is dropped, and one
+     * that matches a TCP frame of that span, in order, is TCP's own frame again: neither is replayed, so a state
+     * TCP already moved past is never applied again.
+     */
+    private void releaseHeld()
+    {
+        synchronized (this.udpLock)
+        {
+            for (byte[] frame : unmatched()) deliver(frame);
+
+            this.held.clear();
+            this.tcpTail.clear();
+            this.holding = false;
+            this.marker = null;
+        }
+    }
+
+    /** The held frames, from OVERLAP_NS behind the last TCP frame, that do not match TCP's frames in order.  Holds udpLock. */
+    private List<byte[]> unmatched()
+    {
+        long from = this.lastTcpAt == 0 ? Long.MIN_VALUE : this.lastTcpAt - OVERLAP_NS;
+        List<Received> tail = new ArrayList<>(this.tcpTail);
+        List<byte[]> out = new ArrayList<>();
+        int next = 0;
+
+        for (Received h : this.held)
+        {
+            if (this.lastTcpAt != 0 && h.at - from < 0) continue;
+
+            int match = -1;
+
+            for (int k = next; k < tail.size() && match < 0; k++)
+            {
+                if (Arrays.equals(tail.get(k).frame, h.frame)) match = k;
+            }
+
+            if (match >= 0)
+            {
+                next = match + 1;
+            }
+            else
+            {
+                out.add(h.frame);
+            }
+        }
+
+        return out;
+    }
+
+    /** The TCP listener: reads the connection, and each that replaces it, until a stop or UDP takes over. */
+    private void readTcp()
+    {
+        byte[] frame = model.initMessageBuffer();
         Socket connection;
+
+        model.logf("network.canListenerRunningTcp");
 
         while (!this.stopRequested && (connection = this.tcp) != null)
         {
@@ -536,7 +798,7 @@ public class NetworkProxy
                     if (filled == frame.length)
                     {
                         filled = 0;
-                        deliver(frame);
+                        deliverTcp(frame);
                     }
                 }
                 catch (SocketTimeoutException quiet)
@@ -562,7 +824,8 @@ public class NetworkProxy
 
     /**
      * Replaces a lost connection: up to TCP_RECONNECT_TRIES new ones, then UDP for the rest of the session.  A
-     * connection that never carried a frame goes straight to UDP.  Frames the station may not have are sent again.
+     * connection that never carried a frame goes straight to UDP.  UDP is delivered live meanwhile, and frames the
+     * station may not have are sent again.
      */
     private void recover(Socket lost, String reason)
     {
@@ -576,6 +839,8 @@ public class NetworkProxy
             this.lostBecause = null;
         }
 
+        releaseHeld();
+
         model.logf(retry ? "network.tcpLostReconnecting" : "network.tcpLostUsingUdp", reason);
 
         IOException failed = null;
@@ -588,6 +853,9 @@ public class NetworkProxy
             try
             {
                 Socket fresh = connectTcp();
+
+                // UDP held again from here; the new connection is read only once that holds
+                enterHolding();
 
                 synchronized (this)
                 {
@@ -607,6 +875,7 @@ public class NetworkProxy
             catch (IOException e)
             {
                 failed = e;
+                releaseHeld();
             }
         }
 
@@ -615,14 +884,12 @@ public class NetworkProxy
             if (this.stopRequested) return;
 
             this.tcp = null;
-            drainUdp();
 
-            java.util.List<Unconfirmed> again = takeUnconfirmed();
-            counts = new int[] {again.size(), this.unconfirmedDropped};
+            List<Unconfirmed> again = takeUnconfirmed();
+            counts = counts(again);
 
             for (Unconfirmed u : again) sendUdp(u.frame);
 
-            this.unconfirmedDropped = 0;
             this.replacing = false;
         }
 
@@ -630,27 +897,40 @@ public class NetworkProxy
         logResent(counts);
     }
 
-    /** Takes `unconfirmed` less the frames sent before the lost connection last carried anything.  Holds this. */
-    private java.util.List<Unconfirmed> takeUnconfirmed()
+    /** Takes `unconfirmed` less the frames sent well before the lost connection last carried anything.  Holds this. */
+    private List<Unconfirmed> takeUnconfirmed()
     {
-        java.util.List<Unconfirmed> again = new java.util.ArrayList<>();
+        List<Unconfirmed> again = new ArrayList<>();
 
         for (Unconfirmed u : this.unconfirmed)
         {
-            if (u.at - this.lastHeardAt >= 0) again.add(u);
+            if (u.at + CONFIRM_MARGIN_NS - this.lastHeardAt >= 0) again.add(u);
         }
 
         this.unconfirmed.clear();
         return again;
     }
 
+    /** How many of the frames were written before (sent again), how many only held (sent late), and how many dropped. */
+    private int[] counts(List<Unconfirmed> again)
+    {
+        int written = 0;
+
+        for (Unconfirmed u : again) if (u.written) written++;
+
+        int[] counts = {written, again.size() - written, this.unconfirmedDropped};
+
+        this.unconfirmedDropped = 0;
+        return counts;
+    }
+
     /**
      * Sends the unconfirmed frames again, oldest first, on a new connection, and makes it the transport; on a failure
-     * they are kept for the next try.  Holds this.  Returns how many were sent and how many had been dropped.
+     * they are kept for the next try.  Holds this.  Returns the counts for logResent.
      */
     private int[] resendOn(Socket fresh) throws IOException
     {
-        java.util.List<Unconfirmed> again = takeUnconfirmed();
+        List<Unconfirmed> again = takeUnconfirmed();
 
         try
         {
@@ -667,6 +947,8 @@ public class NetworkProxy
             throw e;
         }
 
+        int[] counts = counts(again);
+
         useTcp(fresh);
 
         // Unconfirmed on the new connection too, until it carries something
@@ -675,56 +957,22 @@ public class NetworkProxy
         for (Unconfirmed u : again)
         {
             u.at = now;
+            u.written = true;
             this.unconfirmed.addLast(u);
         }
 
         if (!again.isEmpty()) this.firstUnansweredAt = now;
 
-        int[] counts = {again.size(), this.unconfirmedDropped};
-
-        this.unconfirmedDropped = 0;
         this.replacing = false;
         return counts;
     }
 
-    /** Logs, outside the lock, how many frames a replacement sent again and how many it had to drop. */
+    /** Logs, outside the lock, how many frames a replacement sent again, sent late, and had to drop. */
     private void logResent(int[] counts)
     {
         if (counts[0] > 0) model.logf("network.framesSentAgain", counts[0]);
-        if (counts[1] > 0) model.logf("network.framesDropped", counts[1]);
-    }
-
-    /**
-     * Throws away the datagrams that waited, unread, in the UDP socket while TCP ran: they are old, and the same frames
-     * came over TCP.  Holds this.
-     */
-    private void drainUdp()
-    {
-        DatagramSocket waiting = this.socket;
-        DatagramPacket packet = new DatagramPacket(new byte[CS2Message.MESSAGE_LENGTH], CS2Message.MESSAGE_LENGTH);
-        long until = System.nanoTime() + 1000L * 1000000L;
-
-        try
-        {
-            waiting.setSoTimeout(1);
-
-            while (System.nanoTime() < until) waiting.receive(packet);
-        }
-        catch (IOException emptyOrClosed)
-        {
-            // A timeout says the socket is empty
-        }
-        finally
-        {
-            try
-            {
-                if (!waiting.isClosed()) waiting.setSoTimeout(0);
-            }
-            catch (SocketException e)
-            {
-                // Closed meanwhile; the listener's loop ends on that
-            }
-        }
+        if (counts[1] > 0) model.logf("network.framesSentLate", counts[1]);
+        if (counts[2] > 0) model.logf("network.framesDropped", counts[2]);
     }
 
     /** Waits before a reconnect; false when a stop came meanwhile. */
@@ -747,7 +995,7 @@ public class NetworkProxy
 
         return !this.stopRequested;
     }
-
+    
     /**
      * Threaded class that processes responses from the server
      * and sends them to the view listener for display
@@ -770,23 +1018,6 @@ public class NetworkProxy
         {
             // Create a read buffer based on the protocol message length
             byte[] buffer = model.initMessageBuffer();
-
-            // Over TCP first, when connected; UDP is not read meanwhile, or every frame would arrive twice
-            if (tcp != null)
-            {
-                model.logf("network.canListenerRunningTcp");
-
-                try
-                {
-                    readTcp(buffer);
-                }
-                finally
-                {
-                    if (stopRequested) model.logf("network.canListenerClosed");
-                }
-
-                if (stopRequested) return;
-            }
 
             // Create a packet to receive the data
             DatagramPacket packet = new DatagramPacket(buffer, buffer.length);
@@ -813,8 +1044,11 @@ public class NetworkProxy
                         // in the tail, a stale command re-applied that the duplicate-suppression window cannot catch.
                         if (packet.getLength() == buffer.length)
                         {
-                            // Send message to listener
-                            model.receiveMessage(model.createMessage(buffer));
+                            deliverOrHold(buffer);
+                        }
+                        else
+                        {
+                            isMarker(buffer, packet.getLength());
                         }
 
                         // Reset the length of the packet just in case
