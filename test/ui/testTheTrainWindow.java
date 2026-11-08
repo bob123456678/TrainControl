@@ -906,6 +906,100 @@ public class testTheTrainWindow
         }, false);
     }
 
+    /**
+     * Cancel after placing over another train brings the station back as it was, as after a drop onto a train: the
+     * displaced train is back in the setup and on the railway, and the placed one is off both (OB-416).
+     *
+     * MUTATION: drop `putBackOnDiscard.addAll(named)` from `AutonomyEditorPanel.placeLocomotive`, and the displaced train
+     * ends nowhere and this fails.
+     */
+    @Test(timeOut = 180000)
+    public void testCancelAfterPlacingOverAnotherTrainPutsTheStationBack() throws Exception
+    {
+        AutonomyEditorPanel panel = theEditorsPanel();
+
+        TileKey full = aSquareWithATrain();
+
+        String was = session.getLocomotiveNameAt(full);
+        String name = aTrainOffTheRailway();
+
+        String wasBefore = where(was);
+        String nameBefore = where(name);
+
+        org.traincontrol.gui.TailCrossedPrompt.answerForTests(org.traincontrol.gui.TailCrossedPrompt.DISMISSED);
+
+        try
+        {
+            makeActive(name);
+
+            JMenuItem item = placeItemOn(panel, full, name);
+
+            assertNotNull(item, "precondition: the editor's menu has no Place " + name + " over " + was);
+
+            Components.onTheEventThread(() -> { item.doClick(); return null; });
+
+            assertTrue(Components.waitFor(() -> model.getAutoLayout().getLocomotiveLocation(model.getLocByName(name)) != null,
+                20000), "precondition: " + name + " was not put on the railway");
+
+            Components.settle();
+
+            cancelTheEditor();
+
+            assertEquals(where(was), wasBefore, "Cancel did not put the displaced train back");
+            assertEquals(where(name), nameBefore, "Cancel did not take the placed train back off");
+        }
+        finally
+        {
+            org.traincontrol.gui.TailCrossedPrompt.answerForTests(null);
+        }
+    }
+
+    /** Where the setup and the railway have this train, with the side it came in by on the railway. */
+    private static String where(String name)
+    {
+        TileKey inSetup = null;
+
+        for (Map.Entry<TileKey, String> each : session.placementsAutonomyWillWrite().entrySet())
+        {
+            if (name.equals(each.getValue())) inSetup = each.getKey();
+        }
+
+        org.traincontrol.automation.Point on = model.getAutoLayout().getLocomotiveLocation(model.getLocByName(name));
+
+        return "setup " + inSetup + ", railway " + (on == null ? null : on.getName() + " from " + on.getArrivedFrom());
+    }
+
+    /** Cancel on the editor, answering Yes to throwing the edits away. */
+    private void cancelTheEditor() throws Exception
+    {
+        final LayoutEditor closing = editor;
+
+        final java.lang.reflect.Method exit = LayoutEditor.class.getDeclaredMethod("confirmExit");
+
+        exit.setAccessible(true);
+
+        try (support.Answering answering = support.Answering.start(message -> support.Answering.press(AskingWindows.YES)))
+        {
+            SwingUtilities.invokeLater(() ->
+            {
+                try
+                {
+                    exit.invoke(closing);
+                }
+                catch (Exception e)
+                {
+                    throw new IllegalStateException(e);
+                }
+            });
+
+            assertTrue(Components.waitFor(() -> !closing.isDisplayable(), 20000), "Cancel did not close the editor");
+        }
+
+        Components.settle();
+
+        editor = null;
+    }
+
     /** A door that places the named train on Tunnel; returns the window it left open, or null. */
     private interface PlacingDoor
     {

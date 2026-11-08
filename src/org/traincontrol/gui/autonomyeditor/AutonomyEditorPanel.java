@@ -3697,6 +3697,9 @@ public class AutonomyEditorPanel extends JPanel
 
         named.remove(null);
 
+        // Cancel brings the station back as it was, as for a drop onto a train; a plain placement is left as it was
+        if (named.size() > 1) putBackOnDiscard.addAll(named);
+
         session.placeLocomotive(tile, name);
 
         // Over the copies it could leave (OB-284), as a paste records it.
