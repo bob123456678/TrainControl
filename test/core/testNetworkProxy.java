@@ -57,6 +57,20 @@ public class testNetworkProxy
 
     private static final int ONE_MB_IN_KB = 1024;
 
+    /**
+     * What this machine grants a socket that asks for 1 MB, in KB: all of it on Windows, while Linux caps it (rmem_max)
+     * without an error.  Asked of a fresh socket that nothing is receiving on, so it answers at once.
+     */
+    private static int grantableKb() throws java.net.SocketException
+    {
+        try (java.net.DatagramSocket probe = new java.net.DatagramSocket())
+        {
+            probe.setReceiveBufferSize(ONE_MB_IN_KB * 1024);
+
+            return Math.min(ONE_MB_IN_KB, probe.getReceiveBufferSize() / 1024);
+        }
+    }
+
     /** What the model logged from before it started, for the listener's start lines. */
     private static final List<String> LOGGED = Collections.synchronizedList(new ArrayList<>());
 
@@ -187,7 +201,7 @@ public class testNetworkProxy
         assertTrue(support.Components.waitFor(() -> grantedKb(LOGGED) >= 0, 5000),
             "the listener's start line does not give the receive buffer it was granted: " + LOGGED);
 
-        assertTrue(grantedKb(LOGGED) >= ONE_MB_IN_KB, "the receive socket holds " + grantedKb(LOGGED)
+        assertTrue(grantedKb(LOGGED) >= grantableKb(), "the receive socket holds " + grantedKb(LOGGED)
             + " KB, so a held-up listener loses the station's frames");
     }
 
@@ -292,7 +306,9 @@ public class testNetworkProxy
         assertFalse(socketOf(proxy).isClosed(), "A8: the socket should have been reopened");
 
         // The same MUTATION as testTheReceiveSocketHasRoomForAStall: the reopen goes through the same door
-        assertTrue(support.Components.waitFor(() -> grantedKb(LOGGED) >= ONE_MB_IN_KB, 5000), "the reopened receive"
+        final int grantable = grantableKb();
+
+        assertTrue(support.Components.waitFor(() -> grantedKb(LOGGED) >= grantable, 5000), "the reopened receive"
             + " socket's listener gives no receive buffer of 1 MB or more: " + LOGGED);
 
         // AND SOMETHING IS LISTENING ON IT AGAIN.
