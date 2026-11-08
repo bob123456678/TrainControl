@@ -98,6 +98,15 @@ public class testABackupHoldsTheWholeRailway
         }
     }
 
+    /** The backup saves over the run's saved data; the classes after this one in the lane read it. */
+    private static final support.SavedData FOUND = support.SavedData.take();
+
+    @AfterClass(alwaysRun = true, dependsOnMethods = "tearDownClass")
+    public static void putTheDataBack() throws Exception
+    {
+        FOUND.putBack();
+    }
+
     @AfterMethod(alwaysRun = true)
     public void tidy()
     {

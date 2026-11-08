@@ -423,7 +423,7 @@ do
 
     # NO UPDATE CHECK: support.NoUpdateCheck turns it off in this run's preference node before any test (FR-136)
     "$JAVA" $JAVA_FLAGS $EXTRA -Dtraincontrol.batteryRun="$RUN_ID" \
-        -cp "$BUILD;$CP" org.testng.TestNG -listener support.NoUpdateCheck,support.WindowsNotOnTop,support.DialogWatchdog $TARGS -d "$S/oneout" > "$RUN_OUT" 2>&1 &
+        -cp "$BUILD;$CP" org.testng.TestNG -listener support.NoUpdateCheck,support.WindowsNotOnTop,support.DialogWatchdog,support.DataFolderWatch $TARGS -d "$S/oneout" > "$RUN_OUT" 2>&1 &
 
     JVM=$!
 
@@ -526,6 +526,19 @@ do
         echo "*** $T HAD A CONFIGURATION FAILURE - a @Before or @After threw ***"
         echo "    $config"
         echo "    The teardowns in this suite put Adam's signals back and clear the auto layout."
+
+        BAD=$((BAD+1))
+
+        continue
+    fi
+
+    # A CLASS THAT LEFT THE RUN'S SAVED DATA CHANGED: the classes after it read the same data folder
+    # (support.DataFolderWatch names the class and the files).
+    left=$(grep -a 'SAVED DATA LEFT CHANGED' "$S/one-run.txt" | head -1)
+
+    if [ -n "$left" ]
+    then
+        echo "$left"
 
         BAD=$((BAD+1))
 

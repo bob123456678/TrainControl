@@ -836,6 +836,9 @@ public class testLocIconCrop
         org.traincontrol.base.Locomotive loc = null;
         String iconWas = null;
 
+        // The save below changes the run's data; the classes after this one in the lane read it
+        support.SavedData found = support.SavedData.take();
+
         File folder = java.nio.file.Files.createTempDirectory("p6icon").toFile();
 
         File good = new File(folder, "p6-good.png");
@@ -909,12 +912,7 @@ public class testLocIconCrop
         {
             prefs.putBoolean(TrainControlUI.CROP_LOC_ICON_PREF, cropWas);
 
-            if (loc != null)
-            {
-                loc.setLocalImageURL(iconWas);
-
-                if (model != null) model.saveState(false);
-            }
+            if (loc != null) loc.setLocalImageURL(iconWas);
 
             closeTheWindow(ui);
 
@@ -924,7 +922,14 @@ public class testLocIconCrop
             unreadable.delete();
             folder.delete();
 
-            if (sandbox != null) sandbox.close();
+            try
+            {
+                if (sandbox != null) sandbox.close();
+            }
+            finally
+            {
+                found.putBack();
+            }
         }
     }
 

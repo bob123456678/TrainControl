@@ -689,7 +689,7 @@ run_class()
     fi
 
     # NO UPDATE CHECK: support.NoUpdateCheck turns it off in the lane's preference node before any test (FR-136)
-    "$JAVA" $2 $extra -cp "$CP" org.testng.TestNG -listener support.NoUpdateCheck,support.WindowsNotOnTop,support.DialogWatchdog -testclass "$cls" \
+    "$JAVA" $2 $extra -cp "$CP" org.testng.TestNG -listener support.NoUpdateCheck,support.WindowsNotOnTop,support.DialogWatchdog,support.DataFolderWatch -testclass "$cls" \
         -d "$S/tng-run/$cls" > "$RUN_OUT" 2>&1 &
 
     local JVM=$!
@@ -722,9 +722,9 @@ run_class()
 
     # ONE GREP of the whole output for every line the verdict asks about, read with bash patterns: a process a
     # question cost half a second a class.
-    local line lines dialog="" noheap="" oom=""
+    local line lines dialog="" noheap="" oom="" leftData=""
 
-    lines=$(grep -aE 'Total tests run|Configuration Failures|UNANSWERED DIALOG|Could not reserve enough space|Unable to allocate.*heap|OutOfMemoryError' \
+    lines=$(grep -aE 'Total tests run|Configuration Failures|UNANSWERED DIALOG|SAVED DATA LEFT CHANGED|Could not reserve enough space|Unable to allocate.*heap|OutOfMemoryError' \
         "$RUN_OUT" 2>/dev/null)
 
     summary=""
@@ -737,6 +737,7 @@ run_class()
         case "$line" in *"Total tests run"*) summary=$line ;; esac
         case "$line" in *"Configuration Failures"*) configFailures=$line ;; esac
         case "$line" in *"UNANSWERED DIALOG"*) if [ -z "$dialog" ]; then dialog=$line; fi ;; esac
+        case "$line" in *"SAVED DATA LEFT CHANGED"*) if [ -z "$leftData" ]; then leftData=$line; fi ;; esac
         case "$line" in *OutOfMemoryError*) oom=1 ;; esac
 
         if [[ $line =~ Could\ not\ reserve\ enough\ space|Unable\ to\ allocate.*heap ]]; then noheap=1; fi
@@ -787,6 +788,13 @@ run_class()
     elif [ -n "$configFailures" ] && [[ $configFailures != *"Configuration Failures: 0"* ]]
     then
         verdict fail "$cls: $summary / $configFailures"
+
+    elif [ -n "$leftData" ]
+    then
+        # support.DataFolderWatch: the classes after this one in the lane read the same data folder
+        leftData=${leftData#'*** SAVED DATA LEFT CHANGED '}
+
+        verdict fail "$cls: saved data left changed ${leftData%' ***'}"
 
     elif [[ $summary == *"Total tests run: 0"* ]]
     then
@@ -1092,11 +1100,20 @@ fi
 # failures (10) is the tree or the machine, not flakes, and is not rerun; TC_RERUN=0 turns it off.
 mkdir -p "$WORK/first"
 
+# A CLASS THAT LEFT THE LANE'S SAVED DATA CHANGED IS NOT RERUN: its rerun starts from what it left, so a class that
+# rewrites a file with the same bytes would pass the second time and read as flaky.  It stays failed, and not in the
+# flake log (nothing about it is intermittent).
+is_rerunnable()
+{
+    [ "$(sed -n 1p "$WORK/verdicts/$1" 2>/dev/null)" = fail ] \
+        && ! sed -n 2p "$WORK/verdicts/$1" | grep -q 'saved data left changed'
+}
+
 firsts=0
 
 for cls in $(cat "$WORK/classes")
 do
-    if [ "$(sed -n 1p "$WORK/verdicts/$cls" 2>/dev/null)" = fail ]; then firsts=$((firsts + 1)); fi
+    if is_rerunnable "$cls"; then firsts=$((firsts + 1)); fi
 done
 
 if [ "${TC_RERUN:-1}" != 0 ] && [ "$firsts" -gt 0 ] && [ "$firsts" -le "${TC_RERUN_MAX:-10}" ]
@@ -1105,7 +1122,7 @@ then
 
     for cls in $(cat "$WORK/classes")
     do
-        if [ "$(sed -n 1p "$WORK/verdicts/$cls" 2>/dev/null)" != fail ]; then continue; fi
+        if ! is_rerunnable "$cls"; then continue; fi
 
         mv "$WORK/verdicts/$cls" "$WORK/first/$cls"
 
@@ -1159,7 +1176,7 @@ for cls in $(cat "$WORK/classes")
 do
     if [ ! -f "$WORK/verdicts/$cls" ]
     then
-        fail=$((fail+1)); failed="$failed\n  $cls: DID NOT RUN - no verdict (its lane was stopped)"
+        fail=$((fail+1)); failed="$failed"$'\n'"  $cls: DID NOT RUN - no verdict (its lane was stopped)"
 
         continue
     fi
@@ -1180,7 +1197,7 @@ do
 
         if [ "$kind" = pass ]
         then
-            flaky=$((flaky+1)); flakies="$flakies\n  $first (passed on its rerun)"
+            flaky=$((flaky+1)); flakies="$flakies"$'\n'"  $first (passed on its rerun)"
 
             continue
         fi
@@ -1188,8 +1205,8 @@ do
 
     case "$kind" in
         pass) pass=$((pass+1)) ;;
-        skip) skip=$((skip+1)); skipped="$skipped\n  $said" ;;
-        *) fail=$((fail+1)); failed="$failed\n  $said" ;;
+        skip) skip=$((skip+1)); skipped="$skipped"$'\n'"  $said" ;;
+        *) fail=$((fail+1)); failed="$failed"$'\n'"  $said" ;;
     esac
 done
 
@@ -1223,12 +1240,13 @@ REPORTED=1
 reap_the_run
 
 echo "classes green: $pass   classes with failures: $fail   classes that tested nothing: $skip"
-echo -e "$failed"
+# printf, not `echo -e`: a verdict can hold a Windows path, whose backslashes echo -e would read as escapes
+printf '%s\n' "$failed"
 
 if [ "$flaky" -gt 0 ]
 then
     echo "classes that failed, then passed alone (flaky, in $FLAKES): $flaky"
-    echo -e "$flakies"
+    printf '%s\n' "$flakies"
 fi
 
 if [ "$skip" -gt 0 ]
@@ -1236,7 +1254,7 @@ then
     echo ""
     echo "These classes reported no failures because they ran nothing.  A skipped class is not a"
     echo "green class - check whether the skip is deliberate (needing a display) or a broken setup:"
-    echo -e "$skipped"
+    printf '%s\n' "$skipped"
 fi
 
 # THE TREE MOVED WHILE THIS RAN (E8V-C5), which is not a failure and is not nothing either.
