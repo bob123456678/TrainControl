@@ -579,6 +579,14 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         for (java.util.Map.Entry<String, Object> each : values.entrySet())
         {
             changed |= session.updateStoredRecord(l.getName(), each.getKey(), each.getValue());
+
+            // The train's, not the open editor's work: its Cancel, its undo and the crash note keep it
+            if (this.openEditor != null && this.openEditor.isDisplayable())
+            {
+                this.openEditor.autonomyRecordUpdated(l.getName(), each.getKey(), each.getValue());
+            }
+
+            session.getStore().updateRecordInTheUnfinishedEditNote(l.getName(), each.getKey(), each.getValue());
         }
 
         if (!changed) return;

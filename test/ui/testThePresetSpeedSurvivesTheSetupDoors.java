@@ -1,6 +1,8 @@
 package ui;
 
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import javax.swing.JSpinner;
 import javax.swing.SwingUtilities;
@@ -18,6 +20,7 @@ import org.traincontrol.automationui.TileGraph.TileKey;
 import org.traincontrol.base.Locomotive;
 import org.traincontrol.gui.LocomotiveSettingsFrame;
 import org.traincontrol.gui.TrainControlUI;
+import org.traincontrol.gui.layouteditor.LayoutEditor;
 import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.util.I18n;
 import support.Answering;
@@ -30,8 +33,9 @@ import support.WindowField;
 /**
  * The preset speed saved in the Locomotive Settings window (FR-048) is the speed autonomy runs the train at, and the
  * setup stores a standing train by its name alone: so a speed saved with a train standing on a station survives every
- * door that reloads the setup, as Alt+U's and the station dialog's own write of the same number does.  On the frozen
- * copy of Adam's railway, with a train standing on BottomMainB.
+ * door that reloads the setup, as Alt+U's and the station dialog's own write of the same number does, and a speed saved
+ * with the layout editor open outlives its Cancel, its undo and the crash note (OB-108).  On the frozen copy of Adam's
+ * railway, with a train standing on BottomMainB.
  *
  * MUTATION: make `Layout.parseAuto` apply the default speed whatever the train holds (`if (l.getPreferredSpeed() == 0)`
  * becomes `if (true)`), and the reload claims fail.
@@ -254,7 +258,7 @@ public class testThePresetSpeedSurvivesTheSetupDoors
      * A setup that keeps no speed for the train is left byte for byte as it was by the key menu's save and by Alt+U,
      * during a run and at rest.
      *
-     * MUTATION: drop `!stored.has(key)` in `AutonomySession.updateStoredRecord`, and this fails.
+     * MUTATION: drop `!stored.has(key)` in `AutonomyCompanionStore.updateRecordInPoints`, and this fails.
      */
     @Test
     public void testAKeySaveLeavesASetupWithNoSpeedAsItWas() throws Exception
@@ -507,7 +511,7 @@ public class testThePresetSpeedSurvivesTheSetupDoors
      * A Save whose stored speed already equals the setup's does not rewrite the setup, and a setup that stores no
      * speed is left byte for byte as it was, in every configuration.
      *
-     * MUTATION: drop the equal-value test in `AutonomySession.updateStoredRecord`, and this fails.
+     * MUTATION: drop the equal-value test in `AutonomyCompanionStore.updateRecordInPoints`, and this fails.
      */
     @Test
     public void testASetupIsNotRewrittenForNothing() throws Exception
@@ -572,6 +576,342 @@ public class testThePresetSpeedSurvivesTheSetupDoors
         reloadWithoutFolding(configuration);
 
         assertEquals(train.getPreferredSpeed(), model.getAutoLayout().getDefaultLocSpeed(), "a saved 0 did not load the default speed");
+    }
+
+    // A preset saved with the layout editor open is the train's, not the editor's work (FR-048)
+
+    /**
+     * An editor a failed claim left open would answer the next claim's opening, and closing one can build a new session,
+     * which the other claims read through `session`.
+     */
+    @org.testng.annotations.AfterMethod(alwaysRun = true)
+    public void closeTheEditors() throws Exception
+    {
+        support.EditorsOpen.closeAll();
+
+        session = ui.getAutonomySession();
+    }
+
+    /**
+     * Saved with Save Current Speed as Preset or in the Locomotive Settings window, with the editor open in Autonomy
+     * Setup or the track diagram: Cancel asks nothing, and the copy configuration loads the saved speed.
+     *
+     * MUTATION: leave `openEditor.autonomyRecordUpdated` out of `TrainControlUI.recordInTheSetup`, and this fails.
+     */
+    @Test(timeOut = 300000)
+    public void testCancelKeepsAPresetSavedWithTheEditorOpen() throws Exception
+    {
+        int speed = 40;
+
+        for (boolean inTheWindow : new boolean[] { false, true })
+        {
+            for (boolean autonomy : new boolean[] { true, false })
+            {
+                final int saved = ++speed;
+                final String how = (inTheWindow ? "the Locomotive Settings window's Save" : "Save Current Speed as Preset")
+                    + (autonomy ? " in Autonomy Setup" : " in the track diagram");
+
+                oldSetupAndACopy();
+
+                LayoutEditor editor = openEditor(autonomy);
+
+                if (inTheWindow) saveInTheWindow(saved);
+                else keySave(saved);
+
+                assertTrue(Components.waitFor(() -> storedIn(COPY) == saved, 3000), "precondition: " + how
+                    + " did not write the copy configuration");
+
+                List<String> asked = cancel(editor);
+
+                try
+                {
+                    assertTrue(asked.isEmpty(), how + ": Cancel asked about the preset alone: " + asked);
+                    assertEquals(storedOnDisk(COPY), saved, how + ": Cancel put the old speed back in the copy on disk");
+
+                    assertEquals(loaded(COPY), saved, how + ": the copy configuration loaded the speed Cancel put back");
+                }
+                finally
+                {
+                    session().getStore().deleteConfiguration(COPY);
+                }
+            }
+        }
+    }
+
+    /**
+     * An edit made in the editor (a priority of 7) is still undone by Cancel, in memory and on disk, after a preset save
+     * wrote the setup, while the saved speed stays.
+     *
+     * MUTATION: in `LayoutEditor.autonomyRecordUpdated`, take the Cancel snapshot again (`autonomyAsOpened =
+     * snapshotSetup()`) instead of patching it, and this fails.
+     */
+    @Test(timeOut = 240000)
+    public void testCancelStillUndoesAnEditAfterAPresetSave() throws Exception
+    {
+        final String original = ui.getActiveDiagramConfiguration();
+        final TileKey square = squareNamed("BottomMainB");
+
+        oldSetupAndACopy();
+
+        LayoutEditor editor = openEditor(true);
+
+        SwingUtilities.invokeAndWait(() -> session().setPointProperty(square, "priority", 7));
+
+        keySave(45);
+
+        List<String> asked = cancel(editor);
+
+        try
+        {
+            assertTrue(!asked.isEmpty(), "Cancel did not ask about the edit");
+
+            assertEquals(Components.onTheEventThread(() -> session().getPointProperty(square, "priority")), null,
+                "the edit outlived Cancel in memory");
+            assertEquals(onDisk(original).opt("priority"), null, "the edit outlived Cancel on disk");
+
+            assertEquals(storedOnDisk(COPY), 45, "Cancel put the old speed back with the edit");
+        }
+        finally
+        {
+            session().getStore().deleteConfiguration(COPY);
+        }
+    }
+
+    /**
+     * After an edit and a preset save in the track diagram, the editor's undo puts the edit's page back but keeps the
+     * saved speed.
+     *
+     * MUTATION: leave the undo snapshots out of `LayoutEditor.autonomyRecordUpdated`, and this fails.
+     */
+    @Test(timeOut = 240000)
+    public void testUndoKeepsAPresetSavedAfterTheEdit() throws Exception
+    {
+        oldSetupAndACopy();
+
+        final LayoutEditor editor = openEditor(false);
+
+        try
+        {
+            // The undo point every edit takes, as the edit's first step
+            final java.lang.reflect.Method snapshot = LayoutEditor.class.getDeclaredMethod("snapshotLayout");
+
+            snapshot.setAccessible(true);
+
+            SwingUtilities.invokeAndWait(() ->
+            {
+                try
+                {
+                    snapshot.invoke(editor);
+                }
+                catch (ReflectiveOperationException e)
+                {
+                    throw new AssertionError(e);
+                }
+            });
+
+            keySave(47);
+
+            SwingUtilities.invokeAndWait(editor::undo);
+
+            Components.settle();
+
+            assertEquals(storedIn(COPY), 47, "the undo put the old speed back in the copy in memory");
+            assertEquals(storedOnDisk(COPY), 47, "the undo put the old speed back in the copy on disk");
+        }
+        finally
+        {
+            cancel(editor);
+
+            session().getStore().deleteConfiguration(COPY);
+        }
+    }
+
+    /**
+     * The pre-edit note a crash with the editor open leaves holds the saved speed, so the revert a restart makes keeps
+     * it in every configuration.
+     *
+     * MUTATION: leave `updateRecordInTheUnfinishedEditNote` out of `TrainControlUI.recordInTheSetup`, and this fails.
+     */
+    @Test(timeOut = 240000)
+    public void testTheCrashNoteKeepsAPresetSavedWithTheEditorOpen() throws Exception
+    {
+        oldSetupAndACopy();
+
+        LayoutEditor editor = openEditor(true);
+
+        try
+        {
+            keySave(49);
+
+            assertTrue(session().getStore().hasUnfinishedEditNote(), "precondition: the open editor wrote no pre-edit note");
+
+            // As at the next start, which reverts before any editor opens
+            assertTrue(Components.onTheEventThread(() -> session().revertUnfinishedEdit()), "the note was not reverted");
+
+            assertEquals(storedOnDisk(COPY), 49, "the crash note's revert put the old speed back in the copy");
+            assertEquals(loaded(COPY), 49, "the copy configuration loaded the speed the crash note put back");
+        }
+        finally
+        {
+            cancel(editor);
+
+            session().getStore().deleteConfiguration(COPY);
+        }
+    }
+
+    /** The live session: a load can replace the one the class started with. */
+    private static AutonomySession session()
+    {
+        return ui.getAutonomySession();
+    }
+
+    /**
+     * The old-format setup the editor claims start from, saved: speed 20 for the train, in the active configuration and
+     * COPY.  The editor's door folds the active one down to the name, so COPY is where the stale speed is read.
+     */
+    private static void oldSetupAndACopy() throws Exception
+    {
+        final String original = ui.getActiveDiagramConfiguration();
+
+        SwingUtilities.invokeAndWait(() -> session().setPointProperty(squareNamed("BottomMainB"), "loc",
+            new org.json.JSONObject().put("name", TRAIN).put("speed", 20)));
+
+        if (session().getStore().getConfiguration(COPY) != null) session().getStore().deleteConfiguration(COPY);
+
+        session().getStore().createConfiguration(COPY, original);
+
+        SwingUtilities.invokeAndWait(() ->
+        {
+            try
+            {
+                session().saveWithoutReconciling();
+            }
+            catch (java.io.IOException e)
+            {
+                throw new IllegalStateException(e);
+            }
+        });
+
+        train.setPreferredSpeed(20);
+    }
+
+    /** The speed a configuration stores in memory for the train on BottomMainB, or -1 for none. */
+    private static int storedIn(String configuration)
+    {
+        return Components.onTheEventThread(() ->
+        {
+            org.json.JSONObject c = session().getStore().getConfiguration(configuration);
+            org.json.JSONObject points = c == null ? null : c.optJSONObject("points");
+            org.json.JSONObject p = points == null ? null : points.optJSONObject(squareNamed("BottomMainB").toString());
+            org.json.JSONObject loc = p == null ? null : p.optJSONObject("loc");
+
+            return loc == null ? -1 : loc.optInt("speed", -1);
+        });
+    }
+
+    /** BottomMainB's point record in a configuration's file. */
+    private static org.json.JSONObject onDisk(String configuration) throws Exception
+    {
+        final String square = squareNamed("BottomMainB").toString();
+
+        for (Map.Entry<String, String> file : setupFiles().entrySet())
+        {
+            if (!file.getKey().contains(configuration)) continue;
+
+            org.json.JSONObject points = new org.json.JSONObject(file.getValue()).optJSONObject("points");
+            org.json.JSONObject point = points == null ? null : points.optJSONObject(square);
+
+            if (point != null) return point;
+        }
+
+        throw new AssertionError("no file holds " + square + " for " + configuration);
+    }
+
+    private static int storedOnDisk(String configuration) throws Exception
+    {
+        org.json.JSONObject loc = onDisk(configuration).optJSONObject("loc");
+
+        return loc == null ? -1 : loc.optInt("speed", -1);
+    }
+
+    /** The train's preset after a load of the configuration that does not fold, the active one loaded back after. */
+    private static int loaded(String configuration) throws Exception
+    {
+        final String original = ui.getActiveDiagramConfiguration();
+
+        reloadWithoutFolding(configuration);
+
+        int preset = train.getPreferredSpeed();
+
+        reloadWithoutFolding(original);
+
+        return preset;
+    }
+
+    private static LayoutEditor openEditor(boolean autonomy) throws Exception
+    {
+        final String page = squareNamed("BottomMainB").getPage();
+
+        SwingUtilities.invokeAndWait(() -> ui.openLayoutEditor(page, autonomy, null));
+
+        assertTrue(Components.waitFor(() ->
+        {
+            LayoutEditor shown = support.EditorsOpen.editorOn(page);
+
+            return shown != null && shown.isAutonomyMode() == autonomy;
+        }, 20000), "the editor did not open");
+
+        Components.settle();
+
+        return support.EditorsOpen.editorOn(page);
+    }
+
+    /** Presses the editor's Cancel, answering yes to any question, and says what was asked. */
+    private static List<String> cancel(LayoutEditor editor) throws Exception
+    {
+        final List<String> asked = new ArrayList<>();
+
+        if (!editor.isDisplayable()) return asked;
+
+        final java.lang.reflect.Field field = LayoutEditor.class.getDeclaredField("cancelButton");
+
+        field.setAccessible(true);
+
+        final javax.swing.JButton button = (javax.swing.JButton) field.get(editor);
+
+        try (Answering answering = Answering.start(message ->
+        {
+            asked.add(message);
+
+            return Answering.press(String.valueOf(TrainControlUI.YES_NO_OPTS[0]));
+        }))
+        {
+            SwingUtilities.invokeLater(button::doClick);
+
+            assertTrue(Components.waitFor(() -> !editor.isDisplayable(), 8000), "Cancel did not close the editor");
+        }
+
+        Components.settle();
+        Components.settle();
+
+        return asked;
+    }
+
+    /** Save Current Speed as Preset's own method, as the key menu and Alt+U call it. */
+    private static void keySave(int speed) throws Exception
+    {
+        train.setSpeed(speed);
+
+        ui.savePreferredSpeed(train);
+
+        assertTrue(Components.waitFor(() -> train.getPreferredSpeed() == speed, 8000), "the preset was not saved");
+
+        Components.settle();
+
+        // The setup's copy is written on the event thread after the train's
+        Components.waitFor(() -> storedIn(COPY) == speed, 3000);
+
+        train.setSpeed(0);
     }
 
     private static void reloadWithoutFolding(String configuration) throws Exception

@@ -345,6 +345,26 @@ public class LayoutEditor extends PositionAwareJFrame
     }
 
     /**
+     * Puts a value saved for a locomotive (its preset speed) into the snapshots Cancel and Ctrl+Z put back, as the
+     * setup's own copies took it: it is the train's, not this window's work, so neither undoes it nor asks about it.
+     */
+    public void autonomyRecordUpdated(String locomotive, String key, Object value)
+    {
+        org.traincontrol.automationui.AutonomyCompanionStore
+            .updateRecordInSetup(this.autonomyAsOpened, locomotive, key, value);
+
+        java.util.List<java.util.Map<String, Object>> held = new java.util.ArrayList<>(this.previousCaptions);
+
+        held.addAll(this.previousCaptionsRedo);
+
+        for (java.util.Map<String, Object> was : held)
+        {
+            org.traincontrol.automationui.AutonomyCompanionStore
+                .updateRecordInPageSnapshot(was, locomotive, key, value);
+        }
+    }
+
+    /**
      * Takes the undo point, in memory (for Cancel) and on disk (OB-108, for a restart after the process dies with an
      * editor open), always together: a page or mode switch moves both.
      * @param live the session to snapshot, or null when there is none

@@ -755,7 +755,7 @@ public class testTheLocomotiveSettingsMovingRule
      * For a train the setup does not hold, the key menu's Save Current Speed and Alt+U leave the setup's files byte for
      * byte as they were, another train's stored speed included, during a run and at rest (MT-912).
      *
-     * MUTATION: drop the name test in `AutonomySession.updateStoredRecord`, and this fails.
+     * MUTATION: drop the name test in `AutonomyCompanionStore.updateRecordInPoints`, and this fails.
      */
     @Test
     public void testAPresetSaveLeavesTheSetupOfAnotherTrainAlone() throws Exception

@@ -8010,28 +8010,7 @@ public class AutonomySession
             org.json.JSONObject configuration = store.getConfiguration(name);
             org.json.JSONObject points = configuration == null ? null : configuration.optJSONObject("points");
 
-            if (points == null) continue;
-
-            for (String id : new ArrayList<>(points.keySet()))
-            {
-                org.json.JSONObject point = points.optJSONObject(id);
-                org.json.JSONObject stored = point == null ? null : point.optJSONObject("loc");
-
-                if (stored == null || !locomotive.equals(stored.optString("name", null)) || !stored.has(key)) continue;
-
-                if (value != null)
-                {
-                    if (String.valueOf(stored.opt(key)).equals(String.valueOf(value))) continue;
-
-                    stored.put(key, value);
-                }
-                else
-                {
-                    stored.remove(key);
-                }
-
-                changed = true;
-            }
+            changed |= AutonomyCompanionStore.updateRecordInPoints(points, locomotive, key, value);
         }
 
         if (changed) dirty = true;
