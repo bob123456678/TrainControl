@@ -91,12 +91,57 @@ public class testTheLocomotiveSettingsLooks extends support.SettingsClass
     }
 
     /**
+     * The Autonomy tab's icon is the main window's sidebar Autonomy picture at the tab icon size: its silhouette agrees
+     * with the sidebar's, scaled to the same height, on nine pixels in ten.
+     *
+     * MUTATION: load another picture in `TabIcons.autonomy`, or draw the old signal, and this fails.
+     */
+    @Test
+    public void testTheAutonomyTabShowsTheSidebarPicture() throws Exception
+    {
+        JTabbedPane tabs = opened();
+        Icon tab = Components.onTheEventThread(() -> tabs.getIconAt(LocomotiveSettingsFrame.Tab.AUTONOMY.ordinal()));
+        int w = tab.getIconWidth();
+        int h = tab.getIconHeight();
+
+        BufferedImage sidebar = new BufferedImage(TrainControlUI.TAB_ICON_AUTONOMY.getIconWidth(),
+            TrainControlUI.TAB_ICON_AUTONOMY.getIconHeight(), BufferedImage.TYPE_INT_ARGB);
+
+        TrainControlUI.TAB_ICON_AUTONOMY.paintIcon(null, sidebar.getGraphics(), 0, 0);
+
+        BufferedImage expected = new BufferedImage(w, h, BufferedImage.TYPE_INT_ARGB);
+        java.awt.Graphics2D g = expected.createGraphics();
+
+        g.setRenderingHint(java.awt.RenderingHints.KEY_INTERPOLATION, java.awt.RenderingHints.VALUE_INTERPOLATION_BICUBIC);
+        g.drawImage(sidebar, 0, 0, w, h, null);
+        g.dispose();
+
+        BufferedImage drawn = new BufferedImage(w, h, BufferedImage.TYPE_INT_ARGB);
+
+        tab.paintIcon(null, drawn.getGraphics(), 0, 0);
+
+        int same = 0;
+
+        for (int y = 0; y < h; y++)
+        {
+            for (int x = 0; x < w; x++)
+            {
+                if ((expected.getRGB(x, y) >>> 24 > 127) == (drawn.getRGB(x, y) >>> 24 > 127)) same++;
+            }
+        }
+
+        assertTrue(same * 10 >= w * h * 9, "the tab's icon is not the sidebar's picture: " + same + " of " + (w * h)
+            + " pixels agree");
+    }
+
+    /**
      * Blue is for section headings: exactly "Name and Address", "Customize Behavior" and "Locomotive Icon" on the first
-     * tab and the Autonomy tab's two are dark blue, and every item label there and on the other tabs, and the Functions
-     * table's column headings, are black, all Semibold 13.
+     * tab, "Notes" over the Notes tab's text box, and the Autonomy tab's two are dark blue, and every item label there
+     * and on the other tabs, and the Functions table's column headings, are black, all Semibold 13.
      *
      * MUTATION: make `LocomotiveSettingsFrame.label` build a blue `UiStyle.heading`, or `UiStyle.style` blue, or the
-     * Functions table header's foreground blue, and this fails.
+     * Functions table header's foreground blue, or drop `styleHeading(notesCaption)` from
+     * `LocomotiveNotesPanel.styleCaptions`, and this fails.
      */
     @Test
     public void testOnlyTheSectionHeadingsAreBlue() throws Exception
@@ -104,10 +149,11 @@ public class testTheLocomotiveSettingsLooks extends support.SettingsClass
         opened();
 
         String[] blue = { "loc.ui.settingsNameAndAddress", "loc.ui.settingsCustomizeBehavior",
-            "loc.ui.settingsLocomotiveIcon", "loc.ui.settingsAutonomyHeading", "loc.ui.settingsAutonomyFunctionsHeading" };
+            "loc.ui.settingsLocomotiveIcon", "loc.ui.labelNotes", "loc.ui.settingsAutonomyHeading",
+            "loc.ui.settingsAutonomyFunctionsHeading" };
         String[] black = { "ui.name", "loc.ui.decoderType", "layout.ui.address", "loc.ui.settingsPresetSpeed",
             "loc.ui.settingsPresetLabel", "loc.ui.settingsIconsLabel", "loc.ui.labelStartYear",
-            "loc.ui.labelEndYear", "loc.ui.labelRailwayName", "loc.ui.labelNotes", "loc.ui.filterList",
+            "loc.ui.labelEndYear", "loc.ui.labelRailwayName", "loc.ui.filterList",
             "autolayout.ui.trainLength", "autolayout.ui.reversible", "autosetup.ui.trainActive",
             "autolayout.ui.departureFunction", "autolayout.ui.arrivalFunction" };
 
@@ -138,7 +184,7 @@ public class testTheLocomotiveSettingsLooks extends support.SettingsClass
         java.util.List<JLabel> blues = Components.all(SettingsWindow.showing().getContentPane(), JLabel.class,
             l -> UiStyle.BLUE.equals(l.getForeground()));
 
-        assertEquals(blues.size(), blue.length, "the blue labels are not just the five headings");
+        assertEquals(blues.size(), blue.length, "the blue labels are not just the six headings");
     }
 
     /** Where a named part of the window is, in the window's own coordinates. */

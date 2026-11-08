@@ -59,6 +59,9 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
     /** The margin round every tab's content and the footer: the route editor's. */
     private static final int PAD = 10;
 
+    private static final Color STRIP_BACKGROUND = new Color(255, 243, 205);
+    private static final Color STRIP_TEXT = new Color(102, 77, 3);
+
     /** The first tab's picture box: wide like the application's locomotive pictures, taller to balance the fields. */
     private static final int PICTURE_WIDTH = 278;
     private static final int PICTURE_HEIGHT = 150;
@@ -72,12 +75,11 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
     private final JTabbedPane tabs = new JTabbedPane();
     private final JLabel strip = new JLabel();
 
-    /**
-     * Under the strip whenever it is up: the key menu's Save Current Speed as Preset still works (MT-912).  Wrapped to
-     * a width the tabs exceed, so a window opened locked is no wider for it.
-     */
-    private final JLabel presetHint = new JLabel("<html><div style='width:360px'>"
-        + I18n.f("loc.ui.settingsPresetDuringARun", I18n.t("loc.ui.menuSaveSpeedAsPreset")) + "</div></html>");
+    /** Under the lock strip, when the warning triangle was clicked: who else has this address and decoder (OB-417). */
+    private final JPanel sharedStrip = new JPanel(new BorderLayout());
+    private final JLabel sharedText = new JLabel();
+    private java.util.List<String> sharers = java.util.Collections.emptyList();
+    private boolean sharedOpen;
 
     private final JButton save = footerButton(I18n.t("loc.ui.settingsSave"), "settings.save");
     private final JButton cancel = footerButton(I18n.t("ui.cancel"), "settings.cancel");
@@ -112,18 +114,33 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
         TrainControlUI.applyWindowIcon(this);
 
         strip.setName("settings.strip");
-        presetHint.setName("settings.stripPreset");
+        sharedStrip.setName("settings.sharedStrip");
+        sharedText.setName("settings.sharedText");
 
-        for (JLabel line : new JLabel[] { strip, presetHint })
+        for (JLabel line : new JLabel[] { strip, sharedText })
         {
             line.setOpaque(true);
-            line.setBackground(new Color(255, 243, 205));
-            line.setForeground(new Color(102, 77, 3));
-            line.setVisible(false);
+            line.setBackground(STRIP_BACKGROUND);
+            line.setForeground(STRIP_TEXT);
         }
 
+        strip.setVisible(false);
+        sharedStrip.setVisible(false);
+        sharedStrip.setBackground(STRIP_BACKGROUND);
         strip.setBorder(BorderFactory.createEmptyBorder(6, 12, 6, 12));
-        presetHint.setBorder(BorderFactory.createEmptyBorder(0, 12, 6, 12));
+        sharedText.setBorder(BorderFactory.createEmptyBorder(6, 12, 6, 12));
+
+        JButton closeShared = new JButton("✕");
+
+        closeShared.setName("settings.sharedClose");
+        closeShared.setToolTipText(I18n.t("autosetup.ui.stationClose"));
+        closeShared.setFocusable(false);
+        closeShared.setForeground(STRIP_TEXT);
+        closeShared.putClientProperty("JButton.buttonType", "toolBarButton");
+        closeShared.addActionListener(e -> showShared(false));
+
+        sharedStrip.add(sharedText, BorderLayout.CENTER);
+        sharedStrip.add(closeShared, BorderLayout.EAST);
 
         tabs.setName("settings.tabs");
 
@@ -157,7 +174,7 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
         JPanel top = new JPanel(new BorderLayout());
 
         top.add(strip, BorderLayout.NORTH);
-        top.add(presetHint, BorderLayout.SOUTH);
+        top.add(sharedStrip, BorderLayout.CENTER);
 
         content.add(top, BorderLayout.NORTH);
         content.add(tabs, BorderLayout.CENTER);
@@ -244,6 +261,10 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
     {
         tabs.removeAll();
 
+        sharers = java.util.Collections.emptyList();
+        sharedOpen = false;
+        sharedStrip.setVisible(false);
+
         locomotiveTab = new LocomotiveTab();
         locomotiveTab.setBorder(BorderFactory.createEmptyBorder(PAD, PAD, PAD, PAD));
         tabs.addTab(I18n.t("loc.ui.settingsTabLocomotive"), TabIcons.locomotive(), locomotiveTab);
@@ -289,7 +310,43 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
     private void showStrip(boolean up)
     {
         strip.setVisible(up);
-        presetHint.setVisible(up);
+    }
+
+    /** What the tab found: every other locomotive at the typed address and decoder.  None puts the strip away. */
+    private void setSharers(java.util.List<String> names)
+    {
+        sharers = names;
+
+        if (names.isEmpty()) sharedOpen = false;
+
+        showShared(sharedOpen);
+    }
+
+    /** Puts the shared-address strip up or away, and grows or shrinks the window by its height. */
+    private void showShared(boolean up)
+    {
+        sharedOpen = up && !sharers.isEmpty();
+
+        if (sharedOpen)
+        {
+            sharedText.setText("<html><div style='width:360px'>"
+                + I18n.f("loc.ui.settingsAlsoUsedBy", String.join(", ", sharers)).replace("&", "&amp;").replace("<", "&lt;")
+                + "</div></html>");
+        }
+
+        if (sharedStrip.isVisible() == sharedOpen && !sharedOpen) return;
+
+        int before = sharedStrip.isVisible() ? sharedStrip.getHeight() : 0;
+
+        sharedStrip.setVisible(sharedOpen);
+        getContentPane().validate();
+
+        int after = sharedOpen ? sharedStrip.getPreferredSize().height : 0;
+
+        if (isShowing() && (getExtendedState() & java.awt.Frame.MAXIMIZED_BOTH) == 0 && before != after)
+        {
+            setSize(getWidth(), getHeight() + after - before);
+        }
     }
 
     private void fit()
@@ -328,6 +385,7 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
         }
 
         locomotiveTab.setBlocked(blocked);
+        locomotiveTab.refreshSync();
         locomotiveTab.refreshPicture();
         functionsTab.setBlocked(blocked);
         functionsTab.refresh();
@@ -528,6 +586,43 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
         return true;
     }
 
+    /**
+     * The Sync button: the same sync the key menu used to offer, at once and not on Save.  Afterwards the window takes
+     * the locomotive's new values, but never over what was typed: a field the operator changed, a Functions or
+     * Multi-Unit tab with edits in it, keeps them.
+     */
+    private void syncNow()
+    {
+        final Locomotive target = loc;
+
+        if (target == null) return;
+
+        main.syncLocomotive(target, () -> afterSync(target));
+    }
+
+    private void afterSync(Locomotive synced)
+    {
+        if (loc != synced || adding || !isDisplayable()) return;
+
+        locomotiveTab.takeLocomotive();
+
+        if (!functionsTab.isDirty())
+        {
+            functionsTab = new LocomotiveFunctionsTab(main, loc, this::changed);
+            functionsTab.setBorder(BorderFactory.createEmptyBorder(PAD, PAD, PAD, PAD));
+            tabs.setComponentAt(Tab.FUNCTIONS.ordinal(), functionsTab);
+        }
+
+        if (!multiUnitTab.isDirty())
+        {
+            multiUnitTab = new MultiUnitTab();
+            multiUnitTab.setBorder(BorderFactory.createEmptyBorder(PAD, PAD, PAD, PAD));
+            tabs.setComponentAt(Tab.MULTI_UNIT.ordinal(), multiUnitTab);
+        }
+
+        refresh();
+    }
+
     private void stopEditing()
     {
         functionsTab.commitEdit();
@@ -570,18 +665,19 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
         final JTextField address = new JTextField(16);
         final JSpinner speed = typedAtOnce(new JSpinner(new SpinnerNumberModel(0, 0, 100, 1)));
         final JLabel sameAddress = new JLabel();
+        final JButton sync = new JButton(I18n.t("loc.ui.menuSyncCentralStation"));
         final JLabel picture = new JLabel("", JLabel.CENTER);
         final JButton trash = new JButton(RowIcons.trash(18));
         final JLabel wrench = new JLabel(new LocIconActions.WrenchMark());
         final JLabel crop = new JLabel(new LocIconActions.CropMark());
         final JLabel revert = new JLabel(new LocIconActions.RevertMark());
 
-        private final String loadedName = adding ? "" : loc.getName();
-        private final String loadedAddress = adding ? "" : Integer.toString(loc.getAddress());
+        private String loadedName = adding ? "" : loc.getName();
+        private String loadedAddress = adding ? "" : Integer.toString(loc.getAddress());
 
         // DCC is what Add Locomotive started on
-        private final decoderType loadedDecoder = adding ? decoderType.DCC : loc.getDecoderType();
-        private final int loadedSpeed = adding ? 0 : loc.getPreferredSpeed();
+        private decoderType loadedDecoder = adding ? decoderType.DCC : loc.getDecoderType();
+        private int loadedSpeed = adding ? 0 : loc.getPreferredSpeed();
         private String shownPicture = "";
 
         LocomotiveTab()
@@ -617,8 +713,23 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
             revert.setName("settings.revert");
             picture.setName("settings.picture");
 
-            sameAddress.setForeground(new Color(176, 96, 0));
-            sameAddress.setText(" ");
+            // Always the icon's size, so the row does not change width when the triangle appears
+            sameAddress.setPreferredSize(new Dimension(RowIcons.warning(16).getIconWidth() + 4,
+                RowIcons.warning(16).getIconHeight()));
+            sameAddress.setCursor(java.awt.Cursor.getPredefinedCursor(java.awt.Cursor.HAND_CURSOR));
+            sameAddress.addMouseListener(new MouseAdapter()
+            {
+                @Override
+                public void mouseReleased(MouseEvent e)
+                {
+                    if (sameAddress.getIcon() != null) showShared(true);
+                }
+            });
+
+            sync.setName("settings.sync");
+            sync.setFont(BUTTON_FONT);
+            sync.setFocusable(false);
+            sync.addActionListener(e -> syncNow());
 
             // The spinner is as tall as the fields above it
             speed.setPreferredSize(new Dimension(speed.getPreferredSize().width, name.getPreferredSize().height));
@@ -709,9 +820,23 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
                 gbc.anchor = GridBagConstraints.NORTHWEST;
                 add(UiStyle.heading(I18n.t("loc.ui.settingsLocomotiveIcon")), gbc);
 
+                // Sync is a locomotive's own (Add has none yet): under the picture, at its left edge; the picture
+                // takes the column's width
+                JPanel syncRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+                syncRow.setOpaque(false);
+                syncRow.add(sync);
+                syncRow.add(javax.swing.Box.createHorizontalStrut(4));
+                syncRow.add(InfoMark.label(I18n.t("loc.ui.settingsSyncHint")));
+
+                JPanel pictureColumn = new JPanel(new BorderLayout(0, 6));
+                pictureColumn.setOpaque(false);
+                pictureColumn.setName("settings.pictureColumn");
+                pictureColumn.add(picture, BorderLayout.CENTER);
+                pictureColumn.add(syncRow, BorderLayout.SOUTH);
+
                 gbc.gridy = 1;
                 gbc.gridheight = 9;
-                add(picture, gbc);
+                add(pictureColumn, gbc);
 
                 gbc.gridheight = 1;
                 gbc.anchor = GridBagConstraints.WEST;
@@ -746,30 +871,15 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
             gbc.gridx = 1;
             gbc.gridy = 4;
 
-            // Check Duplicates and the warning share the row under the address.  The warning takes only the room left
-            // and ends in "..." (OB-417): it never widens the grid, which would squeeze the labels.
-            JPanel button = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
-            button.setOpaque(false);
-            button.add(checkDuplicates);
-            button.add(javax.swing.Box.createHorizontalStrut(4));
-            button.add(InfoMark.label(I18n.t("loc.ui.settingsCheckDuplicatesHint")));
-            JPanel under = new JPanel(new java.awt.BorderLayout(10, 0))
-            {
-                @Override
-                public java.awt.Dimension getPreferredSize()
-                {
-                    return new java.awt.Dimension(button.getPreferredSize().width, super.getPreferredSize().height);
-                }
-
-                @Override
-                public java.awt.Dimension getMinimumSize()
-                {
-                    return getPreferredSize();
-                }
-            };
+            // Check Duplicates, its (i) and the warning triangle share the row under the address.  The triangle's room
+            // is always held, so showing it never widens the grid and squeezes the labels (OB-417).
+            JPanel under = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
             under.setOpaque(false);
-            under.add(button, java.awt.BorderLayout.WEST);
-            under.add(sameAddress, java.awt.BorderLayout.CENTER);
+            under.add(checkDuplicates);
+            under.add(javax.swing.Box.createHorizontalStrut(4));
+            under.add(InfoMark.label(I18n.t("loc.ui.settingsCheckDuplicatesHint")));
+            under.add(javax.swing.Box.createHorizontalStrut(6));
+            under.add(sameAddress);
             gbc.gridwidth = 2;
             gbc.fill = GridBagConstraints.HORIZONTAL;
             add(under, gbc);
@@ -883,7 +993,7 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
         /** A warning, not a refusal: the model allows two locomotives at one address. */
         private void warnAboutTheSameAddress()
         {
-            String also = null;
+            java.util.List<String> also = new java.util.ArrayList<>();
 
             try
             {
@@ -895,8 +1005,7 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
                 {
                     if (other != loc && other.getAddress() == typed && other.getDecoderType() == type)
                     {
-                        also = other.getName();
-                        break;
+                        also.add(other.getName());
                     }
                 }
             }
@@ -905,8 +1014,37 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
                 // Said by Save, if it is still not one then.
             }
 
-            sameAddress.setText(also == null ? " " : I18n.f("loc.ui.settingsAlsoUsedBy", also));
-            sameAddress.setToolTipText(also == null ? null : sameAddress.getText());
+            sameAddress.setIcon(also.isEmpty() ? null : RowIcons.warning(16));
+            sameAddress.setToolTipText(also.isEmpty() ? null : also.size() == 1
+                ? I18n.t("loc.ui.settingsAlsoUsedByTipOne") : I18n.f("loc.ui.settingsAlsoUsedByTipMany", also.size()));
+
+            setSharers(also);
+        }
+
+        /** Sync needs a Central Station on the wire; the lock does not matter, it only reads. */
+        void refreshSync()
+        {
+            boolean connected = main.isCentralStationConnected();
+
+            sync.setEnabled(connected);
+            sync.setToolTipText(connected ? null : I18n.t("loc.ui.settingsSyncNoStation"));
+        }
+
+        /**
+         * Takes the locomotive's values after a sync, field by field: one the operator has changed keeps what was typed
+         * and the value it is compared with, so Save still writes it.
+         */
+        void takeLocomotive()
+        {
+            if (name.getText().equals(loadedName)) name.setText(loadedName = loc.getName());
+
+            if (address.getText().equals(loadedAddress)) address.setText(loadedAddress = Integer.toString(loc.getAddress()));
+
+            if (decoder.getSelectedItem() == loadedDecoder) decoder.setSelectedItem(loadedDecoder = loc.getDecoderType());
+
+            if (speedValue() == loadedSpeed) speed.setValue(loadedSpeed = loc.getPreferredSpeed());
+
+            warnAboutTheSameAddress();
         }
 
         boolean nameChanged()

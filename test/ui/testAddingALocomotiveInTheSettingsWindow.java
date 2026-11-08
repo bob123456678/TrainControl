@@ -214,30 +214,36 @@ public class testAddingALocomotiveInTheSettingsWindow extends support.SettingsCl
     }
 
     /**
-     * An address another locomotive uses, one with a name wider than the window, gets its "Also used by" note, and the
-     * note never squeezes the labels: every label and the heading keep their full width, and the note ends inside the
-     * window.
+     * An address another locomotive uses, one with a name wider than the window, shows the warning triangle and never
+     * squeezes the labels: every label and the heading keep their full width, and the triangle sits inside the window.
      *
-     * MUTATION: drop `getPreferredSize` from the row under Address in `LocomotiveTab` (OB-417), and this fails.
+     * MUTATION: give the triangle's label no fixed size in `LocomotiveTab`, or put the long name back in the row under
+     * Address (OB-417), and this fails.
      */
     @Test
-    public void testASharedAddressNoteNeverSqueezesTheLabels() throws Exception
+    public void testASharedAddressTriangleNeverSqueezesTheLabels() throws Exception
     {
         fixture.forget(LONG);
         fixture.model.newDCCLocomotive(LONG, 3911);
 
         openAdd();
 
+        java.awt.Container pane = SettingsWindow.showing().getContentPane();
+        javax.swing.JLabel triangle = SettingsWindow.part("settings.sameAddress", javax.swing.JLabel.class);
+
+        assertNull(Components.onTheEventThread(triangle::getIcon), "precondition: the triangle is up with no shared address");
+
+        int[] widths = labelWidths(pane);
+
         Components.select(SettingsWindow.part("settings.decoder", JComboBox.class), decoderType.DCC);
         SettingsWindow.type("settings.address", "3911");
         Components.settle();
 
-        javax.swing.JLabel note = SettingsWindow.part("settings.sameAddress", javax.swing.JLabel.class);
+        assertNotNull(Components.onTheEventThread(triangle::getIcon), "precondition: the shared address has no triangle");
+        assertEquals(Components.onTheEventThread(triangle::getToolTipText), I18n.t("loc.ui.settingsAlsoUsedByTipOne"),
+            "the triangle does not say who is meant");
 
-        assertEquals(Components.onTheEventThread(note::getText), I18n.f("loc.ui.settingsAlsoUsedBy", LONG),
-            "precondition: the shared address has no note");
-
-        java.awt.Container pane = SettingsWindow.showing().getContentPane();
+        assertEquals(labelWidths(pane), widths, "the triangle changed the labels' widths");
 
         for (String key : new String[] { "loc.ui.settingsNameAndAddress", "ui.name", "loc.ui.decoderType",
             "layout.ui.address" })
@@ -252,11 +258,90 @@ public class testAddingALocomotiveInTheSettingsWindow extends support.SettingsCl
             assertTrue(w[0] >= w[1], text + " is squeezed to " + w[0] + " of its " + w[1] + " px");
         }
 
-        int right = Components.onTheEventThread(() -> javax.swing.SwingUtilities.convertPoint(note.getParent(),
-            note.getX() + note.getWidth(), 0, pane).x);
+        int right = Components.onTheEventThread(() -> javax.swing.SwingUtilities.convertPoint(triangle.getParent(),
+            triangle.getX() + triangle.getWidth(), 0, pane).x);
 
-        assertTrue(right <= Components.onTheEventThread(pane::getWidth), "the note ends at " + right
+        assertTrue(right <= Components.onTheEventThread(pane::getWidth), "the triangle ends at " + right
             + " px, outside the window");
+    }
+
+    /** The widths of the first tab's labels, in order, as laid out now. */
+    private static int[] labelWidths(java.awt.Container pane)
+    {
+        return Components.onTheEventThread(() ->
+        {
+            java.util.List<javax.swing.JLabel> all = Components.all(pane, javax.swing.JLabel.class,
+                l -> l.getText() != null && !l.getText().trim().isEmpty());
+            int[] w = new int[all.size()];
+
+            for (int i = 0; i < w.length; i++) w[i] = all.get(i).getWidth();
+
+            return w;
+        });
+    }
+
+    /**
+     * Clicking the triangle puts a yellow strip at the top listing every locomotive at that address and decoder, not
+     * only the first; its close button puts it away; it follows the address and decoder, and goes when no one shares.
+     *
+     * MUTATION: list only the first locomotive in `LocomotiveTab.warnAboutTheSameAddress`, or leave `setSharers` out of
+     * it, and this fails.
+     */
+    @Test
+    public void testTheTriangleOpensAStripListingEveryLocomotiveAtTheAddress() throws Exception
+    {
+        fixture.forget(DCC_A, DCC_B, MFX_A);
+        fixture.model.newDCCLocomotive(DCC_A, 3921);
+        fixture.model.newDCCLocomotive(DCC_B, 3921);
+        fixture.model.newMFXLocomotive(MFX_A, 3921);
+
+        openAdd();
+
+        Components.select(SettingsWindow.part("settings.decoder", JComboBox.class), decoderType.DCC);
+        SettingsWindow.type("settings.address", "3921");
+        Components.settle();
+
+        javax.swing.JPanel strip = SettingsWindow.part("settings.sharedStrip", javax.swing.JPanel.class);
+        javax.swing.JLabel text = SettingsWindow.part("settings.sharedText", javax.swing.JLabel.class);
+
+        assertEquals(Components.onTheEventThread(strip::isVisible), Boolean.FALSE, "the strip is up before a click");
+        assertEquals(Components.onTheEventThread(SettingsWindow.part("settings.sameAddress", javax.swing.JLabel.class)::getToolTipText),
+            I18n.f("loc.ui.settingsAlsoUsedByTipMany", 2), "the tooltip does not count the locomotives");
+
+        support.Mouse.click(SettingsWindow.part("settings.sameAddress", javax.swing.JLabel.class));
+        Components.settle();
+
+        assertEquals(Components.onTheEventThread(strip::isVisible), Boolean.TRUE, "clicking the triangle showed no strip");
+
+        String shown = Components.onTheEventThread(text::getText);
+
+        assertTrue(shown.contains(DCC_A) && shown.contains(DCC_B), "the strip does not list both: " + shown);
+        assertTrue(!shown.contains(MFX_A), "the strip lists an MFX locomotive for a DCC address: " + shown);
+
+        // Typing another address updates the list, and an address no one has puts the strip away
+        Components.select(SettingsWindow.part("settings.decoder", JComboBox.class), decoderType.MFX);
+        Components.settle();
+
+        assertTrue(Components.onTheEventThread(text::getText).contains(MFX_A), "the strip did not follow the decoder");
+        assertTrue(!Components.onTheEventThread(text::getText).contains(DCC_A), "the strip kept the old decoder's names");
+
+        SettingsWindow.type("settings.address", "3922");
+        Components.settle();
+
+        assertEquals(Components.onTheEventThread(strip::isVisible), Boolean.FALSE, "the strip stayed with no one sharing");
+
+        // Closing puts it away until the triangle is clicked again
+        SettingsWindow.type("settings.address", "3921");
+        Components.settle();
+        support.Mouse.click(SettingsWindow.part("settings.sameAddress", javax.swing.JLabel.class));
+        Components.settle();
+
+        assertEquals(Components.onTheEventThread(strip::isVisible), Boolean.TRUE, "the strip did not come back");
+
+        Components.press(SettingsWindow.part("settings.sharedClose", JButton.class));
+        Components.settle();
+
+        assertEquals(Components.onTheEventThread(strip::isVisible), Boolean.FALSE, "the close button left the strip up");
     }
 
     /**

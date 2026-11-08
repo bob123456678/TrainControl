@@ -6512,6 +6512,16 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      */
     public void syncLocomotive(Locomotive l)
     {
+        syncLocomotive(l, null);
+    }
+
+    /**
+     * As {@link #syncLocomotive(Locomotive)}, then runs {@code after} on the event thread once the sync is over.
+     * @param l
+     * @param after what to do afterwards, or null
+     */
+    public void syncLocomotive(Locomotive l, Runnable after)
+    {
         if (l != null)
         {
             javax.swing.SwingUtilities.invokeLater(() -> {
@@ -6520,6 +6530,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 repaintLoc(true, null);
                 this.repaintLayout();
                 this.repaintMappings(Collections.singletonList(l), true);
+
+                if (after != null) after.run();
             });
         }   
     }

@@ -833,33 +833,27 @@ public class testTheLocomotiveSettingsMovingRule
     }
 
     /**
-     * A locked window says under its strip that the key menu's Save Current Speed as Preset still sets the preset, in
-     * the menu's own words: for a moving train, for a window open when autonomy starts and for one opened during a run.
-     * The line goes with the strip, and fits the window.
+     * A locked window shows its strip and nothing under it: no second line about the preset, which the key menu still
+     * saves.  The strip is up for a moving train, for a window open when autonomy starts and for one opened during a run,
+     * and goes when the train stops.
      *
-     * MUTATION: leave `presetHint` out of `LocomotiveSettingsFrame.showStrip`, and this fails.
+     * MUTATION: put a second label under the strip in `LocomotiveSettingsFrame` (the old preset line, shown with the
+     * strip), and this fails.
      */
     @Test
-    public void testALockedWindowPointsToTheKeyMenusPresetSave() throws Exception
+    public void testALockedWindowShowsOnlyTheLockStrip() throws Exception
     {
         SettingsWindow.open(ui, loc, LocomotiveSettingsFrame.Tab.LOCOMOTIVE, null);
         SettingsWindow.awaited();
 
-        final JLabel hint = SettingsWindow.part("settings.stripPreset", JLabel.class);
+        final JLabel strip = SettingsWindow.part("settings.strip", JLabel.class);
 
-        assertFalse(Components.onTheEventThread(hint::isVisible), "the line is up for a train at rest");
-        assertTrue(Components.onTheEventThread(hint::getText).contains(I18n.f("loc.ui.settingsPresetDuringARun",
-            I18n.t("loc.ui.menuSaveSpeedAsPreset"))), "the line does not name the menu's item");
+        assertFalse(Components.onTheEventThread(strip::isVisible), "the strip is up for a train at rest");
 
         run(loc);
 
-        assertTrue(Components.waitFor(() -> Components.onTheEventThread(hint::isVisible), WAIT), "no line for a moving train");
-        assertTrue(Components.onTheEventThread(() ->
-        {
-            hint.getParent().doLayout();
-
-            return hint.getWidth() >= hint.getPreferredSize().width;
-        }), "the line is clipped");
+        assertTrue(Components.waitFor(() -> Components.onTheEventThread(strip::isVisible), WAIT), "no strip for a moving train");
+        assertEquals(visibleLabelsUnder(strip), 0, "something is shown under the lock strip");
 
         loc.setSpeed(0);
 
@@ -870,21 +864,23 @@ public class testTheLocomotiveSettingsMovingRule
             return null;
         });
 
-        assertTrue(Components.waitFor(() -> !Components.onTheEventThread(hint::isVisible), WAIT), "the line stayed up after the train stopped");
+        assertTrue(Components.waitFor(() -> !Components.onTheEventThread(strip::isVisible), WAIT), "the strip stayed up after the train stopped");
 
         autonomy(true);
 
         try
         {
-            assertTrue(Components.waitFor(() -> Components.onTheEventThread(hint::isVisible), WAIT), "no line when autonomy started");
+            assertTrue(Components.waitFor(() -> Components.onTheEventThread(strip::isVisible), WAIT), "no strip when autonomy started");
 
             SettingsWindow.closeIfOpen();
 
             SettingsWindow.open(ui, loc, LocomotiveSettingsFrame.Tab.LOCOMOTIVE, null);
             SettingsWindow.awaited();
 
-            assertTrue(Components.onTheEventThread(SettingsWindow.part("settings.stripPreset", JLabel.class)::isVisible),
-                "a window opened during a run has no line");
+            assertTrue(Components.onTheEventThread(SettingsWindow.part("settings.strip", JLabel.class)::isVisible),
+                "a window opened during a run has no strip");
+            assertEquals(visibleLabelsUnder(SettingsWindow.part("settings.strip", JLabel.class)), 0,
+                "something is shown under the lock strip of a window opened during a run");
         }
         finally
         {
@@ -892,6 +888,22 @@ public class testTheLocomotiveSettingsMovingRule
 
             SettingsWindow.closeIfOpen();
         }
+    }
+
+    /** How many visible labels sit in the strip's own panel besides it: the lines under it. */
+    private static int visibleLabelsUnder(JLabel strip)
+    {
+        return Components.onTheEventThread(() ->
+        {
+            int n = 0;
+
+            for (Component c : strip.getParent().getComponents())
+            {
+                if (c != strip && c.isVisible()) n++;
+            }
+
+            return n;
+        });
     }
 
     /**

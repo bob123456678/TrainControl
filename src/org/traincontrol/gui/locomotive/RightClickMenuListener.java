@@ -154,12 +154,6 @@ public class RightClickMenuListener extends PopupListener
                 menuItem.setToolTipText("Alt-O");
                 add(menuItem);
 
-                menuItem = new JMenuItem(
-                    I18n.t("loc.ui.menuSyncCentralStation")
-                );
-                menuItem.addActionListener(event -> ui.syncLocomotive(ui.getButtonLocomotive(source)));
-                add(menuItem);
-
                 addSeparator();
 
                 // Shared with the locomotive database's menu; the key belongs to this menu

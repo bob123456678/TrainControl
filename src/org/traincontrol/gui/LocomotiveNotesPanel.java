@@ -33,6 +33,7 @@ final class LocomotiveNotesPanel extends JPanel
     private String loadedRailway;
     private String loadedNotes;
     private final java.util.List<JLabel> captions = new java.util.ArrayList<>();
+    private JLabel notesCaption;
 
     /**
      * @param l the locomotive whose notes are shown
@@ -133,7 +134,8 @@ final class LocomotiveNotesPanel extends JPanel
         gbc.gridx = 0;
         gbc.gridy++;
         gbc.gridwidth = 2;
-        add(caption(I18n.t("loc.ui.labelNotes")), gbc);
+        notesCaption = caption(I18n.t("loc.ui.labelNotes"));
+        add(notesCaption, gbc);
 
         gbc.gridy++;
         gbc.weighty = 1;
@@ -168,7 +170,10 @@ final class LocomotiveNotesPanel extends JPanel
         return l;
     }
 
-    /** Sets the captions in the owner's label style, without the colon the older dialog puts after them. */
+    /**
+     * Sets the captions in the owner's label style, without the colon the older dialog puts after them; the Notes
+     * caption is a section heading, blue, over its box.
+     */
     void styleCaptions()
     {
         for (JLabel l : captions)
@@ -176,6 +181,8 @@ final class LocomotiveNotesPanel extends JPanel
             l.setText(org.traincontrol.gui.widgets.UiStyle.withoutColon(l.getText()));
             org.traincontrol.gui.widgets.UiStyle.style(l);
         }
+
+        org.traincontrol.gui.widgets.UiStyle.styleHeading(notesCaption);
     }
 
     /** Shows what the locomotive holds now, and makes that what {@link #isDirty} compares against. */
