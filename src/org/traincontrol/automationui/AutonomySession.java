@@ -7993,9 +7993,10 @@ public class AutonomySession
     }
 
     /**
-     * Puts a value saved in the Locomotive Settings window over the stale copy an old-format setup keeps of a standing
-     * train under `key` (as `Point.toJSON` names it), which a load would otherwise read back.  Every configuration is
-     * walked, excluded pages included; a record that stores no such key, or already stores this value, is left alone.
+     * Puts a value saved for a locomotive (its Settings window, Save Current Speed as Preset) over the stale copy an
+     * old-format setup keeps of a standing train under `key` (as `Point.toJSON` names it), which a load would otherwise
+     * read back.  Every configuration is walked, excluded pages included; a record that stores no such key, or already
+     * stores this value, is left alone.
      *
      * @param value the value, or null to remove the key, which a load reads as "keep the train's own"
      * @return true when a stored record was changed

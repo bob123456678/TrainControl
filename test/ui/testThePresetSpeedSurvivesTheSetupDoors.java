@@ -1,7 +1,7 @@
 package ui;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import javax.swing.JSpinner;
 import javax.swing.SwingUtilities;
 import static org.testng.Assert.assertEquals;
@@ -22,7 +22,10 @@ import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.util.I18n;
 import support.Answering;
 import support.Components;
+import support.Keys;
+import support.Mouse;
 import support.SettingsWindow;
+import support.WindowField;
 
 /**
  * The preset speed saved in the Locomotive Settings window (FR-048) is the speed autonomy runs the train at, and the
@@ -43,6 +46,9 @@ public class testThePresetSpeedSurvivesTheSetupDoors
     private static AutonomySession session;
     private static Locomotive train;
     private static boolean made;
+
+    // The exit door saves the window's state, which holds the key the claims put the train on
+    private static final support.SavedData FOUND = support.SavedData.take();
 
     @BeforeClass
     public static void setUpClass() throws Exception
@@ -90,6 +96,12 @@ public class testThePresetSpeedSurvivesTheSetupDoors
         }
     }
 
+    @AfterClass(alwaysRun = true, dependsOnMethods = "tearDownClass")
+    public static void putTheDataBack() throws Exception
+    {
+        FOUND.putBack();
+    }
+
     /**
      * A speed saved in the window with the train standing is still the train's after each door that reloads the
      * setup: the editor's fold and a load, a load that folds first, a load that does not, the rebuild from the setup,
@@ -102,35 +114,9 @@ public class testThePresetSpeedSurvivesTheSetupDoors
 
         assertNotNull(configuration, "precondition: no setup is loaded");
 
-        List<Runnable> doors = new ArrayList<>();
-        List<String> names = new ArrayList<>();
-
-        names.add("the fold the editor's door makes, then a load");
-        doors.add(() ->
-        {
-            ui.captureRunningLayout();
-            ui.getAutonomyViewerPanel().load(configuration, false, false);
-        });
-
-        names.add("a load that folds the running layout first");
-        doors.add(() -> ui.getAutonomyViewerPanel().load(configuration, false, true));
-
-        names.add("a load that does not fold");
-        doors.add(() -> ui.getAutonomyViewerPanel().load(configuration, false, false));
-
-        names.add("the rebuild from the setup");
-        doors.add(() -> ui.rebuildRunningLayoutFromSetup());
-
-        names.add("the exit's fold, then a load");
-        doors.add(() ->
-        {
-            ui.saveState(false, true);
-            ui.getAutonomyViewerPanel().load(configuration, false, true);
-        });
-
         int speed = 31;
 
-        for (int i = 0; i < doors.size(); i++)
+        for (Map.Entry<String, Runnable> door : reloadDoors(configuration).entrySet())
         {
             speed += 7;
 
@@ -142,21 +128,50 @@ public class testThePresetSpeedSurvivesTheSetupDoors
 
             assertEquals(train.getPreferredSpeed(), saved, "precondition: Save did not write the preset speed");
 
-            final Layout before = model.getAutoLayout();
-            final Runnable door = doors.get(i);
+            goThrough(door);
 
-            try (Answering answering = Answering.start(message -> Answering.press(I18n.t("ui.yes"))))
-            {
-                SwingUtilities.invokeAndWait(door);
-
-                Components.settle();
-                Components.settle();
-            }
-
-            assertNotSame(model.getAutoLayout(), before, "precondition: " + names.get(i) + " did not replace the railway");
-
-            assertEquals(train.getPreferredSpeed(), saved, names.get(i) + " undid the speed saved in the window");
+            assertEquals(train.getPreferredSpeed(), saved, door.getKey() + " undid the speed saved in the window");
         }
+    }
+
+    /** The doors that reload the setup, by name, in the order the claims go through them. */
+    private static Map<String, Runnable> reloadDoors(String configuration)
+    {
+        Map<String, Runnable> doors = new LinkedHashMap<>();
+
+        doors.put("the fold the editor's door makes, then a load", () ->
+        {
+            ui.captureRunningLayout();
+            ui.getAutonomyViewerPanel().load(configuration, false, false);
+        });
+
+        doors.put("a load that folds the running layout first", () -> ui.getAutonomyViewerPanel().load(configuration, false, true));
+        doors.put("a load that does not fold", () -> ui.getAutonomyViewerPanel().load(configuration, false, false));
+        doors.put("the rebuild from the setup", () -> ui.rebuildRunningLayoutFromSetup());
+
+        doors.put("the exit's fold, then a load", () ->
+        {
+            ui.saveState(false, true);
+            ui.getAutonomyViewerPanel().load(configuration, false, true);
+        });
+
+        return doors;
+    }
+
+    /** Goes through a reload door, answering yes, and shows that it replaced the railway. */
+    private static void goThrough(Map.Entry<String, Runnable> door) throws Exception
+    {
+        final Layout before = model.getAutoLayout();
+
+        try (Answering answering = Answering.start(message -> Answering.press(I18n.t("ui.yes"))))
+        {
+            SwingUtilities.invokeAndWait(door.getValue());
+
+            Components.settle();
+            Components.settle();
+        }
+
+        assertNotSame(model.getAutoLayout(), before, "precondition: " + door.getKey() + " did not replace the railway");
     }
 
     /**
@@ -185,6 +200,183 @@ public class testThePresetSpeedSurvivesTheSetupDoors
         assertEquals(train.getPreferredSpeed(), 47, "a speed saved with Alt+U was undone by a load");
 
         train.setSpeed(0);
+    }
+
+    // Save Current Speed as Preset, from the key menu and Alt+U, writes the setup's copy too (MT-912)
+
+    /**
+     * The key menu's Save Current Speed as Preset, chosen while autonomy runs, puts the speed over an old setup's stale
+     * one: the speed is the train's when the run ends and after every door that reloads the setup.
+     *
+     * MUTATION: leave `recordPresetSpeedInTheSetup` out of `TrainControlUI.savePreferredSpeed`, and this fails.
+     */
+    @Test
+    public void testTheKeyMenusSaveDuringARunSurvivesEveryReload() throws Exception
+    {
+        aKeySaveSurvivesEveryReload(true, true);
+    }
+
+    /**
+     * Alt+U during a run, the same.
+     *
+     * MUTATION: leave `recordPresetSpeedInTheSetup` out of `TrainControlUI.savePreferredSpeed`, and this fails.
+     */
+    @Test
+    public void testAltUDuringARunSurvivesEveryReload() throws Exception
+    {
+        aKeySaveSurvivesEveryReload(true, false);
+    }
+
+    /**
+     * The key menu's save at rest, the same.
+     *
+     * MUTATION: leave `recordPresetSpeedInTheSetup` out of `TrainControlUI.savePreferredSpeed`, and this fails.
+     */
+    @Test
+    public void testTheKeyMenusSaveAtRestSurvivesEveryReload() throws Exception
+    {
+        aKeySaveSurvivesEveryReload(false, true);
+    }
+
+    /**
+     * Alt+U at rest, the same.
+     *
+     * MUTATION: leave `recordPresetSpeedInTheSetup` out of `TrainControlUI.savePreferredSpeed`, and this fails.
+     */
+    @Test
+    public void testAltUAtRestSurvivesEveryReload() throws Exception
+    {
+        aKeySaveSurvivesEveryReload(false, false);
+    }
+
+    /**
+     * A setup that keeps no speed for the train is left byte for byte as it was by the key menu's save and by Alt+U,
+     * during a run and at rest.
+     *
+     * MUTATION: drop `!stored.has(key)` in `AutonomySession.updateStoredRecord`, and this fails.
+     */
+    @Test
+    public void testAKeySaveLeavesASetupWithNoSpeedAsItWas() throws Exception
+    {
+        storeEverywhere(squareNamed("BottomMainB"), new org.json.JSONObject().put("name", TRAIN));
+
+        SwingUtilities.invokeAndWait(() ->
+        {
+            try
+            {
+                ui.getAutonomySession().saveWithoutReconciling();
+            }
+            catch (java.io.IOException e)
+            {
+                throw new IllegalStateException(e);
+            }
+        });
+
+        final Map<String, String> before = setupFiles();
+        final javax.swing.JButton key = SettingsWindow.showOnKeyA(ui, train);
+
+        int speed = 50;
+
+        for (boolean duringARun : new boolean[] { true, false })
+        {
+            for (boolean fromTheMenu : new boolean[] { true, false })
+            {
+                saveCurrentSpeed(key, ++speed, duringARun, fromTheMenu);
+
+                Components.settle();
+
+                assertEquals(setupFiles(), before, how(duringARun, fromTheMenu) + " rewrote a setup that keeps no speed");
+            }
+        }
+    }
+
+    private static void aKeySaveSurvivesEveryReload(boolean duringARun, boolean fromTheMenu) throws Exception
+    {
+        final String configuration = ui.getActiveDiagramConfiguration();
+        final javax.swing.JButton key = SettingsWindow.showOnKeyA(ui, train);
+        final String how = how(duringARun, fromTheMenu);
+
+        int speed = 30;
+
+        for (Map.Entry<String, Runnable> door : reloadDoors(configuration).entrySet())
+        {
+            final int saved = speed += 3;
+
+            oldSetupStoringSpeed20();
+
+            train.setPreferredSpeed(20);
+
+            saveCurrentSpeed(key, saved, duringARun, fromTheMenu);
+
+            // The setup's copy is written on the event thread after the train's; waited for, not asserted, so that
+            // its absence shows at the reload
+            Components.waitFor(() -> storedSpeed() == saved, 3000);
+
+            assertEquals(train.getPreferredSpeed(), saved, "the run's end undid the speed saved with " + how);
+
+            goThrough(door);
+
+            assertEquals(train.getPreferredSpeed(), saved, door.getKey() + " undid the speed saved with " + how);
+        }
+    }
+
+    private static String how(boolean duringARun, boolean fromTheMenu)
+    {
+        return (fromTheMenu ? "the key menu" : "Alt+U") + (duringARun ? " during a run" : " at rest");
+    }
+
+    /**
+     * Drives the train at this speed and saves it as the preset through the key menu or Alt+U, with autonomy running
+     * as Start leaves it or at rest; the run is ended and the train stopped after.
+     */
+    private static void saveCurrentSpeed(javax.swing.JButton key, int speed, boolean duringARun, boolean fromTheMenu)
+        throws Exception
+    {
+        assertTrue(Components.waitFor(() -> ui.getActiveLoc() == train, 5000), "precondition: the train is not on show");
+
+        java.lang.reflect.Field running = Layout.class.getDeclaredField("running");
+
+        running.setAccessible(true);
+
+        train.setSpeed(speed);
+
+        running.setBoolean(model.getAutoLayout(), duringARun);
+
+        try
+        {
+            assertEquals(ui.aRunHoldsTheSetup(), duringARun, "precondition: the run is not as the claim says");
+
+            if (fromTheMenu)
+            {
+                Mouse.choose((javax.swing.JMenuItem) Components.withText(SettingsWindow.rightClickKey(key),
+                    I18n.t("loc.ui.menuSaveSpeedAsPreset")));
+            }
+            else
+            {
+                Keys.press(WindowField.of(ui, "KeyboardTab"), java.awt.event.KeyEvent.VK_U,
+                    java.awt.event.InputEvent.ALT_DOWN_MASK);
+            }
+
+            assertTrue(Components.waitFor(() -> train.getPreferredSpeed() == speed, 8000), how(duringARun, fromTheMenu)
+                + " did not save the speed");
+        }
+        finally
+        {
+            running.setBoolean(model.getAutoLayout(), false);
+
+            train.setSpeed(0);
+        }
+    }
+
+    /** The speed the active configuration stores for the train on BottomMainB, or -1 for none. */
+    private static int storedSpeed()
+    {
+        return Components.onTheEventThread(() ->
+        {
+            Object stored = ui.getAutonomySession().getPointProperty(squareNamed("BottomMainB"), "loc");
+
+            return stored instanceof org.json.JSONObject ? ((org.json.JSONObject) stored).optInt("speed", -1) : -1;
+        });
     }
 
     /**
