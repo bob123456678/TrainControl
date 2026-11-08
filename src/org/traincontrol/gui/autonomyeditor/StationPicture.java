@@ -53,16 +53,24 @@ final class StationPicture extends JPanel
     /** The track diagram's 60 pixel square. */
     static final int SQUARE = 60;
 
+    /**
+     * The ways out are drawn a little larger than the diagram's, and the station's icon smaller, so the arrows are what
+     * the picture is read for.
+     */
+    private static final int ARROW = 70;
+
+    private static final float ICON = 0.85f;
+
     /** The ways in are drawn smaller than the diagram's, so that a way in and a way out fit on one side. */
-    private static final int CHEVRON = 40;
+    private static final int CHEVRON = 52;
 
     /** How far a way in on a straight side stands off the axis, clear of the station's art and of its way out. */
-    private static final double ALONGSIDE = 20;
+    private static final double ALONGSIDE = 22;
 
     /** Where a way in that stands by its edge starts: inward from the edge, and along it beside the way out. */
     private static final double EDGE = 4;
 
-    private static final double BESIDE = 14;
+    private static final double BESIDE = 16;
 
     /** What a click on a mark does, and what its tooltip says: the window's, as the window owns the controls. */
     interface Doors
@@ -230,7 +238,7 @@ final class StationPicture extends JPanel
 
         TileAnnotation diagram = session.staticAnnotations(Collections.singleton(tile), true, true).get(tile);
 
-        drawn = new TileAnnotation(null, -1, false, diagram == null ? null : diagram.getBadge(), false);
+        drawn = new TileAnnotation(null, -1, false, diagram == null ? null : diagram.getBadge(), false).withSmallerIcon(ICON);
 
         square.setAutonomyAnnotation(drawn);
 
@@ -372,7 +380,7 @@ final class StationPicture extends JPanel
 
         boolean leaves = rules.waysOut().contains(side.name());
 
-        java.awt.Polygon arrow = TileAnnotation.arrowShape(tip, heading, leaves, SQUARE);
+        java.awt.Polygon arrow = TileAnnotation.arrowShape(tip, heading, leaves, ARROW);
 
         out.add(new Mark(Mark.Kind.OUT, showing, side, leaves, arrow, tip, heading));
 
@@ -635,7 +643,7 @@ final class StationPicture extends JPanel
 
                 for (Mark mark : marks())
                 {
-                    if (mark.kind == Mark.Kind.OUT) TileAnnotation.paintArrow(g2, mark.target, mark.heading, mark.open, SQUARE);
+                    if (mark.kind == Mark.Kind.OUT) TileAnnotation.paintArrow(g2, mark.target, mark.heading, mark.open, ARROW);
 
                     if (mark.kind == Mark.Kind.IN) TileAnnotation.paintArrival(g2, (Path2D) mark.shape, mark.open, CHEVRON);
                 }
