@@ -692,6 +692,7 @@
         <test-one-class class="testARestartLeavesTheRunsDataAsItFoundIt"/>
         <test-one-class class="testSavedDataLeavesAFolderOutsideARunAlone"/>
         <test-one-class class="testAPresetSaveOnALayoutWithoutASetup"/>
+        <test-one-class class="testTheLogIsStampedAndExports"/>
     </target>
     <target name="package-for-store" depends="jar">
         <property name="store.jar.name" value="TrainControl"/>
