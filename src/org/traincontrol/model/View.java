@@ -131,6 +131,14 @@ public interface View
      */
     public void showSyncPartial();
 
+    /**
+     * Warns that the Central Station cut the track power by itself after a short circuit (OB-426).  Must not block the
+     * calling thread.
+     *
+     * @param channel the output that tripped, as the station numbers it
+     */
+    public void showPowerCut(int channel);
+
     // Tells us which key(s) a locomotive is bound to
     public List<String> getAllLocButtonMappings(Locomotive l);
 }
