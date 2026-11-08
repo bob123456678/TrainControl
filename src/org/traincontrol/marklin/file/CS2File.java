@@ -1333,48 +1333,7 @@ public final class CS2File
                             }
                         }
 
-                        // This is disabled becuase the JSON does not appear to convey the function number (only the icon, which is non-unique)
-                        /* 
-                        else if (item.has("lok") && "func".equals(item.getString("typ")) && item.has("lok"))
-                        {
-                            String locName = null;
-
-                            if (this.getCS3LocById(item.getString("lok"), locs) != null)
-                            {
-                                locName = this.getCS3LocById(item.getString("lok"), locs).getString("name");
-                            }
-
-                            if (locName != null)
-                            {
-                                // wert is on, default 0 but cant be on
-                                // icon is (almost) fno, default 0
-                                int fNo = 0;
-                                boolean fActive = false;
-
-                                if (item.has("icon"))
-                                {
-                                    fNo = item.getInt("icon");
-                                }
-
-                                if (item.has("wert") && "1".equals(item.get("wert")))
-                                {
-                                    fActive = true;
-                                }
-
-                                RouteCommand rc = RouteCommand.RouteCommandFunction(locName, fNo, fActive);
-
-                                if (item.has("sekunde") && item.getFloat("sekunde") > 0)
-                                {
-                                    rc.setDelay(Float.valueOf(item.getFloat("sekunde") * 1000).intValue());
-                                }
-
-                                r.addItem(rc);
-                            }
-                            else
-                            {
-                                logMessage("Warning: route locomotive does not exist in database " + item.getString("lok"));
-                            }
-                        } */
+                        // No function steps: the JSON gives a function's icon, which is not unique, and not its number.
                         else if (item.has("lok") && "dir".equals(item.getString("typ")) && item.has("lok"))
                         {
                             String locName = routeLocomotiveName(item, locs, unnameable);
