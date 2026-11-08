@@ -173,7 +173,7 @@ final class EditorTileMenus
 
                 if (train != null) menu.add(train);
 
-                javax.swing.JMenuItem placeSelected = placeSelectedItem(target, standing);
+                javax.swing.JMenuItem placeSelected = placeSelectedItem(target, trainStanding(target));
 
                 if (placeSelected != null) menu.add(placeSelected);
 
@@ -427,7 +427,8 @@ final class EditorTileMenus
 
     /**
      * Place Bramley, for the locomotive selected on the main window; null where none is selected, it already stands
-     * here, or the square is no station.  Grayed while a run holds the setup, as the train window is.
+     * here (on the railway, as the Train at item reads it), or the square is no station.  Grayed while a run holds the
+     * setup, as the train window is.
      */
     private javax.swing.JMenuItem placeSelectedItem(final TileKey target, String standing)
     {

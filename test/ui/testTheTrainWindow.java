@@ -827,8 +827,8 @@ public class testTheTrainWindow
     /**
      * No Place item for the selected train where nothing is selected, or where the selected train already stands.
      *
-     * MUTATION: drop the `selected == null` test or the `equals(standing)` test in `EditorTileMenus.placeSelectedItem`,
-     * and the matching half of this fails.
+     * MUTATION: drop the `equals(standing)` test or the `isStation` test in `EditorTileMenus.placeSelectedItem`, and the
+     * matching part of this fails.
      */
     @Test(timeOut = 120000)
     public void testTheEditorsMenuHasNoPlaceForNothingOrForTheTrainAlreadyThere() throws Exception
@@ -854,10 +854,86 @@ public class testTheTrainWindow
 
         assertNotNull(placeItemOn(panel, empty, other), "precondition: no Place for a selected train that stands nowhere");
         assertNotNull(placeItemOn(panel, full, other), "precondition: no Place over another train");
+
+        // Only a station takes a train: a point that is none gets no Place
+        TileKey plain = null;
+
+        for (TileKey each : session.getReducer().getPoints().keySet())
+        {
+            if (PAGE.equals(each.getPage()) && !session.getStore().isStation(each)) plain = each;
+        }
+
+        assertNotNull(plain, "precondition: " + PAGE + " has no point that is not a station");
+
+        assertNull(placeItemOn(panel, plain, other), "Place was offered on a point that is not a station");
     }
 
     /**
-     * While a route runs the item is grayed with the reason, and clicking it places nothing.
+     * Which train "stands there" is read off the railway, as the Train at item and the diagram's menu read it: after a
+     * run the railway can hold X where the setup still names Y, and Place X is not offered on X's own square.
+     *
+     * MUTATION: pass `editor.locomotiveAt(target)` instead of `trainStanding(target)` to `placeSelectedItem`, and this
+     * fails.
+     */
+    @Test(timeOut = 180000)
+    public void testAfterARunPlaceReadsTheTrainOnTheRailway() throws Exception
+    {
+        AutonomyEditorPanel panel = theEditorsPanel();
+
+        TileKey full = aSquareWithATrain();
+
+        String inTheSetup = session.getLocomotiveNameAt(full);
+
+        org.traincontrol.automation.Layout railway = model.getAutoLayout();
+
+        org.traincontrol.automation.Point copy = railway.getLocomotiveLocation(model.getLocByName(inTheSetup));
+
+        assertNotNull(copy, "precondition: " + inTheSetup + " is not on the railway");
+
+        String x = aTrainNotPlaced();
+
+        try
+        {
+            Components.onTheEventThread(() ->
+            {
+                railway.moveLocomotive(null, copy.getName(), false);
+
+                assertTrue(railway.moveLocomotive(x, copy.getName(), false), "precondition: " + x + " could not be stood there");
+
+                return null;
+            });
+
+            Components.settle();
+
+            assertEquals(Components.onTheEventThread(() -> session.trainOnTheRailway(full, model.getAutoLayout())), x,
+                "precondition: the railway does not hold " + x + " on the square");
+
+            makeActive(x);
+
+            assertNull(placeItemOn(panel, full, x), "Place " + x + " is offered on the square the railway has it standing on");
+
+            makeActive(inTheSetup);
+
+            assertNotNull(placeItemOn(panel, full, inTheSetup),
+                "Place " + inTheSetup + " is not offered where the railway has another train");
+        }
+        finally
+        {
+            // The railway as the setup has it again, for the claims after this one
+            Components.onTheEventThread(() ->
+            {
+                railway.moveLocomotive(null, copy.getName(), false);
+                railway.moveLocomotive(inTheSetup, copy.getName(), false);
+
+                return null;
+            });
+
+            Components.settle();
+        }
+    }
+
+    /**
+     * While a route runs the item is grayed with the reason, and pressing it anyway places nothing.
      *
      * MUTATION: leave the item enabled while `aRunHoldsTheSetup()`, and this fails.
      */
@@ -881,6 +957,10 @@ public class testTheTrainWindow
             assertNotNull(item, "the editor's menu has no Place " + name + " while a route runs; it should be grayed");
             assertFalse(item.isEnabled(), "Place " + name + " is not grayed while a route runs");
             assertNotNull(item.getToolTipText(), "the grayed Place says nothing of why");
+
+            StationDoors.pressThoughGrayed(item);
+
+            assertNull(session.getLocomotiveNameAt(empty), "the grayed Place put a train down when pressed");
         }
         finally
         {
