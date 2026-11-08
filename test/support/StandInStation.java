@@ -132,7 +132,10 @@ public final class StandInStation implements AutoCloseable
         }
     }
 
-    /** Closes the station, stops the model and closes the sandbox, the sandbox even if the others throw. */
+    /**
+     * Closes the station, stops the model and shuts it down, so a proxy that went over TCP does not recover into the next
+     * test's log, and closes the sandbox, the sandbox even if the others throw.
+     */
     public static void tearDown(StandInStation station, MarklinControlStation model, LayoutSandbox sandbox)
     {
         try
@@ -145,6 +148,7 @@ public final class StandInStation implements AutoCloseable
             if (model != null)
             {
                 model.stop();
+                model.shutdown();
             }
         }
         finally

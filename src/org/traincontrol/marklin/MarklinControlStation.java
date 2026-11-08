@@ -2789,6 +2789,12 @@ public class MarklinControlStation implements ViewListener, ModelListener
         return new CS2Message(raw);
     }
         
+    @Override
+    public List<Integer> knownSensors()
+    {
+        return this.feedbackDB.getItemIds();
+    }
+
     /**
      * Receives a network messages from the CS2 for interpretation
      * @param msg
@@ -5233,6 +5239,14 @@ public class MarklinControlStation implements ViewListener, ModelListener
             }
         }
                         
+        // TCP for a CS3 the start-up sync found, unless "Use UDP Only" is on (FR-186): a CS2, or a station whose type is
+        // not known, runs on UDP exactly as before
+        if (model.isCS3() && model.getNetworkCommState()
+            && !TrainControlUI.getPrefs().getBoolean(TrainControlUI.UDP_ONLY_PREF, false))
+        {
+            proxy.connectOverTcp(simulate ? NetworkProxy.simulationTcpPort() : NetworkProxy.TCP_PORT);
+        }
+
         // Start execution
         proxy.setModel(model);
         

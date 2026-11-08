@@ -94,9 +94,15 @@ public class MarklinFeedback extends Feedback
                                    
                 if (id == this.UID && this.readyForUpdate(System.currentTimeMillis()))
                 {
+                    boolean was = this.isSet();
+
                     this._setState((state == 1));
                                         
                     this.updateTiles();
+
+                    // The answer to a resync's query that changes nothing is no event: a resync asks every sensor, and
+                    // the route editor's capture must not take them.  Only the proxy's own answers: UDP is as before
+                    if (m.answersAResync() && was == (state == 1)) return;
 
                     // And anything watching for one, which today is the route editor's capture
                     this.network.feedbackChanged(this.getName(), state == 1);

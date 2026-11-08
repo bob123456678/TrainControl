@@ -696,6 +696,8 @@
         <test-one-class class="testChangeDirectionIsOneClick"/>
         <test-one-class class="testTheLocomotiveSettingsSync"/>
         <test-one-class class="testAStuckConsoleDoesNotStopTheRailway"/>
+        <test-one-class class="testTheStationIsReachedOverTcp"/>
+        <test-one-class class="testTheGoldensHoldOverTcp"/>
         <test-one-class class="testTheLogIsStampedAndExports"/>
     </target>
     <target name="package-for-store" depends="jar">

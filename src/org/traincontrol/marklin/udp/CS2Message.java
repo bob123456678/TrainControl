@@ -25,6 +25,9 @@ public class CS2Message extends CANMessage
     private Integer length;
     // Data payload
     private byte[] data;
+
+    // Set by NetworkProxy on a frame that answers its own sensor query after a lost connection
+    private volatile boolean answersAResync;
     // CAN message length
     public static final int MESSAGE_LENGTH = 13;
 
@@ -533,6 +536,18 @@ public class CS2Message extends CANMessage
     public Integer getHash()
     {
         return hash;
+    }
+
+    /** Marks this frame as the answer to a resync's sensor query (FR-186): an event of no change. */
+    public void markAnswersAResync()
+    {
+        this.answersAResync = true;
+    }
+
+    /** Whether NetworkProxy marked this frame as the answer to its own sensor query; never in UDP-only mode. */
+    public boolean answersAResync()
+    {
+        return this.answersAResync;
     }
 
     /**
