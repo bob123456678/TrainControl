@@ -2602,8 +2602,8 @@ public class testStationSettingsWindow
      * Pressing a pill still sets its preset and lights it, a read-only pill stays legible and a lit one still reads as
      * lit, and an enabled pill shows the hand cursor.
      *
-     * MUTATION: have `pressPreset` apply nothing, or `PillButton.fillColor` use a gray fill when not enabled, and this
-     * fails.
+     * MUTATION: have `pressPreset` apply nothing, `PillButton.fillColor` use a gray fill when not enabled, or drop
+     * `setCursor` from the constructor, and this fails.
      */
     @Test(timeOut = 120000)
     public void testThePillsStillPressAndReadWhenReadOnly() throws Exception
@@ -2621,7 +2621,7 @@ public class testStationSettingsWindow
         PillButton lit = StationDoors.part(window, "station.preset.REVERSING_POINT", PillButton.class);
         PillButton unlit = StationDoors.part(window, "station.preset.STATION", PillButton.class);
 
-        assertEquals(lit.getCursor().getType(), java.awt.Cursor.HAND_CURSOR, "no hand cursor on an enabled pill");
+        assertEquals(toolkitCursor(lit).getType(), java.awt.Cursor.HAND_CURSOR, "no hand cursor on an enabled pill");
 
         Components.onTheEventThread(() -> { lit.setEnabled(false); unlit.setEnabled(false); return null; });
 
@@ -2636,6 +2636,16 @@ public class testStationSettingsWindow
 
             assertTrue(strongestContrast(shot, fill) > 0.45, "the text of a read-only " + pill.getName() + " is hard to read");
         }
+    }
+
+    /** The cursor the toolkit shows: the component's own field, not what an override of getCursor answers. */
+    private static java.awt.Cursor toolkitCursor(java.awt.Component c) throws Exception
+    {
+        java.lang.reflect.Field f = java.awt.Component.class.getDeclaredField("cursor");
+
+        f.setAccessible(true);
+
+        return (java.awt.Cursor) f.get(c);
     }
 
     private static final Color BACKGROUND = new Color(250, 0, 250);

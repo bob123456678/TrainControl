@@ -20,6 +20,7 @@ public class PillButton extends JToggleButton
 
         setFocusable(false);
         updateLook();
+        setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
     }
 
     @Override
@@ -38,10 +39,12 @@ public class PillButton extends JToggleButton
         setRolloverEnabled(true);
     }
 
+    /** The toolkit reads the cursor field itself, so the hand is set, not computed. */
     @Override
-    public Cursor getCursor()
+    public void setEnabled(boolean enabled)
     {
-        return isEnabled() ? Cursor.getPredefinedCursor(Cursor.HAND_CURSOR) : super.getCursor();
+        super.setEnabled(enabled);
+        setCursor(enabled ? Cursor.getPredefinedCursor(Cursor.HAND_CURSOR) : null);
     }
 
     @Override
@@ -81,7 +84,7 @@ public class PillButton extends JToggleButton
             g2.setColor(line);
             g2.draw(new RoundRectangle2D.Double(0.5, 0.5, getWidth() - 1, getHeight() - 1, arc, arc));
 
-            Color ink = isSelected() ? Color.WHITE : new Color(0x22, 0x22, 0x22);
+            Color ink = isSelected() ? Color.WHITE : Color.BLACK;
 
             // A disabled pill stays legible: a little softer, never the theme's washed-out gray
             if (!isEnabled()) ink = isSelected() ? new Color(0xF2, 0xF2, 0xF2) : new Color(0x66, 0x66, 0x66);
