@@ -378,10 +378,8 @@ public class testDiagramLooksRight
     private org.traincontrol.base.Locomotive runLocomotive;
 
     /**
-     * A real autonomy path, over real track, ending on a curved square.
-     *
-     * Shared by the tests that DRAW it and the one that measures the ink: finding it is most of the work, and two
-     * copies could conclude different things about one railway.  The layout is left exactly as found.
+     * A real autonomy path, over real track, ending on a curved square; shared so two copies cannot conclude different
+     * things about one railway.  The layout is left exactly as found.
      *
      * @return the squares of the run, never empty
      */
@@ -664,9 +662,8 @@ public class testDiagramLooksRight
     }
 
     /**
-     * Station captions are blue or light gray, whichever the operator asked for, and readable either way (FR-031): the
-     * text color follows the fill's brightness, so a gray a few shades DARKER would leave black text on a dark ground.
-     * The operator's own setting is put back at the end, as a real preference node.
+     * Station captions are blue or light gray, as the operator asked, and readable either way (FR-031): the text color
+     * follows the fill's brightness.  The operator's own setting is put back at the end.
      *
      * MUTATION: making restingFill ignore the preference fails the second assertion; making readableOn return WHITE
      * always fails the fourth.
@@ -724,12 +721,8 @@ public class testDiagramLooksRight
     }
 
     /**
-     * A placeholder is drawn dimmer than a name, on either pill.
-     *
-     * The editors show "this square is a PLACEHOLDER" in gray.  On a pill, gray is not red, so `onPill` must not fall
-     * through to `readableOn`, which answers by the FILL and would give a placeholder and a name the same color.  Both
-     * fills: on navy the readable color is white and dimming moves it DOWN towards the fill, on pale gray it is black
-     * and dimming moves it UP.  The separation is asserted as a distance, not a constant.
+     * A placeholder is drawn dimmer than a name, on either pill: `onPill` must not fall through to `readableOn`, which
+     * answers by the FILL.  On navy dimming moves white DOWN, on pale gray black UP; asserted as a distance.
      *
      * MUTATION: returning `readableOn(fill)` for gray fails the first assertion on both fills.
      */
@@ -782,9 +775,7 @@ public class testDiagramLooksRight
     }
 
     /**
-     * An old "Point:" label is drawn as it was written, prefix and all (OB-344): the grid draws a label as written
-     * unless autonomy has a caption for its square.  The page is one square built in memory under a name no setup
-     * knows, so there is nothing to restore.
+     * An old "Point:" label is drawn as written, prefix and all (OB-344), unless autonomy has a caption for its square.
      *
      * MUTATION: putting back the branch that stripped the "Point:" prefix fails this with "Bahnhof".
      */
@@ -1015,10 +1006,7 @@ public class testDiagramLooksRight
     }
 
     /**
-     * Captions are left off the track editor and nowhere else (FR-030).
-     *
-     * Three of the four combinations must keep them: a rule that hides too much stops the running diagram saying
-     * where the trains are.
+     * Captions are left off the track editor and nowhere else (FR-030): three of four combinations must keep them.
      *
      * MUTATION: dropping either half of the condition fails a row of this table.
      */
@@ -1205,8 +1193,8 @@ public class testDiagramLooksRight
     }
 
     /**
-     * The Track Directions box is as wide as the Station Labels box above it in every language, and its widest item
-     * does not widen the editor (OB-368).
+     * The Track Directions box is as wide as the Station Labels box in every language, and its widest item does not
+     * widen the editor (OB-368).
      *
      * MUTATION: dropping the `choice.setMaximumSize` line in LayoutEditor fails the width assertion.
      */
@@ -1395,9 +1383,8 @@ public class testDiagramLooksRight
     }
 
     /**
-     * The editor's right column is as wide as its dropdowns, in English and in Danish: the Station Labels and Track
-     * Directions boxes, Save, Cancel and the tool buttons share one left and one right edge (OB-375: "the overall
-     * width should be the width of the dropdown").
+     * The editor's right column is as wide as its dropdowns in English and Danish: both boxes, Save, Cancel and the
+     * tool buttons share one left and one right edge (OB-375).
      *
      * MUTATION: dropping `choice.setMinimumSize` in LayoutEditor widens Save and Cancel past the boxes in Danish.
      */
@@ -1478,12 +1465,10 @@ public class testDiagramLooksRight
     }
 
     /**
-     * The right column ends where its widest text ends, in English and in Danish: no wider than its widest heading,
-     * check box, radio button or button needs, plus {@code TEXT_ALLOWANCE} (MT-825).  The dropdowns' phrases do not
-     * count: a long one is cut in the box and read in its list.
+     * The right column ends where its widest text ends, in English and Danish, plus {@code TEXT_ALLOWANCE} (MT-825);
+     * the dropdowns' phrases do not count.
      *
-     * MUTATION: pin the column in `LayoutEditor.setAutonomyMode` to 150 pixels again: red, as English's widest text
-     * needs 144.
+     * MUTATION: pin the column in `LayoutEditor.setAutonomyMode` to 150 pixels again: red, English needs 144.
      */
     @Test
     public void testTheRightColumnEndsWhereItsTextEnds() throws Exception
@@ -1665,12 +1650,10 @@ public class testDiagramLooksRight
     }
 
     /**
-     * A caption may move itself.  It may not move anything else (OB-115): the text labels' vertical alignment must not
-     * drift when a caption becomes a pill.  Captions are anchored NORTHWEST, out of GridBagLayout's BASELINE_LEADING
-     * ballot; the test changes the one thing a caption changes on its own, its TEXT, and insists that nothing else has
-     * moved a pixel, with no golden file.
+     * A caption may move itself, nothing else (OB-115): the text labels' vertical alignment must not drift when a
+     * caption becomes a pill.  Changes only the caption's TEXT and insists nothing else moved a pixel, no golden file.
      *
-     * MUTATION: anchoring captions BASELINE_LEADING again fails this.
+     * MUTATION: anchoring captions BASELINE_LEADING again.
      */
     @Test
     public void testACaptionNeverMovesAnythingElse() throws Exception
@@ -1764,10 +1747,8 @@ public class testDiagramLooksRight
     }
 
     /**
-     * Changing what trains may do at a station leaves its caption where it is (OB-310): both boxes of Station Settings go
-     * through `setUsage`, which places a caption only where the station has none.  Covered: every named station with a
-     * caption, both changes, through the window `buildAutonomyTileMenu` opens; then a station captioned on north-south
-     * rails, drawn with both boxes off.
+     * Changing what trains may do at a station leaves its caption where it is (OB-310): both Station Settings boxes go
+     * through `setUsage`, which places a caption only where the station has none.
      *
      * MUTATION: dropping the "has none" test from `AutonomyEditorPanel.setUsage` fails both halves.
      */
@@ -2007,14 +1988,10 @@ public class testDiagramLooksRight
     }
 
     /**
-     * A caption sits clear of its rail at every tile size, whichever way the rail runs.
+     * A caption sits clear of its rail at every tile size, but not so far that it stops reading as that track's label.
      *
-     * A caption lying across the track it names would cover its own subject; but not so far past it that it stops
-     * reading as that track's label (the second half stops the offset being increased a few pixels at a time).  Line
-     * heights are three fifths of the tile.
-     *
-     * MUTATION: returning a fixed number of pixels from captionOffset fails this at every size but one; dropping the
-     * nudge fails the first assertion at 20px.
+     * MUTATION: returning a fixed pixel count from captionOffset fails this at every size but one; dropping the nudge
+     * fails the first assertion at 20px.
      */
     @Test
     public void testACaptionSitsRightAtEveryTileSize()
@@ -2049,12 +2026,10 @@ public class testDiagramLooksRight
     }
 
     /**
-     * The four arrows a caption can end in can all be drawn in the font captions are drawn in.
+     * The four arrows a caption can end in can all be drawn in the caption font.  It asks StationCaption for both
+     * halves: a test naming its own font watches something other than the code.
      *
-     * **It asks StationCaption for both halves, and that is the point.**  A test naming its own font and codepoints
-     * watches something other than the code.  A tofu box on a diagram is the failure this stops.
-     *
-     * MUTATION: setting either arrow constant to a codepoint LABEL_FONT cannot draw fails this.
+     * MUTATION: setting either arrow constant to a codepoint LABEL_FONT cannot draw.
      */
     @Test
     public void testCaptionArrowsCanBeDrawn()
@@ -2079,15 +2054,10 @@ public class testDiagramLooksRight
     }
 
     /**
-     * A rotated caption's arrow still points where the train is going.
+     * A rotated caption's arrow still points where the train is going: the GLYPH is chosen for where it ends up.
+     * Decided by painting and reading the ink (a triangle pointing up has its widest row at the BOTTOM).
      *
-     * Turning the drawing turns everything in it, so an arrow keeps its meaning only if the GLYPH is chosen for where
-     * it ends up: a quarter turn anticlockwise sends right to up, so a caption that means north is drawn with the east
-     * glyph.  Decided by painting and reading the ink: a triangle pointing up has its widest row at the BOTTOM of its
-     * ink, whichever pair of glyphs the installed fonts give.
-     *
-     * MUTATION: cycling the arrows the other way - north to west rather than north to east - fails both halves; not
-     * rotating them at all fails both as well.
+     * MUTATION: cycling the arrows the other way, or not rotating them at all, fails both halves.
      */
     @Test
     public void testARotatedArrowStillPointsWhereTheTrainIsGoing() throws Exception
@@ -2112,11 +2082,8 @@ public class testDiagramLooksRight
     }
 
     /**
-     * A rotated caption is stood on end, and takes the mouse only where it is drawn.
-     *
-     * Painting, sizing and hit-testing all ask `pillBounds` for one rectangle: a flat pill hit-tested over the whole
-     * component swallows every click on the tile it borrowed centring room from, and a rotated caption borrows a whole
-     * ROW, so it would eat a click on the square above.
+     * A rotated caption is stood on end and takes the mouse only where it is drawn: painting, sizing and hit-testing
+     * all ask `pillBounds`, or a rotated caption eats the click on the square above.
      *
      * MUTATION: having `contains` fall back to `super.contains` fails the last assertion; returning the flat preferred
      * size when rotated fails the first.
@@ -2236,12 +2203,10 @@ public class testDiagramLooksRight
     }
 
     /**
-     * A caption is an oval, not a rectangle of color (FR-028).
+     * A caption is an oval, not a rectangle of color (FR-028): the label stays TRANSPARENT, or the rounded shape is
+     * drawn inside a square of the same color.  The corner is the assertion.
      *
-     * The pill is painted by the label itself, so the label has to stay TRANSPARENT: an opaque JLabel fills its own
-     * rectangle first and the rounded shape is drawn inside a square of the same color.  The corner is the assertion.
-     *
-     * MUTATION: setting the label opaque, or filling a rectangle instead of a round one, fails this.
+     * MUTATION: setting the label opaque, or filling a rectangle instead of a round one.
      */
     @Test
     public void testACaptionIsAnOval() throws Exception
@@ -2280,13 +2245,10 @@ public class testDiagramLooksRight
     }
 
     /**
-     * Which way the rails run, for the square a caption lands on (FR-028).
+     * Which way the rails run, for the square a caption lands on (FR-028), decided from the tile's geometry; not
+     * asserting WHICH orientation is which (the rotation convention is the layout format's).
      *
-     * Decided from the tile's geometry: a straight rail answers one way, and the same rail turned a quarter answers the
-     * other.  Deliberately not asserting WHICH orientation is which: the rotation convention is the layout format's (a
-     * diagram tile rotates by (4 - o)).
-     *
-     * MUTATION: making runsNorthSouth return a constant fails this whichever constant it returns.
+     * MUTATION: making runsNorthSouth return a constant.
      */
     @Test
     public void testACaptionKnowsWhichWayTheRailsRun() throws Exception
@@ -2350,12 +2312,10 @@ public class testDiagramLooksRight
     }
 
     /**
-     * The autonomy menu for a square opens with that square's name, disabled (OB-112).
+     * The autonomy menu for a square opens with that square's name, disabled (OB-112): the FIRST component, since a
+     * heading not at the top is not a heading.
      *
-     * Checked on the menu itself, through `buildAutonomyTileMenu`, the main window's door to the one builder the editor
-     * uses.  The assertion is about the FIRST component: a heading that is not at the top is not a heading.
-     *
-     * MUTATION: removing the `title` call from buildTileMenu fails this.
+     * MUTATION: removing the `title` call from buildTileMenu.
      */
     @Test
     public void testTheAutonomyMenuOpensWithTheSquaresName() throws Exception
@@ -2433,12 +2393,11 @@ public class testDiagramLooksRight
     }
 
     /**
-     * A diagram already drawn is not taken away 120ms later either (MT-273).  A rebuild at the SAME tile size is not an
-     * arrival: every square is a cache hit, so the page is complete when mounted.  A rebuild at a DIFFERENT size is
-     * one: the size is part of the cache key.  The second half is the control that keeps that distinction alive.
+     * A diagram already drawn is not taken away 120ms later either (MT-273): a rebuild at the SAME tile size is all
+     * cache hits, at a DIFFERENT size (part of the cache key) it is an arrival.  The second half is the control.
      *
      * MUTATION: remove the `sameSizeRebuild` early return and the first assertion fails; make it unconditional on
-     * `replacing` and the control fails instead.
+     * `replacing` and the control fails.
      */
     @Test
     public void testARebuiltDiagramIsNotTakenAwayAMomentLater() throws Exception
@@ -2522,15 +2481,12 @@ public class testDiagramLooksRight
             + "the case the hold-back exists for, and it must keep it");
     }
     /**
-     * A diagram that is already drawn is not taken off the screen to be rebuilt (OB-109): every placement in the track
-     * diagram editor rebuilds the whole grid, and a new grid that hid itself until its tiles had decoded would blink.
-     * Two rules, each what the other misses: nothing pending, nothing to hide; and a replacement is not an arrival (a
-     * slow one still ends behind the spinner, 120ms in, which MT-194 checks).  Both assertions read `isVisible` inside
-     * the event-thread block that built the grid, which makes them deterministic: the reveal can only arrive on a later
-     * pass.
+     * A diagram already drawn is not taken off the screen to be rebuilt (OB-109): a new grid that hid itself until its
+     * tiles decoded would blink.  Nothing pending, nothing to hide; a replacement is not an arrival (MT-194).  Both
+     * assertions read `isVisible` inside the event-thread block that built the grid, which makes them deterministic.
      *
-     * MUTATION: removing the `tilesAreSettled` early return fails the first; removing the `replacing` condition fails
-     * the second; hiding NOTHING, ever, fails the control at the end of the second.
+     * MUTATION: removing the `tilesAreSettled` early return fails the first; removing `replacing` the second; hiding
+     * NOTHING fails the control at the end of the second.
      */
     @Test
     public void testARebuiltDiagramIsNotTakenOffTheScreen() throws Exception
@@ -2639,13 +2595,10 @@ public class testDiagramLooksRight
     }
 
     /**
-     * The train is drawn over the station caption, and the caption is still there beside it (OB-159, OB-117): the
-     * container paints its children as always, then walks them once more asking each for its train.  Asserted as a
-     * DIFFERENCE, not a color: the same arrangement is rendered with a train and without, and the middle of the square
-     * has to change.
+     * The train is drawn over the station caption, and the caption is still there (OB-159, OB-117): asserted as a
+     * DIFFERENCE, rendering the same arrangement with and without a train.
      *
-     * MUTATION: drop the paintTrainOverCaptions loop from newDiagramContainer and nothing changes, so the first
-     * assertion fails; paint the train inside the tile again and it fails the same way.
+     * MUTATION: drop the paintTrainOverCaptions loop from newDiagramContainer, or paint the train inside the tile.
      */
     @Test
     public void testTheTrainIsDrawnOverTheStationCaption() throws Exception
@@ -2731,12 +2684,10 @@ public class testDiagramLooksRight
     }
 
     /**
-     * The locomotive on a square is drawn ten per cent clear, so a caption under it still shows faintly (FR-130).
+     * The locomotive on a square is drawn ten per cent clear, so a caption under it shows faintly (FR-130): a dark gray
+     * a tenth of the way to white, never pure black; nothing adds a glow.
      *
-     * The engine's black over white comes out a dark gray a tenth of the way to white, never pure black.  Nothing adds
-     * a glow: every label that can lie under the engine already has a light surround, which is what shows through.
-     *
-     * MUTATION: draw the engine opaque again and its darkest pixel is the icon's own black, and this fails.
+     * MUTATION: draw the engine opaque again and its darkest pixel is the icon's own black.
      */
     @Test
     public void testTheLocomotiveIsTenPerCentClear()
@@ -2905,13 +2856,11 @@ public class testDiagramLooksRight
     }
 
     /**
-     * A pill's text sits in the middle of it, as much room at the right end as at the left.
+     * A pill's text sits in the middle of it: painted at a larger scale (125, 150 per cent, or the 2x of the guide's
+     * pictures) the glyphs come out wider than measured and must still sit centered.  Painted here at 2x, the arrow on
+     * the left, on the right, and none.
      *
-     * The pill is sized from the text's width as measured for layout; painted at a larger scale (125 or 150 per cent,
-     * or the 2x the guide's pictures use) the glyphs come out wider than measured and must still sit centered.  Painted
-     * here at 2x, with the arrow on the left, on the right, and none.
-     *
-     * MUTATION: draw the text where the label's layout put it again, and this fails.
+     * MUTATION: draw the text where the label's layout put it again.
      */
     @Test
     public void testAPillsTextSitsInTheMiddleOfIt()
@@ -3071,14 +3020,11 @@ public class testDiagramLooksRight
     }
 
     /**
-     * The curve and switch tiles are the mirror images their shapes say they are, at both sizes.
+     * The curve and switch tiles are the mirror images their shapes say they are, at both sizes: a curve between south
+     * and east mirrors across the diagonal, a left switch is a right switch turned over.  A pixel more than a shade out
+     * (12 of 255) on either side is counted (icons come from `docs/tools/tile-icons.py`).
      *
-     * A curve between the south and east sides is its own mirror image across the diagonal; a left switch is a right
-     * switch turned over; a crossing is the same turned a quarter.  The icons are drawn from their geometry
-     * (`docs/tools/tile-icons.py`), and a pixel more than a shade out (12 of 255) on either side of a mirror is
-     * counted.
-     *
-     * MUTATION: put any one of the old icons back and this fails.
+     * MUTATION: put any one of the old icons back.
      */
     @Test
     public void testTheCurveAndSwitchTilesAreMirrorImages() throws Exception
@@ -3150,13 +3096,11 @@ public class testDiagramLooksRight
     }
 
     /**
-     * A pill's edge and a destination's ring are as thick on the right and the bottom as on the left and the top.
+     * A pill's edge and a destination's ring are as thick on the right and bottom as on the left and top:
+     * `drawRoundRect(x, y, w - 1, h - 1)` with anti-aliasing puts left and top half outside the fill; checked at twice
+     * the size.
      *
-     * `drawRoundRect(x, y, w - 1, h - 1)` with anti-aliasing puts the left and top of the outline half outside the fill
-     * and the right and bottom wholly inside it.  Painted at twice the size, the four sides of an even outline read the
-     * same from the outside in.
-     *
-     * MUTATION: draw the outline the old way and this fails.
+     * MUTATION: draw the outline the old way.
      */
     @Test
     public void testAPillsOutlineIsEvenAllRound()
@@ -3221,12 +3165,10 @@ public class testDiagramLooksRight
     }
 
     /**
-     * A square's address is red letters with a white halo round them, and no box behind them.
+     * A square's address is red letters with a white halo and no box behind: each label is painted alone onto black, so
+     * a box would light its corners.
      *
-     * Each address label on a page with Show Addresses on is painted alone onto black: a box behind the text lights
-     * the label's corners, a halo leaves them black and puts white only round the letters.
-     *
-     * MUTATION: put the box back and this fails.
+     * MUTATION: put the box back.
      */
     @Test
     public void testAnAddressHasAHaloAndNoBox() throws Exception
@@ -3425,12 +3367,10 @@ public class testDiagramLooksRight
     }
 
     /**
-     * A caption stood on end beside a station's vertical track clears that station's badge, and the badge of a station
-     * on the next square over (OB-327), by a pixel (the white rim).  The badge is MEASURED, painted as the diagram
-     * paints it, and the caption is built and placed as the grid does, at both tile sizes, empty and with a train's
-     * name.
+     * A caption stood on end beside a station's vertical track clears that station's badge and the next square's by a
+     * pixel (OB-327).  The badge is MEASURED, the caption built and placed as the grid does, at both sizes.
      *
-     * MUTATION: place it by the flat caption's offset again, or give it the full line height, and this fails.
+     * MUTATION: place it by the flat caption's offset again, or give it the full line height.
      */
     @Test
     public void testAPillOnEndClearsTheStationsBesideIt()
@@ -3566,12 +3506,10 @@ public class testDiagramLooksRight
     }
 
     /**
-     * A square's address is drawn over the locomotive standing on it, not under it (FR-116): the diagram's container
-     * paints every tile's train over its children (OB-159), so an address would be painted over by the icon.  Here an
-     * address lies across the middle of a square with a running train on it; its red letters must all still be there
-     * with the train drawn.
+     * A square's address is drawn over the locomotive standing on it (FR-116): the container paints every tile's train
+     * over its children (OB-159), so an address would be painted over by the icon.  Its red letters must all remain.
      *
-     * MUTATION: drop the last pass that paints the addresses over the trains and this fails.
+     * MUTATION: drop the last pass that paints the addresses over the trains.
      */
     @Test
     public void testAnAddressIsDrawnOverTheTrain() throws Exception
@@ -3713,12 +3651,10 @@ public class testDiagramLooksRight
     }
 
     /**
-     * A running train's destination is drawn in the orange the train's line shows on white, solid.
+     * A running train's destination is the orange the train's line shows on white, solid: the pill's commonest color,
+     * the fill between ring and letters, is that orange exactly.
      *
-     * The orange is worked out from the line's own color and see-through, and the pill is painted on white: its
-     * commonest color, the fill between the ring and the letters, is that orange exactly.
-     *
-     * MUTATION: put the bright orange or the warm yellow back, or draw the destination see-through, and this fails.
+     * MUTATION: put the bright orange or the warm yellow back, or draw the destination see-through.
      */
     @Test
     public void testADestinationIsTheLineAsItLooksOnWhite()
@@ -3973,11 +3909,10 @@ public class testDiagramLooksRight
 
     /**
      * A caption over the square a curve's station spills onto stays in front of the spill (OB-117), and the arrows
-     * drawn again over the spill go no further than the spill.  Nine squares in the diagram's own container, a station
-     * on an E-S curve in the middle, the square to its right a one-way road under an opaque yellow caption covering it:
-     * none of the station's blue and none of the arrows' red or green shows on that square.
+     * redrawn over the spill go no further than it: none of the station's blue or the arrows' red or green shows on a
+     * square under an opaque yellow caption.
      *
-     * MUTATION: draw the spill over the captions again, or the arrows again over the whole square, and this fails.
+     * MUTATION: draw the spill over the captions again, or the arrows again over the whole square.
      */
     @Test
     @support.DrawsFR118Icons
@@ -4082,12 +4017,10 @@ public class testDiagramLooksRight
     }
 
     /**
-     * The whole of every kind of station's spill is under the captions, at both sizes, not only the icon's OUTLINE (a
-     * ring): at 60 pixels the body of a block or a terminus would otherwise be drawn in front of a caption.  Nine
-     * squares, a station on an E-S curve in the middle, opaque yellow captions over the squares to its right and below:
-     * none of the station's blue on either.
+     * The whole of every kind of station's spill is under the captions at both sizes, not only the icon's OUTLINE: at
+     * 60 pixels the body of a block or terminus would otherwise show in front of a caption.
      *
-     * MUTATION: make the region the icon's outline alone again, and this fails at 60 pixels.
+     * MUTATION: make the region the icon's outline alone again.
      */
     @Test
     @support.DrawsFR118Icons
@@ -4226,13 +4159,11 @@ public class testDiagramLooksRight
     }
 
     /**
-     * A curve's station spills onto the squares beside it at the middle of their edges, where their arrows are, and
-     * those ingress/egress arrows must stay visible: the arrows of a square a spill reaches are drawn back over it.
-     * Nine squares, a station of every kind on an E-S curve in the middle (the may-turn and must-turn icons and a
-     * terminus are longer than the curve's chord), the square to its right a one-way road from W to E, or the one below
-     * from N to S, at 30 and 60 pixels: that square's arrows have all their pixels with the station as without.
+     * A curve's station spills onto the squares beside it where their arrows are, and those arrows must stay visible:
+     * the arrows of a square a spill reaches are drawn back over it.  At 30 and 60 pixels that square's arrows have all
+     * their pixels with the station as without.
      *
-     * MUTATION: take the arrows' pass over the spill out of `LayoutGrid.newDiagramContainer`, and this fails.
+     * MUTATION: take the arrows' pass over the spill out of `LayoutGrid.newDiagramContainer`.
      */
     @Test
     @support.DrawsFR118Icons
@@ -4341,12 +4272,10 @@ public class testDiagramLooksRight
     }
 
     /**
-     * Writing of the user's own on the diagram has a white halo round its letters, as an address has (a smaller
-     * outline), so it can be read over black track.  A label as the grid builds one, painted over black, shows white
-     * round its letters at 30 and 60 pixels, and the halo is thinner than an address's: no wider than a sixth of their
-     * size.
+     * Writing of the user's own has a white halo, thinner than an address's (no wider than a sixth of its size), so it
+     * reads over black track, at 30 and 60 pixels.
      *
-     * MUTATION: draw the label without its halo, and this fails.
+     * MUTATION: draw the label without its halo.
      */
     @Test
     public void testTheDiagramsOwnWritingHasAHalo()
@@ -4501,11 +4430,10 @@ public class testDiagramLooksRight
     }
 
     /**
-     * A square at the Medium size is drawn from the Large art scaled down (FR-122, the cheap 60px scaling), its own
-     * picture 46 pixels across, cached apart from the Large one it comes from; checked for a sensor, a switch, a curve
-     * and a signal.
+     * A square at the Medium size is the Large art scaled down (FR-122), 46 pixels across, cached apart from the Large
+     * one; checked for a sensor, a switch, a curve and a signal.
      *
-     * MUTATION: look for a 46 pixel icon set, or cache a Medium picture under its Large one's key, and this fails.
+     * MUTATION: look for a 46 pixel icon set, or cache a Medium picture under its Large one's key.
      */
     @Test
     public void testAMediumSquareIsTheLargeArtScaledDown() throws Exception
@@ -4609,14 +4537,10 @@ public class testDiagramLooksRight
     }
 
     /**
-     * A pop-up's title names the configuration that is loaded, beside the page, and follows it (FR-127).
+     * A pop-up's title names the loaded configuration beside the page and follows it (FR-127), asked after unloaded,
+     * loaded, switched, renamed and unloaded.  Run last (priority 1): unloading rebuilds the session the others use.
      *
-     * A pop-up open while the configuration is unloaded, loaded, switched, renamed and unloaded is asked for its title
-     * after each; with nothing loaded it is today's.  Run last (priority 1) because unloading rebuilds the session the
-     * other claims ask the window for.
-     *
-     * MUTATION: build the title from the page alone, or leave a rename or an unload out of the places that set it
-     * again, and this fails.
+     * MUTATION: build the title from the page alone, or leave a rename or an unload out of the places that set it.
      */
     @Test(priority = 1)
     public void testAPopUpTitleNamesTheLoadedConfiguration() throws Exception
@@ -4680,14 +4604,11 @@ public class testDiagramLooksRight
     }
 
     /**
-     * The window's own render of the active locomotive keeps the configuration in a pop-up's title (FR-127).
+     * The window's own render of the active locomotive keeps the configuration in a pop-up's title (FR-127): the render
+     * with a locomotive active adds its text after the page, the one with none takes it off.  The title is set to
+     * something else first, and the render waited for through the window's futures.
      *
-     * Two places set the title from that render: the one with a locomotive active, which adds its text after the page,
-     * and the one with none, which takes it off.  Each is reached by making a locomotive active and then none, the
-     * title set to something else first so that only the render can have written what is read, and the render waited
-     * for through the window's own futures (pumping the event thread does not wait for the worker that posts it).
-     *
-     * MUTATION: set either title from the page alone (`popup.getLayoutTitle() + ...`) in the render, and this fails.
+     * MUTATION: set either title from the page alone in the render.
      */
     @Test(priority = 1)
     public void testALocomotiveRenderKeepsTheConfigurationInAPopUpTitle() throws Exception
@@ -5301,12 +5222,10 @@ public class testDiagramLooksRight
     }
 
     /**
-     * The tunnel portal's wall is near white, #EEEEEE, and a pixel wider each side at 30 and two at 60 (three pixels
-     * and seven), and the arch between the walls is still the track's width, 8 and 16 (FR-134): the wall grew outward,
-     * the track through the arch is where it was.  Read across the portal below the arch's curve, row 12 at 30, row 25
-     * at 60.
+     * The tunnel portal's wall is near white, #EEEEEE, one pixel wider each side at 30 and two at 60, and the arch is
+     * still the track's width, 8 and 16 (FR-134).  Read below the arch's curve, row 12 at 30, row 25 at 60.
      *
-     * MUTATION: put the old tunnel art back, and this fails.
+     * MUTATION: put the old tunnel art back.
      */
     @Test
     public void testTheTunnelsWallIsWider() throws Exception
