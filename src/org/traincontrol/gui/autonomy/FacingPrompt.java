@@ -167,40 +167,44 @@ public class FacingPrompt
     }
 
     /**
-     * Puts the question with `showOptionDialog`, as every dialog here does: the buttons of the input dialogs follow the
-     * SYSTEM language.  The walk's own answer is the default button where the square can hold it, so return gives what
-     * the paste would have done without asking.
-     *
-     * @param parent what to center on
-     * @param question the question, already worded
-     * @param sides the headings to offer
-     * @param suggested the default, or null
-     * @return the chosen heading, or null when dismissed
+     * Puts the question through `askAmong`, the walk's own answer the default button where the square can hold it, so
+     * return gives what the paste would have done without asking.
+     * @return the chosen heading, or null, which every caller reads as a dismissal: the paste moves nothing and the
+     *     home door sets no home (OB-282)
      */
     private static Side ask(Component parent, String question, List<Side> sides, Side suggested)
     {
-        final Side[] answer = {null};
+        return askAmong(parent, question, I18n.t("autolayout.ui.askFacingTitle"), sides, FacingPrompt::labelFor,
+            suggested == null ? 0 : Math.max(0, sides.indexOf(suggested)));
+    }
+
+    /**
+     * Puts a question on the event thread and waits, a button per choice and `preferred` the default (this prompt's and
+     * `ArrivalSidePrompt`'s).  `showOptionDialog`, as every dialog here, because the input dialogs' buttons follow the
+     * SYSTEM language.
+     * @return the choice, or null when the dialog is dismissed or cannot be shown
+     */
+    static <T> T askAmong(Component parent, String question, String title, List<T> choices,
+        java.util.function.Function<T, String> label, int preferred)
+    {
+        java.util.concurrent.atomic.AtomicReference<T> answer = new java.util.concurrent.atomic.AtomicReference<>();
 
         try
         {
             Runnable prompt = () ->
             {
-                Object[] options = new Object[sides.size()];
+                Object[] options = new Object[choices.size()];
 
-                for (int i = 0; i < sides.size(); i++)
+                for (int i = 0; i < choices.size(); i++)
                 {
-                    options[i] = labelFor(sides.get(i));
+                    options[i] = label.apply(choices.get(i));
                 }
 
-                int preferred = suggested == null ? 0 : Math.max(0, sides.indexOf(suggested));
-
-                int chose = JOptionPane.showOptionDialog(parent,
-                    question,
-                    I18n.t("autolayout.ui.askFacingTitle"),
+                int chose = JOptionPane.showOptionDialog(parent, question, title,
                     JOptionPane.DEFAULT_OPTION, JOptionPane.QUESTION_MESSAGE, null,
                     options, options[preferred]);
 
-                if (chose >= 0 && chose < sides.size()) answer[0] = sides.get(chose);
+                if (chose >= 0 && chose < choices.size()) answer.set(choices.get(chose));
             };
 
             if (javax.swing.SwingUtilities.isEventDispatchThread()) prompt.run();
@@ -208,10 +212,9 @@ public class FacingPrompt
         }
         catch (Exception cannotAsk)
         {
-            // Nothing, and null stands, which every caller reads as a dismissal: the paste moves nothing and the home
-            // door sets no home (OB-282).
+            // Nothing, and null stands.
         }
 
-        return answer[0];
+        return answer.get();
     }
 }

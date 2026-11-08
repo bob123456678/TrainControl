@@ -5,7 +5,6 @@ import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
-import javax.swing.JOptionPane;
 import org.traincontrol.automation.Edge;
 import org.traincontrol.automation.Layout;
 import org.traincontrol.automation.Point;
@@ -229,9 +228,8 @@ public class ArrivalSidePrompt
     }
 
     /**
-     * Puts the question to the operator.  `showOptionDialog` rather than `showInputDialog`, as in every dialog here,
-     * because the input dialogs' buttons follow the SYSTEM language.  A dismissed dialog answers null, the answer that
-     * claims least: a tail nobody has placed blocks no track.
+     * Puts the question to the operator through `FacingPrompt.askAmong`.  A dismissed dialog answers null, the answer
+     * that claims least: a tail nobody has placed blocks no track.
      * @return the chosen side, or null when dismissed
      */
     private static String ask(Component parent, Point at, List<String> sides)
@@ -248,37 +246,8 @@ public class ArrivalSidePrompt
             return sides.isEmpty() ? null : sides.get(0);
         }
 
-        final String[] answer = {null};
-
-        try
-        {
-            Runnable prompt = () ->
-            {
-                Object[] options = new Object[sides.size()];
-
-                for (int i = 0; i < sides.size(); i++)
-                {
-                    options[i] = labelFor(sides.get(i));
-                }
-
-                int chose = JOptionPane.showOptionDialog(parent,
-                    I18n.f("autolayout.ui.askArrivalSide", squareNameFor(at)),
-                    I18n.t("autolayout.ui.askArrivalSideTitle"),
-                    JOptionPane.DEFAULT_OPTION, JOptionPane.QUESTION_MESSAGE, null,
-                    options, options[0]);
-
-                if (chose >= 0 && chose < sides.size()) answer[0] = sides.get(chose);
-            };
-
-            if (javax.swing.SwingUtilities.isEventDispatchThread()) prompt.run();
-            else javax.swing.SwingUtilities.invokeAndWait(prompt);
-        }
-        catch (Exception cannotAsk)
-        {
-            // Nothing, and null stands. See the note above: an unanswered question blocks no track.
-        }
-
-        return answer[0];
+        return FacingPrompt.askAmong(parent, I18n.f("autolayout.ui.askArrivalSide", squareNameFor(at)),
+            I18n.t("autolayout.ui.askArrivalSideTitle"), sides, ArrivalSidePrompt::labelFor, 0);
     }
 
     /**

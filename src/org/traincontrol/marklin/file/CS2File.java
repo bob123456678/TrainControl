@@ -10,6 +10,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import org.traincontrol.base.Locomotive;
 import org.traincontrol.marklin.MarklinControlStation;
@@ -343,6 +344,16 @@ public final class CS2File
         }
     }
 
+    /**
+     * The shapes of a config file's lines, compiled once for `parseFileContents`: `String.matches` and the String form
+     * of `replace` compile a pattern on every call, about half of what a sync or a layout load spends parsing.
+     */
+    private static final Pattern ARRAY_ENTRY = Pattern.compile("^ \\.\\.[a-z0-9A-Z]+=.+$");
+    private static final Pattern BLOCK_NAME = Pattern.compile("^[a-zA-Z]+$");
+    private static final Pattern KEY_AND_VALUE = Pattern.compile("^ \\.[a-z0-9A-Z]+=.+$");
+    private static final Pattern KEY_ALONE = Pattern.compile("^ \\.[a-z0-9A-Z]+$");
+    private static final Pattern BARE_KEY = Pattern.compile("^[a-zA-Z0-9_]+=.*$");
+
     /** The body of parseFile.  Call parseFile, which closes the reader whatever happens. */
     private static List<Map<String, String> > parseFileContents(BufferedReader in) throws Exception
     {
@@ -368,9 +379,9 @@ public final class CS2File
             }
             
             // F17-32 get a different key on the CS2
-            s = s.replace(".funktionen_2", ".funktionen");
+            if (s.contains(".funktionen_2")) s = s.replace(".funktionen_2", ".funktionen");
                         
-            if (s.matches("^ \\.\\.[a-z0-9A-Z]+=.+$"))
+            if (ARRAY_ENTRY.matcher(s).matches())
             {
                 // Limit of 2, for the same reason as the ordinary key=value branch below: the one array
                 // key that carries free text is lokname, the name of a multi-unit member, which
@@ -415,7 +426,7 @@ public final class CS2File
                 
                 // Case-insensitive, like `LayoutDiagram.readLayoutIndexIds`: firmware casing varies (`Version`,
                 // `version`), and a capitalized block name would otherwise give an empty diagram with no message.
-                if (s.matches("^[a-zA-Z]+$"))
+                if (BLOCK_NAME.matcher(s).matches())
                 {
                     if (item != null)
                     {
@@ -441,7 +452,7 @@ public final class CS2File
                     // every reader (OB-406).
                     if (!s.equals(s.toLowerCase())) item.put("_typeAsWritten", s);
                 }
-                else if (s.matches("^ \\.[a-z0-9A-Z]+=.+$"))
+                else if (KEY_AND_VALUE.matcher(s).matches())
                 {
                     // Limit of 2, so that a route or locomotive name containing an equals sign is not truncated
                     String[] parts = s.substring(2).split("=", 2);
@@ -451,14 +462,14 @@ public final class CS2File
                         item.put(parts[0], parts[1]);
                     }
                 }   
-                else if (s.matches("^ \\.[a-z0-9A-Z]+$"))
+                else if (KEY_ALONE.matcher(s).matches())
                 {
                     // Same character class as the arm above: a route's condition block ` .S88Flag` has no `=` and lands
                     // here; if it did not match, the `..kont=` group after it would be flushed under the wrong key and
                     // `parseRoutes` would drop the route.
                     lastKey = s.substring(2);
                 }
-                else if (s.matches("^[a-zA-Z0-9_]+=.*$"))
+                else if (BARE_KEY.matcher(s).matches())
                 {
                     // A key at the left margin (`page=1` in a genuine page export): neither block name, key nor array
                     // header.  Collected into an item of its own, which `LayoutDiagram.addBareKey` puts back after the
@@ -1333,48 +1344,7 @@ public final class CS2File
                             }
                         }
 
-                        // This is disabled becuase the JSON does not appear to convey the function number (only the icon, which is non-unique)
-                        /* 
-                        else if (item.has("lok") && "func".equals(item.getString("typ")) && item.has("lok"))
-                        {
-                            String locName = null;
-
-                            if (this.getCS3LocById(item.getString("lok"), locs) != null)
-                            {
-                                locName = this.getCS3LocById(item.getString("lok"), locs).getString("name");
-                            }
-
-                            if (locName != null)
-                            {
-                                // wert is on, default 0 but cant be on
-                                // icon is (almost) fno, default 0
-                                int fNo = 0;
-                                boolean fActive = false;
-
-                                if (item.has("icon"))
-                                {
-                                    fNo = item.getInt("icon");
-                                }
-
-                                if (item.has("wert") && "1".equals(item.get("wert")))
-                                {
-                                    fActive = true;
-                                }
-
-                                RouteCommand rc = RouteCommand.RouteCommandFunction(locName, fNo, fActive);
-
-                                if (item.has("sekunde") && item.getFloat("sekunde") > 0)
-                                {
-                                    rc.setDelay(Float.valueOf(item.getFloat("sekunde") * 1000).intValue());
-                                }
-
-                                r.addItem(rc);
-                            }
-                            else
-                            {
-                                logMessage("Warning: route locomotive does not exist in database " + item.getString("lok"));
-                            }
-                        } */
+                        // No function steps: the JSON gives a function's icon, which is not unique, and not its number.
                         else if (item.has("lok") && "dir".equals(item.getString("typ")) && item.has("lok"))
                         {
                             String locName = routeLocomotiveName(item, locs, unnameable);

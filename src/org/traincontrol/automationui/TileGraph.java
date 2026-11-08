@@ -2146,21 +2146,14 @@ public class TileGraph
 
         if (from == null || side == null || stops == null || !tiles.containsKey(from)) return reached;
 
-        boolean trackThatWay = false;
+        Step start = hasTrackBy(from, side) ? firstStep(from, side) : null;
 
-        for (Route route : getRoutes(from).values())
-        {
-            if (route.touches(side)) trackThatWay = true;
-        }
-
-        Landing first = trackThatWay ? landing(from, side) : null;
-
-        if (first == null || !tiles.containsKey(first.getTile())) return reached;
+        if (start == null) return reached;
 
         Set<String> seen = new java.util.HashSet<>();
         java.util.ArrayDeque<Step> frontier = new java.util.ArrayDeque<>();
 
-        frontier.add(new Step(first.getTile(), first.getEntrySide()));
+        frontier.add(start);
 
         while (!frontier.isEmpty())
         {
@@ -2192,23 +2185,16 @@ public class TileGraph
     {
         if (from == null || side == null || stops == null || !tiles.containsKey(from)) return false;
 
-        boolean trackThatWay = false;
+        if (!hasTrackBy(from, side)) return false;
 
-        for (Route route : getRoutes(from).values())
-        {
-            if (route.touches(side)) trackThatWay = true;
-        }
+        Step start = firstStep(from, side);
 
-        if (!trackThatWay) return false;
-
-        Landing first = landing(from, side);
-
-        if (first == null || !tiles.containsKey(first.getTile())) return true;
+        if (start == null) return true;
 
         Set<String> seen = new java.util.HashSet<>();
         java.util.ArrayDeque<Step> frontier = new java.util.ArrayDeque<>();
 
-        frontier.add(new Step(first.getTile(), first.getEntrySide()));
+        frontier.add(start);
 
         while (!frontier.isEmpty())
         {
@@ -2233,21 +2219,12 @@ public class TileGraph
     {
         if (from == null || side == null || to == null || !tiles.containsKey(from)) return null;
 
-        boolean trackThatWay = false;
+        Step start = hasTrackBy(from, side) ? firstStep(from, side) : null;
 
-        for (Route route : getRoutes(from).values())
-        {
-            if (route.touches(side)) trackThatWay = true;
-        }
-
-        Landing first = trackThatWay ? landing(from, side) : null;
-
-        if (first == null || !tiles.containsKey(first.getTile())) return null;
+        if (start == null) return null;
 
         Map<String, Step> cameFrom = new HashMap<>();
         java.util.ArrayDeque<Step> frontier = new java.util.ArrayDeque<>();
-
-        Step start = new Step(first.getTile(), first.getEntrySide());
 
         cameFrom.put(start.key(), null);
         frontier.add(start);
@@ -2279,6 +2256,27 @@ public class TileGraph
         }
 
         return null;
+    }
+
+    /** Whether any of a square's routes runs to this side. */
+    private boolean hasTrackBy(TileKey from, Side side)
+    {
+        for (Route route : getRoutes(from).values())
+        {
+            if (route.touches(side)) return true;
+        }
+
+        return false;
+    }
+
+    /** A walk's first step out of a square by one side; null where that lands on no square of this graph. */
+    private Step firstStep(TileKey from, Side side)
+    {
+        Landing first = landing(from, side);
+
+        if (first == null || !tiles.containsKey(first.getTile())) return null;
+
+        return new Step(first.getTile(), first.getEntrySide());
     }
 
     /** One square of an undirected walk, remembered with the side it was entered by. */

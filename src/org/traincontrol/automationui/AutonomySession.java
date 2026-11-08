@@ -1487,6 +1487,13 @@ public class AutonomySession
      */
     public Map<String, Side> placeableFacingsFor(TileKey square, org.traincontrol.automation.Layout running)
     {
+        return facingsWhere(square, running, point -> point.isDestination());
+    }
+
+    /** Each copy of a square, with its facing, whose running Point passes the test; all of them with no layout. */
+    private Map<String, Side> facingsWhere(TileKey square, org.traincontrol.automation.Layout running,
+        java.util.function.Predicate<org.traincontrol.automation.Point> test)
+    {
         Map<String, Side> all = square == null ? new LinkedHashMap<String, Side>() : facingsFor(square);
 
         if (running == null) return all;
@@ -1497,7 +1504,7 @@ public class AutonomySession
         {
             org.traincontrol.automation.Point point = running.getPoint(copy.getKey());
 
-            if (point != null && point.isDestination()) out.put(copy.getKey(), copy.getValue());
+            if (point != null && test.test(point)) out.put(copy.getKey(), copy.getValue());
         }
 
         return out;
@@ -1509,20 +1516,7 @@ public class AutonomySession
      */
     public Map<String, Side> departableFacingsFor(TileKey square, org.traincontrol.automation.Layout running)
     {
-        Map<String, Side> all = square == null ? new LinkedHashMap<String, Side>() : facingsFor(square);
-
-        if (running == null) return all;
-
-        Map<String, Side> out = new LinkedHashMap<>();
-
-        for (Map.Entry<String, Side> copy : all.entrySet())
-        {
-            org.traincontrol.automation.Point point = running.getPoint(copy.getKey());
-
-            if (point != null && !running.getNeighbors(point).isEmpty()) out.put(copy.getKey(), copy.getValue());
-        }
-
-        return out;
+        return facingsWhere(square, running, point -> !running.getNeighbors(point).isEmpty());
     }
 
     /**
@@ -1534,25 +1528,21 @@ public class AutonomySession
     {
         if (square == null || facing == null || running == null) return null;
 
-        org.traincontrol.automation.Point turning = null;
+        org.traincontrol.automation.Point arriving = plainFirst(placeableFacingsFor(square, running), facing, running);
 
-        for (Map.Entry<String, Side> copy : placeableFacingsFor(square, running).entrySet())
-        {
-            if (copy.getValue() != facing) continue;
-
-            org.traincontrol.automation.Point candidate = running.getPoint(copy.getKey());
-
-            if (candidate == null) continue;
-
-            if (!candidate.isTerminus() && !candidate.isReversing()) return candidate;
-
-            if (turning == null) turning = candidate;
-        }
-
-        if (turning != null) return turning;
+        if (arriving != null) return arriving;
 
         // None a train may arrive at faces that way: any that does, the plain one first.
-        for (Map.Entry<String, Side> copy : facingsFor(square).entrySet())
+        return plainFirst(facingsFor(square), facing, running);
+    }
+
+    /** The first of these copies facing that way that does not turn trains, else the first that does; null if none. */
+    private static org.traincontrol.automation.Point plainFirst(Map<String, Side> copies, Side facing,
+        org.traincontrol.automation.Layout running)
+    {
+        org.traincontrol.automation.Point turning = null;
+
+        for (Map.Entry<String, Side> copy : copies.entrySet())
         {
             if (copy.getValue() != facing) continue;
 
@@ -1761,12 +1751,8 @@ public class AutonomySession
 
         if (running != null && getStationIndex() != null)
         {
-            for (org.traincontrol.automation.Point point : running.getPoints())
+            for (org.traincontrol.automation.Point point : pointsHolding(locomotive, running))
             {
-                if (point.getCurrentLocomotive() == null) continue;
-
-                if (!locomotive.equals(point.getCurrentLocomotive().getName())) continue;
-
                 TileKey where = getStationIndex().squareOf(point.getName());
 
                 if (where != null && !candidates.contains(where)) candidates.add(where);
@@ -1822,11 +1808,17 @@ public class AutonomySession
         return name.trim().isEmpty() ? null : name;
     }
 
-    private org.json.JSONObject pointOf(TileKey tile)
+    /** The configuration in use, or null when there is none. */
+    private org.json.JSONObject activeConfiguration()
     {
         String active = store.getActiveConfiguration();
 
-        org.json.JSONObject configuration = active == null ? null : store.getConfiguration(active);
+        return active == null ? null : store.getConfiguration(active);
+    }
+
+    private org.json.JSONObject pointOf(TileKey tile)
+    {
+        org.json.JSONObject configuration = activeConfiguration();
 
         if (configuration == null || !configuration.has("points")) return null;
 
@@ -4401,11 +4393,7 @@ public class AutonomySession
     {
         Map<String, org.json.JSONObject> out = new LinkedHashMap<>();
 
-        String active = store.getActiveConfiguration();
-
-        if (active == null) return out;
-
-        org.json.JSONObject configuration = store.getConfiguration(active);
+        org.json.JSONObject configuration = activeConfiguration();
 
         if (configuration == null || !configuration.has("points")) return out;
 
@@ -4978,11 +4966,7 @@ public class AutonomySession
      */
     public boolean setGlobal(String key, Object value) throws IOException
     {
-        String active = store.getActiveConfiguration();
-
-        if (active == null) return false;
-
-        org.json.JSONObject configuration = store.getConfiguration(active);
+        org.json.JSONObject configuration = activeConfiguration();
 
         if (configuration == null) return false;
 
@@ -5006,9 +4990,7 @@ public class AutonomySession
     {
         java.util.Set<String> names = new java.util.TreeSet<>();
 
-        String active = store.getActiveConfiguration();
-
-        org.json.JSONObject configuration = active == null ? null : store.getConfiguration(active);
+        org.json.JSONObject configuration = activeConfiguration();
 
         org.json.JSONObject globals = configuration == null ? null : configuration.optJSONObject("globals");
 
@@ -5084,11 +5066,7 @@ public class AutonomySession
      */
     public String getGlobal(String key)
     {
-        String active = store.getActiveConfiguration();
-
-        if (active == null) return null;
-
-        org.json.JSONObject configuration = store.getConfiguration(active);
+        org.json.JSONObject configuration = activeConfiguration();
 
         if (configuration == null) return null;
 
@@ -5103,11 +5081,7 @@ public class AutonomySession
     {
         AutonomyBuilder.Globals globals = new AutonomyBuilder.Globals();
 
-        String active = store.getActiveConfiguration();
-
-        if (active == null) return globals;
-
-        org.json.JSONObject configuration = store.getConfiguration(active);
+        org.json.JSONObject configuration = activeConfiguration();
 
         if (configuration == null || !configuration.has("globals")) return globals;
 
@@ -5281,9 +5255,7 @@ public class AutonomySession
     {
         java.util.List<TileKey> out = new java.util.ArrayList<>();
 
-        String active = store.getActiveConfiguration();
-
-        org.json.JSONObject configuration = active == null ? null : store.getConfiguration(active);
+        org.json.JSONObject configuration = activeConfiguration();
 
         if (configuration == null || !configuration.has("points")) return out;
 
@@ -6096,9 +6068,7 @@ public class AutonomySession
     {
         Map<String, Object[]> standing = railwayTrains();
 
-        String active = store.getActiveConfiguration();
-
-        org.json.JSONObject configuration = active == null ? null : store.getConfiguration(active);
+        org.json.JSONObject configuration = activeConfiguration();
 
         org.json.JSONObject points = configuration == null ? null : configuration.optJSONObject("points");
 
@@ -6592,11 +6562,7 @@ public class AutonomySession
     /** Takes a locomotive off every other square, carrying what was recorded with it into the new placement `into`. */
     private void forgetPlacementsElsewhere(TileKey keep, String name, org.json.JSONObject into)
     {
-        String active = store.getActiveConfiguration();
-
-        if (active == null) return;
-
-        org.json.JSONObject configuration = store.getConfiguration(active);
+        org.json.JSONObject configuration = activeConfiguration();
 
         if (configuration == null || !configuration.has("points")) return;
 
@@ -7194,6 +7160,23 @@ public class AutonomySession
         return departable.get(0);
     }
 
+    /** The running Points whose locomotive has this name, in the layout's order. */
+    private static List<org.traincontrol.automation.Point> pointsHolding(String locomotive,
+        org.traincontrol.automation.Layout running)
+    {
+        List<org.traincontrol.automation.Point> out = new ArrayList<>();
+
+        for (org.traincontrol.automation.Point point : running.getPoints())
+        {
+            if (point.getCurrentLocomotive() != null && locomotive.equals(point.getCurrentLocomotive().getName()))
+            {
+                out.add(point);
+            }
+        }
+
+        return out;
+    }
+
     /**
      * The breadth-first half: from where this train stands to the nearest copy of the target a train could stand on.
      * `getNeighbors` shuffles, so ties are broken by rule: the plain copy over its turning twin, as a paste is no
@@ -7213,12 +7196,8 @@ public class AutonomySession
         // Where the train IS, not every point of its locked path: an occupied square breaks the tie, else the first.
         org.traincontrol.automation.Point from = null;
 
-        for (org.traincontrol.automation.Point point : running.getPoints())
+        for (org.traincontrol.automation.Point point : pointsHolding(locomotive, running))
         {
-            if (point.getCurrentLocomotive() == null) continue;
-
-            if (!locomotive.equals(point.getCurrentLocomotive().getName())) continue;
-
             if (from == null) from = point;
 
             if (point.isOccupied())
@@ -7385,12 +7364,8 @@ public class AutonomySession
         // WHERE IT IS, from the thing that knows.
         if (running != null && getStationIndex() != null)
         {
-            for (org.traincontrol.automation.Point point : running.getPoints())
+            for (org.traincontrol.automation.Point point : pointsHolding(locomotive, running))
             {
-                if (point.getCurrentLocomotive() == null) continue;
-
-                if (!locomotive.equals(point.getCurrentLocomotive().getName())) continue;
-
                 TileKey where = getStationIndex().squareOf(point.getName());
 
                 if (where == null) continue;
@@ -8021,11 +7996,7 @@ public class AutonomySession
     /** The write alone, for a caller making several and re-deriving once. */
     private void writePointProperty(TileKey tile, String key, Object value)
     {
-        String active = store.getActiveConfiguration();
-
-        if (active == null) return;
-
-        org.json.JSONObject configuration = store.getConfiguration(active);
+        org.json.JSONObject configuration = activeConfiguration();
 
         if (configuration == null) return;
 
@@ -8046,11 +8017,7 @@ public class AutonomySession
     /** @return the stored value, or null when this Point has no such property */
     public Object getPointProperty(TileKey tile, String key)
     {
-        String active = store.getActiveConfiguration();
-
-        if (active == null) return null;
-
-        org.json.JSONObject configuration = store.getConfiguration(active);
+        org.json.JSONObject configuration = activeConfiguration();
 
         if (configuration == null || !configuration.has("points")) return null;
 

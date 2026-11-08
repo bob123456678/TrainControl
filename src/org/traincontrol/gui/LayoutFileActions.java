@@ -303,21 +303,10 @@ final class LayoutFileActions
         }
 
         // The ceiling, asked before anything is made, and not in `fillCombinedPage`, which runs after the page is
-        // written and indexed.  The same arithmetic: the widest source page, and every height plus a blank row between.
-        int wouldBeWide = 0;
-        int wouldBeHigh = 0;
+        // written and indexed.
+        java.awt.Dimension wouldBe = combinedSize(pages);
 
-        for (String each : pages)
-        {
-            LayoutDiagram page = this.ui.getModel().getLayout(each);
-
-            if (page == null) continue;
-
-            wouldBeWide = Math.max(wouldBeWide, page.getSx());
-            wouldBeHigh += page.getSy() + 1;
-        }
-
-        if (wouldBeHigh > LayoutEditor.MAX_SIZE || wouldBeWide > LayoutEditor.MAX_SIZE)
+        if (wouldBe.height > LayoutEditor.MAX_SIZE || wouldBe.width > LayoutEditor.MAX_SIZE)
         {
             JOptionPane.showMessageDialog(over,
                 I18n.f("layout.ui.errorMaxSizeExceeded", LayoutEditor.MAX_SIZE));
@@ -328,6 +317,24 @@ final class LayoutFileActions
 
         if (editor == null) work.run();
         else editor.stepOutFor(work);
+    }
+
+    /** The combined page's size: the widest source page, and every height plus a blank row between. */
+    private java.awt.Dimension combinedSize(List<String> pages)
+    {
+        java.awt.Dimension size = new java.awt.Dimension();
+
+        for (String each : pages)
+        {
+            LayoutDiagram page = this.ui.getModel().getLayout(each);
+
+            if (page == null) continue;
+
+            size.width = Math.max(size.width, page.getSx());
+            size.height += page.getSy() + 1;
+        }
+
+        return size;
     }
 
     /** Combine Linked Pages once nothing can refuse it; `editor` is told which page to show however this ends. */
@@ -807,18 +814,10 @@ final class LayoutFileActions
 
         if (made == null) throw new Exception(I18n.f("layout.ui.errorLayoutPageDoesNotExist", name));
 
-        int width = 0;
-        int height = 0;
+        java.awt.Dimension size = combinedSize(pages);
 
-        for (String each : pages)
-        {
-            LayoutDiagram page = this.ui.getModel().getLayout(each);
-
-            if (page == null) continue;
-
-            width = Math.max(width, page.getSx());
-            height += page.getSy() + 1;
-        }
+        int width = size.width;
+        int height = size.height;
 
         // The ceiling every other growing gesture asks: addRowsAndColumns has none and can grow a page most (24 x 51
         // against 60).  Refused before the page is emptied, since a page above the ceiling can never be grown again.
