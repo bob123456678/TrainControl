@@ -2037,12 +2037,17 @@ public class AutonomyEditorPanel extends JPanel
             + "</body></html>";
     }
 
-    /** A compass word inside a menu item: capitalized in English, whose menus are title case (Adam: "now facing East"). */
+    /**
+     * A compass word inside a menu item: capitalized in English, whose menus are title case (Adam: "now facing East").
+     * English is the base bundle, whose locale is the root one; a side that is not N, S, E or W reads as north.
+     */
     public static String menuSide(String side)
     {
-        String word = I18n.t("autosetup.ui.side" + side);
+        String word = I18n.t("autosetup.ui.side" + org.traincontrol.gui.autonomy.ArrivalSidePrompt.recognized(side));
 
-        return "en".equals(I18n.getLocale().getLanguage()) && !word.isEmpty()
+        String language = I18n.getLocale().getLanguage();
+
+        return (language.isEmpty() || "en".equals(language)) && !word.isEmpty()
             ? Character.toUpperCase(word.charAt(0)) + word.substring(1) : word;
     }
 

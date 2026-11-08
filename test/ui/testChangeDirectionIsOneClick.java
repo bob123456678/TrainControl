@@ -26,7 +26,7 @@ import org.traincontrol.util.I18n;
 
 /**
  * A station's right-click menu turns the train standing there in one click (FR-181): "Change Direction (now facing
- * east)" and "Change Arrived From (currently west)" sit on the menu itself, on the track diagram and in the autonomy
+ * East)" and "Change Arrived From (currently West)" sit on the menu itself, on the track diagram and in the autonomy
  * editor alike, in place of the "Is Facing..." submenu.  Each click is asked of what it changed, in the setup and on
  * the railway; a square with one way is grayed with the reason as its tooltip, and an arrival side with no single other
  * is the list of sides.
@@ -116,9 +116,11 @@ public class testChangeDirectionIsOneClick
     /**
      * In the autonomy editor, Change Direction is one item on the station's own menu, naming the way the train faces;
      * a click turns it to the other way the square allows, in the setup and on the railway, and the menu then names
-     * that way.
+     * that way.  Not a submenu, which a click would hang on rather than fail.
+     *
+     * MUTATION: leave out the two-facing branch of `EditorTileMenus.changeDirectionItem`, and this fails.
      */
-    @Test
+    @Test(timeOut = 180000)
     public void testTheEditorTurnsTheTrainInOneClick() throws Exception
     {
         TileKey square = squareWithTwoFacings();
@@ -128,8 +130,8 @@ public class testChangeDirectionIsOneClick
 
         JMenuItem change = topLevel(editorMenu(square), changeDirection(now));
 
-        assertTrue(change.isEnabled(), "Change Direction at " + square + " is grayed where the train can face "
-            + other + " too");
+        assertTrue(change.isEnabled() && !(change instanceof JMenu), "Change Direction at " + square + " is not one"
+            + " click to " + other);
 
         support.Mouse.choose(change);
 
@@ -144,8 +146,12 @@ public class testChangeDirectionIsOneClick
         topLevel(editorMenu(square), changeDirection(other));
     }
 
-    /** The track diagram's menu carries the same one-click item, and its click turns the train the same way. */
-    @Test
+    /**
+     * The track diagram's menu carries the same one-click item, and its click turns the train the same way.
+     *
+     * MUTATION: leave out the two-facing branch of `EditorTileMenus.changeDirectionItem`, and this fails.
+     */
+    @Test(timeOut = 180000)
     public void testTheDiagramTurnsTheTrainInOneClick() throws Exception
     {
         TileKey square = squareWithTwoFacings();
@@ -155,7 +161,8 @@ public class testChangeDirectionIsOneClick
 
         JMenuItem change = topLevel(support.StationDoors.diagramMenu(ui, square), changeDirection(now));
 
-        assertTrue(change.isEnabled(), "the track diagram's Change Direction at " + square + " is grayed");
+        assertTrue(change.isEnabled() && !(change instanceof JMenu), "the track diagram's Change Direction at " + square
+            + " is not one click to " + other);
 
         support.Mouse.choose(change);
 
@@ -300,6 +307,50 @@ public class testChangeDirectionIsOneClick
         assertNotNull(said, "the list at " + square + " does not say " + gone + " is recorded: " + texts((JMenu) list));
 
         assertFalse(said.isEnabled(), "the recorded side the track has not is offered as a choice at " + square);
+    }
+
+    /**
+     * In English the side is capitalized, as the menus are title case (Adam: "now facing East"); English is the base
+     * bundle, with no messages_en of its own.
+     *
+     * MUTATION: have `menuSide` capitalize only where the language is "en", and this fails.
+     */
+    @Test(timeOut = 180000)
+    public void testEnglishMenusCapitalizeTheSide() throws Exception
+    {
+        assertEquals(I18n.t("autosetup.ui.menuChangeDirectionUnknown"), "Change Direction",
+            "precondition: the messages on show are not English");
+
+        TileKey square = squareWithTwoFacings();
+
+        Side now = facingOnTheRailway(square);
+
+        String word = now == Side.N ? "North" : now == Side.S ? "South" : now == Side.E ? "East" : "West";
+
+        topLevel(editorMenu(square), "Change Direction (now facing " + word + ")");
+
+        assertEquals(I18n.f("autosetup.ui.menuChangeDirection", org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel
+            .menuSide("E")), "Change Direction (now facing East)", "the English menu does not say \"now facing East\"");
+    }
+
+    /**
+     * A recorded arrival side that is not N, S, E or W, which a file can hold, still lets both menus open, and the side
+     * reads as north there, as it does in the train window.
+     *
+     * MUTATION: have `menuSide` look up the recorded side as it is, and this fails.
+     */
+    @Test(timeOut = 180000)
+    public void testAnOddRecordedSideStillOpensTheMenu() throws Exception
+    {
+        TileKey square = stationsWithATrain().get(0);
+
+        session.setArrivedFrom(square, "X");
+        standing(square).setArrivedFrom("X");
+
+        for (JPopupMenu menu : new JPopupMenu[] {support.StationDoors.diagramMenu(ui, square), editorMenu(square)})
+        {
+            topLevel(menu, changeArrivedFrom("N"));
+        }
     }
 
     // ---------------------------------------------------------------- the doors

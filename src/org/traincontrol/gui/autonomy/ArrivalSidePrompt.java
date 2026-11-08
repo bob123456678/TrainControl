@@ -304,13 +304,23 @@ public class ArrivalSidePrompt
      */
     private static String keyFor(String side)
     {
-        switch (side)
+        switch (recognized(side))
         {
             case "S": return "autolayout.ui.sideS";
             case "E": return "autolayout.ui.sideE";
             case "W": return "autolayout.ui.sideW";
             default: return "autolayout.ui.sideN";
         }
+    }
+
+    /**
+     * The side as the operator is shown it: "N", "S", "E" or "W", and north for anything else a file recorded.
+     * @param side the recorded side, possibly null
+     * @return one of the four
+     */
+    public static String recognized(String side)
+    {
+        return "S".equals(side) || "E".equals(side) || "W".equals(side) ? side : "N";
     }
 
     /**

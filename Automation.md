@@ -178,8 +178,8 @@ Right-click any square for everything else. The menu opens with the square's nam
 | Item | What it does |
 | --- | --- |
 | *train* `Is Active` | Untick it to pause the train: autonomy and Return Home then leave it where it stands. On the track diagram it is on the menu while autonomy runs too; the pause button on the train's card on the Auto tab does the same |
-| `Change Direction (now facing` *east* `)` | Turns the train here round in one click. If you are not sure which way it faces, leave it: autonomy corrects it the first time the train runs. Grayed out, with the reason, where the track lets a train face only one way or no track leads out |
-| `Change Arrived From (currently` *west* `)` | Changes the side the train came in by, which is where its tail lies, to the other side in one click. Where there is no single other side, it opens a list of the sides |
+| `Change Direction (now facing` *East* `)` | Turns the train here round in one click. If you are not sure which way it faces, leave it: autonomy corrects it the first time the train runs. Grayed out, with the reason, where the track lets a train face only one way or no track leads out |
+| `Change Arrived From (currently` *West* `)` | Changes the side the train came in by, which is where its tail lies, to the other side in one click. Where there is no single other side, it opens a list of the sides |
 | *train*`'s Tail Reaches Back To...` | Only where it matters: which sensor behind the train its tail has crossed. `Pick on the diagram...` lets you click it |
 | `Train at` *station* `...` / `Place a Locomotive Here...` | Opens the train window: which train is standing here, and the details of how it stands. On a station with no train it puts one there. See [the train window](#the-train-window) |
 | `Place` *train* | On the track diagram, when a train is selected in the main window and is not the one standing here: puts it here |
