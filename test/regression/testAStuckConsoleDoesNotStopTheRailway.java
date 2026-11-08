@@ -163,9 +163,10 @@ public class testAStuckConsoleDoesNotStopTheRailway
 
         assertTrue(first < then, "the console's lines are out of order: " + lines);
 
+        // The second line, as the first was formatted before its write stuck.
         // MUTATION: in the station's console formatter, `record.getMillis()` to `System.currentTimeMillis()`.
-        assertTrue(stampOf(lines.get(first)) < releasedAt, "the line about sensor " + FIRST + " is stamped "
-            + lines.get(first) + ", after the console was released at "
+        assertTrue(stampOf(lines.get(then)) < releasedAt, "the line about sensor " + SECOND + " is stamped "
+            + lines.get(then) + ", after the console was released at "
             + new SimpleDateFormat("HH:mm:ss.SSS").format(releasedAt) + ": the time is the write's, not the log's");
     }
 
