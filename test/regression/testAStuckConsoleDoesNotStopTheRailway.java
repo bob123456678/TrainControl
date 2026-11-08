@@ -144,7 +144,10 @@ public class testAStuckConsoleDoesNotStopTheRailway
                 + " stuck");
 
             // So that a line stamped when it is written, not when it was logged, is told apart
-            Thread.sleep(50);
+            long loggedBy = System.currentTimeMillis();
+
+            assertTrue(Components.waitFor(() -> System.currentTimeMillis() >= loggedBy + 50, BOUND_MS),
+                "precondition: the clock did not move on");
 
             releasedAt = System.currentTimeMillis();
         }

@@ -117,6 +117,7 @@ public class testTheLogIsStampedAndExports
         inAWindow(ui ->
         {
             final java.util.concurrent.CountDownLatch busy = new java.util.concurrent.CountDownLatch(1);
+            final java.util.concurrent.CountDownLatch release = new java.util.concurrent.CountDownLatch(1);
 
             SwingUtilities.invokeLater(() ->
             {
@@ -124,7 +125,7 @@ public class testTheLogIsStampedAndExports
 
                 try
                 {
-                    Thread.sleep(2200);
+                    release.await(60, java.util.concurrent.TimeUnit.SECONDS);
                 }
                 catch (InterruptedException e)
                 {
@@ -139,6 +140,14 @@ public class testTheLogIsStampedAndExports
             ui.log("FR051 late");
 
             String after = HMS.format(LocalTime.now());
+
+            // The event thread stays held until the clock has moved past the logging's second, then shows the line
+            long loggedBy = System.currentTimeMillis();
+
+            assertTrue(support.Components.waitFor(() -> System.currentTimeMillis() >= loggedBy + 2200, 30000),
+                "precondition: the clock did not move on");
+
+            release.countDown();
 
             Matcher line = stamped(logOf(ui), "FR051 late");
 

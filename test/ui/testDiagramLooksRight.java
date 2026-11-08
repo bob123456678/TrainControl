@@ -3677,13 +3677,13 @@ public class testDiagramLooksRight
     }
 
     /**
-     * The mark beside "No available paths" on the Auto tab is the dark gray of the window's side tabs' icons, not blue:
-     * the card's own icon, read off the class that draws it, against the commonest color of the side tabs' pictures.
+     * The mark beside "No available paths" on the Auto tab is the light gray every (i) mark wears, not blue: the card's
+     * own icon, read off the class that draws it.
      *
      * @throws Exception from reading the icons
      */
     @Test
-    public void testTheNoPathsMarkIsTheSideTabsGrey() throws Exception
+    public void testTheNoPathsMarkIsTheInfoMarksGray() throws Exception
     {
         java.lang.reflect.Field field = org.traincontrol.gui.autonomy.AutoLocomotiveStatus.class.getDeclaredField("INFO_ICON");
 
@@ -3702,14 +3702,14 @@ public class testDiagramLooksRight
 
         int ink = commonestInk(drawn);
 
-        BufferedImage tab = javax.imageio.ImageIO.read(org.traincontrol.gui.TrainControlUI.class.getResource(
-            "resources/tabs/loc.png"));
+        java.lang.reflect.Field gray = org.traincontrol.gui.InfoMark.class.getDeclaredField("GRAY");
 
-        int tabs = commonestInk(tab);
+        gray.setAccessible(true);
 
-        assertEquals(Integer.toHexString(ink), Integer.toHexString(tabs), "the mark beside \"No available paths\" is"
-            + " rgb(" + ((ink >> 16) & 0xFF) + "," + ((ink >> 8) & 0xFF) + "," + (ink & 0xFF) + "), where the side tabs'"
-            + " icons are rgb(" + ((tabs >> 16) & 0xFF) + "," + ((tabs >> 8) & 0xFF) + "," + (tabs & 0xFF) + ")");
+        int marks = gray.getInt(null) & 0xFFFFFF;
+
+        assertEquals(Integer.toHexString(ink & 0xFFFFFF), Integer.toHexString(marks), "the mark beside \"No available"
+            + " paths\" is not the (i) marks' gray");
     }
 
     /** The commonest opaque color in a picture that is not white. */
