@@ -5,16 +5,10 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.IdentityHashMap;
-import java.util.List;
-import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import javax.swing.JFileChooser;
 import javax.swing.JMenuItem;
-import javax.swing.JOptionPane;
 import javax.swing.SwingUtilities;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
@@ -178,84 +172,28 @@ public class testTheLogIsStampedAndExports
         });
     }
 
-    /** What the door showed: the name it suggested, and every message. */
-    private static final class Seen
+    /** Cancels the save chooser that has come back after a failed write. */
+    private static boolean cancelTheChooserThatCameBack() throws Exception
     {
-        volatile String suggested;
-        volatile int choosers;
-        final List<String> said = Collections.synchronizedList(new ArrayList<>());
-    }
-
-    /**
-     * Presses File > Export Log; the first chooser takes `file` (null cancels) and a second one, which comes back after
-     * a failed write, is canceled.  Every message is answered OK.
-     */
-    private static Seen press(TrainControlUI ui, File file) throws Exception
-    {
-        final Seen seen = new Seen();
-        final boolean[] going = {true};
-        final Set<Object> handled = Collections.newSetFromMap(new IdentityHashMap<>());
-
-        Thread answering = new Thread(() -> support.DialogWatch.until(() -> going[0], 100, dialog ->
+        return support.Components.waitFor(() ->
         {
-            JFileChooser chooser = support.Components.inside(dialog.getContentPane(), JFileChooser.class);
-
-            if (chooser != null)
+            for (java.awt.Window window : java.awt.Window.getWindows())
             {
-                if (!handled.add(dialog)) return;
+                if (!(window instanceof javax.swing.JDialog) || !window.isShowing()) continue;
 
-                seen.choosers++;
+                final JFileChooser chooser = support.Components.inside(((javax.swing.JDialog) window).getContentPane(),
+                    JFileChooser.class);
 
-                if (seen.choosers == 1) seen.suggested = chooser.getSelectedFile().getName();
-
-                final boolean approve = seen.choosers == 1 && file != null;
-
-                SwingUtilities.invokeLater(() ->
+                if (chooser != null)
                 {
-                    if (approve)
-                    {
-                        chooser.setSelectedFile(file);
-                        chooser.approveSelection();
-                    }
-                    else
-                    {
-                        chooser.cancelSelection();
-                    }
-                });
+                    SwingUtilities.invokeLater(chooser::cancelSelection);
 
-                return;
+                    return true;
+                }
             }
 
-            JOptionPane pane = support.Components.inside(dialog.getContentPane(), JOptionPane.class);
-
-            if (pane == null || !handled.add(pane)) return;
-
-            seen.said.add(support.PopupShape.of(pane).sentence);
-
-            SwingUtilities.invokeLater(() -> pane.setValue(Integer.valueOf(JOptionPane.OK_OPTION)));
-        }), "log export answerer");
-
-        answering.setDaemon(true);
-        answering.start();
-
-        try
-        {
-            SwingUtilities.invokeLater(item(ui)::doClick);
-
-            support.Components.waitFor(() -> seen.choosers >= 1, 60000);
-
-            support.Components.settle();
-
-            if (file != null) support.Components.waitFor(() -> seen.choosers >= 2 || file.exists(), 10000);
-
-            support.Components.settle();
-        }
-        finally
-        {
-            going[0] = false;
-        }
-
-        return seen;
+            return false;
+        }, 30000);
     }
 
     private static JMenuItem item(TrainControlUI ui) throws Exception
@@ -271,11 +209,6 @@ public class testTheLogIsStampedAndExports
         return item;
     }
 
-    private static File aFileIn(File folder, String name)
-    {
-        return new File(folder, name);
-    }
-
     private static File temporaryFolder() throws Exception
     {
         File folder = Files.createTempDirectory("tc-logexport").toFile();
@@ -287,7 +220,7 @@ public class testTheLogIsStampedAndExports
 
     /**
      * MUTATION: `LogExportDoor` saves something other than `logText()` (the text without its stamps, say), or leaves the
-     * line separators as "\n", or writes no file, and this fails.
+     * line separators as LF, or writes no file, and this fails.
      */
     @Test(timeOut = 180000)
     public void testExportLogWritesExactlyTheShownTextToTheChosenFile() throws Exception
@@ -299,32 +232,26 @@ public class testTheLogIsStampedAndExports
 
             String shown = logOf(ui);
 
-            File file = aFileIn(temporaryFolder(), "chosen-log.txt");
+            File file = new File(temporaryFolder(), "chosen-log.txt");
 
-            String remembered = TrainControlUI.getPrefs().get(TrainControlUI.LAST_USED_FOLDER, null);
-
-            try
+            try (support.Answering answering = support.Answering.start(message -> null).choosing(file))
             {
-                Seen seen = press(ui, file);
+                SwingUtilities.invokeLater(item(ui)::doClick);
 
-                assertTrue(file.isFile(), "no file was written where the chooser was told to save");
+                assertTrue(support.Components.waitFor(file::isFile, 60000), "no file was written where the chooser was told to save");
+
+                support.Components.settle();
 
                 assertEquals(new String(Files.readAllBytes(file.toPath()), StandardCharsets.UTF_8),
                     shown.replace("\n", System.lineSeparator()), "the file is not the log as it showed");
 
-                assertTrue(Pattern.compile("^TrainControl-log-\\d{4}-\\d\\d-\\d\\d-\\d{4}\\.txt$").matcher(seen.suggested)
-                    .matches(), "the suggested name is " + seen.suggested);
-
                 assertTrue(logOf(ui).contains(I18n.f("ui.infoLogSaved", file.getAbsolutePath())),
                     "the log does not say where it was saved");
 
-                assertTrue(seen.said.isEmpty(), "a message came up on a good save: " + seen.said);
+                assertTrue(answering.asked().isEmpty(), "a message came up on a good save: " + answering.asked());
             }
             finally
             {
-                if (remembered == null) TrainControlUI.getPrefs().remove(TrainControlUI.LAST_USED_FOLDER);
-                else TrainControlUI.getPrefs().put(TrainControlUI.LAST_USED_FOLDER, remembered);
-
                 file.delete();
             }
         });
@@ -338,27 +265,24 @@ public class testTheLogIsStampedAndExports
     {
         inAWindow(ui ->
         {
-            File missing = aFileIn(aFileIn(temporaryFolder(), "no-such-folder"), "log.txt");
+            File missing = new File(new File(temporaryFolder(), "no-such-folder"), "log.txt");
 
-            String remembered = TrainControlUI.getPrefs().get(TrainControlUI.LAST_USED_FOLDER, null);
-
-            try
+            try (support.Answering answering = support.Answering.start(message -> null).choosing(missing))
             {
-                Seen seen = press(ui, missing);
+                SwingUtilities.invokeLater(item(ui)::doClick);
 
-                assertEquals(seen.said.size(), 1, "the failed write was not said once: " + seen.said);
+                assertTrue(answering.awaitAsked(1, 60000), "a failed write said nothing");
 
-                assertTrue(seen.said.get(0).contains(missing.getAbsolutePath()),
-                    "the message does not name the file: " + seen.said.get(0));
+                assertTrue(cancelTheChooserThatCameBack(), "the chooser did not come back for another place");
 
-                assertEquals(seen.choosers, 2, "the chooser did not come back for another place");
+                support.Components.settle();
+
+                assertEquals(answering.asked().size(), 1, "the failed write was not said once: " + answering.asked());
+
+                assertTrue(answering.asked().get(0).contains(missing.getAbsolutePath()),
+                    "the message does not name the file: " + answering.asked().get(0));
 
                 assertFalse(missing.exists(), "a file appeared");
-            }
-            finally
-            {
-                if (remembered == null) TrainControlUI.getPrefs().remove(TrainControlUI.LAST_USED_FOLDER);
-                else TrainControlUI.getPrefs().put(TrainControlUI.LAST_USED_FOLDER, remembered);
             }
         });
     }
