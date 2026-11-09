@@ -649,10 +649,12 @@ public class testTheStationIsReachedOverTcp
     }
 
     /**
-     * A connection that hangs, open but carrying nothing, is found by a send that goes unanswered for 15 s, and
-     * replaced; the log says why, and counts the unanswered frame as one that may not have arrived.
+     * A connection that hangs, open but carrying nothing, is found by a send that goes unanswered for 3 s, and
+     * replaced within a few seconds more; the log says why, and counts the unanswered frame as one that may not have
+     * arrived.
      *
-     * MUTATION: in `NetworkProxy.readUntilLost`, take out `return I18n.f("network.tcpNoAnswer", ...)`.
+     * MUTATION: in `NetworkProxy.readUntilLost`, take out `return I18n.f("network.tcpNoAnswer", ...)`; or set
+     * `TCP_ANSWER_LIMIT_MS` back to 15000.
      */
     @Test(timeOut = 60000)
     public void testAHungConnectionIsFoundAndReplaced() throws Exception
@@ -661,8 +663,8 @@ public class testTheStationIsReachedOverTcp
 
         this.proxy.sendMessage(new CS2Message(ping(1)));
 
-        assertTrue(logged("network.tcpReconnected", 30000), "no new connection: " + this.model.lines);
-        assertTrue(this.model.lines.stream().anyMatch(l -> l.contains(I18n.f("network.tcpNoAnswer", 15))),
+        assertTrue(logged("network.tcpReconnected", 8000), "no new connection within 8 s: " + this.model.lines);
+        assertTrue(this.model.lines.stream().anyMatch(l -> l.contains(I18n.f("network.tcpNoAnswer", 3))),
             "the log does not say why: " + this.model.lines);
         assertTrue(this.model.lines.contains(I18n.f("network.framesMayNotHaveArrived", 1)),
             "the unanswered frame is not counted: " + this.model.lines);
@@ -721,6 +723,34 @@ public class testTheStationIsReachedOverTcp
 
         assertFalse(logged("network.tcpLostReconnecting", 18000),
             "a quiet healthy connection was taken as hung: " + this.model.lines);
+    }
+
+    /**
+     * A station that answers each send within the limit, here after 2 s, keeps its connection however many sends it
+     * answers so.
+     *
+     * MUTATION: set `TCP_ANSWER_LIMIT_MS` to 1500, and this fails.
+     */
+    @Test(timeOut = 60000)
+    public void testAStationThatAnswersWithinTheLimitKeepsItsConnection() throws Exception
+    {
+        connectedAndCarried();
+
+        for (int i = 1; i <= 4; i++)
+        {
+            byte[] frame = ping(20 + i);
+            this.proxy.sendMessage(new CS2Message(frame));
+
+            // The wait is the answer's delay, and the connection must not be given up during it
+            assertFalse(logged("network.tcpLostReconnecting", 2000), "a connection answered within the limit was"
+                + " taken as hung, send " + i + ": " + this.model.lines);
+
+            this.station.send(answerTo(frame));
+        }
+
+        assertFalse(logged("network.tcpLostReconnecting", 2000), "a connection answered within the limit was taken as"
+            + " hung after its last answer: " + this.model.lines);
+        assertEquals(this.station.connections(), 1, "the connection was replaced");
     }
 
     /**
