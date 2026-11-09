@@ -330,6 +330,51 @@ public class testPagesFollowTheFileOrder extends support.PageWindowTest
     }
 
     /**
+     * Sort Pages by Name ignores capitals: a page added as "apple yard" goes before one added as "Zebra".
+     *
+     * MUTATION: sort with `Collections.sort` alone in `LayoutFileActions.sorted`, and this fails.
+     */
+    @Test
+    public void testSortPagesByNameIgnoresCapitals() throws Exception
+    {
+        open(null);
+
+        edit("1 - Main");
+
+        String on = "1 - Main";
+
+        for (String name : new String[] {"Zebra", "apple yard"})
+        {
+            try (Answering answering = Answering.start(message -> Answering.type(name)))
+            {
+                press(editorOn(on), "ui.main.toolbar.addBlackPage");
+
+                assertTrue(Components.waitFor(() -> namesInTheIndex().contains(name), 15000), "no page was added");
+            }
+
+            assertTrue(Components.waitFor(() -> editorOn(name) != null, 15000), "the editor did not show " + name);
+
+            Components.settle();
+
+            on = name;
+        }
+
+        javax.swing.JMenu tools = Components.find(editorOn(on), javax.swing.JMenu.class,
+            m -> I18n.t("layout.ui.menuTools").equals(m.getText()));
+
+        Components.press(tools);
+
+        Components.press(Components.withText(editorOn(on), I18n.t("ui.main.toolbar.sortPages")));
+
+        List<String> expected = new ArrayList<>(BY_NAME);
+
+        expected.addAll(Arrays.asList("apple yard", "Zebra"));
+
+        assertTrue(Components.waitFor(() -> namesInTheIndex().equals(expected), 15000), "the index is not in name order,"
+            + " capitals ignored: " + namesInTheIndex());
+    }
+
+    /**
      * On a Central Station layout (not the user's own folder) the arrows are refused as the other page edits are, and
      * nothing is written.
      *

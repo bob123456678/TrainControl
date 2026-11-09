@@ -137,6 +137,66 @@ public class testStationSettingsWindow
     }
 
     /**
+     * A key step in Home or May depart only shows a choice: an arrow asks nothing and changes no setup, and Escape puts
+     * the list back with the window still open.  Enter applies what May depart shows.
+     *
+     * MUTATION: have `StationWindowBase.Choice.fireActionEvent` ignore `keying`, and this fails.
+     */
+    @Test(timeOut = 120000)
+    public void testAKeyStepInHomeOrMayDepartChangesNothing() throws Exception
+    {
+        StationSettingsWindow window = StationDoors.open(panel, aStation());
+
+        for (String name : new String[] {"station.home", "station.depart.0"})
+        {
+            javax.swing.JComboBox<?> list = StationDoors.part(window, name, javax.swing.JComboBox.class);
+
+            assertTrue(StationDoors.live(window, name) && Components.onTheEventThread(list::getItemCount) > 1,
+                "precondition: " + name + " offers no choice");
+
+            Object was = Components.onTheEventThread(list::getSelectedItem);
+            int key = Components.onTheEventThread(() -> list.getSelectedIndex() < list.getItemCount() - 1)
+                ? java.awt.event.KeyEvent.VK_DOWN : java.awt.event.KeyEvent.VK_UP;
+
+            String before = setup();
+
+            try (Answering answering = Answering.start(message -> null))
+            {
+                support.Keys.press(list, key);
+
+                assertNotEquals(Components.onTheEventThread(list::getSelectedItem), was, "precondition: the arrow did not step "
+                    + name);
+                assertEquals(answering.asked(), java.util.Collections.emptyList(), "an arrow in " + name + " asked");
+                assertEquals(setup(), before, "an arrow in " + name + " changed the setup");
+
+                support.Keys.press(list, java.awt.event.KeyEvent.VK_ESCAPE);
+            }
+
+            assertEquals(Components.onTheEventThread(list::getSelectedItem), was, "Escape did not put " + name + " back");
+            assertTrue(Components.onTheEventThread(window::isShowing), "Escape on a stepped " + name + " closed the window");
+        }
+
+        javax.swing.JComboBox<?> depart = StationDoors.part(window, "station.depart.0", javax.swing.JComboBox.class);
+
+        Object was = Components.onTheEventThread(depart::getSelectedItem);
+        String before = setup();
+
+        support.Keys.press(depart, Components.onTheEventThread(() -> depart.getSelectedIndex() < depart.getItemCount() - 1)
+            ? java.awt.event.KeyEvent.VK_DOWN : java.awt.event.KeyEvent.VK_UP);
+
+        try (Answering answering = Answering.start(message -> null))
+        {
+            support.Keys.press(depart, java.awt.event.KeyEvent.VK_ENTER);
+        }
+
+        assertNotEquals(setup(), before, "Enter on May depart changed nothing");
+        assertNotEquals(Components.onTheEventThread(() -> StationDoors.part(window, "station.depart.0",
+            javax.swing.JComboBox.class).getSelectedItem()), was, "Enter on May depart did not keep the choice");
+
+        StationDoors.close(window);
+    }
+
+    /**
      * Every kind of square reads the same way: opened and closed, a sensor with no settings stays as it was too.
      *
      * MUTATION: have `fillHome`'s `setSelectedItem` run outside `reading`, so `pressHome` writes, and this fails.

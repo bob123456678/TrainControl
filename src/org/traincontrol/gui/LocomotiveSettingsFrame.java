@@ -26,6 +26,8 @@ import javax.swing.KeyStroke;
 import javax.swing.SpinnerNumberModel;
 import javax.swing.SwingUtilities;
 import javax.swing.event.DocumentListener;
+import javax.swing.plaf.basic.BasicHTML;
+import javax.swing.text.View;
 import org.traincontrol.base.Locomotive;
 import org.traincontrol.base.Locomotive.decoderType;
 import org.traincontrol.gui.widgets.RowIcons;
@@ -74,7 +76,51 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
     private final JTabbedPane tabs = new JTabbedPane();
     private final JPanel content = new JPanel(new BorderLayout());
     private final JPanel footer = new JPanel(new BorderLayout());
-    private final JLabel strip = new JLabel();
+    /** The lock strip: its sentence wraps at the window's width, drawn as HTML, and never widens the window. */
+    private final JLabel strip = new JLabel()
+    {
+        @Override
+        public void setText(String text)
+        {
+            super.setText(text);
+
+            if (text != null && !text.isEmpty())
+            {
+                putClientProperty(BasicHTML.propertyKey, BasicHTML.createHTMLView(this, "<html>"
+                    + text.replace("&", "&amp;").replace("<", "&lt;") + "</html>"));
+            }
+        }
+
+        @Override
+        public Dimension getPreferredSize()
+        {
+            Dimension asked = super.getPreferredSize();
+            View html = (View) getClientProperty(BasicHTML.propertyKey);
+            Insets in = getInsets();
+
+            if (html != null && getWidth() > 0)
+            {
+                html.setSize(getWidth() - in.left - in.right, 0);
+                asked.height = (int) Math.ceil(html.getPreferredSpan(View.Y_AXIS)) + in.top + in.bottom;
+            }
+
+            asked.width = 1;
+
+            return asked;
+        }
+
+        // A new width wraps the sentence anew: laid out again for the height that takes, once this layout is done (one
+        // asked for during it is lost)
+        @Override
+        public void setBounds(int x, int y, int width, int height)
+        {
+            boolean wider = width != getWidth();
+
+            super.setBounds(x, y, width, height);
+
+            if (wider) SwingUtilities.invokeLater(this::revalidate);
+        }
+    };
 
     /** Under the lock strip, when the warning triangle was clicked: who else has this address and decoder (OB-417). */
     private final JPanel sharedStrip = new JPanel(new BorderLayout());
@@ -91,6 +137,9 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
     private MultiUnitTab multiUnitTab;
     private AutonomyTab autonomyTab;
     private boolean blocked;
+
+    /** Whether the unsaved-changes question is up. */
+    private boolean asking;
 
     /** Whether this opening of the window has written the duplicate report to the log. */
     private boolean reported;
@@ -396,6 +445,9 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
         setMinimumSize(null);
         pack();
 
+        // Again with the strip up: its wrapped height is known once it has a width
+        if (strip.isVisible()) pack();
+
         // Measured here, where the tabs are built, and not on the watch's every tick: measuring resizes the strip, and
         // lays every tab out as wide as it, so the strip goes last.  Basic Settings at its least keeps its labels whole.
         least = Math.max(locomotiveTab.getMinimumSize().width + getWidth() - locomotiveTab.getWidth(),
@@ -489,7 +541,7 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
 
     private void changed()
     {
-        // Add is always pressable: a blank name is refused with today's message
+        // Add is always pressable: it refuses a blank name and says why
         save.setEnabled(adding || isDirty() && !blocked);
     }
 
@@ -526,21 +578,27 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
      */
     boolean maySettleBeforeExit()
     {
-        if (!isDirty()) return true;
-
-        if ((getExtendedState() & java.awt.Frame.ICONIFIED) != 0)
-        {
-            setExtendedState(getExtendedState() & ~java.awt.Frame.ICONIFIED);
-        }
-
-        toFront();
-
-        return settleUnsaved();
+        return !isDirty() || settleUnsaved();
     }
 
-    /** Asks what to do with typing that is not saved; true when the caller may go on. */
+    /** Out of the taskbar and in front: a door opened it, or its question is about to ask over it. */
+    void bringBack()
+    {
+        setExtendedState(getExtendedState() & ~java.awt.Frame.ICONIFIED);
+        setVisible(true);
+        toFront();
+    }
+
+    /**
+     * Asks what to do with typing that is not saved, over this window alone: the main window's Stop stays live.  A
+     * second door asking while the question is up is canceled.  True when the caller may go on.
+     */
     private boolean settleUnsaved()
     {
+        if (asking) return false;
+
+        bringBack();
+
         int answer;
 
         if (unsavedAnswerForTest != null)
@@ -551,10 +609,27 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
         {
             Object[] options = { I18n.t("loc.ui.settingsSave"), I18n.t("loc.ui.settingsDiscard"), I18n.t("ui.cancel") };
 
-            answer = JOptionPane.showOptionDialog(this, I18n.f("loc.ui.settingsUnsaved",
-                adding ? I18n.t("loc.ui.addLocomotive") : loc.getName()),
-                I18n.t("route.ui.titleDiscardChanges"), JOptionPane.YES_NO_CANCEL_OPTION, JOptionPane.QUESTION_MESSAGE,
-                null, options, options[2]);
+            JOptionPane pane = new JOptionPane(I18n.f("loc.ui.settingsUnsaved", adding ? I18n.t("loc.ui.addLocomotive")
+                : loc.getName()), JOptionPane.QUESTION_MESSAGE, JOptionPane.YES_NO_CANCEL_OPTION, null, options,
+                options[2]);
+
+            javax.swing.JDialog question = pane.createDialog(this, I18n.t("route.ui.titleDiscardChanges"));
+
+            question.setModalityType(java.awt.Dialog.ModalityType.DOCUMENT_MODAL);
+
+            asking = true;
+
+            try
+            {
+                question.setVisible(true);
+            }
+            finally
+            {
+                asking = false;
+                question.dispose();
+            }
+
+            answer = java.util.Arrays.asList(options).indexOf(pane.getValue());
         }
 
         if (answer == 0) return write();
@@ -589,9 +664,9 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
     }
 
     /**
-     * Writes everything typed onto the locomotive, with today's refusals asked once and in today's order: the moving
-     * rule, then autonomy and routes for what they refuse, then the name before the address.  A refusal leaves the
-     * window as it was.
+     * Writes everything typed onto the locomotive, with each refusal asked once and in this order: the moving rule,
+     * autonomy, routes and the multi-unit, then the name before the address.  The multi-unit's is asked again last,
+     * after the rest is written: refused there, the window stays dirty and the next Save writes it all again.
      *
      * @return true when everything went through
      */
@@ -658,14 +733,14 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
     }
 
     /**
-     * The Sync button: syncs the locomotive with the Central Station at once, not on Save.  Afterwards the whole window
-     * is reloaded from the locomotive, overwriting anything typed.
+     * The Sync button: syncs the locomotive with the Central Station at once, not on Save, then reloads the whole window
+     * from it.  Typing not saved is asked about first, as Close does.
      */
     private void syncNow()
     {
         final Locomotive target = loc;
 
-        if (target == null) return;
+        if (target == null || isDirty() && !settleUnsaved()) return;
 
         main.syncLocomotive(target, () -> afterSync(target));
     }
@@ -793,7 +868,7 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
             name.getDocument().addDocumentListener(tell);
             address.getDocument().addDocumentListener(tell);
 
-            // The same filter and limit as Add Locomotive's address box
+            // Digits, or hex, and six characters at most
             address.addKeyListener(new java.awt.event.KeyAdapter()
             {
                 @Override

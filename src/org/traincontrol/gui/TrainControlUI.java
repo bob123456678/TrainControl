@@ -554,11 +554,12 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             this.locomotiveSettings = new LocomotiveSettingsFrame(this);
         }
 
+        // Before aiming, which may ask about unsaved typing over it
+        this.locomotiveSettings.setAlwaysOnTop(asking.isAlwaysOnTop());
+
         if (!aim.test(this.locomotiveSettings)) return false;
 
-        this.locomotiveSettings.setAlwaysOnTop(asking.isAlwaysOnTop());
-        this.locomotiveSettings.setVisible(true);
-        this.locomotiveSettings.toFront();
+        this.locomotiveSettings.bringBack();
 
         return true;
     }
@@ -3712,7 +3713,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /** The same, said over the window a press read before it left the event thread. */
-    boolean refuseWhileEditorOpen(java.awt.Window asked)
+    public boolean refuseWhileEditorOpen(java.awt.Window asked)
     {
         return RunGates.refuseWhileEditorOpen(this, asked);
     }
@@ -4307,9 +4308,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         return roads == null ? java.util.Collections.<org.traincontrol.automationui.TileGraph.RouteId>emptySet() : roads;
     }
 
-    /**
-     * Delegates to `CoveredTrackView.refreshCoveredTrack`.
-     */
     void refreshCoveredTrack()
     {
         this.coveredTrackView.refreshCoveredTrack();
@@ -15178,9 +15176,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         return System.getProperty("os.name").startsWith("Windows");
     }
     
-    /**
-     * Delegates to `LayoutFileActions.initializeEmptyLayout`.
-     */
     private String initializeEmptyLayout(String folderName)
     {
         return this.layoutFileActions.initializeEmptyLayout(folderName);
@@ -16613,9 +16608,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         }
     }
 
-    /**
-     * Delegates to `ReturnHomeController.requestReturnToHome`.
-     */
     public void requestReturnToHome()
     {
         this.returnHomeController.requestReturnToHome();
@@ -16669,9 +16661,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         return this.gracefulStopRequested && isAutonomyBusy();
     }
 
-    /**
-     * Delegates to `ReturnHomeController.refreshReturnHomeButton`.
-     */
     void refreshReturnHomeButton()
     {
         this.returnHomeController.refreshReturnHomeButton();
@@ -16973,9 +16962,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         this.returnHomeButton.setToolTipText(AutonomyEditorPanel.wrapped(reason));
     }
 
-    /**
-     * Delegates to `ReturnHomeController.describeStagingOutcome`.
-     */
     String describeStagingOutcome(HomeStaging.Outcome outcome, List<Locomotive> blocked)
     {
         return this.returnHomeController.describeStagingOutcome(outcome, blocked);
@@ -17785,9 +17771,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         duplicateOrRenameCurrentLayout(newName, false, true, false);
     }//GEN-LAST:event_duplicateLayoutMenuItemActionPerformed
 
-    /**
-     * Delegates to `LayoutFileActions.combineLinkedPages`.
-     */
     private void combineLinkedPages()
     {
         this.layoutFileActions.combineLinkedPages(pageActionFrom);
@@ -19334,9 +19317,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         return true;
     }
     
-    /**
-     * Delegates to `AutonomySettingsTab.loadAutoLayoutSettings`.
-     */
     private void loadAutoLayoutSettings()
     {
         this.autonomySettingsTab.loadAutoLayoutSettings();
