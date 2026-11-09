@@ -337,8 +337,8 @@ public class testSeveralStationsAtOnce
     }
 
     /**
-     * A triangle grays with its row: with Trains can stop here unticked for all, the triangles beside May choose this
-     * station and Maximum train length are disabled and drawn gray, as the row's controls are.
+     * A triangle grays with its row: with Trains can stop here unticked for all, the triangle beside Maximum train length
+     * is disabled and drawn gray, as the row's field is.  (Unticked, May choose this station reads the same for both.)
      *
      * MUTATION: leave the triangles out of their section's list, or drop `mixedLabel`'s gray disabled icon, and this fails.
      */
@@ -351,9 +351,6 @@ public class testSeveralStationsAtOnce
         {
             session.setPointProperty(two.get(0), "maxTrainLength", 10);
             session.setPointProperty(two.get(1), "maxTrainLength", 20);
-            session.setAutoDestination(two.get(0), true);
-            session.setAutoDestination(two.get(1), false);
-
             return null;
         });
 
@@ -365,25 +362,22 @@ public class testSeveralStationsAtOnce
         assertFalse(StationDoors.on(window, "station.stops"), "precondition: Trains can stop here is still ticked");
         assertFalse(StationDoors.live(window, "station.maxLength"), "precondition: the length field did not gray");
 
-        for (String name : new String[] {"station.maxLengthMixed", "station.fullAutonomyMixed"})
+        javax.swing.JLabel triangle = StationDoors.part(window, "station.maxLengthMixed", javax.swing.JLabel.class);
+
+        assertTrue(on(triangle::isShowing), "precondition: the length's triangle is not showing");
+        assertFalse(on(triangle::isEnabled), "the triangle stays live in a grayed row");
+        assertNotNull(on(triangle::getDisabledIcon), "the triangle has no grayed drawing, so Swing draws nothing");
+
+        List<Integer> pixels = on(() -> painted(triangle.getDisabledIcon()));
+
+        assertTrue(pixels.stream().anyMatch(p -> (p >>> 24) > 0), "the triangle's grayed drawing is empty");
+
+        for (int p : pixels)
         {
-            javax.swing.JLabel triangle = StationDoors.part(window, name, javax.swing.JLabel.class);
+            if ((p >>> 24) == 0) continue;
 
-            assertTrue(on(triangle::isShowing), "precondition: " + name + " is not showing");
-            assertFalse(on(triangle::isEnabled), name + " stays live in a grayed row");
-            assertNotNull(on(triangle::getDisabledIcon), name + " has no grayed drawing, so Swing draws nothing");
-
-            List<Integer> pixels = on(() -> painted(triangle.getDisabledIcon()));
-
-            assertTrue(pixels.stream().anyMatch(p -> (p >>> 24) > 0), name + "'s grayed drawing is empty");
-
-            for (int p : pixels)
-            {
-                if ((p >>> 24) == 0) continue;
-
-                assertTrue(((p >> 16) & 0xff) == ((p >> 8) & 0xff) && ((p >> 8) & 0xff) == (p & 0xff),
-                    name + " is drawn in color in a grayed row: #" + Integer.toHexString(p));
-            }
+            assertTrue(((p >> 16) & 0xff) == ((p >> 8) & 0xff) && ((p >> 8) & 0xff) == (p & 0xff),
+                "the triangle is drawn in color in a grayed row: #" + Integer.toHexString(p));
         }
     }
 
