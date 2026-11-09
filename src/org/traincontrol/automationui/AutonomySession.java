@@ -3408,7 +3408,10 @@ public class AutonomySession
 
         org.json.JSONArray edges = built.getJSONArray("edges");
 
-        for (int i = 0; i < edges.length(); i++) hasOut.add(edges.getJSONObject(i).getString("start"));
+        for (int i = 0; i < edges.length(); i++)
+        {
+            hasOut.add(edges.getJSONObject(i).getString("start"));
+        }
 
         java.util.Map<String, TileKey> byName = named != null ? named : builder(null).tilesByName();
 
