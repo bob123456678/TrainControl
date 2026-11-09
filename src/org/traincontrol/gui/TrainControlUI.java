@@ -4308,9 +4308,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         return roads == null ? java.util.Collections.<org.traincontrol.automationui.TileGraph.RouteId>emptySet() : roads;
     }
 
-    /**
-     * Delegates to `CoveredTrackView.refreshCoveredTrack`.
-     */
     void refreshCoveredTrack()
     {
         this.coveredTrackView.refreshCoveredTrack();
@@ -15176,9 +15173,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         return System.getProperty("os.name").startsWith("Windows");
     }
     
-    /**
-     * Delegates to `LayoutFileActions.initializeEmptyLayout`.
-     */
     private String initializeEmptyLayout(String folderName)
     {
         return this.layoutFileActions.initializeEmptyLayout(folderName);
@@ -16611,9 +16605,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         }
     }
 
-    /**
-     * Delegates to `ReturnHomeController.requestReturnToHome`.
-     */
     public void requestReturnToHome()
     {
         this.returnHomeController.requestReturnToHome();
@@ -16667,9 +16658,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         return this.gracefulStopRequested && isAutonomyBusy();
     }
 
-    /**
-     * Delegates to `ReturnHomeController.refreshReturnHomeButton`.
-     */
     void refreshReturnHomeButton()
     {
         this.returnHomeController.refreshReturnHomeButton();
@@ -16971,9 +16959,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         this.returnHomeButton.setToolTipText(AutonomyEditorPanel.wrapped(reason));
     }
 
-    /**
-     * Delegates to `ReturnHomeController.describeStagingOutcome`.
-     */
     String describeStagingOutcome(HomeStaging.Outcome outcome, List<Locomotive> blocked)
     {
         return this.returnHomeController.describeStagingOutcome(outcome, blocked);
@@ -17783,9 +17768,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         duplicateOrRenameCurrentLayout(newName, false, true, false);
     }//GEN-LAST:event_duplicateLayoutMenuItemActionPerformed
 
-    /**
-     * Delegates to `LayoutFileActions.combineLinkedPages`.
-     */
     private void combineLinkedPages()
     {
         this.layoutFileActions.combineLinkedPages(pageActionFrom);
@@ -19332,9 +19314,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         return true;
     }
     
-    /**
-     * Delegates to `AutonomySettingsTab.loadAutoLayoutSettings`.
-     */
     private void loadAutoLayoutSettings()
     {
         this.autonomySettingsTab.loadAutoLayoutSettings();
