@@ -752,33 +752,6 @@ public class LayoutEditor extends PositionAwareJFrame
     }
     
     /**
-     * Checks if any of the tiles in the new component box are highlighted, indicating an active tool
-     * @return 
-     */
-    public boolean addBoxHighlighted()
-    {
-        for (Component component : this.newComponents.getComponents())
-        {
-            if (component instanceof JLabel)
-            {
-                JLabel label = (JLabel) component;
-                Border border = label.getBorder();
-
-                if (border instanceof LineBorder)
-                {
-                    LineBorder lineBorder = (LineBorder) border;
-                    if (lineBorder.getLineColor().equals(NEW_COMPONENT_BORDER_ACTIVE_COLOR))
-                    {
-                        return true;
-                    }
-                }
-            }
-        }
-        
-        return false;
-    }
-   
-    /**
      * The station on a square, from the session, for the autonomy editor's tooltip; null for no tooltip.
      * @param label the square under the pointer
      * @return the station's name, or null
@@ -2584,19 +2557,6 @@ public class LayoutEditor extends PositionAwareJFrame
 
             refreshGrid();
         }
-    }
-    
-    /**
-     * Changes the text using dropdown options, used for autonomy stations
-     * @param label
-    */
-    public void editTextWithDropdown(LayoutLabel label)
-    {
-        // Station captions belong to the autonomy setup now, keyed by square; said here, so whoever looks finds where.
-        JOptionPane.showMessageDialog(
-            this,
-            I18n.t("layout.ui.infoStationLabelsMovedToAutonomy")
-        );
     }
     
      /**

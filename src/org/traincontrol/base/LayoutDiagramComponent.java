@@ -752,11 +752,6 @@ public class LayoutDiagramComponent
         this.y = y;
     }
 
-    public void setType(componentType type)
-    {
-        this.type = type;
-    }
-    
     public void setRoute(Route route)
     {
         this.route = route;

@@ -256,7 +256,6 @@ EI_EXPOSE_REP	org.traincontrol.automationui.GraphReducer	getGraph	graph	1
 EI_EXPOSE_REP	org.traincontrol.automationui.TileAnnotation	spillShape	spillRegion	1
 EI_EXPOSE_REP	org.traincontrol.automationui.TileOverlay	getSegments	segments	1
 EI_EXPOSE_REP	org.traincontrol.base.ConditionOutline$Row	getCommand	command	1
-EI_EXPOSE_REP	org.traincontrol.base.LayoutDiagram	getControl	network	1
 EI_EXPOSE_REP	org.traincontrol.base.LayoutDiagramComponent	getAccessory	accessory	1
 EI_EXPOSE_REP	org.traincontrol.base.LayoutDiagramComponent	getAccessory2	accessory2	1
 EI_EXPOSE_REP	org.traincontrol.base.LayoutDiagramComponent	getFeedback	feedback	1
@@ -274,7 +273,6 @@ EI_EXPOSE_REP	org.traincontrol.base.RouteCommand	getCommandConfig	commandConfig	
 EI_EXPOSE_REP	org.traincontrol.base.udp.CANMessage	getRawMessage	rawMessage	1
 EI_EXPOSE_REP	org.traincontrol.gui.LayoutGrid	getContainer	container	1
 EI_EXPOSE_REP	org.traincontrol.gui.LayoutLabel	getComponent	component	1
-EI_EXPOSE_REP	org.traincontrol.gui.LayoutPopupUI	getPanel	ExtLayoutPanel	1
 EI_EXPOSE_REP	org.traincontrol.gui.LocomotiveSettingsFrame	getLocomotive	loc	1
 EI_EXPOSE_REP	org.traincontrol.gui.LocomotiveSettingsFrame	tabsForTest	tabs	1
 EI_EXPOSE_REP	org.traincontrol.gui.TailCrossedPrompt$Answer	getRoad	road	1
@@ -322,7 +320,6 @@ EI_EXPOSE_REP2	org.traincontrol.automationui.AutonomyBuilder	withCoordinatesFrom
 EI_EXPOSE_REP2	org.traincontrol.automationui.AutonomyBuilder	withPiecesToMeasure	piecesToMeasure	1
 EI_EXPOSE_REP2	org.traincontrol.automationui.AutonomyBuilder	withPointExtras	pointExtras	1
 EI_EXPOSE_REP2	org.traincontrol.automationui.GraphReducer	<init>	graph	1
-EI_EXPOSE_REP2	org.traincontrol.base.LayoutDiagram	<init>	network	1
 EI_EXPOSE_REP2	org.traincontrol.base.LayoutDiagramComponent	setAccessory	accessory	1
 EI_EXPOSE_REP2	org.traincontrol.base.LayoutDiagramComponent	setAccessory2	accessory2	1
 EI_EXPOSE_REP2	org.traincontrol.base.LayoutDiagramComponent	setFeedback	feedback	1

@@ -64,10 +64,7 @@ public class LayoutDiagram
    
     // Corresponding accessory reference
     private final List<List<LayoutDiagramComponent>> grid;
-    
-    // Network reference
-    private final ViewListener network;
-    
+
     // Path to the layout file
     private final String url;
     
@@ -91,7 +88,6 @@ public class LayoutDiagram
         this.sy = sy;
         this.maxx = sx;
         this.maxy = sy;
-        this.network = network;
         this.url = url;
                 
         this.grid = new ArrayList<>();
@@ -371,11 +367,6 @@ public class LayoutDiagram
     public int getSy()
     {
         return sy;
-    }
-    
-    public ViewListener getControl()
-    {
-        return this.network;
     }
     
     @Override

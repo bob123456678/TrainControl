@@ -241,11 +241,6 @@ public class LayoutPopupUI extends PositionAwareJFrame
         });
     }
     
-    public JPanel getPanel()
-    {
-        return this.ExtLayoutPanel;
-    }
-    
     public int getLayoutSize()
     {
         return this.size;
