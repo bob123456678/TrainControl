@@ -282,16 +282,25 @@ public class testTheLocomotiveSettingsLooks extends support.SettingsClass
         JLabel name = Components.find(pane, JLabel.class,
             l -> UiStyle.withoutColon(I18n.t("loc.ui.labelLocomotiveName")).equals(l.getText()) && l.isShowing());
 
+        JLabel reverse = Components.find(pane, JLabel.class,
+            l -> UiStyle.withoutColon(I18n.t("loc.ui.labelReverse")).equals(l.getText()) && l.isShowing());
+        javax.swing.JCheckBox reverseBox = Components.find(pane, javax.swing.JCheckBox.class,
+            c -> c.isShowing() && c.getText().isEmpty());
+
         assertNotNull(box, "precondition: no member row on the Multi-Unit tab");
+        assertNotNull(reverseBox, "precondition: no Reverse box on the Multi-Unit tab");
 
         int filterX = Components.onTheEventThread(() -> bounds(filter, pane).x);
         int listX = Components.onTheEventThread(() -> bounds(list, pane).x);
         int headingX = Components.onTheEventThread(() -> bounds(name, pane).x + name.getInsets().left);
         int boxX = Components.onTheEventThread(() -> bounds(box, pane).x + box.getInsets().left);
+        int reverseX = Components.onTheEventThread(() -> bounds(reverse, pane).x + reverse.getInsets().left);
+        int reverseBoxX = Components.onTheEventThread(() -> bounds(reverseBox, pane).x + reverseBox.getInsets().left);
 
         assertEquals(filterX, notes, "the filter row does not start where the Notes labels do");
         assertEquals(listX, notes, "the list does not start where the Notes labels do");
         assertEquals(headingX, boxX, "the Locomotive Name heading does not start where the check boxes are drawn");
+        assertEquals(reverseX, reverseBoxX, "the Reverse heading does not start where its check boxes are drawn");
     }
 
     /**
