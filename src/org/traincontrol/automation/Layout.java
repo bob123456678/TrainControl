@@ -1723,7 +1723,9 @@ public class Layout
 
         if (this.control.getPowerState()) this.waitingForThePower.set(false);
 
-        if (!this.control.isReplacingConnection() && this.routesHeld.compareAndSet(true, false))
+        // A stopped run holds nothing, so the next one does not say the connection is back
+        if (!this.running) this.routesHeld.set(false);
+        else if (!this.control.isReplacingConnection() && this.routesHeld.compareAndSet(true, false))
         {
             this.control.logf("autolayout.infoRoutesResumed");
         }
