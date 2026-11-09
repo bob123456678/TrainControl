@@ -371,8 +371,7 @@ final class EditorTileMenus
             menu.add(editor.item(I18n.t("autosetup.ui.menuSetName"), () -> editor.promptLinkName(target)));
         }
 
-        // On the menu itself rather than inside Advanced Parameters (OB-013): Advanced belongs to a STATION and a length to
-        // any square.  Offered where `offersALength` says and bound to the square it names (FR-066): Control+E and this
+        // On the square's own menu (OB-013): a length belongs to any square, not only a station.  Offered where `offersALength` says and bound to the square it names (FR-066): Control+E and this
         // item ask the same question, so there is one.
         if (editor.offersALength(tile))
         {

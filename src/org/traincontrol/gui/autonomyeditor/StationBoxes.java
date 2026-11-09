@@ -6,10 +6,10 @@ import org.traincontrol.automationui.TileGraph.TileKey;
 /** Station Settings' two section boxes as the setup says them (FR-111): neither is Nothing Can Pass. */
 final class StationBoxes
 {
-    /** When trains stop here. */
+    /** Trains can stop here. */
     final boolean stops;
 
-    /** Running through. */
+    /** Trains can pass through. */
     final boolean runsThrough;
 
     private StationBoxes(boolean stops, boolean runsThrough)

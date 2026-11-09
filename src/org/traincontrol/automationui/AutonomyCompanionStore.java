@@ -1393,7 +1393,7 @@ public class AutonomyCompanionStore
 
             renameInList(point, EXCLUDED_LOCS_KEY, from, to);
 
-            // And a list remembered while Which Trains says All (FR-111), or it comes back naming a train that is gone
+            // And a list remembered while Allowed trains says All (FR-111), or it comes back naming a train that is gone
             renameInList(point, AutonomyBuilder.REMEMBERED_LOCS, from, to);
         }
     }

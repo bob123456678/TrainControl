@@ -8188,7 +8188,7 @@ public class Layout
         
     /**
      * Says whether the timetable's entries must run one at a time (each waits for the one before to arrive).
-     * setTimetable clears it; the application no longer calls this, and tests use it to set the flag by hand.
+     * setTimetable clears it; the application does not call this; tests use it to set the flag by hand.
      */
     public void setTimetableSequential(boolean sequential)
     {

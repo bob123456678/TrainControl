@@ -15813,7 +15813,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             }, KEYBOARD_SWITCH_THREAD).start();
     }
 
-    /** The generated keys' handler: those keys are no longer shown, and the new ones go through `keyboardKeyClicked`. */
+    /** The generated keys' handler: these keys' clicks go through `keyboardKeyClicked`. */
     private void UpdateSwitchState(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_UpdateSwitchState
         javax.swing.JToggleButton b = (javax.swing.JToggleButton) evt.getSource();
 

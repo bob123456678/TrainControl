@@ -382,7 +382,7 @@ public class AutonomyEditorPanel extends JPanel
 
     private JToggleButton pickButton;
 
-    /** The stations Pick Stations has picked, in the order picked. */
+    /** The stations Bulk Edit... has picked, in the order picked. */
     private final Set<TileKey> stationPicks = new LinkedHashSet<>();
 
     /**
@@ -977,7 +977,7 @@ public class AutonomyEditorPanel extends JPanel
         dropStationPicks();
     }
 
-    /** Whether Pick Stations is armed, whose own mark outlines what the window is about. */
+    /** Whether Bulk Edit... is armed, whose own mark outlines what the window is about. */
     boolean isPickingStations()
     {
         return tool == Tool.STATIONS;
@@ -1040,7 +1040,7 @@ public class AutonomyEditorPanel extends JPanel
     }
 
     /**
-     * Whether a click on a drawn train is a click on its station: while Test a Path, Why Not Moving? or Pick Stations
+     * Whether a click on a drawn train is a click on its station: while Test a Path, Why Not Moving? or Bulk Edit...
      * waits for one (OB-354).
      * @return true where the train's square is the answer
      */
@@ -3945,7 +3945,7 @@ public class AutonomyEditorPanel extends JPanel
     }
 
     /**
-     * Which Trains (FR-111), asking about a home the choice would break as the list does (OB-022).
+     * Allowed trains (FR-111), asking about a home the choice would break as the list does (OB-022).
      * @return false where the operator kept it as it was
      */
     boolean setWhichTrains(TileKey tile, org.traincontrol.automationui.AutonomySession.WhichTrains which)

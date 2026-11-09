@@ -714,7 +714,7 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
     }
 
     /**
-     * The first tab: picture, name, decoder, address and preset speed, with the trash can and Check Duplicates.  For a
+     * The first tab: picture, name, decoder, address and preset speed, with the trash can and the duplicate-address warning.  For a
      * locomotive still to be made, the name, the decoders Add Locomotive offers and the address alone.
      */
     private final class LocomotiveTab extends JPanel
@@ -847,7 +847,7 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
             trash.addActionListener(e -> delete());
 
             // The fields are at the tab's left edge under their heading, the picture at its right under its own, level
-            // with Name; the divider is midway between Check Duplicates and the next heading, the trash can at the lower left
+            // with Name; the divider is midway between the address row and the next heading, the trash can at the lower left
             final Insets edge = new Insets(4, 4, 4, 6);
             final Insets inner = new Insets(4, 4, 4, 6);
 
