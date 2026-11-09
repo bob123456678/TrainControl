@@ -133,10 +133,13 @@ abstract class StationWindowBase extends JDialog
             JComponent.WHEN_IN_FOCUSED_WINDOW);
     }
 
-    /** Lays the window out: the strip, the content, then the footer's (i) and Close at the bottom right. */
-    final void assemble(JComponent content)
+    /**
+     * Lays the window out: the strip, the content, then the footer's (i) and Done Editing (changes apply as they are
+     * made) at the bottom right.  Hands back the footer, whose bottom left (`BorderLayout.WEST`) is free.
+     */
+    final JPanel assemble(JComponent content)
     {
-        JButton close = new JButton(I18n.t("autosetup.ui.stationClose"));
+        JButton close = new JButton(I18n.t("autosetup.ui.stationDone"));
 
         close.setName("station.close");
         close.setFont(BUTTON_FONT);
@@ -162,6 +165,8 @@ abstract class StationWindowBase extends JDialog
         root.add(footer, BorderLayout.SOUTH);
 
         setContentPane(root);
+
+        return footer;
     }
 
     /** Points the window at a square and shows it, beside the window that asked. */

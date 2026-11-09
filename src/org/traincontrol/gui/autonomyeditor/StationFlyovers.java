@@ -150,4 +150,17 @@ final class StationFlyovers
     {
         return nowThenChange(I18n.t("autosetup.ui.flyTailNow"), I18n.t("autosetup.ui.flyTailChange"));
     }
+
+    /** A train row's (i) where the row has no answer: what the row is, then why it is empty now (OB-429). */
+    static String unanswered(String means, String now)
+    {
+        return "<html><body style='width: 300px'>" + AutonomyEditorPanel.escape(means) + "<br><b>"
+            + I18n.t("autosetup.ui.flyNow") + "</b> " + AutonomyEditorPanel.escape(now) + "</body></html>";
+    }
+
+    /** The same where no train stands here. */
+    static String noTrain(String meansKey)
+    {
+        return unanswered(I18n.t(meansKey), I18n.t("autosetup.ui.flyNoTrain"));
+    }
 }

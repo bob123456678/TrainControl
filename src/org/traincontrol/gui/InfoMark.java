@@ -60,7 +60,8 @@ public final class InfoMark
     }
 
     /**
-     * A mark whose tooltip shows the sentence, wrapped, and stays long enough to read it.
+     * A mark whose tooltip shows the sentence, wrapped, and stays long enough to read it; a click shows it at once
+     * (Adam: "click on any i should immediately show the tooltip, so you don't have to wait for the hover timeout").
      *
      * @param text what the mark explains
      */
@@ -86,8 +87,35 @@ public final class InfoMark
             {
                 ToolTipManager.sharedInstance().setDismissDelay(was);
             }
+
+            // Later, as Swing's own press handler hides the tooltip and may run after this one
+            @Override
+            public void mousePressed(java.awt.event.MouseEvent e)
+            {
+                javax.swing.SwingUtilities.invokeLater(() -> showNow(mark, e.getX(), e.getY()));
+            }
         });
 
         return mark;
+    }
+
+    /** Shows the mark's tooltip as a hover would, without the wait; every other component's wait is left as it was. */
+    private static void showNow(JLabel mark, int x, int y)
+    {
+        ToolTipManager tips = ToolTipManager.sharedInstance();
+
+        int initial = tips.getInitialDelay();
+
+        tips.setInitialDelay(0);
+
+        try
+        {
+            tips.mouseMoved(new java.awt.event.MouseEvent(mark, java.awt.event.MouseEvent.MOUSE_MOVED,
+                System.currentTimeMillis(), 0, x, y, 0, false));
+        }
+        finally
+        {
+            tips.setInitialDelay(initial);
+        }
     }
 }

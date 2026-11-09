@@ -171,7 +171,7 @@ With no tool armed, a left-click on track changes which way trains may run on it
 
 ## The right-click menu
 
-Right-click any square for everything else. The menu opens with the square's name or kind as a heading, and offers only what makes sense there. Settings on plain track act on the whole run. Nothing in it can be changed while autonomy is busy, except `Is Active` on the track diagram; `Station Settings` and the train window open then, but read only.
+Right-click any square for everything else. In the autonomy editor the menu opens with the square's name or kind as a heading; on the track diagram a station's name heads the station's own items. The menu offers only what makes sense there. Settings on plain track act on the whole run. Nothing in it can be changed while autonomy is busy, except `Is Active` on the track diagram; `Station Settings` and the train window open then, but read only.
 
 ### On a sensor or a station
 
@@ -181,11 +181,11 @@ Right-click any square for everything else. The menu opens with the square's nam
 | `Change Direction (now facing` *East* `)` | Turns the train here round in one click. If you are not sure which way it faces, leave it: autonomy corrects it the first time the train runs. Grayed out, with the reason, where the track lets a train face only one way or no track leads out |
 | `Change Arrived From (currently` *West* `)` | Changes the side the train came in by, which is where its tail lies, to the other side in one click. Where there is no single other side, it opens a list of the sides |
 | *train*`'s Tail Reaches Back To...` | Only where it matters: which sensor behind the train its tail has crossed. `Pick on the diagram...` lets you click it |
-| `Train at` *station* `...` / `Place a Locomotive Here...` | Opens the train window: which train is standing here, and the details of how it stands. On a station with no train it puts one there. See [the train window](#the-train-window) |
+| `Station Settings...` | Opens the window with every setting of the station (Control+O): see [the Station Settings window](#the-station-settings-window) |
+| `Change Train at` *station* `...` / `Place a Locomotive Here...` | Opens the train window: which train is standing here, and the details of how it stands. On a station with no train it puts one there. See [the train window](#the-train-window) |
 | `Place` *train* | On the track diagram, when a train is selected in the main window and is not the one standing here: puts it here |
 | `Remove` *train* | Takes the train off this square |
 | `Edit` *train* `...` | On the track diagram only, when a train is standing here: opens that train's `Locomotive Settings` on the `Autonomy` tab. It opens grayed out while autonomy runs |
-| `Station Settings...` | Opens the window with every setting of the station (Control+O): see [the Station Settings window](#the-station-settings-window) |
 | `Segment Length...` | How long this piece of track counts as, in your own units; see [Track lengths](#track-lengths-what-they-are-for) (Control+E) |
 | `Show a Station Name Here...` | Puts a station's caption on this square (Control+N). A page shows a station once: if the station already has a caption on this page it moves here, and its captions on other pages stay. `Stop Showing` *station* takes off the one on this square only |
 | `Bulk Tools` | See [Bulk Tools](#bulk-tools) |
@@ -194,7 +194,7 @@ Everything else a station has is in its `Station Settings`: its name, whether tr
 
 ### The Station Settings window
 
-`Station Settings...` opens one window for the station you right-clicked. It stays open beside the diagram: right-click another square, or point at one and press Control+O, and it shows that one. In the autonomy editor every change is made at once in the editor's draft, so the editor's `Cancel` undoes it; on the track diagram each change is saved at once. While autonomy runs the window opens, but nothing in it can be changed. An (i) beside a setting says what it is set to now and what changing it does.
+`Station Settings...` opens one window for the station you right-clicked. It stays open beside the diagram: right-click another square, or point at one and press Control+O, and it shows that one. In the autonomy editor every change is made at once in the editor's draft, so the editor's `Cancel` undoes it; on the track diagram each change is saved at once. While autonomy runs the window opens, but nothing in it can be changed. An (i) beside a setting says what it is set to now and what changing it does: rest the pointer on it, or click it to read it at once.
 
 **The settings, from the top:**
 
@@ -239,7 +239,7 @@ A station with only `Trains can stop here` ticked is not a terminus: a train may
 
 ### The train window
 
-On a station with a train on it, `Train at` *station* opens a window for that train; on an empty one, `Place a Locomotive Here...` opens the same window. It holds:
+On a station with a train on it, `Change Train at` *station* `...` opens a window for that train; on an empty one, `Place a Locomotive Here...` opens the same window. It holds:
 
 - `Train`: the locomotive standing here. Pick another to put it here, or `None` to take it off.
 - `Locomotive Settings...`: opens the `Autonomy` tab of that locomotive's `Locomotive Settings`: its `Train Length`, `Reversible`, `Active`, and the `Departure Function` and `Arrival Function` switched as it sets off and arrives.
@@ -527,7 +527,7 @@ So if a short train seems to be blocking a surprising amount of track, the answe
 
 ![The Auto tab while autonomy runs: Graceful Stop, and a card for each train](assets/automation/13-auto-tab.png)
 
-**On the track diagram**, right-click a train to send it to one of the stations autonomy chooses from, or one under `More Destinations`, which lists the stations you have unticked `May choose this station` on, such as parking berths. Right-click a station to place the train selected in the main window there (`Place` *train*), to take one off, or to open the train standing there: `Edit` *train* `...` opens its `Locomotive Settings` on the `Autonomy` tab, and `Train at` *station* opens [the train window](#the-train-window). Placing a train from the diagram may ask which way it faces and which way it came in; if you are not sure, take the suggestion.
+**On the track diagram**, right-click a train to send it to one of the stations autonomy chooses from, or one under `More Destinations`, which lists the stations you have unticked `May choose this station` on, such as parking berths. Right-click a station to place the train selected in the main window there (`Place` *train*), to take one off, or to open the train standing there: `Edit` *train* `...` opens its `Locomotive Settings` on the `Autonomy` tab, and `Change Train at` *station* `...` opens [the train window](#the-train-window). Placing a train from the diagram may ask which way it faces and which way it came in; if you are not sure, take the suggestion.
 
 When you send a train that can reverse to a station where trains may change direction, TrainControl first asks "Keep direction?". Yes, the default, keeps it facing the way it is; No turns it around there.
 
