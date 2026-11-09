@@ -55,10 +55,12 @@ public class testNoSetupEditWhileARouteRuns
     private static final String WAIT = "autolayout.ui.errorWaitForActiveLocomotivesToStop";
 
     /**
-     * The track diagram's right-click menu leaves out Place, Remove, Is Active, the Facing menu and Autonomy Setup while
-     * a route runs, and offers them at rest - Start Autonomy and Edit Locomotive, which are not setup edits, both times.
+     * The track diagram's right-click menu leaves out Place, Remove, the Facing menu and Autonomy Setup while a route
+     * runs, and offers them at rest - Start Autonomy, Is Active and Edit Locomotive, which are not setup edits, both times.
+     * Is Active then pauses the train alone, as its Auto tab card's button does, and the setup stays as it was (D30).
      *
-     * MUTATION: ask `isAutonomyBusy` alone for any of them again, and this fails naming it.
+     * MUTATION: ask `isAutonomyBusy` alone for any of them again, or leave Is Active off while a run holds the setup,
+     * and this fails naming it.
      */
     @Test
     public void testTheDiagramsMenuOffersNoSetupEditWhileARouteRuns() throws Exception
@@ -91,7 +93,6 @@ public class testNoSetupEditWhileARouteRuns
 
             setupItems.put("Place", I18n.f("layout.ui.menuPlaceLocomotive", active));
             setupItems.put("Remove", I18n.f("layout.ui.menuRemoveLocomotive", train));
-            setupItems.put("Is Active", I18n.f("autolayout.ui.menuLocomotiveActive", train));
             setupItems.put("Segment Length", I18n.t("autosetup.ui.menuSetLength"));
 
             // Change Direction and the other items about the train (FR-181)
@@ -114,15 +115,41 @@ public class testNoSetupEditWhileARouteRuns
 
             List<String> running;
 
+            final String before = ui.getAutonomySession().snapshotSetup().toString();
+
             aRouteRuns(ui, true);
 
             try
             {
-                running = texts(diagramMenu(ui, square, standing));
+                javax.swing.JPopupMenu menu = diagramMenu(ui, square, standing);
+
+                running = texts(menu);
+
+                // Is Active pauses the train alone while a route runs, as its Auto tab card does (D30)
+                JMenuItem tick = itemCalled(menu, I18n.f("autolayout.ui.menuLocomotiveActive", train));
+
+                assertNotNull(tick, "no Is Active while a route runs: " + running);
+
+                SwingUtilities.invokeAndWait(tick::doClick);
+
+                Components.drain(2);
             }
             finally
             {
                 aRouteRuns(ui, false);
+            }
+
+            try
+            {
+                assertTrue(standing.getCurrentLocomotive().isAutonomyPaused(), "unticking Is Active while a route runs"
+                    + " did not pause the train");
+
+                assertEquals(ui.getAutonomySession().snapshotSetup().toString(), before, "Is Active while a route runs"
+                    + " edited the setup");
+            }
+            finally
+            {
+                standing.getCurrentLocomotive().setAutonomyPaused(false);
             }
 
             for (Map.Entry<String, String> item : setupItems.entrySet())

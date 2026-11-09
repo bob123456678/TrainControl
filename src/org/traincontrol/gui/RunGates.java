@@ -159,6 +159,17 @@ public final class RunGates
     }
 
     /**
+     * Whether this train may be sent by hand now as far as runs go: not while autonomy, a timetable or Return Home runs
+     * or plans, nor while it is out itself; another train sent by hand does not stop it (FR-187).  Takes no monitor.
+     */
+    static boolean mayBeSentByHandNow(TrainControlUI ui, org.traincontrol.automation.Layout railway,
+        org.traincontrol.base.Locomotive train)
+    {
+        return !ui.stagingFlowActive && !railway.isAutoRunning() && !railway.isStagingInProgress()
+            && !railway.isAlreadyUnderway(train);
+    }
+
+    /**
      * Why a train may not be sent by hand right now, or null when it may (MT-263): a hand send is refused on the
      * question Start is refused on, `autonomyHasErrors`, asked before the reversal question.
      */

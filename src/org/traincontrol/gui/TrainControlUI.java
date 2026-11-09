@@ -3888,7 +3888,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         final java.awt.Window asked = dialogParent();
 
-        String why = whyThisPathCannotBeTaken(railway, path, train);
+        // Asked again at the click: a run may have begun since the menu or list offered the path
+        String why = RunGates.mayBeSentByHandNow(this, railway, train) ? whyThisPathCannotBeTaken(railway, path, train)
+            : I18n.t(RunGates.WAIT_FOR_THE_TRAINS);
 
         if (why != null)
         {

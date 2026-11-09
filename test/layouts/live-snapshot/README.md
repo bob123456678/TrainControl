@@ -198,3 +198,4 @@ not fix it. Name the square.
 - `ui.testRightClickMenuTipsCanBeHidden`
 - `ui.testChangeDirectionIsOneClick`
 - `regression.testTheLogIsStampedAndExports`
+- `ui.testAStandingTrainIsSentWhileAnotherRuns`
