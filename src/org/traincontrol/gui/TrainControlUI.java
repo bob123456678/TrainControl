@@ -7650,18 +7650,19 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
                                 ImageLoaderLoc.execute(() ->
                                 {
-                                    // Deselected since this was queued: nothing to show (an error here now reaches the log)
-                                    if (this.activeLoc == null) return;
+                                    // Read once: the event thread can deselect it at any moment, and nothing is shown then
+                                    Locomotive shown = this.activeLoc;
 
-                                    if (LOAD_IMAGES && this.activeLoc.getImageURL() != null)
+                                    if (shown == null) return;
+
+                                    String url = shown.getImageURL();
+
+                                    if (LOAD_IMAGES && url != null)
                                     {
-                                        String url = this.activeLoc.getImageURL();
-
                                         try 
                                         {
                                             ImageIcon icon = new javax.swing.ImageIcon(
-                                                getLocImageMaxHeight(this.activeLoc.getImageURL(), LOC_ICON_WIDTH, LOC_ICON_HEIGHT)
-                                                // getLocImage(this.activeLoc.getImageURL(), LOC_ICON_WIDTH)
+                                                getLocImageMaxHeight(url, LOC_ICON_WIDTH, LOC_ICON_HEIGHT)
                                             );
                                             
                                             // If the network is laggy, this could show an icon even though no loc is selected
