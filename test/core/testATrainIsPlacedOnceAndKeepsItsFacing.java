@@ -19,6 +19,7 @@ import org.traincontrol.automationui.TileGraph.RouteId;
 import org.traincontrol.automationui.TileGraph.TileKey;
 import org.traincontrol.automationui.TilePorts.Route;
 import org.traincontrol.automationui.TilePorts.Side;
+import support.Reflect;
 import support.SourceOf;
 
 /**
@@ -738,9 +739,7 @@ public class testATrainIsPlacedOnceAndKeepsItsFacing extends AutonomySessionFixt
             "main", () -> { }));
 
         java.lang.reflect.Method badgeFor =
-            org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel.class.getDeclaredMethod("badgeFor", TileKey.class);
-
-        badgeFor.setAccessible(true);
+            Reflect.method(org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel.class, "badgeFor", TileKey.class);
 
         assertEquals(((TileAnnotation.Badge) badgeFor.invoke(panel[0], open)).getDeadEnd(), Side.E, "the editor's badge"
             + " for the station whose track stops does not say which way it runs out");

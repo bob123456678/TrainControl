@@ -28,6 +28,7 @@ import org.traincontrol.automationui.AutonomySession;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.util.I18n;
+import support.Reflect;
 
 /**
  * His setup, exported from the frozen copy of his railway, imported onto the one-page layout MT-380 ships - through the
@@ -293,11 +294,7 @@ public class testASetupMovesToAOnePageLayout
     /** Whatever stands in the menu bar's Autonomy slot. */
     private static JMenu theAutonomySlot(TrainControlUI ui) throws Exception
     {
-        java.lang.reflect.Field field = TrainControlUI.class.getDeclaredField("mainMenuBar");
-
-        field.setAccessible(true);
-
-        JMenuBar bar = (JMenuBar) field.get(ui);
+        JMenuBar bar = (JMenuBar) Reflect.get(TrainControlUI.class, ui, "mainMenuBar");
 
         String heading = I18n.t("autosetup.ui.menuAutonomy");
 

@@ -13,6 +13,7 @@ import org.traincontrol.base.LayoutDiagram;
 import org.traincontrol.base.LayoutDiagramComponent.componentType;
 import org.traincontrol.automationui.TileGraph.TileKey;
 import org.traincontrol.automationui.TilePorts.Side;
+import support.Reflect;
 
 /**
  * The editor measures a platform against the track behind it, and says the figure a train is refused above.
@@ -540,10 +541,8 @@ public class testThePlatformNoticeKnowsWhatATrainIsRefusedAt extends AutonomySes
         built.put("points", pointList);
         built.put("edges", edgeList);
 
-        java.lang.reflect.Method read = org.traincontrol.automationui.AutonomySession.class.getDeclaredMethod(
+        java.lang.reflect.Method read = Reflect.method(org.traincontrol.automationui.AutonomySession.class,
             "refusingFigures", org.json.JSONObject.class, java.util.Map.class);
-
-        read.setAccessible(true);
 
         java.util.Map<TileKey, Integer> bySquare = (java.util.Map<TileKey, Integer>) read.invoke(session, built, named);
 

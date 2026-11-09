@@ -26,6 +26,7 @@ import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.marklin.MarklinRoute;
 import org.traincontrol.util.I18n;
+import support.Reflect;
 
 /**
  * Locomotives > Import from CSV (FR-049), driven as the operator drives it: the menu item pressed, the file chosen in the
@@ -135,11 +136,7 @@ public class testLocomotiveCsvImportDoor
 
         try
         {
-            java.lang.reflect.Field item = TrainControlUI.class.getDeclaredField("importLocsFromCSVMenuItem");
-
-            item.setAccessible(true);
-
-            final JMenuItem door = (JMenuItem) item.get(ui);
+            final JMenuItem door = (JMenuItem) Reflect.get(TrainControlUI.class, ui, "importLocsFromCSVMenuItem");
 
             assertNotNull(door, "the Locomotives menu has no Import from CSV item");
 

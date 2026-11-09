@@ -15,6 +15,7 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import support.Reflect;
 import support.SourceOf;
 
 /**
@@ -491,9 +492,7 @@ public class testTrainTailClearsEdges
     {
         try
         {
-            java.lang.reflect.Field field = Edge.class.getDeclaredField("occupancy");
-
-            field.setAccessible(true);
+            java.lang.reflect.Field field = Reflect.field(Edge.class, "occupancy");
 
             return field.getInt(edge);
         }

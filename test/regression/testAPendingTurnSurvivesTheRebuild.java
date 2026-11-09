@@ -16,6 +16,7 @@ import org.traincontrol.automationui.AutonomySession;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;
 import static org.traincontrol.marklin.MarklinControlStation.init;
+import support.Reflect;
 
 /**
  * A destination turn nobody has managed to write down yet survives a setup rebuild.  `Layout.reversedOnArrival` holds
@@ -82,12 +83,7 @@ public class testAPendingTurnSurvivesTheRebuild
 
             assertNotNull(active, "the snapshot names no active configuration");
 
-            java.lang.reflect.Field field =
-                TrainControlUI.class.getDeclaredField("activeDiagramConfiguration");
-
-            field.setAccessible(true);
-
-            field.set(ui, active);
+            Reflect.set(TrainControlUI.class, ui, "activeDiagramConfiguration", active);
         }
     }
 
@@ -317,9 +313,7 @@ public class testAPendingTurnSurvivesTheRebuild
         String restrictionsWere = prefs.get(TrainControlUI.DIAGRAM_RESTRICTION_ARROWS, null);
         String allowedWere = prefs.get(TrainControlUI.DIAGRAM_ALLOWED_DIRECTIONS, null);
 
-        java.lang.reflect.Field flag = Layout.class.getDeclaredField("running");
-
-        flag.setAccessible(true);
+        java.lang.reflect.Field flag = Reflect.field(Layout.class, "running");
 
         final javax.swing.JButton graceful = (javax.swing.JButton) windowField("gracefulStop");
 
@@ -429,9 +423,7 @@ public class testAPendingTurnSurvivesTheRebuild
     /** The refresh that turns the spinner on Start or stops it, as the window makes it where what runs changes. */
     private static void theSpinnersRefresh() throws Exception
     {
-        final java.lang.reflect.Method refresh = TrainControlUI.class.getDeclaredMethod("refreshWhatWaitsForTheTrains");
-
-        refresh.setAccessible(true);
+        final java.lang.reflect.Method refresh = Reflect.method(TrainControlUI.class, "refreshWhatWaitsForTheTrains");
 
         javax.swing.SwingUtilities.invokeAndWait(() ->
         {
@@ -451,9 +443,8 @@ public class testAPendingTurnSurvivesTheRebuild
     /** How many red or green pixels the track diagram's marks paint over every square it marks, each on black. */
     private static int arrowPixels() throws Exception
     {
-        java.lang.reflect.Field last = org.traincontrol.gui.autonomy.DiagramTileRegistry.class.getDeclaredField("lastAnnotated");
-
-        last.setAccessible(true);
+        java.lang.reflect.Field last =
+            Reflect.field(org.traincontrol.gui.autonomy.DiagramTileRegistry.class, "lastAnnotated");
 
         final java.util.Map<?, ?> marks = new java.util.HashMap<>((java.util.Map<?, ?>) last.get(ui.getDiagramTileRegistry()));
 
@@ -1139,10 +1130,7 @@ public class testAPendingTurnSurvivesTheRebuild
     /** The Medium button's pop-up of the page shown, once it is up. */
     private static org.traincontrol.gui.LayoutPopupUI openAMediumPopUp() throws Exception
     {
-        java.lang.reflect.Field buttonField = TrainControlUI.class.getDeclaredField("mediumButton");
-        buttonField.setAccessible(true);
-
-        final javax.swing.JButton medium = (javax.swing.JButton) buttonField.get(ui);
+        final javax.swing.JButton medium = (javax.swing.JButton) Reflect.get(TrainControlUI.class, ui, "mediumButton");
 
         java.util.Set<java.awt.Window> before = new java.util.HashSet<>(java.util.Arrays.asList(java.awt.Window.getWindows()));
 
@@ -1314,9 +1302,7 @@ public class testAPendingTurnSurvivesTheRebuild
     /** Asks the window which captions to hide, as a setup change does, and waits for its worker's answer to be painted. */
     private static void captionsSettled() throws Exception
     {
-        java.lang.reflect.Method ask = TrainControlUI.class.getDeclaredMethod("refreshCaptionVisibility");
-
-        ask.setAccessible(true);
+        java.lang.reflect.Method ask = Reflect.method(TrainControlUI.class, "refreshCaptionVisibility");
 
         javax.swing.SwingUtilities.invokeAndWait(() ->
         {
@@ -1484,11 +1470,7 @@ public class testAPendingTurnSurvivesTheRebuild
     /** One of the window's own fields. */
     private static Object windowField(String name) throws Exception
     {
-        java.lang.reflect.Field field = TrainControlUI.class.getDeclaredField(name);
-
-        field.setAccessible(true);
-
-        return field.get(ui);
+        return Reflect.get(TrainControlUI.class, ui, name);
     }
 
     /** Lets a setup change finish on the window: the posted refresh, the grid renderer's job, and the grid it posts. */
@@ -1634,11 +1616,7 @@ public class testAPendingTurnSurvivesTheRebuild
 
         assertNotNull(made, "precondition: the window made no session");
 
-        java.lang.reflect.Field source = AutonomySession.class.getDeclaredField("runningLayout");
-
-        source.setAccessible(true);
-
-        Object supplier = source.get(made);
+        Object supplier = Reflect.get(AutonomySession.class, made, "runningLayout");
 
         assertTrue(supplier != null && ((java.util.function.Supplier<?>) supplier).get() == model.getAutoLayoutIfLoaded(),
             "the session the window made cannot see the running railway, so a direction refused over a train the run"

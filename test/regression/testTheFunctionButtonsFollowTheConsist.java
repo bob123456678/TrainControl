@@ -15,6 +15,7 @@ import org.traincontrol.base.Locomotive;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.marklin.MarklinLocomotive;
+import support.Reflect;
 
 /**
  * The function buttons offer what the CONSIST can drive, not what its head can (MT-359).  Driven through `repaintLoc`,
@@ -146,9 +147,7 @@ public class testTheFunctionButtonsFollowTheConsist
 
         assertFalse(button(6).isEnabled(), "precondition: f6 is lit for the all-MM2 consist even when shown alone");
 
-        Field active = TrainControlUI.class.getDeclaredField("activeLoc");
-
-        active.setAccessible(true);
+        Field active = Reflect.field(TrainControlUI.class, "activeLoc");
 
         final java.util.concurrent.CountDownLatch held = new java.util.concurrent.CountDownLatch(1);
         final java.util.concurrent.CountDownLatch release = new java.util.concurrent.CountDownLatch(1);
@@ -213,9 +212,7 @@ public class testTheFunctionButtonsFollowTheConsist
 
         try
         {
-            Field session = TrainControlUI.class.getDeclaredField("autonomySession");
-
-            session.setAccessible(true);
+            Field session = Reflect.field(TrainControlUI.class, "autonomySession");
 
             // The railway graph exists, so the guard gets as far as asking about the session.
             model.getAutoLayout();
@@ -224,9 +221,7 @@ public class testTheFunctionButtonsFollowTheConsist
 
             // A session the getter can give here - the window built one when it was set up - so the claim below is
             // not about a fixture that has none to build.  The window keeps it; it is put back at the end.
-            java.lang.reflect.Method getter = TrainControlUI.class.getDeclaredMethod("getAutonomySession");
-
-            getter.setAccessible(true);
+            java.lang.reflect.Method getter = Reflect.method(TrainControlUI.class, "getAutonomySession");
 
             javax.swing.SwingUtilities.invokeAndWait(() ->
             {
@@ -267,9 +262,7 @@ public class testTheFunctionButtonsFollowTheConsist
             // PUT BACK, so the window and its viewer panel still agree about the session for anything after this.
             if (built[0] != null)
             {
-                Field restore = TrainControlUI.class.getDeclaredField("autonomySession");
-
-                restore.setAccessible(true);
+                Field restore = Reflect.field(TrainControlUI.class, "autonomySession");
 
                 if (restore.get(ui) == null) restore.set(ui, built[0]);
             }
@@ -300,11 +293,7 @@ public class testTheFunctionButtonsFollowTheConsist
             }
         }
 
-        Field active = TrainControlUI.class.getDeclaredField("activeLoc");
-
-        active.setAccessible(true);
-
-        Object showing = active.get(ui);
+        Object showing = Reflect.get(TrainControlUI.class, ui, "activeLoc");
 
         said.append("\n  The window is drawing: ")
             .append(showing == null ? "nothing" : ((Locomotive) showing).getName())
@@ -358,16 +347,12 @@ public class testTheFunctionButtonsFollowTheConsist
     /** Makes this locomotive the active one and lets the window draw its panel. */
     private static void show(Locomotive loc) throws Exception
     {
-        Field active = TrainControlUI.class.getDeclaredField("activeLoc");
-
-        active.setAccessible(true);
-
         // WAIT FOR THE WINDOW'S OWN RENDER, BEFORE AND AFTER: `repaintLoc` returns without doing anything while an
         // earlier render is running, so a `show` straight after another could have its repaint dropped and read the
         // previous consist's buttons.  One pump of the event thread was never a wait for either.
         waitForTheRender();
 
-        active.set(ui, loc);
+        Reflect.set(TrainControlUI.class, ui, "activeLoc", loc);
 
         javax.swing.SwingUtilities.invokeAndWait(() -> ui.repaintLoc(true, null));
 
@@ -378,9 +363,7 @@ public class testTheFunctionButtonsFollowTheConsist
     @SuppressWarnings("unchecked")
     private static boolean waitForTheRender() throws Exception
     {
-        Field futures = TrainControlUI.class.getDeclaredField("locFutures");
-
-        futures.setAccessible(true);
+        Field futures = Reflect.field(TrainControlUI.class, "locFutures");
 
         long deadline = System.currentTimeMillis() + 10000;
 
@@ -420,12 +403,8 @@ public class testTheFunctionButtonsFollowTheConsist
     @SuppressWarnings("unchecked")
     private static JToggleButton button(int fNumber) throws Exception
     {
-        Field mapping = TrainControlUI.class.getDeclaredField("rFunctionMapping");
-
-        mapping.setAccessible(true);
-
         HashMap<Integer, JToggleButton> buttons =
-            (HashMap<Integer, JToggleButton>) mapping.get(ui);
+            (HashMap<Integer, JToggleButton>) Reflect.get(TrainControlUI.class, ui, "rFunctionMapping");
 
         JToggleButton button = buttons.get(fNumber);
 

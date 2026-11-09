@@ -17,6 +17,7 @@ import org.traincontrol.base.LayoutDiagramComponent.componentType;
 import org.traincontrol.automationui.TileGraph.Direction;
 import org.traincontrol.automationui.TileGraph.RouteId;
 import org.traincontrol.automationui.TileGraph.TileKey;
+import support.Reflect;
 
 /**
  * The fixtures the autonomy session topic classes share (FR-136): a temporary layout folder and a fresh
@@ -164,9 +165,7 @@ abstract class AutonomySessionFixture
     static java.awt.Component panelPart(org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel panel, String field)
         throws Exception
     {
-        java.lang.reflect.Field f = org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel.class.getDeclaredField(field);
-
-        f.setAccessible(true);
+        java.lang.reflect.Field f = Reflect.field(org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel.class, field);
 
         return (java.awt.Component) f.get(panel);
     }
@@ -462,10 +461,9 @@ abstract class AutonomySessionFixture
     static void answerTheStationMenu(final org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel panel, final TileKey square,
         final boolean station) throws Exception
     {
-        final java.lang.reflect.Method usage = org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel.class.getDeclaredMethod("setUsage",
-            TileKey.class, boolean.class, boolean.class);
-
-        usage.setAccessible(true);
+        final java.lang.reflect.Method usage =
+            Reflect.method(org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel.class,
+                "setUsage", TileKey.class, boolean.class, boolean.class);
 
         javax.swing.SwingUtilities.invokeAndWait(() ->
         {

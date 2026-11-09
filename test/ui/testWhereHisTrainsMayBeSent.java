@@ -23,6 +23,7 @@ import org.traincontrol.gui.TailCrossedPrompt;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.util.I18n;
+import support.Reflect;
 import support.SourceOf;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 
@@ -130,9 +131,7 @@ public class testWhereHisTrainsMayBeSent
         // PUT BACK AFTER: a stop is not echoed here, and the claims after this one start trains.
         final boolean powerWas = model.getPowerState();
 
-        final java.lang.reflect.Field power = MarklinControlStation.class.getDeclaredField("powerState");
-
-        power.setAccessible(true);
+        final java.lang.reflect.Field power = Reflect.field(MarklinControlStation.class, "powerState");
 
         try
         {
@@ -491,9 +490,7 @@ public class testWhereHisTrainsMayBeSent
         panel.setRunningLayoutSource(() -> model.getAutoLayout());
         panel.setLayoutSource(() -> model.getAutoLayout());
 
-        java.lang.reflect.Field field = AutonomyEditorPanel.class.getDeclaredField("whyButton");
-
-        field.setAccessible(true);
+        java.lang.reflect.Field field = Reflect.field(AutonomyEditorPanel.class, "whyButton");
 
         final javax.swing.AbstractButton why = (javax.swing.AbstractButton) field.get(panel);
 
@@ -533,9 +530,7 @@ public class testWhereHisTrainsMayBeSent
 
         SwingUtilities.invokeAndWait(() -> panel.tileClicked(clicked, session.getGraph().getTiles().get(clicked), false));
 
-        Method waitsOn = AutonomyEditorPanel.class.getDeclaredMethod("whyWaitsOn", TileKey.class);
-
-        waitsOn.setAccessible(true);
+        Method waitsOn = Reflect.method(AutonomyEditorPanel.class, "whyWaitsOn", TileKey.class);
 
         for (TileKey tile : withTrains)
         {
@@ -773,9 +768,7 @@ public class testWhereHisTrainsMayBeSent
     {
         final Class<?> menuClass = Class.forName("org.traincontrol.gui.LayoutRightclickAutonomyMenu");
 
-        final Method gather = menuClass.getDeclaredMethod("gatherPathOptions", TrainControlUI.class, Point.class);
-
-        gather.setAccessible(true);
+        final Method gather = Reflect.method(menuClass, "gatherPathOptions", TrainControlUI.class, Point.class);
 
         final java.lang.reflect.Constructor<?> make = menuClass.getDeclaredConstructor(TrainControlUI.class,
             TileKey.class, TileKey.class, Class.forName("org.traincontrol.gui.LayoutRightclickAutonomyMenu$PathOptions"));
@@ -902,9 +895,7 @@ public class testWhereHisTrainsMayBeSent
     {
         final Class<?> menuClass = Class.forName("org.traincontrol.gui.LayoutRightclickAutonomyMenu");
 
-        final Method gather = menuClass.getDeclaredMethod("gatherPathOptions", TrainControlUI.class, Point.class);
-
-        gather.setAccessible(true);
+        final Method gather = Reflect.method(menuClass, "gatherPathOptions", TrainControlUI.class, Point.class);
 
         final Point[] standing = new Point[1];
 
@@ -918,11 +909,7 @@ public class testWhereHisTrainsMayBeSent
 
         for (String field : new String[] {"shown", "other"})
         {
-            java.lang.reflect.Field list = options.getClass().getDeclaredField(field);
-
-            list.setAccessible(true);
-
-            Object paths = list.get(options);
+            Object paths = Reflect.get(options.getClass(), options, field);
 
             if (paths != null) out.addAll((List<List<Edge>>) paths);
         }
@@ -935,9 +922,7 @@ public class testWhereHisTrainsMayBeSent
     {
         final Class<?> menuClass = Class.forName("org.traincontrol.gui.LayoutRightclickAutonomyMenu");
 
-        final Method gather = menuClass.getDeclaredMethod("gatherPathOptions", TrainControlUI.class, Point.class);
-
-        gather.setAccessible(true);
+        final Method gather = Reflect.method(menuClass, "gatherPathOptions", TrainControlUI.class, Point.class);
 
         final java.lang.reflect.Constructor<?> make = menuClass.getDeclaredConstructor(TrainControlUI.class,
             TileKey.class, TileKey.class, Class.forName("org.traincontrol.gui.LayoutRightclickAutonomyMenu$PathOptions"));
@@ -1009,18 +994,14 @@ public class testWhereHisTrainsMayBeSent
 
         if (manual)
         {
-            java.lang.reflect.Field type = AutonomyEditorPanel.class.getDeclaredField("pathTypeManual");
-
-            type.setAccessible(true);
+            java.lang.reflect.Field type = Reflect.field(AutonomyEditorPanel.class, "pathTypeManual");
 
             final javax.swing.AbstractButton byHand = (javax.swing.AbstractButton) type.get(panel);
 
             SwingUtilities.invokeAndWait(byHand::doClick);
         }
 
-        java.lang.reflect.Field field = AutonomyEditorPanel.class.getDeclaredField("whyButton");
-
-        field.setAccessible(true);
+        java.lang.reflect.Field field = Reflect.field(AutonomyEditorPanel.class, "whyButton");
 
         final javax.swing.AbstractButton why = (javax.swing.AbstractButton) field.get(panel);
 
@@ -1211,9 +1192,7 @@ public class testWhereHisTrainsMayBeSent
 
     private static String hintOf(AutonomyEditorPanel panel) throws Exception
     {
-        java.lang.reflect.Field field = AutonomyEditorPanel.class.getDeclaredField("hint");
-
-        field.setAccessible(true);
+        java.lang.reflect.Field field = Reflect.field(AutonomyEditorPanel.class, "hint");
 
         final String[] text = new String[1];
 

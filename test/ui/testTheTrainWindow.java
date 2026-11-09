@@ -28,6 +28,7 @@ import org.traincontrol.util.I18n;
 import support.AskingWindows;
 import support.Components;
 import support.Mouse;
+import support.Reflect;
 import support.StationDoors;
 
 /**
@@ -977,9 +978,7 @@ public class testTheTrainWindow
     /** The diagram's menu over the square while autonomy runs, its run flag set and put back around the right-click. */
     private static JPopupMenu runningMenuOn(TileKey square) throws Exception
     {
-        final java.lang.reflect.Field staging = TrainControlUI.class.getDeclaredField("stagingFlowActive");
-
-        staging.setAccessible(true);
+        final java.lang.reflect.Field staging = Reflect.field(TrainControlUI.class, "stagingFlowActive");
 
         try
         {
@@ -1359,9 +1358,7 @@ public class testTheTrainWindow
     {
         final LayoutEditor closing = editor;
 
-        final java.lang.reflect.Method exit = LayoutEditor.class.getDeclaredMethod("confirmExit");
-
-        exit.setAccessible(true);
+        final java.lang.reflect.Method exit = Reflect.method(LayoutEditor.class, "confirmExit");
 
         try (support.Answering answering = support.Answering.start(message -> support.Answering.press(AskingWindows.YES)))
         {

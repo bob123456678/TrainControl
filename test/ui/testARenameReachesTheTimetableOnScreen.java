@@ -14,6 +14,7 @@ import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 import org.traincontrol.marklin.MarklinLocomotive;
+import support.Reflect;
 
 /**
  * Renaming a locomotive redraws the timetable it is named in (MT-149): `MarklinLocomotive` hashes by IDENTITY,
@@ -103,10 +104,7 @@ public class testARenameReachesTheTimetableOnScreen
 
         try
         {
-            java.lang.reflect.Method signature = TrainControlUI.class.getDeclaredMethod(
-                "timetableSignature", List.class);
-
-            signature.setAccessible(true);
+            java.lang.reflect.Method signature = Reflect.method(TrainControlUI.class, "timetableSignature", List.class);
 
             String before = (String) signature.invoke(ui[0], layout.getTimetableSnapshot());
 
@@ -145,15 +143,9 @@ public class testARenameReachesTheTimetableOnScreen
             // being discarded.
             ui[0].setViewListener(model, new java.util.concurrent.CountDownLatch(1));
 
-            java.lang.reflect.Method repaint =
-                TrainControlUI.class.getDeclaredMethod("repaintTimetable");
+            java.lang.reflect.Method repaint = Reflect.method(TrainControlUI.class, "repaintTimetable");
 
-            repaint.setAccessible(true);
-
-            java.lang.reflect.Field state =
-                TrainControlUI.class.getDeclaredField("lastTimetableState");
-
-            state.setAccessible(true);
+            java.lang.reflect.Field state = Reflect.field(TrainControlUI.class, "lastTimetableState");
 
             // Once, to establish what it believes it is showing.
             repaint.invoke(ui[0]);

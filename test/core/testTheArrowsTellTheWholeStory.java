@@ -34,6 +34,7 @@ import org.traincontrol.base.Accessory.accessoryDecoderType;
 import org.traincontrol.base.LayoutDiagram;
 import org.traincontrol.base.LayoutDiagramComponent.componentType;
 import org.traincontrol.util.I18n;
+import support.Reflect;
 
 /**
  * A square's arrows are the whole of which way trains may run through it (OB-351).  Each claim asks a train's own
@@ -888,9 +889,7 @@ public class testTheArrowsTellTheWholeStory
     private static void cycle(final org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel panel, final TileKey square) throws Exception
     {
         final java.lang.reflect.Method cycle =
-            org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel.class.getDeclaredMethod("cycle", TileKey.class);
-
-        cycle.setAccessible(true);
+            Reflect.method(org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel.class, "cycle", TileKey.class);
 
         javax.swing.SwingUtilities.invokeAndWait(() ->
         {

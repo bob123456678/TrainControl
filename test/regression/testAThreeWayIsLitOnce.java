@@ -20,6 +20,7 @@ import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.marklin.MarklinRoute;
 import org.traincontrol.util.ImageUtil;
 import static org.traincontrol.marklin.MarklinControlStation.init;
+import support.Reflect;
 
 /**
  * Highlight on Diagram lights a three-way once, as commanded, where a route commands one of its decoders and checks the
@@ -122,9 +123,7 @@ public class testAThreeWayIsLitOnce
                     RouteCommand.RouteCommandAccessory(first + 1, protocol, true))));
             });
 
-            final java.lang.reflect.Method highlight = RouteEditorFrame.class.getDeclaredMethod("highlightOnDiagram");
-
-            highlight.setAccessible(true);
+            final java.lang.reflect.Method highlight = Reflect.method(RouteEditorFrame.class, "highlightOnDiagram");
 
             SwingUtilities.invokeLater(() ->
             {

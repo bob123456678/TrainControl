@@ -10,6 +10,7 @@ import org.traincontrol.base.Accessory.accessoryDecoderType;
 import org.traincontrol.base.LayoutDiagram;
 import org.traincontrol.base.LayoutDiagramComponent.componentType;
 import org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel;
+import support.Reflect;
 import support.SourceOf;
 
 /**
@@ -196,8 +197,7 @@ public class testStationLabelPrefill
             AutonomyEditorPanel panel = new AutonomyEditorPanel(session, "main", () -> { });
 
             java.lang.reflect.Method nearestStation =
-                AutonomyEditorPanel.class.getDeclaredMethod("nearestStation", TileKey.class);
-            nearestStation.setAccessible(true);
+                Reflect.method(AutonomyEditorPanel.class, "nearestStation", TileKey.class);
 
             // Right beside the excluded point and further from both real stations, so a filter that let it through
             // would win on distance alone.

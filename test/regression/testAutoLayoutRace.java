@@ -18,6 +18,7 @@ import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.marklin.MarklinFeedback;
 import org.traincontrol.marklin.MarklinLocomotive;
 import static org.traincontrol.marklin.MarklinControlStation.init;
+import support.Reflect;
 
 /**
  * PROOF OF CONCEPT for the Layout.activeLocomotives concurrency race.
@@ -406,9 +407,7 @@ public class testAutoLayoutRace
     {
         // Power believed OFF, the state a tile click that has to turn the power on first is in.  Set directly: whether
         // a STOP echoes back at all is what is being simulated away.
-        java.lang.reflect.Field field = MarklinControlStation.class.getDeclaredField("powerState");
-
-        field.setAccessible(true);
+        java.lang.reflect.Field field = Reflect.field(MarklinControlStation.class, "powerState");
         field.setBoolean(model, false);
 
         long began = System.currentTimeMillis();
@@ -426,10 +425,8 @@ public class testAutoLayoutRace
     /** updatePendingS88 is private bookkeeping; reached the way testImportRename reaches its internals. */
     private static void pendingS88(Layout layout, Locomotive loc, String s88) throws Exception
     {
-        java.lang.reflect.Method method = Layout.class.getDeclaredMethod(
-            "updatePendingS88", Locomotive.class, String.class);
-
-        method.setAccessible(true);
+        java.lang.reflect.Method method =
+            Reflect.method(Layout.class, "updatePendingS88", Locomotive.class, String.class);
         method.invoke(layout, loc, s88);
     }
 

@@ -29,6 +29,7 @@ import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.util.I18n;
 import support.Answering;
 import support.Components;
+import support.Reflect;
 import support.Restart;
 
 /**
@@ -212,11 +213,7 @@ public class testOpenLayoutLeavesTheOldTrainsBehind
     /** The window's list of the diagram's pages. */
     private static javax.swing.JComboBox<?> pageList() throws Exception
     {
-        java.lang.reflect.Field field = TrainControlUI.class.getDeclaredField("LayoutList");
-
-        field.setAccessible(true);
-
-        return (javax.swing.JComboBox<?>) field.get(ui);
+        return (javax.swing.JComboBox<?>) Reflect.get(TrainControlUI.class, ui, "LayoutList");
     }
 
     /** Which train stands where, as "station=train". */

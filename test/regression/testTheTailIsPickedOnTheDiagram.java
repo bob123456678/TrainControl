@@ -25,6 +25,7 @@ import org.traincontrol.gui.TailCrossedPrompt;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;
 import static org.traincontrol.marklin.MarklinControlStation.init;
+import support.Reflect;
 import support.SourceOf;
 
 /**
@@ -426,13 +427,9 @@ public class testTheTailIsPickedOnTheDiagram
 
         final org.traincontrol.gui.layouteditor.LayoutEditor[] editor = new org.traincontrol.gui.layouteditor.LayoutEditor[1];
 
-        java.lang.reflect.Field open = TrainControlUI.class.getDeclaredField("openEditor");
+        java.lang.reflect.Field open = Reflect.field(TrainControlUI.class, "openEditor");
 
-        open.setAccessible(true);
-
-        java.lang.reflect.Field armed = TailCrossedPrompt.class.getDeclaredField("armed");
-
-        armed.setAccessible(true);
+        java.lang.reflect.Field armed = Reflect.field(TailCrossedPrompt.class, "armed");
 
         ExecutorService asker = Executors.newSingleThreadExecutor();
 
@@ -515,18 +512,13 @@ public class testTheTailIsPickedOnTheDiagram
 
             final TileKey tile = ui.getAutonomySession().getStationIndex().squareOf(q.tunnel.getName());
 
-            java.lang.reflect.Field tailField = TrainControlUI.class.getDeclaredField("tailAtTheLanding");
-            tailField.setAccessible(true);
-            tailField.set(ui, "N");
+            Reflect.set(TrainControlUI.class, ui, "tailAtTheLanding", "N");
 
             // The paste door is DiagramLocGestures', which the window holds
-            final java.lang.reflect.Field held = TrainControlUI.class.getDeclaredField("diagramLocGestures");
-            held.setAccessible(true);
-            final Object gestures = held.get(ui);
+            final Object gestures = Reflect.get(TrainControlUI.class, ui, "diagramLocGestures");
 
-            final java.lang.reflect.Method remember = gestures.getClass().getDeclaredMethod("rememberPlacement",
-                Point.class, TileKey.class);
-            remember.setAccessible(true);
+            final java.lang.reflect.Method remember =
+                Reflect.method(gestures.getClass(), "rememberPlacement", Point.class, TileKey.class);
 
             // THE PASTE DOOR, on the event thread as it runs: it asks, and the question waits on the diagram.
             javax.swing.SwingUtilities.invokeLater(() ->
@@ -547,8 +539,7 @@ public class testTheTailIsPickedOnTheDiagram
 
             Thread.sleep(2000);
 
-            java.lang.reflect.Field armed = TailCrossedPrompt.class.getDeclaredField("armed");
-            armed.setAccessible(true);
+            java.lang.reflect.Field armed = Reflect.field(TailCrossedPrompt.class, "armed");
 
             assertNotNull(armed.get(null), "precondition: the paste door's tail question is not waiting on the diagram");
 
@@ -678,10 +669,8 @@ public class testTheTailIsPickedOnTheDiagram
             {
                 AutonomySession session = ui.getAutonomySession();
 
-                java.lang.reflect.Method fileOf = session.getStore().getClass().getDeclaredMethod("configurationFile",
-                    String.class);
-
-                fileOf.setAccessible(true);
+                java.lang.reflect.Method fileOf =
+                    Reflect.method(session.getStore().getClass(), "configurationFile", String.class);
 
                 java.io.File file = (java.io.File) fileOf.invoke(session.getStore(),
                     session.getStore().getActiveConfiguration());
@@ -790,18 +779,13 @@ public class testTheTailIsPickedOnTheDiagram
 
         final TileKey tile = ui.getAutonomySession().getStationIndex().squareOf(q.tunnel.getName());
 
-        java.lang.reflect.Field tailField = TrainControlUI.class.getDeclaredField("tailAtTheLanding");
-        tailField.setAccessible(true);
-        tailField.set(ui, "N");
+        Reflect.set(TrainControlUI.class, ui, "tailAtTheLanding", "N");
 
         // The paste door is DiagramLocGestures', which the window holds
-        final java.lang.reflect.Field held = TrainControlUI.class.getDeclaredField("diagramLocGestures");
-        held.setAccessible(true);
-        final Object gestures = held.get(ui);
+        final Object gestures = Reflect.get(TrainControlUI.class, ui, "diagramLocGestures");
 
-        final java.lang.reflect.Method remember = gestures.getClass().getDeclaredMethod("rememberPlacement",
-            Point.class, TileKey.class);
-        remember.setAccessible(true);
+        final java.lang.reflect.Method remember =
+            Reflect.method(gestures.getClass(), "rememberPlacement", Point.class, TileKey.class);
 
         final java.util.concurrent.atomic.AtomicBoolean returned = new java.util.concurrent.atomic.AtomicBoolean(false);
 
@@ -823,8 +807,7 @@ public class testTheTailIsPickedOnTheDiagram
 
         Thread.sleep(2000);
 
-        java.lang.reflect.Field armed = TailCrossedPrompt.class.getDeclaredField("armed");
-        armed.setAccessible(true);
+        java.lang.reflect.Field armed = Reflect.field(TailCrossedPrompt.class, "armed");
 
         assertNotNull(armed.get(null), "precondition: the paste door's tail question is not waiting on the diagram");
 
@@ -967,10 +950,8 @@ public class testTheTailIsPickedOnTheDiagram
 
                 assertTrue(ui.getAutonomySession() != before, "precondition: the setup was not replaced");
 
-                java.lang.reflect.Method fileOf = before.getStore().getClass().getDeclaredMethod("configurationFile",
-                    String.class);
-
-                fileOf.setAccessible(true);
+                java.lang.reflect.Method fileOf =
+                    Reflect.method(before.getStore().getClass(), "configurationFile", String.class);
 
                 file[0] = (java.io.File) fileOf.invoke(before.getStore(), active);
                 saved[0] = file[0].lastModified();
@@ -1032,9 +1013,7 @@ public class testTheTailIsPickedOnTheDiagram
 
     private static java.lang.reflect.Field facingField() throws Exception
     {
-        java.lang.reflect.Field field = TrainControlUI.class.getDeclaredField("facingChosenAtTheLanding");
-
-        field.setAccessible(true);
+        java.lang.reflect.Field field = Reflect.field(TrainControlUI.class, "facingChosenAtTheLanding");
 
         return field;
     }
@@ -1608,10 +1587,8 @@ public class testTheTailIsPickedOnTheDiagram
     private static java.util.concurrent.atomic.AtomicBoolean pasteAtTunnelFromTheNorth(
         org.traincontrol.base.Locomotive train, TileKey from, TileKey tunnel) throws Exception
     {
-        final java.lang.reflect.Method door = TrainControlUI.class.getDeclaredMethod("locomotiveGestureOnDiagram",
-            int.class, boolean.class);
-
-        door.setAccessible(true);
+        final java.lang.reflect.Method door =
+            Reflect.method(TrainControlUI.class, "locomotiveGestureOnDiagram", int.class, boolean.class);
 
         final Object[] cut = new Object[1];
 
@@ -1632,10 +1609,7 @@ public class testTheTailIsPickedOnTheDiagram
         assertEquals(cut[0], Boolean.TRUE, "Control+X over the train was not taken");
 
         // FACING SOUTH, the way a train that came in from the north faces: what the cut remembered.
-        java.lang.reflect.Field cutFacing = TrainControlUI.class.getDeclaredField("cutFacing");
-
-        cutFacing.setAccessible(true);
-        cutFacing.set(ui, org.traincontrol.automationui.TilePorts.Side.S);
+        Reflect.set(TrainControlUI.class, ui, "cutFacing", org.traincontrol.automationui.TilePorts.Side.S);
 
         org.traincontrol.gui.autonomy.FacingPrompt.answerForTests(org.traincontrol.automationui.TilePorts.Side.S);
         org.traincontrol.gui.autonomy.ArrivalSidePrompt.answerForTests("N");
@@ -1662,9 +1636,7 @@ public class testTheTailIsPickedOnTheDiagram
             }
         });
 
-        java.lang.reflect.Field armed = TailCrossedPrompt.class.getDeclaredField("armed");
-
-        armed.setAccessible(true);
+        java.lang.reflect.Field armed = Reflect.field(TailCrossedPrompt.class, "armed");
 
         for (long end = System.currentTimeMillis() + 15000; armed.get(null) == null && !returned.get()
             && System.currentTimeMillis() < end; ) Thread.sleep(50);
@@ -1680,10 +1652,8 @@ public class testTheTailIsPickedOnTheDiagram
     {
         final Class<?> menuClass = Class.forName("org.traincontrol.gui.LayoutRightclickAutonomyMenu");
 
-        final java.lang.reflect.Method gather = menuClass.getDeclaredMethod("gatherPathOptions", TrainControlUI.class,
-            Point.class);
-
-        gather.setAccessible(true);
+        final java.lang.reflect.Method gather =
+            Reflect.method(menuClass, "gatherPathOptions", TrainControlUI.class, Point.class);
 
         final java.lang.reflect.Constructor<?> make = menuClass.getDeclaredConstructor(TrainControlUI.class,
             TileKey.class, TileKey.class, Class.forName("org.traincontrol.gui.LayoutRightclickAutonomyMenu$PathOptions"));
@@ -2006,17 +1976,13 @@ public class testTheTailIsPickedOnTheDiagram
         final String notKnown = org.traincontrol.util.I18n.t("autosetup.ui.tailCrossedNotKnown");
         final String cancel = org.traincontrol.util.I18n.t("ui.cancel");
 
-        java.lang.reflect.Field armed = TailCrossedPrompt.class.getDeclaredField("armed");
-
-        armed.setAccessible(true);
+        java.lang.reflect.Field armed = Reflect.field(TailCrossedPrompt.class, "armed");
 
         ExecutorService asker = Executors.newSingleThreadExecutor();
 
         final org.traincontrol.gui.layouteditor.LayoutEditor[] editor = new org.traincontrol.gui.layouteditor.LayoutEditor[1];
 
-        java.lang.reflect.Field open = TrainControlUI.class.getDeclaredField("openEditor");
-
-        open.setAccessible(true);
+        java.lang.reflect.Field open = Reflect.field(TrainControlUI.class, "openEditor");
 
         try
         {
@@ -2109,9 +2075,7 @@ public class testTheTailIsPickedOnTheDiagram
 
         final org.traincontrol.gui.layouteditor.LayoutEditor[] editor = new org.traincontrol.gui.layouteditor.LayoutEditor[1];
 
-        java.lang.reflect.Field open = TrainControlUI.class.getDeclaredField("openEditor");
-
-        open.setAccessible(true);
+        java.lang.reflect.Field open = Reflect.field(TrainControlUI.class, "openEditor");
 
         try
         {

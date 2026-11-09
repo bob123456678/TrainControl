@@ -17,6 +17,7 @@ import org.traincontrol.base.LayoutDiagramComponent.componentType;
 import org.traincontrol.marklin.MarklinAccessory;
 import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.marklin.file.CS2File;
+import support.Reflect;
 
 /**
  * A layout folder that is not perfect, and what TrainControl does about it, from hands-on tests 39, 40 and 38: a page
@@ -429,16 +430,10 @@ public class testLayoutFolderRobustness
     {
         String path = "file:///" + folder.getAbsolutePath().replace('\\', '/') + "/";
 
-        java.lang.reflect.Field parserField =
-            MarklinControlStation.class.getDeclaredField("fileParser");
-        parserField.setAccessible(true);
-
-        CS2File parser = (CS2File) parserField.get(model);
+        CS2File parser = (CS2File) Reflect.get(MarklinControlStation.class, model, "fileParser");
         parser.setLayoutDataLoc(path);
 
-        java.lang.reflect.Method sync =
-            MarklinControlStation.class.getDeclaredMethod("syncLayouts");
-        sync.setAccessible(true);
+        java.lang.reflect.Method sync = Reflect.method(MarklinControlStation.class, "syncLayouts");
 
         try
         {

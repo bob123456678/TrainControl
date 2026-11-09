@@ -12,6 +12,7 @@ import org.traincontrol.marklin.MarklinControlStation;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertTrue;
 import org.testng.annotations.Test;
+import support.Reflect;
 
 /**
  * An export that fails hands its grid back, exactly as one that works does.  The export builds a grid into a panel
@@ -171,9 +172,7 @@ public class testTheExportRetiresItsGrid
     @SuppressWarnings("unchecked")
     private static int captions(TrainControlUI ui) throws Exception
     {
-        Field table = TrainControlUI.class.getDeclaredField("layoutStations");
-
-        table.setAccessible(true);
+        Field table = Reflect.field(TrainControlUI.class, "layoutStations");
 
         int total = 0;
 

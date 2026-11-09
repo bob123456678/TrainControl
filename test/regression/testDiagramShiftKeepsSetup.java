@@ -13,6 +13,7 @@ import org.traincontrol.automationui.TileGraph.TileKey;
 import org.traincontrol.base.Accessory.accessoryDecoderType;
 import org.traincontrol.base.LayoutDiagram;
 import org.traincontrol.base.LayoutDiagramComponent.componentType;
+import support.Reflect;
 
 /**
  * Inserting or removing a row or a column, and what happens to the setup on the squares that move.
@@ -323,21 +324,16 @@ public class testDiagramShiftKeepsSetup
 
             // getAutonomySession() only builds a session when the field is still null: pointed at ours, the editor's
             // real setupShift/moveTiles call writes to the session this test can see.
-            java.lang.reflect.Field sessionField =
-                org.traincontrol.gui.TrainControlUI.class.getDeclaredField("autonomySession");
-            sessionField.setAccessible(true);
-            sessionField.set(ui[0], session);
+            Reflect.set(org.traincontrol.gui.TrainControlUI.class, ui[0], "autonomySession", session);
 
             javax.swing.SwingUtilities.invokeAndWait(() ->
                 editor[0] = new org.traincontrol.gui.layouteditor.LayoutEditor(diagram, 30, ui[0], 0));
 
             java.lang.reflect.Method drawGrid =
-                org.traincontrol.gui.layouteditor.LayoutEditor.class.getDeclaredMethod("drawGrid");
-            drawGrid.setAccessible(true);
+                Reflect.method(org.traincontrol.gui.layouteditor.LayoutEditor.class, "drawGrid");
 
             java.lang.reflect.Field hoveredY =
-                org.traincontrol.gui.layouteditor.LayoutEditor.class.getDeclaredField("lastHoveredY");
-            hoveredY.setAccessible(true);
+                Reflect.field(org.traincontrol.gui.layouteditor.LayoutEditor.class, "lastHoveredY");
 
             javax.swing.SwingUtilities.invokeAndWait(() ->
             {

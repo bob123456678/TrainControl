@@ -29,6 +29,7 @@ import org.traincontrol.gui.LayoutLabel;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;
 import static org.traincontrol.marklin.MarklinControlStation.init;
+import support.Reflect;
 
 /**
  * MT-309, second half: the wash is as long as the train, not as long as the edge.  Coverage is recorded per EDGE, so a
@@ -705,11 +706,7 @@ public class testTheWashIsNoLongerThanTheTrain
 
     private static Icon bareIconOf(LayoutLabel label) throws Exception
     {
-        java.lang.reflect.Field lastIcon = LayoutLabel.class.getDeclaredField("lastIcon");
-
-        lastIcon.setAccessible(true);
-
-        return (Icon) lastIcon.get(label);
+        return (Icon) Reflect.get(LayoutLabel.class, label, "lastIcon");
     }
 
     /** Lets the production monitor tick and the event thread catch up. */

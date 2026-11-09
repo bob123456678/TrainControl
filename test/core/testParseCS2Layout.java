@@ -22,6 +22,7 @@ import static org.traincontrol.base.Accessory.accessoryDecoderType.MM2;
 import org.traincontrol.marklin.MarklinAccessory;
 import org.traincontrol.base.LayoutDiagram;
 import org.traincontrol.base.LayoutDiagramComponent;
+import support.Reflect;
 
 /**
  * Compares CS2 and CS3 route parsing
@@ -300,8 +301,7 @@ public class testParseCS2Layout
     @Test
     public void testTheLayoutListIsStillSortedLexicographically() throws Exception
     {
-        java.lang.reflect.Field field = MarklinControlStation.class.getDeclaredField("layoutDB");
-        field.setAccessible(true);
+        java.lang.reflect.Field field = Reflect.field(MarklinControlStation.class, "layoutDB");
 
         @SuppressWarnings("unchecked")
         org.traincontrol.base.RemoteDeviceCollection<LayoutDiagram, String> layoutDB =

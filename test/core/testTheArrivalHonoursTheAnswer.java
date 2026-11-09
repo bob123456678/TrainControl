@@ -13,6 +13,7 @@ import org.traincontrol.automation.Point;
 import org.traincontrol.base.Locomotive;
 import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.marklin.MarklinFeedback;
+import support.Reflect;
 
 /**
  * A train turned at the end of a journey is turned because the answer said so (Adam, MT-368).  The decision is
@@ -485,9 +486,7 @@ public class testTheArrivalHonoursTheAnswer
 
         final boolean forward = loc.goingForward();
 
-        final java.lang.reflect.Field version = Layout.class.getDeclaredField("version");
-
-        version.setAccessible(true);
+        final java.lang.reflect.Field version = Reflect.field(Layout.class, "version");
 
         final int current = version.getInt(layout);
 

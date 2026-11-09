@@ -10,6 +10,7 @@ import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.marklin.MarklinLocomotive;
 import org.traincontrol.marklin.file.CS2File;
 import org.traincontrol.marklin.udp.CS2Message;
+import support.Reflect;
 import support.SourceOf;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 
@@ -761,8 +762,7 @@ public class testControlStationFaults
         String was = support.TestStationAddress.get();
 
         // The sync replaces the model's file parser, which every test here shares: put back as it was, with the address
-        java.lang.reflect.Field parser = MarklinControlStation.class.getDeclaredField("fileParser");
-        parser.setAccessible(true);
+        java.lang.reflect.Field parser = Reflect.field(MarklinControlStation.class, "fileParser");
         Object parserWas = parser.get(model);
 
         try
@@ -800,8 +800,7 @@ public class testControlStationFaults
         final String switchName = "traincontrol.failFirstSyncs";
 
         // The sync replaces the model's file parser, which every test here shares: put back as it was, with the address
-        java.lang.reflect.Field parser = MarklinControlStation.class.getDeclaredField("fileParser");
-        parser.setAccessible(true);
+        java.lang.reflect.Field parser = Reflect.field(MarklinControlStation.class, "fileParser");
         Object parserWas = parser.get(model);
 
         try
@@ -1184,9 +1183,7 @@ public class testControlStationFaults
      */
     private static long millisOf(String nanosConstant) throws Exception
     {
-        java.lang.reflect.Field window = MarklinControlStation.class.getDeclaredField(nanosConstant);
-
-        window.setAccessible(true);
+        java.lang.reflect.Field window = Reflect.field(MarklinControlStation.class, nanosConstant);
 
         return window.getLong(null) / 1000000L;
     }
@@ -1330,17 +1327,12 @@ public class testControlStationFaults
     {
         // Reached reflectively so that the compiler does not warn about the internal class
         Class<?> unsafeClass = Class.forName("sun.misc.Unsafe");
-        java.lang.reflect.Field theUnsafe = unsafeClass.getDeclaredField("theUnsafe");
-        theUnsafe.setAccessible(true);
-
         return (org.traincontrol.gui.TrainControlUI) unsafeClass.getMethod("allocateInstance", Class.class)
-            .invoke(theUnsafe.get(null), org.traincontrol.gui.TrainControlUI.class);
+            .invoke(Reflect.get(unsafeClass, null, "theUnsafe"), org.traincontrol.gui.TrainControlUI.class);
     }
 
     private static void set(Object target, String name, Object value) throws Exception
     {
-        java.lang.reflect.Field field = org.traincontrol.gui.TrainControlUI.class.getDeclaredField(name);
-        field.setAccessible(true);
-        field.set(target, value);
+        Reflect.set(org.traincontrol.gui.TrainControlUI.class, target, name, value);
     }
 }

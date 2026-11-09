@@ -20,6 +20,7 @@ import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.util.I18n;
 import static org.traincontrol.marklin.MarklinControlStation.init;
+import support.Reflect;
 
 /**
  * After a run, the Facing menu is about the train the railway has on the square, and turns that one.
@@ -471,15 +472,9 @@ public class testTheFacingMenuIsAboutTheTrainThere
 
         Layout.ReversalPolicy keepDirection = keepingDirectionAt(turning);
 
-        java.lang.reflect.Field journeysField = org.traincontrol.automation.Layout.class.getDeclaredField("activeLocomotives");
+        final Object journeys = Reflect.get(org.traincontrol.automation.Layout.class, running, "activeLocomotives");
 
-        journeysField.setAccessible(true);
-
-        final Object journeys = journeysField.get(running);
-
-        java.lang.reflect.Field takingField = org.traincontrol.automation.Layout.class.getDeclaredField("takingPath");
-
-        takingField.setAccessible(true);
+        java.lang.reflect.Field takingField = Reflect.field(org.traincontrol.automation.Layout.class, "takingPath");
 
         final java.util.Map<?, ?> taking = (java.util.Map<?, ?>) takingField.get(running);
 

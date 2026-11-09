@@ -22,6 +22,7 @@ import org.traincontrol.automationui.TileOverlay;
 import org.traincontrol.automationui.TileOverlay.State;
 import org.traincontrol.automationui.TilePorts.Side;
 import support.ProgramConstants;
+import support.Reflect;
 
 /**
  * Turning what the railway is doing into what each tile shows: a tile lit after its train has gone reads as a train
@@ -689,9 +690,7 @@ public class testAutonomyDiagramMonitor
 
         assertTrue(railway.releasedBehind(train).isEmpty(), "precondition: a train with no run has given something back");
 
-        java.lang.reflect.Field released = org.traincontrol.automation.Layout.class.getDeclaredField("releasedEarly");
-
-        released.setAccessible(true);
+        java.lang.reflect.Field released = Reflect.field(org.traincontrol.automation.Layout.class, "releasedEarly");
 
         @SuppressWarnings("unchecked")
         Map<org.traincontrol.base.Locomotive, java.util.Set<Edge>> early =
@@ -1181,10 +1180,7 @@ public class testAutonomyDiagramMonitor
         // build, which would otherwise decode its picture through the window this test does not open
         if (!"arrows on".equals(arrows))
         {
-            java.lang.reflect.Field component = org.traincontrol.gui.LayoutLabel.class.getDeclaredField("component");
-
-            component.setAccessible(true);
-            component.set(tile, squareOf(roads));
+            Reflect.set(org.traincontrol.gui.LayoutLabel.class, tile, "component", squareOf(roads));
         }
 
         tile.setBounds(size, size, size, size);
@@ -3323,11 +3319,7 @@ public class testAutonomyDiagramMonitor
     {
         try
         {
-            java.lang.reflect.Method ask = TileOverlay.class.getDeclaredMethod(method, int.class, int.class);
-
-            ask.setAccessible(true);
-
-            return (Integer) ask.invoke(null, size, size);
+            return (Integer) Reflect.method(TileOverlay.class, method, int.class, int.class).invoke(null, size, size);
         }
         catch (ReflectiveOperationException e)
         {

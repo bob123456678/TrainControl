@@ -17,6 +17,7 @@ import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.util.I18n;
 import static org.traincontrol.marklin.MarklinControlStation.init;
+import support.Reflect;
 
 /**
  * OB-194: Bulk Tools says what it is about to clear, and what Cancel will do about it.  Since OB-223 Cancel in the
@@ -357,8 +358,7 @@ public class testTheBulkClearSaysWhatCancelDoes
         final TileKey at = square;
         final javax.swing.JPopupMenu[] menu = new javax.swing.JPopupMenu[1];
         final String[] said = new String[1];
-        final java.lang.reflect.Field panel = TrainControlUI.class.getDeclaredField("autonomyTileMenus");
-        panel.setAccessible(true);
+        final java.lang.reflect.Field panel = Reflect.field(TrainControlUI.class, "autonomyTileMenus");
         // With no editor open, as a person meets the diagram's menu; built again straight after for the later claims.
         final LayoutEditor closing = editor;
         SwingUtilities.invokeAndWait(() -> closing.dispose());

@@ -16,6 +16,7 @@ import org.testng.SkipException;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
+import support.Reflect;
 import support.SourceOf;
 
 /**
@@ -188,18 +189,14 @@ public class testADeclinedSetupEditSaysSoAndSurvivesTheExit
     /** Makes `isAutonomyBusy()` answer as asked, through `stagingFlowActive`, a plain flag the predicate also reads. */
     private static void busy(boolean running) throws Exception
     {
-        Field flag = TrainControlUI.class.getDeclaredField("stagingFlowActive");
-
-        flag.setAccessible(true);
+        Field flag = Reflect.field(TrainControlUI.class, "stagingFlowActive");
         flag.setBoolean(ui, running);
     }
 
     /** Whether a decline has been recorded against the exit save. */
     private static boolean declined() throws Exception
     {
-        Field flag = TrainControlUI.class.getDeclaredField("setupEditDeclinedDuringRun");
-
-        flag.setAccessible(true);
+        Field flag = Reflect.field(TrainControlUI.class, "setupEditDeclinedDuringRun");
 
         return flag.getBoolean(ui);
     }
@@ -208,9 +205,8 @@ public class testADeclinedSetupEditSaysSoAndSurvivesTheExit
     private static void forget() throws Exception
     {
         // Through the one door the flag is set by, so the track diagram's notice is cleared with it
-        java.lang.reflect.Method newer = TrainControlUI.class.getDeclaredMethod("setupNewerThanTheRailway", boolean.class);
-
-        newer.setAccessible(true);
+        java.lang.reflect.Method newer =
+            Reflect.method(TrainControlUI.class, "setupNewerThanTheRailway", boolean.class);
 
         SwingUtilities.invokeAndWait(() ->
         {
@@ -332,10 +328,8 @@ public class testADeclinedSetupEditSaysSoAndSurvivesTheExit
             assertTrue(onIt, train + " was taken off the railway a declined load left as it was (RSA18-A1)");
 
             // AND THE OTHER DOOR THAT PUTS THE TRAINS BACK AFTER A LOAD (`carryTheTrainsAcross`), its load declined too
-            final java.lang.reflect.Method carry = TrainControlUI.class.getDeclaredMethod("carryTheTrainsAcross",
-                Runnable.class);
-
-            carry.setAccessible(true);
+            final java.lang.reflect.Method carry =
+                Reflect.method(TrainControlUI.class, "carryTheTrainsAcross", Runnable.class);
 
             SwingUtilities.invokeAndWait(() ->
             {
@@ -480,9 +474,7 @@ public class testADeclinedSetupEditSaysSoAndSurvivesTheExit
 
         final Object lengthWas = session.getPointProperty(station, "maxTrainLength");
 
-        final java.lang.reflect.Method capture = TrainControlUI.class.getDeclaredMethod("captureRunningLayout");
-
-        capture.setAccessible(true);
+        final java.lang.reflect.Method capture = Reflect.method(TrainControlUI.class, "captureRunningLayout");
 
         final String tableWas = session.getGlobal("timetable");
 
@@ -938,9 +930,7 @@ public class testADeclinedSetupEditSaysSoAndSurvivesTheExit
 
         assertNotNull(partner, "precondition: the link at 1 - Main:12,1 is not paired on the snapshot");
 
-        Field field = TrainControlUI.class.getDeclaredField("autonomyOverlayToggle");
-
-        field.setAccessible(true);
+        Field field = Reflect.field(TrainControlUI.class, "autonomyOverlayToggle");
 
         final org.traincontrol.gui.AutonomyOverlayToggle strip = (org.traincontrol.gui.AutonomyOverlayToggle) field.get(ui);
 
@@ -1201,11 +1191,7 @@ public class testADeclinedSetupEditSaysSoAndSurvivesTheExit
     /** The Auto tab's timetable table. */
     private static javax.swing.JTable timetableTable() throws Exception
     {
-        Field table = TrainControlUI.class.getDeclaredField("timetable");
-
-        table.setAccessible(true);
-
-        return (javax.swing.JTable) table.get(ui);
+        return (javax.swing.JTable) Reflect.get(TrainControlUI.class, ui, "timetable");
     }
 
     /** How many rows a table shows, read on the event thread. */
@@ -1223,11 +1209,7 @@ public class testADeclinedSetupEditSaysSoAndSurvivesTheExit
     {
         try
         {
-            java.lang.reflect.Method repaint = TrainControlUI.class.getDeclaredMethod("repaintTimetable");
-
-            repaint.setAccessible(true);
-
-            repaint.invoke(ui);
+            Reflect.method(TrainControlUI.class, "repaintTimetable").invoke(ui);
         }
         catch (ReflectiveOperationException e)
         {
@@ -1248,9 +1230,7 @@ public class testADeclinedSetupEditSaysSoAndSurvivesTheExit
 
         assertNotNull(railway, "precondition: no running layout to be running");
 
-        Field running = org.traincontrol.automation.Layout.class.getDeclaredField("running");
-
-        running.setAccessible(true);
+        Field running = Reflect.field(org.traincontrol.automation.Layout.class, "running");
 
         final boolean was = running.getBoolean(railway);
 
@@ -1260,9 +1240,7 @@ public class testADeclinedSetupEditSaysSoAndSurvivesTheExit
 
             for (String item : new String[] {"syncFullLocStateMenuItem", "addLocomotiveMenuItem"})
             {
-                Field field = TrainControlUI.class.getDeclaredField(item);
-
-                field.setAccessible(true);
+                Field field = Reflect.field(TrainControlUI.class, item);
 
                 final javax.swing.JMenuItem menuItem = (javax.swing.JMenuItem) field.get(ui);
 

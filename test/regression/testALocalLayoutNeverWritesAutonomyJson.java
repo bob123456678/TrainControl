@@ -15,6 +15,7 @@ import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.util.Util;
 import static org.traincontrol.marklin.MarklinControlStation.init;
+import support.Reflect;
 
 /**
  * A layout stored on this computer never has autonomy.json written, loaded setup or not (OB-254).
@@ -113,9 +114,7 @@ public class testALocalLayoutNeverWritesAutonomyJson
     @Test
     public void testTheSaveWritesNoAutonomyJson() throws Exception
     {
-        Method local = TrainControlUI.class.getDeclaredMethod("isLocalLayout");
-
-        local.setAccessible(true);
+        Method local = Reflect.method(TrainControlUI.class, "isLocalLayout");
 
         assertTrue((Boolean) local.invoke(ui), "precondition: the sandbox is not a layout stored on this computer");
 

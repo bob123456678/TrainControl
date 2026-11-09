@@ -15,6 +15,7 @@ import org.traincontrol.automationui.AutonomySession;
 import org.traincontrol.base.LayoutDiagram;
 import org.traincontrol.base.LayoutDiagramComponent.componentType;
 import org.traincontrol.automationui.TileGraph.TileKey;
+import support.Reflect;
 
 /**
  * A station's signals and entry guards are kept, built and checked, and clicking a notice or a finding shows where it
@@ -346,8 +347,8 @@ public class testASignalGuardsItsStationAndTheNoticeNamesIt extends AutonomySess
         session.setProtectingSignals(station, Arrays.asList(signal));
 
         // As a loaded file has it, past the setter.
-        java.lang.reflect.Field field = org.traincontrol.automationui.AutonomyCompanionStore.class.getDeclaredField("entrySignals");
-        field.setAccessible(true);
+        java.lang.reflect.Field field =
+            Reflect.field(org.traincontrol.automationui.AutonomyCompanionStore.class, "entrySignals");
         ((java.util.Map<TileKey, java.util.List<TileKey>>) field.get(session.getStore()))
             .put(station, new java.util.ArrayList<>(Arrays.asList(signal)));
 
@@ -509,9 +510,8 @@ public class testASignalGuardsItsStationAndTheNoticeNamesIt extends AutonomySess
         final org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel panel =
             new org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel(session, "main", () -> { });
 
-        java.lang.reflect.Field field = org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel.class.getDeclaredField("findings");
-
-        field.setAccessible(true);
+        java.lang.reflect.Field field =
+            Reflect.field(org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel.class, "findings");
 
         final javax.swing.JList<?> list = (javax.swing.JList<?>) field.get(panel);
 
@@ -739,9 +739,8 @@ public class testASignalGuardsItsStationAndTheNoticeNamesIt extends AutonomySess
         final org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel panel =
             new org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel(session, "main", () -> { });
 
-        java.lang.reflect.Field field = org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel.class.getDeclaredField("findings");
-
-        field.setAccessible(true);
+        java.lang.reflect.Field field =
+            Reflect.field(org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel.class, "findings");
 
         final javax.swing.JList<?> list = (javax.swing.JList<?>) field.get(panel);
 
@@ -780,9 +779,8 @@ public class testASignalGuardsItsStationAndTheNoticeNamesIt extends AutonomySess
         assertFalse(copied.contains("<"), "the copied notice carries markup, which is not plain text: " + copied);
 
         // And a heading is not a notice: clicking "Warnings" or a page's name leaves the clipboard alone
-        java.lang.reflect.Field severities = org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel.class.getDeclaredField("findingSeverity");
-
-        severities.setAccessible(true);
+        java.lang.reflect.Field severities =
+            Reflect.field(org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel.class, "findingSeverity");
 
         final java.util.List<?> severity = (java.util.List<?>) severities.get(panel);
 
@@ -845,9 +843,8 @@ public class testASignalGuardsItsStationAndTheNoticeNamesIt extends AutonomySess
     {
         final javax.swing.JList<?> list = (javax.swing.JList<?>) panelPart(panel, "findings");
 
-        java.lang.reflect.Field field = org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel.class.getDeclaredField("findingTiles");
-
-        field.setAccessible(true);
+        java.lang.reflect.Field field =
+            Reflect.field(org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel.class, "findingTiles");
 
         final List<?> tiles = (List<?>) field.get(panel);
 
@@ -871,9 +868,8 @@ public class testASignalGuardsItsStationAndTheNoticeNamesIt extends AutonomySess
     /** Selects the guard notice in the editor's list, as a click on it does. */
     private static void clickTheGuardNotice(org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel panel) throws Exception
     {
-        java.lang.reflect.Field field = org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel.class.getDeclaredField("findings");
-
-        field.setAccessible(true);
+        java.lang.reflect.Field field =
+            Reflect.field(org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel.class, "findings");
 
         final javax.swing.JList<?> list = (javax.swing.JList<?>) field.get(panel);
 

@@ -17,6 +17,7 @@ import org.traincontrol.gui.widgets.StationCaption;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;
 import static org.traincontrol.marklin.MarklinControlStation.init;
+import support.Reflect;
 
 /**
  * A remembered **None** opens with the captions actually gone (MT-292): `AutonomyEditorPanel` restores the remembered
@@ -481,9 +482,7 @@ public class testARememberedNoneOpensWithTheCaptionsOff
         final List<Boolean> hidden = new ArrayList<>();
 
         final java.lang.reflect.Method press =
-            LayoutEditor.class.getDeclaredMethod("formKeyPressed", java.awt.event.KeyEvent.class);
-
-        press.setAccessible(true);
+            Reflect.method(LayoutEditor.class, "formKeyPressed", java.awt.event.KeyEvent.class);
 
         for (int i = 0; i < 5; i++)
         {

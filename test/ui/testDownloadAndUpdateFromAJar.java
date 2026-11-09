@@ -47,6 +47,7 @@ import org.traincontrol.util.SelfUpdate;
 import org.traincontrol.util.Util;
 import support.Answering;
 import support.Components;
+import support.Reflect;
 
 /**
  * Help > Download Update > Download & Update, from a jar it can replace: each way it stops short of the exit says why
@@ -718,11 +719,7 @@ public class testDownloadAndUpdateFromAJar
 
             assertNotNull(removeItem[0], "precondition: the editor's setup does not have " + train + " on " + where[1]);
 
-            java.lang.reflect.Field saveField = editing.getClass().getDeclaredField("saveButton");
-
-            saveField.setAccessible(true);
-
-            final AbstractButton save = (AbstractButton) saveField.get(editing);
+            final AbstractButton save = (AbstractButton) Reflect.get(editing.getClass(), editing, "saveButton");
 
             gate = new CountDownLatch(1);
 

@@ -23,6 +23,7 @@ import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.util.I18n;
 import static org.traincontrol.marklin.MarklinControlStation.init;
+import support.Reflect;
 
 /**
  * The farthest sensor a standing train's tail has crossed can be given in the autonomy editor, from the right-click
@@ -349,12 +350,10 @@ public class testTheTailCanBeGivenInTheEditor
             org.traincontrol.gui.autonomy.FacingPrompt.answerForTests(heading);
             TailCrossedPrompt.answerForTests(farthest.getFarthest().getName());
 
-            final java.lang.reflect.Field cut = TrainControlUI.class.getDeclaredField("cutLocomotive");
-            cut.setAccessible(true);
+            final java.lang.reflect.Field cut = Reflect.field(TrainControlUI.class, "cutLocomotive");
 
-            final java.lang.reflect.Method gesture = TrainControlUI.class.getDeclaredMethod(
-                "locomotiveGestureOnDiagram", int.class, boolean.class);
-            gesture.setAccessible(true);
+            final java.lang.reflect.Method gesture =
+                Reflect.method(TrainControlUI.class, "locomotiveGestureOnDiagram", int.class, boolean.class);
 
             final Object[] handled = new Object[1];
 
@@ -682,12 +681,10 @@ public class testTheTailCanBeGivenInTheEditor
 
             try
             {
-                final java.lang.reflect.Field cut = TrainControlUI.class.getDeclaredField("cutLocomotive");
-                cut.setAccessible(true);
+                final java.lang.reflect.Field cut = Reflect.field(TrainControlUI.class, "cutLocomotive");
 
-                final java.lang.reflect.Method gesture = TrainControlUI.class.getDeclaredMethod(
-                    "locomotiveGestureOnDiagram", int.class, boolean.class);
-                gesture.setAccessible(true);
+                final java.lang.reflect.Method gesture =
+                    Reflect.method(TrainControlUI.class, "locomotiveGestureOnDiagram", int.class, boolean.class);
 
                 final Object[] handled = new Object[1];
 
@@ -737,12 +734,10 @@ public class testTheTailCanBeGivenInTheEditor
 
             try
             {
-                final java.lang.reflect.Field cut = TrainControlUI.class.getDeclaredField("cutLocomotive");
-                cut.setAccessible(true);
+                final java.lang.reflect.Field cut = Reflect.field(TrainControlUI.class, "cutLocomotive");
 
-                final java.lang.reflect.Method gesture = TrainControlUI.class.getDeclaredMethod(
-                    "locomotiveGestureOnDiagram", int.class, boolean.class);
-                gesture.setAccessible(true);
+                final java.lang.reflect.Method gesture =
+                    Reflect.method(TrainControlUI.class, "locomotiveGestureOnDiagram", int.class, boolean.class);
 
                 final Object[] handled = new Object[1];
 

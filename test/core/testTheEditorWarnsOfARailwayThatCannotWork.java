@@ -17,6 +17,7 @@ import org.traincontrol.automationui.TileGraph.Direction;
 import org.traincontrol.automationui.TileGraph.RouteId;
 import org.traincontrol.automationui.TileGraph.TileKey;
 import org.traincontrol.automationui.TilePorts.Side;
+import support.Reflect;
 import support.SourceOf;
 
 /**
@@ -677,10 +678,8 @@ public class testTheEditorWarnsOfARailwayThatCannotWork extends AutonomySessionF
 
         assertNotNull(cutCopy, "the middle station built to no copy, so there is none to cut the ways into");
 
-        java.lang.reflect.Method noWayIn = AutonomySession.class.getDeclaredMethod("destinationCopiesWithNoWayIn",
-            org.json.JSONObject.class, java.util.Map.class);
-
-        noWayIn.setAccessible(true);
+        java.lang.reflect.Method noWayIn = Reflect.method(AutonomySession.class,
+            "destinationCopiesWithNoWayIn", org.json.JSONObject.class, java.util.Map.class);
 
         assertTrue(((java.util.Map<?, ?>) noWayIn.invoke(session, injected, null)).isEmpty(),
             "control: the intact graph reports a copy nothing can reach");

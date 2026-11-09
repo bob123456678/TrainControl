@@ -12,6 +12,7 @@ import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
 import org.testng.SkipException;
 import org.testng.annotations.Test;
+import support.Reflect;
 
 /**
  * A window of this application looks the same whoever built it, and is the same SIZE.
@@ -100,9 +101,8 @@ public class testEveryWindowWearsTheApplicationsLook
 
             try
             {
-                java.lang.reflect.Method states = org.traincontrol.gui.TrainControlUI.class.getDeclaredMethod("uiScaleFor", int.class);
-
-                states.setAccessible(true);
+                java.lang.reflect.Method states =
+                    Reflect.method(org.traincontrol.gui.TrainControlUI.class, "uiScaleFor", int.class);
 
                 expected = Double.parseDouble((String) states.invoke(null,
                     java.awt.Toolkit.getDefaultToolkit().getScreenResolution()));

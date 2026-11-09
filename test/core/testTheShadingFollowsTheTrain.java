@@ -33,6 +33,7 @@ import org.traincontrol.gui.LayoutLabel;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;
 import static org.traincontrol.marklin.MarklinControlStation.init;
+import support.Reflect;
 
 /**
  * A train runs to the next station and back, and the diagram's gray wash follows it (OB-180).  A test asserting only
@@ -467,11 +468,7 @@ public class testTheShadingFollowsTheTrain
     /** The square a label was registered for, read back for a failure message. */
     private static TileKey squareOf(LayoutLabel label) throws Exception
     {
-        java.lang.reflect.Field square = LayoutLabel.class.getDeclaredField("square");
-
-        square.setAccessible(true);
-
-        return (TileKey) square.get(label);
+        return (TileKey) Reflect.get(LayoutLabel.class, label, "square");
     }
 
     /**
@@ -485,11 +482,7 @@ public class testTheShadingFollowsTheTrain
 
     private static Icon bareIconOf(LayoutLabel label) throws Exception
     {
-        java.lang.reflect.Field lastIcon = LayoutLabel.class.getDeclaredField("lastIcon");
-
-        lastIcon.setAccessible(true);
-
-        return (Icon) lastIcon.get(label);
+        return (Icon) Reflect.get(LayoutLabel.class, label, "lastIcon");
     }
 
     private static void pumpTheEventThread() throws Exception

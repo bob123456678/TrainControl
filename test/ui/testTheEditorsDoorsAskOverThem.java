@@ -3,7 +3,6 @@ package ui;
 import java.awt.Window;
 import java.io.File;
 import java.io.IOException;
-import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.List;
 import javax.swing.AbstractButton;
@@ -26,6 +25,7 @@ import support.Answering;
 import support.AskingWindows;
 import support.Components;
 import support.Mouse;
+import support.Reflect;
 import support.RouteListDoors;
 
 /**
@@ -355,20 +355,12 @@ public class testTheEditorsDoorsAskOverThem
 
         Components.settle();
 
-        Field item = TrainControlUI.class.getDeclaredField("deleteLayoutMenuItem");
-
-        item.setAccessible(true);
-
-        assertDeleteMeetsTheIndex((AbstractButton) item.get(ui), ui);
+        assertDeleteMeetsTheIndex((AbstractButton) Reflect.get(TrainControlUI.class, ui, "deleteLayoutMenuItem"), ui);
     }
 
     private javax.swing.JComboBox<?> pageList() throws Exception
     {
-        Field list = TrainControlUI.class.getDeclaredField("LayoutList");
-
-        list.setAccessible(true);
-
-        return (javax.swing.JComboBox<?>) list.get(ui);
+        return (javax.swing.JComboBox<?>) Reflect.get(TrainControlUI.class, ui, "LayoutList");
     }
 
     /**

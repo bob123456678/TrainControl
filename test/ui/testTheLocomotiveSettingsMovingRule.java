@@ -32,6 +32,7 @@ import org.traincontrol.util.I18n;
 import support.Answering;
 import support.Components;
 import support.Mouse;
+import support.Reflect;
 import support.SettingsWindow;
 
 /**
@@ -397,9 +398,7 @@ public class testTheLocomotiveSettingsMovingRule
     /** Calls the open window's Save as a click would, whatever its gray, and gives what was said. */
     private static java.util.List<String> saveAnyway() throws Exception
     {
-        java.lang.reflect.Method save = LocomotiveSettingsFrame.class.getDeclaredMethod("save");
-
-        save.setAccessible(true);
+        java.lang.reflect.Method save = Reflect.method(LocomotiveSettingsFrame.class, "save");
 
         LocomotiveSettingsFrame window = SettingsWindow.showing();
 
@@ -975,11 +974,7 @@ public class testTheLocomotiveSettingsMovingRule
 
     private static Object field(String name) throws Exception
     {
-        java.lang.reflect.Field f = TrainControlUI.class.getDeclaredField(name);
-
-        f.setAccessible(true);
-
-        return f.get(ui);
+        return Reflect.get(TrainControlUI.class, ui, name);
     }
 
 

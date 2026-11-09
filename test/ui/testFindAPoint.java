@@ -27,6 +27,7 @@ import org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel;
 import org.traincontrol.gui.layouteditor.LayoutEditor;
 import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.util.I18n;
+import support.Reflect;
 
 /**
  * Find a Point... on the autonomy editor's Tools menu, and Control+F (FR-055), and a finding that names a point on
@@ -384,11 +385,7 @@ public class testFindAPoint
 
     private static Object field(Object on, String name) throws ReflectiveOperationException
     {
-        java.lang.reflect.Field f = on.getClass().getDeclaredField(name);
-
-        f.setAccessible(true);
-
-        return f.get(on);
+        return Reflect.get(on.getClass(), on, name);
     }
 
     /** Opens the autonomy editor as the main window's Edit does, and waits for its build. */
@@ -448,9 +445,7 @@ public class testFindAPoint
 
     private static boolean isFlashing(LayoutEditor editor, TileKey tile) throws Exception
     {
-        java.lang.reflect.Field gridField = LayoutEditor.class.getDeclaredField("grid");
-
-        gridField.setAccessible(true);
+        java.lang.reflect.Field gridField = Reflect.field(LayoutEditor.class, "grid");
 
         final org.traincontrol.gui.LayoutGrid grid = (org.traincontrol.gui.LayoutGrid) gridField.get(editor);
 

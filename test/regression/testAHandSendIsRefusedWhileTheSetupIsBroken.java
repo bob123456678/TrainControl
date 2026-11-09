@@ -8,6 +8,7 @@ import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.util.I18n;
 import static org.testng.Assert.*;
 import org.testng.annotations.Test;
+import support.Reflect;
 import support.SourceOf;
 
 /**
@@ -157,10 +158,7 @@ public class testAHandSendIsRefusedWhileTheSetupIsBroken
 
             // RETURN HOME OFFERED BEFORE ANYTHING IS BROKEN: otherwise the item is grayed for that, and the
             // grayed state below says nothing about the setup.
-            java.lang.reflect.Method triage = TrainControlUI.class.getDeclaredMethod("awaitReturnHomeTriage", long.class);
-
-            triage.setAccessible(true);
-            triage.invoke(ui[0], 30000L);
+            Reflect.method(TrainControlUI.class, "awaitReturnHomeTriage", long.class).invoke(ui[0], 30000L);
 
             javax.swing.SwingUtilities.invokeAndWait(() ->
             {
@@ -184,9 +182,7 @@ public class testAHandSendIsRefusedWhileTheSetupIsBroken
 
                 try
                 {
-                    Method offered = TrainControlUI.class.getDeclaredMethod("isReturnHomeOffered");
-
-                    offered.setAccessible(true);
+                    Method offered = Reflect.method(TrainControlUI.class, "isReturnHomeOffered");
 
                     outcome[6] = String.valueOf(offered.invoke(ui[0]));
                 }
@@ -527,10 +523,7 @@ public class testAHandSendIsRefusedWhileTheSetupIsBroken
 
             // RETURN HOME OFFERED BEFORE ANYTHING IS BROKEN (MT-573): a train is away from its home, so a grayed item
             // or a refused press below is about the setup.
-            Method triage = TrainControlUI.class.getDeclaredMethod("awaitReturnHomeTriage", long.class);
-
-            triage.setAccessible(true);
-            triage.invoke(ui[0], 30000L);
+            Reflect.method(TrainControlUI.class, "awaitReturnHomeTriage", long.class).invoke(ui[0], 30000L);
 
             answering.start();
 
@@ -579,10 +572,8 @@ public class testAHandSendIsRefusedWhileTheSetupIsBroken
             // is not on screen, and `showFor` shows only over a showing window.
             final Class<?> menuClass = Class.forName("org.traincontrol.gui.LayoutRightclickAutonomyMenu");
 
-            final Method gather = menuClass.getDeclaredMethod("gatherPathOptions", TrainControlUI.class,
-                org.traincontrol.automation.Point.class);
-
-            gather.setAccessible(true);
+            final Method gather = Reflect.method(menuClass,
+                "gatherPathOptions", TrainControlUI.class, org.traincontrol.automation.Point.class);
 
             final java.lang.reflect.Constructor<?> make = menuClass.getDeclaredConstructor(TrainControlUI.class,
                 org.traincontrol.automationui.TileGraph.TileKey.class, org.traincontrol.automationui.TileGraph.TileKey.class,
@@ -727,11 +718,7 @@ public class testAHandSendIsRefusedWhileTheSetupIsBroken
     private static void press(TrainControlUI ui, String field, Dismisser dismisser, java.util.Map<String, String> seen)
         throws Exception
     {
-        java.lang.reflect.Field found = TrainControlUI.class.getDeclaredField(field);
-
-        found.setAccessible(true);
-
-        final javax.swing.JButton button = (javax.swing.JButton) found.get(ui);
+        final javax.swing.JButton button = (javax.swing.JButton) Reflect.get(TrainControlUI.class, ui, field);
 
         final boolean[] live = new boolean[1];
 
@@ -760,11 +747,7 @@ public class testAHandSendIsRefusedWhileTheSetupIsBroken
     {
         try
         {
-            Method offered = TrainControlUI.class.getDeclaredMethod("isReturnHomeOffered");
-
-            offered.setAccessible(true);
-
-            return (Boolean) offered.invoke(ui);
+            return (Boolean) Reflect.method(TrainControlUI.class, "isReturnHomeOffered").invoke(ui);
         }
         catch (ReflectiveOperationException failed)
         {
@@ -862,9 +845,7 @@ public class testAHandSendIsRefusedWhileTheSetupIsBroken
 
     private static String said(int errors, int blocking) throws Exception
     {
-        Method rule = TrainControlUI.class.getDeclaredMethod("whyAHandSendIsRefused", int.class, int.class);
-
-        rule.setAccessible(true);
+        Method rule = Reflect.method(TrainControlUI.class, "whyAHandSendIsRefused", int.class, int.class);
 
         return (String) rule.invoke(null, errors, blocking);
     }

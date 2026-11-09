@@ -12,6 +12,7 @@ import static org.testng.Assert.assertTrue;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
+import support.Reflect;
 import support.SourceOf;
 
 /**
@@ -176,10 +177,8 @@ public class testASecondImportFillsGapsAndDoesNotOverwrite
     {
         for (String sentence : new String[] {"sharedSquaresSentence", "leftBehindSentence"})
         {
-            java.lang.reflect.Method say = org.traincontrol.gui.AutonomyViewerPanel.class.getDeclaredMethod(sentence,
-                int.class);
-
-            say.setAccessible(true);
+            java.lang.reflect.Method say =
+                Reflect.method(org.traincontrol.gui.AutonomyViewerPanel.class, sentence, int.class);
 
             String one = (String) say.invoke(null, 1);
             String two = (String) say.invoke(null, 2);
@@ -211,10 +210,8 @@ public class testASecondImportFillsGapsAndDoesNotOverwrite
 
                 for (String[] key : keys)
                 {
-                    java.lang.reflect.Method say = org.traincontrol.gui.AutonomyViewerPanel.class.getDeclaredMethod(key[0],
-                        int.class);
-
-                    say.setAccessible(true);
+                    java.lang.reflect.Method say =
+                        Reflect.method(org.traincontrol.gui.AutonomyViewerPanel.class, key[0], int.class);
 
                     assertEquals((String) say.invoke(null, n), org.traincontrol.util.I18n.f(key[1] + form[2], n), key[0]
                         + " in " + form[0] + " for " + n + " is not the bundle's " + (((String) form[2]).isEmpty() ? "plain"

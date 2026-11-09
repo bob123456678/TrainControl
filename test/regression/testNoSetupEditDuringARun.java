@@ -30,6 +30,7 @@ import static regression.testTheImportDoorReadsAnOldFile.openTheWindow;
 import static regression.testTheImportDoorReadsAnOldFile.pointsHeldBy;
 import static regression.testTheImportDoorReadsAnOldFile.putTheFolderBack;
 import static regression.testTheImportDoorReadsAnOldFile.startAnsweringYes;
+import support.Reflect;
 
 /**
  * No setup edit is made while trains run, at any door (Adam: *"There should be no setup edit possible during a run"*),
@@ -126,9 +127,7 @@ public class testNoSetupEditDuringARun
     @SuppressWarnings("unchecked")
     private static java.util.Set<String> keptDespiteRepeats(AutonomySession session) throws Exception
     {
-        java.lang.reflect.Field kept = session.getStore().getClass().getDeclaredField("keptDespiteRepeats");
-
-        kept.setAccessible(true);
+        java.lang.reflect.Field kept = Reflect.field(session.getStore().getClass(), "keptDespiteRepeats");
 
         return (java.util.Set<String>) kept.get(session.getStore());
     }
@@ -494,9 +493,7 @@ public class testNoSetupEditDuringARun
 
             final String before = session.getStore().getConfiguration(inUse).toString();
 
-            final java.lang.reflect.Method follow = TrainControlUI.class.getDeclaredMethod("followTheTurn", String.class);
-
-            follow.setAccessible(true);
+            final java.lang.reflect.Method follow = Reflect.method(TrainControlUI.class, "followTheTurn", String.class);
 
             final Object[] moved = new Object[1];
 
@@ -601,9 +598,7 @@ public class testNoSetupEditDuringARun
 
         final support.SandboxedWindow sandboxed = new support.SandboxedWindow();
 
-        java.lang.reflect.Field declined = TrainControlUI.class.getDeclaredField("setupEditDeclinedDuringRun");
-
-        declined.setAccessible(true);
+        java.lang.reflect.Field declined = Reflect.field(TrainControlUI.class, "setupEditDeclinedDuringRun");
 
         Thread driving = null;
 
@@ -906,9 +901,7 @@ public class testNoSetupEditDuringARun
             final String recorded = String.valueOf(session.getStore().getConfiguration(inUse).getJSONObject("points")
                 .opt(square));
 
-            final java.lang.reflect.Method write = TrainControlUI.class.getDeclaredMethod("writeTheTurnsOwed");
-
-            write.setAccessible(true);
+            final java.lang.reflect.Method write = Reflect.method(TrainControlUI.class, "writeTheTurnsOwed");
 
             SwingUtilities.invokeAndWait(() ->
             {
@@ -1272,9 +1265,7 @@ public class testNoSetupEditDuringARun
                 if (square == null && "1 - Main".equals(tile.getPage())) square = tile;
             }
 
-            java.lang.reflect.Field startField = TrainControlUI.class.getDeclaredField("startAutonomy");
-
-            startField.setAccessible(true);
+            java.lang.reflect.Field startField = Reflect.field(TrainControlUI.class, "startAutonomy");
 
             final javax.swing.JButton start = (javax.swing.JButton) startField.get(ui[0]);
 
@@ -1374,9 +1365,7 @@ public class testNoSetupEditDuringARun
                 if (square == null && "1 - Main".equals(tile.getPage())) square = tile;
             }
 
-            java.lang.reflect.Field startField = TrainControlUI.class.getDeclaredField("startAutonomy");
-
-            startField.setAccessible(true);
+            java.lang.reflect.Field startField = Reflect.field(TrainControlUI.class, "startAutonomy");
 
             final javax.swing.JButton start = (javax.swing.JButton) startField.get(ui[0]);
 
@@ -1442,9 +1431,7 @@ public class testNoSetupEditDuringARun
         final List<String> asked = Collections.synchronizedList(new ArrayList<>());
         final java.util.concurrent.atomic.AtomicBoolean going = new java.util.concurrent.atomic.AtomicBoolean(true);
 
-        final java.lang.reflect.Field staging = TrainControlUI.class.getDeclaredField("stagingFlowActive");
-
-        staging.setAccessible(true);
+        final java.lang.reflect.Field staging = Reflect.field(TrainControlUI.class, "stagingFlowActive");
 
         try
         {
@@ -1493,9 +1480,7 @@ public class testNoSetupEditDuringARun
             assertTrue(asked.contains(I18n.t("ui.main.errorNoEditsWhileRunning")), "the editor's build, refused"
                 + " once a run had begun, did not say why: " + asked);
 
-            java.lang.reflect.Field button = TrainControlUI.class.getDeclaredField("editLayoutButton");
-
-            button.setAccessible(true);
+            java.lang.reflect.Field button = Reflect.field(TrainControlUI.class, "editLayoutButton");
 
             assertTrue(((javax.swing.JButton) button.get(ui[0])).isEnabled(), "the editor's build refused, and did not"
                 + " give the Edit button back");
@@ -2028,10 +2013,8 @@ public class testNoSetupEditDuringARun
 
             answeringKeepOpen(asked, going);
 
-            final java.lang.reflect.Method close = TrainControlUI.class.getDeclaredMethod("WindowClosed",
-                java.awt.event.WindowEvent.class);
-
-            close.setAccessible(true);
+            final java.lang.reflect.Method close =
+                Reflect.method(TrainControlUI.class, "WindowClosed", java.awt.event.WindowEvent.class);
 
             final TrainControlUI window = ui[0];
 
@@ -2055,9 +2038,7 @@ public class testNoSetupEditDuringARun
             assertTrue(railway.isAutoRunning(), "closing, and then keeping TrainControl open, stopped autonomy - the close"
                 + " changed the trains' state before it asked (RSA-C7)");
 
-            java.lang.reflect.Field graceful = TrainControlUI.class.getDeclaredField("gracefulStopRequested");
-
-            graceful.setAccessible(true);
+            java.lang.reflect.Field graceful = Reflect.field(TrainControlUI.class, "gracefulStopRequested");
 
             assertFalse(graceful.getBoolean(ui[0]), "the close pressed Graceful Stop before it asked (RSA-C7)");
         }
@@ -2533,10 +2514,8 @@ public class testNoSetupEditDuringARun
 
                 assertFalse(ui[0].getModel().getPowerState(), "precondition: the power is not off");
 
-                final java.lang.reflect.Method timetable =
-                    TrainControlUI.class.getDeclaredMethod("executeTimetableActionPerformed", java.awt.event.ActionEvent.class);
-
-                timetable.setAccessible(true);
+                final java.lang.reflect.Method timetable = Reflect.method(TrainControlUI.class,
+                    "executeTimetableActionPerformed", java.awt.event.ActionEvent.class);
 
                 before = asked.size();
 
@@ -2620,15 +2599,9 @@ public class testNoSetupEditDuringARun
             answeringKeepOpen(asked, going);
 
             // THE START'S DEBUG MENU, which reads the stored choice; LayoutMenus mounts it
-            final java.lang.reflect.Field held = TrainControlUI.class.getDeclaredField("layoutMenus");
+            final Object menus = Reflect.get(TrainControlUI.class, ui[0], "layoutMenus");
 
-            held.setAccessible(true);
-
-            final Object menus = held.get(ui[0]);
-
-            final java.lang.reflect.Method mount = menus.getClass().getDeclaredMethod("mountDebugMenu");
-
-            mount.setAccessible(true);
+            final java.lang.reflect.Method mount = Reflect.method(menus.getClass(), "mountDebugMenu");
 
             SwingUtilities.invokeAndWait(() ->
             {
@@ -2741,11 +2714,7 @@ public class testNoSetupEditDuringARun
             assertTrue(ui[0].getModel().getPowerState(), "precondition: the power is not on");
 
             // A GRACEFUL STOP PRESSED EARLIER IN THE SESSION
-            java.lang.reflect.Field graceful = TrainControlUI.class.getDeclaredField("gracefulStopRequested");
-
-            graceful.setAccessible(true);
-
-            graceful.set(ui[0], true);
+            Reflect.set(TrainControlUI.class, ui[0], "gracefulStopRequested", true);
 
             // START TIMETABLE, somebody there to be told
             TrainControlUI.setUnattended(false);
@@ -2754,10 +2723,8 @@ public class testNoSetupEditDuringARun
 
             answeringKeepOpen(asked, going);
 
-            final java.lang.reflect.Method press =
-                TrainControlUI.class.getDeclaredMethod("executeTimetableActionPerformed", java.awt.event.ActionEvent.class);
-
-            press.setAccessible(true);
+            final java.lang.reflect.Method press = Reflect.method(TrainControlUI.class,
+                "executeTimetableActionPerformed", java.awt.event.ActionEvent.class);
 
             SwingUtilities.invokeAndWait(() ->
             {
@@ -2820,9 +2787,7 @@ public class testNoSetupEditDuringARun
 
         final support.SandboxedWindow sandboxed = new support.SandboxedWindow();
 
-        java.lang.reflect.Field staging = TrainControlUI.class.getDeclaredField("stagingFlowActive");
-
-        staging.setAccessible(true);
+        java.lang.reflect.Field staging = Reflect.field(TrainControlUI.class, "stagingFlowActive");
 
         final java.util.concurrent.atomic.AtomicBoolean going = new java.util.concurrent.atomic.AtomicBoolean(true);
 
@@ -2914,9 +2879,7 @@ public class testNoSetupEditDuringARun
 
         final support.SandboxedWindow sandboxed = new support.SandboxedWindow();
 
-        java.lang.reflect.Field staging = TrainControlUI.class.getDeclaredField("stagingFlowActive");
-
-        staging.setAccessible(true);
+        java.lang.reflect.Field staging = Reflect.field(TrainControlUI.class, "stagingFlowActive");
 
         final java.util.concurrent.atomic.AtomicBoolean going = new java.util.concurrent.atomic.AtomicBoolean(true);
 
@@ -3002,9 +2965,7 @@ public class testNoSetupEditDuringARun
 
         final support.SandboxedWindow sandboxed = new support.SandboxedWindow();
 
-        java.lang.reflect.Field staging = TrainControlUI.class.getDeclaredField("stagingFlowActive");
-
-        staging.setAccessible(true);
+        java.lang.reflect.Field staging = Reflect.field(TrainControlUI.class, "stagingFlowActive");
 
         try
         {
@@ -3083,9 +3044,7 @@ public class testNoSetupEditDuringARun
 
         final support.SandboxedWindow sandboxed = new support.SandboxedWindow();
 
-        java.lang.reflect.Field staging = TrainControlUI.class.getDeclaredField("stagingFlowActive");
-
-        staging.setAccessible(true);
+        java.lang.reflect.Field staging = Reflect.field(TrainControlUI.class, "stagingFlowActive");
 
         String[] greyed = {"chooseLocalDataFolderMenuItem", "modifyLocalLayoutMenu", "editPageMenu",
             "initializeLocalLayoutMenuItem", "switchCSLayoutMenuItem", "downloadCSLayoutMenuItem"};
@@ -3152,9 +3111,7 @@ public class testNoSetupEditDuringARun
     private static java.util.Map<String, Object[]> layoutMenuAsOpened(final TrainControlUI ui, String[]... names)
         throws Exception
     {
-        final java.lang.reflect.Field menu = TrainControlUI.class.getDeclaredField("layoutMenu");
-
-        menu.setAccessible(true);
+        final java.lang.reflect.Field menu = Reflect.field(TrainControlUI.class, "layoutMenu");
 
         SwingUtilities.invokeAndWait(() ->
         {
@@ -3181,11 +3138,7 @@ public class testNoSetupEditDuringARun
         {
             for (String name : group)
             {
-                java.lang.reflect.Field field = TrainControlUI.class.getDeclaredField(name);
-
-                field.setAccessible(true);
-
-                javax.swing.JMenuItem item = (javax.swing.JMenuItem) field.get(ui);
+                javax.swing.JMenuItem item = (javax.swing.JMenuItem) Reflect.get(TrainControlUI.class, ui, name);
 
                 assertNotNull(item, "precondition: the window has no " + name);
 
@@ -3319,9 +3272,7 @@ public class testNoSetupEditDuringARun
 
         boolean echoWas = org.traincontrol.marklin.MarklinControlStation.DEBUG_SIMULATE_PACKETS;
 
-        java.lang.reflect.Field staging = TrainControlUI.class.getDeclaredField("stagingFlowActive");
-
-        staging.setAccessible(true);
+        java.lang.reflect.Field staging = Reflect.field(TrainControlUI.class, "stagingFlowActive");
 
         final java.util.concurrent.atomic.AtomicBoolean going = new java.util.concurrent.atomic.AtomicBoolean(true);
 
@@ -3345,9 +3296,7 @@ public class testNoSetupEditDuringARun
             // A GRACEFUL STOP BEING CARRIED OUT: autonomy busy, the stop asked for
             staging.set(ui[0], true);
 
-            java.lang.reflect.Field graceful = TrainControlUI.class.getDeclaredField("gracefulStopRequested");
-
-            graceful.setAccessible(true);
+            java.lang.reflect.Field graceful = Reflect.field(TrainControlUI.class, "gracefulStopRequested");
 
             graceful.set(ui[0], true);
 
@@ -3355,10 +3304,8 @@ public class testNoSetupEditDuringARun
 
             closingEveryQuestion(asked, new ArrayList<String>(), going);
 
-            final java.lang.reflect.Method press =
-                TrainControlUI.class.getDeclaredMethod("executeTimetableActionPerformed", java.awt.event.ActionEvent.class);
-
-            press.setAccessible(true);
+            final java.lang.reflect.Method press = Reflect.method(TrainControlUI.class,
+                "executeTimetableActionPerformed", java.awt.event.ActionEvent.class);
 
             SwingUtilities.invokeAndWait(() ->
             {
@@ -3416,9 +3363,7 @@ public class testNoSetupEditDuringARun
 
         final support.SandboxedWindow sandboxed = new support.SandboxedWindow();
 
-        java.lang.reflect.Field staging = TrainControlUI.class.getDeclaredField("stagingFlowActive");
-
-        staging.setAccessible(true);
+        java.lang.reflect.Field staging = Reflect.field(TrainControlUI.class, "stagingFlowActive");
 
         final java.util.concurrent.atomic.AtomicBoolean going = new java.util.concurrent.atomic.AtomicBoolean(true);
 
@@ -3442,16 +3387,12 @@ public class testNoSetupEditDuringARun
             closingEveryQuestion(asked, new ArrayList<String>(), going);
 
             // THE TRAINS-AT-ONCE SLIDER MOVED AND LET GO, through its own handler
-            java.lang.reflect.Field slider = TrainControlUI.class.getDeclaredField("maxActiveTrains");
-
-            slider.setAccessible(true);
+            java.lang.reflect.Field slider = Reflect.field(TrainControlUI.class, "maxActiveTrains");
 
             final javax.swing.JSlider trains = (javax.swing.JSlider) slider.get(ui[0]);
 
-            final java.lang.reflect.Method released = TrainControlUI.class.getDeclaredMethod("maxActiveTrainsMouseReleased",
-                java.awt.event.MouseEvent.class);
-
-            released.setAccessible(true);
+            final java.lang.reflect.Method released =
+                Reflect.method(TrainControlUI.class, "maxActiveTrainsMouseReleased", java.awt.event.MouseEvent.class);
 
             SwingUtilities.invokeAndWait(() ->
             {
@@ -3523,10 +3464,8 @@ public class testNoSetupEditDuringARun
 
             closingEveryQuestion(asked, choosers, going);
 
-            final java.lang.reflect.Method press = TrainControlUI.class.getDeclaredMethod(
+            final java.lang.reflect.Method press = Reflect.method(TrainControlUI.class,
                 "initializeLocalLayoutMenuItemActionPerformed", java.awt.event.ActionEvent.class);
-
-            press.setAccessible(true);
 
             SwingUtilities.invokeAndWait(() ->
             {
@@ -3900,16 +3839,12 @@ public class testNoSetupEditDuringARun
             assertTrue(ui[0].getModel().getPowerState(), "precondition: the power is not on");
 
             // A GRACEFUL STOP PRESSED IN AN EARLIER RUN
-            final java.lang.reflect.Field graceful = TrainControlUI.class.getDeclaredField("gracefulStopRequested");
-
-            graceful.setAccessible(true);
+            final java.lang.reflect.Field graceful = Reflect.field(TrainControlUI.class, "gracefulStopRequested");
 
             graceful.set(ui[0], true);
 
             final java.lang.reflect.Method press =
-                TrainControlUI.class.getDeclaredMethod("startAutonomyActionPerformed", java.awt.event.ActionEvent.class);
-
-            press.setAccessible(true);
+                Reflect.method(TrainControlUI.class, "startAutonomyActionPerformed", java.awt.event.ActionEvent.class);
 
             final boolean[] after = new boolean[1];
 
@@ -3966,10 +3901,8 @@ public class testNoSetupEditDuringARun
 
             ui[0] = sandboxed.hold(openTheWindow());
 
-            final java.lang.reflect.Method gate = TrainControlUI.class.getDeclaredMethod("whyNoTrainMayBeSent",
-                boolean.class);
-
-            gate.setAccessible(true);
+            final java.lang.reflect.Method gate =
+                Reflect.method(TrainControlUI.class, "whyNoTrainMayBeSent", boolean.class);
 
             final String refreshing = I18n.t("autosetup.ui.errorDiagramRefreshing");
 
@@ -3977,20 +3910,16 @@ public class testNoSetupEditDuringARun
                 + " rest");
 
             // DUPLICATE CURRENT PAGE: the gate asked straight after the door's own work, before its reset
-            final java.lang.reflect.Method duplicate = TrainControlUI.class.getDeclaredMethod(
+            final java.lang.reflect.Method duplicate = Reflect.method(TrainControlUI.class,
                 "duplicateOrRenameCurrentLayout", String.class, boolean.class, boolean.class, boolean.class);
-
-            duplicate.setAccessible(true);
 
             answers = answeringNamesAndYes(asked, answering, "RSA23 combined");
 
             final Object[] said = new Object[2];
 
             // AND THE RUN DOORS' LAST EVENT-THREAD QUESTION, which a door clicked after Start's own gate meets
-            final java.lang.reflect.Method atTheLastMoment = TrainControlUI.class.getDeclaredMethod(
-                "refusedForAnEditorOnItsWay");
-
-            atTheLastMoment.setAccessible(true);
+            final java.lang.reflect.Method atTheLastMoment =
+                Reflect.method(TrainControlUI.class, "refusedForAnEditorOnItsWay");
 
             SwingUtilities.invokeAndWait(() ->
             {
@@ -4044,17 +3973,13 @@ public class testNoSetupEditDuringARun
                 + " duplicated");
 
             // COMBINE LINKED PAGES: its worker writes before it hands over, and the gate refuses from before it starts
-            java.lang.reflect.Field list = TrainControlUI.class.getDeclaredField("LayoutList");
-
-            list.setAccessible(true);
+            java.lang.reflect.Field list = Reflect.field(TrainControlUI.class, "LayoutList");
 
             final javax.swing.JComboBox<?> pages = (javax.swing.JComboBox<?>) list.get(ui[0]);
 
             SwingUtilities.invokeAndWait(() -> pages.setSelectedItem("1 - Main"));
 
-            final java.lang.reflect.Method combine = TrainControlUI.class.getDeclaredMethod("combineLinkedPages");
-
-            combine.setAccessible(true);
+            final java.lang.reflect.Method combine = Reflect.method(TrainControlUI.class, "combineLinkedPages");
 
             SwingUtilities.invokeAndWait(() ->
             {
@@ -4184,16 +4109,12 @@ public class testNoSetupEditDuringARun
 
             ui[0] = sandboxed.hold(openTheWindow());
 
-            final java.lang.reflect.Method gate = TrainControlUI.class.getDeclaredMethod("whyNoTrainMayBeSent",
-                boolean.class);
-
-            gate.setAccessible(true);
+            final java.lang.reflect.Method gate =
+                Reflect.method(TrainControlUI.class, "whyNoTrainMayBeSent", boolean.class);
 
             final String refreshing = I18n.t("autosetup.ui.errorDiagramRefreshing");
 
-            java.lang.reflect.Field open = TrainControlUI.class.getDeclaredField("openEditor");
-
-            open.setAccessible(true);
+            java.lang.reflect.Field open = Reflect.field(TrainControlUI.class, "openEditor");
 
             answers = answeringNamesAndYes(asked, answering, "unused");
 
@@ -4220,10 +4141,9 @@ public class testNoSetupEditDuringARun
 
                 final org.traincontrol.gui.layouteditor.LayoutEditor editor = shown;
 
-                final java.lang.reflect.Method press = org.traincontrol.gui.layouteditor.LayoutEditor.class.getDeclaredMethod(button,
-                    java.awt.event.ActionEvent.class);
-
-                press.setAccessible(true);
+                final java.lang.reflect.Method press =
+                    Reflect.method(org.traincontrol.gui.layouteditor.LayoutEditor.class,
+                        button, java.awt.event.ActionEvent.class);
 
                 final Object said = theGateSaidWhilePressing(ui[0], gate, editor, press);
 
@@ -4272,16 +4192,12 @@ public class testNoSetupEditDuringARun
 
             ui[0] = sandboxed.hold(openTheWindow());
 
-            final java.lang.reflect.Method gate = TrainControlUI.class.getDeclaredMethod("whyNoTrainMayBeSent",
-                boolean.class);
-
-            gate.setAccessible(true);
+            final java.lang.reflect.Method gate =
+                Reflect.method(TrainControlUI.class, "whyNoTrainMayBeSent", boolean.class);
 
             final String refreshing = I18n.t("autosetup.ui.errorDiagramRefreshing");
 
-            java.lang.reflect.Field open = TrainControlUI.class.getDeclaredField("openEditor");
-
-            open.setAccessible(true);
+            java.lang.reflect.Field open = Reflect.field(TrainControlUI.class, "openEditor");
 
             for (final String button : new String[] {"saveButtonActionPerformed", "cancelButtonActionPerformed"})
             {
@@ -4292,10 +4208,9 @@ public class testNoSetupEditDuringARun
                 assertTrue(editor != null && editor.isDisplayable() && editor.getAutonomyPanel() != null,
                     "precondition: the autonomy editor did not open");
 
-                final java.lang.reflect.Method press = org.traincontrol.gui.layouteditor.LayoutEditor.class.getDeclaredMethod(button,
-                    java.awt.event.ActionEvent.class);
-
-                press.setAccessible(true);
+                final java.lang.reflect.Method press =
+                    Reflect.method(org.traincontrol.gui.layouteditor.LayoutEditor.class,
+                        button, java.awt.event.ActionEvent.class);
 
                 answers = answeringNamesAndYes(asked, answering, "unused");
 
@@ -4345,9 +4260,7 @@ public class testNoSetupEditDuringARun
 
         final support.SandboxedWindow sandboxed = new support.SandboxedWindow();
 
-        java.lang.reflect.Field staging = TrainControlUI.class.getDeclaredField("stagingFlowActive");
-
-        staging.setAccessible(true);
+        java.lang.reflect.Field staging = Reflect.field(TrainControlUI.class, "stagingFlowActive");
 
         final java.util.concurrent.atomic.AtomicBoolean going = new java.util.concurrent.atomic.AtomicBoolean(true);
 
@@ -4395,9 +4308,7 @@ public class testNoSetupEditDuringARun
                 + " (OB-309)");
 
             // THE ROUTING RULE'S TOOLTIP, set again while grayed, as a load sets it: still says why
-            final java.lang.reflect.Method rule = TrainControlUI.class.getDeclaredMethod("refreshRoutingLogicTooltip");
-
-            rule.setAccessible(true);
+            final java.lang.reflect.Method rule = Reflect.method(TrainControlUI.class, "refreshRoutingLogicTooltip");
 
             SwingUtilities.invokeAndWait(() ->
             {
@@ -4566,9 +4477,7 @@ public class testNoSetupEditDuringARun
 
             // START AUTONOMY, through its own handler
             final java.lang.reflect.Method start =
-                TrainControlUI.class.getDeclaredMethod("startAutonomyActionPerformed", java.awt.event.ActionEvent.class);
-
-            start.setAccessible(true);
+                Reflect.method(TrainControlUI.class, "startAutonomyActionPerformed", java.awt.event.ActionEvent.class);
 
             answeringYes(() ->
             {
@@ -4617,9 +4526,7 @@ public class testNoSetupEditDuringARun
 
             // GRACEFUL STOP, through its own handler, and the trains left to stop
             final java.lang.reflect.Method graceful =
-                TrainControlUI.class.getDeclaredMethod("gracefulStopActionPerformed", java.awt.event.ActionEvent.class);
-
-            graceful.setAccessible(true);
+                Reflect.method(TrainControlUI.class, "gracefulStopActionPerformed", java.awt.event.ActionEvent.class);
 
             SwingUtilities.invokeAndWait(() ->
             {
@@ -4682,11 +4589,7 @@ public class testNoSetupEditDuringARun
      */
     static javax.swing.JComponent control(TrainControlUI ui, String name) throws ReflectiveOperationException
     {
-        java.lang.reflect.Field field = TrainControlUI.class.getDeclaredField(name);
-
-        field.setAccessible(true);
-
-        return (javax.swing.JComponent) field.get(ui);
+        return (javax.swing.JComponent) Reflect.get(TrainControlUI.class, ui, name);
     }
 
     /**
@@ -4696,9 +4599,7 @@ public class testNoSetupEditDuringARun
      */
     private static void refreshWhatWaits(final TrainControlUI ui) throws Exception
     {
-        final java.lang.reflect.Method refresh = TrainControlUI.class.getDeclaredMethod("refreshWhatWaitsForTheTrains");
-
-        refresh.setAccessible(true);
+        final java.lang.reflect.Method refresh = Reflect.method(TrainControlUI.class, "refreshWhatWaitsForTheTrains");
 
         SwingUtilities.invokeAndWait(() ->
         {

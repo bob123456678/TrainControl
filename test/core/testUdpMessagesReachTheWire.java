@@ -10,6 +10,7 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 import org.traincontrol.marklin.udp.CS2Message;
 import org.traincontrol.marklin.udp.NetworkProxy;
+import support.Reflect;
 
 /**
  * A message handed to the proxy arrives on the wire, byte for byte (OB-089): nothing else asserts an outgoing datagram,
@@ -107,11 +108,7 @@ public class testUdpMessagesReachTheWire
      */
     private static void closeTheProxySocket() throws Exception
     {
-        java.lang.reflect.Field field = NetworkProxy.class.getDeclaredField("socket");
-
-        field.setAccessible(true);
-
-        ((DatagramSocket) field.get(proxy)).close();
+        ((DatagramSocket) Reflect.get(NetworkProxy.class, proxy, "socket")).close();
     }
 
     private static void drain() throws Exception

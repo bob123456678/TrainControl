@@ -24,6 +24,7 @@ import org.traincontrol.gui.LayoutLabel;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;
 import static org.traincontrol.marklin.MarklinControlStation.init;
+import support.Reflect;
 
 /**
  * MT-309, third ruling: the drawing says "track is blocked" again, in gray.  The orange line as long as the train and
@@ -503,9 +504,7 @@ public class testBlockedTrackIsGreyWhileAutonomyRuns
      */
     private static void setRunning(boolean value) throws Exception
     {
-        Field running = Layout.class.getDeclaredField("running");
-
-        running.setAccessible(true);
+        Field running = Reflect.field(Layout.class, "running");
         running.setBoolean(layout, value);
     }
 

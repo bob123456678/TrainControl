@@ -15,6 +15,7 @@ import org.traincontrol.marklin.MarklinAccessory;
 import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.marklin.file.CS2File;
 import static org.traincontrol.marklin.MarklinControlStation.init;
+import support.Reflect;
 
 /**
  * What drawing the track diagram actually costs, measured rather than guessed.
@@ -437,11 +438,7 @@ public class testRenderingCost
      */
     private static int registeredTiles(MarklinAccessory accessory) throws Exception
     {
-        java.lang.reflect.Field field = MarklinAccessory.class.getDeclaredField("tiles");
-
-        field.setAccessible(true);
-
-        return ((java.util.Collection<?>) field.get(accessory)).size();
+        return ((java.util.Collection<?>) Reflect.get(MarklinAccessory.class, accessory, "tiles")).size();
     }
 
     /**

@@ -11,6 +11,7 @@ import org.traincontrol.automation.Layout;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;
 import static org.traincontrol.marklin.MarklinControlStation.init;
+import support.Reflect;
 
 /**
  * Return Home shows that it is working while its plan is worked out, and stops when there is an answer (FR-077).
@@ -165,10 +166,7 @@ public class testReturnHomeShowsItIsWorking
 
         if (!model.getPowerState())
         {
-            java.lang.reflect.Field power = MarklinControlStation.class.getDeclaredField("powerState");
-
-            power.setAccessible(true);
-            power.set(model, true);
+            Reflect.set(MarklinControlStation.class, model, "powerState", true);
         }
     }
 

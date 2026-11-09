@@ -26,6 +26,7 @@ import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.marklin.file.CS2File;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 import support.ProgramConstants;
+import support.Reflect;
 
 /**
  * A simulated path to a station autonomy will never choose is drawn in a color of its own (Adam: "just use a different
@@ -260,10 +261,8 @@ public class testManualOnlyPathsAreADifferentColour
 
         ((javax.swing.AbstractButton) field(panel, "testButton")).doClick();
 
-        java.lang.reflect.Method applyTest = AutonomyEditorPanel.class.getDeclaredMethod("applyTest",
-            TileKey.class, org.traincontrol.base.LayoutDiagramComponent.class);
-
-        applyTest.setAccessible(true);
+        java.lang.reflect.Method applyTest = Reflect.method(AutonomyEditorPanel.class,
+            "applyTest", TileKey.class, org.traincontrol.base.LayoutDiagramComponent.class);
 
         applyTest.invoke(panel, pair[0], graph.getTiles().get(pair[0]));
         applyTest.invoke(panel, pair[1], graph.getTiles().get(pair[1]));
@@ -413,11 +412,7 @@ public class testManualOnlyPathsAreADifferentColour
 
     private static Object field(AutonomyEditorPanel panel, String name) throws Exception
     {
-        java.lang.reflect.Field f = AutonomyEditorPanel.class.getDeclaredField(name);
-
-        f.setAccessible(true);
-
-        return f.get(panel);
+        return Reflect.get(AutonomyEditorPanel.class, panel, name);
     }
 
     /**
@@ -480,18 +475,14 @@ public class testManualOnlyPathsAreADifferentColour
             }
         });
 
-        java.lang.reflect.Method applyTest = AutonomyEditorPanel.class.getDeclaredMethod("applyTest",
-            TileKey.class, org.traincontrol.base.LayoutDiagramComponent.class);
-
-        applyTest.setAccessible(true);
+        java.lang.reflect.Method applyTest = Reflect.method(AutonomyEditorPanel.class,
+            "applyTest", TileKey.class, org.traincontrol.base.LayoutDiagramComponent.class);
 
         // The first click names the origin and draws nothing; the second runs the test.
         applyTest.invoke(panel, from, graph.getTiles().get(from));
         applyTest.invoke(panel, to, graph.getTiles().get(to));
 
-        java.lang.reflect.Field traces = AutonomyEditorPanel.class.getDeclaredField("traces");
-
-        traces.setAccessible(true);
+        java.lang.reflect.Field traces = Reflect.field(AutonomyEditorPanel.class, "traces");
 
         return new HashMap<>((Map<TileKey, List<TileAnnotation.Trace>>) traces.get(panel));
     }

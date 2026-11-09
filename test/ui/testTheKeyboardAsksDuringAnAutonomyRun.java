@@ -24,6 +24,7 @@ import org.traincontrol.marklin.udp.CS2Message;
 import org.traincontrol.util.I18n;
 import support.Answering;
 import support.Components;
+import support.Reflect;
 
 /**
  * A click on a half of an accessory keyboard key while autonomy runs (FR-050): the accessory on a path a train holds,
@@ -316,18 +317,12 @@ public class testTheKeyboardAsksDuringAnAutonomyRun
     @SuppressWarnings("rawtypes")
     private static java.util.Map underway(Layout layout) throws Exception
     {
-        java.lang.reflect.Field f = Layout.class.getDeclaredField("activeLocomotives");
-
-        f.setAccessible(true);
-
-        return (java.util.Map) f.get(layout);
+        return (java.util.Map) Reflect.get(Layout.class, layout, "activeLocomotives");
     }
 
     private static void setOccupancy(int value) throws Exception
     {
-        java.lang.reflect.Field f = Edge.class.getDeclaredField("occupancy");
-
-        f.setAccessible(true);
+        java.lang.reflect.Field f = Reflect.field(Edge.class, "occupancy");
         f.setInt(pathEdge, value);
     }
 

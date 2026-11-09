@@ -28,6 +28,7 @@ import org.traincontrol.gui.LayoutLabel;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;
 import static org.traincontrol.marklin.MarklinControlStation.init;
+import support.Reflect;
 
 /**
  * MT-334's shape, asked of the gray wash that came back (OB-180): the diagram is not rebuilt, and only what changed
@@ -345,9 +346,7 @@ public class testTheGreyDoesNotRebuildTheDiagram
 
         LayoutLabel tile = null;
 
-        java.lang.reflect.Field what = LayoutLabel.class.getDeclaredField("component");
-
-        what.setAccessible(true);
+        java.lang.reflect.Field what = Reflect.field(LayoutLabel.class, "component");
 
         // A TILE WITH A PICTURE - track, a switch, a sensor - in the diagram's own panel
         for (LayoutLabel t : tiles)
@@ -360,18 +359,14 @@ public class testTheGreyDoesNotRebuildTheDiagram
 
         assertNotNull(tile, "precondition: no tile of the page with a picture sits in a panel of its own");
 
-        java.lang.reflect.Field parentField = LayoutLabel.class.getDeclaredField("parent");
-
-        parentField.setAccessible(true);
+        java.lang.reflect.Field parentField = Reflect.field(LayoutLabel.class, "parent");
 
         assertSame(parentField.get(tile), tab, "precondition: the tile does not call the tab its parent, so this asks"
             + " nothing");
 
         final LayoutLabel changing = tile;
 
-        final java.lang.reflect.Method setImage = LayoutLabel.class.getDeclaredMethod("setImageOnEDT", boolean.class);
-
-        setImage.setAccessible(true);
+        final java.lang.reflect.Method setImage = Reflect.method(LayoutLabel.class, "setImageOnEDT", boolean.class);
 
         Counting counter = new Counting();
 
@@ -504,13 +499,10 @@ public class testTheGreyDoesNotRebuildTheDiagram
             settle();
 
             // PRECONDITION: squares of the window's page wear a mark, so a clear would redraw them
-            java.lang.reflect.Field tilesField = org.traincontrol.gui.autonomy.DiagramTileRegistry.class.getDeclaredField("tiles");
+            java.lang.reflect.Field tilesField =
+                Reflect.field(org.traincontrol.gui.autonomy.DiagramTileRegistry.class, "tiles");
 
-            tilesField.setAccessible(true);
-
-            java.lang.reflect.Field markField = LayoutLabel.class.getDeclaredField("autonomyAnnotation");
-
-            markField.setAccessible(true);
+            java.lang.reflect.Field markField = Reflect.field(LayoutLabel.class, "autonomyAnnotation");
 
             int marked = 0;
 

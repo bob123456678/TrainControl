@@ -16,6 +16,7 @@ import org.traincontrol.base.LayoutDiagramComponent;
 import org.traincontrol.gui.autonomy.DiagramExport;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;
+import support.Reflect;
 
 /**
  * Saving a track diagram to a picture.
@@ -234,10 +235,7 @@ public class testDiagramExport
         assertNotEquals(onScreen, somethingElse,
             "picked the same page twice by accident, so this test would prove nothing");
 
-        java.lang.reflect.Field listField = TrainControlUI.class.getDeclaredField("LayoutList");
-        listField.setAccessible(true);
-
-        javax.swing.JComboBox<?> list = (javax.swing.JComboBox<?>) listField.get(ui);
+        javax.swing.JComboBox<?> list = (javax.swing.JComboBox<?>) Reflect.get(TrainControlUI.class, ui, "LayoutList");
 
         final Object[] wasSelected = new Object[1];
 
@@ -252,10 +250,7 @@ public class testDiagramExport
             // The exact private call the active-page menu item makes, on the window's Layouts menu (LayoutMenus).
             Object menus = layoutMenus();
 
-            java.lang.reflect.Method activeLayoutPage = menus.getClass().getDeclaredMethod("activeLayoutPage");
-            activeLayoutPage.setAccessible(true);
-
-            Object reportedActive = activeLayoutPage.invoke(menus);
+            Object reportedActive = Reflect.method(menus.getClass(), "activeLayoutPage").invoke(menus);
 
             assertEquals(reportedActive, onScreen,
                 "activeLayoutPage() reported " + reportedActive + " while the selector was showing "
@@ -589,8 +584,7 @@ public class testDiagramExport
     @Test
     public void testTheScreenshotMenuOffersSmallMediumAndLarge() throws Exception
     {
-        java.lang.reflect.Field itemField = TrainControlUI.class.getDeclaredField("exportDiagramItem");
-        itemField.setAccessible(true);
+        java.lang.reflect.Field itemField = Reflect.field(TrainControlUI.class, "exportDiagramItem");
 
         final javax.swing.JMenuItem item = (javax.swing.JMenuItem) itemField.get(ui);
 
@@ -694,10 +688,6 @@ public class testDiagramExport
     /** The window's Layouts menu, which holds the export's private steps. */
     private static Object layoutMenus() throws Exception
     {
-        java.lang.reflect.Field menus = TrainControlUI.class.getDeclaredField("layoutMenus");
-
-        menus.setAccessible(true);
-
-        return menus.get(ui);
+        return Reflect.get(TrainControlUI.class, ui, "layoutMenus");
     }
 }

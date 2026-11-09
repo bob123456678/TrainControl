@@ -17,6 +17,7 @@ import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.util.I18n;
 import static org.traincontrol.marklin.MarklinControlStation.init;
+import support.Reflect;
 import support.SourceOf;
 
 /**
@@ -103,9 +104,7 @@ public class testTheAutonomyMenuLinksItsDocumentation
     @Test
     public void testDocumentationStaysUsableWhileAnEditorIsOpen() throws Exception
     {
-        Field open = TrainControlUI.class.getDeclaredField("openEditor");
-
-        open.setAccessible(true);
+        Field open = Reflect.field(TrainControlUI.class, "openEditor");
 
         final Object was = open.get(ui);
         final LayoutEditor[] built = new LayoutEditor[1];
@@ -165,11 +164,7 @@ public class testTheAutonomyMenuLinksItsDocumentation
     /** The Autonomy menu, built as opening it builds it: from its own listener, when it is selected. */
     private static JMenu opened() throws Exception
     {
-        Field field = TrainControlUI.class.getDeclaredField("autonomyMenu");
-
-        field.setAccessible(true);
-
-        final JMenu menu = (JMenu) field.get(ui);
+        final JMenu menu = (JMenu) Reflect.get(TrainControlUI.class, ui, "autonomyMenu");
 
         assertNotNull(menu, "precondition: the window has no Autonomy menu on a layout stored on this computer");
 

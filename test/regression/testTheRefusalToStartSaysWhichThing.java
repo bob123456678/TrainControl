@@ -6,6 +6,7 @@ import org.traincontrol.util.I18n;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertTrue;
 import org.testng.annotations.Test;
+import support.Reflect;
 import support.SourceOf;
 
 /**
@@ -105,10 +106,8 @@ public class testTheRefusalToStartSaysWhichThing
     /** What the rule says for a given state. */
     private static String said(int errors, int blocking, boolean broken) throws Exception
     {
-        Method rule = TrainControlUI.class.getDeclaredMethod("whyAutonomyWillNotStart",
-            int.class, int.class, boolean.class);
-
-        rule.setAccessible(true);
+        Method rule =
+            Reflect.method(TrainControlUI.class, "whyAutonomyWillNotStart", int.class, int.class, boolean.class);
 
         return (String) rule.invoke(null, errors, blocking, broken);
     }

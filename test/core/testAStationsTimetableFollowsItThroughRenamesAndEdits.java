@@ -12,6 +12,7 @@ import org.traincontrol.automationui.AutonomySession;
 import org.traincontrol.base.LayoutDiagram;
 import org.traincontrol.base.LayoutDiagramComponent.componentType;
 import org.traincontrol.automationui.TileGraph.TileKey;
+import support.Reflect;
 
 /**
  * A station's timetable, and the roads its trains stand on, follow it through a rename, a moved square, a ticked-out
@@ -497,9 +498,7 @@ public class testAStationsTimetableFollowsItThroughRenamesAndEdits extends Auton
 
         session.endEditSession();
 
-        java.lang.reflect.Field seen = AutonomySession.class.getDeclaredField("squareOfNameSeen");
-
-        seen.setAccessible(true);
+        java.lang.reflect.Field seen = Reflect.field(AutonomySession.class, "squareOfNameSeen");
 
         assertFalse(((java.util.Map<?, ?>) seen.get(session)).containsKey("Omega"), "the memory still knows a name only the"
             + " edit gave, after the edit session: it would be the next one's opening memory (OB-343)");

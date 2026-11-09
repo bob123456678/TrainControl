@@ -27,6 +27,7 @@ import org.traincontrol.marklin.MarklinAccessory;
 import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.marklin.MarklinFeedback;
 import static org.traincontrol.marklin.MarklinControlStation.init;
+import support.Reflect;
 
 /**
  * Sanity check: run the kind of autonomy file the main UI ships with, in simulate mode, for one minute and
@@ -208,9 +209,7 @@ public class testAutonomySimulationSanity
     @SuppressWarnings("unchecked")
     private static java.util.Map<String, String> owed(Layout layout) throws Exception
     {
-        java.lang.reflect.Field f = Layout.class.getDeclaredField("reversedOnArrival");
-
-        f.setAccessible(true);
+        java.lang.reflect.Field f = Reflect.field(Layout.class, "reversedOnArrival");
 
         return new java.util.LinkedHashMap<>((java.util.Map<String, String>) f.get(layout));
     }

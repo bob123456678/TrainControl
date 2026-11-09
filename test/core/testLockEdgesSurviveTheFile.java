@@ -12,6 +12,7 @@ import org.traincontrol.automation.Point;
 import org.traincontrol.marklin.MarklinControlStation;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 import org.traincontrol.marklin.MarklinLocomotive;
+import support.Reflect;
 
 /**
  * A configuration loaded from a file arrives with its lock edges, and they protect the track.  Nothing else asked
@@ -259,10 +260,8 @@ public class testLockEdgesSurviveTheFile
         // AND THE LIVE DOOR, which is the one that mends every future way of leaving a side behind.
         stand.setArrivedFrom("LE Junction");
 
-        java.lang.reflect.Method reserve = Point.class.getDeclaredMethod(
-            "reserve", org.traincontrol.base.Locomotive.class);
-
-        reserve.setAccessible(true);
+        java.lang.reflect.Method reserve =
+            Reflect.method(Point.class, "reserve", org.traincontrol.base.Locomotive.class);
         reserve.invoke(stand, loc());
 
         assertNull(stand.getArrivedFrom(),

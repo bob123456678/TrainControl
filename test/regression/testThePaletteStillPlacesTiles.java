@@ -7,6 +7,7 @@ import org.traincontrol.automationui.AutonomySession;
 import org.traincontrol.base.Accessory.accessoryDecoderType;
 import org.traincontrol.base.LayoutDiagram;
 import org.traincontrol.base.LayoutDiagramComponent.componentType;
+import support.Reflect;
 
 /**
  * Picking a tile out of "new components" and clicking a square puts that tile on the square, and stays in place mode
@@ -75,25 +76,19 @@ public class testThePaletteStillPlacesTiles
 
             session.open(Arrays.asList(diagram));
 
-            java.lang.reflect.Field sessionField =
-                org.traincontrol.gui.TrainControlUI.class.getDeclaredField("autonomySession");
-            sessionField.setAccessible(true);
-            sessionField.set(ui[0], session);
+            Reflect.set(org.traincontrol.gui.TrainControlUI.class, ui[0], "autonomySession", session);
 
             javax.swing.SwingUtilities.invokeAndWait(() ->
                 editor[0] = new org.traincontrol.gui.layouteditor.LayoutEditor(diagram, 30, ui[0], 0));
 
             java.lang.reflect.Method drawGrid =
-                org.traincontrol.gui.layouteditor.LayoutEditor.class.getDeclaredMethod("drawGrid");
-            drawGrid.setAccessible(true);
+                Reflect.method(org.traincontrol.gui.layouteditor.LayoutEditor.class, "drawGrid");
 
             java.lang.reflect.Field gridField =
-                org.traincontrol.gui.layouteditor.LayoutEditor.class.getDeclaredField("grid");
-            gridField.setAccessible(true);
+                Reflect.field(org.traincontrol.gui.layouteditor.LayoutEditor.class, "grid");
 
             java.lang.reflect.Field paletteField =
-                org.traincontrol.gui.layouteditor.LayoutEditor.class.getDeclaredField("newComponents");
-            paletteField.setAccessible(true);
+                Reflect.field(org.traincontrol.gui.layouteditor.LayoutEditor.class, "newComponents");
 
             final String[] failure = new String[1];
 

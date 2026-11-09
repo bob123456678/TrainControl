@@ -9,6 +9,7 @@ import static org.testng.Assert.*;
 import org.testng.annotations.Test;
 import org.traincontrol.gui.locomotive.RightClickPageMenu;
 import org.traincontrol.gui.TrainControlUI;
+import support.Reflect;
 import support.SourceOf;
 
 /**
@@ -153,8 +154,7 @@ public class testLocMappingPages
     {
         TrainControlUI ui = build();
 
-        java.lang.reflect.Field names = TrainControlUI.class.getDeclaredField("pageNames");
-        names.setAccessible(true);
+        java.lang.reflect.Field names = Reflect.field(TrainControlUI.class, "pageNames");
 
         @SuppressWarnings("unchecked")
         java.util.Map<Integer, String> pageNames = (java.util.Map<Integer, String>) names.get(ui);
@@ -167,8 +167,7 @@ public class testLocMappingPages
         pageNames.put(-1, "3");
         pageNames.put(-2, "81");
 
-        java.lang.reflect.Method ofPages = TrainControlUI.class.getDeclaredMethod("namesOfPages");
-        ofPages.setAccessible(true);
+        java.lang.reflect.Method ofPages = Reflect.method(TrainControlUI.class, "namesOfPages");
 
         @SuppressWarnings("unchecked")
         java.util.Set<String> asked = (java.util.Set<String>) ofPages.invoke(ui);
@@ -397,15 +396,11 @@ public class testLocMappingPages
         /** Makes this the active locomotive and lets the window draw its panel, as `repaintLoc` does. */
         void show(org.traincontrol.base.Locomotive loc) throws Exception
         {
-            java.lang.reflect.Field active = TrainControlUI.class.getDeclaredField("activeLoc");
-
-            active.setAccessible(true);
-
             // `repaintLoc` returns without doing anything while an earlier render is still running, and the render
             // goes to a worker and back through the event thread - so wait for the last one before and for this one after
             waitForTheRender();
 
-            active.set(ui, loc);
+            Reflect.set(TrainControlUI.class, ui, "activeLoc", loc);
 
             javax.swing.SwingUtilities.invokeAndWait(() -> ui.repaintLoc(true, null));
 
@@ -429,9 +424,7 @@ public class testLocMappingPages
         @SuppressWarnings("unchecked")
         void waitForTheRender() throws Exception
         {
-            java.lang.reflect.Field futures = TrainControlUI.class.getDeclaredField("locFutures");
-
-            futures.setAccessible(true);
+            java.lang.reflect.Field futures = Reflect.field(TrainControlUI.class, "locFutures");
 
             long deadline = System.currentTimeMillis() + 10000;
 
@@ -563,9 +556,7 @@ public class testLocMappingPages
          */
         void renameTheShownPage(String name) throws Exception
         {
-            java.lang.reflect.Method rename = TrainControlUI.class.getDeclaredMethod("setPageName", String.class);
-
-            rename.setAccessible(true);
+            java.lang.reflect.Method rename = Reflect.method(TrainControlUI.class, "setPageName", String.class);
 
             javax.swing.SwingUtilities.invokeAndWait(() ->
             {
@@ -682,11 +673,7 @@ public class testLocMappingPages
 
     private static Object privateField(Object owner, String name) throws Exception
     {
-        java.lang.reflect.Field f = TrainControlUI.class.getDeclaredField(name);
-
-        f.setAccessible(true);
-
-        return f.get(owner);
+        return Reflect.get(TrainControlUI.class, owner, name);
     }
 
     /**
@@ -2174,9 +2161,7 @@ public class testLocMappingPages
     /** Puts the window on a given number of pages, by reflection: the count is private and adding is under test. */
     private void setPages(TrainControlUI ui, int pages) throws Exception
     {
-        Field count = TrainControlUI.class.getDeclaredField("numLocMappings");
-
-        count.setAccessible(true);
+        Field count = Reflect.field(TrainControlUI.class, "numLocMappings");
         count.setInt(ui, pages);
     }
 

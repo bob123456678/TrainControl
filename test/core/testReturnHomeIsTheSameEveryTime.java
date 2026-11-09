@@ -13,6 +13,7 @@ import org.testng.annotations.Test;
 import org.traincontrol.automation.HomeStaging;
 import org.traincontrol.automation.Layout;
 import org.traincontrol.marklin.MarklinControlStation;
+import support.Reflect;
 import support.Scenario;
 
 /**
@@ -162,9 +163,7 @@ public class testReturnHomeIsTheSameEveryTime
     {
         HomeStaging staging = HomeStaging.snapshot(railway());
 
-        Field budget = HomeStaging.class.getDeclaredField("budget");
-
-        budget.setAccessible(true);
+        Field budget = Reflect.field(HomeStaging.class, "budget");
         budget.setLong(staging, 2000);
 
         HomeStaging.Plan starved = staging.plan();

@@ -18,6 +18,7 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
 import org.traincontrol.marklin.MarklinRoute;
 import org.traincontrol.util.I18n;
 import org.traincontrol.util.SelfUpdate;
+import support.Reflect;
 
 /**
  * The update question offers Download & Update only where there is a jar to replace, and the update refuses to start
@@ -265,9 +266,7 @@ public class testTheUpdateQuestion
             }
 
             // Autonomy or a timetable running, which is the railway's own running flag
-            java.lang.reflect.Field running = Layout.class.getDeclaredField("running");
-
-            running.setAccessible(true);
+            java.lang.reflect.Field running = Reflect.field(Layout.class, "running");
             running.setBoolean(layout, true);
 
             try

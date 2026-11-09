@@ -2,6 +2,7 @@ package regression;
 
 import static org.testng.Assert.*;
 import org.testng.annotations.Test;
+import support.Reflect;
 import support.SourceOf;
 
 /**
@@ -119,12 +120,7 @@ public class testTheWindowTakesTheKeyboard
 
     private static Object field(Object of, String name) throws Exception
     {
-        java.lang.reflect.Field f =
-            org.traincontrol.gui.TrainControlUI.class.getDeclaredField(name);
-
-        f.setAccessible(true);
-
-        return f.get(of);
+        return Reflect.get(org.traincontrol.gui.TrainControlUI.class, of, name);
     }
 
     @SuppressWarnings("unchecked")
@@ -440,8 +436,7 @@ public class testTheWindowTakesTheKeyboard
         try
         {
             java.lang.reflect.Method raise =
-                org.traincontrol.gui.TrainControlUI.class.getDeclaredMethod("comeToTheForeground");
-            raise.setAccessible(true);
+                Reflect.method(org.traincontrol.gui.TrainControlUI.class, "comeToTheForeground");
 
             for (final boolean onTop : new boolean[] { false, true })
             {
@@ -521,8 +516,7 @@ public class testTheWindowTakesTheKeyboard
         try
         {
             java.lang.reflect.Method raise =
-                org.traincontrol.gui.TrainControlUI.class.getDeclaredMethod("comeToTheForeground");
-            raise.setAccessible(true);
+                Reflect.method(org.traincontrol.gui.TrainControlUI.class, "comeToTheForeground");
 
             javax.swing.SwingUtilities.invokeAndWait(() -> up.ui.setExtendedState(
                 java.awt.Frame.ICONIFIED | java.awt.Frame.MAXIMIZED_BOTH));
@@ -620,8 +614,7 @@ public class testTheWindowTakesTheKeyboard
                 });
 
             java.lang.reflect.Method focus =
-                org.traincontrol.gui.TrainControlUI.class.getDeclaredMethod("focusTheKeyboard");
-            focus.setAccessible(true);
+                Reflect.method(org.traincontrol.gui.TrainControlUI.class, "focusTheKeyboard");
 
             final java.lang.reflect.Method call = focus;
 
@@ -773,10 +766,7 @@ public class testTheWindowTakesTheKeyboard
      */
     private static void call(org.traincontrol.gui.TrainControlUI on, String name) throws Exception
     {
-        final java.lang.reflect.Method m =
-            org.traincontrol.gui.TrainControlUI.class.getDeclaredMethod(name);
-
-        m.setAccessible(true);
+        final java.lang.reflect.Method m = Reflect.method(org.traincontrol.gui.TrainControlUI.class, name);
 
         javax.swing.SwingUtilities.invokeAndWait(() ->
         {

@@ -23,6 +23,7 @@ import org.traincontrol.gui.LayoutLabel;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;
 import static org.traincontrol.marklin.MarklinControlStation.init;
+import support.Reflect;
 
 /**
  * MT-309, first half - a train is shown as a line along the track, not as a gray wash over the tile.  Asserted in
@@ -469,9 +470,7 @@ public class testTheTrainIsShownAsALine
             assertTrue(alone > 0, "precondition: no orange on the covered square");
 
             // THE ROAD THE TAIL IS DRAWN ON, and a run's reached line along it
-            java.lang.reflect.Method roads = LayoutLabel.class.getDeclaredMethod("coveredRoads");
-
-            roads.setAccessible(true);
+            java.lang.reflect.Method roads = Reflect.method(LayoutLabel.class, "coveredRoads");
 
             @SuppressWarnings("unchecked")
             java.util.List<org.traincontrol.automationui.TilePorts.Route> covering =
@@ -522,9 +521,7 @@ public class testTheTrainIsShownAsALine
 
             int standing = commonestOrange(support.Pixels.paint(tile, TILE));
 
-            java.lang.reflect.Method roads = LayoutLabel.class.getDeclaredMethod("coveredRoads");
-
-            roads.setAccessible(true);
+            java.lang.reflect.Method roads = Reflect.method(LayoutLabel.class, "coveredRoads");
 
             @SuppressWarnings("unchecked")
             java.util.List<org.traincontrol.automationui.TilePorts.Route> covering =
@@ -575,9 +572,7 @@ public class testTheTrainIsShownAsALine
 
             BufferedImage once = support.Pixels.paint(tile, TILE);
 
-            java.lang.reflect.Method roads = LayoutLabel.class.getDeclaredMethod("coveredRoads");
-
-            roads.setAccessible(true);
+            java.lang.reflect.Method roads = Reflect.method(LayoutLabel.class, "coveredRoads");
 
             @SuppressWarnings("unchecked")
             java.util.List<org.traincontrol.automationui.TilePorts.Route> covering =

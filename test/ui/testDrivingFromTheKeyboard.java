@@ -4,7 +4,6 @@ import java.awt.Component;
 import java.awt.event.InputEvent;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseEvent;
-import java.lang.reflect.Field;
 import java.util.List;
 import java.util.Map;
 import java.util.function.BooleanSupplier;
@@ -36,6 +35,7 @@ import org.traincontrol.util.I18n;
 import support.Answering;
 import support.Components;
 import support.Keys;
+import support.Reflect;
 import support.WireRecorder;
 import support.WireRecorder.Sent;
 
@@ -1058,10 +1058,7 @@ public class testDrivingFromTheKeyboard
         {
             try
             {
-                java.lang.reflect.Method m = TrainControlUI.class.getDeclaredMethod("switchKeyboard", int.class);
-
-                m.setAccessible(true);
-                m.invoke(ui, 32);
+                Reflect.method(TrainControlUI.class, "switchKeyboard", int.class).invoke(ui, 32);
             }
             catch (ReflectiveOperationException e)
             {
@@ -1685,11 +1682,7 @@ public class testDrivingFromTheKeyboard
 
     private static Object field(String name) throws Exception
     {
-        Field f = TrainControlUI.class.getDeclaredField(name);
-
-        f.setAccessible(true);
-
-        return f.get(ui);
+        return Reflect.get(TrainControlUI.class, ui, name);
     }
 
     @SuppressWarnings("unchecked")
@@ -1771,11 +1764,7 @@ public class testDrivingFromTheKeyboard
         {
             BasicSliderUI look = (BasicSliderUI) slider.getUI();
 
-            Field thumbField = BasicSliderUI.class.getDeclaredField("thumbRect");
-
-            thumbField.setAccessible(true);
-
-            java.awt.Rectangle thumb = (java.awt.Rectangle) thumbField.get(look);
+            java.awt.Rectangle thumb = (java.awt.Rectangle) Reflect.get(BasicSliderUI.class, look, "thumbRect");
 
             boolean across = slider.getOrientation() == JSlider.HORIZONTAL;
 
@@ -1783,10 +1772,8 @@ public class testDrivingFromTheKeyboard
             int fromY = thumb.y + thumb.height / 2;
 
             // Protected in BasicSliderUI: where the look and feel itself puts a value
-            java.lang.reflect.Method at = BasicSliderUI.class.getDeclaredMethod(
-                across ? "xPositionForValue" : "yPositionForValue", int.class);
-
-            at.setAccessible(true);
+            java.lang.reflect.Method at =
+                Reflect.method(BasicSliderUI.class, across ? "xPositionForValue" : "yPositionForValue", int.class);
 
             int toX = across ? (Integer) at.invoke(look, toValue) : fromX;
             int toY = across ? fromY : (Integer) at.invoke(look, toValue);

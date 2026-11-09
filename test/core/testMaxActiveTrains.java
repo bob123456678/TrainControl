@@ -10,6 +10,7 @@ import org.traincontrol.automation.Layout;
 import org.traincontrol.base.Locomotive;
 import org.traincontrol.marklin.MarklinControlStation;
 import static org.traincontrol.marklin.MarklinControlStation.init;
+import support.Reflect;
 
 /**
  * The limit on how many trains may be out at once is a limit, not a suggestion.
@@ -244,9 +245,7 @@ public class testMaxActiveTrains
         Locomotive first = model.getLocByName(model.getLocList().get(0));
         Locomotive second = model.getLocByName(model.getLocList().get(1));
 
-        java.lang.reflect.Field field = Layout.class.getDeclaredField("sentByHand");
-
-        field.setAccessible(true);
+        java.lang.reflect.Field field = Reflect.field(Layout.class, "sentByHand");
 
         @SuppressWarnings("unchecked")
         java.util.Set<Locomotive> sentByHand = (java.util.Set<Locomotive>) field.get(layout);

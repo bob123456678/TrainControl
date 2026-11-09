@@ -1,5 +1,6 @@
 package core;
 
+import support.Reflect;
 import support.TestStationAddress;
 
 import com.sun.net.httpserver.HttpExchange;
@@ -598,9 +599,7 @@ public class testMockCentralStation
 
         List<String> made = new LinkedList<>();
 
-        java.lang.reflect.Field running = org.traincontrol.automation.Layout.class.getDeclaredField("running");
-
-        running.setAccessible(true);
+        java.lang.reflect.Field running = Reflect.field(org.traincontrol.automation.Layout.class, "running");
 
         StandingMultiUnit standing = null;
 

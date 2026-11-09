@@ -43,6 +43,7 @@ import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.util.I18n;
 import support.Answering;
 import support.Components;
+import support.Reflect;
 import support.StationDoors;
 
 /**
@@ -1042,16 +1043,10 @@ public class testStationSettingsWindow
 
         Components.settle();
 
-        java.lang.reflect.Field held = AutonomyEditorPanel.class.getDeclaredField("findings");
-
-        held.setAccessible(true);
-
         @SuppressWarnings("unchecked")
-        JList<String> list = (JList<String>) held.get(panel);
+        JList<String> list = (JList<String>) Reflect.get(AutonomyEditorPanel.class, panel, "findings");
 
-        java.lang.reflect.Field tiles = AutonomyEditorPanel.class.getDeclaredField("findingTiles");
-
-        tiles.setAccessible(true);
+        java.lang.reflect.Field tiles = Reflect.field(AutonomyEditorPanel.class, "findingTiles");
 
         int row = Components.onTheEventThread(() -> ((List<?>) tiles.get(panel)).indexOf(square));
 
@@ -2377,9 +2372,7 @@ public class testStationSettingsWindow
     private static String theSameOnBoth(StationSettingsWindow window,
         org.traincontrol.gui.LayoutLabel onTheDiagram, String what) throws Exception
     {
-        java.lang.reflect.Field worn = org.traincontrol.gui.LayoutLabel.class.getDeclaredField("autonomyAnnotation");
-
-        worn.setAccessible(true);
+        java.lang.reflect.Field worn = Reflect.field(org.traincontrol.gui.LayoutLabel.class, "autonomyAnnotation");
 
         return Components.onTheEventThread(() ->
         {
@@ -2651,11 +2644,7 @@ public class testStationSettingsWindow
     /** The cursor the toolkit shows: the component's own field, not what an override of getCursor answers. */
     private static java.awt.Cursor toolkitCursor(java.awt.Component c) throws Exception
     {
-        java.lang.reflect.Field f = java.awt.Component.class.getDeclaredField("cursor");
-
-        f.setAccessible(true);
-
-        return (java.awt.Cursor) f.get(c);
+        return (java.awt.Cursor) Reflect.get(java.awt.Component.class, c, "cursor");
     }
 
     private static final Color BACKGROUND = new Color(250, 0, 250);

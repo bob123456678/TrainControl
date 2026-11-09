@@ -35,6 +35,7 @@ import org.traincontrol.marklin.MarklinRoute;
 import org.traincontrol.util.I18n;
 import support.Answering;
 import support.Components;
+import support.Reflect;
 
 /**
  * FR-109: the layout editor's page icons (FR-174) and Tools menu add, rename, duplicate, combine and delete pages with the
@@ -1357,11 +1358,7 @@ public class testTheLayoutEditorManagesPages
 
     private <T> T field(String name, Class<T> type) throws Exception
     {
-        java.lang.reflect.Field field = TrainControlUI.class.getDeclaredField(name);
-
-        field.setAccessible(true);
-
-        return type.cast(field.get(ui));
+        return type.cast(Reflect.get(TrainControlUI.class, ui, name));
     }
 
     /** Presses the editor's own item for this action. */

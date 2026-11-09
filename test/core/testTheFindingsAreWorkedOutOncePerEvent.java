@@ -22,6 +22,7 @@ import org.traincontrol.automationui.AutonomySession;
 import org.traincontrol.automationui.TileGraph.TileKey;
 import org.traincontrol.base.LayoutDiagram;
 import org.traincontrol.base.LayoutDiagramComponent;
+import support.Reflect;
 
 /**
  * The setup check is worked out once per event, and the configuration build works out its names once.
@@ -61,9 +62,7 @@ public class testTheFindingsAreWorkedOutOncePerEvent
 
     private static java.lang.reflect.Field source(String name) throws NoSuchFieldException
     {
-        java.lang.reflect.Field field = AutonomySession.class.getDeclaredField(name);
-
-        field.setAccessible(true);
+        java.lang.reflect.Field field = Reflect.field(AutonomySession.class, name);
 
         return field;
     }
@@ -144,9 +143,7 @@ public class testTheFindingsAreWorkedOutOncePerEvent
 
         AutonomyBuilder builder = session.builder(new AutonomyBuilder.Globals());
 
-        java.lang.reflect.Field field = AutonomyBuilder.class.getDeclaredField("namesOutOfPlay");
-
-        field.setAccessible(true);
+        java.lang.reflect.Field field = Reflect.field(AutonomyBuilder.class, "namesOutOfPlay");
 
         @SuppressWarnings("unchecked")
         Map<TileKey, String> outOfPlay = (Map<TileKey, String>) field.get(builder);

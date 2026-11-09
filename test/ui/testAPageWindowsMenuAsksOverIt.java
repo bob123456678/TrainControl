@@ -38,6 +38,7 @@ import support.Answering;
 import support.AskingWindows;
 import support.Components;
 import support.Mouse;
+import support.Reflect;
 
 /**
  * The track diagram's right-click menu and paste key, in a page's own window, ask over that window (OB-324): the run
@@ -187,9 +188,7 @@ public class testAPageWindowsMenuAsksOverIt
     /** The railway taken up by a flow of the window's, as Return to Home takes it. */
     private static void takenUp(boolean taken) throws Exception
     {
-        Field flow = TrainControlUI.class.getDeclaredField("stagingFlowActive");
-
-        flow.setAccessible(true);
+        Field flow = Reflect.field(TrainControlUI.class, "stagingFlowActive");
 
         flow.setBoolean(ui, taken);
 
@@ -226,11 +225,7 @@ public class testAPageWindowsMenuAsksOverIt
     {
         try
         {
-            Field found = TrainControlUI.class.getDeclaredField(field);
-
-            found.setAccessible(true);
-
-            return (AbstractButton) found.get(ui);
+            return (AbstractButton) Reflect.get(TrainControlUI.class, ui, field);
         }
         catch (ReflectiveOperationException e)
         {
@@ -240,12 +235,8 @@ public class testAPageWindowsMenuAsksOverIt
 
     private static <T> T fieldOfTheWindow(String name) throws Exception
     {
-        Field found = TrainControlUI.class.getDeclaredField(name);
-
-        found.setAccessible(true);
-
         @SuppressWarnings("unchecked")
-        T value = (T) found.get(ui);
+        T value = (T) Reflect.get(TrainControlUI.class, ui, name);
 
         return value;
     }
@@ -684,9 +675,7 @@ public class testAPageWindowsMenuAsksOverIt
 
         java.util.concurrent.atomic.AtomicInteger refreshes = fieldOfTheWindow("refreshesUnderWay");
 
-        Field onItsWay = TrainControlUI.class.getDeclaredField("editorOnItsWay");
-
-        onItsWay.setAccessible(true);
+        Field onItsWay = Reflect.field(TrainControlUI.class, "editorOnItsWay");
 
         for (Window window : bothWindows())
         {

@@ -16,6 +16,7 @@ import org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel;
 import org.traincontrol.gui.layouteditor.LayoutEditor;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;
+import support.Reflect;
 
 /**
  * The autonomy editor's Test a Path button sits right under the window's heading, with only the form's own gap between,
@@ -697,11 +698,7 @@ public class testTheToolsSitUnderTheHeading
     {
         try
         {
-            java.lang.reflect.Field f = in.getDeclaredField(name);
-
-            f.setAccessible(true);
-
-            T value = (T) f.get(of);
+            T value = (T) Reflect.get(in, of, name);
 
             assertNotNull(value, "precondition: " + in.getSimpleName() + "." + name + " is null");
 

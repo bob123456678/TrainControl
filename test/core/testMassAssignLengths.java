@@ -21,6 +21,7 @@ import org.traincontrol.base.LayoutDiagram;
 import org.traincontrol.base.LayoutDiagramComponent.componentType;
 import org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel;
 import org.traincontrol.gui.autonomyeditor.StationSettingsWindow;
+import support.Reflect;
 import support.SourceOf;
 
 /**
@@ -392,9 +393,7 @@ public class testMassAssignLengths
 
         session.setTileLength(key(4, 1), 3);
 
-        java.lang.reflect.Method setupChanged = AutonomyEditorPanel.class.getDeclaredMethod("setupChanged");
-        setupChanged.setAccessible(true);
-        setupChanged.invoke(panel);
+        Reflect.method(AutonomyEditorPanel.class, "setupChanged").invoke(panel);
 
         assertFalse(marked(panel, key(4, 1)), "the square was measured through Control+E's path and is still amber");
         assertFalse(marked(panel, key(5, 1)), "the rest of a piece that now has a length is still amber");
@@ -1167,9 +1166,7 @@ public class testMassAssignLengths
                 assertTrue(oneWay.isSelected() && String.valueOf(hintOf(main)).contains(first), "precondition: One-Way Run"
                     + " did not arm on " + MAIN + ", or does not ask for the first square: " + hintOf(main));
 
-                java.lang.reflect.Field boxField = AutonomyEditorPanel.class.getDeclaredField("excludePage");
-
-                boxField.setAccessible(true);
+                java.lang.reflect.Field boxField = Reflect.field(AutonomyEditorPanel.class, "excludePage");
 
                 final javax.swing.AbstractButton box = (javax.swing.AbstractButton) boxField.get(main);
 
@@ -1213,11 +1210,7 @@ public class testMassAssignLengths
 
     private static javax.swing.AbstractButton oneWayButtonOf(AutonomyEditorPanel panel) throws Exception
     {
-        java.lang.reflect.Field field = AutonomyEditorPanel.class.getDeclaredField("oneWayButton");
-
-        field.setAccessible(true);
-
-        return (javax.swing.AbstractButton) field.get(panel);
+        return (javax.swing.AbstractButton) Reflect.get(AutonomyEditorPanel.class, panel, "oneWayButton");
     }
 
     private static String stripped(String html)
@@ -1370,11 +1363,7 @@ public class testMassAssignLengths
 
     private static String hintOf(AutonomyEditorPanel panel) throws Exception
     {
-        java.lang.reflect.Field hintField = AutonomyEditorPanel.class.getDeclaredField("hint");
-
-        hintField.setAccessible(true);
-
-        String text = ((javax.swing.JLabel) hintField.get(panel)).getText();
+        String text = ((javax.swing.JLabel) Reflect.get(AutonomyEditorPanel.class, panel, "hint")).getText();
 
         return text == null ? null : text.replaceAll("<[^>]*>", "").replace("&lt;", "<").replace("&gt;", ">")
             .replace("&amp;", "&").trim();
@@ -1383,9 +1372,7 @@ public class testMassAssignLengths
     @SuppressWarnings("unchecked")
     private static Set<TileKey> selectionOf(AutonomyEditorPanel panel) throws Exception
     {
-        java.lang.reflect.Field field = AutonomyEditorPanel.class.getDeclaredField("selection");
-
-        field.setAccessible(true);
+        java.lang.reflect.Field field = Reflect.field(AutonomyEditorPanel.class, "selection");
 
         final Set<TileKey> out = new java.util.LinkedHashSet<>();
 
@@ -1406,11 +1393,7 @@ public class testMassAssignLengths
 
     private static String nameForPrompt(AutonomyEditorPanel panel, TileKey tile) throws Exception
     {
-        java.lang.reflect.Method name = AutonomyEditorPanel.class.getDeclaredMethod("nameForPrompt", TileKey.class);
-
-        name.setAccessible(true);
-
-        return (String) name.invoke(panel, tile);
+        return (String) Reflect.method(AutonomyEditorPanel.class, "nameForPrompt", TileKey.class).invoke(panel, tile);
     }
 
     private static Object initialValueOf(final javax.swing.JDialog dialog) throws Exception
@@ -1842,9 +1825,7 @@ public class testMassAssignLengths
     {
         openTwoSwitchesBackToBack();
 
-        java.lang.reflect.Method asked = AutonomySession.class.getDeclaredMethod("piecesToMeasure");
-
-        asked.setAccessible(true);
+        java.lang.reflect.Method asked = Reflect.method(AutonomySession.class, "piecesToMeasure");
 
         java.util.Map<TileKey, String> keys = (java.util.Map<TileKey, String>) asked.invoke(session);
 
@@ -1869,11 +1850,7 @@ public class testMassAssignLengths
 
     private org.json.JSONObject inspected() throws Exception
     {
-        java.lang.reflect.Method built = AutonomySession.class.getDeclaredMethod("builtForInspection");
-
-        built.setAccessible(true);
-
-        return (org.json.JSONObject) built.invoke(session);
+        return (org.json.JSONObject) Reflect.method(AutonomySession.class, "builtForInspection").invoke(session);
     }
 
     private static org.json.JSONArray placesEndingAt(org.json.JSONObject built, String end)
@@ -2083,8 +2060,7 @@ public class testMassAssignLengths
     /** Starts the named mass-assign walk of the panel on the event thread without waiting for it, as its menu item does. */
     private static void startTheWalk(final AutonomyEditorPanel panel, String name) throws Exception
     {
-        final java.lang.reflect.Method walk = AutonomyEditorPanel.class.getDeclaredMethod(name);
-        walk.setAccessible(true);
+        final java.lang.reflect.Method walk = Reflect.method(AutonomyEditorPanel.class, name);
 
         javax.swing.SwingUtilities.invokeLater(() ->
         {
@@ -2453,9 +2429,7 @@ public class testMassAssignLengths
 
         final AutonomyEditorPanel panel = new AutonomyEditorPanel(session, "main", () -> { });
 
-        java.lang.reflect.Field field = AutonomyEditorPanel.class.getDeclaredField("oneWayButton");
-
-        field.setAccessible(true);
+        java.lang.reflect.Field field = Reflect.field(AutonomyEditorPanel.class, "oneWayButton");
 
         final javax.swing.AbstractButton oneWay = (javax.swing.AbstractButton) field.get(panel);
 
@@ -2474,19 +2448,13 @@ public class testMassAssignLengths
         assertFalse(oneWay.isSelected(), "One-Way Run was left armed on a page left out of autonomy - a click there waits"
             + " for its second square (OB-235)");
 
-        java.lang.reflect.Field toolField = AutonomyEditorPanel.class.getDeclaredField("tool");
-
-        toolField.setAccessible(true);
+        java.lang.reflect.Field toolField = Reflect.field(AutonomyEditorPanel.class, "tool");
 
         assertEquals(String.valueOf(toolField.get(panel)), "NONE", "the One-Way Run button was put down on a page left"
             + " out, and the tool it arms was not - tick the page back in and the next click starts a one-way run with"
             + " nothing pressed (TDD2-C7)");
 
-        java.lang.reflect.Field hintField = AutonomyEditorPanel.class.getDeclaredField("hint");
-
-        hintField.setAccessible(true);
-
-        String hint = ((javax.swing.JLabel) hintField.get(panel)).getText();
+        String hint = ((javax.swing.JLabel) Reflect.get(AutonomyEditorPanel.class, panel, "hint")).getText();
 
         assertFalse(hint != null && hint.contains(org.traincontrol.util.I18n.t("autosetup.ui.promptOneWayFrom")),
             "One-Way Run was put down on a page left out and its prompt still asks for the first square (TDD2-C7): "
@@ -3243,10 +3211,8 @@ public class testMassAssignLengths
     @SuppressWarnings("unchecked")
     private java.util.Map<TileKey, int[]> runInsSaid() throws Exception
     {
-        java.lang.reflect.Method runIns = org.traincontrol.automationui.AutonomySession.class.getDeclaredMethod(
-            "runInsShorterThanTheBerth");
-
-        runIns.setAccessible(true);
+        java.lang.reflect.Method runIns =
+            Reflect.method(org.traincontrol.automationui.AutonomySession.class, "runInsShorterThanTheBerth");
 
         return (java.util.Map<TileKey, int[]>) runIns.invoke(session);
     }

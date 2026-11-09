@@ -21,6 +21,7 @@ import org.traincontrol.gui.LayoutLabel;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;
 import static org.traincontrol.marklin.MarklinControlStation.init;
+import support.Reflect;
 
 /**
  * Revealing a square ends the flash on the square revealed before it (MT-454).  Asked of the real editor window on a
@@ -210,10 +211,6 @@ public class testAWalkMovesTheFlashOn
 
     private static LayoutGrid gridOf(LayoutEditor editor) throws Exception
     {
-        java.lang.reflect.Field field = LayoutEditor.class.getDeclaredField("grid");
-
-        field.setAccessible(true);
-
-        return (LayoutGrid) field.get(editor);
+        return (LayoutGrid) Reflect.get(LayoutEditor.class, editor, "grid");
     }
 }

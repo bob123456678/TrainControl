@@ -15,6 +15,7 @@ import org.traincontrol.base.LayoutDiagram;
 import org.traincontrol.base.LayoutDiagramComponent.componentType;
 import org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel;
 import org.traincontrol.util.I18n;
+import support.Reflect;
 
 /**
  * Control+N offers a station name exactly where the right-click menu does (FR-086): the key asks what the menu asks,
@@ -129,9 +130,7 @@ public class testControlNAsksTheMenusQuestion
 
             // Armed through the panel's own field, not its button: on an ignored page the refresh disables Test a Path,
             // so a second doClick would do nothing.
-            final java.lang.reflect.Field tool = AutonomyEditorPanel.class.getDeclaredField("tool");
-
-            tool.setAccessible(true);
+            final java.lang.reflect.Field tool = Reflect.field(AutonomyEditorPanel.class, "tool");
 
             @SuppressWarnings({ "unchecked", "rawtypes" })
             final Object testTool = Enum.valueOf((Class) tool.getType(), "TEST");
@@ -419,11 +418,7 @@ public class testControlNAsksTheMenusQuestion
 
     private static Object field(Object on, String name) throws Exception
     {
-        java.lang.reflect.Field f = on.getClass().getDeclaredField(name);
-
-        f.setAccessible(true);
-
-        return f.get(on);
+        return Reflect.get(on.getClass(), on, name);
     }
 
     /**

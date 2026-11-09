@@ -17,6 +17,7 @@ import org.traincontrol.automationui.TileGraph.TileKey;
 import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.marklin.MarklinLocomotive;
 import org.traincontrol.util.I18n;
+import support.Reflect;
 
 /**
  * A square answered 0 on purpose is not called unmeasured when a berth is refused.
@@ -224,9 +225,8 @@ public class testAnAnsweredZeroIsNotMissing
 
         panel.refresh();
 
-        java.lang.reflect.Field field = org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel.class.getDeclaredField("findingsModel");
-
-        field.setAccessible(true);
+        java.lang.reflect.Field field =
+            Reflect.field(org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel.class, "findingsModel");
 
         javax.swing.ListModel<?> model = (javax.swing.ListModel<?>) field.get(panel);
 

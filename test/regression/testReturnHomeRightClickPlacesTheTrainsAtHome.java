@@ -34,6 +34,7 @@ import static regression.testTheImportDoorReadsAnOldFile.closeTheEditor;
 import static regression.testTheImportDoorReadsAnOldFile.logged;
 import static regression.testTheImportDoorReadsAnOldFile.openTheEditorFor;
 import static regression.testTheImportDoorReadsAnOldFile.openTheWindow;
+import support.Reflect;
 
 /**
  * Right-clicking Return Home offers to put the trains at their homes without moving them (FR-129), after a
@@ -56,11 +57,7 @@ public class testReturnHomeRightClickPlacesTheTrainsAtHome
 
     private static javax.swing.JButton returnHomeButton(TrainControlUI ui) throws Exception
     {
-        java.lang.reflect.Field field = TrainControlUI.class.getDeclaredField("returnHomeButton");
-
-        field.setAccessible(true);
-
-        return (javax.swing.JButton) field.get(ui);
+        return (javax.swing.JButton) Reflect.get(TrainControlUI.class, ui, "returnHomeButton");
     }
 
     /** The menu a right-click on the button opens, which holds Run Trains to Their Homes and, below it, Place All. */
@@ -379,9 +376,7 @@ public class testReturnHomeRightClickPlacesTheTrainsAtHome
     /** The reflected flag that says the railway's autonomy is running, opened for writing. */
     private static java.lang.reflect.Field runningFlag() throws Exception
     {
-        java.lang.reflect.Field flag = Layout.class.getDeclaredField("running");
-
-        flag.setAccessible(true);
+        java.lang.reflect.Field flag = Reflect.field(Layout.class, "running");
 
         return flag;
     }
@@ -718,9 +713,7 @@ public class testReturnHomeRightClickPlacesTheTrainsAtHome
     /** Waits until the window's Return Home triage has answered every ask, then lets the event thread paint it. */
     private static void awaitTheButton(TrainControlUI ui) throws Exception
     {
-        java.lang.reflect.Method triage = TrainControlUI.class.getDeclaredMethod("awaitReturnHomeTriage", long.class);
-
-        triage.setAccessible(true);
+        java.lang.reflect.Method triage = Reflect.method(TrainControlUI.class, "awaitReturnHomeTriage", long.class);
 
         assertTrue((Boolean) triage.invoke(ui, 30000L), "precondition: the Return Home triage did not settle");
 

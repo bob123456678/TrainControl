@@ -26,6 +26,7 @@ import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.util.I18n;
 import support.Answering;
 import support.Components;
+import support.Reflect;
 import support.Settle;
 
 /**
@@ -317,11 +318,7 @@ public class testStartingAutonomyFromTheWindow
     {
         try
         {
-            java.lang.reflect.Field field = TrainControlUI.class.getDeclaredField(name);
-
-            field.setAccessible(true);
-
-            return (JButton) field.get(ui);
+            return (JButton) Reflect.get(TrainControlUI.class, ui, name);
         }
         catch (ReflectiveOperationException e)
         {
@@ -345,10 +342,8 @@ public class testStartingAutonomyFromTheWindow
     {
         final Class<?> menuClass = Class.forName("org.traincontrol.gui.LayoutRightclickAutonomyMenu");
 
-        final java.lang.reflect.Method gather = menuClass.getDeclaredMethod("gatherPathOptions", TrainControlUI.class,
-            Point.class);
-
-        gather.setAccessible(true);
+        final java.lang.reflect.Method gather =
+            Reflect.method(menuClass, "gatherPathOptions", TrainControlUI.class, Point.class);
 
         final java.lang.reflect.Constructor<?> make = menuClass.getDeclaredConstructor(TrainControlUI.class,
             TileKey.class, TileKey.class, Class.forName("org.traincontrol.gui.LayoutRightclickAutonomyMenu$PathOptions"));

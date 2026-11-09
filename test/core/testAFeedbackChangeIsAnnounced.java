@@ -17,6 +17,7 @@ import org.traincontrol.marklin.MarklinFeedback;
 import org.traincontrol.marklin.udp.CS2Message;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 import org.traincontrol.model.View;
+import support.Reflect;
 
 /**
  * A sensor that changes state says so, however it changed.  A module changes state two ways and only one announced it:
@@ -78,13 +79,9 @@ public class testAFeedbackChangeIsAnnounced
 
         // OVER THE MODEL'S OWN VIEW, which is final and private; reflection keeps this inside the test, where a
         // test-only door would be one the application also has.
-        Field view = MarklinControlStation.class.getDeclaredField("view");
+        Field view = Reflect.field(MarklinControlStation.class, "view");
 
-        view.setAccessible(true);
-
-        Field modifiers = Field.class.getDeclaredField("modifiers");
-
-        modifiers.setAccessible(true);
+        Field modifiers = Reflect.field(Field.class, "modifiers");
 
         modifiers.setInt(view, view.getModifiers() & ~Modifier.FINAL);
 

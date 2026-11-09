@@ -20,6 +20,7 @@ import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.util.I18n;
 import static org.traincontrol.marklin.MarklinControlStation.init;
+import support.Reflect;
 
 /**
  * The Is Active tick on the track diagram's right-click menu and on the autonomy editor's pauses the train standing
@@ -301,11 +302,7 @@ public class testTheActiveTickPausesATrain
 
             final AutonomyEditorPanel panel = editorsPanel(editor);
 
-            java.lang.reflect.Field setupField = AutonomyEditorPanel.class.getDeclaredField("session");
-
-            setupField.setAccessible(true);
-
-            final AutonomySession edited = (AutonomySession) setupField.get(panel);
+            final AutonomySession edited = (AutonomySession) Reflect.get(AutonomyEditorPanel.class, panel, "session");
 
             assertEquals(edited.getLocomotiveNameAt(mainB), HIS_TRAIN, "precondition: the editor's setup does not have "
                 + HIS_TRAIN + " on BottomMainB");
@@ -342,9 +339,7 @@ public class testTheActiveTickPausesATrain
     {
         final Class<?> menuClass = Class.forName("org.traincontrol.gui.LayoutRightclickAutonomyMenu");
 
-        final Method gather = menuClass.getDeclaredMethod("gatherPathOptions", TrainControlUI.class, Point.class);
-
-        gather.setAccessible(true);
+        final Method gather = Reflect.method(menuClass, "gatherPathOptions", TrainControlUI.class, Point.class);
 
         final java.lang.reflect.Constructor<?> make = menuClass.getDeclaredConstructor(TrainControlUI.class,
             TileKey.class, TileKey.class, Class.forName("org.traincontrol.gui.LayoutRightclickAutonomyMenu$PathOptions"));
@@ -855,11 +850,7 @@ public class testTheActiveTickPausesATrain
     /** The autonomy panel of an editor window. */
     private static AutonomyEditorPanel editorsPanel(java.awt.Window editor) throws Exception
     {
-        java.lang.reflect.Field panelField = editor.getClass().getDeclaredField("autonomyPanel");
-
-        panelField.setAccessible(true);
-
-        AutonomyEditorPanel panel = (AutonomyEditorPanel) panelField.get(editor);
+        AutonomyEditorPanel panel = (AutonomyEditorPanel) Reflect.get(editor.getClass(), editor, "autonomyPanel");
 
         assertNotNull(panel, "precondition: the editor opened without its autonomy panel");
 
@@ -971,9 +962,7 @@ public class testTheActiveTickPausesATrain
     /** The window's record of how the railway was built, for the railway given. */
     private static org.json.JSONObject recordOf(Layout railway) throws Exception
     {
-        Method record = TrainControlUI.class.getDeclaredMethod("settingsAsBuiltFor", Object.class);
-
-        record.setAccessible(true);
+        Method record = Reflect.method(TrainControlUI.class, "settingsAsBuiltFor", Object.class);
 
         return (org.json.JSONObject) record.invoke(ui, railway);
     }
@@ -1036,10 +1025,8 @@ public class testTheActiveTickPausesATrain
             // THE IMPORT, which folds the railway into the setup first and fails after it
             final org.traincontrol.gui.AutonomyViewerPanel viewer = ui.getAutonomyViewerPanel();
 
-            final Method importIt = org.traincontrol.gui.AutonomyViewerPanel.class.getDeclaredMethod("importLegacyGraph",
-                org.json.JSONObject.class, String.class);
-
-            importIt.setAccessible(true);
+            final Method importIt = Reflect.method(org.traincontrol.gui.AutonomyViewerPanel.class,
+                "importLegacyGraph", org.json.JSONObject.class, String.class);
 
             final org.json.JSONObject file = new org.json.JSONObject("{\"points\": [], \"edges\": {}}");
 
@@ -3004,9 +2991,7 @@ public class testTheActiveTickPausesATrain
 
             assertNotNull(activate, "precondition: Bulk Tools offers no Activate All Trains at rest: " + diagramMenuTexts(mainB));
 
-            java.lang.reflect.Field running = TrainControlUI.class.getDeclaredField("stagingFlowActive");
-
-            running.setAccessible(true);
+            java.lang.reflect.Field running = Reflect.field(TrainControlUI.class, "stagingFlowActive");
 
             running.set(ui, true);
 
@@ -3145,23 +3130,15 @@ public class testTheActiveTickPausesATrain
     @SuppressWarnings("unchecked")
     private static java.util.Set<TileKey> pausedOnNoPointOnTheDiagram() throws Exception
     {
-        java.lang.reflect.Field driverField = TrainControlUI.class.getDeclaredField("diagramMonitorDriver");
-
-        driverField.setAccessible(true);
-
         java.lang.reflect.Field monitorField = org.traincontrol.gui.autonomy.DiagramMonitorDriver.class.getDeclaredField("monitor");
 
         monitorField.setAccessible(true);
 
-        Object monitor = monitorField.get(driverField.get(ui));
+        Object monitor = monitorField.get(Reflect.get(TrainControlUI.class, ui, "diagramMonitorDriver"));
 
         assertNotNull(monitor, "precondition: the diagram has no monitor");
 
-        java.lang.reflect.Field paused = monitor.getClass().getDeclaredField("pausedOnNoPoint");
-
-        paused.setAccessible(true);
-
-        return (java.util.Set<TileKey>) paused.get(monitor);
+        return (java.util.Set<TileKey>) Reflect.get(monitor.getClass(), monitor, "pausedOnNoPoint");
     }
 
     /**
@@ -3252,15 +3229,11 @@ public class testTheActiveTickPausesATrain
     /** What the track diagram's borrowed autonomy menu last said in its message line. */
     private static String hintText() throws Exception
     {
-        java.lang.reflect.Field menus = TrainControlUI.class.getDeclaredField("autonomyTileMenus");
-
-        menus.setAccessible(true);
-
         java.lang.reflect.Field hint = AutonomyEditorPanel.class.getDeclaredField("hint");
 
         hint.setAccessible(true);
 
-        return ((javax.swing.JLabel) hint.get(menus.get(ui))).getText();
+        return ((javax.swing.JLabel) hint.get(Reflect.get(TrainControlUI.class, ui, "autonomyTileMenus"))).getText();
     }
 
     /** The pages the model has, as a setup opens them. */

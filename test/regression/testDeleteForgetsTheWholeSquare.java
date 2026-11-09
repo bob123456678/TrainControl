@@ -17,6 +17,7 @@ import org.traincontrol.gui.layouteditor.LayoutEditor;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;
 import static org.traincontrol.marklin.MarklinControlStation.init;
+import support.Reflect;
 
 /**
  * Deleting a square from the diagram forgets everything the setup wrote about it, the captions too: a repair that
@@ -113,9 +114,7 @@ public class testDeleteForgetsTheWholeSquare
         // The grid is private and the delete door takes a LABEL, as every gesture in the window does.  The square is
         // chosen from the grid rather than named: the blank labels that hold the layout together are shared, so a
         // square is only usable here if the editor's two directions agree about it.
-        java.lang.reflect.Field gridField = LayoutEditor.class.getDeclaredField("grid");
-
-        gridField.setAccessible(true);
+        java.lang.reflect.Field gridField = Reflect.field(LayoutEditor.class, "grid");
 
         final org.traincontrol.gui.LayoutLabel[] found = new org.traincontrol.gui.LayoutLabel[1];
         final TileKey[] chosen = new TileKey[1];

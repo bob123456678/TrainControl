@@ -29,6 +29,7 @@ import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.util.I18n;
 import static org.traincontrol.marklin.MarklinControlStation.init;
+import support.Reflect;
 
 /**
  * The track diagram's right-click Place, and Control+X then Control+V, keep a train's heading, on the frozen copy of
@@ -323,9 +324,7 @@ public class testThePlaceDoorsKeepTheHeading
 
             for (int turn = 0; turn < 6; turn++) pump();
 
-            java.lang.reflect.Field panelField = editor.getClass().getDeclaredField("autonomyPanel");
-
-            panelField.setAccessible(true);
+            java.lang.reflect.Field panelField = Reflect.field(editor.getClass(), "autonomyPanel");
 
             final AutonomyEditorPanel panel = (AutonomyEditorPanel) panelField.get(editor);
 
@@ -356,9 +355,7 @@ public class testThePlaceDoorsKeepTheHeading
             // THE QUESTION: the list, in front of the editor, hung off the train window.
             javax.swing.JDialog question = awaitDialogStarting(I18n.t("autolayout.ui.askArrivalSideTitle"));
 
-            java.lang.reflect.Field armed = TailCrossedPrompt.class.getDeclaredField("armed");
-
-            armed.setAccessible(true);
+            java.lang.reflect.Field armed = Reflect.field(TailCrossedPrompt.class, "armed");
 
             assertNull(armed.get(null), "with the editor open the tail question was put on the main window's diagram,"
                 + " which the editor covers (MT-575)");
@@ -745,9 +742,7 @@ public class testThePlaceDoorsKeepTheHeading
         panel.setRunningLayoutSource(() -> model.getAutoLayout());
         panel.setLayoutSource(() -> model.getAutoLayout());
 
-        java.lang.reflect.Field field = AutonomyEditorPanel.class.getDeclaredField("whyButton");
-
-        field.setAccessible(true);
+        java.lang.reflect.Field field = Reflect.field(AutonomyEditorPanel.class, "whyButton");
 
         final javax.swing.AbstractButton why = (javax.swing.AbstractButton) field.get(panel);
 
@@ -775,10 +770,8 @@ public class testThePlaceDoorsKeepTheHeading
     /** Presses a key over a square, through the diagram's own gesture door. */
     private static Object gesture(TileKey over, int key) throws Exception
     {
-        final Method door = TrainControlUI.class.getDeclaredMethod("locomotiveGestureOnDiagram", int.class,
-            boolean.class);
-
-        door.setAccessible(true);
+        final Method door =
+            Reflect.method(TrainControlUI.class, "locomotiveGestureOnDiagram", int.class, boolean.class);
 
         final Object[] handled = new Object[1];
 
@@ -894,9 +887,7 @@ public class testThePlaceDoorsKeepTheHeading
 
     private static String hintOf(AutonomyEditorPanel panel) throws Exception
     {
-        java.lang.reflect.Field field = AutonomyEditorPanel.class.getDeclaredField("hint");
-
-        field.setAccessible(true);
+        java.lang.reflect.Field field = Reflect.field(AutonomyEditorPanel.class, "hint");
 
         final String[] text = new String[1];
 

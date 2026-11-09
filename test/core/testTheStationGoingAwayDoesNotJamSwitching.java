@@ -8,6 +8,7 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 import org.traincontrol.marklin.MarklinControlStation;
 import static org.traincontrol.marklin.MarklinControlStation.init;
+import support.Reflect;
 
 /**
  * A Central Station that has gone away does not stop every tile in the application for ever (MT-035).  Two halves,
@@ -152,10 +153,7 @@ public class testTheStationGoingAwayDoesNotJamSwitching
      */
     private static void powerOff() throws Exception
     {
-        java.lang.reflect.Field field =
-            MarklinControlStation.class.getDeclaredField("powerState");
-
-        field.setAccessible(true);
+        java.lang.reflect.Field field = Reflect.field(MarklinControlStation.class, "powerState");
         field.setBoolean(model, false);
 
         assertFalse(model.getPowerState(), "the power flag did not go down");

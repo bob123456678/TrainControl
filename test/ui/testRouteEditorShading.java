@@ -9,6 +9,7 @@ import org.testng.annotations.Test;
 import org.traincontrol.base.NodeRouteCommand;
 import org.traincontrol.base.RouteCommand;
 import org.traincontrol.marklin.MarklinRoute;
+import support.Reflect;
 
 /**
  * OB-121: the lines of the conditions list that are not conditions, the group captions, are white, not gray.  A table
@@ -170,25 +171,16 @@ public class testRouteEditorShading
             {
                 // THE ROUTE'S COMMANDS HAVE TO REACH THE TABLE, or the loop under test sees nothing and this passes
                 // vacuously.
-                java.lang.reflect.Field rows = org.traincontrol.gui.RouteEditorFrame.class
-                    .getDeclaredField("commands");
+                Object table = Reflect.get(org.traincontrol.gui.RouteEditorFrame.class, frame[0], "commands");
 
-                rows.setAccessible(true);
-
-                Object table = rows.get(frame[0]);
-
-                java.lang.reflect.Field list = table.getClass().getDeclaredField("rows");
-
-                list.setAccessible(true);
+                java.lang.reflect.Field list = Reflect.field(table.getClass(), "rows");
 
                 assertTrue(((java.util.List<?>) list.get(table)).size() >= 2,
                     "precondition: the editor did not load the route's two commands, so the loop under "
                     + "test has nothing to walk.  Rows: " + list.get(table));
 
-                java.lang.reflect.Method highlight = org.traincontrol.gui.RouteEditorFrame.class
-                    .getDeclaredMethod("highlightOnDiagram");
-
-                highlight.setAccessible(true);
+                java.lang.reflect.Method highlight =
+                    Reflect.method(org.traincontrol.gui.RouteEditorFrame.class, "highlightOnDiagram");
 
                 final Throwable[] thrown = new Throwable[1];
 

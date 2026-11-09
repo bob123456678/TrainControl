@@ -20,6 +20,7 @@ import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.marklin.MarklinRoute;
 import org.traincontrol.util.I18n;
 import org.traincontrol.util.Util;
+import support.Reflect;
 import support.SourceOf;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 
@@ -394,9 +395,7 @@ public class testAStopRouteStandsAlone
     public void testARoutesStopIsSentWhenThePowerAlreadyReadsOff() throws Exception
     {
         // THE MODEL BELIEVES THE POWER IS OFF - the last echo it heard was a STOP - whatever the track is doing
-        java.lang.reflect.Field power = MarklinControlStation.class.getDeclaredField("powerState");
-
-        power.setAccessible(true);
+        java.lang.reflect.Field power = Reflect.field(MarklinControlStation.class, "powerState");
 
         final boolean powerWas = power.getBoolean(model);
 

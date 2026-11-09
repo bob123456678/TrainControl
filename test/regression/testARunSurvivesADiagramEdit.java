@@ -17,6 +17,7 @@ import org.traincontrol.marklin.MarklinAccessory;
 import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.marklin.file.CS2File;
 import static org.traincontrol.marklin.MarklinControlStation.init;
+import support.Reflect;
 import support.SourceOf;
 
 /**
@@ -275,8 +276,7 @@ public class testARunSurvivesADiagramEdit
             set(ui[0], "activeDiagramConfiguration", active);
 
             java.lang.reflect.Method capture =
-                org.traincontrol.gui.TrainControlUI.class.getDeclaredMethod("captureRunningLayout");
-            capture.setAccessible(true);
+                Reflect.method(org.traincontrol.gui.TrainControlUI.class, "captureRunningLayout");
 
             // The run: a train ends up somewhere it did not start.
             org.traincontrol.automation.Point from = occupiedPoint(layout);
@@ -387,10 +387,7 @@ public class testARunSurvivesADiagramEdit
     /** Sets a private field on the window, which is how the running application wires these two. */
     private static void set(Object on, String field, Object value) throws Exception
     {
-        java.lang.reflect.Field f = on.getClass().getDeclaredField(field);
-
-        f.setAccessible(true);
-        f.set(on, value);
+        Reflect.set(on.getClass(), on, field, value);
     }
 
     /**
@@ -402,10 +399,7 @@ public class testARunSurvivesADiagramEdit
     private static void setRunning(org.traincontrol.automation.Layout layout, boolean running)
         throws Exception
     {
-        java.lang.reflect.Field f =
-            org.traincontrol.automation.Layout.class.getDeclaredField("running");
-
-        f.setAccessible(true);
+        java.lang.reflect.Field f = Reflect.field(org.traincontrol.automation.Layout.class, "running");
         f.setBoolean(layout, running);
     }
 

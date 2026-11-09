@@ -35,6 +35,7 @@ import org.traincontrol.util.I18n;
 import support.Answering;
 import support.Components;
 import support.Mouse;
+import support.Reflect;
 import support.SettingsWindow;
 
 /**
@@ -696,11 +697,7 @@ public class testTheLocomotiveSettingsWindow
 
         asks.setAccessible(true);
 
-        java.lang.reflect.Field editors = TrainControlUI.class.getDeclaredField("editorWindows");
-
-        editors.setAccessible(true);
-
-        Object windows = editors.get(ui);
+        Object windows = Reflect.get(TrainControlUI.class, ui, "editorWindows");
 
         assertTrue((Boolean) Components.onTheEventThread(() -> invoke(asks, windows)), "the exit asked about a window with nothing typed");
 
@@ -857,11 +854,7 @@ public class testTheLocomotiveSettingsWindow
     @Test
     public void testTheNameAndAddressWriteAsksAboutAutonomy() throws Exception
     {
-        java.lang.reflect.Field field = TrainControlUI.class.getDeclaredField("locomotiveActions");
-
-        field.setAccessible(true);
-
-        Object actions = field.get(ui);
+        Object actions = Reflect.get(TrainControlUI.class, ui, "locomotiveActions");
 
         java.lang.reflect.Method write = actions.getClass().getDeclaredMethod("writeNameAndAddress", Component.class,
             Locomotive.class, String.class, String.class, Locomotive.decoderType.class);
@@ -1035,11 +1028,7 @@ public class testTheLocomotiveSettingsWindow
 
     private static Object field(String name) throws Exception
     {
-        java.lang.reflect.Field f = TrainControlUI.class.getDeclaredField(name);
-
-        f.setAccessible(true);
-
-        return f.get(ui);
+        return Reflect.get(TrainControlUI.class, ui, name);
     }
 
     /** Opens the window on a tab of the first train. */

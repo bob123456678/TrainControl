@@ -1,7 +1,6 @@
 package regression;
 
 import java.io.File;
-import java.lang.reflect.Field;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -24,6 +23,7 @@ import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.util.I18n;
 import org.traincontrol.util.Util;
 import static org.traincontrol.marklin.MarklinControlStation.init;
+import support.Reflect;
 import support.SourceOf;
 
 /**
@@ -95,10 +95,7 @@ public class testTheOldAutonomyTabIsGone
                     bar.remove(built);
                     bar.add(placeholder, at);
 
-                    Field menu = TrainControlUI.class.getDeclaredField("autonomyMenu");
-
-                    menu.setAccessible(true);
-                    menu.set(ui, null);
+                    Reflect.set(TrainControlUI.class, ui, "autonomyMenu", null);
                 }
 
                 // What the switch does to the autonomy controls, and what the end of start-up asks of the slot.
@@ -116,11 +113,7 @@ public class testTheOldAutonomyTabIsGone
 
     private static Object field(String name) throws ReflectiveOperationException
     {
-        Field field = TrainControlUI.class.getDeclaredField(name);
-
-        field.setAccessible(true);
-
-        return field.get(ui);
+        return Reflect.get(TrainControlUI.class, ui, name);
     }
 
     private static void settle() throws Exception
@@ -359,10 +352,8 @@ public class testTheOldAutonomyTabIsGone
 
         final File last = sandbox.getFolder().getAbsoluteFile();
 
-        final java.lang.reflect.Method door = TrainControlUI.class.getDeclaredMethod(
+        final java.lang.reflect.Method door = Reflect.method(TrainControlUI.class,
             "chooseLocalDataFolderMenuItemActionPerformed", java.awt.event.ActionEvent.class);
-
-        door.setAccessible(true);
 
         SwingUtilities.invokeLater(() ->
         {
@@ -416,9 +407,7 @@ public class testTheOldAutonomyTabIsGone
         assertEquals(writers, 1, "a door writes the layout"
             + " folder without going through `layoutFolderIs`, so the folder it names is not remembered (OB-308)");
 
-        final java.lang.reflect.Method folderIs = TrainControlUI.class.getDeclaredMethod("layoutFolderIs", String.class);
-
-        folderIs.setAccessible(true);
+        final java.lang.reflect.Method folderIs = Reflect.method(TrainControlUI.class, "layoutFolderIs", String.class);
 
         File other = Files.createTempDirectory("ob308").toFile();
 
@@ -587,11 +576,7 @@ public class testTheOldAutonomyTabIsGone
         // What the old window held on every start, where it still exists: autonomy.json, read in whether used or not.
         try
         {
-            Field field = TrainControlUI.class.getDeclaredField("autonomyJSON");
-
-            field.setAccessible(true);
-
-            final JTextArea text = (JTextArea) field.get(ui);
+            final JTextArea text = (JTextArea) Reflect.get(TrainControlUI.class, ui, "autonomyJSON");
 
             SwingUtilities.invokeAndWait(() -> text.setText("{\"points\": [], \"edges\": []}"));
         }

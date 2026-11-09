@@ -18,6 +18,7 @@ import org.traincontrol.util.I18n;
 import static regression.testNoSetupEditDuringARun.control;
 import static regression.testTheImportDoorReadsAnOldFile.answeringYes;
 import static regression.testTheImportDoorReadsAnOldFile.openTheWindow;
+import support.Reflect;
 
 /**
  * The Auto tab waits for the trains at both ends of a run it did not see coming: a Start that starts nothing gives it
@@ -96,9 +97,7 @@ public class testTheAutoTabWaitsForTheTrains
             SwingUtilities.invokeAndWait(() -> stop.addPropertyChangeListener("enabled", watch));
 
             final java.lang.reflect.Method start =
-                TrainControlUI.class.getDeclaredMethod("startAutonomyActionPerformed", java.awt.event.ActionEvent.class);
-
-            start.setAccessible(true);
+                Reflect.method(TrainControlUI.class, "startAutonomyActionPerformed", java.awt.event.ActionEvent.class);
 
             final List<String> answered = answeringYes(() ->
             {
@@ -358,10 +357,8 @@ public class testTheAutoTabWaitsForTheTrains
             closeTheEditor(ui[0]);
 
             // THE SETTINGS TAB'S BUTTON
-            final java.lang.reflect.Method press = TrainControlUI.class.getDeclaredMethod(
+            final java.lang.reflect.Method press = Reflect.method(TrainControlUI.class,
                 "editAutonomyFromSettingsActionPerformed", java.awt.event.ActionEvent.class);
-
-            press.setAccessible(true);
 
             answeringYes(() ->
             {
@@ -490,9 +487,7 @@ public class testTheAutoTabWaitsForTheTrains
             // A PAGE SWITCH
             during[0] = "a page switch";
 
-            final java.lang.reflect.Method step = editor.getClass().getDeclaredMethod("stepPage", int.class);
-
-            step.setAccessible(true);
+            final java.lang.reflect.Method step = Reflect.method(editor.getClass(), "stepPage", int.class);
 
             answeringYes(() ->
             {
@@ -519,9 +514,7 @@ public class testTheAutoTabWaitsForTheTrains
             // AND THE CLOSE - the window's own - GIVES BOTH BACK
             during[0] = "the close";
 
-            final java.lang.reflect.Method close = editor.getClass().getDeclaredMethod("confirmExit");
-
-            close.setAccessible(true);
+            final java.lang.reflect.Method close = Reflect.method(editor.getClass(), "confirmExit");
 
             answeringYes(() ->
             {
@@ -552,9 +545,7 @@ public class testTheAutoTabWaitsForTheTrains
 
             assertNotNull(again, "precondition: the track editor did not open again");
 
-            final java.lang.reflect.Method abandon = again.getClass().getDeclaredMethod("confirmExitWithoutAsking");
-
-            abandon.setAccessible(true);
+            final java.lang.reflect.Method abandon = Reflect.method(again.getClass(), "confirmExitWithoutAsking");
 
             answeringYes(() ->
             {
@@ -633,9 +624,7 @@ public class testTheAutoTabWaitsForTheTrains
 
             SwingUtilities.invokeAndWait(() -> session.setPointProperty(edited, "maxTrainLength", length));
 
-            final java.lang.reflect.Method unsaved = editor.getClass().getDeclaredMethod("hasUnsavedAutonomyWork");
-
-            unsaved.setAccessible(true);
+            final java.lang.reflect.Method unsaved = Reflect.method(editor.getClass(), "hasUnsavedAutonomyWork");
 
             final boolean[] waiting = new boolean[1];
 
@@ -747,9 +736,8 @@ public class testTheAutoTabWaitsForTheTrains
             ui[0] = sandboxed.hold(openTheWindow());
 
             // A PAGE WHOSE FIRST USE RAISES AN ERROR
-            java.lang.reflect.Field db = org.traincontrol.marklin.MarklinControlStation.class.getDeclaredField("layoutDB");
-
-            db.setAccessible(true);
+            java.lang.reflect.Field db =
+                Reflect.field(org.traincontrol.marklin.MarklinControlStation.class, "layoutDB");
 
             @SuppressWarnings("unchecked")
             org.traincontrol.base.RemoteDeviceCollection<org.traincontrol.base.LayoutDiagram, String> held =
@@ -768,9 +756,7 @@ public class testTheAutoTabWaitsForTheTrains
 
             openTheEditorOnAPageChosenWithTheListenersOff(ui[0], failing);
 
-            java.lang.reflect.Field onItsWay = TrainControlUI.class.getDeclaredField("editorOnItsWay");
-
-            onItsWay.setAccessible(true);
+            java.lang.reflect.Field onItsWay = Reflect.field(TrainControlUI.class, "editorOnItsWay");
 
             assertEquals(editorWindows(ui[0]), 0, "an editor whose build raised an Error left its frame");
 
@@ -886,10 +872,8 @@ public class testTheAutoTabWaitsForTheTrains
 
             pages.add(aPageThatFailsToDraw(failing, ui[0]), failing, failing);
 
-            final java.lang.reflect.Method arrive = org.traincontrol.gui.layouteditor.LayoutEditor.class.getDeclaredMethod("arriveAt",
-                String.class, boolean.class);
-
-            arrive.setAccessible(true);
+            final java.lang.reflect.Method arrive = Reflect.method(org.traincontrol.gui.layouteditor.LayoutEditor.class,
+                "arriveAt", String.class, boolean.class);
 
             final Throwable[] thrown = new Throwable[1];
 
@@ -937,9 +921,7 @@ public class testTheAutoTabWaitsForTheTrains
     private static org.traincontrol.base.RemoteDeviceCollection<org.traincontrol.base.LayoutDiagram, String> thePages(
         TrainControlUI ui) throws ReflectiveOperationException
     {
-        java.lang.reflect.Field db = org.traincontrol.marklin.MarklinControlStation.class.getDeclaredField("layoutDB");
-
-        db.setAccessible(true);
+        java.lang.reflect.Field db = Reflect.field(org.traincontrol.marklin.MarklinControlStation.class, "layoutDB");
 
         return (org.traincontrol.base.RemoteDeviceCollection<org.traincontrol.base.LayoutDiagram, String>) db.get(ui.getModel());
     }
@@ -993,9 +975,8 @@ public class testTheAutoTabWaitsForTheTrains
             assertFalse(editor.isAutonomyMode(), "precondition: the editor opened was not the track editor");
 
             // A TILE TURNED through the editor's own rotate: a station on the page shown
-            java.lang.reflect.Field shown = org.traincontrol.gui.layouteditor.LayoutEditor.class.getDeclaredField("layout");
-
-            shown.setAccessible(true);
+            java.lang.reflect.Field shown =
+                Reflect.field(org.traincontrol.gui.layouteditor.LayoutEditor.class, "layout");
 
             final org.traincontrol.base.LayoutDiagram page = (org.traincontrol.base.LayoutDiagram) shown.get(editor);
 
@@ -1015,9 +996,8 @@ public class testTheAutoTabWaitsForTheTrains
 
             final int before = page.getComponent(turned.getX(), turned.getY()).getOrientation();
 
-            java.lang.reflect.Field gridField = org.traincontrol.gui.layouteditor.LayoutEditor.class.getDeclaredField("grid");
-
-            gridField.setAccessible(true);
+            java.lang.reflect.Field gridField =
+                Reflect.field(org.traincontrol.gui.layouteditor.LayoutEditor.class, "grid");
 
             final org.traincontrol.gui.LayoutGrid grid = (org.traincontrol.gui.LayoutGrid) gridField.get(editor);
 
@@ -1063,9 +1043,7 @@ public class testTheAutoTabWaitsForTheTrains
      */
     private static int editorWindows(TrainControlUI ui) throws ReflectiveOperationException
     {
-        java.lang.reflect.Field parent = org.traincontrol.gui.layouteditor.LayoutEditor.class.getDeclaredField("parent");
-
-        parent.setAccessible(true);
+        java.lang.reflect.Field parent = Reflect.field(org.traincontrol.gui.layouteditor.LayoutEditor.class, "parent");
 
         int count = 0;
 
@@ -1127,9 +1105,7 @@ public class testTheAutoTabWaitsForTheTrains
     private static List<String> clickAndCloseInTheSwitchsGap(final javax.swing.AbstractButton button,
         final org.traincontrol.gui.layouteditor.LayoutEditor editor) throws Exception
     {
-        final java.lang.reflect.Method close = editor.getClass().getDeclaredMethod("confirmExit");
-
-        close.setAccessible(true);
+        final java.lang.reflect.Method close = Reflect.method(editor.getClass(), "confirmExit");
 
         return answeringYes(() ->
         {
@@ -1154,13 +1130,10 @@ public class testTheAutoTabWaitsForTheTrains
      */
     private static void waitForTheSwitch(TrainControlUI ui, org.traincontrol.gui.layouteditor.LayoutEditor editor) throws Exception
     {
-        java.lang.reflect.Field latch = org.traincontrol.gui.layouteditor.LayoutEditor.class.getDeclaredField("changingPage");
+        java.lang.reflect.Field latch =
+            Reflect.field(org.traincontrol.gui.layouteditor.LayoutEditor.class, "changingPage");
 
-        latch.setAccessible(true);
-
-        java.lang.reflect.Field refreshes = TrainControlUI.class.getDeclaredField("refreshesUnderWay");
-
-        refreshes.setAccessible(true);
+        java.lang.reflect.Field refreshes = Reflect.field(TrainControlUI.class, "refreshesUnderWay");
 
         long until = System.currentTimeMillis() + 30000;
 
@@ -1205,12 +1178,10 @@ public class testTheAutoTabWaitsForTheTrains
 
             final javax.swing.JComponent edit = control(ui[0], "editLayoutButton");
 
-            java.lang.reflect.Field showField = org.traincontrol.gui.AutonomyOverlayToggle.class.getDeclaredField("show");
-            showField.setAccessible(true);
+            java.lang.reflect.Field showField = Reflect.field(org.traincontrol.gui.AutonomyOverlayToggle.class, "show");
             final javax.swing.JCheckBox show = (javax.swing.JCheckBox) showField.get(strip);
 
-            java.lang.reflect.Field runField = org.traincontrol.gui.AutonomyOverlayToggle.class.getDeclaredField("run");
-            runField.setAccessible(true);
+            java.lang.reflect.Field runField = Reflect.field(org.traincontrol.gui.AutonomyOverlayToggle.class, "run");
             final javax.swing.JButton run = (javax.swing.JButton) runField.get(strip);
 
             final int[] heights = new int[4];
@@ -1313,11 +1284,7 @@ public class testTheAutoTabWaitsForTheTrains
     {
         try
         {
-            java.lang.reflect.Field run = org.traincontrol.gui.AutonomyOverlayToggle.class.getDeclaredField("run");
-
-            run.setAccessible(true);
-
-            return (javax.swing.JButton) run.get(strip);
+            return (javax.swing.JButton) Reflect.get(org.traincontrol.gui.AutonomyOverlayToggle.class, strip, "run");
         }
         catch (ReflectiveOperationException e)
         {
@@ -1339,11 +1306,9 @@ public class testTheAutoTabWaitsForTheTrains
         java.lang.reflect.Constructor<?> make = arcClass.getDeclaredConstructor(int.class);
         make.setAccessible(true);
 
-        java.lang.reflect.Method advance = arcClass.getDeclaredMethod("advance");
-        advance.setAccessible(true);
+        java.lang.reflect.Method advance = Reflect.method(arcClass, "advance");
 
-        java.lang.reflect.Field angle = arcClass.getDeclaredField("angle");
-        angle.setAccessible(true);
+        java.lang.reflect.Field angle = Reflect.field(arcClass, "angle");
 
         List<String> unsteady = new ArrayList<>();
 
@@ -1466,9 +1431,7 @@ public class testTheAutoTabWaitsForTheTrains
             clickAndCloseInTheSwitchsGap(track, editor);
 
             // Until the switch has arrived, or not: its latch comes down first thing either way
-            java.lang.reflect.Field latch = editor.getClass().getDeclaredField("changingPage");
-
-            latch.setAccessible(true);
+            java.lang.reflect.Field latch = Reflect.field(editor.getClass(), "changingPage");
 
             long until = System.currentTimeMillis() + 30000;
 
@@ -1528,9 +1491,7 @@ public class testTheAutoTabWaitsForTheTrains
      */
     private static org.traincontrol.gui.layouteditor.LayoutEditor theEditor(TrainControlUI ui) throws Exception
     {
-        java.lang.reflect.Field open = TrainControlUI.class.getDeclaredField("openEditor");
-
-        open.setAccessible(true);
+        java.lang.reflect.Field open = Reflect.field(TrainControlUI.class, "openEditor");
 
         long until = System.currentTimeMillis() + 20000;
 

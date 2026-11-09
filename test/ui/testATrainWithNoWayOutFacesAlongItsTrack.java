@@ -25,6 +25,7 @@ import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.marklin.MarklinLocomotive;
 import org.traincontrol.util.I18n;
 import static org.traincontrol.marklin.MarklinControlStation.init;
+import support.Reflect;
 
 /**
  * The locomotive on a square no track leads out of faces a way its track runs, not east (OB-348).  Run at
@@ -446,10 +447,8 @@ public class testATrainWithNoWayOutFacesAlongItsTrack
 
             makeItTheActiveTrain();
 
-            final java.lang.reflect.Method door = TrainControlUI.class.getDeclaredMethod("locomotiveGestureOnDiagram",
-                int.class, boolean.class);
-
-            door.setAccessible(true);
+            final java.lang.reflect.Method door =
+                Reflect.method(TrainControlUI.class, "locomotiveGestureOnDiagram", int.class, boolean.class);
 
             final Object[] handled = new Object[1];
 
@@ -618,10 +617,8 @@ public class testATrainWithNoWayOutFacesAlongItsTrack
         panel.setLayoutSource(() -> model.getAutoLayout());
         panel.setLocomotiveNames(() -> model.getLocList());
 
-        final java.lang.reflect.Method place = AutonomyEditorPanel.class.getDeclaredMethod("placeLocomotive",
-            TileKey.class);
-
-        place.setAccessible(true);
+        final java.lang.reflect.Method place =
+            Reflect.method(AutonomyEditorPanel.class, "placeLocomotive", TileKey.class);
 
         SwingUtilities.invokeLater(() ->
         {

@@ -14,6 +14,7 @@ import org.traincontrol.base.Route;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;
 import static org.traincontrol.marklin.MarklinControlStation.init;
+import support.Reflect;
 
 /**
  * A train reversed on the throttle turns around in autonomy, from the throttle's call to the setup's facing (MT-488).
@@ -296,9 +297,7 @@ public class testAThrottleReversalIsFollowedFromItsEcho
     @Test
     public void testADirectionCommandWhileAutonomyRunsChangesNothing() throws Exception
     {
-        final java.lang.reflect.Field running = org.traincontrol.automation.Layout.class.getDeclaredField("running");
-
-        running.setAccessible(true);
+        final java.lang.reflect.Field running = Reflect.field(org.traincontrol.automation.Layout.class, "running");
 
         ignoredWhile(() -> set(running, model.getAutoLayout(), true), () -> set(running, model.getAutoLayout(), false),
             "autonomy runs");
@@ -310,9 +309,7 @@ public class testAThrottleReversalIsFollowedFromItsEcho
     @Test
     public void testADirectionCommandWhileReturnHomeRunsChangesNothing() throws Exception
     {
-        final java.lang.reflect.Field staging = TrainControlUI.class.getDeclaredField("stagingFlowActive");
-
-        staging.setAccessible(true);
+        final java.lang.reflect.Field staging = Reflect.field(TrainControlUI.class, "stagingFlowActive");
 
         ignoredWhile(() -> set(staging, ui, true), () -> set(staging, ui, false), "Return Home runs");
     }
@@ -531,15 +528,9 @@ public class testAThrottleReversalIsFollowedFromItsEcho
         {
             Object driver = ui.getDiagramMonitorDriver();
 
-            java.lang.reflect.Field monitor = driver.getClass().getDeclaredField("monitor");
+            Object watching = Reflect.get(driver.getClass(), driver, "monitor");
 
-            monitor.setAccessible(true);
-
-            Object watching = monitor.get(driver);
-
-            java.lang.reflect.Field dirty = watching.getClass().getDeclaredField("dirty");
-
-            dirty.setAccessible(true);
+            java.lang.reflect.Field dirty = Reflect.field(watching.getClass(), "dirty");
 
             return ((java.util.concurrent.atomic.AtomicBoolean) dirty.get(watching)).get();
         }
@@ -564,11 +555,7 @@ public class testAThrottleReversalIsFollowedFromItsEcho
     {
         try
         {
-            java.lang.reflect.Field field = TrainControlUI.class.getDeclaredField("turnsHeldByARoute");
-
-            field.setAccessible(true);
-
-            return (java.util.Set<String>) field.get(ui);
+            return (java.util.Set<String>) Reflect.get(TrainControlUI.class, ui, "turnsHeldByARoute");
         }
         catch (ReflectiveOperationException failed)
         {

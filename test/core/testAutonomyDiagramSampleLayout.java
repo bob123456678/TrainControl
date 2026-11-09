@@ -31,6 +31,7 @@ import org.traincontrol.marklin.MarklinAccessory;
 import org.traincontrol.marklin.MarklinControlStation;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 import org.traincontrol.marklin.file.CS2File;
+import support.Reflect;
 
 /**
  * The ground truth gate: reduce a real track diagram and compare what comes out against the autonomy configuration
@@ -1801,14 +1802,11 @@ public class testAutonomyDiagramSampleLayout
         // TileGraph has no public way to undo either; TestNG's arbitrary method order could otherwise run another test
         // against a graph this one has re-paired.  Both fields are private and final, so they are snapshotted and
         // restored by reflection.
-        java.lang.reflect.Field portalsField = TileGraph.class.getDeclaredField("portals");
-        portalsField.setAccessible(true);
-
         java.lang.reflect.Field disabledField = TileGraph.class.getDeclaredField("disabledPortals");
         disabledField.setAccessible(true);
 
         @SuppressWarnings("unchecked")
-        Map<TileKey, TileKey> portals = (Map<TileKey, TileKey>) portalsField.get(graph);
+        Map<TileKey, TileKey> portals = (Map<TileKey, TileKey>) Reflect.get(TileGraph.class, graph, "portals");
         @SuppressWarnings("unchecked")
         Set<TileKey> disabled = (Set<TileKey>) disabledField.get(graph);
 

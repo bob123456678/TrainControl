@@ -12,6 +12,7 @@ import org.traincontrol.gui.layouteditor.LayoutEditor;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;
 import static org.traincontrol.marklin.MarklinControlStation.init;
+import support.Reflect;
 
 /**
  * Cut or Copy while the pointer is not over a square must not arm a paste with nothing in it: the right-click Paste
@@ -134,14 +135,10 @@ public class testCutWithNothingHovered
     {
         final boolean[] answer = new boolean[3];
 
-        final java.lang.reflect.Field gridField = LayoutEditor.class.getDeclaredField("grid");
-
-        gridField.setAccessible(true);
+        final java.lang.reflect.Field gridField = Reflect.field(LayoutEditor.class, "grid");
 
         // The arming flag is disarmed between the claims, because `initCopy` refusing does not CLEAR what is armed.
-        final java.lang.reflect.Field toolField = LayoutEditor.class.getDeclaredField("toolFlag");
-
-        toolField.setAccessible(true);
+        final java.lang.reflect.Field toolField = Reflect.field(LayoutEditor.class, "toolFlag");
 
         SwingUtilities.invokeAndWait(() ->
         {

@@ -14,6 +14,7 @@ import org.traincontrol.base.Accessory;
 import org.traincontrol.base.Locomotive;
 import org.traincontrol.marklin.udp.CS2Message;
 import support.Components;
+import support.Reflect;
 import support.StandInStation;
 import support.TcpStation;
 
@@ -89,12 +90,8 @@ public class testTheGoldensHoldOverTcp
 
     private static Object proxyField(support.StationRig rig, String name) throws Exception
     {
-        java.lang.reflect.Field at = org.traincontrol.marklin.MarklinControlStation.class.getDeclaredField("NetworkInterface");
-        at.setAccessible(true);
-        Object proxy = at.get(rig.model);
-        java.lang.reflect.Field field = proxy.getClass().getDeclaredField(name);
-        field.setAccessible(true);
-        return field.get(proxy);
+        Object proxy = Reflect.get(org.traincontrol.marklin.MarklinControlStation.class, rig.model, "NetworkInterface");
+        return Reflect.get(proxy.getClass(), proxy, name);
     }
 
     /**

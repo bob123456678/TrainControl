@@ -19,6 +19,7 @@ import org.traincontrol.automationui.TilePorts;
 import org.traincontrol.automationui.TilePorts.Side;
 import org.traincontrol.marklin.MarklinControlStation;
 import static org.traincontrol.marklin.MarklinControlStation.init;
+import support.Reflect;
 
 /**
  * A straight dropped between two pieces of track is turned to join them (OB-292), and so is every other
@@ -501,9 +502,7 @@ public class testANewStraightJoinsTheTrackBesideIt
 
         try
         {
-            java.lang.reflect.Field field = LayoutEditor.class.getDeclaredField("grid");
-
-            field.setAccessible(true);
+            java.lang.reflect.Field field = Reflect.field(LayoutEditor.class, "grid");
 
             int[] landed = new int[helds.length];
 
@@ -580,11 +579,7 @@ public class testANewStraightJoinsTheTrackBesideIt
 
         try
         {
-            java.lang.reflect.Field field = LayoutEditor.class.getDeclaredField("grid");
-
-            field.setAccessible(true);
-
-            final LayoutGrid grid = (LayoutGrid) field.get(editor[0]);
+            final LayoutGrid grid = (LayoutGrid) Reflect.get(LayoutEditor.class, editor[0], "grid");
             final LayoutLabel target = grid.getValueAt(x, y);
 
             assertNotNull(target, "precondition: the editor drew no square at " + x + "," + y);

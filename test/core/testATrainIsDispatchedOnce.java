@@ -19,6 +19,7 @@ import org.traincontrol.automation.Edge;
 import org.traincontrol.automation.Layout;
 import org.traincontrol.base.Locomotive;
 import org.traincontrol.marklin.MarklinControlStation;
+import support.Reflect;
 import support.SourceOf;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 
@@ -93,9 +94,7 @@ public class testATrainIsDispatchedOnce
 
         final Locomotive train = aTrainAtTheStart(layout);
 
-        java.lang.reflect.Field answersField = Layout.class.getDeclaredField("runPolicies");
-
-        answersField.setAccessible(true);
+        java.lang.reflect.Field answersField = Reflect.field(Layout.class, "runPolicies");
 
         @SuppressWarnings("unchecked")
         final java.util.Map<Locomotive, Object> answers = (java.util.Map<Locomotive, Object>) answersField.get(layout);
@@ -135,21 +134,15 @@ public class testATrainIsDispatchedOnce
             }
         };
 
-        java.lang.reflect.Field claimsField = Layout.class.getDeclaredField("takingPath");
+        java.lang.reflect.Field claimsField = Reflect.field(Layout.class, "takingPath");
 
-        claimsField.setAccessible(true);
-
-        java.lang.reflect.Field modifiers = java.lang.reflect.Field.class.getDeclaredField("modifiers");
-
-        modifiers.setAccessible(true);
+        java.lang.reflect.Field modifiers = Reflect.field(java.lang.reflect.Field.class, "modifiers");
         modifiers.setInt(claimsField, claimsField.getModifiers() & ~java.lang.reflect.Modifier.FINAL);
 
         claimsField.set(layout, claims);
 
-        java.lang.reflect.Method lock = Layout.class.getDeclaredMethod("configureAndLockPath", List.class, Locomotive.class,
-            Layout.ReversalPolicy.class);
-
-        lock.setAccessible(true);
+        java.lang.reflect.Method lock = Reflect.method(Layout.class,
+            "configureAndLockPath", List.class, Locomotive.class, Layout.ReversalPolicy.class);
 
         boolean locked = (boolean) lock.invoke(layout, theRoute(layout), train, thisRuns);
 
@@ -1245,10 +1238,8 @@ public class testATrainIsDispatchedOnce
     /** Records the train on each of the points, as locking a path does. */
     private static void reserve(Layout layout, Locomotive loc, String... points) throws Exception
     {
-        java.lang.reflect.Method reserve = org.traincontrol.automation.Point.class.getDeclaredMethod("reserve",
-            Locomotive.class);
-
-        reserve.setAccessible(true);
+        java.lang.reflect.Method reserve =
+            Reflect.method(org.traincontrol.automation.Point.class, "reserve", Locomotive.class);
 
         for (String point : points) reserve.invoke(layout.getPoint(point), loc);
     }
@@ -1327,11 +1318,7 @@ public class testATrainIsDispatchedOnce
 
     private static Object field(Object target, String name) throws Exception
     {
-        java.lang.reflect.Field f = target.getClass().getDeclaredField(name);
-
-        f.setAccessible(true);
-
-        return f.get(target);
+        return Reflect.get(target.getClass(), target, name);
     }
 
     private static void waitUntil(java.util.function.BooleanSupplier condition, String what) throws Exception
@@ -1755,9 +1742,7 @@ public class testATrainIsDispatchedOnce
      */
     private static int layoutConstant(String name) throws Exception
     {
-        java.lang.reflect.Field field = Layout.class.getDeclaredField(name);
-
-        field.setAccessible(true);
+        java.lang.reflect.Field field = Reflect.field(Layout.class, name);
 
         return field.getInt(null);
     }
@@ -2319,9 +2304,7 @@ public class testATrainIsDispatchedOnce
 
         final Layout rail = aLine(s, "PWA", "PWB");
 
-        final java.lang.reflect.Field power = MarklinControlStation.class.getDeclaredField("powerState");
-
-        power.setAccessible(true);
+        final java.lang.reflect.Field power = Reflect.field(MarklinControlStation.class, "powerState");
 
         final List<String> said = java.util.Collections.synchronizedList(new ArrayList<String>());
 
@@ -2400,9 +2383,7 @@ public class testATrainIsDispatchedOnce
 
         final Layout rail = aLine(s, "PTA", "PTB");
 
-        final java.lang.reflect.Field power = MarklinControlStation.class.getDeclaredField("powerState");
-
-        power.setAccessible(true);
+        final java.lang.reflect.Field power = Reflect.field(MarklinControlStation.class, "powerState");
 
         Thread executor = null;
 
@@ -2472,9 +2453,7 @@ public class testATrainIsDispatchedOnce
 
         aSwitchOnEach(path, 241);
 
-        final java.lang.reflect.Field power = MarklinControlStation.class.getDeclaredField("powerState");
-
-        power.setAccessible(true);
+        final java.lang.reflect.Field power = Reflect.field(MarklinControlStation.class, "powerState");
 
         Thread journey = null;
 
@@ -2792,12 +2771,8 @@ public class testATrainIsDispatchedOnce
 
         aSwitchOnEach(path, 271);
 
-        final java.lang.reflect.Field epochField = MarklinControlStation.class.getDeclaredField("powerEpoch");
-
-        epochField.setAccessible(true);
-
         final java.util.concurrent.atomic.AtomicInteger epoch =
-            (java.util.concurrent.atomic.AtomicInteger) epochField.get(model);
+            (java.util.concurrent.atomic.AtomicInteger) Reflect.get(MarklinControlStation.class, model, "powerEpoch");
 
         Thread journey = null;
 
@@ -2859,9 +2834,7 @@ public class testATrainIsDispatchedOnce
     /** The model's way of taking in the Central Station's stop and go. */
     private static java.lang.reflect.Method setPowerState() throws Exception
     {
-        java.lang.reflect.Method power = MarklinControlStation.class.getDeclaredMethod("setPowerState", boolean.class);
-
-        power.setAccessible(true);
+        java.lang.reflect.Method power = Reflect.method(MarklinControlStation.class, "setPowerState", boolean.class);
 
         return power;
     }
@@ -2999,9 +2972,7 @@ public class testATrainIsDispatchedOnce
     @Test
     public void testATrainHandingOverIsCounted() throws Exception
     {
-        final java.lang.reflect.Method count = Layout.class.getDeclaredMethod("trainsUnderway");
-
-        count.setAccessible(true);
+        final java.lang.reflect.Method count = Reflect.method(Layout.class, "trainsUnderway");
 
         Object answer = acrossAHandOver(1921, "trainsUnderway", (rail, x, y) -> count.invoke(rail));
 
@@ -3253,11 +3224,7 @@ public class testATrainIsDispatchedOnce
 
     private static void swap(Layout layout, String field, Object value) throws Exception
     {
-        java.lang.reflect.Field f = Layout.class.getDeclaredField(field);
-
-        f.setAccessible(true);
-
-        f.set(layout, value);
+        Reflect.set(Layout.class, layout, field, value);
     }
 
     /**

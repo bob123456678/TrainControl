@@ -9,6 +9,7 @@ import java.util.List;
 import static org.testng.Assert.*;
 import org.testng.annotations.Test;
 import org.traincontrol.gui.layouteditor.LayoutEditor;
+import support.Reflect;
 import support.SourceOf;
 
 /**
@@ -699,23 +700,15 @@ public class testEditorSurfaceRules
         // The outline highlightLabel puts on a DIAGRAM square while the grid is off, reached by reflection as the
         // private half of a rule whose public half is restingBorder.
         java.lang.reflect.Method overlay =
-            LayoutEditor.class.getDeclaredMethod("overlayLine", java.awt.Color.class, int.class);
-
-        overlay.setAccessible(true);
+            Reflect.method(LayoutEditor.class, "overlayLine", java.awt.Color.class, int.class);
 
         // The color a hovered square really wears, asked of the editor: handing the outline a color of this test's own
         // would prove only that the outline paints what it is given.
-        java.lang.reflect.Field hoveredColour =
-            LayoutEditor.class.getDeclaredField("COMPONENT_BORDER_HOVERED_COLOR");
-
-        hoveredColour.setAccessible(true);
+        java.lang.reflect.Field hoveredColour = Reflect.field(LayoutEditor.class, "COMPONENT_BORDER_HOVERED_COLOR");
 
         java.awt.Color wornWhenHovered = (java.awt.Color) hoveredColour.get(null);
 
-        java.lang.reflect.Field restingColour =
-            LayoutEditor.class.getDeclaredField("COMPONENT_BORDER_DEFAULT_COLOR");
-
-        restingColour.setAccessible(true);
+        java.lang.reflect.Field restingColour = Reflect.field(LayoutEditor.class, "COMPONENT_BORDER_DEFAULT_COLOR");
 
         java.awt.Color wornAtRest = (java.awt.Color) restingColour.get(null);
 
@@ -3649,9 +3642,7 @@ public class testEditorSurfaceRules
 
         // The front sheet as the mark measures it, asked of RowIcons so a copy of its proportions cannot go stale.
         java.lang.reflect.Method sheet =
-            org.traincontrol.gui.widgets.RowIcons.class.getDeclaredMethod("frontSheet", int.class, int.class);
-
-        sheet.setAccessible(true);
+            Reflect.method(org.traincontrol.gui.widgets.RowIcons.class, "frontSheet", int.class, int.class);
 
         java.awt.Rectangle front = (java.awt.Rectangle) sheet.invoke(null, size, size);
 

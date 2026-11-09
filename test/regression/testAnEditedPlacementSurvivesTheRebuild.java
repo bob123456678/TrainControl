@@ -12,6 +12,7 @@ import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.marklin.MarklinFeedback;
 import static org.traincontrol.marklin.MarklinControlStation.init;
+import support.Reflect;
 
 /**
  * A locomotive placed in the autonomy editor is still there when the editor closes (MT-337).  Closing records every
@@ -200,9 +201,7 @@ public class testAnEditedPlacementSurvivesTheRebuild
 
         running.createPoint("OTHER", true, otherSensor.getName());
 
-        java.lang.reflect.Field runningFlag = Layout.class.getDeclaredField("running");
-
-        runningFlag.setAccessible(true);
+        java.lang.reflect.Field runningFlag = Reflect.field(Layout.class, "running");
         runningFlag.setBoolean(running, true);
 
         try

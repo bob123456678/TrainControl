@@ -17,6 +17,7 @@ import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.util.I18n;
 import static org.traincontrol.marklin.MarklinControlStation.init;
+import support.Reflect;
 
 /**
  * One-Way Run and Name Everything are on the autonomy editor's Bulk Tools menu, not in its column (OB-217): "move 'one
@@ -218,11 +219,7 @@ public class testBulkToolsHoldsTheWholeLayoutTools
     {
         try
         {
-            java.lang.reflect.Field f = AutonomyEditorPanel.class.getDeclaredField(field);
-
-            f.setAccessible(true);
-
-            java.awt.Component button = (java.awt.Component) f.get(panel);
+            java.awt.Component button = (java.awt.Component) Reflect.get(AutonomyEditorPanel.class, panel, field);
 
             assertTrue(button != null, "precondition: the panel built no " + field);
 

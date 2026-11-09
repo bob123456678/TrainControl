@@ -27,6 +27,7 @@ import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.util.I18n;
 import static org.traincontrol.marklin.MarklinControlStation.init;
+import support.Reflect;
 
 /**
  * A train pasted onto a may-reverse square faces the way the operator said, on the railway itself (MT-394).  The
@@ -219,8 +220,7 @@ public class testAPastedTrainFacesTheWayTheOperatorChose
                     + ", though " + SQUARE_NAME + " is no station");
             }
 
-            Field cut = TrainControlUI.class.getDeclaredField("cutLocomotive");
-            cut.setAccessible(true);
+            Field cut = Reflect.field(TrainControlUI.class, "cutLocomotive");
 
             assertSame(cut.get(ui), train, "the refused paste took the train off the clipboard");
         }
@@ -259,10 +259,7 @@ public class testAPastedTrainFacesTheWayTheOperatorChose
 
         assertNotNull(over, "the main window draws no square at " + target + " to point at");
 
-        Field tab = TrainControlUI.class.getDeclaredField("KeyboardTab");
-        tab.setAccessible(true);
-
-        final Component keyboard = (Component) tab.get(ui);
+        final Component keyboard = (Component) Reflect.get(TrainControlUI.class, ui, "KeyboardTab");
         final LayoutLabel square = over;
 
         SwingUtilities.invokeAndWait(() ->
@@ -357,10 +354,8 @@ public class testAPastedTrainFacesTheWayTheOperatorChose
             + " train was put");
 
         // AND CUT, by the same door's Control+X
-        final Method gesture = TrainControlUI.class.getDeclaredMethod("locomotiveGestureOnDiagram", int.class,
-            boolean.class);
-
-        gesture.setAccessible(true);
+        final Method gesture =
+            Reflect.method(TrainControlUI.class, "locomotiveGestureOnDiagram", int.class, boolean.class);
 
         final Object[] handled = new Object[1];
 
@@ -427,16 +422,12 @@ public class testAPastedTrainFacesTheWayTheOperatorChose
 
         // WHAT CONTROL+X LEAVES BEHIND, set directly: the train on the clipboard and no remembered
         // heading, so the facing comes from the question and nothing else.
-        Field cut = TrainControlUI.class.getDeclaredField("cutLocomotive");
-        cut.setAccessible(true);
+        Field cut = Reflect.field(TrainControlUI.class, "cutLocomotive");
 
-        Field cutFacing = TrainControlUI.class.getDeclaredField("cutFacing");
-        cutFacing.setAccessible(true);
+        Field cutFacing = Reflect.field(TrainControlUI.class, "cutFacing");
 
-        final Method gesture = TrainControlUI.class.getDeclaredMethod(
-            "locomotiveGestureOnDiagram", int.class, boolean.class);
-
-        gesture.setAccessible(true);
+        final Method gesture =
+            Reflect.method(TrainControlUI.class, "locomotiveGestureOnDiagram", int.class, boolean.class);
 
         final Object[] handled = new Object[1];
 

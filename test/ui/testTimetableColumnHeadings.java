@@ -4,6 +4,7 @@ import static org.testng.Assert.*;
 import org.testng.annotations.Test;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.util.I18n;
+import support.Reflect;
 
 /**
  * The timetable's column headings, before there is anything to put under them.  The form designer gives every new
@@ -80,10 +81,6 @@ public class testTimetableColumnHeadings
     /** The timetable table itself, which is a generated field and so has no accessor. */
     private javax.swing.JTable timetableOf(TrainControlUI ui) throws Exception
     {
-        java.lang.reflect.Field field = TrainControlUI.class.getDeclaredField("timetable");
-
-        field.setAccessible(true);
-
-        return (javax.swing.JTable) field.get(ui);
+        return (javax.swing.JTable) Reflect.get(TrainControlUI.class, ui, "timetable");
     }
 }

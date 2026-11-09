@@ -20,6 +20,7 @@ import static org.testng.Assert.*;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
+import support.Reflect;
 
 /**
  * Conditional routes that act on locomotives, and multi-units inside them.
@@ -1274,13 +1275,10 @@ public class testAdvancedRoutes
 
         // THE PAGE HAS TO BE ONE THE MODEL KNOWS, because that is what the re-bind walks - and it is also
         // what makes this the real case: a page the model never heard of is not on anybody's diagram.
-        java.lang.reflect.Field pages = MarklinControlStation.class.getDeclaredField("layoutDB");
-        pages.setAccessible(true);
-
         @SuppressWarnings("unchecked")
         org.traincontrol.base.RemoteDeviceCollection<org.traincontrol.base.LayoutDiagram, String> layouts =
             (org.traincontrol.base.RemoteDeviceCollection<org.traincontrol.base.LayoutDiagram, String>)
-                pages.get(model);
+                Reflect.get(MarklinControlStation.class, model, "layoutDB");
 
         layouts.add(page, page.getName(), page.getName());
 

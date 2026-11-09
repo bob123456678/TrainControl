@@ -1,6 +1,5 @@
 package regression;
 
-import java.lang.reflect.Field;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
@@ -11,6 +10,7 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;
+import support.Reflect;
 
 /**
  * The locomotive mapping pages stop at fifty, in the method as well as in the menu (FR-033, MT-383):
@@ -219,11 +219,7 @@ public class testFiftyLocomotiveMappingPages
     {
         try
         {
-            Field count = TrainControlUI.class.getDeclaredField("numLocMappings");
-
-            count.setAccessible(true);
-
-            count.set(ui, to);
+            Reflect.set(TrainControlUI.class, ui, "numLocMappings", to);
         }
         catch (ReflectiveOperationException e)
         {

@@ -7,6 +7,7 @@ import org.traincontrol.automationui.AutonomySession;
 import org.traincontrol.base.Accessory.accessoryDecoderType;
 import org.traincontrol.base.LayoutDiagram;
 import org.traincontrol.base.LayoutDiagramComponent.componentType;
+import support.Reflect;
 import support.SourceOf;
 
 /**
@@ -105,10 +106,7 @@ public class testTheAutonomyEditorKnowsWhichSquare
 
             session.open(Arrays.asList(diagram));
 
-            java.lang.reflect.Field sessionField =
-                org.traincontrol.gui.TrainControlUI.class.getDeclaredField("autonomySession");
-            sessionField.setAccessible(true);
-            sessionField.set(open.ui, session);
+            Reflect.set(org.traincontrol.gui.TrainControlUI.class, open.ui, "autonomySession", session);
 
             final org.traincontrol.gui.layouteditor.LayoutEditor[] built = new org.traincontrol.gui.layouteditor.LayoutEditor[1];
 
@@ -118,12 +116,10 @@ public class testTheAutonomyEditorKnowsWhichSquare
             open.editor = built[0];
 
             java.lang.reflect.Method drawGrid =
-                org.traincontrol.gui.layouteditor.LayoutEditor.class.getDeclaredMethod("drawGrid");
-            drawGrid.setAccessible(true);
+                Reflect.method(org.traincontrol.gui.layouteditor.LayoutEditor.class, "drawGrid");
 
             java.lang.reflect.Field gridField =
-                org.traincontrol.gui.layouteditor.LayoutEditor.class.getDeclaredField("grid");
-            gridField.setAccessible(true);
+                Reflect.field(org.traincontrol.gui.layouteditor.LayoutEditor.class, "grid");
 
             javax.swing.SwingUtilities.invokeAndWait(() ->
             {
@@ -156,12 +152,7 @@ public class testTheAutonomyEditorKnowsWhichSquare
     /** A private field of the editor, by name. */
     private static Object field(org.traincontrol.gui.layouteditor.LayoutEditor of, String name) throws Exception
     {
-        java.lang.reflect.Field f =
-            org.traincontrol.gui.layouteditor.LayoutEditor.class.getDeclaredField(name);
-
-        f.setAccessible(true);
-
-        return f.get(of);
+        return Reflect.get(org.traincontrol.gui.layouteditor.LayoutEditor.class, of, name);
     }
 
     /** A plain move event over a label, which is all the handler reads off it. */
@@ -179,9 +170,7 @@ public class testTheAutonomyEditorKnowsWhichSquare
     private static org.traincontrol.gui.LayoutLabel hover(org.traincontrol.gui.layouteditor.LayoutEditor on,
         int x, int y) throws Exception
     {
-        java.lang.reflect.Field gridField =
-            org.traincontrol.gui.layouteditor.LayoutEditor.class.getDeclaredField("grid");
-        gridField.setAccessible(true);
+        java.lang.reflect.Field gridField = Reflect.field(org.traincontrol.gui.layouteditor.LayoutEditor.class, "grid");
 
         final org.traincontrol.gui.LayoutLabel[] moved = new org.traincontrol.gui.LayoutLabel[1];
 
@@ -496,10 +485,6 @@ public class testTheAutonomyEditorKnowsWhichSquare
     /** A private field of the editor's autonomy panel, by name. */
     private static Object panelField(org.traincontrol.gui.layouteditor.LayoutEditor of, String name) throws Exception
     {
-        java.lang.reflect.Field f = org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel.class.getDeclaredField(name);
-
-        f.setAccessible(true);
-
-        return f.get(of.getAutonomyPanel());
+        return Reflect.get(org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel.class, of.getAutonomyPanel(), name);
     }
 }

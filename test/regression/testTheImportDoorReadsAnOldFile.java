@@ -28,6 +28,7 @@ import org.traincontrol.automationui.TileGraph.TileKey;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.util.I18n;
+import support.Reflect;
 
 /**
  * The Autonomy menu's Import, driven as Adam drives it, on a sandbox copy of his railway with his own 2.7.4c file.
@@ -594,9 +595,7 @@ public class testTheImportDoorReadsAnOldFile
 
         final support.SandboxedWindow sandboxed = new support.SandboxedWindow();
 
-        java.lang.reflect.Field staging = TrainControlUI.class.getDeclaredField("stagingFlowActive");
-
-        staging.setAccessible(true);
+        java.lang.reflect.Field staging = Reflect.field(TrainControlUI.class, "stagingFlowActive");
 
         try
         {
@@ -1007,9 +1006,7 @@ public class testTheImportDoorReadsAnOldFile
 
         final support.SandboxedWindow sandboxed = new support.SandboxedWindow();
 
-        java.lang.reflect.Field staging = TrainControlUI.class.getDeclaredField("stagingFlowActive");
-
-        staging.setAccessible(true);
+        java.lang.reflect.Field staging = Reflect.field(TrainControlUI.class, "stagingFlowActive");
 
         try
         {
@@ -1067,9 +1064,7 @@ public class testTheImportDoorReadsAnOldFile
 
         final support.SandboxedWindow sandboxed = new support.SandboxedWindow();
 
-        java.lang.reflect.Field declined = TrainControlUI.class.getDeclaredField("setupEditDeclinedDuringRun");
-
-        declined.setAccessible(true);
+        java.lang.reflect.Field declined = Reflect.field(TrainControlUI.class, "setupEditDeclinedDuringRun");
 
         try
         {
@@ -1140,9 +1135,7 @@ public class testTheImportDoorReadsAnOldFile
 
         final support.SandboxedWindow sandboxed = new support.SandboxedWindow();
 
-        java.lang.reflect.Field declined = TrainControlUI.class.getDeclaredField("setupEditDeclinedDuringRun");
-
-        declined.setAccessible(true);
+        java.lang.reflect.Field declined = Reflect.field(TrainControlUI.class, "setupEditDeclinedDuringRun");
 
         try
         {
@@ -1229,9 +1222,7 @@ public class testTheImportDoorReadsAnOldFile
 
         final support.SandboxedWindow sandboxed = new support.SandboxedWindow();
 
-        java.lang.reflect.Field declined = TrainControlUI.class.getDeclaredField("setupEditDeclinedDuringRun");
-
-        declined.setAccessible(true);
+        java.lang.reflect.Field declined = Reflect.field(TrainControlUI.class, "setupEditDeclinedDuringRun");
 
         try
         {
@@ -1291,9 +1282,7 @@ public class testTheImportDoorReadsAnOldFile
 
         final support.SandboxedWindow sandboxed = new support.SandboxedWindow();
 
-        java.lang.reflect.Field declined = TrainControlUI.class.getDeclaredField("setupEditDeclinedDuringRun");
-
-        declined.setAccessible(true);
+        java.lang.reflect.Field declined = Reflect.field(TrainControlUI.class, "setupEditDeclinedDuringRun");
 
         try
         {
@@ -1358,13 +1347,9 @@ public class testTheImportDoorReadsAnOldFile
 
         final support.SandboxedWindow sandboxed = new support.SandboxedWindow();
 
-        java.lang.reflect.Field declined = TrainControlUI.class.getDeclaredField("setupEditDeclinedDuringRun");
+        java.lang.reflect.Field declined = Reflect.field(TrainControlUI.class, "setupEditDeclinedDuringRun");
 
-        declined.setAccessible(true);
-
-        java.lang.reflect.Field staging = TrainControlUI.class.getDeclaredField("stagingFlowActive");
-
-        staging.setAccessible(true);
+        java.lang.reflect.Field staging = Reflect.field(TrainControlUI.class, "stagingFlowActive");
 
         try
         {
@@ -1426,9 +1411,7 @@ public class testTheImportDoorReadsAnOldFile
 
         final support.SandboxedWindow sandboxed = new support.SandboxedWindow();
 
-        java.lang.reflect.Field declined = TrainControlUI.class.getDeclaredField("setupEditDeclinedDuringRun");
-
-        declined.setAccessible(true);
+        java.lang.reflect.Field declined = Reflect.field(TrainControlUI.class, "setupEditDeclinedDuringRun");
 
         try
         {
@@ -1486,13 +1469,9 @@ public class testTheImportDoorReadsAnOldFile
 
         final support.SandboxedWindow sandboxed = new support.SandboxedWindow();
 
-        java.lang.reflect.Field running = org.traincontrol.automation.Layout.class.getDeclaredField("running");
+        java.lang.reflect.Field running = Reflect.field(org.traincontrol.automation.Layout.class, "running");
 
-        running.setAccessible(true);
-
-        java.lang.reflect.Field noEditorOpen = TrainControlUI.class.getDeclaredField("noEditorOpen");
-
-        noEditorOpen.setAccessible(true);
+        java.lang.reflect.Field noEditorOpen = Reflect.field(TrainControlUI.class, "noEditorOpen");
 
         org.traincontrol.automation.Layout layout = null;
 
@@ -1535,9 +1514,7 @@ public class testTheImportDoorReadsAnOldFile
             SwingUtilities.invokeAndWait(() -> editor[0] = new org.traincontrol.gui.RouteEditorFrame(ui[0], routeName,
                 ui[0].getModel().getRoute(routeName)));
 
-            final java.lang.reflect.Method save = org.traincontrol.gui.RouteEditorFrame.class.getDeclaredMethod("onSave");
-
-            save.setAccessible(true);
+            final java.lang.reflect.Method save = Reflect.method(org.traincontrol.gui.RouteEditorFrame.class, "onSave");
 
             startAnsweringYes(asked, going);
 
@@ -1619,9 +1596,7 @@ public class testTheImportDoorReadsAnOldFile
 
         final support.SandboxedWindow sandboxed = new support.SandboxedWindow();
 
-        java.lang.reflect.Field declined = TrainControlUI.class.getDeclaredField("setupEditDeclinedDuringRun");
-
-        declined.setAccessible(true);
+        java.lang.reflect.Field declined = Reflect.field(TrainControlUI.class, "setupEditDeclinedDuringRun");
 
         Thread driving = null;
 
@@ -1841,9 +1816,7 @@ public class testTheImportDoorReadsAnOldFile
 
         final support.SandboxedWindow sandboxed = new support.SandboxedWindow();
 
-        java.lang.reflect.Field declined = TrainControlUI.class.getDeclaredField("setupEditDeclinedDuringRun");
-
-        declined.setAccessible(true);
+        java.lang.reflect.Field declined = Reflect.field(TrainControlUI.class, "setupEditDeclinedDuringRun");
 
         try
         {
@@ -1957,9 +1930,7 @@ public class testTheImportDoorReadsAnOldFile
 
         final support.SandboxedWindow sandboxed = new support.SandboxedWindow();
 
-        java.lang.reflect.Field declined = TrainControlUI.class.getDeclaredField("setupEditDeclinedDuringRun");
-
-        declined.setAccessible(true);
+        java.lang.reflect.Field declined = Reflect.field(TrainControlUI.class, "setupEditDeclinedDuringRun");
 
         try
         {
@@ -1973,9 +1944,7 @@ public class testTheImportDoorReadsAnOldFile
 
             final String[] move = moveAStandingTrain(ui[0], session);
 
-            java.lang.reflect.Field forgotten = TrainControlUI.class.getDeclaredField("forgottenByTheReset");
-
-            forgotten.setAccessible(true);
+            java.lang.reflect.Field forgotten = Reflect.field(TrainControlUI.class, "forgottenByTheReset");
 
             declined.set(ui[0], true);
 
@@ -2111,12 +2080,7 @@ public class testTheImportDoorReadsAnOldFile
                 + " driving " + dispatched[0] + " drives it on at line speed when it reaches the sensor it waits for"
                 + " (RLV8-A1)");
 
-            java.lang.reflect.Method finished = org.traincontrol.automation.Layout.class
-                .getDeclaredMethod("announceRunFinished");
-
-            finished.setAccessible(true);
-
-            finished.invoke(unloaded);
+            Reflect.method(org.traincontrol.automation.Layout.class, "announceRunFinished").invoke(unloaded);
 
             for (int turn = 0; turn < 6; turn++) SwingUtilities.invokeAndWait(() -> { });
 
@@ -2145,13 +2109,9 @@ public class testTheImportDoorReadsAnOldFile
 
         final support.SandboxedWindow sandboxed = new support.SandboxedWindow();
 
-        java.lang.reflect.Field declined = TrainControlUI.class.getDeclaredField("setupEditDeclinedDuringRun");
+        java.lang.reflect.Field declined = Reflect.field(TrainControlUI.class, "setupEditDeclinedDuringRun");
 
-        declined.setAccessible(true);
-
-        java.lang.reflect.Field forgotten = TrainControlUI.class.getDeclaredField("forgottenByTheReset");
-
-        forgotten.setAccessible(true);
+        java.lang.reflect.Field forgotten = Reflect.field(TrainControlUI.class, "forgottenByTheReset");
 
         try
         {
@@ -2197,9 +2157,7 @@ public class testTheImportDoorReadsAnOldFile
 
         final support.SandboxedWindow sandboxed = new support.SandboxedWindow();
 
-        java.lang.reflect.Field declined = TrainControlUI.class.getDeclaredField("setupEditDeclinedDuringRun");
-
-        declined.setAccessible(true);
+        java.lang.reflect.Field declined = Reflect.field(TrainControlUI.class, "setupEditDeclinedDuringRun");
 
         try
         {
@@ -2207,9 +2165,7 @@ public class testTheImportDoorReadsAnOldFile
 
             ui[0] = sandboxed.hold(openTheWindow());
 
-            java.lang.reflect.Field covered = TrainControlUI.class.getDeclaredField("coveredTrack");
-
-            covered.setAccessible(true);
+            java.lang.reflect.Field covered = Reflect.field(TrainControlUI.class, "coveredTrack");
 
             long until = System.currentTimeMillis() + 20000;
 
@@ -2238,9 +2194,7 @@ public class testTheImportDoorReadsAnOldFile
                 + " track the unloaded configuration's trains covered (RLV8-C1)");
 
             // With the power on, the latency ping asked the model for its railway, which makes one where there is none.
-            java.lang.reflect.Field power = MarklinControlStation.class.getDeclaredField("powerState");
-
-            power.setAccessible(true);
+            java.lang.reflect.Field power = Reflect.field(MarklinControlStation.class, "powerState");
 
             Object powerWas = power.get(ui[0].getModel());
 
@@ -2248,21 +2202,15 @@ public class testTheImportDoorReadsAnOldFile
             {
                 power.set(ui[0].getModel(), true);
 
-                java.lang.reflect.Method ping = TrainControlUI.class.getDeclaredMethod("checkAutoLayoutLatency",
-                    double.class);
-
-                ping.setAccessible(true);
+                java.lang.reflect.Method ping =
+                    Reflect.method(TrainControlUI.class, "checkAutoLayoutLatency", double.class);
 
                 ping.invoke(ui[0], 0.0);
 
                 assertFalse(ui[0].getModel().hasAutoLayout(), "after Unload the latency ping built a railway, which"
                     + " hasAutoLayout then answers yes about (RLV8-C2)");
 
-                java.lang.reflect.Method repaint = TrainControlUI.class.getDeclaredMethod("repaintTimetable");
-
-                repaint.setAccessible(true);
-
-                repaint.invoke(ui[0]);
+                Reflect.method(TrainControlUI.class, "repaintTimetable").invoke(ui[0]);
 
                 for (int turn = 0; turn < 4; turn++) SwingUtilities.invokeAndWait(() -> { });
 
@@ -2277,17 +2225,13 @@ public class testTheImportDoorReadsAnOldFile
             assertFalse((Boolean) declined.get(ui[0]), "Unload left the flag up, with no railway for an edit to wait for"
                 + " (RLV7-C2)");
 
-            java.lang.reflect.Field forgotten = TrainControlUI.class.getDeclaredField("forgottenByTheReset");
-
-            forgotten.setAccessible(true);
+            java.lang.reflect.Field forgotten = Reflect.field(TrainControlUI.class, "forgottenByTheReset");
 
             assertEquals(forgotten.get(ui[0]), null, "Unload remembers the configuration it unloaded, for a load to carry"
                 + " its trains across (RLV7-C2)");
 
-            final java.lang.reflect.Method carry = TrainControlUI.class.getDeclaredMethod("carryTheTrainsAcross",
-                Runnable.class);
-
-            carry.setAccessible(true);
+            final java.lang.reflect.Method carry =
+                Reflect.method(TrainControlUI.class, "carryTheTrainsAcross", Runnable.class);
 
             SwingUtilities.invokeAndWait(() ->
             {
@@ -2488,9 +2432,7 @@ public class testTheImportDoorReadsAnOldFile
 
         final support.SandboxedWindow sandboxed = new support.SandboxedWindow();
 
-        java.lang.reflect.Field declined = TrainControlUI.class.getDeclaredField("setupEditDeclinedDuringRun");
-
-        declined.setAccessible(true);
+        java.lang.reflect.Field declined = Reflect.field(TrainControlUI.class, "setupEditDeclinedDuringRun");
 
         final String source = TrainControlUI.getPrefs().get(TrainControlUI.LAYOUT_OVERRIDE_PATH_PREF, "");
 
@@ -2504,16 +2446,12 @@ public class testTheImportDoorReadsAnOldFile
 
             assertFalse(folder.isEmpty(), "precondition: the sandbox's railway is not a folder of his");
 
-            java.lang.reflect.Field remembered = TrainControlUI.class.getDeclaredField("railwaySource");
-
-            remembered.setAccessible(true);
+            java.lang.reflect.Field remembered = Reflect.field(TrainControlUI.class, "railwaySource");
 
             remembered.set(ui[0], "");
 
-            final java.lang.reflect.Method downloaded = TrainControlUI.class.getDeclaredMethod("useTheDownloadedLayout",
-                File.class);
-
-            downloaded.setAccessible(true);
+            final java.lang.reflect.Method downloaded =
+                Reflect.method(TrainControlUI.class, "useTheDownloadedLayout", File.class);
 
             SwingUtilities.invokeAndWait(() ->
             {
@@ -2565,9 +2503,7 @@ public class testTheImportDoorReadsAnOldFile
 
         final support.SandboxedWindow sandboxed = new support.SandboxedWindow();
 
-        java.lang.reflect.Field declined = TrainControlUI.class.getDeclaredField("setupEditDeclinedDuringRun");
-
-        declined.setAccessible(true);
+        java.lang.reflect.Field declined = Reflect.field(TrainControlUI.class, "setupEditDeclinedDuringRun");
 
         try
         {
@@ -2869,13 +2805,12 @@ public class testTheImportDoorReadsAnOldFile
 
                 final org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel panel = openTheEditorFor(ui[0], station, null);
 
-                java.lang.reflect.Field open = TrainControlUI.class.getDeclaredField("openEditor");
-                open.setAccessible(true);
+                java.lang.reflect.Field open = Reflect.field(TrainControlUI.class, "openEditor");
 
                 final org.traincontrol.gui.layouteditor.LayoutEditor editor = (org.traincontrol.gui.layouteditor.LayoutEditor) open.get(ui[0]);
 
-                java.lang.reflect.Field gridField = org.traincontrol.gui.layouteditor.LayoutEditor.class.getDeclaredField("grid");
-                gridField.setAccessible(true);
+                java.lang.reflect.Field gridField =
+                    Reflect.field(org.traincontrol.gui.layouteditor.LayoutEditor.class, "grid");
 
                 final org.traincontrol.gui.LayoutLabel square =
                     ((org.traincontrol.gui.LayoutGrid) gridField.get(editor)).getValueAt(station.getX(), station.getY());
@@ -3003,11 +2938,7 @@ public class testTheImportDoorReadsAnOldFile
     /** A private field of the editor's panel, by name. */
     private static Object panelPart(org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel panel, String name) throws Exception
     {
-        java.lang.reflect.Field field = org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel.class.getDeclaredField(name);
-
-        field.setAccessible(true);
-
-        return field.get(panel);
+        return Reflect.get(org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel.class, panel, name);
     }
 
     /** Opens the autonomy editor at a square, as a finding's click does, and waits for it to settle. */
@@ -3016,9 +2947,7 @@ public class testTheImportDoorReadsAnOldFile
     {
         answeringYes(() -> ui.openAutonomyEditor(at, related));
 
-        java.lang.reflect.Field open = TrainControlUI.class.getDeclaredField("openEditor");
-
-        open.setAccessible(true);
+        java.lang.reflect.Field open = Reflect.field(TrainControlUI.class, "openEditor");
 
         org.traincontrol.gui.layouteditor.LayoutEditor editor = null;
 
@@ -3050,9 +2979,7 @@ public class testTheImportDoorReadsAnOldFile
     /** Closes the editor `openTheEditorFor` opened. */
     static void closeTheEditor(TrainControlUI ui) throws Exception
     {
-        java.lang.reflect.Field open = TrainControlUI.class.getDeclaredField("openEditor");
-
-        open.setAccessible(true);
+        java.lang.reflect.Field open = Reflect.field(TrainControlUI.class, "openEditor");
 
         final org.traincontrol.gui.layouteditor.LayoutEditor editor = (org.traincontrol.gui.layouteditor.LayoutEditor) open.get(ui);
 
@@ -3085,9 +3012,7 @@ public class testTheImportDoorReadsAnOldFile
 
         final support.SandboxedWindow sandboxed = new support.SandboxedWindow();
 
-        java.lang.reflect.Field declined = TrainControlUI.class.getDeclaredField("setupEditDeclinedDuringRun");
-
-        declined.setAccessible(true);
+        java.lang.reflect.Field declined = Reflect.field(TrainControlUI.class, "setupEditDeclinedDuringRun");
 
         Thread driving = null;
 
@@ -3642,9 +3567,7 @@ public class testTheImportDoorReadsAnOldFile
 
             assertTrue(before >= 2, "precondition: " + train.getName() + " under way holds " + before + " points");
 
-            final java.lang.reflect.Method write = TrainControlUI.class.getDeclaredMethod("writeTheTurnsOwed");
-
-            write.setAccessible(true);
+            final java.lang.reflect.Method write = Reflect.method(TrainControlUI.class, "writeTheTurnsOwed");
 
             SwingUtilities.invokeAndWait(() ->
             {
@@ -3838,9 +3761,7 @@ public class testTheImportDoorReadsAnOldFile
 
         final support.SandboxedWindow sandboxed = new support.SandboxedWindow();
 
-        java.lang.reflect.Field declined = TrainControlUI.class.getDeclaredField("setupEditDeclinedDuringRun");
-
-        declined.setAccessible(true);
+        java.lang.reflect.Field declined = Reflect.field(TrainControlUI.class, "setupEditDeclinedDuringRun");
 
         try
         {
@@ -4930,11 +4851,7 @@ public class testTheImportDoorReadsAnOldFile
     /** The setup file as the store last saved it - what the next start reads. */
     private static org.json.JSONObject setupOnDisk(AutonomySession session) throws Exception
     {
-        java.lang.reflect.Method setupFile = session.getStore().getClass().getDeclaredMethod("setupFile");
-
-        setupFile.setAccessible(true);
-
-        File file = (File) setupFile.invoke(session.getStore());
+        File file = (File) Reflect.method(session.getStore().getClass(), "setupFile").invoke(session.getStore());
 
         return new org.json.JSONObject(new String(java.nio.file.Files.readAllBytes(file.toPath()),
             java.nio.charset.StandardCharsets.UTF_8));
@@ -5288,9 +5205,7 @@ public class testTheImportDoorReadsAnOldFile
 
             final int entries = railway.getTimetable().size();
 
-            java.lang.reflect.Field list = TrainControlUI.class.getDeclaredField("LayoutList");
-
-            list.setAccessible(true);
+            java.lang.reflect.Field list = Reflect.field(TrainControlUI.class, "LayoutList");
 
             final javax.swing.JComboBox<?> pages = (javax.swing.JComboBox<?>) list.get(ui[0]);
 
@@ -5299,10 +5214,8 @@ public class testTheImportDoorReadsAnOldFile
             assertEquals(String.valueOf(pages.getSelectedItem()), going, "precondition: " + going + " is not the page"
                 + " shown");
 
-            java.lang.reflect.Method delete = TrainControlUI.class.getDeclaredMethod("deleteLayoutMenuItemActionPerformed",
-                java.awt.event.ActionEvent.class);
-
-            delete.setAccessible(true);
+            java.lang.reflect.Method delete = Reflect.method(TrainControlUI.class,
+                "deleteLayoutMenuItemActionPerformed", java.awt.event.ActionEvent.class);
 
             answers = startAnsweringYes(asked, answering);
 

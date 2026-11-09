@@ -15,6 +15,7 @@ import org.traincontrol.gui.layouteditor.LayoutEditor;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;
 import static org.traincontrol.marklin.MarklinControlStation.init;
+import support.Reflect;
 
 /**
  * Switching Path Type redraws the path test in the real autonomy editor (OB-225).
@@ -376,9 +377,7 @@ public class testPathTypeRedrawsTheTestInTheEditor
                 + " stations");
 
             // And let go by a right-click's menu before the answer can paint
-            final java.lang.reflect.Method cancel = AutonomyEditorPanel.class.getDeclaredMethod("cancelPendingGesture");
-
-            cancel.setAccessible(true);
+            final java.lang.reflect.Method cancel = Reflect.method(AutonomyEditorPanel.class, "cancelPendingGesture");
 
             SwingUtilities.invokeAndWait(() ->
             {
@@ -440,10 +439,8 @@ public class testPathTypeRedrawsTheTestInTheEditor
 
             org.traincontrol.automation.Layout layout = model.getAutoLayout();
 
-            java.lang.reflect.Method turns = org.traincontrol.automation.Layout.class.getDeclaredMethod(
-                "reversesAlongTheWay", java.util.List.class);
-
-            turns.setAccessible(true);
+            java.lang.reflect.Method turns =
+                Reflect.method(org.traincontrol.automation.Layout.class, "reversesAlongTheWay", java.util.List.class);
 
             int trains = 0;
             int purple = 0;
@@ -1155,9 +1152,7 @@ public class testPathTypeRedrawsTheTestInTheEditor
     /** Waits for the worker to finish the answer, then for the event thread to paint it. */
     private static void answered(AutonomyEditorPanel panel) throws Exception
     {
-        java.lang.reflect.Method await = AutonomyEditorPanel.class.getDeclaredMethod("awaitWhy", long.class);
-
-        await.setAccessible(true);
+        java.lang.reflect.Method await = Reflect.method(AutonomyEditorPanel.class, "awaitWhy", long.class);
 
         assertTrue((Boolean) await.invoke(panel, 120000L), "the Why answer was not worked out within two minutes");
 
@@ -1225,9 +1220,7 @@ public class testPathTypeRedrawsTheTestInTheEditor
 
     private static String describe(AutonomyEditorPanel panel, TileKey tile) throws Exception
     {
-        java.lang.reflect.Method describe = AutonomyEditorPanel.class.getDeclaredMethod("describeTile", TileKey.class);
-
-        describe.setAccessible(true);
+        java.lang.reflect.Method describe = Reflect.method(AutonomyEditorPanel.class, "describeTile", TileKey.class);
 
         String text = String.valueOf(describe.invoke(panel, tile));
 
@@ -1273,11 +1266,7 @@ public class testPathTypeRedrawsTheTestInTheEditor
         {
             try
             {
-                java.lang.reflect.Field f = type.getDeclaredField(name);
-
-                f.setAccessible(true);
-
-                return f.get(on);
+                return Reflect.get(type, on, name);
             }
             catch (NoSuchFieldException notHere)
             {

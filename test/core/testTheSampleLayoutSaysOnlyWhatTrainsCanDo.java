@@ -29,6 +29,7 @@ import org.traincontrol.automationui.TileGraph.RouteId;
 import org.traincontrol.automationui.TileGraph.TileKey;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;
+import support.Reflect;
 
 /**
  * The sample layout Create New Layout unpacks says nothing about moves no train can make (OB-361): "it is impossible
@@ -419,9 +420,7 @@ public class testTheSampleLayoutSaysOnlyWhatTrainsCanDo
     private static void click(final org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel panel, final TileKey square) throws Exception
     {
         final java.lang.reflect.Method cycle =
-            org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel.class.getDeclaredMethod("cycle", TileKey.class);
-
-        cycle.setAccessible(true);
+            Reflect.method(org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel.class, "cycle", TileKey.class);
 
         javax.swing.SwingUtilities.invokeAndWait(() ->
         {

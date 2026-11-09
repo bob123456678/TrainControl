@@ -21,6 +21,7 @@ import org.traincontrol.gui.layouteditor.LayoutEditor;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;
 import static org.traincontrol.marklin.MarklinControlStation.init;
+import support.Reflect;
 
 /**
  * Cancel in the autonomy editor undoes the setup edits made in it (MT-406).  Every setup gesture rebuilds the running
@@ -414,8 +415,7 @@ public class testCancelUndoesAutonomyEdits
 
         final LayoutEditor editor = opened();
 
-        java.lang.reflect.Field open = TrainControlUI.class.getDeclaredField("openEditor");
-        open.setAccessible(true);
+        java.lang.reflect.Field open = Reflect.field(TrainControlUI.class, "openEditor");
 
         Object was = open.get(ui);
 
@@ -552,8 +552,7 @@ public class testCancelUndoesAutonomyEdits
     public void testADeclinedEditSurvivesTheNextCapture() throws Exception
     {
         org.json.JSONObject asFound = session.snapshotSetup();
-        final java.lang.reflect.Field declined = TrainControlUI.class.getDeclaredField("setupEditDeclinedDuringRun");
-        declined.setAccessible(true);
+        final java.lang.reflect.Field declined = Reflect.field(TrainControlUI.class, "setupEditDeclinedDuringRun");
         try
         {
             final Map.Entry<TileKey, String> standing = aLocomotiveWithNoHome();
@@ -600,8 +599,7 @@ public class testCancelUndoesAutonomyEdits
     @Test
     public void testTheDeclinedEditGuardEndsWhenARebuildCarriesTheEdit() throws Exception
     {
-        final java.lang.reflect.Field declined = TrainControlUI.class.getDeclaredField("setupEditDeclinedDuringRun");
-        declined.setAccessible(true);
+        final java.lang.reflect.Field declined = Reflect.field(TrainControlUI.class, "setupEditDeclinedDuringRun");
         try
         {
             declined.setBoolean(ui, true);
@@ -630,8 +628,7 @@ public class testCancelUndoesAutonomyEdits
     @Test
     public void testADeclinedRebuildLeavesTheDeclinedEditGuardUp() throws Exception
     {
-        final java.lang.reflect.Field declined = TrainControlUI.class.getDeclaredField("setupEditDeclinedDuringRun");
-        declined.setAccessible(true);
+        final java.lang.reflect.Field declined = Reflect.field(TrainControlUI.class, "setupEditDeclinedDuringRun");
         final org.json.JSONObject asFound = session.snapshotSetup();
         try
         {
@@ -824,9 +821,8 @@ public class testCancelUndoesAutonomyEdits
     /** Runs the autonomy panel's bulk clear of every placement on the event thread. */
     private static void clearAllPlacements(final LayoutEditor editor) throws Exception
     {
-        final java.lang.reflect.Method clear = editor.getAutonomyPanel().getClass().getDeclaredMethod("clearAllPlacements");
-
-        clear.setAccessible(true);
+        final java.lang.reflect.Method clear =
+            Reflect.method(editor.getAutonomyPanel().getClass(), "clearAllPlacements");
 
         SwingUtilities.invokeAndWait(() ->
         {
@@ -844,8 +840,7 @@ public class testCancelUndoesAutonomyEdits
     /** Calls the exit's fold of the running layout back into the setup (`captureRunningLayout`) on the event thread. */
     private static void foldTheRunningLayout() throws Exception
     {
-        final java.lang.reflect.Method fold = TrainControlUI.class.getDeclaredMethod("captureRunningLayout");
-        fold.setAccessible(true);
+        final java.lang.reflect.Method fold = Reflect.method(TrainControlUI.class, "captureRunningLayout");
         SwingUtilities.invokeAndWait(() ->
         {
             try
@@ -942,9 +937,7 @@ public class testCancelUndoesAutonomyEdits
     private static void click(final LayoutEditor editor, final TileKey square) throws Exception
     {
         final java.lang.reflect.Method cycle =
-            editor.getAutonomyPanel().getClass().getDeclaredMethod("cycle", TileKey.class);
-
-        cycle.setAccessible(true);
+            Reflect.method(editor.getAutonomyPanel().getClass(), "cycle", TileKey.class);
 
         SwingUtilities.invokeAndWait(() ->
         {
@@ -971,10 +964,8 @@ public class testCancelUndoesAutonomyEdits
     /** The Save button's action. */
     private static void save(final LayoutEditor editor) throws Exception
     {
-        final java.lang.reflect.Method pressed = LayoutEditor.class.getDeclaredMethod(
-            "saveButtonActionPerformed", java.awt.event.ActionEvent.class);
-
-        pressed.setAccessible(true);
+        final java.lang.reflect.Method pressed =
+            Reflect.method(LayoutEditor.class, "saveButtonActionPerformed", java.awt.event.ActionEvent.class);
 
         SwingUtilities.invokeAndWait(() ->
         {
@@ -993,9 +984,7 @@ public class testCancelUndoesAutonomyEdits
 
     private static void press(final LayoutEditor editor, String method) throws Exception
     {
-        final java.lang.reflect.Method pressed = LayoutEditor.class.getDeclaredMethod(method);
-
-        pressed.setAccessible(true);
+        final java.lang.reflect.Method pressed = Reflect.method(LayoutEditor.class, method);
 
         SwingUtilities.invokeAndWait(() ->
         {

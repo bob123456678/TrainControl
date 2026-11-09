@@ -15,6 +15,7 @@ import org.traincontrol.marklin.MarklinAccessory;
 import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.marklin.udp.CS2Message;
 import static org.traincontrol.marklin.MarklinControlStation.init;
+import support.Reflect;
 
 /**
  * A platform with two protecting signals throws BOTH of them (MT-023): they are commanded together and show the same
@@ -368,9 +369,7 @@ public class testBothProtectingSignalsAreThrown
 
         final Locomotive train = model.getLocByName(model.getLocList().get(0));
 
-        java.lang.reflect.Field takingField = Layout.class.getDeclaredField("takingPath");
-
-        takingField.setAccessible(true);
+        java.lang.reflect.Field takingField = Reflect.field(Layout.class, "takingPath");
 
         @SuppressWarnings("unchecked")
         final java.util.Map<Locomotive, List<Edge>> taking = (java.util.Map<Locomotive, List<Edge>>) takingField.get(layout);
@@ -397,13 +396,9 @@ public class testBothProtectingSignalsAreThrown
             }
         };
 
-        java.lang.reflect.Field journeysField = Layout.class.getDeclaredField("activeLocomotives");
+        java.lang.reflect.Field journeysField = Reflect.field(Layout.class, "activeLocomotives");
 
-        journeysField.setAccessible(true);
-
-        java.lang.reflect.Field modifiers = java.lang.reflect.Field.class.getDeclaredField("modifiers");
-
-        modifiers.setAccessible(true);
+        java.lang.reflect.Field modifiers = Reflect.field(java.lang.reflect.Field.class, "modifiers");
         modifiers.setInt(journeysField, journeysField.getModifiers() & ~java.lang.reflect.Modifier.FINAL);
 
         journeysField.set(layout, journeys);
@@ -411,10 +406,8 @@ public class testBothProtectingSignalsAreThrown
         // THE CLAIM TAKEN
         taking.put(train, path);
 
-        java.lang.reflect.Method passing = Layout.class.getDeclaredMethod("onlyPassing", Locomotive.class,
-            org.traincontrol.automation.Point.class);
-
-        passing.setAccessible(true);
+        java.lang.reflect.Method passing =
+            Reflect.method(Layout.class, "onlyPassing", Locomotive.class, org.traincontrol.automation.Point.class);
 
         boolean passed = (boolean) passing.invoke(layout, train, layout.getPoint("HO M"));
 
@@ -1529,10 +1522,8 @@ public class testBothProtectingSignalsAreThrown
     {
         try
         {
-            java.lang.reflect.Method refresh = Layout.class.getDeclaredMethod("refreshProtectingSignal",
-                org.traincontrol.automation.Point.class);
-
-            refresh.setAccessible(true);
+            java.lang.reflect.Method refresh =
+                Reflect.method(Layout.class, "refreshProtectingSignal", org.traincontrol.automation.Point.class);
             refresh.invoke(layout, layout.getPoint(point));
 
             return "refreshed";
@@ -1547,11 +1538,7 @@ public class testBothProtectingSignalsAreThrown
     @SuppressWarnings("unchecked")
     private static java.util.Map<Locomotive, List<Edge>> journeys(Layout layout) throws Exception
     {
-        java.lang.reflect.Field active = Layout.class.getDeclaredField("activeLocomotives");
-
-        active.setAccessible(true);
-
-        return (java.util.Map<Locomotive, List<Edge>>) active.get(layout);
+        return (java.util.Map<Locomotive, List<Edge>>) Reflect.get(Layout.class, layout, "activeLocomotives");
     }
 
     /**

@@ -27,6 +27,7 @@ import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.util.I18n;
 import support.Answering;
 import support.Mouse;
+import support.Reflect;
 
 /**
  * FR-160: a train drawn on a station in the autonomy editor can be dragged to another station.  It lands through the
@@ -865,9 +866,7 @@ public class testATrainDragsFromStationToStation
 
         org.json.JSONObject asFound = session.snapshotSetup();
 
-        final java.lang.reflect.Field staging = TrainControlUI.class.getDeclaredField("stagingFlowActive");
-
-        staging.setAccessible(true);
+        final java.lang.reflect.Field staging = Reflect.field(TrainControlUI.class, "stagingFlowActive");
 
         try
         {
@@ -1008,9 +1007,7 @@ public class testATrainDragsFromStationToStation
     {
         try (Answering answering = Answering.start(message -> Answering.press(I18n.t("layout.ui.switchDiscard"))))
         {
-            final java.lang.reflect.Method settle = LayoutEditor.class.getDeclaredMethod("settleUnsavedWork");
-
-            settle.setAccessible(true);
+            final java.lang.reflect.Method settle = Reflect.method(LayoutEditor.class, "settleUnsavedWork");
 
             onTheEventThread(() -> assertTrue((Boolean) settle.invoke(editor), "the switch did not go ahead"));
 
@@ -1246,9 +1243,7 @@ public class testATrainDragsFromStationToStation
 
             try (Answering answering = Answering.start(message -> Answering.press(I18n.t("layout.ui.switchSave"))))
             {
-                final java.lang.reflect.Method settleWork = LayoutEditor.class.getDeclaredMethod("settleUnsavedWork");
-
-                settleWork.setAccessible(true);
+                final java.lang.reflect.Method settleWork = Reflect.method(LayoutEditor.class, "settleUnsavedWork");
 
                 onTheEventThread(() -> settleWork.invoke(editor));
             }
@@ -1494,9 +1489,7 @@ public class testATrainDragsFromStationToStation
         try (Answering answering = Answering.start(
             message -> Answering.press(String.valueOf(TrainControlUI.YES_NO_OPTS[0]))))
         {
-            final java.lang.reflect.Method cancel = LayoutEditor.class.getDeclaredMethod("confirmExit");
-
-            cancel.setAccessible(true);
+            final java.lang.reflect.Method cancel = Reflect.method(LayoutEditor.class, "confirmExit");
 
             later(() -> cancel.invoke(editor));
 
@@ -1573,9 +1566,7 @@ public class testATrainDragsFromStationToStation
     {
         final Object panel = editor.getAutonomyPanel();
 
-        final java.lang.reflect.Field box = panel.getClass().getDeclaredField("showTrains");
-
-        box.setAccessible(true);
+        final java.lang.reflect.Field box = Reflect.field(panel.getClass(), "showTrains");
 
         SwingUtilities.invokeAndWait(() ->
         {
@@ -1733,11 +1724,7 @@ public class testATrainDragsFromStationToStation
 
     private static LayoutGrid gridOf() throws Exception
     {
-        java.lang.reflect.Field field = LayoutEditor.class.getDeclaredField("grid");
-
-        field.setAccessible(true);
-
-        return (LayoutGrid) field.get(editor);
+        return (LayoutGrid) Reflect.get(LayoutEditor.class, editor, "grid");
     }
 
     /** The middle of a square, where Mouse presses. */
@@ -1781,11 +1768,7 @@ public class testATrainDragsFromStationToStation
     /** The picture following the pointer, or null. */
     private static Object ghost() throws Exception
     {
-        java.lang.reflect.Field field = LayoutEditor.class.getDeclaredField("captionGhost");
-
-        field.setAccessible(true);
-
-        return field.get(editor);
+        return Reflect.get(LayoutEditor.class, editor, "captionGhost");
     }
 
     /** The color of the outline a square wears, or null. */
@@ -1821,9 +1804,7 @@ public class testATrainDragsFromStationToStation
         {
             try
             {
-                java.lang.reflect.Field field = LayoutEditor.class.getDeclaredField("jScrollPane1");
-
-                field.setAccessible(true);
+                java.lang.reflect.Field field = Reflect.field(LayoutEditor.class, "jScrollPane1");
 
                 javax.swing.JScrollPane pane = (javax.swing.JScrollPane) field.get(editor);
 
@@ -1956,15 +1937,11 @@ public class testATrainDragsFromStationToStation
     /** A real Control+X on one square and Control+V on another, through the main window's key door. */
     private static void realPaste(final TileKey from, final TileKey to) throws Exception
     {
-        final java.lang.reflect.Method gesture = TrainControlUI.class.getDeclaredMethod("locomotiveGestureOnDiagram",
-            int.class, boolean.class);
-
-        gesture.setAccessible(true);
+        final java.lang.reflect.Method gesture =
+            Reflect.method(TrainControlUI.class, "locomotiveGestureOnDiagram", int.class, boolean.class);
 
         // The train is also the one selected in the main window, which is what a paste puts down if its cut took none
-        final java.lang.reflect.Field selected = TrainControlUI.class.getDeclaredField("activeLoc");
-
-        selected.setAccessible(true);
+        final java.lang.reflect.Field selected = Reflect.field(TrainControlUI.class, "activeLoc");
 
         final org.traincontrol.base.Locomotive train = model.getLocByName(session.getLocomotiveNameAt(from));
 

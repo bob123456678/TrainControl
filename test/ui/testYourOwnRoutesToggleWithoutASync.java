@@ -14,6 +14,7 @@ import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.marklin.MarklinRoute;
 import org.traincontrol.util.I18n;
 import static org.traincontrol.marklin.MarklinControlStation.init;
+import support.Reflect;
 
 /**
  * Turning automatic execution on or off for a route the Central Station never carried does not sync with it (MT-467):
@@ -198,11 +199,7 @@ public class testYourOwnRoutesToggleWithoutASync
             {
                 try
                 {
-                    java.lang.reflect.Field area = TrainControlUI.class.getDeclaredField("debugArea");
-
-                    area.setAccessible(true);
-
-                    text[0] = ((javax.swing.JTextArea) area.get(ui)).getText();
+                    text[0] = ((javax.swing.JTextArea) Reflect.get(TrainControlUI.class, ui, "debugArea")).getText();
                 }
                 catch (ReflectiveOperationException e)
                 {
@@ -230,9 +227,7 @@ public class testYourOwnRoutesToggleWithoutASync
      */
     private static void holdTheSync(boolean held) throws Exception
     {
-        java.lang.reflect.Field field = TrainControlUI.class.getDeclaredField("syncInFlight");
-
-        field.setAccessible(true);
+        java.lang.reflect.Field field = Reflect.field(TrainControlUI.class, "syncInFlight");
 
         java.util.concurrent.atomic.AtomicBoolean flag = (java.util.concurrent.atomic.AtomicBoolean) field.get(ui);
 

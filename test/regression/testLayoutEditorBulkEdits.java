@@ -15,6 +15,7 @@ import org.traincontrol.automationui.TileGraph.RouteId;
 import org.traincontrol.automationui.TileGraph.TileKey;
 import org.traincontrol.automationui.TilePorts;
 import org.traincontrol.gui.layouteditor.LayoutEditor;
+import support.Reflect;
 
 /**
  * Moving or copying a whole line of squares at once, and what happens to the setup underneath it.
@@ -383,9 +384,7 @@ public class testLayoutEditorBulkEdits
             try
             {
                 java.lang.reflect.Field picked =
-                    org.traincontrol.gui.layouteditor.LayoutEditor.class.getDeclaredField("selection");
-
-                picked.setAccessible(true);
+                    Reflect.field(org.traincontrol.gui.layouteditor.LayoutEditor.class, "selection");
 
                 ((org.traincontrol.base.TileSelection) picked.get(editor)).addRectangle(5, 3, 5, 3);
             }
@@ -520,17 +519,13 @@ public class testLayoutEditorBulkEdits
             session.getStore().setStation(at(page, 5, 3), true);
             session.getStore().setPointName(at(page, 5, 3), "Cut And Carried");
 
-            java.lang.reflect.Field sessionField =
-                org.traincontrol.gui.TrainControlUI.class.getDeclaredField("autonomySession");
-            sessionField.setAccessible(true);
-            sessionField.set(ui[0], session);
+            Reflect.set(org.traincontrol.gui.TrainControlUI.class, ui[0], "autonomySession", session);
 
             javax.swing.SwingUtilities.invokeAndWait(() ->
                 editor[0] = new org.traincontrol.gui.layouteditor.LayoutEditor(diagram, 30, ui[0], 0));
 
             java.lang.reflect.Method drawGrid =
-                org.traincontrol.gui.layouteditor.LayoutEditor.class.getDeclaredMethod("drawGrid");
-            drawGrid.setAccessible(true);
+                Reflect.method(org.traincontrol.gui.layouteditor.LayoutEditor.class, "drawGrid");
 
             javax.swing.SwingUtilities.invokeAndWait(() ->
             {
@@ -646,11 +641,8 @@ public class testLayoutEditorBulkEdits
         {
             try
             {
-                java.lang.reflect.Field gridField = LayoutEditor.class.getDeclaredField("grid");
-                gridField.setAccessible(true);
-
                 org.traincontrol.gui.LayoutGrid grid =
-                    (org.traincontrol.gui.LayoutGrid) gridField.get(editor);
+                    (org.traincontrol.gui.LayoutGrid) Reflect.get(LayoutEditor.class, editor, "grid");
 
                 // The fixture's diagram is 21 x 16, so the padding is row 16; asserted, or the test would look at
                 // nothing.
@@ -663,16 +655,10 @@ public class testLayoutEditorBulkEdits
 
                 assertNull(padding.getBorder(), "the padding started out with a border");
 
-                java.lang.reflect.Field landingField =
-                    LayoutEditor.class.getDeclaredField("landingSelection");
-                landingField.setAccessible(true);
-
                 org.traincontrol.base.TileSelection landing =
-                    (org.traincontrol.base.TileSelection) landingField.get(editor);
+                    (org.traincontrol.base.TileSelection) Reflect.get(LayoutEditor.class, editor, "landingSelection");
 
-                java.lang.reflect.Method refresh =
-                    LayoutEditor.class.getDeclaredMethod("refreshSelectionBorders");
-                refresh.setAccessible(true);
+                java.lang.reflect.Method refresh = Reflect.method(LayoutEditor.class, "refreshSelectionBorders");
 
                 // A group on the bottom row, dragged one row further down: the landing runs off the diagram onto the
                 // padding.

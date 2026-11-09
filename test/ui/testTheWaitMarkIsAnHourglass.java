@@ -11,6 +11,7 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 import org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel;
 import org.traincontrol.gui.widgets.LoadingSpinner;
+import support.Reflect;
 import support.SourceOf;
 
 /**
@@ -44,9 +45,7 @@ public class testTheWaitMarkIsAnHourglass
     {
         try
         {
-            java.lang.reflect.Field field = LoadingSpinner.class.getDeclaredField(name);
-
-            field.setAccessible(true);
+            java.lang.reflect.Field field = Reflect.field(LoadingSpinner.class, name);
 
             return field.getInt(null);
         }

@@ -2,6 +2,7 @@ package regression;
 
 import static org.testng.Assert.*;
 import org.testng.annotations.Test;
+import support.Reflect;
 
 /**
  * OB-187: the menus stopped being gray in stages as the connect finished.  The autonomy menu is not on the bar when
@@ -246,12 +247,7 @@ public class testTheMenusComeBackAtOneMoment
     private static <T> T field(org.traincontrol.gui.TrainControlUI on, String name, Class<T> kind)
         throws Exception
     {
-        java.lang.reflect.Field f =
-            org.traincontrol.gui.TrainControlUI.class.getDeclaredField(name);
-
-        f.setAccessible(true);
-
-        return kind.cast(f.get(on));
+        return kind.cast(Reflect.get(org.traincontrol.gui.TrainControlUI.class, on, name));
     }
 
     /** Where a component sits on a menu, or -1. */
@@ -298,10 +294,7 @@ public class testTheMenusComeBackAtOneMoment
     /** A private no-argument method of the window, by name, on the event thread. */
     private static void call(org.traincontrol.gui.TrainControlUI on, String name) throws Exception
     {
-        final java.lang.reflect.Method m =
-            org.traincontrol.gui.TrainControlUI.class.getDeclaredMethod(name);
-
-        m.setAccessible(true);
+        final java.lang.reflect.Method m = Reflect.method(org.traincontrol.gui.TrainControlUI.class, name);
 
         javax.swing.SwingUtilities.invokeAndWait(() ->
         {
@@ -420,8 +413,9 @@ public class testTheMenusComeBackAtOneMoment
     {
         try
         {
-            java.lang.reflect.Method rule = org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel.class.getDeclaredMethod("fitsOnOneLine", String.class);
-            rule.setAccessible(true);
+            java.lang.reflect.Method rule =
+                Reflect.method(org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel.class,
+                    "fitsOnOneLine", String.class);
 
             return (Boolean) rule.invoke(null, text);
         }

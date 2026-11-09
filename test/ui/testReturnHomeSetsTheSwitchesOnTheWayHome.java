@@ -24,6 +24,7 @@ import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.util.I18n;
 import support.Answering;
 import support.Components;
+import support.Reflect;
 import support.Restart;
 
 /**
@@ -159,9 +160,7 @@ public class testReturnHomeSetsTheSwitchesOnTheWayHome
         assertTrue(model.waitForPowerState(true, 10000), "precondition: the power is not on");
 
         // The Auto tab's Return Home button, by its field, saying what the operator reads on it
-        final java.lang.reflect.Field field = TrainControlUI.class.getDeclaredField("returnHomeButton");
-
-        field.setAccessible(true);
+        final java.lang.reflect.Field field = Reflect.field(TrainControlUI.class, "returnHomeButton");
 
         final AbstractButton returnHome = (AbstractButton) field.get(model.getGUI());
 

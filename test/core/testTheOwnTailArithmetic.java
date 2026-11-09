@@ -16,6 +16,7 @@ import org.traincontrol.base.Locomotive;
 import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.util.I18n;
 import static org.traincontrol.marklin.MarklinControlStation.init;
+import support.Reflect;
 
 /**
  * The own-tail rule's arithmetic, on routes built by hand (OB-294).
@@ -140,9 +141,7 @@ public class testTheOwnTailArithmetic
     /** The rule, asked of this route for a train of this length whose body lies on these places. */
     private static String ask(List<Edge> route, int length, Map<String, Integer> body) throws Exception
     {
-        Method rule = Layout.class.getDeclaredMethod("whyItWouldMeetItsOwnTail", List.class, Locomotive.class, Map.class);
-
-        rule.setAccessible(true);
+        Method rule = Reflect.method(Layout.class, "whyItWouldMeetItsOwnTail", List.class, Locomotive.class, Map.class);
 
         train.setTrainLength(length);
 

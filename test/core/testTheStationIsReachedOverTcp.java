@@ -31,6 +31,7 @@ import org.traincontrol.model.ModelListener;
 import org.traincontrol.util.I18n;
 import support.Components;
 import support.Packets;
+import support.Reflect;
 import support.TcpStation;
 
 /**
@@ -250,9 +251,7 @@ public class testTheStationIsReachedOverTcp
 
     private Object field(String name) throws Exception
     {
-        java.lang.reflect.Field field = NetworkProxy.class.getDeclaredField(name);
-        field.setAccessible(true);
-        return field.get(this.proxy);
+        return Reflect.get(NetworkProxy.class, this.proxy, name);
     }
 
     /** Sends a datagram to the proxy's UDP socket, as the station's broadcast would arrive. */
@@ -270,8 +269,7 @@ public class testTheStationIsReachedOverTcp
     private void broadcastSetAside(byte[] frame) throws Exception
     {
         Object lock = field("udpLock");
-        java.lang.reflect.Field count = NetworkProxy.class.getDeclaredField("udpSetAside");
-        count.setAccessible(true);
+        java.lang.reflect.Field count = Reflect.field(NetworkProxy.class, "udpSetAside");
         long before;
 
         synchronized (lock)
@@ -876,8 +874,7 @@ public class testTheStationIsReachedOverTcp
         this.station.sensor(1905, true);
         assertTrue(Components.waitFor(() -> this.model.heardFrame(linkS88(1905, true)), WAIT_MS), "precondition");
 
-        java.lang.reflect.Field replacing = NetworkProxy.class.getDeclaredField("replacing");
-        replacing.setAccessible(true);
+        java.lang.reflect.Field replacing = Reflect.field(NetworkProxy.class, "replacing");
         replacing.setBoolean(this.proxy, true);
 
         try

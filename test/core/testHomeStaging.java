@@ -21,6 +21,7 @@ import static org.testng.Assert.*;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
+import support.Reflect;
 import support.SourceOf;
 
 /**
@@ -2116,9 +2117,7 @@ public class testHomeStaging
         String to = victim.getEnd().getName();
         String point = layout.getPoints().iterator().next().getName();
 
-        Field running = Layout.class.getDeclaredField("running");
-
-        running.setAccessible(true);
+        Field running = Reflect.field(Layout.class, "running");
 
         running.set(layout, true);
 
@@ -3299,14 +3298,10 @@ public class testHomeStaging
 
             HomeStaging staging = HomeStaging.snapshot(layout);
 
-            Method passes = HomeStaging.class.getDeclaredMethod("passesTheTailsOfTrainsThatHaveNotMoved", Edge.class,
-                Locomotive.class, Map.class);
+            Method passes = Reflect.method(HomeStaging.class,
+                "passesTheTailsOfTrainsThatHaveNotMoved", Edge.class, Locomotive.class, Map.class);
 
-            passes.setAccessible(true);
-
-            Field startField = HomeStaging.class.getDeclaredField("start");
-
-            startField.setAccessible(true);
+            Field startField = Reflect.field(HomeStaging.class, "start");
 
             @SuppressWarnings("unchecked")
             Map<Point, Locomotive> start = new LinkedHashMap<>((Map<Point, Locomotive>) startField.get(staging));
@@ -3863,10 +3858,8 @@ public class testHomeStaging
 
         assertTrue(layout.getPoint("HS R").isReversing(), "precondition: HS R does not reverse");
 
-        java.lang.reflect.Method tailKey = HomeStaging.class.getDeclaredMethod(
-            "tailKey", java.util.Map.class, java.util.Map.class);
-
-        tailKey.setAccessible(true);
+        java.lang.reflect.Method tailKey =
+            Reflect.method(HomeStaging.class, "tailKey", java.util.Map.class, java.util.Map.class);
 
         HomeStaging staging = HomeStaging.snapshot(layout);
 
@@ -5508,10 +5501,8 @@ public class testHomeStaging
     private static void reserveAsAFailedPathWould(Layout layout, String pointName, String locName)
         throws Exception
     {
-        Method reserve = org.traincontrol.automation.Point.class.getDeclaredMethod(
-            "reserve", org.traincontrol.base.Locomotive.class);
-
-        reserve.setAccessible(true);
+        Method reserve =
+            Reflect.method(org.traincontrol.automation.Point.class, "reserve", org.traincontrol.base.Locomotive.class);
 
         reserve.invoke(layout.getPoint(pointName), loc(locName));
     }
@@ -5584,8 +5575,7 @@ public class testHomeStaging
     {
         Layout layout = load(ring(LOC_A, null, null));
 
-        java.lang.reflect.Field record = Layout.class.getDeclaredField("reversedOnArrival");
-        record.setAccessible(true);
+        java.lang.reflect.Field record = Reflect.field(Layout.class, "reversedOnArrival");
 
         @SuppressWarnings("unchecked")
         java.util.Map<String, String> turns = (java.util.Map<String, String>) record.get(layout);

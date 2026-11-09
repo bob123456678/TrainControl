@@ -24,6 +24,7 @@ import org.traincontrol.base.RouteCommand;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.marklin.MarklinRoute;
+import support.Reflect;
 
 /**
  * The route list turns a mark beside every route that is running (FR-137): the mark is the one Start and Return Home
@@ -187,9 +188,7 @@ public class testTheRouteListShowsWhatRuns
     {
         final String route = aSlowRoute(PREFIX + "edit", 1);
 
-        final java.lang.reflect.Field power = MarklinControlStation.class.getDeclaredField("powerState");
-
-        power.setAccessible(true);
+        final java.lang.reflect.Field power = Reflect.field(MarklinControlStation.class, "powerState");
 
         final boolean was = power.getBoolean(model);
 
@@ -203,11 +202,7 @@ public class testTheRouteListShowsWhatRuns
             {
                 try
                 {
-                    java.lang.reflect.Field field = TrainControlUI.class.getDeclaredField("RouteList");
-
-                    field.setAccessible(true);
-
-                    JTable table = (JTable) field.get(ui);
+                    JTable table = (JTable) Reflect.get(TrainControlUI.class, ui, "RouteList");
 
                     for (int row = 0; row < table.getRowCount() && click[0] == null; row++)
                     {
@@ -237,10 +232,8 @@ public class testTheRouteListShowsWhatRuns
 
             assertNotNull(click[0], "precondition: the route " + route + " is not in the route list");
 
-            final java.lang.reflect.Method clicked = TrainControlUI.class.getDeclaredMethod("RouteListMouseClicked",
-                java.awt.event.MouseEvent.class);
-
-            clicked.setAccessible(true);
+            final java.lang.reflect.Method clicked =
+                Reflect.method(TrainControlUI.class, "RouteListMouseClicked", java.awt.event.MouseEvent.class);
 
             SwingUtilities.invokeLater(() ->
             {
@@ -1843,11 +1836,7 @@ public class testTheRouteListShowsWhatRuns
             {
                 try
                 {
-                    java.lang.reflect.Field field = TrainControlUI.class.getDeclaredField("RouteList");
-
-                    field.setAccessible(true);
-
-                    JTable table = (JTable) field.get(ui);
+                    JTable table = (JTable) Reflect.get(TrainControlUI.class, ui, "RouteList");
 
                     for (int row = 0; row < table.getRowCount(); row++)
                     {

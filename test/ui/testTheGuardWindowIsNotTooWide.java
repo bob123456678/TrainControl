@@ -19,6 +19,7 @@ import org.traincontrol.base.LayoutDiagram;
 import org.traincontrol.base.LayoutDiagramComponent.componentType;
 import org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel;
 import org.traincontrol.util.I18n;
+import support.Reflect;
 
 /**
  * The Exit and Entry Guard Signal windows put their sentence on two lines rather than one wide one (MT-479): "the
@@ -141,9 +142,8 @@ public class testTheGuardWindowIsNotTooWide
 
         final Object chosen = which;
 
-        final java.lang.reflect.Method ask = AutonomyEditorPanel.class.getDeclaredMethod("askAboutSignals", kind, TileKey.class);
-
-        ask.setAccessible(true);
+        final java.lang.reflect.Method ask =
+            Reflect.method(AutonomyEditorPanel.class, "askAboutSignals", kind, TileKey.class);
 
         SwingUtilities.invokeLater(() ->
         {

@@ -15,6 +15,7 @@ import org.testng.annotations.Test;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;
 import static org.traincontrol.marklin.MarklinControlStation.init;
+import support.Reflect;
 
 /**
  * A UIState.data that will not read is copied aside before it is written over (MT-038).  This test writes where the
@@ -38,11 +39,7 @@ public class testUiStateIsNotLostWhenUnreadable
     {
         try
         {
-            java.lang.reflect.Field name = TrainControlUI.class.getDeclaredField("DATA_FILE_NAME");
-
-            name.setAccessible(true);
-
-            return (String) name.get(null);
+            return (String) Reflect.get(TrainControlUI.class, null, "DATA_FILE_NAME");
         }
         catch (ReflectiveOperationException e)
         {

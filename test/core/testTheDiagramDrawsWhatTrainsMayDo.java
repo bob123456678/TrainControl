@@ -24,6 +24,7 @@ import org.traincontrol.automationui.TileGraph.RouteId;
 import org.traincontrol.automationui.TileGraph.TileKey;
 import org.traincontrol.automationui.TilePorts.Route;
 import org.traincontrol.automationui.TilePorts.Side;
+import support.Reflect;
 
 /**
  * The track diagram and the autonomy editor draw the arrows trains may follow, and take the clicks that set them: the
@@ -86,9 +87,7 @@ public class testTheDiagramDrawsWhatTrainsMayDo extends AutonomySessionFixture
     public void testAShortTooltipIsNotPaddedToTheWrappingWidth() throws Exception
     {
         java.lang.reflect.Method wrapped =
-            org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel.class.getDeclaredMethod("wrapped", String.class);
-
-        wrapped.setAccessible(true);
+            Reflect.method(org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel.class, "wrapped", String.class);
 
         String reason = org.traincontrol.util.I18n.t("autolayout.errorCannotEditWhileRunning");
 
@@ -457,11 +456,7 @@ public class testTheDiagramDrawsWhatTrainsMayDo extends AutonomySessionFixture
     /** A private constant of a class, read by reflection so a claim asks the program's rule instead of restating it. */
     private static Object privateConstant(Class<?> owner, String name) throws Exception
     {
-        java.lang.reflect.Field field = owner.getDeclaredField(name);
-
-        field.setAccessible(true);
-
-        return field.get(null);
+        return Reflect.get(owner, null, name);
     }
 
     /** Asserts an annotation's lit pixels on a 30-pixel tile run from 9 to 20 across its rail, about 15.0. */
@@ -725,10 +720,8 @@ public class testTheDiagramDrawsWhatTrainsMayDo extends AutonomySessionFixture
     /** Which way an annotation aims its arrow at a side, on a 48-pixel square. */
     private static double[] headingOf(TileAnnotation annotation, Side side) throws Exception
     {
-        java.lang.reflect.Method heading = TileAnnotation.class.getDeclaredMethod("heading", Side.class, int.class,
-            int.class);
-
-        heading.setAccessible(true);
+        java.lang.reflect.Method heading =
+            Reflect.method(TileAnnotation.class, "heading", Side.class, int.class, int.class);
 
         return (double[]) heading.invoke(annotation, side, 48, 48);
     }
@@ -1607,9 +1600,8 @@ public class testTheDiagramDrawsWhatTrainsMayDo extends AutonomySessionFixture
         final List<String[]> asked = new java.util.ArrayList<>();
         final java.util.LinkedList<String> answers = new java.util.LinkedList<>();
 
-        java.lang.reflect.Field question = org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel.class.getDeclaredField("askForAName");
-
-        question.setAccessible(true);
+        java.lang.reflect.Field question =
+            Reflect.field(org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel.class, "askForAName");
 
         question.set(panel, (java.util.function.BiFunction<String, String, String>) (message, typed) ->
         {
@@ -1691,9 +1683,7 @@ public class testTheDiagramDrawsWhatTrainsMayDo extends AutonomySessionFixture
 
         assertNotNull(session.getLocomotiveNameAt(station), "precondition: no train placed on the station");
 
-        final java.lang.reflect.Field occupied = TileAnnotation.class.getDeclaredField("occupied");
-
-        occupied.setAccessible(true);
+        final java.lang.reflect.Field occupied = Reflect.field(TileAnnotation.class, "occupied");
 
         final boolean[] marked = new boolean[2];
 
@@ -1896,10 +1886,8 @@ public class testTheDiagramDrawsWhatTrainsMayDo extends AutonomySessionFixture
         assertFalse(panel.clickChangesDirections(square), "the editor offers a direction click on a square out of service,"
             + " whose arrows it does not draw (RSA63-C5)");
 
-        final java.lang.reflect.Method cycle = org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel.class.getDeclaredMethod("cycle",
-            TileKey.class);
-
-        cycle.setAccessible(true);
+        final java.lang.reflect.Method cycle =
+            Reflect.method(org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel.class, "cycle", TileKey.class);
 
         javax.swing.SwingUtilities.invokeAndWait(() ->
         {

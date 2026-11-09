@@ -30,6 +30,7 @@ import org.traincontrol.marklin.MarklinLocomotive;
 import org.traincontrol.util.I18n;
 import support.Components;
 import support.Mouse;
+import support.Reflect;
 import support.SettingsWindow;
 import support.Answering;
 
@@ -564,11 +565,7 @@ public class testTheFunctionButtonMenu
     /** The loaded state autonomy is in, as far as the menu and the editor ask: set by the window's own field. */
     private static void setAutonomyLoaded(boolean loaded) throws Exception
     {
-        java.lang.reflect.Field name = TrainControlUI.class.getDeclaredField("activeDiagramConfiguration");
-
-        name.setAccessible(true);
-
-        name.set(ui, loaded ? "fmenu" : null);
+        Reflect.set(TrainControlUI.class, ui, "activeDiagramConfiguration", loaded ? "fmenu" : null);
 
         assertEquals(ui.isAutonomyLoaded(), loaded, "precondition: the window's autonomy state was not set");
     }
@@ -577,11 +574,7 @@ public class testTheFunctionButtonMenu
     {
         try
         {
-            java.lang.reflect.Field f = TrainControlUI.class.getDeclaredField("F" + function);
-
-            f.setAccessible(true);
-
-            return (JToggleButton) f.get(ui);
+            return (JToggleButton) Reflect.get(TrainControlUI.class, ui, "F" + function);
         }
         catch (ReflectiveOperationException e)
         {

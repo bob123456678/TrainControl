@@ -5,6 +5,7 @@ import org.testng.annotations.Test;
 import org.traincontrol.automation.Layout.PathPreference;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.util.I18n;
+import support.Reflect;
 
 /**
  * Every routing rule explains itself on the control that chooses it.
@@ -32,17 +33,12 @@ public class testRoutingRuleTooltips
 
         javax.swing.JComboBox<?> dropdown = dropdownOf(ui);
 
-        java.lang.reflect.Field order = TrainControlUI.class.getDeclaredField("ROUTING_ORDER");
-        order.setAccessible(true);
-
-        PathPreference[] rules = (PathPreference[]) order.get(null);
+        PathPreference[] rules = (PathPreference[]) Reflect.get(TrainControlUI.class, null, "ROUTING_ORDER");
 
         assertEquals(dropdown.getItemCount(), rules.length,
             "the dropdown does not offer one item per rule, so the indexes below name the wrong ones");
 
-        java.lang.reflect.Method refresh =
-            TrainControlUI.class.getDeclaredMethod("refreshRoutingLogicTooltip");
-        refresh.setAccessible(true);
+        java.lang.reflect.Method refresh = Reflect.method(TrainControlUI.class, "refreshRoutingLogicTooltip");
 
         String general = I18n.t("ui.main.tooltip.routingLogic");
 
@@ -114,10 +110,6 @@ public class testRoutingRuleTooltips
      */
     private javax.swing.JComboBox<?> dropdownOf(TrainControlUI ui) throws Exception
     {
-        java.lang.reflect.Field field = TrainControlUI.class.getDeclaredField("algorithmType");
-
-        field.setAccessible(true);
-
-        return (javax.swing.JComboBox<?>) field.get(ui);
+        return (javax.swing.JComboBox<?>) Reflect.get(TrainControlUI.class, ui, "algorithmType");
     }
 }

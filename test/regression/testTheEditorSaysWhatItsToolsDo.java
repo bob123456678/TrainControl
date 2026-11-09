@@ -21,6 +21,7 @@ import org.traincontrol.base.LayoutDiagram;
 import org.traincontrol.base.LayoutDiagramComponent.componentType;
 import org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel;
 import org.traincontrol.util.I18n;
+import support.Reflect;
 
 /**
  * The autonomy editor says what its items do, and shows where its tools can be used (OB-293, FR-102).
@@ -114,9 +115,7 @@ public class testTheEditorSaysWhatItsToolsDo
         assertNull(markOf(panel, WITH_A_TRAIN), "precondition: the train's square is marked before"
             + " the tool is armed");
 
-        java.lang.reflect.Field field = AutonomyEditorPanel.class.getDeclaredField("whyButton");
-
-        field.setAccessible(true);
+        java.lang.reflect.Field field = Reflect.field(AutonomyEditorPanel.class, "whyButton");
 
         final javax.swing.AbstractButton why = (javax.swing.AbstractButton) field.get(panel);
 
@@ -182,9 +181,7 @@ public class testTheEditorSaysWhatItsToolsDo
             panel.setRunningLayoutSource(() -> railway);
             panel.setLayoutSource(() -> railway);
 
-            java.lang.reflect.Field field = AutonomyEditorPanel.class.getDeclaredField("whyButton");
-
-            field.setAccessible(true);
+            java.lang.reflect.Field field = Reflect.field(AutonomyEditorPanel.class, "whyButton");
 
             final javax.swing.AbstractButton why = (javax.swing.AbstractButton) field.get(panel);
 
@@ -206,9 +203,7 @@ public class testTheEditorSaysWhatItsToolsDo
             }
 
             // Asked of the waiting outline itself: once a square is asked about, the answer draws outlines of its own.
-            java.lang.reflect.Method waitsOn = AutonomyEditorPanel.class.getDeclaredMethod("whyWaitsOn", TileKey.class);
-
-            waitsOn.setAccessible(true);
+            java.lang.reflect.Method waitsOn = Reflect.method(AutonomyEditorPanel.class, "whyWaitsOn", TileKey.class);
 
             assertTrue((Boolean) waitsOn.invoke(panel, WITH_A_TRAIN), "precondition: the second train at 3,1 is not"
                 + " outlined as somewhere to click while Why Not Moving waits");
@@ -869,11 +864,7 @@ public class testTheEditorSaysWhatItsToolsDo
     {
         try
         {
-            java.lang.reflect.Field field = AutonomyEditorPanel.class.getDeclaredField("hint");
-
-            field.setAccessible(true);
-
-            String text = ((javax.swing.JLabel) field.get(panel)).getText();
+            String text = ((javax.swing.JLabel) Reflect.get(AutonomyEditorPanel.class, panel, "hint")).getText();
 
             return text == null ? null : text.replaceAll("<[^>]*>", "").replace("&lt;", "<").replace("&gt;", ">")
                 .replace("&amp;", "&").trim();
@@ -887,10 +878,8 @@ public class testTheEditorSaysWhatItsToolsDo
     /** The addresses of these signals, as the station's menu lists them in its guard items' labels. */
     private static String addressesOf(AutonomyEditorPanel panel, java.util.List<TileKey> signals) throws Exception
     {
-        java.lang.reflect.Method describe = AutonomyEditorPanel.class.getDeclaredMethod("signalAddresses",
-            java.util.List.class);
-
-        describe.setAccessible(true);
+        java.lang.reflect.Method describe =
+            Reflect.method(AutonomyEditorPanel.class, "signalAddresses", java.util.List.class);
 
         return (String) describe.invoke(panel, signals);
     }
@@ -898,11 +887,7 @@ public class testTheEditorSaysWhatItsToolsDo
     /** One of the panel's private one-square describers, as its sentences use them. */
     private static String privately(AutonomyEditorPanel panel, String method, TileKey tile) throws Exception
     {
-        java.lang.reflect.Method describe = AutonomyEditorPanel.class.getDeclaredMethod(method, TileKey.class);
-
-        describe.setAccessible(true);
-
-        return (String) describe.invoke(panel, tile);
+        return (String) Reflect.method(AutonomyEditorPanel.class, method, TileKey.class).invoke(panel, tile);
     }
 
     private static void delete(File file)
@@ -1049,8 +1034,7 @@ public class testTheEditorSaysWhatItsToolsDo
     {
         try
         {
-            java.lang.reflect.Method rule = AutonomyEditorPanel.class.getDeclaredMethod("fitsOnOneLine", String.class);
-            rule.setAccessible(true);
+            java.lang.reflect.Method rule = Reflect.method(AutonomyEditorPanel.class, "fitsOnOneLine", String.class);
 
             return (Boolean) rule.invoke(null, text);
         }
@@ -1138,8 +1122,7 @@ public class testTheEditorSaysWhatItsToolsDo
             final AutonomySession setup = everyKindOfSquare(armed);
             final AutonomyEditorPanel panel = new AutonomyEditorPanel(setup, "kinds", () -> { });
 
-            java.lang.reflect.Field button = AutonomyEditorPanel.class.getDeclaredField("testButton");
-            button.setAccessible(true);
+            java.lang.reflect.Field button = Reflect.field(AutonomyEditorPanel.class, "testButton");
             final javax.swing.JToggleButton test = (javax.swing.JToggleButton) button.get(panel);
 
             javax.swing.SwingUtilities.invokeAndWait(() -> test.doClick());

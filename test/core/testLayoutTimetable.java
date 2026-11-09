@@ -14,6 +14,7 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
 import static org.testng.Assert.*;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
+import support.Reflect;
 
 /**
  * Tests for the timetable subsystem - capture, the unfinished-entry sentinel, and reset.
@@ -93,10 +94,7 @@ public class testLayoutTimetable
     private static boolean capture(Layout layout, Locomotive loc, List<Edge> path, long timestamp)
         throws Exception
     {
-        Method method = Layout.class.getDeclaredMethod(
-            "addTimetableEntry", Locomotive.class, List.class, long.class);
-
-        method.setAccessible(true);
+        Method method = Reflect.method(Layout.class, "addTimetableEntry", Locomotive.class, List.class, long.class);
 
         return (boolean) method.invoke(layout, loc, path, timestamp);
     }

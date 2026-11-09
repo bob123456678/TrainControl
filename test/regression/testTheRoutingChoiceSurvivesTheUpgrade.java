@@ -4,6 +4,7 @@ import static org.testng.Assert.*;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
+import support.Reflect;
 
 /**
  * A routing rule chosen before 3.0.0 has to reach the configuration, or wait until it can.  It was a java Preference
@@ -32,12 +33,9 @@ public class testTheRoutingChoiceSurvivesTheUpgrade
     @BeforeClass
     public void useOurOwnPreferences() throws Exception
     {
-        java.lang.reflect.Field field =
-            org.traincontrol.gui.TrainControlUI.class.getDeclaredField("prefs");
-        field.setAccessible(true);
+        java.lang.reflect.Field field = Reflect.field(org.traincontrol.gui.TrainControlUI.class, "prefs");
 
-        java.lang.reflect.Field modifiers = java.lang.reflect.Field.class.getDeclaredField("modifiers");
-        modifiers.setAccessible(true);
+        java.lang.reflect.Field modifiers = Reflect.field(java.lang.reflect.Field.class, "modifiers");
         modifiers.setInt(field, field.getModifiers() & ~java.lang.reflect.Modifier.FINAL);
 
         realPrefs = (java.util.prefs.Preferences) field.get(null);
@@ -58,11 +56,7 @@ public class testTheRoutingChoiceSurvivesTheUpgrade
     @AfterClass(alwaysRun = true)
     public void giveThePreferencesBack() throws Exception
     {
-        java.lang.reflect.Field field =
-            org.traincontrol.gui.TrainControlUI.class.getDeclaredField("prefs");
-        field.setAccessible(true);
-
-        if (realPrefs != null) field.set(null, realPrefs);
+        if (realPrefs != null) Reflect.set(org.traincontrol.gui.TrainControlUI.class, null, "prefs", realPrefs);
 
         if (ourPrefs != null) ourPrefs.removeNode();
     }
@@ -115,14 +109,9 @@ public class testTheRoutingChoiceSurvivesTheUpgrade
                 org.traincontrol.automation.Layout.PathPreference.LONGEST_LENGTH);
 
             // Busy, without a train moving: isAutonomyBusy() answers true on this flag alone.
-            java.lang.reflect.Field staging =
-                org.traincontrol.gui.TrainControlUI.class.getDeclaredField("stagingFlowActive");
-            staging.setAccessible(true);
-            staging.set(ui[0], true);
+            Reflect.set(org.traincontrol.gui.TrainControlUI.class, ui[0], "stagingFlowActive", true);
 
-            java.lang.reflect.Field combo =
-                org.traincontrol.gui.TrainControlUI.class.getDeclaredField("algorithmType");
-            combo.setAccessible(true);
+            java.lang.reflect.Field combo = Reflect.field(org.traincontrol.gui.TrainControlUI.class, "algorithmType");
 
             final javax.swing.JComboBox<String> dropdown =
                 (javax.swing.JComboBox<String>) combo.get(ui[0]);
@@ -130,14 +119,11 @@ public class testTheRoutingChoiceSurvivesTheUpgrade
             assertNotNull(dropdown, "the dropdown was never mounted, so this test proves nothing");
 
             java.lang.reflect.Method restore =
-                org.traincontrol.gui.TrainControlUI.class.getDeclaredMethod(
-                    "restoreRoutingLogicSelection");
-            restore.setAccessible(true);
+                Reflect.method(org.traincontrol.gui.TrainControlUI.class, "restoreRoutingLogicSelection");
 
             // What a user's refused choice leaves behind: a control showing something else, set with the guard held.
             java.lang.reflect.Field guard =
-                org.traincontrol.gui.TrainControlUI.class.getDeclaredField("restoringRoutingLogic");
-            guard.setAccessible(true);
+                Reflect.field(org.traincontrol.gui.TrainControlUI.class, "restoringRoutingLogic");
 
             javax.swing.SwingUtilities.invokeAndWait(() ->
             {
@@ -210,9 +196,7 @@ public class testTheRoutingChoiceSurvivesTheUpgrade
     /** The order the dropdown speaks, read from the window rather than copied. */
     private static org.traincontrol.automation.Layout.PathPreference[] routingOrder() throws Exception
     {
-        java.lang.reflect.Field order =
-            org.traincontrol.gui.TrainControlUI.class.getDeclaredField("ROUTING_ORDER");
-        order.setAccessible(true);
+        java.lang.reflect.Field order = Reflect.field(org.traincontrol.gui.TrainControlUI.class, "ROUTING_ORDER");
 
         return (org.traincontrol.automation.Layout.PathPreference[]) order.get(null);
     }
@@ -636,20 +620,15 @@ public class testTheRoutingChoiceSurvivesTheUpgrade
                 "precondition: the legacy file must parse, or the tab is off for a reason that has "
                 + "nothing to do with this finding.  " + org.traincontrol.automation.Layout.getLastError());
 
-            java.lang.reflect.Field active = org.traincontrol.gui.TrainControlUI.class
-                .getDeclaredField("activeDiagramConfiguration");
-
-            active.setAccessible(true);
+            java.lang.reflect.Field active =
+                Reflect.field(org.traincontrol.gui.TrainControlUI.class, "activeDiagramConfiguration");
 
             assertNull(active.get(ui[0]),
                 "precondition: this test is about a layout with NO diagram configuration active");
 
             javax.swing.SwingUtilities.invokeAndWait(() -> ui[0].refreshAutonomyTabState());
 
-            java.lang.reflect.Field tabs = org.traincontrol.gui.TrainControlUI.class
-                .getDeclaredField("KeyboardTab");
-
-            tabs.setAccessible(true);
+            java.lang.reflect.Field tabs = Reflect.field(org.traincontrol.gui.TrainControlUI.class, "KeyboardTab");
 
             javax.swing.JTabbedPane pane = (javax.swing.JTabbedPane) tabs.get(ui[0]);
 
@@ -699,20 +678,15 @@ public class testTheRoutingChoiceSurvivesTheUpgrade
     private static void giveTheWindowThisSession(org.traincontrol.gui.TrainControlUI ui, Object session)
         throws Exception
     {
-        java.lang.reflect.Field sessionField =
-            org.traincontrol.gui.TrainControlUI.class.getDeclaredField("autonomySession");
-        sessionField.setAccessible(true);
-        sessionField.set(ui, session);
+        Reflect.set(org.traincontrol.gui.TrainControlUI.class, ui, "autonomySession", session);
     }
 
     /** Runs the window's start-up migration of the stored path preference onto `live`. */
     private static void migrateTheStoredChoice(org.traincontrol.gui.TrainControlUI ui,
         org.traincontrol.automation.Layout live) throws Exception
     {
-        java.lang.reflect.Method migrate =
-            org.traincontrol.gui.TrainControlUI.class.getDeclaredMethod(
-                "migrateStoredPathPreference", org.traincontrol.automation.Layout.class);
-        migrate.setAccessible(true);
+        java.lang.reflect.Method migrate = Reflect.method(org.traincontrol.gui.TrainControlUI.class,
+            "migrateStoredPathPreference", org.traincontrol.automation.Layout.class);
 
         migrate.invoke(ui, live);
     }
