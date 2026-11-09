@@ -22,6 +22,7 @@ import support.SettingsWindow;
 public class testTheLocomotiveSettingsLooks extends support.SettingsClass
 {
     private static final String NAME = "LK train";
+    private static final String[] LANGUAGES = {"en", "de", "da", "es", "fr", "it", "nl", "pl"};
 
 
     @Override
@@ -424,7 +425,7 @@ public class testTheLocomotiveSettingsLooks extends support.SettingsClass
     {
         try
         {
-            for (String lang : new String[] {"en", "de", "da", "es", "fr", "it", "nl", "pl"})
+            for (String lang : LANGUAGES)
             {
                 I18n.setLocale(new java.util.Locale(lang));
 
@@ -451,6 +452,76 @@ public class testTheLocomotiveSettingsLooks extends support.SettingsClass
 
                     assertEquals(new java.util.HashSet<>(rows).size(), 1, lang + (narrowed ? ": at the narrowest, " : ": as it opens, ")
                         + window.getWidth() + " wide, the tabs are on more than one row: " + rows);
+                }
+            }
+        }
+        finally
+        {
+            I18n.setLocale(java.util.Locale.ENGLISH);
+        }
+    }
+
+    /** Opens the window on a tab in a language and drags it as narrow as it lets itself go (an unset minimum, to 300). */
+    private static LocomotiveSettingsFrame narrowest(String lang, LocomotiveSettingsFrame.Tab tab) throws Exception
+    {
+        I18n.setLocale(new java.util.Locale(lang));
+        fixture.layDcc(NAME, 3806, tab);
+
+        LocomotiveSettingsFrame window = SettingsWindow.showing();
+
+        Components.onTheEventThread(() ->
+        {
+            window.setSize(window.isMinimumSizeSet() ? window.getMinimumSize().width : 300, window.getHeight());
+            window.validate();
+
+            return null;
+        });
+        Components.settle();
+
+        return window;
+    }
+
+    /** Whether a label shows its whole text: no narrower than its text, icon and border need. */
+    private static boolean whole(JLabel label)
+    {
+        return label.getUI().getPreferredSize(label).width <= label.getWidth();
+    }
+
+    /**
+     * At the narrowest window, in every language, the Multi-Unit list's Reverse column shows whole: its heading's text
+     * uncut, and the heading and every Reverse box end inside the list's view, left of its scroll bar.
+     *
+     * MUTATION: leave the Multi-Unit list out of `least` in `LocomotiveSettingsFrame.fit`, and this fails.
+     */
+    @Test
+    public void testTheReverseColumnIsWholeAtTheNarrowestWindow() throws Exception
+    {
+        try
+        {
+            for (String lang : LANGUAGES)
+            {
+                java.awt.Container pane = narrowest(lang, LocomotiveSettingsFrame.Tab.MULTI_UNIT).getContentPane();
+                javax.swing.JScrollPane list = Components.find(pane, javax.swing.JScrollPane.class,
+                    s -> s.isShowing() && s.getViewport().getView() instanceof javax.swing.JPanel);
+                java.awt.Component view = list.getViewport().getView();
+                JLabel heading = Components.find(pane, JLabel.class,
+                    l -> UiStyle.withoutColon(I18n.t("loc.ui.labelReverse")).equals(l.getText()) && l.isShowing());
+                java.util.List<java.awt.Component> ends = new java.util.ArrayList<>(Components.all(view, javax.swing.JCheckBox.class,
+                    c -> c.isShowing() && c.getText().isEmpty()));
+
+                assertTrue(!ends.isEmpty() && Components.onTheEventThread(list.getVerticalScrollBar()::isShowing),
+                    "precondition: no Reverse box, or no scroll bar, on the Multi-Unit tab");
+                assertTrue(Components.onTheEventThread(() -> whole(heading)), lang + ": the Reverse heading is cut short");
+
+                ends.add(heading);
+
+                for (java.awt.Component c : ends)
+                {
+                    int right = Components.onTheEventThread(() -> bounds(c, (java.awt.Container) view).x + c.getWidth());
+                    int visible = Components.onTheEventThread(() -> list.getViewport().getViewRect().x + list.getViewport().getWidth());
+
+                    assertTrue(right <= visible, lang + ": at " + pane.getWidth() + " wide the Reverse column ends at " + right
+                        + ", under the scroll bar from " + visible);
                 }
             }
         }
