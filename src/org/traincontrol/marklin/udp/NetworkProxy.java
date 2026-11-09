@@ -13,7 +13,6 @@ import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -27,7 +26,8 @@ import org.traincontrol.util.I18n;
 /**
  *  This class facilitates communication with the Marklin CS2/CS3 over UDP, and with a CS3 over one TCP connection to
  *  its port 15731 once connectOverTcp is asked and the station takes it (FR-186).  Both carry the same 13-byte frames,
- *  sent the same and handed to the same model.receiveMessage.
+ *  sent the same and handed to the same model.receiveMessage.  While a lost connection is replaced, commands go over
+ *  UDP at once, and nothing is held or sent again, as another copy or the station's handset may have commanded since.
  */
 public class NetworkProxy
 {
@@ -97,9 +97,6 @@ public class NetworkProxy
      */
     private static final long CONFIRM_MARGIN_NS = 250L * 1000000L;
 
-    /** The most frames kept to send again on a replacement connection; the oldest go first. */
-    private static final int UNCONFIRMED_LIMIT = 1000;
-
     /** The gap between two sensor queries: the Link S88 answers each within about 20 ms, 60 take 0.3 s. */
     private static final long RESYNC_PACE_NS = 5L * 1000000L;
 
@@ -122,17 +119,11 @@ public class NetworkProxy
     // The TCP connection, null in UDP mode
     private volatile Socket tcp;
 
-    /**
-     * Frames sent since the connection last carried anything, and frames held while it is replaced: the station may
-     * not have them, so a replacement sends them again, in order.  Guarded by this.
-     */
-    private final ArrayDeque<Unconfirmed> unconfirmed = new ArrayDeque<>();
+    // Guarded by this: when each frame was written since the connection last carried anything, for the loss's log line
+    private final ArrayDeque<Long> unconfirmed = new ArrayDeque<>();
 
-    // Guarded by this: the listener is replacing a lost connection, and sends are held meanwhile
+    // Guarded by this: the listener is replacing a lost connection, and sends go over UDP meanwhile
     private boolean replacing;
-
-    // Guarded by this: frames dropped from `unconfirmed` at its limit since the last replacement
-    private int unconfirmedDropped;
 
     // Why a send found the connection broken, for the listener's log line
     private volatile String lostBecause;
@@ -191,21 +182,6 @@ public class NetworkProxy
 
     // Model listener class reference
     private ModelListener model;
-
-    /** One frame and when it was sent; `written` once it went onto a connection, so the station may have it. */
-    private static final class Unconfirmed
-    {
-        final byte[] frame;
-        long at;
-        boolean written;
-
-        Unconfirmed(byte[] frame, long at, boolean written)
-        {
-            this.frame = frame;
-            this.at = at;
-            this.written = written;
-        }
-    }
 
     /**
      * Constructor
@@ -466,7 +442,7 @@ public class NetworkProxy
      * Public interface to send a message out to the CS2 
      
      * @param m a CANMessage object 
-     * @return true on success (over TCP, also when the frame is held for a replacement connection), else false
+     * @return true on success, else false
      */
     public boolean sendMessage(CANMessage m)
     {
@@ -485,16 +461,11 @@ public class NetworkProxy
     {
         Socket connection = this.tcp;
 
-        if (connection == null && !this.replacing) return sendUdp(message);
+        // While a lost connection is replaced, over UDP at once and never again on the new one (FR-186)
+        if (connection == null || this.replacing) return sendUdp(message);
 
-        // A Stop must not wait for a replacement or a connection that may be hung: over UDP at once, and kept too
-        if (isUrgentStop(message) && suspect()) sendUdp(message);
-
-        if (this.replacing)
-        {
-            keep(message, System.nanoTime(), false);
-            return true;
-        }
+        // A Stop must not wait on a connection that may be hung: over UDP at once as well
+        boolean overUdp = isUrgentStop(message) && suspect() && sendUdp(message);
 
         try
         {
@@ -502,11 +473,12 @@ public class NetworkProxy
         }
         catch (IOException e)
         {
-            // The listener, woken by the close, replaces the connection and sends this frame on what replaces it
-            this.unconfirmed.peekLast().written = false;
+            // The listener, woken by the close, replaces the connection; the frame did not go out on it
             this.replacing = true;
             this.lostBecause = reasonOf(e);
             closeQuietly(connection);
+
+            if (!overUdp) return sendUdp(message);
         }
 
         return true;
@@ -532,48 +504,39 @@ public class NetworkProxy
             || sub == CS2Message.CMD_SYSSUB_TRAINSTOP;
     }
 
-    /** Whether the connection is being replaced, or a frame sent on it has gone unanswered for TCP_SUSPECT_MS.  Holds this. */
+    /** Whether a frame sent on the connection has gone unanswered for TCP_SUSPECT_MS.  Holds this. */
     private boolean suspect()
     {
         long first = this.firstUnansweredAt;
 
-        return this.replacing || (first != 0 && first - this.lastHeardAt > 0
-            && System.nanoTime() - first > TCP_SUSPECT_MS * 1000000L);
+        return first != 0 && first - this.lastHeardAt > 0 && System.nanoTime() - first > TCP_SUSPECT_MS * 1000000L;
     }
 
-    /** Writes one frame to the connection and keeps it until the connection carries something after it. */
+    /** Writes one frame to the connection and notes when, until the connection carries something after it. */
     private void writeTcp(Socket connection, byte[] message) throws IOException
     {
         long now = System.nanoTime();
 
-        // Frames sent well before the last bytes heard are taken as received
-        while (!this.unconfirmed.isEmpty() && this.unconfirmed.peekFirst().at + CONFIRM_MARGIN_NS - this.lastHeardAt < 0)
-        {
-            this.unconfirmed.pollFirst();
-        }
+        forgetReceived();
 
         // The first send since the connection last carried anything starts the answer clock
         long first = this.firstUnansweredAt;
 
         if (first == 0 || first - this.lastHeardAt <= 0) this.firstUnansweredAt = now;
 
-        keep(message, now, true);
-
         OutputStream out = connection.getOutputStream();
         out.write(message);
         out.flush();
+        this.unconfirmed.addLast(now);
     }
 
-    /** Adds a frame to `unconfirmed`, dropping the oldest at the limit. */
-    private void keep(byte[] message, long at, boolean written)
+    /** Forgets the frames sent well before the connection last carried anything: taken as received.  Holds this. */
+    private void forgetReceived()
     {
-        if (this.unconfirmed.size() >= UNCONFIRMED_LIMIT)
+        while (!this.unconfirmed.isEmpty() && this.unconfirmed.peekFirst() + CONFIRM_MARGIN_NS - this.lastHeardAt < 0)
         {
             this.unconfirmed.pollFirst();
-            this.unconfirmedDropped++;
         }
-
-        this.unconfirmed.addLast(new Unconfirmed(Arrays.copyOf(message, message.length), at, written));
     }
 
     /** Sends a datagram, as before TCP. */
@@ -905,9 +868,9 @@ public class NetworkProxy
     }
 
     /**
-     * Writes a sensor query to the connection; false when it was not written.  Not kept to send again, and no start of
-     * the answer clock: a resync runs again on the next live transport, and a query left unanswered says nothing of
-     * the connection.
+     * Writes a sensor query to the connection; false when it was not written.  Not counted as a command that may not
+     * have arrived, and no start of the answer clock: a resync runs again on the next live transport, and a query
+     * left unanswered says nothing of the connection.
      */
     private synchronized boolean sendQuery(byte[] query)
     {
@@ -1003,29 +966,46 @@ public class NetworkProxy
 
     /**
      * Replaces a lost connection: up to TCP_RECONNECT_TRIES new ones, then UDP for the rest of the session.  A
-     * connection that never carried a frame goes straight to UDP.  UDP is live meanwhile, frames the station may not
-     * have are sent again, and the sensors are resynced on each transport made live.  Locomotive and accessory echoes
-     * missed meanwhile are not replayed: this program commands those, as when a datagram is lost.
+     * connection that never carried a frame goes straight to UDP.  UDP is live meanwhile and carries every command at
+     * once; nothing is sent again, as another copy or the handset may have commanded since, so the frames that may not
+     * have arrived are only counted in the log (FR-186).  The sensors are resynced on each transport made live.
      */
     private void recover(Socket lost, String reason)
     {
+        // Reset, not closed in order, so the station drops what it has not read and runs no old command late.  The
+        // CS3 runs Linux, where a reset discards its unread buffer too as far as we know (unconfirmed on the station).
+        try
+        {
+            lost.setSoLinger(true, 0);
+        }
+        catch (SocketException ignored)
+        {
+            // Already closed
+        }
+
         closeQuietly(lost);
 
         boolean retry = this.carried;
+        int cutOff;
 
         synchronized (this)
         {
             this.replacing = true;
             this.lostBecause = null;
+            forgetReceived();
+            cutOff = this.unconfirmed.size();
+            this.unconfirmed.clear();
         }
 
         setUdpLive(true);
 
         model.logf(retry ? "network.tcpLostReconnecting" : "network.tcpLostUsingUdp", reason);
+
+        if (cutOff > 0) model.logf("network.framesMayNotHaveArrived", cutOff);
+
         resync(false, 2);
 
         IOException failed = null;
-        int[] counts;
 
         for (int attempt = 1; retry && attempt <= TCP_RECONNECT_TRIES; attempt++)
         {
@@ -1045,11 +1025,11 @@ public class NetworkProxy
                         return;
                     }
 
-                    counts = resendOn(fresh);
+                    useTcp(fresh);
+                    this.replacing = false;
                 }
 
                 model.logf("network.tcpReconnected");
-                logResent(counts);
                 resync(true, 1);
                 return;
             }
@@ -1066,95 +1046,10 @@ public class NetworkProxy
             if (this.stopRequested) return;
 
             this.tcp = null;
-
-            List<Unconfirmed> again = takeUnconfirmed();
-            counts = counts(again);
-
-            for (Unconfirmed u : again) sendUdp(u.frame);
-
             this.replacing = false;
         }
 
         if (failed != null) model.logf("network.tcpReconnectFailed", reasonOf(failed));
-        logResent(counts);
-    }
-
-    /** Takes `unconfirmed` less the frames sent well before the lost connection last carried anything.  Holds this. */
-    private List<Unconfirmed> takeUnconfirmed()
-    {
-        List<Unconfirmed> again = new ArrayList<>();
-
-        for (Unconfirmed u : this.unconfirmed)
-        {
-            if (u.at + CONFIRM_MARGIN_NS - this.lastHeardAt >= 0) again.add(u);
-        }
-
-        this.unconfirmed.clear();
-        return again;
-    }
-
-    /** How many of the frames were written before (sent again), how many only held (sent late), and how many dropped. */
-    private int[] counts(List<Unconfirmed> again)
-    {
-        int written = 0;
-
-        for (Unconfirmed u : again) if (u.written) written++;
-
-        int[] counts = {written, again.size() - written, this.unconfirmedDropped};
-
-        this.unconfirmedDropped = 0;
-        return counts;
-    }
-
-    /**
-     * Sends the unconfirmed frames again, oldest first, on a new connection, and makes it the transport; on a failure
-     * they are kept for the next try.  Holds this.  Returns the counts for logResent.
-     */
-    private int[] resendOn(Socket fresh) throws IOException
-    {
-        List<Unconfirmed> again = takeUnconfirmed();
-
-        try
-        {
-            OutputStream out = fresh.getOutputStream();
-
-            for (Unconfirmed u : again) out.write(u.frame);
-
-            out.flush();
-        }
-        catch (IOException e)
-        {
-            this.unconfirmed.addAll(again);
-            closeQuietly(fresh);
-            throw e;
-        }
-
-        int[] counts = counts(again);
-
-        useTcp(fresh);
-
-        // Unconfirmed on the new connection too, until it carries something
-        long now = System.nanoTime();
-
-        for (Unconfirmed u : again)
-        {
-            u.at = now;
-            u.written = true;
-            this.unconfirmed.addLast(u);
-        }
-
-        if (!again.isEmpty()) this.firstUnansweredAt = now;
-
-        this.replacing = false;
-        return counts;
-    }
-
-    /** Logs, outside the lock, how many frames a replacement sent again, sent late, and had to drop. */
-    private void logResent(int[] counts)
-    {
-        if (counts[0] > 0) model.logf("network.framesSentAgain", counts[0]);
-        if (counts[1] > 0) model.logf("network.framesSentLate", counts[1]);
-        if (counts[2] > 0) model.logf("network.framesDropped", counts[2]);
     }
 
     /** Waits before a reconnect; false when a stop came meanwhile. */

@@ -85,6 +85,22 @@ public final class TcpStation implements AutoCloseable
         return this;
     }
 
+    /** Whether the station reads what clients write; off, frames wait unread in its buffer, as a stalled one's do. */
+    public TcpStation reading(boolean on)
+    {
+        synchronized (this.readGate)
+        {
+            this.reading = on;
+            this.readGate.notifyAll();
+        }
+
+        return this;
+    }
+
+    private final Object readGate = new Object();
+
+    private boolean reading = true;
+
     /** How many connections have been accepted. */
     public int connections()
     {
@@ -292,7 +308,7 @@ public final class TcpStation implements AutoCloseable
         {
             InputStream in = client.getInputStream();
 
-            for (int n; (n = in.read(frame, filled, frame.length - filled)) >= 0; )
+            for (int n; awaitReading() && (n = in.read(frame, filled, frame.length - filled)) >= 0; )
             {
                 filled += n;
 
@@ -325,6 +341,25 @@ public final class TcpStation implements AutoCloseable
         }
 
         this.ended.add(number);
+    }
+
+    /** Waits while reading is off; true, or false once interrupted. */
+    private boolean awaitReading()
+    {
+        synchronized (this.readGate)
+        {
+            try
+            {
+                while (!this.reading) this.readGate.wait();
+            }
+            catch (InterruptedException e)
+            {
+                Thread.currentThread().interrupt();
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /** Runs work with simulations connecting over TCP to a port, and puts the setting back. */
