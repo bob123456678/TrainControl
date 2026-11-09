@@ -2518,8 +2518,14 @@ public class testATrainIsDispatchedOnce
     private static void refusedForTheConnection(Layout rail, Locomotive train, String from, String to, List<String> said,
         String what) throws Exception
     {
-        Future<Boolean> sent = dispatcher.submit(() ->
-            rail.executePathByHand(through(rail, from, to), train, 30, null, -1));
+        refusedForTheConnection(rail, train, through(rail, from, to), said, what);
+    }
+
+    /** The same, along a path. */
+    private static void refusedForTheConnection(Layout rail, Locomotive train, List<Edge> path, List<String> said,
+        String what) throws Exception
+    {
+        Future<Boolean> sent = dispatcher.submit(() -> rail.executePathByHand(path, train, 30, null, -1));
         Boolean answer;
 
         try
@@ -2703,24 +2709,10 @@ public class testATrainIsDispatchedOnce
             train.setSpeed(0);
             rail.getPoint("DBA").setLocomotive(train);
 
-            Future<Boolean> sent = dispatcher.submit(() -> rail.executePathByHand(path, train, 30, null, -1));
-            Boolean answer;
-
-            try
-            {
-                answer = sent.get(10, TimeUnit.SECONDS);
-            }
-            catch (TimeoutException tookTheRoute)
-            {
-                answer = null;
-            }
+            refusedForTheConnection(rail, train, path, said, "a send over switches set while the connection to the"
+                + " station was replaced");
 
             assertTrue(replacements.get() > 0, "precondition: the route's switches were not set");
-            assertEquals(answer, Boolean.FALSE, "a train was sent over switches set while the connection to the station"
-                + " was replaced: " + said);
-            assertTrue(said.contains(org.traincontrol.util.I18n.f("autolayout.log.notSentReconnecting", train.getName())),
-                "the send given back did not say why: " + said);
-            assertFalse(rail.isAlreadyUnderway(train) || train.getSpeed() > 0, "the train took its route or was set going");
         }
         finally
         {
