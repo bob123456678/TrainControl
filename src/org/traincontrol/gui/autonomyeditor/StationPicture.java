@@ -54,14 +54,13 @@ final class StationPicture extends JPanel
     static final int SQUARE = 60;
 
     /**
-     * The ways out are drawn a little larger than the diagram's, and the station's icon smaller, so the arrows are what
-     * the picture is read for; on a curve, where both point at the icon, smaller and the icon whole, so it still shows.
+     * The station's icon is drawn smaller than the diagram's, so the arrows are what the picture is read for: on a
+     * curve, where the ways out stand against it, smaller still.  Every arrow, the station's and the next squares', is
+     * the diagram's size (`SQUARE`), so green and red read alike all over the picture.
      */
-    private static final int ARROW = 70;
-
-    private static final int CURVE_ARROW = 48;
-
     private static final float ICON = 0.85f;
+
+    private static final float CURVE_ICON = 0.6f;
 
     /** The ways in are drawn smaller than the diagram's, so that a way in and a way out fit on one side. */
     private static final int CHEVRON = 52;
@@ -241,7 +240,7 @@ final class StationPicture extends JPanel
         TileAnnotation diagram = session.staticAnnotations(Collections.singleton(tile), true, true).get(tile);
 
         drawn = new TileAnnotation(null, -1, false, diagram == null ? null : diagram.getBadge(), false)
-            .withSmallerIcon(diagram != null && diagram.isCurved() ? 1f : ICON);
+            .withSmallerIcon(diagram != null && diagram.isCurved() ? CURVE_ICON : ICON);
 
         square.setAutonomyAnnotation(drawn);
 
@@ -381,12 +380,11 @@ final class StationPicture extends JPanel
         boolean bent = other != null && other.opposite() != side && other != side;
 
         // As long as the arrow's span, which painting reads back from it
-        int span = bent ? CURVE_ARROW : ARROW;
-        double[] heading = {away[0] * span, away[1] * span};
+        double[] heading = {away[0] * SQUARE, away[1] * SQUARE};
 
         boolean leaves = rules.waysOut().contains(side.name());
 
-        java.awt.Polygon arrow = TileAnnotation.arrowShape(tip, heading, leaves, span);
+        java.awt.Polygon arrow = TileAnnotation.arrowShape(tip, heading, leaves, SQUARE);
 
         out.add(new Mark(Mark.Kind.OUT, showing, side, leaves, arrow, tip, heading));
 
