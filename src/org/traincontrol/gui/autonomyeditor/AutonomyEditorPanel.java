@@ -1290,11 +1290,6 @@ public class AutonomyEditorPanel extends JPanel
     /**
      * Everything that can be set on a tile, on one menu built like LayoutEditorRightclickMenu's, items in the graph
      * window's order and wording.
-     * @param tile which square
-     * @param component what is drawn there
-     * @param invoker the component to show the menu over
-     * @param x where on it
-     * @param y
      */
     public void tileRightClicked(TileKey tile, LayoutDiagramComponent component,
         java.awt.Component invoker, int x, int y)
@@ -1314,7 +1309,6 @@ public class AutonomyEditorPanel extends JPanel
 
     /**
      * The same menu, handed back for the main window's right-click menu to carry, so the two cannot drift.
-     * @param tile which square
      * @param component what is drawn there, or null to read it off the page
      * @return the menu, or null where this square has nothing to offer
      */
@@ -2024,9 +2018,7 @@ public class AutonomyEditorPanel extends JPanel
 
     /**
      * Text wrapped at a width, as `wrapped` wraps a tooltip.
-     * @param text the text
      * @param width the width in pixels, or 0 or less to leave it on one line
-     * @return the text, wrapped
      */
     public static String wrappedAt(String text, int width)
     {
@@ -2053,7 +2045,6 @@ public class AutonomyEditorPanel extends JPanel
 
     /**
      * A tooltip that wraps instead of running off the screen, which Swing does with a long one.
-     * @return the same text, wrapped
      */
     public static String wrapped(String text)
     {
@@ -2084,7 +2075,6 @@ public class AutonomyEditorPanel extends JPanel
 
     /**
      * Wraps every too-wide tooltip on a menu and its submenus (FR-112), for menus set where nobody wraps them.
-     * @param menu a menu bar, a menu or a popup menu
      */
     public static void wrapTheTooltips(java.awt.Container menu)
     {
@@ -2199,10 +2189,6 @@ public class AutonomyEditorPanel extends JPanel
     /**
      * Whether a dragged station label may land here (FR-035): asked while dragging and on release, so green is what is
      * accepted.
-     * @param from the square the label is on now
-     * @param to the square under the pointer
-     * @param onTarget what is drawn there
-     * @return whether the drop would work
      */
     public boolean canDropCaption(TileKey from, TileKey to, LayoutDiagramComponent onTarget)
     {
@@ -2247,10 +2233,6 @@ public class AutonomyEditorPanel extends JPanel
     /**
      * Moves a station label (FR-035): the caption command run twice, so no stored position needs carrying.  Every
      * refusal is spoken.
-     * @param from the square the label is on now
-     * @param to the square it was dropped on
-     * @param onTarget what is drawn on that square
-     * @return whether the label moved
      */
     public boolean moveCaption(TileKey from, TileKey to, LayoutDiagramComponent onTarget)
     {
@@ -3879,9 +3861,6 @@ public class AutonomyEditorPanel extends JPanel
      * Whether a train may be dragged from one square to another (FR-160): a square autonomy does not ignore, a station,
      * nothing running or armed, and what the window's paste asks (`canTrainLandOn`), so a green mark means the train
      * lands on that square.
-     * @param from the square the train stands on
-     * @param to the square under the pointer
-     * @return true when letting go there would move the train
      */
     public boolean canDropTrain(TileKey from, TileKey to)
     {
@@ -3931,9 +3910,6 @@ public class AutonomyEditorPanel extends JPanel
      * window's paste, which walks the road, picks the copy and records the facing and the tail.  Where no railway is
      * loaded to paste onto, through `placeLocomotive`, which the menu's Add to Autonomy uses.  Nothing happens, and
      * nothing is said, where `canDropTrain` says no, and the drag never waits on a question a paste would ask.
-     * @param from the square the train stands on
-     * @param to the square it was let go on
-     * @return whether it moved
      */
     public boolean dropTrain(TileKey from, TileKey to)
     {
@@ -4103,7 +4079,6 @@ public class AutonomyEditorPanel extends JPanel
     /**
      * Whether the menu offers Show a Station Name Here, live, on this square (FR-086), by the menu's own questions;
      * public so a test can compare key and menu (`regression.testControlNAsksTheMenusQuestion`).
-     * @param tile the square
      * @return whether the menu offers the item, enabled
      */
     public boolean offersAStationName(TileKey tile)
@@ -4159,7 +4134,6 @@ public class AutonomyEditorPanel extends JPanel
     /**
      * Where a length typed for this square lands with nothing selected, or null: the menu's target, the run's leader,
      * not the pointer's (`regression.testControlEAsksTheMenusQuestion`).
-     * @param tile the square under the pointer
      * @return the square the length would be written to, or null when nothing would be asked
      */
     public TileKey squareTheLengthWouldGoOn(TileKey tile)
@@ -4170,8 +4144,6 @@ public class AutonomyEditorPanel extends JPanel
     /**
      * Whether Set Length... is on this square's menu, and so whether Control+E means anything: `buildTileMenu`'s early
      * returns, asked rather than repeated (`regression.testControlEAsksTheMenusQuestion`).
-     * @param tile the square
-     * @return whether the menu offers to measure it
      */
     public boolean offersALength(TileKey tile)
     {
@@ -4188,7 +4160,6 @@ public class AutonomyEditorPanel extends JPanel
      * Control+B: the maximum train length of the station under the pointer (Adam: *"map it to the station maximum train
      * length, and add a tooltip."*), through the menu item's method and `offersAMaximumTrainLength`; a refusal says
      * which reason.
-     * @param tile the square under the pointer
      */
     public void promptMaxTrainLengthFor(TileKey tile)
     {
@@ -4225,8 +4196,6 @@ public class AutonomyEditorPanel extends JPanel
 
     /**
      * Whether Maximum Train Length is on this square's menu (MT-313): `offersALength`, a Point, and a station.
-     * @param tile the square
-     * @return whether the menu offers to set a maximum on it
      */
     public boolean offersAMaximumTrainLength(TileKey tile)
     {
@@ -4241,7 +4210,6 @@ public class AutonomyEditorPanel extends JPanel
 
     /**
      * Whether this square can be named: the menu's own question (MT-313).
-     * @return whether naming it means anything
      */
     public boolean canBeNamed(TileKey tile)
     {
@@ -4462,9 +4430,7 @@ public class AutonomyEditorPanel extends JPanel
     /**
      * A text field that takes only digits, typed or pasted; the route editor's number fields and cells too.
      * @param initial what it shows to start with, or null; not filtered
-     * @param columns how wide
      * @param maxDigits the most digits it holds once an edit is applied, or 0 for no limit
-     * @return the field
      */
     public static javax.swing.JTextField digitsOnlyField(String initial, int columns, final int maxDigits)
     {
@@ -4621,7 +4587,6 @@ public class AutonomyEditorPanel extends JPanel
     /**
      * Asks for a length and writes it to the selection, or the square's leader with none (FR-066); others go through
      * `promptLengthFor`.
-     * @param tile the square the length was asked on
      */
     void applyLength(TileKey tile)
     {
@@ -4698,7 +4663,6 @@ public class AutonomyEditorPanel extends JPanel
     /**
      * What Segment Length does with an answer: a length for the run or each selected square; 0 is an answer (OB-274),
      * null clears.  Apart from the dialog, to run without a display.
-     * @param tile the square the dialog was opened on
      * @param length the length typed, or null to clear
      */
     public void applyLengthAnswer(TileKey tile, Integer length)
@@ -4770,8 +4734,6 @@ public class AutonomyEditorPanel extends JPanel
 
     /**
      * A tile on the diagram was clicked while autonomy mode is on.
-     * @param tile which square
-     * @param component what is drawn there
      * @param addToSelection whether the click was a shift-click, which adds to a bulk selection instead
      *        of acting immediately
      */
@@ -5032,7 +4994,6 @@ public class AutonomyEditorPanel extends JPanel
      * Whether an ordinary click here changes a direction, as the pointer and tooltip offer (FR-112): `tileClicked` and
      * `cycle`'s questions in their order (`regression.testTheEditorSaysWhatItsToolsDo.testTheClickAndItsPointerAgree`).
      * @param tile a square, or null
-     * @return true where a click there changes a direction
      */
     public boolean clickChangesDirections(TileKey tile)
     {
@@ -6240,7 +6201,6 @@ public class AutonomyEditorPanel extends JPanel
     /**
      * What Segment Length shows for this square: the whole run's measure, not the leader's share after Mass Assign
      * Lengths (`behaviour/length.md` 5b).
-     * @param tile any square of the run
      * @return the sum over every square the run covers
      */
     public int lengthShownFor(TileKey tile)
@@ -6254,7 +6214,6 @@ public class AutonomyEditorPanel extends JPanel
 
     /**
      * Gives a run the length typed: the leader holds it and the followers 0, or Mass Assign's shares would add on.
-     * @param tile any square of the run
      * @param length the whole run's length
      */
     public void setRunLength(TileKey tile, int length)
@@ -6818,10 +6777,7 @@ public class AutonomyEditorPanel extends JPanel
         /** @return the locomotives autonomy would run that have no train length, in the order to ask them */
         java.util.List<String> trainsWithoutALength();
 
-        /**
-         * @param train a locomotive's name
-         * @param units its length
-         */
+        /** Gives one locomotive its train length. */
         void applyTrainLength(String train, int units);
 
         /** @return every locomotive autonomy would run, to its length, for a walk with none missing (MT-533) */
@@ -6876,7 +6832,6 @@ public class AutonomyEditorPanel extends JPanel
     /**
      * Puts a clicked notice on the clipboard as the list shows it, unindented, for both lists of notices (MT-767); a
      * busy or missing clipboard is silently skipped.
-     * @param shown the notice as the list holds it
      */
     public static void copyNoticeToClipboard(String shown)
     {
@@ -6939,7 +6894,6 @@ public class AutonomyEditorPanel extends JPanel
     /**
      * Outlines the squares a clicked finding is about and shows its own (MT-505).  Outlined, not selected: the
      * selection is where the next length or direction is written.
-     * @param at the finding's own square
      * @param related the squares it names beside it
      */
     public void outlineTheNotice(TileKey at, java.util.Collection<TileKey> related)
@@ -6960,7 +6914,6 @@ public class AutonomyEditorPanel extends JPanel
 
     /**
      * Whether a square is drawn outlined: the selection, a finding's squares or a menu's signals.
-     * @return whether it is outlined
      */
     public boolean isOutlined(TileKey tile)
     {
@@ -7373,7 +7326,6 @@ public class AutonomyEditorPanel extends JPanel
 
     /**
      * Shows that many findings at a time, the list scrolling past them (OB-399).
-     * @param rows how many rows the list is tall
      */
     public void setFindingRows(int rows)
     {

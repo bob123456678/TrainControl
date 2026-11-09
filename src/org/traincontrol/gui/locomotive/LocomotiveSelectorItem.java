@@ -61,8 +61,7 @@ public final class LocomotiveSelectorItem extends javax.swing.JPanel
         }
         else
         {
-            // A placeholder rather than nothing (FR-054; Adam: "for locomotives without an icon, add a placeholder
-            // rather than nothing."): a blank reads as a list that has failed to load.
+            // A placeholder rather than nothing (FR-054): a blank reads as a list that has failed to load.
             locIcon.setIcon(new javax.swing.ImageIcon(
                 org.traincontrol.gui.locomotive.LocomotivePlaceholder.image(142)));
 
@@ -206,10 +205,8 @@ public final class LocomotiveSelectorItem extends javax.swing.JPanel
         }
         else
         {
-            // No active button means nothing to name: `getKeyForCurrentButton()` ends `return -1`, and formatting that
-            // into the sentence told the operator to map the locomotive to button U+FFFF.  The sibling right-click item
-            // omits itself; this is a dialog the operator asked for, so it answers with the other half of the sentence,
-            // that there is no active button to map to.
+            // No active button means nothing to name: `getKeyForCurrentButton()` ends `return -1`.  The sibling
+            // right-click item omits itself; this dialog was asked for, so it says there is no active button to map to.
             int key = this.selector.getUI().getKeyForCurrentButton();
 
             JOptionPane.showMessageDialog(
