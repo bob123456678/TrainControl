@@ -149,7 +149,7 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
      */
     private static PathOptions gatherPathOptions(TrainControlUI ui, Point current)
     {
-        // The same gates the constructor applies, in the same order, so a gather never takes the railway's monitor for
+        // The constructor's first gates, so a gather never takes the railway's monitor for
         // a menu that will not draw it.
         if (ui == null || current == null || ui.isLayoutEditorOpen()) return null;
 

@@ -117,9 +117,9 @@ asked: *"Timetable can run paused trains"*). **The pause belongs to the configur
 a load, an import, a rebuild), and the log names the paused ones (*"Make sure the log shows what locomotive are paused
 when the autonomy import happens"*). Three doors set it: the Auto tab's pause button, which changes the train alone
 while trains run and is taken into the setup by the next fold; and the **... Is Active** tick on the track diagram's and
-the autonomy editor's right-click menus, offered where a train stands and only while autonomy is stopped, which changes
-the train, the setup and the railway's settings as built together (so a later press of the pause button is not undone
-by a rebuild). A rename of a train is carried into every configuration's list, and a deletion takes it off. A paused
+the autonomy editor's right-click menus, offered where a train stands: at rest it changes the train, the setup and the
+railway's settings as built together (so a later press of the pause button is not undone by a rebuild); while a run
+holds the setup (autonomy or a route) it pauses the train alone, as the Auto tab's button does (FR-187). A rename of a train is carried into every configuration's list, and a deletion takes it off. A paused
 train's icon is gray on the diagram. `core.testAPausedTrainStaysPaused`, `ui.testTheActiveTickPausesATrain`,
 `core.testAutonomyDiagramMonitor.testAPausedTrainIsDrawnGrey`.
 

@@ -57,7 +57,7 @@ public class testNoSetupEditWhileARouteRuns
     /**
      * The track diagram's right-click menu leaves out Place, Remove, the Facing menu and Autonomy Setup while a route
      * runs, and offers them at rest - Start Autonomy, Is Active and Edit Locomotive, which are not setup edits, both times.
-     * Is Active then pauses the train alone, as its Auto tab card's button does, and the setup stays as it was (D30).
+     * Is Active then pauses the train alone, as its Auto tab card's button does, and the setup stays as it was (FR-187).
      *
      * MUTATION: ask `isAutonomyBusy` alone for any of them again, or leave Is Active off while a run holds the setup,
      * and this fails naming it.
@@ -125,7 +125,7 @@ public class testNoSetupEditWhileARouteRuns
 
                 running = texts(menu);
 
-                // Is Active pauses the train alone while a route runs, as its Auto tab card does (D30)
+                // Is Active pauses the train alone while a route runs, as its Auto tab card does (FR-187)
                 JMenuItem tick = itemCalled(menu, I18n.f("autolayout.ui.menuLocomotiveActive", train));
 
                 assertNotNull(tick, "no Is Active while a route runs: " + running);
