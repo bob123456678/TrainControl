@@ -98,7 +98,7 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
     /** Whether the window is Add Locomotive's: no locomotive yet, the first tab alone and Add for Save. */
     private boolean adding;
 
-    /** How narrow the window may go and keep the tab strip on one row and the Multi-Unit list whole, as `fit` measured. */
+    /** The least width that keeps Basic Settings, the tab strip and the Multi-Unit list whole, as `fit` measured it. */
     private int least;
 
     /** Asks the rule again every second while the window is open: a run starting or stopping raises no single event. */
@@ -392,13 +392,15 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
 
         pack();
 
-        // Measured here, where the tabs are built, and not on the watch's every tick: measuring resizes the strip
+        // Measured here, where the tabs are built, and not on the watch's every tick: measuring resizes the strip, and
+        // lays every tab out as wide as it, so the strip goes last.  Basic Settings at its least keeps its labels whole.
+        least = locomotiveTab.getMinimumSize().width + getWidth() - locomotiveTab.getWidth();
+
         if (!adding)
         {
-            // The list first: measuring the strip lays every tab out as wide as the strip
-            int list = multiUnitTab.members == null ? 0 : getWidth() + multiUnitTab.members.shortfall();
+            if (multiUnitTab.members != null) least = Math.max(least, getWidth() + multiUnitTab.members.shortfall());
 
-            least = Math.max(list, tabsOnOneRow() + getWidth() - tabs.getWidth());
+            least = Math.max(least, tabsOnOneRow() + getWidth() - tabs.getWidth());
         }
 
         keepTheRowsWhole();
@@ -407,15 +409,13 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
     }
 
     /**
-     * The window is never narrower than its tabs on one row, the Multi-Unit list's columns beside its scroll bar, or the
-     * Functions tab's button row, so its two groups cannot overlap.  All are measured, so this holds in every language
-     * and at every scale.
+     * The window is never narrower than Basic Settings with its labels whole, its tabs on one row, the Multi-Unit list's
+     * columns beside its scroll bar, or the Functions tab's button row, so its two groups cannot overlap.  All are
+     * measured, so this holds in every language and at every scale.
      */
     private void keepTheRowsWhole()
     {
-        if (adding || functionsTab == null) return;
-
-        int buttons = functionsTab.buttonRowWidth() + getWidth() - functionsTab.getWidth();
+        int buttons = adding ? 0 : functionsTab.buttonRowWidth() + getWidth() - functionsTab.getWidth();
 
         setMinimumSize(new java.awt.Dimension(Math.max(buttons, least), 0));
     }

@@ -461,17 +461,22 @@ public class testTheLocomotiveSettingsLooks extends support.SettingsClass
         }
     }
 
-    /** Opens the window on a tab in a language and drags it as narrow as it lets itself go (an unset minimum, to 300). */
+    /**
+     * Opens the window on a tab, or as Add Locomotive for a null tab, in a language, and drags it as narrow as it lets
+     * itself go (an unset minimum stops nothing: to 200).
+     */
     private static LocomotiveSettingsFrame narrowest(String lang, LocomotiveSettingsFrame.Tab tab) throws Exception
     {
         I18n.setLocale(new java.util.Locale(lang));
-        fixture.layDcc(NAME, 3806, tab);
+
+        if (tab != null) fixture.layDcc(NAME, 3806, tab);
+        else assertTrue(Components.onTheEventThread(ui::openAddLocomotive) && SettingsWindow.awaited() != null, "Add did not open");
 
         LocomotiveSettingsFrame window = SettingsWindow.showing();
 
         Components.onTheEventThread(() ->
         {
-            window.setSize(window.isMinimumSizeSet() ? window.getMinimumSize().width : 300, window.getHeight());
+            window.setSize(window.isMinimumSizeSet() ? window.getMinimumSize().width : 200, window.getHeight());
             window.validate();
 
             return null;
@@ -522,6 +527,36 @@ public class testTheLocomotiveSettingsLooks extends support.SettingsClass
 
                     assertTrue(right <= visible, lang + ": at " + pane.getWidth() + " wide the Reverse column ends at " + right
                         + ", under the scroll bar from " + visible);
+                }
+            }
+        }
+        finally
+        {
+            I18n.setLocale(java.util.Locale.ENGLISH);
+        }
+    }
+
+    /**
+     * At the narrowest window, in every language, no label on Basic Settings is cut short, nor on Add Locomotive.
+     *
+     * MUTATION: leave Basic Settings out of `least` in `LocomotiveSettingsFrame.fit`, and this fails.
+     */
+    @Test
+    public void testNoBasicSettingsLabelIsCutShortAtTheNarrowestWindow() throws Exception
+    {
+        try
+        {
+            for (String lang : LANGUAGES)
+            {
+                for (LocomotiveSettingsFrame.Tab tab : new LocomotiveSettingsFrame.Tab[] {LocomotiveSettingsFrame.Tab.LOCOMOTIVE, null})
+                {
+                    LocomotiveSettingsFrame window = narrowest(lang, tab);
+                    java.util.List<String> cut = Components.onTheEventThread(() -> Components.all(window.getContentPane(), JLabel.class,
+                        l -> l.isShowing() && l.getText() != null && !l.getText().isEmpty() && !whole(l)).stream()
+                        .map(l -> "'" + l.getText() + "' " + l.getWidth() + " wide").collect(java.util.stream.Collectors.toList()));
+
+                    assertTrue(cut.isEmpty(), lang + (tab == null ? ": Add Locomotive" : ": Basic Settings") + " at "
+                        + window.getWidth() + " wide cuts " + cut);
                 }
             }
         }
