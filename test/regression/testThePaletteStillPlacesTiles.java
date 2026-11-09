@@ -4,9 +4,9 @@ import java.util.Arrays;
 import static org.testng.Assert.*;
 import org.testng.annotations.Test;
 import org.traincontrol.automationui.AutonomySession;
-import org.traincontrol.base.Accessory.accessoryDecoderType;
 import org.traincontrol.base.LayoutDiagram;
 import org.traincontrol.base.LayoutDiagramComponent.componentType;
+import support.Diagrams;
 import support.Reflect;
 
 /**
@@ -68,8 +68,7 @@ public class testThePaletteStillPlacesTiles
 
             // THE SQUARE IS OCCUPIED, the case that fails: a straight, so the palette tile is a different type and the
             // assertion cannot pass by accident.
-            diagram.addComponent(componentType.STRAIGHT, 4, 2, 0, 0, 0, 0,
-                accessoryDecoderType.MM2, null);
+            Diagrams.straight(diagram, 4, 2);
 
             diagram.setEdit(true);
             diagram.checkBounds();

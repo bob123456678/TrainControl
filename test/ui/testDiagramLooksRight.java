@@ -11,6 +11,7 @@ import org.traincontrol.gui.autonomy.DiagramExport;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.base.LayoutDiagram;
 import org.traincontrol.marklin.MarklinControlStation;
+import support.Diagrams;
 import support.Display;
 import support.Reflect;
 import support.SourceOf;
@@ -2250,11 +2251,9 @@ public class testDiagramLooksRight
     {
         LayoutDiagram page = new LayoutDiagram("orientation", 4, 4, null, null);
 
-        page.addComponent(org.traincontrol.base.LayoutDiagramComponent.componentType.STRAIGHT,
-            1, 1, 0, 0, 0, 0, org.traincontrol.base.Accessory.accessoryDecoderType.MM2, null);
+        Diagrams.straight(page, 1, 1);
 
-        page.addComponent(org.traincontrol.base.LayoutDiagramComponent.componentType.STRAIGHT,
-            2, 2, 1, 0, 0, 0, org.traincontrol.base.Accessory.accessoryDecoderType.MM2, null);
+        Diagrams.straight(page, 2, 2, 1);
 
         boolean flat = org.traincontrol.gui.LayoutGrid.runsNorthSouth(page.getComponent(1, 1));
         boolean turned = org.traincontrol.gui.LayoutGrid.runsNorthSouth(page.getComponent(2, 2));

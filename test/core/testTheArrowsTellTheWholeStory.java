@@ -34,6 +34,7 @@ import org.traincontrol.base.Accessory.accessoryDecoderType;
 import org.traincontrol.base.LayoutDiagram;
 import org.traincontrol.base.LayoutDiagramComponent.componentType;
 import org.traincontrol.util.I18n;
+import support.Diagrams;
 import support.Reflect;
 
 /**
@@ -840,9 +841,9 @@ public class testTheArrowsTellTheWholeStory
 
                     if (!blank) continue;
 
-                    page.addComponent(componentType.STRAIGHT, x + 1, y, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
-                    page.addComponent(componentType.FEEDBACK, x + 2, y, 0, 0, 1999, 1999, accessoryDecoderType.MM2, null);
-                    page.addComponent(componentType.STRAIGHT, x + 3, y, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
+                    Diagrams.straight(page, x + 1, y);
+                    Diagrams.feedback(page, x + 2, y, 1999, 1999);
+                    Diagrams.straight(page, x + 3, y);
 
                     snapshot.getSession().rebuild();
 
@@ -958,10 +959,8 @@ public class testTheArrowsTellTheWholeStory
                     accessoryDecoderType.MM2, null);
                 page.addComponent(componentType.FEEDBACK, square.getX(), square.getY() + 1, 1, 0, sensor, sensor++,
                     accessoryDecoderType.MM2, null);
-                page.addComponent(componentType.FEEDBACK, square.getX() - 1, square.getY(), 0, 0, sensor, sensor++,
-                    accessoryDecoderType.MM2, null);
-                page.addComponent(componentType.FEEDBACK, square.getX() + 1, square.getY(), 0, 0, sensor, sensor++,
-                    accessoryDecoderType.MM2, null);
+                Diagrams.feedback(page, square.getX() - 1, square.getY(), sensor, sensor++);
+                Diagrams.feedback(page, square.getX() + 1, square.getY(), sensor, sensor++);
             }
 
             session = new AutonomySession(folder);

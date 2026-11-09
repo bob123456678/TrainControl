@@ -10,13 +10,12 @@ import java.util.List;
 import java.util.Set;
 import static org.testng.Assert.*;
 import org.testng.annotations.Test;
-import org.traincontrol.base.Accessory.accessoryDecoderType;
 import org.traincontrol.automationui.AutonomyBuilder;
 import org.traincontrol.automationui.AutonomySession;
 import org.traincontrol.base.LayoutDiagram;
-import org.traincontrol.base.LayoutDiagramComponent.componentType;
 import org.traincontrol.automationui.TileGraph.TileKey;
 import org.traincontrol.automationui.TilePorts.Side;
+import support.Diagrams;
 import support.SourceOf;
 
 /**
@@ -560,9 +559,9 @@ public class testALegacyImportBringsWhatItCanAndSaysWhatItLeaves extends Autonom
         LayoutDiagram page = new LayoutDiagram("main", 8, 4, null, null);
 
         // The same s88 twice, which is what a duplicated page looks like to the reduction
-        page.addComponent(componentType.FEEDBACK, 1, 1, 0, 0, 5, 11, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.STRAIGHT, 2, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.FEEDBACK, 3, 1, 0, 0, 5, 11, accessoryDecoderType.MM2, null);
+        Diagrams.feedback(page, 1, 1, 5, 11);
+        Diagrams.straight(page, 2, 1);
+        Diagrams.feedback(page, 3, 1, 5, 11);
 
         page.setPageId("1");
         page.checkBounds();
@@ -606,9 +605,9 @@ public class testALegacyImportBringsWhatItCanAndSaysWhatItLeaves extends Autonom
         LayoutDiagram repeat = new LayoutDiagram("repeat", 6, 4, null, null);
 
         // 11 is pageOnDisk's own sensor; 21 is this page's alone
-        repeat.addComponent(componentType.FEEDBACK, 1, 1, 0, 0, 5, 11, accessoryDecoderType.MM2, null);
-        repeat.addComponent(componentType.STRAIGHT, 2, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
-        repeat.addComponent(componentType.FEEDBACK, 3, 1, 0, 0, 10, 21, accessoryDecoderType.MM2, null);
+        Diagrams.feedback(repeat, 1, 1, 5, 11);
+        Diagrams.straight(repeat, 2, 1);
+        Diagrams.feedback(repeat, 3, 1, 10, 21);
 
         repeat.setPageId("2");
         repeat.checkBounds();
@@ -650,7 +649,7 @@ public class testALegacyImportBringsWhatItCanAndSaysWhatItLeaves extends Autonom
         LayoutDiagram first = pageOnDisk();
 
         LayoutDiagram repeat = new LayoutDiagram("repeat", 6, 4, null, null);
-        repeat.addComponent(componentType.FEEDBACK, 1, 1, 0, 0, 5, 11, accessoryDecoderType.MM2, null);
+        Diagrams.feedback(repeat, 1, 1, 5, 11);
         repeat.setPageId("2");
         repeat.checkBounds();
 
@@ -730,7 +729,7 @@ public class testALegacyImportBringsWhatItCanAndSaysWhatItLeaves extends Autonom
         LayoutDiagram first = pageOnDisk();
 
         LayoutDiagram repeat = new LayoutDiagram("repeat", 6, 4, null, null);
-        repeat.addComponent(componentType.FEEDBACK, 1, 1, 0, 0, 5, 11, accessoryDecoderType.MM2, null);
+        Diagrams.feedback(repeat, 1, 1, 5, 11);
         repeat.setPageId("2");
         repeat.checkBounds();
 

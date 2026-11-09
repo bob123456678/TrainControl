@@ -7,14 +7,13 @@ import static org.testng.Assert.*;
 import org.testng.annotations.Test;
 import org.traincontrol.automationui.AutonomyCompanionStore;
 import org.traincontrol.automationui.AutonomySession;
-import org.traincontrol.base.Accessory.accessoryDecoderType;
 import org.traincontrol.base.LayoutDiagram;
-import org.traincontrol.base.LayoutDiagramComponent.componentType;
 import org.traincontrol.automationui.TileGraph.Direction;
 import org.traincontrol.automationui.TileGraph.RouteId;
 import org.traincontrol.automationui.TileGraph.TileKey;
 import org.traincontrol.automationui.TilePorts;
 import org.traincontrol.gui.layouteditor.LayoutEditor;
+import support.Diagrams;
 import support.Display;
 import support.Reflect;
 
@@ -503,8 +502,7 @@ public class testLayoutEditorBulkEdits
 
             LayoutDiagram diagram = new LayoutDiagram("Cut Page", 21, 16, null, null);
 
-            diagram.addComponent(componentType.FEEDBACK, 5, 3, 0, 0, 1, 1,
-                accessoryDecoderType.MM2, null);
+            Diagrams.feedback(diagram, 5, 3, 1, 1);
 
             // Every square counts towards the bounds, not only the one with track on it.
             diagram.setEdit(true);

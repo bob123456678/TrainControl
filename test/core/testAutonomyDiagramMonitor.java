@@ -21,6 +21,7 @@ import org.traincontrol.automationui.TileAnnotation;
 import org.traincontrol.automationui.TileOverlay;
 import org.traincontrol.automationui.TileOverlay.State;
 import org.traincontrol.automationui.TilePorts.Side;
+import support.Diagrams;
 import support.ProgramConstants;
 import support.Reflect;
 
@@ -905,15 +906,13 @@ public class testAutonomyDiagramMonitor
 
     private void straight(LayoutDiagram page, int x, int y) throws java.io.IOException
     {
-        page.addComponent(componentType.STRAIGHT, x, y, 0, 0, 0, 0,
-            org.traincontrol.base.Accessory.accessoryDecoderType.MM2, null);
+        Diagrams.straight(page, x, y);
     }
 
     /** A feedback tile lying east-west.  The address is the RAW one of a CS2 file; CS2File halves it. */
     private void feedback(LayoutDiagram page, int x, int y, int rawAddress) throws java.io.IOException
     {
-        page.addComponent(componentType.FEEDBACK, x, y, 0, 0, rawAddress / 2, rawAddress,
-            org.traincontrol.base.Accessory.accessoryDecoderType.MM2, null);
+        Diagrams.feedback(page, x, y, rawAddress / 2, rawAddress);
     }
 
     private TileGraph graph(LayoutDiagram... pages)

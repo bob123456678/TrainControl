@@ -12,6 +12,7 @@ import org.traincontrol.automationui.AutonomySession;
 import org.traincontrol.base.LayoutDiagram;
 import org.traincontrol.base.LayoutDiagramComponent.componentType;
 import org.traincontrol.automationui.TileGraph.TileKey;
+import support.Diagrams;
 import support.Reflect;
 
 /**
@@ -265,11 +266,11 @@ public class testAStationsTimetableFollowsItThroughRenamesAndEdits extends Auton
 
         LayoutDiagram yard = new LayoutDiagram("yard", 7, 3, null, null);
 
-        yard.addComponent(componentType.FEEDBACK, 1, 1, 0, 0, 64, 64, accessoryDecoderType.MM2, null);
-        yard.addComponent(componentType.STRAIGHT, 2, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
-        yard.addComponent(componentType.FEEDBACK, 3, 1, 0, 0, 65, 65, accessoryDecoderType.MM2, null);
-        yard.addComponent(componentType.STRAIGHT, 4, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
-        yard.addComponent(componentType.FEEDBACK, 5, 1, 0, 0, 66, 66, accessoryDecoderType.MM2, null);
+        Diagrams.feedback(yard, 1, 1, 64, 64);
+        Diagrams.straight(yard, 2, 1);
+        Diagrams.feedback(yard, 3, 1, 65, 65);
+        Diagrams.straight(yard, 4, 1);
+        Diagrams.feedback(yard, 5, 1, 66, 66);
         yard.setPageId("1");
 
         AutonomySession next = new AutonomySession(layout);
@@ -696,10 +697,9 @@ public class testAStationsTimetableFollowsItThroughRenamesAndEdits extends Auton
 
         for (int i = 0; i < 4; i++)
         {
-            page.addComponent(componentType.FEEDBACK, 1 + 2 * i, 1, 0, 0, address + i, address + i,
-                accessoryDecoderType.MM2, null);
+            Diagrams.feedback(page, 1 + 2 * i, 1, address + i, address + i);
 
-            if (i < 3) page.addComponent(componentType.STRAIGHT, 2 + 2 * i, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
+            if (i < 3) Diagrams.straight(page, 2 + 2 * i, 1);
         }
 
         page.setPageId("1");
@@ -890,13 +890,11 @@ public class testAStationsTimetableFollowsItThroughRenamesAndEdits extends Auton
 
         for (LayoutDiagram page : new LayoutDiagram[] {main, second})
         {
-            page.addComponent(componentType.FEEDBACK, 1, 1, 0, 0, address, address, accessoryDecoderType.MM2, null);
-            page.addComponent(componentType.STRAIGHT, 2, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
-            page.addComponent(componentType.FEEDBACK, 3, 1, 0, 0, address + 1, address + 1, accessoryDecoderType.MM2,
-                null);
-            page.addComponent(componentType.STRAIGHT, 4, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
-            page.addComponent(componentType.FEEDBACK, 5, 1, 0, 0, address + 2, address + 2, accessoryDecoderType.MM2,
-                null);
+            Diagrams.feedback(page, 1, 1, address, address);
+            Diagrams.straight(page, 2, 1);
+            Diagrams.feedback(page, 3, 1, address + 1, address + 1);
+            Diagrams.straight(page, 4, 1);
+            Diagrams.feedback(page, 5, 1, address + 2, address + 2);
 
             address += 10;
         }
@@ -1157,13 +1155,11 @@ public class testAStationsTimetableFollowsItThroughRenamesAndEdits extends Auton
 
         for (LayoutDiagram page : new LayoutDiagram[] {main, second})
         {
-            page.addComponent(componentType.FEEDBACK, 1, 1, 0, 0, address, address, accessoryDecoderType.MM2, null);
-            page.addComponent(componentType.STRAIGHT, 2, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
-            page.addComponent(componentType.FEEDBACK, 3, 1, 0, 0, address + 1, address + 1, accessoryDecoderType.MM2,
-                null);
-            page.addComponent(componentType.STRAIGHT, 4, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
-            page.addComponent(componentType.FEEDBACK, 5, 1, 0, 0, address + 2, address + 2, accessoryDecoderType.MM2,
-                null);
+            Diagrams.feedback(page, 1, 1, address, address);
+            Diagrams.straight(page, 2, 1);
+            Diagrams.feedback(page, 3, 1, address + 1, address + 1);
+            Diagrams.straight(page, 4, 1);
+            Diagrams.feedback(page, 5, 1, address + 2, address + 2);
 
             address += 10;
         }

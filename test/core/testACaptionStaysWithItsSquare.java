@@ -12,6 +12,7 @@ import org.traincontrol.automationui.AutonomySession;
 import org.traincontrol.base.LayoutDiagram;
 import org.traincontrol.base.LayoutDiagramComponent.componentType;
 import org.traincontrol.automationui.TileGraph.TileKey;
+import support.Diagrams;
 
 /**
  * A station's caption is written on a page, kept inside the drawn area, carried by its square and taken away
@@ -301,7 +302,7 @@ public class testACaptionStaysWithItsSquare extends AutonomySessionFixture
 
         // A station hard against the top-left of the drawn area, its only neighbor to the east a curve: with no plain
         // track to put the name on, the blank squares are looked at, and the ones outside have to be refused (FR-136).
-        page.addComponent(componentType.FEEDBACK, 0, 0, 0, 0, 5, 11, accessoryDecoderType.MM2, null);
+        Diagrams.feedback(page, 0, 0, 5, 11);
         page.addComponent(componentType.CURVE, 1, 0, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
         page.setPageId("1");
         page.checkBounds();
@@ -390,7 +391,7 @@ public class testACaptionStaysWithItsSquare extends AutonomySessionFixture
         LayoutDiagram page = new LayoutDiagram("main", 8, 4, null, null);
 
         // A station hard against the top-left corner, its only neighbor a curve (so no plain track to put the name on).
-        page.addComponent(componentType.FEEDBACK, 0, 0, 0, 0, 5, 11, accessoryDecoderType.MM2, null);
+        Diagrams.feedback(page, 0, 0, 5, 11);
         page.addComponent(componentType.CURVE, 1, 0, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
         page.setPageId("1");
         page.setEdit(true);

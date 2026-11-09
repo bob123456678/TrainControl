@@ -8,6 +8,7 @@ import org.traincontrol.base.Accessory.accessoryDecoderType;
 import org.traincontrol.base.LayoutDiagram;
 import org.traincontrol.base.LayoutDiagramComponent.componentType;
 import org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel;
+import support.Diagrams;
 import support.Display;
 import support.Trees;
 
@@ -45,10 +46,10 @@ public class testTheMenuShowsWhereALinkGoes
 
         // A tunnel at orientation 0 opens to the south, so the track it meets runs vertically.
         page.addComponent(componentType.TUNNEL, 1, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.STRAIGHT, 1, 2, 1, 0, 0, 0, accessoryDecoderType.MM2, null);
+        Diagrams.straight(page, 1, 2, 1);
 
         page.addComponent(componentType.TUNNEL, 5, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.STRAIGHT, 5, 2, 1, 0, 0, 0, accessoryDecoderType.MM2, null);
+        Diagrams.straight(page, 5, 2, 1);
 
         page.setPageId(name);
 

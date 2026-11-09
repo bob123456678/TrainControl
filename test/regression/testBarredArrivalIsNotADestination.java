@@ -15,6 +15,7 @@ import org.traincontrol.automationui.TilePorts;
 import org.traincontrol.base.Accessory.accessoryDecoderType;
 import org.traincontrol.base.LayoutDiagram;
 import org.traincontrol.base.LayoutDiagramComponent.componentType;
+import support.Diagrams;
 
 /**
  * A station with one arrival side barred does not offer that side as somewhere to stop (MT-078).  The rule lives in the
@@ -133,9 +134,9 @@ public class testBarredArrivalIsNotADestination
     {
         LayoutDiagram page = new LayoutDiagram("main", 10, 4, null, null);
 
-        page.addComponent(componentType.FEEDBACK, 1, 1, 0, 0, 5, 11, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.FEEDBACK, 2, 1, 0, 0, 6, 12, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.FEEDBACK, 3, 1, 0, 0, 7, 13, accessoryDecoderType.MM2, null);
+        Diagrams.feedback(page, 1, 1, 5, 11);
+        Diagrams.feedback(page, 2, 1, 6, 12);
+        Diagrams.feedback(page, 3, 1, 7, 13);
 
         // A signal off to one side, wired as parsing a real layout does: without an accessory it has no address to
         // command and the pairing is dropped.
@@ -379,9 +380,9 @@ public class testBarredArrivalIsNotADestination
     {
         LayoutDiagram page = new LayoutDiagram("main", 10, 4, null, null);
 
-        page.addComponent(componentType.FEEDBACK, 1, 1, 0, 0, 5, 11, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.FEEDBACK, 2, 1, 0, 0, 6, 12, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.FEEDBACK, 3, 1, 0, 0, 7, 13, accessoryDecoderType.MM2, null);
+        Diagrams.feedback(page, 1, 1, 5, 11);
+        Diagrams.feedback(page, 2, 1, 6, 12);
+        Diagrams.feedback(page, 3, 1, 7, 13);
 
         page.setPageId("1");
 

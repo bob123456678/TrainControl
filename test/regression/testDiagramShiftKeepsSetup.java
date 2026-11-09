@@ -13,6 +13,7 @@ import org.traincontrol.automationui.TileGraph.TileKey;
 import org.traincontrol.base.Accessory.accessoryDecoderType;
 import org.traincontrol.base.LayoutDiagram;
 import org.traincontrol.base.LayoutDiagramComponent.componentType;
+import support.Diagrams;
 import support.Display;
 import support.Reflect;
 import support.Trees;
@@ -154,13 +155,13 @@ public class testDiagramShiftKeepsSetup
             LayoutDiagram far = new LayoutDiagram(FAR, 6, 6, null, null);
 
             // A run of track with a link at the end of it, on each page
-            main.addComponent(componentType.FEEDBACK, 1, 5, 0, 0, 5, 11, accessoryDecoderType.MM2, null);
-            main.addComponent(componentType.STRAIGHT, 2, 5, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
+            Diagrams.feedback(main, 1, 5, 5, 11);
+            Diagrams.straight(main, 2, 5);
             main.addComponent(componentType.LINK, 3, 5, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
 
             far.addComponent(componentType.LINK, 1, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
-            far.addComponent(componentType.STRAIGHT, 2, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
-            far.addComponent(componentType.FEEDBACK, 3, 1, 0, 0, 6, 12, accessoryDecoderType.MM2, null);
+            Diagrams.straight(far, 2, 1);
+            Diagrams.feedback(far, 3, 1, 6, 12);
 
             main.setPageId("1");
             far.setPageId("2");
@@ -217,8 +218,8 @@ public class testDiagramShiftKeepsSetup
             LayoutDiagram main = new LayoutDiagram(PAGE, 12, 10, null, null);
             LayoutDiagram far = new LayoutDiagram(FAR, 6, 6, null, null);
 
-            main.addComponent(componentType.FEEDBACK, 5, 2, 0, 0, 5, 11, accessoryDecoderType.MM2, null);
-            main.addComponent(componentType.STRAIGHT, 6, 2, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
+            Diagrams.feedback(main, 5, 2, 5, 11);
+            Diagrams.straight(main, 6, 2);
             main.addComponent(componentType.LINK, 7, 2, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
 
             far.addComponent(componentType.LINK, 1, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);

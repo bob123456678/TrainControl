@@ -21,6 +21,7 @@ import org.traincontrol.base.LayoutDiagram;
 import org.traincontrol.base.LayoutDiagramComponent.componentType;
 import org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel;
 import org.traincontrol.util.I18n;
+import support.Diagrams;
 import support.Reflect;
 import support.Trees;
 
@@ -46,9 +47,9 @@ public class testTheEditorSaysWhatItsToolsDo
         // 1,1 station - 2,1 - 3,1 station, a train standing at 3,1.
         LayoutDiagram page = new LayoutDiagram("main", 6, 3, null, null);
 
-        page.addComponent(componentType.FEEDBACK, 1, 1, 0, 0, 5, 11, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.STRAIGHT, 2, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.FEEDBACK, 3, 1, 0, 0, 6, 12, accessoryDecoderType.MM2, null);
+        Diagrams.feedback(page, 1, 1, 5, 11);
+        Diagrams.straight(page, 2, 1);
+        Diagrams.feedback(page, 3, 1, 6, 12);
 
         page.setPageId("1");
 
@@ -528,9 +529,9 @@ public class testTheEditorSaysWhatItsToolsDo
 
         LayoutDiagram page = new LayoutDiagram("main", 6, 3, null, null);
 
-        page.addComponent(componentType.FEEDBACK, 1, 1, 0, 0, 5, 11, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.STRAIGHT, 2, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.FEEDBACK, 3, 1, 0, 0, 6, 12, accessoryDecoderType.MM2, null);
+        Diagrams.feedback(page, 1, 1, 5, 11);
+        Diagrams.straight(page, 2, 1);
+        Diagrams.feedback(page, 3, 1, 6, 12);
         page.addComponent(componentType.SIGNAL, 2, 0, 0, 0, 86, 0, accessoryDecoderType.MM2, null);
         page.addComponent(componentType.SIGNAL, 3, 0, 0, 0, 87, 0, accessoryDecoderType.MM2, null);
 
@@ -1179,7 +1180,7 @@ public class testTheEditorSaysWhatItsToolsDo
 
         LayoutDiagram out = new LayoutDiagram("left out", 4, 3, null, null);
 
-        out.addComponent(componentType.STRAIGHT, 1, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
+        Diagrams.straight(out, 1, 1);
         out.setPageId("2");
 
         AutonomySession setup = new AutonomySession(folder);

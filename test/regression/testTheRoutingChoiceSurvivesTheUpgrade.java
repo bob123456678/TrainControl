@@ -4,6 +4,7 @@ import static org.testng.Assert.*;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
+import support.Diagrams;
 import support.Display;
 import support.Reflect;
 
@@ -336,9 +337,7 @@ public class testTheRoutingChoiceSurvivesTheUpgrade
             org.traincontrol.base.LayoutDiagram page =
                 new org.traincontrol.base.LayoutDiagram("Routing Page", 8, 4, null, null);
 
-            page.addComponent(org.traincontrol.base.LayoutDiagramComponent.componentType.FEEDBACK,
-                1, 1, 0, 0, 5, 11,
-                org.traincontrol.base.Accessory.accessoryDecoderType.MM2, null);
+            Diagrams.feedback(page, 1, 1, 5, 11);
 
             page.setEdit(true);
             page.checkBounds();
@@ -507,9 +506,7 @@ public class testTheRoutingChoiceSurvivesTheUpgrade
             org.traincontrol.base.LayoutDiagram page =
                 new org.traincontrol.base.LayoutDiagram("Routing Page", 8, 4, null, null);
 
-            page.addComponent(org.traincontrol.base.LayoutDiagramComponent.componentType.FEEDBACK,
-                1, 1, 0, 0, 5, 11,
-                org.traincontrol.base.Accessory.accessoryDecoderType.MM2, null);
+            Diagrams.feedback(page, 1, 1, 5, 11);
 
             page.setEdit(true);
             page.checkBounds();

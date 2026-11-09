@@ -7,6 +7,7 @@ import org.traincontrol.base.LayoutDiagram;
 import org.traincontrol.base.LayoutDiagramComponent;
 import static org.traincontrol.base.Accessory.accessoryDecoderType;
 import static org.traincontrol.base.LayoutDiagramComponent.componentType;
+import support.Diagrams;
 
 /**
  * Growing a track diagram by one all round, and shrinking it back.
@@ -263,8 +264,8 @@ public class testDiagramResize
     {
         LayoutDiagram page = new LayoutDiagram("row", 30, 10, null, null);
 
-        page.addComponent(componentType.FEEDBACK, 4, 6, 0, 0, 5, 11, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.FEEDBACK, 7, 6, 0, 0, 6, 12, accessoryDecoderType.MM2, null);
+        Diagrams.feedback(page, 4, 6, 5, 11);
+        Diagrams.feedback(page, 7, 6, 6, 12);
 
         page.setEdit(false);
         page.checkBounds();

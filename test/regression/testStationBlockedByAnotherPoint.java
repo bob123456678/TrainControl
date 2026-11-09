@@ -16,9 +16,8 @@ import org.traincontrol.base.Locomotive;
 import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.automationui.AutonomySession;
 import org.traincontrol.automationui.TileGraph.TileKey;
-import org.traincontrol.base.Accessory.accessoryDecoderType;
 import org.traincontrol.base.LayoutDiagram;
-import org.traincontrol.base.LayoutDiagramComponent.componentType;
+import support.Diagrams;
 
 /**
  * A station can be held back while another point is occupied (FR-001), as a locomotive can be excluded from it.  The
@@ -356,15 +355,15 @@ public class testStationBlockedByAnotherPoint
         // feedbacks connect on their own.
         LayoutDiagram diagram = new LayoutDiagram("main", 10, 6, null, null);
 
-        diagram.addComponent(componentType.FEEDBACK, 1, 1, 0, 0, 5, 11, accessoryDecoderType.MM2, null);
-        diagram.addComponent(componentType.FEEDBACK, 2, 1, 0, 0, 6, 12, accessoryDecoderType.MM2, null);
-        diagram.addComponent(componentType.FEEDBACK, 3, 1, 0, 0, 7, 13, accessoryDecoderType.MM2, null);
+        Diagrams.feedback(diagram, 1, 1, 5, 11);
+        Diagrams.feedback(diagram, 2, 1, 6, 12);
+        Diagrams.feedback(diagram, 3, 1, 7, 13);
 
         // A separate run for the yard; the restriction needs an edge ENDING at the watched square, which is what gets
         // locked against.
-        diagram.addComponent(componentType.FEEDBACK, 1, 3, 0, 0, 8, 14, accessoryDecoderType.MM2, null);
-        diagram.addComponent(componentType.FEEDBACK, 2, 3, 0, 0, 9, 15, accessoryDecoderType.MM2, null);
-        diagram.addComponent(componentType.FEEDBACK, 3, 3, 0, 0, 10, 16, accessoryDecoderType.MM2, null);
+        Diagrams.feedback(diagram, 1, 3, 8, 14);
+        Diagrams.feedback(diagram, 2, 3, 9, 15);
+        Diagrams.feedback(diagram, 3, 3, 10, 16);
 
         diagram.setPageId("1");
 

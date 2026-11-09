@@ -15,6 +15,7 @@ import org.traincontrol.automationui.AutonomySession;
 import org.traincontrol.base.LayoutDiagram;
 import org.traincontrol.base.LayoutDiagramComponent.componentType;
 import org.traincontrol.automationui.TileGraph.TileKey;
+import support.Diagrams;
 import support.Display;
 import support.Reflect;
 
@@ -129,7 +130,7 @@ public class testASignalGuardsItsStationAndTheNoticeNamesIt extends AutonomySess
         // A real signal: the check asks whether the tile resolves to an accessory, so a feedback tile would prove
         // nothing.
         elsewhere.addComponent(componentType.SIGNAL, 1, 1, 0, 0, 31, 0, accessoryDecoderType.MM2, null);
-        elsewhere.addComponent(componentType.FEEDBACK, 2, 1, 0, 0, 10, 21, accessoryDecoderType.MM2, null);
+        Diagrams.feedback(elsewhere, 2, 1, 10, 21);
 
         // Wired, as parsing a real layout does: without an accessory the signal reports gone on any page, and the
         // precondition below would pass for the wrong reason.
@@ -925,7 +926,7 @@ public class testASignalGuardsItsStationAndTheNoticeNamesIt extends AutonomySess
 
         LayoutDiagram page = new LayoutDiagram("far", 4, 2, url, null);
 
-        page.addComponent(componentType.FEEDBACK, 1, 1, 0, 0, 9, 15, accessoryDecoderType.MM2, null);
+        Diagrams.feedback(page, 1, 1, 9, 15);
 
         page.setPageId("2");
 
@@ -980,9 +981,9 @@ public class testASignalGuardsItsStationAndTheNoticeNamesIt extends AutonomySess
     {
         LayoutDiagram page = pageWithTwoSignals();
 
-        page.addComponent(componentType.FEEDBACK, 1, 3, 0, 0, 7, 13, accessoryDecoderType.MM2, null);
+        Diagrams.feedback(page, 1, 3, 7, 13);
         page.addComponent(componentType.SIGNAL, 2, 3, 0, 0, 23, 0, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.FEEDBACK, 3, 3, 0, 0, 8, 14, accessoryDecoderType.MM2, null);
+        Diagrams.feedback(page, 3, 3, 8, 14);
 
         wire(page, 2, 3, 23);
 
@@ -1004,10 +1005,10 @@ public class testASignalGuardsItsStationAndTheNoticeNamesIt extends AutonomySess
 
         LayoutDiagram page = new LayoutDiagram("main", 8, 4, url, null);
 
-        page.addComponent(componentType.FEEDBACK, 1, 1, 0, 0, 5, 11, accessoryDecoderType.MM2, null);
+        Diagrams.feedback(page, 1, 1, 5, 11);
         page.addComponent(componentType.SIGNAL, 2, 1, 0, 0, 21, 0, accessoryDecoderType.MM2, null);
         page.addComponent(componentType.SIGNAL, 3, 1, 0, 0, 22, 0, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.FEEDBACK, 4, 1, 0, 0, 6, 12, accessoryDecoderType.MM2, null);
+        Diagrams.feedback(page, 4, 1, 6, 12);
 
         // Wired as parsing a real layout does; without an accessory the pairing is dropped on the way to the built
         // configuration.

@@ -23,6 +23,7 @@ import org.traincontrol.base.Accessory.accessoryDecoderType;
 import org.traincontrol.base.LayoutDiagram;
 import org.traincontrol.base.LayoutDiagramComponent.componentType;
 import org.traincontrol.marklin.MarklinAccessory;
+import support.Diagrams;
 
 /**
  * Turning around: one sensor, two things a train may do there.  From the sample layout: BottomMainC and BottomMainCTerm
@@ -649,8 +650,7 @@ public class testAutonomyDiagramReversal
 
     private void feedback(LayoutDiagram page, int x, int y, int rawAddress) throws IOException
     {
-        page.addComponent(componentType.FEEDBACK, x, y, 0, 0, rawAddress / 2, rawAddress,
-            accessoryDecoderType.MM2, null);
+        Diagrams.feedback(page, x, y, rawAddress / 2, rawAddress);
     }
 
     private void feedbackNS(LayoutDiagram page, int x, int y, int rawAddress) throws IOException

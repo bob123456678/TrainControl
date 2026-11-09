@@ -13,9 +13,8 @@ import org.testng.annotations.Test;
 import org.traincontrol.automationui.AutonomyCompanionStore;
 import org.traincontrol.automationui.AutonomySession;
 import org.traincontrol.automationui.TileGraph.TileKey;
-import org.traincontrol.base.Accessory.accessoryDecoderType;
 import org.traincontrol.base.LayoutDiagram;
-import org.traincontrol.base.LayoutDiagramComponent.componentType;
+import support.Diagrams;
 import support.Trees;
 
 /**
@@ -291,8 +290,7 @@ public class testStationLabelsFollowMoves
 
                 // The diagram first, then the setup: the editor's order, and the graph is rebuilt from the pages.
                 page.addComponent(null, 1, 1);
-                page.addComponent(componentType.FEEDBACK, to[0], to[1], 0, 0, 5, 11,
-                    accessoryDecoderType.MM2, null);
+                Diagrams.feedback(page, to[0], to[1], 5, 11);
 
                 session.moveTiles(one(station, at(to[0], to[1])));
 
@@ -379,15 +377,15 @@ public class testStationLabelsFollowMoves
     {
         LayoutDiagram page = new LayoutDiagram(PAGE, 8, 5, null, null);
 
-        page.addComponent(componentType.FEEDBACK, 1, 1, 0, 0, 5, 11, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.STRAIGHT, 2, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.STRAIGHT, 3, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.FEEDBACK, 4, 1, 0, 0, 6, 12, accessoryDecoderType.MM2, null);
+        Diagrams.feedback(page, 1, 1, 5, 11);
+        Diagrams.straight(page, 2, 1);
+        Diagrams.straight(page, 3, 1);
+        Diagrams.feedback(page, 4, 1, 6, 12);
 
-        page.addComponent(componentType.FEEDBACK, 1, 2, 0, 0, 7, 13, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.STRAIGHT, 2, 2, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.STRAIGHT, 3, 2, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.FEEDBACK, 4, 2, 0, 0, 8, 14, accessoryDecoderType.MM2, null);
+        Diagrams.feedback(page, 1, 2, 7, 13);
+        Diagrams.straight(page, 2, 2);
+        Diagrams.straight(page, 3, 2);
+        Diagrams.feedback(page, 4, 2, 8, 14);
 
         page.setPageId("1");
 

@@ -4,9 +4,8 @@ import java.util.Arrays;
 import static org.testng.Assert.*;
 import org.testng.annotations.Test;
 import org.traincontrol.automationui.AutonomySession;
-import org.traincontrol.base.Accessory.accessoryDecoderType;
 import org.traincontrol.base.LayoutDiagram;
-import org.traincontrol.base.LayoutDiagramComponent.componentType;
+import support.Diagrams;
 import support.Display;
 import support.Reflect;
 import support.SourceOf;
@@ -93,12 +92,10 @@ public class testTheAutonomyEditorKnowsWhichSquare
 
             for (int x = 2; x <= 6; x++)
             {
-                diagram.addComponent(componentType.STRAIGHT, x, 2, 0, 0, 0, 0,
-                    accessoryDecoderType.MM2, null);
+                Diagrams.straight(diagram, x, 2);
             }
 
-            diagram.addComponent(componentType.FEEDBACK, 4, 2, 0, 0, 9, 21,
-                accessoryDecoderType.MM2, null);
+            Diagrams.feedback(diagram, 4, 2, 9, 21);
 
             diagram.setEdit(true);
             diagram.checkBounds();

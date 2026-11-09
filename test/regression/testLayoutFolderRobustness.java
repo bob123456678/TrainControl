@@ -11,12 +11,11 @@ import static org.testng.Assert.*;
 import org.testng.annotations.Test;
 import org.traincontrol.automationui.AutonomySession;
 import org.traincontrol.automationui.TileGraph.TileKey;
-import org.traincontrol.base.Accessory.accessoryDecoderType;
 import org.traincontrol.base.LayoutDiagram;
-import org.traincontrol.base.LayoutDiagramComponent.componentType;
 import org.traincontrol.marklin.MarklinAccessory;
 import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.marklin.file.CS2File;
+import support.Diagrams;
 import support.Reflect;
 import support.Trees;
 
@@ -56,7 +55,7 @@ public class testLayoutFolderRobustness
             LayoutDiagram page = new LayoutDiagram("Up/Down", 8, 6,
                 placeholder.toURI().toURL().toString(), null);
 
-            page.addComponent(componentType.FEEDBACK, 1, 1, 0, 0, 5, 11, accessoryDecoderType.MM2, null);
+            Diagrams.feedback(page, 1, 1, 5, 11);
 
             page.setPageId("1");
             page.checkBounds();
@@ -496,8 +495,8 @@ public class testLayoutFolderRobustness
     {
         LayoutDiagram page = new LayoutDiagram(name, 8, 6, null, null);
 
-        page.addComponent(componentType.FEEDBACK, 1, 1, 0, 0, 5, 11, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.STRAIGHT, 2, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
+        Diagrams.feedback(page, 1, 1, 5, 11);
+        Diagrams.straight(page, 2, 1);
 
         page.setPageId("1");
 

@@ -19,6 +19,7 @@ import org.traincontrol.automationui.TileGraph.RouteId;
 import org.traincontrol.automationui.TileGraph.TileKey;
 import org.traincontrol.automationui.TilePorts.Route;
 import org.traincontrol.automationui.TilePorts.Side;
+import support.Diagrams;
 import support.Reflect;
 import support.SourceOf;
 
@@ -125,10 +126,10 @@ public class testATrainIsPlacedOnceAndKeepsItsFacing extends AutonomySessionFixt
         LayoutDiagram page = new LayoutDiagram("main", 6, 5, null, null);
 
         page.addComponent(componentType.FEEDBACK, 2, 0, 1, 0, 70, 70, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.STRAIGHT, 2, 1, 1, 0, 0, 0, accessoryDecoderType.MM2, null);
+        Diagrams.straight(page, 2, 1, 1);
         page.addComponent(componentType.FEEDBACK_DOUBLE_CURVE, 2, 2, 0, 0, 71, 71, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.STRAIGHT, 3, 2, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.FEEDBACK, 4, 2, 0, 0, 72, 72, accessoryDecoderType.MM2, null);
+        Diagrams.straight(page, 3, 2);
+        Diagrams.feedback(page, 4, 2, 72, 72);
         page.setPageId("1");
 
         session.open(Arrays.asList(page));
@@ -236,11 +237,11 @@ public class testATrainIsPlacedOnceAndKeepsItsFacing extends AutonomySessionFixt
     {
         LayoutDiagram page = new LayoutDiagram("main", 7, 3, null, null);
 
-        page.addComponent(componentType.FEEDBACK, 1, 1, 0, 0, 64, 64, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.STRAIGHT, 2, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.FEEDBACK, 3, 1, 0, 0, 65, 65, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.STRAIGHT, 4, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.FEEDBACK, 5, 1, 0, 0, 66, 66, accessoryDecoderType.MM2, null);
+        Diagrams.feedback(page, 1, 1, 64, 64);
+        Diagrams.straight(page, 2, 1);
+        Diagrams.feedback(page, 3, 1, 65, 65);
+        Diagrams.straight(page, 4, 1);
+        Diagrams.feedback(page, 5, 1, 66, 66);
         page.setPageId("1");
 
         session.open(Arrays.asList(page));
@@ -703,14 +704,14 @@ public class testATrainIsPlacedOnceAndKeepsItsFacing extends AutonomySessionFixt
         LayoutDiagram page = new LayoutDiagram("main", 12, 3, null, null);
 
         page.addComponent(componentType.END, 1, 1, 3, 0, 0, 0, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.FEEDBACK, 2, 1, 0, 0, 81, 81, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.STRAIGHT, 3, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.STRAIGHT, 4, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.FEEDBACK, 5, 1, 0, 0, 82, 82, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.STRAIGHT, 6, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.STRAIGHT, 7, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.FEEDBACK, 8, 1, 0, 0, 83, 83, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.STRAIGHT, 9, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
+        Diagrams.feedback(page, 2, 1, 81, 81);
+        Diagrams.straight(page, 3, 1);
+        Diagrams.straight(page, 4, 1);
+        Diagrams.feedback(page, 5, 1, 82, 82);
+        Diagrams.straight(page, 6, 1);
+        Diagrams.straight(page, 7, 1);
+        Diagrams.feedback(page, 8, 1, 83, 83);
+        Diagrams.straight(page, 9, 1);
         page.setPageId("1");
 
         session.open(Arrays.asList(page));
@@ -1294,10 +1295,10 @@ public class testATrainIsPlacedOnceAndKeepsItsFacing extends AutonomySessionFixt
             LayoutDiagram page = new LayoutDiagram("main", 6, 6, null, null);
 
             if (gone != Side.N) page.addComponent(componentType.FEEDBACK, 2, 1, 1, 0, 21, 21, accessoryDecoderType.MM2, null);
-            if (gone != Side.W) page.addComponent(componentType.FEEDBACK, 1, 2, 0, 0, 22, 22, accessoryDecoderType.MM2, null);
+            if (gone != Side.W) Diagrams.feedback(page, 1, 2, 22, 22);
             page.addComponent(componentType.FEEDBACK_DOUBLE_CURVE, 2, 2, orientation, 0, 25, 25, accessoryDecoderType.MM2,
                 null);
-            if (gone != Side.E) page.addComponent(componentType.FEEDBACK, 3, 2, 0, 0, 23, 23, accessoryDecoderType.MM2, null);
+            if (gone != Side.E) Diagrams.feedback(page, 3, 2, 23, 23);
             if (gone != Side.S) page.addComponent(componentType.FEEDBACK, 2, 3, 1, 0, 24, 24, accessoryDecoderType.MM2, null);
             page.setPageId("1");
 

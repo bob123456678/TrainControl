@@ -27,6 +27,7 @@ import org.traincontrol.automationui.TilePorts.Side;
 import org.traincontrol.base.Accessory.accessoryDecoderType;
 import org.traincontrol.base.LayoutDiagram;
 import org.traincontrol.base.LayoutDiagramComponent.componentType;
+import support.Diagrams;
 import support.Reflect;
 
 /**
@@ -416,12 +417,12 @@ public class testTwoYsMakeACrossing
 
         // a turnout with no address, toe east, which ends the room as a switch does (5e)
         page.addComponent(componentType.CUSTOM_PERM_LEFT, 2, 5, 1, 0, 0, 0, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.STRAIGHT, 3, 5, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
+        Diagrams.straight(page, 3, 5);
 
         y(page, 4, 5, 0);
         y(page, 4, 6, 2);
 
-        page.addComponent(componentType.STRAIGHT, 5, 6, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
+        Diagrams.straight(page, 5, 6);
 
         sensor(page, 6, 6, 0, 2);
 

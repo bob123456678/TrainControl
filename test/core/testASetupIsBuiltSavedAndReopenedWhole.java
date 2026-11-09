@@ -8,14 +8,13 @@ import java.util.List;
 import java.util.Set;
 import static org.testng.Assert.*;
 import org.testng.annotations.Test;
-import org.traincontrol.base.Accessory.accessoryDecoderType;
 import org.traincontrol.automationui.AutonomySession;
 import org.traincontrol.base.LayoutDiagram;
-import org.traincontrol.base.LayoutDiagramComponent.componentType;
 import org.traincontrol.automationui.TileGraph.Direction;
 import org.traincontrol.automationui.TileGraph.RouteId;
 import org.traincontrol.automationui.TileGraph.TileKey;
 import org.traincontrol.automationui.TilePorts.Side;
+import support.Diagrams;
 import support.SourceOf;
 
 /**
@@ -424,8 +423,8 @@ public class testASetupIsBuiltSavedAndReopenedWhole extends AutonomySessionFixtu
         LayoutDiagram other = new LayoutDiagram("other", 6, 4, null, null);
 
         // 11 is the first page's own sensor, so this page repeats it and is the one shut out
-        other.addComponent(componentType.FEEDBACK, 1, 1, 0, 0, 5, 11, accessoryDecoderType.MM2, null);
-        other.addComponent(componentType.STRAIGHT, 2, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
+        Diagrams.feedback(other, 1, 1, 5, 11);
+        Diagrams.straight(other, 2, 1);
 
         other.setPageId("2");
         other.checkBounds();
