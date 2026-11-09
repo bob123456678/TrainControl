@@ -109,7 +109,8 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
             return asked;
         }
 
-        // A new width wraps the sentence anew: laid out again for the height that takes
+        // A new width wraps the sentence anew: laid out again for the height that takes, once this layout is done (one
+        // asked for during it is lost)
         @Override
         public void setBounds(int x, int y, int width, int height)
         {
@@ -117,7 +118,7 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
 
             super.setBounds(x, y, width, height);
 
-            if (wider) revalidate();
+            if (wider) SwingUtilities.invokeLater(this::revalidate);
         }
     };
 
