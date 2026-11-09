@@ -74,7 +74,7 @@ final class MultiUnitPanel extends JPanel
         filterField.setName("multi.filter");
 
         GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(5, 5, 5, 5);
+        gbc.insets = new Insets(5, 4, 5, 4);
         gbc.fill = GridBagConstraints.HORIZONTAL;
         gbc.gridx = 0;
         gbc.gridy = 0;
@@ -93,6 +93,12 @@ final class MultiUnitPanel extends JPanel
 
         JLabel reverseLabel = org.traincontrol.gui.widgets.UiStyle.label(I18n.t("loc.ui.labelReverse"));
         reverseLabel.setToolTipText(I18n.t("loc.ui.tooltip.swapDirection"));
+
+        // A check box paints its box inside its own left inset: the headings over the two box columns start there too
+        int box = new JCheckBox().getInsets().left;
+
+        nameLabel.setBorder(javax.swing.BorderFactory.createEmptyBorder(0, box, 0, 0));
+        reverseLabel.setBorder(javax.swing.BorderFactory.createEmptyBorder(0, box, 0, 0));
 
         headingPanel.setOpaque(false);
         columns(headingPanel, nameLabel, multiplierLabel, null, reverseLabel);
@@ -272,7 +278,7 @@ final class MultiUnitPanel extends JPanel
         scrollPanel.removeAll();
 
         GridBagConstraints scrollGbc = new GridBagConstraints();
-        scrollGbc.insets = new Insets(2, 5, 2, 5);
+        scrollGbc.insets = new Insets(2, 4, 2, 4);
         scrollGbc.fill = GridBagConstraints.HORIZONTAL;
         scrollGbc.weightx = 1;
         scrollGbc.gridwidth = 3;

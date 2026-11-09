@@ -253,6 +253,85 @@ public class testTheLocomotiveSettingsLooks extends support.SettingsClass
     }
 
     /**
+     * The Multi-Unit tab starts where the Notes tab does (filter row and list box on the Notes labels' left edge), and
+     * each box-column heading starts where its check box's box is painted.
+     *
+     * MUTATION: put `MultiUnitPanel`'s `gbc.insets` or `scrollGbc.insets` back to 5 on the left, or drop the border
+     * from its name or Reverse heading, and this fails.
+     */
+    @Test
+    public void testTheMultiUnitTabAlignsWithTheOthers() throws Exception
+    {
+        fixture.layDcc(NAME, 3805, LocomotiveSettingsFrame.Tab.NOTES);
+        Components.settle();
+
+        java.awt.Container pane = SettingsWindow.showing().getContentPane();
+        JLabel startYear = Components.find(pane, JLabel.class,
+            l -> UiStyle.withoutColon(I18n.t("loc.ui.labelStartYear")).equals(l.getText()));
+        int notes = Components.onTheEventThread(() -> bounds(startYear, pane).x);
+
+        SettingsWindow.selectTab(LocomotiveSettingsFrame.Tab.MULTI_UNIT.ordinal());
+        Components.settle();
+
+        JLabel filter = Components.find(pane, JLabel.class,
+            l -> UiStyle.withoutColon(I18n.t("loc.ui.filterList")).equals(l.getText()));
+        javax.swing.JScrollPane list = (javax.swing.JScrollPane) Components.find(pane, javax.swing.JScrollPane.class,
+            s -> s.isShowing() && s.getViewport().getView() instanceof javax.swing.JPanel);
+        javax.swing.JCheckBox box = Components.find(pane, javax.swing.JCheckBox.class,
+            c -> c.isShowing() && !c.getText().isEmpty());
+        JLabel name = Components.find(pane, JLabel.class,
+            l -> UiStyle.withoutColon(I18n.t("loc.ui.labelLocomotiveName")).equals(l.getText()) && l.isShowing());
+
+        JLabel reverse = Components.find(pane, JLabel.class,
+            l -> UiStyle.withoutColon(I18n.t("loc.ui.labelReverse")).equals(l.getText()) && l.isShowing());
+        javax.swing.JCheckBox reverseBox = Components.find(pane, javax.swing.JCheckBox.class,
+            c -> c.isShowing() && c.getText().isEmpty());
+
+        assertNotNull(box, "precondition: no member row on the Multi-Unit tab");
+        assertNotNull(reverseBox, "precondition: no Reverse box on the Multi-Unit tab");
+
+        int filterX = Components.onTheEventThread(() -> bounds(filter, pane).x);
+        int listX = Components.onTheEventThread(() -> bounds(list, pane).x);
+        int headingX = Components.onTheEventThread(() -> bounds(name, pane).x + name.getInsets().left);
+        int boxX = Components.onTheEventThread(() -> bounds(box, pane).x + box.getInsets().left);
+        int reverseX = Components.onTheEventThread(() -> bounds(reverse, pane).x + reverse.getInsets().left);
+        int reverseBoxX = Components.onTheEventThread(() -> bounds(reverseBox, pane).x + reverseBox.getInsets().left);
+
+        assertEquals(filterX, notes, "the filter row does not start where the Notes labels do");
+        assertEquals(listX, notes, "the list does not start where the Notes labels do");
+        assertEquals(headingX, boxX, "the Locomotive Name heading does not start where the check boxes are drawn");
+        assertEquals(reverseX, reverseBoxX, "the Reverse heading does not start where its check boxes are drawn");
+    }
+
+    /**
+     * The (i) on the Functions tab's preset buttons sits to the left of Save Current Functions as Preset, a Save-button
+     * distance from it, as the Save button's own (i) does.
+     *
+     * MUTATION: put the mark last in the `presetGroup` in `LocomotiveFunctionsTab.buttons`, and this fails.
+     */
+    @Test
+    public void testThePresetMarkIsLeftOfItsButton() throws Exception
+    {
+        opened();
+        SettingsWindow.selectTab(LocomotiveSettingsFrame.Tab.FUNCTIONS.ordinal());
+        Components.settle();
+
+        java.awt.Container pane = SettingsWindow.showing().getContentPane();
+        javax.swing.JButton preset = SettingsWindow.part("functions.useCurrent", javax.swing.JButton.class);
+        javax.swing.JButton save = SettingsWindow.save();
+        JLabel mark = Components.find(preset.getParent(), JLabel.class, l -> l.getIcon() == InfoMark.icon());
+        JLabel saveMark = Components.find(save.getParent(), JLabel.class, l -> l.getIcon() == InfoMark.icon());
+
+        assertNotNull(mark, "precondition: no (i) beside the preset buttons");
+
+        int gap = Components.onTheEventThread(() -> bounds(preset, pane).x - (bounds(mark, pane).x + mark.getWidth()));
+        int saveGap = Components.onTheEventThread(() -> bounds(save, pane).x - (bounds(saveMark, pane).x + saveMark.getWidth()));
+
+        assertTrue(Components.onTheEventThread(() -> bounds(mark, pane).x < bounds(preset, pane).x), "the (i) is not left of Save Current Functions");
+        assertEquals(gap, saveGap, "the (i) is not the Save button's distance from its control");
+    }
+
+    /**
      * Dragged as narrow as the window lets it go, the Functions tab's two button groups still do not overlap, in each
      * language.
      *

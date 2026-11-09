@@ -2074,6 +2074,180 @@ public class testStationSettingsWindow
         assertTrue(wrong.isEmpty(), "a routed click or hover missed its mark: " + wrong);
     }
 
+    /** The pixel counts of the bright green blobs of a picture: the arrows' fill, which their dark outline sets apart. */
+    private static List<Integer> greenAreas(BufferedImage img)
+    {
+        List<Integer> out = new java.util.ArrayList<>();
+        boolean[][] seen = new boolean[img.getWidth()][img.getHeight()];
+
+        for (int x = 0; x < img.getWidth(); x++)
+        {
+            for (int y = 0; y < img.getHeight(); y++)
+            {
+                if (seen[x][y] || !isArrowGreen(img.getRGB(x, y))) continue;
+
+                int n = 0;
+                java.util.ArrayDeque<int[]> todo = new java.util.ArrayDeque<>();
+
+                todo.add(new int[] {x, y});
+                seen[x][y] = true;
+
+                while (!todo.isEmpty())
+                {
+                    int[] at = todo.poll();
+
+                    n++;
+
+                    for (int side = 0; side < 4; side++)
+                    {
+                        int nx = at[0] + (side < 2 ? 2 * side - 1 : 0);
+                        int ny = at[1] + (side < 2 ? 0 : 2 * side - 5);
+
+                        if (nx >= 0 && ny >= 0 && nx < img.getWidth() && ny < img.getHeight() && !seen[nx][ny]
+                            && isArrowGreen(img.getRGB(nx, ny)))
+                        {
+                            seen[nx][ny] = true;
+                            todo.add(new int[] {nx, ny});
+                        }
+                    }
+                }
+
+                if (n >= 30) out.add(n);
+            }
+        }
+
+        return out;
+    }
+
+    private static boolean isArrowGreen(int rgb)
+    {
+        int r = (rgb >> 16) & 0xff;
+        int g = (rgb >> 8) & 0xff;
+        int b = rgb & 0xff;
+
+        return g > 150 && r < 130 && b < 150 && g - r > 60;
+    }
+
+    /** The longest distance between two corners of an arrow's outline: its size, however it points. */
+    private static double arrowSpan(java.awt.Shape arrow)
+    {
+        List<double[]> corners = new java.util.ArrayList<>();
+        double[] at = new double[6];
+
+        for (java.awt.geom.PathIterator it = arrow.getPathIterator(null); !it.isDone(); it.next())
+        {
+            if (it.currentSegment(at) != java.awt.geom.PathIterator.SEG_CLOSE) corners.add(new double[] {at[0], at[1]});
+        }
+
+        double most = 0;
+
+        for (double[] a : corners) for (double[] b : corners) most = Math.max(most, Math.hypot(a[0] - b[0], a[1] - b[1]));
+
+        return most;
+    }
+
+    /**
+     * On a straight station every arrow, a way out's and the next squares', is the size the track diagram draws a next
+     * square's arrows at, as shaped and as painted.  On a curved one the ways out are the smaller 48 px arrows and the
+     * station's icon is whole: its blue circle is at least 20 pixels across and 250 pixels of it show.
+     *
+     * MUTATION: in `StationPicture.stationMarks`, make a straight side's span 70, or in `StationPicture.show` pass
+     * `0.6f` for a curved station's icon, or in `StationPicture.stationMarks` take the curved span as `SQUARE`, and
+     * this fails.
+     */
+    @Test(timeOut = 600000)
+    public void testAStraightStationsArrowsAreOneSizeAndACurvedStationKeepsItsIcon() throws Exception
+    {
+        int[] done = {0, 0};
+        int[] compared = {0};
+        List<String> wrong = new java.util.ArrayList<>();
+
+        eachStation(square -> isCurved(square) ? done[0] < 3 : done[1] < 3, (square, window) ->
+        {
+            boolean curved = isCurved(square);
+
+            if (curved) done[0]++;
+            else done[1]++;
+
+            JComponent block = StationDoors.part(window, "station.picture.ways", JComponent.class);
+            Map<String, java.awt.Shape> marks = Components.onTheEventThread(window::pictureMarksForTest);
+            Set<String> state = Components.onTheEventThread(window::pictureStateForTest);
+            int cell = ((java.awt.Rectangle) marks.get("SQUARE")).width;
+
+            for (Map.Entry<String, java.awt.Shape> each : marks.entrySet())
+            {
+                if (!each.getKey().startsWith("OUT.")) continue;
+
+                boolean open = state.stream().anyMatch(k -> k.startsWith(each.getKey() + " ") && k.endsWith(":true"));
+                double expected = arrowSpan(org.traincontrol.automationui.TileAnnotation.arrowShape(new int[] {0, 0},
+                    new double[] {1, 0}, open, curved ? 48 : cell));
+
+                // A slanted arrow's whole-pixel corners differ from a level one's by a pixel or so
+                if (Math.abs(arrowSpan(each.getValue()) - expected) > 1.5)
+                {
+                    wrong.add(square + " " + each.getKey() + " is " + arrowSpan(each.getValue()) + " long, not " + expected);
+                }
+            }
+
+            BufferedImage img = new BufferedImage(block.getWidth(), block.getHeight(), BufferedImage.TYPE_INT_RGB);
+
+            Components.onTheEventThread(() ->
+            {
+                java.awt.Graphics2D g = img.createGraphics();
+
+                g.setColor(Color.WHITE);
+                g.fillRect(0, 0, img.getWidth(), img.getHeight());
+                block.paint(g);
+                g.dispose();
+
+                return null;
+            });
+
+            // As painted, on a straight station every green arrow, the station's and the next squares' alike, has the
+            // same area
+            List<Integer> areas = greenAreas(img);
+
+            if (!curved && areas.size() >= 2) compared[0]++;
+
+            if (!curved && areas.size() >= 2 && java.util.Collections.max(areas) > 1.3 * java.util.Collections.min(areas))
+            {
+                wrong.add(square + ": green arrows of " + areas + " pixels");
+            }
+
+            if (!curved) return;
+
+            java.awt.Rectangle at = (java.awt.Rectangle) marks.get("SQUARE");
+            int left = Integer.MAX_VALUE;
+            int right = -1;
+            int blue = 0;
+
+            for (int y = at.y; y < at.y + at.height; y++)
+            {
+                for (int x = at.x; x < at.x + at.width; x++)
+                {
+                    int rgb = img.getRGB(x, y);
+
+                    if ((rgb & 0xff) > 120 && ((rgb >> 16) & 0xff) < 60 && ((rgb >> 8) & 0xff) < 60)
+                    {
+                        left = Math.min(left, x);
+                        right = Math.max(right, x);
+                        blue++;
+                    }
+                }
+            }
+
+            if (right < 0) wrong.add(square + ": no blue circle painted");
+            else if (right - left + 1 < 20 || blue < 250)
+            {
+                wrong.add(square + ": the circle is " + (right - left + 1) + " px across, " + blue + " px showing");
+            }
+        });
+
+        assertTrue(done[0] >= 3 && done[1] >= 2, "precondition: " + done[0] + " curved and " + done[1] + " straight stations");
+        assertTrue(compared[0] >= 2, "precondition: only " + compared[0] + " straight pictures with two green arrows");
+        assertTrue(wrong.isEmpty(), "arrows or icon off: " + wrong);
+    }
+
     /** Whether a mark's tooltip gives the reason its click can change nothing. */
     private static boolean refusal(String tip, String key)
     {
