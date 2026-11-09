@@ -121,8 +121,8 @@ final class LayoutExplanations
         // open that side.
         if (owner.isABarredCopyOfAStation(at))
         {
-            // NOT "OPEN THAT SIDE" WHERE EVERY TRAIN TURNS: a terminus
-            // reached from two sides is the terminus error, whose own remedy is to close one.
+            // NOT "OPEN THAT SIDE" WHERE EVERY TRAIN TURNS: a terminus reached from two
+            // sides is the terminus error, whose own remedy is to close one.
             if (owner.turnsEveryTrainAt(at)) return I18n.f("autolayout.why.startFacingBarredMustTurn", Layout.placeNameOf(at));
 
             return I18n.f("autolayout.why.startFacingBarred", Layout.placeNameOf(at), I18n.t("autosetup.ui.menuArrivalsGroup"));
