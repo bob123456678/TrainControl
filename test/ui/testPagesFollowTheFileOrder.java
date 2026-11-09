@@ -389,10 +389,9 @@ public class testPagesFollowTheFileOrder extends support.PageWindowTest
 
     /**
      * The letters' order is the same on a machine set to Swedish from the start: `Util` loaded afresh under that default
-     * still puts "Ölberg" among the O's, before "Zebra", with capitals aside.  The Sort Pages claim above switches the
-     * default once `Util` is loaded, so it cannot see an order fixed as `Util` loads.
+     * still puts "Ölberg" among the O's, before "Zebra", with capitals aside: no default locale reaches `byLetters`.
      *
-     * MUTATION: build `Util.byLetters`' collator for the default locale (`Collator.getInstance()`), and this fails.
+     * MUTATION: compare with a `Collator.getInstance()` in `Util.byLetters`, and this fails.
      */
     @Test
     public void testTheLettersOrderIsTheSameOnAMachineSetToSwedish() throws Exception
@@ -422,6 +421,20 @@ public class testPagesFollowTheFileOrder extends support.PageWindowTest
         {
             java.util.Locale.setDefault(was);
         }
+    }
+
+    /**
+     * Letters with no accent to take off sort as the letters they stand for: "Stra\u00dfe" beside "Strasse" and before
+     * "Strasser", "\u00c6beltoft" among the A's, before "Bergen".
+     *
+     * MUTATION: drop the writing out of \u00df, \u00e6 and the like from `Util.byLetters`, and this fails.
+     */
+    @Test
+    public void testLettersWrittenAsTwoSortAsThoseTwo()
+    {
+        assertEquals(org.traincontrol.util.Util.byLetters("Stra\u00dfe", "Strasse"), 0, "Stra\u00dfe is not beside Strasse");
+        assertTrue(org.traincontrol.util.Util.byLetters("Stra\u00dfe", "Strasser") < 0, "Stra\u00dfe sorts after Strasser");
+        assertTrue(org.traincontrol.util.Util.byLetters("\u00c6beltoft", "Bergen") < 0, "\u00c6beltoft sorts after Bergen");
     }
 
     /**

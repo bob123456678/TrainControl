@@ -164,6 +164,36 @@ public class testSignalsAreGrayInTheAutonomyEditor
             "the signal is not drawn in its " + (red ? "red" : "green") + " aspect on the track diagram");
     }
 
+    /**
+     * The same editor switched from Autonomy Setup back to Track Diagram draws its signals in color again (FR-193, Adam:
+     * "Make sure it goes back to color in the track diagram editor too").
+     *
+     * MUTATION: have `LayoutEditor.refreshAutonomyAnnotations` return when the panel is not active, so nothing clears the
+     * gray, and this fails.
+     */
+    @Test(timeOut = 120000)
+    public void testBackOnTrackDiagramTheSameEditorIsInColor() throws Exception
+    {
+        LayoutEditor editor = frozen.editorOn(PAGE);
+
+        try
+        {
+            LayoutLabel grayed = signalsIn(editor).get(0);
+
+            assertEquals(coloredArt(grayed), 0, "precondition: the signal is not gray in the autonomy editor");
+
+            Components.onTheEventThread(() -> { editor.setAutonomyMode(null); return null; });
+            Components.settle();
+
+            assertTrue(green(same(signalsIn(editor), grayed.getComponent())) > 20, "the signal is still gray once the"
+                + " editor is back on Track Diagram");
+        }
+        finally
+        {
+            support.FrozenEditor.dispose(editor);
+        }
+    }
+
     /** Sets or clears the station a guard signal is being picked for, as "click it on the diagram" does. */
     private static void picking(AutonomyEditorPanel panel, TileKey station) throws Exception
     {
