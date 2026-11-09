@@ -196,7 +196,7 @@ final class StationPicture extends JPanel
         block.setName("station.picture.ways");
         block.setBackground(Color.WHITE);
         block.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createLineBorder(new Color(204, 204, 204)),
-            BorderFactory.createEmptyBorder(8, 8, 8, 8)));
+            BorderFactory.createEmptyBorder(3, 8, 3, 8)));
 
         art.setOpaque(false);
         block.add(art);

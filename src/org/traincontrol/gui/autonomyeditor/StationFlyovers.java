@@ -54,6 +54,8 @@ final class StationFlyovers
     /** @param open the names of the sides trains may arrive by, of `all` */
     static String arrivals(List<String> open, List<String> all)
     {
+        if (all.isEmpty()) return nowThenChange(I18n.t("autosetup.ui.flyArriveNoneNow"), I18n.t("autosetup.ui.flyArriveNoneChange"));
+
         if (all.size() < 2) return nowThenChange(I18n.t("autosetup.ui.flyArriveOneNow"), I18n.t("autosetup.ui.flyArriveOneChange"));
 
         if (open.size() == all.size())

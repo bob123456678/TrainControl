@@ -1129,10 +1129,180 @@ public class testStationSettingsWindow
     }
 
     /**
-     * Blue is for the section headings alone (Adam: "it looks very blue"); every other label is black Semibold 13
-     * (docs/UI-standards.md), and a label in an off section still grays.
+     * May depart sits under Changing direction, above both sections, as it belongs to neither box (Adam, FR-182); it
+     * still grays only when both boxes are off.
      *
-     * MUTATION: build a row's label with `UiStyle.heading`, or a section heading with `UiStyle.label`, and this fails naming it.
+     * MUTATION: put the May depart row back under "Trains can pass through", and this fails.
+     */
+    @Test(timeOut = 120000)
+    public void testMayDepartHeadsBothSectionsUnderChangingDirection() throws Exception
+    {
+        StationSettingsWindow window = StationDoors.open(panel, aStation());
+
+        StationDoors.current(window);
+
+        javax.swing.JPanel form = StationDoors.part(window, "station.form", javax.swing.JPanel.class);
+
+        int turning = cornerIn(form, labelSaying(window, I18n.t("autosetup.ui.stationTurning"))).y;
+        int depart = cornerIn(form, labelSaying(window, I18n.t("autosetup.ui.stationDepart"))).y;
+        int stops = cornerIn(form, StationDoors.part(window, "station.stops", javax.swing.JCheckBox.class)).y;
+
+        assertTrue(turning < depart && depart < stops, "May depart (at " + depart + ") is not between Changing direction (at "
+            + turning + ") and Trains can stop here (at " + stops + ")");
+
+        StationDoors.press(window, "station.stops");
+        StationDoors.current(window);
+
+        assertTrue(StationDoors.live(window, "station.depart.0"), "May depart grays with Trains can stop here alone off");
+
+        StationDoors.press(window, "station.runsThrough");
+        StationDoors.current(window);
+
+        assertFalse(StationDoors.live(window, "station.depart.0"), "May depart is live with both boxes off");
+
+        StationDoors.close(window);
+    }
+
+    /**
+     * May arrive from is never blank (Adam, FR-182): on a square no track leads a train onto, as some on his "2 - Bottom"
+     * page are (a closed one, and pass-through ones fed only by track leading away), it says "(none)", grayed with its
+     * section as the boxes are, and its (i) says there is no side to choose rather than describing a single side that is
+     * not shown.
+     *
+     * MUTATION: drop the "(none)" label from `fillArrivals`, or the empty case from `StationFlyovers.arrivals`, or the
+     * label's `setEnabled`, and this fails.
+     */
+    @Test(timeOut = 180000)
+    public void testMayArriveFromIsNeverBlank() throws Exception
+    {
+        LayoutEditor bottom = frozen.editorOn("2 - Bottom");
+
+        try
+        {
+            AutonomyEditorPanel lower = Components.onTheEventThread(() -> bottom.getAutonomyPanel());
+
+            List<TileKey> noWayIn = Components.onTheEventThread(() ->
+            {
+                List<TileKey> out = new java.util.ArrayList<>();
+
+                for (TileKey each : session.getGraph().getTiles().keySet())
+                {
+                    if ("2 - Bottom".equals(each.getPage()) && lower.offersStationSettings(each)
+                        && session.arrivalSides(each).isEmpty()) out.add(each);
+                }
+
+                return out;
+            });
+
+            assertFalse(noWayIn.isEmpty(), "precondition: every square on 2 - Bottom has a way in");
+
+            for (TileKey square : noWayIn)
+            {
+                StationSettingsWindow window = StationDoors.open(lower, square);
+
+                StationDoors.current(window);
+
+                javax.swing.JPanel arrivals = StationDoors.part(window, "station.arrivals", javax.swing.JPanel.class);
+
+                List<String> shown = Components.onTheEventThread(() ->
+                {
+                    List<String> out = new java.util.ArrayList<>();
+
+                    for (java.awt.Component each : arrivals.getComponents())
+                    {
+                        if (each instanceof javax.swing.JLabel) out.add(((javax.swing.JLabel) each).getText());
+                        if (each instanceof AbstractButton) out.add(((AbstractButton) each).getText());
+                    }
+
+                    return out;
+                });
+
+                assertEquals(shown, Arrays.asList(I18n.t("autosetup.ui.labelNone")), square + ": May arrive from shows " + shown);
+
+                boolean stops = StationDoors.on(window, "station.stops");
+
+                assertEquals(StationDoors.live(window, "station.arriveNone"), stops, square + ": \"(none)\" is "
+                    + (stops ? "grayed" : "not grayed") + " with Trains can stop here " + (stops ? "on" : "off"));
+
+                String flyover = Components.onTheEventThread(() -> window.flyoverForTest("arrivals"));
+
+                assertTrue(flyover.contains(I18n.t("autosetup.ui.flyArriveNoneNow")), square + ": the (i) does not say no track"
+                    + " leads in: " + flyover);
+
+                StationDoors.close(window);
+            }
+        }
+        finally
+        {
+            support.FrozenEditor.dispose(bottom);
+        }
+    }
+
+    /**
+     * The row choosing All, Blacklist or Whitelist under Advanced is labeled "Allowed trains" (Adam, FR-182).
+     *
+     * MUTATION: put "Which trains" back in the bundle, and this fails.
+     */
+    @Test(timeOut = 120000)
+    public void testTheTrainListRowSaysAllowedTrains() throws Exception
+    {
+        StationSettingsWindow window = StationDoors.open(panel, aStation());
+
+        Components.onTheEventThread(() -> { window.openAdvancedForTest(); return null; });
+
+        StationDoors.current(window);
+
+        assertTrue(Components.onTheEventThread(labelSaying(window, "Allowed trains")::isShowing), "the row is not showing");
+
+        StationDoors.close(window);
+    }
+
+    /**
+     * The picture's white area keeps 3 px above its squares and 3 px below, 5 fewer each than it had, for room for the
+     * Presets in the right column (Adam, FR-182); here, where the right column sets the height, it is drawn at the height
+     * it asks for, and every mark and square still lies inside it.
+     *
+     * MUTATION: put the block's 8 px padding back, and this fails.
+     */
+    @Test(timeOut = 120000)
+    public void testThePictureIsPaddedTightlyAndNothingIsCut() throws Exception
+    {
+        StationSettingsWindow window = StationDoors.open(panel, aStation());
+
+        StationDoors.current(window);
+
+        JComponent block = StationDoors.part(window, "station.picture.ways", JComponent.class);
+
+        Components.onTheEventThread(() ->
+        {
+            Map<String, java.awt.Shape> marks = window.pictureMarksForTest();
+
+            java.awt.Rectangle middle = (java.awt.Rectangle) marks.get("SQUARE");
+
+            assertEquals(block.getHeight(), block.getPreferredSize().height, "the picture is not drawn at its own height");
+
+            // Less the 1 px gray line on each side
+            assertEquals(middle.y - middle.height - 1, 3, "the white above the squares");
+            assertEquals(block.getHeight() - 1 - (middle.y + 2 * middle.height), 3, "the white below the squares");
+
+            java.awt.Rectangle inside = new java.awt.Rectangle(1, 1, block.getWidth() - 2, block.getHeight() - 2);
+
+            for (Map.Entry<String, java.awt.Shape> each : marks.entrySet())
+            {
+                assertTrue(inside.contains(each.getValue().getBounds2D()), each.getKey() + " at " + each.getValue().getBounds2D()
+                    + " is cut by the picture's edge " + inside);
+            }
+
+            return null;
+        });
+    }
+
+    /**
+     * Blue is for the section headings alone (Adam: "it looks very blue"), Presets among them; every other label is black
+     * Semibold 13 (docs/UI-standards.md), and a label in an off section still grays.
+     *
+     * MUTATION: build a row's label with `UiStyle.heading`, or a section heading (Presets) with `UiStyle.label`, and this
+     * fails naming it.
      */
     @Test(timeOut = 120000)
     public void testOnlyTheSectionHeadingsAreBlue() throws Exception
@@ -1157,7 +1327,8 @@ public class testStationSettingsWindow
 
         assertEquals(blue, new java.util.TreeSet<>(Arrays.asList(I18n.t("autosetup.ui.stationSectionStop"),
             I18n.t("autosetup.ui.stationSectionThrough"), I18n.t("autosetup.ui.stationSectionAdvanced"),
-            I18n.t("autosetup.ui.stationMatrixHeading"), I18n.t("autosetup.ui.stationPictureHeading"))),
+            I18n.t("autosetup.ui.stationMatrixHeading"), I18n.t("autosetup.ui.stationPictureHeading"),
+            I18n.t("autosetup.ui.stationPresets"))),
             "what is blue is not the section headings");
 
         for (String key : new String[] {"autosetup.ui.stationMaxLength", "autosetup.ui.menuAutoDestination",
@@ -1181,11 +1352,12 @@ public class testStationSettingsWindow
     }
 
     /**
-     * The presets look like pills, not text: drawn as pills, Bold 12, and starting where the Name box starts, on the row of
-     * their black "Presets" label; and the lit one can be told from the others.
+     * The presets look like pills, not text: drawn as pills, Bold 12, at the top of the right column under a "Presets"
+     * section heading drawn as "What's allowed here" is, which they start under, above that heading; and the lit one can be
+     * told from the others.  The heading and the right column are Adam's (FR-182), for room beside the picture.
      *
-     * MUTATION: put `JButton.buttonType` `toolBarButton` back on them, make them plain `JToggleButton`s, or a gap before the first, or drop the label, and
-     * this fails.
+     * MUTATION: put `JButton.buttonType` `toolBarButton` back on them, make them plain `JToggleButton`s, or a gap before
+     * the first, or put them back in the form beside a black label, and this fails.
      */
     @Test(timeOut = 120000)
     public void testThePresetsLookLikeButtons() throws Exception
@@ -1208,27 +1380,32 @@ public class testStationSettingsWindow
                 assertEquals(button.getFont(), new java.awt.Font("Segoe UI", java.awt.Font.BOLD, 12), preset + " is not Bold 12");
             }
 
-            javax.swing.JPanel form = StationDoors.part(window, "station.form", javax.swing.JPanel.class);
+            java.awt.Container content = window.getContentPane();
 
-            java.awt.image.BufferedImage drawn = drawnOn(form);
+            javax.swing.JPanel form = StationDoors.part(window, "station.form", javax.swing.JPanel.class);
 
             javax.swing.JToggleButton first = StationDoors.part(window, "station.preset.STATION", javax.swing.JToggleButton.class);
             javax.swing.JLabel presets = labelSaying(window, I18n.t("autosetup.ui.stationPresets"));
+            javax.swing.JLabel allowed = labelSaying(window, I18n.t("autosetup.ui.stationMatrixHeading"));
 
-            assertEquals(presets.getForeground(), java.awt.Color.BLACK, "the Presets label is not black");
-            assertEquals(presets.getFont(), UiStyle.LABEL_FONT, "the Presets label is not Semibold 13");
-            assertEquals(rowOf(form, presets), rowOf(form, first), "the Presets label is not beside the buttons");
+            assertEquals(presets.getForeground(), allowed.getForeground(), "the Presets heading is not drawn as What's allowed here is");
+            assertEquals(presets.getFont(), allowed.getFont(), "the Presets heading is not in What's allowed here's font");
 
-            assertTrue(cornerIn(form, presets).x < cornerIn(form, first).x, "the label is not left of the buttons");
+            assertFalse(javax.swing.SwingUtilities.isDescendingFrom(first, form), "the presets are still in the form");
+            assertTrue(cornerIn(content, presets).x >= cornerIn(content, form).x + form.getWidth(),
+                "the Presets heading is not in the right column");
 
-            assertEquals(cornerIn(form, first).x, cornerIn(form, StationDoors.part(window, "station.name",
-                javax.swing.JTextField.class)).x, "the presets do not start where the Name box starts");
+            assertEquals(cornerIn(content, first).x, cornerIn(content, presets).x, "the presets do not start under their heading");
+            assertTrue(cornerIn(content, presets).y + presets.getHeight() <= cornerIn(content, first).y,
+                "the presets are not under their heading");
+            assertTrue(cornerIn(content, first).y + first.getHeight() < cornerIn(content, allowed).y,
+                "the presets are not above What's allowed here");
 
             javax.swing.JToggleButton last = StationDoors.part(window, "station.preset.REVERSING_POINT",
                 javax.swing.JToggleButton.class);
 
-            assertTrue(javax.swing.SwingUtilities.convertRectangle(last.getParent(), last.getBounds(), form).getMaxX()
-                <= form.getWidth(), "the last button runs off the form");
+            assertTrue(javax.swing.SwingUtilities.convertRectangle(last.getParent(), last.getBounds(), content).getMaxX()
+                <= content.getWidth(), "the last button runs off the window");
 
             return null;
         });
@@ -2587,28 +2764,6 @@ public class testStationSettingsWindow
         g.dispose();
 
         return out;
-    }
-
-    /** The middle row, in the form's pixels, of a component somewhere inside it. */
-    private static int rowOf(java.awt.Component form, java.awt.Component part)
-    {
-        return javax.swing.SwingUtilities.convertPoint(part, 0, part.getHeight() / 2, form).y;
-    }
-
-    /** The first column, within this row and the five either side, that is not the background. */
-    private static int firstInk(java.awt.image.BufferedImage image, int row, java.awt.Color background)
-    {
-        int first = image.getWidth();
-
-        for (int y = Math.max(0, row - 5); y <= Math.min(image.getHeight() - 1, row + 5); y++)
-        {
-            for (int x = 0; x < first; x++)
-            {
-                if ((image.getRGB(x, y) & 0xffffff) != (background.getRGB() & 0xffffff)) first = x;
-            }
-        }
-
-        return first;
     }
 
     /** How many pixels differ, from this column on, over the width both share. */

@@ -53,14 +53,17 @@ import org.traincontrol.util.I18n;
 /**
  * The Station Settings window (FR-111, FR-176): every setting of one sensor square, beside what they allow.  Its matrix
  * asks the railway off the event thread (OB-192).  About several squares picked together (FR-052) it has no matrix,
- * picture or per-station rows; a field they disagree on says "(mixed)" and is left alone, and a change goes to each
+ * picture or per-station rows; a field they disagree on wears a warning triangle and is left alone, and a change goes to each
  * square through the door it takes for one.
  */
 public final class StationSettingsWindow extends StationWindowBase
 {
     private static final Color GRAY_ICON = new Color(170, 170, 170);
     private static final Font REGULAR = new Font("Segoe UI", Font.PLAIN, 14);
-    private static final String MIXED = "autosetup.ui.stationMixed";
+
+    /** How to set every station where a blank, which leaves them as they are, cannot. */
+    private static final String LENGTH_BLANK = "autosetup.ui.stationMixedLengthTip";
+    private static final String PRIORITY_BLANK = "autosetup.ui.stationMixedPriorityTip";
 
     private static final int NEVER = 0;
     private static final int MAY = 1;
@@ -86,8 +89,11 @@ public final class StationSettingsWindow extends StationWindowBase
     /** The rows that are about one station alone, left out for several: its ways, signals, home and blockers. */
     private final List<JComponent> perStation = new ArrayList<>();
 
-    /** The matrix and picture's column. */
+    /** The matrix and picture, under the presets in the right column. */
     private final JPanel sideColumn = new JPanel(new BorderLayout());
+
+    /** The presets' heading and buttons, at the top of the right column for one station or several. */
+    private final JPanel presetsPanel = new JPanel(new BorderLayout(0, 6));
 
     /** Where the reason at the top wraps, with the side column and without. */
     private int stripWide;
@@ -189,12 +195,19 @@ public final class StationSettingsWindow extends StationWindowBase
 
         sideColumn.add(right, BorderLayout.NORTH);
 
-        columns.add(sideColumn, BorderLayout.EAST);
+        JPanel east = new JPanel(new BorderLayout(0, 12));
+
+        east.add(presetsPanel, BorderLayout.NORTH);
+        east.add(sideColumn, BorderLayout.CENTER);
+
+        columns.add(east, BorderLayout.EAST);
 
         assemble(columns);
 
-        stripNarrow = wrapWithin(form.getPreferredSize().width + 2 * PAD - 24);
-        stripWide = wrapWithin(form.getPreferredSize().width + 14 + matrix.getPreferredSize().width + 2 * PAD - 24);
+        int beside = form.getPreferredSize().width + 14 + 2 * PAD - 24;
+
+        stripNarrow = wrapWithin(beside + presetsPanel.getPreferredSize().width);
+        stripWide = wrapWithin(beside + Math.max(presetsPanel.getPreferredSize().width, matrix.getPreferredSize().width));
         stripWrapsAt = stripWide;
 
         showAdvanced(false);
@@ -427,16 +440,11 @@ public final class StationSettingsWindow extends StationWindowBase
             strip.add(button);
         }
 
-        JLabel presetsLabel = UiStyle.blackLabel(I18n.t("autosetup.ui.stationPresets"));
+        JLabel presetsHeading = UiStyle.heading(I18n.t("autosetup.ui.stationPresets"));
 
-        presetsLabel.setName("station.presetsLabel");
-        form.add(presetsLabel, at(0, row));
-
-        GridBagConstraints presetsAt = at(2, row++);
-
-        presetsAt.gridwidth = 2;
-
-        form.add(strip, presetsAt);
+        presetsHeading.setName("station.presetsHeading");
+        presetsPanel.add(presetsHeading, BorderLayout.NORTH);
+        presetsPanel.add(strip, BorderLayout.CENTER);
 
         closedLine.setName("station.closedLine");
         closedLine.setFont(REGULAR);
@@ -453,9 +461,13 @@ public final class StationSettingsWindow extends StationWindowBase
         JPanel turning = oneOf(throughSection, turnNever, turnMay, turnMust);
 
         turning.add(turnMixed);
+        throughSection.add(turnMixed);
 
-        // Above both sections, as it applies to either
+        // Above both sections, as each applies to either
         rowOf("autosetup.ui.stationTurning", "turning", turning, null, throughSection);
+
+        rowOf("autosetup.ui.stationDepart", "depart", depart, null, throughSection);
+        perStation.addAll(rowsFrom(row - 1));
 
         section(stops, mark("stops"), stopsMixed);
         stops.addActionListener(e -> pressBoxes(stops));
@@ -466,6 +478,7 @@ public final class StationSettingsWindow extends StationWindowBase
 
         rowOf("autosetup.ui.menuAutoDestination", "fullAutonomy", autonomyRow, null, stopSection);
         stopSection.add(fullAutonomy);
+        stopSection.add(autoMixed);
         fullAutonomy.addActionListener(e ->
         {
             // Through `act` itself, which the editor's surface rules read as announcing the write
@@ -477,8 +490,8 @@ public final class StationSettingsWindow extends StationWindowBase
             });
         });
 
-        typedRow("autosetup.ui.stationMaxLength", "maxLength", maxLength, leftAligned(maxLength), stopSection,
-            this::maxLengthInStore, (each, typed) -> editor.applyNumber(each, "maxTrainLength", blankIsZero(typed), 0));
+        numberRow("autosetup.ui.stationMaxLength", "maxLength", maxLength, stopSection, this::maxLengthInStore,
+            "maxTrainLength", LENGTH_BLANK);
 
         rowOf("autosetup.ui.menuArrivalsGroup", "arrivals", arrivals, null, stopSection);
         perStation.addAll(rowsFrom(row - 1));
@@ -504,9 +517,6 @@ public final class StationSettingsWindow extends StationWindowBase
         section(runsThrough, mark("runsThrough"), throughMixed);
         runsThrough.addActionListener(e -> pressBoxes(runsThrough));
 
-        rowOf("autosetup.ui.stationDepart", "depart", depart, null, throughSection);
-        perStation.addAll(rowsFrom(row - 1));
-
         advanced.setName("station.advanced");
         advanced.setIcon(RowIcons.arrow(14, false));
         advanced.setFont(UiStyle.LABEL_FONT);
@@ -530,8 +540,8 @@ public final class StationSettingsWindow extends StationWindowBase
 
         int first = row;
 
-        typedRow("autosetup.ui.stationPriority", "priority", priority, leftAligned(priority), otherControls,
-            this::priorityInStore, (each, typed) -> editor.applyNumber(each, "priority", blankIsZero(typed), 0));
+        numberRow("autosetup.ui.stationPriority", "priority", priority, otherControls, this::priorityInStore, "priority",
+            PRIORITY_BLANK);
 
         JPanel speedRow = leftAligned(speed);
 
@@ -549,6 +559,7 @@ public final class StationSettingsWindow extends StationWindowBase
         JPanel which = oneOf(otherControls, whichAll, whichBlack, whichWhite);
 
         which.add(whichMixed);
+        otherControls.add(whichMixed);
 
         rowOf("autosetup.ui.stationWhich", "which", which, whichChoose, otherControls);
 
@@ -621,6 +632,16 @@ public final class StationSettingsWindow extends StationWindowBase
         return out;
     }
 
+    /** A typed whole-number property, blank meaning 0, whose triangle says how to set them all (`blankKey`). */
+    private void numberRow(String labelKey, String markName, JTextField part, List<JComponent> section,
+        Function<TileKey, String> stored, String property, String blankKey)
+    {
+        typedRow(labelKey, markName, part, leftAligned(part), section, stored,
+            (each, typed) -> editor.applyNumber(each, property, blankIsZero(typed), 0));
+
+        mixedMarks.get(part).setToolTipText(AutonomyEditorPanel.wrapped(mixedTip(blankKey)));
+    }
+
     /**
      * A row whose field applies on Enter or leaving, with a line under it for a refusal.  `stored` reads a square's
      * value as the field shows it; `door` writes what was typed to a square, answering why not or null.
@@ -630,7 +651,16 @@ public final class StationSettingsWindow extends StationWindowBase
     {
         rowOf(labelKey, markName, shown, null, section);
 
-        if (shown != part) section.add(part);
+        if (shown != part)
+        {
+            section.add(part);
+
+            JLabel mixed = mixedLabel(part.getName() + "Mixed");
+
+            shown.add(mixed);
+            section.add(mixed);
+            mixedMarks.put(part, mixed);
+        }
 
         JLabel problem = problemLine(part.getName() + "Problem");
 
@@ -684,16 +714,30 @@ public final class StationSettingsWindow extends StationWindowBase
         x.insets = m.insets;
 
         form.add(mixed, x);
+        otherControls.add(mixed);
 
         row++;
     }
 
-    /** "(mixed)", shown beside a box or radios the squares picked disagree on. */
+    /**
+     * The warning triangle beside a control the squares picked disagree on; its tooltip says what that means.  It grays
+     * with its row, drawn gray here as Swing grays only an ImageIcon.
+     */
     private static JLabel mixedLabel(String partName)
     {
-        JLabel out = styled(new JLabel(I18n.t(MIXED)), partName, REGULAR);
+        javax.swing.Icon triangle = RowIcons.warning(16);
 
-        out.setForeground(Color.BLACK);
+        JLabel out = styled(new JLabel(triangle), partName, REGULAR);
+
+        java.awt.image.BufferedImage drawn = new java.awt.image.BufferedImage(triangle.getIconWidth(),
+            triangle.getIconHeight(), java.awt.image.BufferedImage.TYPE_INT_ARGB);
+        java.awt.Graphics2D g = drawn.createGraphics();
+
+        triangle.paintIcon(null, g, 0, 0);
+        g.dispose();
+
+        out.setDisabledIcon(new javax.swing.ImageIcon(javax.swing.GrayFilter.createDisabledImage(drawn)));
+        out.setToolTipText(AutonomyEditorPanel.wrapped(mixedTip()));
         out.setBorder(javax.swing.BorderFactory.createEmptyBorder(0, 6, 0, 0));
         out.setVisible(false);
 
@@ -783,6 +827,7 @@ public final class StationSettingsWindow extends StationWindowBase
     private final Map<JTextField, BiFunction<TileKey, String, String>> typedDoors = new LinkedHashMap<>();
     private final Map<JTextField, Function<TileKey, String>> storedValues = new LinkedHashMap<>();
     private final Map<JTextField, JLabel> problems = new LinkedHashMap<>();
+    private final Map<JTextField, JLabel> mixedMarks = new LinkedHashMap<>();
 
     /** Enter or leaving applies; Escape puts back what it held.  Never per keystroke, as each change rebuilds the railway. */
     private void commitsOnLeaving(JTextField part, Function<TileKey, String> stored)
@@ -799,12 +844,6 @@ public final class StationSettingsWindow extends StationWindowBase
                 if (!e.isTemporary()) commit(part);
             }
 
-            // "(mixed)" is replaced by what is typed
-            @Override
-            public void focusGained(java.awt.event.FocusEvent e)
-            {
-                if (part.getText().equals(I18n.t(MIXED))) part.selectAll();
-            }
         });
 
         part.registerKeyboardAction(e ->
@@ -818,12 +857,20 @@ public final class StationSettingsWindow extends StationWindowBase
         }, KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0), JComponent.WHEN_FOCUSED);
     }
 
-    /** What a field shows: the squares' value, or "(mixed)" where they differ. */
+    /** What a field shows: the squares' value, or nothing where they differ. */
     private String shown(JTextField part)
     {
         String common = agreed(storedValues.get(part));
 
-        return common == null ? I18n.t(MIXED) : common;
+        return common == null ? "" : common;
+    }
+
+    /** A typed field's value, and its triangle where the squares differ. */
+    private void showTyped(JTextField part)
+    {
+        mixedMarks.get(part).setVisible(agreed(storedValues.get(part)) == null);
+
+        keepTyping(part, shown(part));
     }
 
     private void commit(JTextField part)
@@ -832,7 +879,7 @@ public final class StationSettingsWindow extends StationWindowBase
 
         String typed = part.getText();
 
-        // Unchanged writes nothing: an untouched station opened and closed changes no setup, nor "(mixed)" left alone
+        // Unchanged writes nothing: an untouched station opened and closed changes no setup, nor a field they differ on
         if (typed.trim().equals(shown(part).trim())) { showProblem(part, null); return; }
 
         final String[] refused = new String[1];
@@ -964,11 +1011,11 @@ public final class StationSettingsWindow extends StationWindowBase
         autoMixed.setVisible(autonomy == null);
         fly("fullAutonomy", autonomy == null ? mixedTip() : StationFlyovers.fullAutonomy(autonomy));
 
-        keepTyping(maxLength, shown(maxLength));
+        showTyped(maxLength);
 
         Integer length = agreed(each -> editor.number(each, "maxTrainLength", 0));
 
-        fly("maxLength", length == null ? mixedTip() : StationFlyovers.maxLength(length));
+        fly("maxLength", length == null ? mixedTip(LENGTH_BLANK) : StationFlyovers.maxLength(length));
 
         if (!many)
         {
@@ -990,13 +1037,13 @@ public final class StationSettingsWindow extends StationWindowBase
         turnMixed.setVisible(turning == null);
         fly("turning", turning == null ? mixedTip() : StationFlyovers.turning(may, must));
 
-        keepTyping(priority, shown(priority));
+        showTyped(priority);
 
         Integer rank = agreed(each -> editor.number(each, "priority", 0));
 
-        fly("priority", rank == null ? mixedTip() : StationFlyovers.priority(rank));
+        fly("priority", rank == null ? mixedTip(PRIORITY_BLANK) : StationFlyovers.priority(rank));
 
-        keepTyping(speed, shown(speed));
+        showTyped(speed);
 
         Integer pace = agreed(editor::percent);
 
@@ -1063,6 +1110,11 @@ public final class StationSettingsWindow extends StationWindowBase
         return I18n.t("autosetup.ui.stationMixedTip");
     }
 
+    private static String mixedTip(String blankKey)
+    {
+        return mixedTip() + "  " + I18n.t(blankKey);
+    }
+
     /** Leaves none of a row's radios chosen, which a group allows only by being told. */
     private static void clearOneOf(JRadioButton any)
     {
@@ -1127,6 +1179,16 @@ public final class StationSettingsWindow extends StationWindowBase
 
             arrivals.add(allow);
             arriveBoxes.put(side, allow);
+        }
+
+        // No track leads a train onto the square: no side to show, so the row says none and its (i) says why
+        if (ways.isEmpty())
+        {
+            JLabel none = value("station.arriveNone");
+
+            none.setText(I18n.t("autosetup.ui.labelNone"));
+            none.setEnabled(live);
+            arrivals.add(none);
         }
 
         fly("arrivals", StationFlyovers.arrivals(open, all));
