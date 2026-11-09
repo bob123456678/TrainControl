@@ -16,6 +16,7 @@ import org.traincontrol.automationui.AutonomySession;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;
 import static org.traincontrol.marklin.MarklinControlStation.init;
+import support.Components;
 import support.Reflect;
 
 /**
@@ -65,8 +66,8 @@ public class testAPendingTurnSurvivesTheRebuild
         assertNotNull(ui, "there is no window, so the rebuild this class is about cannot be reached");
 
         // `init` posts `display()` to the event thread without waiting for it.
-        pump();
-        pump();
+        Components.drain(1);
+        Components.drain(1);
 
         session = ui.getAutonomySession();
 
@@ -120,7 +121,7 @@ public class testAPendingTurnSurvivesTheRebuild
             // final assertion would be a race.
             ui.reconcileFacingWhenIdle();
 
-            pump();
+            Components.drain(1);
 
             Map<String, String> stillOwed = before.takeReversalsOnArrival();
 
@@ -133,7 +134,7 @@ public class testAPendingTurnSurvivesTheRebuild
             // THE REBUILD: the same call every setup gesture on the diagram's right-click menu makes.
             javax.swing.SwingUtilities.invokeAndWait(() -> ui.rebuildRunningLayoutFromSetup());
 
-            pump();
+            Components.drain(1);
 
             Layout after = model.getAutoLayout();
 
@@ -193,7 +194,7 @@ public class testAPendingTurnSurvivesTheRebuild
 
         javax.swing.SwingUtilities.invokeAndWait(() -> ui.rebuildRunningLayoutFromSetup());
 
-        pump();
+        Components.drain(1);
 
         assertNotSame(model.getAutoLayout(), before,
             "the window's rebuild did not produce a new Layout, so the carry this class tests has"
@@ -875,8 +876,8 @@ public class testAPendingTurnSurvivesTheRebuild
             // THE WINDOW WRITES ITS CAPTIONS
             ui.updateVisiblePoints();
 
-            pump();
-            pump();
+            Components.drain(1);
+            Components.drain(1);
 
             String shown = null;
 
@@ -938,8 +939,8 @@ public class testAPendingTurnSurvivesTheRebuild
 
         try
         {
-            pump();
-            pump();
+            Components.drain(1);
+            Components.drain(1);
 
             assertTrue(labelsInPopup(station, popup) > 0, "precondition: the pop-up draws no caption of " + station);
 
@@ -948,7 +949,7 @@ public class testAPendingTurnSurvivesTheRebuild
 
             javax.swing.SwingUtilities.invokeAndWait(() -> ui.autonomySetupChanged());
 
-            for (int i = 0; i < 20; i++) pump();
+            for (int i = 0; i < 20; i++) Components.drain(1);
 
             assertEquals(labelsInPopup(station, popup), 0, "the pop-up still holds a caption of " + station + " that was taken"
                 + " off the setup, and goes on writing the station into it");
@@ -961,7 +962,7 @@ public class testAPendingTurnSurvivesTheRebuild
 
             javax.swing.SwingUtilities.invokeAndWait(popup::dispose);
 
-            pump();
+            Components.drain(1);
         }
     }
 
@@ -1005,8 +1006,8 @@ public class testAPendingTurnSurvivesTheRebuild
 
             for (String suffix : new String[] {"_x", "_y", "_width", "_height", "_state"}) prefs.remove(kept + suffix);
 
-            pump();
-            pump();
+            Components.drain(1);
+            Components.drain(1);
 
             final java.awt.Dimension[] natural = new java.awt.Dimension[1];
             final java.awt.Dimension[] sized = new java.awt.Dimension[1];
@@ -1021,7 +1022,7 @@ public class testAPendingTurnSurvivesTheRebuild
                 window.setLocation(window.getX() + 37, window.getY() + 23);
             });
 
-            for (int i = 0; i < 10; i++) pump();
+            for (int i = 0; i < 10; i++) Components.drain(1);
 
             javax.swing.SwingUtilities.invokeAndWait(() ->
             {
@@ -1040,11 +1041,11 @@ public class testAPendingTurnSurvivesTheRebuild
 
             javax.swing.SwingUtilities.invokeAndWait(() -> ui.autonomySetupChanged());
 
-            for (int i = 0; i < 20; i++) pump();
+            for (int i = 0; i < 20; i++) Components.drain(1);
 
             Thread.sleep(500);
 
-            for (int i = 0; i < 5; i++) pump();
+            for (int i = 0; i < 5; i++) Components.drain(1);
 
             // IT WAS REDRAWN, or what follows would pass for a window nothing touched
             assertEquals(labelsInPopup(station, window), 0, "precondition: the pop-up was not redrawn, so nothing here was"
@@ -1076,7 +1077,7 @@ public class testAPendingTurnSurvivesTheRebuild
 
             window.goToLayoutPage(shown);
 
-            for (int i = 0; i < 20; i++) pump();
+            for (int i = 0; i < 20; i++) Components.drain(1);
 
             // The resize can follow the pumps on a busy machine: waited for, and judged below either way
             support.Components.waitFor(() -> natural[0].equals(support.Components.onTheEventThread(window::getSize)), 5000);
@@ -1106,7 +1107,7 @@ public class testAPendingTurnSurvivesTheRebuild
             if (rememberWas == null) prefs.remove(org.traincontrol.gui.widgets.PositionAwareJFrame.REMEMBER_WINDOW_LOCATION);
             else prefs.put(org.traincontrol.gui.widgets.PositionAwareJFrame.REMEMBER_WINDOW_LOCATION, rememberWas);
 
-            pump();
+            Components.drain(1);
         }
     }
 
@@ -1328,8 +1329,8 @@ public class testAPendingTurnSurvivesTheRebuild
         assertFalse(busy.get() || dirty.get(), "precondition: the window never finished working out which captions to"
             + " hide");
 
-        pump();
-        pump();
+        Components.drain(1);
+        Components.drain(1);
     }
 
     /** What the visible captions of a station say, together. */
@@ -1481,20 +1482,14 @@ public class testAPendingTurnSurvivesTheRebuild
 
         for (int round = 0; round < 3; round++)
         {
-            pump();
-            pump();
+            Components.drain(1);
+            Components.drain(1);
 
             renderer.submit(() -> { }).get(30, java.util.concurrent.TimeUnit.SECONDS);
 
-            pump();
-            pump();
+            Components.drain(1);
+            Components.drain(1);
         }
-    }
-
-    /** Lets the event thread finish what it has been given. */
-    private static void pump() throws Exception
-    {
-        javax.swing.SwingUtilities.invokeAndWait(() -> { });
     }
 
     /**
@@ -1542,7 +1537,7 @@ public class testAPendingTurnSurvivesTheRebuild
             // THE PRECONDITION, MEASURED: nobody can write it, so it is still owed at the rename
             ui.reconcileFacingWhenIdle();
 
-            pump();
+            Components.drain(1);
 
             Map<String, String> stillOwed = before.takeReversalsOnArrival();
 
@@ -1558,7 +1553,7 @@ public class testAPendingTurnSurvivesTheRebuild
                 ui.rebuildRunningLayoutFromSetup(true, null);
             });
 
-            pump();
+            Components.drain(1);
 
             Layout after = model.getAutoLayout();
 
@@ -1589,7 +1584,7 @@ public class testAPendingTurnSurvivesTheRebuild
                 ui.rebuildRunningLayoutFromSetup(true, null);
             });
 
-            pump();
+            Components.drain(1);
 
             if (model.hasAutoLayout())
             {

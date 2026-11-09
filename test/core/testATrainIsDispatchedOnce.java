@@ -22,6 +22,7 @@ import org.traincontrol.marklin.MarklinControlStation;
 import support.Reflect;
 import support.SourceOf;
 import static org.traincontrol.marklin.MarklinControlStation.init;
+import static support.Settle.until;
 
 /**
  * One locomotive is dispatched onto one path at a time.  The guard is `Layout.isAlreadyUnderway`, and this is its test.
@@ -1456,7 +1457,7 @@ public class testATrainIsDispatchedOnce
 
             before = sendOn(old, Arrays.asList(old.getEdge("GA", "GB"), old.getEdge("GB", "GC")), x);
 
-            assertTrue(waitFor(() -> x.getSpeed() == 30 && old.getActiveLocomotives().containsKey(x), 10000),
+            assertTrue(until(() -> x.getSpeed() == 30 && old.getActiveLocomotives().containsKey(x), 10000),
                 "precondition: the train was not sent on the old railway");
 
             // THE YES, as the reload's door answers it, and then the next railway
@@ -1474,14 +1475,14 @@ public class testATrainIsDispatchedOnce
             final Thread waiting = before;
 
             // Two seconds, under the wait's five-second poll: it is the retirement that must end it, not the clock
-            assertTrue(waitFor(() -> !waiting.isAlive(), 2000), "the retired railway's journey is still waiting on "
+            assertTrue(until(() -> !waiting.isAlive(), 2000), "the retired railway's journey is still waiting on "
                 + s[1].getName() + ", a sensor its stopped train will not reach, and when anything occupies it the"
                 + " thread will stop its locomotive - whichever railway is driving it then (RSA-B1)");
 
             // THE NEXT RAILWAY SENDS THE SAME TRAIN ELSEWHERE, and another train then crosses the old journey's sensor
             after = sendOn(fresh, Arrays.asList(fresh.getEdge("GA", "GD")), x);
 
-            assertTrue(waitFor(() -> x.getSpeed() > 0 && fresh.getActiveLocomotives().containsKey(x), 10000),
+            assertTrue(until(() -> x.getSpeed() > 0 && fresh.getActiveLocomotives().containsKey(x), 10000),
                 "precondition: the next railway did not send the train");
 
             model.setFeedbackState(s[1].getName(), true);
@@ -1538,14 +1539,14 @@ public class testATrainIsDispatchedOnce
 
                 final Thread blocked = claiming;
 
-                assertTrue(waitFor(() -> blocked.getState() == Thread.State.BLOCKED, 5000),
+                assertTrue(until(() -> blocked.getState() == Thread.State.BLOCKED, 5000),
                     "precondition: the dispatch did not reach its claim");
 
                 // THE YES
                 theYes(rail);
             }
 
-            assertFalse(waitFor(() -> y.getSpeed() > 0, 2000), "a train still claiming its route when the operator"
+            assertFalse(until(() -> y.getSpeed() > 0, 2000), "a train still claiming its route when the operator"
                 + " answered Yes set off once the claim came through (RSA-C1, GS-C1)");
 
             assertFalse(rail.getActiveLocomotives().containsKey(y), "a claim completed after the Yes was kept as a"
@@ -1598,10 +1599,10 @@ public class testATrainIsDispatchedOnce
 
             departing = sendOn(rail, through(rail, "LA", "LB", "LC"), w);
 
-            assertTrue(waitFor(() -> rail.getActiveLocomotives().containsKey(w), 5000), "precondition: the journey was not"
+            assertTrue(until(() -> rail.getActiveLocomotives().containsKey(w), 5000), "precondition: the journey was not"
                 + " counted");
 
-            assertFalse(waitFor(() -> w.getSpeed() > 0, 2000), "a train whose journey was counted when the operator"
+            assertFalse(until(() -> w.getSpeed() > 0, 2000), "a train whose journey was counted when the operator"
                 + " answered Yes set off after it (RSA-C1, GS-C1)");
         }
         finally
@@ -1637,7 +1638,7 @@ public class testATrainIsDispatchedOnce
 
             running = sendOn(rail, through(rail, "IA", "IB", "IC", "ID"), z);
 
-            assertTrue(waitFor(() -> z.getSpeed() == 30 && rail.getActiveLocomotives().containsKey(z), 10000),
+            assertTrue(until(() -> z.getSpeed() == 30 && rail.getActiveLocomotives().containsKey(z), 10000),
                 "precondition: the train was not sent");
 
             theYes(rail);
@@ -1699,13 +1700,13 @@ public class testATrainIsDispatchedOnce
             {
                 rail.runLocomotives();
 
-                assertTrue(waitFor(() -> aThreadIsBlockedIn("pickPath"), 5000), "precondition: autonomy's thread did"
+                assertTrue(until(() -> aThreadIsBlockedIn("pickPath"), 5000), "precondition: autonomy's thread did"
                     + " not reach its choice");
 
                 theYes(rail);
             }
 
-            assertFalse(waitFor(() -> v.getSpeed() > 0 || rail.isAlreadyUnderway(v), 2000), "a train autonomy was"
+            assertFalse(until(() -> v.getSpeed() > 0 || rail.isAlreadyUnderway(v), 2000), "a train autonomy was"
                 + " choosing a route for when the operator answered Yes was sent along it after the Yes (RSA-C1)");
         }
         finally
@@ -1852,21 +1853,6 @@ public class testATrainIsDispatchedOnce
         return false;
     }
 
-    /** Waits for a condition, polling. */
-    private static boolean waitFor(java.util.function.BooleanSupplier condition, long ms) throws InterruptedException
-    {
-        long until = System.currentTimeMillis() + ms;
-
-        while (System.currentTimeMillis() < until)
-        {
-            if (condition.getAsBoolean()) return true;
-
-            Thread.sleep(20);
-        }
-
-        return condition.getAsBoolean();
-    }
-
     /** Ends whatever a claim left: a newer railway retires its journeys, the sensors clear, the train stands. */
     private static void letGo(org.traincontrol.marklin.MarklinFeedback[] s, Locomotive loc, Thread journey)
         throws InterruptedException
@@ -1931,7 +1917,7 @@ public class testATrainIsDispatchedOnce
             // X SENT TO ONE: its journey now waits on the shared sensor
             sent = sendOn(rail, through(rail, "SXA", "ONE"), x);
 
-            assertTrue(waitFor(() -> x.getSpeed() > 0 && rail.getActiveLocomotives().containsKey(x), 10000),
+            assertTrue(until(() -> x.getSpeed() > 0 && rail.getActiveLocomotives().containsKey(x), 10000),
                 "precondition: the first train was not sent");
 
             assertFalse(rail.isPathClear(toTheOtherArc, y, false), "a second train was offered the other place on the"
@@ -2018,7 +2004,7 @@ public class testATrainIsDispatchedOnce
 
             final Thread timetable = running;
 
-            assertTrue(waitFor(() -> !timetable.isAlive(), 5000), "the timetable Return Home planned did not end after the"
+            assertTrue(until(() -> !timetable.isAlive(), 5000), "the timetable Return Home planned did not end after the"
                 + " operator's Yes: it keeps trying to send trains (RSA2-C1)");
 
             assertTrue(completed[0], "the timetable after the Yes reported a move abandoned, where it should have started"
@@ -2107,7 +2093,7 @@ public class testATrainIsDispatchedOnce
 
             final Thread sending = journey;
 
-            assertTrue(waitFor(() -> !sending.isAlive(), 5000), "a journey chosen before the operator's Yes was sent"
+            assertTrue(until(() -> !sending.isAlive(), 5000), "a journey chosen before the operator's Yes was sent"
                 + " after it, and is under way (RSA2-C2)");
 
             assertEquals(sent[0], Boolean.FALSE, "a journey chosen before the operator's Yes was sent after it"
@@ -2181,7 +2167,7 @@ public class testATrainIsDispatchedOnce
 
             final Thread asked = waiting;
 
-            assertTrue(waitFor(() -> !asked.isAlive(), 1000), "a turn's wait for its resumed speed went on after it was"
+            assertTrue(until(() -> !asked.isAlive(), 1000), "a turn's wait for its resumed speed went on after it was"
                 + " told to give up and woken, waiting for a speed only the next driver would give (RSA2-C2)");
         }
         finally
@@ -2264,7 +2250,7 @@ public class testATrainIsDispatchedOnce
 
             journey = sendOn(rail, through(rail, "UWA" + firstSensor, "UWB" + firstSensor), w);
 
-            assertTrue(waitFor(() -> w.getSpeed() > 0 && rail.getActiveLocomotives().containsKey(w), 10000),
+            assertTrue(until(() -> w.getSpeed() > 0 && rail.getActiveLocomotives().containsKey(w), 10000),
                 "precondition (" + door + "): the train was not sent");
 
             // Past its advisory: the wait is untimed now
@@ -2276,7 +2262,7 @@ public class testATrainIsDispatchedOnce
 
             final Thread waiting = journey;
 
-            return waitFor(() -> !waiting.isAlive(), 2000);
+            return until(() -> !waiting.isAlive(), 2000);
         }
         finally
         {
@@ -2325,7 +2311,7 @@ public class testATrainIsDispatchedOnce
 
             assertTrue(rail.isAutoRunning(), "precondition: autonomy did not start, so nothing here is asked");
 
-            assertFalse(waitFor(() -> v.getSpeed() > 0 || rail.isAlreadyUnderway(v), 2000), "autonomy chose a journey and"
+            assertFalse(until(() -> v.getSpeed() > 0 || rail.isAlreadyUnderway(v), 2000), "autonomy chose a journey and"
                 + " sent its train with the track power off - its route's switches commanded on a railway with no power to"
                 + " move them, and the train set going the moment the power came back (GST-B1)");
 
@@ -2348,7 +2334,7 @@ public class testATrainIsDispatchedOnce
             // AND ON AGAIN, as the GO echo leaves it: the run goes on
             power.setBoolean(model, true);
 
-            assertTrue(waitFor(() -> v.getSpeed() > 0 || rail.isAlreadyUnderway(v), 5000), "the power came back on and"
+            assertTrue(until(() -> v.getSpeed() > 0 || rail.isAlreadyUnderway(v), 5000), "the power came back on and"
                 + " autonomy still sent nothing - it is to wait while the power is off, and go on once it is back");
         }
         finally
@@ -2406,9 +2392,9 @@ public class testATrainIsDispatchedOnce
             executor.setDaemon(true);
             executor.start();
 
-            assertTrue(waitFor(() -> rail.isAutoRunning(), 5000), "precondition: the timetable did not start");
+            assertTrue(until(() -> rail.isAutoRunning(), 5000), "precondition: the timetable did not start");
 
-            assertFalse(waitFor(() -> t.getSpeed() > 0 || rail.isAlreadyUnderway(t) || entry.getExecutionTime() != 0,
+            assertFalse(until(() -> t.getSpeed() > 0 || rail.isAlreadyUnderway(t) || entry.getExecutionTime() != 0,
                 2000), "a timetable started its entry with the track power off - its route's switches commanded on a"
                 + " railway with no power to move them (GST-B1)");
 
@@ -2417,7 +2403,7 @@ public class testATrainIsDispatchedOnce
             // AND ON AGAIN: the entry starts
             power.setBoolean(model, true);
 
-            assertTrue(waitFor(() -> t.getSpeed() > 0 || rail.isAlreadyUnderway(t), 5000), "the power came back on and the"
+            assertTrue(until(() -> t.getSpeed() > 0 || rail.isAlreadyUnderway(t), 5000), "the power came back on and the"
                 + " timetable still started nothing - it is to wait while the power is off, and go on once it is back");
         }
         finally
@@ -2477,12 +2463,12 @@ public class testATrainIsDispatchedOnce
             // UNTIL THE JOURNEY HAS ENDED rather than for six seconds: only its own thread gives its train a speed (FR-136)
             final Thread running = journey;
 
-            waitFor(() -> v.getSpeed() > 0 || !running.isAlive(), 9000);
+            until(() -> v.getSpeed() > 0 || !running.isAlive(), 9000);
 
             assertFalse(v.getSpeed() > 0, "a journey whose route was being set when the power went"
                 + " off gave its train its speed during the cut, to take effect the moment the power came back (RSA61-C1)");
 
-            assertTrue(waitFor(() -> !running.isAlive(), 3000) && !rail.getActiveLocomotives().containsKey(v), "a journey"
+            assertTrue(until(() -> !running.isAlive(), 3000) && !rail.getActiveLocomotives().containsKey(v), "a journey"
                 + " whose route was being set when the power went off is still under way, waiting to set off when the"
                 + " power comes back (RSA61-C1)");
         }
@@ -2551,13 +2537,13 @@ public class testATrainIsDispatchedOnce
             // UNTIL THE JOURNEY HAS ENDED rather than for six seconds: only its own thread gives its train a speed (FR-136)
             final Thread running = journey;
 
-            waitFor(() -> v.getSpeed() > 0 || !running.isAlive(), 9000);
+            until(() -> v.getSpeed() > 0 || !running.isAlive(), 9000);
 
             assertFalse(v.getSpeed() > 0, "a journey whose route was being set when the power went off"
                 + " and came back gave its train its speed over the switches commanded with no power to move them"
                 + " (RSA62-C2)");
 
-            assertTrue(waitFor(() -> !running.isAlive(), 3000) && !rail.getActiveLocomotives().containsKey(v), "a journey"
+            assertTrue(until(() -> !running.isAlive(), 3000) && !rail.getActiveLocomotives().containsKey(v), "a journey"
                 + " whose route was being set when the power went off and came back is still under way (RSA62-C2)");
 
             String why = org.traincontrol.util.I18n.f("autolayout.log.notSentPowerOff", v.getName());
@@ -2673,13 +2659,13 @@ public class testATrainIsDispatchedOnce
             executor.setDaemon(true);
             executor.start();
 
-            assertTrue(waitFor(() -> attempts.get() >= maxAttempts, 20000), "precondition: the leg was not tried "
+            assertTrue(until(() -> attempts.get() >= maxAttempts, 20000), "precondition: the leg was not tried "
                 + maxAttempts + " times - "
                 + attempts.get() + " attempts seen");
 
             // RUNNING - given its speed, or counted among the trains running - and not merely claiming its route, which
             // `isAlreadyUnderway` counts too
-            assertTrue(waitFor(() -> t.getSpeed() > 0 || rail.getActiveLocomotives().containsKey(t), 20000), "a Return Home"
+            assertTrue(until(() -> t.getSpeed() > 0 || rail.getActiveLocomotives().containsKey(t), 20000), "a Return Home"
                 + " leg whose route"
                 + " setting the power cut three times was given up, not run once the power stayed on (RSA62-C3): " + said);
 
@@ -2801,12 +2787,12 @@ public class testATrainIsDispatchedOnce
             // UNTIL THE JOURNEY HAS ENDED rather than for six seconds: only its own thread gives its train a speed (FR-136)
             final Thread running = journey;
 
-            waitFor(() -> v.getSpeed() > 0 || !running.isAlive(), 9000);
+            until(() -> v.getSpeed() > 0 || !running.isAlive(), 9000);
 
             assertFalse(v.getSpeed() > 0, "a journey dispatched in the instant the power went off was"
                 + " given its speed over the route set while it was off (RSA63-C1)");
 
-            assertTrue(waitFor(() -> !running.isAlive(), 3000) && !rail.getActiveLocomotives().containsKey(v), "a journey"
+            assertTrue(until(() -> !running.isAlive(), 3000) && !rail.getActiveLocomotives().containsKey(v), "a journey"
                 + " dispatched in the instant the power went off is still under way (RSA63-C1)");
         }
         finally
@@ -2895,7 +2881,7 @@ public class testATrainIsDispatchedOnce
 
             sent = sendOn(rail, through(rail, "PXA", "PXM", "PXN", "PXB"), x);
 
-            assertTrue(waitFor(() -> x.getSpeed() > 0 && rail.getActiveLocomotives().containsKey(x), 10000),
+            assertTrue(until(() -> x.getSpeed() > 0 && rail.getActiveLocomotives().containsKey(x), 10000),
                 "precondition: the first train was not sent");
 
             assertFalse(rail.isPathClear(toTheSharedSensor, y, false), "precondition: the sensor ahead of the first"
@@ -2904,7 +2890,7 @@ public class testATrainIsDispatchedOnce
             // ITS HEAD PASSES THE SHARED SENSOR
             model.setFeedbackState(s[1].getName(), true);
 
-            assertTrue(waitFor(() -> rail.getReachedMilestones(x) != null
+            assertTrue(until(() -> rail.getReachedMilestones(x) != null
                 && rail.getReachedMilestones(x).contains(rail.getPoint("PXM")), 5000),
                 "precondition: the first train's journey did not record passing the shared sensor");
 
@@ -2913,13 +2899,13 @@ public class testATrainIsDispatchedOnce
             // AND ONE SENSOR ON, where the rail to the shared sensor is given back
             model.setFeedbackState(s[4].getName(), true);
 
-            assertTrue(waitFor(() -> !rail.getEdge("PXA", "PXM").isRunOver(x), 5000), "precondition: the rail to the"
+            assertTrue(until(() -> !rail.getEdge("PXA", "PXM").isRunOver(x), 5000), "precondition: the rail to the"
                 + " shared sensor was not given back one sensor on");
 
             model.setFeedbackState(s[4].getName(), false);
 
             // THE RELEASE RECORDED a moment after the rail reads free: until then the sensor is refused, the safe way
-            waitFor(() -> rail.isPathClear(toTheSharedSensor, y, false), 5000);
+            until(() -> rail.isPathClear(toTheSharedSensor, y, false), 5000);
 
             assertTrue(rail.isPathClear(toTheSharedSensor, y, false), "a sensor the first train has already passed is"
                 + " still refused to another route, though its journey waits on it no more: " + Layout.getLastError());
@@ -3272,13 +3258,13 @@ public class testATrainIsDispatchedOnce
 
             sent = sendOn(rail, through(rail, "PXA", "PXM", "PXN", "PXB"), x);
 
-            assertTrue(waitFor(() -> x.getSpeed() > 0 && rail.getActiveLocomotives().containsKey(x), 10000),
+            assertTrue(until(() -> x.getSpeed() > 0 && rail.getActiveLocomotives().containsKey(x), 10000),
                 "precondition: the first train was not sent");
 
             // ITS HEAD REACHES THE SHARED SENSOR, and a gap between two axles reads clear
             model.setFeedbackState(s[1].getName(), true);
 
-            assertTrue(waitFor(() -> rail.getReachedMilestones(x) != null
+            assertTrue(until(() -> rail.getReachedMilestones(x) != null
                 && rail.getReachedMilestones(x).contains(rail.getPoint("PXM")), 5000),
                 "precondition: the first train's journey did not record reaching the shared sensor");
 
@@ -3936,12 +3922,12 @@ public class testATrainIsDispatchedOnce
             executor.start();
 
             // THE FIRST ENTRY RUNS AND ARRIVES, its sensor left occupied: the train stands there
-            assertTrue(waitFor(() -> rail.getActiveLocomotives().containsKey(t), 10000), "precondition: the first entry"
+            assertTrue(until(() -> rail.getActiveLocomotives().containsKey(t), 10000), "precondition: the first entry"
                 + " was not sent");
 
             model.setFeedbackState(s[1].getName(), true);
 
-            assertTrue(waitFor(() -> !rail.getActiveLocomotives().containsKey(t), 10000), "precondition: the first entry"
+            assertTrue(until(() -> !rail.getActiveLocomotives().containsKey(t), 10000), "precondition: the first entry"
                 + " did not arrive");
 
             Thread.sleep(500);
@@ -3978,7 +3964,7 @@ public class testATrainIsDispatchedOnce
             stopping.setDaemon(true);
             stopping.start();
 
-            assertTrue(waitFor(() -> !rail.isAutoRunning(), 5000), "precondition: the stop did not clear running");
+            assertTrue(until(() -> !rail.isAutoRunning(), 5000), "precondition: the stop did not clear running");
 
             assertTrue(rail.isRunning(), "a timetable's loop still inside the timetable after a stop is not counted as"
                 + " running, so Start can come back and begin a run the loop then joins (RSA4-C1)");
@@ -4100,7 +4086,7 @@ public class testATrainIsDispatchedOnce
 
             final Thread asking = yes;
 
-            assertTrue(waitFor(() -> asking.getState() == Thread.State.BLOCKED, 5000), "precondition: the Yes did not"
+            assertTrue(until(() -> asking.getState() == Thread.State.BLOCKED, 5000), "precondition: the Yes did not"
                 + " block between clearing running and counting");
 
             assertEquals(rail.stopsOrdered(), chosen, "precondition: the Yes counted before it was held");

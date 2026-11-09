@@ -16,6 +16,7 @@ import org.traincontrol.automationui.TileGraph.TileKey;
 import org.traincontrol.base.Accessory.accessoryDecoderType;
 import org.traincontrol.base.LayoutDiagram;
 import org.traincontrol.base.LayoutDiagramComponent.componentType;
+import support.Trees;
 
 /**
  * A station's NAME survives being moved, wherever it is moved to.
@@ -308,7 +309,7 @@ public class testStationLabelsFollowMoves
             }
             finally
             {
-                delete(folder);
+                Trees.delete(folder);
             }
         }
     }
@@ -391,14 +392,5 @@ public class testStationLabelsFollowMoves
         page.setPageId("1");
 
         return page;
-    }
-
-    private static void delete(File file)
-    {
-        File[] kids = file.listFiles();
-
-        if (kids != null) for (File kid : kids) delete(kid);
-
-        file.delete();
     }
 }

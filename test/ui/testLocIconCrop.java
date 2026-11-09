@@ -4,6 +4,7 @@ import java.io.File;
 import static org.testng.Assert.*;
 import org.testng.annotations.Test;
 import org.traincontrol.gui.TrainControlUI;
+import support.Components;
 import support.Reflect;
 import support.SourceOf;
 
@@ -882,7 +883,7 @@ public class testLocIconCrop
             assertEquals(said.get(0), org.traincontrol.util.I18n.f("loc.ui.errorPictureCouldNotBeRead",
                 unreadable.getName()), "the refusal does not name the picture");
 
-            settle();
+            Components.drain(4);
 
             assertEquals(loc.getLocalImageURL(), goodUrl, "an unreadable picture replaced the locomotive's icon");
 
@@ -1237,7 +1238,7 @@ public class testLocIconCrop
 
             ui.updatePowerState();
 
-            settle();
+            Components.drain(4);
 
             assertFalse((Boolean) offers.invoke(ui), "the picture's tools are offered while the power is on (MT-591)");
 
@@ -1261,7 +1262,7 @@ public class testLocIconCrop
 
             ui.updatePowerState();
 
-            settle();
+            Components.drain(4);
 
             assertTrue((Boolean) offers.invoke(ui), "the picture's tools are not offered with the power off");
 
@@ -1281,7 +1282,7 @@ public class testLocIconCrop
 
             ui.repaintLoc();
 
-            settle();
+            Components.drain(4);
 
             assertNull(picture.getToolTipText(), "with no locomotive, the picture still says to right-click it");
         }
@@ -1326,7 +1327,7 @@ public class testLocIconCrop
 
             ui = windowOver(model);
 
-            settle();
+            Components.drain(4);
 
             final javax.swing.JLabel wrench = field(ui, "iconWrench", javax.swing.JLabel.class);
             final javax.swing.JLabel revert = field(ui, "iconRevert", javax.swing.JLabel.class);
@@ -1445,7 +1446,7 @@ public class testLocIconCrop
 
             ui = windowOver(model);
 
-            settle();
+            Components.drain(4);
 
             final javax.swing.JLabel wrench = field(ui, "iconWrench", javax.swing.JLabel.class);
 
@@ -1585,11 +1586,6 @@ public class testLocIconCrop
         {
             throw new RuntimeException(e);
         }
-    }
-
-    private static void settle() throws Exception
-    {
-        for (int pass = 0; pass < 4; pass++) javax.swing.SwingUtilities.invokeAndWait(() -> { });
     }
 
     /**

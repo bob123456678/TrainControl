@@ -23,6 +23,7 @@ import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.util.I18n;
 import static org.traincontrol.marklin.MarklinControlStation.init;
+import support.Components;
 import support.Reflect;
 
 /**
@@ -71,7 +72,7 @@ public class testTheTailCanBeGivenInTheEditor
 
             SwingUtilities.invokeAndWait(() -> ui.getAutonomyViewerPanel().load(active, false));
 
-            settle();
+            Components.drain(8);
         }
 
         assertNotNull(ui.getActiveDiagramConfiguration(), "precondition: no configuration is loaded");
@@ -213,7 +214,7 @@ public class testTheTailCanBeGivenInTheEditor
 
             SwingUtilities.invokeAndWait(item::doClick);
 
-            settle();
+            Components.drain(8);
 
             f.assertRecorded(farthest, "chosen from the menu");
         }
@@ -263,7 +264,7 @@ public class testTheTailCanBeGivenInTheEditor
 
             SwingUtilities.invokeAndWait(() -> f.panel.tileClicked(clicked, null, false));
 
-            settle();
+            Components.drain(8);
 
             assertNull(f.panel.tailPickFor(), "the click on an outlined sensor did not end the pick");
 
@@ -291,7 +292,7 @@ public class testTheTailCanBeGivenInTheEditor
 
             SwingUtilities.invokeAndWait(() -> f.panel.tileClicked(f.tile, null, false));
 
-            settle();
+            Components.drain(8);
 
             assertEquals(f.panel.tailPickFor(), f.tile,
                 "a click on a square the tail cannot have crossed dropped the pick, so a near miss costs the whole menu");
@@ -344,7 +345,7 @@ public class testTheTailCanBeGivenInTheEditor
             // OFF THE RAILWAY AND ON THE CLIPBOARD, which is what Control+X leaves behind.
             SwingUtilities.invokeAndWait(() -> model.getAutoLayout().moveLocomotive(null, before.getName(), true));
 
-            settle();
+            Components.drain(8);
 
             org.traincontrol.gui.autonomy.ArrivalSidePrompt.answerForTests(side);
             org.traincontrol.gui.autonomy.FacingPrompt.answerForTests(heading);
@@ -371,7 +372,7 @@ public class testTheTailCanBeGivenInTheEditor
                 }
             });
 
-            settle();
+            Components.drain(8);
 
             assertEquals(handled[0], Boolean.TRUE, "the diagram's paste door did not take Control+V: " + handled[0]);
 
@@ -602,7 +603,7 @@ public class testTheTailCanBeGivenInTheEditor
 
             SwingUtilities.invokeAndWait(() -> ui.rebuildRunningLayoutFromSetup());
 
-            settle();
+            Components.drain(8);
 
             Layout running = model.getAutoLayout();
 
@@ -653,7 +654,7 @@ public class testTheTailCanBeGivenInTheEditor
                 built[0].setAutonomyMode(session);
             });
 
-            settle();
+            Components.drain(8);
 
             return new Fixture(asFound, built[0], at, train, lengthWas);
         }
@@ -673,7 +674,7 @@ public class testTheTailCanBeGivenInTheEditor
 
             SwingUtilities.invokeAndWait(() -> model.getAutoLayout().moveLocomotive(null, before.getName(), true));
 
-            settle();
+            Components.drain(8);
 
             org.traincontrol.gui.autonomy.ArrivalSidePrompt.answerForTests(side);
             org.traincontrol.gui.autonomy.FacingPrompt.answerForTests(heading);
@@ -702,7 +703,7 @@ public class testTheTailCanBeGivenInTheEditor
                     }
                 });
 
-                settle();
+                Components.drain(8);
 
                 assertEquals(handled[0], Boolean.TRUE, "the diagram's paste door did not take Control+V: " + handled[0]);
                 assertNotNull(standing(), "precondition: the paste put the train nowhere");
@@ -755,7 +756,7 @@ public class testTheTailCanBeGivenInTheEditor
                     }
                 });
 
-                settle();
+                Components.drain(8);
 
                 assertEquals(handled[0], Boolean.TRUE, "the diagram's paste door did not take Control+V: " + handled[0]);
                 assertNotNull(standing(), "precondition: the paste put the train nowhere");
@@ -825,7 +826,7 @@ public class testTheTailCanBeGivenInTheEditor
 
             SwingUtilities.invokeAndWait(pick::doClick);
 
-            settle();
+            Components.drain(8);
 
             assertEquals(panel.tailPickFor(), tile, "picking on the diagram did not wait for a click about " + tile);
 
@@ -855,7 +856,7 @@ public class testTheTailCanBeGivenInTheEditor
         {
             SwingUtilities.invokeAndWait(() -> editor.dispose());
 
-            settle();
+            Components.drain(8);
         }
 
         void close() throws Exception
@@ -864,7 +865,7 @@ public class testTheTailCanBeGivenInTheEditor
             {
                 SwingUtilities.invokeAndWait(() -> editor.dispose());
 
-                settle();
+                Components.drain(8);
             }
             finally
             {
@@ -915,13 +916,5 @@ public class testTheTailCanBeGivenInTheEditor
         }
 
         return null;
-    }
-
-    private static void settle() throws Exception
-    {
-        for (int pass = 0; pass < 8; pass++)
-        {
-            SwingUtilities.invokeAndWait(() -> { });
-        }
     }
 }

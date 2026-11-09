@@ -13,6 +13,7 @@ import org.traincontrol.base.Accessory.accessoryDecoderType;
 import org.traincontrol.base.LayoutDiagram;
 import org.traincontrol.base.LayoutDiagramComponent.componentType;
 import org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel;
+import support.Trees;
 
 /**
  * Control+B acts exactly where the right-click menu offers a maximum train length, and nowhere else (MT-313).  A key
@@ -117,7 +118,7 @@ public class testControlBAsksTheMenusQuestion
         }
         finally
         {
-            deleteRecursively(folder);
+            Trees.delete(folder);
         }
     }
 
@@ -168,7 +169,7 @@ public class testControlBAsksTheMenusQuestion
         }
         finally
         {
-            deleteRecursively(folder);
+            Trees.delete(folder);
         }
     }
 
@@ -214,7 +215,7 @@ public class testControlBAsksTheMenusQuestion
         }
         finally
         {
-            deleteRecursively(folder);
+            Trees.delete(folder);
         }
     }
 
@@ -250,18 +251,5 @@ public class testControlBAsksTheMenusQuestion
             throw new SkipException("AutonomyEditorPanel builds real Swing components - this needs a"
                 + " display");
         }
-    }
-
-    /** A temporary directory and everything under it. */
-    private static void deleteRecursively(java.io.File file)
-    {
-        java.io.File[] children = file.listFiles();
-
-        if (children != null)
-        {
-            for (java.io.File child : children) deleteRecursively(child);
-        }
-
-        file.delete();
     }
 }

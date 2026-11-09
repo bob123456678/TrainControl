@@ -23,6 +23,7 @@ import org.traincontrol.gui.TailCrossedPrompt;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.util.I18n;
+import support.Components;
 import support.Reflect;
 import support.SourceOf;
 import static org.traincontrol.marklin.MarklinControlStation.init;
@@ -68,8 +69,8 @@ public class testWhereHisTrainsMayBeSent
 
         assertNotNull(ui, "there is no window");
 
-        pump();
-        pump();
+        Components.drain(1);
+        Components.drain(1);
 
         session = ui.getAutonomySession();
 
@@ -356,7 +357,7 @@ public class testWhereHisTrainsMayBeSent
                 if (at != null) railway().moveLocomotive(null, at.getName(), false);
             });
 
-            pump();
+            Components.drain(1);
 
             List<String> again = offered(tunnel);
 
@@ -371,7 +372,7 @@ public class testWhereHisTrainsMayBeSent
                 ui.rebuildRunningLayoutFromSetup();
             });
 
-            pump();
+            Components.drain(1);
         }
     }
 
@@ -547,7 +548,7 @@ public class testWhereHisTrainsMayBeSent
         {
             Thread.sleep(100);
 
-            pump();
+            Components.drain(1);
 
             said = hintOf(panel);
         }
@@ -635,7 +636,7 @@ public class testWhereHisTrainsMayBeSent
             // CLOSED SAVING THE CHANGE: the running railway rebuilt from the setup.
             SwingUtilities.invokeAndWait(() -> ui.rebuildRunningLayoutFromSetup());
 
-            pump();
+            Components.drain(1);
 
             Edge answered = railway().getEdge("BottomSecondary", "TunnelPre");
 
@@ -650,7 +651,7 @@ public class testWhereHisTrainsMayBeSent
             // THE PLAIN SOUTHBOUND COPY: RampDown also has a copy for trains that turn there, which is no station.
             SwingUtilities.invokeAndWait(() -> railway().moveLocomotive(HIS_TRAIN, "RampDown (southbound)", false));
 
-            pump();
+            Components.drain(1);
 
             assertTrue(railway().getLocomotiveLocation(his) != null
                 && "RampDown (southbound)".equals(railway().getLocomotiveLocation(his).getName()), "precondition: 75 407 DB"
@@ -747,7 +748,7 @@ public class testWhereHisTrainsMayBeSent
                 ui.rebuildRunningLayoutFromSetup();
             });
 
-            pump();
+            Components.drain(1);
         }
     }
 
@@ -879,14 +880,14 @@ public class testWhereHisTrainsMayBeSent
 
         awaitNoDialogTitled(title);
 
-        pump();
+        Components.drain(1);
 
         support.StationDoors.close(settings);
 
         // CLOSED SAVING THE CHANGE: the running railway rebuilt from the setup.
         SwingUtilities.invokeAndWait(() -> ui.rebuildRunningLayoutFromSetup());
 
-        pump();
+        Components.drain(1);
     }
 
     /** The right-click menu on this square, as the diagram builds it; the paths it offers. */
@@ -1018,7 +1019,7 @@ public class testWhereHisTrainsMayBeSent
         {
             Thread.sleep(100);
 
-            pump();
+            Components.drain(1);
 
             said = hintOf(panel);
         }
@@ -1061,7 +1062,7 @@ public class testWhereHisTrainsMayBeSent
             railway().moveLocomotive(loc.getName(), onto, false, true);
         });
 
-        pump();
+        Components.drain(1);
 
         Point at = railway().getLocomotiveLocation(loc);
 
@@ -1136,7 +1137,7 @@ public class testWhereHisTrainsMayBeSent
             copy.setArrivedAlong(java.util.Arrays.asList(cameIn));
         });
 
-        pump();
+        Components.drain(1);
     }
 
     private static void remember(Locomotive loc)
@@ -1291,7 +1292,7 @@ public class testWhereHisTrainsMayBeSent
     {
         for (int round = 0; round < 50; round++)
         {
-            pump();
+            Components.drain(1);
 
             boolean any = false;
 
@@ -1313,10 +1314,5 @@ public class testWhereHisTrainsMayBeSent
 
             Thread.sleep(100);
         }
-    }
-
-    private static void pump() throws Exception
-    {
-        SwingUtilities.invokeAndWait(() -> { });
     }
 }

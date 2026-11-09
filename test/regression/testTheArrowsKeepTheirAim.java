@@ -11,6 +11,7 @@ import org.traincontrol.base.LayoutDiagramComponent;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertTrue;
 import org.testng.annotations.Test;
+import support.Trees;
 
 /**
  * An arrow on the diagram points at the same page after the page list changes.  A link tile holds a POSITION in the
@@ -210,21 +211,8 @@ public class testTheArrowsKeepTheirAim
         }
         finally
         {
-            deleteTree(folder);
+            Trees.delete(folder);
         }
-    }
-
-    /** Removes a temporary folder and everything in it. */
-    private static void deleteTree(File where)
-    {
-        File[] children = where.listFiles();
-
-        if (children != null)
-        {
-            for (File child : children) deleteTree(child);
-        }
-
-        where.delete();
     }
 
     /**

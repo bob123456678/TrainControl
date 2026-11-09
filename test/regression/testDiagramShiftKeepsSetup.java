@@ -14,6 +14,7 @@ import org.traincontrol.base.Accessory.accessoryDecoderType;
 import org.traincontrol.base.LayoutDiagram;
 import org.traincontrol.base.LayoutDiagramComponent.componentType;
 import support.Reflect;
+import support.Trees;
 
 /**
  * Inserting or removing a row or a column, and what happens to the setup on the squares that move.
@@ -195,7 +196,7 @@ public class testDiagramShiftKeepsSetup
         }
         finally
         {
-            delete(folder);
+            Trees.delete(folder);
         }
     }
 
@@ -252,7 +253,7 @@ public class testDiagramShiftKeepsSetup
         }
         finally
         {
-            delete(folder);
+            Trees.delete(folder);
         }
     }
 
@@ -373,15 +374,6 @@ public class testDiagramShiftKeepsSetup
 
             if (sandbox != null) sandbox.close();
         }
-    }
-
-    private static void delete(File file)
-    {
-        File[] kids = file.listFiles();
-
-        if (kids != null) for (File kid : kids) delete(kid);
-
-        file.delete();
     }
 
     /**

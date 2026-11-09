@@ -13,6 +13,7 @@ import org.traincontrol.gui.layouteditor.LayoutEditor;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;
 import static org.traincontrol.marklin.MarklinControlStation.init;
+import support.Components;
 
 /**
  * FR-065: Escape closes the editor, after it has let go of whatever the editor was holding.  The order is the whole
@@ -249,7 +250,7 @@ public class testEscapeClosesTheEditor
             if (autonomy) built[0].setAutonomyMode(session);
         });
 
-        settle();
+        Components.drain(5);
 
         return built[0];
     }
@@ -272,7 +273,7 @@ public class testEscapeClosesTheEditor
 
         SwingUtilities.invokeAndWait(() -> arming.doClick());
 
-        settle();
+        Components.drain(5);
     }
 
     /**
@@ -286,7 +287,7 @@ public class testEscapeClosesTheEditor
             KeyEvent.CHAR_UNDEFINED)));
 
         // `formKeyPressed` does all its work inside an `invokeLater`, and `confirmExit` posts again
-        settle();
+        Components.drain(5);
     }
 
     /** Disposes a window that may already have closed itself. */
@@ -294,14 +295,6 @@ public class testEscapeClosesTheEditor
     {
         SwingUtilities.invokeAndWait(() -> editor.dispose());
 
-        settle();
-    }
-
-    private static void settle() throws Exception
-    {
-        for (int pass = 0; pass < 5; pass++)
-        {
-            SwingUtilities.invokeAndWait(() -> { });
-        }
+        Components.drain(5);
     }
 }

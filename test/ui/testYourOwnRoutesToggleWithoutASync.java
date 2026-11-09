@@ -15,6 +15,7 @@ import org.traincontrol.marklin.MarklinRoute;
 import org.traincontrol.util.I18n;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 import support.Reflect;
+import static support.Settle.until;
 
 /**
  * Turning automatic execution on or off for a route the Central Station never carried does not sync with it (MT-467):
@@ -98,7 +99,7 @@ public class testYourOwnRoutesToggleWithoutASync
 
             ui.enableOrDisableRoute(own, true);
 
-            assertTrue(waitFor(() -> isEnabled(own), 10000), "precondition: the toggle never reached the route");
+            assertTrue(until(() -> isEnabled(own), 10000), "precondition: the toggle never reached the route");
 
             settle();
 
@@ -110,7 +111,7 @@ public class testYourOwnRoutesToggleWithoutASync
             // THE CONTROL: a route the station carried still syncs, so a sync is something this test can see.
             ui.enableOrDisableRoute(station, true);
 
-            assertTrue(waitFor(() -> syncsAskedFor() > before, 10000), "a route the Central Station carried was"
+            assertTrue(until(() -> syncsAskedFor() > before, 10000), "a route the Central Station carried was"
                 + " toggled and no sync was asked for, so this test cannot see a sync at all and the claim above"
                 + " says nothing");
         }
@@ -140,13 +141,13 @@ public class testYourOwnRoutesToggleWithoutASync
             // delete-and-re-add over the same database, which is not what this is about.
             ui.enableOrDisableMatching(PREFIX + "bulk f", true);
 
-            assertTrue(waitFor(() -> isEnabled(first), 10000), "precondition: the first batch never reached its route");
+            assertTrue(until(() -> isEnabled(first), 10000), "precondition: the first batch never reached its route");
 
             settle();
 
             ui.enableOrDisableMatching(PREFIX + "bulk s", true);
 
-            assertTrue(waitFor(() -> isEnabled(second) && isEnabled(station), 10000),
+            assertTrue(until(() -> isEnabled(second) && isEnabled(station), 10000),
                 "precondition: the second batch never reached its routes");
 
             settle();
@@ -238,7 +239,7 @@ public class testYourOwnRoutesToggleWithoutASync
             return;
         }
 
-        assertTrue(waitFor(() -> flag.compareAndSet(false, true), 60000),
+        assertTrue(until(() -> flag.compareAndSet(false, true), 60000),
             "precondition: a sync has been running for a minute, so the flag cannot be taken");
     }
 
@@ -251,19 +252,5 @@ public class testYourOwnRoutesToggleWithoutASync
         Thread.sleep(1500);
 
         SwingUtilities.invokeAndWait(() -> { });
-    }
-
-    private static boolean waitFor(BooleanSupplier condition, long millis) throws Exception
-    {
-        long until = System.currentTimeMillis() + millis;
-
-        while (System.currentTimeMillis() < until)
-        {
-            if (condition.getAsBoolean()) return true;
-
-            Thread.sleep(50);
-        }
-
-        return condition.getAsBoolean();
     }
 }

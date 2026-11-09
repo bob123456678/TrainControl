@@ -23,6 +23,7 @@ import org.traincontrol.gui.TailCrossedPrompt;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;
 import static org.traincontrol.marklin.MarklinControlStation.init;
+import support.Components;
 import support.Reflect;
 
 /**
@@ -69,8 +70,8 @@ public class testACutTrainArrivesTheWayItWouldDrive
 
         assertNotNull(ui, "there is no window");
 
-        pump();
-        pump();
+        Components.drain(1);
+        Components.drain(1);
 
         session = ui.getAutonomySession();
 
@@ -222,7 +223,7 @@ public class testACutTrainArrivesTheWayItWouldDrive
             }
         });
 
-        pump();
+        Components.drain(1);
 
         return handled[0];
     }
@@ -251,10 +252,5 @@ public class testACutTrainArrivesTheWayItWouldDrive
         }
 
         throw new AssertionError("this railway has no " + name);
-    }
-
-    private static void pump() throws Exception
-    {
-        SwingUtilities.invokeAndWait(() -> { });
     }
 }

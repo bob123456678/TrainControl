@@ -12,6 +12,7 @@ import org.traincontrol.base.LayoutDiagramComponent.componentType;
 import org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel;
 import support.Reflect;
 import support.SourceOf;
+import support.Trees;
 
 /**
  * FR-034: "Show station label here" opens on the station the square is next to.
@@ -212,20 +213,7 @@ public class testStationLabelPrefill
         }
         finally
         {
-            deleteRecursively(layout);
+            Trees.delete(layout);
         }
-    }
-
-    /** A temporary directory and everything under it. */
-    private static void deleteRecursively(java.io.File file)
-    {
-        java.io.File[] children = file.listFiles();
-
-        if (children != null)
-        {
-            for (java.io.File child : children) deleteRecursively(child);
-        }
-
-        file.delete();
     }
 }

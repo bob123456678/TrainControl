@@ -23,6 +23,7 @@ import org.traincontrol.gui.LayoutLabel;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;
 import static org.traincontrol.marklin.MarklinControlStation.init;
+import support.Components;
 import support.Reflect;
 
 /**
@@ -95,8 +96,8 @@ public class testTheTrainIsShownAsALine
 
         assertNotNull(ui, "there is no window");
 
-        pump();
-        pump();
+        Components.drain(1);
+        Components.drain(1);
 
         session = ui.getAutonomySession();
 
@@ -165,7 +166,7 @@ public class testTheTrainIsShownAsALine
 
         SwingUtilities.invokeAndWait(() -> tile.refreshCoveredMark());
 
-        pump();
+        Components.drain(1);
 
         assertFalse(ui.isTrackCovered(covered),
             "the square is still reported as covered with the train's length cleared, so the second "
@@ -306,7 +307,7 @@ public class testTheTrainIsShownAsALine
         // and `support.CoveredMarks` is the one place that knows it.
         support.CoveredMarks.refresh(ui);
 
-        pump();
+        Components.drain(1);
     }
 
     /** The train made four units long, so it lies across the covered square, and the square's mark redrawn. */
@@ -318,7 +319,7 @@ public class testTheTrainIsShownAsALine
 
         SwingUtilities.invokeAndWait(() -> tile.refreshCoveredMark());
 
-        pump();
+        Components.drain(1);
     }
 
     /** The run overlay taken off the square, the train made no length again, and the square's mark redrawn. */
@@ -332,7 +333,7 @@ public class testTheTrainIsShownAsALine
 
         SwingUtilities.invokeAndWait(() -> tile.refreshCoveredMark());
 
-        pump();
+        Components.drain(1);
     }
 
     private static TileKey firstCoveredSquareWithATile()
@@ -374,14 +375,14 @@ public class testTheTrainIsShownAsALine
 
         long until = System.currentTimeMillis() + 30000;
 
-        while (built[0].getIcon() == null && System.currentTimeMillis() < until) pump();
+        while (built[0].getIcon() == null && System.currentTimeMillis() < until) Components.drain(1);
 
         assertNotNull(built[0].getIcon(),
             "the tile never drew its image, so every picture below would be of an empty square");
 
         SwingUtilities.invokeAndWait(() -> built[0].refreshCoveredMark());
 
-        pump();
+        Components.drain(1);
 
         return built[0];
     }
@@ -442,11 +443,6 @@ public class testTheTrainIsShownAsALine
         support.TileLengths.measureEveryTileAs(session, units);
     }
 
-    private static void pump() throws Exception
-    {
-        SwingUtilities.invokeAndWait(() -> { });
-    }
-
     /**
      * The tail shows over a run line too (FR-106): the covered square is painted again with the run's reached line
      * along the road the tail is drawn on, and the orange is all still there.
@@ -485,7 +481,7 @@ public class testTheTrainIsShownAsALine
                     new org.traincontrol.automationui.TileOverlay.Segment(road.getA(), road.getB(),
                         org.traincontrol.automationui.TileOverlay.State.REACHED)))));
 
-            pump();
+            Components.drain(1);
 
             BufferedImage run = support.Pixels.paint(tile, TILE);
 
@@ -536,7 +532,7 @@ public class testTheTrainIsShownAsALine
                     new org.traincontrol.automationui.TileOverlay.Segment(road.getA(), road.getB(),
                         org.traincontrol.automationui.TileOverlay.State.REACHED)))));
 
-            pump();
+            Components.drain(1);
 
             int running = commonestOrange(support.Pixels.paint(tile, TILE));
 
@@ -584,7 +580,7 @@ public class testTheTrainIsShownAsALine
             SwingUtilities.invokeAndWait(() -> tile.setAutonomyOverlay(
                 org.traincontrol.automationui.TileOverlay.parked(road.getB())));
 
-            pump();
+            Components.drain(1);
 
             int standing = laidTwice(support.Pixels.paint(tile, TILE), once);
 
@@ -597,7 +593,7 @@ public class testTheTrainIsShownAsALine
                     new org.traincontrol.automationui.TileOverlay.Segment(road.getA(), null,
                         org.traincontrol.automationui.TileOverlay.State.REACHED)))));
 
-            pump();
+            Components.drain(1);
 
             int ending = laidTwice(support.Pixels.paint(tile, TILE), once);
 
@@ -1045,13 +1041,13 @@ public class testTheTrainIsShownAsALine
 
         long until = System.currentTimeMillis() + 30000;
 
-        while (built[0].getIcon() == null && System.currentTimeMillis() < until) pump();
+        while (built[0].getIcon() == null && System.currentTimeMillis() < until) Components.drain(1);
 
         assertNotNull(built[0].getIcon(), "the tile on " + square + " never drew its image");
 
         SwingUtilities.invokeAndWait(() -> built[0].refreshCoveredMark());
 
-        pump();
+        Components.drain(1);
 
         return built[0];
     }

@@ -21,6 +21,7 @@ import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 import support.Reflect;
+import static support.Settle.until;
 
 /**
  * Conditional routes that act on locomotives, and multi-units inside them.
@@ -1356,16 +1357,6 @@ public class testAdvancedRoutes
 
     // Every command and trigger, run (Adam: "Add the tests.  Advise if any fail") - the gaps
     // a read of the suite found: features that were only parsed or round-tripped, never run as a route
-
-    /** Polls a condition every 50 ms until it holds or the time is up. */
-    private static boolean until(java.util.function.BooleanSupplier holds, long ms) throws InterruptedException
-    {
-        long end = System.currentTimeMillis() + ms;
-
-        while (!holds.getAsBoolean() && System.currentTimeMillis() < end) Thread.sleep(50);
-
-        return holds.getAsBoolean();
-    }
 
     /** A route run by hand, not watching a sensor. */
     private static MarklinRoute byHand(String name, int id, RouteCommand... commands)

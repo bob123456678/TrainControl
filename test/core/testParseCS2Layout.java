@@ -23,6 +23,7 @@ import org.traincontrol.marklin.MarklinAccessory;
 import org.traincontrol.base.LayoutDiagram;
 import org.traincontrol.base.LayoutDiagramComponent;
 import support.Reflect;
+import support.Trees;
 
 /**
  * Compares CS2 and CS3 route parsing
@@ -133,7 +134,7 @@ public class testParseCS2Layout
         }
         finally
         {
-            deleteTree(folder);
+            Trees.delete(folder);
         }
     }
 
@@ -235,23 +236,8 @@ public class testParseCS2Layout
         }
         finally
         {
-            deleteTree(folder);
+            Trees.delete(folder);
         }
-    }
-
-    /**
-     * Removes a temporary folder and everything in it.
-     */
-    private static void deleteTree(java.io.File file)
-    {
-        java.io.File[] children = file.listFiles();
-
-        if (children != null)
-        {
-            for (java.io.File child : children) deleteTree(child);
-        }
-
-        file.delete();
     }
     /**
      * The page id from gleisbild.cs2 reaches the parsed layout.  Autonomy stores its setup against it (a name is what
@@ -832,7 +818,7 @@ public class testParseCS2Layout
         }
         finally
         {
-            deleteTree(folder);
+            Trees.delete(folder);
         }
     }
 
@@ -890,7 +876,7 @@ public class testParseCS2Layout
         }
         finally
         {
-            deleteTree(folder);
+            Trees.delete(folder);
         }
     }
 

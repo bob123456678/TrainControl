@@ -14,6 +14,7 @@ import org.traincontrol.base.Route;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;
 import static org.traincontrol.marklin.MarklinControlStation.init;
+import support.Components;
 import support.Reflect;
 
 /**
@@ -71,7 +72,7 @@ public class testAThrottleReversalIsFollowedFromItsEcho
 
         assertNotNull(ui, "there is no window, so nothing follows a turn");
 
-        settle();
+        Components.drain(4);
 
         assertNotNull(model.newMM2Locomotive(PROBE, 2397), "could not create this class's train");
 
@@ -94,7 +95,7 @@ public class testAThrottleReversalIsFollowedFromItsEcho
             ui.getDiagramMonitorDriver().bind(session);
         });
 
-        settle();
+        Components.drain(4);
 
         assertFalse(model.getAutoLayout().isRunning(), "precondition: something is running, and a turn is not followed"
             + " while it is");
@@ -142,7 +143,7 @@ public class testAThrottleReversalIsFollowedFromItsEcho
         for (long until = System.currentTimeMillis() + 10000; System.currentTimeMillis() < until
             && facing != Side.W; )
         {
-            settle();
+            Components.drain(4);
 
             Thread.sleep(100);
 
@@ -173,7 +174,7 @@ public class testAThrottleReversalIsFollowedFromItsEcho
 
             waitFor(() -> held().contains(PROBE), "the reversal was not seen by the window while a route runs");
 
-            settle();
+            Components.drain(4);
 
             assertEquals(session.getFacing(MAIN_A), Side.E, "the setup was turned while a route runs - Adam: \"There"
                 + " should be no setup edit possible during a run\"");
@@ -220,11 +221,11 @@ public class testAThrottleReversalIsFollowedFromItsEcho
 
             endTheRoute(hold);
 
-            settle();
+            Components.drain(4);
 
             Thread.sleep(500);
 
-            settle();
+            Components.drain(4);
 
             assertEquals(session.getFacing(MAIN_A), Side.E, "reversed twice during a route, the train runs the way it did,"
                 + " and the setup turned it");
@@ -334,13 +335,13 @@ public class testAThrottleReversalIsFollowedFromItsEcho
             // ends turned around and a turn left over would show after the run
             reverse();
 
-            settle();
+            Components.drain(4);
 
             Thread.sleep(500);
 
             fromTheCentralStation(train, forwardWas);
 
-            settle();
+            Components.drain(4);
 
             Thread.sleep(500);
 
@@ -348,11 +349,11 @@ public class testAThrottleReversalIsFollowedFromItsEcho
 
             reverse();
 
-            settle();
+            Components.drain(4);
 
             Thread.sleep(500);
 
-            settle();
+            Components.drain(4);
 
             assertNothingTurned("a direction command while " + what);
         }
@@ -366,11 +367,11 @@ public class testAThrottleReversalIsFollowedFromItsEcho
 
         train.setSpeed(0);
 
-        settle();
+        Components.drain(4);
 
         Thread.sleep(500);
 
-        settle();
+        Components.drain(4);
 
         assertNothingTurned("a direction command made while " + what + ", once it was over,");
 
@@ -510,7 +511,7 @@ public class testAThrottleReversalIsFollowedFromItsEcho
             ui.getDiagramMonitorDriver().bind(session);
         });
 
-        settle();
+        Components.drain(4);
 
         SwingUtilities.invokeAndWait(() -> ui.reconcileFacingWhenIdle());
 
@@ -567,7 +568,7 @@ public class testAThrottleReversalIsFollowedFromItsEcho
     {
         for (long until = System.currentTimeMillis() + 10000; System.currentTimeMillis() < until; )
         {
-            settle();
+            Components.drain(4);
 
             if (condition.getAsBoolean()) return;
 
@@ -575,10 +576,5 @@ public class testAThrottleReversalIsFollowedFromItsEcho
         }
 
         assertTrue(condition.getAsBoolean(), otherwise);
-    }
-
-    private static void settle() throws Exception
-    {
-        for (int pass = 0; pass < 4; pass++) SwingUtilities.invokeAndWait(() -> { });
     }
 }

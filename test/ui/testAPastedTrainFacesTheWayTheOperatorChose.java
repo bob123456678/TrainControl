@@ -27,6 +27,7 @@ import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.util.I18n;
 import static org.traincontrol.marklin.MarklinControlStation.init;
+import support.Components;
 import support.Reflect;
 
 /**
@@ -69,8 +70,8 @@ public class testAPastedTrainFacesTheWayTheOperatorChose
 
         assertNotNull(ui, "there is no window");
 
-        pump();
-        pump();
+        Components.drain(1);
+        Components.drain(1);
 
         session = ui.getAutonomySession();
 
@@ -241,7 +242,7 @@ public class testAPastedTrainFacesTheWayTheOperatorChose
 
         layout = model.getAutoLayout();
 
-        pump();
+        Components.drain(1);
     }
 
     /**
@@ -275,7 +276,7 @@ public class testAPastedTrainFacesTheWayTheOperatorChose
                 keyCode, KeyEvent.CHAR_UNDEFINED));
         });
 
-        pump();
+        Components.drain(1);
     }
 
     /**
@@ -392,7 +393,7 @@ public class testAPastedTrainFacesTheWayTheOperatorChose
 
         for (int tries = 0; tries < 50; tries++)
         {
-            pump();
+            Components.drain(1);
 
             seen = ui.getDiagramTileRegistry().overlayAt(square);
 
@@ -448,7 +449,7 @@ public class testAPastedTrainFacesTheWayTheOperatorChose
             }
         });
 
-        pump();
+        Components.drain(1);
 
         assertEquals(handled[0], Boolean.TRUE,
             "the diagram's paste door did not take Control+V over " + SQUARE_NAME + ": " + handled[0]);
@@ -488,11 +489,6 @@ public class testAPastedTrainFacesTheWayTheOperatorChose
             }
         });
 
-        pump();
-    }
-
-    private static void pump() throws Exception
-    {
-        SwingUtilities.invokeAndWait(() -> { });
+        Components.drain(1);
     }
 }

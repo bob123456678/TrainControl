@@ -7,6 +7,7 @@ import org.testng.SkipException;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 import org.traincontrol.gui.autonomy.AutonomyBanner;
+import support.Components;
 
 /**
  * OB-191: "why not moving" painted the paths and then said nothing.  The fault is in the LAYING OUT of the banner's
@@ -186,7 +187,7 @@ public class testTheWhyAnswerIsOnScreen
             OPENED.add(frame);
         });
 
-        settle();
+        Components.drain(5);
 
         // Again, because `hold` posts its own pass and the height the strip asks for depends on the
         // width the message has just been wrapped to.
@@ -196,7 +197,7 @@ public class testTheWhyAnswerIsOnScreen
             host[0].getContentPane().doLayout();
         });
 
-        settle();
+        Components.drain(5);
 
         return built[0];
     }
@@ -324,13 +325,5 @@ public class testTheWhyAnswerIsOnScreen
         {
             for (javax.swing.JFrame frame : OPENED) frame.dispose();
         });
-    }
-
-    private static void settle() throws Exception
-    {
-        for (int pass = 0; pass < 5; pass++)
-        {
-            SwingUtilities.invokeAndWait(() -> { });
-        }
     }
 }

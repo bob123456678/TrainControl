@@ -2,6 +2,7 @@ package regression;
 
 import static org.testng.Assert.*;
 import org.testng.annotations.Test;
+import support.Components;
 import support.Reflect;
 import support.SourceOf;
 
@@ -75,7 +76,7 @@ public class testTheWindowTakesTheKeyboard
 
             up.ui = made[0];
 
-            settle();
+            Components.drain(5);
 
             // AND THE RAISE HAS TO FINISH: `takeTheKeyboard` posts the raise, which hands its always-on-top flag back
             // 400 ms later, and only THEN asks for the keyboard (the flag's restore is a native window-style change
@@ -91,7 +92,7 @@ public class testTheWindowTakesTheKeyboard
 
                 Thread.sleep(100);
 
-                settle();
+                Components.drain(5);
             }
 
             return up;
@@ -103,18 +104,6 @@ public class testTheWindowTakesTheKeyboard
             up.close();
 
             throw failed;
-        }
-    }
-
-    /**
-     * Lets everything the last gesture POSTED actually run: `takeTheKeyboard` and `displayCurrentButtonLoc` work
-     * through `invokeLater`.  Several passes, because a posted task may post another.
-     */
-    private static void settle() throws Exception
-    {
-        for (int pass = 0; pass < 5; pass++)
-        {
-            javax.swing.SwingUtilities.invokeAndWait(() -> { });
         }
     }
 
@@ -161,7 +150,7 @@ public class testTheWindowTakesTheKeyboard
             new java.awt.event.KeyEvent(on, java.awt.event.KeyEvent.KEY_PRESSED,
                 System.currentTimeMillis(), 0, keyCode, (char) keyCode)));
 
-        settle();
+        Components.drain(5);
     }
 
     private static boolean isTheKeyboard(java.awt.Component what, java.awt.Component keyboard)
@@ -250,7 +239,7 @@ public class testTheWindowTakesTheKeyboard
             }
         });
 
-        settle();
+        Components.drain(5);
     }
 
     /**
@@ -338,7 +327,7 @@ public class testTheWindowTakesTheKeyboard
 
             javax.swing.SwingUtilities.invokeAndWait(() -> elsewhere.requestFocusInWindow());
 
-            settle();
+            Components.drain(5);
 
             // SKIPPED RATHER THAN FAILED when this desktop will not move the keyboard: that says nothing about the
             // window.
@@ -373,13 +362,13 @@ public class testTheWindowTakesTheKeyboard
                 new java.awt.event.WindowEvent(up.ui,
                     java.awt.event.WindowEvent.WINDOW_LOST_FOCUS)));
 
-            settle();
+            Components.drain(5);
 
             javax.swing.SwingUtilities.invokeAndWait(() -> up.ui.dispatchEvent(
                 new java.awt.event.WindowEvent(up.ui,
                     java.awt.event.WindowEvent.WINDOW_GAINED_FOCUS)));
 
-            settle();
+            Components.drain(5);
 
             up.ui.removeWindowFocusListener(watcher);
 
@@ -447,7 +436,7 @@ public class testTheWindowTakesTheKeyboard
 
                 javax.swing.SwingUtilities.invokeAndWait(() -> up.ui.setAlwaysOnTop(!onTop));
 
-                settle();
+                Components.drain(5);
 
                 assertEquals(up.ui.isAlwaysOnTop(), !onTop,
                     "precondition: the window would not take the always-on-top setting at all, so "
@@ -470,7 +459,7 @@ public class testTheWindowTakesTheKeyboard
                 {
                     Thread.sleep(100);
 
-                    settle();
+                    Components.drain(5);
                 }
 
                 assertEquals(up.ui.isAlwaysOnTop(), onTop,
@@ -521,7 +510,7 @@ public class testTheWindowTakesTheKeyboard
             javax.swing.SwingUtilities.invokeAndWait(() -> up.ui.setExtendedState(
                 java.awt.Frame.ICONIFIED | java.awt.Frame.MAXIMIZED_BOTH));
 
-            settle();
+            Components.drain(5);
 
             // WHAT THE FIXTURE ACTUALLY GOT: this window is `setResizable(false)` and may refuse the maximized bits, so
             // the second assertion is conditional on it rather than passing on a state nobody set.
@@ -543,7 +532,7 @@ public class testTheWindowTakesTheKeyboard
                 }
             });
 
-            settle();
+            Components.drain(5);
 
             assertEquals(up.ui.getExtendedState() & java.awt.Frame.ICONIFIED, 0,
                 "the window is still iconified after being asked to come to the front, and an "
@@ -598,7 +587,7 @@ public class testTheWindowTakesTheKeyboard
 
             javax.swing.SwingUtilities.invokeAndWait(() -> typing.requestFocusInWindow());
 
-            settle();
+            Components.drain(5);
 
             assertSame(up.ui.getMostRecentFocusOwner(), typing,
                 "precondition: the caret is supposed to be somewhere other than the keyboard");
@@ -630,7 +619,7 @@ public class testTheWindowTakesTheKeyboard
                 }
             });
 
-            settle();
+            Components.drain(5);
 
             assertSame(up.ui.getMostRecentFocusOwner(), typing,
                 "coming back to the window took the keyboard away from "

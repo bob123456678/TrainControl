@@ -12,6 +12,7 @@ import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 import support.Reflect;
+import static support.Settle.until;
 
 /**
  * Return Home shows that it is working while its plan is worked out, and stops when there is an answer (FR-077).
@@ -103,13 +104,13 @@ public class testReturnHomeShowsItIsWorking
         {
             SwingUtilities.invokeLater(() -> ui.requestReturnToHome());
 
-            assertTrue(waitFor(() -> ui.isReturnHomeShowingWork(), 10000),
+            assertTrue(until(() -> ui.isReturnHomeShowingWork(), 10000),
                 "Return Home was pressed and its plan is still being worked out - this test holds the"
                 + " railway the plan must read - and the button shows nothing. Adam, FR-077: \"there needs"
                 + " to be a spinner on the return home button while it is calculating\"");
         }
 
-        assertTrue(waitFor(() -> !ui.isReturnHomeShowingWork(), 60000),
+        assertTrue(until(() -> !ui.isReturnHomeShowingWork(), 60000),
             "the plan was released and the button is still turning a minute later, so the mark outlives"
             + " the calculation it was put up for");
     }
@@ -148,7 +149,7 @@ public class testReturnHomeShowsItIsWorking
 
         SwingUtilities.invokeAndWait(() -> ui.dispose());
 
-        assertTrue(waitFor(() -> !timer[0].isRunning(), 2000),
+        assertTrue(until(() -> !timer[0].isRunning(), 2000),
             "the window was closed with Return Home's mark turning and its timer is still running, repainting a"
             + " button nobody can see");
     }
@@ -179,28 +180,5 @@ public class testReturnHomeShowsItIsWorking
                 if (window instanceof javax.swing.JDialog && window.isShowing()) window.dispose();
             }
         });
-    }
-
-    private static boolean waitFor(BooleanSupplier until, long ms)
-    {
-        long deadline = System.currentTimeMillis() + ms;
-
-        while (System.currentTimeMillis() < deadline)
-        {
-            if (until.getAsBoolean()) return true;
-
-            try
-            {
-                Thread.sleep(25);
-            }
-            catch (InterruptedException e)
-            {
-                Thread.currentThread().interrupt();
-
-                return false;
-            }
-        }
-
-        return until.getAsBoolean();
     }
 }

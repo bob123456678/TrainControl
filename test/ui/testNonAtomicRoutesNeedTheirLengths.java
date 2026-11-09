@@ -19,6 +19,7 @@ import org.testng.SkipException;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
+import support.Components;
 import support.SourceOf;
 
 /**
@@ -75,8 +76,8 @@ public class testNonAtomicRoutesNeedTheirLengths
 
         assertNotNull(ui, "there is no window, so the door this is about does not exist");
 
-        settle();
-        settle();
+        Components.drain(1);
+        Components.drain(1);
 
         assertTrue(model.hasAutoLayout(), "the sandbox copy holds no autonomy setup");
 
@@ -641,11 +642,5 @@ public class testNonAtomicRoutesNeedTheirLengths
     private static void remember(Locomotive loc)
     {
         if (!trainsWere.containsKey(loc)) trainsWere.put(loc, loc.getTrainLength());
-    }
-
-    /** Lets the event thread catch up, twice being what the window needs after init (OB-192). */
-    private static void settle() throws Exception
-    {
-        SwingUtilities.invokeAndWait(() -> { });
     }
 }

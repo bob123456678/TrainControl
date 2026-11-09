@@ -30,6 +30,7 @@ import static regression.testTheImportDoorReadsAnOldFile.itemCalled;
 import static regression.testTheImportDoorReadsAnOldFile.logged;
 import static regression.testTheImportDoorReadsAnOldFile.openTheWindow;
 import static regression.testTheImportDoorReadsAnOldFile.putTheFolderBack;
+import support.Components;
 import support.Reflect;
 
 /**
@@ -246,7 +247,7 @@ public class testNoSetupEditWhileARouteRuns
 
                     SwingUtilities.invokeAndWait(item::doClick);
 
-                    settle();
+                    Components.drain(6);
 
                     List<String> said = answering.since(from);
 
@@ -259,7 +260,7 @@ public class testNoSetupEditWhileARouteRuns
 
                 SwingUtilities.invokeAndWait(() -> support.StationDoors.fireThoughGrayed(choose));
 
-                settle();
+                Components.drain(6);
 
                 assertTrue(answering.since(fromWindow).contains(refusal), "Station Settings' control, offered at rest and"
                     + " pressed while a route runs, did not say why it did nothing: " + answering.since(fromWindow));
@@ -288,7 +289,7 @@ public class testNoSetupEditWhileARouteRuns
 
             SwingUtilities.invokeAndWait(choose::doClick);
 
-            settle();
+            Components.drain(6);
 
             assertFalse(answering.since(from).contains(refusal), "a setup item refused at rest: " + answering.since(from));
 
@@ -416,7 +417,7 @@ public class testNoSetupEditWhileARouteRuns
 
                     SwingUtilities.invokeAndWait(() -> window.openLayoutEditor(null, autonomy, null));
 
-                    settle();
+                    Components.drain(6);
 
                     assertFalse(ui.isLayoutEditorOpen(), "the " + (autonomy ? "autonomy" : "track") + " editor opened"
                         + " while a route runs");
@@ -451,7 +452,7 @@ public class testNoSetupEditWhileARouteRuns
                     }
                 });
 
-                settle();
+                Components.drain(6);
 
                 assertTrue(answering.since(from).contains(refusal), "the track editor's Save did not refuse while a"
                     + " route runs: " + answering.since(from));
@@ -819,7 +820,7 @@ public class testNoSetupEditWhileARouteRuns
 
         SwingUtilities.invokeAndWait(door);
 
-        settle();
+        Components.drain(6);
 
         List<String> said = answering.since(from);
 
@@ -937,7 +938,7 @@ public class testNoSetupEditWhileARouteRuns
 
                     SwingUtilities.invokeAndWait((Runnable) door.getValue()[1]);
 
-                    settle();
+                    Components.drain(6);
 
                     List<String> said = answering.since(from);
 
@@ -966,7 +967,7 @@ public class testNoSetupEditWhileARouteRuns
 
                 SwingUtilities.invokeAndWait((Runnable) doors.get(name)[1]);
 
-                settle();
+                Components.drain(6);
 
                 List<String> said = answering.since(from);
 
@@ -1029,7 +1030,7 @@ public class testNoSetupEditWhileARouteRuns
                 editor[0].setAutonomyMode(session);
             });
 
-            settle();
+            Components.drain(6);
 
             final org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel panel = editor[0].getAutonomyPanel();
 
@@ -1137,7 +1138,7 @@ public class testNoSetupEditWhileARouteRuns
             SwingUtilities.invokeAndWait(() -> panel.tileClicked(square, page.getComponent(square.getX(), square.getY()),
                 false));
 
-            settle();
+            Components.drain(6);
 
             assertFalse(session.snapshotSetup().similar(before), "precondition: the arrow click wrote nothing at rest, so"
                 + " its refusal while a route runs shows nothing");
@@ -1190,7 +1191,7 @@ public class testNoSetupEditWhileARouteRuns
             gesture.run();
         });
 
-        settle();
+        Components.drain(6);
 
         StringBuilder out = new StringBuilder(String.valueOf(((javax.swing.JLabel) hint.get(panel)).getText()));
 
@@ -1383,7 +1384,7 @@ public class testNoSetupEditWhileARouteRuns
 
                         SwingUtilities.invokeAndWait(door.getValue());
 
-                        settle();
+                        Components.drain(6);
 
                         said.put(door.getKey(), answering.since(from));
                     }
@@ -1399,7 +1400,7 @@ public class testNoSetupEditWhileARouteRuns
 
                     SwingUtilities.invokeAndWait(() -> call(panel, "exportConfiguration"));
 
-                    settle();
+                    Components.drain(6);
 
                     assertEquals(answering.since(from), Collections.singletonList(I18n.t(WAIT)), "Export, a door that"
                         + " must wait, did not say so while " + run + " runs");
@@ -1513,7 +1514,7 @@ public class testNoSetupEditWhileARouteRuns
 
                     SwingUtilities.invokeAndWait(door.getValue());
 
-                    settle();
+                    Components.drain(6);
 
                     List<String> said = answering.since(from);
 
@@ -1672,7 +1673,7 @@ public class testNoSetupEditWhileARouteRuns
 
                     SwingUtilities.invokeAndWait(door.getValue());
 
-                    settle();
+                    Components.drain(6);
 
                     assertEquals(answering.since(from), Collections.singletonList(anyRun), door.getKey()
                         + " did not refuse, before asking anything, while a route runs - Adam: \"There should be no setup"
@@ -1707,7 +1708,7 @@ public class testNoSetupEditWhileARouteRuns
 
                     SwingUtilities.invokeAndWait(doors.get(door));
 
-                    settle();
+                    Components.drain(6);
 
                     assertEquals(answering.since(from), Collections.singletonList(offer), door + " did not make its offer"
                         + " to stop the trains while autonomy is busy, as it did before routes were refused");
@@ -1731,7 +1732,7 @@ public class testNoSetupEditWhileARouteRuns
                         SwingUtilities.invokeAndWait(door.equals("Unload") ? (Runnable) () -> window.unloadAutonomy()
                             : doors.get(door));
 
-                        settle();
+                        Components.drain(6);
 
                         List<String> said = answering.since(asked);
 
@@ -1757,7 +1758,7 @@ public class testNoSetupEditWhileARouteRuns
 
                 SwingUtilities.invokeAndWait(doors.get("Autonomy: Export"));
 
-                settle();
+                Components.drain(6);
 
                 assertEquals(answering.since(from), Collections.singletonList(I18n.t(WAIT)),
                     "Export did not refuse with the wait sentence while autonomy is busy");
@@ -1779,7 +1780,7 @@ public class testNoSetupEditWhileARouteRuns
 
                 SwingUtilities.invokeAndWait(unload);
 
-                settle();
+                Components.drain(6);
 
                 assertEquals(answering.since(from), Collections.singletonList(anyRun), "Unload did not refuse, before"
                     + " asking anything, while a route runs");
@@ -1800,7 +1801,7 @@ public class testNoSetupEditWhileARouteRuns
 
                 SwingUtilities.invokeAndWait(unload);
 
-                settle();
+                Components.drain(6);
 
                 assertEquals(answering.since(from), Collections.singletonList(
                     I18n.t("autolayout.ui.confirmReloadJsonStopsRunningLocomotives")), "Unload did not make its offer to"
@@ -1820,7 +1821,7 @@ public class testNoSetupEditWhileARouteRuns
 
                 SwingUtilities.invokeAndWait(door.getValue());
 
-                settle();
+                Components.drain(6);
 
                 List<String> said = answering.since(from);
 
@@ -1841,7 +1842,7 @@ public class testNoSetupEditWhileARouteRuns
                 window.refreshAutonomyPrompt();
             });
 
-            settle();
+            Components.drain(6);
 
             final javax.swing.JButton banner = ((org.traincontrol.gui.autonomy.AutonomyBanner) fieldOf("autonomyDiagramBanner", ui))
                 .getActionButton();
@@ -1857,7 +1858,7 @@ public class testNoSetupEditWhileARouteRuns
 
                 SwingUtilities.invokeAndWait(banner::doClick);
 
-                settle();
+                Components.drain(6);
 
                 assertEquals(answering.since(from), Collections.singletonList(anyRun), "the banner's Load this"
                     + " configuration did not refuse, before asking anything, while a route runs");
@@ -1874,7 +1875,7 @@ public class testNoSetupEditWhileARouteRuns
 
             SwingUtilities.invokeAndWait(banner::doClick);
 
-            settle();
+            Components.drain(6);
 
             assertFalse(answering.since(from).contains(anyRun), "the banner refused at rest");
             assertTrue(ui.isAutonomyLoaded(), "the banner did not load the configuration at rest");
@@ -1952,7 +1953,7 @@ public class testNoSetupEditWhileARouteRuns
 
                     SwingUtilities.invokeAndWait(door.getValue());
 
-                    settle();
+                    Components.drain(6);
 
                     assertNamesTheRoute(answering.since(from), door.getKey());
 
@@ -2041,7 +2042,7 @@ public class testNoSetupEditWhileARouteRuns
 
                 SwingUtilities.invokeAndWait(ask);
 
-                settle();
+                Components.drain(6);
 
                 assertTrue(refused[0], "the last-moment question let a run through under a route");
                 assertNamesTheRoute(answering.since(from), "the last-moment question");
@@ -2065,7 +2066,7 @@ public class testNoSetupEditWhileARouteRuns
 
             try
             {
-                settle();
+                Components.drain(6);
 
                 assertNamesTheRoute(answering.since(from), "Execute Timetable, the route begun after its press,");
 
@@ -2302,7 +2303,7 @@ public class testNoSetupEditWhileARouteRuns
         ui.mapLocToCurrentButton(other);
 
         for (long end = System.currentTimeMillis() + 10000; (ui.getActiveLoc() == null
-            || !other.equals(ui.getActiveLoc().getName())) && System.currentTimeMillis() < end; ) settle();
+            || !other.equals(ui.getActiveLoc().getName())) && System.currentTimeMillis() < end; ) Components.drain(6);
 
         assertTrue(ui.getActiveLoc() != null && other.equals(ui.getActiveLoc().getName()), "precondition: " + other
             + " could not be made the active locomotive");
@@ -2361,7 +2362,7 @@ public class testNoSetupEditWhileARouteRuns
             }
         });
 
-        settle();
+        Components.drain(6);
 
         return handled[0];
     }
@@ -2407,7 +2408,7 @@ public class testNoSetupEditWhileARouteRuns
 
         SwingUtilities.invokeAndWait(closing::dispose);
 
-        settle();
+        Components.drain(6);
     }
 
     /** The window's Autonomy menu. */
@@ -2461,7 +2462,7 @@ public class testNoSetupEditWhileARouteRuns
             layout.setSelected(false);
         });
 
-        settle();
+        Components.drain(6);
 
         Map<String, Object[]> out = new java.util.LinkedHashMap<>();
 
@@ -2537,11 +2538,6 @@ public class testNoSetupEditWhileARouteRuns
         assertNotNull(found, "the window has no Layouts menu");
 
         return found;
-    }
-
-    private static void settle() throws Exception
-    {
-        for (int turn = 0; turn < 6; turn++) SwingUtilities.invokeAndWait(() -> { });
     }
 
     /** Closes every question as it is asked - No, Cancel, or the file chooser's Cancel - and keeps what each said. */

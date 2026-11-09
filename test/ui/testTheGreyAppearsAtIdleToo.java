@@ -25,6 +25,7 @@ import org.traincontrol.gui.LayoutLabel;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;
 import static org.traincontrol.marklin.MarklinControlStation.init;
+import support.Components;
 import support.Reflect;
 
 /**
@@ -137,8 +138,8 @@ public class testTheGreyAppearsAtIdleToo
 
         assertNotNull(ui, "there is no window");
 
-        pump();
-        pump();
+        Components.drain(1);
+        Components.drain(1);
 
         session = ui.getAutonomySession();
 
@@ -199,7 +200,7 @@ public class testTheGreyAppearsAtIdleToo
 
         support.CoveredMarks.refresh(ui);
 
-        pump();
+        Components.drain(1);
 
         repaintTheThree();
 
@@ -215,7 +216,7 @@ public class testTheGreyAppearsAtIdleToo
         // (a length of zero is "not set", and an unmeasured train covers nothing), THROUGH THE DOOR.
         SwingUtilities.invokeAndWait(() -> ui.applyTrainLength(train, 0));
 
-        pump();
+        Components.drain(1);
 
         support.CoveredMarks.settle(ui);
 
@@ -230,7 +231,7 @@ public class testTheGreyAppearsAtIdleToo
         // AND BACK, so the gesture is shown in both directions.
         SwingUtilities.invokeAndWait(() -> ui.applyTrainLength(train, trainLength));
 
-        pump();
+        Components.drain(1);
 
         support.CoveredMarks.settle(ui);
 
@@ -447,8 +448,8 @@ public class testTheGreyAppearsAtIdleToo
 
         SwingUtilities.invokeAndWait(() -> ui.rebuildRunningLayoutFromSetup());
 
-        pump();
-        pump();
+        Components.drain(1);
+        Components.drain(1);
 
         support.CoveredMarks.settle(ui);
 
@@ -464,8 +465,8 @@ public class testTheGreyAppearsAtIdleToo
 
         SwingUtilities.invokeAndWait(() -> ui.rebuildRunningLayoutFromSetup());
 
-        pump();
-        pump();
+        Components.drain(1);
+        Components.drain(1);
 
         support.CoveredMarks.settle(ui);
 
@@ -516,8 +517,8 @@ public class testTheGreyAppearsAtIdleToo
             + "), so nothing was removed and the claim below would pass by having changed nothing: "
             + handled[0]);
 
-        pump();
-        pump();
+        Components.drain(1);
+        Components.drain(1);
 
         // THE GESTURE ACTUALLY TOOK THE TRAIN OFF, asserted rather than assumed: `true` is also what this door returns
         // when it REFUSES (autonomy busy, an editor open, no autonomy Point on the square), leaving the gray as it was.
@@ -671,7 +672,7 @@ public class testTheGreyAppearsAtIdleToo
 
             support.CoveredMarks.refresh(ui);
 
-            pump();
+            Components.drain(1);
 
             // THE WHOLE-EDGE ANSWER, to pick the tiles: `blockedSquare` must be a tile of the covered EDGE that the
             // train does not reach, a square that is neither orange nor gray.
@@ -768,7 +769,7 @@ public class testTheGreyAppearsAtIdleToo
             freeTile.refreshCoveredMark();
         });
 
-        pump();
+        Components.drain(1);
     }
 
     /** A real tile for a square, drawn and ready to be painted. */
@@ -790,7 +791,7 @@ public class testTheGreyAppearsAtIdleToo
 
         long until = System.currentTimeMillis() + 30000;
 
-        while (built[0].getIcon() == null && System.currentTimeMillis() < until) pump();
+        while (built[0].getIcon() == null && System.currentTimeMillis() < until) Components.drain(1);
 
         assertNotNull(built[0].getIcon(),
             "the tile never drew its image, so every picture below would be of an empty square");
@@ -883,11 +884,6 @@ public class testTheGreyAppearsAtIdleToo
     private static void measureEveryTileAs(int units)
     {
         support.TileLengths.measureEveryTileAs(session, units);
-    }
-
-    private static void pump() throws Exception
-    {
-        SwingUtilities.invokeAndWait(() -> { });
     }
 
     // ---------------------------------------------------------------- nothing without a loaded setup (OB-307)

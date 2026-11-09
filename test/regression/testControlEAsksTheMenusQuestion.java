@@ -14,6 +14,7 @@ import org.traincontrol.base.Accessory.accessoryDecoderType;
 import org.traincontrol.base.LayoutDiagram;
 import org.traincontrol.base.LayoutDiagramComponent.componentType;
 import org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel;
+import support.Trees;
 
 /**
  * Control+E has to act on the square the right-click menu would act on, and only where it offers to (FR-066): the
@@ -114,7 +115,7 @@ public class testControlEAsksTheMenusQuestion
         }
         finally
         {
-            deleteRecursively(folder);
+            Trees.delete(folder);
         }
     }
 
@@ -170,7 +171,7 @@ public class testControlEAsksTheMenusQuestion
         }
         finally
         {
-            deleteRecursively(folder);
+            Trees.delete(folder);
         }
     }
 
@@ -244,7 +245,7 @@ public class testControlEAsksTheMenusQuestion
         }
         finally
         {
-            deleteRecursively(folder);
+            Trees.delete(folder);
         }
     }
 
@@ -301,7 +302,7 @@ public class testControlEAsksTheMenusQuestion
         }
         finally
         {
-            deleteRecursively(folder);
+            Trees.delete(folder);
         }
     }
 
@@ -329,18 +330,5 @@ public class testControlEAsksTheMenusQuestion
             throw new SkipException("AutonomyEditorPanel builds real Swing components - this needs a"
                 + " display");
         }
-    }
-
-    /** A temporary directory and everything under it. */
-    private static void deleteRecursively(java.io.File file)
-    {
-        java.io.File[] children = file.listFiles();
-
-        if (children != null)
-        {
-            for (java.io.File child : children) deleteRecursively(child);
-        }
-
-        file.delete();
     }
 }

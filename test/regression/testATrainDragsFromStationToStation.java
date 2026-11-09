@@ -26,6 +26,7 @@ import org.traincontrol.gui.layouteditor.LayoutEditor;
 import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.util.I18n;
 import support.Answering;
+import support.Components;
 import support.Mouse;
 import support.Reflect;
 
@@ -106,7 +107,7 @@ public class testATrainDragsFromStationToStation
 
         arrived.await(30, java.util.concurrent.TimeUnit.SECONDS);
 
-        settle();
+        Components.drain(8);
     }
 
     /** Loaded as on Adam's railway: the trains are drawn from the running layout it builds. */
@@ -118,7 +119,7 @@ public class testATrainDragsFromStationToStation
         {
             SwingUtilities.invokeAndWait(() -> ui.getAutonomyViewerPanel().load(active, false));
 
-            settle();
+            Components.drain(8);
         }
 
         assertNotNull(ui.getActiveDiagramConfiguration(), "precondition: no configuration is loaded");
@@ -134,11 +135,11 @@ public class testATrainDragsFromStationToStation
 
         onTheEventThread(() -> made.set(shown(new LayoutEditor(page, 30, ui, 0))));
 
-        settle();
+        Components.drain(8);
 
         onTheEventThread(ui::rebuildRunningLayoutFromSetup);
 
-        settle();
+        Components.drain(8);
 
         return made.get();
     }
@@ -228,7 +229,7 @@ public class testATrainDragsFromStationToStation
         try
         {
             Mouse.drag(f.fromLabel, f.toLabel);
-            settle();
+            Components.drain(8);
 
             assertEquals(session.getLocomotiveNameAt(f.to), train,
                 "the train dragged from " + f.from + " is not on the station it was let go on, " + f.to);
@@ -371,10 +372,10 @@ public class testATrainDragsFromStationToStation
             session.setPointProperty(f.to, "loc", settings(displaced, 3, false, 33));
 
             onTheEventThread(ui::rebuildRunningLayoutFromSetup);
-            settle();
+            Components.drain(8);
 
             Mouse.drag(f.fromLabel, f.toLabel);
-            settle();
+            Components.drain(8);
 
             org.json.JSONObject now = (org.json.JSONObject) session.getPointProperty(f.to, "loc");
 
@@ -427,7 +428,7 @@ public class testATrainDragsFromStationToStation
             assertTrue(onTheEventThreadValue(f.fromLabel::trainPictureIsMissing), "precondition: the picture is not missing");
 
             Mouse.drag(f.fromLabel, f.toLabel);
-            settle();
+            Components.drain(8);
 
             assertEquals(session.getLocomotiveNameAt(f.to), train, "a press on a train between pictures did not drag it");
 
@@ -471,7 +472,7 @@ public class testATrainDragsFromStationToStation
             onTheEventThread(() -> tool.set(panel, AutonomyEditorPanel.Tool.TEST));
 
             Mouse.drag(f.fromLabel, f.toLabel);
-            settle();
+            Components.drain(8);
 
             assertUnchanged(asFound, "a train was dragged with a tool armed");
 
@@ -482,7 +483,7 @@ public class testATrainDragsFromStationToStation
             });
 
             Mouse.drag(f.fromLabel, f.toLabel);
-            settle();
+            Components.drain(8);
 
             assertUnchanged(asFound, "a train was dragged with a tail pick waiting");
 
@@ -540,7 +541,7 @@ public class testATrainDragsFromStationToStation
 
         post(captioned, MouseEvent.MOUSE_RELEASED, center(captioned), 0, 1, MouseEvent.BUTTON3);
         post(captioned, MouseEvent.MOUSE_RELEASED, center(captioned), 0, 1, MouseEvent.BUTTON1);
-        settle();
+        Components.drain(8);
     }
 
     /**
@@ -566,7 +567,7 @@ public class testATrainDragsFromStationToStation
             org.json.JSONArray timetable = timetableOf(train);
 
             Mouse.drag(f.fromLabel, f.toLabel);
-            settle();
+            Components.drain(8);
 
             assertEquals(session.getLocomotiveNameAt(f.to), train, "precondition: the train did not land");
             assertTrue(session.getPausedLocomotives().contains(train), "the drag un-paused the train");
@@ -670,7 +671,7 @@ public class testATrainDragsFromStationToStation
             SwingUtilities.invokeAndWait(closing::dispose);
 
             post(f.fromLabel, MouseEvent.MOUSE_RELEASED, pointOn(f.toLabel, f.fromLabel), 0, 1, MouseEvent.BUTTON1);
-            settle();
+            Components.drain(8);
 
             assertUnchanged(asFound, "a train carried when the editor closed landed");
         }
@@ -711,7 +712,7 @@ public class testATrainDragsFromStationToStation
             carryTo(f.fromLabel, f.toLabel);
 
             Mouse.release(f.fromLabel, MouseEvent.BUTTON1);
-            settle();
+            Components.drain(8);
 
             assertNull(ghost(), "the carried name stayed on screen after the release");
         }
@@ -737,12 +738,12 @@ public class testATrainDragsFromStationToStation
         try (Answering answering = Answering.start(message -> null))
         {
             Mouse.drag(f.fromLabel, f.trackLabel);
-            settle();
+            Components.drain(8);
 
             assertUnchanged(asFound, "a release on plain track moved the train");
 
             Mouse.drag(f.fromLabel, f.fromLabel);
-            settle();
+            Components.drain(8);
 
             assertUnchanged(asFound, "a release on its own square changed the setup");
 
@@ -752,7 +753,7 @@ public class testATrainDragsFromStationToStation
 
             post(f.fromLabel, MouseEvent.MOUSE_DRAGGED, outside, InputEvent.BUTTON1_DOWN_MASK, 0, MouseEvent.NOBUTTON);
             post(f.fromLabel, MouseEvent.MOUSE_RELEASED, outside, 0, 1, MouseEvent.BUTTON1);
-            settle();
+            Components.drain(8);
 
             assertUnchanged(asFound, "a release outside the diagram changed the setup");
 
@@ -783,14 +784,14 @@ public class testATrainDragsFromStationToStation
             liftAndCarry(f);
 
             support.Keys.press(editor, KeyEvent.VK_ESCAPE);
-            settle();
+            Components.drain(8);
 
             assertNull(ghost(), "Escape left the carried name on screen");
 
             Point there = pointOn(f.toLabel, f.fromLabel);
 
             post(f.fromLabel, MouseEvent.MOUSE_RELEASED, there, 0, 1, MouseEvent.BUTTON1);
-            settle();
+            Components.drain(8);
 
             assertUnchanged(asFound, "the train moved after Escape");
 
@@ -820,7 +821,7 @@ public class testATrainDragsFromStationToStation
         try
         {
             Mouse.click(f.fromLabel);
-            settle();
+            Components.drain(8);
 
             // A click on a station does what it always did to the square (cycles its arrow); only the train must stay.
             asFound = session.snapshotSetup();
@@ -837,12 +838,12 @@ public class testATrainDragsFromStationToStation
             assertNull(ghost(), "a two-pixel jitter lifted the train");
 
             post(f.fromLabel, MouseEvent.MOUSE_RELEASED, new Point(at.x + 2, at.y + 1), 0, 1, MouseEvent.BUTTON1);
-            settle();
+            Components.drain(8);
 
             assertUnchanged(asFound, "a jitter changed the setup");
 
             Mouse.drag(f.fromLabel, f.toLabel);
-            settle();
+            Components.drain(8);
 
             assertNotNull(session.getLocomotiveNameAt(f.to), "after a click and a jitter, a real drag no longer works");
         }
@@ -884,7 +885,7 @@ public class testATrainDragsFromStationToStation
             assertEquals(markOf(f.toLabel), Color.RED, "with a run holding the setup, the station still reads as taking the train");
 
             Mouse.release(f.fromLabel, MouseEvent.BUTTON1);
-            settle();
+            Components.drain(8);
 
             assertUnchanged(asFound, "a train carried when a run began landed");
 
@@ -898,7 +899,7 @@ public class testATrainDragsFromStationToStation
             liftAndCarry(f);
 
             Mouse.release(f.fromLabel, MouseEvent.BUTTON1);
-            settle();
+            Components.drain(8);
 
             assertUnchanged(asFound, "a train moved while a run holds the setup");
         }
@@ -942,7 +943,7 @@ public class testATrainDragsFromStationToStation
                 String before = threeStores(f);
 
                 Mouse.drag(f.fromLabel, f.toLabel);
-                settle();
+                Components.drain(8);
 
                 assertEquals(session.getLocomotiveNameAt(f.to), dragged, "precondition: the train did not land");
 
@@ -1014,7 +1015,7 @@ public class testATrainDragsFromStationToStation
             assertEquals(answering.asked().size(), 1, "the switch did not ask about the unsaved work");
         }
 
-        settle();
+        Components.drain(8);
     }
 
     /**
@@ -1045,7 +1046,7 @@ public class testATrainDragsFromStationToStation
             org.json.JSONObject changed = session.snapshotSetup();
 
             Mouse.drag(f.fromLabel, f.toLabel);
-            settle();
+            Components.drain(8);
 
             assertUnchanged(changed, "a train was dropped on a square the railway is stale for");
 
@@ -1092,7 +1093,7 @@ public class testATrainDragsFromStationToStation
             session.setPointProperty(f.to, AutonomyBuilder.CAN_REVERSE, true);
 
             onTheEventThread(ui::rebuildRunningLayoutFromSetup);
-            settle();
+            Components.drain(8);
 
             Fixture again = fixture(false);
 
@@ -1324,7 +1325,7 @@ public class testATrainDragsFromStationToStation
     {
         support.StationDoors.placeFromTheList(editor.getAutonomyPanel(), square, train);
 
-        settle();
+        Components.drain(8);
     }
 
     /**
@@ -1399,7 +1400,7 @@ public class testATrainDragsFromStationToStation
                 final java.util.Set<String> all = new java.util.HashSet<>(session.placementsAutonomyWillWrite().values());
 
                 onTheEventThread(() -> ui.rebuildRunningLayoutFromSetup(false, all));
-                settle();
+                Components.drain(8);
 
                 session.setPointProperty(where, "loc", settings(lone, 5, false, 40));
 
@@ -1496,7 +1497,7 @@ public class testATrainDragsFromStationToStation
             support.Components.waitFor(() -> !editor.isDisplayable(), 5000);
         }
 
-        settle();
+        Components.drain(8);
 
         assertFalse(editor.isDisplayable(), "precondition: Cancel did not close the editor");
     }
@@ -1582,7 +1583,7 @@ public class testATrainDragsFromStationToStation
             }
         });
 
-        settle();
+        Components.drain(8);
     }
 
     /** What the page holds, for a fixture that found nothing. */
@@ -1820,7 +1821,7 @@ public class testATrainDragsFromStationToStation
             }
         });
 
-        settle();
+        Components.drain(8);
     }
 
     /** Every placement the setup records, by square. */
@@ -1850,7 +1851,7 @@ public class testATrainDragsFromStationToStation
 
         SwingUtilities.invokeAndWait(() -> ui.rebuildRunningLayoutFromSetup(false, trains));
 
-        settle();
+        Components.drain(8);
 
         for (java.util.Map.Entry<TileKey, String> placed : session.placementsAutonomyWillWrite().entrySet())
         {
@@ -1907,7 +1908,7 @@ public class testATrainDragsFromStationToStation
         support.Components.waitFor(() -> support.Components.onTheEventThread(() -> start.trainDrawnAt(center(start))), 10000);
 
         Mouse.drag(start, labelOf(to));
-        settle();
+        Components.drain(8);
     }
 
     /** The trains on the page, each with some empty stations, as moves to compare. */
@@ -1954,7 +1955,7 @@ public class testATrainDragsFromStationToStation
             gesture.invoke(ui, KeyEvent.VK_V, true);
         });
 
-        settle();
+        Components.drain(8);
     }
 
     /** What a placement left on a square: facing, tail side and road, every train's place, and the copy it stands on. */
@@ -2033,14 +2034,6 @@ public class testATrainDragsFromStationToStation
         if (was == null ? now != null : !(now != null && was.toString().equals(now.toString())))
         {
             into.add(path + " " + was + " -> " + now);
-        }
-    }
-
-    private static void settle() throws Exception
-    {
-        for (int pass = 0; pass < 8; pass++)
-        {
-            SwingUtilities.invokeAndWait(() -> { });
         }
     }
 }

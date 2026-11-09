@@ -22,6 +22,7 @@ import org.traincontrol.base.LayoutDiagramComponent.componentType;
 import org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel;
 import org.traincontrol.util.I18n;
 import support.Reflect;
+import support.Trees;
 
 /**
  * The autonomy editor says what its items do, and shows where its tools can be used (OB-293, FR-102).
@@ -62,7 +63,7 @@ public class testTheEditorSaysWhatItsToolsDo
     @AfterMethod(alwaysRun = true)
     public void tearDown()
     {
-        delete(folder);
+        Trees.delete(folder);
     }
 
     /**
@@ -890,20 +891,6 @@ public class testTheEditorSaysWhatItsToolsDo
         return (String) Reflect.method(AutonomyEditorPanel.class, method, TileKey.class).invoke(panel, tile);
     }
 
-    private static void delete(File file)
-    {
-        if (file == null) return;
-
-        File[] children = file.listFiles();
-
-        if (children != null)
-        {
-            for (File child : children) delete(child);
-        }
-
-        file.delete();
-    }
-
     /**
      * Every tooltip on the autonomy right-click menus is short, in every language, and one too wide for a line is
      * wrapped (FR-112).  Asked of the built menus over the frozen railway, from both doors, with the menus a standing
@@ -1102,7 +1089,7 @@ public class testTheEditorSaysWhatItsToolsDo
                     }
                     finally
                     {
-                        delete(doors);
+                        Trees.delete(doors);
                     }
                 }
             }
@@ -1141,7 +1128,7 @@ public class testTheEditorSaysWhatItsToolsDo
         }
         finally
         {
-            delete(armed);
+            Trees.delete(armed);
         }
     }
 

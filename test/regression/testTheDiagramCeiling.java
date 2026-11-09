@@ -296,17 +296,6 @@ public class testTheDiagramCeiling
         return built[0];
     }
 
-    /**
-     * Lets everything the editor posted for itself finish: several passes, because a posted task may post another.
-     */
-    private static void settle() throws Exception
-    {
-        for (int pass = 0; pass < 5; pass++)
-        {
-            SwingUtilities.invokeAndWait(() -> { });
-        }
-    }
-
     /** Puts the editor's idea of where the pointer is onto a real square (private fields a mouse event sets). */
     private static void hoverAt(LayoutEditor editor, int x, int y) throws Exception
     {

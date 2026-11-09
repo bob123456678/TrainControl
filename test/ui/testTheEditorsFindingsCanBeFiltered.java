@@ -21,6 +21,7 @@ import org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel;
 import org.traincontrol.gui.layouteditor.LayoutEditor;
 import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.util.I18n;
+import support.Components;
 import support.Reflect;
 
 /**
@@ -403,7 +404,7 @@ public class testTheEditorsFindingsCanBeFiltered
                 Reflect.method(LayoutEditor.class, "leaveFor", String.class, boolean.class);
             support.Components.onTheEventThread(() -> leave.invoke(editor, OTHER_PAGE, true));
 
-            settle();
+            Components.settle();
 
             assertTrue(editor.isDisplayable(), "precondition: the page change closed the window");
             assertEquals(editor.getAutonomyPanel().getFindingFilter(), word, "the box after a page change in place");
@@ -540,7 +541,7 @@ public class testTheEditorsFindingsCanBeFiltered
             return fresh;
         });
 
-        settle();
+        Components.settle();
 
         return made;
     }
@@ -563,13 +564,7 @@ public class testTheEditorsFindingsCanBeFiltered
             return null;
         });
 
-        settle();
-    }
-
-    /** What a window posts while it opens or closes. */
-    private static void settle() throws Exception
-    {
-        support.Components.settle();
+        Components.settle();
     }
 
     private static javax.swing.JList<?> list(LayoutEditor editor)
@@ -818,7 +813,7 @@ public class testTheEditorsFindingsCanBeFiltered
 
         assertTrue(came, "precondition: no autonomy editor was opened");
 
-        settle();
+        Components.settle();
 
         return now[0];
     }

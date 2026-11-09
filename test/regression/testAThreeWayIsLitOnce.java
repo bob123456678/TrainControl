@@ -20,6 +20,7 @@ import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.marklin.MarklinRoute;
 import org.traincontrol.util.ImageUtil;
 import static org.traincontrol.marklin.MarklinControlStation.init;
+import support.Components;
 import support.Reflect;
 
 /**
@@ -66,8 +67,8 @@ public class testAThreeWayIsLitOnce
 
             assertNotNull(ui, "precondition: there is no window");
 
-            settle();
-            settle();
+            Components.drain(3);
+            Components.drain(3);
 
             // A THREE-WAY ON 1 - MAIN, and the label it is drawn as.
             String page = "1 - Main";
@@ -96,7 +97,7 @@ public class testAThreeWayIsLitOnce
 
             SwingUtilities.invokeAndWait(() -> label.endFlash());
 
-            settle();
+            Components.drain(3);
 
             final ImageIcon plain = (ImageIcon) label.getIcon();
 
@@ -137,7 +138,7 @@ public class testAThreeWayIsLitOnce
                 }
             });
 
-            settle();
+            Components.drain(3);
 
             assertTrue(label.isFlashOutstanding(), "precondition: the three-way was not lit at all");
 
@@ -188,10 +189,5 @@ public class testAThreeWayIsLitOnce
         g.dispose();
 
         return image.getRGB(0, 0, w, h, null, 0, w);
-    }
-
-    private static void settle() throws Exception
-    {
-        for (int i = 0; i < 3; i++) SwingUtilities.invokeAndWait(() -> { });
     }
 }

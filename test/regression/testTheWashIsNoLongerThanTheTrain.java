@@ -29,6 +29,7 @@ import org.traincontrol.gui.LayoutLabel;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;
 import static org.traincontrol.marklin.MarklinControlStation.init;
+import support.Components;
 import support.Reflect;
 
 /**
@@ -93,8 +94,8 @@ public class testTheWashIsNoLongerThanTheTrain
         assertNotNull(ui, "there is no window, so nothing here can reach the drawing path");
 
         // init returns with display() still queued.
-        pump();
-        pump();
+        Components.drain(1);
+        Components.drain(1);
 
         session = ui.getAutonomySession();
 
@@ -483,7 +484,7 @@ public class testTheWashIsNoLongerThanTheTrain
         // reading are two moments, and `support.CoveredMarks` knows it.
         support.CoveredMarks.refresh(ui);
 
-        pump();
+        Components.drain(1);
     }
 
     /**
@@ -659,7 +660,7 @@ public class testTheWashIsNoLongerThanTheTrain
             ui.getDiagramTileRegistry().register(square, label);
         }
 
-        pump();
+        Components.drain(1);
     }
 
     /** The tiles this test registered for these squares, drawn and ready to be asked what they show. */
@@ -675,7 +676,7 @@ public class testTheWashIsNoLongerThanTheTrain
             {
                 while (bareIconOf(label) == null && System.currentTimeMillis() < until)
                 {
-                    pump();
+                    Components.drain(1);
                 }
 
                 if (bareIconOf(label) == null) continue;
@@ -686,7 +687,7 @@ public class testTheWashIsNoLongerThanTheTrain
             }
         }
 
-        pump();
+        Components.drain(1);
 
         assertFalse(out.isEmpty(),
             "none of " + squares + " has a drawn tile, so there is nothing an operator could have "
@@ -718,13 +719,8 @@ public class testTheWashIsNoLongerThanTheTrain
         {
             Thread.sleep(50);
 
-            pump();
+            Components.drain(1);
         }
-    }
-
-    private static void pump() throws Exception
-    {
-        SwingUtilities.invokeAndWait(() -> { });
     }
 
     // ---------------------------------------------------------------- the fixture

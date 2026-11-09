@@ -28,6 +28,7 @@ import org.traincontrol.gui.LayoutLabel;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;
 import static org.traincontrol.marklin.MarklinControlStation.init;
+import support.Components;
 import support.Reflect;
 
 /**
@@ -112,8 +113,8 @@ public class testTheGreyDoesNotRebuildTheDiagram
 
         assertNotNull(ui, "there is no window");
 
-        pump();
-        pump();
+        Components.drain(1);
+        Components.drain(1);
 
         session = ui.getAutonomySession();
 
@@ -789,7 +790,7 @@ public class testTheGreyDoesNotRebuildTheDiagram
     {
         support.CoveredMarks.settle(ui);
 
-        pump();
+        Components.drain(1);
     }
 
     private static void refreshCoveredTrack() throws Exception
@@ -798,7 +799,7 @@ public class testTheGreyDoesNotRebuildTheDiagram
         // `Layout` monitor a dispatch holds), so asking and reading are two moments, known to `support.CoveredMarks`.
         support.CoveredMarks.refresh(ui);
 
-        pump();
+        Components.drain(1);
     }
 
     private static void settle() throws Exception
@@ -810,7 +811,7 @@ public class testTheGreyDoesNotRebuildTheDiagram
 
         settled.await(60, java.util.concurrent.TimeUnit.SECONDS);
 
-        pump();
+        Components.drain(1);
     }
 
     /**
@@ -861,10 +862,5 @@ public class testTheGreyDoesNotRebuildTheDiagram
     private static void measureEveryTileAs(int units)
     {
         support.TileLengths.measureEveryTileAs(session, units);
-    }
-
-    private static void pump() throws Exception
-    {
-        SwingUtilities.invokeAndWait(() -> { });
     }
 }

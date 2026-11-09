@@ -24,7 +24,9 @@ import org.traincontrol.base.RouteCommand;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.marklin.MarklinRoute;
+import support.Components;
 import support.Reflect;
+import static support.Settle.until;
 
 /**
  * The route list turns a mark beside every route that is running (FR-137): the mark is the one Start and Return Home
@@ -113,9 +115,9 @@ public class testTheRouteListShowsWhatRuns
 
         model.getRoute(slow).execRoute(false);
 
-        assertTrue(waitFor(() -> model.getRoute(slow).isExecuting(), 5000), "precondition: the route never started");
+        assertTrue(until(() -> model.getRoute(slow).isExecuting(), 5000), "precondition: the route never started");
 
-        assertTrue(waitFor(() -> markOf(slow), 3000), "a route is running and the route list shows no mark beside it."
+        assertTrue(until(() -> markOf(slow), 3000), "a route is running and the route list shows no mark beside it."
             + "  Adam, FR-137: \"show a spinner next to any route that is currently running\"");
 
         assertTrue(model.getRoute(slow).isExecuting(), "precondition: the route ended before the mark could be looked at");
@@ -135,10 +137,10 @@ public class testTheRouteListShowsWhatRuns
         assertTrue(differ(first, second), "the mark did not turn between two looks a quarter of a second apart");
 
         // OVER: gone, and the animation with it
-        assertTrue(waitFor(() -> !model.getRoute(slow).isExecuting(), 30000), "precondition: the route never ended");
+        assertTrue(until(() -> !model.getRoute(slow).isExecuting(), 30000), "precondition: the route never ended");
 
-        assertTrue(waitFor(() -> !markOf(slow), 3000), "the route ended and the mark is still beside it");
-        assertTrue(waitFor(() -> !isTurning(), 3000), "nothing runs and the mark is still being animated");
+        assertTrue(until(() -> !markOf(slow), 3000), "the route ended and the mark is still beside it");
+        assertTrue(until(() -> !isTurning(), 3000), "nothing runs and the mark is still being animated");
     }
 
     /**
@@ -162,17 +164,17 @@ public class testTheRouteListShowsWhatRuns
 
         model.getRoute(outer).execRoute(false);
 
-        assertTrue(waitFor(() -> model.getRoute(inner).isExecuting(), 5000),
+        assertTrue(until(() -> model.getRoute(inner).isExecuting(), 5000),
             "precondition: the route the other fires never started");
 
-        assertTrue(waitFor(() -> markOf(inner), 3000), "a route started by another route has no mark beside it");
+        assertTrue(until(() -> markOf(inner), 3000), "a route started by another route has no mark beside it");
 
-        assertTrue(waitFor(() -> isTurning(), 3000), "a route started by another route has its mark and nothing animates it");
+        assertTrue(until(() -> isTurning(), 3000), "a route started by another route has its mark and nothing animates it");
 
-        assertTrue(waitFor(() -> !model.getRoute(inner).isExecuting() && !model.getRoute(outer).isExecuting(), 30000),
+        assertTrue(until(() -> !model.getRoute(inner).isExecuting() && !model.getRoute(outer).isExecuting(), 30000),
             "precondition: the routes never ended");
 
-        assertTrue(waitFor(() -> !markOf(inner) && !markOf(outer) && !isTurning(), 3000),
+        assertTrue(until(() -> !markOf(inner) && !markOf(outer) && !isTurning(), 3000),
             "the routes ended and a mark is still there");
     }
 
@@ -247,7 +249,7 @@ public class testTheRouteListShowsWhatRuns
                 }
             });
 
-            assertTrue(waitFor(() -> routeEditorShowing(), 8000), "with the power off, a click on the route's row did not"
+            assertTrue(until(() -> routeEditorShowing(), 8000), "with the power off, a click on the route's row did not"
                 + " open its editor.  Adam, FR-140: \"when the power is off, clicking on routes in the route tab should open"
                 + " the editor rather than ask for execution\"");
 
@@ -342,7 +344,7 @@ public class testTheRouteListShowsWhatRuns
         {
             for (boolean on : new boolean[] {false, true})
             {
-                settle();
+                Components.settle();
 
                 asked.set(false);
 
@@ -392,7 +394,7 @@ public class testTheRouteListShowsWhatRuns
                 + " wrench did not open the route's editor.  Adam, FR-164: \"the overall click behavior of cell can"
                 + " remain unchanged\"");
 
-            settle();
+            Components.settle();
 
             assertEquals(accessoryCommandsSince(wire, mark), 0, "a click on the wrench sent the route's commands: "
                 + wire.since(mark));
@@ -446,10 +448,10 @@ public class testTheRouteListShowsWhatRuns
 
             SwingUtilities.invokeLater(execute::doClick);
 
-            assertTrue(waitFor(() -> switched(246) && switched(247), 10000), "Execute did not switch the route's"
+            assertTrue(until(() -> switched(246) && switched(247), 10000), "Execute did not switch the route's"
                 + " accessories");
 
-            assertTrue(waitFor(() -> accessoryCommandsSince(wire, mark) >= 2, 5000), "Execute switched the accessories"
+            assertTrue(until(() -> accessoryCommandsSince(wire, mark) >= 2, 5000), "Execute switched the accessories"
                 + " and no command for them reached the railway: " + wire.since(mark));
         }
         finally
@@ -534,7 +536,7 @@ public class testTheRouteListShowsWhatRuns
 
         assertTrue(model.waitForPowerState(on, 5000), "precondition: the power did not go " + (on ? "on" : "off"));
 
-        settle();
+        Components.settle();
     }
 
     /** How many pixels of a route button's glyph are the triangle's green (or, if not, the wrench's gray). */
@@ -583,10 +585,10 @@ public class testTheRouteListShowsWhatRuns
 
             clickTheRoute(route, true, java.awt.event.MouseEvent.MOUSE_CLICKED, false);
 
-            assertTrue(waitFor(() -> switched(246) && switched(247), 10000), "the play button did not switch the"
+            assertTrue(until(() -> switched(246) && switched(247), 10000), "the play button did not switch the"
                 + " route's accessories");
 
-            assertTrue(waitFor(() -> accessoryCommandsSince(wire, mark) >= 2, 5000), "the route's accessories switched"
+            assertTrue(until(() -> accessoryCommandsSince(wire, mark) >= 2, 5000), "the route's accessories switched"
                 + " and no command for them reached the railway: " + wire.since(mark));
 
             assertEquals(answering.asked(), new ArrayList<String>(), "the play button asked before running the route"
@@ -622,9 +624,9 @@ public class testTheRouteListShowsWhatRuns
             assertEquals(answering.asked().get(0), org.traincontrol.util.I18n.f("route.ui.confirmExecuteRouteWithId",
                 route, model.getRouteId(route)), "the question does not name the route and its id");
 
-            assertTrue(waitFor(() -> switched(246) && switched(247), 10000), "Yes did not switch the route's accessories");
+            assertTrue(until(() -> switched(246) && switched(247), 10000), "Yes did not switch the route's accessories");
 
-            assertTrue(waitFor(() -> accessoryCommandsSince(wire, mark) >= 2, 5000), "Yes switched the accessories and"
+            assertTrue(until(() -> accessoryCommandsSince(wire, mark) >= 2, 5000), "Yes switched the accessories and"
                 + " no command for them reached the railway: " + wire.since(mark));
         }
         finally
@@ -654,7 +656,7 @@ public class testTheRouteListShowsWhatRuns
 
             assertTrue(answering.awaitAsked(1, 10000), "a click on the route's row asked nothing");
 
-            settle();
+            Components.settle();
 
             assertFalse(model.getRoute(route).isExecuting(), "No ran the route");
 
@@ -701,7 +703,7 @@ public class testTheRouteListShowsWhatRuns
 
             SwingUtilities.invokeLater(duplicate::doClick);
 
-            assertTrue(waitFor(() -> model.getRoute(copy) != null, 30000), "Duplicate Route made no route called "
+            assertTrue(until(() -> model.getRoute(copy) != null, 30000), "Duplicate Route made no route called "
                 + copy + ": " + model.getRouteList());
 
             assertNotEquals(model.getRouteId(copy), model.getRouteId(route), "the copy has the original's id");
@@ -709,11 +711,11 @@ public class testTheRouteListShowsWhatRuns
             assertEquals(model.getRoute(copy).toCSV(), model.getRoute(route).toCSV(), "the copy's commands are not the"
                 + " original's");
 
-            assertTrue(waitFor(() -> cellOf(copy) != null, 30000), "the copy is not in the route list");
+            assertTrue(until(() -> cellOf(copy) != null, 30000), "the copy is not in the route list");
 
             // Its sync over before the next claim: the sync deletes every sensor on no page, so one left running
             // deleted Enable Auto Execution's sensor while it was held made
-            assertTrue(waitFor(() -> !duplicating(), 60000), "Duplicate Route's worker was still going a minute on");
+            assertTrue(until(() -> !duplicating(), 60000), "Duplicate Route's worker was still going a minute on");
         }
         finally
         {
@@ -766,12 +768,12 @@ public class testTheRouteListShowsWhatRuns
             assertEquals(answering.asked().get(0), org.traincontrol.util.I18n.t("route.ui.promptFindRoute"), "asked: "
                 + answering.asked());
 
-            assertTrue(waitFor(table::isShowing, 5000), "Find Route did not bring the route list forward");
+            assertTrue(until(table::isShowing, 5000), "Find Route did not bring the route list forward");
 
-            settle();
+            Components.settle();
         }
 
-        assertTrue(waitFor(() -> !backgroundOf(route).equals(backgroundOf(other)), 5000), "Find Route did not highlight"
+        assertTrue(until(() -> !backgroundOf(route).equals(backgroundOf(other)), 5000), "Find Route did not highlight"
             + " the route it found");
 
         // Until the next click in the table, which clears it
@@ -843,12 +845,12 @@ public class testTheRouteListShowsWhatRuns
             assertEquals(answering.asked().get(0), org.traincontrol.util.I18n.f(
                 "route.ui.promptEnterSearchStringWithS88State", org.traincontrol.util.I18n.t("ui.stateEnabled")));
 
-            assertTrue(waitFor(() -> armed(match, true), 30000), "Bulk Enable did not arm the route"
+            assertTrue(until(() -> armed(match, true), 30000), "Bulk Enable did not arm the route"
                 + " whose name matches");
 
-            settle();
+            Components.settle();
 
-            assertTrue(waitFor(() -> model.getRoute(unmatched) != null, 10000), "the unmatched route is gone");
+            assertTrue(until(() -> model.getRoute(unmatched) != null, 10000), "the unmatched route is gone");
 
             assertFalse(model.getRoute(unmatched).isEnabled(), "Bulk Enable armed a route whose name does not match");
         }
@@ -882,12 +884,12 @@ public class testTheRouteListShowsWhatRuns
             assertEquals(answering.asked().get(1), org.traincontrol.util.I18n.t("route.ui.promptWhichRoute"), "asked: "
                 + answering.asked());
 
-            assertTrue(waitFor(table::isShowing, 5000), "Find Route did not bring the route list forward");
+            assertTrue(until(table::isShowing, 5000), "Find Route did not bring the route list forward");
 
             asked = answering.asked();
         }
 
-        assertTrue(waitFor(() -> !backgroundOf(second).equals(backgroundOf(first)), 5000), "Find Route did not highlight"
+        assertTrue(until(() -> !backgroundOf(second).equals(backgroundOf(first)), 5000), "Find Route did not highlight"
             + " the route picked; asked " + asked);
 
         clickTheRoute(first, false, java.awt.event.MouseEvent.MOUSE_PRESSED, false);
@@ -933,12 +935,12 @@ public class testTheRouteListShowsWhatRuns
             assertEquals(answering.asked().get(0), org.traincontrol.util.I18n.f(
                 "route.ui.promptEnterSearchStringWithS88State", org.traincontrol.util.I18n.t("ui.stateDisabled")));
 
-            assertTrue(waitFor(() -> armed(match, false), 30000), "Bulk Disable did not disarm the route"
+            assertTrue(until(() -> armed(match, false), 30000), "Bulk Disable did not disarm the route"
                 + " whose name matches");
 
-            settle();
+            Components.settle();
 
-            assertTrue(waitFor(() -> model.getRoute(unmatched) != null, 10000), "the unmatched route is gone");
+            assertTrue(until(() -> model.getRoute(unmatched) != null, 10000), "the unmatched route is gone");
 
             assertTrue(model.getRoute(unmatched).isEnabled(), "Bulk Disable disarmed a route whose name does not match");
         }
@@ -967,7 +969,7 @@ public class testTheRouteListShowsWhatRuns
 
             SwingUtilities.invokeLater(edit::doClick);
 
-            assertTrue(waitFor(() -> routeEditorsTitled(title) == 1, 10000), "Edit Route opened no editor titled \""
+            assertTrue(until(() -> routeEditorsTitled(title) == 1, 10000), "Edit Route opened no editor titled \""
                 + title + "\"");
 
             closeAnyMenu();
@@ -984,7 +986,7 @@ public class testTheRouteListShowsWhatRuns
                 assertEquals(answering.asked().get(0),
                     org.traincontrol.util.I18n.t("route.ui.errorOnlyOneRouteEditorAllowed"));
 
-                settle();
+                Components.settle();
             }
 
             assertEquals(routeEditorsTitled(title), 1, "a second Edit Route opened a second editor");
@@ -1029,10 +1031,10 @@ public class testTheRouteListShowsWhatRuns
 
             assertEquals(answering.asked().get(0), org.traincontrol.util.I18n.t("route.ui.promptEnterNewRouteId"));
 
-            assertTrue(waitFor(() -> model.getRouteId(route) == free, 10000), "the route's id is "
+            assertTrue(until(() -> model.getRouteId(route) == free, 10000), "the route's id is "
                 + model.getRouteId(route) + " after " + free + " was typed");
 
-            settle();
+            Components.settle();
 
             assertEquals(answering.asked().size(), 1, "Change Route ID to a free id said more: " + answering.asked());
         }
@@ -1109,9 +1111,9 @@ public class testTheRouteListShowsWhatRuns
             assertEquals(answering.asked().get(0), org.traincontrol.util.I18n.f("route.ui.confirmDeleteRouteWithCallers",
                 route, 1), "the question does not say that one route runs it");
 
-            assertTrue(waitFor(() -> model.getRoute(route) == null, 10000), "Delete Route answered Yes left the route");
+            assertTrue(until(() -> model.getRoute(route) == null, 10000), "Delete Route answered Yes left the route");
 
-            assertTrue(waitFor(() -> cellOf(route) == null, 10000), "the deleted route is still in the list");
+            assertTrue(until(() -> cellOf(route) == null, 10000), "the deleted route is still in the list");
         }
         finally
         {
@@ -1150,7 +1152,7 @@ public class testTheRouteListShowsWhatRuns
 
             assertTrue(answering.awaitAsked(1, 10000), "Delete Route asked nothing");
 
-            settle();
+            Components.settle();
         }
         finally
         {
@@ -1186,16 +1188,16 @@ public class testTheRouteListShowsWhatRuns
 
             SwingUtilities.invokeLater(enable::doClick);
 
-            assertTrue(waitFor(() -> model.getRoute(route) != null && model.getRoute(route).isEnabled(), 10000),
+            assertTrue(until(() -> model.getRoute(route) != null && model.getRoute(route).isEnabled(), 10000),
                 "Enable Auto Execution did not arm the route");
 
             // Its monitor on the sensor before the station reports it, or the report comes too soon to be heard
-            assertTrue(waitFor(() -> support.RouteMonitor.watching(model.getRoute(route)), 10000),
+            assertTrue(until(() -> support.RouteMonitor.watching(model.getRoute(route)), 10000),
                 "Enable Auto Execution armed the route and nothing is watching its sensor");
 
             pulse(sensor);
 
-            assertTrue(waitFor(() -> switched(248), 10000), "the station reported the armed route's sensor clear then"
+            assertTrue(until(() -> switched(248), 10000), "the station reported the armed route's sensor clear then"
                 + " made, and the route did not run");
         }
         finally
@@ -1222,7 +1224,7 @@ public class testTheRouteListShowsWhatRuns
 
         try
         {
-            assertTrue(waitFor(() -> support.RouteMonitor.watching(model.getRoute(route)), 10000),
+            assertTrue(until(() -> support.RouteMonitor.watching(model.getRoute(route)), 10000),
                 "precondition: the armed route is not watching its sensor");
 
             final javax.swing.AbstractButton disable = support.Components.withText(rightClickTheRoute(route),
@@ -1232,12 +1234,12 @@ public class testTheRouteListShowsWhatRuns
 
             SwingUtilities.invokeLater(disable::doClick);
 
-            assertTrue(waitFor(() -> model.getRoute(route) != null && !model.getRoute(route).isEnabled(), 10000),
+            assertTrue(until(() -> model.getRoute(route) != null && !model.getRoute(route).isEnabled(), 10000),
                 "Disable Auto Execution did not disarm the route");
 
             pulse(sensor);
 
-            assertFalse(waitFor(() -> switched(249), org.traincontrol.base.Locomotive.FEEDBACK_DURATION_THRESHOLD * 5L),
+            assertFalse(until(() -> switched(249), org.traincontrol.base.Locomotive.FEEDBACK_DURATION_THRESHOLD * 5L),
                 "the station reported the disarmed route's sensor clear then made, and the route ran");
         }
         finally
@@ -1283,7 +1285,7 @@ public class testTheRouteListShowsWhatRuns
     {
         model.receiveMessage(support.Packets.s88(sensor, false));
 
-        assertTrue(waitFor(() -> model.isFeedbackSet(Integer.toString(sensor))
+        assertTrue(until(() -> model.isFeedbackSet(Integer.toString(sensor))
             && !model.getFeedbackState(Integer.toString(sensor)), 5000), "precondition: the sensor is not known, or not"
             + " clear");
 
@@ -1354,7 +1356,7 @@ public class testTheRouteListShowsWhatRuns
                 assertEquals(answering.asked().get(0), org.traincontrol.util.I18n.f("route.ui.confirmRouteRenamed", route,
                     renamed));
 
-                assertTrue(waitFor(() -> !editor.isShowing(), 10000), "Save answered Yes left the editor open");
+                assertTrue(until(() -> !editor.isShowing(), 10000), "Save answered Yes left the editor open");
             }
 
             assertNotNull(model.getRoute(renamed), "the save took the route's new name away: " + model.getRouteList());
@@ -1395,7 +1397,7 @@ public class testTheRouteListShowsWhatRuns
                 pressAndAwaitAQuestion(answering, editor, "route.ui.frameSave",
                     "Save asked nothing about the rename");
 
-                settle();
+                Components.settle();
             }
 
             assertTrue(editor.isShowing(), "Save answered No closed the editor");
@@ -1436,7 +1438,7 @@ public class testTheRouteListShowsWhatRuns
                 assertEquals(answering.asked().get(0), org.traincontrol.util.I18n.f("route.ui.confirmRouteGoneSaveAsNew",
                     route));
 
-                assertTrue(waitFor(() -> model.getRoute(route) != null, 10000), "Save answered Yes did not add the route"
+                assertTrue(until(() -> model.getRoute(route) != null, 10000), "Save answered Yes did not add the route"
                     + " back");
             }
 
@@ -1481,7 +1483,7 @@ public class testTheRouteListShowsWhatRuns
                 assertEquals(answering.asked().get(0), org.traincontrol.util.I18n.f(
                     "route.ui.confirmRouteChangedUnderneath", route));
 
-                settle();
+                Components.settle();
             }
 
             assertEquals(model.getRoute(route).toCSV(), theirs, "Save answered No wrote over the change made elsewhere");
@@ -1527,7 +1529,7 @@ public class testTheRouteListShowsWhatRuns
 
                 assertEquals(answering.asked().get(0), org.traincontrol.util.I18n.t("route.ui.confirmDiscardChanges"));
 
-                settle();
+                Components.settle();
             }
 
             assertTrue(editor.isShowing(), "Cancel answered No closed the editor");
@@ -1637,8 +1639,8 @@ public class testTheRouteListShowsWhatRuns
                 rightClickTheRoute(route);
 
                 // Still open once everything the click set off has run: a menu shown and then closed is gone too
-                settle();
-                settle();
+                Components.settle();
+                Components.settle();
 
                 javax.swing.JPopupMenu open = support.Components.popupShowing();
 
@@ -1727,7 +1729,7 @@ public class testTheRouteListShowsWhatRuns
 
         if (!model.getPowerState()) model.go();
 
-        assertTrue(waitFor(() -> model.getPowerState(), 5000), "precondition: the power is off");
+        assertTrue(until(() -> model.getPowerState(), 5000), "precondition: the power is off");
 
         for (int address : addresses)
         {
@@ -1742,7 +1744,7 @@ public class testTheRouteListShowsWhatRuns
     /** Waits until the route has ended and its mark has stopped, so the next claim starts with nothing running. */
     private static void theRouteIsOver(String route)
     {
-        assertTrue(waitFor(() -> !model.getRoute(route).isExecuting() && !isTurning(), 10000), "the route "
+        assertTrue(until(() -> !model.getRoute(route).isExecuting() && !isTurning(), 10000), "the route "
             + route + " never ended");
     }
 
@@ -1762,11 +1764,6 @@ public class testTheRouteListShowsWhatRuns
         }
 
         return seen;
-    }
-
-    private static void settle() throws Exception
-    {
-        support.Components.settle();
     }
 
     /** Whether a route editor window is showing. */
@@ -1936,28 +1933,5 @@ public class testTheRouteListShowsWhatRuns
         org.traincontrol.marklin.MarklinRoute route = model.getRoute(name);
 
         return route != null && route.isEnabled() == enabled;
-    }
-
-    private static boolean waitFor(BooleanSupplier condition, long millis)
-    {
-        long until = System.currentTimeMillis() + millis;
-
-        while (System.currentTimeMillis() < until)
-        {
-            if (condition.getAsBoolean()) return true;
-
-            try
-            {
-                Thread.sleep(25);
-            }
-            catch (InterruptedException e)
-            {
-                Thread.currentThread().interrupt();
-
-                return false;
-            }
-        }
-
-        return condition.getAsBoolean();
     }
 }

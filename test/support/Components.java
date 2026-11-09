@@ -149,6 +149,12 @@ public final class Components
         for (int turn = 0; turn < 6; turn++) onTheEventThread(() -> null);
     }
 
+    /** Waits for this many empty turns of the event thread, one after the other. */
+    public static void drain(int turns) throws Exception
+    {
+        for (int turn = 0; turn < turns; turn++) SwingUtilities.invokeAndWait(() -> { });
+    }
+
     /** Waits for a condition, asking it every 25 ms; whether it came true in time. */
     public static boolean waitFor(BooleanSupplier condition, long millis)
     {

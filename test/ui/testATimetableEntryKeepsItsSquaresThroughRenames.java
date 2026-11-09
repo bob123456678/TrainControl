@@ -23,6 +23,7 @@ import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel;
 import org.traincontrol.gui.layouteditor.LayoutEditor;
 import org.traincontrol.marklin.MarklinControlStation;
+import support.Components;
 import support.Reflect;
 
 /**
@@ -65,7 +66,7 @@ public class testATimetableEntryKeepsItsSquaresThroughRenames
 
         model = support.TestStation.simulatedWithWindowInDebug();
 
-        settle();
+        Components.settle();
 
         ui = (TrainControlUI) model.getGUI();
 
@@ -89,7 +90,7 @@ public class testATimetableEntryKeepsItsSquaresThroughRenames
 
             SwingUtilities.invokeAndWait(() -> ui.getAutonomyViewerPanel().load(active, false));
 
-            settle();
+            Components.settle();
         }
 
         assertNotNull(ui.getActiveDiagramConfiguration(), "precondition: no configuration is loaded");
@@ -129,7 +130,7 @@ public class testATimetableEntryKeepsItsSquaresThroughRenames
             ui.rebuildRunningLayoutFromSetup();
         });
 
-        settle();
+        Components.settle();
     }
 
     /**
@@ -383,7 +384,7 @@ public class testATimetableEntryKeepsItsSquaresThroughRenames
 
         open = editor[0];
 
-        settle();
+        Components.settle();
 
         final java.lang.reflect.Method newer =
             Reflect.method(TrainControlUI.class, "setupNewerThanTheRailway", boolean.class);
@@ -420,7 +421,7 @@ public class testATimetableEntryKeepsItsSquaresThroughRenames
                 }
             });
 
-            settle();
+            Components.settle();
 
             assertEquals(session.getStore().getPointName(new TileKey(PAGE, 8, 3)), "MainPlatform",
                 "precondition: the shift did not carry the station");
@@ -514,7 +515,7 @@ public class testATimetableEntryKeepsItsSquaresThroughRenames
 
         assertNotNull(open, "the autonomy editor did not open on " + PAGE);
 
-        settle();
+        Components.settle();
     }
 
     private static AutonomyEditorPanel panel()
@@ -544,7 +545,7 @@ public class testATimetableEntryKeepsItsSquaresThroughRenames
             assertTrue(answering.awaitAsked(1, 15000), "the Name item asked nothing");
         }
 
-        settle();
+        Components.settle();
 
         assertEquals(session.getStore().getPointName(square), name, "precondition: the rename did not take");
     }
@@ -570,7 +571,7 @@ public class testATimetableEntryKeepsItsSquaresThroughRenames
             }
         });
 
-        settle();
+        Components.settle();
     }
 
     /** The arrow through the track before Approach turned to run away from it, through the editor's own door. */
@@ -597,7 +598,7 @@ public class testATimetableEntryKeepsItsSquaresThroughRenames
                 }
             });
 
-            settle();
+            Components.settle();
 
             if (!hasARoadFromWestEndToApproach()) return;
         }
@@ -652,7 +653,7 @@ public class testATimetableEntryKeepsItsSquaresThroughRenames
             untilItHasGone(editor);
         }
 
-        settle();
+        Components.settle();
     }
 
     /** The editor's Save button. */
@@ -670,7 +671,7 @@ public class testATimetableEntryKeepsItsSquaresThroughRenames
 
         untilItHasGone(editor);
 
-        settle();
+        Components.settle();
     }
 
     private static void untilItHasGone(java.awt.Window editor) throws Exception
@@ -687,13 +688,7 @@ public class testATimetableEntryKeepsItsSquaresThroughRenames
 
         SwingUtilities.invokeAndWait(() -> ui.getAutonomyViewerPanel().load(active, false));
 
-        settle();
-    }
-
-    /** Pumps the event queue and gives a coalesced rebuild and the cards after it their turn. */
-    private static void settle() throws Exception
-    {
-        support.Components.settle();
+        Components.settle();
     }
 
     // ----------------------------------------------------------- what the claims read

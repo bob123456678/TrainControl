@@ -18,6 +18,7 @@ import org.traincontrol.base.Accessory;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;
 import static org.traincontrol.marklin.MarklinControlStation.init;
+import support.Components;
 import support.Reflect;
 
 /**
@@ -69,8 +70,8 @@ public class testTheDiagramRefreshDoesNotWaitOnTheRailway
 
         assertNotNull(ui, "there is no window, so there is no event thread to block");
 
-        pump();
-        pump();
+        Components.drain(1);
+        Components.drain(1);
 
         session = ui.getAutonomySession();
 
@@ -266,7 +267,7 @@ public class testTheDiagramRefreshDoesNotWaitOnTheRailway
         // The railway asked directly, from this thread, which may block.
         final boolean somethingToDo = layout.triageReturnToHome() == null;
 
-        pump();
+        Components.drain(1);
 
         assertEquals(offered.isEnabled(), somethingToDo,
             "the button says " + (offered.isEnabled() ? "there is" : "there is nothing")
@@ -438,7 +439,7 @@ public class testTheDiagramRefreshDoesNotWaitOnTheRailway
         // The answer must also land: "did not block" is true of an `applyWhy` that does nothing (OB-191).
         assertTrue(awaitWhy(panel), "the why answer never landed, so nothing was ever painted from it");
 
-        pump();
+        Components.drain(1);
 
         String said = whatTheEditorSays(panel);
 
@@ -768,7 +769,7 @@ public class testTheDiagramRefreshDoesNotWaitOnTheRailway
 
         assertTrue(awaitWhy(panel), "the why answer never landed");
 
-        pump();
+        Components.drain(1);
 
         return panel;
     }
@@ -1190,10 +1191,5 @@ public class testTheDiagramRefreshDoesNotWaitOnTheRailway
         }
 
         return "    (no event thread found at all)";
-    }
-
-    private static void pump() throws Exception
-    {
-        SwingUtilities.invokeAndWait(() -> { });
     }
 }

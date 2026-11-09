@@ -20,6 +20,7 @@ import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.util.I18n;
 import static org.traincontrol.marklin.MarklinControlStation.init;
+import support.Components;
 import support.Reflect;
 
 /**
@@ -68,8 +69,8 @@ public class testTheActiveTickPausesATrain
 
         assertNotNull(ui, "there is no window");
 
-        pump();
-        pump();
+        Components.drain(1);
+        Components.drain(1);
 
         session = ui.getAutonomySession();
 
@@ -233,7 +234,7 @@ public class testTheActiveTickPausesATrain
 
         session.setLocomotivePaused(HIS_TRAIN, false);
 
-        pump();
+        Components.drain(1);
     }
 
     /**
@@ -319,7 +320,7 @@ public class testTheActiveTickPausesATrain
 
             click(tick);
 
-            for (int turn = 0; turn < 6; turn++) pump();
+            for (int turn = 0; turn < 6; turn++) Components.drain(1);
 
             assertTrue(train.isAutonomyPaused(), "unticking " + label + " in the editor did not pause the train");
 
@@ -397,7 +398,7 @@ public class testTheActiveTickPausesATrain
     {
         SwingUtilities.invokeAndWait(item::doClick);
 
-        pump();
+        Components.drain(1);
     }
 
     private static void closeTheEditor(java.awt.Window editor) throws Exception
@@ -509,11 +510,6 @@ public class testTheActiveTickPausesATrain
         return model.getAutoLayout();
     }
 
-    private static void pump() throws Exception
-    {
-        SwingUtilities.invokeAndWait(() -> { });
-    }
-
     /**
      * The Auto tab's pause button pressed after the diagram's tick is not undone by the next rebuild.  The tick pauses
      * the train and records it in the setup; the button then sets it going on the railway alone, for the fold to take
@@ -536,14 +532,14 @@ public class testTheActiveTickPausesATrain
 
         SwingUtilities.invokeAndWait(button::doClick);
 
-        pump();
+        Components.drain(1);
 
         assertFalse(train.isAutonomyPaused(), "precondition: the Auto tab's pause button did not set the train going");
 
         // A SETUP GESTURE'S REBUILD
         SwingUtilities.invokeAndWait(() -> ui.rebuildRunningLayoutFromSetup());
 
-        for (int turn = 0; turn < 10; turn++) pump();
+        for (int turn = 0; turn < 10; turn++) Components.drain(1);
 
         assertFalse(train.isAutonomyPaused(), "the Auto tab's pause button set " + HIS_TRAIN + " going after the diagram's"
             + " tick paused it, and the next rebuild paused it again - the last choice made for it was undone (RSA60-B1)");
@@ -571,7 +567,7 @@ public class testTheActiveTickPausesATrain
         {
             Thread.sleep(100);
 
-            pump();
+            Components.drain(1);
 
             button = autoTabPauseButton(who);
         }
@@ -592,7 +588,7 @@ public class testTheActiveTickPausesATrain
 
         SwingUtilities.invokeAndWait(button::doClick);
 
-        pump();
+        Components.drain(1);
 
         assertEquals(who.isAutonomyPaused(), expectedToPause, "precondition: the card's button did not "
             + (expectedToPause ? "pause " : "set going ") + who.getName());
@@ -605,7 +601,7 @@ public class testTheActiveTickPausesATrain
         {
             Thread.sleep(50);
 
-            pump();
+            Components.drain(1);
         }
     }
 
@@ -842,7 +838,7 @@ public class testTheActiveTickPausesATrain
 
         assertNotNull(editor, "the autonomy editor did not open on " + mainB.getPage());
 
-        for (int turn = 0; turn < 6; turn++) pump();
+        for (int turn = 0; turn < 6; turn++) Components.drain(1);
 
         return editor;
     }
@@ -1042,7 +1038,7 @@ public class testTheActiveTickPausesATrain
                 }
             });
 
-            pump();
+            Components.drain(1);
 
             String unreadable = I18n.f("autosetup.ui.errorImportUnreadable", "#X#").split("#X#")[0].trim();
 
@@ -1754,7 +1750,7 @@ public class testTheActiveTickPausesATrain
         SwingUtilities.invokeAndWait(() -> assertTrue(model.renameLoc(from, to), "precondition: " + from + " could not be"
             + " renamed to " + to));
 
-        pump();
+        Components.drain(1);
     }
 
     /** The card's train called what it is called, whatever a claim did to it. */
@@ -2152,7 +2148,7 @@ public class testTheActiveTickPausesATrain
             // PAUSED THROUGH THE DOOR, as a configuration loaded with it paused leaves it: the train and the setup together
             SwingUtilities.invokeAndWait(() -> ui.setLocomotiveActive(session, away, false));
 
-            pump();
+            Components.drain(1);
 
             assertTrue(session.getPausedLocomotives().contains(NOWHERE), "precondition: the setup does not list " + NOWHERE);
 
@@ -2434,7 +2430,7 @@ public class testTheActiveTickPausesATrain
             }
         });
 
-        pump();
+        Components.drain(1);
     }
 
     /** His train and the crowd: the trains that stand on the layout. */
@@ -2517,14 +2513,14 @@ public class testTheActiveTickPausesATrain
         {
             Thread.sleep(100);
 
-            pump();
+            Components.drain(1);
         }
 
         for (int turn = 0; turn < 8; turn++)
         {
             Thread.sleep(100);
 
-            pump();
+            Components.drain(1);
         }
     }
 
@@ -2563,7 +2559,7 @@ public class testTheActiveTickPausesATrain
     {
         SwingUtilities.invokeAndWait(() -> ui.showAutonomySettingsTab());
 
-        pump();
+        Components.drain(1);
 
         SwingUtilities.invokeAndWait(() -> ui.showAutonomyRunTab());
 
@@ -2610,13 +2606,13 @@ public class testTheActiveTickPausesATrain
             // The commands tab is the one showing, and the user then leaves for the track diagram and returns
             SwingUtilities.invokeAndWait(() -> ui.showAutonomyRunTab());
 
-            pump();
+            Components.drain(1);
 
             goStale();
 
             SwingUtilities.invokeAndWait(() -> ui.showLayoutTab());
 
-            pump();
+            Components.drain(1);
 
             assertNotEquals(cardOrder(), SORTED, "leaving the Auto tab re-sorted the cards, which are due to be sorted when"
                 + " it is opened");
@@ -2750,7 +2746,7 @@ public class testTheActiveTickPausesATrain
 
             SwingUtilities.invokeAndWait(() -> ui.setLocomotiveActive(session, alco, false));
 
-            pump();
+            Components.drain(1);
 
             final List<String> standing = new ArrayList<>(new java.util.TreeSet<>(session.trainsWhereTheyStand().values()));
 
@@ -2771,7 +2767,7 @@ public class testTheActiveTickPausesATrain
 
             click(tool);
 
-            for (int turn = 0; turn < 6; turn++) pump();
+            for (int turn = 0; turn < 6; turn++) Components.drain(1);
 
             for (String name : standing)
             {
@@ -2809,7 +2805,7 @@ public class testTheActiveTickPausesATrain
 
             click(tool);
 
-            for (int turn = 0; turn < 6; turn++) pump();
+            for (int turn = 0; turn < 6; turn++) Components.drain(1);
 
             for (String name : standing)
             {
@@ -2882,7 +2878,7 @@ public class testTheActiveTickPausesATrain
 
             session.setLocomotivePaused(GHOST, true);
 
-            pump();
+            Components.drain(1);
 
             // THE LABELS: Deactivate counts the standing trains going (the resumed one among them); Activate the paused
             // anywhere (the card's, the one away, the ghost) and not the resumed one
@@ -2900,7 +2896,7 @@ public class testTheActiveTickPausesATrain
 
             click(deactivateTool);
 
-            for (int turn = 0; turn < 6; turn++) pump();
+            for (int turn = 0; turn < 6; turn++) Components.drain(1);
 
             for (String name : standing)
             {
@@ -2925,7 +2921,7 @@ public class testTheActiveTickPausesATrain
 
             click(activateTool);
 
-            for (int turn = 0; turn < 6; turn++) pump();
+            for (int turn = 0; turn < 6; turn++) Components.drain(1);
 
             for (String name : standing)
             {
@@ -2978,7 +2974,7 @@ public class testTheActiveTickPausesATrain
 
             SwingUtilities.invokeAndWait(() -> ui.setLocomotiveActive(session, alco, false));
 
-            pump();
+            Components.drain(1);
 
             final List<String> standing = new ArrayList<>(new java.util.TreeSet<>(session.trainsWhereTheyStand().values()));
 
@@ -3048,7 +3044,7 @@ public class testTheActiveTickPausesATrain
                 session.setFacing(mainA, org.traincontrol.automationui.TilePorts.Side.N);
             });
 
-            pump();
+            Components.drain(1);
 
             assertTrue(session.trainsOnNoPoint().containsKey(mainA), "precondition: " + stray + ", placed on BottomMainA facing"
                 + " north, is not a train on no Point: " + session.trainsOnNoPoint());
@@ -3062,14 +3058,14 @@ public class testTheActiveTickPausesATrain
 
             SwingUtilities.invokeAndWait(() -> ui.setLocomotiveActive(session, strayTrain, false));
 
-            pump();
+            Components.drain(1);
 
             assertTrue(pausedOnNoPointOnTheDiagram().contains(mainA), "the diagram does not draw " + stray + ", paused by the"
                 + " Is Active door and standing on no Point, grey: " + pausedOnNoPointOnTheDiagram());
 
             SwingUtilities.invokeAndWait(() -> ui.setLocomotiveActive(session, strayTrain, true));
 
-            pump();
+            Components.drain(1);
 
             assertFalse(pausedOnNoPointOnTheDiagram().contains(mainA), "the diagram still draws " + stray + ", set going by"
                 + " the Is Active door, grey: " + pausedOnNoPointOnTheDiagram());
@@ -3087,7 +3083,7 @@ public class testTheActiveTickPausesATrain
             {
                 Thread.sleep(100);
 
-                pump();
+                Components.drain(1);
             }
 
             assertTrue(session.pausedTrainsOnNoPoint().contains(mainA), "precondition: the setup does not list the train on no"
@@ -3107,7 +3103,7 @@ public class testTheActiveTickPausesATrain
             {
                 Thread.sleep(100);
 
-                pump();
+                Components.drain(1);
             }
 
             assertFalse(pausedOnNoPointOnTheDiagram().contains(mainA), "the diagram still draws " + stray + ", set going by"
@@ -3214,7 +3210,7 @@ public class testTheActiveTickPausesATrain
 
             assertTrue(done.await(30, java.util.concurrent.TimeUnit.SECONDS), "the click did not come back; it put up: " + said);
 
-            pump();
+            Components.drain(1);
 
             return new ArrayList<>(said);
         }

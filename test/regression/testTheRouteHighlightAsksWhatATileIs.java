@@ -17,6 +17,7 @@ import org.testng.SkipException;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
+import support.Components;
 
 /**
  * Highlight on Diagram lights a tile of the kind the address names, and not everything numbered alike (MT-462):
@@ -71,8 +72,8 @@ public class testTheRouteHighlightAsksWhatATileIs
 
         assertNotNull(ui, "there is no window, so nothing here can reach the drawing path");
 
-        settle();
-        settle();
+        Components.drain(3);
+        Components.drain(3);
 
         assertFalse(ui.getDiagramTileRegistry().labelsFor(WEST_END).isEmpty(),
             "precondition: no label is registered for WestEnd, so nothing below could light anyway");
@@ -215,7 +216,7 @@ public class testTheRouteHighlightAsksWhatATileIs
             Collections.singletonMap(ACCESSORY_OF_THE_TURNOUT, Collections.singleton(DCC)),
             org.traincontrol.util.ImageUtil.HIGHLIGHT, 4000));
 
-        settle();
+        Components.drain(3);
 
         assertEquals(lit[0], 0, "a command to DCC " + ACCESSORY_OF_THE_TURNOUT + " lit the scenario's MM2"
             + " turnout numbered alike, which is a different decoder (GUI-C5)");
@@ -226,7 +227,7 @@ public class testTheRouteHighlightAsksWhatATileIs
             Collections.singletonMap(ACCESSORY_OF_THE_TURNOUT, Collections.singleton(MM2)),
             org.traincontrol.util.ImageUtil.HIGHLIGHT, 4000));
 
-        settle();
+        Components.drain(3);
 
         assertTrue(lit[1] > 0, "control: a command to MM2 " + ACCESSORY_OF_THE_TURNOUT + " does not light the"
             + " scenario's turnout, so the door refuses everything");
@@ -254,7 +255,7 @@ public class testTheRouteHighlightAsksWhatATileIs
         SwingUtilities.invokeAndWait(() -> lit[0] = ui.highlightAddresses(
             Collections.singleton(address), kind, org.traincontrol.util.ImageUtil.HIGHLIGHT, 4000));
 
-        settle();
+        Components.drain(3);
 
         return lit[0];
     }
@@ -283,12 +284,6 @@ public class testTheRouteHighlightAsksWhatATileIs
             }
         }
 
-        settle();
-    }
-
-    /** Lets the event thread finish what a gesture posted. */
-    private static void settle() throws Exception
-    {
-        for (int i = 0; i < 3; i++) SwingUtilities.invokeAndWait(() -> { });
+        Components.drain(3);
     }
 }

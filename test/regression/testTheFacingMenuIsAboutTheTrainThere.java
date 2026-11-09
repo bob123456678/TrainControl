@@ -20,6 +20,7 @@ import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.util.I18n;
 import static org.traincontrol.marklin.MarklinControlStation.init;
+import support.Components;
 import support.Reflect;
 
 /**
@@ -72,7 +73,7 @@ public class testTheFacingMenuIsAboutTheTrainThere
 
             SwingUtilities.invokeAndWait(() -> ui.getAutonomyViewerPanel().load(active, false));
 
-            settle();
+            Components.drain(8);
         }
 
         assertNotNull(ui.getActiveDiagramConfiguration(), "precondition: no configuration is loaded");
@@ -112,7 +113,7 @@ public class testTheFacingMenuIsAboutTheTrainThere
         {
             SwingUtilities.invokeAndWait(() -> ui.rebuildRunningLayoutFromSetup());
 
-            settle();
+            Components.drain(8);
 
             Layout running = model.getAutoLayout();
 
@@ -191,7 +192,7 @@ public class testTheFacingMenuIsAboutTheTrainThere
                 editor[0].setAutonomyMode(session);
             });
 
-            settle();
+            Components.drain(8);
 
             final AutonomyEditorPanel panel = editor[0].getAutonomyPanel();
             final TileKey target = square;
@@ -213,7 +214,7 @@ public class testTheFacingMenuIsAboutTheTrainThere
 
             SwingUtilities.invokeAndWait(choice::doClick);
 
-            settle();
+            Components.drain(8);
 
             Layout now = model.getAutoLayout();
 
@@ -241,7 +242,7 @@ public class testTheFacingMenuIsAboutTheTrainThere
 
             SwingUtilities.invokeAndWait(() -> ui.rebuildRunningLayoutFromSetup());
 
-            settle();
+            Components.drain(8);
         }
     }
 
@@ -261,7 +262,7 @@ public class testTheFacingMenuIsAboutTheTrainThere
         {
             SwingUtilities.invokeAndWait(() -> ui.rebuildRunningLayoutFromSetup());
 
-            settle();
+            Components.drain(8);
 
             Layout running = model.getAutoLayout();
 
@@ -315,7 +316,7 @@ public class testTheFacingMenuIsAboutTheTrainThere
                 editor[0].setAutonomyMode(session);
             });
 
-            settle();
+            Components.drain(8);
 
             final AutonomyEditorPanel panel = editor[0].getAutonomyPanel();
             final TileKey target = square;
@@ -350,7 +351,7 @@ public class testTheFacingMenuIsAboutTheTrainThere
 
             SwingUtilities.invokeAndWait(() -> ui.rebuildRunningLayoutFromSetup());
 
-            settle();
+            Components.drain(8);
         }
     }
 
@@ -598,7 +599,7 @@ public class testTheFacingMenuIsAboutTheTrainThere
 
             SwingUtilities.invokeAndWait(() -> ui.rebuildRunningLayoutFromSetup());
 
-            settle();
+            Components.drain(8);
         }
 
         assertEquals(flipped[0], square, "precondition: the flip did not act on " + square);
@@ -790,13 +791,5 @@ public class testTheFacingMenuIsAboutTheTrainThere
     private static JMenuItem find(java.awt.Container menu, String text)
     {
         return support.Components.find(menu, JMenuItem.class, item -> text.equals(item.getText()));
-    }
-
-    private static void settle() throws Exception
-    {
-        for (int pass = 0; pass < 8; pass++)
-        {
-            SwingUtilities.invokeAndWait(() -> { });
-        }
     }
 }

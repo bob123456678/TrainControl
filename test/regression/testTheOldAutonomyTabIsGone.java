@@ -23,6 +23,7 @@ import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.util.I18n;
 import org.traincontrol.util.Util;
 import static org.traincontrol.marklin.MarklinControlStation.init;
+import support.Components;
 import support.Reflect;
 import support.SourceOf;
 
@@ -72,7 +73,7 @@ public class testTheOldAutonomyTabIsGone
 
         ui.setViewListener(model, new java.util.concurrent.CountDownLatch(1));
 
-        settle();
+        Components.drain(8);
 
         // NOW A LAYOUT WITH NO LOCAL COPY: the preference switching to a Central Station layout stores; the sandbox
         // puts the real value back.
@@ -108,17 +109,12 @@ public class testTheOldAutonomyTabIsGone
             }
         });
 
-        settle();
+        Components.drain(8);
     }
 
     private static Object field(String name) throws ReflectiveOperationException
     {
         return Reflect.get(TrainControlUI.class, ui, name);
-    }
-
-    private static void settle() throws Exception
-    {
-        for (int pass = 0; pass < 8; pass++) SwingUtilities.invokeAndWait(() -> { });
     }
 
     @AfterClass(alwaysRun = true)
@@ -335,7 +331,7 @@ public class testTheOldAutonomyTabIsGone
 
         SwingUtilities.invokeAndWait(cancelling::cancelSelection);
 
-        settle();
+        Components.drain(8);
     }
 
     /**
@@ -382,7 +378,7 @@ public class testTheOldAutonomyTabIsGone
             open.cancelSelection();
         });
 
-        settle();
+        Components.drain(8);
 
         assertEquals(canonical(at[0]), canonical(last.getParentFile()), "Open Layout... does not start beside the last"
             + " layout folder of this computer's, " + last + ", once the Central Station's layout is switched to - it"
@@ -443,7 +439,7 @@ public class testTheOldAutonomyTabIsGone
                 again.cancelSelection();
             });
 
-            settle();
+            Components.drain(8);
 
             assertEquals(canonical(at[1]), canonical(other), "a layout folder named since is not the one Open Layout..."
                 + " starts at after the switch (OB-308)");

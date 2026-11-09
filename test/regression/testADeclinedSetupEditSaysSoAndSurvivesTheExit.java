@@ -16,6 +16,7 @@ import org.testng.SkipException;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
+import support.Components;
 import support.Reflect;
 import support.SourceOf;
 
@@ -64,7 +65,7 @@ public class testADeclinedSetupEditSaysSoAndSurvivesTheExit
 
             SwingUtilities.invokeAndWait(() -> ui.getAutonomyViewerPanel().load(active, false));
 
-            settle();
+            Components.drain(3);
         }
 
         assertNotNull(ui.getActiveDiagramConfiguration(), "precondition: no configuration is loaded");
@@ -111,7 +112,7 @@ public class testADeclinedSetupEditSaysSoAndSurvivesTheExit
         {
             SwingUtilities.invokeAndWait(() -> ui.rebuildRunningLayoutFromSetup(true, null));
 
-            settle();
+            Components.drain(3);
 
             assertTrue(said(heard, "autosetup.log.setupEditNotApplied"),
                 "the rebuild was refused because the railway is busy and said nothing, so the edit looks"
@@ -144,7 +145,7 @@ public class testADeclinedSetupEditSaysSoAndSurvivesTheExit
         {
             SwingUtilities.invokeAndWait(() -> ui.rebuildRunningLayoutFromSetup(false, null));
 
-            settle();
+            Components.drain(3);
 
             assertFalse(said(heard, "autosetup.log.setupEditNotApplied"),
                 "a door carrying no edit was told an edit could not be applied.  Heard: " + heard);
@@ -171,7 +172,7 @@ public class testADeclinedSetupEditSaysSoAndSurvivesTheExit
         {
             SwingUtilities.invokeAndWait(() -> ui.rebuildRunningLayoutFromSetup(true, null));
 
-            settle();
+            Components.drain(3);
 
             assertFalse(said(heard, "autosetup.log.setupEditNotApplied"),
                 "an ordinary rebuild, with nothing running, reported that the edit could not be applied."
@@ -269,12 +270,6 @@ public class testADeclinedSetupEditSaysSoAndSurvivesTheExit
         return false;
     }
 
-    /** Lets the event thread finish what this gesture posted. */
-    private static void settle() throws Exception
-    {
-        for (int i = 0; i < 3; i++) SwingUtilities.invokeAndWait(() -> { });
-    }
-
     /**
      * A setup edit whose load is declined (a link unpaired) puts nothing back and records nothing over the railway it
      * did not replace.
@@ -314,7 +309,7 @@ public class testADeclinedSetupEditSaysSoAndSurvivesTheExit
                 ui.rebuildRunningLayoutFromSetup(false, null);
             });
 
-            settle();
+            Components.drain(3);
 
             assertSame(model.getAutoLayout(), railway, "precondition: the load was not declined, so this is not the case");
 
@@ -343,7 +338,7 @@ public class testADeclinedSetupEditSaysSoAndSurvivesTheExit
                 }
             });
 
-            settle();
+            Components.drain(3);
 
             boolean stillOnIt = false;
 
@@ -367,7 +362,7 @@ public class testADeclinedSetupEditSaysSoAndSurvivesTheExit
                 ui.rebuildRunningLayoutFromSetup(false, null);
             });
 
-            settle();
+            Components.drain(3);
         }
     }
 
@@ -418,7 +413,7 @@ public class testADeclinedSetupEditSaysSoAndSurvivesTheExit
                 ui.rebuildRunningLayoutFromSetup(false, null);
             });
 
-            settle();
+            Components.drain(3);
 
             assertEquals(session.getLocomotiveNameAt(square), train, "precondition: " + train + " is not recorded on"
                 + " BottomMainB, where it stands: " + session.trainsOnNoPoint());
@@ -449,7 +444,7 @@ public class testADeclinedSetupEditSaysSoAndSurvivesTheExit
                 ui.rebuildRunningLayoutFromSetup(false, null);
             });
 
-            settle();
+            Components.drain(3);
         }
     }
 
@@ -490,7 +485,7 @@ public class testADeclinedSetupEditSaysSoAndSurvivesTheExit
                 ui.rebuildRunningLayoutFromSetup(false, null);
             });
 
-            settle();
+            Components.drain(3);
 
             assertSame(model.getAutoLayout(), railway, "precondition: the load was not declined, so this is not the case");
 
@@ -553,7 +548,7 @@ public class testADeclinedSetupEditSaysSoAndSurvivesTheExit
                 }
             });
 
-            settle();
+            Components.drain(3);
 
             assertEquals(String.valueOf(set[0]), "9", "precondition: the edit was not made");
 
@@ -586,7 +581,7 @@ public class testADeclinedSetupEditSaysSoAndSurvivesTheExit
                 ui.saveState(false, true);
             });
 
-            settle();
+            Components.drain(3);
 
             assertEquals(session.getGlobal("maxDelay"), String.valueOf(delayWas + 4), "the exit's fold while the setup is"
                 + " newer wrote nothing of the railway's settings (RSA20-A1)");
@@ -612,7 +607,7 @@ public class testADeclinedSetupEditSaysSoAndSurvivesTheExit
                 ui.rebuildRunningLayoutFromSetup(false, null);
             });
 
-            settle();
+            Components.drain(3);
         }
     }
 
@@ -650,7 +645,7 @@ public class testADeclinedSetupEditSaysSoAndSurvivesTheExit
             ui.rebuildRunningLayoutFromSetup(false, null);
         });
 
-        settle();
+        Components.drain(3);
 
         try
         {
@@ -685,7 +680,7 @@ public class testADeclinedSetupEditSaysSoAndSurvivesTheExit
                 ui.rebuildRunningLayoutFromSetup(false, null);
             });
 
-            settle();
+            Components.drain(3);
         }
     }
 
@@ -719,7 +714,7 @@ public class testADeclinedSetupEditSaysSoAndSurvivesTheExit
                 ui.rebuildRunningLayoutFromSetup(false, null);
             });
 
-            settle();
+            Components.drain(3);
 
             final org.traincontrol.automation.Layout railway = model.getAutoLayout();
 
@@ -740,7 +735,7 @@ public class testADeclinedSetupEditSaysSoAndSurvivesTheExit
                 ui.rebuildRunningLayoutFromSetup(false, null);
             });
 
-            settle();
+            Components.drain(3);
 
             assertTrue(model.getAutoLayout() != railway, "precondition: the railway was not rebuilt");
 
@@ -801,7 +796,7 @@ public class testADeclinedSetupEditSaysSoAndSurvivesTheExit
                 ui.rebuildRunningLayoutFromSetup(false, null);
             });
 
-            settle();
+            Components.drain(3);
 
             final org.traincontrol.automation.Layout railway = model.getAutoLayout();
 
@@ -811,7 +806,7 @@ public class testADeclinedSetupEditSaysSoAndSurvivesTheExit
             // A GESTURE ON THE DIAGRAM'S MENU, nobody touching atomic routes
             SwingUtilities.invokeAndWait(() -> ui.rebuildRunningLayoutFromSetup(false, null));
 
-            settle();
+            Components.drain(3);
 
             assertTrue(model.getAutoLayout() != railway, "precondition: the railway was not rebuilt");
 
@@ -911,7 +906,7 @@ public class testADeclinedSetupEditSaysSoAndSurvivesTheExit
             ui.rebuildRunningLayoutFromSetup(false, null);
         });
 
-        settle();
+        Components.drain(3);
     }
 
     /**
@@ -951,7 +946,7 @@ public class testADeclinedSetupEditSaysSoAndSurvivesTheExit
                 ui.rebuildRunningLayoutFromSetup(false, null);
             });
 
-            settle();
+            Components.drain(3);
 
             assertTrue(declined(), "precondition: the rebuild was not declined");
 
@@ -967,7 +962,7 @@ public class testADeclinedSetupEditSaysSoAndSurvivesTheExit
                 ui.rebuildRunningLayoutFromSetup(false, null);
             });
 
-            settle();
+            Components.drain(3);
         }
 
         assertFalse(strip.isSetupWaitingShown(), "the track diagram still says the setup is not applied after a load took"

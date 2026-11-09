@@ -16,6 +16,7 @@ import org.traincontrol.base.LayoutDiagramComponent.componentType;
 import org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel;
 import org.traincontrol.util.I18n;
 import support.Reflect;
+import support.Trees;
 
 /**
  * Control+N offers a station name exactly where the right-click menu does (FR-086): the key asks what the menu asks,
@@ -87,7 +88,7 @@ public class testControlNAsksTheMenusQuestion
         }
         finally
         {
-            deleteRecursively(folder);
+            Trees.delete(folder);
         }
     }
 
@@ -150,7 +151,7 @@ public class testControlNAsksTheMenusQuestion
         }
         finally
         {
-            deleteRecursively(folder);
+            Trees.delete(folder);
         }
     }
 
@@ -215,7 +216,7 @@ public class testControlNAsksTheMenusQuestion
         {
             AutonomyEditorPanel.answerTakeAnotherNameForTests(null);
 
-            deleteRecursively(folder);
+            Trees.delete(folder);
         }
     }
 
@@ -279,7 +280,7 @@ public class testControlNAsksTheMenusQuestion
         {
             AutonomyEditorPanel.answerTakeAnotherNameForTests(null);
 
-            deleteRecursively(folder);
+            Trees.delete(folder);
         }
     }
 
@@ -330,7 +331,7 @@ public class testControlNAsksTheMenusQuestion
         }
         finally
         {
-            deleteRecursively(folder);
+            Trees.delete(folder);
         }
     }
 
@@ -400,7 +401,7 @@ public class testControlNAsksTheMenusQuestion
         }
         finally
         {
-            deleteRecursively(folder);
+            Trees.delete(folder);
         }
     }
 
@@ -471,7 +472,7 @@ public class testControlNAsksTheMenusQuestion
         }
         finally
         {
-            deleteRecursively(folder);
+            Trees.delete(folder);
         }
     }
 
@@ -518,7 +519,7 @@ public class testControlNAsksTheMenusQuestion
         }
         finally
         {
-            deleteRecursively(folder);
+            Trees.delete(folder);
         }
     }
 
@@ -565,7 +566,7 @@ public class testControlNAsksTheMenusQuestion
         }
         finally
         {
-            deleteRecursively(folder);
+            Trees.delete(folder);
         }
     }
 
@@ -643,7 +644,7 @@ public class testControlNAsksTheMenusQuestion
         }
         finally
         {
-            deleteRecursively(folder);
+            Trees.delete(folder);
         }
     }
 
@@ -771,17 +772,5 @@ public class testControlNAsksTheMenusQuestion
         {
             throw new SkipException("AutonomyEditorPanel builds real Swing components - this needs a display");
         }
-    }
-
-    private static void deleteRecursively(java.io.File file)
-    {
-        java.io.File[] children = file.listFiles();
-
-        if (children != null)
-        {
-            for (java.io.File child : children) deleteRecursively(child);
-        }
-
-        file.delete();
     }
 }

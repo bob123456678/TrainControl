@@ -14,6 +14,7 @@ import org.traincontrol.base.Locomotive;
 import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.marklin.MarklinFeedback;
 import support.Reflect;
+import static support.Settle.until;
 
 /**
  * A train turned at the end of a journey is turned because the answer said so (Adam, MT-368).  The decision is
@@ -49,30 +50,6 @@ public class testTheArrivalHonoursTheAnswer
                 return at == askedAbout;
             }
         };
-    }
-
-    /** A bounded wait rather than a sleep: the railway's timings are its own. */
-    private static boolean waitFor(java.util.function.BooleanSupplier until, long ceilingMs)
-    {
-        long deadline = System.currentTimeMillis() + ceilingMs;
-
-        while (System.currentTimeMillis() < deadline)
-        {
-            if (until.getAsBoolean()) return true;
-
-            try
-            {
-                Thread.sleep(50);
-            }
-            catch (InterruptedException e)
-            {
-                Thread.currentThread().interrupt();
-
-                return false;
-            }
-        }
-
-        return until.getAsBoolean();
     }
 
     @BeforeClass
@@ -219,7 +196,7 @@ public class testTheArrivalHonoursTheAnswer
 
         try
         {
-            assertTrue(waitFor(() -> running.isRunning() && driver.getSpeed() > 0, 15000),
+            assertTrue(until(() -> running.isRunning() && driver.getSpeed() > 0, 15000),
                 "the train never set off, so no arrival happened and this claim tested nothing");
 
             // On its way the railway already knows the copy it will stand on (OB-314), not the turning copy its path
@@ -231,7 +208,7 @@ public class testTheArrivalHonoursTheAnswer
             model.setFeedbackState(turning.getS88(), true);
             model.setFeedbackState(arrive.getS88(), false);
 
-            assertTrue(waitFor(() -> !run.isAlive(), 30000),
+            assertTrue(until(() -> !run.isAlive(), 30000),
                 "the run never finished after the destination's sensor went on, so the arrival this"
                 + " claim is about was never reached");
         }
@@ -528,13 +505,13 @@ public class testTheArrivalHonoursTheAnswer
 
         try
         {
-            assertTrue(waitFor(() -> running.isRunning() && driver.getSpeed() > 0, 15000),
+            assertTrue(until(() -> running.isRunning() && driver.getSpeed() > 0, 15000),
                 "the train never set off, so no arrival happened and this claim tested nothing");
 
             model.setFeedbackState(end.getS88(), true);
             model.setFeedbackState(from.getS88(), false);
 
-            assertTrue(waitFor(() -> !run.isAlive(), 30000), "the run never finished after the destination's sensor went"
+            assertTrue(until(() -> !run.isAlive(), 30000), "the run never finished after the destination's sensor went"
                 + " on, so the arrival this claim is about was never reached");
 
             assertTrue(version.getInt(layout) != current, "precondition: the arrival's callback never retired the"
@@ -933,7 +910,7 @@ public class testTheArrivalHonoursTheAnswer
         journey.setDaemon(true);
         journey.start();
 
-        assertTrue(waitFor(() -> x.getSpeed() > 0 && rail.getActiveLocomotives().containsKey(x), 10000),
+        assertTrue(until(() -> x.getSpeed() > 0 && rail.getActiveLocomotives().containsKey(x), 10000),
             "precondition (" + shape + "): the train was not sent: " + Layout.getLastError());
 
         model.setFeedbackState(arrive.getName(), true);
@@ -1115,12 +1092,12 @@ public class testTheArrivalHonoursTheAnswer
             runner.start();
 
             // THE FIRST ENTRY: to the square, and kept as recorded
-            assertTrue(waitFor(() -> x.getSpeed() > 0 && rail.getActiveLocomotives().containsKey(x), 10000),
+            assertTrue(until(() -> x.getSpeed() > 0 && rail.getActiveLocomotives().containsKey(x), 10000),
                 "precondition: the first entry did not start: " + Layout.getLastError());
 
             model.setFeedbackState(m.getName(), true);
 
-            assertTrue(waitFor(() -> plain.getCurrentLocomotive() == x || (turning.getCurrentLocomotive() == x
+            assertTrue(until(() -> plain.getCurrentLocomotive() == x || (turning.getCurrentLocomotive() == x
                 && !rail.getActiveLocomotives().containsKey(x)), 15000), "precondition: the first entry did not end");
 
             model.setFeedbackState(m.getName(), false);
@@ -1132,12 +1109,12 @@ public class testTheArrivalHonoursTheAnswer
                 + " had it stood on the plain one, so the next entry cannot start (RSA49-B1)");
 
             // THE SECOND ENTRY, from the plain copy, as recorded
-            assertTrue(waitFor(() -> x.getSpeed() > 0 && rail.getActiveLocomotives().containsKey(x), 10000),
+            assertTrue(until(() -> x.getSpeed() > 0 && rail.getActiveLocomotives().containsKey(x), 10000),
                 "the second entry, recorded from the plain copy, never started (RSA49-B1): " + Layout.getLastError());
 
             model.setFeedbackState(c.getName(), true);
 
-            assertTrue(waitFor(() -> onward.getCurrentLocomotive() == x && !rail.getActiveLocomotives().containsKey(x),
+            assertTrue(until(() -> onward.getCurrentLocomotive() == x && !rail.getActiveLocomotives().containsKey(x),
                 15000), "the second entry did not arrive");
         }
         finally
@@ -1164,7 +1141,7 @@ public class testTheArrivalHonoursTheAnswer
         journey.setDaemon(true);
         journey.start();
 
-        assertTrue(waitFor(() -> x.getSpeed() > 0 && rail.getActiveLocomotives().containsKey(x), 10000),
+        assertTrue(until(() -> x.getSpeed() > 0 && rail.getActiveLocomotives().containsKey(x), 10000),
             "precondition: the hand send did not start: " + Layout.getLastError());
 
         model.setFeedbackState(arrive.getName(), true);

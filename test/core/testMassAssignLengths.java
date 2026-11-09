@@ -23,6 +23,7 @@ import org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel;
 import org.traincontrol.gui.autonomyeditor.StationSettingsWindow;
 import support.Reflect;
 import support.SourceOf;
+import support.Trees;
 
 /**
  * Mass Assign Lengths and the Unmeasured Track display: which squares they ask for, and how a piece's whole length is
@@ -47,7 +48,7 @@ public class testMassAssignLengths
     @AfterMethod
     public void tearDown()
     {
-        delete(folder);
+        Trees.delete(folder);
     }
 
     /**
@@ -3758,20 +3759,6 @@ public class testMassAssignLengths
         for (AutonomySession.Stretch stretch : stretches) out.append(stretch.getTiles()).append("; ");
 
         return out.append("]").toString();
-    }
-
-    private static void delete(File file)
-    {
-        if (file == null) return;
-
-        File[] children = file.listFiles();
-
-        if (children != null)
-        {
-            for (File child : children) delete(child);
-        }
-
-        file.delete();
     }
 
     /**

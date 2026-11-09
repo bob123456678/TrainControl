@@ -9,6 +9,7 @@ import org.traincontrol.base.Accessory.accessoryDecoderType;
 import org.traincontrol.base.LayoutDiagram;
 import org.traincontrol.base.LayoutDiagramComponent.componentType;
 import org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel;
+import support.Trees;
 
 /**
  * FR-056: right-clicking a tunnel flashes the square it is joined to, limited to a partner on the page being looked at:
@@ -135,7 +136,7 @@ public class testTheMenuShowsWhereALinkGoes
         }
         finally
         {
-            deleteTree(layout);
+            Trees.delete(layout);
         }
     }
 
@@ -164,19 +165,6 @@ public class testTheMenuShowsWhereALinkGoes
         }
 
         return out.toString();
-    }
-
-    /** Removes a temporary folder and everything in it. */
-    private static void deleteTree(java.io.File where)
-    {
-        java.io.File[] children = where.listFiles();
-
-        if (children != null)
-        {
-            for (java.io.File child : children) deleteTree(child);
-        }
-
-        where.delete();
     }
 
     /**

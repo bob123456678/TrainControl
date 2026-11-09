@@ -25,6 +25,7 @@ import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.marklin.MarklinLocomotive;
 import org.traincontrol.util.I18n;
 import static org.traincontrol.marklin.MarklinControlStation.init;
+import support.Components;
 import support.Reflect;
 
 /**
@@ -84,7 +85,7 @@ public class testATrainWithNoWayOutFacesAlongItsTrack
 
             SwingUtilities.invokeAndWait(() -> ui.getAutonomyViewerPanel().load(active, false));
 
-            settle();
+            Components.drain(8);
         }
 
         assertNotNull(ui.getActiveDiagramConfiguration(), "precondition: no configuration is loaded");
@@ -195,7 +196,7 @@ public class testATrainWithNoWayOutFacesAlongItsTrack
 
             SwingUtilities.invokeAndWait(() -> ui.updateVisiblePoints());
 
-            settle();
+            Components.drain(8);
 
             boolean captioned = false;
 
@@ -466,7 +467,7 @@ public class testATrainWithNoWayOutFacesAlongItsTrack
                 }
             });
 
-            settle();
+            Components.drain(8);
 
             assertEquals(handled[0], Boolean.TRUE, "Control+V over TunnelLeftPark was not taken");
 
@@ -557,7 +558,7 @@ public class testATrainWithNoWayOutFacesAlongItsTrack
 
             placeByTheDiagram();
 
-            settle();
+            Components.drain(8);
 
             String said;
 
@@ -656,7 +657,7 @@ public class testATrainWithNoWayOutFacesAlongItsTrack
 
         SwingUtilities.invokeAndWait(() -> ui.rebuildRunningLayoutFromSetup());
 
-        settle();
+        Components.drain(8);
 
         String on = standingOn();
 
@@ -733,7 +734,7 @@ public class testATrainWithNoWayOutFacesAlongItsTrack
             Thread.sleep(50);
         }
 
-        settle();
+        Components.drain(8);
 
         assertNotNull(standingOn(), "the right-click Place did not put the train on TunnelLeftPark");
     }
@@ -745,7 +746,8 @@ public class testATrainWithNoWayOutFacesAlongItsTrack
         if (ui.getActiveLoc() == null || !OUR_TRAIN.equals(ui.getActiveLoc().getName())) ui.mapLocToCurrentButton(OUR_TRAIN);
 
         for (long end = System.currentTimeMillis() + 10000; (ui.getActiveLoc() == null
-            || !OUR_TRAIN.equals(ui.getActiveLoc().getName())) && System.currentTimeMillis() < end; ) settle();
+            || !OUR_TRAIN.equals(ui.getActiveLoc().getName())) && System.currentTimeMillis() < end; )
+                Components.drain(8);
 
         assertTrue(ui.getActiveLoc() != null && OUR_TRAIN.equals(ui.getActiveLoc().getName()), "precondition: "
             + OUR_TRAIN + " could not be made the active locomotive");
@@ -899,7 +901,7 @@ public class testATrainWithNoWayOutFacesAlongItsTrack
 
         for (int tries = 0; tries < 50; tries++)
         {
-            settle();
+            Components.drain(8);
 
             seen = ui.getDiagramTileRegistry().overlayAt(PLATFORM);
 
@@ -926,7 +928,7 @@ public class testATrainWithNoWayOutFacesAlongItsTrack
 
         SwingUtilities.invokeAndWait(() -> ui.rebuildRunningLayoutFromSetup());
 
-        settle();
+        Components.drain(8);
 
         assertTrue(session.facingChoices(PLATFORM).isEmpty(), "precondition: TunnelLeftPark still has a way out: "
             + session.facingChoices(PLATFORM));
@@ -954,7 +956,7 @@ public class testATrainWithNoWayOutFacesAlongItsTrack
 
         SwingUtilities.invokeAndWait(() -> ui.rebuildRunningLayoutFromSetup());
 
-        settle();
+        Components.drain(8);
 
         assertTrue(session.trainsOnNoPoint().containsKey(square), notOnAPoint);
 
@@ -971,7 +973,7 @@ public class testATrainWithNoWayOutFacesAlongItsTrack
 
         for (int tries = 0; tries < 50 && (shown == null || !shown.hasTrain()); tries++)
         {
-            settle();
+            Components.drain(8);
 
             shown = ui.getDiagramTileRegistry().overlayAt(square);
 
@@ -993,7 +995,7 @@ public class testATrainWithNoWayOutFacesAlongItsTrack
             editor[0].setAutonomyMode(session);
         });
 
-        settle();
+        Components.drain(8);
     }
 
     /** Disposes the editor `openTheEditor` made, if it got that far. */
@@ -1016,14 +1018,6 @@ public class testATrainWithNoWayOutFacesAlongItsTrack
 
         SwingUtilities.invokeAndWait(() -> ui.rebuildRunningLayoutFromSetup());
 
-        settle();
-    }
-
-    private static void settle() throws Exception
-    {
-        for (int pass = 0; pass < 8; pass++)
-        {
-            SwingUtilities.invokeAndWait(() -> { });
-        }
+        Components.drain(8);
     }
 }

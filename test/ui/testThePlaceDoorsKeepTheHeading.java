@@ -29,6 +29,7 @@ import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.util.I18n;
 import static org.traincontrol.marklin.MarklinControlStation.init;
+import support.Components;
 import support.Reflect;
 
 /**
@@ -72,8 +73,8 @@ public class testThePlaceDoorsKeepTheHeading
 
         assertNotNull(ui, "there is no window");
 
-        pump();
-        pump();
+        Components.drain(1);
+        Components.drain(1);
 
         session = ui.getAutonomySession();
 
@@ -122,12 +123,13 @@ public class testThePlaceDoorsKeepTheHeading
     @BeforeMethod
     public static void hisTrainIsActive() throws Exception
     {
-        pump();
+        Components.drain(1);
 
         if (ui.getActiveLoc() == null || !HIS_TRAIN.equals(ui.getActiveLoc().getName())) ui.mapLocToCurrentButton(HIS_TRAIN);
 
         for (long end = System.currentTimeMillis() + 10000; (ui.getActiveLoc() == null
-            || !HIS_TRAIN.equals(ui.getActiveLoc().getName())) && System.currentTimeMillis() < end; ) pump();
+            || !HIS_TRAIN.equals(ui.getActiveLoc().getName())) && System.currentTimeMillis() < end; )
+                Components.drain(1);
 
         assertNotNull(ui.getActiveLoc(), "precondition: " + HIS_TRAIN + " could not be made the active locomotive");
 
@@ -140,7 +142,7 @@ public class testThePlaceDoorsKeepTheHeading
     {
         for (int round = 0; round < 50; round++)
         {
-            pump();
+            Components.drain(1);
 
             boolean any = false;
 
@@ -322,7 +324,7 @@ public class testThePlaceDoorsKeepTheHeading
 
             assertNotNull(editor, "the autonomy editor did not open on " + tunnel.getPage());
 
-            for (int turn = 0; turn < 6; turn++) pump();
+            for (int turn = 0; turn < 6; turn++) Components.drain(1);
 
             java.lang.reflect.Field panelField = Reflect.field(editor.getClass(), "autonomyPanel");
 
@@ -383,7 +385,7 @@ public class testThePlaceDoorsKeepTheHeading
 
             support.Components.waitFor(() -> !answered.isShowing(), 10000);
 
-            for (int turn = 0; turn < 6; turn++) pump();
+            for (int turn = 0; turn < 6; turn++) Components.drain(1);
 
             // ANSWERED: the train stands on Tunnel with TunnelPre's road behind it.
             Point standing = railway().getLocomotiveLocation(train);
@@ -442,7 +444,7 @@ public class testThePlaceDoorsKeepTheHeading
             {
                 Thread.sleep(100);
 
-                pump();
+                Components.drain(1);
             }
 
             assertFalse(ui.isLayoutEditorOpen(), "precondition: an editor from the claim before is still open");
@@ -666,7 +668,7 @@ public class testThePlaceDoorsKeepTheHeading
             Thread.sleep(50);
         }
 
-        pump();
+        Components.drain(1);
 
         assertTrue(standsOn(square), "the right-click Place did not put " + HIS_TRAIN + " on " + name(square)
             + "; showing: " + showing());
@@ -759,7 +761,7 @@ public class testThePlaceDoorsKeepTheHeading
         {
             Thread.sleep(100);
 
-            pump();
+            Components.drain(1);
 
             said = hintOf(panel);
         }
@@ -789,7 +791,7 @@ public class testThePlaceDoorsKeepTheHeading
             }
         });
 
-        pump();
+        Components.drain(1);
 
         return handled[0];
     }
@@ -820,7 +822,7 @@ public class testThePlaceDoorsKeepTheHeading
             railway().moveLocomotive(HIS_TRAIN, onto, false, true);
         });
 
-        pump();
+        Components.drain(1);
 
         assertTrue(standsOn(square), "precondition: " + HIS_TRAIN + " could not be stood on " + onto);
     }
@@ -971,10 +973,5 @@ public class testThePlaceDoorsKeepTheHeading
     private static Layout railway()
     {
         return model.getAutoLayout();
-    }
-
-    private static void pump() throws Exception
-    {
-        SwingUtilities.invokeAndWait(() -> { });
     }
 }

@@ -18,6 +18,7 @@ import org.traincontrol.marklin.MarklinAccessory;
 import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.marklin.file.CS2File;
 import support.Reflect;
+import support.Trees;
 
 /**
  * A layout folder that is not perfect, and what TrainControl does about it, from hands-on tests 39, 40 and 38: a page
@@ -73,7 +74,7 @@ public class testLayoutFolderRobustness
         }
         finally
         {
-            delete(folder);
+            Trees.delete(folder);
         }
     }
 
@@ -125,7 +126,7 @@ public class testLayoutFolderRobustness
         }
         finally
         {
-            delete(folder);
+            Trees.delete(folder);
         }
     }
 
@@ -175,7 +176,7 @@ public class testLayoutFolderRobustness
         }
         finally
         {
-            delete(folder);
+            Trees.delete(folder);
         }
     }
 
@@ -219,7 +220,7 @@ public class testLayoutFolderRobustness
         }
         finally
         {
-            delete(folder);
+            Trees.delete(folder);
         }
     }
 
@@ -258,7 +259,7 @@ public class testLayoutFolderRobustness
         }
         finally
         {
-            delete(folder);
+            Trees.delete(folder);
         }
     }
 
@@ -309,7 +310,7 @@ public class testLayoutFolderRobustness
         }
         finally
         {
-            delete(folder);
+            Trees.delete(folder);
         }
     }
 
@@ -357,7 +358,7 @@ public class testLayoutFolderRobustness
         }
         finally
         {
-            delete(folder);
+            Trees.delete(folder);
         }
     }
 
@@ -465,7 +466,7 @@ public class testLayoutFolderRobustness
             session.getStore().setStation(new TileKey("main", 1, 1), true);
             session.getStore().save();
 
-            delete(new File(folder, "config/autonomy"));
+            Trees.delete(new File(folder, "config/autonomy"));
 
             AutonomySession after = new AutonomySession(folder);
 
@@ -487,7 +488,7 @@ public class testLayoutFolderRobustness
         }
         finally
         {
-            delete(folder);
+            Trees.delete(folder);
         }
     }
 
@@ -508,14 +509,5 @@ public class testLayoutFolderRobustness
     private static void write(File file, String text) throws IOException
     {
         Files.write(file.toPath(), text.getBytes(StandardCharsets.UTF_8));
-    }
-
-    private static void delete(File file)
-    {
-        File[] kids = file.listFiles();
-
-        if (kids != null) for (File kid : kids) delete(kid);
-
-        file.delete();
     }
 }

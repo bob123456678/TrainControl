@@ -22,6 +22,7 @@ import org.traincontrol.automationui.TileGraph.Direction;
 import org.traincontrol.automationui.TileGraph.RouteId;
 import org.traincontrol.automationui.TileGraph.TileKey;
 import org.traincontrol.automationui.TilePorts;
+import support.Trees;
 
 /**
  * Every setting the store holds, against every structural thing that can happen to a diagram.
@@ -363,7 +364,7 @@ public class testAutonomyStoreSettingsMatrix
             }
             finally
             {
-                delete(folder);
+                Trees.delete(folder);
             }
         }
     }
@@ -554,7 +555,7 @@ public class testAutonomyStoreSettingsMatrix
             }
             finally
             {
-                delete(folder);
+                Trees.delete(folder);
             }
         }
     }
@@ -607,7 +608,7 @@ public class testAutonomyStoreSettingsMatrix
             }
             finally
             {
-                delete(folder);
+                Trees.delete(folder);
             }
         }
     }
@@ -663,7 +664,7 @@ public class testAutonomyStoreSettingsMatrix
             }
             finally
             {
-                delete(folder);
+                Trees.delete(folder);
             }
         }
 
@@ -695,14 +696,5 @@ public class testAutonomyStoreSettingsMatrix
     private static TileKey on(String page, int x, int y)
     {
         return new TileKey(page, x, y);
-    }
-
-    private static void delete(File file)
-    {
-        File[] kids = file.listFiles();
-
-        if (kids != null) for (File kid : kids) delete(kid);
-
-        file.delete();
     }
 }

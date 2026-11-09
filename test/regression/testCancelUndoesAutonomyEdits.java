@@ -21,6 +21,7 @@ import org.traincontrol.gui.layouteditor.LayoutEditor;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;
 import static org.traincontrol.marklin.MarklinControlStation.init;
+import support.Components;
 import support.Reflect;
 
 /**
@@ -78,7 +79,7 @@ public class testCancelUndoesAutonomyEdits
 
             SwingUtilities.invokeAndWait(() -> ui.getAutonomyViewerPanel().load(active, false));
 
-            settle();
+            Components.drain(8);
         }
 
         assertNotNull(ui.getActiveDiagramConfiguration(),
@@ -230,7 +231,7 @@ public class testCancelUndoesAutonomyEdits
 
             answerer.stop();
 
-            settle();
+            Components.drain(8);
 
             assertEquals(session.getStore().getTileLength(square), 4,
                 "Cancel did not put back the length a bulk clear took, although the confirmation says it does"
@@ -312,7 +313,7 @@ public class testCancelUndoesAutonomyEdits
 
             clearAllPlacements(editor);
 
-            settle();
+            Components.drain(8);
 
             answerer.stop();
 
@@ -325,7 +326,7 @@ public class testCancelUndoesAutonomyEdits
 
             answerer.stop();
 
-            settle();
+            Components.drain(8);
 
             assertEquals(placements(), before,
                 "Cancel did not put back the locomotives the bulk clear took off the setup");
@@ -369,18 +370,18 @@ public class testCancelUndoesAutonomyEdits
             assertFalse(before.isEmpty(), "precondition: no locomotive stands anywhere on the snapshot");
             answerer = Answerer.start(String.valueOf(TrainControlUI.YES_NO_OPTS[0]));
             clearAllPlacements(editor);
-            settle();
+            Components.drain(8);
             answerer.stop();
             assertTrue(placements().isEmpty(), "precondition: the bulk clear left " + placements() + " on the setup");
             answerer = Answerer.start(org.traincontrol.util.I18n.t("layout.ui.switchDiscard"));
             final boolean[] mayExit = new boolean[1];
             SwingUtilities.invokeAndWait(() -> mayExit[0] = editor.maySettleBeforeExit());
-            settle();
+            Components.drain(8);
             answerer.stop();
             assertTrue(answerer.answered(), "precondition: the exit did not ask about the unsaved clear");
             assertTrue(mayExit[0], "precondition: Discard did not let the exit go ahead");
             foldTheRunningLayout();
-            settle();
+            Components.drain(8);
             assertEquals(placements(), before,
                 "Discard on the way out restored the setup, and the save on the way out then folded the running"
                 + " layout - still without the cleared locomotives - back over it");
@@ -440,7 +441,7 @@ public class testCancelUndoesAutonomyEdits
 
             SwingUtilities.invokeAndWait(() -> mayExit[0] = ui.everyOpenWindowMaySettle());
 
-            settle();
+            Components.drain(8);
 
             int asked = answerer.answered(true);
 
@@ -482,11 +483,11 @@ public class testCancelUndoesAutonomyEdits
             answerer = Answerer.start(org.traincontrol.util.I18n.t("layout.ui.switchDiscard"));
             final boolean[] mayExit = new boolean[1];
             SwingUtilities.invokeAndWait(() -> mayExit[0] = editor.maySettleBeforeExit());
-            settle();
+            Components.drain(8);
             answerer.stop();
             assertTrue(mayExit[0], "precondition: Discard did not let the exit go ahead");
             foldTheRunningLayout();
-            settle();
+            Components.drain(8);
             assertEquals(directions(session).toString(), before.toString(),
                 "Discard on the way out did not keep the arrow put back in the setup");
             assertEquals(directions(fromDisk()).toString(), before.toString(),
@@ -525,11 +526,11 @@ public class testCancelUndoesAutonomyEdits
             answerer = Answerer.start(org.traincontrol.util.I18n.t("layout.ui.switchDiscard"));
             final boolean[] mayExit = new boolean[1];
             SwingUtilities.invokeAndWait(() -> mayExit[0] = editor.maySettleBeforeExit());
-            settle();
+            Components.drain(8);
             answerer.stop();
             assertTrue(mayExit[0], "precondition: Discard did not let the exit go ahead");
             foldTheRunningLayout();
-            settle();
+            Components.drain(8);
             assertEquals(homes(session), before,
                 "Discard on the way out restored the setup, and the save on the way out then folded the running"
                 + " layout - still carrying the home given to " + name + " - back over it");
@@ -570,14 +571,14 @@ public class testCancelUndoesAutonomyEdits
                     throw new RuntimeException(failed);
                 }
             });
-            settle();
+            Components.drain(8);
             Map<String, String> edited = homes(session);
             assertEquals(edited.get(at.toString()), name, "precondition: the home did not reach the setup");
             assertEquals(homes(fromDisk()).get(at.toString()), name, "precondition: the home did not reach the file");
             // The running layout was not rebuilt after the write, so it does not carry the home: the fold removed it.
             declined.setBoolean(ui, true);
             foldTheRunningLayout();
-            settle();
+            Components.drain(8);
             assertEquals(homes(session).get(at.toString()), name,
                 "the fold removed the home that was declined during the run - the layout it folded was built"
                 + " before the edit - so the promise that the edit is picked up at the next load is broken"
@@ -605,7 +606,7 @@ public class testCancelUndoesAutonomyEdits
             declined.setBoolean(ui, true);
             final Object before = model.getAutoLayout();
             SwingUtilities.invokeAndWait(() -> ui.rebuildRunningLayoutFromSetup());
-            settle();
+            Components.drain(8);
             assertNotSame(model.getAutoLayout(), before,
                 "precondition: the rebuild did not replace the running layout, so it carried nothing and the guard"
                 + " is right to stay");
@@ -655,7 +656,7 @@ public class testCancelUndoesAutonomyEdits
             if (second == null) throw new AssertionError("no square to record a second copy of a placed train on");
             session.setPointProperty(second, "loc", new org.json.JSONObject().put("name", twice));
             SwingUtilities.invokeAndWait(() -> ui.rebuildRunningLayoutFromSetup());
-            settle();
+            Components.drain(8);
             // WHAT "DECLINED" MEANS HERE: the load ran and produced nothing usable.  A locomotive on two squares does
             // not stop the GRAPH being built (`hasBlockingProblems` asks the graph), so the rebuild reaches the
             // railway, which refuses it; an invalid railway has carried no edit, so the guard must stay up.
@@ -803,7 +804,7 @@ public class testCancelUndoesAutonomyEdits
             session.setHome(at, name);
             ui.rebuildRunningLayoutFromSetup();
         });
-        settle();
+        Components.drain(8);
         assertNotEquals(homes(session), before, "precondition: making " + at + " home to " + name + " changed nothing");
     }
 
@@ -870,7 +871,7 @@ public class testCancelUndoesAutonomyEdits
             built[0].setAutonomyMode(session);
         });
 
-        settle();
+        Components.drain(8);
 
         assertTrue(built[0].isAutonomyMode(), "the editor did not open in autonomy mode");
 
@@ -952,7 +953,7 @@ public class testCancelUndoesAutonomyEdits
         });
 
         // The rebuild of the running layout is posted, and so is anything it posts
-        settle();
+        Components.drain(8);
     }
 
     /** The Cancel button's action. */
@@ -979,7 +980,7 @@ public class testCancelUndoesAutonomyEdits
             }
         });
 
-        settle();
+        Components.drain(8);
     }
 
     private static void press(final LayoutEditor editor, String method) throws Exception
@@ -998,7 +999,7 @@ public class testCancelUndoesAutonomyEdits
             }
         });
 
-        settle();
+        Components.drain(8);
     }
 
     /** @param editor a window that may already have closed itself */
@@ -1006,15 +1007,7 @@ public class testCancelUndoesAutonomyEdits
     {
         SwingUtilities.invokeAndWait(() -> editor.dispose());
 
-        settle();
-    }
-
-    private static void settle() throws Exception
-    {
-        for (int pass = 0; pass < 8; pass++)
-        {
-            SwingUtilities.invokeAndWait(() -> { });
-        }
+        Components.drain(8);
     }
 
     /**
@@ -1185,7 +1178,7 @@ public class testCancelUndoesAutonomyEdits
                     throw new RuntimeException(failed);
                 }
             });
-            settle();
+            Components.drain(8);
             assertNull(said[0], "precondition: the discard failed: " + said[0]);
             assertEquals(said[1], "folded", "precondition: the fold did not run between the close and the hand-over");
             assertEquals(homes(session), before, "a fold between Cancel's discard and the hand-over behind it wrote the"

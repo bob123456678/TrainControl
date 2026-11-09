@@ -14,6 +14,7 @@ import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 import org.traincontrol.marklin.MarklinLocomotive;
+import support.Components;
 import support.Reflect;
 
 /**
@@ -150,7 +151,7 @@ public class testARenameReachesTheTimetableOnScreen
             // Once, to establish what it believes it is showing.
             repaint.invoke(ui[0]);
 
-            settle();
+            Components.drain(5);
 
             String showing = String.valueOf(state.get(ui[0]));
 
@@ -163,7 +164,7 @@ public class testARenameReachesTheTimetableOnScreen
 
             repaint.invoke(ui[0]);
 
-            settle();
+            Components.drain(5);
 
             assertNotEquals(String.valueOf(state.get(ui[0])), showing,
                 "the key repaintTimetable skips its redraw on did not move when every row of "
@@ -176,15 +177,6 @@ public class testARenameReachesTheTimetableOnScreen
             final TrainControlUI closing = ui[0];
 
             if (closing != null) javax.swing.SwingUtilities.invokeAndWait(() -> closing.dispose());
-        }
-    }
-
-    /** Lets what the window POSTED actually run: `repaintTimetable` does its work in an invokeLater. */
-    private static void settle() throws Exception
-    {
-        for (int pass = 0; pass < 5; pass++)
-        {
-            javax.swing.SwingUtilities.invokeAndWait(() -> { });
         }
     }
 }

@@ -26,6 +26,7 @@ import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.marklin.MarklinRoute;
 import org.traincontrol.util.I18n;
 import static org.traincontrol.marklin.MarklinControlStation.init;
+import support.Components;
 
 /**
  * A route that would switch track a train is on, fired at each of its doors on the real window: by its sensor (MT-506),
@@ -81,8 +82,8 @@ public class testARouteOverATrainAtItsDoors
 
         assertNotNull(ui, "there is no window");
 
-        pump();
-        pump();
+        Components.drain(1);
+        Components.drain(1);
 
         tap = new Handler()
         {
@@ -693,10 +694,5 @@ public class testARouteOverATrainAtItsDoors
         }
 
         return null;
-    }
-
-    private static void pump() throws Exception
-    {
-        SwingUtilities.invokeAndWait(() -> { });
     }
 }
