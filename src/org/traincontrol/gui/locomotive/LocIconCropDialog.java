@@ -872,8 +872,7 @@ public class LocIconCropDialog extends JDialog
 
             try
             {
-                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING,
-                    RenderingHints.VALUE_ANTIALIAS_ON);
+                ImageUtil.antialias(g2);
                 g2.setRenderingHint(RenderingHints.KEY_INTERPOLATION,
                     RenderingHints.VALUE_INTERPOLATION_BILINEAR);
 

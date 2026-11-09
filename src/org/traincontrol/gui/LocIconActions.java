@@ -19,6 +19,7 @@ import org.traincontrol.base.Locomotive;
 import org.traincontrol.gui.locomotive.LocIconCropDialog;
 import org.traincontrol.gui.widgets.QuickFileChooser;
 import org.traincontrol.util.I18n;
+import org.traincontrol.util.ImageUtil;
 import org.traincontrol.util.Util;
 
 /**
@@ -61,10 +62,7 @@ final class LocIconActions
         {
             java.awt.Graphics2D g2 = (java.awt.Graphics2D) g.create();
 
-            g2.setRenderingHint(java.awt.RenderingHints.KEY_ANTIALIASING,
-                java.awt.RenderingHints.VALUE_ANTIALIAS_ON);
-            g2.setRenderingHint(java.awt.RenderingHints.KEY_STROKE_CONTROL,
-                java.awt.RenderingHints.VALUE_STROKE_PURE);
+            ImageUtil.smooth(g2);
 
             double middle = SIZE / 2.0;
             double radius = 4.5;
@@ -150,12 +148,8 @@ final class LocIconActions
         {
             java.awt.Graphics2D g2 = (java.awt.Graphics2D) g.create();
 
-            g2.setRenderingHint(java.awt.RenderingHints.KEY_ANTIALIASING,
-                java.awt.RenderingHints.VALUE_ANTIALIAS_ON);
-
             // Drawn where the coordinates say, so the two ends come out alike
-            g2.setRenderingHint(java.awt.RenderingHints.KEY_STROKE_CONTROL,
-                java.awt.RenderingHints.VALUE_STROKE_PURE);
+            ImageUtil.smooth(g2);
 
             for (int pass = 0; pass < 2; pass++)
             {
@@ -211,8 +205,7 @@ final class LocIconActions
         {
             java.awt.Graphics2D g2 = (java.awt.Graphics2D) g.create();
 
-            g2.setRenderingHint(java.awt.RenderingHints.KEY_ANTIALIASING,
-                java.awt.RenderingHints.VALUE_ANTIALIAS_ON);
+            ImageUtil.antialias(g2);
 
             for (int pass = 0; pass < 2; pass++)
             {

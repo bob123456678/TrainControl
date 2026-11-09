@@ -8,7 +8,6 @@ import java.awt.FlowLayout;
 import java.awt.Font;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
-import java.awt.RenderingHints;
 import java.awt.geom.Path2D;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
@@ -30,6 +29,7 @@ import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.gui.widgets.UiStyle;
 import org.traincontrol.model.ViewListener;
 import org.traincontrol.util.I18n;
+import org.traincontrol.util.ImageUtil;
 
 /**
  * The locomotive usage chart: run time per day, week or month, over a range the operator picks, with Previous and Next
@@ -226,8 +226,7 @@ public class UsageChart extends JFrame
 
             try
             {
-                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                g2.setRenderingHint(RenderingHints.KEY_STROKE_CONTROL, RenderingHints.VALUE_STROKE_PURE);
+                ImageUtil.smooth(g2);
                 g2.setColor(c.isEnabled() ? c.getForeground() : UIManager.getColor("Button.disabledText"));
                 g2.setStroke(new BasicStroke(UIScale.scale(1.6f), BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
 

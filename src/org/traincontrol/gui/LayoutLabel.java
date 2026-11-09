@@ -1439,8 +1439,7 @@ public final class LayoutLabel extends JLabel
 
         int span = Math.min(getWidth(), getHeight());
 
-        g.setRenderingHint(java.awt.RenderingHints.KEY_ANTIALIASING,
-            java.awt.RenderingHints.VALUE_ANTIALIAS_ON);
+        ImageUtil.antialias(g);
 
         float width = Math.max(3f, span / 7f);
 

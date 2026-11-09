@@ -16960,13 +16960,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
             try
             {
-                g2.setRenderingHint(java.awt.RenderingHints.KEY_ANTIALIASING,
-                    java.awt.RenderingHints.VALUE_ANTIALIAS_ON);
-
                 // About the arc's own center, exact coordinates and pure strokes, inset by half the stroke so no frame
                 // is clipped (MT-650): whole-pixel `drawArc` made the ring step as it turned.
-                g2.setRenderingHint(java.awt.RenderingHints.KEY_STROKE_CONTROL,
-                    java.awt.RenderingHints.VALUE_STROKE_PURE);
+                ImageUtil.smooth(g2);
 
                 float stroke = Math.max(2f, size / 6f);
 
@@ -18810,8 +18806,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         java.awt.Graphics2D g = out.createGraphics();
 
-        g.setRenderingHint(java.awt.RenderingHints.KEY_ANTIALIASING,
-            java.awt.RenderingHints.VALUE_ANTIALIAS_ON);
+        ImageUtil.antialias(g);
         g.setRenderingHint(java.awt.RenderingHints.KEY_TEXT_ANTIALIASING,
             java.awt.RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
 
@@ -20328,8 +20323,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
             try
             {
-                g2.setRenderingHint(java.awt.RenderingHints.KEY_ANTIALIASING,
-                    java.awt.RenderingHints.VALUE_ANTIALIAS_ON);
+                ImageUtil.antialias(g2);
 
                 // The renderer is stamped at the cell's origin, so the box is worked out against a rectangle of its own
                 // size, through the same method the click uses.

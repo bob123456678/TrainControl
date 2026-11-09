@@ -7,6 +7,7 @@ import java.awt.RenderingHints;
 import javax.swing.JLabel;
 import org.traincontrol.gui.LayoutGrid;
 import org.traincontrol.gui.TrainControlUI;
+import org.traincontrol.util.ImageUtil;
 
 /**
  * A station caption, drawn as a rounded pill instead of a rectangle of text (FR-028): the same badge as on the auto loc
@@ -196,8 +197,7 @@ public class StationCaption extends JLabel
 
         try
         {
-            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-            g2.setRenderingHint(RenderingHints.KEY_STROKE_CONTROL, RenderingHints.VALUE_STROKE_PURE);
+            ImageUtil.smooth(g2);
 
             java.awt.FontMetrics fm = g2.getFontMetrics(getFont());
 
@@ -242,8 +242,7 @@ public class StationCaption extends JLabel
 
         try
         {
-            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-            g2.setRenderingHint(RenderingHints.KEY_STROKE_CONTROL, RenderingHints.VALUE_STROKE_PURE);
+            ImageUtil.smooth(g2);
 
             java.awt.FontMetrics fm = g2.getFontMetrics(getFont());
 
@@ -773,7 +772,7 @@ public class StationCaption extends JLabel
 
         try
         {
-            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            ImageUtil.antialias(g2);
             g2.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING,
                 RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
 
@@ -822,8 +821,7 @@ public class StationCaption extends JLabel
 
             try
             {
-                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING,
-                    RenderingHints.VALUE_ANTIALIAS_ON);
+                ImageUtil.antialias(g2);
 
                 g2.setColor(getBackground());
 

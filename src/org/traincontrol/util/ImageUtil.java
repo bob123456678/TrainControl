@@ -213,4 +213,17 @@ public class ImageUtil
 
     /** And what a route only looks at */
     public static final Color HIGHLIGHT_CONDITION = new Color(255, 140, 0, 140);
+
+    /** Antialiased shapes. */
+    public static void antialias(Graphics2D g)
+    {
+        g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+    }
+
+    /** Antialiased shapes drawn where the coordinates say (pure strokes), as the hand-drawn icons and marks are. */
+    public static void smooth(Graphics2D g)
+    {
+        antialias(g);
+        g.setRenderingHint(RenderingHints.KEY_STROKE_CONTROL, RenderingHints.VALUE_STROKE_PURE);
+    }
 }
