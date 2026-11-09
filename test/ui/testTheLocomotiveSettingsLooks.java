@@ -595,7 +595,8 @@ public class testTheLocomotiveSettingsLooks extends support.SettingsClass
 
     /**
      * At the narrowest window, in every language, the lock strip shows its whole sentence, for a moving train with a
-     * thirty-letter name and while autonomy runs: it wraps rather than ending in "...".
+     * thirty-letter name and while autonomy runs, in a window just opened: it wraps rather than ending in "...", and is
+     * as tall as its lines.
      *
      * MUTATION: drop the strip's own `getPreferredSize` in `LocomotiveSettingsFrame`, and this fails.
      */
@@ -609,6 +610,9 @@ public class testTheLocomotiveSettingsLooks extends support.SettingsClass
                 for (boolean moving : new boolean[] {true, false})
                 {
                     I18n.setLocale(new java.util.Locale(lang));
+
+                    // A window of its own each time: the strip first comes up with no width
+                    SettingsWindow.closeIfOpen();
 
                     org.traincontrol.marklin.MarklinLocomotive train = fixture.layDcc(LONG, 3807,
                         LocomotiveSettingsFrame.Tab.LOCOMOTIVE);
@@ -654,12 +658,13 @@ public class testTheLocomotiveSettingsLooks extends support.SettingsClass
         }
     }
 
-    /** Whether a label's text, plain or wrapped as HTML, fits the room it has. */
+    /** Whether a label's text, plain or wrapped as HTML, fits the room it shows: its own, cut to its parents'. */
     private static boolean wholeSentence(JLabel label)
     {
         java.awt.Insets in = label.getInsets();
+        java.awt.Rectangle shown = label.getVisibleRect();
 
-        int width = label.getWidth() - in.left - in.right;
+        int width = shown.width - in.left - in.right;
 
         javax.swing.text.View html = javax.swing.plaf.basic.BasicHTML.createHTMLView(label, "<html>"
             + label.getText().replace("&", "&amp;").replace("<", "&lt;") + "</html>");
@@ -668,7 +673,7 @@ public class testTheLocomotiveSettingsLooks extends support.SettingsClass
 
         return html.getMinimumSpan(javax.swing.text.View.X_AXIS) <= width && (label.getClientProperty(
             javax.swing.plaf.basic.BasicHTML.propertyKey) == null ? label.getFontMetrics(label.getFont()).stringWidth(
-            label.getText()) <= width : html.getPreferredSpan(javax.swing.text.View.Y_AXIS) <= label.getHeight() - in.top - in.bottom);
+            label.getText()) <= width : html.getPreferredSpan(javax.swing.text.View.Y_AXIS) <= shown.height - in.top - in.bottom);
     }
 
     /**
