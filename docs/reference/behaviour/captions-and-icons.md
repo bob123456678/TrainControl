@@ -85,8 +85,8 @@ vertical labels is really hard to read"*).
 | the icon | the station |
 |---|---|
 | a rounded block | a station |
-| a hexagon pointed at both ends | trains may turn round there |
-| two arrow-shaped halves back to back, pointing away from each other, white bars in them, the track's black line between them | trains must turn round there |
+| a hexagon pointed at both ends | trains may turn around there |
+| two arrow-shaped halves back to back, pointing away from each other, white bars in them, the track's black line between them | trains must turn around there |
 | a hexagon flat at one end, with a bar at that end | a terminus: its track runs out on that side |
 | a white circle with an orange ring and an orange X in it, whatever the square otherwise is | out of service: nothing may pass or stop there |
 

@@ -16,7 +16,7 @@ import org.traincontrol.marklin.MarklinControlStation;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 
 /**
- * A train reversed on the throttle turns round in autonomy, from the throttle's call to the setup's facing (MT-488).
+ * A train reversed on the throttle turns around in autonomy, from the throttle's call to the setup's facing (MT-488).
  *
  * Adam: *"reversing it on the throttle has no effect on autonomy.  when no autonomy or manual path is running, have
  * the throttle change its autonomy direction."*  The window follows a turn from the direction MESSAGE
@@ -334,7 +334,7 @@ public class testAThrottleReversalIsFollowedFromItsEcho
         try
         {
             // THE THROTTLE, echoed; THE CENTRAL STATION'S OWN COMMAND, turning it back; and the throttle again, so that it
-            // ends turned round and a turn left over would show after the run
+            // ends turned around and a turn left over would show after the run
             reverse();
 
             settle();

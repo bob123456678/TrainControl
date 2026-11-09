@@ -192,7 +192,7 @@ public class testTheGoldenLayoutHoldsTogether
         // worth checking, and so is a listed length with the notice off.
         assertEquals(armed, !store.tilesWithALength().isEmpty(),
             "the reversal-length notice is armed by one measured square anywhere and then covers "
-            + "every square trains turn round at.  Armed with nothing measured is the state TCX-B3 "
+            + "every square trains turn around at.  Armed with nothing measured is the state TCX-B3 "
             + "names: a warning that cannot answer the question it raises.  The store says "
             + (armed ? "a square is measured" : "none is") + "; it lists " + store.tilesWithALength().size()
             + " squares with a length, and " + measured + " of those named carry one");

@@ -116,7 +116,7 @@ public class ArrivalSidePrompt
      * null.
      * - **An ordinary station** is answered by the heading (it faces the way it will leave, so it came from behind),
      * out of the sides this square actually has.
-     * - **A may-reverse station** answers NULL, because turning round is what those squares are for.  `forPlacement`
+     * - **A may-reverse station** answers NULL, because turning around is what those squares are for.  `forPlacement`
      * sends it to the operator; a form can pass `mayReverse` false to get the assumption as a visible starting
      * value.
      */

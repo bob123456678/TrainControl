@@ -71,7 +71,7 @@ public class testThePlatformNoticeKnowsWhatATrainIsRefusedAt extends AutonomySes
         session.rebuild();
 
         assertTrue(session.isTurnAround(turns),
-            "the fixture did not take: this square must be one trains turn round at");
+            "the fixture did not take: this square must be one trains turn around at");
 
         // NOTHING MEASURED ANYWHERE: the notice stays away.
         assertFalse(session.reversalsWithoutLength().containsKey(turns),
@@ -83,7 +83,7 @@ public class testThePlatformNoticeKnowsWhatATrainIsRefusedAt extends AutonomySes
         session.setTileLength(new TileKey("main", 4, 1), 7);
 
         assertTrue(session.reversalsWithoutLength().containsKey(turns),
-            "the layout measures track now, and the square where a train turns round - the one place "
+            "the layout measures track now, and the square where a train turns around - the one place "
             + "the length rule cannot do its job without a number - was not asked about");
 
         // ONE ENTRY, NOT ONE PER SQUARE (OB-171): the map is the reversal square mapped to how many squares its guard
@@ -197,7 +197,7 @@ public class testThePlatformNoticeKnowsWhatATrainIsRefusedAt extends AutonomySes
             + "short. Unmeasured is unknown, not zero - and REVERSAL_NEEDS_LENGTH is the notice that "
             + "asks for a number where one is needed");
 
-        // THE OTHER BRANCH: no switch between the two squares, and the train turns round at the far end.
+        // THE OTHER BRANCH: no switch between the two squares, and the train turns around at the far end.
         session.open(Arrays.asList(runOfTrack()));
         session.initialize("ShortTurn");
 
@@ -215,13 +215,13 @@ public class testThePlatformNoticeKnowsWhatATrainIsRefusedAt extends AutonomySes
         session.rebuild();
 
         assertTrue(session.isTurnAround(turns),
-            "the fixture did not take: trains must turn round at the far end of this run");
+            "the fixture did not take: trains must turn around at the far end of this run");
 
         org.traincontrol.automationui.AutonomyChecks.Finding afterATurn =
             runInNotice();
 
         assertNotNull(afterATurn, "a platform set to hold nine units is four units of track from the "
-            + "square trains turn round at, and the walk stops at a reversal just as it stops at a "
+            + "square trains turn around at, and the walk stops at a reversal just as it stops at a "
             + "switch (Adam, 2026-09-11) - so nine can never be reached there and nothing said so");
 
         assertEquals(afterATurn.getSubject(), session.pointNameForTile(berth),
@@ -241,7 +241,7 @@ public class testThePlatformNoticeKnowsWhatATrainIsRefusedAt extends AutonomySes
         assertFalse(session.isTurnAround(turns), "the fixture did not take: nothing should turn here now");
 
         assertFalse(runInNotice() != null,
-            "an edge that crosses no switch and starts nowhere trains turn round bounds nothing - the "
+            "an edge that crosses no switch and starts nowhere trains turn around bounds nothing - the "
             + "guard carries on back through the route - so the number this would quote is not the "
             + "number that would refuse the train");
     }
@@ -826,7 +826,7 @@ public class testThePlatformNoticeKnowsWhatATrainIsRefusedAt extends AutonomySes
         session.rebuild();
 
         assertEquals(findingsAbout(key, berth), 0, "a home on a parking berth a train can be backed into - rested at the"
-            + " terminus beyond it, as Return Home does - is still warned about turning round");
+            + " terminus beyond it, as Return Home does - is still warned about turning around");
     }
 
     /**

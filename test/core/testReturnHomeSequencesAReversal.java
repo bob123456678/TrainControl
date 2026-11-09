@@ -22,7 +22,7 @@ import org.traincontrol.base.Accessory;
  * learn to sequence a reversal as two paths.").
  *
  * A path sets every switch it needs before the train departs, so one accessory cannot be asked for two settings on one
- * route; a journey that turns round and returns through the same junction asks exactly that.  This is that shape in
+ * route; a journey that turns around and returns through the same junction asks exactly that.  This is that shape in
  * miniature, with three tests: the single path really is refused, the planner gets there anyway, and it does not invent
  * a stop when the run was clear all along.
  */
@@ -199,7 +199,7 @@ public class testReturnHomeSequencesAReversal
     {
         Layout layout = reversalLayout();
 
-        // The workaround, set: a place trains turn round at, that autonomy never sends anyone to.
+        // The workaround, set: a place trains turn around at, that autonomy never sends anyone to.
         layout.getPoint("RH mid").setAutoDestination(false);
 
         Locomotive loc = model.getLocByName(model.getLocList().get(0));
@@ -213,7 +213,7 @@ public class testReturnHomeSequencesAReversal
             HomeStaging.Plan plan = planHome(layout, loc, "RH start", "RH home");
 
             assertTrue(plan.isPossible(),
-                "a reversing square that autonomy may not choose was refused as a place to turn round "
+                "a reversing square that autonomy may not choose was refused as a place to turn around "
                 + "on the way home, which is the one job that kind of square exists to do.  Outcome "
                 + plan.getOutcome() + ", blocked " + plan.getBlocked());
 
@@ -566,7 +566,7 @@ public class testReturnHomeSequencesAReversal
         layout.createPoint("RH mid", true, Integer.toString(FEEDBACK_BASE + 1));
         layout.createPoint("RH home", true, Integer.toString(FEEDBACK_BASE + 2));
 
-        // Where the train turns round, and where it is going.
+        // Where the train turns around, and where it is going.
         layout.getPoint("RH mid").setReversing(true);
         layout.getPoint("RH home").setTerminus(true);
 

@@ -1052,7 +1052,7 @@ public class LayoutGrid
                                 // Left-clicking a station will activate its locomotive
                                 else
                                 {
-                                    // By square: a square where trains may turn round is several Points, none called
+                                    // By square: a square where trains may turn around is several Points, none called
                                     // what the diagram says.
                                     org.traincontrol.automation.Point standing =
                                         ui.getAutonomyPointForTile(station);

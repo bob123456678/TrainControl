@@ -12,7 +12,7 @@ import org.traincontrol.automation.Point;
 import org.traincontrol.automationui.TileGraph.TileKey;
 
 /**
- * One switch decides whether autonomy chooses a station, and turning round is not it (OB-195).  Runs on
+ * One switch decides whether autonomy chooses a station, and turning around is not it (OB-195).  Runs on
  * `single-switch`, whose three stub ends are compulsory turns and none is manual-only.
  *
  * @author Adam
@@ -22,7 +22,7 @@ public class testACompulsoryTurnIsChosenLikeAnyOtherStation
     private static support.Scenario scenario;
 
     /**
-     * A compulsory turn on the fixture: `MainPlatform` is a buffer stop, so every train that arrives there turns round.
+     * A compulsory turn on the fixture: `MainPlatform` is a buffer stop, so every train that arrives there turns around.
      */
     private static final int X = 7;
 
@@ -79,7 +79,7 @@ public class testACompulsoryTurnIsChosenLikeAnyOtherStation
 
         assertFalse(left.contains(berth),
             "the editor still reports MainPlatform as a station autonomy never chooses, and autonomy"
-            + " chooses it. Turning round says what happens when a train ARRIVES; the switch Adam"
+            + " chooses it. Turning around says what happens when a train ARRIVES; the switch Adam"
             + " names - Can Be Chosen in Full Autonomy - says who may send one");
     }
 

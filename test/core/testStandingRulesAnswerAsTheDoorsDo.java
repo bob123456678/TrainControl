@@ -263,7 +263,7 @@ public class testStandingRulesAnswerAsTheDoorsDo
         }
     }
 
-    /** Turned Round Here: a trip ending on a turning copy, or a hand trip through one, from the east, where something lies on both sides. */
+    /** Turned around Here: a trip ending on a turning copy, or a hand trip through one, from the east, where something lies on both sides. */
     private static void assertTurned(Layout railway, StandingRules rules, String say)
     {
         String side = sideFrom(railway, "MainPlatform");
@@ -294,11 +294,11 @@ public class testStandingRulesAnswerAsTheDoorsDo
         // trip turns here and the cell says no
         boolean byHand = reaches(railway, reversible, from, turning.and(offeredTo(railway, reversible)));
 
-        assertEquals(rules.cells(Row.TURNED_ROUND, true).get(side).getAnswer() != Answer.NO, byHand, say + ": Turned round by hand");
+        assertEquals(rules.cells(Row.TURNED_ROUND, true).get(side).getAnswer() != Answer.NO, byHand, say + ": Turned around by hand");
 
         boolean byAutonomy = reaches(railway, reversible, from, turning.and(chosenBy(railway, reversible)));
 
-        assertEquals(rules.cells(Row.TURNED_ROUND, false).get(side).getAnswer() != Answer.NO, byAutonomy, say + ": Turned round by autonomy");
+        assertEquals(rules.cells(Row.TURNED_ROUND, false).get(side).getAnswer() != Answer.NO, byAutonomy, say + ": Turned around by autonomy");
     }
 
     /**
@@ -532,7 +532,7 @@ public class testStandingRulesAnswerAsTheDoorsDo
     }
 
     /**
-     * A plain station says what the owner was shown: yes to everything but turning round.
+     * A plain station says what the owner was shown: yes to everything but turning around.
      *
      * MUTATION: answer `neverTurns` with Answer.SOME in `LayoutStandingRules.turning` and this fails.
      */
@@ -556,7 +556,7 @@ public class testStandingRulesAnswerAsTheDoorsDo
         {
             for (StandingRules.Cell cell : rules.cells(Row.TURNED_ROUND, byHand).values())
             {
-                assertEquals(cell.getAnswer(), Answer.NO, "turned round by hand " + byHand);
+                assertEquals(cell.getAnswer(), Answer.NO, "turned around by hand " + byHand);
             }
         }
     }

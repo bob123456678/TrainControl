@@ -98,7 +98,7 @@ all use that search. `core.testARouteIsFoundPastATerminus`.
 **No tier sends a train round a loop to another copy of its own square** (Adam: *"we should never do a round trip
 just to change direction"*). The right-click menu and autonomy never offer one (a copy of the square a train stands on
 reads as occupied by that train), Why Not Moving? does not list the train's own square, and Return Home's planner
-refuses it too. A train turns round at a reversing square or a terminus on its way.
+refuses it too. A train turns around at a reversing square or a terminus on its way.
 `core.testARouteIsFoundPastATerminus.testNoRoundTripBackToTheTrainsOwnSquare`.
 
 ---

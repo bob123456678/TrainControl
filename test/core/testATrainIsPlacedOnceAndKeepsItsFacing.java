@@ -893,7 +893,7 @@ public class testATrainIsPlacedOnceAndKeepsItsFacing extends AutonomySessionFixt
 
         session.setStation(station, true);
 
-        // "Trains may turn round here" (a berth or a stub platform) gives the square a turning copy of every arrival.
+        // "Trains may turn around here" (a berth or a stub platform) gives the square a turning copy of every arrival.
         session.setPointProperty(station, org.traincontrol.automationui.AutonomyBuilder.CAN_REVERSE,
             Boolean.TRUE);
 
@@ -1086,7 +1086,7 @@ public class testATrainIsPlacedOnceAndKeepsItsFacing extends AutonomySessionFixt
     }
 
     /**
-     * Barring a side of a station where trains turn round still loads.  "station" is per copy, but "terminus" was read
+     * Barring a side of a station where trains turn around still loads.  "station" is per copy, but "terminus" was read
      * off the SQUARE, so the reverse copy of a barred side was a terminus that is not a destination, which
      * `Point.setTerminus` refuses and `parseAuto` answers by invalidating the WHOLE layout.
      */
@@ -1107,7 +1107,7 @@ public class testATrainIsPlacedOnceAndKeepsItsFacing extends AutonomySessionFixt
         session.setPointName(station, "Kopfbahnhof");
         session.setPointFlag(station, AutonomyBuilder.CAN_REVERSE, true);
 
-        assertTrue(session.isTurnAround(station), "precondition: trains may turn round here");
+        assertTrue(session.isTurnAround(station), "precondition: trains may turn around here");
 
         session.setBarredArrivals(station, new java.util.LinkedHashSet<>(
             Arrays.asList(session.arrivalSides(station).get(0))));
@@ -1743,7 +1743,7 @@ public class testATrainIsPlacedOnceAndKeepsItsFacing extends AutonomySessionFixt
             "the placed locomotive was not followed at all");
 
         assertEquals(session.getFacing(tile), choices.get(1),
-            "the setup was not turned round: the recorded facing is still " + session.getFacing(tile)
+            "the setup was not turned around: the recorded facing is still " + session.getFacing(tile)
             + " and the square offers " + choices);
 
         // The call site hands the layout over, the half a session-only test cannot see: standing the whole window up

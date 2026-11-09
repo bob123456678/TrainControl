@@ -177,7 +177,7 @@ public class testAPlacedTrainRecordsWhereItCameFrom
         assertEquals(facingOne, facingOther,
             "the arrival side recorded at " + square + " depends on which way the train happens to be"
             + " facing - " + facingOne + " against " + facingOther + " - and the facing alternates every"
-            + " time the train is turned round somewhere. That is Adam's \"about half the time\":"
+            + " time the train is turned around somewhere. That is Adam's \"about half the time\":"
             + " the square has ONE way in, and a side the operator barred was being counted as a second");
 
         assertNotNull(facingOne,

@@ -95,7 +95,7 @@ final class LayoutExplanations
         }
 
         // NEITHER WAY: what a reachable station needs - switched on, Can Be Chosen ticked, and the side a train would
-        // arrive on open, unless every train turns round there.  The exception is in the words because this sentence
+        // arrive on open, unless every train turns around there.  The exception is in the words because this sentence
         // does not know which station is meant.
         return I18n.f("autolayout.why.startReachesNoStationEitherWay", Layout.placeNameOf(at),
             I18n.t("autosetup.ui.menuAutoDestination"), I18n.t("autosetup.ui.menuArrivalsGroup"));

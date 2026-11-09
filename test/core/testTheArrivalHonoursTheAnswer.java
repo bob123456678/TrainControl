@@ -401,14 +401,14 @@ public class testTheArrivalHonoursTheAnswer
         }
     }
 
-    /** And "turn round" at the same square turns it, so the answer is read in both directions. */
+    /** And "turn around" at the same square turns it, so the answer is read in both directions. */
     @Test
     public void testTurnRoundIsHonouredAtTheSameSquare() throws Exception
     {
         Point may = layout.getPoint("MT368_MAY");
 
         assertTrue(layout.turnsOnArrival(may, loc, answering(true, may)),
-            "the operator said TURN ROUND at a square trains may turn at and the train was not"
+            "the operator said TURN around at a square trains may turn at and the train was not"
             + " turned, so the answer is ignored in both directions rather than honoured");
     }
 

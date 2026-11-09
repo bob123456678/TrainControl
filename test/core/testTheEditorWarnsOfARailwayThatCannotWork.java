@@ -265,7 +265,7 @@ public class testTheEditorWarnsOfARailwayThatCannotWork extends AutonomySessionF
     {
         threeStationsInARow("OB-201");
 
-        // TRAINS TURN ROUND AT BOTH ENDS, so a train reaches 3,1 from either side (OB-361)
+        // TRAINS TURN around AT BOTH ENDS, so a train reaches 3,1 from either side (OB-361)
         turnTrainsRoundAtBothEnds();
 
         TileKey beta = new TileKey("main", 3, 1);
@@ -424,7 +424,7 @@ public class testTheEditorWarnsOfARailwayThatCannotWork extends AutonomySessionF
         assertNotNull(trappedAt(beta), "precondition: a train arriving at 3,1 from the west is not reported trapped: "
             + session.check());
 
-        // AND NOW NO TRAIN ARRIVES FROM THE WEST: trains reaching 1,1, the end of the line, no longer turn round there
+        // AND NOW NO TRAIN ARRIVES FROM THE WEST: trains reaching 1,1, the end of the line, no longer turn around there
         session.setPointProperty(new TileKey("main", 1, 1), "mustReverse", null);
         session.rebuild();
 
@@ -833,7 +833,7 @@ public class testTheEditorWarnsOfARailwayThatCannotWork extends AutonomySessionF
     }
 
     /**
-     * A square trains turn round at, from which no station can be reached, is reported (OB-113).  The second half
+     * A square trains turn around at, from which no station can be reached, is reported (OB-113).  The second half
      * gives the pocket a station, which stops the notice, so the check is not one that lists every reversing point.
      *
      * MUTATION: dropping the `!reachesAStation` condition fails the second half; removing the call to
@@ -886,8 +886,8 @@ public class testTheEditorWarnsOfARailwayThatCannotWork extends AutonomySessionF
                 saw.append("\n  ").append(f.getMessageKey()).append(" ").append(f.getSubject());
             }
 
-            fail("a square trains turn round at, with no station reachable from it, was not reported. "
-                + "Turning round somewhere a train can never get to a station from is the shape of "
+            fail("a square trains turn around at, with no station reachable from it, was not reported. "
+                + "Turning around somewhere a train can never get to a station from is the shape of "
                 + "OB-113 - a route that does not exist and nothing on the diagram saying why. "
                 + "Findings were:" + saw);
         }
@@ -961,7 +961,7 @@ public class testTheEditorWarnsOfARailwayThatCannotWork extends AutonomySessionF
 
         assertTrue(hasFinding(org.traincontrol.automationui.AutonomyChecks.REVERSING_LEADS_NOWHERE),
             "the only station reachable from that reversing point is one autonomy will never choose, "
-            + "so a train sent there turns round and is still nowhere - which is exactly what this "
+            + "so a train sent there turns around and is still nowhere - which is exactly what this "
             + "notice is for, and the editor counted it as somewhere to go (V36-C4)");
 
         // AND THE SEVERITY IS THE ONE HE ASKED FOR.
@@ -1060,7 +1060,7 @@ public class testTheEditorWarnsOfARailwayThatCannotWork extends AutonomySessionF
         // THE CASE. One way in, and still somewhere to carry on to.
         assertFalse(reported.contains("LowerBack"),
             "the square a train can enter from one side and leave by either was reported as a place "
-            + "where \"every train turns round anyway\" - it can carry on east, which is the whole "
+            + "where \"every train turns around anyway\" - it can carry on east, which is the whole "
             + "of OB-123. Reported: " + reported);
 
         // THE CONTROL, which is what stops this passing by the check having been switched off.
@@ -1139,7 +1139,7 @@ public class testTheEditorWarnsOfARailwayThatCannotWork extends AutonomySessionF
         session.setStation(east, true);
         session.setPointName(east, "EastEnd");
 
-        // Trains turn round at the west end, or a train standing there faces the buffers and is sent nowhere
+        // Trains turn around at the west end, or a train standing there faces the buffers and is sent nowhere
         session.setPointFlag(west, AutonomyBuilder.CAN_REVERSE, true);
 
         session.rebuild();
@@ -1364,9 +1364,9 @@ public class testTheEditorWarnsOfARailwayThatCannotWork extends AutonomySessionF
     }
 
     /**
-     * A station every train must turn round at may have only one way in (MT-361).  An ERROR is asserted, since
+     * A station every train must turn around at may have only one way in (MT-361).  An ERROR is asserted, since
      * `errorCount() > 0` refuses to start autonomy.  The three remedies the message names all clear it: bar one way in,
-     * change the square to "may turn round", or stop calling it a station.
+     * change the square to "may turn around", or stop calling it a station.
      *
      * MUTATIONS: dropping the `isStation` test reports the reversing point; dropping the barred-arrival test leaves the
      * first remedy unable to clear it; using `isTurnAround` instead of `mandatoryTurnTiles` reports the may-turn
@@ -1396,7 +1396,7 @@ public class testTheEditorWarnsOfARailwayThatCannotWork extends AutonomySessionF
             + " is about a fixture that cannot show the fault: " + session.terminiWithTwoWaysIn());
 
         assertTrue(hasFinding(org.traincontrol.automationui.AutonomyChecks.TERMINUS_WITH_TWO_WAYS_IN),
-            "a station where every train must turn round has track reaching it from both sides and"
+            "a station where every train must turn around has track reaching it from both sides and"
             + " nothing objected. It is two termini, each sending its trains back the way they came,"
             + " and the track out of the far side is never used (Adam, MT-361)");
 
@@ -1427,7 +1427,7 @@ public class testTheEditorWarnsOfARailwayThatCannotWork extends AutonomySessionF
         session.rebuild();
 
         assertFalse(hasFinding(org.traincontrol.automationui.AutonomyChecks.TERMINUS_WITH_TWO_WAYS_IN),
-            "a station where trains MAY turn round is reported as a terminus with two ways in. That is"
+            "a station where trains MAY turn around is reported as a terminus with two ways in. That is"
             + " the ordinary station a train can either run through or reverse in, which is what \"may\""
             + " is for - and the rule has taken the operator's choice away");
 
@@ -1522,7 +1522,7 @@ public class testTheEditorWarnsOfARailwayThatCannotWork extends AutonomySessionF
         session.setStation(near, true);
         session.setStation(far, true);
 
-        // Trains turn round at the near end, or a train standing there faces the buffers and is sent nowhere
+        // Trains turn around at the near end, or a train standing there faces the buffers and is sent nowhere
         session.setPointFlag(near, AutonomyBuilder.CAN_REVERSE, true);
 
         session.rebuild();

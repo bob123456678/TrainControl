@@ -25,16 +25,16 @@ import org.traincontrol.base.LayoutDiagramComponent.componentType;
 import org.traincontrol.marklin.MarklinAccessory;
 
 /**
- * Turning round: one sensor, two things a train may do there.  From the sample layout: BottomMainC and BottomMainCTerm
+ * Turning around: one sensor, two things a train may do there.  From the sample layout: BottomMainC and BottomMainCTerm
  * are both stations and both s88 4, both entered from BottomMainCPre; one leaves to BottomMainPost carrying on, the
- * other to TunnelReversePre having turned round.  A single Point per sensor cannot say that.
+ * other to TunnelReversePre having turned around.  A single Point per sensor cannot say that.
  *
  *     F11 --- x --- SW --- x --- F4 --- x --- F12        (the running line, west to east)
  *                    |
  *                   F18                                  (a siding, trailing off behind F4)
  *
  * The switch faces east, so a train running WEST out of F4 can take the siding and one running east out of F11
- * cannot: reaching F18 from F11 means stopping at F4 and turning round.
+ * cannot: reaching F18 from F11 means stopping at F4 and turning around.
  *
  * @author Adam
  */
@@ -64,7 +64,7 @@ public class testAutonomyDiagramReversal
             "running west the siding is straight ahead");
 
         assertFalse(hasEdge(built, "Main4 (eastbound)", "Siding18"),
-            "running east it is behind the train, and nothing here lets it turn round");
+            "running east it is behind the train, and nothing here lets it turn around");
     }
 
     /**
@@ -96,20 +96,20 @@ public class testAutonomyDiagramReversal
 
     /**
      * Both copies hang off the same incoming point, which is what lets the path finder choose between
-     * carrying on and turning round.  BottomMainCPre reached both BottomMainC and BottomMainCTerm.
+     * carrying on and turning around.  BottomMainCPre reached both BottomMainC and BottomMainCTerm.
      */
     @Test
     public void testBothCopiesAreReachableFromTheSameIncomingPoint() throws IOException
     {
         // West11 is a buffer stop and must be marked too: track runs east from it only, so it cannot set off towards
-        // the junction until trains turn round there.  What is under test is Main4, and West11 only has to reach it.
+        // the junction until trains turn around there.  What is under test is Main4, and West11 only has to reach it.
         JSONObject built = build(junction(), stations(key("main", 5, 2)),
             marked(key("main", 5, 2), key("main", 1, 2)), extras());
 
         assertTrue(hasEdge(built, "West11", "Main4 (eastbound)"),
             "a train from the west can pass through");
         assertTrue(hasEdge(built, "West11", "Main4 (eastbound, reverse)"),
-            "or stop and turn round, from the very same place");
+            "or stop and turn around, from the very same place");
     }
 
     /**
@@ -126,19 +126,19 @@ public class testAutonomyDiagramReversal
         assertTrue(hasEdge(built, "Main4 (eastbound)", "East12"),
             "carrying on east is what the plain copy is for");
         assertFalse(hasEdge(built, "Main4 (eastbound)", "Siding18"),
-            "the siding is behind it - reaching it without turning round is the bug");
+            "the siding is behind it - reaching it without turning around is the bug");
         assertFalse(hasEdge(built, "Main4 (eastbound)", "West11"));
 
-        // arrived from the west and turned round
+        // arrived from the west and turned around
         assertTrue(hasEdge(built, "Main4 (eastbound, reverse)", "Siding18"),
-            "having turned round, the siding is straight ahead");
+            "having turned around, the siding is straight ahead");
         assertFalse(hasEdge(built, "Main4 (eastbound, reverse)", "East12"),
             "and carrying on east is exactly what it cannot do");
     }
 
     /**
      * The other direction is the mirror image, not a special case: a train that arrived from the east
-     * carries on west - to the siding or beyond - and only turns round to go back east.
+     * carries on west - to the siding or beyond - and only turns around to go back east.
      */
     @Test
     public void testTheOppositeDirectionMirrorsIt() throws IOException
@@ -214,7 +214,7 @@ public class testAutonomyDiagramReversal
         // And it has to carry what the mark means, or the platform emits no flag at all and its trains
         // run into the buffers.
         assertTrue(copies.get(0).optBoolean("terminus"),
-            "the only thing a train can do at a dead end is arrive and turn round");
+            "the only thing a train can do at a dead end is arrive and turn around");
     }
 
     /**
@@ -240,7 +240,7 @@ public class testAutonomyDiagramReversal
 
     /**
      * An authored terminus flag is not carried onto the copies either.  It described the tile; on a
-     * split tile turning round is what the COPY means, and letting it through would make the plain copy
+     * split tile turning around is what the COPY means, and letting it through would make the plain copy
      * reverse as well - which is the behavior the split exists to separate.
      */
     @Test
@@ -349,7 +349,7 @@ public class testAutonomyDiagramReversal
             .withReversibleTiles(Collections.singleton(station)).build();
 
         assertNotEquals(withTheStationMarked, withoutFeature,
-            "control: marking a square as somewhere trains may turn round produced exactly the same "
+            "control: marking a square as somewhere trains may turn around produced exactly the same "
             + "configuration as marking nothing, so the assertion below - that marking NOTHING "
             + "changes nothing - is satisfied by a builder that ignores the set altogether");
 
@@ -433,7 +433,7 @@ public class testAutonomyDiagramReversal
     /**
      * The running line with a siding trailing off behind the junction sensor.  SWITCH_LEFT at orientation 1 puts the
      * toe EAST, straight west, branch south (ports rotate by (4 - orientation) quarter turns, see TilePorts.ports), so
-     * the siding is reachable only by turning round at F4.
+     * the siding is reachable only by turning around at F4.
      */
     private LayoutDiagram junction() throws IOException
     {

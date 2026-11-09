@@ -429,9 +429,9 @@ public class testAutonomyDiagramSampleLayout
         Collections.sort(turns);
 
         System.out.println();
-        System.out.println("=== WHERE A TRAIN COULD TURN ROUND, " + label + " ===");
+        System.out.println("=== WHERE A TRAIN COULD TURN around, " + label + " ===");
         System.out.println("emitted Points: " + arrivals.size()
-            + ", of which trains may turn round at " + turnsHere.size());
+            + ", of which trains may turn around at " + turnsHere.size());
         System.out.println("Points offering a turn a train cannot make: " + turns.size());
 
         for (String line : turns) System.out.println(line);
@@ -454,7 +454,7 @@ public class testAutonomyDiagramSampleLayout
 
     /**
      * The case the author raised: a train that reached BottomMainA from the Tunnel end must not be able to go straight
-     * back to the Tunnel, since it cannot turn round anywhere between.  Checked against the wide-open reduction as
+     * back to the Tunnel, since it cannot turn around anywhere between.  Checked against the wide-open reduction as
      * well: as authored the branch back out is closed, so the test would pass without establishing anything.
      */
     @Test

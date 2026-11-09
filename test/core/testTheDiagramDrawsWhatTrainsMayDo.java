@@ -904,7 +904,7 @@ public class testTheDiagramDrawsWhatTrainsMayDo extends AutonomySessionFixture
         session.getStore().createConfiguration("Shut", null);
         session.getStore().setActiveConfiguration("Shut");
 
-        // The MIDDLE sensor is neither a station nor anywhere trains turn round, so only being switched off can earn it
+        // The MIDDLE sensor is neither a station nor anywhere trains turn around, so only being switched off can earn it
         // a badge.
         TileKey plain = new TileKey("main", 4, 1);
 

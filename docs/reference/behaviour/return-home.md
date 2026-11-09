@@ -22,8 +22,8 @@ Part of the behavior reference: [`../behaviour.md`](../behaviour.md) is the inde
   offering only the facings of copies trains may arrive at. The setup keeps it as `homeFacing`, the build puts the home
   on the copy facing that way and marks it, and a home set on the running diagram is held to the copy it was set on.
   Return Home counts a train home only on a copy FACING that way (MT-165 asked for the square alone): on a square with
-  two platforms facing opposite ways, any copy would count a train turned round as home. Not by arrival side: the home
-  copy's turning twin shares its arrival and points the other way, so a train left turned round on BottomMainB
+  two platforms facing opposite ways, any copy would count a train turned around as home. Not by arrival side: the home
+  copy's turning twin shares its arrival and points the other way, so a train left turned around on BottomMainB
   (EN57-947's home) would be reported already home.
   `core.testATrainComesHomeFacingTheWayItWasHomed.testATrainTurnedRoundOnItsHomeIsNotHome`. A home with no facing (an
   old setup, or a copy no train may arrive at) is still the square, either way.

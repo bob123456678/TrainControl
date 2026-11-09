@@ -520,7 +520,7 @@ public class testRoutes
     }
 
     /**
-     * NOT AT is the same question turned round (FR-141): a train on no sensor is not at this one either, and a name
+     * NOT AT is the same question turned around (FR-141): a train on no sensor is not at this one either, and a name
      * with no locomotive behind it satisfies neither form, so a typo cannot make a condition true.
      *
      * MUTATION: have `Route.evaluate` ignore `isAtSensor` and the first assertion fails; answer "not at" for a name

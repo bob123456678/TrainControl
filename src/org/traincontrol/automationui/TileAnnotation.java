@@ -142,7 +142,7 @@ public class TileAnnotation
             this(station, terminus, reversing, parking, named, a, b, false);
         }
 
-        /** @param optional whether turning round here is a choice rather than compulsory */
+        /** @param optional whether turning around here is a choice rather than compulsory */
         public Badge(boolean station, boolean terminus, boolean reversing, boolean parking,
             boolean named, Side a, Side b, boolean optional)
         {
@@ -198,7 +198,7 @@ public class TileAnnotation
             return terminus;
         }
 
-        /** Whether turning round here is a choice rather than compulsory. */
+        /** Whether turning around here is a choice rather than compulsory. */
         public boolean isOptional()
         {
             return optional;

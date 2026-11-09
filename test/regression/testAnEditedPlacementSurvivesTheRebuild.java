@@ -1548,7 +1548,7 @@ public class testAnEditedPlacementSurvivesTheRebuild
     }
 
     /**
-     * A train the last run turned round on a station, whose turning is then taken away, is recorded where it stands and
+     * A train the last run turned around on a station, whose turning is then taken away, is recorded where it stands and
      * reported, not left where the setup last had it: no copy of the square faces its way any more.
      *
      * MUTATION: put nothing on the list of trains not put back for a copy the rebuild has not got, and this fails.

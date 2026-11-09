@@ -191,7 +191,7 @@ public class testAReversalCommandIsEmitted
         {
             layout.stopLocomotives();
 
-            fail(which + " never arrived, so whether it would have turned round is unknown");
+            fail(which + " never arrived, so whether it would have turned around is unknown");
         }
         finally
         {
@@ -257,7 +257,7 @@ public class testAReversalCommandIsEmitted
         run(layout, path, driver, answering(false, end), "the kept-direction journey");
 
         assertEquals(driver.goingForward(), before,
-            "the answer was yes - keep the direction - and the train turned round anyway. A dialog"
+            "the answer was yes - keep the direction - and the train turned around anyway. A dialog"
             + " whose answer is discarded is worse than no dialog");
     }
 

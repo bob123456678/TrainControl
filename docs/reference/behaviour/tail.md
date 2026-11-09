@@ -321,7 +321,7 @@ smaller the typed maximum never binds.
   with no length refuses nothing and hides nothing. Where it equals {3} it is still given. On the frozen railway: TopMainR1Inter 3
   (TopR1ParkShort's four-unit train, MT-564), and LowerFront 4, from ParkingTrack12; none at Tunnel, BottomMainA or
   BottomInnerOtherside. `core.testAnAnsweredZeroIsNotMissing.testTheRefusingFigureIsTheRailwaysOwn`.
-- An arriving edge crossing no switch is skipped unless trains turn round where it starts (the guard then walks on back)
+- An arriving edge crossing no switch is skipped unless trains turn around where it starts (the guard then walks on back)
   or, for a parking berth, a crossing on it ends the berth rule's room.
 - Silent where either side is missing: no typed maximum is `checkNoMaxTrainLength`'s sentence, an unmeasured stretch is
   `checkReversalNeedsLength`'s, and a railway measuring no track has decided not to model lengths.

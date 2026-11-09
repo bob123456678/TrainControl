@@ -177,7 +177,7 @@ of service; the train then has to be driven off by hand, and a rule that refused
 
 With **Trains can stop here** on and **Trains can pass through** off, an automatic run or a trip sent by hand may end at the
 station and may leave it, and may not run through it. A later trip may leave in the same direction, as `Trains May
-Depart...` allows, with no turn round: that is how it differs from Must. Every copy of the square says so, a barred
+Depart...` allows, with no turn around: that is how it differs from Must. Every copy of the square says so, a barred
 side's included, so a train arriving by a barred side can neither stop nor pass.
 
 **Return Home may still run through it** (Adam's choice). `HomeStaging` does not ask the rule, and each leg of a plan is

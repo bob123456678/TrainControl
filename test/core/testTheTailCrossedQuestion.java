@@ -166,7 +166,7 @@ public class testTheTailCrossedQuestion
 
     /**
      * Only a road a train can DRIVE in on is offered (OB-227, MT-435): here the rails out of J run AWAY from the
-     * platform, so no train can have come from A or C to S without turning round, and nothing past J is offered.
+     * platform, so no train can have come from A or C to S without turning around, and nothing past J is offered.
      */
     @Test
     public void testOnlyARoadATrainCanDriveInOnIsOffered() throws Exception

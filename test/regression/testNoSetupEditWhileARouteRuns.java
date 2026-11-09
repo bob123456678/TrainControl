@@ -1561,7 +1561,7 @@ public class testNoSetupEditWhileARouteRuns
                         + " without saying a route is why");
                 }
 
-                // A TRAIN TURNED ROUND BY HAND is not followed into the setup
+                // A TRAIN TURNED around BY HAND is not followed into the setup
                 Point standing = aTrainOnASquareWithTwoFacings(window, session);
 
                 final org.json.JSONObject before = session.snapshotSetup();
@@ -1585,9 +1585,9 @@ public class testNoSetupEditWhileARouteRuns
                     }
                 });
 
-                assertNull(followed[0], "a train turned round by hand was followed into the setup while a route runs");
+                assertNull(followed[0], "a train turned around by hand was followed into the setup while a route runs");
 
-                assertTrue(session.snapshotSetup().similar(before), "a train turned round by hand changed the setup while a"
+                assertTrue(session.snapshotSetup().similar(before), "a train turned around by hand changed the setup while a"
                     + " route runs");
             }
             finally

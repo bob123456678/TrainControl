@@ -110,7 +110,7 @@ public class testTheCheckerAgreesWithTheBuild
     /**
      * A square the checker calls trapped is a square the build emits a Point it cannot leave (OB-361): `nodesFor`
      * answers the same question by NOT emitting a way out, so the sensor is not lost.  Excluded: squares with no
-     * arrival side, and squares where trains may turn round.
+     * arrival side, and squares where trains may turn around.
      *
      * Mutation this must fail: in `AutonomySession.check`, delete the `if (isTurnAround(tile)) continue;` that opens
      * the trapped walk (parking berths would be named as places a train cannot leave).  Not caught: replacing the
@@ -244,9 +244,9 @@ public class testTheCheckerAgreesWithTheBuild
     }
 
     /**
-     * A train parked where it turned round is not reported as facing an impossible way.
+     * A train parked where it turned around is not reported as facing an impossible way.
      *
-     * A train that turned round is pointing back at the side it came in by - so on a berth whose only
+     * A train that turned around is pointing back at the side it came in by - so on a berth whose only
      * copy is the turning one, the single facing the square can actually hold was reported as
      * impossible.
      *
@@ -273,7 +273,7 @@ public class testTheCheckerAgreesWithTheBuild
         TileKey berth = null;
         Side turned = null;
 
-        // The first square that is a berth in the sense this is about: a train may turn round on it,
+        // The first square that is a berth in the sense this is about: a train may turn around on it,
         // and the side it would then be facing is an arrival side.
         //
         // THE SEARCH USED TO ADD "and facingChoices does not offer it", which was how it found the
@@ -298,7 +298,7 @@ public class testTheCheckerAgreesWithTheBuild
         }
 
         assertNotNull(berth,
-            "this fixture has no square a train can turn round on that anything arrives at - so the "
+            "this fixture has no square a train can turn around on that anything arrives at - so the "
             + "case this is about cannot be built here, and this test would pass by testing nothing");
 
         session.placeLocomotive(berth, firstLocomotive());
@@ -310,7 +310,7 @@ public class testTheCheckerAgreesWithTheBuild
         for (AutonomyChecks.Finding finding : after)
         {
             assertNotEquals(finding.getMessageKey(), AutonomyChecks.FACING_IMPOSSIBLE,
-                "a train parked where it turned round was reported as holding a facing its square "
+                "a train parked where it turned around was reported as holding a facing its square "
                 + "cannot hold - and on a berth with one copy that is the only facing the square CAN "
                 + "hold.  Square: " + berth + ", facing " + turned);
         }
@@ -355,7 +355,7 @@ public class testTheCheckerAgreesWithTheBuild
                 //
                 // This used to skip any facing that was an arrival side, on the reasoning quoted in
                 // the javadoc: a turning copy points back the way it came, and that is "never offered
-                // as a facing because a train standing there has not turned round yet". True of a
+                // as a facing because a train standing there has not turned around yet". True of a
                 // train that arrived and stopped; false of one the operator placed, which is the
                 // menu's whole job, and false of one autonomy parked, because captureFromLayout
                 // writes that facing back.
@@ -381,7 +381,7 @@ public class testTheCheckerAgreesWithTheBuild
     }
 
     /**
-     * On a square a train may turn round on, the menu offers every facing the build can hold (OB-145).
+     * On a square a train may turn around on, the menu offers every facing the build can hold (OB-145).
      *
      * Adam: "on bottommainc, I don't see a 'locomotive is facing' choice even though there is a path
      * out both ways" - and the context that finds it: "the menu disappears when switch 70 disallows
@@ -396,13 +396,13 @@ public class testTheCheckerAgreesWithTheBuild
      *
      * **The sentence that allowed it** is in `testEveryFacingTheBuildEmitsIsOneTheEditorOffers` just
      * above, which skips a turning copy's facing on the reasoning that it is "never offered as a facing
-     * because a train standing there has not turned round yet". That is true of a train that arrived
+     * because a train standing there has not turned around yet". That is true of a train that arrived
      * and stopped. It is false of a train the OPERATOR placed - which is the whole job of the menu -
      * and false of one autonomy parked, because `captureFromLayout` writes exactly that facing back.
      * So the pair were held in step by a rule that excused the disagreement instead of catching it.
      *
      * This is the strict half, over the squares where the excuse applied: the build emits a turning
-     * copy only where a train may turn round, so on those squares the arrival sides ARE holdable
+     * copy only where a train may turn around, so on those squares the arrival sides ARE holdable
      * facings and the menu has to offer them.
      *
      * MUTATION: remove `if (isTurnAround(tile)) out.addAll(arrivalSides(tile));` from
@@ -439,11 +439,11 @@ public class testTheCheckerAgreesWithTheBuild
         // Both floors, because they fail differently: no berths at all means the fixture stopped
         // carrying the case, and berths with no copies means facingsAt has stopped answering.
         assertTrue(berths > 0,
-            "no square in this fixture is one a train may turn round on, so the case OB-145 is about "
+            "no square in this fixture is one a train may turn around on, so the case OB-145 is about "
             + "cannot be built here and this test would pass by testing nothing");
 
         assertTrue(checked > 0,
-            berths + " squares a train may turn round on, and not one of them has a copy carrying a "
+            berths + " squares a train may turn around on, and not one of them has a copy carrying a "
             + "facing - so this compared nothing");
 
         assertEquals(missing.toString(), "",

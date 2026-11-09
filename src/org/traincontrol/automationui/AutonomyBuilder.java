@@ -66,7 +66,7 @@ public class AutonomyBuilder
         /** which side a train arrived by, or null when the tile is not split */
         private final TilePorts.Side arrival;
 
-        /** whether this is the copy a train turns round at */
+        /** whether this is the copy a train turns around at */
         private final boolean reverse;
 
         /**
@@ -119,10 +119,10 @@ public class AutonomyBuilder
         }
     }
 
-    /** The authored key marking a tile where a train may turn round; never emitted, as it only shapes the graph. */
+    /** The authored key marking a tile where a train may turn around; never emitted, as it only shapes the graph. */
     public static final String CAN_REVERSE = "canReverse";
 
-    /** The authored key marking a square where a train must turn round; only the turning copies are emitted. */
+    /** The authored key marking a square where a train must turn around; only the turning copies are emitted. */
     public static final String MUST_REVERSE = "mustReverse";
 
     /** The authored key marking a berth trains are only sent to on purpose; emitted as `autoDestination` false. */
@@ -169,14 +169,14 @@ public class AutonomyBuilder
 
     private List<String> coordinatePages = null;
 
-    // Tiles the user marked as somewhere a train may turn round.  See Node.
+    // Tiles the user marked as somewhere a train may turn around.  See Node.
     private Set<TileKey> reversible = Collections.emptySet();
 
     // Stations autonomy may not choose for itself: emitted with autoDestination false and otherwise ordinary (a route
     // the user picks reaches them, Return Home fills them, and nothing about them stops a split).
     private Set<TileKey> manualOnly = Collections.emptySet();
 
-    // Squares where turning round is not optional: only the turning copies are emitted.
+    // Squares where turning around is not optional: only the turning copies are emitted.
     private Set<TileKey> mandatory = Collections.emptySet();
 
     // Per-point operational data from the active configuration - placements, homes, termini and the
@@ -217,7 +217,7 @@ public class AutonomyBuilder
     }
 
     /**
-     * The tiles (null for none) where a train may turn round, which gain a turning copy of every arrival.  Every tile
+     * The tiles (null for none) where a train may turn around, which gain a turning copy of every arrival.  Every tile
      * is split by arrival side whether or not it is marked.
      */
     public AutonomyBuilder withReversibleTiles(Set<TileKey> tiles)
@@ -227,7 +227,7 @@ public class AutonomyBuilder
         return this;
     }
 
-    /** The squares (null for none) where every arriving train must turn round. */
+    /** The squares (null for none) where every arriving train must turn around. */
     public AutonomyBuilder withMandatoryTurns(Set<TileKey> tiles)
     {
         this.mandatory = tiles == null ? Collections.<TileKey>emptySet() : tiles;
@@ -465,7 +465,7 @@ public class AutonomyBuilder
     }
 
     /**
-     * Every Point a tile is emitted as: one per arrival side, and a second per side where trains may turn round.  A
+     * Every Point a tile is emitted as: one per arrival side, and a second per side where trains may turn around.  A
      * tile nothing arrives at is one Point where one way or none leads out, else one copy per way out, so the copy a
      * train stands on says which way it faces.
      */
@@ -517,7 +517,7 @@ public class AutonomyBuilder
                 }
 
                 // The plain copy lets a train pass straight through.  Where turning is compulsory it is not emitted, so
-                // the path finder has nothing else to choose: the difference between "may turn round here" and "must".
+                // the path finder has nothing else to choose: the difference between "may turn around here" and "must".
                 // Nor where it would have no way out (a dead end would be a destination that can be reached and never
                 // left), and only where a turning copy carries the arrival: an unmarked dead end keeps its plain copy
                 // so the sensor stays in the graph, and the trapped-arrival check puts that in front of the user.
@@ -594,12 +594,12 @@ public class AutonomyBuilder
         if (facing == null) return startableCopy(nodes);
 
         // Matched on the facing each copy stands for, not its arrival side: those differ on a turning copy, so a facing
-        // learned from a train that had just turned round would match no copy and put the locomotive on the copy
+        // learned from a train that had just turned around would match no copy and put the locomotive on the copy
         // pointing the opposite way.  Among the copies facing that way, one trains may arrive at first, as `homeCopy`
         // asks.
         for (int copy = 0; copy < nodes.size(); copy++)
         {
-            // The plain copy in preference to the turning one: a train standing where it MAY turn round has not turned
+            // The plain copy in preference to the turning one: a train standing where it MAY turn around has not turned
             // yet
             if (facingOf(nodes.get(copy)) == facing && !nodes.get(copy).reverse && arrivalAllowed(nodes.get(copy)))
             {
@@ -666,7 +666,7 @@ public class AutonomyBuilder
     {
         if (node.arrival == null) return null;
 
-        // Turned round: pointing back at the side it came in by, whatever the track does
+        // Turned around: pointing back at the side it came in by, whatever the track does
         if (node.reverse) return node.arrival;
 
         Map<TileGraph.RouteId, TilePorts.Route> routes =
@@ -917,7 +917,7 @@ public class AutonomyBuilder
                         // most locomotives can reach it.  See homeCopy.
                         if (HOME.equals(key) && copy != homeOn) continue;
 
-                        // On a split tile, turning round is what the copy means, so the authored flag is carried onto
+                        // On a split tile, turning around is what the copy means, so the authored flag is carried onto
                         // neither: it would make the plain copy reverse too.  CAN_REVERSE never goes out; it is the
                         // instruction to split.
                         if (CAN_REVERSE.equals(key) || PARKING.equals(key)
@@ -939,7 +939,7 @@ public class AutonomyBuilder
                     }
                 }
 
-                // A station turns round at a terminus, anything else at a reversing point: a terminus is a destination
+                // A station turns around at a terminus, anything else at a reversing point: a terminus is a destination
                 // that reverses on arrival, a reversing point one autonomy never chooses to stop at.  Either the copy
                 // that exists to turn trains round, or, where the square was marked and nothing arrives at it by a side
                 // of the grid, the single Point it became (must, not may: the flag means every arriving train reverses,
@@ -1244,7 +1244,7 @@ public class AutonomyBuilder
         return behind.size() == 1 ? facingOf(new Node(tile, behind.get(0), false)) : null;
     }
 
-    /** Every emitted name of a turning copy: a train that came in and turned round there. */
+    /** Every emitted name of a turning copy: a train that came in and turned around there. */
     public Set<String> turningNames()
     {
         Set<String> out = new java.util.LinkedHashSet<>();

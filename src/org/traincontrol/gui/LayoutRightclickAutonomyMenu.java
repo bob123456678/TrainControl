@@ -842,7 +842,7 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
     }
 
     /**
-     * Whether the operator marked this square as one trains may turn round at.  Asked of the SETUP, because
+     * Whether the operator marked this square as one trains may turn around at.  Asked of the SETUP, because
      * `canReverse` never reaches the running layout (the builder splits the square); the same answer as
      * `TrainControlUI.mayTurnHere`.
      */
