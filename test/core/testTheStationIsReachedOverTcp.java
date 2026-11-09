@@ -309,6 +309,13 @@ public class testTheStationIsReachedOverTcp
         }, WAIT_MS), "the proxy did not set the broadcast frame aside: " + this.model.lines);
     }
 
+    /** The station shows the contact occupied, and the model has heard it. */
+    private void occupiedAndHeard(int contact) throws Exception
+    {
+        this.station.sensor(contact, true);
+        assertTrue(Components.waitFor(() -> this.model.heardFrame(linkS88(contact, true)), WAIT_MS), "precondition");
+    }
+
     private boolean logged(String key, long ms)
     {
         return Components.waitFor(() -> this.model.count(key) > 0, ms);
@@ -575,8 +582,7 @@ public class testTheStationIsReachedOverTcp
         try (DatagramSocket wire = udpWire())
         {
             connectedAndAnswered();
-            this.station.sensor(1202, true);
-            assertTrue(Components.waitFor(() -> this.model.heardFrame(linkS88(1202, true)), WAIT_MS), "precondition");
+            occupiedAndHeard(1202);
 
             Thread listener = (Thread) field("tcpReader");
 
@@ -729,8 +735,7 @@ public class testTheStationIsReachedOverTcp
         try (DatagramSocket wire = udpWire())
         {
             connectedToASilentStation();
-            this.station.sensor(1201, true);
-            assertTrue(Components.waitFor(() -> this.model.heardFrame(linkS88(1201, true)), WAIT_MS), "precondition");
+            occupiedAndHeard(1201);
 
             this.station.sensorUnseen(1201, false);
             broadcastSetAside(linkS88(1201, false));
@@ -797,8 +802,7 @@ public class testTheStationIsReachedOverTcp
     public void testASensorChangedDuringADropIsPutRightOnTheNewConnection() throws Exception
     {
         connectedToASilentStation();
-        this.station.sensor(1202, true);
-        assertTrue(Components.waitFor(() -> this.model.heardFrame(linkS88(1202, true)), WAIT_MS), "precondition");
+        occupiedAndHeard(1202);
 
         this.station.drop();
         this.station.sensorUnseen(1202, false);
@@ -976,8 +980,7 @@ public class testTheStationIsReachedOverTcp
     public void testAQueryNotWrittenIsNotCounted() throws Exception
     {
         connectedToASilentStation();
-        this.station.sensor(1905, true);
-        assertTrue(Components.waitFor(() -> this.model.heardFrame(linkS88(1905, true)), WAIT_MS), "precondition");
+        occupiedAndHeard(1905);
 
         java.lang.reflect.Field replacing = Reflect.field(NetworkProxy.class, "replacing");
         replacing.setBoolean(this.proxy, true);
