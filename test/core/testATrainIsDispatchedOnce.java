@@ -2731,6 +2731,31 @@ public class testATrainIsDispatchedOnce
     }
 
     /**
+     * A send whose connection is replaced while its switches are awaited is given back as one refused for the
+     * connection, not reported as misconfigured accessories nor counted toward that alert.  A simulated station sends
+     * no echo, so the wait fails.
+     *
+     * MUTATION: take the replacement test out of `configureAndLockPath`'s failure branch, and this fails.
+     */
+    @Test
+    public void testASendWhoseConnectionIsReplacedWhileItsSwitchesAreAwaitedIsNotMisconfigured() throws Exception
+    {
+        final java.util.concurrent.atomic.AtomicInteger replacements = new java.util.concurrent.atomic.AtomicInteger();
+
+        whileReplacing(2141, 12, "DVA", "DVB", replacedWhile("validatePathActuation", replacements), (rail, v, said) ->
+        {
+            aSwitchOnEach(through(rail, "DVA", "DVB"), 311);
+
+            refusedForTheConnection(rail, v, "DVA", "DVB", said, "a send whose connection was replaced while its switches"
+                + " were awaited");
+
+            assertTrue(replacements.get() > 0, "precondition: the switches were not awaited");
+            assertEquals(rail.getPathValidationFailureCount(), 0, "a send given back for the connection counted toward"
+                + " the misconfigured-accessories alert: " + said);
+        });
+    }
+
+    /**
      * Nor is a journey set going when the track power goes off while its route is being set: the train is given no
      * speed and the journey is not under way.  Path Integrity Validation off; eight edges, a switch on each.
      *
