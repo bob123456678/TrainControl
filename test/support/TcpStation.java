@@ -52,6 +52,9 @@ public final class TcpStation implements AutoCloseable
 
     private volatile boolean answering;
 
+    // Which frames are answered with `answering` off: none unless answeringOnly says
+    private volatile java.util.function.Predicate<byte[]> answers = frame -> false;
+
     /** The Link S88's device number on Adam's CS3. */
     public static final int LINK_S88 = 2;
 
@@ -87,6 +90,13 @@ public final class TcpStation implements AutoCloseable
     public TcpStation answering(boolean on)
     {
         this.answering = on;
+        return this;
+    }
+
+    /** Answers only the frames `which` accepts, as a station that leaves some frame unanswered. */
+    public TcpStation answeringOnly(java.util.function.Predicate<byte[]> which)
+    {
+        this.answers = which;
         return this;
     }
 
@@ -337,7 +347,7 @@ public final class TcpStation implements AutoCloseable
                     {
                         answerQuery(client, copy);
                     }
-                    else if (this.answering)
+                    else if (this.answering || this.answers.test(copy))
                     {
                         copy = Arrays.copyOf(copy, copy.length);
                         copy[1] |= 1;
