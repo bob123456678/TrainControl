@@ -1253,11 +1253,14 @@ public class testStationSettingsWindow
         StationDoors.current(window);
 
         assertTrue(Components.onTheEventThread(labelSaying(window, "Allowed trains")::isShowing), "the row is not showing");
+
+        StationDoors.close(window);
     }
 
     /**
-     * The picture's white area keeps 3 px above and below its squares, 5 fewer than it had, for room for the Presets in
-     * the right column (Adam, FR-182); it is not squeezed, and every mark and square still lies inside it.
+     * The picture's white area keeps 3 px above its squares and 3 px below, 5 fewer each than it had, for room for the
+     * Presets in the right column (Adam, FR-182); here, where the right column sets the height, it is drawn at the height
+     * it asks for, and every mark and square still lies inside it.
      *
      * MUTATION: put the block's 8 px padding back, and this fails.
      */
@@ -1274,11 +1277,13 @@ public class testStationSettingsWindow
         {
             Map<String, java.awt.Shape> marks = window.pictureMarksForTest();
 
-            int cell = ((java.awt.Rectangle) marks.get("SQUARE")).height;
-            int pad = (block.getPreferredSize().height - 3 * cell - 2) / 2;
+            java.awt.Rectangle middle = (java.awt.Rectangle) marks.get("SQUARE");
 
-            assertEquals(pad, 3, "the white area's padding above and below the squares");
-            assertTrue(block.getHeight() >= block.getPreferredSize().height, "the picture is squeezed");
+            assertEquals(block.getHeight(), block.getPreferredSize().height, "the picture is not drawn at its own height");
+
+            // Less the 1 px gray line on each side
+            assertEquals(middle.y - middle.height - 1, 3, "the white above the squares");
+            assertEquals(block.getHeight() - 1 - (middle.y + 2 * middle.height), 3, "the white below the squares");
 
             java.awt.Rectangle inside = new java.awt.Rectangle(1, 1, block.getWidth() - 2, block.getHeight() - 2);
 

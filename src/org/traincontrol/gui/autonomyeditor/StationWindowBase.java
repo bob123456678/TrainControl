@@ -123,7 +123,7 @@ abstract class StationWindowBase extends JDialog
         }
 
         // A list, not a warning: the editor's green for a setup that is ready
-        picked.setBackground(new Color(214, 245, 214));
+        picked.setBackground(AutonomyEditorPanel.READY_GREEN);
         picked.setForeground(Color.BLACK);
 
         strip.setName("station.strip");
