@@ -92,6 +92,9 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
     private AutonomyTab autonomyTab;
     private boolean blocked;
 
+    /** Whether the unsaved-changes question is up. */
+    private boolean asking;
+
     /** Whether this opening of the window has written the duplicate report to the log. */
     private boolean reported;
 
@@ -526,21 +529,27 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
      */
     boolean maySettleBeforeExit()
     {
-        if (!isDirty()) return true;
-
-        if ((getExtendedState() & java.awt.Frame.ICONIFIED) != 0)
-        {
-            setExtendedState(getExtendedState() & ~java.awt.Frame.ICONIFIED);
-        }
-
-        toFront();
-
-        return settleUnsaved();
+        return !isDirty() || settleUnsaved();
     }
 
-    /** Asks what to do with typing that is not saved; true when the caller may go on. */
+    /** Out of the taskbar and in front: a door opened it, or its question is about to ask over it. */
+    void bringBack()
+    {
+        setExtendedState(getExtendedState() & ~java.awt.Frame.ICONIFIED);
+        setVisible(true);
+        toFront();
+    }
+
+    /**
+     * Asks what to do with typing that is not saved, over this window alone: the main window's Stop stays live.  A
+     * second door asking while the question is up is canceled.  True when the caller may go on.
+     */
     private boolean settleUnsaved()
     {
+        if (asking) return false;
+
+        bringBack();
+
         int answer;
 
         if (unsavedAnswerForTest != null)
@@ -551,10 +560,27 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
         {
             Object[] options = { I18n.t("loc.ui.settingsSave"), I18n.t("loc.ui.settingsDiscard"), I18n.t("ui.cancel") };
 
-            answer = JOptionPane.showOptionDialog(this, I18n.f("loc.ui.settingsUnsaved",
-                adding ? I18n.t("loc.ui.addLocomotive") : loc.getName()),
-                I18n.t("route.ui.titleDiscardChanges"), JOptionPane.YES_NO_CANCEL_OPTION, JOptionPane.QUESTION_MESSAGE,
-                null, options, options[2]);
+            JOptionPane pane = new JOptionPane(I18n.f("loc.ui.settingsUnsaved", adding ? I18n.t("loc.ui.addLocomotive")
+                : loc.getName()), JOptionPane.QUESTION_MESSAGE, JOptionPane.YES_NO_CANCEL_OPTION, null, options,
+                options[2]);
+
+            javax.swing.JDialog question = pane.createDialog(this, I18n.t("route.ui.titleDiscardChanges"));
+
+            question.setModalityType(java.awt.Dialog.ModalityType.DOCUMENT_MODAL);
+
+            asking = true;
+
+            try
+            {
+                question.setVisible(true);
+            }
+            finally
+            {
+                asking = false;
+                question.dispose();
+            }
+
+            answer = java.util.Arrays.asList(options).indexOf(pane.getValue());
         }
 
         if (answer == 0) return write();

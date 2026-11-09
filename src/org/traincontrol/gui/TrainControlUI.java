@@ -554,11 +554,12 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             this.locomotiveSettings = new LocomotiveSettingsFrame(this);
         }
 
+        // Before aiming, which may ask about unsaved typing over it
+        this.locomotiveSettings.setAlwaysOnTop(asking.isAlwaysOnTop());
+
         if (!aim.test(this.locomotiveSettings)) return false;
 
-        this.locomotiveSettings.setAlwaysOnTop(asking.isAlwaysOnTop());
-        this.locomotiveSettings.setVisible(true);
-        this.locomotiveSettings.toFront();
+        this.locomotiveSettings.bringBack();
 
         return true;
     }
