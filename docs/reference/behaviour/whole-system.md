@@ -180,8 +180,7 @@ one copy). So a station renamed, or a square given more copies or fewer, carries
 - Cancel also keeps what the railway changed alone while the editor was open (an Auto tab setting, a timetable entry, a
   card's pause), with the legs of a kept timetable carried to the names of the edit's last build (OB-343). That holds
   for a card's pause an editor gesture then overtook, and Cancel asks about the gesture even where it leaves the setup
-  as the editor opened it (OB-346). Known exception, for 3.1.0: a chain of renames that hands one station's name to
-  another can point such a leg, or the railway's leg at the fold itself, at the wrong station (OB-345).
+  as the editor opened it (OB-346).
 - A station name two pages share is settled over every page, those out of autonomy too, so the plain name does not move
   to the other page while one is out.
 
@@ -262,6 +261,33 @@ reported never holds a run. Instant Stop is a halt, not a power cut, and autonom
 send is not waited for: the send gate refuses it while the power is off.
 `core.testATrainIsDispatchedOnce.testAutonomySendsNothingWhileThePowerIsOff`,
 `testATimetableStartsNothingWhileThePowerIsOff`.
+
+**No new journey starts while a lost connection to a CS3 is replaced** (FR-186). While the station's TCP connection is
+being replaced, Autonomy, Execute Timetable and Return Home wait before they choose a journey, as for the power, and the
+log says once that they are held and once that they resume. A journey still setting its route when the replacement
+begins is given back unrun, a hand send is refused with the reason in the log, and a held send is no timetable attempt.
+Journeys already under way carry on. The hold ends once a transport is live: TCP again, or UDP for the rest of the
+session. A CS2 and a simulation are never held. A hung connection is held only once it is found, and the station's own
+routes still fire. `core.testATrainIsDispatchedOnce.testAutonomyStartsNoRouteWhileTheConnectionIsReplaced`,
+`core.testATrainIsDispatchedOnce.testAHandSendIsRefusedWhileTheConnectionIsReplaced`,
+`core.testATrainIsDispatchedOnce.testASendWhoseConnectionIsLostWhileItsRouteIsSetIsGivenBack`,
+`core.testATrainIsDispatchedOnce.testReturnHomeSpendsNoAttemptOnAHeldSend`, `core.testAutonomyRidesOutADroppedConnection`.
+
+**Nothing is held or sent again after a lost connection** (FR-186; Adam: *"I don't think we can do careful resend since
+we have to assume we don't know what is going on."*). The handset or another copy of TrainControl may have commanded the
+layout since, so a late command could undo a newer one. While the connection is replaced every command goes over UDP at
+once; a command that may have been cut off at the drop is counted in the log and never sent again. The lost connection is
+reset, so the station drops what it has not read rather than running it late.
+`core.testTheStationIsReachedOverTcp.testAFrameWrittenBeforeTheDropIsNotSentAgain`,
+`core.testTheStationIsReachedOverTcp.testACommandDuringAReconnectGoesOverUdpAtOnce`,
+`core.testTheStationIsReachedOverTcp.testAHungConnectionIsResetSoTheStationRunsNothingLate`.
+
+**A short circuit is the track power going off** (OB-426). The station's System Overload is taken as a Stop from the
+station: the power reads off, so the rule above holds every new journey, the log names the output that tripped, and a
+warning names it once per cut. Go turns the power back on as before. An Overload on any output counts; whether a station
+reports one for an output other than the main track is not yet known.
+`ui.testAShortCircuitCutsThePower.testAShortCircuitTurnsThePowerOffAndWarnsOnce`,
+`ui.testAShortCircuitCutsThePower.testAStopDoesNotWarnButAnOverloadAfterItDoes`.
 
 ### Configurations, import and export
 

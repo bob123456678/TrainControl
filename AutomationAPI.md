@@ -435,7 +435,7 @@ also specify `"terminus" : true`.  For the corresponding locomotive, set `"rever
 
 The three tiers differ, and it is worth knowing which is which:
 
-* **By hand, from the right-click menu or the Auto tab:** a terminus autonomy may choose is not offered to a locomotive that cannot reverse, unless the track leads on through it, because the train could not leave again.  A parking berth - a terminus with `Can Be Chosen in Full Autonomy` unticked - is still offered to any locomotive the track can take there; whether a train that cannot reverse should go in is then your judgement.
+* **By hand, from the right-click menu or the Auto tab:** a terminus autonomy may choose is not offered to a locomotive that cannot reverse, unless the track leads on through it, because the train could not leave again.  A parking berth - a terminus with `May choose this station` unticked in its `Station Settings` - is still offered to any locomotive the track can take there; whether a train that cannot reverse should go in is then your judgement.
 * **In full autonomy:** a terminus is never chosen for a locomotive that cannot reverse.
 * **Returning home:** a non-reversible locomotive may be homed at a terminus.  *Since v3.0.0* Return Home takes the first clear route there, as you would by hand: where one exists, the train is driven straight in, nose first, and has to be backed out by hand.  Only where it cannot get there directly (facing away from it, say) does it rest the train first on another terminus that leads straight to its home, or turn it at a reversing point on the way, and back it in.  The setup check warns about a home on a parking berth with no way to back in at all.  (The planner only names a locomotive when it can prove there is no route at all, which is a claim about the track.)
 
@@ -465,7 +465,7 @@ TrainControl's graph model can be used to automate layouts with complex designs 
 
 Since v3.0.0 most of what is described below is set in the autonomy editor on the track diagram - a station's settings by right-clicking its square, the rest in the autonomy settings; the JSON keys are what an older `autonomy.json` carries. 
 
-*Since v3.0.0* a point may also carry `autoDestination` (`false` keeps full autonomy from choosing it - Can Be Chosen in Full Autonomy), `protectingSignal` and `entrySignal` (its exit and entry guard signals: one name, or a list), and `blockedBy` (the stations that make it Unavailable While Occupied: one name, or a list).  At the top level, `pausedLocomotives` lists the names of the paused locomotives.
+*Since v3.0.0* a point may also carry `autoDestination` (`false` keeps full autonomy from choosing it - `May choose this station` in `Station Settings`), `protectingSignal` and `entrySignal` (its exit and entry guard signals: one name, or a list), and `blockedBy` (the stations that make it Unavailable While Occupied: one name, or a list).  At the top level, `pausedLocomotives` lists the names of the paused locomotives.
 
 ## Train lengths and non-atomic routes
 
@@ -519,12 +519,12 @@ The time between paths will be recorded and replayed.  Timetables can also be bu
 
 ## Locomotive exclusions (v2.1.5+)
 
-You can keep locomotives off a given point by adding them to the list within the `excludedLocs` JSON key on any `Point`.  This can also be set in the autonomy editor: right-click the square, then `Advanced Parameters...` → `Excluded Locomotives`.  What it does depends on whether the point is a station:
+You can keep locomotives off a given point by adding them to the list within the `excludedLocs` JSON key on any `Point`.  This can also be set in the autonomy editor: open the square's `Station Settings`, then under `Advanced` set `Allowed trains` to `Blacklist` and pick the locomotives with the pencil (`Choose...`) beside it.  What it does depends on whether the point is a station:
 
 * On a station, the excluded locomotives may not stop there.  Autonomy never chooses it for them, and since v3.0.0 neither the Auto tab nor the track diagram's right-click menu offers it to them either (until then you could still send them there yourself).  They can still pass through it on the way somewhere else, and Return Home routes them through it too.
 * On a point that is not a station, the excluded locomotives may never pass it, on any path.
 
-*Since v3.0.0* the list can name the only locomotives allowed instead: add `"excludedLocsMode": "whitelist"` beside `excludedLocs` (in the autonomy editor, choose `Allow only the chosen locomotives` under `Advanced Parameters...` → `Excluded Locomotives`; the item then reads `Allowed Locomotives Only`).  Every locomotive the list does not name is then excluded, including one added to the locomotive database later, by the same rules as above.  Without the key - or with `"blacklist"` - the list names the locomotives excluded.
+*Since v3.0.0* the list can name the only locomotives allowed instead: add `"excludedLocsMode": "whitelist"` beside `excludedLocs` (in the autonomy editor, set `Allowed trains` to `Whitelist` in the station's `Station Settings`).  Every locomotive the list does not name is then excluded, including one added to the locomotive database later, by the same rules as above.  Without the key - or with `"blacklist"` - the list names the locomotives excluded.
 
 ## Ensuring network stability (v2.4.7+)
 
@@ -564,9 +564,9 @@ The `Return Home` button in the autonomy tab sends every locomotive back to the 
 
 Unless you say otherwise, a locomotive's home is simply the station it occupied when the layout was loaded.  Locomotives placed afterwards claim the station they are placed on, provided no other locomotive has claimed it already - each station can be the home of only one locomotive, since two locomotives wanting the same station could never both get there.  A locomotive without a home is never asked to move.  In the locomotive list, `*` marks a locomotive standing at its timetable starting point.  A locomotive standing on a station it has been *assigned* to - see below - shows a small house beside its location; a home that was merely derived from where a locomotive started is not marked, since that would be every locomotive on an untouched layout.
 
-You can also say which locomotive belongs at a station, rather than letting it be decided by where trains happened to start.  In the autonomy editor, right-click a station and pick `Set Home Locomotive...` (Control+H), which names that station's current home and opens a chooser.  (Up to v2.8.2 this was on the Autonomy tab's graph.)  The blank entry at the top of the list is how a station gives up its locomotive.  The item is on every station, so there is always somewhere to make the first assignment.
+You can also say which locomotive belongs at a station, rather than letting it be decided by where trains happened to start.  In the autonomy editor, open a station's `Station Settings` and pick its `Home locomotive` (Control+H over the station sets it too).  (Up to v2.8.2 this was on the Autonomy tab's graph.)  `(none)` at the top of the list is how a station gives up its locomotive.  Every station has the setting, so there is always somewhere to make the first assignment.
 
-**Clear All Home Locomotives**, on the autonomy editor's Bulk Tools menu, clears every assignment at once and asks first.  A single station's assignment is cleared from its own right-click menu, and `Layout.clearHomeLocomotives` does the same thing programmatically.
+**Clear All Home Locomotives**, on the autonomy editor's Bulk Tools menu, clears every assignment at once and asks first.  A single station's assignment is cleared by picking `(none)` in its `Home locomotive`, and `Layout.clearHomeLocomotives` does the same thing programmatically.
 
 An assigned station is that locomotive's home whether or not it is standing there, and whether or not it is on the layout at all - an assignment for a locomotive you have not placed is simply ignored until you place it.  Each locomotive belongs at one station only, so assigning it somewhere new releases it from wherever it was assigned before.  Everything you do not assign still falls back to the rule above.
 
