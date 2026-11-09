@@ -260,17 +260,13 @@ public class AutonomyViewerPanel extends JPanel
 
         // No ActionListener, deliberately: a configuration is chosen from the menu, not by selecting here.  Anything
         // that adds one needs a guard around populate(), which sets the selection itself.
-        configurations.addMouseListener(new java.awt.event.MouseAdapter()
+        configurations.addMouseListener(Listen.pressed(e ->
         {
-            @Override
-            public void mousePressed(java.awt.event.MouseEvent e)
+            if (javax.swing.SwingUtilities.isRightMouseButton(e))
             {
-                if (javax.swing.SwingUtilities.isRightMouseButton(e))
-                {
-                    manageMenu().show(configurations, e.getX(), e.getY());
-                }
+                manageMenu().show(configurations, e.getX(), e.getY());
             }
-        });
+        }));
 
         add(panel, gbc, choose, 0);
 
@@ -391,36 +387,32 @@ public class AutonomyViewerPanel extends JPanel
         findings.setFont(FONT_LIST);
 
         // One click, straight to the square it is about, with the tools that can fix it already open.
-        findings.addMouseListener(new java.awt.event.MouseAdapter()
+        findings.addMouseListener(Listen.clicked(e ->
         {
-            @Override
-            public void mouseClicked(java.awt.event.MouseEvent e)
+            int row = findings.locationToIndex(e.getPoint());
+
+            if (row < 0 || row >= findingRows.size()) return;
+
+            // locationToIndex answers the CLOSEST row for a click below the last one, so check the cell bounds.
+            java.awt.Rectangle bounds = findings.getCellBounds(row, row);
+
+            if (bounds == null || !bounds.contains(e.getPoint())) return;
+
+            // AND ITS TEXT ON THE CLIPBOARD, as the editor's list does (MT-767) - a notice only: a heading has no
+            // severity
+            if (row < findingSeverity.size() && findingSeverity.get(row) != null)
             {
-                int row = findings.locationToIndex(e.getPoint());
-
-                if (row < 0 || row >= findingRows.size()) return;
-
-                // locationToIndex answers the CLOSEST row for a click below the last one, so check the cell bounds.
-                java.awt.Rectangle bounds = findings.getCellBounds(row, row);
-
-                if (bounds == null || !bounds.contains(e.getPoint())) return;
-
-                // AND ITS TEXT ON THE CLIPBOARD, as the editor's list does (MT-767) - a notice only: a heading has no
-                // severity
-                if (row < findingSeverity.size() && findingSeverity.get(row) != null)
-                {
-                    AutonomyEditorPanel.copyNoticeToClipboard(findings.getModel().getElementAt(row));
-                }
-
-                org.traincontrol.automationui.TileGraph.TileKey tile = findingRows.get(row);
-
-                // With the squares it names beside its own, outlined there as the editor's own list outlines them
-                if (tile != null)
-                {
-                    ui.openAutonomyEditor(tile, row < findingRelatedRows.size() ? findingRelatedRows.get(row) : null);
-                }
+                AutonomyEditorPanel.copyNoticeToClipboard(findings.getModel().getElementAt(row));
             }
-        });
+
+            org.traincontrol.automationui.TileGraph.TileKey tile = findingRows.get(row);
+
+            // With the squares it names beside its own, outlined there as the editor's own list outlines them
+            if (tile != null)
+            {
+                ui.openAutonomyEditor(tile, row < findingRelatedRows.size() ? findingRelatedRows.get(row) : null);
+            }
+        }));
 
         // The findings are the only thing here genuinely wider than the tab, so this is the only thing
         // that scrolls sideways.  Everything else is bounded, so the tab itself never scrolls at all.

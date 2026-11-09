@@ -860,16 +860,12 @@ public class RouteEditorFrame extends JFrame
 
         area.add(conditions, BorderLayout.NORTH);
 
-        area.addMouseListener(new java.awt.event.MouseAdapter()
+        area.addMouseListener(Listen.pressed(e ->
         {
-            @Override
-            public void mousePressed(java.awt.event.MouseEvent e)
-            {
-                if (conditions.isEditing()) conditions.getCellEditor().stopCellEditing();
+            if (conditions.isEditing()) conditions.getCellEditor().stopCellEditing();
 
-                conditions.clearSelection();
-            }
-        });
+            conditions.clearSelection();
+        }));
 
         area.addMouseListener(new org.traincontrol.gui.widgets.PopupListener()
         {
@@ -1905,20 +1901,16 @@ public class RouteEditorFrame extends JFrame
 
         for (int column : marked) table.getColumnModel().getColumn(column).setCellRenderer(marks);
 
-        table.addMouseListener(new java.awt.event.MouseAdapter()
+        table.addMouseListener(Listen.pressed(e ->
         {
-            @Override
-            public void mousePressed(java.awt.event.MouseEvent e)
-            {
-                // A right-click opens the table's menu rather than working the mark under it.
-                if (!javax.swing.SwingUtilities.isLeftMouseButton(e)) return;
+            // A right-click opens the table's menu rather than working the mark under it.
+            if (!javax.swing.SwingUtilities.isLeftMouseButton(e)) return;
 
-                // With Shift or Ctrl the press only selects: the trash would delete the whole selection it just grew.
-                if (e.isShiftDown() || e.isControlDown()) return;
+            // With Shift or Ctrl the press only selects: the trash would delete the whole selection it just grew.
+            if (e.isShiftDown() || e.isControlDown()) return;
 
-                pressRowMark(table, table.rowAtPoint(e.getPoint()), table.columnAtPoint(e.getPoint()));
-            }
-        });
+            pressRowMark(table, table.rowAtPoint(e.getPoint()), table.columnAtPoint(e.getPoint()));
+        }));
 
         table.addMouseMotionListener(new java.awt.event.MouseMotionAdapter()
         {

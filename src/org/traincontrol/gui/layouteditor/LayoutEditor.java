@@ -37,6 +37,7 @@ import org.traincontrol.automation.Point;
 import org.traincontrol.base.Accessory;
 import org.traincontrol.base.LayoutDiagram;
 import org.traincontrol.base.LayoutDiagramComponent;
+import org.traincontrol.gui.Listen;
 import org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel;
 import org.traincontrol.gui.LayoutGrid;
 import org.traincontrol.gui.LayoutLabel;
@@ -4598,23 +4599,19 @@ public class LayoutEditor extends PositionAwareJFrame
         });
 
         // On the click, not the selection change, which code and arrow keys fire too.
-        pageList.addMouseListener(new java.awt.event.MouseAdapter()
+        pageList.addMouseListener(Listen.clicked(e ->
         {
-            @Override
-            public void mouseClicked(MouseEvent e)
-            {
-                int row = pageRowAt(e.getPoint());
+            int row = pageRowAt(e.getPoint());
 
-                // Not while one is in flight.
-                if (row < 0 || switching || changingPage) return;
+            // Not while one is in flight.
+            if (row < 0 || switching || changingPage) return;
 
-                String page = pageList.getModel().getElementAt(row);
+            String page = pageList.getModel().getElementAt(row);
 
-                if (page.equals(layout.getName())) return;
+            if (page.equals(layout.getName())) return;
 
-                leaveFor(page, isAutonomyMode());
-            }
-        });
+            leaveFor(page, isAutonomyMode());
+        }));
 
         return pageList;
     }

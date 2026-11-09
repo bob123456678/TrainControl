@@ -6,7 +6,6 @@ import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.GridLayout;
 import java.awt.Insets;
-import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseMotionAdapter;
 import java.util.ArrayList;
@@ -250,14 +249,10 @@ final class MultiUnitPanel extends JPanel
         });
 
         // Add mouse listener to reset to 100 on double-click
-        multiplierSlider.addMouseListener(new MouseAdapter()
+        multiplierSlider.addMouseListener(Listen.clicked(e ->
         {
-            @Override
-            public void mouseClicked(MouseEvent e)
-            {
-                if (e.getClickCount() == 2) multiplierSlider.setValue(100);
-            }
-        });
+            if (e.getClickCount() == 2) multiplierSlider.setValue(100);
+        }));
 
         JCheckBox reverseCheckBox = new JCheckBox("", isReversed);
         reverseCheckBox.setFocusable(false);

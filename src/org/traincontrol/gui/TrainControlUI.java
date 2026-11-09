@@ -16762,19 +16762,15 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     /** Right-click on Return Home opens its menu even when grayed, so the click can say why (FR-129). */
     private void installReturnHomeMenu()
     {
-        this.returnHomeButton.addMouseListener(new MouseAdapter()
+        this.returnHomeButton.addMouseListener(Listen.pressed(e ->
         {
-            @Override
-            public void mousePressed(MouseEvent e)
-            {
-                if (!SwingUtilities.isRightMouseButton(e)) return;
+            if (!SwingUtilities.isRightMouseButton(e)) return;
 
-                returnHomePopup = buildReturnHomeMenu();
+            returnHomePopup = buildReturnHomeMenu();
 
-                // A button that is not on screen has nowhere to open it
-                if (returnHomeButton.isShowing()) returnHomePopup.show(returnHomeButton, e.getX(), e.getY());
-            }
-        });
+            // A button that is not on screen has nowhere to open it
+            if (returnHomeButton.isShowing()) returnHomePopup.show(returnHomeButton, e.getX(), e.getY());
+        }));
     }
 
     javax.swing.JPopupMenu buildReturnHomeMenu()
@@ -18899,15 +18895,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         iconWrench.setVisible(false);
         iconWrench.setOpaque(false);
 
-        iconWrench.addMouseListener(new java.awt.event.MouseAdapter()
+        iconWrench.addMouseListener(Listen.released(evt ->
         {
-            @Override
-            public void mouseReleased(java.awt.event.MouseEvent evt)
-            {
-                // Either button: a right-click over the wrench is a right-click over the picture.
-                if (activeLoc != null) setLocIcon(activeLoc);
-            }
-        });
+            // Either button: a right-click over the wrench is a right-click over the picture.
+            if (activeLoc != null) setLocIcon(activeLoc);
+        }));
 
         // The revert, beside the wrench (MT-591): over a Central Station picture replaced or cropped it does what Clear
         // Local Locomotive Icon does, and the wrench stays for choosing another.
@@ -18917,14 +18909,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         iconRevert.setVisible(false);
         iconRevert.setOpaque(false);
 
-        iconRevert.addMouseListener(new java.awt.event.MouseAdapter()
+        iconRevert.addMouseListener(Listen.released(evt ->
         {
-            @Override
-            public void mouseReleased(java.awt.event.MouseEvent evt)
-            {
-                if (activeLoc != null && revertsInstead(activeLoc)) clearLocIcon(activeLoc);
-            }
-        });
+            if (activeLoc != null && revertsInstead(activeLoc)) clearLocIcon(activeLoc);
+        }));
 
         // Upper right: it overlaps the picture, since a cropped icon fills the label's width, but a corner takes less
         // than the middle. Hard in the corner with no gap, as any inset spends picture rather than margin. The wrench

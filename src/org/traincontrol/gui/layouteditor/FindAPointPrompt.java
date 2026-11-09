@@ -3,8 +3,6 @@ package org.traincontrol.gui.layouteditor;
 import java.awt.BorderLayout;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
@@ -18,6 +16,7 @@ import javax.swing.JScrollPane;
 import javax.swing.JTextField;
 import javax.swing.ListSelectionModel;
 import org.traincontrol.automationui.TileGraph.TileKey;
+import org.traincontrol.gui.Listen;
 import org.traincontrol.util.I18n;
 
 /**
@@ -143,22 +142,18 @@ final class FindAPointPrompt extends JDialog
             }
         });
 
-        list.addMouseListener(new MouseAdapter()
+        list.addMouseListener(Listen.clicked(e ->
         {
-            @Override
-            public void mouseClicked(MouseEvent e)
+            if (e.getClickCount() < 2) return;
+
+            int row = list.locationToIndex(e.getPoint());
+
+            if (row >= 0 && list.getCellBounds(row, row).contains(e.getPoint()))
             {
-                if (e.getClickCount() < 2) return;
-
-                int row = list.locationToIndex(e.getPoint());
-
-                if (row >= 0 && list.getCellBounds(row, row).contains(e.getPoint()))
-                {
-                    list.setSelectedIndex(row);
-                    choose();
-                }
+                list.setSelectedIndex(row);
+                choose();
             }
-        });
+        }));
 
         narrow();
         pack();

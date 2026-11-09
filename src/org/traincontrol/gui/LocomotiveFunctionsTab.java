@@ -157,16 +157,12 @@ final class LocomotiveFunctionsTab extends JPanel
         table.getColumnModel().getColumn(TEST).setPreferredWidth(70);
 
         // The Test column's cell is the target: a press anywhere in it switches the function
-        table.addMouseListener(new java.awt.event.MouseAdapter()
+        table.addMouseListener(Listen.released(e ->
         {
-            @Override
-            public void mouseReleased(MouseEvent e)
-            {
-                int row = playRowAt(e);
+            int row = playRowAt(e);
 
-                if (row >= 0 && SwingUtilities.isLeftMouseButton(e)) press(row);
-            }
-        });
+            if (row >= 0 && SwingUtilities.isLeftMouseButton(e)) press(row);
+        }));
 
         table.addMouseMotionListener(new java.awt.event.MouseMotionAdapter()
         {
@@ -756,21 +752,17 @@ final class LocomotiveFunctionsTab extends JPanel
         gridLayout(grid);
         grid.setName("functions.menuIconGrid");
         grid.setSelectedIndex(r.custom == null ? r.icon : -1);
-        grid.addMouseListener(new java.awt.event.MouseAdapter()
+        grid.addMouseListener(Listen.released(e ->
         {
-            @Override
-            public void mouseReleased(MouseEvent e)
-            {
-                int i = grid.locationToIndex(e.getPoint());
+            int i = grid.locationToIndex(e.getPoint());
 
-                if (i < 0 || !grid.getCellBounds(i, i).contains(e.getPoint())) return;
+            if (i < 0 || !grid.getCellBounds(i, i).contains(e.getPoint())) return;
 
-                MenuSelectionManager.defaultManager().clearSelectedPath();
-                menu.setVisible(false);
+            MenuSelectionManager.defaultManager().clearSelectedPath();
+            menu.setVisible(false);
 
-                useStandardIcon(r.function, i);
-            }
-        });
+            useStandardIcon(r.function, i);
+        }));
 
         JScrollPane gridScroll = new JScrollPane(grid);
         gridScroll.setPreferredSize(new Dimension(520, 300));

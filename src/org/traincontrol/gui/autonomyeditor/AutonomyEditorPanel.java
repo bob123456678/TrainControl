@@ -29,6 +29,7 @@ import org.traincontrol.automationui.TileGraph.Direction;
 import org.traincontrol.automationui.TileGraph.RouteId;
 import org.traincontrol.automationui.TileGraph.TileKey;
 import org.traincontrol.gui.AutonomyViewerPanel;
+import org.traincontrol.gui.Listen;
 import org.traincontrol.gui.RunGates;
 import org.traincontrol.gui.TailCrossedPrompt;
 import org.traincontrol.gui.TrainControlUI;
@@ -1073,14 +1074,10 @@ public class AutonomyEditorPanel extends JPanel
             AutonomyViewerPanel.FONT_GROUP));
 
         // A double-click, or Control+O, opens the station's settings; one click stays as it is (FR-072).
-        findings.addMouseListener(new java.awt.event.MouseAdapter()
+        findings.addMouseListener(Listen.clicked(e ->
         {
-            @Override
-            public void mouseClicked(java.awt.event.MouseEvent e)
-            {
-                if (e.getClickCount() == 2) openStationSettingsForTheFinding();
-            }
-        });
+            if (e.getClickCount() == 2) openStationSettingsForTheFinding();
+        }));
 
         // Clicking a finding goes to its tile.
         findings.addListSelectionListener(e ->
@@ -1227,15 +1224,11 @@ public class AutonomyEditorPanel extends JPanel
         {
             setFocusable(false);
 
-            addMouseListener(new java.awt.event.MouseAdapter()
+            addMouseListener(Listen.pressed(e ->
             {
-                @Override
-                public void mousePressed(java.awt.event.MouseEvent e)
-                {
-                    setFocusable(true);
-                    requestFocusInWindow();
-                }
-            });
+                setFocusable(true);
+                requestFocusInWindow();
+            }));
 
             addKeyListener(new java.awt.event.KeyAdapter()
             {
@@ -3282,19 +3275,15 @@ public class AutonomyEditorPanel extends JPanel
         if (row.getComponentCount() > 0) panel.add(row, java.awt.BorderLayout.SOUTH);
 
         // Double-click chooses, as OK does.
-        list.addMouseListener(new java.awt.event.MouseAdapter()
+        list.addMouseListener(Listen.clicked(e ->
         {
-            @Override
-            public void mouseClicked(java.awt.event.MouseEvent e)
+            if (e.getClickCount() == 2 && list.getSelectedValue() != null)
             {
-                if (e.getClickCount() == 2 && list.getSelectedValue() != null)
-                {
-                    answer[0] = list.getSelectedValue();
+                answer[0] = list.getSelectedValue();
 
-                    pane.setValue(javax.swing.JOptionPane.OK_OPTION);
-                }
+                pane.setValue(javax.swing.JOptionPane.OK_OPTION);
             }
-        });
+        }));
 
         javax.swing.JDialog dialog = pane.createDialog(owner, title);
 
