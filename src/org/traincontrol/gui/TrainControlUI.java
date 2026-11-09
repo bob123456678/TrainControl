@@ -525,11 +525,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         return showLocomotiveSettings(window -> window.aim(l, tab, function));
     }
 
-    /**
-     * Add Locomotive (FR-179): the Locomotive Settings window on its first tab with blank fields and Add for Save.
-     *
-     * @return true when the window is open for a new locomotive
-     */
+    /** Add Locomotive (FR-179): the Locomotive Settings window on its first tab with blank fields and Add for Save. */
     public boolean openAddLocomotive()
     {
         return showLocomotiveSettings(LocomotiveSettingsFrame::aimAtANewLocomotive);
@@ -851,7 +847,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         // Set internationalized options
 
-        // Set here because the generated block hard-codes "Utilities"; the old Functions key was another menu.
+        // Set here because the generated block hard-codes "Utilities".
         this.functionsMenu.setText(I18n.t("ui.main.menu.utilities"));
 
         // The autonomy menu's slot (OB-202): the configurations on disk cannot be read until the connect is over, so
@@ -1807,7 +1803,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      */
     public void saveState(boolean backup)
     {
-        // Every existing caller keeps its behavior: a live save captures the session, a backup does not.
+        // A live save captures the session, a backup does not.
         saveState(backup, !backup);
     }
 
@@ -1943,7 +1939,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             }
         }
 
-        // autonomy.json is not written on any layout (OB-254): a diagram-derived graph replaced a hand-made one.
+        // autonomy.json is not written on any layout (OB-254).
 
         saveLayoutTitles();
     }
@@ -3809,8 +3805,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * Whether an editor holds the diagram or is on its way to it: the editor is built in a posted task, so meanwhile
-     * `isLayoutEditorOpen` alone let a train go.  Package-visible for `TailCrossedPrompt` (OB-305).
+     * Whether an editor holds the diagram or is on its way to it: the editor is built in a posted task, and until
+     * that runs `isLayoutEditorOpen` alone says no.  Package-visible for `TailCrossedPrompt` (OB-305).
      */
     boolean anEditorIsOpenOrOnItsWay()
     {
@@ -3994,7 +3990,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             if (name == null || standing.containsKey(name)) continue;
 
             // Another train STANDS there (recorded above), not merely one whose path runs through it: a train locking a
-            // path through the point is recorded on it, and skipping for that left this one where the setup had it.
+            // path through the point is recorded on it.
             boolean anotherStands = false;
 
             for (String[] at : standing.values())
@@ -5195,8 +5191,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         {
             input = input.trim();
 
-            // The page names only: `pageNames` also holds the active page and button key code under keys -1 and -2,
-            // which `containsValue` saw, so naming a page "3" or "81" was refused as a duplicate.
+            // The page names only: `pageNames` also holds the active page and button key code under keys -1 and -2.
             if (namesOfPages().contains(input)
                 && !input.equals(this.getPageName(this.locMappingNumber, true).trim()))
             {
@@ -5709,7 +5704,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         {
             javax.swing.SwingUtilities.invokeLater(() ->
             {
-                // Only the active configuration resumes at start; the old JSON graph went with its tab (OB-254).
+                // Only the active configuration resumes at start (OB-254).
                 org.traincontrol.automationui.AutonomySession session = getAutonomySession();
 
                 if (session != null && this.getAutonomyViewerPanel() != null
@@ -6842,7 +6837,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                     keyboardAddressExists(address));
             }
             
-            // The new editor belongs in this gate too: capture did nothing unless the old editor was also open.
             if (this.routeEditor != null)
             {
                 // Throttle to ensure commands are not duplicated
@@ -6982,7 +6976,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         b.setOpaque(false);
     }
     
-    /** The height limit that means none: the key stays url + size, as a plain request has always been cached. */
+    /** The height limit that means none: the key stays url + size. */
     private static final int NO_HEIGHT_LIMIT = Integer.MAX_VALUE;
 
     /**
@@ -7213,8 +7207,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * Fills in the routing-logic dropdown from the designer (MT-226) without touching the layout (GroupLayout.replace,
-     * in the wrong order, stopped the application starting).
+     * Fills in the routing-logic dropdown from the designer (MT-226) without touching the layout: a GroupLayout.replace
+     * in the wrong order stops the application starting.
      */
     private void mountRoutingLogic()
     {
@@ -7346,8 +7340,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // one this method just wrote.
         if (this.pathPreferenceCarried) return;
 
-        // The stored answer, not live.getPathPreference(), which on a second call read what this method wrote and
-        // deleted the legacy key with nothing stored.  The field, not getAutonomySession(): this runs from a refresh.
+        // The stored answer, not live.getPathPreference() alone, which reads back what this method wrote.  The field,
+        // not getAutonomySession(): this runs from a refresh.
         org.traincontrol.automationui.AutonomySession stored = this.autonomySession;
 
         // The loaded layout's own answer counts too: a legacy autonomy.json can carry a rule getGlobal cannot see.
@@ -7784,10 +7778,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                                                 locIcon.setText("");
                                                 locIcon.setVisible(true);
 
-                                                // Show the mark only for THIS locomotive: hover alone left it over the
-                                                // wrong picture. On the EDT because getMousePosition takes the AWT tree
-                                                // lock and can throw HeadlessException, which would kill this pool
-                                                // task.
+                                                // Show the mark only for THIS locomotive.  On the EDT because
+                                                // getMousePosition takes the AWT tree lock and can throw
+                                                // HeadlessException, which would kill this pool task.
                                                 javax.swing.SwingUtilities.invokeLater(
                                                     () -> showCropOverlay());
                                             }
@@ -15805,8 +15798,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      */
     private KeyboardSwitch keyboardSwitchAllowed(int address, boolean red)
     {
-        // The power question, which the diagram tile asks (MT-261): a command sent with the power off does nothing, and
-        // the keyboard left the button looking as though it had worked.  Asked first, as the tile does.
+        // The power question, which the diagram tile asks (MT-261): a command sent with the power off does nothing.
+        // Asked first, as the tile does.
         if (!this.model.getPowerState())
         {
             Object[] powerOptions = {
@@ -19750,8 +19743,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 if (this.model.getAutoLayout().getPoints().isEmpty()) return;
 
                 // Throttled, not suppressed: dropping every arrival during a run froze the panels until the last train
-                // stopped.  A flag, not a list of Futures, which suppressed every later refresh once a task never
-                // completed; it is cleared in a finally, so a refresh that throws cannot take the display with it.
+                // stopped.  A flag, cleared in a finally, so a refresh that throws cannot take the display with it.
                 if (!this.autoRefreshInFlight.compareAndSet(false, true)) return;
 
                 try
@@ -20194,8 +20186,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             this.model.log("Route " + route + " marked as running");
         }
 
-        // A rebuild rather than a repaint, which was not landing on the cell (MT-217): refreshRouteList replaces the
-        // table's model, so every cell redraws.
+        // A rebuild rather than a repaint (MT-217): refreshRouteList replaces the table's model, so every cell redraws.
         javax.swing.SwingUtilities.invokeLater(() -> refreshRouteList());
     }
 

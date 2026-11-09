@@ -57,9 +57,8 @@ abstract public class Accessory
 
     /**
      * Whether a LOGICAL address, the number the operator types, is one this protocol has.  The maxima above are RAW:
-     * the diagram editor converts before asking (`isValidAddress(address - 1, ...)`) and the route editor did not, so
-     * logical MM2 320 and DCC 2048 were refused in one place and taken in the other.  Stated once, here, because an
-     * over-strict guard costs more than it buys: Adam would rather have no check than one that refuses something legal.
+     * the diagram editor converts before asking (`isValidAddress(address - 1, ...)`).  An over-strict guard costs more
+     * than it buys, so this is the one place that says what is legal.
      *
      * @param logical the address as the operator writes it, from 1
      * @param type MM2 or DCC

@@ -1137,8 +1137,9 @@ public class MarklinLocomotive extends Locomotive
     /**
      * Stages a list and applies it in one call, so no second thread can be staging at the same time:
      * `preSetLinkedLocomotives` writes an instance field that `setLinkedLocomotives` reads, and `syncWithCS2` and the
-     * Locomotive Settings window's Multi-Unit tab both rebuild consists.  The two-call form remains for `restoreState`, which stages each consist
-     * before every member exists and applies them all afterwards, before the window is built.
+     * Locomotive Settings window's Multi-Unit tab both rebuild consists.  The two-call form remains for
+     * `restoreState`, which stages each consist before every member exists and applies them all afterwards, before the
+     * window is built.
      *
      * @param locList member name to speed adjustment, as `preSetLinkedLocomotives` takes it
      * @return the number of members linked, or -1 where a Central Station multi-unit refuses linking
