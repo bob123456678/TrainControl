@@ -6538,6 +6538,14 @@ public class Layout
                 return false;
             }
 
+            // Nor if the connection began to be replaced while its route was set (FR-186).
+            if (this.control.isReplacingConnection())
+            {
+                giveBackUnrun(path, loc, "autolayout.log.notSentReconnecting");
+
+                return false;
+            }
+
             synchronized (this.activeLocomotives)
             {                
                 // CopyOnWriteArrayList: this list is only ever appended to (below) and read by the UI

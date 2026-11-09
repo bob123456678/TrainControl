@@ -60,7 +60,10 @@ public class testAutonomyRidesOutADroppedConnection
     /** Reconnect tries refused before the station takes connections again: 2 makes the gap about 10 s on Windows. */
     private static final int TRIES_REFUSED = 2;
 
-    /** A route that passed the gate just before the loss still logs its start after it, once its switches are set. */
+    /**
+     * A route that passed the gate and was set going just before the loss was found logs its start just after it;
+     * one whose route was still being set is given back.
+     */
     private static final long LOCK_GRACE_MS = 1500;
 
     /** Contacts of the station's Link S88 outside the railway: one shown occupied, one clear, both changed unseen. */
