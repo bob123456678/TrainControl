@@ -729,7 +729,7 @@ public class testTheStationIsReachedOverTcp
      * A station that answers each send within the limit, here after 2 s, keeps its connection however many sends it
      * answers so.
      *
-     * MUTATION: set `TCP_ANSWER_LIMIT_MS` to 1500, and this fails.
+     * MUTATION: set `TCP_ANSWER_LIMIT_MS` to 1000, and this fails.
      */
     @Test(timeOut = 60000)
     public void testAStationThatAnswersWithinTheLimitKeepsItsConnection() throws Exception
