@@ -1250,6 +1250,43 @@ public class testStationSettingsWindow
     }
 
     /**
+     * The picture's white area keeps 3 px above and below its squares, 5 fewer than it had, for room for the Presets in
+     * the right column (Adam, FR-182); it is not squeezed, and every mark and square still lies inside it.
+     *
+     * MUTATION: put the block's 8 px padding back, and this fails.
+     */
+    @Test(timeOut = 120000)
+    public void testThePictureIsPaddedTightlyAndNothingIsCut() throws Exception
+    {
+        StationSettingsWindow window = StationDoors.open(panel, aStation());
+
+        StationDoors.current(window);
+
+        JComponent block = StationDoors.part(window, "station.picture.ways", JComponent.class);
+
+        Components.onTheEventThread(() ->
+        {
+            Map<String, java.awt.Shape> marks = window.pictureMarksForTest();
+
+            int cell = ((java.awt.Rectangle) marks.get("SQUARE")).height;
+            int pad = (block.getPreferredSize().height - 3 * cell - 2) / 2;
+
+            assertEquals(pad, 3, "the white area's padding above and below the squares");
+            assertTrue(block.getHeight() >= block.getPreferredSize().height, "the picture is squeezed");
+
+            java.awt.Rectangle inside = new java.awt.Rectangle(1, 1, block.getWidth() - 2, block.getHeight() - 2);
+
+            for (Map.Entry<String, java.awt.Shape> each : marks.entrySet())
+            {
+                assertTrue(inside.contains(each.getValue().getBounds2D()), each.getKey() + " at " + each.getValue().getBounds2D()
+                    + " is cut by the picture's edge " + inside);
+            }
+
+            return null;
+        });
+    }
+
+    /**
      * Blue is for the section headings alone (Adam: "it looks very blue"), Presets among them; every other label is black
      * Semibold 13 (docs/UI-standards.md), and a label in an off section still grays.
      *
