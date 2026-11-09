@@ -20,6 +20,7 @@ import org.traincontrol.util.I18n;
 import org.traincontrol.util.SelfUpdate;
 import support.Display;
 import support.Reflect;
+import support.Settle;
 
 /**
  * The update question offers Download & Update only where there is a jar to replace, and the update refuses to start
@@ -123,9 +124,7 @@ public class testTheUpdateQuestion
 
         showing.set(false);
 
-        long until = System.currentTimeMillis() + 10000;
-
-        while (ran.get() == 0 && System.currentTimeMillis() < until) Thread.sleep(20);
+        Settle.until(() -> !(ran.get() == 0), 10000);
 
         Thread.sleep(300);
 
@@ -174,9 +173,7 @@ public class testTheUpdateQuestion
             javax.swing.SwingUtilities.invokeAndWait(() -> dialog[0].dispose());
         }
 
-        long until = System.currentTimeMillis() + 10000;
-
-        while (TrainControlUI.aModalDialogIsShowing() && System.currentTimeMillis() < until) Thread.sleep(20);
+        Settle.until(() -> !TrainControlUI.aModalDialogIsShowing(), 10000);
 
         assertFalse(TrainControlUI.aModalDialogIsShowing(), "a closed dialog still reads as open, so the update would"
             + " wait for ever");

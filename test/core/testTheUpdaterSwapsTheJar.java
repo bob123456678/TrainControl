@@ -25,6 +25,7 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 import org.traincontrol.util.JarUpdater;
 import org.traincontrol.util.SelfUpdate;
+import support.Settle;
 
 /**
  * One-click updates swap the jar safely, or not at all (FR-125).  `JarUpdater` runs once TrainControl has closed; the
@@ -420,9 +421,7 @@ public class testTheUpdaterSwapsTheJar
 
         try
         {
-            long until = System.currentTimeMillis() + 20000;
-
-            while (!ready.isFile() && other.isAlive() && System.currentTimeMillis() < until) Thread.sleep(50);
+            Settle.until(() -> !(!ready.isFile() && other.isAlive()), 20000);
 
             assertTrue(ready.isFile(), "precondition: the other JVM did not take the lock: " + read(said));
 

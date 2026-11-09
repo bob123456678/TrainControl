@@ -26,6 +26,7 @@ import org.traincontrol.marklin.MarklinControlStation;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 import support.Display;
 import support.Reflect;
+import support.Settle;
 import support.SourceOf;
 
 /**
@@ -392,9 +393,7 @@ public class testTheTailIsPickedOnTheDiagram
 
             click(q.label, 1);
 
-            long giveUp = System.currentTimeMillis() + 10000;
-
-            while (got.get() == null && System.currentTimeMillis() < giveUp) Thread.sleep(50);
+            Settle.until(() -> !(got.get() == null), 10000);
 
             assertNotNull(got.get(), "asked on the event thread, the tail question was not answered by a click on TunnelPre"
                 + " - the secondary loop did not hand the answer back");
@@ -568,9 +567,7 @@ public class testTheTailIsPickedOnTheDiagram
                 }
             });
 
-            long giveUp = System.currentTimeMillis() + 10000;
-
-            while (!returned.get() && System.currentTimeMillis() < giveUp) Thread.sleep(50);
+            Settle.until(() -> returned.get(), 10000);
 
             assertTrue(returned.get(), "precondition: the paste door did not return after Cancel");
 
@@ -840,9 +837,7 @@ public class testTheTailIsPickedOnTheDiagram
             cancelTheQuestion();
         }
 
-        long giveUp = System.currentTimeMillis() + 10000;
-
-        while (!returned.get() && System.currentTimeMillis() < giveUp) Thread.sleep(50);
+        Settle.until(() -> returned.get(), 10000);
 
         assertTrue(returned.get(), "precondition: the paste door did not return after the answer");
 

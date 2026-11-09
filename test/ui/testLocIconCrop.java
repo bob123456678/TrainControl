@@ -6,6 +6,7 @@ import org.testng.annotations.Test;
 import org.traincontrol.gui.TrainControlUI;
 import support.Components;
 import support.Reflect;
+import support.Settle;
 import support.SourceOf;
 
 /**
@@ -744,9 +745,7 @@ public class testLocIconCrop
 
             javax.swing.SwingUtilities.invokeAndWait(ok::doClick);
 
-            long giveUp = System.currentTimeMillis() + 10000;
-
-            while (loc.getLocalImageURL() == null && System.currentTimeMillis() < giveUp) Thread.sleep(50);
+            Settle.until(() -> !(loc.getLocalImageURL() == null), 10000);
 
             crop = loc.getLocalImageURL();
 
@@ -1399,9 +1398,7 @@ public class testLocIconCrop
                 java.awt.event.MouseEvent.MOUSE_RELEASED, System.currentTimeMillis(), java.awt.event.InputEvent.BUTTON1_MASK,
                 5, 5, 1, false, java.awt.event.MouseEvent.BUTTON1)));
 
-            long giveUp = System.currentTimeMillis() + 10000;
-
-            while (replaced.getLocalImageURL() != null && System.currentTimeMillis() < giveUp) Thread.sleep(50);
+            Settle.until(() -> !(replaced.getLocalImageURL() != null), 10000);
 
             assertNull(replaced.getLocalImageURL(), "a click on the revert did not clear the icon of this computer's"
                 + " (MT-591)");

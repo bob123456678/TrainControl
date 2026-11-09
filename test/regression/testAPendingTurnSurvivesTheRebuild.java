@@ -18,6 +18,7 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
 import support.Components;
 import support.Display;
 import support.Reflect;
+import support.Settle;
 
 /**
  * A destination turn nobody has managed to write down yet survives a setup rebuild.  `Layout.reversedOnArrival` holds
@@ -1319,9 +1320,7 @@ public class testAPendingTurnSurvivesTheRebuild
         java.util.concurrent.atomic.AtomicBoolean dirty =
             (java.util.concurrent.atomic.AtomicBoolean) windowField("captionVisibilityDirty");
 
-        long until = System.currentTimeMillis() + 30000;
-
-        while ((busy.get() || dirty.get()) && System.currentTimeMillis() < until) Thread.sleep(20);
+        Settle.until(() -> !(busy.get() || dirty.get()), 30000);
 
         assertFalse(busy.get() || dirty.get(), "precondition: the window never finished working out which captions to"
             + " hide");

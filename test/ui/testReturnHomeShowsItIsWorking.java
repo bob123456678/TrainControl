@@ -12,6 +12,7 @@ import org.traincontrol.marklin.MarklinControlStation;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 import support.Display;
 import support.Reflect;
+import support.Settle;
 import support.Teardown;
 import static support.Settle.until;
 
@@ -54,9 +55,7 @@ public class testReturnHomeShowsItIsWorking
 
         settled.await(30, java.util.concurrent.TimeUnit.SECONDS);
 
-        long until = System.currentTimeMillis() + 30000;
-
-        while (!model.hasAutoLayout() && System.currentTimeMillis() < until) Thread.sleep(100);
+        Settle.until(() -> model.hasAutoLayout(), 30000);
 
         for (int turn = 0; turn < 4; turn++) SwingUtilities.invokeAndWait(() -> { });
     }

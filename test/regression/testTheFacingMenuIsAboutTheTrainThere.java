@@ -22,6 +22,7 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
 import support.Components;
 import support.Display;
 import support.Reflect;
+import support.Settle;
 import support.Teardown;
 
 /**
@@ -748,9 +749,7 @@ public class testTheFacingMenuIsAboutTheTrainThere
         model.setFeedbackState(at.turning.getS88(), true);
         model.setFeedbackState(at.approach.getS88(), false);
 
-        long until = System.currentTimeMillis() + 30000;
-
-        while (run != null && run.isAlive() && System.currentTimeMillis() < until) Thread.sleep(100);
+        Settle.until(() -> !(run != null && run.isAlive()), 30000);
 
         running.moveLocomotive(null, at.turning.getName(), false);
         running.moveLocomotive(null, at.plain.getName(), false);

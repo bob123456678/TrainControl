@@ -32,6 +32,7 @@ import static regression.testTheImportDoorReadsAnOldFile.pointsHeldBy;
 import static regression.testTheImportDoorReadsAnOldFile.putTheFolderBack;
 import static regression.testTheImportDoorReadsAnOldFile.startAnsweringYes;
 import support.Reflect;
+import support.Settle;
 
 /**
  * No setup edit is made while trains run, at any door (Adam: *"There should be no setup edit possible during a run"*),
@@ -178,9 +179,7 @@ public class testNoSetupEditDuringARun
 
             final org.traincontrol.automation.Layout railway = ui.getModel().getAutoLayout();
 
-            long until = System.currentTimeMillis() + 5000;
-
-            while (!railway.isAlreadyUnderway(sent) && System.currentTimeMillis() < until) Thread.sleep(100);
+            Settle.until(() -> railway.isAlreadyUnderway(sent), 5000);
 
             for (int turn = 0; turn < 6; turn++) SwingUtilities.invokeAndWait(() -> { });
 
@@ -1002,9 +1001,7 @@ public class testNoSetupEditDuringARun
 
             SwingUtilities.invokeAndWait(() -> item.doClick());
 
-            long until = System.currentTimeMillis() + 5000;
-
-            while (!railway.isAlreadyUnderway(train) && System.currentTimeMillis() < until) Thread.sleep(100);
+            Settle.until(() -> railway.isAlreadyUnderway(train), 5000);
 
             for (int turn = 0; turn < 6; turn++) SwingUtilities.invokeAndWait(() -> { });
 
@@ -1457,9 +1454,7 @@ public class testNoSetupEditDuringARun
             }
         });
 
-        long answered = System.currentTimeMillis() + 10000;
-
-        while ("not asked".equals(said[0]) && System.currentTimeMillis() < answered) Thread.sleep(50);
+        Settle.until(() -> !("not asked".equals(said[0])), 10000);
 
         return said[0];
     }
@@ -1738,9 +1733,7 @@ public class testNoSetupEditDuringARun
 
             doubleClickTheFirstPath((javax.swing.JList<?>) offered[0]);
 
-            long until = System.currentTimeMillis() + 15000;
-
-            while (!railway.isAlreadyUnderway(control) && System.currentTimeMillis() < until) Thread.sleep(200);
+            Settle.until(() -> railway.isAlreadyUnderway(control), 15000);
 
             assertTrue(railway.isAlreadyUnderway(control), "precondition: the double-click sends nothing even at rest, so"
                 + " this claim cannot tell a refusal from a broken door: asked " + asked);
@@ -3051,9 +3044,7 @@ public class testNoSetupEditDuringARun
 
             SwingUtilities.invokeAndWait(() -> ui.getAutonomyViewerPanel().exportConfiguration());
 
-            long until = System.currentTimeMillis() + 10000;
-
-            while (out.length() == 0 && System.currentTimeMillis() < until) Thread.sleep(100);
+            Settle.until(() -> !(out.length() == 0), 10000);
 
             assertTrue(out.length() > 0, "precondition: Export wrote nothing");
 
@@ -3279,9 +3270,7 @@ public class testNoSetupEditDuringARun
             });
 
             // WHATEVER IT SHOWS, from a task it posts too: waited for, then flushed
-            long until = System.currentTimeMillis() + 5000;
-
-            while (asked.isEmpty() && choosers.isEmpty() && System.currentTimeMillis() < until) Thread.sleep(100);
+            Settle.until(() -> !(asked.isEmpty() && choosers.isEmpty()), 5000);
 
             Thread.sleep(1000);
 
@@ -3589,9 +3578,7 @@ public class testNoSetupEditDuringARun
 
             ui.getModel().go();
 
-            long until = System.currentTimeMillis() + 5000;
-
-            while (!ui.getModel().getPowerState() && System.currentTimeMillis() < until) Thread.sleep(50);
+            Settle.until(() -> ui.getModel().getPowerState(), 5000);
 
             assertTrue(ui.getModel().getPowerState(), "precondition: the power is not on");
 

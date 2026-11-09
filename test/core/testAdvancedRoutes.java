@@ -21,6 +21,7 @@ import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 import support.Reflect;
+import support.Settle;
 import static support.Settle.until;
 
 /**
@@ -844,9 +845,7 @@ public class testAdvancedRoutes
         {
             new Thread(() -> model.execRoute(routeName)).start();
 
-            long armed = System.currentTimeMillis() + 5000;
-
-            while (!model.getRoute(routeName).isExecuting() && System.currentTimeMillis() < armed) Thread.sleep(20);
+            Settle.until(() -> model.getRoute(routeName).isExecuting(), 5000);
 
             assertTrue(model.getRoute(routeName).isExecuting(), "precondition: the route never started");
 
@@ -855,16 +854,12 @@ public class testAdvancedRoutes
 
             String expected = org.traincontrol.util.I18n.f("route.ui.infoAlreadyRunning", routeName);
 
-            long until = System.currentTimeMillis() + 5000;
-
-            while (!said.contains(expected) && System.currentTimeMillis() < until) Thread.sleep(20);
+            Settle.until(() -> said.contains(expected), 5000);
 
             assertTrue(said.contains(expected), "a route started again while it ran was dropped with nothing in the log"
                 + " (GSR-C4): " + said);
 
-            long giveUp = System.currentTimeMillis() + 15000;
-
-            while (model.getRoute(routeName).isExecuting() && System.currentTimeMillis() < giveUp) Thread.sleep(50);
+            Settle.until(() -> !model.getRoute(routeName).isExecuting(), 15000);
         }
         finally
         {
