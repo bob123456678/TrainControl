@@ -473,8 +473,8 @@ final class LocIconActions
 
         try
         {
-            // The RETURN VALUE, which ImageIO answers false with when no writer claims the format: thrown away, a
-            // zero-byte file was moved into place and the crop it replaced deleted.
+            // The RETURN VALUE, which ImageIO answers false with when no writer claims the format: ignored, a
+            // zero-byte file would be moved into place and the crop it replaced deleted.
             Util.writeAtomically(target, out ->
             {
                 if (!ImageIO.write(cropped, "png", out))
@@ -601,7 +601,7 @@ final class LocIconActions
     /**
      * What a crop's note SAYS, whether or not the file it names is there right now: `cropSourceOf` answers null for
      * both "no note" and "the note names a photograph I cannot see at the moment" (an unplugged drive, a OneDrive
-     * folder not yet online), and a re-crop that treated the two the same threw away the only record of where the
+     * folder not yet online); a re-crop must keep the two apart, or it throws away the only record of where the
      * photograph was.
      *
      * @param url the icon currently set on the locomotive

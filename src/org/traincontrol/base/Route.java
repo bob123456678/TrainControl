@@ -354,8 +354,8 @@ abstract public class Route
             // TODO rc should maintain the accessory type
 
             // Asked without registering: getAccessoryState creates a switch on a miss, and conditions are evaluated on
-            // a timer while a route waits, so one typo made a permanent accessory.  The verdict is unchanged: an absent
-            // accessory reads as not switched.
+            // a timer while a route waits, so one typo made a permanent accessory.  An absent accessory reads as not
+            // switched.
             return control.getAccessoryStateIfPresent(rc.getAddress(), rc.getProtocol())
                 == rc.getSetting();
         }

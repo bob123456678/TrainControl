@@ -80,7 +80,6 @@ public class LoadingSpinner extends JPanel
      * Which frame is due after a given time on screen.  Static and taking the elapsed time so the clock can be checked
      * without waiting for one.
      *
-     * @param elapsedMs milliseconds since the animation started
      * @return the frame to draw, within the two cycles the drawing alternates over
      */
     public static int frameAt(long elapsedMs)
@@ -181,11 +180,6 @@ public class LoadingSpinner extends JPanel
     /**
      * Draws the glass and its sand, centered on the origin of the transform it is given.  Kept apart from the frame
      * arithmetic so the shape is a function of the three numbers passed in.
-     *
-     * @param g2 a graphics already translated to the center and rotated to the current turn
-     * @param glassW the width across the plates
-     * @param glassH the height from plate to plate
-     * @param drained how much of the sand has run through, 0 for none and 1 for all of it
      */
     private void drawHourglass(Graphics2D g2, double glassW, double glassH, double drained)
     {

@@ -161,8 +161,6 @@ public final class RunGates
     /**
      * Why a train may not be sent by hand right now, or null when it may (MT-263): a hand send is refused on the
      * question Start is refused on, `autonomyHasErrors`, asked before the reversal question.
-     *
-     * @return the sentence to show, or null
      */
     static String whyAHandSendIsRefused(TrainControlUI ui)
     {

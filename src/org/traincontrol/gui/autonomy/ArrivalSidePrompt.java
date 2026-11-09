@@ -74,9 +74,6 @@ public class ArrivalSidePrompt
      * What the arrival-side question calls the square: its name, not the copy's.  A split square's Points carry a
      * heading ("BottomMainB (eastbound)") and this question is ABOUT direction, so the copy's name put an arbitrary
      * answer in it.  The facing question after it names the square the same way (`TrainControlUI`'s paste door).
-     *
-     * @param at the Point the train is being put on
-     * @return the name the question shows
      */
     static String squareNameFor(Point at)
     {
@@ -116,19 +113,12 @@ public class ArrivalSidePrompt
      * can use as a visible starting value.
      *
      * - **A terminus** has one way in: `sides` holds one entry and it is the answer.  A square with no track answers
-     *   null.
+     * null.
      * - **An ordinary station** is answered by the heading (it faces the way it will leave, so it came from behind),
-     *   out of the sides this square actually has.
+     * out of the sides this square actually has.
      * - **A may-reverse station** answers NULL, because turning round is what those squares are for.  `forPlacement`
-     *   sends it to the operator; a form can pass `mayReverse` false to get the assumption as a visible starting
-     *   value.
-     *
-     * @param layout the running layout
-     * @param at the point the train is being put down on
-     * @param facing which way it points, or null when nobody has said
-     * @param mayReverse whether the operator marked this square as one trains may turn at
-     * @param arrivalSides the build's own sides, where the caller has them
-     * @return the side the rule gives, or null where only the operator can say
+     * sends it to the operator; a form can pass `mayReverse` false to get the assumption as a visible starting
+     * value.
      */
     public static String suggestedFor(Layout layout, Point at, String facing, boolean mayReverse,
         List<org.traincontrol.automationui.TilePorts.Side> arrivalSides)
@@ -154,11 +144,7 @@ public class ArrivalSidePrompt
      * The sides a placement here may be recorded as having come from: the BUILD'S SIDES when the caller has them (every
      * caller in the application), else `Layout.entrySideOf` for hand-built test Layouts.  One place, because the
      * dialog's buttons, the combo's entries and `wouldAsk` all read this list and would drift if assembled separately.
-     *
-     * @param layout the running layout
-     * @param at the point
-     * @param arrivalSides the build's own sides, where the caller has them
-     * @return the sides, in a stable order, never null
+     * Never null, in a stable order.
      */
     public static List<String> choicesFor(Layout layout, Point at,
         List<org.traincontrol.automationui.TilePorts.Side> arrivalSides)
@@ -173,10 +159,6 @@ public class ArrivalSidePrompt
      * Behind a train that drove in forwards, named in the vocabulary the tail walk compares against.  The sides are
      * given and the facing chooses between them, not the other way about (OB-182).  A null arrival side claims least,
      * which is also what a dismissed dialog answers.
-     *
-     * @param sides the sides track reaches this square by - the build's where the caller has them
-     * @param facing which way its front points, or null when nobody has said
-     * @return the side to record, or null when this cannot be worked out
      */
     private static String arrivedFrom(List<String> sides, String facing)
     {
@@ -212,11 +194,6 @@ public class ArrivalSidePrompt
      * Whether a placement here would actually put a question to the operator.  `forPlacement` returns null in three
      * situations and only one is "the operator said no", so the paste door asks this, the exact condition under which
      * `forPlacement` reaches `ask`, rather than inferring it from a null.
-     *
-     * @param layout the running layout
-     * @param at the point being placed on
-     * @param mayReverse whether the operator marked this square as one trains may turn at
-     * @return whether a dialog would be shown
      */
     public static boolean wouldAsk(Layout layout, Point at, boolean mayReverse,
         List<org.traincontrol.automationui.TilePorts.Side> arrivalSides)
@@ -253,9 +230,6 @@ public class ArrivalSidePrompt
     /**
      * What one side is called where an operator reads it, for the dialog's buttons and the train window's, so a side is
      * worded the same wherever it is offered.
-     *
-     * @param side "N", "S", "E" or "W"
-     * @return the operator's name for it
      */
     public static String labelFor(String side)
     {
@@ -282,11 +256,7 @@ public class ArrivalSidePrompt
         }
     }
 
-    /**
-     * The side as the operator is shown it: "N", "S", "E" or "W", and north for anything else a file recorded.
-     * @param side the recorded side, possibly null
-     * @return one of the four
-     */
+    /** The side as the operator is shown it: "N", "S", "E" or "W", and north for anything else a file recorded. */
     public static String recognized(String side)
     {
         return "S".equals(side) || "E".equals(side) || "W".equals(side) ? side : "N";
@@ -325,9 +295,6 @@ public class ArrivalSidePrompt
      * the compass direction of the neighboring POINT, the far end of a reduced edge that may turn corners (a rail
      * leaving north and curving east gives "E" while the metal leaves by "N"); the builder already knows the answer
      * (`arrivalSides` to `StationIndex` to `AutonomyBuilder.arrivalSidesOf`).
-     *
-     * @param sides the arrival sides from the session, as the build split them
-     * @return their names, in the build's own order
      */
     public static List<String> sidesOf(List<org.traincontrol.automationui.TilePorts.Side> sides)
     {

@@ -42,11 +42,10 @@ final class LayoutFileActions
     /**
      * Writes the page index and re-aims every arrow on the layout at the page it was aimed at, as a link tile holds a
      * position in the name-sorted page list.  Delete and Combine go through here; Add, Duplicate and Rename go through
-     * `LayoutPageEdit`.  The order is taken from the pages this session holds, not the index file (FR-018).
+     * `LayoutPageEdit`.  The order is taken from the pages this session holds, not the index file (FR-018).  `renamed`
+     * is old name to new name, or null (both callers pass null: a rename goes through `LayoutPageEdit`); `keepAbsent`
+     * is pages to hold in the index though they are not loaded (FR-018), or null.
      *
-     * @param layoutList the new page list, as writeLayoutIndex takes it
-     * @param renamed old name -&gt; new name, or null - which both callers pass; a rename goes through `LayoutPageEdit`
-     * @param keepAbsent pages to hold in the index though they are not loaded (FR-018), or null
      * @throws java.io.IOException if the index cannot be written, which is the caller's to report
      */
     void writeIndexAndKeepLinksAimed(List<String> layoutList, Map<String, String> renamed,
@@ -70,10 +69,7 @@ final class LayoutFileActions
         }
     }
 
-    /**
-     * Unzips an empty layout to the current folder and returns the path
-     * @return
-     */
+    /** Unzips an empty layout to the current folder and returns the path. */
     String initializeEmptyLayout(String folderName)
     {
         try
@@ -107,12 +103,7 @@ final class LayoutFileActions
         return null;
     }
 
-    /**
-     * Copies a JAR resource file to the specified path
-     * @param resource
-     * @param output
-     * @throws IOException 
-     */
+    /** Copies a JAR resource file to the specified path. */
     private void copyResource(String resource, File output) throws IOException
     {
         InputStream is = TrainControlUI.class.getResource(resource).openStream();
@@ -130,12 +121,7 @@ final class LayoutFileActions
         os.close();
     }
 
-    /**
-     * Unzips a file
-     * https://howtodoinjava.com/java/io/unzip-file-with-subdirectories/
-     * @param filePathToUnzip
-     * @throws java.io.IOException
-     */
+    /** Unzips a file (after https://howtodoinjava.com/java/io/unzip-file-with-subdirectories/). */
     private void unzipFile(Path filePathToUnzip, String folderName)
     {
         Path parentDir = filePathToUnzip.getParent();
@@ -245,8 +231,6 @@ final class LayoutFileActions
      * recursively produces every page, in an order nobody chose.  The result is excluded from autonomy as it is
      * written, not optionally: left included, every square would mint a second Point for a sensor and a parallel set of
      * edges.
-     *
-     * @param editor the layout editor that asked, or null for the Layouts menu, as in `duplicateOrRenameCurrentLayout`
      */
     void combineLinkedPages(final LayoutEditor editor)
     {
@@ -420,10 +404,7 @@ final class LayoutFileActions
 
     /**
      * Moves the selected page one place up or down the page list and saves at once (FR-175).  Silent at either end,
-     * where the editor grays the arrow.
-     *
-     * @param by -1 for up, 1 for down
-     * @param from the layout editor that asked, or null
+     * where the editor grays the arrow.  `by` is -1 for up, 1 for down.
      */
     void movePage(final int by, final LayoutEditor from)
     {
@@ -459,11 +440,7 @@ final class LayoutFileActions
         return out.equals(pages) ? null : out;
     }
 
-    /**
-     * Writes the pages in name order once (FR-175); nothing is written when they already are.
-     *
-     * @param from the layout editor that asked, or null
-     */
+    /** Writes the pages in name order once (FR-175); nothing is written when they already are. */
     void sortPagesByName(final LayoutEditor from)
     {
         if (sorted(this.ui.getModel().getLayoutList()) == null) return;
@@ -474,13 +451,9 @@ final class LayoutFileActions
 
     /**
      * Writes the index in a new page order: every page keeps its id, and no page file and not the setup is touched.
-     * Refused as the other page edits are.
-     *
-     * @param order the pages in the order to write, worked out from the pages as they are when the write goes ahead
-     *        (a page may have been added meanwhile); null when there is nothing to change
-     * @param page the page the main window shows afterwards
-     * @param editorPage the page the layout editor that asked arrives on, or null for the one it left
-     * @param from the layout editor that asked (FR-109), or null for the Layouts menu
+     * Refused as the other page edits are.  `order` is worked out from the pages as they are when the write goes ahead
+     * (a page may have been added meanwhile); null when there is nothing to change.  `editorPage` is the page the
+     * layout editor that asked arrives on, null for the one it left.
      */
     private void reorder(final java.util.function.Function<List<String>, List<String>> order, final String page,
         final String editorPage, final LayoutEditor from)
@@ -511,9 +484,7 @@ final class LayoutFileActions
     /**
      * The refusals every page edit that rewrites the index shares, in the order they are asked: an open editor (the
      * Layouts menu's edits only; the editor that asked steps aside), a running railway, and a Central Station layout.
-     *
-     * @param from the layout editor that asked, or null for the Layouts menu
-     * @return true when the edit is refused, the user told why
+     * True when the edit is refused, the user told why.
      */
     private boolean refusedAsAPageEdit(LayoutEditor from)
     {
@@ -598,12 +569,8 @@ final class LayoutFileActions
     }
 
     /**
-     * Duplicates or renames the current layout page, optionally clearing it
-     * @param newLayoutName - name of the new layout
-     * @param rename - true if renaming
-     * @param duplicate - true if duplicating
-     * @param blank - true to clear
-     * @param from the layout editor that asked (FR-109), or null for the Layouts menu
+     * Duplicates or renames the current layout page, optionally clearing it; `from` is the layout editor that asked
+     * (FR-109), or null.
      */
     void duplicateOrRenameCurrentLayout(String newLayoutName, boolean rename, boolean duplicate, boolean blank,
         final LayoutEditor from)
@@ -737,11 +704,7 @@ final class LayoutFileActions
         }
     }
 
-    /**
-     * Every page of the local layout, as objects.
-     *
-     * @return the loaded pages, in the order the window lists them
-     */
+    /** Every page of the local layout, as objects, in the order the window lists them. */
     private List<LayoutDiagram> everyLoadedPage()
     {
         List<LayoutDiagram> pages = new ArrayList<>();
@@ -759,9 +722,6 @@ final class LayoutFileActions
     /**
      * The page itself, then every page its links lead to, without repeats.  Read off the tiles (a link carries the
      * INDEX of its page), so it works whether or not autonomy has been set up on this layout.
-     *
-     * @param from the page to start at
-     * @return that page first, then the pages it reaches
      */
     private List<String> pagesLinkedFrom(String from)
     {
@@ -803,10 +763,8 @@ final class LayoutFileActions
      * Fills the new page in: each source page's squares, stacked with a blank row between, written square by square
      * because a LayoutDiagramComponent carries its own coordinates.  The file on disk is briefly stale (written before
      * the arrows are re-aimed); `refreshLayouts` re-reads the corrected sources and this refills the copy from them
-     * through the copy constructor, which carries `rawAddress`, so a link keeps its destination.
-     *
-     * @param name the page just created
-     * @param pages the source pages, the one being combined first
+     * through the copy constructor, which carries `rawAddress`, so a link keeps its destination.  `pages` has the one
+     * being combined first.
      */
     private void fillCombinedPage(String name, List<String> pages) throws Exception
     {

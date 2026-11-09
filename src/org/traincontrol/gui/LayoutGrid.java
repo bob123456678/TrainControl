@@ -58,8 +58,6 @@ public class LayoutGrid
 
     /**
      * Whether the column and row numbers are drawn: exactly when the grid is (OB-179).  Holds no preference of its own.
-     *
-     * @return true when the numbers should be drawn
      */
     public static boolean coordinatesVisible()
     {
@@ -323,8 +321,8 @@ public class LayoutGrid
     }
 
     /**
-     * The square under a mouse event, for a train dragged over the diagram (FR-160): the caption drag's own question.
-     * @return the square, or null when off the diagram
+     * The square under a mouse event, or null off the diagram, for a train dragged over the diagram (FR-160): the
+     * caption drag's own question.
      */
     public static LayoutLabel squareUnder(Container container, java.awt.Component from, MouseEvent e)
     {
@@ -338,9 +336,6 @@ public class LayoutGrid
      * Whether the track on this square runs up and down rather than across (FR-028), asked of the geometry as the
      * autonomy graph asks it, so a caption and the path through it cannot disagree.  A switch in its straight position
      * answers TRUE.
-     *
-     * @param c what is drawn on the square
-     * @return true when the rails run north to south and nothing else
      */
     public static boolean runsNorthSouth(LayoutDiagramComponent c)
     {
@@ -383,10 +378,6 @@ public class LayoutGrid
      * How a station caption is spelled when a train is standing on it: the name cut to LAYOUT_STATION_MAX_LENGTH, then
      * the facing arrow, no brackets (FR-028).  Shared by the running diagram and the autonomy editor so they spell it
      * alike.
-     *
-     * @param name the locomotive
-     * @param arrow the facing arrow, already carrying its own leading space, or "" for none
-     * @return the caption
      */
     public static String stationCaption(String name, String arrow)
     {
@@ -460,9 +451,6 @@ public class LayoutGrid
      * Makes a diagram's window scroll half a square at a time on both axes, at the size it is drawn (MT-726): each
      * wheel step and each press of a scroll bar's arrow.  The diagram's panel is not Scrollable, so without this its
      * bars step one pixel at a time.
-     *
-     * @param pane the scroll pane the diagram is in
-     * @param size the square's edge in pixels
      */
     public static void scrollHalfASquareAtATime(javax.swing.JScrollPane pane, int size)
     {
@@ -504,8 +492,6 @@ public class LayoutGrid
      * Retires whatever grid is registered against this panel, whether or not the caller got a reference to it: a
      * constructor that throws part-way has already registered (`LIVE.put` comes first).  Idempotent; safe on a panel
      * with no grid.
-     *
-     * @param host the panel a grid was built into
      */
     public static void retire(JPanel host)
     {

@@ -200,7 +200,6 @@ public class RouteCommand implements java.io.Serializable
      * @param name the locomotive
      * @param s88 the sensor's address
      * @param at true for the train standing at the sensor, false for it not standing there
-     * @return
      */
     public static RouteCommand RouteCommandAutoLocomotive(String name, int s88, boolean at)
     {
@@ -342,7 +341,6 @@ public class RouteCommand implements java.io.Serializable
     /**
      * Whether an auto locomotive condition asks for the train AT its sensor (true) or NOT at it (false) - FR-141.
      * A missing SETTING here is "at", unlike getSetting.
-     * @return
      */
     public boolean isAtSensor()
     {
@@ -622,7 +620,6 @@ public class RouteCommand implements java.io.Serializable
     /**
      * Returns a simple string representation of this command
      * @param linkedAccessory the accessory object linked to this command's address - so that we can pretty print the accessory type
-     * @return 
      */
     public String toLine(Accessory linkedAccessory)
     {
@@ -746,9 +743,8 @@ public class RouteCommand implements java.io.Serializable
     {
         line = line.trim();
 
-        // Case does not decide whether a command is a command: `Feedback` was matched through toLowerCase() and no
-        // other command name was, so "feedback 12,1" parsed and "emergency stop" did not.  Forgiving cannot break a
-        // file this program wrote, since the exporter emits the canonical casing.
+        // Case does not decide whether a command is a command.  Forgiving cannot break a file this program wrote, since
+        // the exporter emits the canonical casing.
         if (COMMAND_EMERGENCY_STOP.equalsIgnoreCase(line))
         {
             return RouteCommand.RouteCommandStop();

@@ -118,7 +118,7 @@ public final class UpdateFlow
                 try
                 {
                     // A file of that name that is not the whole release, an earlier download cut short, is fetched
-                    // again rather than installed.  Download alone keeps whatever is there, as it always has.
+                    // again rather than installed.  Download alone keeps whatever is there.
                     if (install && f.exists()
                         && SelfUpdate.whyNotAWholeJar(f, TrainControlUI.LATEST_DOWNLOAD_SIZE, TrainControlUI.LATEST_DOWNLOAD_DIGEST) != null)
                     {
@@ -168,7 +168,7 @@ public final class UpdateFlow
 
                 javax.swing.SwingUtilities.invokeLater(() ->
                 {
-                    // Wrapped: the path is one long word, and made the popup wider than the screen
+                    // Wrapped: the path is one long word and would make the popup wider than the screen
                     JOptionPane.showMessageDialog(this.ui, DetailsArea.wrapped(
                         I18n.f("ui.infoDownloadedUpdateReplaceExistingJar", f.getAbsolutePath())));
 

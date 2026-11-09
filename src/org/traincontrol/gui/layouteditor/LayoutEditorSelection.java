@@ -139,10 +139,7 @@ final class LayoutEditorSelection
         this.editor.refreshGrid();
     }
 
-    /**
-     * Resets the contents of the clipboard.  Under the editor's monitor: `LayoutEditor.resetClipboard` is
-     * `synchronized`.
-     */
+    /** Resets the contents of the clipboard. */
     void resetClipboard()
     {
         this.editor.lastX = -1;
@@ -167,7 +164,7 @@ final class LayoutEditorSelection
 
     /**
      * Adds this label's location to the clipboard; `component` is the component at the label location, or one that's
-     * specified.  Under the editor's monitor: `LayoutEditor.initCopy` is `synchronized`.
+     * specified.
      */
     void initCopy(LayoutLabel label, LayoutDiagramComponent component, boolean move)
     {
@@ -205,10 +202,7 @@ final class LayoutEditorSelection
         this.editor.clearBordersFromChildren(this.editor.newComponents());
     }
 
-    /**
-     * Takes a copy of everything picked, as the rectangle it occupies; true if there was something to copy.  Under the
-     * editor's monitor: `LayoutEditor.copySelection` is `synchronized`.
-     */
+    /** Takes a copy of everything picked, as the rectangle it occupies; true if there was something to copy. */
     boolean copySelection()
     {
         int[] bounds = this.editor.selection.bounds();
@@ -356,8 +350,7 @@ final class LayoutEditorSelection
     /**
      * Pastes a copied group with its top left corner at (atX, atY), as ONE undoable step; true if anything was pasted.
      * OVERWRITES what is there: merging would mean deciding per square whether the copy or the original wins, and
-     * overwriting is the answer the user can predict and undo takes back in one step.  Under the editor's monitor:
-     * `LayoutEditor.pasteSelection` is `synchronized`.
+     * overwriting is the answer the user can predict and undo takes back in one step.
      */
     boolean pasteSelection(int atX, int atY)
     {
@@ -497,8 +490,7 @@ final class LayoutEditorSelection
      * Moves every picked square by a delta, as ONE undoable step; true if the move happened.  Reads everything first,
      * then clears, then writes: a group that overlaps where it is going (every short drag) would otherwise erase tiles
      * it had already placed.  Refused WHOLE if any square would land off the diagram, rather than clipped, which would
-     * drop a column of track off the side with nothing on screen saying so.  Under the editor's monitor:
-     * `LayoutEditor.moveSelection` is `synchronized`.
+     * drop a column of track off the side with nothing on screen saying so.
      */
     boolean moveSelection(int dx, int dy)
     {
@@ -641,7 +633,7 @@ final class LayoutEditorSelection
     /**
      * Copies the picked squares and then clears them, as one step; true if anything was cut.  Copy first and only
      * delete if it took, because a cut that lost the tiles and kept nothing on the clipboard is the one outcome pasting
-     * cannot undo.  Under the editor's monitor: `LayoutEditor.cutSelection` is `synchronized`.
+     * cannot undo.
      */
     boolean cutSelection()
     {
@@ -695,8 +687,7 @@ final class LayoutEditorSelection
     /**
      * Puts the armed tile on every picked square, as ONE undoable step; true if anything was filled.  Needs a tile
      * armed from the palette; with nothing armed it says so rather than clearing, because "fill with nothing" is Delete
-     * and the two should not be one gesture with a hidden mode.  Under the editor's monitor:
-     * `LayoutEditor.fillSelection` is `synchronized`.
+     * and the two should not be one gesture with a hidden mode.
      */
     boolean fillSelection()
     {
@@ -757,8 +748,7 @@ final class LayoutEditorSelection
 
     /**
      * Deletes every picked square, as ONE undoable step; true if anything was picked to delete.  One snapshot for the
-     * group rather than one per square: a user who erases a yard means the yard, not the last tile of it.  Under the
-     * editor's monitor: `LayoutEditor.deleteSelection` is `synchronized`.
+     * group rather than one per square: a user who erases a yard means the yard, not the last tile of it.
      */
     boolean deleteSelection()
     {
@@ -766,8 +756,7 @@ final class LayoutEditorSelection
     }
 
     /**
-     * Empties every picked square; true if anything was picked to delete.  Under the editor's monitor:
-     * `LayoutEditor.deleteSelection` is `synchronized`.
+     * Empties every picked square; true if anything was picked to delete.
      *
      * @param tellAutonomy whether the setup should forget what was on those squares: TRUE for a plain delete, FALSE for
      *        a CUT, where the paste that follows carries the setup and forgetting the captions here (the caption on
@@ -828,7 +817,7 @@ final class LayoutEditorSelection
     /**
      * Rotates every picked square where it stands, as one undoable step; true if anything was picked to rotate.  In
      * place, not around the group: turning a yard through ninety degrees would move every tile of it, a different
-     * operation.  Under the editor's monitor: `LayoutEditor.rotateSelection` is `synchronized`.
+     * operation.
      */
     boolean rotateSelection()
     {
@@ -872,14 +861,14 @@ final class LayoutEditorSelection
         return true;
     }
 
-    /** Deletes this label from the layout.  Under the editor's monitor: `LayoutEditor.delete` is `synchronized`. */
+    /** Deletes this label from the layout. */
     void delete(LayoutLabel label)
     {
         this.editor.delete(label, true);
     }
 
     /**
-     * Deletes this label from the layout.  Under the editor's monitor: `LayoutEditor.delete` is `synchronized`.
+     * Deletes this label from the layout.
      *
      * @param tellAutonomy false when the CALLER tells the setup what happened.  A cut empties its squares one at a time
      *        and the paste that follows tells the setup where the block went (deleteSelection); announcing each delete
@@ -929,7 +918,7 @@ final class LayoutEditorSelection
         }
     }
 
-    /** Rotates the specified label.  Under the editor's monitor: `LayoutEditor.rotate` is `synchronized`. */
+    /** Rotates the specified label. */
     void rotate(LayoutLabel label)
     {       
         LayoutDiagramComponent lc = this.editor.layout.getComponent(this.editor.getX(label), this.editor.getY(label));

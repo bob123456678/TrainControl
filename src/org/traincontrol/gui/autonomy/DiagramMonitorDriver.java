@@ -63,8 +63,6 @@ public class DiagramMonitorDriver
      * Points the monitor at a reduction, and at the layout currently built from it.  Called after every rebuild and
      * configuration load; rebinding rather than making a new driver keeps the timer running with no window where
      * movement goes unnoticed.
-     *
-     * @param session the setup the running layout was generated from
      */
     public void bind(AutonomySession session)
     {
@@ -158,11 +156,8 @@ public class DiagramMonitorDriver
 
     /**
      * Which way a train standing on each Point faces, from the builder that named them: a split copy's own facing, and
-     * a single copy's only way out where it has one (the icon of a parked train turns to it).
-     *
-     * @param builder the builder the names came from
-     * @param names every Point name and its square
-     * @return Point name to the side a train's front faces there
+     * a single copy's only way out where it has one (the icon of a parked train turns to it).  Answers Point name to
+     * the side a train's front faces there.
      */
     private static Map<String, org.traincontrol.automationui.TilePorts.Side> facingsOf(AutonomyBuilder builder,
         Map<String, TileKey> names)
@@ -264,11 +259,7 @@ public class DiagramMonitorDriver
         return timer != null;
     }
 
-    /**
-     * Turns the monitoring layer on or off without unwiring anything.
-     *
-     * @param enabled
-     */
+    /** Turns the monitoring layer on or off without unwiring anything. */
     public void setEnabled(boolean enabled)
     {
         if (this.enabled == enabled) return;

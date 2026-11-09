@@ -1501,10 +1501,6 @@ public final class HomeStaging
     /**
      * Whether this station could ever be a home for this locomotive: the planner's own question, delegated so the
      * answer here matches the one Return Home will give later.
-     *
-     * @param loc
-     * @param at
-     * @return
      */
     public static boolean canBeHome(Locomotive loc, Point at)
     {

@@ -195,8 +195,6 @@ public class PositionAwareJFrame extends JFrame
     /**
      * Shows or hides the window - and, shown, maximizes it where it was remembered maximized, and brings it forward
      * (OB-328).
-     *
-     * @param visible whether to show it
      */
     @Override
     public void setVisible(boolean visible)

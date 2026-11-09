@@ -428,7 +428,7 @@ public class AutonomyBanner extends JPanel
     /** Whether this banner is currently saying anything. */
     public boolean isSaying()
     {
-        // The document always carries a body wrapper now, so the markup cannot be the test - what
+        // The document always carries a body wrapper, so the markup cannot be the test - what
         // is being asked is whether there is anything to READ.
         return saying != null && !saying.trim().isEmpty();
     }
@@ -482,7 +482,7 @@ public class AutonomyBanner extends JPanel
         java.awt.Color ink = warning ? WARNING_TEXT : INFO_TEXT;
 
         // The font and the color go into the DOCUMENT: an editor pane showing HTML takes neither from setFont nor from
-        // setForeground, so a message set the ordinary way came out in the default serif face in black.
+        // setForeground, so a message set the ordinary way comes out in the default serif face in black.
         message.setText("<html><body style=\"font-family:'" + MESSAGE_FONT.getFamily()
             + "'; font-size:" + MESSAGE_FONT.getSize() + "pt; color:rgb("
             + ink.getRed() + "," + ink.getGreen() + "," + ink.getBlue() + "); margin:0\">"
@@ -623,7 +623,7 @@ public class AutonomyBanner extends JPanel
         }
 
         /**
-         * Nothing, and that is the point: reporting the child's own minimum is what let the message be shrunk to five
+         * Nothing, and that is the point: reporting the child's own minimum would let the message be shrunk to five
          * pixels.  This layout never needs any space taken from it; it fits whatever it is given.
          */
         @Override

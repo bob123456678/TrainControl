@@ -15,10 +15,8 @@ import org.traincontrol.automation.Point;
 import org.traincontrol.util.I18n;
 
 /**
- * The farthest sensor the tail of a hand-placed train has crossed, which says the road its tail lies on.  Adam: "the
- * prompt should ask the user to pick from a list and select the farthest sensor the tail of the train recently
- * crossed."  That road is what `Point.arrivedAlong` holds for a train autonomy drove and what the tail walk follows
- * past a junction (MT-335).
+ * The farthest sensor the tail of a hand-placed train has crossed, which says the road its tail lies on.  That road is
+ * what `Point.arrivedAlong` holds for a train autonomy drove and what the tail walk follows past a junction (MT-335).
  *
  * Asked only when the answer changes something (MT-477).  How far back a sensor may be offered is a suggestion, not
  * the blocking rule: what blocks track is the walk, reading the road the operator chose (OB-278, OB-226).
@@ -103,14 +101,8 @@ public class TailCrossedPrompt
     }
 
     /**
-     * Every sensor the tail of this train can have crossed, nearest first along each road back.
-     *
-     * @param layout the running layout
-     * @param at the point the train stands on
-     * @param arrivedFrom the side it came in by - the first road back - or null
-     * @param trainLength its length, or null
-     * @param shown what to call a point on screen, or null for its own name
-     * @return the choices, never null; empty where nothing can be said
+     * Every sensor the tail of this train can have crossed, nearest first along each road back; never null.  A null
+     * `shown` calls a point by its own name.
      */
     public static List<Choice> choicesFor(Layout layout, Point at, String arrivedFrom, Integer trainLength,
         Function<String, String> shown)
@@ -127,12 +119,6 @@ public class TailCrossedPrompt
     /**
      * Whether the answer would change which track is blocked, so a placement should ask: the same walk as `choicesFor`,
      * true exactly where the tail lies past a junction with two roads back that put it on different track.
-     *
-     * @param layout the running layout
-     * @param at the point the train stands on
-     * @param arrivedFrom the side it came in by, or null
-     * @param trainLength its length, or null
-     * @return whether to ask
      */
     public static boolean wouldAsk(Layout layout, Point at, String arrivedFrom, Integer trainLength)
     {
@@ -145,18 +131,9 @@ public class TailCrossedPrompt
 
     /**
      * The road a hand-placed train's tail lies on, asking where the answer matters.  Asked AFTER the train is down:
-     * the side question is asked before the move because its dismissal refuses the placement (Adam: "simply don't place
-     * the train"; `testEditorSurfaceRules.testADismissedArrivalQuestionPlacesNothing` holds that), while this one's
-     * dismissal is Not Known, places the train all the same, and needs the side the placement just recorded.
-     *
-     * @param layout the running layout
-     * @param at the point the train now stands on
-     * @param arrivedFrom the side it came in by, or null
-     * @param trainLength its length, or null
-     * @param train the train's name, for the question
-     * @param parent what to center the dialog on
-     * @param shown what to call a point on screen, or null for its own name
-     * @return what the question came to - see `Answer`
+     * the side question is asked before the move because its dismissal refuses the placement
+     * (`testEditorSurfaceRules.testADismissedArrivalQuestionPlacesNothing` holds that), while this one's dismissal is
+     * Not Known, places the train all the same, and needs the side the placement just recorded.
      */
     public static Answer askAfterPlacement(Layout layout, Point at, String arrivedFrom, Integer trainLength,
         String train, Component parent, Function<String, String> shown)
@@ -183,9 +160,8 @@ public class TailCrossedPrompt
         // Quiet, nobody is asked; one road is no question, and is taken as ever
         if (quiet && choices.size() != 1) return Answer.NOT_ASKED;
 
-        // On the diagram where it can be (FR-100; Adam: *"instead of showing the list of points, highlight possible
-        // squares on the diagram and ask the user to click one.  only show the list if there are options on another
-        // page."*).  Not for one choice, which is answered without asking, nor for a test's answer.
+        // On the diagram where it can be (FR-100); not for one choice, which is answered without asking, nor for a
+        // test's answer.
         DiagramPick pick = choices.size() > 1 && answeredByATest == null
             ? DiagramPick.of(parent, at, choices, train, shownName(shown, at)) : null;
 
@@ -210,14 +186,6 @@ public class TailCrossedPrompt
      * Saves what a placement door has written before its tail question waits, and answers what the save reconciled, or
      * null where it did not save (OB-305).  Saves only where the question will be put (`wouldAsk`), and not while an
      * editor is open or on its way.
-     *
-     * @param session the setup the door wrote to
-     * @param layout the running railway
-     * @param at the copy the train was put on
-     * @param arrivedFrom the side it came in by, or null
-     * @param trainLength its length, or null
-     * @param window the main window, which knows whether an editor holds the setup, and where the log goes
-     * @return what the save reconciled, for the door to report as it reports its own save; null when nothing was saved
      */
     public static org.traincontrol.automationui.AutonomyCompanionStore.Reconciliation saveBeforeAsking(
         org.traincontrol.automationui.AutonomySession session, Layout layout, Point at, String arrivedFrom,
@@ -244,15 +212,7 @@ public class TailCrossedPrompt
      * What every placement door does once the train is down and its facing written: the tail's side into both stores
      * (the walk that blocks track reads the live Point; the setup survives a restart), the save before the question
      * waits, the question, and its road written only where the placement still stands, else a dropped answer logged.
-     *
-     * @param point the copy the train was put on, holding it
-     * @param train the train's name
-     * @param roadBefore the road the train had before the door moved it, or null
-     * @param sameSquareAsBefore whether it was put back on the square it stood on
-     * @param sideBefore the side it had there, or null
-     * @param asker what the question hangs off: the main window, which asks as its own doors do, or another window
-     * @param savedEarly given what the save before the question reconciled (null when it did not save), or null
-     * @return whether the setup written to is still the window's, so the door may save it
+     * Answers whether the setup written to is still the window's, so the door may save it.
      */
     public static boolean recordTheTail(org.traincontrol.automationui.AutonomySession session,
         org.traincontrol.automationui.TileGraph.TileKey tile, Layout layout, Point point, String tail, String train,
@@ -304,36 +264,23 @@ public class TailCrossedPrompt
     }
 
     /**
-     * Puts the question: a list of the sensors, and Not Known.  A closed dialog is no answer and a choice of nothing;
-     * unlike the side question it does not refuse the placement, since the train is already somewhere a side was given
-     * for.
-     *
-     * @param parent what to center on
-     * @param train the train's name
-     * @param station where it stands, as the operator reads it
-     * @param choices the sensors
-     * @return the choice, or null for Not Known
+     * Puts the question: a list of the sensors, and Not Known, which answers null.  A closed dialog is no answer and a
+     * choice of nothing; unlike the side question it does not refuse the placement, since the train is already
+     * somewhere a side was given for.
      */
     public static Choice ask(Component parent, String train, String station, List<Choice> choices)
     {
         return reply(parent, train, station, choices, -1).choice;
     }
 
-    /**
-     * Where the list should start: the choice the recorded road describes, or none.
-     *
-     * @param choices the choices
-     * @param recorded the road the train has, or null
-     * @return its index, or -1
-     */
+    /** Where the list should start: the choice the recorded road describes, or none (-1). */
     public static int preselectedIndex(List<Choice> choices, List<Edge> recorded)
     {
         Choice ticked = recordedChoice(choices, recorded);
 
         if (ticked != null) return choices.indexOf(ticked);
 
-        // The sensor nearest the back, when there is one (FR-088).  Adam: *"The closest sensor to the back should be
-        // the default selection in the length window, so the user can just click OK if appropriate."*  Asked about
+        // The sensor nearest the back, when there is one (FR-088): the default selection, so OK is enough.  Asked about
         // several: nearest the back if there is one, nothing chosen otherwise; that is a sensor no other offered sensor
         // lies beyond on the same road.
         int nearestTheBack = -1;
@@ -460,8 +407,7 @@ public class TailCrossedPrompt
     {
         if (choices == null || choices.isEmpty()) return new Reply(false, null);
 
-        // One choice is the answer, and nothing is shown (Adam: *"since there is only one choice, it should be auto
-        // selected without a prompt"*).  Before the test seam, as the operator is: nobody is asked.
+        // One choice is the answer, and nothing is shown.  Before the test seam, as the operator is: nobody is asked.
         if (choices.size() == 1) return new Reply(true, choices.get(0));
 
         if (answeredByATest != null)
@@ -500,9 +446,9 @@ public class TailCrossedPrompt
                     + "</div></html>"), java.awt.BorderLayout.NORTH);
                 panel.add(new javax.swing.JScrollPane(list), java.awt.BorderLayout.CENTER);
 
-                // OK and Cancel, no "Not Known" (Adam: "drop not known, keep cancel"): for a train just put down they
-                // did the same.  Cancel is no answer and keeps whatever road the train has; OK with nothing chosen is
-                // the same, so no answer is given that nobody chose.
+                // OK and Cancel, no "Not Known": for a train just put down they did the same.  Cancel is no answer and
+                // keeps whatever road the train has; OK with nothing chosen is the same, so no answer is given that
+                // nobody chose.
                 Object[] options = { I18n.t("ui.ok"), I18n.t("ui.cancel") };
 
                 int chose = JOptionPane.showOptionDialog(parent, panel, I18n.t("autolayout.ui.askArrivalSideTitle"),
@@ -528,12 +474,9 @@ public class TailCrossedPrompt
     }
 
     /**
-     * Which choice a recorded road describes: the longest one it ends with.  A driven train's road starts wherever it
-     * set off, so it is usually longer than any choice; what matters is the part nearest the train.
-     *
-     * @param choices the choices
-     * @param recorded the road the running layout has, or null
-     * @return the choice, or null when the road matches none - Not Known
+     * Which choice a recorded road describes: the longest one it ends with, or null (Not Known) when it matches none.
+     * A driven train's road starts wherever it set off, so it is usually longer than any choice; what matters is the
+     * part nearest the train.
      */
     public static Choice recordedChoice(List<Choice> choices, List<Edge> recorded)
     {
@@ -579,10 +522,7 @@ public class TailCrossedPrompt
     }
 
     /**
-     * The road as the setup writes it, for a door that records the answer.
-     *
-     * @param road the road, or null
-     * @return its [start, end] name pairs as a JSON array string, or null
+     * The road as the setup writes it, for a door that records the answer: [start, end] name pairs as JSON, or null.
      */
     public static String namesOf(List<Edge> road)
     {
@@ -591,15 +531,7 @@ public class TailCrossedPrompt
 
     // ---------------------------------------------------------------- on the diagram (FR-100)
 
-    /**
-     * Whether the question goes on the diagram rather than into a list (FR-100).  Adam: "only show the list if there
-     * are options on another page."
-     *
-     * @param train the square the train stands on
-     * @param squares each choice's sensor square
-     * @param drawn whether a square is drawn where it can be clicked
-     * @return whether to put the question on the diagram
-     */
+    /** Whether the question goes on the diagram rather than into a list (FR-100). */
     public static boolean putsTheQuestionOnTheDiagram(org.traincontrol.automationui.TileGraph.TileKey train,
         java.util.Collection<org.traincontrol.automationui.TileGraph.TileKey> squares,
         java.util.function.Predicate<org.traincontrol.automationui.TileGraph.TileKey> drawn)
@@ -621,12 +553,6 @@ public class TailCrossedPrompt
      * may hold another train, brought there by a run with the road it drove in by, and a stale answer would put the
      * first train's road over it.  So a door writes only while the copy still holds the train it placed, with the side
      * and road the placement left, asked of the running railway's copy through `whereTheAnswerGoes`.
-     *
-     * @param point the copy the train was put on
-     * @param placed the train put there, by reference
-     * @param side the side the placement recorded
-     * @param road the road the copy held when the question was asked
-     * @return true when the answer is still about what stands there
      */
     public static boolean placementStillStands(Point point, org.traincontrol.base.Locomotive placed, String side,
         List<Edge> road)
@@ -641,17 +567,9 @@ public class TailCrossedPrompt
      * railway running NOW: a rebuild in the wait (a setup change, a page left out, another configuration loaded)
      * builds new copies and leaves the old one as it was.
      *
-     * Nowhere once the door's setup is not the window's any more (`sameSetup`; Adam: *"Follow the train."*).  Nowhere
-     * while trains run (Adam: *"There should be no setup edit possible during a run"*): Start or a hand send in the
-     * wait is not refused, so every door that asks takes where to write from here.
-     *
-     * @param running the railway running now, or null to ask the copy itself
-     * @param asked the copy the train was put on when the question was asked
-     * @param placed the train put there, by reference
-     * @param side the side the placement recorded
-     * @param road the road the copy held when the question was asked
-     * @param sameSetup whether the setup the door writes to is still the window's
-     * @return the copy to write to, or null
+     * Nowhere once the door's setup is not the window's any more (`sameSetup`).  Nowhere while trains run: Start or a
+     * hand send in the wait is not refused, so every door that asks takes where to write from here.  A null `running`
+     * asks the copy itself.
      */
     public static Point whereTheAnswerGoes(Layout running, Point asked, org.traincontrol.base.Locomotive placed,
         String side, List<Edge> road, boolean sameSetup)
@@ -670,11 +588,6 @@ public class TailCrossedPrompt
     /**
      * Writes an answered road to the copy `whereTheAnswerGoes` chose - through the running railway's own edges where a
      * rebuild made that copy a new one, since the answer's road is the old railway's.
-     *
-     * @param landing the copy to write to
-     * @param asked the copy the question was asked about
-     * @param running the railway running now
-     * @param road the road to record, or null for none
      */
     public static void writeRoad(Point landing, Point asked, Layout running, List<Edge> road)
     {
@@ -684,13 +597,7 @@ public class TailCrossedPrompt
             : running.roadNamed(Layout.namesOfRoad(road)));
     }
 
-    /**
-     * The railway running now, or null where autonomy has none - asked without making one, which `getAutoLayout` does
-     * when there is none.
-     *
-     * @param model the model
-     * @return the running railway, or null
-     */
+    /** The railway running now, or null where autonomy has none - asked without making one, as `getAutoLayout` does. */
     public static Layout runningNow(org.traincontrol.model.ViewListener model)
     {
         // Asked once
@@ -699,14 +606,10 @@ public class TailCrossedPrompt
 
     /**
      * Whether the setup a door wrote to before its question is still the window's when the answer comes back: the same
-     * session.  **Another configuration loaded in the wait is the same setup here** (Adam: *"Follow the train."*): it
-     * keeps the session and rebuilds the railway, and where its copy of the square holds the same train from the same
-     * side with the road it had (which `whereTheAnswerGoes` asks) the answer goes into the configuration loaded now
-     * and onto the railway running.  A door whose setup is not the window's any more saves nothing.
-     *
-     * @param asked the session the door wrote to before the question
-     * @param now the window's session now
-     * @return true when the answer is about the setup in front of the operator
+     * session.  **Another configuration loaded in the wait is the same setup here**: it keeps the session and rebuilds
+     * the railway, and where its copy of the square holds the same train from the same side with the road it had (which
+     * `whereTheAnswerGoes` asks) the answer goes into the configuration loaded now and onto the railway running.  A
+     * door whose setup is not the window's any more saves nothing.
      */
     public static boolean sameSetup(org.traincontrol.automationui.AutonomySession asked,
         org.traincontrol.automationui.AutonomySession now)
@@ -718,10 +621,6 @@ public class TailCrossedPrompt
      * Says in the log that an answer was not recorded, and why: the squares go dark whichever way it went.  Only for an
      * answer (Not known included; a Cancel asked for nothing to be recorded), naming the square as the diagram does
      * and offering no remedy, since the train having moved or another train standing there makes one impossible.
-     *
-     * @param model where the log goes
-     * @param train the train the question was about
-     * @param where the copy it was put on
      */
     public static void noteADroppedAnswer(org.traincontrol.model.ViewListener model, String train, String where)
     {
@@ -729,13 +628,8 @@ public class TailCrossedPrompt
     }
 
     /**
-     * The same, saying why this answer was dropped - an editor opened in the wait, trains began running in it,
-     * or the square changed.
-     *
-     * @param model where the log goes
-     * @param train the train the question was about
-     * @param where the copy it was put on
-     * @param answer the answer dropped
+     * The same, saying why this answer was dropped: an editor opened in the wait, trains began running, or the square
+     * changed.
      */
     public static void noteADroppedAnswer(org.traincontrol.model.ViewListener model, String train, String where,
         Answer answer)
@@ -765,9 +659,6 @@ public class TailCrossedPrompt
     /**
      * A click on a sensor of the main diagram, offered first to a tail question waiting there (FR-100): while a
      * question waits, every such click is the question's.
-     *
-     * @param label the tile clicked
-     * @return whether the click was the question's
      */
     public static boolean takesTheClick(LayoutLabel label)
     {
@@ -778,10 +669,6 @@ public class TailCrossedPrompt
      * The same, knowing which click of a run this is, so the rest of a double-click on the sensor that answered is the
      * question's too (no later one, since the next click puts the guard down).  The second click would otherwise flip
      * the sensor, announced as a real sensor change which an armed route acts on.
-     *
-     * @param label the tile clicked
-     * @param clickCount the click's count in its run, from the mouse event
-     * @return whether the click was the question's
      */
     public static boolean takesTheClick(LayoutLabel label, int clickCount)
     {
@@ -930,8 +817,8 @@ public class TailCrossedPrompt
                 + escape(I18n.f("autosetup.ui.promptTailCrossedOnTheDiagram", train, station)).replace("\n", "<br>")
                 + "</div></html>"), java.awt.BorderLayout.CENTER);
 
-            // Cancel, and no "Not Known" (Adam: "drop not known, keep cancel"): for a train just put down the two did
-            // the same, and Cancel keeps whatever road a train standing still already has.
+            // Cancel, and no "Not Known": for a train just put down the two did the same, and Cancel keeps whatever
+            // road a train standing still already has.
             javax.swing.JButton cancel = org.traincontrol.gui.widgets.UiStyle.button(
                 new javax.swing.JButton(I18n.t("ui.cancel")));
 
@@ -1190,11 +1077,7 @@ public class TailCrossedPrompt
     /**
      * Whether the tail, with this much train left, lies on different track depending on which of these rails it came in
      * on (MT-477), which is when the answer changes what is blocked.  A tail that reaches into the switch has passed
-     * it, though the squares are the same (Adam: "technically that length should qualify for the prompt").
-     *
-     * @param rails the roads back from one junction, one per piece of metal
-     * @param left how much train is left at the junction
-     * @return whether two of them put the tail on different track
+     * it, though the squares are the same.
      */
     private static boolean tailsPart(java.util.Collection<Edge> rails, int left)
     {
@@ -1330,14 +1213,7 @@ public class TailCrossedPrompt
         return choice.isReached() ? name : I18n.f("autolayout.ui.tailCrossedToward", name);
     }
 
-    /**
-     * The sensors between a choice and the train, nearest the choice first, as the operator reads them.
-     *
-     * @param choice the choice
-     * @param shown what to call a point on screen
-     * @param most how many to name
-     * @return the names, joined
-     */
+    /** The sensors between a choice and the train, nearest the choice first, as the operator reads them. */
     private static String viaNames(Choice choice, Function<String, String> shown, int most)
     {
         List<String> names = new ArrayList<>();
@@ -1361,12 +1237,7 @@ public class TailCrossedPrompt
         return String.join(", ", names);
     }
 
-    /**
-     * One square, whatever it is called: the block a split square's copies share, or the Point's own name.
-     *
-     * @param point a Point
-     * @return the key
-     */
+    /** One square, whatever it is called: the block a split square's copies share, or the Point's own name. */
     private static String placeOf(Point point)
     {
         return point.getBlock() != null ? "block " + point.getBlock() : "point " + point.getName();
@@ -1375,9 +1246,6 @@ public class TailCrossedPrompt
     /**
      * One road back, by the METAL it runs over, not by lane: the square it comes from and the places the rail crosses
      * (OB-276).  A rail with no places falls back to the lane.
-     *
-     * @param rail a rail arriving towards the train
-     * @return the key
      */
     static String roadKeyOf(Edge rail)
     {
@@ -1390,10 +1258,7 @@ public class TailCrossedPrompt
         return placeOf(rail.getStart()) + " over " + places;
     }
 
-    /**
-     * @param point a Point
-     * @return whether it is the turning copy of a lane - "X (eastbound, reverse)" beside "X (eastbound)"
-     */
+    /** Whether it is the turning copy of a lane - "X (eastbound, reverse)" beside "X (eastbound)". */
     private static boolean isATurningCopy(Point point)
     {
         return point != null && !laneOf(point.getName()).equals(point.getName());
@@ -1404,9 +1269,6 @@ public class TailCrossedPrompt
      * builder names it "X (eastbound, reverse)" beside "X (eastbound)"), so the two are one road; its copies for the
      * two arrival sides are the square's two ends (a balloon reaches one directly and the other round its loop) and are
      * two roads.  A Point with no block is its own road.
-     *
-     * @param point a Point
-     * @return the key
      */
     static String roadKeyOf(Point point)
     {
@@ -1414,12 +1276,7 @@ public class TailCrossedPrompt
             : "block " + point.getBlock() + " lane " + laneOf(point.getName());
     }
 
-    /**
-     * The name with its turning mark taken off: "X (eastbound, reverse)" -> "X (eastbound)", "X (reverse)" -> "X".
-     *
-     * @param name a Point name
-     * @return the lane's name
-     */
+    /** The name with its turning mark taken off: "X (eastbound, reverse)" -> "X (eastbound)", "X (reverse)" -> "X". */
     static String laneOf(String name)
     {
         return name == null ? "" : name.replace(", reverse)", ")").replace(" (reverse)", "");

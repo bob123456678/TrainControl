@@ -306,8 +306,7 @@ final class EditorSignals
             else if (!found.contains(at)) found.add(at);
         }
 
-        // A SIGNAL FOUND AND REFUSED is said with the addresses that found nothing (MT-505); on the gray line alone it
-        // was behind this window.
+        // A SIGNAL FOUND AND REFUSED is said with the addresses that found nothing (MT-505).
         java.util.List<String> refused = new java.util.ArrayList<>();
 
         for (TileKey one : found)

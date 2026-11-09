@@ -26,7 +26,7 @@ import org.traincontrol.util.I18n;
  */
 public class CurrentKeyRow extends JComponent
 {
-    /** The decoder pill's fill: the exact navy of the old line's text, `CurrentKeyLabel`'s foreground (Adam's choice). */
+    /** The decoder pill's fill: the exact navy of `CurrentKeyLabel`'s foreground (Adam's choice). */
     public static final Color DECODER_FILL = new Color(0, 0, 115);
 
     /** The words on the decoder pill, and the line between its two parts. */
@@ -59,7 +59,7 @@ public class CurrentKeyRow extends JComponent
     /** The ellipsis a cut page name ends in. */
     public static final String ELLIPSIS = String.valueOf((char) 0x2026);
 
-    /** The separator in the tooltip, the one the old line used between its parts. */
+    /** The separator in the tooltip between its parts. */
     private static final String BULLET = " " + (char) 0x2022 + " ";
 
     /** Measured as drawn (anti-aliased, fractional advances), so a width taken here is the width on screen. */

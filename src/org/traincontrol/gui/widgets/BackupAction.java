@@ -29,8 +29,6 @@ public final class BackupAction
      * Puts a yes/no question on screen from whatever thread is asking, and waits for the answer.  The backup runs on its own
      * thread and can neither show a dialog directly nor carry on without the answer, so the worker blocks and the event thread
      * asks.  Must not be called ON the event thread, where invokeAndWait deadlocks outright.
-     *
-     * @param question what to ask
      * @return true only for an explicit yes
      */
     private boolean askOnEventThread(String question)
@@ -246,9 +244,7 @@ public final class BackupAction
         return new BackupOutcome(made[0], unsaved);
     }
 
-    /**
-     * What `backupData` wrote, and what it could not (FR-125).
-     */
+    /** What `backupData` wrote, and what it could not (FR-125). */
     public static final class BackupOutcome
     {
         /** The archive, or null when none was written. */
@@ -306,9 +302,7 @@ public final class BackupAction
         return String.valueOf(failed);
     }
 
-    /**
-     * File > Backup TrainControl Data: writes the backup off the event thread and says what it holds.
-     */
+    /** File > Backup TrainControl Data: writes the backup off the event thread and says what it holds. */
     public void backupDataMenuItemActionPerformed()
     {
         final String folded = foldTheStoppedRun(this.ui);

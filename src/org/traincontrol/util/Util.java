@@ -182,7 +182,7 @@ public class Util
             return new File(dir, fileName).getPath();
         }
 
-        // Folder unavailable - fall back to the current directory (the original behavior)
+        // Folder unavailable - fall back to the current directory
         return fileName;
     }
 
@@ -578,7 +578,6 @@ public class Util
      *
      * @param target the file to end up with
      * @param body writes the content to the stream it is given; need not close it
-     * @throws IOException
      */
     public static void writeAtomically(File target, StreamWriter body) throws IOException
     {
@@ -757,7 +756,6 @@ public class Util
     /**
      * The size in bytes of the release download, so an update can tell a whole download from one cut short (FR-125).
      *
-     * @param gitHubReleaseInfo
      * @return the size, or -1 when the release does not give one
      */
     public static long parseDownloadSize(JSONObject gitHubReleaseInfo)
@@ -768,7 +766,6 @@ public class Util
     /**
      * The release download's digest, `sha256:<hex>`, where the release gives one (FR-125).
      *
-     * @param gitHubReleaseInfo
      * @return the digest, or null
      */
     public static String parseDownloadDigest(JSONObject gitHubReleaseInfo)

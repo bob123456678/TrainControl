@@ -55,11 +55,9 @@ public final class LocomotiveSettings
     }
 
     /**
-     * Why a locomotive cannot be edited now: autonomy is running (for every locomotive), or it, or a multi-unit it
-     * belongs to, is moving with the power on.  A route that drives it is not a reason: its name, address and multi-unit
-     * are refused at Save.
-     *
-     * @return the reason, or null when it can be edited
+     * Why a locomotive cannot be edited now (null when it can): autonomy is running (for every locomotive), or it, or a
+     * multi-unit it belongs to, is moving with the power on.  A route that drives it is not a reason: its name, address
+     * and multi-unit are refused at Save.
      */
     public static Why why(TrainControlUI ui, Locomotive l)
     {
@@ -71,9 +69,8 @@ public final class LocomotiveSettings
     }
 
     /**
-     * The sentence that says a locomotive cannot be edited now.
-     *
-     * @return null when it can be, else "Stop BR 218 to edit it." or the refusal for autonomy
+     * The sentence that says a locomotive cannot be edited now: null when it can be, else "Stop BR 218 to edit it." or
+     * the refusal for autonomy.
      */
     public static String whyNotEditable(TrainControlUI ui, Locomotive l)
     {
@@ -98,10 +95,8 @@ public final class LocomotiveSettings
     }
 
     /**
-     * Asks the rule and, when it says no, says so.
-     *
-     * @param owner what the message hangs off
-     * @return true when the locomotive cannot be edited and the message has been shown
+     * Asks the rule and, when it says no, says so; true when the locomotive cannot be edited and the message has been
+     * shown.
      */
     public static boolean refuseIfNotEditable(TrainControlUI ui, Locomotive l, Component owner)
     {

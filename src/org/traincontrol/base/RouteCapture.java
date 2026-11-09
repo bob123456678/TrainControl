@@ -52,8 +52,8 @@ public final class RouteCapture
             String value = line.length() > key.length() ? line.substring(key.length() + 1) : "";
 
             // Rewriting an accessory moves it to the end, so the surviving lines are in the order they were last
-            // written; keeping the latest value at the earliest position inverted captured three-way pairs (reaching
-            // "right" clicks through "left"), collapsing them to turn-before-straight, the one order a three-way must
+            // written; keeping the latest value at the earliest position would invert captured three-way pairs
+            // (reaching "right" clicks through "left"), giving turn-before-straight, the one order a three-way must
             // never be given.
             map.remove(key);
             map.put(key, value);

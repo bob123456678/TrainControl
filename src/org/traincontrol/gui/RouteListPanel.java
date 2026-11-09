@@ -107,9 +107,6 @@ final class RouteListPanel
      * would miss the two early returns (an overridden conflict and a refused one) and measure the happy path only.  It
      * puts the button back on the last line of the finally, through `releaseTheRoutePlayButton`, which holds the gray
      * for a minimum time.
-     *
-     * @param route the route's name
-     * @param work what to run
      */
     private void runAndTimeTheRoute(String route, Runnable work)
     {
@@ -341,9 +338,6 @@ final class RouteListPanel
      * Whether a click landed on a cell's play button rather than on the cell.  The button's box is worked out from the
      * cell's own rectangle, as the renderer paints it at the right-hand end, not from anything the renderer remembers:
      * it is one component reused for every cell, so it would answer for whichever cell was painted last.
-     *
-     * @param evt the click
-     * @return true if the pointer is over the button of a cell that has one
      */
     boolean isOverTheRoutePlayButton(java.awt.event.MouseEvent evt)
     {

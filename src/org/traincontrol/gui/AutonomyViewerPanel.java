@@ -793,7 +793,7 @@ public class AutonomyViewerPanel extends JPanel
             // length comes up atomic, with the reason in the log.  This is the only door into `parseAuto` (OB-254).
             ui.keepAtomicRoutesOnWhileTheRailwayCouldReleaseTrack();
 
-            // remembered for next start, the way loading has always doubled as choosing
+            // remembered for next start
             save();
 
             // everything that follows success - dependent tabs, the monitor, the overlay toggle, the
@@ -845,8 +845,7 @@ public class AutonomyViewerPanel extends JPanel
         }
         catch (IOException e)
         {
-            // Only a name collision is reported as one: initialize() also SAVES, and a full disk was announced as "in
-            // use".
+            // Only a name collision is reported as one: initialize() also SAVES, so a full disk is not a name in use.
             JOptionPane.showMessageDialog(ui, nameRefused(e, name, String.valueOf(e.getMessage())));
             return;
         }
@@ -1313,7 +1312,7 @@ public class AutonomyViewerPanel extends JPanel
                 }
                 catch (Exception e)
                 {
-                    // as load() treats it: a courtesy, and failing it leaves the reload to capture, as before
+                    // as load() treats it: a courtesy
                     if (ui.getModel().isDebug()) ui.getModel().log(String.valueOf(e.getMessage()));
                 }
             }
@@ -1638,8 +1637,7 @@ public class AutonomyViewerPanel extends JPanel
     {
         String name = selected();
 
-        // Refused while trains are moving, as deleting the whole setup is: confirming mid-run went through to
-        // clearAutoLayout and stopped every locomotive.
+        // Refused while trains are moving, as deleting the whole setup is.
         if (ui.refuseWhileARunHoldsTheSetup(ui)) return;
 
         // WHICH ONE, where there is a choice (OB-319): a setup that cannot be used is refused at its load and never
@@ -1760,8 +1758,7 @@ public class AutonomyViewerPanel extends JPanel
         pagesSummary.setText(I18n.f("autosetup.ui.labelPagesSummary",
             total - session().getStore().getExcludedPages().size(), total));
 
-        // Hidden rather than disabled until it works: an enabled-looking button that goes to a tab
-        // which does not exist is what made placing look missing in the first place.
+        // Hidden rather than disabled until it works: the button goes to a tab that does not exist until then.
         stepRun.setVisible(running);
         placeLocomotives.setVisible(running);
 
@@ -1794,8 +1791,7 @@ public class AutonomyViewerPanel extends JPanel
     {
         roster.clear();
 
-        // Asked, not built: `getAutoLayout` makes a Layout where there is none, so `hasAutoLayout` answered yes about
-        // an empty one as the panel is made.
+        // Asked, not built: `getAutoLayout` makes a Layout where there is none.
         Layout layout = ui.getModel() == null ? null : ui.getModel().getAutoLayoutIfLoaded();
 
         if (layout == null) return;

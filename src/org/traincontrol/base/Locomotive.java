@@ -644,8 +644,7 @@ public abstract class Locomotive
 
     /**
      * The same, given up once `abandon` says so - asked whenever the wait wakes, which a change of speed and a
-     * retirement (`wakeEveryWait`) both do.  A turn's resume passes "a stop ordered, or my railway gone": a Yes landing
-     * between the resume and this wait left it waiting for a speed only the next driver would give.
+     * retirement (`wakeEveryWait`) both do.  A turn's resume passes "a stop ordered, or my railway gone".
      *
      * @param threshold the speed to reach
      * @param abandon when to stop waiting, or null never to
@@ -840,7 +839,7 @@ public abstract class Locomotive
             if (!this.isFeedbackSet(name) || !this.getFeedbackState(name))
             {
                 // Whatever is left of the advisory goes with it: a flicker is not a fresh journey.  Once SAID, nothing
-                // is left (a negative remainder floored at 1 ms announced the same train again as "0 minutes").
+                // is left.
                 return this.waitForOccupiedFeedback(name, minDuration, adviseAfterMs, began, advised, abandon);
             }
         }

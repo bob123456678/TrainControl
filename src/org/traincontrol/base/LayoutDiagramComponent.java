@@ -109,8 +109,7 @@ public class LayoutDiagramComponent
         this.label = original.label;
 
         // What the file said and this class cannot express: the editor copies constantly (deepCopyLayout builds every
-        // undo state through this constructor), so a copy without these stripped the page and the next Save deleted it
-        // from the file.
+        // undo state through this constructor), and a copy without these loses them at the next Save.
         this.originalTyp = original.originalTyp;
 
         this.unmodelledKeys = original.unmodelledKeys == null
@@ -120,7 +119,7 @@ public class LayoutDiagramComponent
         this.linkPageName = original.linkPageName;
 
         // What the tile is tied to: set when a page is read, by address, and not set again by the editor, so a copy
-        // without them was a switch tied to no accessory.
+        // must carry it.
         this.accessory = original.accessory;
         this.accessory2 = original.accessory2;
         this.feedback = original.feedback;
@@ -993,7 +992,7 @@ public class LayoutDiagramComponent
         }
         
         // .typ: the file's own word wherever this component still IS what was read.  getComponentType is many-to-one,
-        // so writing the canonical name collapsed every variant (fifteen signal types became "signal").  Only while the
+        // so the canonical name would collapse every variant (fifteen signal types to "signal").  Only while the
         // type is unchanged (a redrawn square is a different component), and decided before the rotation is written,
         // because a rotation number only means something beside its word.
         String writtenTyp = originalTyp != null && getComponentTypeOf(originalTyp) == this.type

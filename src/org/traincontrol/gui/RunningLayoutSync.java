@@ -241,7 +241,7 @@ final class RunningLayoutSync
         {
             String[] at = turn.getValue();
 
-            // BY THE NAME THE REBUILD GIVES THE SAME COPY; where it has none, the name recorded, owed as before
+            // BY THE NAME THE REBUILD GIVES THE SAME COPY; where it has none, the name recorded
             String now = naming == null || at[0] == null ? at[0] : naming.pointNamedNow(at[0], at[1], at[2]);
 
             named.put(turn.getKey(), now != null ? now : at[0]);
@@ -436,7 +436,7 @@ final class RunningLayoutSync
                 }
                 catch (org.json.JSONException notARoad)
                 {
-                    // left as it is, and `roadNamed` finds no road in it, as before
+                    // left as it is, and `roadNamed` finds no road in it
                 }
             }
 
@@ -592,8 +592,8 @@ final class RunningLayoutSync
             java.util.Map<String, String[]> standing = this.ui.whereTheTrainsAre();
 
             // And the turns nobody has managed to write down yet: `Layout.reversedOnArrival` lives on the Layout, which
-            // the load below replaces wholesale, so every pending turn died on any setup gesture; a turn that declined
-            // to write is put back and retried at the next idle refresh (OB-189).
+            // the load below replaces wholesale; a turn that declined to write is put back and retried at the next
+            // idle refresh (OB-189).
             java.util.Map<String, String[]> pendingTurns = takeThePendingTurns();
 
             // Asked, not built, as the carry asks
@@ -618,7 +618,7 @@ final class RunningLayoutSync
                     }
                     catch (Exception cannotFold)
                     {
-                        // the rebuild goes ahead on the setup's settings, as it did before this fold existed
+                        // the rebuild goes ahead on the setup's settings
                         this.ui.getModel().log(cannotFold);
                     }
                 }

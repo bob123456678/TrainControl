@@ -73,7 +73,7 @@ public class LayoutPopupUI extends PositionAwareJFrame
         setTitle(titleWith(this.parent.getWindowTitleString()));
 
         // A caption redraw is not a new page: the window stays as the operator left it and what is remembered for it is
-        // theirs; packing it to its natural size and saving that undid a size they had chosen (OB-341).
+        // theirs; packing it to its natural size and saving that would undo a size they had chosen (OB-341).
         if (fit)
         {
             // Scale the popup according to the size of the layout

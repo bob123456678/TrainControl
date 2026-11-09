@@ -474,9 +474,7 @@ final class EditorTileMenus
         return item;
     }
 
-    /**
-     * The text-square menu, built and handed back.  See buildTileMenu.
-     */
+    /** The text-square menu, built and handed back.  See buildTileMenu. */
     private javax.swing.JPopupMenu buildTextMenu(final TileKey tile,
         final LayoutDiagramComponent component)
     {

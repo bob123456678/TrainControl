@@ -926,8 +926,6 @@ public class LayoutDiagram
     /**
      * Turns edit mode on or off.  A window that opens the editor and closes without saving must clear the flag, or it
      * stays set on the SHARED diagram and the main window rebuilds its grid in edit mode.
-     *
-     * @param edit
      */
     public void setEdit(boolean edit)
     {
@@ -1647,7 +1645,6 @@ public class LayoutDiagram
      * @param layoutList the pages, in the order they are to appear
      * @param renamedFromTo old name -> new name, so a renamed page keeps its id; null when nothing was renamed, and a
      *        page nobody recognizes then gets a fresh id
-     * @throws IOException
      */
     public static void writeLayoutIndex(String path, List<String> layoutList,
         Map<String, String> renamedFromTo) throws IOException

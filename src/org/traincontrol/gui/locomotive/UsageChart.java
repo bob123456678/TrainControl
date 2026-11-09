@@ -103,11 +103,7 @@ public class UsageChart extends JFrame
     /** Whole periods back from the current one. */
     private long page = 0;
 
-    /**
-     * Builds the chart on the 30 days ending today; the caller shows it.
-     *
-     * @param tcui the main window, whose model has the figures
-     */
+    /** Builds the chart on the 30 days ending today; the caller shows it. */
     public UsageChart(TrainControlUI tcui)
     {
         super(I18n.t("stats.chart.title"));

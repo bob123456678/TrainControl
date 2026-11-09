@@ -164,8 +164,7 @@ public final class TileSelection
      *
      * What a copy takes: the bounding box, INCLUDING squares inside it that were not picked, or the paste would be a
      * shape with holes.  READ THIS BEFORE PAIRING IT WITH A DELETE: delete walks the picked squares, this walks the box
-     * around them, and a cut that assumed they match carried origins for sixteen squares when two had been emptied, and
-     * moved the setup off fourteen that still held their track.
+     * around them.
      */
     public int[] bounds()
     {

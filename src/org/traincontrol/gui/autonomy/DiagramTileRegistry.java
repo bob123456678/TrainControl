@@ -33,9 +33,6 @@ public class DiagramTileRegistry
      *
      * Called while a grid is being built, which is also the only place that knows both the page and the
      * square - a LayoutLabel is told neither.
-     *
-     * @param key
-     * @param label
      */
     public void register(TileKey key, LayoutLabel label)
     {
@@ -127,9 +124,7 @@ public class DiagramTileRegistry
         }
     }
 
-    /**
-     * Clears every tile, for when autonomy stops.
-     */
+    /** Clears every tile, for when autonomy stops. */
     public void clearOverlays()
     {
         publish(Collections.<TileKey, TileOverlay>emptyMap());
@@ -141,7 +136,6 @@ public class DiagramTileRegistry
      * Separate from publish(), which is the whole-layout picture of what trains are doing.  This one is
      * per tile and changes rarely, so it is pushed as it changes rather than republished wholesale.
      *
-     * @param key
      * @param annotation what to draw, or null for nothing
      */
     public void annotate(TileKey key, org.traincontrol.automationui.TileAnnotation annotation)

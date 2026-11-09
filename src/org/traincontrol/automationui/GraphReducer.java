@@ -514,8 +514,6 @@ public class GraphReducer
     /**
      * Whether a square refuses trains arriving by a given side (OB-120), as `AutonomyBuilder.arrivalAllowed` does.  A
      * null side is the starting square, never barred.
-     *
-     * @return true when the arrival is not allowed
      */
     private boolean refusesArrival(java.util.Map<TileKey, Set<Side>> barred, TileKey tile, Side by)
     {
@@ -764,10 +762,8 @@ public class GraphReducer
     }
 
     /**
-     * Adds the settings a tile's position requires, refusing the path if they contradict what it already carries.
-     * Switch positions and signal greens are gathered identically.
-     *
-     * @return false if this position conflicts with the path so far
+     * Adds the settings a tile's position requires, refusing the path (false) if they contradict what it already
+     * carries.  Switch positions and signal greens are gathered identically.
      */
     private boolean collectCommands(TileKey tile, int state, Map<String, accessorySetting> into)
     {
@@ -811,8 +807,6 @@ public class GraphReducer
     /**
      * Whether the berth-room walk stops at this tile: a switch, or a turnout declared permanently set (OB-233).  A
      * two-square crossing does not end the room (OB-320).
-     *
-     * @return true when the room ends here
      */
     private boolean boundsTheRoom(TileKey tile, LayoutDiagramComponent component)
     {
@@ -877,8 +871,6 @@ public class GraphReducer
      * the editor asks for exactly what the guard needs.  The switch tile is not asked for, the far endpoint is.  An
      * edge that crosses no switch has its WHOLE length asked for and the walk stops at its start: asking for a whole
      * route is a nag, and the guard declines to judge what it cannot measure.
-     *
-     * @return the unmeasured tiles, empty when the stretch is fully measured
      */
     public List<TileKey> unmeasuredAfterTheLastSwitch(ReducedEdge edge)
     {
@@ -1086,9 +1078,8 @@ public class GraphReducer
 
     /**
      * The places an edge runs over, in order from its start, each with what it measures (OB-207), so the runtime can
-     * answer at place grain.  The far endpoint is included and the near one is not, as in `lengthOf`.
-     *
-     * @return its places, in path order, empty for a null edge
+     * answer at place grain.  The far endpoint is included and the near one is not, as in `lengthOf`; empty for a null
+     * edge.
      */
     public List<Place> placesAlong(ReducedEdge edge)
     {

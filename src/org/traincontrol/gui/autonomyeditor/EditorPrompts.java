@@ -123,7 +123,7 @@ final class EditorPrompts
             }
         });
 
-        // Nothing to offer, which now also means nothing is stored - the loop above puts every stored
+        // Nothing to offer, which means nothing is stored - the loop above puts every stored
         // entry on the list. So returning here cannot hide anything.
         if (choices.isEmpty())
         {
@@ -228,8 +228,7 @@ final class EditorPrompts
             I18n.t("autosetup.ui.menuBlockedByPointsTitle"),
             JOptionPane.DEFAULT_OPTION, JOptionPane.PLAIN_MESSAGE, null, answers, ok);
 
-        // Anything that is not one of the two doing answers - Cancel, Escape, the close box - changes
-        // nothing, which is what Cancel has always meant here.
+        // Anything that is not one of the two doing answers - Cancel, Escape, the close box - changes nothing.
         if (chose != 0 && chose != 1) return;
 
         java.util.List<TileKey> chosen = new java.util.ArrayList<>();
