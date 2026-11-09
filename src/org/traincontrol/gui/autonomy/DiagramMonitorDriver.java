@@ -84,24 +84,10 @@ public class DiagramMonitorDriver
         if (monitor == null)
         {
             monitor = new DiagramMonitor(
-                new DiagramMonitor.LayoutSource()
-                {
-                    @Override
-                    public Layout get()
-                    {
-                        return currentLayout();
-                    }
-                },
+                () -> currentLayout(),
                 builder.edgesByName(),
                 names,
-                new DiagramMonitor.Publisher()
-                {
-                    @Override
-                    public void publish(final Map<TileKey, TileOverlay> overlays)
-                    {
-                        onEventThread(overlays);
-                    }
-                });
+                overlays -> onEventThread(overlays));
         }
         else
         {
@@ -315,25 +301,21 @@ public class DiagramMonitorDriver
         // Read on the thread that computed this picture, so it records the world this picture is of
         final long computedAt = generation.get();
 
-        SwingUtilities.invokeLater(new Runnable()
+        SwingUtilities.invokeLater(() ->
         {
-            @Override
-            public void run()
-            {
-                // Re-checked HERE, on the event thread: timer.cancel does not wait for a tick already running, so its
-                // publish can arrive after stop()'s clear.
-                if (timer == null || !enabled) return;
+            // Re-checked HERE, on the event thread: timer.cancel does not wait for a tick already running, so its
+            // publish can arrive after stop()'s clear.
+            if (timer == null || !enabled) return;
 
-                // And the same for a wipe that is not a stop, or a wipe landing first leaves stale trains over an
-                // emptied diagram and landing second leaves it blank while the monitor believes it published.
-                if (generation.get() != computedAt) return;
+            // And the same for a wipe that is not a stop, or a wipe landing first leaves stale trains over an
+            // emptied diagram and landing second leaves it blank while the monitor believes it published.
+            if (generation.get() != computedAt) return;
 
-                registry.publish(overlays);
+            registry.publish(overlays);
 
-                // The station labels show which locomotive is where it is heading; nothing else drives them on this
-                // path.
-                if (ui != null) ui.updateVisiblePoints();
-            }
+            // The station labels show which locomotive is where it is heading; nothing else drives them on this
+            // path.
+            if (ui != null) ui.updateVisiblePoints();
         });
     }
 
@@ -345,20 +327,16 @@ public class DiagramMonitorDriver
         // wipe.
         generation.incrementAndGet();
 
-        SwingUtilities.invokeLater(new Runnable()
+        SwingUtilities.invokeLater(() ->
         {
-            @Override
-            public void run()
-            {
-                registry.clearOverlays();
+            registry.clearOverlays();
 
-                // AFTER the wipe, on the thread that does it: the monitor suppresses an unchanged picture, which is
-                // wrong for a screen just emptied.  Forgetting what was published makes the next refresh arrive, and
-                // doing it here stops a tick already in flight from writing its picture into that memory afterwards.
-                DiagramMonitor current = monitor;
+            // AFTER the wipe, on the thread that does it: the monitor suppresses an unchanged picture, which is
+            // wrong for a screen just emptied.  Forgetting what was published makes the next refresh arrive, and
+            // doing it here stops a tick already in flight from writing its picture into that memory afterwards.
+            DiagramMonitor current = monitor;
 
-                if (current != null) current.invalidate();
-            }
+            if (current != null) current.invalidate();
         });
     }
 

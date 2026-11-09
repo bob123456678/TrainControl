@@ -3167,15 +3167,11 @@ public class AutonomyEditorPanel extends JPanel
     {
         javax.swing.JButton pick = new javax.swing.JButton(label);
 
-        pick.addActionListener(new java.awt.event.ActionListener()
+        pick.addActionListener(e ->
         {
-            @Override
-            public void actionPerformed(java.awt.event.ActionEvent e)
-            {
-                answer[0] = name;
+            answer[0] = name;
 
-                pane.setValue(javax.swing.JOptionPane.OK_OPTION);
-            }
+            pane.setValue(javax.swing.JOptionPane.OK_OPTION);
         });
 
         return pick;

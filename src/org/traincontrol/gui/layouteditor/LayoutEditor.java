@@ -1402,16 +1402,12 @@ public class LayoutEditor extends PositionAwareJFrame
             takeTheSetupsTextLabels(this.layout);
 
             // The panel needs the running layout for Why Not Moving?, a question the setup cannot answer.
-            autonomyPanel = new AutonomyEditorPanel(session, layout.getName(), new Runnable()
+            autonomyPanel = new AutonomyEditorPanel(session, layout.getName(), () ->
             {
-                @Override
-                public void run()
-                {
-                    refreshAutonomyAnnotations();
+                refreshAutonomyAnnotations();
 
-                    // The main window draws the same setup and must be told of each edit.
-                    parent.refreshStaticAutonomyLayer();
-                }
+                // The main window draws the same setup and must be told of each edit.
+                parent.refreshStaticAutonomyLayer();
             });
 
             // The main window cannot be found from a JFrame, which has no owner.
@@ -1436,26 +1432,15 @@ public class LayoutEditor extends PositionAwareJFrame
             autonomyPanel.setLayoutSource(() -> parent.getModel().getAutoLayoutIfLoaded());
 
             // A caption is tile art, so the grid is rebuilt, the annotations laid back on top.
-            autonomyPanel.setOnDiagramChanged(new Runnable()
+            autonomyPanel.setOnDiagramChanged(() ->
             {
-                @Override
-                public void run()
-                {
-                    refreshGrid();
+                refreshGrid();
 
-                    javax.swing.SwingUtilities.invokeLater(() -> refreshAutonomyAnnotations());
-                }
+                javax.swing.SwingUtilities.invokeLater(() -> refreshAutonomyAnnotations());
             });
 
             // And the light door (OB-185): only the arrows re-set, no flashing rebuild.
-            autonomyPanel.setOnAnnotationsChanged(new Runnable()
-            {
-                @Override
-                public void run()
-                {
-                    refreshAutonomyAnnotations();
-                }
-            });
+            autonomyPanel.setOnAnnotationsChanged(() -> refreshAutonomyAnnotations());
 
             autonomyPanel.setOnReveal(new java.util.function.Consumer<
                 org.traincontrol.automationui.TileGraph.TileKey>()
@@ -2721,14 +2706,7 @@ public class LayoutEditor extends PositionAwareJFrame
         showGridCheckbox.setOpaque(false);
         showGridCheckbox.setToolTipText(AutonomyEditorPanel.wrapped(I18n.t("layout.ui.tooltipGrid")));
 
-        showGridCheckbox.addActionListener(new java.awt.event.ActionListener()
-        {
-            @Override
-            public void actionPerformed(java.awt.event.ActionEvent e)
-            {
-                setShowGrid(showGridCheckbox.isSelected());
-            }
-        });
+        showGridCheckbox.addActionListener(e -> setShowGrid(showGridCheckbox.isSelected()));
 
         javax.swing.JPanel column = new javax.swing.JPanel();
 

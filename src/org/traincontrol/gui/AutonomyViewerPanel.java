@@ -338,17 +338,12 @@ public class AutonomyViewerPanel extends JPanel
     {
         javax.swing.JPopupMenu menu = new javax.swing.JPopupMenu();
 
-        menu.add(item(I18n.t("autosetup.ui.menuNewConfiguration"), new Runnable()
-            { public void run() { duplicate(); } }));
-        menu.add(item(I18n.t("autosetup.ui.menuRenameConfiguration"), new Runnable()
-            { public void run() { rename(); } }));
-        menu.add(item(I18n.t("autosetup.ui.menuDeleteConfiguration"), new Runnable()
-            { public void run() { delete(); } }));
+        menu.add(item(I18n.t("autosetup.ui.menuNewConfiguration"), () -> duplicate()));
+        menu.add(item(I18n.t("autosetup.ui.menuRenameConfiguration"), () -> rename()));
+        menu.add(item(I18n.t("autosetup.ui.menuDeleteConfiguration"), () -> delete()));
         menu.addSeparator();
-        menu.add(item(I18n.t("autosetup.ui.btnImportConfiguration"), new Runnable()
-            { public void run() { importConfiguration(); } }));
-        menu.add(item(I18n.t("autosetup.ui.btnExportConfiguration"), new Runnable()
-            { public void run() { exportConfiguration(); } }));
+        menu.add(item(I18n.t("autosetup.ui.btnImportConfiguration"), () -> importConfiguration()));
+        menu.add(item(I18n.t("autosetup.ui.btnExportConfiguration"), () -> exportConfiguration()));
 
         // Debug builds only, last on the menu (the flag is read fresh: the menu is rebuilt on every press).  It writes
         // the derived graph as a diagnostic, so it is offered only with a setup free of blocking problems, as the
@@ -357,8 +352,7 @@ public class AutonomyViewerPanel extends JPanel
             && session().exists() && !session().hasBlockingProblems())
         {
             menu.addSeparator();
-            menu.add(item(I18n.t("autosetup.ui.menuExportRawGraph"), new Runnable()
-                { public void run() { inspect(); } }));
+            menu.add(item(I18n.t("autosetup.ui.menuExportRawGraph"), () -> inspect()));
         }
 
         return menu;
