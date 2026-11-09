@@ -12,6 +12,7 @@ import java.awt.event.KeyEvent;
 import java.util.function.BooleanSupplier;
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
+import javax.swing.JComboBox;
 import javax.swing.JComponent;
 import javax.swing.JDialog;
 import javax.swing.JLabel;
@@ -470,6 +471,131 @@ abstract class StationWindowBase extends JDialog
         asked.width = 1;
 
         return asked;
+    }
+
+    /**
+     * A list that acts only on a deliberate choice: a pick from the open list, Enter, or the list closing on a keyboard
+     * choice.  A typed letter or an arrow on the closed list only shows; Escape, or leaving the list, puts back what it held.
+     */
+    class Choice extends JComboBox<String>
+    {
+        private final transient java.util.function.IntConsumer door;
+        private Object held;
+        private boolean keying;
+        private boolean canceled;
+
+        /** @param door given the index chosen */
+        Choice(java.util.function.IntConsumer door, String... items)
+        {
+            super(items);
+
+            this.door = door;
+            this.held = getSelectedItem();
+
+            addPopupMenuListener(new javax.swing.event.PopupMenuListener()
+            {
+                @Override
+                public void popupMenuWillBecomeVisible(javax.swing.event.PopupMenuEvent e)
+                {
+                }
+
+                @Override
+                public void popupMenuCanceled(javax.swing.event.PopupMenuEvent e)
+                {
+                    canceled = true;
+                }
+
+                // Once closed: the door may ask
+                @Override
+                public void popupMenuWillBecomeInvisible(javax.swing.event.PopupMenuEvent e)
+                {
+                    final boolean undo = canceled;
+
+                    canceled = false;
+                    javax.swing.SwingUtilities.invokeLater(undo ? Choice.this::putBack : Choice.this::settle);
+                }
+            });
+
+            addFocusListener(new java.awt.event.FocusAdapter()
+            {
+                @Override
+                public void focusLost(java.awt.event.FocusEvent e)
+                {
+                    if (!e.isTemporary() && !isPopupVisible()) putBack();
+                }
+            });
+
+            onKey(KeyEvent.VK_ENTER, this::settle);
+            onKey(KeyEvent.VK_ESCAPE, this::putBack);
+        }
+
+        /** A key of the closed list with a choice shown and not made; otherwise the key goes where it went. */
+        private void onKey(int key, Runnable action)
+        {
+            getInputMap(WHEN_FOCUSED).put(KeyStroke.getKeyStroke(key, 0), action);
+            getActionMap().put(action, new javax.swing.AbstractAction()
+            {
+                @Override
+                public boolean isEnabled()
+                {
+                    return !isPopupVisible() && !java.util.Objects.equals(getSelectedItem(), held);
+                }
+
+                @Override
+                public void actionPerformed(java.awt.event.ActionEvent e)
+                {
+                    action.run();
+                }
+            });
+        }
+
+        @Override
+        public void processKeyEvent(KeyEvent e)
+        {
+            keying = e.getKeyCode() != KeyEvent.VK_ENTER;
+
+            try
+            {
+                super.processKeyEvent(e);
+            }
+            finally
+            {
+                keying = false;
+            }
+        }
+
+        @Override
+        protected void fireActionEvent()
+        {
+            if (reading) held = getSelectedItem();
+            else if (!keying && !isPopupVisible()) settle();
+        }
+
+        private void settle()
+        {
+            if (java.util.Objects.equals(getSelectedItem(), held)) return;
+
+            held = getSelectedItem();
+            door.accept(getSelectedIndex());
+        }
+
+        private void putBack()
+        {
+            if (java.util.Objects.equals(getSelectedItem(), held)) return;
+
+            boolean was = reading;
+
+            reading = true;
+
+            try
+            {
+                setSelectedItem(held);
+            }
+            finally
+            {
+                reading = was;
+            }
+        }
     }
 
     /** Names a control and gives it its font. */

@@ -10,7 +10,6 @@ import javax.swing.ButtonGroup;
 import javax.swing.DefaultComboBoxModel;
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
-import javax.swing.JComboBox;
 import javax.swing.JComponent;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
@@ -34,7 +33,7 @@ public final class TrainWindow extends StationWindowBase
 {
     private static final Font REGULAR = new Font("Segoe UI", Font.PLAIN, 14);
 
-    private final JComboBox<String> train = new JComboBox<>();
+    private final Choice train = new Choice(at -> pressTrain());
     private final JButton settings = new JButton(I18n.t("autosetup.ui.trainLocomotiveSettings"),
         RowIcons.wrench(16, new java.awt.Color(110, 110, 110)));
 
@@ -63,7 +62,6 @@ public final class TrainWindow extends StationWindowBase
         form.setName("train.form");
 
         train.setName("train.train");
-        train.addActionListener(e -> pressTrain());
 
         settings.setName("train.settings");
         settings.putClientProperty("JButton.buttonType", "toolBarButton");
@@ -306,8 +304,6 @@ public final class TrainWindow extends StationWindowBase
 
     private void pressTrain()
     {
-        if (reading) return;
-
         final int at = train.getSelectedIndex();
         final String chosen = (String) train.getSelectedItem();
 
