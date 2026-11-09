@@ -267,8 +267,9 @@ being replaced, Autonomy, Execute Timetable and Return Home wait before they cho
 log says once that they are held and once that they resume. A journey still setting its route when the replacement
 begins is given back unrun, a hand send is refused with the reason in the log, and a held send is no timetable attempt.
 Journeys already under way carry on. The hold ends once a transport is live: TCP again, or UDP for the rest of the
-session. A CS2 and a simulation are never held. A hung connection is held only once it is found, and the station's own
-routes still fire. `core.testATrainIsDispatchedOnce.testAutonomyStartsNoRouteWhileTheConnectionIsReplaced`,
+session. A CS2 and a simulation are never held. A hung connection, one that has answered nothing for 3 s since a
+command was sent, is held only once it is found, and the station's own routes still fire.
+`core.testATrainIsDispatchedOnce.testAutonomyStartsNoRouteWhileTheConnectionIsReplaced`,
 `core.testATrainIsDispatchedOnce.testAHandSendIsRefusedWhileTheConnectionIsReplaced`,
 `core.testATrainIsDispatchedOnce.testASendWhoseConnectionIsLostWhileItsRouteIsSetIsGivenBack`,
 `core.testATrainIsDispatchedOnce.testReturnHomeSpendsNoAttemptOnAHeldSend`, `core.testAutonomyRidesOutADroppedConnection`.

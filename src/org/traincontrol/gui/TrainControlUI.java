@@ -141,6 +141,7 @@ import org.traincontrol.gui.widgets.BackupAction;
 import org.traincontrol.gui.widgets.BusyDialog;
 import org.traincontrol.gui.widgets.DetailsArea;
 import org.traincontrol.gui.widgets.HandScrollListener;
+import org.traincontrol.gui.widgets.RowIcons;
 import org.traincontrol.gui.widgets.PositionAwareJFrame;
 import org.traincontrol.gui.widgets.QuickFileChooser;
 import org.traincontrol.gui.widgets.RestoreAction;
@@ -5578,20 +5579,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 {
                     try
                     {
-                        if (model.getTimeSinceLastPing() > 0 && model.getTimeSinceLastPing() > PING_INTERVAL)
-                        {
-                            javax.swing.SwingUtilities.invokeLater(() ->
-                            {
-                                latencyLabel.setText(
-                                    I18n.t("ui.labelLostNetworkConnection")
-                                );
-                                latencyLabel.setForeground(Color.red);
-                            });
-                            
-                            checkAutoLayoutLatency(PING_INTERVAL);
-                        }
-                        
-                        model.sendPing(false);
+                        watchTheConnection();
                     }
                     catch (Exception e)
                     {
@@ -6053,7 +6041,40 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
     
     /**
-     * Updates the latency value
+     * The ping timer's watch: pings unanswered past PING_INTERVAL show as a lost connection, and Power OFF wears the
+     * warning triangle while they go unanswered or the station is not answering on TCP.
+     */
+    private void watchTheConnection()
+    {
+        boolean lost = model.getTimeSinceLastPing() > 0 && model.getTimeSinceLastPing() > PING_INTERVAL;
+        boolean notAnswering = lost || model.isConnectionNotAnswering();
+
+        javax.swing.SwingUtilities.invokeLater(() ->
+        {
+            if (lost)
+            {
+                latencyLabel.setText(I18n.t("ui.labelLostNetworkConnection"));
+                latencyLabel.setForeground(Color.red);
+            }
+
+            warnOnStop(notAnswering);
+        });
+
+        if (lost) checkAutoLayoutLatency(PING_INTERVAL);
+
+        model.sendPing(false);
+    }
+
+    /** Power OFF wears the warning triangle while the station is not answering; its text, size and action stay. */
+    private void warnOnStop(boolean on)
+    {
+        this.PowerOff.setIcon(on ? RowIcons.warning(16) : null);
+        this.PowerOff.setToolTipText(on ? I18n.t("ui.main.tooltip.stationNotAnswering") : "Escape");
+    }
+
+    /**
+     * Updates the latency value, "(UDP)" after it once a CS3's TCP connection was given up, and takes the triangle off
+     * Power OFF once the station answers on TCP again.
      */
     @Override
     public void updateLatency(double latency)
@@ -6064,13 +6085,15 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             {
                 this.latencyLabel.setText(
                     I18n.f(
-                        "ui.labelNetworkLatency",
+                        this.model.isOnUdpInsteadOfTcp() ? "ui.labelNetworkLatencyUdp" : "ui.labelNetworkLatency",
                         (this.model.isCS3() ? "3" : "2"),
                         String.format("%.0f", latency)
                     )
                 );
 
                 this.latencyLabel.setForeground(latency > PING_ORANGE ? (latency > PING_RED ? Color.RED : Color.MAGENTA) : Color.BLACK);
+
+                warnOnStop(this.model.isConnectionNotAnswering());
             });
             
             this.checkAutoLayoutLatency(latency);

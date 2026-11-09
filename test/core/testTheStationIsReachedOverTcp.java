@@ -649,10 +649,12 @@ public class testTheStationIsReachedOverTcp
     }
 
     /**
-     * A connection that hangs, open but carrying nothing, is found by a send that goes unanswered for 15 s, and
-     * replaced; the log says why, and counts the unanswered frame as one that may not have arrived.
+     * A connection that hangs, open but carrying nothing, is found by a send that goes unanswered for 3 s, and
+     * replaced within a few seconds more; the log says why, and counts the unanswered frame as one that may not have
+     * arrived.
      *
-     * MUTATION: in `NetworkProxy.readUntilLost`, take out `return I18n.f("network.tcpNoAnswer", ...)`.
+     * MUTATION: in `NetworkProxy.readUntilLost`, take out `return I18n.f("network.tcpNoAnswer", ...)`; or set
+     * `TCP_ANSWER_LIMIT_MS` back to 15000.
      */
     @Test(timeOut = 60000)
     public void testAHungConnectionIsFoundAndReplaced() throws Exception
@@ -661,8 +663,8 @@ public class testTheStationIsReachedOverTcp
 
         this.proxy.sendMessage(new CS2Message(ping(1)));
 
-        assertTrue(logged("network.tcpReconnected", 30000), "no new connection: " + this.model.lines);
-        assertTrue(this.model.lines.stream().anyMatch(l -> l.contains(I18n.f("network.tcpNoAnswer", 15))),
+        assertTrue(logged("network.tcpReconnected", 8000), "no new connection within 8 s: " + this.model.lines);
+        assertTrue(this.model.lines.stream().anyMatch(l -> l.contains(I18n.f("network.tcpNoAnswer", 3))),
             "the log does not say why: " + this.model.lines);
         assertTrue(this.model.lines.contains(I18n.f("network.framesMayNotHaveArrived", 1)),
             "the unanswered frame is not counted: " + this.model.lines);
@@ -710,7 +712,7 @@ public class testTheStationIsReachedOverTcp
 
     /**
      * A healthy station that answered and then sends nothing more is not taken as hung: silence alone is not a hang.
-     * The wait is the point: past the 15 s answer limit.
+     * The wait is the point: past the 3 s answer limit.
      *
      * MUTATION: in `NetworkProxy.readUntilLost`, take out `first - this.lastHeardAt > 0 && `.
      */
@@ -719,8 +721,36 @@ public class testTheStationIsReachedOverTcp
     {
         connectedAndAnswered();
 
-        assertFalse(logged("network.tcpLostReconnecting", 18000),
+        assertFalse(logged("network.tcpLostReconnecting", 5000),
             "a quiet healthy connection was taken as hung: " + this.model.lines);
+    }
+
+    /**
+     * A station that answers each send within the limit, here after 2 s, keeps its connection however many sends it
+     * answers so.
+     *
+     * MUTATION: set `TCP_ANSWER_LIMIT_MS` to 1500, and this fails.
+     */
+    @Test(timeOut = 60000)
+    public void testAStationThatAnswersWithinTheLimitKeepsItsConnection() throws Exception
+    {
+        connectedAndCarried();
+
+        for (int i = 1; i <= 4; i++)
+        {
+            byte[] frame = ping(20 + i);
+            this.proxy.sendMessage(new CS2Message(frame));
+
+            // The wait is the answer's delay, and the connection must not be given up during it
+            assertFalse(logged("network.tcpLostReconnecting", 2000), "a connection answered within the limit was"
+                + " taken as hung, send " + i + ": " + this.model.lines);
+
+            this.station.send(answerTo(frame));
+        }
+
+        assertFalse(logged("network.tcpLostReconnecting", 2000), "a connection answered within the limit was taken as"
+            + " hung after its last answer: " + this.model.lines);
+        assertEquals(this.station.connections(), 1, "the connection was replaced");
     }
 
     /**
@@ -1367,7 +1397,7 @@ public class testTheStationIsReachedOverTcp
 
     /**
      * A station that takes the connection but never sends on it is left for UDP once a send goes unanswered for
-     * 15 s: the station's broadcasts are heard, and what was sent over TCP is counted, not sent over UDP.
+     * 3 s: the station's broadcasts are heard, and what was sent over TCP is counted, not sent over UDP.
      *
      * MUTATION: in `NetworkProxy.recover`, `boolean retry = this.carried;` to `boolean retry = true;`.
      */

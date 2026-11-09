@@ -473,7 +473,8 @@ Tab icons provided by Freepik.
             - An unexpected error in the background now shows in the log.
         - Central Station
             - TrainControl now connects to a CS3 over TCP, and falls back to UDP, saying so in the log, if that doesn't work. A CS2 still uses UDP.
-            - If the connection to a CS3 drops, commands go over UDP at once and nothing is sent again, and the log counts the commands that may not have arrived.
+            - If the connection to a CS3 drops, or the CS3 answers nothing for 3 seconds after a command, commands go over UDP at once and nothing is sent again, and the log counts the commands that may not have arrived.
+            - The network latency in the main window reads `(UDP)` when a CS3 is reached over UDP instead of TCP, and `Power OFF` shows a warning triangle while the Central Station isn't answering.
             - When TrainControl starts up or syncs with a CS3, it now asks the sensors for their state, including those on a Link S88, so the track diagram shows them as they really are.
             - When the Central Station turns the track power off after a short circuit, TrainControl now shows the power as off and a warning names the output that tripped.
             - A CS3 sync skips what it can't read, such as something a new firmware changed, and keeps the rest, so it no longer loses a page or fails because of it.
