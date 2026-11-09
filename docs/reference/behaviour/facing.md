@@ -135,8 +135,8 @@ copy has a way out.
 
 **A copy with a way out that reaches no station autonomy may choose is kept too** (OB-299), and Why not Moving? says
 why autonomy never starts a train there and what to do:
-- where another copy of the square reaches a station and a train may be started from it: turn it round;
-- where that copy is barred: open its side and turn it round, except where every train turns around at the square
+- where another copy of the square reaches a station and a train may be started from it: turn it around;
+- where that copy is barred: open its side and turn it around, except where every train turns around at the square
   (opening that side there is the terminus error): drive it off by hand;
 - where autonomy starts no train from that copy for another reason: drive it off by hand;
 - where no copy reaches one: drive it off by hand, or let autonomy choose a station it can reach (switched on, Can Be

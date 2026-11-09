@@ -1561,7 +1561,7 @@ public class testNoSetupEditWhileARouteRuns
                         + " without saying a route is why");
                 }
 
-                // A TRAIN TURNED around BY HAND is not followed into the setup
+                // A TRAIN TURNED AROUND BY HAND is not followed into the setup
                 Point standing = aTrainOnASquareWithTwoFacings(window, session);
 
                 final org.json.JSONObject before = session.snapshotSetup();

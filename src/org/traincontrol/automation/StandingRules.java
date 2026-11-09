@@ -86,7 +86,7 @@ public final class StandingRules
         waysOut.add(side);
     }
 
-    /** @return the sides a train may come in by and stop, sent or chosen: where Sent Here or Turned around is not No */
+    /** @return the sides a train may come in by and stop, sent or chosen: where Sent Here or Turned Around is not No */
     public Set<String> waysIn()
     {
         Set<String> out = new TreeSet<>();

@@ -263,7 +263,7 @@ public class testStandingRulesAnswerAsTheDoorsDo
         }
     }
 
-    /** Turned around Here: a trip ending on a turning copy, or a hand trip through one, from the east, where something lies on both sides. */
+    /** Turned Around Here: a trip ending on a turning copy, or a hand trip through one, from the east, where something lies on both sides. */
     private static void assertTurned(Layout railway, StandingRules rules, String say)
     {
         String side = sideFrom(railway, "MainPlatform");

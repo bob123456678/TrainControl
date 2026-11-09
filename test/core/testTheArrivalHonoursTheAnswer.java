@@ -408,7 +408,7 @@ public class testTheArrivalHonoursTheAnswer
         Point may = layout.getPoint("MT368_MAY");
 
         assertTrue(layout.turnsOnArrival(may, loc, answering(true, may)),
-            "the operator said TURN around at a square trains may turn at and the train was not"
+            "the operator said TURN AROUND at a square trains may turn at and the train was not"
             + " turned, so the answer is ignored in both directions rather than honoured");
     }
 

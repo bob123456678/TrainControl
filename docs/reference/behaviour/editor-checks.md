@@ -22,7 +22,7 @@ length behind a turn asks about that side; the two berth notices, about a train 
 **A train can still stand facing the barred way, and is not started there** (OB-284). The copy is its direction
 (section 3), so a train reversed on the throttle, turned by the Facing menu, standing when the side was barred, or built
 from a setup recording that facing stands on the barred copy. Autonomy does not start it there, and Why not Moving? and
-Return Home say that trains may not arrive facing its way and what to do: drive it off by hand, turn it round, or open
+Return Home say that trains may not arrive facing its way and what to do: drive it off by hand, turn it around, or open
 the side. The rebuild's put-back stands it there again where no station copy faces its way; a placement keeps it where
 the train can leave that way (OB-284); a home does not save such a facing. An import of an old autonomy.json takes each
 train's facing from the side its point's one-way edges leave by, guessing one trains may arrive in where they cannot

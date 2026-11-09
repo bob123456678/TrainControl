@@ -529,7 +529,7 @@ So if a short train seems to be blocking a surprising amount of track, the answe
 
 **On the track diagram**, right-click a train to send it to one of the stations autonomy chooses from, or one under `More Destinations`, which lists the stations you have unticked `May choose this station` on, such as parking berths. Right-click a station to place the train selected in the main window there (`Place` *train*), to take one off, or to open the train standing there: `Edit` *train* `...` opens its `Locomotive Settings` on the `Autonomy` tab, and `Train at` *station* opens [the train window](#the-train-window). Placing a train from the diagram may ask which way it faces and which way it came in; if you are not sure, take the suggestion.
 
-When you send a train that can reverse to a station where trains may change direction, TrainControl first asks "Keep direction?". Yes, the default, keeps it facing the way it is; No turns it round there.
+When you send a train that can reverse to a station where trains may change direction, TrainControl first asks "Keep direction?". Yes, the default, keeps it facing the way it is; No turns it around there.
 
 The diagram's right-click menu opens the same `Station Settings` and train windows as the editor, but changes made there are saved at once, with no Cancel, and while autonomy runs they open read only. With autonomy stopped, you can also move trains from the keyboard: point at a station and press Control+X to pick its train up, Control+V to put it (or the locomotive selected in the main window) down, or Delete to take it off.
 
@@ -733,8 +733,8 @@ The log is verbose about all of this too, and worth reading: it names the train,
 
 **It is facing a way that leads to no station autonomy may choose.** A train stood on a platform facing a way whose track leads only to sensors, turning points or parking is never sent anywhere by autonomy. Why not Moving? says so, and what would help:
 
-- where the platform's other way leads to a station autonomy may choose, and a train may start from it: turn the train round;
-- where the other way leads to one, but trains may not arrive at the platform facing that way: open that side under `May arrive from` in its `Station Settings`, and turn the train round, unless every train turns around at that platform (that side cannot then be opened, and the train is driven off by hand);
+- where the platform's other way leads to a station autonomy may choose, and a train may start from it: turn the train around;
+- where the other way leads to one, but trains may not arrive at the platform facing that way: open that side under `May arrive from` in its `Station Settings`, and turn the train around, unless every train turns around at that platform (that side cannot then be opened, and the train is driven off by hand);
 - where autonomy starts no train facing the other way for another reason: drive it off by hand;
 - where neither way leads to a station autonomy may choose: drive it off by hand, or let autonomy choose a station it can reach: put that station back in service, tick `May choose this station`, and open the side a train would arrive on under `May arrive from`, unless every train turns around there.
 

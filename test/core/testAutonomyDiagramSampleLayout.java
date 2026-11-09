@@ -429,7 +429,7 @@ public class testAutonomyDiagramSampleLayout
         Collections.sort(turns);
 
         System.out.println();
-        System.out.println("=== WHERE A TRAIN COULD TURN around, " + label + " ===");
+        System.out.println("=== WHERE A TRAIN COULD TURN AROUND, " + label + " ===");
         System.out.println("emitted Points: " + arrivals.size()
             + ", of which trains may turn around at " + turnsHere.size());
         System.out.println("Points offering a turn a train cannot make: " + turns.size());

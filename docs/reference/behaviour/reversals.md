@@ -10,7 +10,7 @@ A square is several `Point`s, one per side a train can arrive by, and **which co
 Three kinds of square matter:
 
 - **A terminus.** The train has run out of track. It turns, and nobody is asked. A train that *cannot* reverse may
-  still **back into** a terminus, when the route there turns it round (MT-245).
+  still **back into** a terminus, when the route there turns it around (MT-245).
 - **A compulsory turn** (`mustReverse`). Every copy turns trains, in every tier: a turning copy's only outgoing edges
   leave by the side the train arrived from, so *not* turning is not an available outcome: it drives the train forward
   off its reserved path.

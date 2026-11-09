@@ -265,7 +265,7 @@ public class testTheEditorWarnsOfARailwayThatCannotWork extends AutonomySessionF
     {
         threeStationsInARow("OB-201");
 
-        // TRAINS TURN around AT BOTH ENDS, so a train reaches 3,1 from either side (OB-361)
+        // TRAINS TURN AROUND AT BOTH ENDS, so a train reaches 3,1 from either side (OB-361)
         turnTrainsRoundAtBothEnds();
 
         TileKey beta = new TileKey("main", 3, 1);
