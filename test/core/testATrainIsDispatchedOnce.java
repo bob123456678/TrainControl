@@ -2756,6 +2756,39 @@ public class testATrainIsDispatchedOnce
     }
 
     /**
+     * Return Home spends no attempt on a send given back because the connection was replaced while its switches were
+     * awaited, though the replacement is over by the time the attempt is counted.
+     *
+     * MUTATION: in the timetable's `cut`, drop the replacements counted since the attempt began, and this fails.
+     */
+    @Test
+    public void testReturnHomeSpendsNoAttemptOnASendReplacedWhileItsSwitchesWereAwaited() throws Exception
+    {
+        final int attempts = layoutConstant("STAGING_MAX_ATTEMPTS");
+
+        whileReplacing(2151, 13, "DWA", "DWB", replacedWhile("validatePathActuation",
+            new java.util.concurrent.atomic.AtomicInteger()), (rail, t, said) ->
+        {
+            final String refused = org.traincontrol.util.I18n.f("autolayout.log.notSentReconnecting", t.getName());
+
+            aSwitchOnEach(through(rail, "DWA", "DWB"), 313);
+
+            rail.setTimetable(Arrays.asList(new org.traincontrol.automation.TimetablePath(t, through(rail, "DWA", "DWB"),
+                0)));
+            rail.setTimetableSequential(true);
+
+            Thread executor = new Thread(rail::executeTimetable, "Return Home while its switches are awaited");
+            executor.setDaemon(true);
+            executor.start();
+
+            assertTrue(until(() -> java.util.Collections.frequency(new ArrayList<>(said), refused) > attempts
+                || !rail.isAutoRunning(), 30000), "Return Home neither gave up nor went on: " + said);
+            assertTrue(rail.isAutoRunning(), "Return Home gave up on sends given back for the replaced connection: "
+                + said);
+        });
+    }
+
+    /**
      * Nor is a journey set going when the track power goes off while its route is being set: the train is given no
      * speed and the journey is not under way.  Path Integrity Validation off; eight edges, a switch on each.
      *
