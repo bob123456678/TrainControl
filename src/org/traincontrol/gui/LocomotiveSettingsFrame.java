@@ -671,9 +671,9 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
     }
 
     /**
-     * Writes everything typed onto the locomotive, with each refusal asked once and in this order: the moving rule,
-     * autonomy, routes and the multi-unit, then the name before the address.  The multi-unit's is asked again last,
-     * after the rest is written: refused there, the window stays dirty and the next Save writes it all again.
+     * Writes everything typed onto the locomotive.  Each refusal is asked before the first write, in this order: the
+     * moving rule, autonomy, routes and the multi-unit, then the name before the address; the multi-unit's again after
+     * the rest is written, and refused there the window stays dirty and the next Save writes it all again.
      *
      * @return true when everything went through
      */
