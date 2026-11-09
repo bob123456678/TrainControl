@@ -122,8 +122,8 @@ public final class TrainWindow extends StationWindowBase
 
         active.setSelected(going);
 
-        // Not while nothing stands here; the one control autonomy running leaves live, as the train's card does
-        active.setEnabled(standing != null && (!readOnly || autonomyRuns()));
+        // Not while nothing stands here; the one control a run leaves live, as the diagram's Is Active (FR-187)
+        active.setEnabled(standing != null && (!readOnly || runHolds()));
 
         // Every (i) explains its row in every state (OB-429)
         activeMark.setToolTipText(standing == null ? StationFlyovers.noTrain("autosetup.ui.flyActiveMeans")
@@ -148,11 +148,11 @@ public final class TrainWindow extends StationWindowBase
         shown = signature(standing, model);
     }
 
-    private boolean autonomyRuns()
+    private boolean runHolds()
     {
         TrainControlUI main = editor.parentWindow();
 
-        return main != null && main.getModel() != null && main.getModel().isAutonomyRunning();
+        return main != null && main.aRunHoldsTheSetup();
     }
 
     private Locomotive train(String name)
@@ -339,14 +339,13 @@ public final class TrainWindow extends StationWindowBase
         final String standing = editor.tileMenus.trainStanding(tile);
         final Locomotive model = train(standing);
         final boolean on = active.isSelected();
-        final TrainControlUI main = editor.parentWindow();
 
         if (standing == null) return;
 
-        if (isReadOnly() && model != null && main != null)
+        if (model != null && runHolds())
         {
-            // While autonomy runs: the train alone, as its card's pause button does (FR-059)
-            main.pauseTrainWhileRunning(model, !on);
+            // Decided at the click, as the diagram's Is Active is: during a run, the train alone (FR-059)
+            editor.parentWindow().pauseTrainWhileRunning(model, !on);
         }
         else
         {
