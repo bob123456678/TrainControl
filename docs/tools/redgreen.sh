@@ -99,7 +99,8 @@ show()
 echo "RED (the working tree's tests on $WHAT):"
 show "$S/redgreen-red.txt"
 
-FIRST=$(tr '\n' ' ' < "$RED_S"/oneout/junitreports/TEST-*.xml 2>/dev/null | grep -o '<failure[^>]*' | head -1 | cut -c1-300)
+# cat, not a redirect: a redirect does not expand the glob in sh, and is ambiguous in bash for more than one report
+FIRST=$(cat "$RED_S"/oneout/junitreports/TEST-*.xml 2>/dev/null | tr '\n' ' ' | grep -o '<failure[^>]*' | head -1 | cut -c1-300)
 
 [ -n "$FIRST" ] && echo "    first failure: $FIRST"
 
