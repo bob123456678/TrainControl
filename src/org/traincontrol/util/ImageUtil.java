@@ -214,6 +214,37 @@ public class ImageUtil
     /** And what a route only looks at */
     public static final Color HIGHLIGHT_CONDITION = new Color(255, 140, 0, 140);
 
+    /**
+     * Paints `art` into `at` without its color, at g's scale: into a picture of its own, never a shared one, so no
+     * cached tile image is grayed.
+     */
+    public static void inGray(Graphics2D g, java.awt.Rectangle at, java.util.function.Consumer<Graphics2D> art)
+    {
+        double scale = Math.max(1, g.getTransform().getScaleX());
+
+        BufferedImage image = new BufferedImage((int) Math.ceil(at.width * scale), (int) Math.ceil(at.height * scale),
+            BufferedImage.TYPE_INT_ARGB);
+
+        Graphics2D on = image.createGraphics();
+
+        on.scale(scale, scale);
+        art.accept(on);
+        on.dispose();
+
+        for (int y = 0; y < image.getHeight(); y++)
+        {
+            for (int x = 0; x < image.getWidth(); x++)
+            {
+                int argb = image.getRGB(x, y);
+                int light = (((argb >> 16) & 0xff) * 299 + ((argb >> 8) & 0xff) * 587 + (argb & 0xff) * 114) / 1000;
+
+                image.setRGB(x, y, (argb & 0xff000000) | light << 16 | light << 8 | light);
+            }
+        }
+
+        g.drawImage(image, at.x, at.y, at.width, at.height, null);
+    }
+
     /** Antialiased shapes. */
     public static void antialias(Graphics2D g)
     {

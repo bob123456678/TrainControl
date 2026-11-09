@@ -459,6 +459,7 @@ Tab icons provided by Freepik.
             - A `Filter` box above `Things to look at` narrows the list as you type.
             - `Find a Point...` on the editor's `Tools` menu (Ctrl+F) goes to a named point on any page, in the autonomy editor.
             - In the autonomy editor, you can drag a train from one station to another to move it there.
+            - The autonomy editor draws signals in gray to keep the picture simple, and shows the ones you can pick in color while you choose a guard signal.
         - Track Diagram
             - The track diagram editor has a strip of icons under `Page` to add, duplicate, rename and delete a page and to move it up or down, and its `Manage Pages` menu is now `Tools`.
             - Pages are shown in the order of the layout's files rather than by name, and `Sort Pages by Name` puts them back in name order.

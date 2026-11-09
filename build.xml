@@ -690,6 +690,7 @@
         <test-one-class class="testRightClickMenuTipsCanBeHidden"/>
         <test-one-class class="testTheHandBuiltWindowsWearTheStandard"/>
         <test-one-class class="testTheAutonomyEditorWearsTheStandard"/>
+        <test-one-class class="testSignalsAreGrayInTheAutonomyEditor"/>
         <test-one-class class="testARestartLeavesTheRunsDataAsItFoundIt"/>
         <test-one-class class="testSavedDataLeavesAFolderOutsideARunAlone"/>
         <test-one-class class="testAPresetSaveOnALayoutWithoutASetup"/>
