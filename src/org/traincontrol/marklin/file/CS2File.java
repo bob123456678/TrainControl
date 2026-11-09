@@ -1345,7 +1345,7 @@ public final class CS2File
         }
     }
 
-    /** A skipped record is warned of when held back or not of the shape read; one whose keys will not read is logged alone. */
+    /** A skipped record is warned of when held back or not of the shape read; one whose keys fail is logged alone. */
     private void countUnreadable(RuntimeException e)
     {
         if (e instanceof HeldBack || e instanceof ClassCastException) this.unreadableRecords++;
