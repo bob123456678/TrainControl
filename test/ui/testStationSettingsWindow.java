@@ -2152,22 +2152,22 @@ public class testStationSettingsWindow
     }
 
     /**
-     * Every green or red arrow of the picture, a station's way out on a straight or a curved side, is the size the
-     * track diagram draws a next square's arrows at, and as painted every green arrow (the station's and the next
-     * squares') is of one size (so all of them match), and a curved station's blue circle is
-     * smaller than 85% of a whole one (at most 21 pixels across, a whole one is 25), clear of the way-out arrows.
+     * On a straight station every arrow, a way out's and the next squares', is the size the track diagram draws a next
+     * square's arrows at, as shaped and as painted.  On a curved one the ways out are the smaller 48 px arrows and the
+     * station's icon is whole: its blue circle is at least 20 pixels across and 250 pixels of it show.
      *
-     * MUTATION: in `StationPicture.stationMarks`, make the heading `away * 70` and the `arrowShape` span 70 (a way out
-     * larger than the neighbors'), or in `StationPicture.show` pass `1f` for a curved station's icon, and this fails.
+     * MUTATION: in `StationPicture.stationMarks`, make a straight side's span 70, or in `StationPicture.show` pass
+     * `0.6f` for a curved station's icon, or in `StationPicture.stationMarks` take the curved span as `SQUARE`, and
+     * this fails.
      */
     @Test(timeOut = 600000)
-    public void testEveryArrowOfThePictureIsOneSizeAndACurvedStationsCircleIsSmall() throws Exception
+    public void testAStraightStationsArrowsAreOneSizeAndACurvedStationKeepsItsIcon() throws Exception
     {
         int[] done = {0, 0};
         int[] compared = {0};
         List<String> wrong = new java.util.ArrayList<>();
 
-        eachStation(square -> isCurved(square) ? done[0] < 3 : done[1] < 2, (square, window) ->
+        eachStation(square -> isCurved(square) ? done[0] < 3 : done[1] < 3, (square, window) ->
         {
             boolean curved = isCurved(square);
 
@@ -2185,12 +2185,12 @@ public class testStationSettingsWindow
 
                 boolean open = state.stream().anyMatch(k -> k.startsWith(each.getKey() + " ") && k.endsWith(":true"));
                 double expected = arrowSpan(org.traincontrol.automationui.TileAnnotation.arrowShape(new int[] {0, 0},
-                    new double[] {1, 0}, open, cell));
+                    new double[] {1, 0}, open, curved ? 48 : cell));
 
                 // A slanted arrow's whole-pixel corners differ from a level one's by a pixel or so
                 if (Math.abs(arrowSpan(each.getValue()) - expected) > 1.5)
                 {
-                    wrong.add(square + " " + each.getKey() + " is " + arrowSpan(each.getValue()) + " long, a next square's " + expected);
+                    wrong.add(square + " " + each.getKey() + " is " + arrowSpan(each.getValue()) + " long, not " + expected);
                 }
             }
 
@@ -2208,12 +2208,13 @@ public class testStationSettingsWindow
                 return null;
             });
 
-            // As painted, every green arrow, the station's and the next squares' alike, has the same area
+            // As painted, on a straight station every green arrow, the station's and the next squares' alike, has the
+            // same area
             List<Integer> areas = greenAreas(img);
 
-            if (areas.size() >= 2) compared[0]++;
+            if (!curved && areas.size() >= 2) compared[0]++;
 
-            if (areas.size() >= 2 && java.util.Collections.max(areas) > 1.3 * java.util.Collections.min(areas))
+            if (!curved && areas.size() >= 2 && java.util.Collections.max(areas) > 1.3 * java.util.Collections.min(areas))
             {
                 wrong.add(square + ": green arrows of " + areas + " pixels");
             }
@@ -2223,6 +2224,7 @@ public class testStationSettingsWindow
             java.awt.Rectangle at = (java.awt.Rectangle) marks.get("SQUARE");
             int left = Integer.MAX_VALUE;
             int right = -1;
+            int blue = 0;
 
             for (int y = at.y; y < at.y + at.height; y++)
             {
@@ -2234,17 +2236,21 @@ public class testStationSettingsWindow
                     {
                         left = Math.min(left, x);
                         right = Math.max(right, x);
+                        blue++;
                     }
                 }
             }
 
             if (right < 0) wrong.add(square + ": no blue circle painted");
-            else if (right - left + 1 > 21) wrong.add(square + ": the circle is " + (right - left + 1) + " px across");
+            else if (right - left + 1 < 20 || blue < 250)
+            {
+                wrong.add(square + ": the circle is " + (right - left + 1) + " px across, " + blue + " px showing");
+            }
         });
 
         assertTrue(done[0] >= 3 && done[1] >= 2, "precondition: " + done[0] + " curved and " + done[1] + " straight stations");
-        assertTrue(compared[0] >= 3, "precondition: only " + compared[0] + " pictures with two green arrows");
-        assertTrue(wrong.isEmpty(), "arrows or circle off: " + wrong);
+        assertTrue(compared[0] >= 2, "precondition: only " + compared[0] + " straight pictures with two green arrows");
+        assertTrue(wrong.isEmpty(), "arrows or icon off: " + wrong);
     }
 
     /** Whether a mark's tooltip gives the reason its click can change nothing. */
