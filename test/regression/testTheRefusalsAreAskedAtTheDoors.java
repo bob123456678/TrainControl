@@ -444,7 +444,7 @@ public class testTheRefusalsAreAskedAtTheDoors
         // declaration and one use inside the session, `departableFacingsFor` by its declaration and the six places the
         // four doors ask it.
         assertEquals(SourceOf.occurrences("placeableFacingsFor("), 2, "a door chooses a placed train's heading among"
-            + " the ways trains may arrive in, which turns round a train that can leave the way it faces (OB-284)");
+            + " the ways trains may arrive in, which turns around a train that can leave the way it faces (OB-284)");
         assertTrue(SourceOf.occurrences("departableFacingsFor(") >= 5, "a door no longer asks which headings a train can"
             + " leave by (OB-284)");
 

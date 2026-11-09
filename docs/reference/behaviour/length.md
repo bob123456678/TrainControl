@@ -12,7 +12,7 @@ Two separate rules, both about length, both easy to mistake for each other.
 
 | | what it measures | which squares it judges |
 |---|---|---|
-| **Track room** | the rail behind the square, from the last switch to it | **where the train comes to rest**: the destination, and a square it turns round at, **not a square it only passes** |
+| **Track room** | the rail behind the square, from the last switch to it | **where the train comes to rest**: the destination, and a square it turns around at, **not a square it only passes** |
 | **Station capacity** | the length the station says it accepts | **the destination**, when it states one |
 
 Adam: *"the train should be refused any destination it does not fit in, i.e.
@@ -42,7 +42,7 @@ The rest of this section is about the **first** rule.
   1. **A train already standing still blocks other roads**, stopped at a station or parked, wherever the segments under
      it are measured: its tail claims the places it lies on and no route is cleared over them (§5c; `OB-207`), and a
      parking berth refuses a train that would foul a road that is not its own (below).
-  2. **Whether a train being SENT fits** is asked where it will halt: the destination, and every square it turns round
+  2. **Whether a train being SENT fits** is asked where it will halt: the destination, and every square it turns around
      at. A square it only drives past is not asked: it stands nowhere there, and a moving train holds the track it runs
      on.
 
@@ -97,7 +97,7 @@ there: on Adam's railway a train at BottomMainA long enough to reach the switch 
 train's tail claims the places it lies on (`OB-207`). The berth half refuses the cost because a parked train pays it all
 evening.
 
-**A train that turns round at the destination is not excluded** from the relaxation: it stands there for the same
+**A train that turns around at the destination is not excluded** from the relaxation: it stands there for the same
 reason and time.
 
 **Both halves are only as good as the measurements.** An unmeasured tile costs a tail nothing; where an approach

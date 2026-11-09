@@ -433,7 +433,7 @@ public class testTheAutonomyEditorsQuestionsChangeTheSetup
     }
 
     /**
-     * Remove {0} from This Square takes the train off the square, saved, and leaves every other train where it was.
+     * Remove {0} takes the train off the square, saved, and leaves every other train where it was.
      *
      * MUTATION: have the item skip `session.placeLocomotive(target, null)`, and this fails.
      */
@@ -448,7 +448,7 @@ public class testTheAutonomyEditorsQuestionsChangeTheSetup
 
         others.remove(square);
 
-        pressAndAnswer(tileItem(square, I18n.f("autosetup.ui.menuRemoveLocomotive", train)), message -> null);
+        pressAndAnswer(tileItem(square, I18n.f("layout.ui.menuRemoveLocomotive", train)), message -> null);
 
         AutonomySession saved = saveAndReadBack();
 

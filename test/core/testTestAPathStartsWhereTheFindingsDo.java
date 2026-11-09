@@ -26,7 +26,7 @@ public class testTestAPathStartsWhereTheFindingsDo extends AutonomySessionFixtur
     /**
      * Middle refuses arrivals from the east, so a train sent there came in from the west and faces east, into a dead
      * end.  Only the barred copy faces west, to WestEnd, and no train is sent onto it.  So nothing is drawn from Middle,
-     * as the check says, while WestEnd, which can turn round and leave, still draws its way to Middle.
+     * as the check says, while WestEnd, which can turn around and leave, still draws its way to Middle.
      *
      * MUTATION: pass null for the starting sides in `AutonomyEditorPanel.applyTest`, so the walk starts facing every
      * way, and this fails.
@@ -60,12 +60,12 @@ public class testTestAPathStartsWhereTheFindingsDo extends AutonomySessionFixtur
                 + " the setup check says Middle reaches nothing");
 
         assertNotEquals(legs[1], I18n.t("autosetup.ui.testLegBlocked"),
-            "WestEnd can turn round and reach Middle from the west, and Test a Path drew no route back");
+            "WestEnd can turn around and reach Middle from the west, and Test a Path drew no route back");
     }
 
     /**
      * Middle is reached from the east only, as the run west of it is one way westward: its one copy faces west, into a
-     * dead end.  EastEnd, which can turn round, still draws its way to Middle.
+     * dead end.  EastEnd, which can turn around, still draws its way to Middle.
      *
      * MUTATION: pass null for the starting sides in `AutonomyEditorPanel.applyTest`, and this fails.
      */
@@ -103,7 +103,7 @@ public class testTestAPathStartsWhereTheFindingsDo extends AutonomySessionFixtur
                 + " says Middle reaches nothing");
 
         assertNotEquals(legs[1], I18n.t("autosetup.ui.testLegBlocked"),
-            "EastEnd can turn round and reach Middle, and Test a Path drew no route back");
+            "EastEnd can turn around and reach Middle, and Test a Path drew no route back");
     }
 
     /**

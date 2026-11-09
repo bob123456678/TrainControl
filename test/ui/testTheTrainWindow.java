@@ -547,7 +547,7 @@ public class testTheTrainWindow
 
         for (String item : new String[] {I18n.t("autosetup.ui.menuStationSettings"),
             I18n.f("autosetup.ui.menuTrainAt", session.describeTile(square)),
-            I18n.f("autosetup.ui.menuRemoveLocomotive", train), I18n.f("autolayout.ui.menuLocomotiveActive", train)})
+            I18n.f("layout.ui.menuRemoveLocomotive", train), I18n.f("autolayout.ui.menuLocomotiveActive", train)})
         {
             assertNotNull(Components.withText(menu, item), "the editor's menu has no \"" + item + "\"");
         }
@@ -733,7 +733,7 @@ public class testTheTrainWindow
         java.util.List<String> hand = groups.get(groups.indexOf(own) + 1);
 
         assertEquals(hand, java.util.Arrays.asList(said("layout.ui.menuPlaceLocomotive", active),
-            said("autosetup.ui.menuRemoveLocomotive", train)), "Place and Remove do not follow the train's own items"
+            said("layout.ui.menuRemoveLocomotive", train)), "Place and Remove do not follow the train's own items"
             + " as a group: " + groups);
 
         assertEquals(groups.get(groups.indexOf(hand) + 1).get(0), I18n.t("autosetup.ui.menuStationSettings"),

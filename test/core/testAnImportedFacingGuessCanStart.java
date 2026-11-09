@@ -140,7 +140,7 @@ public class testAnImportedFacingGuessCanStart
     }
 
     /**
-     * The guess is made over the setup the import leaves, after it has marked the squares trains turn round at: a
+     * The guess is made over the setup the import leaves, after it has marked the squares trains turn around at: a
      * square trains must turn at has only turning copies, which face the other way from its plain ones.  BottomMainA,
      * arrivals from the east barred, its legacy point marked a terminus, its edges taken out.
      *
@@ -172,7 +172,7 @@ public class testAnImportedFacingGuessCanStart
         session.importLegacy(legacy);
 
         assertTrue(session.isMustTurnAround(mainA), "precondition: the import did not mark BottomMainA a square trains"
-            + " turn round at");
+            + " turn around at");
 
         Side guessed = session.getFacing(mainA);
 

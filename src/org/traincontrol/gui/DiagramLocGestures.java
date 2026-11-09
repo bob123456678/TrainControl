@@ -342,7 +342,7 @@ final class DiagramLocGestures
     }
 
     /**
-     * Whether the operator marked this square as one trains may turn round at.  Asked of the setup, as `canReverse`
+     * Whether the operator marked this square as one trains may turn around at.  Asked of the setup, as `canReverse`
      * never reaches the running layout (the builder expresses it by splitting the square).
      *
      * @param tile the square
@@ -386,7 +386,7 @@ final class DiagramLocGestures
                     java.util.Map.Entry<String, String> turned = pending.next();
 
                     // The way it came in, not the setup's stored facing, which is stale now (a run moves trains
-                    // and writes nothing back; OB-190).  A train turned round faces the way it came in.
+                    // and writes nothing back; OB-190).  A train turned around faces the way it came in.
                     if (session.faceTheWayItCameIn(turned.getKey(),
                         built.getPoint(turned.getValue()), built) == null)
                     {
@@ -435,7 +435,7 @@ final class DiagramLocGestures
             // a journey is MEANT to disagree with the graph: it is between two copies.
             if (built.isRunning()) return;
 
-            // What the railway turned round at its destination is written to the graph before the baseline is leveled,
+            // What the railway turned around at its destination is written to the graph before the baseline is leveled,
             // or a manual "no, turn" there is invisible and the next dispatch offers paths for the wrong heading.
             org.traincontrol.automationui.AutonomySession session = ui.getAutonomySession();
 

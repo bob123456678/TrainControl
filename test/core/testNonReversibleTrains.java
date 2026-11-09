@@ -15,7 +15,7 @@ import support.SourceOf;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 
 /**
- * A train that cannot reverse is only turned round where nobody would call that service, and a platform caption shows
+ * A train that cannot reverse is only turned around where nobody would call that service, and a platform caption shows
  * one train once.  A square is several Points, one per side a train can arrive by: a rule about one of them is not a
  * rule about the square.
  */
@@ -946,7 +946,7 @@ public class testNonReversibleTrains
      * runin would just be refused because 3<8, and be OK if the max train length at the berth was set to 8.  Here the
      * berth beyond the turn measures 4 and the approach 2 + 3 = 5; the refusal reported is the first walking forwards.
      *
-     * MUTATIONS: drop `comesToRest` from `whyTooLongForThisRoute`, or apply either bound where nothing turns round.
+     * MUTATIONS: drop `comesToRest` from `whyTooLongForThisRoute`, or apply either bound where nothing turns around.
      * Dropping the reversal stop from `measuredRoomAtTheEndOf` does NOT fail this;
      * `testATrainTooLongForTheBerthIsNotBackedOverTheSwitch` holds that half.
      */
@@ -1276,7 +1276,7 @@ public class testNonReversibleTrains
         };
 
         assertFalse(layout.shouldReverseAt(turn, end, loc, asking),
-            "the train was turned at a destination the operator marked \"may turn round\" without the"
+            "the train was turned at a destination the operator marked \"may turn around\" without the"
             + " answer being read. The turning copy of a may-turn square is emitted as a terminus, so"
             + " the terminus branch answered for it - and the prompt, reading the same flag, was never"
             + " shown (Adam, OB-205)");

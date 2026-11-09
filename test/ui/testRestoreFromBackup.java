@@ -875,6 +875,103 @@ public class testRestoreFromBackup
         return shadow;
     }
 
+    /** The question a backup asks when the layout is on the Central Station, as its first line says. */
+    private static String stationQuestion()
+    {
+        return I18n.t("ui.askBackupIncludeCentralStationLayout").split("\n")[0];
+    }
+
+    /**
+     * Runs `work` with the window believing its layout is on a Central Station that answers: no local layout folder,
+     * a real (not simulated) connection.  Put back after.
+     */
+    private void onACentralStation(java.util.concurrent.Callable<?> work) throws Exception
+    {
+        java.lang.reflect.Field simulation = MarklinControlStation.class.getDeclaredField("simulation");
+
+        simulation.setAccessible(true);
+
+        // A message counted, so the window's watch for a silent station does not raise its warning mid-claim
+        java.lang.reflect.Field counted = MarklinControlStation.class.getDeclaredField("numMessagesProcessed");
+
+        counted.setAccessible(true);
+
+        boolean simulationWas = simulation.getBoolean(model);
+
+        int countedWas = counted.getInt(model);
+
+        boolean connectedWas = model.getNetworkCommState();
+
+        String layout = TrainControlUI.getPrefs().get(TrainControlUI.LAYOUT_OVERRIDE_PATH_PREF, null);
+
+        try
+        {
+            TrainControlUI.getPrefs().remove(TrainControlUI.LAYOUT_OVERRIDE_PATH_PREF);
+            simulation.setBoolean(model, false);
+            counted.setInt(model, Math.max(1, countedWas));
+            model.setNetworkCommState(true);
+
+            work.call();
+        }
+        finally
+        {
+            simulation.setBoolean(model, simulationWas);
+            model.setNetworkCommState(connectedWas);
+            counted.setInt(model, countedWas);
+            putBack(TrainControlUI.LAYOUT_OVERRIDE_PATH_PREF, layout);
+        }
+    }
+
+    /**
+     * The backup a restore takes of the current data asks nothing about the Central Station's layout: a restore never
+     * changes it, so there is nothing to protect.
+     *
+     * MUTATION: in `RestoreAction`, call `this.ui.backupData(true)`, and the question is asked.
+     */
+    @Test
+    public void testARestoreDoesNotAskAboutTheStationsLayout() throws Exception
+    {
+        File archive = backUp();
+
+        onACentralStation(() ->
+        {
+            List<String> said = restore(archive, I18n.t("ui.restoreButton"), 2, 1000);
+
+            for (String question : said)
+            {
+                assertFalse(question.contains(stationQuestion()), "the restore asked about the Central Station's layout: "
+                    + said);
+            }
+
+            return null;
+        });
+    }
+
+    /**
+     * An ordinary Backup on a Central Station layout still asks.
+     *
+     * MUTATION: in `BackupAction.writeTheBackup`, drop the question, and this fails.
+     */
+    @Test
+    public void testAnOrdinaryBackupStillAsksAboutTheStationsLayout() throws Exception
+    {
+        onACentralStation(() ->
+        {
+            try (Answering answering = Answering.start(message ->
+                message.contains(stationQuestion()) ? Answering.pressAt(1) : Answering.pressAt(0)))
+            {
+                Components.press(Components.withText(ui, I18n.t("ui.main.toolbar.backupData")));
+
+                assertTrue(answering.awaitAsked(2, 120000), "the backup did not finish: " + answering.asked());
+
+                assertTrue(answering.asked().get(0).contains(stationQuestion()), "the backup did not ask about the "
+                    + "Central Station's layout: " + answering.asked());
+            }
+
+            return null;
+        });
+    }
+
     /**
      * Clicks Restore from Backup, picks `archive`, answers its question with `button`, and the rest with their first.
      * After the questions expected it waits `quietMillis` more, so one asked later (a backup's end) is seen too.

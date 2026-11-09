@@ -25,7 +25,7 @@ public class testAStationsTimetableFollowsItThroughRenamesAndEdits extends Auton
 
     /**
      * A station renamed keeps its timetable: every leg through it is carried to the new name.  Beta is somewhere trains
-     * may turn round, so two of its copies run to Alpha, and only the heading says which a leg meant.
+     * may turn around, so two of its copies run to Alpha, and only the heading says which a leg meant.
      *
      * MUTATION: carry nothing across a rebuild, or carry a leg to a copy other than the one its heading names, and this
      * fails.

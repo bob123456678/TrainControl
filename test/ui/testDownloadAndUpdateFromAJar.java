@@ -701,7 +701,7 @@ public class testDownloadAndUpdateFromAJar
 
             final org.traincontrol.gui.layouteditor.LayoutEditor editing = editor;
 
-            final String remove = I18n.f("autosetup.ui.menuRemoveLocomotive", train);
+            final String remove = I18n.f("layout.ui.menuRemoveLocomotive", train);
 
             final javax.swing.JMenuItem[] removeItem = new javax.swing.JMenuItem[1];
 

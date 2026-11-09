@@ -951,7 +951,7 @@ public class TailCrossedPrompt
 
         // The first road back is the side it came in by: the tail walk's own first hop (`entrySideOf` is the one
         // definition of a side both read).  Only rails that arrive here (OB-227): the road a tail lies on is the one
-        // the train DROVE in on, so a rail laid the other way is one it could only reach by turning round.
+        // the train DROVE in on, so a rail laid the other way is one it could only reach by turning around.
         Map<String, Edge> firstHops = new LinkedHashMap<>();
 
         for (Edge candidate : layout.getIncomingEdges(at))

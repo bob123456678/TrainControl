@@ -1061,7 +1061,7 @@ public final class HomeStaging
                 // agrees (`Layout.isPathClear` exempts an intermediate copy of the train's own square) and
                 // `auditAgainstRuntime` makes the matching exemption.
                 //
-                // Whether the train has been turned round by the time it stands here: part of the STATE
+                // Whether the train has been turned around by the time it stands here: part of the STATE
                 // (Candidate.turned).
                 boolean turned = current.turned || next.isReversing();
 
@@ -1968,7 +1968,7 @@ public final class HomeStaging
         if (home == null || !home.isSamePlaceAs(where)) return false;
 
         // A home set facing a way (OB-282) is met only by a copy facing that way; a copy is a facing.  Not the copy
-        // with the same arrival side: that includes the home copy's turning twin, the train turned round again.
+        // with the same arrival side: that includes the home copy's turning twin, the train turned around again.
         return !home.isHomeFacingFixed() || java.util.Objects.equals(home.getCopyFacing(), where.getCopyFacing());
     }
 

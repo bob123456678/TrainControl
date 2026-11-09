@@ -298,6 +298,96 @@ public class testTheFunctionButtonMenu
         assertTrue(Components.waitFor(() -> loc.getSpeed() == 41, WAIT), "Apply Saved Speed Preset did not drive the train at 41");
     }
 
+    /**
+     * An error thrown while a sensor message is handled is written to TrainControl's log window, naming the thread, and
+     * its stack trace is printed on the console, rather than being lost in a Future nobody reads.
+     *
+     * MUTATION: in `MarklinControlStation.receiveMessage`, `feedbackMessageProcessor.execute(` to `.submit(`; or drop
+     * `thread.setUncaughtExceptionHandler(THREAD_ERRORS)` from `messageProcessor`, or the `station.log(said)` in the
+     * handler.
+     */
+    @Test
+    public void testAFailureInASensorTaskReachesTheLogWindow() throws Exception
+    {
+        javax.swing.JTextArea area = support.WindowField.of(ui, "debugArea");
+
+        // A sensor frame with no payload: the task reads the sensor number from it and fails on the message thread.
+        model.receiveMessage(new org.traincontrol.marklin.udp.CS2Message(
+            org.traincontrol.marklin.udp.CS2Message.CMD_ACC_SENSOR, 0x7b34, true, new byte[0]));
+
+        assertTrue(Components.waitFor(() -> Components.onTheEventThread(area::getText).contains("cs2-feedback-messages"),
+            30000), "an error thrown while a sensor message was handled never reached the log window: submit keeps it "
+            + "in a Future nobody reads, and without the thread's handler nothing is written");
+    }
+
+    /**
+     * An error that ends a picture-loading task is written to the log window, naming the thread.
+     *
+     * MUTATION: drop `thread.setUncaughtExceptionHandler(...)` from `TrainControlUI.pictureLoader`.
+     */
+    @Test
+    public void testAnErrorInAPictureTaskReachesTheLogWindow() throws Exception
+    {
+        javax.swing.JTextArea area = support.WindowField.of(ui, "debugArea");
+
+        ui.getImageLoader().execute(() -> { throw new IllegalStateException("picture task boom"); });
+
+        assertTrue(Components.waitFor(() -> Components.onTheEventThread(area::getText).contains("picture task boom"), WAIT),
+            "an error that ended a picture task never reached the log window");
+    }
+
+    /**
+     * A locomotive picture that cannot be loaded is said in the log window, and the train shows no picture.
+     *
+     * MUTATION: drop `this.model.logf("loc.ui.errorImageLoad", url)` from the `IOException` catch in
+     * `TrainControlUI.repaintLoc`.
+     */
+    @Test
+    public void testAPictureThatCannotBeLoadedIsSaidInTheLogWindow() throws Exception
+    {
+        javax.swing.JTextArea area = support.WindowField.of(ui, "debugArea");
+
+        String missing = new File(folder, "no such picture.png").toURI().toString();
+
+        String imageWas = loc.getImageURL();
+
+        loc.setImageURL(missing);
+
+        try
+        {
+            ui.repaintLoc(true, null);
+
+            assertTrue(Components.waitFor(() -> Components.onTheEventThread(area::getText).contains(I18n.f("loc.ui.errorImageLoad", missing)), WAIT),
+                "a picture that could not be loaded was not said in the log window");
+        }
+        finally
+        {
+            loc.setImageURL(imageWas);
+        }
+    }
+
+    /**
+     * A train with no saved speed preset has nothing to apply: the menu item is grayed and says why.
+     *
+     * MUTATION: drop the `getPreferredSpeed() < 1` test in `RightClickMenuListener`, and this fails.
+     */
+    @Test
+    public void testApplyingNoSpeedPresetIsGrayedOut() throws Exception
+    {
+        loc.setPreferredSpeed(0);
+
+        JPopupMenu menu = SettingsWindow.rightClickKey(SettingsWindow.key(ui, java.awt.event.KeyEvent.VK_A));
+
+        assertNotNull(menu, "a right click on the key opened no menu");
+
+        JMenuItem item = (JMenuItem) Components.withText(menu, I18n.f("loc.ui.menuApplySavedSpeedPreset", 0));
+
+        assertNotNull(item, "the key's menu has no Apply Saved Speed Preset");
+        assertFalse(Components.onTheEventThread(item::isEnabled), "Apply Saved Speed Preset is enabled with no preset saved");
+        assertEquals(Components.onTheEventThread(item::getToolTipText), I18n.t("loc.ui.tooltip.noSpeedPreset"),
+            "the grayed item does not say why");
+    }
+
     // Autonomy's departure and arrival functions were ticked on the old menu and in its editor; they move to the
     // Autonomy tab, which is built separately, and the two claims that pinned them wait for it.
 

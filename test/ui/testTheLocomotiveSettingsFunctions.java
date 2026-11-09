@@ -632,7 +632,7 @@ public class testTheLocomotiveSettingsFunctions
 
         String picture = support.SourceOf.declaration("void refreshPicture()");
 
-        assertTrue(picture.contains("getImageLoader().submit"), "the picture is not fetched by the image loader");
+        assertTrue(picture.contains("getImageLoader().execute"), "the picture is not fetched by the image loader");
     }
 
     // Helpers

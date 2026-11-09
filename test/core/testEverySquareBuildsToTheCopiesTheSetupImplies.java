@@ -29,7 +29,7 @@ import org.traincontrol.marklin.file.CS2File;
  * (`docs/reference/two-copies-evaluation.md`).  Asserts:
  *
  *   - THE RULE.  Every square emits the Points the setup implies: one per arrival side, plus one turning copy per
- *     arrival side where a train may turn round, less the plain copies that would be dead ends, and no plain copy at
+ *     arrival side where a train may turn around, less the plain copies that would be dead ends, and no plain copy at
  *     all where turning is compulsory; a square with no arrival side is emitted whole.
  *   - THE CENSUS.  The counts, pinned: red when the split fires more, and equally when it fires less.
  *   - THAT THE CENSUS LOOKED AT A RAILWAY.  The edge count is asserted, because 18 edges reads like a real result.
@@ -198,7 +198,7 @@ public class testEverySquareBuildsToTheCopiesTheSetupImplies
                 {
                     wrong.add(what + ": " + turning + " of its Points are turning copies, and the"
                         + " setting implies " + expectedTurning + " - one per arrival side where a"
-                        + " train may turn round, and none anywhere else");
+                        + " train may turn around, and none anywhere else");
                 }
 
                 if (plain > sides.size() || (compulsory && plain != 0))

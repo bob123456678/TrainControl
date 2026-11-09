@@ -97,7 +97,7 @@ public final class RestoreAction
 
         BusyDialog.run(this.ui, I18n.t("ui.busyRestoring"), () ->
         {
-            BackupAction.BackupOutcome shadow = this.ui.backupData();
+            BackupAction.BackupOutcome shadow = this.ui.backupData(false);
 
             if (!shadow.isComplete())
             {

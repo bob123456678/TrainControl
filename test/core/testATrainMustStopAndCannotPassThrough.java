@@ -418,7 +418,7 @@ public class testATrainMustStopAndCannotPassThrough
 
     /**
      * The trip to the station holds nothing beyond it, ends there, and a later trip leaves onward in the same direction
-     * with no turn round.  That is how it differs from Must, which is the control: there the same arrival turns the
+     * with no turn around.  That is how it differs from Must, which is the control: there the same arrival turns the
      * train.
      *
      * MUTATION: make a stop-only Point a terminus in `Layout.parseAuto` and this fails.

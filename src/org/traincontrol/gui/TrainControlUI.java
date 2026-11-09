@@ -411,8 +411,21 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     private ExecutorService AutonomyRenderer = Executors.newFixedThreadPool(1);
     private ExecutorService MappingRenderer = Executors.newFixedThreadPool(1);
     private ExecutorService LocRenderer = Executors.newFixedThreadPool(1);
-    private ExecutorService ImageLoader = Executors.newFixedThreadPool(4);
-    private ExecutorService ImageLoaderLoc = Executors.newFixedThreadPool(2);
+    private ExecutorService ImageLoader = pictureLoader(4);
+    private ExecutorService ImageLoaderLoc = pictureLoader(2);
+
+    /** A pool for locomotive pictures: an error that ends a task is reported to the log window like the other pools'. */
+    private static ExecutorService pictureLoader(int threads)
+    {
+        return Executors.newFixedThreadPool(threads, runnable ->
+        {
+            Thread thread = Executors.defaultThreadFactory().newThread(runnable);
+
+            thread.setUncaughtExceptionHandler(org.traincontrol.marklin.MarklinControlStation.THREAD_ERRORS);
+
+            return thread;
+        });
+    }
     // Decodes/scales layout tile images off the EDT so the diagram can paint while tiles load
     private ExecutorService TileImageLoader = Executors.newFixedThreadPool(Math.max(2, Runtime.getRuntime().availableProcessors()));
     /**
@@ -6529,9 +6542,16 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         }
     }
     
+    /** Whether the locomotive has a saved speed preset: what Apply Saved Speed Preset needs, in the menu and on Alt+V. */
+    public static boolean hasSpeedPreset(Locomotive l)
+    {
+        return l != null && l.getPreferredSpeed() > 0;
+    }
+
     public void applyPreferredSpeed(Locomotive l)
     {
-        if (l != null)
+        // Nothing to apply without a saved preset: the menu item is grayed, and the hotkey does nothing
+        if (hasSpeedPreset(l))
         {
             new Thread(() -> {
                 this.model.getLocByName(l.getName()).applyPreferredSpeed();
@@ -7039,7 +7059,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     {
         noImageButton(b); // makes icons appear consistent on slow networks
         
-        ImageLoader.submit(() -> 
+        ImageLoader.execute(() -> 
         {
             if (b != null)
             {
@@ -7757,8 +7777,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                                 // Do this outside of the queue b/c otherwise it would be delayed for the currently selected loc at app startup
                                 repaintIcon(this.currentButton, this.activeLoc, currentButtonlocMappingNumber);
 
-                                ImageLoaderLoc.submit(() -> 
+                                ImageLoaderLoc.execute(() ->
                                 {
+                                    // Deselected since this was queued: nothing to show (an error here now reaches the log)
+                                    if (this.activeLoc == null) return;
+
                                     if (LOAD_IMAGES && this.activeLoc.getImageURL() != null)
                                     {
                                         String url = this.activeLoc.getImageURL();
@@ -7787,6 +7810,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                                         }
                                         catch (IOException e)
                                         {
+                                            this.model.logf("loc.ui.errorImageLoad", url);
+
                                             if (this.activeLoc != null && url != null && url.equals(this.activeLoc.getImageURL()))
                                             {
                                                 locIcon.setIcon(null);
@@ -7825,7 +7850,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                                     bt.setHorizontalTextPosition(JButton.CENTER);
                                     bt.setVerticalTextPosition(JButton.CENTER);
 
-                                    ImageLoaderLoc.submit(() -> 
+                                    ImageLoaderLoc.execute(() -> 
                                     {
                                         try
                                         {
@@ -15576,9 +15601,15 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      */
     public BackupAction.BackupOutcome backupData()
     {
+        return backupData(true);
+    }
+
+    /** As `backupData`; `offerStationLayout` false skips the question about the Central Station's layout (OB-427). */
+    public BackupAction.BackupOutcome backupData(boolean offerStationLayout)
+    {
         synchronized (this.oneBackupAtATime)
         {
-            return this.backupAction.writeTheBackup();
+            return this.backupAction.writeTheBackup(offerStationLayout);
         }
     }
 

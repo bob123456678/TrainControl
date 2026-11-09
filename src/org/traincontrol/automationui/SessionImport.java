@@ -574,7 +574,7 @@ final class SessionImport
             }
 
             // Terminus and reversing are derived, so neither can be written down: what the old graph recorded is that
-            // every train arriving here turns round (mustReverse).  An old "reversing station" also meant autonomy
+            // every train arriving here turns around (mustReverse).  An old "reversing station" also meant autonomy
             // never chooses it, so it takes the parking flag as well, or a shunting neck would become a destination.
             boolean turnsTrains = point.optBoolean("terminus", false)
                 || point.optBoolean("reversing", false);

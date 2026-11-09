@@ -93,7 +93,7 @@ page says so itself, and that it will not be written over until the file reads a
 
 - **A square is several Points.** Anything reasoning about "the station" must say which copy it means.
 - **`canReverse` is not in the running layout.** Only the setup knows it. **It is a property of the TILE**, not of the
-  train: *may a train turn round on this square.* `AutonomyBuilder` splits the square into a plain copy and a turning
+  train: *may a train turn around on this square.* `AutonomyBuilder` splits the square into a plain copy and a turning
   one and never emits the flag, which is why the manual doors read it from the setup. The train's own ability to run in
   either direction is `Locomotive.isReversible` (§3).
 - **A route tile carries no track of its own; it conducts what is beside it, like a fixed crossing**

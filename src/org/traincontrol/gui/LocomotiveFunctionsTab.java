@@ -647,7 +647,7 @@ final class LocomotiveFunctionsTab extends JPanel
 
             if (customRequested.add(path))
             {
-                ui.getImageLoader().submit(() ->
+                ui.getImageLoader().execute(() ->
                 {
                     ImageIcon loaded = null;
 

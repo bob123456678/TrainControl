@@ -949,7 +949,7 @@ public class testTheLengthGuardsOnTheRealLayout
      * able to block the switch that leads to BottomMainC."**
      *
      * **Why facing could not have told us this.**  A train faces the way it will leave; its tail is
-     * behind it, and once it has been turned round the two point the same way.  Before `arrivedFrom`
+     * behind it, and once it has been turned around the two point the same way.  Before `arrivedFrom`
      * the walk looked up the track this train is about to depart along - which is clear - and reported
      * nothing blocked.  The rail it is actually lying across is the one it came in by, and only the
      * train knows that.

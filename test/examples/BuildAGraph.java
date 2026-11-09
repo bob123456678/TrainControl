@@ -122,7 +122,7 @@ public class BuildAGraph
             + ", arriving at Pre Arrival: " + layout.getIncomingEdges(preArrival).size());
 
         // These four ask whether every neighbor (or every incoming edge) is reversing, or inactive.  Reversing is for
-        // a station where the train turns round; inactive switches a point off for the autonomy.
+        // a station where the train turns around; inactive switches a point off for the autonomy.
         found.add("every way into Pre Arrival is from a reversing point: " + layout.hasOnlyReversingIncoming(preArrival));
 
         mainTrack.setReversing(true);

@@ -2988,7 +2988,7 @@ public class Layout
         return name == null ? null : this.reversedOnArrival.get(name);
     }
     /**
-     * The locomotives turned round at their destination since this was last asked, each against the Point it stood on
+     * The locomotives turned around at their destination since this was last asked, each against the Point it stood on
      * when it turned; drained, so the caller puts back what it could not write.  Removed by key and value, so a turn
      * recorded meanwhile by a driver thread survives.
      *
@@ -4591,7 +4591,7 @@ public class Layout
     }
 
     /**
-     * Whether a train can stand on this square without being turned round (MT-367): a plain copy answers true about
+     * Whether a train can stand on this square without being turned around (MT-367): a plain copy answers true about
      * itself, every copy of a compulsory turn false, and a may-turn square true from either copy.  A question about
      * the graph, not a train (that is turnsOnArrival).  False for a Point with no block.
      */
@@ -5740,7 +5740,7 @@ public class Layout
     }
     
     /**
-     * Asked before a train is turned round at a point it may reverse at.  Intent cannot be inferred (Adam: "in manual
+     * Asked before a train is turned around at a point it may reverse at.  Intent cannot be inferred (Adam: "in manual
      * mode, the system has no way of knowing that the intention is to reverse into a berth on the next turn."), so
      * the caller decides: autonomy always says yes, a hand-driven send asks the operator.  A true terminus is never
      * asked.
@@ -5770,7 +5770,7 @@ public class Layout
     }
 
     /**
-     * Whether a train that has just arrived here is turned round (MT-368).  A square the door asks about is the
+     * Whether a train that has just arrived here is turned around (MT-368).  A square the door asks about is the
      * operator's call (Adam: "may reverse should always prompt in manual mode"), terminus flag or not; a terminus
      * nobody is asked about turns the train (MT-245); everything else is shouldReverseAt.  A null policy is autonomy.
      */
@@ -5813,7 +5813,7 @@ public class Layout
     }
 
     /**
-     * Whether a train reaching this point is turned round here.  A point trains do not reverse at: no.  On a journey
+     * Whether a train reaching this point is turned around here.  A point trains do not reverse at: no.  On a journey
      * whose destination is a terminus, a reversing point turns the train without asking: that is how it backs in
      * (Adam, MT-245: "trains should be allowed to back into terminuses if they are not reversible").  Anywhere else
      * the caller's policy decides; a null policy means yes.
@@ -6179,7 +6179,7 @@ public class Layout
     }
 
     /**
-     * Whether trains may turn round at this piece of track, on any of its copies: a may-turn square is expressed by a
+     * Whether trains may turn around at this piece of track, on any of its copies: a may-turn square is expressed by a
      * split, with only the turning copy marked reversing.
      */
     public boolean mayReverseAt(Point point)

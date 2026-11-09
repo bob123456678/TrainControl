@@ -3724,7 +3724,7 @@ public class testAutonomyDiagramMonitor
             // different picture.
             assertTrue(Math.abs(n - e) * 10 <= e,
                 "one heading draws " + n + " pixels where east draws " + e + ". That is not the same "
-                + "locomotive turned round, which is what rotating and flipping means - it is a "
+                + "locomotive turned around, which is what rotating and flipping means - it is a "
                 + "different picture per direction, and it will not survive somebody replacing the "
                 + "icon file");
         }

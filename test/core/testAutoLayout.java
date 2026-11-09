@@ -2406,7 +2406,7 @@ public class testAutoLayout
         {
             plain.setReversible(false);
 
-            // THE RULING: a train that cannot turn round may still be backed into a BERTH by hand -
+            // THE RULING: a train that cannot turn around may still be backed into a BERTH by hand -
             // somewhere autonomy will never send it, which is what that exemption is for.
             terminus.setAutoDestination(false);
 

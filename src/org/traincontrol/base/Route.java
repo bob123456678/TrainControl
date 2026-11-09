@@ -382,7 +382,7 @@ abstract public class Route
                 return false;
             }
 
-            // NOT AT is the same question with the answer turned round
+            // NOT AT is the same question with the answer turned around
             return trainStandsAt(layout, loc, Integer.toString(rc.getAddress())) == rc.isAtSensor();
         }
         

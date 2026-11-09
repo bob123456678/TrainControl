@@ -26,7 +26,7 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
  * square, so a train on a copy facing the wrong way would be dispatched along a route locked one way while its
  * decoder drives the other.  Where no copy trains may arrive at faces the recorded way, the train stands on one that
  * faces it anyway; autonomy will not start it there, and says so.  Among the copies facing the recorded way, one
- * trains may arrive at is chosen first, and the train is never turned round to get it (OB-270).
+ * trains may arrive at is chosen first, and the train is never turned around to get it (OB-270).
  *
  * MUTATION: have `placementCopy` or `moveOntoFacingCopy` take the first copy facing that way again, and its claim
  * fails; let either fall back to a copy trains may arrive at before one facing the recorded way, and the facing claims
@@ -224,7 +224,7 @@ public class testATrainIsPutOnlyWhereItCanStart
 
         assertEquals(session.facingsFor(mainA).get(standing.getName()), Side.W, "the setup records the train at"
             + " BottomMainA facing west, and the build stood it on " + standing.getName() + ", which faces "
-            + session.facingsFor(mainA).get(standing.getName()) + " - turned round in the model, so its next route is"
+            + session.facingsFor(mainA).get(standing.getName()) + " - turned around in the model, so its next route is"
             + " locked one way while its decoder drives it the other (AUT2-A1)");
     }
 
@@ -528,10 +528,10 @@ public class testATrainIsPutOnlyWhereItCanStart
             + " too and autonomy can start it there (TDY4-B1)");
 
         // AND THE BARRED ONE IS NOT CALLED BARRED: a train facing south can arrive at BottomMainPost, so
-        // telling one stood on that copy to turn round would be false.
+        // telling one stood on that copy to turn around would be false.
         assertFalse(rebuilt.isABarredCopyOfAStation(rebuilt.getPoint(barred.getName())), "BottomMainPost's south-facing"
             + " copy trains may not arrive at counts as barred, though its turning twin faces south and is a station -"
-            + " a train stood there would be told to turn round (AUT4-B1)");
+            + " a train stood there would be told to turn around (AUT4-B1)");
     }
 
     /**
@@ -665,7 +665,7 @@ public class testATrainIsPutOnlyWhereItCanStart
     }
 
     /**
-     * At a square every train must turn round at, a train facing the barred way is told to drive it off by hand or turn
+     * At a square every train must turn around at, a train facing the barred way is told to drive it off by hand or turn
      * it round - not to open the side, which a terminus reached from two sides (MT-361) would answer with another
      * refusal.
      *
@@ -691,7 +691,7 @@ public class testATrainIsPutOnlyWhereItCanStart
 
             Point standing = standingOn(running);
 
-            assertTrue(standing != null && running.isABarredCopyOfAStation(standing), "precondition: turned round at"
+            assertTrue(standing != null && running.isABarredCopyOfAStation(standing), "precondition: turned around at"
                 + " BottomMainA, the train does not stand on the copy trains may not arrive at: " + standing);
 
             String said = running.explainCannotStart(model.getLocByName(PROBE));

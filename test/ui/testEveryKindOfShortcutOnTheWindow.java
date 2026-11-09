@@ -172,6 +172,24 @@ public class testEveryKindOfShortcutOnTheWindow
     }
 
     /**
+     * Alt+V on a train with no saved speed preset does nothing: the speed stays where it was.
+     *
+     * MUTATION: in `TrainControlUI.hasSpeedPreset`, drop the `> 0`, and Alt+V sets the speed to 0.
+     */
+    @Test
+    public void testAltVDoesNothingWithoutAPreset() throws Exception
+    {
+        one.setPreferredSpeed(0);
+        one.setSpeed(30);
+
+        Keys.press(keyboard(), KeyEvent.VK_V, ALT);
+
+        // The apply runs on its own thread, so a bounded wait for a change that must not come
+        assertFalse(Components.waitFor(() -> one.getSpeed() != 30, 1000),
+            "Alt+V set the speed of a train with no saved preset to " + one.getSpeed());
+    }
+
+    /**
      * Control letters: Control+C and Control+V copy a train to another button, Control+X cuts one off its button, and
      * Control+S swaps.  Control+V with nothing copied changes nothing.
      *

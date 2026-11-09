@@ -172,7 +172,7 @@ public class testATrainComesHomeFacingTheWayItWasHomed
     }
 
     /**
-     * A train standing turned round on its home square - on the turning copy of the arrival it was homed in - is not
+     * A train standing turned around on its home square - on the turning copy of the arrival it was homed in - is not
      * home. A turning copy points back at the side it came in by, so it faces the other way from its plain twin; Return
      * Home counted the twin as home because the two share an arrival (on his railway, BottomMainB, EN57-947's home).
      *
@@ -199,7 +199,7 @@ public class testATrainComesHomeFacingTheWayItWasHomed
         }
 
         assertNotNull(plain, "precondition: his railway has no square with a plain copy and a turning twin a train may stand"
-            + " on, so being turned round on one's home cannot happen here");
+            + " on, so being turned around on one's home cannot happen here");
 
         try
         {
@@ -214,7 +214,7 @@ public class testATrainComesHomeFacingTheWayItWasHomed
             HomeStaging.Plan plan = layout.planReturnToHome();
 
             assertTrue(plan.getOutcome() != HomeStaging.Outcome.ALREADY_HOME, "a train homed on " + plain.getName() + " and"
-                + " standing on " + twin.getName() + " - turned round, facing the other way - is reported already home."
+                + " standing on " + twin.getName() + " - turned around, facing the other way - is reported already home."
                 + "  Adam, 2026-09-23: \"it should accomplish the facing\"");
         }
         finally

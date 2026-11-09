@@ -21,7 +21,7 @@ public class Point
     /**
      * The side a train standing here came IN by, which is where its tail lies.
      *
-     * Facing cannot answer this: a train faces the way it will leave, and once turned round its tail points the same
+     * Facing cannot answer this: a train faces the way it will leave, and once turned around its tail points the same
      * way it faces, so inferring the tail from the heading finds the wrong track.  A compass side rather than an edge,
      * because an edge is directional and a tail is not.  Null when nothing has said.
      */

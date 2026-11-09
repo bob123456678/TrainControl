@@ -631,7 +631,7 @@ public class testASetupIsBuiltSavedAndReopenedWhole extends AutonomySessionFixtu
         assertEquals(extras.getJSONObject("loc").getString("name"), "BR 218");
         assertFalse(extras.has("station"), "structural fields are the reduction's, not captured");
 
-        // Terminus is the builder's answer, not the user's: read back, it would turn round every train that passed.
+        // Terminus is the builder's answer, not the user's: read back, it would turn around every train that passed.
         assertFalse(extras.has("terminus"), "derived flags are not lifted off the running layout");
 
         // pace settings land in globals, and points/edges do not

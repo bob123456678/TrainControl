@@ -281,9 +281,9 @@ public class testTheUpdateIsWiredEndToEnd
     @Test
     public void testOneBackupAtATime() throws Exception
     {
-        String backup = bodyOf("BackupAction.BackupOutcome backupData()");
+        String backup = bodyOf("BackupAction.BackupOutcome backupData(boolean offerStationLayout)");
 
-        assertTrue(backup.contains("synchronized (this.oneBackupAtATime)") && backup.contains("writeTheBackup()"),
+        assertTrue(backup.contains("synchronized (this.oneBackupAtATime)") && backup.contains("writeTheBackup("),
             "backupData no longer holds one backup at a time");
 
         // Asked of the whole program's code: the declaration and the one call.

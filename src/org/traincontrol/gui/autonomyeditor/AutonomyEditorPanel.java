@@ -2691,7 +2691,7 @@ public class AutonomyEditorPanel extends JPanel
     /** Runs a question for the railway on the worker Why Not Moving? uses (OB-192). */
     void offTheEventThread(Runnable question)
     {
-        WhyRenderer.submit(question);
+        WhyRenderer.execute(question);
     }
 
     /**
@@ -5428,7 +5428,7 @@ public class AutonomyEditorPanel extends JPanel
 
         try
         {
-            WhyRenderer.submit(() -> workOutWhy(asked, layout, index, setup, tile, byHand));
+            WhyRenderer.execute(() -> workOutWhy(asked, layout, index, setup, tile, byHand));
         }
         catch (RuntimeException refused)
         {
@@ -5590,6 +5590,7 @@ public class AutonomyEditorPanel extends JPanel
                 Thread worker = new Thread(runnable, "WhyRenderer");
 
                 worker.setDaemon(true);
+                worker.setUncaughtExceptionHandler(org.traincontrol.marklin.MarklinControlStation.THREAD_ERRORS);
 
                 return worker;
             });

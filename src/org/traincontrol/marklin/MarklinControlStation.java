@@ -321,6 +321,26 @@ public class MarklinControlStation implements ViewListener, ModelListener
     public static final long POWER_STATE_TIMEOUT = 2000;
     // DAEMONS.  These serve inbound CAN messages and have no meaning without the application they serve,
     // but the default factory makes ordinary threads, which would outlive every caller and keep the JVM up.
+    /**
+     * Where a task that ended in an error nobody caught is reported, for the pools' thread factories: the stack trace
+     * on stderr, as the JVM's own handler prints it, and a line in the log window naming the thread, through the
+     * station started last (the Logger alone when none has started).
+     */
+    public static final Thread.UncaughtExceptionHandler THREAD_ERRORS = (thread, error) ->
+    {
+        System.err.print("Exception in thread \"" + thread.getName() + "\" ");
+        error.printStackTrace();
+
+        String said = I18n.f("error.uncaughtInThread", thread.getName(), error);
+        MarklinControlStation station = MarklinControlStation.reporter;
+
+        if (station != null) station.log(said);
+        else MarklinControlStation.log.warning(said);
+    };
+
+    /** The station started last, which `THREAD_ERRORS` reports through. */
+    private static volatile MarklinControlStation reporter;
+
     private static ExecutorService messageProcessor(final String name)
     {
         return Executors.newFixedThreadPool(1, runnable ->
@@ -328,6 +348,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
             Thread thread = new Thread(runnable, name);
 
             thread.setDaemon(true);
+            thread.setUncaughtExceptionHandler(THREAD_ERRORS);
 
             return thread;
         });
@@ -364,6 +385,8 @@ public class MarklinControlStation implements ViewListener, ModelListener
      */
     public MarklinControlStation(NetworkProxy network, View view, boolean autoPowerOn, boolean debug, boolean simulate)
     {       
+        reporter = this;
+
         // Configure logger
         log.setUseParentHandlers(false);
 
@@ -2869,13 +2892,13 @@ public class MarklinControlStation implements ViewListener, ModelListener
         // Send the message to the appropriate listener
         if (message.isFeedbackCommand())
         {
-            this.feedbackMessageProcessor.submit(() ->
+            this.feedbackMessageProcessor.execute(() ->
             {
                 int id = message.extractShortUID();
 
                 // Resolved once into a local, as the locomotive and accessory branches do: hasId then getById would be
-                // two lock acquisitions, and syncLayouts prunes feedbacks on another thread; the NPE would be swallowed
-                // by the executor's Future.  A dropped feedback is not cosmetic: the state is a LEVEL, and a driving
+                // two lock acquisitions, and syncLayouts prunes feedbacks on another thread; the NPE would end the task
+                // and reach the thread's handler, not the message.  A dropped feedback is not cosmetic: the state is a LEVEL, and a driving
                 // thread waits on it without a timeout, so a train whose arrival was dropped never slows and never
                 // stops.
                 MarklinFeedback feedback = this.feedbackDB.getById(id);
@@ -4182,6 +4205,8 @@ public class MarklinControlStation implements ViewListener, ModelListener
         this.locMessageProcessor.shutdownNow();
         this.feedbackMessageProcessor.shutdownNow();
         this.systemMessageProcessor.shutdownNow();
+
+        if (reporter == this) reporter = null;
     }
 
     /**

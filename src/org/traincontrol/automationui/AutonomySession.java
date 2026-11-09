@@ -1665,7 +1665,7 @@ public class AutonomySession
         // timetable place (as `Layout.copyAfterTheTurn`)
         if (from != null && facing == facingsFor(tile).get(from.getName()) && from.isDestination()) return;
 
-        // And the tail comes with it, which `setLocomotive` clears (behaviour/facing.md 4: turning round at the
+        // And the tail comes with it, which `setLocomotive` clears (behaviour/facing.md 4: turning around at the
         // platform does not move the tail); read from the copy it was on.
         final String tail = from == null ? null : from.getArrivedFrom();
 
@@ -2771,7 +2771,7 @@ public class AutonomySession
     private static final List<String> PLACEMENT_KEYS = java.util.Arrays.asList("loc", "arrivedFrom", "arrivedAlong");
 
     /**
-     * Squares where trains turn round whose stretch back to the last switch is not fully measured, one entry each
+     * Squares where trains turn around whose stretch back to the last switch is not fully measured, one entry each
      * (OB-171): `Layout.isPathClear` cannot refuse a reversal into a berth it cannot measure.  The stretch is walked as
      * `GraphReducer.roomAfterTheLastSwitch` walks it.  Maps each square to how many squares its guard still needs.
      */
@@ -4110,7 +4110,7 @@ public class AutonomySession
     }
 
     /**
-     * Squares where a train may turn round, emitted as several Points each: a TERMINUS station (as one Point it would
+     * Squares where a train may turn around, emitted as several Points each: a TERMINUS station (as one Point it would
      * block every path through it), and anything marked CAN REVERSE.
      */
     public Set<TileKey> reversibleTiles()
@@ -4141,7 +4141,7 @@ public class AutonomySession
         return out;
     }
 
-    /** Whether every train arriving here must turn round, rather than merely being able to. */
+    /** Whether every train arriving here must turn around, rather than merely being able to. */
     public boolean isMustTurnAround(TileKey tile)
     {
         return Boolean.TRUE.equals(getPointProperty(tile, AutonomyBuilder.MUST_REVERSE));
@@ -4203,7 +4203,7 @@ public class AutonomySession
     }
 
     /**
-     * Whether trains may turn round on this square, reading the older "terminus" and "reversing" keys too, or an older
+     * Whether trains may turn around on this square, reading the older "terminus" and "reversing" keys too, or an older
      * setup would lose its termini at the first rebuild.  The first edit writes the new spelling.
      */
     public boolean isTurnAround(TileKey tile)
@@ -5206,7 +5206,7 @@ public class AutonomySession
     }
 
     /**
-     * Whether every train arriving here must turn round (OB-123), so "may change direction here" offers no choice.
+     * Whether every train arriving here must turn around (OB-123), so "may change direction here" offers no choice.
      * Departures as `departureSides` gathers them, as the trapped-arrival check does.
      */
     private boolean everyArrivalMustTurn(TileGraph graph, GraphReducer reducer, TileKey tile)
@@ -5419,7 +5419,7 @@ public class AutonomySession
             if (store.isStation(tile) && Boolean.TRUE.equals(getPointProperty(tile, "terminus"))) termini.add(tile);
         }
 
-        // "May turn round here" where no arriving train could do anything else (OB-123), judged per ARRIVAL against
+        // "May turn around here" where no arriving train could do anything else (OB-123), judged per ARRIVAL against
         // the build's own sides: it tests for two outgoing paths, not two incoming.
         Set<TileKey> pointless = new LinkedHashSet<>();
 
@@ -7274,7 +7274,7 @@ public class AutonomySession
 
             org.traincontrol.automation.Point point = running.getPoint(copy.getKey());
 
-            // Standing beats turned round, at the same distance.
+            // Standing beats turned around, at the same distance.
             if (point != null && !point.isTerminus() && !point.isReversing()) return copy.getValue();
 
             // The first turning copy, in build order, in case that is all there is (a compulsory turn).

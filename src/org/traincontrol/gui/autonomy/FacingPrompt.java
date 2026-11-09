@@ -13,7 +13,7 @@ import org.traincontrol.util.I18n;
  * Which way a train pasted onto a may-reverse square should face.  Adam: "If pasting at a 'may reverse' square, ask
  * what direction the train should face."
  *
- * The paste cannot work it out there: `facingByPath` answers on an ordinary square, but turning round is what a
+ * The paste cannot work it out there: `facingByPath` answers on an ordinary square, but turning around is what a
  * may-reverse square is FOR, so both headings are reachable and the walk's answer is whichever copy it landed on.
  * `ArrivalSidePrompt` asks which side the tail lies on one question earlier; on a may-reverse square neither follows
  * from the other.

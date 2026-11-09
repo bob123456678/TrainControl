@@ -4,13 +4,13 @@ Part of the behavior reference: [`../behaviour.md`](../behaviour.md) is the inde
 
 ## 3. Reversals
 
-### Where a train turns round
+### Where a train turns around
 
 A square is several `Point`s, one per side a train can arrive by, and **which copy a train is on IS its direction**.
 Three kinds of square matter:
 
 - **A terminus.** The train has run out of track. It turns, and nobody is asked. A train that *cannot* reverse may
-  still **back into** a terminus, when the route there turns it round (MT-245).
+  still **back into** a terminus, when the route there turns it around (MT-245).
 - **A compulsory turn** (`mustReverse`). Every copy turns trains, in every tier: a turning copy's only outgoing edges
   leave by the side the train arrived from, so *not* turning is not an available outcome: it drives the train forward
   off its reserved path.
@@ -59,7 +59,7 @@ a train does not physically fit into is still refused. The station-capacity rule
 *"the terminus that isn’t a destination should fail on the track length check - the station length can safely be
 ignored."*
 
-**"The flag" is on the tile, not on the train.** `canReverse` says *may a train turn round here*, set by marking the
+**"The flag" is on the tile, not on the train.** `canReverse` says *may a train turn around here*, set by marking the
 tile in the editor. `Locomotive.isReversible` says *can this locomotive run in either direction at all*; the two are
 asked in different places. A non-reversible train may still back into a terminus (MT-245); a reversible train may
 still be refused a turn at a may-reverse square, because the operator said no.
@@ -110,7 +110,7 @@ which the build makes one turning copy, or a may-turn square one of whose ways i
 re-stand a kept train on; kept, it would face back out with its decoder driving it forward into the end of the line.
 So `Layout.turnsOnArrival` turns it first of all, the hand doors do not ask (`ManualReversalPrompt.destinationAskedAbout`),
 and a train that cannot reverse is not offered such a copy by hand (MT-367's rule, asked of the copy's ways in). The
-setup check's NOTICE, *"every train turns round anyway"*, says what happens.
+setup check's NOTICE, *"every train turns around anyway"*, says what happens.
 
 **A train the operator turned is stood at once on the copy that faces the way it came in**: the copy the window's idle
 drain chooses (`AutonomySession.copyFacing`: one trains may arrive at first, and of those one that does not turn
@@ -175,7 +175,7 @@ own arrival side, as an absolute answer, never a **flip** of the facing the setu
 stored facing is stale at exactly that moment, so a flip would have no pivot, or take the previous occupant's answer and
 write the turn backwards.
 
-**A train that has just been turned round faces the way it came in** (§4): the arrival wrote that side onto that
+**A train that has just been turned around faces the way it came in** (§4): the arrival wrote that side onto that
 `Point` before turning it, and the window writes it as it stands. An absolute answer applied twice says the same thing
 twice, so a shuttle that turns at both ends is written from the end it stands at.
 
@@ -193,7 +193,7 @@ window's single refresh callback tells the graph when it does.** A hand dispatch
 thread goes; a timetable (Return Home's run included) announces again once its completion wait has seen the railway
 stop, because until then `running` is still set.
 
-### Turning round, and being chosen: two markings, two questions
+### Turning around, and being chosen: two markings, two questions
 
 Adam, settling OB-195:
 
@@ -220,5 +220,5 @@ The editor's hint says it that way.
 
   **Nothing passes through such a square in either case**: a compulsory turn is built as a terminus, and
   `Layout.isPathClear` refuses any route whose terminus is not its endpoint. Adam's *"the train may only pass through
-  in its current direction"* rules that turning round is not part of who may be SENT somewhere: that is the switch, and
+  in its current direction"* rules that turning around is not part of who may be SENT somewhere: that is the switch, and
   only the switch.

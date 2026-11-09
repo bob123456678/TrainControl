@@ -164,7 +164,7 @@ public final class ManualReversalPrompt
 
     /**
      * The policy both hand-driven doors hand to `executePath`.  `asksAbout` is answered from the SETUP because the
-     * runtime cannot answer it: the operator's "trains may turn round here" is `canReverse`, which `AutonomyBuilder`
+     * runtime cannot answer it: the operator's "trains may turn around here" is `canReverse`, which `AutonomyBuilder`
      * never emits (it is the instruction to split), so where a square cannot be split the instruction leaves no trace.
      *
      * @param session the setup, which knows what the operator marked

@@ -198,7 +198,7 @@ final class EditorTileMenus
 
                 if (standing != null)
                 {
-                    menu.add(editor.item(I18n.f("autosetup.ui.menuRemoveLocomotive", standing),
+                    menu.add(editor.item(I18n.f("layout.ui.menuRemoveLocomotive", standing),
                         () -> editor.removeLocomotive(target)));
                 }
 

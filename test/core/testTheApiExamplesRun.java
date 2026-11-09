@@ -128,7 +128,7 @@ public class testTheApiExamplesRun
         assertSaysEach(found,
             "after goBackward: going backward true, going forward false",
             "after goForward: going backward false, going forward true",
-            "after turning round twice: going forward true",
+            "after turning around twice: going forward true",
             "after setSpeed(40): speed 40",
             "after stop: speed 0",
             "light true, F1 false, F2 true of 5 functions",

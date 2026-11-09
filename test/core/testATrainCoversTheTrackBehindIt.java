@@ -370,7 +370,7 @@ public class testATrainCoversTheTrackBehindIt
         int turned = flat.indexOf("if (stillThisRailway) loc.switchDirection()");
 
         assertTrue(turned > written,
-            "the arrival side is recorded AFTER the train is turned round. Turning it does not move"
+            "the arrival side is recorded AFTER the train is turned around. Turning it does not move"
             + " its carriages, so that records the side it is about to depart by - which is the"
             + " mistake arrivedFrom exists to end");
 
@@ -623,7 +623,7 @@ public class testATrainCoversTheTrackBehindIt
         Point turning = point(layout, "CPR" + tag, true);
         Point berth = point(layout, "CS" + tag, true);
 
-        // ONE SQUARE, TWO COPIES: the plain one and the one a train turns round on.
+        // ONE SQUARE, TWO COPIES: the plain one and the one a train turns around on.
         plain.setBlock("CP-square" + tag);
         turning.setBlock("CP-square" + tag);
 
@@ -809,7 +809,7 @@ public class testATrainCoversTheTrackBehindIt
         Point twin = point(layout, "TN" + tag + twinSuffix, true);
         Point d = point(layout, "TD" + tag, true);
 
-        // ONE SQUARE, TWO COPIES: the plain one, and the one a train turns round on - emitted as a terminus.
+        // ONE SQUARE, TWO COPIES: the plain one, and the one a train turns around on - emitted as a terminus.
         twin.setTerminus(true);
 
         plain.setBlock("N" + tag);

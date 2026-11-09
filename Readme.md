@@ -640,10 +640,10 @@ Tab icons provided by Freepik.
             - Direction arrows on switches and slips fully decide which way trains run; older setups are corrected when they load.
             - Setup edits, Start, Execute Timetable, Return Home and sending a train wait while a route runs, not only while autonomy does.
             - Every finding you click in the setup check is outlined in the editor.
-            - A locomotive turned round during a route is turned round in the setup too.
+            - A locomotive turned around during a route is turned around in the setup too.
             - Clicking a train in `Test a Path` or `Why not Moving?` picks its station.
             - Return Home names trains that are paused instead of saying every train is home.
-            - A train's icon turns round with the arrow on its label.
+            - A train's icon turns around with the arrow on its label.
             - The setup check no longer warns about moves no train can make.
             - The Track Diagram and the autonomy editor draw the same direction arrows.
         - Track Diagram

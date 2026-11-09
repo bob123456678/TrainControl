@@ -29,7 +29,7 @@ import org.traincontrol.marklin.file.CS2File;
 import support.SourceOf;
 
 /**
- * A train put down on a square is standing where the drive would leave it, not turned round.  A turning copy is
+ * A train put down on a square is standing where the drive would leave it, not turned around.  A turning copy is
  * emitted with `terminus: true` (or `reversing: true`), so `isTerminus()` cannot tell it from a real terminus (OB-205,
  * MT-368); `isSamePlaceAs` is the discriminator used here.  A terminus must still reverse on paste.  Read against a
  * `LayoutSandbox` copy of the frozen snapshot (OB-111).
@@ -781,7 +781,7 @@ public class testAPasteDoesNotTurnTheTrainRound
         }
 
         assertNotNull(best,
-            "no copy of " + ONTO + " that a train could stand on without turning round is reachable"
+            "no copy of " + ONTO + " that a train could stand on without turning around is reachable"
             + " from " + FROM + ", so there is nothing for the paste to be compared against");
 
         return best;

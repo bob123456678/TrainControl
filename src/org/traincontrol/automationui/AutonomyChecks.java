@@ -291,7 +291,7 @@ public class AutonomyChecks
     public static final String NO_ARRIVALS_LEFT = "autosetup.ui.checkNoArrivalsLeft";
 
     /**
-     * A station every train must turn round at, with track reaching it from more than one side (MT-361): an ERROR, as
+     * A station every train must turn around at, with track reaching it from more than one side (MT-361): an ERROR, as
      * each arrival side becomes its own terminus.  Stations only; barred arrivals do not count.
      */
     public static final String TERMINUS_WITH_TWO_WAYS_IN = "autosetup.ui.checkTerminusTwoWaysIn";
@@ -374,7 +374,7 @@ public class AutonomyChecks
      * @param shortRunIns stations whose measured run in is shorter than their stated maximum, each mapped to {the
      *        stated maximum, the smallest measured room}, and at a platform the figure a train is refused above third
      * @param berthsGivenNoRoom parking berths whose track before the stop was all answered 0
-     * @param terminiWithTwoWaysIn stations every train must turn round at with more than one unbarred way in, mapped
+     * @param terminiWithTwoWaysIn stations every train must turn around at with more than one unbarred way in, mapped
      *        to how many (MT-361)
      * @param berthsBackedInto the squares a train can be backed into (tail first, after a rest on another terminus or
      *        a reversing point), off the build; null where the setup does not build
@@ -618,7 +618,7 @@ public class AutonomyChecks
     }
 
     /**
-     * A square trains turn round at, from which nothing can be reached (OB-113): a NOTICE, as "reaches no station" is
+     * A square trains turn around at, from which nothing can be reached (OB-113): a NOTICE, as "reaches no station" is
      * also true of a reversing point on a spur somebody is still drawing.  One finding per reversing square that leads
      * nowhere.  `mayTurn` and `mustTurn` are the squares where a train may or must change direction; a null `reach`
      * says nothing.
@@ -794,7 +794,7 @@ public class AutonomyChecks
 
 
     /**
-     * A home on a square every train must turn round at, which is emitted as a TERMINUS: the berth is entered nose
+     * A home on a square every train must turn around at, which is emitted as a TERMINUS: the berth is entered nose
      * first and the train has to back out.  THIS NOTICE IS THE ONLY WARNING THERE IS, as Return Home is manual
      * operation and staging does not refuse a terminus to a locomotive that cannot reverse.  Only at a parking berth no
      * route can back a train into (MT-552).
@@ -831,7 +831,7 @@ public class AutonomyChecks
 
     /**
      * Squares a train can reach and then not leave: a train arriving points away from where it came from, so a square
-     * whose only way on is back is the end of its day unless trains may turn round there.  Usually the square IS a
+     * whose only way on is back is the end of its day unless trains may turn around there.  Usually the square IS a
      * terminus and wants marking, or a branch off it is shut that should be open.
      *
      * @param closable the squares whose trapped sides the arrivals menu can close, the only ones told to
