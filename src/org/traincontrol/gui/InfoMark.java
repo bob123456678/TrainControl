@@ -16,6 +16,10 @@ public final class InfoMark
     /** Long enough to read a sentence; Swing's 4 seconds is not. */
     private static final int DISMISS_MS = 30000;
 
+    /** The mark the pointer is on, and the dismiss delay it found, put back as the pointer leaves or the mark goes. */
+    private static JLabel hovered;
+    private static int normal;
+
     private InfoMark()
     {
     }
@@ -71,21 +75,24 @@ public final class InfoMark
 
         mark.setToolTipText(AutonomyEditorPanel.wrapped(text));
 
+        // A window closed under the pointer sends no exit
+        mark.addHierarchyListener(e -> { if (!mark.isShowing()) leave(mark); });
+
         mark.addMouseListener(new java.awt.event.MouseAdapter()
         {
-            private int was;
-
             @Override
             public void mouseEntered(java.awt.event.MouseEvent e)
             {
-                was = ToolTipManager.sharedInstance().getDismissDelay();
+                if (hovered == null) normal = ToolTipManager.sharedInstance().getDismissDelay();
+
+                hovered = mark;
                 ToolTipManager.sharedInstance().setDismissDelay(DISMISS_MS);
             }
 
             @Override
             public void mouseExited(java.awt.event.MouseEvent e)
             {
-                ToolTipManager.sharedInstance().setDismissDelay(was);
+                leave(mark);
             }
 
             // Later, as Swing's own press handler hides the tooltip and may run after this one
@@ -97,6 +104,14 @@ public final class InfoMark
         });
 
         return mark;
+    }
+
+    private static void leave(JLabel mark)
+    {
+        if (hovered != mark) return;
+
+        hovered = null;
+        ToolTipManager.sharedInstance().setDismissDelay(normal);
     }
 
     /** Shows the mark's tooltip as a hover would, without the wait; every other component's wait is left as it was. */
