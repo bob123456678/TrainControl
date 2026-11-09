@@ -320,29 +320,6 @@ public class testTheFunctionButtonMenu
             "the grayed item does not say why");
     }
 
-    // Autonomy's departure and arrival functions were ticked on the old menu and in its editor; they move to the
-    // Autonomy tab, which is built separately, and the two claims that pinned them wait for it.
-
-    /**
-     * The departure and arrival ticks of the old function menu: the menu is gone and the Autonomy tab that replaces
-     * them is not built yet, so this waits to be re-pointed there.
-     */
-    @Test(enabled = false)
-    public void testTheMenuTicksTheAutonomyFunctions() throws Exception
-    {
-        throw new SkipException("re-point to the Autonomy tab's departure and arrival dropdowns when it is built");
-    }
-
-    /**
-     * Cancel put the departure and arrival ticks back in the old editor: the Autonomy tab will hold them, and Cancel
-     * will leave them as they were.
-     */
-    @Test(enabled = false)
-    public void testCancelPutsTheAutonomyTicksBack() throws Exception
-    {
-        throw new SkipException("re-point to the Autonomy tab's departure and arrival dropdowns when it is built");
-    }
-
     // The Functions tab behind the right-click
 
     /**
