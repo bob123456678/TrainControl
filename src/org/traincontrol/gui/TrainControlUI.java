@@ -7661,9 +7661,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                                     {
                                         try 
                                         {
-                                            ImageIcon icon = new javax.swing.ImageIcon(
-                                                getLocImageMaxHeight(url, LOC_ICON_WIDTH, LOC_ICON_HEIGHT)
-                                            );
+                                            Image picture = getLocImageMaxHeight(url, LOC_ICON_WIDTH, LOC_ICON_HEIGHT);
+
+                                            // A picture that will not decode shows the placeholder, as no picture does
+                                            ImageIcon icon = new javax.swing.ImageIcon(picture != null ? picture
+                                                : LocomotivePlaceholder.image(LOC_ICON_WIDTH));
                                             
                                             // If the network is laggy, this could show an icon even though no loc is selected
                                             // Check to ensure there is still an active loc and it hasn't changed
