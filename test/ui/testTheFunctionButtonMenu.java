@@ -446,6 +446,44 @@ public class testTheFunctionButtonMenu
     }
 
     /**
+     * A picture that will not decode shows the placeholder, as a train with no picture does, with no error in the log
+     * window.
+     *
+     * MUTATION: in `TrainControlUI.repaintLoc`'s picture task, hand `getLocImageMaxHeight`'s null to `ImageIcon`.
+     */
+    @Test
+    public void testAPictureThatWillNotDecodeShowsThePlaceholder() throws Exception
+    {
+        javax.swing.JTextArea area = support.WindowField.of(ui, "debugArea");
+        final javax.swing.JLabel shown = support.WindowField.of(ui, "locIcon");
+        final int from = Components.onTheEventThread(area::getText).length();
+        File text = new File(folder, "not a picture.png");
+
+        java.nio.file.Files.write(text.toPath(), "not a picture".getBytes(java.nio.charset.StandardCharsets.US_ASCII));
+
+        String imageWas = loc.getImageURL();
+
+        loc.setImageURL(text.toURI().toString());
+
+        try
+        {
+            SwingUtilities.invokeAndWait(() -> shown.setIcon(null));
+            ui.repaintLoc(true, null);
+
+            Components.waitFor(() -> shown.getIcon() != null
+                || Components.onTheEventThread(area::getText).substring(from).contains("NullPointerException"), WAIT);
+
+            assertFalse(Components.onTheEventThread(area::getText).substring(from).contains("NullPointerException"),
+                "a picture that will not decode ended its task with an error in the log window");
+            assertNotNull(shown.getIcon(), "a picture that will not decode showed nothing, not the placeholder");
+        }
+        finally
+        {
+            loc.setImageURL(imageWas);
+        }
+    }
+
+    /**
      * A train with no saved speed preset has nothing to apply: the menu item is grayed and says why.
      *
      * MUTATION: drop the `getPreferredSpeed() < 1` test in `RightClickMenuListener`, and this fails.
