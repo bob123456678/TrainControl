@@ -26,16 +26,16 @@ public class testSignalsAreGrayInTheAutonomyEditor
 
     private static support.FrozenEditor frozen;
 
-    @BeforeClass
-    public static void open() throws Exception
-    {
-        frozen = support.FrozenEditor.open();
-    }
-
     @AfterClass(alwaysRun = true)
     public static void close() throws Exception
     {
         if (frozen != null) frozen.close();
+    }
+
+    @BeforeClass
+    public static void open() throws Exception
+    {
+        frozen = support.FrozenEditor.open();
     }
 
     /**
