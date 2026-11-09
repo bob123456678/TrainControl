@@ -103,11 +103,13 @@ refuses it too. A train turns around at a reversing square or a terminus on its 
 
 ---
 
-**Known limit: in non-atomic mode the diagram's right-click menu can offer a train no destinations**
-where the Locomotive commands panel offers several (OB-164, MT-087). The menu gates on the one locomotive being on a
-run, the panel on the whole railway running, and the state that separates them was never reproduced. Adam: *"The user
-can rely on full autonomy
-or the panels to send trains more clearly."* Accepted as it stands.
+**The diagram's right-click menu offers a standing train its destinations while another train is out**, as the
+train's Auto tab card does (FR-187; this ends the known limit OB-164 recorded). The menu and the hand send ask one
+question, `RunGates.mayBeSentByHandNow`: no destinations while autonomy, a timetable or Return Home runs or plans, nor
+for a train that is out itself; a train sent by hand elsewhere, or a Graceful Stop waiting for trains, does not stop
+them. The send asks it again at the click, so a destination offered before Start or Return Home began sends nothing
+once they have, and says to wait for the trains. No setup edit is offered during any run; Is Active pauses the train
+alone while a run holds the setup, as the card's button does. `ui.testAStandingTrainIsSentWhileAnotherRuns`.
 
 ---
 

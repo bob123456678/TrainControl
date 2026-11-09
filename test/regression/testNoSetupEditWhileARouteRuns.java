@@ -55,8 +55,8 @@ public class testNoSetupEditWhileARouteRuns
     private static final String WAIT = "autolayout.ui.errorWaitForActiveLocomotivesToStop";
 
     /**
-     * The track diagram's right-click menu leaves out Place, Remove, Is Active, the Facing menu and Autonomy Setup while
-     * a route runs, and offers them at rest - Start Autonomy and Edit Locomotive, which are not setup edits, both times.
+     * The track diagram's right-click menu leaves out Place, Remove, the Facing menu and Autonomy Setup while a route
+     * runs, and offers them at rest - Start Autonomy, Is Active and Edit Locomotive, which are not setup edits, both times.
      *
      * MUTATION: ask `isAutonomyBusy` alone for any of them again, and this fails naming it.
      */
@@ -91,7 +91,6 @@ public class testNoSetupEditWhileARouteRuns
 
             setupItems.put("Place", I18n.f("layout.ui.menuPlaceLocomotive", active));
             setupItems.put("Remove", I18n.f("layout.ui.menuRemoveLocomotive", train));
-            setupItems.put("Is Active", I18n.f("autolayout.ui.menuLocomotiveActive", train));
             setupItems.put("Segment Length", I18n.t("autosetup.ui.menuSetLength"));
 
             // Change Direction and the other items about the train (FR-181)
@@ -139,6 +138,10 @@ public class testNoSetupEditWhileARouteRuns
             assertTrue(running.contains(I18n.t("autosetup.ui.menuStationSettings")), "no read-only Station Settings while a"
                 + " route runs: " + running);
 
+            // Is Active pauses the train alone while a route runs, as its Auto tab card does (D30)
+            assertTrue(running.contains(I18n.f("autolayout.ui.menuLocomotiveActive", train)), "no Is Active while a"
+                + " route runs: " + running);
+
             // And Edit Locomotive, whose Save refuses the setup's part during a run (Adam: "there should always be an
             // edit loc")
             assertTrue(running.contains(I18n.f("autolayout.ui.menuEditLocomotive", train)), "no Edit Locomotive while a"
@@ -146,6 +149,72 @@ public class testNoSetupEditWhileARouteRuns
         }
         finally
         {
+            closeDown(ui, sandbox, folderWas);
+        }
+    }
+
+    /**
+     * Is Active on the diagram's menu while a route runs pauses the train alone, as its Auto tab card's button does, and
+     * the setup stays as it was (D30).
+     *
+     * MUTATION: leave Is Active off the menu while a run holds the setup, or have it go through `setLocomotiveActive`,
+     * and this fails.
+     */
+    @Test
+    public void testIsActiveWhileARouteRunsPausesTheTrainAlone() throws Exception
+    {
+        if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
+
+        support.LayoutSandbox sandbox = null;
+
+        TrainControlUI ui = null;
+
+        String folderWas = TrainControlUI.getPrefs().get(TrainControlUI.LAST_USED_FOLDER, null);
+
+        org.traincontrol.base.Locomotive train = null;
+
+        try
+        {
+            sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+            ui = openTheWindow();
+
+            final AutonomySession session = ui.getAutonomySession();
+            final Point standing = aStandingTrain(ui);
+            final TileKey square = session.getStationIndex().squareOf(standing.getName());
+
+            train = standing.getCurrentLocomotive();
+
+            assertFalse(train.isAutonomyPaused(), "precondition: " + train.getName() + " is paused");
+
+            final String before = session.snapshotSetup().toString();
+
+            aRouteRuns(ui, true);
+
+            try
+            {
+                final JMenuItem active = itemCalled(diagramMenu(ui, square, standing),
+                    I18n.f("autolayout.ui.menuLocomotiveActive", train.getName()));
+
+                assertNotNull(active, "the right-click menu offers no Is Active while a route runs");
+
+                SwingUtilities.invokeAndWait(active::doClick);
+
+                Components.drain(2);
+            }
+            finally
+            {
+                aRouteRuns(ui, false);
+            }
+
+            assertTrue(train.isAutonomyPaused(), "unticking Is Active while a route runs did not pause the train");
+
+            assertEquals(session.snapshotSetup().toString(), before, "Is Active while a route runs edited the setup");
+        }
+        finally
+        {
+            if (train != null) train.setAutonomyPaused(false);
+
             closeDown(ui, sandbox, folderWas);
         }
     }

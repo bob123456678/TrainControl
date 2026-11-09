@@ -160,16 +160,10 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
 
         if (running == null) return null;
 
-        if (ui.isAutonomyBusy()) return null;
-
-        if (!current.isDestination() && current.getCurrentLocomotive() == null) return null;
-
         Locomotive locomotive = current.getCurrentLocomotive();
 
-        if (locomotive == null) return null;
-
-        // If we want to view paths, locomotive must not be running: a per-locomotive gate (OB-164).
-        if (running.getActiveLocomotives().containsKey(locomotive)) return null;
+        // Per train, as its Auto tab card: another train sent by hand does not hide this one's (FR-187)
+        if (locomotive == null || !RunGates.mayBeSentByHandNow(ui, running, locomotive)) return null;
 
         List<List<Edge>> paths = withoutGoingNowhere(ui, running.getPossiblePaths(locomotive, true));
 
@@ -316,98 +310,9 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
                 // side can still hold a train placed by hand.
                 if (current != null && (current.isDestination() || current.getCurrentLocomotive() != null))
                 {
-                    // Get the locomotive at this station
                     Locomotive locomotive = current.getCurrentLocomotive();
 
-                    // If we want to view paths, locomotive must not be running
-                    //
-                    // A per-locomotive gate, where AutoLocomotiveStatus asks isAutoRunning() about the whole layout, so
-                    // the two disagree, by design (OB-164).  The answer is the one gathered for this train: equality
-                    // says it is about the locomotive standing here now.
-                    if (locomotive != null && options != null && locomotive.equals(options.locomotive))
-                    {
-                        List<List<Edge>> paths = options.shown;
-
-
-                        List<List<Edge>> otherPaths = options.other;
-
-                        if (!paths.isEmpty())
-                        {
-                            addSeparator();
-
-                            // Show the locomotive name for reference
-                            menuItem = new JMenuItem(locomotive.getName());
-                            menuItem.setEnabled(false);
-                            add(menuItem);
-                        }
-
-                        // Counted rather than measured off the menu, which also holds other items.
-                        int shown = 0;
-
-                        for (List<Edge> path : paths)
-                        {
-                            add(destinationItem(ui, options.railway, path, locomotive));
-
-                            // The way through whenever there were more destinations than fitted (FR-058); comparing
-                            // against `shown` alone would fire on essentially every right-click.
-                            if (++shown >= Math.min(MAX_PATHS, paths.size())
-                                && theListWasCutShort(paths.size() + otherPaths.size(), shown,
-                                    otherPaths.size()))
-                            {
-                                menuItem = new JMenuItem("...");
-                                menuItem.addActionListener(event -> 
-                                {
-                                    try
-                                    {
-                                        ui.jumpToAutonomyLocTab();
-                                    }
-                                    catch (Exception e)
-                                    {
-                                        JOptionPane.showMessageDialog(ui.dialogParent(), e.getMessage());
-                                    }
-                                });    
-
-                                add(menuItem);
-                                break;
-                            }
-                        }
-
-                        // More Destinations (FR-058) holds everything valid but not automatic: a reversing point, and a
-                        // square marked as not an automatic destination ("filtering at selection, never refusing at
-                        // execution").  A terminus is not here (a non-reversible train may back into one); nor is an
-                        // excluded square.  Uncapped: Swing gives an over-tall JMenu no scroller, so a railway
-                        // exceeding a screen would want one rather than a second ellipsis.
-                        if (!otherPaths.isEmpty())
-                        {
-                            // The heading, when the top-level list did not add it, so no bare "More Destinations".
-                            if (paths.isEmpty())
-                            {
-                                addSeparator();
-
-                                javax.swing.JMenuItem whose =
-                                    new javax.swing.JMenuItem(locomotive.getName());
-
-                                whose.setEnabled(false);
-
-                                add(whose);
-                            }
-
-                            javax.swing.JMenu more =
-                                new javax.swing.JMenu(I18n.t("autolayout.ui.menuMoreDestinations"));
-
-                            for (List<Edge> path : otherPaths)
-                            {
-                                more.add(destinationItem(ui, options.railway, path, locomotive));
-                            }
-
-                            add(more);
-
-                        }
-
-                        // There is no second way out: the item is decided in ONE place, the loop above through
-                        // `theListWasCutShort`, and `regression.testTheDestinationDoorsAgree` asserts there is only
-                        // one.
-                    }
+                    addDestinations(locomotive, options);
 
                     addSeparator();
 
@@ -421,21 +326,7 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
 
                     // THE TRAIN'S OWN ITEMS and Station Settings, then the hand doors behind a divider: Edit <loc> is
                     // never in a group with the autonomy items (FR-182).
-                    if (locomotive != null && !ui.aRunHoldsTheSetup())
-                    {
-                        final Locomotive standing = locomotive;
-
-                        // Whether it runs (FR-117): only at rest; while trains run the Auto tab's pause button says the same.
-                        final javax.swing.JCheckBoxMenuItem active = new javax.swing.JCheckBoxMenuItem(
-                            I18n.f("autolayout.ui.menuLocomotiveActive", standing.getName()),
-                            !standing.isAutonomyPaused());
-
-                        active.setToolTipText(I18n.t("autolayout.ui.hintLocomotiveActive"));
-
-                        active.addActionListener(event -> setActive(standing, active.isSelected()));
-
-                        add(active);
-                    }
+                    if (locomotive != null) addActive(locomotive);
 
                     if (!ui.aRunHoldsTheSetup()) ui.addAutonomyFacingItems(this, here);
 
@@ -542,32 +433,24 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
 
                 add(menuItem);
 
-                addWhileRunning();
+                addWhileRunning(options);
             }
         }
     }
 
     /**
-     * Whether the train standing here runs, as its Auto tab card does (FR-059), and both windows, read-only.  Asks the
-     * Point what stands on it, which takes no monitor.
+     * The standing train's destinations where it may still be sent by hand (FR-187), whether it runs, as its Auto tab
+     * card does (FR-059), and both windows, read-only.  Asks the Point what stands on it, which takes no monitor.
      */
-    private void addWhileRunning()
+    private void addWhileRunning(PathOptions options)
     {
         Point current = ui.getAutonomyPointForTile(station != null ? station : here);
 
         final Locomotive train = current == null ? null : current.getCurrentLocomotive();
 
-        if (train != null)
-        {
-            final javax.swing.JCheckBoxMenuItem active = new javax.swing.JCheckBoxMenuItem(
-                I18n.f("autolayout.ui.menuLocomotiveActive", train.getName()), !train.isAutonomyPaused());
+        if (addDestinations(train, options)) addSeparator();
 
-            active.setToolTipText(I18n.t("autolayout.ui.hintLocomotiveActive"));
-
-            active.addActionListener(event -> ui.pauseTrainWhileRunning(train, !active.isSelected()));
-
-            add(active);
-        }
+        if (train != null) addActive(train);
 
         JMenuItem trainWindow = train == null ? null : ui.trainWindowItem(here);
         JMenuItem settings = ui.stationSettingsItem(here);
@@ -588,6 +471,66 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
 
             add(settings);
         }
+    }
+
+    /**
+     * The standing train's destinations under its name, from the answer gathered for it (equality says it is about the
+     * train standing here now); true when it added any.
+     */
+    private boolean addDestinations(Locomotive locomotive, PathOptions options)
+    {
+        if (locomotive == null || options == null || !locomotive.equals(options.locomotive)
+            || options.shown.isEmpty() && options.other.isEmpty()) return false;
+
+        addSeparator();
+
+        JMenuItem whose = new JMenuItem(locomotive.getName());
+        whose.setEnabled(false);
+        add(whose);
+
+        // Counted rather than measured off the menu, which also holds other items.
+        int shown = 0;
+
+        for (List<Edge> path : options.shown)
+        {
+            add(destinationItem(ui, options.railway, path, locomotive));
+
+            // The way through whenever there were more destinations than fitted (FR-058), decided here alone
+            if (++shown >= Math.min(MAX_PATHS, options.shown.size())
+                && theListWasCutShort(options.shown.size() + options.other.size(), shown, options.other.size()))
+            {
+                JMenuItem rest = new JMenuItem("...");
+                rest.addActionListener(event -> ui.jumpToAutonomyLocTab());
+                add(rest);
+                break;
+            }
+        }
+
+        // More Destinations (FR-058): everything valid but not automatic, such as a reversing point or a square marked
+        // as no automatic destination.  Uncapped: Swing gives an over-tall JMenu no scroller.
+        if (!options.other.isEmpty())
+        {
+            javax.swing.JMenu more = new javax.swing.JMenu(I18n.t("autolayout.ui.menuMoreDestinations"));
+
+            for (List<Edge> path : options.other) more.add(destinationItem(ui, options.railway, path, locomotive));
+
+            add(more);
+        }
+
+        return true;
+    }
+
+    /** The Is Active tick (FR-117), as the train's Auto tab card has it. */
+    private void addActive(final Locomotive train)
+    {
+        final javax.swing.JCheckBoxMenuItem active = new javax.swing.JCheckBoxMenuItem(
+            I18n.f("autolayout.ui.menuLocomotiveActive", train.getName()), !train.isAutonomyPaused());
+
+        active.setToolTipText(I18n.t("autolayout.ui.hintLocomotiveActive"));
+
+        active.addActionListener(event -> setActive(train, active.isSelected()));
+
+        add(active);
     }
 
     /**
@@ -991,14 +934,13 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
     }
 
     /**
-     * The Is Active tick (FR-117), asked again at the click as Edit Locomotive is: a run may have started since the
-     * menu opened.
+     * The Is Active tick (FR-117), decided at the click: while a run holds the setup it pauses the train alone, as the
+     * card's button does (FR-187); at rest the setup records it.
      */
     private void setActive(Locomotive train, boolean active)
     {
-        if (refusedWhileRunning()) return;
-
-        ui.setLocomotiveActive(session, train, active);
+        if (ui.aRunHoldsTheSetup()) ui.pauseTrainWhileRunning(train, !active);
+        else ui.setLocomotiveActive(session, train, active);
     }
 
     /**
