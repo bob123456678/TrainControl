@@ -61,6 +61,10 @@ public final class StationSettingsWindow extends StationWindowBase
     private static final Color GRAY_ICON = new Color(170, 170, 170);
     private static final Font REGULAR = new Font("Segoe UI", Font.PLAIN, 14);
 
+    /** How to set every station where a blank, which leaves them as they are, cannot. */
+    private static final String LENGTH_BLANK = "autosetup.ui.stationMixedLengthTip";
+    private static final String PRIORITY_BLANK = "autosetup.ui.stationMixedPriorityTip";
+
     private static final int NEVER = 0;
     private static final int MAY = 1;
     private static final int MUST = 2;
@@ -486,6 +490,7 @@ public final class StationSettingsWindow extends StationWindowBase
 
         typedRow("autosetup.ui.stationMaxLength", "maxLength", maxLength, leftAligned(maxLength), stopSection,
             this::maxLengthInStore, (each, typed) -> editor.applyNumber(each, "maxTrainLength", blankIsZero(typed), 0));
+        mixedMarks.get(maxLength).setToolTipText(AutonomyEditorPanel.wrapped(mixedTip(LENGTH_BLANK)));
 
         rowOf("autosetup.ui.menuArrivalsGroup", "arrivals", arrivals, null, stopSection);
         perStation.addAll(rowsFrom(row - 1));
@@ -536,6 +541,7 @@ public final class StationSettingsWindow extends StationWindowBase
 
         typedRow("autosetup.ui.stationPriority", "priority", priority, leftAligned(priority), otherControls,
             this::priorityInStore, (each, typed) -> editor.applyNumber(each, "priority", blankIsZero(typed), 0));
+        mixedMarks.get(priority).setToolTipText(AutonomyEditorPanel.wrapped(mixedTip(PRIORITY_BLANK)));
 
         JPanel speedRow = leftAligned(speed);
 
@@ -983,7 +989,7 @@ public final class StationSettingsWindow extends StationWindowBase
 
         Integer length = agreed(each -> editor.number(each, "maxTrainLength", 0));
 
-        fly("maxLength", length == null ? mixedTip() : StationFlyovers.maxLength(length));
+        fly("maxLength", length == null ? mixedTip(LENGTH_BLANK) : StationFlyovers.maxLength(length));
 
         if (!many)
         {
@@ -1009,7 +1015,7 @@ public final class StationSettingsWindow extends StationWindowBase
 
         Integer rank = agreed(each -> editor.number(each, "priority", 0));
 
-        fly("priority", rank == null ? mixedTip() : StationFlyovers.priority(rank));
+        fly("priority", rank == null ? mixedTip(PRIORITY_BLANK) : StationFlyovers.priority(rank));
 
         showTyped(speed);
 
@@ -1076,6 +1082,11 @@ public final class StationSettingsWindow extends StationWindowBase
     private static String mixedTip()
     {
         return I18n.t("autosetup.ui.stationMixedTip");
+    }
+
+    private static String mixedTip(String blankKey)
+    {
+        return mixedTip() + "  " + I18n.t(blankKey);
     }
 
     /** Leaves none of a row's radios chosen, which a group allows only by being told. */

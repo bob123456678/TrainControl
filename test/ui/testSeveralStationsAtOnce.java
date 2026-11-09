@@ -287,6 +287,56 @@ public class testSeveralStationsAtOnce
     }
 
     /**
+     * A blank Enter leaves a length or priority they differ on as each has it, where before it cleared them all, so the
+     * triangle and the row's (i) say how to set them all instead: 0 for any length, 0 for the default priority.
+     *
+     * MUTATION: give the two fields' triangles and flyovers the plain `mixedTip()`, and this fails.
+     */
+    @Test(timeOut = 120000)
+    public void testABlankLeavesThemAloneAndTheTipSaysHowToClearThem() throws Exception
+    {
+        List<TileKey> two = stations(2);
+
+        Components.onTheEventThread(() ->
+        {
+            session.setPointProperty(two.get(0), "maxTrainLength", 10);
+            session.setPointProperty(two.get(1), "maxTrainLength", 20);
+            session.setPointProperty(two.get(0), "priority", 1);
+            session.setPointProperty(two.get(1), "priority", 2);
+
+            return null;
+        });
+
+        StationSettingsWindow window = pick(two);
+
+        Components.onTheEventThread(() -> { window.openAdvancedForTest(); return null; });
+
+        StationDoors.current(window);
+
+        String[][] fields = {{"maxLength", "autosetup.ui.stationMixedLengthTip"},
+            {"priority", "autosetup.ui.stationMixedPriorityTip"}};
+
+        for (String[] field : fields)
+        {
+            String how = I18n.t(field[1]);
+
+            javax.swing.JLabel triangle = StationDoors.part(window, "station." + field[0] + "Mixed", javax.swing.JLabel.class);
+
+            assertTrue(on(triangle::isShowing), "precondition: no triangle beside " + field[0]);
+            assertTrue(on(triangle::getToolTipText).contains(how), field[0] + "'s triangle does not say how to set them all: "
+                + on(triangle::getToolTipText));
+            assertTrue(on(() -> window.flyoverForTest(field[0])).contains(how), field[0] + "'s (i) does not say how to set"
+                + " them all");
+        }
+
+        String before = setup();
+
+        StationDoors.typeAndEnter(window, "station.priority", "");
+
+        assertEquals(setup(), before, "a blank Enter on the priority they differ on wrote to the stations");
+    }
+
+    /**
      * A field the stations disagree on is blank beside a warning triangle, and nothing is written to it unless the user
      * changes it; a change to another field leaves it as each station has it.
      *
