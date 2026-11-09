@@ -18,10 +18,10 @@ import support.StandInStation;
 import support.TcpStation;
 
 /**
- * TCP is for a CS3 the start-up sync found, unless "Use UDP Only" is set; everything else runs on UDP as before
+ * TCP is for a CS3 the start-up sync found; everything else runs on UDP as before
  * (FR-186).  The CS2 requests, the CS2 sync and the CS3 sync goldens run unchanged with a `support.TcpStation`
  * offered: their start-up sync finds no station, so no model may connect, and each still matches its golden.  A CS2
- * found at start-up never connects, and its proxy has no TCP listener; a CS3 connects, unless the preference is on.
+ * found at start-up never connects, and its proxy has no TCP listener; a CS3 connects.
  * And over TCP the station receives exactly the frames the program handed the network, byte for byte and in order:
  * the bytes `testUdpMessagesReachTheWire` shows a datagram carries.
  *
@@ -72,32 +72,20 @@ public class testTheGoldensHoldOverTcp
         }
     }
 
-    /** Runs a rig whose start-up sync reaches a stand-in with "Use UDP Only" set as given, and puts the setting back. */
-    private static void startedAgainst(java.util.function.BiFunction<String, Integer, byte[]> answer, boolean udpOnly,
+    /** Runs a rig whose start-up sync reaches a stand-in. */
+    private static void startedAgainst(java.util.function.BiFunction<String, Integer, byte[]> answer,
         TcpStation station, java.util.function.Consumer<support.StationRig> check) throws Exception
     {
-        java.util.prefs.Preferences prefs = org.traincontrol.gui.TrainControlUI.getPrefs();
-        String key = org.traincontrol.gui.TrainControlUI.UDP_ONLY_PREF;
-        String was = prefs.get(key, null);
-        prefs.putBoolean(key, udpOnly);
-
-        try
+        TcpStation.forSimulations(station.port(), () ->
         {
-            TcpStation.forSimulations(station.port(), () ->
+            try (support.StationRig rig = new support.StationRig(Files.createTempDirectory("tc-tcp-start").toFile(),
+                answer, false, true))
             {
-                try (support.StationRig rig = new support.StationRig(Files.createTempDirectory("tc-tcp-start").toFile(),
-                    answer, false, true))
-                {
-                    check.accept(rig);
-                }
+                check.accept(rig);
+            }
 
-                return null;
-            });
-        }
-        finally
-        {
-            if (was == null) prefs.remove(key); else prefs.put(key, was);
-        }
+            return null;
+        });
     }
 
     private static Object proxyField(support.StationRig rig, String name) throws Exception
@@ -123,7 +111,7 @@ public class testTheGoldensHoldOverTcp
         try (TcpStation station = new TcpStation())
         {
             startedAgainst((path, n) -> path.equals("/config/geraet.vrs") ? testACS2RequestsAreAsBefore.CS2_DEVICE
-                : StandInStation.file(served.getPath() + path), false, station, rig ->
+                : StandInStation.file(served.getPath() + path), station, rig ->
             {
                 try
                 {
@@ -142,23 +130,6 @@ public class testTheGoldensHoldOverTcp
     }
 
     /**
-     * With "Use UDP Only" set, a CS3 is not connected to over TCP.
-     *
-     * MUTATION: in `MarklinControlStation.init`, take out the `UDP_ONLY_PREF` condition.
-     */
-    @Test(timeOut = 120000)
-    public void testUseUdpOnlyKeepsACS3OnUdp() throws Exception
-    {
-        try (TcpStation station = new TcpStation())
-        {
-            startedAgainst(StandInStation.cs3("260", CS3_INFO), true, station, rig ->
-                assertTrue(rig.model.isCS3() && rig.model.getNetworkCommState(), "precondition: no CS3 synced"));
-
-            assertEquals(station.connections(), 0, "a CS3 was connected to over TCP with Use UDP Only set");
-        }
-    }
-
-    /**
      * A CS3 whose start-up sync failed is not connected to over TCP: it runs as an unconnected station does.  The
      * stand-in says it is a CS3 and then answers nothing more.
      *
@@ -172,7 +143,7 @@ public class testTheGoldensHoldOverTcp
         try (TcpStation station = new TcpStation())
         {
             startedAgainst((path, n) -> path.equals("/config/geraet.vrs") || path.equals("/app/api/info")
-                ? cs3.apply(path, n) : null, false, station, rig ->
+                ? cs3.apply(path, n) : null, station, rig ->
                 assertTrue(rig.model.isCS3() && !rig.model.getNetworkCommState(), "precondition: the sync did not fail"));
 
             assertEquals(station.connections(), 0, "a CS3 whose sync failed was connected to over TCP");
@@ -180,7 +151,7 @@ public class testTheGoldensHoldOverTcp
     }
 
     /**
-     * Without it, a CS3 found at start-up is connected to over TCP.
+     * A CS3 found at start-up is connected to over TCP.
      *
      * MUTATION: in `MarklinControlStation.init`, take out `proxy.connectOverTcp(...)`.
      */
@@ -189,7 +160,7 @@ public class testTheGoldensHoldOverTcp
     {
         try (TcpStation station = new TcpStation())
         {
-            startedAgainst(StandInStation.cs3("260", CS3_INFO), false, station, rig ->
+            startedAgainst(StandInStation.cs3("260", CS3_INFO), station, rig ->
                 assertTrue(Components.waitFor(() -> station.connections() == 1, 5000), "a CS3 was not connected to over TCP"));
         }
     }
