@@ -201,32 +201,41 @@ public class StationCaption extends JLabel
 
             java.awt.FontMetrics fm = g2.getFontMetrics(getFont());
 
-            java.awt.Insets in = getInsets();
+            java.awt.Rectangle place = new java.awt.Rectangle();
 
-            java.awt.Rectangle view = new java.awt.Rectangle(in.left, in.top, getWidth() - in.left - in.right,
-                getHeight() - in.top - in.bottom);
-
-            java.awt.Rectangle icon = new java.awt.Rectangle(), place = new java.awt.Rectangle();
-
-            // where JLabel's own painter puts the text, and what of it fits
-            String shown = javax.swing.SwingUtilities.layoutCompoundLabel(this, fm, text, getIcon(), getVerticalAlignment(),
-                getHorizontalAlignment(), getVerticalTextPosition(), getHorizontalTextPosition(), view, icon, place,
-                getIconTextGap());
+            String shown = layOut(fm, text, place);
 
             if (shown == null || shown.isEmpty()) return;
 
-            java.awt.Shape letters = new java.awt.font.TextLayout(shown, getFont(), g2.getFontRenderContext())
-                .getOutline(java.awt.geom.AffineTransform.getTranslateInstance(place.x, place.y + fm.getAscent()));
-
-            g2.setColor(AddressLabel.HALO);
-            g2.setStroke(new java.awt.BasicStroke(haloWidth(), java.awt.BasicStroke.CAP_ROUND,
-                java.awt.BasicStroke.JOIN_ROUND));
-            g2.draw(letters);
+            drawHalo(g2, new java.awt.font.TextLayout(shown, getFont(), g2.getFontRenderContext())
+                .getOutline(java.awt.geom.AffineTransform.getTranslateInstance(place.x, place.y + fm.getAscent())));
         }
         finally
         {
             g2.dispose();
         }
+    }
+
+    /** Where JLabel's own painter puts the text, into `place`, and what of the text fits. */
+    private String layOut(java.awt.FontMetrics fm, String text, java.awt.Rectangle place)
+    {
+        java.awt.Insets in = getInsets();
+
+        java.awt.Rectangle view = new java.awt.Rectangle(in.left, in.top, getWidth() - in.left - in.right,
+            getHeight() - in.top - in.bottom);
+
+        return javax.swing.SwingUtilities.layoutCompoundLabel(this, fm, text, getIcon(), getVerticalAlignment(),
+            getHorizontalAlignment(), getVerticalTextPosition(), getHorizontalTextPosition(), view,
+            new java.awt.Rectangle(), place, getIconTextGap());
+    }
+
+    /** The halo itself: the letters' outline, stroked wide in the halo's color. */
+    private void drawHalo(Graphics2D g2, java.awt.Shape letters)
+    {
+        g2.setColor(AddressLabel.HALO);
+        g2.setStroke(new java.awt.BasicStroke(haloWidth(), java.awt.BasicStroke.CAP_ROUND,
+            java.awt.BasicStroke.JOIN_ROUND));
+        g2.draw(letters);
     }
 
     /** The halo round writing set as HTML: each line outlined where the HTML view draws it. */
@@ -246,17 +255,10 @@ public class StationCaption extends JLabel
 
             java.awt.FontMetrics fm = g2.getFontMetrics(getFont());
 
-            java.awt.Insets in = getInsets();
-
-            java.awt.Rectangle viewR = new java.awt.Rectangle(in.left, in.top, getWidth() - in.left - in.right,
-                getHeight() - in.top - in.bottom);
-
-            java.awt.Rectangle icon = new java.awt.Rectangle(), place = new java.awt.Rectangle();
+            java.awt.Rectangle place = new java.awt.Rectangle();
 
             // where JLabel's own painter puts the view
-            javax.swing.SwingUtilities.layoutCompoundLabel(this, fm, text, getIcon(), getVerticalAlignment(),
-                getHorizontalAlignment(), getVerticalTextPosition(), getHorizontalTextPosition(), viewR, icon, place,
-                getIconTextGap());
+            layOut(fm, text, place);
 
             javax.swing.text.Document document = view.getDocument();
 
@@ -296,10 +298,7 @@ public class StationCaption extends JLabel
                 start = end + 1;
             }
 
-            g2.setColor(AddressLabel.HALO);
-            g2.setStroke(new java.awt.BasicStroke(haloWidth(), java.awt.BasicStroke.CAP_ROUND,
-                java.awt.BasicStroke.JOIN_ROUND));
-            g2.draw(letters);
+            drawHalo(g2, letters);
         }
         catch (javax.swing.text.BadLocationException e)
         {
