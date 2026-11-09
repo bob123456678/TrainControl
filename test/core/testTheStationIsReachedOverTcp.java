@@ -202,10 +202,10 @@ public class testTheStationIsReachedOverTcp
         return connect(STATION, port);
     }
 
-    /** A frame as the station would send it: a sensor event, from device 0, so never asked for. */
+    /** A sensor frame as the station would send it, of no change (another program's answer), so never asked for. */
     private static byte[] sensor(int contact, boolean occupied)
     {
-        return Packets.s88(contact, occupied).getRawMessage();
+        return answer(0, contact, occupied);
     }
 
     /** A sensor event from the Link S88, whose contacts a resync asks. */
@@ -231,12 +231,9 @@ public class testTheStationIsReachedOverTcp
             new byte[] {(byte) (device >> 8), (byte) device, (byte) (contact >> 8), (byte) contact}).getRawMessage();
     }
 
-    /** A station's answer to a query: old and new state both the current one. */
     private static byte[] answer(int device, int contact, boolean occupied)
     {
-        byte s = (byte) (occupied ? 1 : 0);
-        return new CS2Message(CS2Message.CMD_ACC_SENSOR, 0x7b34, true, new byte[]
-            {(byte) (device >> 8), (byte) device, (byte) (contact >> 8), (byte) contact, s, s, 0, 0}).getRawMessage();
+        return TcpStation.answer(device, contact, occupied);
     }
 
     private static byte[] ping(int tag)
@@ -709,35 +706,202 @@ public class testTheStationIsReachedOverTcp
     }
 
     /**
-     * Only a contact whose device an event showed is asked, and only on a device that answers truly: not device 0, not
-     * device 1 (the CS3 answers those itself, "occupied" for all), not a contact the model knows with no event, and
-     * not on a device an answer named rather than an event.
+     * A contact is asked only at the device a real event, a change of state, showed for it, whatever that device's
+     * number (OB-418): devices vary by station.  A device that never sent a change is never asked: not for a contact
+     * the model knows with no event, nor for one only an answer named (on Adam's CS3, the station's own false
+     * "occupied" for device 1), nor at a device an answer named rather than an event.
      *
-     * MUTATION: in `NetworkProxy.deliverTcp`, `marked(model.createMessage(frame), answer)` to
-     * `marked(model.createMessage(frame), false)`.  And: in `NetworkProxy`, `FIRST_QUERIED_DEVICE = 2` to `= 0`.  And: in `NetworkProxy.resync`,
-     * `this.sensorDevice.get(contact)` to `this.sensorDevice.getOrDefault(contact, FIRST_QUERIED_DEVICE)`.  And: in
-     * `NetworkProxy.learn`, take out `|| frame[9] == frame[10]`.
+     * MUTATION: in `NetworkProxy.deliverTcp`, `marked(model.createMessage(frame), heard)` to
+     * `marked(model.createMessage(frame), Heard.FRAME)`.  And: in `NetworkProxy.askOnce`, `if (device == null)` to
+     * `if (device == null || device < 2)`.  And: there, `this.sensorDevice.get(contact)` to
+     * `this.sensorDevice.getOrDefault(contact, 2)`.  And: in `NetworkProxy.learn`, `if (frame[9] != frame[10])` to
+     * `if (true)`.
      */
     @Test(timeOut = 30000)
-    public void testOnlySensorsSeenOnATruthfulDeviceAreAsked() throws Exception
+    public void testOnlyADeviceAnEventShowedIsAsked() throws Exception
     {
         connectedToASilentStation();
         this.model.alsoKnown.add(1304);
 
         this.station.sensor(1301, true);
-        this.station.send(sensor(1302, true));
+        this.station.send(TcpStation.event(0, 1302, true));
         this.station.send(TcpStation.event(1, 1303, true));
+        this.station.send(answer(1, 1305, true));
         this.station.send(answer(1, 1301, true));
-        assertTrue(Components.waitFor(() -> this.model.heard.size() == 4, WAIT_MS), "precondition: not carried");
+        assertTrue(Components.waitFor(() -> this.model.heard.size() == 5, WAIT_MS), "precondition: not carried");
 
-        droppedAndResynced(1, 1, 3);
+        droppedAndResynced(3, 1, 2);
 
         assertTrue(Components.waitFor(() -> this.model.heardFrame(answer(TcpStation.LINK_S88, 1301, true)), WAIT_MS),
             "the Link S88's contact was not asked over the new connection");
-        assertEquals(this.station.queries().size(), 1, "other queries reached the station");
         assertEquals(this.model.resyncAnswers.get(), 1, "the station's answer was not marked as the resync's, or the "
             + "device 1 frame was");
-        assertEquals(Arrays.toString(this.station.queries().get(0)), "[2, 1301]", "the query is not for 2/1301");
+        assertEquals(asked(), "[[0, 1302], [1, 1303], [2, 1301]]", "the queries are not each contact at its device");
+    }
+
+    /**
+     * A CS3 reached over UDP, as when it refuses TCP, learns its contacts' devices from events too, and a sync asks
+     * them over UDP and logs its own line (OB-418).
+     *
+     * MUTATION: in `NetworkProxy.connectOverTcp`, take out `this.learnsDevices = true;`.
+     */
+    @Test(timeOut = 30000)
+    public void testACS3OnUdpIsAskedOverUdp() throws Exception
+    {
+        try (DatagramSocket wire = udpWire())
+        {
+            Thread syncing = syncingOverUdp(wire, 1901);
+            broadcast(answer(TcpStation.LINK_S88, 1901, false));
+            syncing.join(WAIT_MS);
+
+            assertTrue(this.model.lines.contains(I18n.f("network.sensorsSynced", 1, 1, 0)),
+                "the sync did not log 1 asked, 1 answered: " + this.model.lines);
+            assertEquals(this.model.lastState(1901), Boolean.FALSE, "the answer did not reach the model");
+        }
+    }
+
+    /**
+     * A proxy on UDP, TCP refused, that has heard the contact occupied from the Link S88, syncing on a thread of its
+     * own, which has just asked the contact over UDP.
+     */
+    private Thread syncingOverUdp(DatagramSocket wire, int contact) throws Exception
+    {
+        connect(STATION, TcpStation.closedPort());
+        assertTrue(logged("network.tcpUnavailable", WAIT_MS), "precondition: TCP was taken: " + this.model.lines);
+
+        byte[] event = linkS88(contact, true);
+        broadcast(event);
+        assertTrue(Components.waitFor(() -> this.model.heardFrame(event), WAIT_MS), "precondition: not heard");
+
+        Thread syncing = new Thread(this.proxy::syncSensors, "tcp-claim-sync");
+        syncing.start();
+        assertTrue(Arrays.equals(nextOn(wire, WAIT_MS), query(TcpStation.LINK_S88, contact)),
+            "the contact was not asked over UDP: " + this.model.lines);
+        return syncing;
+    }
+
+    /** Broadcasts a frame of another contact after the others, and waits until it is heard, so they were read. */
+    private void allRead() throws Exception
+    {
+        byte[] marker = linkS88(1999, true);
+        broadcast(marker);
+        assertTrue(Components.waitFor(() -> this.model.heardFrame(marker), WAIT_MS), "the marker was not heard");
+    }
+
+    /**
+     * Over UDP a real event after the answer beats a copy of the answer that lands after it (the CS3 sends 2 to 4):
+     * the sensor ends at the event's state.
+     *
+     * MUTATION: in `NetworkProxy.learn`, `return older ? Heard.OVERTAKEN` to `return ours && older ? Heard.OVERTAKEN`.
+     */
+    @Test(timeOut = 30000)
+    public void testACopyOfTheAnswerAfterAnEventIsDropped() throws Exception
+    {
+        try (DatagramSocket wire = udpWire())
+        {
+            Thread syncing = syncingOverUdp(wire, 1902);
+            byte[] answer = answer(TcpStation.LINK_S88, 1902, true);
+            broadcast(answer);
+            broadcast(linkS88(1902, false));
+            broadcast(answer);
+            allRead();
+
+            assertEquals(this.model.lastState(1902), Boolean.FALSE, "the copy of the answer won over the later event: "
+                + this.model.states(1902));
+            syncing.join(WAIT_MS);
+        }
+    }
+
+    /**
+     * Over UDP a sync asks twice, as a resync does: a late copy of an older event that lands after the first query
+     * makes the first answer look older than it, and the second pass, half a second on, puts the sensor right.
+     *
+     * MUTATION: in `NetworkProxy.syncSensors`, `overTcp ? 1 : 2` to `1`.
+     */
+    @Test(timeOut = 30000)
+    public void testASyncOverUdpPutsRightALateCopyOfAnOlderEvent() throws Exception
+    {
+        try (DatagramSocket wire = udpWire())
+        {
+            Thread syncing = syncingOverUdp(wire, 1903);
+            broadcast(linkS88(1903, false));
+            broadcast(linkS88(1903, true));
+            broadcast(answer(TcpStation.LINK_S88, 1903, false));
+            allRead();
+
+            assertTrue(Arrays.equals(nextOn(wire, 1500), query(TcpStation.LINK_S88, 1903)),
+                "the contact was not asked a second time: " + this.model.lines);
+            broadcast(answer(TcpStation.LINK_S88, 1903, false));
+            syncing.join(WAIT_MS);
+
+            assertEquals(this.model.lastState(1903), Boolean.FALSE, "the late copy's state was left: "
+                + this.model.states(1903));
+        }
+    }
+
+    /**
+     * An answer counts as overtaken only shortly after the event that overtook it: a frame of no change long after an
+     * event, as the station sends when another program asks, is delivered as before.
+     *
+     * MUTATION: in `NetworkProxy.learn`, `System.nanoTime() - event < RESYNC_WAIT_NS` to `true`.
+     */
+    @Test(timeOut = 30000)
+    public void testAnOvertakenMarkLapses() throws Exception
+    {
+        try (DatagramSocket wire = udpWire())
+        {
+            syncingOverUdp(wire, 1904).join(WAIT_MS);
+            broadcast(linkS88(1904, false));
+            assertTrue(Components.waitFor(() -> this.model.heardFrame(linkS88(1904, false)), WAIT_MS),
+                "precondition: the event was not heard");
+
+            // Waiting is the point: the mark lapses RESYNC_WAIT_NS after the event
+            Components.waitFor(() -> false, 1200);
+            broadcast(answer(0, 1904, true));
+            allRead();
+
+            assertEquals(this.model.lastState(1904), Boolean.TRUE, "a frame long after the event was dropped");
+        }
+    }
+
+    /**
+     * A query the proxy could not write, the connection being replaced, is not counted as asked.
+     *
+     * MUTATION: in `NetworkProxy.askOnce`, `if (written) sent++;` to `sent++;`.
+     */
+    @Test(timeOut = 30000)
+    public void testAQueryNotWrittenIsNotCounted() throws Exception
+    {
+        connectedToASilentStation();
+        this.station.sensor(1905, true);
+        assertTrue(Components.waitFor(() -> this.model.heardFrame(linkS88(1905, true)), WAIT_MS), "precondition");
+
+        java.lang.reflect.Field replacing = NetworkProxy.class.getDeclaredField("replacing");
+        replacing.setAccessible(true);
+        replacing.setBoolean(this.proxy, true);
+
+        try
+        {
+            this.proxy.syncSensors();
+        }
+        finally
+        {
+            replacing.setBoolean(this.proxy, false);
+        }
+
+        assertTrue(this.model.lines.contains(I18n.f("network.sensorsSynced", 0, 0, 0)),
+            "a query not written was counted: " + this.model.lines);
+        assertTrue(this.station.queries().isEmpty(), "precondition: the query was written");
+    }
+
+    /** The queries the station received, as {device, contact}, sorted. */
+    private String asked()
+    {
+        TreeSet<String> out = new TreeSet<>();
+
+        for (int[] q : this.station.queries()) out.add(Arrays.toString(q));
+
+        return out.toString();
     }
 
     /** Whether, within WAIT_MS, `line` is logged after the line of `key`. */
@@ -756,7 +920,7 @@ public class testTheStationIsReachedOverTcp
      * asked by 0.8 s, not left wrong until a reconnect try fails; also when some of the first pass's queries go
      * unanswered, here four on a device the station does not have.
      *
-     * MUTATION: in `NetworkProxy.recover`, `resync(false, 2);` to `resync(false, 1);`.  And: in `NetworkProxy.resync`,
+     * MUTATION: in `NetworkProxy.recover`, `resync(false, 2);` to `resync(false, 1);`.  And: in `NetworkProxy.ask`,
      * `n + 1 < passes ? start + RESYNC_AGAIN_NS : 0` to `0` (the first pass waits out its unanswered queries).
      */
     @Test(timeOut = 30000)
@@ -968,7 +1132,7 @@ public class testTheStationIsReachedOverTcp
      * device: it never asks a sensor anything.
      *
      * MUTATION: in `NetworkProxy.deliverUdp`, `if (!this.udpLive)` to `if (!this.udpLive || this.tcpPort == 0)`.  And:
-     * in `NetworkProxy.learn`, take out `this.tcpPort <= 0 || `.
+     * in `NetworkProxy.learn`, take out `!this.learnsDevices || `.
      */
     @Test(timeOut = 30000)
     public void testAProxyNeverAskedForTcpHearsUdp() throws Exception

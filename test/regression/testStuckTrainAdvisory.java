@@ -227,7 +227,10 @@ public class testStuckTrainAdvisory
     /**
      * A sensor that makes and lets go does not restart the clock: the advisory is measured from when the train was
      * SENT.  This watches the number the hook is handed, since the sentence rounds to whole minutes and every number
-     * here rounds to zero.
+     * here rounds to zero, against the time it was handed.
+     *
+     * MUTATION: in `Locomotive.waitForOccupiedFeedback`, move `final long began = System.currentTimeMillis();` into the
+     * loop.
      */
     @Test
     public void testAFlickerDoesNotRestartTheClock() throws Exception
@@ -271,13 +274,54 @@ public class testStuckTrainAdvisory
             + sinceTheStart + "ms and the quota is " + quota + "ms.  The clock restarted at the "
             + "flicker, so a train missing for minutes is described as freshly sent");
 
+        assertTrue(watcher.reported >= watcher.firedAt - began - 200, "the advisory reported " + watcher.reported
+            + "ms when said " + (watcher.firedAt - began) + "ms after the wait began: the clock restarted at the flicker");
+
         waiting.interrupt();
+    }
+
+    /**
+     * An advisory said is not said again when the sensor flickers after it: the restarted wait is the same journey.
+     *
+     * MUTATION: in `Locomotive.waitForOccupiedFeedback`, move `boolean advised = adviseAfterMs <= 0;` into the loop.
+     */
+    @Test
+    public void testAFlickerAfterTheAdvisoryDoesNotSayItAgain() throws Exception
+    {
+        Watcher watcher = new Watcher(model);
+        MarklinFeedback sensor = model.newFeedback(80, null);
+        String name = sensor.getName();
+        model.setFeedbackState(name, false);
+
+        Thread waiting = new Thread(() -> watcher.waitForOccupiedFeedback(name, 300, 200));
+        waiting.setDaemon(true);
+        waiting.start();
+
+        assertTrue(support.Components.waitFor(() -> watcher.said.get() == 1, 5000), "precondition: never said");
+        model.setFeedbackState(name, true);
+        assertTrue(support.Components.waitFor(() -> watcher.debounces.get() == 1, 5000),
+            "precondition: the wait did not see the sensor made");
+        model.setFeedbackState(name, false);
+
+        // Waiting is the point: a restart that forgot the advisory says it again at once, being past the quota
+        support.Components.waitFor(() -> watcher.said.get() > 1, 1000);
+        model.setFeedbackState(name, true);
+        waiting.join(5000);
+
+        assertFalse(waiting.isAlive(), "the wait did not end on the held sensor");
+        assertEquals(watcher.debounces.get(), 2, "the flicker did not restart the wait");
+        assertEquals(watcher.said.get(), 1, "the advisory was said again after a flicker");
     }
 
     /** A locomotive that writes down what the advisory hook was handed (`waitedTooLongFor` is protected, for this). */
     private static final class Watcher extends MarklinLocomotive
     {
         volatile long reported = -1;
+
+        // When the advisory was said, how often, and how many debounces the wait began
+        volatile long firedAt = -1;
+        final java.util.concurrent.atomic.AtomicInteger said = new java.util.concurrent.atomic.AtomicInteger();
+        final java.util.concurrent.atomic.AtomicInteger debounces = new java.util.concurrent.atomic.AtomicInteger();
 
         Watcher(MarklinControlStation model)
         {
@@ -288,6 +332,15 @@ public class testStuckTrainAdvisory
         protected void waitedTooLongFor(String feedbackName, long waitedMs)
         {
             reported = waitedMs;
+            firedAt = System.currentTimeMillis();
+            said.incrementAndGet();
+        }
+
+        @Override
+        public Locomotive delay(long ms)
+        {
+            debounces.incrementAndGet();
+            return super.delay(ms);
         }
     }
 

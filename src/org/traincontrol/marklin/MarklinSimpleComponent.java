@@ -75,11 +75,27 @@ public class MarklinSimpleComponent implements java.io.Serializable
     
     public MarklinSimpleComponent(MarklinFeedback a)
     {
+        this(a, null);
+    }
+
+    /** A sensor, with the s88 device a CS3 is asked at for it, or null (OB-418). */
+    public MarklinSimpleComponent(MarklinFeedback a, Integer device)
+    {
         this.type = Type.FEEDBACK;
         
         this.name = a.getName();
         this.address = a.getUID();
         this.state = a.isSet();
+
+        // In the field a route keeps its trigger in, one up so that an older file's 0 is none.  No new field: a 3.0.8
+        // build reads the file as before, and takes only a sensor's address and state from it.
+        this.s88 = device == null ? 0 : device + 1;
+    }
+
+    /** A sensor's s88 device, or null when none was saved. */
+    public Integer getS88Device()
+    {
+        return this.type == Type.FEEDBACK && this.s88 > 0 ? this.s88 - 1 : null;
     }
     
     public MarklinSimpleComponent(MarklinRoute r)

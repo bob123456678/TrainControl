@@ -271,6 +271,99 @@ public final class CS2File
     {
         return "http://" + this.IP + "/app/api/mags";
     }
+
+    public String getCS3DevicesUrl()
+    {
+        return "http://" + this.IP + "/app/api/devs";
+    }
+
+    /**
+     * Each contact's s88 device from the CS3's device list, by its "kennung": a Link S88 (typ 64) has 1-16 unless its
+     * "Auswertung 1 - 16" is the keyboard matrix, and 16 contacts a module from 1001, 2001 and 3001 for its three
+     * buses.  Link S88s only: the station's own bus may be configured with nothing on it, so a contact there is placed
+     * only by an event.  A contact two Link S88s have is left out.  Empty when the list cannot be read (OB-418).
+     */
+    public Map<Integer, Integer> parseS88DevicesCS3()
+    {
+        Map<Integer, Integer> owner = new HashMap<>();
+        java.util.Set<Integer> shared = new java.util.HashSet<>();
+
+        try (BufferedReader in = fetchURL(getCS3DevicesUrl()))
+        {
+            JSONArray devices = readList(in, null);
+
+            for (int i = 0; i < devices.length(); i++)
+            {
+                JSONObject d = devices.optJSONObject(i);
+                Integer device = d == null ? null : number(d.opt("kennung"));
+
+                if (device == null || device == 0xffff) continue;
+
+                for (int contact : contactsOf(d))
+                {
+                    Integer was = owner.put(contact, device);
+
+                    if (was != null && !was.equals(device)) shared.add(contact);
+                }
+            }
+        }
+        catch (Exception unreadable)
+        {
+            return new HashMap<>();
+        }
+
+        owner.keySet().removeAll(shared);
+        return owner;
+    }
+
+    /** The contacts of one entry of the device list: none unless it is a Link S88. */
+    private static List<Integer> contactsOf(JSONObject device)
+    {
+        List<Integer> out = new ArrayList<>();
+        JSONArray channels = device.optJSONArray("kanal");
+
+        if ("64".equals(device.optString("typ")))
+        {
+            if (setting(channels, "Auswertung 1 - 16") == 0) modules(out, 1, 1);
+
+            for (int bus = 1; bus <= 3; bus++) modules(out, bus * 1000 + 1, setting(channels, "nge Bus " + bus));
+        }
+
+        return out;
+    }
+
+    /** Adds the contacts of `count` modules of 16 from `first`. */
+    private static void modules(List<Integer> out, int first, int count)
+    {
+        for (int c = 0; c < 16 * Math.min(count, 31); c++) out.add(first + c);
+    }
+
+    /** The "wert" of the first channel whose name holds `name` (matched past its umlaut), or 0. */
+    private static int setting(JSONArray channels, String name)
+    {
+        for (int i = 0; channels != null && i < channels.length(); i++)
+        {
+            JSONObject c = channels.optJSONObject(i);
+
+            if (c != null && c.optString("name").contains(name)) return Math.max(0, c.optInt("wert", 0));
+        }
+
+        return 0;
+    }
+
+    /** A number given as one, or as a decimal or 0x hex string; null for anything else. */
+    private static Integer number(Object value)
+    {
+        try
+        {
+            return value instanceof Number ? Integer.valueOf(((Number) value).intValue())
+                : Integer.decode(String.valueOf(value).trim());
+        }
+        catch (NumberFormatException notANumber)
+        {
+            return null;
+        }
+    }
             
     /**
      * Parsing this is not currently supported - 
