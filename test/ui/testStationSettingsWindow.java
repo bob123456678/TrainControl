@@ -140,7 +140,7 @@ public class testStationSettingsWindow
      * A key step in Home or May depart only shows a choice: an arrow asks nothing and changes no setup, and Escape puts
      * the list back with the window still open.  Enter applies what May depart shows.
      *
-     * MUTATION: have `StationWindowBase.Choice.fireActionEvent` ignore `keying`, and this fails.
+     * MUTATION: have `StationWindowBase.Choice.fireActionEvent` ignore `quiet`, and this fails.
      */
     @Test(timeOut = 120000)
     public void testAKeyStepInHomeOrMayDepartChangesNothing() throws Exception
@@ -634,15 +634,7 @@ public class testStationSettingsWindow
         TileKey square = aStation();
 
         String mine = session.getStore().getPointName(square);
-
-        String other = null;
-
-        for (TileKey each : session.getStore().getNamedTiles())
-        {
-            if (!each.equals(square)) other = session.getStore().getPointName(each);
-        }
-
-        assertNotNull(other, "precondition: no other named square");
+        String other = anotherSquaresName(square);
 
         StationSettingsWindow window = StationDoors.open(panel, square);
 
@@ -665,6 +657,46 @@ public class testStationSettingsWindow
         assertEquals(session.getStore().getPointName(square), "A Name Nobody Has", "the new name was not written");
 
         assertFalse(visible(window, "station.nameProblem"), "the reason stayed after the fix");
+    }
+
+    /**
+     * Closing the window with a refused name still in its field applies a choice stepped in May depart too: the lists
+     * are settled before the typed fields try again and read the setup back.
+     *
+     * MUTATION: settle the lists after the typed fields in `StationSettingsWindow.commitFields`, and this fails.
+     */
+    @Test(timeOut = 120000)
+    public void testClosingWithARefusedNameAppliesAChoiceStepped() throws Exception
+    {
+        TileKey square = aStation();
+
+        StationSettingsWindow window = StationDoors.open(panel, square);
+
+        StationDoors.typeAndEnter(window, "station.name", anotherSquaresName(square));
+
+        assertTrue(visible(window, "station.nameProblem"), "precondition: the taken name was not refused");
+
+        String before = setup();
+
+        stepMayDepart(window);
+        StationDoors.close(window);
+
+        assertNotEquals(setup(), before, "closing with a refused name showing dropped the choice stepped in May depart");
+    }
+
+    /** The name of a named square other than this one. */
+    private static String anotherSquaresName(TileKey square)
+    {
+        String other = null;
+
+        for (TileKey each : session.getStore().getNamedTiles())
+        {
+            if (!each.equals(square)) other = session.getStore().getPointName(each);
+        }
+
+        assertNotNull(other, "precondition: no other named square");
+
+        return other;
     }
 
     // ------------------------------------------------------------------------------------------------------ Which Trains

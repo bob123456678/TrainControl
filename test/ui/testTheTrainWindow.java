@@ -359,7 +359,7 @@ public class testTheTrainWindow
      * back and leaves the window open, and Enter places the train shown.  A pick from the open list acts as the list
      * closes; a list closed by canceling puts the choice back.
      *
-     * MUTATION: have `StationWindowBase.Choice.fireActionEvent` ignore `keying`, and this fails.
+     * MUTATION: have `StationWindowBase.Choice.fireActionEvent` ignore `quiet`, and this fails.
      */
     @Test(timeOut = 120000)
     public void testAKeyStepInTheListPlacesNothingUntilEnter() throws Exception
