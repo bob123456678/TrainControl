@@ -461,6 +461,7 @@ public final class StationSettingsWindow extends StationWindowBase
         JPanel turning = oneOf(throughSection, turnNever, turnMay, turnMust);
 
         turning.add(turnMixed);
+        throughSection.add(turnMixed);
 
         // Above both sections, as each applies to either
         rowOf("autosetup.ui.stationTurning", "turning", turning, null, throughSection);
@@ -477,6 +478,7 @@ public final class StationSettingsWindow extends StationWindowBase
 
         rowOf("autosetup.ui.menuAutoDestination", "fullAutonomy", autonomyRow, null, stopSection);
         stopSection.add(fullAutonomy);
+        stopSection.add(autoMixed);
         fullAutonomy.addActionListener(e ->
         {
             // Through `act` itself, which the editor's surface rules read as announcing the write
@@ -559,6 +561,7 @@ public final class StationSettingsWindow extends StationWindowBase
         JPanel which = oneOf(otherControls, whichAll, whichBlack, whichWhite);
 
         which.add(whichMixed);
+        otherControls.add(whichMixed);
 
         rowOf("autosetup.ui.stationWhich", "which", which, whichChoose, otherControls);
 
@@ -647,6 +650,7 @@ public final class StationSettingsWindow extends StationWindowBase
             JLabel mixed = mixedLabel(part.getName() + "Mixed");
 
             shown.add(mixed);
+            section.add(mixed);
             mixedMarks.put(part, mixed);
         }
 
@@ -702,15 +706,29 @@ public final class StationSettingsWindow extends StationWindowBase
         x.insets = m.insets;
 
         form.add(mixed, x);
+        otherControls.add(mixed);
 
         row++;
     }
 
-    /** The warning triangle beside a control the squares picked disagree on; its tooltip says what that means. */
+    /**
+     * The warning triangle beside a control the squares picked disagree on; its tooltip says what that means.  It grays
+     * with its row, drawn gray here as Swing grays only an ImageIcon.
+     */
     private static JLabel mixedLabel(String partName)
     {
-        JLabel out = styled(new JLabel(RowIcons.warning(16)), partName, REGULAR);
+        javax.swing.Icon triangle = RowIcons.warning(16);
 
+        JLabel out = styled(new JLabel(triangle), partName, REGULAR);
+
+        java.awt.image.BufferedImage drawn = new java.awt.image.BufferedImage(triangle.getIconWidth(),
+            triangle.getIconHeight(), java.awt.image.BufferedImage.TYPE_INT_ARGB);
+        java.awt.Graphics2D g = drawn.createGraphics();
+
+        triangle.paintIcon(null, g, 0, 0);
+        g.dispose();
+
+        out.setDisabledIcon(new javax.swing.ImageIcon(javax.swing.GrayFilter.createDisabledImage(drawn)));
         out.setToolTipText(AutonomyEditorPanel.wrapped(mixedTip()));
         out.setBorder(javax.swing.BorderFactory.createEmptyBorder(0, 6, 0, 0));
         out.setVisible(false);
