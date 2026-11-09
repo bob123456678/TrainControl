@@ -712,7 +712,7 @@ public class testTheStationIsReachedOverTcp
 
     /**
      * A healthy station that answered and then sends nothing more is not taken as hung: silence alone is not a hang.
-     * The wait is the point: past the 15 s answer limit.
+     * The wait is the point: past the 3 s answer limit.
      *
      * MUTATION: in `NetworkProxy.readUntilLost`, take out `first - this.lastHeardAt > 0 && `.
      */
@@ -721,7 +721,7 @@ public class testTheStationIsReachedOverTcp
     {
         connectedAndAnswered();
 
-        assertFalse(logged("network.tcpLostReconnecting", 18000),
+        assertFalse(logged("network.tcpLostReconnecting", 5000),
             "a quiet healthy connection was taken as hung: " + this.model.lines);
     }
 
@@ -1397,7 +1397,7 @@ public class testTheStationIsReachedOverTcp
 
     /**
      * A station that takes the connection but never sends on it is left for UDP once a send goes unanswered for
-     * 15 s: the station's broadcasts are heard, and what was sent over TCP is counted, not sent over UDP.
+     * 3 s: the station's broadcasts are heard, and what was sent over TCP is counted, not sent over UDP.
      *
      * MUTATION: in `NetworkProxy.recover`, `boolean retry = this.carried;` to `boolean retry = true;`.
      */

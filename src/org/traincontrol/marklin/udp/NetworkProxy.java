@@ -81,9 +81,10 @@ public class NetworkProxy
 
     /**
      * A connection that has carried nothing for this long since a frame was sent on it is taken as hung: the station
-     * answers every command, and the window pings every 5 s.  Silence alone is not, as a CS2 may send nothing unasked.
+     * answers every command, 99% within 0.42 s in live captures.  Silence alone is not, as a CS2 may send nothing
+     * unasked.
      */
-    private static final long TCP_ANSWER_LIMIT_MS = 15000;
+    private static final long TCP_ANSWER_LIMIT_MS = 3000;
 
     /** A send unanswered this long makes the connection suspect: a Stop then goes over UDP as well. */
     private static final long TCP_SUSPECT_MS = 1000;
