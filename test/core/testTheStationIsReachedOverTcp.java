@@ -564,26 +564,36 @@ public class testTheStationIsReachedOverTcp
 
     /**
      * An unexpected error that ends the listener while it replaces a lost connection leaves nothing being replaced:
-     * UDP takes over for the session, logged, so autonomy does not hold new routes for ever.
+     * UDP takes over for the session, logged, so autonomy does not hold new routes for ever; and the sensors are asked
+     * again over UDP, so one changed in the gap ends at the station's state.
      *
-     * MUTATION: take the catch out of `NetworkProxy.readTcp`, and this fails.
+     * MUTATION: take the catch out of `NetworkProxy.readTcp`, or its `resync`, and this fails.
      */
     @Test(timeOut = 30000)
     public void testAListenerEndedByAnErrorLeavesNothingBeingReplaced() throws Exception
     {
-        connectedAndAnswered();
+        try (DatagramSocket wire = udpWire())
+        {
+            connectedAndAnswered();
+            this.station.sensor(1202, true);
+            assertTrue(Components.waitFor(() -> this.model.heardFrame(linkS88(1202, true)), WAIT_MS), "precondition");
 
-        Thread listener = (Thread) field("tcpReader");
+            Thread listener = (Thread) field("tcpReader");
 
-        this.model.failOnce = "network.tcpLostReconnecting";
-        this.station.drop();
-        listener.join(15000);
+            this.model.failOnce = "network.tcpLostReconnecting";
+            this.station.sensorUnseen(1202, false);
+            this.station.drop();
+            listener.join(15000);
 
-        assertFalse(listener.isAlive(), "precondition: the listener did not end on the injected fault");
-        assertFalse(this.proxy.isReplacing(), "the listener ended with the lost connection still being replaced, so new"
-            + " routes would be held for the rest of the session: " + this.model.lines);
-        assertTrue(logged("network.tcpLostUsingUdp", WAIT_MS), "the loss is not logged: " + this.model.lines);
-        assertReachedOverUdp();
+            assertFalse(listener.isAlive(), "precondition: the listener did not end on the injected fault");
+            assertFalse(this.proxy.isReplacing(), "the listener ended with the lost connection still being replaced, so"
+                + " new routes would be held for the rest of the session: " + this.model.lines);
+            assertTrue(logged("network.tcpLostUsingUdp", WAIT_MS), "the loss is not logged: " + this.model.lines);
+
+            askedAndAnsweredOverUdp(wire, 1202, WAIT_MS);
+            assertEndsAtTheStationsState(1202);
+            assertReachedOverUdp();
+        }
     }
 
     /**
