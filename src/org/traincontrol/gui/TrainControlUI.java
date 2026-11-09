@@ -6531,7 +6531,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     
     public void applyPreferredSpeed(Locomotive l)
     {
-        if (l != null)
+        // Nothing to apply without a saved preset: the menu item is grayed, and the hotkey does nothing
+        if (l != null && l.getPreferredSpeed() > 0)
         {
             new Thread(() -> {
                 this.model.getLocByName(l.getName()).applyPreferredSpeed();

@@ -298,6 +298,28 @@ public class testTheFunctionButtonMenu
         assertTrue(Components.waitFor(() -> loc.getSpeed() == 41, WAIT), "Apply Saved Speed Preset did not drive the train at 41");
     }
 
+    /**
+     * A train with no saved speed preset has nothing to apply: the menu item is grayed and says why.
+     *
+     * MUTATION: drop the `getPreferredSpeed() < 1` test in `RightClickMenuListener`, and this fails.
+     */
+    @Test
+    public void testApplyingNoSpeedPresetIsGrayedOut() throws Exception
+    {
+        loc.setPreferredSpeed(0);
+
+        JPopupMenu menu = SettingsWindow.rightClickKey(SettingsWindow.key(ui, java.awt.event.KeyEvent.VK_A));
+
+        assertNotNull(menu, "a right click on the key opened no menu");
+
+        JMenuItem item = (JMenuItem) Components.withText(menu, I18n.f("loc.ui.menuApplySavedSpeedPreset", 0));
+
+        assertNotNull(item, "the key's menu has no Apply Saved Speed Preset");
+        assertFalse(Components.onTheEventThread(item::isEnabled), "Apply Saved Speed Preset is enabled with no preset saved");
+        assertEquals(Components.onTheEventThread(item::getToolTipText), I18n.t("loc.ui.tooltip.noSpeedPreset"),
+            "the grayed item does not say why");
+    }
+
     // Autonomy's departure and arrival functions were ticked on the old menu and in its editor; they move to the
     // Autonomy tab, which is built separately, and the two claims that pinned them wait for it.
 
