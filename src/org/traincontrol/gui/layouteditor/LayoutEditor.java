@@ -1679,10 +1679,7 @@ public class LayoutEditor extends PositionAwareJFrame
 
                 javax.swing.JComponent list = autonomyPanel.getFindingsBox();
 
-                if (list != null)
-                {
-                    foot.add(list, BorderLayout.CENTER);
-                }
+                if (list != null) foot.add(list, BorderLayout.CENTER);
 
                 // The count under the list: it is a total.
                 foot.add(autonomyPanel.getBanner(), BorderLayout.SOUTH);
@@ -2247,10 +2244,7 @@ public class LayoutEditor extends PositionAwareJFrame
             ? null : this.grid.getValueAt(handle[0], handle[1]);
 
         // The old grip stops saying so, or its tooltip would offer the wrong drag.
-        if (this.handleLabel != null && this.handleLabel != grip)
-        {
-            this.handleLabel.setToolTipText(null);
-        }
+        if (this.handleLabel != null && this.handleLabel != grip) this.handleLabel.setToolTipText(null);
 
         this.handleLabel = grip;
 
@@ -3204,15 +3198,9 @@ public class LayoutEditor extends PositionAwareJFrame
             layout.getSx() + " x " + layout.getSy()));
 
         // And the two buttons' tooltips, which the generated form leaves empty.
-        if (this.plusButton != null)
-        {
-            this.plusButton.setToolTipText(I18n.t("layout.ui.tooltipGrowDiagram"));
-        }
+        if (this.plusButton != null) this.plusButton.setToolTipText(I18n.t("layout.ui.tooltipGrowDiagram"));
 
-        if (this.minusButton != null)
-        {
-            this.minusButton.setToolTipText(I18n.t("layout.ui.tooltipShrinkDiagram"));
-        }
+        if (this.minusButton != null) this.minusButton.setToolTipText(I18n.t("layout.ui.tooltipShrinkDiagram"));
     }
 
     /** Grows the diagram by one: a column on the right and a row at the bottom (`LayoutEditorReshape.growEdges`). */
@@ -5257,10 +5245,7 @@ public class LayoutEditor extends PositionAwareJFrame
             if (isAutonomyMode())
             {
                 // Closed only on a save that happened, or it would contradict the failure dialog.
-                if (autonomyPanel.save())
-                {
-                    closeAutonomyMode();
-                }
+                if (autonomyPanel.save()) closeAutonomyMode();
 
                 return;
             }

@@ -182,10 +182,7 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
             Point end = path.get(path.size() - 1).getEnd();
 
             // Off this menu altogether (switched off, or excluded for this train), not counted towards the ellipsis.
-            if (!running.isOfferableToOperator(end, locomotive))
-            {
-                continue;
-            }
+            if (!running.isOfferableToOperator(end, locomotive)) continue;
 
             // Asked of the square, not of this train (which `isOfferableToOperator` has covered).
             if (running.isChoosableByAutonomy(end))
@@ -574,10 +571,7 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
         javax.swing.JMenu setup = new javax.swing.JMenu(I18n.t("autosetup.ui.menuAutonomySetup"));
 
         // getComponents hands back a copy, so moving each out from under the popup does not walk the array being read.
-        for (java.awt.Component part : built.getComponents())
-        {
-            setup.add(part);
-        }
+        for (java.awt.Component part : built.getComponents()) setup.add(part);
 
         setup.addSeparator();
         setup.add(openFullEditorItem());

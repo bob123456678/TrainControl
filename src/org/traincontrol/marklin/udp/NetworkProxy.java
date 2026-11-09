@@ -1064,10 +1064,7 @@ public class NetworkProxy
 
         try
         {
-            for (long left = ms; !this.stopRequested && left > 0; left = until - System.currentTimeMillis())
-            {
-                wait(left);
-            }
+            for (long left = ms; !this.stopRequested && left > 0; left = until - System.currentTimeMillis()) wait(left);
         }
         catch (InterruptedException e)
         {
@@ -1124,10 +1121,7 @@ public class NetworkProxy
                         // Only a datagram of the right LENGTH is parsed: one buffer is reused for every receive, so a
                         // short datagram would be parsed as its own header followed by whatever the last message left
                         // in the tail, a stale command re-applied that the duplicate-suppression window cannot catch.
-                        if (packet.getLength() == buffer.length)
-                        {
-                            deliverUdp(buffer);
-                        }
+                        if (packet.getLength() == buffer.length) deliverUdp(buffer);
 
                         // Reset the length of the packet just in case
                         packet.setLength(buffer.length);
@@ -1138,10 +1132,7 @@ public class NetworkProxy
                         // recoverable: log it, pause briefly so a persistent fault cannot spin, and
                         // keep listening.  sendMessage may also have replaced the socket by now, in
                         // which case the next pass picks up the new one.
-                        if (socket.isClosed())
-                        {
-                            break;
-                        }
+                        if (socket.isClosed()) break;
 
                         model.log(e);
 

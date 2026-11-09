@@ -156,10 +156,7 @@ public class LoadingSpinner extends JPanel
             // (OB-129).  getVisibleRect() degrades to the full bounds outside a JScrollPane.
             java.awt.Rectangle visible = getVisibleRect();
 
-            if (visible.isEmpty())
-            {
-                visible = new java.awt.Rectangle(0, 0, getWidth(), getHeight());
-            }
+            if (visible.isEmpty()) visible = new java.awt.Rectangle(0, 0, getWidth(), getHeight());
 
             // Sized off whichever way round the visible space is tighter, so it never overhangs.
             double glassH = Math.max(18.0,

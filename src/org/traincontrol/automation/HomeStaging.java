@@ -182,10 +182,7 @@ public final class HomeStaging
 
             if (p.getS88() != null)
             {
-                if (!pointsBySensor.containsKey(p.getS88()))
-                {
-                    pointsBySensor.put(p.getS88(), new ArrayList<>());
-                }
+                if (!pointsBySensor.containsKey(p.getS88())) pointsBySensor.put(p.getS88(), new ArrayList<>());
 
                 pointsBySensor.get(p.getS88()).add(p);
 
@@ -221,10 +218,7 @@ public final class HomeStaging
             // other copy of its own home would read as not standing on it.
             boolean standingOnIt = atHome(entry.getValue(), locationOf(occupancy, entry.getKey()));
 
-            if (!assigned && !standingOnIt && launchPads.contains(entry.getValue().getName()))
-            {
-                it.remove();
-            }
+            if (!assigned && !standingOnIt && launchPads.contains(entry.getValue().getName())) it.remove();
         }
 
         // A PAUSED TRAIN STAYS WHERE IT STANDS (FR-117): for this plan its home is where it stands, so nothing is
@@ -560,17 +554,11 @@ public final class HomeStaging
         // arrangement exists, so an exhausted search answers NO_PLAN_FOUND
         // (`testHomeStaging.testTwoHomesThatHoldEachOtherBackAreADeadlock`).
 
-        if (!unreachable.isEmpty())
-        {
-            return new Plan(Outcome.IMPOSSIBLE, empty(), unreachable, reasons);
-        }
+        if (!unreachable.isEmpty()) return new Plan(Outcome.IMPOSSIBLE, empty(), unreachable, reasons);
 
         List<Move> moves = search();
 
-        if (moves == null)
-        {
-            return new Plan(Outcome.NO_PLAN_FOUND, empty(), noLocs(), whatCanBeSeen(), this.ranOut);
-        }
+        if (moves == null) return new Plan(Outcome.NO_PLAN_FOUND, empty(), noLocs(), whatCanBeSeen(), this.ranOut);
 
         return new Plan(Outcome.READY, moves, noLocs(), Collections.<Locomotive, List<String>>emptyMap(), this.ranOut);
     }
@@ -878,10 +866,7 @@ public final class HomeStaging
 
                 // atHome: a train resting on the far copy of its own home square is resting at home, and pinning it to
                 // the exact copy can ask the A* for a move that no arrival side allows.
-                if (this.launchPads.contains(at.getName()) && (ownHome == null || atHome(ownHome, at)))
-                {
-                    continue;
-                }
+                if (this.launchPads.contains(at.getName()) && (ownHome == null || atHome(ownHome, at))) continue;
 
                 // A train that cannot reverse is turned on the way only to go home (Adam: "This should only be allowed
                 // if the train is going to reverse into its berth on the next turn.", OB-205).  Carried by the train,
@@ -1595,10 +1580,7 @@ public final class HomeStaging
     {
         List<String> out = new ArrayList<>();
 
-        if (!from.isActive())
-        {
-            out.add(I18n.f("autolayout.whyHomeStartOutOfService", Layout.placeNameOf(from)));
-        }
+        if (!from.isActive()) out.add(I18n.f("autolayout.whyHomeStartOutOfService", Layout.placeNameOf(from)));
 
         // A placement turns the train round, so "place it on a station first" would send the operator back to the same
         // square: say what to do instead.
@@ -1767,10 +1749,7 @@ public final class HomeStaging
     {
         if (home == null) return false;
 
-        if (home.getBlock() == null || home.getLayout() == null)
-        {
-            return canRest(loc, home) && connected(from, home);
-        }
+        if (home.getBlock() == null || home.getLayout() == null) return canRest(loc, home) && connected(from, home);
 
         boolean sawACopy = false;
 
@@ -1931,10 +1910,7 @@ public final class HomeStaging
                 // Still tighter than the search: an out-of-service or non-destination terminus is not expanded here, so
                 // a graph whose only route home passes through such a square is proved IMPOSSIBLE although a two-move
                 // plan exists.  Not reachable on a builder-derived graph; the safe direction to widen is this one.
-                if (!next.isTerminus() || (next.isDestination() && next.isActive()))
-                {
-                    queue.add(next);
-                }
+                if (!next.isTerminus() || (next.isDestination() && next.isActive())) queue.add(next);
             }
         }
 

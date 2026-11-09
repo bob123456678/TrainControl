@@ -695,10 +695,7 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
             // reason that is not about them.
             String cannotStart = layout.explainCannotStart(locomotive, byHand);
 
-            if (cannotStart != null)
-            {
-                return out.append("\n").append(cannotStart).append("\n").toString();
-            }
+            if (cannotStart != null) return out.append("\n").append(cannotStart).append("\n").toString();
 
             // Both halves under ONE acquisition of the Layout monitor: asked separately, the reasons and the grouping
             // could be computed against two states, and a line would sit under the wrong heading.

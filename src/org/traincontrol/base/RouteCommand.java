@@ -185,10 +185,7 @@ public class RouteCommand implements java.io.Serializable
         r.commandConfig.put(KEY_NAME, name);
         r.commandConfig.put(KEY_ADDRESS, Integer.toString(s88));
         
-        if (!at)
-        {
-            r.commandConfig.put(KEY_SETTING, Boolean.toString(false));
-        }
+        if (!at) r.commandConfig.put(KEY_SETTING, Boolean.toString(false));
         
         return r;
     }

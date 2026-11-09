@@ -36,10 +36,7 @@ final class AutonomySettingsTab
                         // Collect IDs of all selected routes
                         List<Integer> activateRouteIDs = new ArrayList<>();
 
-                        for (Route r:  this.ui.autoRouteList().getSelectedValuesList())
-                        {
-                            activateRouteIDs.add(r.getId());
-                        }
+                        for (Route r:  this.ui.autoRouteList().getSelectedValuesList()) activateRouteIDs.add(r.getId());
 
                         // Push back into the model
                         this.ui.getModel().getAutoLayout().setActivateRouteIDs(activateRouteIDs);

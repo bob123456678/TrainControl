@@ -583,10 +583,7 @@ public class GraphReducer
 
             String name = authored.getPointName(tile);
 
-            if (name == null || name.trim().isEmpty())
-            {
-                name = generatedName(tile);
-            }
+            if (name == null || name.trim().isEmpty()) name = generatedName(tile);
 
             // Feedback is keyed on the RAW address, not the halved one: MarklinControlStation registers and looks up
             // feedback by getRawAddress(), while CS2File halves the value for accessories.
@@ -852,10 +849,7 @@ public class GraphReducer
 
             LayoutDiagramComponent component = graph.getTiles().get(tile);
 
-            if (boundsTheRoom(tile, component))
-            {
-                return room > 0 ? room : known ? 0 : -1;
-            }
+            if (boundsTheRoom(tile, component)) return room > 0 ? room : known ? 0 : -1;
 
             int here = authored.getTileLength(tile);
 
@@ -917,10 +911,7 @@ public class GraphReducer
     {
         int total = 0;
 
-        for (TileStep step : path)
-        {
-            total += Math.max(0, authored.getTileLength(step.getTile()));
-        }
+        for (TileStep step : path) total += Math.max(0, authored.getTileLength(step.getTile()));
 
         return total;
     }

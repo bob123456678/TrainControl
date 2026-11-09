@@ -608,10 +608,7 @@ public class AutonomyCompanionStore
 
         int version = root.optInt("version", VERSION);
 
-        if (version > VERSION)
-        {
-            throw new IOException(ERROR_VERSION + " (" + version + " > " + VERSION + ")");
-        }
+        if (version > VERSION) throw new IOException(ERROR_VERSION + " (" + version + " > " + VERSION + ")");
 
         // Parsed before anything is thrown away too.  A bare JSONException is unchecked and would walk out through the
         // IOException catches that expect a failed load to change nothing.
@@ -673,10 +670,7 @@ public class AutonomyCompanionStore
             throw e;
         }
 
-        if (activeConfiguration != null && !configurations.containsKey(activeConfiguration))
-        {
-            activeConfiguration = null;
-        }
+        if (activeConfiguration != null && !configurations.containsKey(activeConfiguration)) activeConfiguration = null;
 
         if (activeConfiguration == null && !configurations.isEmpty())
         {
@@ -1086,10 +1080,7 @@ public class AutonomyCompanionStore
     /** Renames the locomotive in every configuration; a null `to` removes it. */
     private void repairLocomotive(String from, String to)
     {
-        for (JSONObject configuration : configurations.values())
-        {
-            repairLocomotiveIn(configuration, from, to);
-        }
+        for (JSONObject configuration : configurations.values()) repairLocomotiveIn(configuration, from, to);
 
         repairTheUnfinishedEditNote(from, to);
     }
@@ -1266,10 +1257,7 @@ public class AutonomyCompanionStore
     {
         if (configuration == null) return;
 
-        if (configuration.has("points"))
-        {
-            repairLocomotiveInPoints(configuration.getJSONObject("points"), from, to);
-        }
+        if (configuration.has("points")) repairLocomotiveInPoints(configuration.getJSONObject("points"), from, to);
 
         repairLocomotiveInTimetable(configuration, from, to);
 
@@ -1500,10 +1488,7 @@ public class AutonomyCompanionStore
         // what each id was called when this was written, so a renumber can be told from a rename
         Map<String, String> pages = new LinkedHashMap<>();
 
-        for (Map.Entry<String, String> entry : pageIdToName.entrySet())
-        {
-            pages.put(entry.getKey(), entry.getValue());
-        }
+        for (Map.Entry<String, String> entry : pageIdToName.entrySet()) pages.put(entry.getKey(), entry.getValue());
 
         // And what the file already knew about ids NOT in the index right now (heldForAbsentPages): one save during a
         // page's absence would otherwise drop the record that tells a renumber from a rename.  Never over a live id.
@@ -1520,10 +1505,7 @@ public class AutonomyCompanionStore
 
         // Whatever was held back because its page is not loaded goes back in exactly as it came (OB-067): one save while
         // a page's file is missing would otherwise delete that page's whole setup.
-        for (String field : HELD_FIELDS.keySet())
-        {
-            mergeHeld(root, field);
-        }
+        for (String field : HELD_FIELDS.keySet()) mergeHeld(root, field);
 
         // written back last, so a field this build does not model survives a round trip
         for (Map.Entry<String, Object> entry : unknownSharedFields.entrySet())
@@ -1659,10 +1641,7 @@ public class AutonomyCompanionStore
                 }
                 else
                 {
-                    for (String id : ((JSONObject) value).keySet())
-                    {
-                        mine.put(id, ((JSONObject) value).get(id));
-                    }
+                    for (String id : ((JSONObject) value).keySet()) mine.put(id, ((JSONObject) value).get(id));
                 }
 
                 continue;
@@ -2061,10 +2040,7 @@ public class AutonomyCompanionStore
     {
         // Refused rather than allowed to overwrite: renaming A to an existing B would replace B and then delete B's file,
         // destroying a configuration the user never named in the gesture.
-        if (!from.equals(to) && configurations.containsKey(to))
-        {
-            throw new IOException(ERROR_NAME_IN_USE);
-        }
+        if (!from.equals(to) && configurations.containsKey(to)) throw new IOException(ERROR_NAME_IN_USE);
 
         // ANOTHER CONFIGURATION'S FILE, refused as that and naming it
         if (!from.equals(to)) refuseASharedFile(to, from);
@@ -2091,10 +2067,7 @@ public class AutonomyCompanionStore
             {
                 // Only when there is somewhere to move TO: two names can resolve to one file (File.equals is
                 // case-insensitive on Windows), but the REWRITE still has to happen.
-                if (!old.equals(now))
-                {
-                    Files.move(old.toPath(), now.toPath(), StandardCopyOption.REPLACE_EXISTING);
-                }
+                if (!old.equals(now)) Files.move(old.toPath(), now.toPath(), StandardCopyOption.REPLACE_EXISTING);
 
                 writeJson(now, configuration);
             }
@@ -2192,10 +2165,7 @@ public class AutonomyCompanionStore
 
         if (folder.isDirectory() && left != null && left.length == 0) folder.delete();
 
-        if (!failed.isEmpty())
-        {
-            throw new IOException(String.join(", ", failed));
-        }
+        if (!failed.isEmpty()) throw new IOException(String.join(", ", failed));
     }
 
     // keeping up with the diagram
@@ -2235,10 +2205,7 @@ public class AutonomyCompanionStore
             JSONObject points = configuration.getJSONObject("points");
             JSONObject renamedPoints = new JSONObject();
 
-            for (String key : points.keySet())
-            {
-                renamedPoints.put(rekeyOne(key, from, to), points.get(key));
-            }
+            for (String key : points.keySet()) renamedPoints.put(rekeyOne(key, from, to), points.get(key));
 
             configuration.put("points", renamedPoints);
         }
@@ -2437,10 +2404,7 @@ public class AutonomyCompanionStore
             {
                 TileKey tile = parseTileKey(key);
 
-                if (tile != null && byKey.containsKey(tile))
-                {
-                    moved.put(byKey.get(tile).toString(), points.get(key));
-                }
+                if (tile != null && byKey.containsKey(tile)) moved.put(byKey.get(tile).toString(), points.get(key));
             }
 
             configuration.put("points", moved);
@@ -2805,10 +2769,7 @@ public class AutonomyCompanionStore
 
             JSONObject points = configuration.getJSONObject("points");
 
-            for (TileKey key : squares)
-            {
-                any |= points.remove(key.toString()) != null;
-            }
+            for (TileKey key : squares) any |= points.remove(key.toString()) != null;
         }
 
         return any;
@@ -2967,10 +2928,7 @@ public class AutonomyCompanionStore
 
         Set<TileKey> keys = new LinkedHashSet<>();
 
-        for (TileKey tile : existing)
-        {
-            keys.add(tile);
-        }
+        for (TileKey tile : existing) keys.add(tile);
 
         report.droppedTileProperties.addAll(asStrings(dropMissing(tileLengths, keys)));
         report.droppedTileProperties.addAll(asStrings(dropMissing(tileDirections, keys)));
@@ -3257,10 +3215,7 @@ public class AutonomyCompanionStore
 
         JSONObject out = new JSONObject();
 
-        for (String field : root.keySet())
-        {
-            out.put(field, root.get(field));
-        }
+        for (String field : root.keySet()) out.put(field, root.get(field));
 
         for (Map.Entry<String, Held> field : HELD_FIELDS.entrySet())
         {
@@ -3320,10 +3275,7 @@ public class AutonomyCompanionStore
                 {
                     JSONArray each = (JSONArray) value;
 
-                    for (int at = 0; here && at < each.length(); at++)
-                    {
-                        here = allHere(String.valueOf(each.get(at)));
-                    }
+                    for (int at = 0; here && at < each.length(); at++) here = allHere(String.valueOf(each.get(at)));
                 }
             }
 
@@ -3428,10 +3380,7 @@ public class AutonomyCompanionStore
             // from the index and the settings are still that page's) or renumbered (a DIFFERENT page holds this id: the
             // old name is still in the index under another id, and adopting the settings would attach them to the wrong
             // track).
-            if (pageNameToId.containsKey(entry.getValue()))
-            {
-                pageIdConflicts.put(entry.getValue(), nowCalled);
-            }
+            if (pageNameToId.containsKey(entry.getValue())) pageIdConflicts.put(entry.getValue(), nowCalled);
         }
 
         // From the whole object, not the filtered copy: an unmodeled field is written back verbatim.
@@ -4274,10 +4223,7 @@ public class AutonomyCompanionStore
         {
             List<String> values = new ArrayList<>();
 
-            for (TileKey value : entry.getValue())
-            {
-                values.add(toStored(value.toString()));
-            }
+            for (TileKey value : entry.getValue()) values.add(toStored(value.toString()));
 
             // One is written as a bare string, as every earlier version wrote; an array only where a second signal is
             // paired.
@@ -4338,10 +4284,7 @@ public class AutonomyCompanionStore
     {
         Set<String> out = new LinkedHashSet<>();
 
-        for (TileKey key : set)
-        {
-            out.add(toStored(key.toString()));
-        }
+        for (TileKey key : set) out.add(toStored(key.toString()));
 
         return out;
     }
@@ -4572,10 +4515,7 @@ public class AutonomyCompanionStore
         {
             List<TileKey> out = new ArrayList<>();
 
-            for (TileKey value : entry.getValue())
-            {
-                out.add(rekeyOne(value, fromPage, toPage));
-            }
+            for (TileKey value : entry.getValue()) out.add(rekeyOne(value, fromPage, toPage));
 
             entry.setValue(out);
         }
@@ -4586,10 +4526,7 @@ public class AutonomyCompanionStore
     {
         List<String> out = new ArrayList<>();
 
-        for (K key : keys)
-        {
-            out.add(key.toString());
-        }
+        for (K key : keys) out.add(key.toString());
 
         return out;
     }
@@ -4620,10 +4557,7 @@ public class AutonomyCompanionStore
             if (!existing.contains(key.square())) gone.add(key);
         }
 
-        for (K key : gone)
-        {
-            map.remove(key);
-        }
+        for (K key : gone) map.remove(key);
 
         return gone;
     }
@@ -4780,10 +4714,7 @@ public class AutonomyCompanionStore
 
         if (object == null) return;
 
-        for (String key : object.keySet())
-        {
-            into.put(key, object.getString(key));
-        }
+        for (String key : object.keySet()) into.put(key, object.getString(key));
     }
 
     private static void readStringSet(JSONObject root, String field, Set<String> into)
@@ -4792,10 +4723,7 @@ public class AutonomyCompanionStore
 
         if (array == null) return;
 
-        for (int i = 0; i < array.length(); i++)
-        {
-            into.add(array.getString(i));
-        }
+        for (int i = 0; i < array.length(); i++) into.add(array.getString(i));
     }
 
     /**

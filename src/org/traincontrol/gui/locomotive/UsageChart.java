@@ -325,10 +325,7 @@ public class UsageChart extends JFrame
         {
             LocalDate end = today.minusDays(page * range.days());
 
-            for (int i = range.days() - 1; i >= 0; i--)
-            {
-                spans.add(new LocalDate[] {end.minusDays(i), end.minusDays(i)});
-            }
+            for (int i = range.days() - 1; i >= 0; i--) spans.add(new LocalDate[] {end.minusDays(i), end.minusDays(i)});
         }
         else if (range == Range.YEAR)
         {

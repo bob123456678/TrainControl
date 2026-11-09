@@ -377,10 +377,7 @@ abstract public class Route
         layout.waitForTheRunToRecord(loc, 3000);
 
         // The last milestone reached, while the locomotive is running a path
-        if (s88.equals(layout.getLatestMilestoneS88(loc)))
-        {
-            return true;
-        }
+        if (s88.equals(layout.getLatestMilestoneS88(loc))) return true;
 
         // Otherwise where the train is now (OB-250): the start of the road it was given until it reaches a sensor, and
         // wherever it stands once a path has completed.  Not "which Point holds the train": every Point of a locked

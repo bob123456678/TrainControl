@@ -495,10 +495,7 @@ public final class CommandRow
 
     private void requireName()
     {
-        if (target.trim().isEmpty())
-        {
-            throw new IllegalArgumentException(I18n.t("route.errorRowNeedsALocomotive"));
-        }
+        if (target.trim().isEmpty()) throw new IllegalArgumentException(I18n.t("route.errorRowNeedsALocomotive"));
     }
 
     /**

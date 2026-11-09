@@ -30,10 +30,7 @@ public final class CS3TrackPlan
         {
             JSONObject plan = plans.optJSONObject(i);
 
-            if (plan != null)
-            {
-                this.pages.putIfAbsent(plan.optString("name"), new Page(plan));
-            }
+            if (plan != null) this.pages.putIfAbsent(plan.optString("name"), new Page(plan));
         }
     }
 
@@ -113,10 +110,7 @@ public final class CS3TrackPlan
          */
         public Point gridOffset(Map<String, List<Point>> squaresByArticle)
         {
-            if (!this.grid)
-            {
-                return null;
-            }
+            if (!this.grid) return null;
 
             Map<Point, Integer> votes = new HashMap<>();
 

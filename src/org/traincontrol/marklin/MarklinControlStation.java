@@ -553,10 +553,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
             
                 this.logf("layout.loadingStaticFiles", overrideLayoutPath);
             
-                if (debug)
-                {
-                    this.logf("layout.configFolderStructureHint");
-                }
+                if (debug) this.logf("layout.configFolderStructureHint");
             
                 try
                 {
@@ -720,19 +717,13 @@ public class MarklinControlStation implements ViewListener, ModelListener
                 {
                     a.adoptStationPosition(turned, asked);
 
-                    if (this.view != null)
-                    {
-                        this.view.repaintSwitch(a.getAddress() + 1, a.getDecoderType());
-                    }
+                    if (this.view != null) this.view.repaintSwitch(a.getAddress() + 1, a.getDecoderType());
                 }
             });
         }
         catch (Exception e)
         {
-            if (this.debug)
-            {
-                this.log(e);
-            }
+            if (this.debug) this.log(e);
         }
     }
 
@@ -806,10 +797,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
                     int uid = MarklinAccessory.UIDfromAddress(c.getAddress() - 1, c.getProtocol());
                     kinds.computeIfAbsent(uid, k -> new HashSet<>()).add(c.isSignal());
 
-                    if (c.isThreeWay())
-                    {
-                        kinds.computeIfAbsent(uid + 1, k -> new HashSet<>()).add(c.isSignal());
-                    }
+                    if (c.isThreeWay()) kinds.computeIfAbsent(uid + 1, k -> new HashSet<>()).add(c.isSignal());
                 }
             }
         }
@@ -1329,10 +1317,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
         // single local locomotive, so the list would get two proposals with one source.
         Map<Integer, Integer> parsedCountByAddress = new HashMap<>();
 
-        for (MarklinLocomotive l : parsedLocs)
-        {
-            parsedCountByAddress.merge(l.getIntUID(), 1, Integer::sum);
-        }
+        for (MarklinLocomotive l : parsedLocs) parsedCountByAddress.merge(l.getIntUID(), 1, Integer::sum);
 
         for (MarklinLocomotive l : parsedLocs)
         {
@@ -1414,10 +1399,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
         }
 
         // Nothing could be emitted, so every target left is still some other entry's source: a cycle
-        for (String[] proposal : remaining)
-        {
-            this.logf("loc.renameCycleRefused", proposal[0], proposal[1]);
-        }
+        for (String[] proposal : remaining) this.logf("loc.renameCycleRefused", proposal[0], proposal[1]);
 
         return ordered;
     }
@@ -1909,10 +1891,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
         }
 
         // Routes from the Central Station are not editable
-        if (this.routeDB.getById(r.getId()) != null)
-        {
-            this.routeDB.getById(r.getId()).setLocked(true);
-        }
+        if (this.routeDB.getById(r.getId()) != null) this.routeDB.getById(r.getId()).setLocked(true);
 
         return added;
     }
@@ -2366,10 +2345,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
         this.restoreRouteActivation(id, wasActivated);
 
         // And the lock, onto the route that now holds this id.
-        if (wasLocked && this.routeDB.getById(id) != null)
-        {
-            this.routeDB.getById(id).setLocked(true);
-        }
+        if (wasLocked && this.routeDB.getById(id) != null) this.routeDB.getById(id).setLocked(true);
 
         // Let other routes know this has been renamed
         for (MarklinRoute r : this.getRoutes())
@@ -2598,10 +2574,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
     {
         MarklinAccessory accessory = this.accDB.getByName(name);
 
-        if (accessory != null || name == null)
-        {
-            return accessory;
-        }
+        if (accessory != null || name == null) return accessory;
 
         String switchPrefix = Accessory.accessoryTypeToPrettyString(Accessory.accessoryType.SWITCH);
         String signalPrefix = Accessory.accessoryTypeToPrettyString(Accessory.accessoryType.SIGNAL);
@@ -3579,10 +3552,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
                     this.logf("route.warnConditionNamesDeletedLocomotive", r.getName(), name);
                 }
 
-                if (drove)
-                {
-                    this.logf("route.warnCommandsRemovedForDeletedLocomotive", r.getName(), name);
-                }
+                if (drove) this.logf("route.warnCommandsRemovedForDeletedLocomotive", r.getName(), name);
             }
         }
 
@@ -3599,10 +3569,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
         String address;
 
         // An unknown name answers null
-        if (l == null)
-        {
-            return null;
-        }
+        if (l == null) return null;
 
         if (l.getDecoderType() == MarklinLocomotive.decoderType.MFX 
                 || l.getDecoderType() == MarklinLocomotive.decoderType.MULTI_UNIT)
@@ -3936,10 +3903,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
 
         if (layout == null) return;
 
-        if (!layout.getActivateRouteIDs().contains((Integer) id))
-        {
-            layout.getActivateRouteIDs().add(id);
-        }
+        if (!layout.getActivateRouteIDs().contains((Integer) id)) layout.getActivateRouteIDs().add(id);
     }
 
     /**
@@ -4329,10 +4293,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
     @Override
     public void showAutonomyAlert(String message)
     {
-        if (this.view != null)
-        {
-            this.view.showAutonomyAlert(message);
-        }
+        if (this.view != null) this.view.showAutonomyAlert(message);
     }
 
     /**

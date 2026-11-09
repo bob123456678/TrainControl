@@ -43,10 +43,7 @@ public class RemoteDeviceCollection<ITEM, IDENTIFIER> implements
 
         // Re-adding a name under a different id would otherwise strand the old device in the
         // database, where it would still be returned by getItems but not by getItemNames
-        if (existingId != null && !existingId.equals(id))
-        {
-            this.db.remove(existingId);
-        }
+        if (existingId != null && !existingId.equals(id)) this.db.remove(existingId);
 
         // Re-adding an id under a different name would otherwise strand the old name, which would
         // keep being listed by getItemNames and keep resolving - to the new device - via getByName.

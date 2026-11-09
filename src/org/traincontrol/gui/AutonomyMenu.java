@@ -97,10 +97,7 @@ public class AutonomyMenu extends JMenu
     {
         if (!ui.isLayoutEditorOpen()) return;
 
-        for (int i = 0; i < getMenuComponentCount(); i++)
-        {
-            getMenuComponent(i).setEnabled(false);
-        }
+        for (int i = 0; i < getMenuComponentCount(); i++) getMenuComponent(i).setEnabled(false);
 
         // Clickable, and it brings the editor forward (OB-033).
         // First in the list, as the only thing that can be done.  It reads menuOpenFullEditor, the label already used
@@ -157,10 +154,7 @@ public class AutonomyMenu extends JMenu
         {
             java.awt.Component part = getMenuComponent(i);
 
-            if (!(part instanceof JMenuItem) || part == documentation || part == settingsItem)
-            {
-                continue;
-            }
+            if (!(part instanceof JMenuItem) || part == documentation || part == settingsItem) continue;
 
             part.setEnabled(false);
 

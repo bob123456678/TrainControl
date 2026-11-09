@@ -792,10 +792,7 @@ public class Layout
             if (guard != null) guards.add(guard);
         }
 
-        for (String name : first.getConfigCommands().keySet())
-        {
-            guards.remove(this.control.getAccessoryByName(name));
-        }
+        for (String name : first.getConfigCommands().keySet()) guards.remove(this.control.getAccessoryByName(name));
 
         return guards;
     }
@@ -943,10 +940,7 @@ public class Layout
     {
         Point p = this.getPoint(pointName);
 
-        if (p == null)
-        {
-            throw new Exception(I18n.f("autolayout.errorPointDoesNotExist", pointName));
-        }
+        if (p == null) throw new Exception(I18n.f("autolayout.errorPointDoesNotExist", pointName));
 
         Locomotive loc = locName == null || locName.trim().isEmpty()
             ? null : this.control.getLocByName(locName);
@@ -991,10 +985,7 @@ public class Layout
     /** Drops every assignment, so homes come purely from where trains stand.  Synchronized on this Layout. */
     synchronized public void clearHomeLocomotives()
     {
-        for (Point p : this.points.values())
-        {
-            p.setHomeLoc(null);
-        }
+        for (Point p : this.points.values()) p.setHomeLoc(null);
 
         this.rebuildHomeStations();
     }
@@ -1498,19 +1489,13 @@ public class Layout
     {
         // Clears run detached for up to maxDelay seconds, so a reload may have replaced this Layout; an orphan's
         // epoch map is not the new run's, so its stand-down check would pass and clear a sensor the new run waits on.
-        if (!this.isCurrentLayout())
-        {
-            return;
-        }
+        if (!this.isCurrentLayout()) return;
 
         AtomicLong epoch = this.simFeedbackEpochs.get(s88);
 
         synchronized (epoch)
         {
-            if (epoch.get() == stamp)
-            {
-                this.control.setFeedbackState(s88, false);
-            }
+            if (epoch.get() == stamp) this.control.setFeedbackState(s88, false);
         }
     }
 
@@ -3016,10 +3001,7 @@ public class Layout
 
         // Nothing to move it to: right for a real terminus, but on a may-turn square the operator's "keep the
         // direction" was not honored (a may-turn dead end has only the turning copy), so it is said.
-        if (!mustTurnAt(arrived))
-        {
-            this.control.logf("autolayout.log.noPlainCopyToStandOn", placeNameOf(arrived));
-        }
+        if (!mustTurnAt(arrived)) this.control.logf("autolayout.log.noPlainCopyToStandOn", placeNameOf(arrived));
     }
 
     /** What a person calls the track an edge runs over: "From -> To" by square, without the builder's headings. */
@@ -3374,10 +3356,7 @@ public class Layout
             // As a configuration failure does, and only the edges actually taken: releasing others clears lock edges
             // that may now be another train's.  Not with none taken: handleMisconfiguredPath would throw on the empty
             // list.
-            if (edgesLocked > 0)
-            {
-                this.handleMisconfiguredPath(path.subList(0, edgesLocked), loc);
-            }
+            if (edgesLocked > 0) this.handleMisconfiguredPath(path.subList(0, edgesLocked), loc);
 
             this.takingPath.remove(loc);
 
@@ -3398,10 +3377,7 @@ public class Layout
         // In pure simulation mode the accessories are not really actuated, so there is nothing to
         // validate - skip the guard entirely (see setSimulate: sim requires debug + no connection).
         // Also skip when the user has disabled path integrity validation.
-        if (this.simulate || !PATH_INTEGRITY_VALIDATION)
-        {
-            return true;
-        }
+        if (this.simulate || !PATH_INTEGRITY_VALIDATION) return true;
 
         // Verify the accessories actually reached their commanded state (this wait does not hold the
         // Layout monitor).  If not, stop the locomotive and release its locks (returning false so
@@ -3459,10 +3435,7 @@ public class Layout
             }
         }
 
-        if (accessories.isEmpty())
-        {
-            return true;
-        }
+        if (accessories.isEmpty()) return true;
 
         // Woken by every CS echo (MarklinAccessory notifies the monitor), and at least every STOP_CHECK_MS so a Stop, a
         // power change or a stopped run ends the wait at once instead of after the station's backlog.
@@ -3474,10 +3447,7 @@ public class Layout
             {
                 long remaining = deadline - System.currentTimeMillis();
 
-                if (remaining <= 0 || this.stopsOrdered.get() != stops || this.control.getPowerEpoch() != power)
-                {
-                    break;
-                }
+                if (remaining <= 0 || this.stopsOrdered.get() != stops || this.control.getPowerEpoch() != power) break;
 
                 long echoesBefore = Accessory.echoes;
 
@@ -3517,10 +3487,7 @@ public class Layout
     {
         for (int i = 0; i < accessories.size(); i++)
         {
-            if (!accessories.get(i).isConfirmedAt(desired.get(i)))
-            {
-                return false;
-            }
+            if (!accessories.get(i).isConfirmedAt(desired.get(i))) return false;
         }
 
         return true;
@@ -3602,10 +3569,7 @@ public class Layout
             pathValidationFailureCount++;
             alert = !pathValidationAlertShown && pathValidationFailureCount >= PATH_VALIDATION_ALERT_THRESHOLD;
 
-            if (alert)
-            {
-                pathValidationAlertShown = true;
-            }
+            if (alert) pathValidationAlertShown = true;
         }
 
         if (alert)
@@ -3713,10 +3677,7 @@ public class Layout
 
                     if (givenUp == null || !givenUp.contains(e))
                     {
-                        for (Edge lockEdge : e.getLockEdges())
-                        {
-                            lockEdge.setLockedEdgeUnoccupied();
-                        }
+                        for (Edge lockEdge : e.getLockEdges()) lockEdge.setLockedEdgeUnoccupied();
                     }
 
                     if (this.control.isDebug())
@@ -3935,10 +3896,7 @@ public class Layout
     {
         for (Edge e : path)
         {
-            if (e.getEnd().isReversing())
-            {
-                return true;
-            }
+            if (e.getEnd().isReversing()) return true;
         }
 
         return false;
@@ -4091,10 +4049,7 @@ public class Layout
             finally
             {
                 // In a finally, or a thread killed by anything leaves the layout running for ever.
-                if (this.locomotiveThreads.decrementAndGet() == 0)
-                {
-                    announceRunFinished();
-                }
+                if (this.locomotiveThreads.decrementAndGet() == 0) announceRunFinished();
             }
         }).start();
     }
@@ -4131,10 +4086,7 @@ public class Layout
         // path and reported nothing.  Claims first (see pathHeldBy).
         List<Edge> given = this.pathHeldBy(loc);
 
-        if (given != null && !given.isEmpty() && given.get(0).getStart() != null)
-        {
-            return given.get(0).getStart();
-        }
+        if (given != null && !given.isEmpty() && given.get(0).getStart() != null) return given.get(0).getStart();
 
         return this.getLocomotiveLocation(loc);
     }
@@ -4168,10 +4120,7 @@ public class Layout
         Collections.sort(ends, (Point p1, Point p2) ->
         {
             // Equal, always, for the rule that ignores priority (OB-156), so the shuffle survives untouched.
-            if (this.pathPreference == PathPreference.RANDOM_ANY_STATION)
-            {
-                return 0;
-            }
+            if (this.pathPreference == PathPreference.RANDOM_ANY_STATION) return 0;
 
             // Random order if equivalent
             if (p1.getPriority() == p2.getPriority())
@@ -6267,10 +6216,7 @@ public class Layout
                     // Only a path this locomotive actually got: a lock-phase failure is already recovered by
                     // configureAndLockPath, and unlocking the whole path over it would clear the start reservation and
                     // release counted lock edges never taken.
-                    if (hadItsPath)
-                    {
-                        this.unlockPath(path, loc);
-                    }
+                    if (hadItsPath) this.unlockPath(path, loc);
 
                     this.clearedEdges.remove(loc);
                     this.releasedEarly.remove(loc);
@@ -6290,10 +6236,7 @@ public class Layout
             if (homeBound) this.returningHome.remove(loc);
 
             // In a finally, as in runLocomotive: otherwise the layout reads as running for the rest of the session.
-            if (this.locomotiveThreads.decrementAndGet() == 0)
-            {
-                announceRunFinished();
-            }
+            if (this.locomotiveThreads.decrementAndGet() == 0) announceRunFinished();
         }
     }
 
@@ -6325,19 +6268,13 @@ public class Layout
             // With the reason this layout recorded when invalidated, not lastError, which names the latest failure.
             this.control.logf("autolayout.errorConfigurationInvalidMustReload");
 
-            if (this.invalidReason != null)
-            {
-                this.control.log(this.invalidReason);
-            }
+            if (this.invalidReason != null) this.control.log(this.invalidReason);
 
             return false;
         }
 
         // Retired graph: refuse before configureAndLockPath throws switches on a replaced layout's path.
-        if (!this.isCurrentLayout())
-        {
-            return false;
-        }
+        if (!this.isCurrentLayout()) return false;
 
         // A speed of 0 is not a dispatch: the thread would wait forever on a sensor a stationary train never reaches,
         // with isRunning() stuck true.
@@ -6642,10 +6579,7 @@ public class Layout
 
                         waitingToClear.add(new int[] { i - 1, 0, edgeLeftEndsAt });
 
-                        for (int[] waiting : waitingToClear)
-                        {
-                            waiting[1] = Math.max(0, headSeenAt - waiting[2]);
-                        }
+                        for (int[] waiting : waitingToClear) waiting[1] = Math.max(0, headSeenAt - waiting[2]);
 
                         for (java.util.Iterator<int[]> pending = waitingToClear.iterator();
                             pending.hasNext();)
@@ -6805,10 +6739,7 @@ public class Layout
                 List<Point> milestones = this.locomotiveMilestones.get(loc);
 
                 // Null if the locomotive was deleted from the database while this path was running
-                if (milestones != null && !recordedAlready)
-                {
-                    milestones.add(current);
-                }
+                if (milestones != null && !recordedAlready) milestones.add(current);
 
                 // Fire callbacks
                 for (TriFunction<List<Edge>, Locomotive, Boolean, Void> callback : this.callbacks.values())
@@ -7250,10 +7181,7 @@ public class Layout
 
         for (Point p : this.points.values())
         {
-            if (p != null && p.isDestination() && p.isActive() && reaches.add(p.getName()))
-            {
-                frontier.add(p);
-            }
+            if (p != null && p.isDestination() && p.isActive() && reaches.add(p.getName())) frontier.add(p);
         }
 
         while (!frontier.isEmpty())
@@ -7484,10 +7412,7 @@ public class Layout
 
         try
         {
-            for (String accessory : accessories)
-            {
-                refreshOneSignal(accessory);
-            }
+            for (String accessory : accessories) refreshOneSignal(accessory);
         }
         catch (Exception e)
         {
@@ -7794,15 +7719,9 @@ public class Layout
 
         java.util.Set<String> seen = new LinkedHashSet<>();
 
-        for (Point point : this.points.values())
-        {
-            seen.addAll(point.getProtectingSignals());
-        }
+        for (Point point : this.points.values()) seen.addAll(point.getProtectingSignals());
 
-        for (String accessory : seen)
-        {
-            refreshOneSignal(accessory);
-        }
+        for (String accessory : seen) refreshOneSignal(accessory);
     }
 
     /**
@@ -7871,10 +7790,7 @@ public class Layout
                 if (end == null || !seen.add(end)) continue;
 
                 // Somewhere a train can be sent, by the shared clauses only: no locomotive here to ask the rest of.
-                if (!end.equals(from) && isSendableDestination(end))
-                {
-                    return true;
-                }
+                if (!end.equals(from) && isSendableDestination(end)) return true;
 
                 // No further than a station trips must end at (FR-111).
                 if (!end.isStopOnly()) queue.add(end);
@@ -8114,10 +8030,7 @@ public class Layout
         HomeStaging staging = HomeStaging.snapshot(this);
 
         // Debug only: the audit logs every path it rejects, thousands of lines.
-        if (this.control.isDebug())
-        {
-            this.control.logf("autolayout.infoStagingAudit", staging.auditAgainstRuntime());
-        }
+        if (this.control.isDebug()) this.control.logf("autolayout.infoStagingAudit", staging.auditAgainstRuntime());
 
         HomeStaging.Plan plan = staging.plan();
 
@@ -8501,10 +8414,7 @@ public class Layout
 
         // Written only when set and no plan has the timetable on loan, or a folded Return Home plan would reload as an
         // ordinary timetable, dispatching each entry as the previous one starts.
-        if (this.timetableSequential && owners == null)
-        {
-            jsonObj.put("timetableSequential", true);
-        }
+        if (this.timetableSequential && owners == null) jsonObj.put("timetableSequential", true);
         jsonObj.put("activateRoutes", this.isActivateRoutes());
         jsonObj.put("activateRouteIDs", new JSONArray(this.activateRouteIDs));
 
@@ -9669,10 +9579,7 @@ public class Layout
             Point landed = layout.getPoint(entry.getKey());
 
             // Only onto a square whose placement was honored, or the next train to reserve it inherits the tail.
-            if (landed != null && landed.getCurrentLocomotive() != null)
-            {
-                landed.setArrivedFrom(entry.getValue());
-            }
+            if (landed != null && landed.getCurrentLocomotive() != null) landed.setArrivedFrom(entry.getValue());
         }
 
         // And the roads, likewise; a road naming a missing edge is dropped whole (see roadNamed).

@@ -97,10 +97,7 @@ public class FacingPrompt
     {
         if (!wouldAsk(canHold)) return null;
 
-        if (answeredByATest != null)
-        {
-            return choicesFor(canHold).contains(answeredByATest) ? answeredByATest : null;
-        }
+        if (answeredByATest != null) return choicesFor(canHold).contains(answeredByATest) ? answeredByATest : null;
 
         return ask(parent, I18n.f("autolayout.ui.askHomeFacing", locomotive, station, I18n.t("ui.main.returnHome")),
             choicesFor(canHold), null);
@@ -190,10 +187,7 @@ public class FacingPrompt
             {
                 Object[] options = new Object[choices.size()];
 
-                for (int i = 0; i < choices.size(); i++)
-                {
-                    options[i] = label.apply(choices.get(i));
-                }
+                for (int i = 0; i < choices.size(); i++) options[i] = label.apply(choices.get(i));
 
                 int chose = JOptionPane.showOptionDialog(parent, question, title,
                     JOptionPane.DEFAULT_OPTION, JOptionPane.QUESTION_MESSAGE, null,

@@ -404,10 +404,7 @@ public class UsageChartPanel extends JComponent
     {
         g2.setColor(textColor);
 
-        for (int[] at : dateLabels(fm))
-        {
-            g2.drawString(bars.get(at[0]).label, at[1], at[2] + fm.getAscent());
-        }
+        for (int[] at : dateLabels(fm)) g2.drawString(bars.get(at[0]).label, at[1], at[2] + fm.getAscent());
     }
 
     /** Where the date labels are drawn, each as {bar, left, top, width}; from the newest bar back, so it is labeled. */

@@ -287,10 +287,7 @@ public class DiagramMonitorDriver
         }
         catch (Exception e)
         {
-            if (ui != null && ui.getModel() != null && ui.getModel().isDebug())
-            {
-                ui.getModel().log(e);
-            }
+            if (ui != null && ui.getModel() != null && ui.getModel().isDebug()) ui.getModel().log(e);
         }
     }
 

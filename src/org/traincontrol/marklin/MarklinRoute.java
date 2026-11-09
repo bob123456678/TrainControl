@@ -145,10 +145,7 @@ public class MarklinRoute extends Route
             // disable/enable cycle in the meantime starts a second monitor, and the route then fires
             // once per monitor on every trigger.  applyAutonomyRouteActivations does exactly that when
             // one autonomy configuration omits the route and the next one includes it.
-            if (this.monitorThread != null && this.monitorThread.isAlive())
-            {
-                return false;
-            }
+            if (this.monitorThread != null && this.monitorThread.isAlive()) return false;
 
             this.monitorThread = new Thread(() ->
             {

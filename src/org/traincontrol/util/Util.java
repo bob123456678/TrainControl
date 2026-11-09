@@ -175,10 +175,7 @@ public class Util
     {
         File dir = new File(dataPath(BACKUP_FOLDER));
 
-        if (dir.isDirectory() || dir.mkdirs())
-        {
-            return new File(dir, fileName).getPath();
-        }
+        if (dir.isDirectory() || dir.mkdirs()) return new File(dir, fileName).getPath();
 
         // Folder unavailable - fall back to the current directory
         return fileName;
@@ -236,10 +233,7 @@ public class Util
     {
         File dir = locIconFolder();
 
-        if (dir.isDirectory() || dir.mkdirs())
-        {
-            return new File(dir, fileName);
-        }
+        if (dir.isDirectory() || dir.mkdirs()) return new File(dir, fileName);
 
         return null;
     }
@@ -425,10 +419,7 @@ public class Util
 
                 if (children == null) return;
 
-                for (File child : children)
-                {
-                    addToZip(out, child, name + "/" + child.getName(), failed, depth + 1);
-                }
+                for (File child : children) addToZip(out, child, name + "/" + child.getName(), failed, depth + 1);
 
                 return;
             }
@@ -515,10 +506,7 @@ public class Util
                 return;
             }
 
-            for (File child : children)
-            {
-                copyInto(child, new File(target, child.getName()), failed, visited, depth + 1);
-            }
+            for (File child : children) copyInto(child, new File(target, child.getName()), failed, visited, depth + 1);
 
             return;
         }
@@ -712,10 +700,7 @@ public class Util
 
         while (tagged.find())
         {
-            if (anchored == null || tagged.group(1).length() > anchored.length())
-            {
-                anchored = tagged.group(1);
-            }
+            if (anchored == null || tagged.group(1).length() > anchored.length()) anchored = tagged.group(1);
         }
 
         if (anchored != null) return anchored;

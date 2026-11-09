@@ -224,10 +224,7 @@ public class TimetablePath
         {
             return false;
         }
-        if (!Objects.equals(this.turnAtTheEnd, other.turnAtTheEnd))
-        {
-            return false;
-        }
+        if (!Objects.equals(this.turnAtTheEnd, other.turnAtTheEnd)) return false;
         
         return Objects.equals(this.path, other.path);
     }
@@ -336,10 +333,7 @@ public class TimetablePath
         }
 
         // WHAT THE ARRIVAL WAS TOLD, where it was recorded by hand
-        if (json.has("turnAtTheEnd"))
-        {
-            ttp.setTurnAtTheEnd(json.getBoolean("turnAtTheEnd"));
-        }
+        if (json.has("turnAtTheEnd")) ttp.setTurnAtTheEnd(json.getBoolean("turnAtTheEnd"));
         
         return ttp;
     }

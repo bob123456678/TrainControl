@@ -63,10 +63,7 @@ public class AutonomyReport
 
             StringBuilder names = new StringBuilder();
 
-            for (String page : report.getDeclinedBecauseAbsent())
-            {
-                names.append("\n    ").append(page);
-            }
+            for (String page : report.getDeclinedBecauseAbsent()) names.append("\n    ").append(page);
 
             JOptionPane.showMessageDialog(owner,
                 I18n.f("autosetup.ui.infoSetupNotTidied", names.toString()),
@@ -102,10 +99,7 @@ public class AutonomyReport
         {
             text.append(I18n.t("autosetup.ui.infoNamesForgotten")).append("\n\n");
 
-            for (String forgotten : report.getForgottenNames())
-            {
-                text.append("    ").append(forgotten).append("\n");
-            }
+            for (String forgotten : report.getForgottenNames()) text.append("    ").append(forgotten).append("\n");
         }
 
         if (!report.getNamesStillReferenced().isEmpty())
@@ -130,10 +124,7 @@ public class AutonomyReport
 
             text.append(I18n.t("autosetup.ui.infoTilePropertiesDropped")).append("\n\n");
 
-            for (String dropped : report.getDroppedTileProperties())
-            {
-                text.append("    ").append(dropped).append("\n");
-            }
+            for (String dropped : report.getDroppedTileProperties()) text.append("    ").append(dropped).append("\n");
         }
 
         return text.toString();

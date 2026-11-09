@@ -342,10 +342,7 @@ public final class SelfUpdate
         {
             byte[] buffer = new byte[65536];
 
-            for (int read = in.read(buffer); read != -1; read = in.read(buffer))
-            {
-                digest.update(buffer, 0, read);
-            }
+            for (int read = in.read(buffer); read != -1; read = in.read(buffer)) digest.update(buffer, 0, read);
         }
 
         StringBuilder hex = new StringBuilder();

@@ -595,10 +595,7 @@ public final class JarUpdater
 
         File candidate = new File(folder, stem + "_old.jar");
 
-        for (int n = 2; candidate.exists(); n++)
-        {
-            candidate = new File(folder, stem + "_old_" + n + ".jar");
-        }
+        for (int n = 2; candidate.exists(); n++) candidate = new File(folder, stem + "_old_" + n + ".jar");
 
         return candidate;
     }

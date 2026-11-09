@@ -245,10 +245,7 @@ public final class DiagramExport
 
         for (java.awt.Component child : container.getComponents())
         {
-            if (child instanceof java.awt.Container)
-            {
-                layoutEverything((java.awt.Container) child);
-            }
+            if (child instanceof java.awt.Container) layoutEverything((java.awt.Container) child);
         }
     }
 

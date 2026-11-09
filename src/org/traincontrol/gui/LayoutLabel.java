@@ -514,10 +514,7 @@ public final class LayoutLabel extends JLabel
                                                     return;
                                                 }
 
-                                                if (answer == TrainControlUI.RouteConflict.REFUSED)
-                                                {
-                                                    return;
-                                                }
+                                                if (answer == TrainControlUI.RouteConflict.REFUSED) return;
 
                                                 component.execSwitching();
                                             }, ROUTE_CONFLICT_THREAD).start();
@@ -1195,10 +1192,7 @@ public final class LayoutLabel extends JLabel
 
             // And the badge back on top of the line (MT-076): a station is where the train is going, so it must not be
             // buried; only where an overlay could have covered it.
-            if (overlay != null && annotation != null)
-            {
-                annotation.paintBadgeOverRun(g2, getWidth(), getHeight());
-            }
+            if (overlay != null && annotation != null) annotation.paintBadgeOverRun(g2, getWidth(), getHeight());
         }
         finally
         {
@@ -1607,10 +1601,7 @@ public final class LayoutLabel extends JLabel
     /** The roads of this square a standing train is lying across, as the sides they join. */
     private java.util.List<org.traincontrol.automationui.TilePorts.Route> coveredRoads()
     {
-        if (edit || square == null || tcUI == null || component == null)
-        {
-            return new java.util.ArrayList<>();
-        }
+        if (edit || square == null || tcUI == null || component == null) return new java.util.ArrayList<>();
 
         return routesOf(tcUI.coveredRoutesAt(square));
     }

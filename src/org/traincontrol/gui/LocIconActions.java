@@ -314,10 +314,7 @@ final class LocIconActions
                 l.setLocalImageURL(chosenURL);
                 TrainControlUI.getPrefs().put(TrainControlUI.LAST_USED_ICON_FOLDER, f.getParent());
 
-                if (!chosenURL.equals(superseded) && Util.isLocIconFile(superseded))
-                {
-                    deleteLocIconFile(superseded);
-                }
+                if (!chosenURL.equals(superseded) && Util.isLocIconFile(superseded)) deleteLocIconFile(superseded);
 
                 this.ui.repaintLoc(true, null);
                 this.ui.repaintMappings(Collections.singletonList(l), true);
@@ -458,10 +455,7 @@ final class LocIconActions
 
         // Not when the picture cropped was itself one of our crops: a crop with no note re-crops from the crop itself,
         // and a note would name a crop the caller deletes; no note beats a wrong one.
-        if (!Util.isLocIconFile(chosen.toPath().toUri().toString()))
-        {
-            rememberCropSource(target, chosen, view);
-        }
+        if (!Util.isLocIconFile(chosen.toPath().toUri().toString())) rememberCropSource(target, chosen, view);
 
         return target.toPath().toUri().toString();
     }
@@ -657,10 +651,7 @@ final class LocIconActions
                 if (fresh != null) rememberCropSource(fresh, remembered);
             }
 
-            if (!cropped.equals(superseded) && Util.isLocIconFile(superseded))
-            {
-                deleteLocIconFile(superseded);
-            }
+            if (!cropped.equals(superseded) && Util.isLocIconFile(superseded)) deleteLocIconFile(superseded);
 
             // Told, because the difference is invisible: re-cropping a crop cannot pan back out to anything the
             // previous crop threw away.  The message does not claim to know WHY there was no original.

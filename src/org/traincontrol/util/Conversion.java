@@ -128,10 +128,7 @@ public class Conversion
     {
         int end = 0;
 
-        while (end < component.length() && Character.isDigit(component.charAt(end)))
-        {
-            end++;
-        }
+        while (end < component.length() && Character.isDigit(component.charAt(end))) end++;
 
         return end == 0 ? 0 : Integer.parseInt(component.substring(0, end));
     }

@@ -703,10 +703,7 @@ final class SessionImport
     {
         if (file == null) return ImportFormat.UNKNOWN;
 
-        if (file.optJSONObject(AutonomyCompanionStore.EXPORT_CONFIGURATION) != null)
-        {
-            return ImportFormat.BUNDLE;
-        }
+        if (file.optJSONObject(AutonomyCompanionStore.EXPORT_CONFIGURATION) != null) return ImportFormat.BUNDLE;
 
         // A list of Points, which is the old graph and nothing else
         if (file.optJSONArray("points") != null) return ImportFormat.LEGACY_GRAPH;

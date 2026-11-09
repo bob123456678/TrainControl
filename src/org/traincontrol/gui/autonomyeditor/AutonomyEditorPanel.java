@@ -803,10 +803,7 @@ public class AutonomyEditorPanel extends JPanel
     /** Stretches buttons to the column's width, as the window's Save and Cancel are (`setColumnWidth`). */
     private void fillWidth(javax.swing.AbstractButton... buttons)
     {
-        for (javax.swing.AbstractButton button : buttons)
-        {
-            stretched.add(button);
-        }
+        for (javax.swing.AbstractButton button : buttons) stretched.add(button);
     }
 
     /**
@@ -1029,10 +1026,7 @@ public class AutonomyEditorPanel extends JPanel
     {
         if (!anythingIsArmed()) return false;
 
-        for (JToggleButton other : toolButtons)
-        {
-            other.setSelected(false);
-        }
+        for (JToggleButton other : toolButtons) other.setSelected(false);
 
         tool = Tool.NONE;
 
@@ -2212,10 +2206,7 @@ public class AutonomyEditorPanel extends JPanel
         if (!mayCarryACaption(onTarget)) return I18n.t("autosetup.ui.errorDropOnControl");
 
         // Refused, not replaced: the name there would vanish without trace.
-        if (session.getCaptionTarget(to) != null)
-        {
-            return I18n.f("autosetup.ui.errorDropOccupied", describeTile(to));
-        }
+        if (session.getCaptionTarget(to) != null) return I18n.f("autosetup.ui.errorDropOccupied", describeTile(to));
 
         return null;
     }
@@ -2270,10 +2261,7 @@ public class AutonomyEditorPanel extends JPanel
         for (org.traincontrol.automationui.GraphReducer.ReducedPoint point
             : session.getReducer().getPoints().values())
         {
-            if (point.isStation() && point.getName() != null && point.getTile() != null)
-            {
-                stations.add(point.getTile());
-            }
+            if (point.isStation() && point.getName() != null && point.getTile() != null) stations.add(point.getTile());
         }
 
         return nearestOf(from, stations);
@@ -2313,10 +2301,7 @@ public class AutonomyEditorPanel extends JPanel
     /** Notes a square if it is a station, so the next label defaults to it. */
     void rememberIfStation(TileKey tile)
     {
-        if (tile != null && session != null && session.getStore().isStation(tile))
-        {
-            lastStationTouched = tile;
-        }
+        if (tile != null && session != null && session.getStore().isStation(tile)) lastStationTouched = tile;
     }
 
     /** The answer to the take-another-station's-name question for tests, or null to ask. */
@@ -3577,10 +3562,7 @@ public class AutonomyEditorPanel extends JPanel
 
         java.awt.Window window = javax.swing.SwingUtilities.getWindowAncestor(this);
 
-        while (window != null && !(window instanceof TrainControlUI))
-        {
-            window = window.getOwner();
-        }
+        while (window != null && !(window instanceof TrainControlUI)) window = window.getOwner();
 
         return window instanceof TrainControlUI ? (TrainControlUI) window : null;
     }
@@ -4284,10 +4266,7 @@ public class AutonomyEditorPanel extends JPanel
         {
             int at = choice.getSelectedIndex();
 
-            if (at >= 0 && at < candidates.size() && onReveal != null)
-            {
-                onReveal.accept(candidates.get(at));
-            }
+            if (at >= 0 && at < candidates.size() && onReveal != null) onReveal.accept(candidates.get(at));
         });
 
         JPanel panel = new JPanel(new java.awt.BorderLayout(0, 6));
@@ -4654,10 +4633,7 @@ public class AutonomyEditorPanel extends JPanel
         else
         {
             // A selection is squares, not runs: each gets the number.
-            for (TileKey target : targets)
-            {
-                session.setTileLength(target, typed);
-            }
+            for (TileKey target : targets) session.setTileLength(target, typed);
         }
 
         selection.clear();
@@ -4821,10 +4797,7 @@ public class AutonomyEditorPanel extends JPanel
             if (changed >= 0) annotationsChanged();
 
             // Armed for the next: a yard is several runs.
-            if (changed >= 0 && tool == Tool.ONE_WAY)
-            {
-                say(hint, I18n.f("autosetup.ui.oneWayDoneAgain", changed));
-            }
+            if (changed >= 0 && tool == Tool.ONE_WAY) say(hint, I18n.f("autosetup.ui.oneWayDoneAgain", changed));
 
             refresh();
             return;
@@ -5710,10 +5683,7 @@ public class AutonomyEditorPanel extends JPanel
      */
     private String legColor(TileKey to, boolean forward)
     {
-        if (endsManualOnly(to))
-        {
-            return I18n.t("autosetup.ui.testColorPurple");
-        }
+        if (endsManualOnly(to)) return I18n.t("autosetup.ui.testColorPurple");
 
         return I18n.t(forward ? "autosetup.ui.testColorYellow" : "autosetup.ui.testColorAmber");
     }
@@ -5732,10 +5702,7 @@ public class AutonomyEditorPanel extends JPanel
 
         for (org.traincontrol.automationui.GraphReducer.ReducedEdge edge : run)
         {
-            for (org.traincontrol.automationui.GraphReducer.TileStep step : edge.getPath())
-            {
-                seq.add(step.getTile());
-            }
+            for (org.traincontrol.automationui.GraphReducer.TileStep step : edge.getPath()) seq.add(step.getTile());
 
             seq.add(edge.getEnd());
         }
@@ -5777,10 +5744,7 @@ public class AutonomyEditorPanel extends JPanel
 
         java.util.List<String> names = new java.util.ArrayList<>();
 
-        for (int i = 0; i < run.size() - 1; i++)
-        {
-            names.add(describeTile(run.get(i).getEnd()));
-        }
+        for (int i = 0; i < run.size() - 1; i++) names.add(describeTile(run.get(i).getEnd()));
 
         // The space is here because Properties strips a value's leading whitespace.
         return " " + I18n.f("autosetup.ui.testVia", String.join(", ", names));
@@ -5917,10 +5881,7 @@ public class AutonomyEditorPanel extends JPanel
             marks.addAll(session.directionMarks(tile));
 
             // A bare layout gets one arrow per run between sensors.
-            if (marks.isEmpty() && flowMarks.containsKey(tile))
-            {
-                marks.add(flowMarks.get(tile));
-            }
+            if (marks.isEmpty() && flowMarks.containsKey(tile)) marks.add(flowMarks.get(tile));
         }
 
         // 0 is "does not count", not drawn
@@ -6101,10 +6062,7 @@ public class AutonomyEditorPanel extends JPanel
         // Set on the run, not the tile: a run has one direction.
         int set = session.setRunDirection(tile, routeId, direction);
 
-        if (set == 0)
-        {
-            say(hint, I18n.t("autosetup.ui.oneWayNoPath"));
-        }
+        if (set == 0) say(hint, I18n.t("autosetup.ui.oneWayNoPath"));
 
         refresh();
 
@@ -6178,10 +6136,7 @@ public class AutonomyEditorPanel extends JPanel
         // One re-derivation for the whole run.
         java.util.Map<TileKey, Integer> lengths = new java.util.LinkedHashMap<>();
 
-        for (TileKey square : runTilesOf(tile))
-        {
-            lengths.put(square, square.equals(leader) ? length : 0);
-        }
+        for (TileKey square : runTilesOf(tile)) lengths.put(square, square.equals(leader) ? length : 0);
 
         session.setTileLengths(lengths);
 
@@ -6470,10 +6425,7 @@ public class AutonomyEditorPanel extends JPanel
         // The whole sentence, for a narrow window (OB-342)
         banner.setToolTipText(banner.getText());
 
-        if (!selection.isEmpty())
-        {
-            say(hint, I18n.f("autosetup.ui.labelTilesSelected", selection.size()));
-        }
+        if (!selection.isEmpty()) say(hint, I18n.f("autosetup.ui.labelTilesSelected", selection.size()));
 
         if (onChanged != null) onChanged.run();
 

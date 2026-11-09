@@ -606,17 +606,11 @@ public class CurrentKeyRow extends JComponent
             Color text = foreground();
             Color edge = outline();
 
-            if (at.keycap != null)
-            {
-                paintKeycap(g2, at, edge, text);
-            }
+            if (at.keycap != null) paintKeycap(g2, at, edge, text);
 
             paintPage(g2, at);
 
-            if (at.decoder != null)
-            {
-                paintDecoder(g2, at);
-            }
+            if (at.decoder != null) paintDecoder(g2, at);
         }
         finally
         {
@@ -647,10 +641,7 @@ public class CurrentKeyRow extends JComponent
 
         g2.setColor(DECODER_TEXT);
 
-        if (at.divider != null)
-        {
-            g2.fillRect(at.divider.x, at.divider.y, at.divider.width, at.divider.height);
-        }
+        if (at.divider != null) g2.fillRect(at.divider.x, at.divider.y, at.divider.width, at.divider.height);
 
         g2.setFont(TEXT_FONT);
 

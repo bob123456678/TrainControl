@@ -744,10 +744,7 @@ public class TileAnnotation
         g.setColor(HATCH);
         g.setStroke(new BasicStroke(1f));
 
-        for (int at = -height; at < width; at += 5)
-        {
-            g.drawLine(at, 0, at + height, height);
-        }
+        for (int at = -height; at < width; at += 5) g.drawLine(at, 0, at + height, height);
     }
 
 

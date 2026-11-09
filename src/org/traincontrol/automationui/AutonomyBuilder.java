@@ -420,10 +420,7 @@ public class AutonomyBuilder
 
         for (ReducedEdge edge : reducer.getEdges())
         {
-            if (edge.getStart().equals(tile) && edge.getExitSide() != null)
-            {
-                sides.add(edge.getExitSide());
-            }
+            if (edge.getStart().equals(tile) && edge.getExitSide() != null) sides.add(edge.getExitSide());
         }
 
         return sides;
@@ -955,10 +952,7 @@ public class AutonomyBuilder
 
                 // A berth is an ordinary station that autonomy is told not to choose, not a reversing one (which would
                 // drag along reversing on arrival and no path routed through): a terminus and a shut arm say those.
-                if (manualOnly.contains(point.getTile()))
-                {
-                    json.put(AUTO_DESTINATION, false);
-                }
+                if (manualOnly.contains(point.getTile())) json.put(AUTO_DESTINATION, false);
 
                 // Which way a train on this copy points, on a split square (OB-282): what Return Home compares to tell
                 // whether a train is home facing the way it was homed.  The facing, not the arrival side: a turning
@@ -995,10 +989,7 @@ public class AutonomyBuilder
 
             for (Node from : nodesFor(edge.getStart()))
             {
-                if (!from.leavesBy(edge.getExitSide(), onwardFrom(edge.getStart(), from.arrival)))
-                {
-                    continue;
-                }
+                if (!from.leavesBy(edge.getExitSide(), onwardFrom(edge.getStart(), from.arrival))) continue;
 
                 for (Node to : nodesFor(edge.getEnd()))
                 {
@@ -1081,10 +1072,7 @@ public class AutonomyBuilder
                 commands.put(command);
             }
 
-            if (commands.length() > 0)
-            {
-                json.put("commands", commands);
-            }
+            if (commands.length() > 0) json.put("commands", commands);
 
             JSONArray lockEdges = new JSONArray();
 
@@ -1139,10 +1127,7 @@ public class AutonomyBuilder
                 }
             }
 
-            if (lockEdges.length() > 0)
-            {
-                json.put("lockedges", lockEdges);
-            }
+            if (lockEdges.length() > 0) json.put("lockedges", lockEdges);
 
             edgeList.put(json);
           }
@@ -1307,10 +1292,7 @@ public class AutonomyBuilder
 
             for (Node from : nodesFor(edge.getStart()))
             {
-                if (!from.leavesBy(edge.getExitSide(), onwardFrom(edge.getStart(), from.arrival)))
-                {
-                    continue;
-                }
+                if (!from.leavesBy(edge.getExitSide(), onwardFrom(edge.getStart(), from.arrival))) continue;
 
                 for (Node to : nodesFor(edge.getEnd()))
                 {
@@ -1372,10 +1354,7 @@ public class AutonomyBuilder
             int suffix = count + 1;
             String candidate = base + " (" + suffix + ")";
 
-            while (seen.containsKey(candidate))
-            {
-                candidate = base + " (" + (++suffix) + ")";
-            }
+            while (seen.containsKey(candidate)) candidate = base + " (" + (++suffix) + ")";
 
             seen.put(base, suffix);
             seen.put(candidate, 1);

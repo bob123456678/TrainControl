@@ -457,10 +457,7 @@ public class LocIconCropDialog extends JDialog
         /** The pointer shape for whatever is under it (`grabAt`'s result), as a java.awt.Cursor constant. */
         private static int cursorFor(String grabbed)
         {
-            if (grabbed == null || "pan".equals(grabbed))
-            {
-                return java.awt.Cursor.MOVE_CURSOR;
-            }
+            if (grabbed == null || "pan".equals(grabbed)) return java.awt.Cursor.MOVE_CURSOR;
 
             switch (grabbed)
             {
@@ -553,10 +550,7 @@ public class LocIconCropDialog extends JDialog
         {
             Rectangle w = cropWindow();
 
-            if (Math.abs(x - w.getCenterX()) <= PAN_GRIP && Math.abs(y - w.getCenterY()) <= PAN_GRIP)
-            {
-                return "pan";
-            }
+            if (Math.abs(x - w.getCenterX()) <= PAN_GRIP && Math.abs(y - w.getCenterY()) <= PAN_GRIP) return "pan";
 
             // Only along the side it belongs to, so the corners are the only place two of them meet.
             boolean nearLeft = Math.abs(x - w.x) <= GRIP && y >= w.y - GRIP && y <= w.y + w.height + GRIP;
@@ -958,18 +952,12 @@ public class LocIconCropDialog extends JDialog
             // reads as a selection handle you can drag anywhere, and these only move two edges.
             for (int cx : new int[] {window.x, window.x + window.width - arm})
             {
-                for (int cy : new int[] {window.y, window.y + window.height - thick})
-                {
-                    g2.fillRect(cx, cy, arm, thick);
-                }
+                for (int cy : new int[] {window.y, window.y + window.height - thick}) g2.fillRect(cx, cy, arm, thick);
             }
 
             for (int cx : new int[] {window.x, window.x + window.width - thick})
             {
-                for (int cy : new int[] {window.y, window.y + window.height - arm})
-                {
-                    g2.fillRect(cx, cy, thick, arm);
-                }
+                for (int cy : new int[] {window.y, window.y + window.height - arm}) g2.fillRect(cx, cy, thick, arm);
             }
 
             // And one on the middle of each side, which is where somebody reaches to change only the

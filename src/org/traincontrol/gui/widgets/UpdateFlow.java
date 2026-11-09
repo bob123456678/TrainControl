@@ -151,10 +151,7 @@ public final class UpdateFlow
 
                     this.ui.getModel().logf("ui.errorDownloadingUpdateFile");
 
-                    if (this.ui.getModel().isDebug())
-                    {
-                        this.ui.getModel().log(e);
-                    }
+                    if (this.ui.getModel().isDebug()) this.ui.getModel().log(e);
 
                     return;
                 }

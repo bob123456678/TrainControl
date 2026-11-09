@@ -54,10 +54,7 @@ final class LocomotiveActions
                 I18n.t("loc.ui.promptEnterLocomotiveNameToJumpTo")
             );
 
-            if (input != null)
-            {
-                this.ui.jumpToLocomotive(input);
-            }
+            if (input != null) this.ui.jumpToLocomotive(input);
         });
     }
 
@@ -613,10 +610,7 @@ final class LocomotiveActions
             if (l != null)
             {
                 // Also delete locomotive from active loc list
-                if (l.equals(this.ui.activeLoc))
-                {
-                    this.ui.activeLoc = null;
-                }
+                if (l.equals(this.ui.activeLoc)) this.ui.activeLoc = null;
 
                 // What Control+X is holding, if it is this locomotive: cut a train off a square, delete the locomotive,
                 // press Control+V, and the paste resolves a locomotive no longer in the database.  The holder is in the

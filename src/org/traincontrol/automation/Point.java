@@ -614,10 +614,7 @@ public class Point
             for (Point one : points)
             {
                 // De-duplicated, and a point never blocks itself (that would shut the station to everything).
-                if (one != null && one != this && !this.blockedBy.contains(one))
-                {
-                    this.blockedBy.add(one);
-                }
+                if (one != null && one != this && !this.blockedBy.contains(one)) this.blockedBy.add(one);
             }
         }
 
@@ -1032,25 +1029,16 @@ public class Point
 
         // Written because parseAuto reads it: without it a re-imported graph splits every square into independent
         // Points.
-        if (this.block != null)
-        {
-            jsonObj.put("block", this.block);
-        }
+        if (this.block != null) jsonObj.put("block", this.block);
 
         // Read back by parseAuto too
         if (this.square != null) jsonObj.put("square", this.square);
 
         // written only when it differs from the default, so a file gains no noise from a setting
         // nobody has touched
-        if (!this.autoDestination)
-        {
-            jsonObj.put("autoDestination", this.autoDestination);
-        }
+        if (!this.autoDestination) jsonObj.put("autoDestination", this.autoDestination);
 
-        if (this.stopOnly)
-        {
-            jsonObj.put(RUN_THROUGH, false);
-        }
+        if (this.stopOnly) jsonObj.put(RUN_THROUGH, false);
 
         if (this.priority != 0)
         {
@@ -1080,10 +1068,7 @@ public class Point
             locObj.put("reversible", standing.isReversible());
             // Written only when it is a speed (MT-233): zero means "not set" to parseAuto, and absence says the same
             // thing without being misread, as arrivalFunc and departureFunc below do.
-            if (standing.getPreferredSpeed() > 0)
-            {
-                locObj.put("speed", standing.getPreferredSpeed());
-            }
+            if (standing.getPreferredSpeed() > 0) locObj.put("speed", standing.getPreferredSpeed());
             
             if (standing.getArrivalFunc() != null)
             {
@@ -1123,10 +1108,7 @@ public class Point
 
         // The list's mode, written only where it names the locomotives allowed (FR-121) - an empty list then
         // keeps every locomotive out, so the mode is written whether the list is or not
-        if (this.allowOnlyListed)
-        {
-            jsonObj.put(EXCLUDED_LOCS_MODE, ALLOW_ONLY_LISTED);
-        }
+        if (this.allowOnlyListed) jsonObj.put(EXCLUDED_LOCS_MODE, ALLOW_ONLY_LISTED);
 
         if (!this.blockedBy.isEmpty())
         {

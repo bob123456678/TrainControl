@@ -169,10 +169,7 @@ final class LayoutEditorTrainDrag
         editor.hideCaptionGhost();
         editor.clearCaptionDropTarget();
 
-        if (editor.grid != null && editor.grid.getContainer() != null)
-        {
-            editor.grid.getContainer().setCursor(null);
-        }
+        if (editor.grid != null && editor.grid.getContainer() != null) editor.grid.getContainer().setCursor(null);
 
         editor.ignoreTheClickOf(pressed);
     }

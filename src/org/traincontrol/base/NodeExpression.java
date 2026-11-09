@@ -85,10 +85,7 @@ public abstract class NodeExpression implements Serializable
             NodeExpression left = normalize(((NodeAnd) expr).getLeft());
             NodeExpression right = normalize(((NodeAnd) expr).getRight());
 
-            if (left instanceof NodeOr)
-            {
-                left = new NodeGroup(java.util.Arrays.asList(left));
-            }
+            if (left instanceof NodeOr) left = new NodeGroup(java.util.Arrays.asList(left));
 
             return new NodeAnd(left, right);
         }
@@ -97,10 +94,7 @@ public abstract class NodeExpression implements Serializable
             NodeExpression left = normalize(((NodeOr) expr).getLeft());
             NodeExpression right = normalize(((NodeOr) expr).getRight());
 
-            if (left instanceof NodeAnd)
-            {
-                left = new NodeGroup(java.util.Arrays.asList(left));
-            }
+            if (left instanceof NodeAnd) left = new NodeGroup(java.util.Arrays.asList(left));
 
             return new NodeOr(left, right);
         }
@@ -108,10 +102,7 @@ public abstract class NodeExpression implements Serializable
         {
             List<NodeExpression> normalized = new ArrayList<>();
 
-            for (NodeExpression child : ((NodeGroup) expr).getExpressions())
-            {
-                normalized.add(normalize(child));
-            }
+            for (NodeExpression child : ((NodeGroup) expr).getExpressions()) normalized.add(normalize(child));
 
             return new NodeGroup(normalized);
         }

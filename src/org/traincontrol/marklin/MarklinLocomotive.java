@@ -394,15 +394,9 @@ public class MarklinLocomotive extends Locomotive
             // A decoder change can shrink the function count (MFX 32 to MM2 5), leaving an arrival or departure
             // function beyond it, which no decoder of the new type has.  Clear through the
             // setter, the only writer that validates; it refuses out-of-range values, so it cannot clamp.
-            if (this.getArrivalFunc() != null && this.getArrivalFunc() >= this.numF)
-            {
-                this.setArrivalFunc(null);
-            }
+            if (this.getArrivalFunc() != null && this.getArrivalFunc() >= this.numF) this.setArrivalFunc(null);
 
-            if (this.getDepartureFunc() != null && this.getDepartureFunc() >= this.numF)
-            {
-                this.setDepartureFunc(null);
-            }
+            if (this.getDepartureFunc() != null && this.getDepartureFunc() >= this.numF) this.setDepartureFunc(null);
 
             return true;
         }
@@ -1205,10 +1199,7 @@ public class MarklinLocomotive extends Locomotive
     {
         for (int i = 0; i < this.drivableFunctionCount(); i++)
         {
-            if (this.getF(i))
-            {
-                this.setF(i, false).delay(FUNCTION_DELAY_MS);
-            }
+            if (this.getF(i)) this.setF(i, false).delay(FUNCTION_DELAY_MS);
         }
 
         return this;

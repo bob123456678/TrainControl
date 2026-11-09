@@ -328,10 +328,7 @@ public class LocButtonTransferHandler extends TransferHandler
 
         private void switchPage()
         {
-            if (isValid(pending))
-            {
-                tabs.setSelectedIndex(pending - 1);
-            }
+            if (isValid(pending)) tabs.setSelectedIndex(pending - 1);
 
             // Re-arm, so that resting on the previous/next buttons keeps turning pages
             pending = 0;

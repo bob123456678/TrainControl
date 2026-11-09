@@ -709,10 +709,7 @@ public class LayoutDiagram
     {
         // A placeholder is never written: it is blank, and the file it would go over is the one the operator is trying
         // to get back.  Refused here, at the one method that writes a page.
-        if (this.unreadable)
-        {
-            throw new Exception(I18n.f("layout.errorPageWasNotReadSoNotSaved", this.getName()));
-        }
+        if (this.unreadable) throw new Exception(I18n.f("layout.errorPageWasNotReadSoNotSaved", this.getName()));
 
         try
         {
@@ -1706,10 +1703,7 @@ public class LayoutDiagram
 
         if (extras == null) return;
 
-        for (String line : extras)
-        {
-            contents.append(line).append("\n");
-        }
+        for (String line : extras) contents.append(line).append("\n");
     }
 
     /**
@@ -1748,10 +1742,7 @@ public class LayoutDiagram
         // is regenerated on every write: after the modeled header and before the pages, where the sample file has it.
         for (List<String> block : readLayoutIndexExtras(path))
         {
-            for (String line : block)
-            {
-                contents.append(line).append("\n");
-            }
+            for (String line : block) contents.append(line).append("\n");
         }
 
         // Write layout details, keeping the id each page already had: an id is a page's IDENTITY (MT-135), kept while
@@ -1806,10 +1797,7 @@ public class LayoutDiagram
             if (id == null) id = next++;
 
             // Taken already, by a page written a moment ago in this same loop.
-            while (!issued.add(id))
-            {
-                id = next++;
-            }
+            while (!issued.add(id)) id = next++;
 
             contents.append("seite\n");
 

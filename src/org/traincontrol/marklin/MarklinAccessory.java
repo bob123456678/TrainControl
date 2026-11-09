@@ -140,10 +140,7 @@ public class MarklinAccessory extends Accessory
      */
     synchronized public void adoptStationPosition(boolean switched, long asked)
     {
-        if (this.lastEchoAt != 0 && this.lastEchoAt - asked >= 0)
-        {
-            return;
-        }
+        if (this.lastEchoAt != 0 && this.lastEchoAt - asked >= 0) return;
 
         this._setSwitched(switched);
         this.stateAtLastActuation = switched;

@@ -152,10 +152,7 @@ public class AutonomyViewerPanel extends JPanel
 
         if (component instanceof java.awt.Container)
         {
-            for (java.awt.Component child : ((java.awt.Container) component).getComponents())
-            {
-                unfocusable(child);
-            }
+            for (java.awt.Component child : ((java.awt.Container) component).getComponents()) unfocusable(child);
         }
 
         return component;
@@ -262,10 +259,7 @@ public class AutonomyViewerPanel extends JPanel
         // that adds one needs a guard around populate(), which sets the selection itself.
         configurations.addMouseListener(Listen.pressed(e ->
         {
-            if (javax.swing.SwingUtilities.isRightMouseButton(e))
-            {
-                manageMenu().show(configurations, e.getX(), e.getY());
-            }
+            if (javax.swing.SwingUtilities.isRightMouseButton(e)) manageMenu().show(configurations, e.getX(), e.getY());
         }));
 
         add(panel, gbc, choose, 0);
@@ -1754,10 +1748,7 @@ public class AutonomyViewerPanel extends JPanel
 
         configurations.removeAllItems();
 
-        for (String name : session().getStore().getConfigurationNames())
-        {
-            configurations.addItem(name);
-        }
+        for (String name : session().getStore().getConfigurationNames()) configurations.addItem(name);
 
         String active = session().getStore().getActiveConfiguration();
 
@@ -1844,10 +1835,7 @@ public class AutonomyViewerPanel extends JPanel
 
         if (named != null && !named.trim().isEmpty()) return named.trim() + " (" + where + ")";
 
-        if (component.isFeedback())
-        {
-            return I18n.f("autosetup.ui.describeSensor", where, component.getRawAddress());
-        }
+        if (component.isFeedback()) return I18n.f("autosetup.ui.describeSensor", where, component.getRawAddress());
 
         if (component.getAccessory() != null)
         {

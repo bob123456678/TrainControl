@@ -110,10 +110,7 @@ public final class TileSelection
     {
         for (int x = Math.min(fromX, toX); x <= Math.max(fromX, toX); x++)
         {
-            for (int y = Math.min(fromY, toY); y <= Math.max(fromY, toY); y++)
-            {
-                add(x, y);
-            }
+            for (int y = Math.min(fromY, toY); y <= Math.max(fromY, toY); y++) add(x, y);
         }
     }
 
@@ -135,10 +132,7 @@ public final class TileSelection
     {
         for (At at : movedBy(dx, dy))
         {
-            if (at.getX() < 0 || at.getY() < 0 || at.getX() >= width || at.getY() >= height)
-            {
-                return false;
-            }
+            if (at.getX() < 0 || at.getY() < 0 || at.getX() >= width || at.getY() >= height) return false;
         }
 
         return true;
