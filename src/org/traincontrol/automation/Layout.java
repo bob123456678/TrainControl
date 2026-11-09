@@ -559,9 +559,6 @@ public class Layout
     /** Why a train cannot start, and why a station is not offered or reached. */
     private final LayoutExplanations layoutExplanations = new LayoutExplanations(this);
 
-    /** What the square's copies allow, for Station Settings. */
-    private final LayoutStandingRules layoutStandingRules = new LayoutStandingRules(this, layoutExplanations);
-
     /** Where each standing train's body lies: the tail walks behind the covered track and places. */
     private final StandingTrains standingTrains = new StandingTrains(this);
 
@@ -4451,9 +4448,10 @@ public class Layout
     /**
      * What a square's standing rules let a train do (FR-111), from its copies on this railway, whoever stands where
      * (`copies` as `StationIndex.pointNamesAt` gives them).  Null when none of those names is on this railway.
-     * Synchronized on this Layout, so never on the event thread (OB-192).
+     * Takes no lock: it reads only the graph and the squares' settings, which no run writes, and holding the monitor
+     * for a search over every station would stop every running train.  Still a search: never on the event thread.
      */
-    synchronized public StandingRules standingRulesAt(java.util.Collection<String> copies)
+    public StandingRules standingRulesAt(java.util.Collection<String> copies)
     {
         List<Point> found = new ArrayList<>();
 
@@ -4462,7 +4460,7 @@ public class Layout
             if (this.getPoint(name) != null) found.add(this.getPoint(name));
         }
 
-        return found.isEmpty() ? null : layoutStandingRules.at(found);
+        return found.isEmpty() ? null : new LayoutStandingRules(this, layoutExplanations).at(found);
     }
 
     /** The standing bar on this square, for no train in particular, or null. */
@@ -5068,7 +5066,7 @@ public class Layout
 
     /**
      * Whether the path search gives a route from `start`, to a station `ends` accepts, that `wanted` accepts: as
-     * getPossiblePaths would with nobody on the track and no list or length (FR-111).  Under the caller's monitor.
+     * getPossiblePaths would with nobody on the track and no list or length (FR-111).  Takes no lock.
      */
     boolean anyStandingRoute(Point start, java.util.function.Predicate<Point> ends,
         java.util.function.Predicate<List<Edge>> wanted)
