@@ -171,7 +171,7 @@ With no tool armed, a left-click on track changes which way trains may run on it
 
 ## The right-click menu
 
-Right-click any square for everything else. In the autonomy editor the menu opens with the square's name or kind as a heading; on the track diagram a station's name heads the station's own items. The menu offers only what makes sense there. Settings on plain track act on the whole run. Nothing in it can be changed while trains are running (autonomy, a route, a train you sent or Return Home), except `Is Active` on the track diagram; `Station Settings` and the train window open then, but read only.
+Right-click any square for everything else. In the autonomy editor the menu opens with the square's name or kind as a heading; on the track diagram a station's name heads the station's own items. The menu offers only what makes sense there. Settings on plain track act on the whole run. Nothing in it can be changed while trains are running (autonomy, a timetable, a route, a train you sent or Return Home), except `Is Active` on the track diagram; `Station Settings` and the train window open then, but read only.
 
 ### On a sensor or a station
 
@@ -244,10 +244,10 @@ On a station with a train on it, `Change Train at` *station* `...` opens a windo
 
 - `Train`: the locomotive standing here. Pick another to put it here, or `(none)` to take it off.
 - `Locomotive Settings...`: opens the `Autonomy` tab of that locomotive's `Locomotive Settings`: its `Train Length`, `Reversible`, `Active`, and the `Departure Function` and `Arrival Function` switched as it sets off and arrives.
-- `Active`: untick it to pause the train, as on its card on the Auto tab. It also works while trains are running (autonomy, a route, a train you sent or Return Home), and then pauses that train alone.
+- `Active`: untick it to pause the train, as on its card on the Auto tab. On the track diagram it also works while trains are running (autonomy, a timetable, a route, a train you sent or Return Home), and then pauses that train alone.
 - `Facing`, `Arrived` and `Tail lies`: which way the train points, which side it came in by and where its tail lies, as `Change Direction` and `Change Arrived From` above set them. `Pick...`, in the autonomy editor, lets you click the sensor.
 
-Putting a train here asks which way it came in, and where its tail lies, in the same way as the other ways of placing one. While trains are running (autonomy, a route, a train you sent or Return Home), everything in the window is read only except `Active`.
+Putting a train here asks which way it came in, and where its tail lies, in the same way as the other ways of placing one. While trains are running (autonomy, a timetable, a route, a train you sent or Return Home), everything in the window is read only, except `Active` in the window opened from the track diagram.
 
 ### On track, switches and signals
 
