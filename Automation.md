@@ -211,7 +211,7 @@ Everything else a station has is in its `Station Settings`: its name, whether tr
 - `Trains can stop here`: whether the square is a station. Unticked, nothing stops here and what is under it grays out. It holds:
     - `May choose this station`: untick it and autonomy never chooses the station, though Return Home and the trips you send by hand still use it. This is for a parking berth.
     - `Maximum train length`: the longest train that may be sent here. Blank means any length.
-    - `May arrive from`: a box for each side trains may arrive from and stop. One side must stay open. Trains can still run through from a side that is closed.
+    - `May arrive from`: a box for each side trains may arrive from and stop. One side must stay open. Trains can still run through from a side that is closed. On a square no track leads a train onto it says `(none)`, as there is no side to choose.
     - `Exit guard` and `Entry guard`: the signals that follow the station; the `Change...` button picks them.
     - `Home locomotive`: the train Return Home brings back here.
 - `Trains can pass through`: whether trains may pass over the square without stopping.

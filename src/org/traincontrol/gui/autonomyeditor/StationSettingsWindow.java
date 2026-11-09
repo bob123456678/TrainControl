@@ -1150,6 +1150,7 @@ public final class StationSettingsWindow extends StationWindowBase
             JLabel none = value("station.arriveNone");
 
             none.setText(I18n.t("autosetup.ui.labelNone"));
+            none.setEnabled(live);
             arrivals.add(none);
         }
 

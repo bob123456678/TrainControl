@@ -1165,11 +1165,12 @@ public class testStationSettingsWindow
 
     /**
      * May arrive from is never blank (Adam, FR-182): on a square no track leads a train onto, as some on his "2 - Bottom"
-     * page are (a closed one, and pass-through ones fed only by track leading away), it says "(none)", and its (i) says
-     * there is no side to choose rather than describing a single side that is not shown.
+     * page are (a closed one, and pass-through ones fed only by track leading away), it says "(none)", grayed with its
+     * section as the boxes are, and its (i) says there is no side to choose rather than describing a single side that is
+     * not shown.
      *
-     * MUTATION: drop the "(none)" label from `fillArrivals`, or the empty case from `StationFlyovers.arrivals`, and this
-     * fails.
+     * MUTATION: drop the "(none)" label from `fillArrivals`, or the empty case from `StationFlyovers.arrivals`, or the
+     * label's `setEnabled`, and this fails.
      */
     @Test(timeOut = 180000)
     public void testMayArriveFromIsNeverBlank() throws Exception
@@ -1217,6 +1218,11 @@ public class testStationSettingsWindow
                 });
 
                 assertEquals(shown, Arrays.asList(I18n.t("autosetup.ui.labelNone")), square + ": May arrive from shows " + shown);
+
+                boolean stops = StationDoors.on(window, "station.stops");
+
+                assertEquals(StationDoors.live(window, "station.arriveNone"), stops, square + ": \"(none)\" is "
+                    + (stops ? "grayed" : "not grayed") + " with Trains can stop here " + (stops ? "on" : "off"));
 
                 String flyover = Components.onTheEventThread(() -> window.flyoverForTest("arrivals"));
 
