@@ -381,6 +381,53 @@ public class testTheLocomotiveSettingsLooks extends support.SettingsClass
         }
     }
 
+    /**
+     * The open window's once-a-second watch leaves the tab strip alone: over two of its ticks the strip is not resized.
+     *
+     * MUTATION: measure the tab strip in `LocomotiveSettingsFrame.keepTheRowsWhole`, which the watch calls, instead of
+     * in `fit`, and this fails.
+     */
+    @Test
+    public void testTheWatchDoesNotResizeTheTabStrip() throws Exception
+    {
+        JTabbedPane tabs = opened();
+
+        Components.settle();
+
+        java.util.concurrent.atomic.AtomicInteger resized = new java.util.concurrent.atomic.AtomicInteger();
+        java.awt.event.ComponentListener count = new java.awt.event.ComponentAdapter()
+        {
+            @Override
+            public void componentResized(java.awt.event.ComponentEvent e)
+            {
+                resized.incrementAndGet();
+            }
+        };
+
+        Components.onTheEventThread(() ->
+        {
+            tabs.addComponentListener(count);
+
+            return null;
+        });
+
+        try
+        {
+            // The watch ticks every second, so 2.5 s holds two ticks; measuring on a tick resized the strip twice
+            assertTrue(!Components.waitFor(() -> resized.get() > 0, 2500), "the watch resized the tab strip "
+                + resized.get() + " times");
+        }
+        finally
+        {
+            Components.onTheEventThread(() ->
+            {
+                tabs.removeComponentListener(count);
+
+                return null;
+            });
+        }
+    }
+
     private static java.awt.Rectangle bounds(java.awt.Component c, java.awt.Container pane)
     {
         return javax.swing.SwingUtilities.convertRectangle(c.getParent(), c.getBounds(), pane);

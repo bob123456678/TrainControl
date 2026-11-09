@@ -98,6 +98,9 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
     /** Whether the window is Add Locomotive's: no locomotive yet, the first tab alone and Add for Save. */
     private boolean adding;
 
+    /** How wide the tab strip is with every tab on one row, as `fit` last measured it. */
+    private int tabRow;
+
     /** Asks the rule again every second while the window is open: a run starting or stopping raises no single event. */
     private final javax.swing.Timer watch = new javax.swing.Timer(1000, e -> refresh());
 
@@ -389,6 +392,9 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
 
         pack();
 
+        // Measured here, where the tabs are built, and not on the watch's every tick: measuring resizes the strip
+        if (!adding && functionsTab != null) tabRow = tabsOnOneRow();
+
         keepTheRowsWhole();
 
         if (first) setLocationRelativeTo(main);
@@ -404,7 +410,7 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
 
         int buttons = functionsTab.buttonRowWidth() + getWidth() - functionsTab.getWidth();
 
-        setMinimumSize(new java.awt.Dimension(Math.max(buttons, tabsOnOneRow() + getWidth() - tabs.getWidth()), 0));
+        setMinimumSize(new java.awt.Dimension(Math.max(buttons, tabRow + getWidth() - tabs.getWidth()), 0));
     }
 
     /** How wide the tab strip is with every tab on one row: it is laid out once wide enough for them, then put back. */
