@@ -854,7 +854,6 @@ public class MarklinControlStation implements ViewListener, ModelListener
      * @param state the state to wait for
      * @param timeoutMs how long to allow before giving up
      * @return whether the state was actually reached
-     * @throws InterruptedException
      */
     public boolean waitForPowerState(boolean state, long timeoutMs) throws InterruptedException
     {
@@ -1088,10 +1087,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
     /**
      * One figure for each calendar day, newest first, from the current date less the offset.  Stepped a calendar day
      * at a time: a day is 23 or 25 hours across a DST transition, so a fixed step could repeat or skip a date.
-     * @param days
-     * @param offset
      * @param figure the figure for a day, given its yyyy-MM-dd key as Locomotive.getDate produces it
-     * @return 
      */
     private <T> TreeMap<String, T> dailyStats(int days, long offset, Function<String, T> figure)
     {
@@ -2411,8 +2407,6 @@ public class MarklinControlStation implements ViewListener, ModelListener
     /**
      * Every locomotive address in the database, mapped to the locomotives using it.  Separate from
      * getDuplicateLocAddresses, which has every single-user address removed.
-     *
-     * @return
      */
     @Override
     public Map<Integer, Set<Locomotive>> getLocAddresses()
@@ -3137,8 +3131,6 @@ public class MarklinControlStation implements ViewListener, ModelListener
 
     /**
      * Formatted log message
-     * @param key
-     * @param args
      */
     @Override
     public final void logf(String key, Object... args)
@@ -3871,7 +3863,6 @@ public class MarklinControlStation implements ViewListener, ModelListener
 
     /**
      * Deletes the route with the specified name if it exists
-     * @param name
      */
     @Override
     public final void deleteRoute(String name)
@@ -4123,9 +4114,6 @@ public class MarklinControlStation implements ViewListener, ModelListener
      * Whether the accessory at this address is switched, WITHOUT creating one that is not there.  One rule for three
      * callers (a route condition and the two keyboard paints), so they cannot disagree.
      *
-     *
-     * @param address
-     * @param decoderType
      * @return whether it is switched; false when there is no such accessory
      */
     @Override
@@ -4236,7 +4224,6 @@ public class MarklinControlStation implements ViewListener, ModelListener
      * Gets all the available layout names for display, in the order the index file (gleisbild.cs2) lists them (FR-175),
      * a page the import did not list after those, by name.  Not what an arrow's number indexes: that is
      * `getLayoutListByName`.  A fresh list each call.
-     * @return
      */
     @Override
     public List<String> getLayoutList()
@@ -4440,7 +4427,6 @@ public class MarklinControlStation implements ViewListener, ModelListener
 
     /**
      * Returns whether debug mode is enabled
-     * @return
      */
     @Override
     public boolean isDebug()
@@ -4541,7 +4527,6 @@ public class MarklinControlStation implements ViewListener, ModelListener
     
     /**
      * Replaces existing route data with that from a JSON file
-     * @param json
      * @return how many routes were added
      */
     @Override
