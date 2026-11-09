@@ -761,6 +761,7 @@ public class MarklinLocomotive extends Locomotive
             Thread thread = new Thread(runnable, "TrainControl stuck-train advisories");
 
             thread.setDaemon(true);
+            thread.setUncaughtExceptionHandler(org.traincontrol.marklin.MarklinControlStation.THREAD_ERRORS);
 
             return thread;
         });

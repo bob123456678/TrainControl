@@ -5590,6 +5590,7 @@ public class AutonomyEditorPanel extends JPanel
                 Thread worker = new Thread(runnable, "WhyRenderer");
 
                 worker.setDaemon(true);
+                worker.setUncaughtExceptionHandler(org.traincontrol.marklin.MarklinControlStation.THREAD_ERRORS);
 
                 return worker;
             });

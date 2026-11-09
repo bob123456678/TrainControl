@@ -321,6 +321,18 @@ public class MarklinControlStation implements ViewListener, ModelListener
     public static final long POWER_STATE_TIMEOUT = 2000;
     // DAEMONS.  These serve inbound CAN messages and have no meaning without the application they serve,
     // but the default factory makes ordinary threads, which would outlive every caller and keep the JVM up.
+    /**
+     * Where a task that ended in an error nobody caught is reported, for the pools' thread factories: the stack trace
+     * on stderr, as the JVM's own handler prints it, and a line in the log naming the thread.
+     */
+    public static final Thread.UncaughtExceptionHandler THREAD_ERRORS = (thread, error) ->
+    {
+        System.err.print("Exception in thread \"" + thread.getName() + "\" ");
+        error.printStackTrace();
+
+        MarklinControlStation.log.warning(I18n.f("error.uncaughtInThread", thread.getName(), error));
+    };
+
     private static ExecutorService messageProcessor(final String name)
     {
         return Executors.newFixedThreadPool(1, runnable ->
@@ -328,6 +340,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
             Thread thread = new Thread(runnable, name);
 
             thread.setDaemon(true);
+            thread.setUncaughtExceptionHandler(THREAD_ERRORS);
 
             return thread;
         });
@@ -2880,8 +2893,8 @@ public class MarklinControlStation implements ViewListener, ModelListener
                 int id = message.extractShortUID();
 
                 // Resolved once into a local, as the locomotive and accessory branches do: hasId then getById would be
-                // two lock acquisitions, and syncLayouts prunes feedbacks on another thread; the NPE would be swallowed
-                // by the executor's Future.  A dropped feedback is not cosmetic: the state is a LEVEL, and a driving
+                // two lock acquisitions, and syncLayouts prunes feedbacks on another thread; the NPE would end the task
+                // and reach the thread's handler, not the message.  A dropped feedback is not cosmetic: the state is a LEVEL, and a driving
                 // thread waits on it without a timeout, so a train whose arrival was dropped never slows and never
                 // stops.
                 MarklinFeedback feedback = this.feedbackDB.getById(id);
