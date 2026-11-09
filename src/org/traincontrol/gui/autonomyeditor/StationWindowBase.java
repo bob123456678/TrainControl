@@ -115,7 +115,7 @@ abstract class StationWindowBase extends JDialog
             }
         });
 
-        // Applied before whatever is clicked next: the editor's Save or Cancel, or a question of this window's
+        // Typed text applies before whatever is clicked next (the editor's Save); a list's choice its own loss put back
         addWindowFocusListener(new java.awt.event.WindowAdapter()
         {
             @Override
@@ -514,7 +514,8 @@ abstract class StationWindowBase extends JDialog
 
     /**
      * A list that acts on a choice made, as a typed field does: a pick from the open list, Enter, or leaving the list
-     * (`commitFields`).  A typed letter or an arrow alone only shows the choice; Escape puts back what it held.
+     * within the window (`commitFields`).  A typed letter or an arrow alone only shows the choice; Escape, or another
+     * window taking the keyboard, puts back what it held.
      */
     class Choice extends JComboBox<String>
     {
@@ -559,10 +560,12 @@ abstract class StationWindowBase extends JDialog
 
             addFocusListener(new FocusAdapter()
             {
+                // Another window took the keyboard (a loss for now): put back, so no question swallows its click
                 @Override
                 public void focusLost(FocusEvent e)
                 {
-                    if (!isPopupVisible()) settle();
+                    if (e.isTemporary()) putBack();
+                    else if (!isPopupVisible()) settle();
                 }
             });
 
