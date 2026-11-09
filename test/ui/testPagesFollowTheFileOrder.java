@@ -332,7 +332,7 @@ public class testPagesFollowTheFileOrder extends support.PageWindowTest
     /**
      * Sort Pages by Name sorts by the letters, capitals and accents aside: a page added as "apple yard" goes before one
      * added as "Zebra", and "\u00d6lberg" between them, on any machine: here one set to Swedish, whose own order puts
-     * \u00d6 after Z.
+     * \u00d6 after Z.  A space counts: "Main Yard" comes before "Mainline".
      *
      * MUTATION: sort with `Collections.sort` alone, or `String.CASE_INSENSITIVE_ORDER`, in `LayoutFileActions.sorted`, and
      * this fails.
@@ -346,7 +346,7 @@ public class testPagesFollowTheFileOrder extends support.PageWindowTest
 
         String on = "1 - Main";
 
-        for (String name : new String[] {"Zebra", "\u00d6lberg", "apple yard"})
+        for (String name : new String[] {"Zebra", "\u00d6lberg", "Mainline", "Main Yard", "apple yard"})
         {
             try (Answering answering = Answering.start(message -> Answering.type(name)))
             {
@@ -370,7 +370,7 @@ public class testPagesFollowTheFileOrder extends support.PageWindowTest
         java.util.Locale was = java.util.Locale.getDefault();
         List<String> expected = new ArrayList<>(BY_NAME);
 
-        expected.addAll(Arrays.asList("apple yard", "\u00d6lberg", "Zebra"));
+        expected.addAll(Arrays.asList("apple yard", "Main Yard", "Mainline", "\u00d6lberg", "Zebra"));
 
         try
         {
