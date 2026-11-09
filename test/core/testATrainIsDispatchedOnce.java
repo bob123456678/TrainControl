@@ -2426,42 +2426,69 @@ public class testATrainIsDispatchedOnce
         Reflect.set(proxy.getClass(), proxy, "replacing", on);
     }
 
-    /**
-     * Starts a run while the connection is being replaced: it sets no train going and says once that new routes are
-     * held, then starts its train once the connection is back and says so.
-     */
-    private static void heldUntilReconnected(Layout rail, Locomotive train, Runnable start, String run) throws Exception
+    private interface WhileReplacing
     {
+        void run(Layout rail, Locomotive train, List<String> said) throws Exception;
+    }
+
+    /**
+     * Runs a claim with a train standing at the start of a line of two points, the log tapped and the connection being
+     * replaced, and puts everything back after.
+     */
+    private static void whileReplacing(int firstSensor, int loco, String from, String to, WhileReplacing claim)
+        throws Exception
+    {
+        org.traincontrol.marklin.MarklinFeedback[] s = sensors(firstSensor, 2);
+        final Locomotive train = model.getLocByName(model.getLocList().get(loco));
+        final int preferredWas = train.getPreferredSpeed();
+        final Layout rail = aLine(s, from, to);
         final List<String> said = java.util.Collections.synchronizedList(new ArrayList<String>());
         java.util.logging.Handler tap = aTapOn(said);
-        String held = org.traincontrol.util.I18n.t("autolayout.infoRoutesHeld");
 
         try
         {
+            train.setSpeed(0);
+            train.setPreferredSpeed(30);
+            rail.getPoint(from).setLocomotive(train);
             replacing(true);
-            start.run();
 
-            assertTrue(until(() -> rail.isAutoRunning(), 5000), "precondition: the " + run + " did not start");
-            assertFalse(until(() -> train.getSpeed() > 0 || rail.isAlreadyUnderway(train), 2000), "the " + run
-                + " set a train going while the connection to the station was being replaced (FR-186)");
-            assertTrue(rail.isAutoRunning(), "the " + run + " stopped for the lost connection: it is to hold new"
-                + " routes, not stop");
-            assertEquals(java.util.Collections.frequency(new ArrayList<>(said), held), 1, "the " + run + " did not say"
-                + " once that new routes are held: " + said);
-
-            replacing(false);
-
-            assertTrue(until(() -> train.getSpeed() > 0 || rail.isAlreadyUnderway(train), 5000), "the connection came"
-                + " back and the " + run + " still started nothing");
-            assertTrue(until(() -> said.contains(org.traincontrol.util.I18n.t("autolayout.infoRoutesResumed")), 2000),
-                "the " + run + " did not say that new routes start again: " + said);
+            claim.run(rail, train, said);
         }
         finally
         {
             replacing(false);
-
             java.util.logging.Logger.getLogger(MarklinControlStation.class.getName()).removeHandler(tap);
+            rail.stopLocomotives();
+            train.setPreferredSpeed(preferredWas);
+            letGo(s, train, null);
         }
+    }
+
+    /**
+     * A run started while the connection is being replaced sets no train going and says once that new routes are
+     * held; once the connection is back it starts its train and says so.
+     */
+    private static void heldUntilReconnected(Layout rail, Locomotive train, List<String> said, Runnable start,
+        String run) throws Exception
+    {
+        String held = org.traincontrol.util.I18n.t("autolayout.infoRoutesHeld");
+
+        start.run();
+
+        assertTrue(until(() -> rail.isAutoRunning(), 5000), "precondition: the " + run + " did not start");
+        assertFalse(until(() -> train.getSpeed() > 0 || rail.isAlreadyUnderway(train), 2000), "the " + run
+            + " set a train going while the connection to the station was being replaced (FR-186)");
+        assertTrue(rail.isAutoRunning(), "the " + run + " stopped for the lost connection: it is to hold new routes,"
+            + " not stop");
+        assertEquals(java.util.Collections.frequency(new ArrayList<>(said), held), 1, "the " + run + " did not say once"
+            + " that new routes are held: " + said);
+
+        replacing(false);
+
+        assertTrue(until(() -> train.getSpeed() > 0 || rail.isAlreadyUnderway(train), 5000), "the connection came back"
+            + " and the " + run + " still started nothing");
+        assertTrue(until(() -> said.contains(org.traincontrol.util.I18n.t("autolayout.infoRoutesResumed")), 2000),
+            "the " + run + " did not say that new routes start again: " + said);
     }
 
     /**
@@ -2472,26 +2499,11 @@ public class testATrainIsDispatchedOnce
     @Test
     public void testAutonomyStartsNoRouteWhileTheConnectionIsReplaced() throws Exception
     {
-        org.traincontrol.marklin.MarklinFeedback[] s = sensors(2081, 2);
-        final Locomotive v = model.getLocByName(model.getLocList().get(5));
-        final int preferredWas = v.getPreferredSpeed();
-        final Layout rail = aLine(s, "CRA", "CRB");
-
-        try
+        whileReplacing(2081, 5, "DRA", "DRB", (rail, v, said) ->
         {
-            v.setSpeed(0);
-            v.setPreferredSpeed(30);
-            rail.getPoint("CRA").setLocomotive(v);
             rail.setLocomotivesToRun(Arrays.asList(v));
-
-            heldUntilReconnected(rail, v, rail::runLocomotives, "autonomy run");
-        }
-        finally
-        {
-            rail.stopLocomotives();
-            v.setPreferredSpeed(preferredWas);
-            letGo(s, v, null);
-        }
+            heldUntilReconnected(rail, v, said, rail::runLocomotives, "autonomy run");
+        });
     }
 
     /**
@@ -2502,32 +2514,18 @@ public class testATrainIsDispatchedOnce
     @Test
     public void testATimetableStartsNothingWhileTheConnectionIsReplaced() throws Exception
     {
-        org.traincontrol.marklin.MarklinFeedback[] s = sensors(2091, 2);
-        final Locomotive t = model.getLocByName(model.getLocList().get(16));
-        final int preferredWas = t.getPreferredSpeed();
-        final Layout rail = aLine(s, "CTA", "CTB");
-        final Thread[] executor = new Thread[1];
-
-        try
+        whileReplacing(2091, 16, "DTA", "DTB", (rail, t, said) ->
         {
-            t.setSpeed(0);
-            t.setPreferredSpeed(30);
-            rail.getPoint("CTA").setLocomotive(t);
-            rail.setTimetable(Arrays.asList(new org.traincontrol.automation.TimetablePath(t, through(rail, "CTA", "CTB"), 0)));
+            rail.setTimetable(Arrays.asList(new org.traincontrol.automation.TimetablePath(t, through(rail, "DTA", "DTB"),
+                0)));
 
-            heldUntilReconnected(rail, t, () ->
+            heldUntilReconnected(rail, t, said, () ->
             {
-                executor[0] = new Thread(rail::executeTimetable, "a timetable run while the connection is replaced");
-                executor[0].setDaemon(true);
-                executor[0].start();
+                Thread executor = new Thread(rail::executeTimetable, "a timetable run while the connection is replaced");
+                executor.setDaemon(true);
+                executor.start();
             }, "timetable");
-        }
-        finally
-        {
-            rail.stopLocomotives();
-            t.setPreferredSpeed(preferredWas);
-            letGo(s, t, executor[0]);
-        }
+        });
     }
 
     /**
@@ -2539,20 +2537,10 @@ public class testATrainIsDispatchedOnce
     @Test
     public void testAHandSendIsRefusedWhileTheConnectionIsReplaced() throws Exception
     {
-        org.traincontrol.marklin.MarklinFeedback[] s = sensors(2101, 2);
-        final Locomotive h = model.getLocByName(model.getLocList().get(7));
-        final Layout rail = aLine(s, "CHA", "CHB");
-        final List<String> said = java.util.Collections.synchronizedList(new ArrayList<String>());
-        java.util.logging.Handler tap = aTapOn(said);
-
-        try
+        whileReplacing(2101, 7, "DHA", "DHB", (rail, h, said) ->
         {
-            h.setSpeed(0);
-            rail.getPoint("CHA").setLocomotive(h);
-            replacing(true);
-
             Future<Boolean> sent = dispatcher.submit(() ->
-                rail.executePathByHand(through(rail, "CHA", "CHB"), h, 30, null, -1));
+                rail.executePathByHand(through(rail, "DHA", "DHB"), h, 30, null, -1));
             Boolean answer;
 
             try
@@ -2570,13 +2558,7 @@ public class testATrainIsDispatchedOnce
                 "the refused hand send did not say why: " + said);
             assertFalse(rail.isAlreadyUnderway(h) || h.getSpeed() > 0, "the refused hand send took its route or set its"
                 + " train going");
-        }
-        finally
-        {
-            replacing(false);
-            java.util.logging.Logger.getLogger(MarklinControlStation.class.getName()).removeHandler(tap);
-            letGo(s, h, null);
-        }
+        });
     }
 
     /**
