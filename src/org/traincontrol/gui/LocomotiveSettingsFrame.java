@@ -540,7 +540,7 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
 
     private void changed()
     {
-        // Add is always pressable: a blank name is refused with today's message
+        // Add is always pressable: it refuses a blank name and says why
         save.setEnabled(adding || isDirty() && !blocked);
     }
 
@@ -663,7 +663,7 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
     }
 
     /**
-     * Writes everything typed onto the locomotive, with today's refusals asked once and in today's order: the moving
+     * Writes everything typed onto the locomotive, with each refusal asked once and in this order: the moving
      * rule, then autonomy and routes for what they refuse, then the name before the address.  A refusal leaves the
      * window as it was.
      *
@@ -867,7 +867,7 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
             name.getDocument().addDocumentListener(tell);
             address.getDocument().addDocumentListener(tell);
 
-            // The same filter and limit as Add Locomotive's address box
+            // Digits, or hex, and six characters at most
             address.addKeyListener(new java.awt.event.KeyAdapter()
             {
                 @Override
