@@ -171,7 +171,7 @@ With no tool armed, a left-click on track changes which way trains may run on it
 
 ## The right-click menu
 
-Right-click any square for everything else. In the autonomy editor the menu opens with the square's name or kind as a heading; on the track diagram a station's name heads the station's own items. The menu offers only what makes sense there. Settings on plain track act on the whole run. Nothing in it can be changed while trains are running (autonomy, a timetable, a route, a train you sent or Return Home), except `Is Active` on the track diagram; `Station Settings` and the train window open then, but read only.
+Right-click any square for everything else. In the autonomy editor the menu opens with the square's name or kind as a heading; on the track diagram a station's name heads the station's own items. The menu offers only what makes sense there. Settings on plain track act on the whole run. Nothing in it can be changed while trains are running (autonomy, a timetable, a route, a train you sent or Return Home), except `Is Active` on the track diagram; `Station Settings` and the train window open then, but read only, except `Active` in the train window opened from the track diagram.
 
 ### On a sensor or a station
 

@@ -476,7 +476,7 @@ Tab icons provided by Freepik.
             - If the connection to a CS3 drops, commands go over UDP at once and nothing is sent again, and the log counts the commands that may not have arrived.
             - When TrainControl starts up or syncs with a CS3, it now asks the sensors for their state, including those on a Link S88, so the track diagram shows them as they really are.
             - When the Central Station turns the track power off after a short circuit, TrainControl now shows the power as off and a warning names the output that tripped.
-            - A CS3 sync skips what it can't read, such as something a new firmware changed, and keeps the rest, so it no longer loses a page or fails because of it. The log says what was skipped.
+            - A CS3 sync skips what it can't read, such as something a new firmware changed, and keeps the rest, so it no longer loses a page or fails because of it.
         - Documentation
             - The Readme and the autonomy guide now describe `Locomotive Settings`, `Station Settings` and the other new windows and shortcuts.
     - Bug Fixes
