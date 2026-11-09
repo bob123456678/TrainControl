@@ -136,7 +136,12 @@ public class testTheStationIsReachedOverTcp
         {
             this.keys.add(key);
             this.lines.add(I18n.f(key, args));
+
+            if (args.length > 0 && args[0] instanceof Integer) this.sums.merge(key, (Integer) args[0], Integer::sum);
         }
+
+        // Each key's first number, summed over its lines
+        final Map<String, Integer> sums = new java.util.concurrent.ConcurrentHashMap<>();
 
         @Override
         public void log(String message)
@@ -322,6 +327,17 @@ public class testTheStationIsReachedOverTcp
 
         this.station.send(sensor(1007, true));
         assertTrue(Components.waitFor(() -> this.model.heard.size() == 1, WAIT_MS), "precondition: nothing carried");
+    }
+
+    /** As connectedAndCarried, then `frames` written to the connection and received by the station. */
+    private void connectedAndWritten(byte[]... frames) throws Exception
+    {
+        connectedAndCarried();
+
+        for (byte[] frame : frames) this.proxy.sendMessage(new CS2Message(frame));
+
+        assertTrue(Components.waitFor(() -> this.station.received().size() == frames.length, WAIT_MS),
+            "precondition: not sent");
     }
 
     /** Connected over TCP to a station that sends nothing unless told. */
@@ -535,36 +551,54 @@ public class testTheStationIsReachedOverTcp
     }
 
     /**
-     * A command sent as the connection is lost is not lost with it: it is sent again on the new connection.
+     * A frame written just before the station drops the connection is not sent again, on the new connection or over
+     * UDP: another program or the handset may have commanded since (FR-186).
      *
-     * MUTATION: in `NetworkProxy.takeUnconfirmed`, `if (u.at + CONFIRM_MARGIN_NS - this.lastHeardAt >= 0)` to
-     * `if (false)`.
+     * MUTATION: in `NetworkProxy`, keep each frame with its time in `unconfirmed`, and in `recover` write those counted
+     * at the loss to `fresh` before `useTcp(fresh);`.
      */
     @Test(timeOut = 30000)
-    public void testACommandSentAsTheConnectionIsLostIsSentAgain() throws Exception
+    public void testAFrameWrittenBeforeTheDropIsNotSentAgain() throws Exception
     {
-        connectedAndCarried();
+        try (DatagramSocket wire = udpWire())
+        {
+            byte[] command = speed(0);
+            connectedAndWritten(command);
+            this.station.drop();
 
-        byte[] command = Packets.powerStop().getRawMessage();
+            assertNotOnTheNewConnection(command);
 
-        this.station.drop();
-        this.proxy.sendMessage(new CS2Message(command));
-
-        assertSentOnTheNewConnection(command, 15000);
+            // Waiting is the point: nothing may go over UDP
+            assertEquals(nextOn(wire, 200), null, "the frame was sent again over UDP");
+        }
     }
 
-    /** A new connection is made, and the frame arrives on it. */
-    private void assertSentOnTheNewConnection(byte[] frame, long ms)
+    /** A locomotive speed command. */
+    private static byte[] speed(int speed)
     {
-        assertTrue(logged("network.tcpReconnected", ms), "no new connection: " + this.model.lines);
-        assertTrue(Components.waitFor(() ->
-            this.station.receivedOn(2).stream().anyMatch(f -> Arrays.equals(f, frame)), WAIT_MS),
-            "the frame the station may have missed never reached it on the new connection: " + this.model.lines);
+        return new CS2Message(CS2Message.CMD_LOCO_VELOCITY, new byte[] {0, 0, 0, 5, 0, (byte) speed}).getRawMessage();
+    }
+
+    /** A new connection is made, carries a later frame, and carried none of `frames` before it. */
+    private void assertNotOnTheNewConnection(byte[]... frames)
+    {
+        assertTrue(logged("network.tcpReconnected", 15000), "no new connection: " + this.model.lines);
+
+        byte[] later = ping(9);
+        this.proxy.sendMessage(new CS2Message(later));
+        assertTrue(Components.waitFor(() -> this.station.receivedOn(2).stream().anyMatch(f -> Arrays.equals(f, later)),
+            WAIT_MS), "a send after the reconnect never reached the station: " + this.model.lines);
+
+        for (byte[] frame : frames)
+        {
+            assertFalse(this.station.receivedOn(2).stream().anyMatch(f -> Arrays.equals(f, frame)),
+                "a frame was sent again on the new connection: " + this.model.lines);
+        }
     }
 
     /**
      * A connection that hangs, open but carrying nothing, is found by a send that goes unanswered for 15 s, and
-     * replaced; the unanswered frame is sent again on the new connection.
+     * replaced; the log says why, and counts the unanswered frame as one that may not have arrived.
      *
      * MUTATION: in `NetworkProxy.readUntilLost`, take out `return I18n.f("network.tcpNoAnswer", ...)`.
      */
@@ -573,12 +607,13 @@ public class testTheStationIsReachedOverTcp
     {
         connectedAndCarried();
 
-        byte[] ping = ping(1);
-        this.proxy.sendMessage(new CS2Message(ping));
+        this.proxy.sendMessage(new CS2Message(ping(1)));
 
-        assertSentOnTheNewConnection(ping, 30000);
+        assertTrue(logged("network.tcpReconnected", 30000), "no new connection: " + this.model.lines);
         assertTrue(this.model.lines.stream().anyMatch(l -> l.contains(I18n.f("network.tcpNoAnswer", 15))),
             "the log does not say why: " + this.model.lines);
+        assertTrue(this.model.lines.contains(I18n.f("network.framesMayNotHaveArrived", 1)),
+            "the unanswered frame is not counted: " + this.model.lines);
     }
 
     /**
@@ -954,10 +989,10 @@ public class testTheStationIsReachedOverTcp
 
     /**
      * A resync says how many sensors answered, here none (the station ignores a device it does not have), and its
-     * queries are not commands: the next drop sends none of them again.
+     * queries are not commands: the next drop counts none of them as ones that may not have arrived.
      *
      * MUTATION: in `NetworkProxy.askOnce`, log `queries.size()` for `got`.  And: in `NetworkProxy.sendQuery`, add
-     * `keep(query, System.nanoTime(), true);` before the write.
+     * `this.unconfirmed.addLast(System.nanoTime());` after the write.
      */
     @Test(timeOut = 30000)
     public void testAResyncSaysHowManyAnsweredAndIsNotSentAgain() throws Exception
@@ -971,7 +1006,8 @@ public class testTheStationIsReachedOverTcp
         this.station.drop();
 
         assertTrue(logged("network.tcpLostUsingUdp", WAIT_MS), "the second loss was not found: " + this.model.lines);
-        assertEquals(this.model.count("network.framesSentAgain"), 0, "a query counted as a command: " + this.model.lines);
+        assertEquals(this.model.count("network.framesMayNotHaveArrived"), 0, "a query counted as a command: "
+            + this.model.lines);
     }
 
     /**
@@ -1148,67 +1184,78 @@ public class testTheStationIsReachedOverTcp
     }
 
     /**
-     * Frames the station has answered are not kept to send again, so a busy connection never reaches the limit:
-     * after 1,200 answered sends, a drop logs no command as not sent.
+     * Frames the station has answered are not counted at a drop as ones that may not have arrived.
      *
-     * MUTATION: in `NetworkProxy.writeTcp`, take out the loop that drops the frames taken as received.
+     * MUTATION: in `NetworkProxy.recover`, take out `forgetReceived();`.
      */
-    @Test(timeOut = 60000)
-    public void testAnsweredFramesAreNotKeptToTheLimit() throws Exception
+    @Test(timeOut = 30000)
+    public void testAnsweredFramesAreNotCountedAsMissing() throws Exception
     {
         connectedAndAnswered();
 
-        for (int batch = 0; batch < 2; batch++)
-        {
-            for (int n = 0; n < 600; n++) this.proxy.sendMessage(new CS2Message(numbered(batch + 1, n)));
+        for (int n = 0; n < 100; n++) this.proxy.sendMessage(new CS2Message(numbered(1, n)));
 
-            byte[] last = answerTo(numbered(batch + 1, 599));
-            assertTrue(Components.waitFor(() -> this.model.heardFrame(last), WAIT_MS), "batch " + batch + " not answered");
+        byte[] last = answerTo(numbered(1, 99));
+        assertTrue(Components.waitFor(() -> this.model.heardFrame(last), WAIT_MS), "the frames were not answered");
 
-            // Waiting is the point: a frame heard past the margin after the batch makes the batch count as received
-            Components.waitFor(() -> false, 400);
-            this.station.send(sensor(1009 + batch, true));
-            byte[] heard = sensor(1009 + batch, true);
-            assertTrue(Components.waitFor(() -> this.model.heardFrame(heard), WAIT_MS), "precondition: not heard");
-        }
+        // Waiting is the point: a frame heard past the margin after the frames makes them count as received
+        Components.waitFor(() -> false, 400);
+        this.station.send(sensor(1009, true));
+        assertTrue(Components.waitFor(() -> this.model.heardFrame(sensor(1009, true)), WAIT_MS), "precondition: not heard");
 
         this.station.drop();
 
         assertTrue(logged("network.tcpReconnected", 15000), "no new connection: " + this.model.lines);
-        assertEquals(this.model.count("network.framesDropped"), 0, "answered frames were counted as not sent: "
-            + this.model.lines);
+        assertEquals(this.model.count("network.framesMayNotHaveArrived"), 0,
+            "answered frames were counted as ones that may not have arrived: " + this.model.lines);
     }
 
     /**
-     * A Stop sent while the connection is being replaced goes out over UDP at once, not after the tries.
+     * A Stop on a connection whose send has gone unanswered for a second goes over UDP at once as well, as the
+     * connection may be hung; one sent before that goes on the connection only.
      *
-     * MUTATION: in `NetworkProxy.sendMessage`, take out `if (isUrgentStop(message) && suspect()) sendUdp(message);`.
+     * MUTATION: in `NetworkProxy.sendMessage`, `isUrgentStop(message) && suspect() && sendUdp(message)` to `false`.
      */
     @Test(timeOut = 30000)
-    public void testAStopDuringAReconnectGoesOutAtOnce() throws Exception
+    public void testAStopOnAnUnansweredConnectionAlsoGoesOverUdp() throws Exception
     {
         try (DatagramSocket wire = udpWire())
         {
             connectedAndCarried();
-            this.station.close();
-            assertTrue(logged("network.tcpLostReconnecting", WAIT_MS), "the loss was not found: " + this.model.lines);
 
             byte[] stop = Packets.powerStop().getRawMessage();
-            this.proxy.sendMessage(new CS2Message(stop));
+            long unanswered = System.nanoTime();
+            this.proxy.sendMessage(new CS2Message(ping(1)));
+            byte[] overUdp = null;
+            int stops = 0;
 
-            assertTrue(Arrays.equals(nextOn(wire, 1000), stop),
-                "the Stop did not reach the station over UDP within 1 s of being sent: " + this.model.lines);
+            // A Stop every 100 ms until one comes over UDP
+            while (overUdp == null && System.nanoTime() - unanswered < 5000000000L)
+            {
+                this.proxy.sendMessage(new CS2Message(stop));
+                stops++;
+                overUdp = nextOn(wire, 100);
+            }
+
+            long after = System.nanoTime() - unanswered;
+            final int sent = stops;
+
+            assertTrue(Arrays.equals(overUdp, stop), "no Stop went over UDP: " + this.model.lines);
+            assertTrue(after >= 1000000000L, "a Stop went over UDP " + after / 1000000 + " ms after the unanswered send");
+            assertTrue(Components.waitFor(() -> this.station.received().stream().filter(f -> Arrays.equals(f.bytes, stop))
+                .count() == sent, WAIT_MS), "the Stops did not all go on the connection too");
         }
     }
 
     /**
-     * A Go sent while the connection is replaced does not overtake a speed 0 sent before it: it is no Stop, so it
-     * waits for the new connection, in order, and nothing goes over UDP.
+     * Commands given while the connection is replaced go over UDP at once, in order (a Go after a speed 0 does not
+     * overtake it), and are not sent again on the new connection (FR-186).
      *
-     * MUTATION: in `NetworkProxy.isUrgentStop`, add `|| sub == CS2Message.CMD_SYSSUB_GO`.
+     * MUTATION: in `NetworkProxy.sendMessage`, `if (connection == null || this.replacing) return sendUdp(message);` to
+     * `if (connection == null) return sendUdp(message); if (this.replacing) return true;`.
      */
     @Test(timeOut = 30000)
-    public void testAGoDuringAReconnectWaitsBehindEarlierCommands() throws Exception
+    public void testACommandDuringAReconnectGoesOverUdpAtOnce() throws Exception
     {
         try (DatagramSocket wire = udpWire())
         {
@@ -1216,51 +1263,43 @@ public class testTheStationIsReachedOverTcp
             this.station.drop();
             assertTrue(logged("network.tcpLostReconnecting", WAIT_MS), "the loss was not found: " + this.model.lines);
 
-            byte[] stopTrain = new CS2Message(CS2Message.CMD_LOCO_VELOCITY, new byte[] {0, 0, 0, 5, 0, 0}).getRawMessage();
+            byte[] stopTrain = speed(0);
             byte[] go = Packets.powerGo().getRawMessage();
             this.proxy.sendMessage(new CS2Message(stopTrain));
             this.proxy.sendMessage(new CS2Message(go));
 
-            // Waiting is the point: nothing may go over UDP
-            assertEquals(nextOn(wire, 1000), null, "the Go went over UDP, ahead of the speed 0");
-
-            assertTrue(Components.waitFor(() -> this.station.receivedOn(2).size() >= 2, 15000), "not sent: " + this.model.lines);
-            assertEquals(this.station.receivedOn(2).get(0), stopTrain, "the speed 0 was not first");
-            assertEquals(this.station.receivedOn(2).get(1), go, "the Go was not second");
+            assertTrue(Arrays.equals(nextOn(wire, 1000), stopTrain), "the speed 0 did not go over UDP at once");
+            assertTrue(Arrays.equals(nextOn(wire, 1000), go), "the Go did not follow it over UDP");
+            assertNotOnTheNewConnection(stopTrain, go);
         }
     }
 
     /**
-     * A command the station may not have when TCP is given up is sent over UDP: a Stop written to a connection that
-     * then closed, with no answer.
+     * A frame written to a connection that then closed for good is not sent over UDP when TCP is given up.
      *
-     * MUTATION: in `NetworkProxy.recover`, take out `for (Unconfirmed u : again) sendUdp(u.frame);`.
+     * MUTATION: in `NetworkProxy`, keep each frame with its time in `unconfirmed`, and in `recover` send those counted
+     * at the loss over UDP where the fallback sets `this.tcp = null`.
      */
     @Test(timeOut = 60000)
-    public void testAnUnansweredCommandGoesOverUdpWhenTcpIsGivenUp() throws Exception
+    public void testAFrameWrittenBeforeTcpIsGivenUpIsNotSentOverUdp() throws Exception
     {
         try (DatagramSocket wire = udpWire())
         {
-            connectedAndCarried();
-
-            byte[] stop = Packets.powerStop().getRawMessage();
-            this.proxy.sendMessage(new CS2Message(stop));
-            assertTrue(Components.waitFor(() -> this.station.received().size() == 1, WAIT_MS), "precondition: not sent");
-
+            connectedAndWritten(Packets.powerStop().getRawMessage());
             this.station.close();
 
             assertTrue(logged("network.tcpReconnectFailed", 30000), "no fallback to UDP: " + this.model.lines);
-            assertTrue(Arrays.equals(nextOn(wire, WAIT_MS), stop),
-                "the unanswered Stop was not sent over UDP when TCP was given up: " + this.model.lines);
+
+            // Waiting is the point: nothing may go over UDP
+            assertEquals(nextOn(wire, 1000), null, "the Stop was sent over UDP when TCP was given up");
         }
     }
 
     /**
      * A station that takes the connection but never sends on it is left for UDP once a send goes unanswered for
-     * 15 s: what was sent over TCP goes over UDP once each, and the station's broadcasts are heard.
+     * 15 s: the station's broadcasts are heard, and what was sent over TCP is counted, not sent over UDP.
      *
-     * MUTATION: in `NetworkProxy.recover`, `for (Unconfirmed u : again) sendUdp(u.frame);` to
-     * `for (Unconfirmed u : again) { sendUdp(u.frame); sendUdp(u.frame); }`.
+     * MUTATION: in `NetworkProxy.recover`, `boolean retry = this.carried;` to `boolean retry = true;`.
      */
     @Test(timeOut = 60000)
     public void testASilentStationIsLeftForUdp() throws Exception
@@ -1284,103 +1323,149 @@ public class testTheStationIsReachedOverTcp
             assertTrue(Components.waitFor(() -> this.model.heardFrame(occupied), WAIT_MS),
                 "a frame broadcast after the fallback never reached the model");
 
-            for (int i = 0; i < sent.size(); i++)
-            {
-                assertTrue(Arrays.equals(nextOn(wire, WAIT_MS), sent.get(i)), "frame " + (i + 1) + " not sent over UDP");
-            }
+            // Waiting is the point: nothing may go over UDP
+            assertEquals(nextOn(wire, 1000), null, "a frame sent over TCP was sent over UDP too");
 
-            // Waiting is the point: nothing more may come
-            assertEquals(nextOn(wire, 1000), null, "a frame went over UDP more than once");
+            assertTrue(this.model.lines.contains(I18n.f("network.framesMayNotHaveArrived", sent.size())),
+                "the frames sent over TCP are not counted: " + this.model.lines);
         }
     }
 
     /**
-     * Three senders while the connection is dropped three times: no frame lost, none out of order on a connection,
-     * and no send waits for a reconnect.
+     * Three senders while the connection is dropped three times: no send waits, no frame reaches the station twice
+     * over TCP and UDP together, none is out of order on a connection, and no more are missing than the log counted
+     * as ones that may not have arrived (FR-186).
      *
-     * MUTATION: in `NetworkProxy.resendOn`, send `again` newest first.  And: in `NetworkProxy.sendMessage`, take out
-     * `keep(message, System.nanoTime(), false);`.
+     * MUTATION: as testACommandDuringAReconnectGoesOverUdpAtOnce.
      */
     @Test(timeOut = 120000)
-    public void testSendersDuringDropsLoseNothing() throws Exception
+    public void testSendersDuringDropsNeverWaitOrRepeat() throws Exception
     {
-        this.station = new TcpStation(STATION).answering(true);
-        connect(this.station.port());
-        assertTrue(Components.waitFor(() -> this.station.connections() == 1, WAIT_MS), "precondition: no connection");
-
-        final int threads = 3;
-        final int each = 600;
-        final AtomicLong longestSend = new AtomicLong();
-        List<Thread> senders = new ArrayList<>();
-
-        for (int t = 1; t <= threads; t++)
+        try (DatagramSocket wire = udpWire())
         {
-            final int sender = t;
-            Thread thread = new Thread(() ->
+            List<byte[]> overUdp = Collections.synchronizedList(new ArrayList<>());
+            AtomicBoolean collecting = new AtomicBoolean(true);
+            wire.setReceiveBufferSize(1 << 20);
+
+            Thread collector = new Thread(() ->
             {
-                for (int n = 0; n < each; n++)
+                try
                 {
-                    long start = System.nanoTime();
-                    this.proxy.sendMessage(new CS2Message(numbered(sender, n)));
-                    longestSend.accumulateAndGet(System.nanoTime() - start, Math::max);
+                    while (collecting.get())
+                    {
+                        byte[] f = nextOn(wire, 100);
 
-                    // A command every few milliseconds from each, as a busy railway sends
-                    LockSupport.parkNanos(3000000L);
+                        if (f != null && f.length == CS2Message.MESSAGE_LENGTH && f[1] == 0x30) overUdp.add(f);
+                    }
                 }
-            }, "tcp-claim-sender-" + t);
+                catch (Exception e)
+                {
+                    throw new IllegalStateException(e);
+                }
+            }, "tcp-claim-udp-wire");
 
-            senders.add(thread);
-            thread.start();
-        }
+            collector.start();
 
-        for (int drop = 1; drop <= 3; drop++)
-        {
-            final int want = drop * 350;
-            final int reconnects = drop;
-            assertTrue(Components.waitFor(() -> this.station.received().size() >= want, 30000), "stalled at drop " + drop);
-            this.station.drop();
-            assertTrue(Components.waitFor(() -> this.model.count("network.tcpReconnected") >= reconnects, 15000),
-                "no reconnect after drop " + drop + ": " + this.model.lines);
-        }
+            this.station = new TcpStation(STATION).answering(true);
+            connect(this.station.port());
+            assertTrue(Components.waitFor(() -> this.station.connections() == 1, WAIT_MS), "precondition: no connection");
 
-        for (Thread thread : senders) thread.join(60000);
+            final int threads = 3;
+            final int[] sentBy = new int[threads + 1];
+            final AtomicBoolean sending = new AtomicBoolean(true);
+            final AtomicLong longestSend = new AtomicLong();
+            List<Thread> senders = new ArrayList<>();
 
-        for (int t = 1; t <= threads; t++)
-        {
-            byte[] last = numbered(t, each - 1);
-            assertTrue(Components.waitFor(() -> this.station.received().stream().anyMatch(f -> Arrays.equals(f.bytes, last)),
-                10000), "sender " + t + "'s last frame never arrived");
-        }
+            for (int t = 1; t <= threads; t++)
+            {
+                final int sender = t;
+                Thread thread = new Thread(() ->
+                {
+                    for (int n = 0; sending.get(); n++)
+                    {
+                        long start = System.nanoTime();
+                        this.proxy.sendMessage(new CS2Message(numbered(sender, n)));
+                        longestSend.accumulateAndGet(System.nanoTime() - start, Math::max);
+                        sentBy[sender] = n + 1;
 
-        List<TcpStation.Frame> all = this.station.received();
-        int lost = 0;
-        int disorder = 0;
+                        // A command every few milliseconds from each, as a busy railway sends
+                        LockSupport.parkNanos(3000000L);
+                    }
+                }, "tcp-claim-sender-" + t);
 
-        for (int t = 1; t <= threads; t++)
-        {
+                senders.add(thread);
+                thread.start();
+            }
+
+            // Each connection carries a while, and has been answered, before it is dropped: the last one too
+            for (int connection = 1; connection <= 4; connection++)
+            {
+                final int on = connection;
+                assertTrue(Components.waitFor(() -> this.station.receivedOn(on).size() >= 150, 30000),
+                    "stalled on connection " + on + ": " + this.model.lines);
+
+                if (on == 4) break;
+
+                this.station.drop();
+                assertTrue(Components.waitFor(() -> this.model.count("network.tcpReconnected") >= on, 15000),
+                    "no reconnect after drop " + on + ": " + this.model.lines);
+            }
+
+            sending.set(false);
+
+            for (Thread thread : senders) thread.join(60000);
+
+            for (int t = 1; t <= threads; t++)
+            {
+                byte[] last = numbered(t, sentBy[t] - 1);
+                assertTrue(Components.waitFor(() -> this.station.received().stream().anyMatch(f -> Arrays.equals(f.bytes, last))
+                    || new ArrayList<>(overUdp).stream().anyMatch(f -> Arrays.equals(f, last)),
+                    10000), "sender " + t + "'s last frame never arrived");
+            }
+
+            collecting.set(false);
+            collector.join(WAIT_MS);
+
+            List<TcpStation.Frame> all = this.station.received();
             Map<Integer, Integer> seen = new HashMap<>();
             Map<Integer, Integer> lastOn = new HashMap<>();
+            int disorder = 0;
 
             for (TcpStation.Frame f : all)
             {
-                if (f.bytes[5] != t) continue;
+                int id = f.bytes[5] << 16 | ((f.bytes[6] & 0xff) << 8) | (f.bytes[7] & 0xff);
+                seen.merge(id, 1, Integer::sum);
+                Integer before = lastOn.get(f.connection * 8 + f.bytes[5]);
 
-                int n = ((f.bytes[6] & 0xff) << 8) | (f.bytes[7] & 0xff);
-                seen.merge(n, 1, Integer::sum);
-                Integer before = lastOn.get(f.connection);
+                if (before != null && id <= before) disorder++;
 
-                if (before != null && n <= before) disorder++;
-
-                lastOn.put(f.connection, n);
+                lastOn.put(f.connection * 8 + f.bytes[5], id);
             }
 
-            for (int n = 0; n < each; n++) if (!seen.containsKey(n)) lost++;
-        }
+            for (byte[] f : overUdp) seen.merge(f[5] << 16 | ((f[6] & 0xff) << 8) | (f[7] & 0xff), 1, Integer::sum);
 
-        String summary = "connections=" + this.station.connections() + " frames=" + all.size() + " log=" + this.model.lines;
-        assertEquals(disorder, 0, "frames out of order on one connection: " + summary);
-        assertEquals(lost, 0, "frames lost across the drops: " + summary);
-        assertTrue(longestSend.get() < 500000000L, "a send waited " + longestSend.get() / 1000000 + " ms: " + summary);
+            int twice = 0;
+            int missing = 0;
+
+            for (int t = 1; t <= threads; t++)
+            {
+                for (int n = 0; n < sentBy[t]; n++)
+                {
+                    int times = seen.getOrDefault(t << 16 | n, 0);
+
+                    if (times > 1) twice++;
+                    if (times == 0) missing++;
+                }
+            }
+
+            int counted = this.model.sums.getOrDefault("network.framesMayNotHaveArrived", 0);
+            String summary = "connections=" + this.station.connections() + " tcp=" + all.size() + " udp=" + overUdp.size()
+                + " log=" + this.model.lines;
+            assertEquals(twice, 0, "frames reached the station twice: " + summary);
+            assertEquals(disorder, 0, "frames out of order on one connection: " + summary);
+            assertTrue(missing <= counted, missing + " frames missing, " + counted + " counted: " + summary);
+            assertTrue(longestSend.get() < 500000000L, "a send waited " + longestSend.get() / 1000000 + " ms: " + summary);
+        }
     }
 
     /** A ping-command frame carrying its sender and number, so each can be told apart at the station. */
@@ -1398,33 +1483,24 @@ public class testTheStationIsReachedOverTcp
     }
 
     /**
-     * The log tells commands sent again, that the station may already have, from commands only held while
-     * reconnecting and sent late.
+     * The log says once, at the loss, how many frames written to the connection may not have arrived (FR-186).
      *
-     * MUTATION: in `NetworkProxy.counts`, `if (u.written) written++;` to `written++;`.
+     * MUTATION: in `NetworkProxy.recover`, take out `if (cutOff > 0) model.logf("network.framesMayNotHaveArrived", ...`.
      */
     @Test(timeOut = 30000)
-    public void testTheLogTellsSentAgainFromSentLate() throws Exception
+    public void testTheLogSaysHowManyMayNotHaveArrived() throws Exception
     {
-        connectedAndAnswered();
-        this.station.answering(false);
-
-        // Waiting is the point: a frame heard past the margin after the ping makes the ping count as received
-        Components.waitFor(() -> false, 400);
-        this.station.send(sensor(1008, true));
-        assertTrue(Components.waitFor(() -> this.model.heardFrame(sensor(1008, true)), WAIT_MS), "precondition: not heard");
-
-        this.proxy.sendMessage(new CS2Message(ping(1)));
-        assertTrue(Components.waitFor(() -> this.station.received().size() == 2, WAIT_MS), "precondition: not sent");
-
+        connectedAndWritten(ping(1), ping(2), ping(3));
         this.station.drop();
-        assertTrue(logged("network.tcpLostReconnecting", WAIT_MS), "the loss was not found: " + this.model.lines);
-        this.proxy.sendMessage(new CS2Message(ping(2)));
-        this.proxy.sendMessage(new CS2Message(ping(3)));
 
         assertTrue(logged("network.tcpReconnected", 15000), "no new connection: " + this.model.lines);
-        assertTrue(this.model.lines.contains(I18n.f("network.framesSentAgain", 1)), "sent again not 1: " + this.model.lines);
-        assertTrue(this.model.lines.contains(I18n.f("network.framesSentLate", 2)), "sent late not 2: " + this.model.lines);
+
+        List<String> keys = new ArrayList<>(this.model.keys);
+        assertEquals(keys.indexOf("network.framesMayNotHaveArrived"), keys.indexOf("network.tcpLostReconnecting") + 1,
+            "not logged at the loss: " + this.model.lines);
+        assertEquals(this.model.count("network.framesMayNotHaveArrived"), 1, "not logged once: " + this.model.lines);
+        assertTrue(this.model.lines.contains(I18n.f("network.framesMayNotHaveArrived", 3)), "the count is not 3: "
+            + this.model.lines);
     }
 
     /**
