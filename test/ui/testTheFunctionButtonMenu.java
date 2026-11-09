@@ -321,6 +321,52 @@ public class testTheFunctionButtonMenu
     }
 
     /**
+     * An error that ends a picture-loading task is written to the log window, naming the thread.
+     *
+     * MUTATION: drop `thread.setUncaughtExceptionHandler(...)` from `TrainControlUI.pictureLoader`.
+     */
+    @Test
+    public void testAnErrorInAPictureTaskReachesTheLogWindow() throws Exception
+    {
+        javax.swing.JTextArea area = support.WindowField.of(ui, "debugArea");
+
+        ui.getImageLoader().execute(() -> { throw new IllegalStateException("picture task boom"); });
+
+        assertTrue(Components.waitFor(() -> Components.onTheEventThread(area::getText).contains("picture task boom"), WAIT),
+            "an error that ended a picture task never reached the log window");
+    }
+
+    /**
+     * A locomotive picture that cannot be loaded is said in the log window, and the train shows no picture.
+     *
+     * MUTATION: drop `this.model.logf("loc.ui.errorImageLoad", url)` from the `IOException` catch in
+     * `TrainControlUI.repaintLoc`.
+     */
+    @Test
+    public void testAPictureThatCannotBeLoadedIsSaidInTheLogWindow() throws Exception
+    {
+        javax.swing.JTextArea area = support.WindowField.of(ui, "debugArea");
+
+        String missing = new File(folder, "no such picture.png").toURI().toString();
+
+        String imageWas = loc.getImageURL();
+
+        loc.setImageURL(missing);
+
+        try
+        {
+            ui.repaintLoc(true, null);
+
+            assertTrue(Components.waitFor(() -> Components.onTheEventThread(area::getText).contains(I18n.f("loc.ui.errorImageLoad", missing)), WAIT),
+                "a picture that could not be loaded was not said in the log window");
+        }
+        finally
+        {
+            loc.setImageURL(imageWas);
+        }
+    }
+
+    /**
      * A train with no saved speed preset has nothing to apply: the menu item is grayed and says why.
      *
      * MUTATION: drop the `getPreferredSpeed() < 1` test in `RightClickMenuListener`, and this fails.

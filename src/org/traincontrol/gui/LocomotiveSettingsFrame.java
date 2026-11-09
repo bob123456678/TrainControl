@@ -1135,7 +1135,7 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
                     // window has since left is ignored
                     final Locomotive target = loc;
 
-                    main.getImageLoader().submit(() ->
+                    main.getImageLoader().execute(() ->
                     {
                         javax.swing.ImageIcon loaded = null;
 
@@ -1145,7 +1145,8 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
                         }
                         catch (Exception e)
                         {
-                            // Shown as no picture
+                            // Shown as no picture, and said in the log
+                            main.getModel().logf("loc.ui.errorImageLoad", url);
                         }
 
                         final javax.swing.ImageIcon shown = loaded;

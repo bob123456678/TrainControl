@@ -411,8 +411,21 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     private ExecutorService AutonomyRenderer = Executors.newFixedThreadPool(1);
     private ExecutorService MappingRenderer = Executors.newFixedThreadPool(1);
     private ExecutorService LocRenderer = Executors.newFixedThreadPool(1);
-    private ExecutorService ImageLoader = Executors.newFixedThreadPool(4);
-    private ExecutorService ImageLoaderLoc = Executors.newFixedThreadPool(2);
+    private ExecutorService ImageLoader = pictureLoader(4);
+    private ExecutorService ImageLoaderLoc = pictureLoader(2);
+
+    /** A pool for locomotive pictures: an error that ends a task is reported to the log window like the other pools'. */
+    private static ExecutorService pictureLoader(int threads)
+    {
+        return Executors.newFixedThreadPool(threads, runnable ->
+        {
+            Thread thread = Executors.defaultThreadFactory().newThread(runnable);
+
+            thread.setUncaughtExceptionHandler(org.traincontrol.marklin.MarklinControlStation.THREAD_ERRORS);
+
+            return thread;
+        });
+    }
     // Decodes/scales layout tile images off the EDT so the diagram can paint while tiles load
     private ExecutorService TileImageLoader = Executors.newFixedThreadPool(Math.max(2, Runtime.getRuntime().availableProcessors()));
     /**
@@ -7046,7 +7059,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     {
         noImageButton(b); // makes icons appear consistent on slow networks
         
-        ImageLoader.submit(() -> 
+        ImageLoader.execute(() -> 
         {
             if (b != null)
             {
@@ -7764,7 +7777,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                                 // Do this outside of the queue b/c otherwise it would be delayed for the currently selected loc at app startup
                                 repaintIcon(this.currentButton, this.activeLoc, currentButtonlocMappingNumber);
 
-                                ImageLoaderLoc.submit(() -> 
+                                ImageLoaderLoc.execute(() -> 
                                 {
                                     if (LOAD_IMAGES && this.activeLoc.getImageURL() != null)
                                     {
@@ -7794,6 +7807,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                                         }
                                         catch (IOException e)
                                         {
+                                            this.model.logf("loc.ui.errorImageLoad", url);
+
                                             if (this.activeLoc != null && url != null && url.equals(this.activeLoc.getImageURL()))
                                             {
                                                 locIcon.setIcon(null);
@@ -7832,7 +7847,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                                     bt.setHorizontalTextPosition(JButton.CENTER);
                                     bt.setVerticalTextPosition(JButton.CENTER);
 
-                                    ImageLoaderLoc.submit(() -> 
+                                    ImageLoaderLoc.execute(() -> 
                                     {
                                         try
                                         {
