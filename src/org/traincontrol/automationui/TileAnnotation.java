@@ -521,7 +521,7 @@ public class TileAnnotation
 
     private boolean stationless = false;
 
-    /** Has the square's own art drawn without color, as the editor draws its signals. */
+    /** Has the square's own art drawn without color, as the editor draws its signals and lamps. */
     public TileAnnotation inGray()
     {
         this.gray = true;

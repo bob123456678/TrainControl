@@ -5918,9 +5918,8 @@ public class AutonomyEditorPanel extends JPanel
 
         if (directionsView() == VIEW_ALLOWED) annotation.withoutRestrictions();
 
-        // Signals in gray, to simplify the picture, but in color while they can be picked.
-        if (!pickable && componentAt(tile) != null
-            && componentAt(tile).getType() == LayoutDiagramComponent.componentType.SIGNAL) annotation.inGray();
+        // Signals and lamps (isSignal) in gray, to simplify the picture, but in color while they can be picked.
+        if (!pickable && componentAt(tile) != null && componentAt(tile).isSignal()) annotation.inGray();
 
         // A train the setup puts here gets its own mark, unless Show Trains is off.
         if (locomotiveAt(tile) != null && isShowingTrains()) annotation.withTrain();
