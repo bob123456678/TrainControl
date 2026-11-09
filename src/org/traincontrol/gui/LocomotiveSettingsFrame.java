@@ -580,23 +580,6 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
 
         if (members && main.locomotiveActions.refuseMultiUnitEdit(this, loc, multiUnitTab.chosen().keySet())) return false;
 
-        if (notesTab.panel.isDirty())
-        {
-            try
-            {
-                notesTab.panel.checkYears();
-            }
-            catch (NumberFormatException ex)
-            {
-                tabs.setSelectedIndex(Tab.NOTES.ordinal());
-
-                JOptionPane.showMessageDialog(this, I18n.t("loc.ui.errorStartEndYearMustBeIntegers"),
-                    I18n.t("ui.dialogInputError"), JOptionPane.ERROR_MESSAGE);
-
-                return false;
-            }
-        }
-
         // Only what the operator changed from the loaded values: another door may have changed the rest since
         if (identity && !main.locomotiveActions.writeNameAndAddress(this, loc,
             locomotiveTab.nameChanged() ? locomotiveTab.name.getText() : null,

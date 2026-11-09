@@ -486,23 +486,68 @@ public class testTheLocomotiveSettingsWindow
     }
 
     /**
-     * A year that is not a number is refused on the Notes tab, which comes forward, and nothing is written.
+     * Start and End Year each take four digits and nothing else: typed a key at a time, a letter, a minus and a fifth
+     * digit are refused; a paste of five digits or of a letter is refused whole, and one of four digits is taken.
      *
-     * MUTATION: skip `checkYears` in `save`, and this fails.
+     * MUTATION: build the year fields in `LocomotiveNotesPanel` as plain `JTextField`s, and this fails.
      */
     @Test
-    public void testAYearThatIsNotANumberIsRefusedOnTheNotesTab() throws Exception
+    public void testTheYearsRefuseAFifthDigitAndNonDigits() throws Exception
     {
-        open(0);
+        open(2);
 
-        speed(66);
-        SettingsWindow.selectTab(2);
-        SettingsWindow.type("notes.startYear", "19x");
-        SettingsWindow.selectTab(0);
+        for (String name : new String[] { "notes.startYear", "notes.endYear" })
+        {
+            List<String> shown = Components.onTheEventThread(() ->
+            {
+                JTextField year = SettingsWindow.part(name, JTextField.class);
+                List<String> out = new java.util.ArrayList<>();
 
-        assertEquals(saveAndAnswer(), Arrays.asList(I18n.t("loc.ui.errorStartEndYearMustBeIntegers")));
-        assertEquals(SettingsWindow.tabShowing(), 2, "the Notes tab did not come forward");
-        assertEquals(loc.getPreferredSpeed(), 30, "the speed was written though a year was refused");
+                year.selectAll();
+                year.replaceSelection("");
+
+                // A typed key goes in as a replaceSelection at the caret, as the field's own key binding does
+                for (char c : "19x5-78".toCharArray()) year.replaceSelection(String.valueOf(c));
+
+                out.add(year.getText());
+
+                for (String paste : new String[] { "123456", "20a1", "2001" })
+                {
+                    year.selectAll();
+                    year.replaceSelection(paste);
+                    out.add(year.getText());
+                }
+
+                return out;
+            });
+
+            assertEquals(shown, Arrays.asList("1957", "1957", "1957", "2001"), name + " took what it should refuse");
+        }
+    }
+
+    /**
+     * A stored year longer than four digits, as an import may write, is shown whole and does not light Save, and a
+     * save of the notes beside it keeps it.
+     *
+     * MUTATION: show the loaded years through the field's filter (`setText`) in `LocomotiveNotesPanel.reload`, and this
+     * fails.
+     */
+    @Test
+    public void testALongStoredYearIsShownWholeAndKept() throws Exception
+    {
+        loc.setStructuredNotes(12345, 1970, "LS Railway", "first notes");
+
+        open(2);
+
+        assertEquals(SettingsWindow.text("notes.startYear"), "12345", "the stored year is not shown whole");
+        assertFalse(Components.onTheEventThread(SettingsWindow.save()::isEnabled), "showing the stored year lit Save");
+
+        typeArea("notes.text", "second notes");
+        SettingsWindow.press(SettingsWindow.save());
+
+        assertTrue(Components.waitFor(() -> SettingsWindow.showing() == null, WAIT), "Save did not close the window");
+        assertEquals(loc.getStructuredNotes().getStartYear(), 12345, "saving the notes changed the stored year");
+        assertEquals(loc.getStructuredNotes().getNotes(), "second notes");
     }
 
     // Delete

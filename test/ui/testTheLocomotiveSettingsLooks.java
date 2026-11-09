@@ -307,7 +307,7 @@ public class testTheLocomotiveSettingsLooks extends support.SettingsClass
 
     /**
      * Blue is for section headings: exactly "Name and Address", "Customize Behavior" and "Locomotive Icon" on the first
-     * tab, "Notes" over the Notes tab's text box, and the Autonomy tab's two are dark blue, and every item label there
+     * tab, "Metadata" and "Notes" on the Notes tab, and the Autonomy tab's two are dark blue, and every item label there
      * and on the other tabs, and the Functions table's column headings, are black, all Semibold 13.
      *
      * MUTATION: make `LocomotiveSettingsFrame.label` build a blue `UiStyle.heading`, or `UiStyle.style` blue, or the
@@ -320,7 +320,7 @@ public class testTheLocomotiveSettingsLooks extends support.SettingsClass
         opened();
 
         String[] blue = { "loc.ui.settingsNameAndAddress", "loc.ui.settingsCustomizeBehavior",
-            "loc.ui.settingsLocomotiveIcon", "loc.ui.labelNotes", "loc.ui.settingsAutonomyHeading",
+            "loc.ui.settingsLocomotiveIcon", "loc.ui.settingsMetadata", "loc.ui.labelNotes", "loc.ui.settingsAutonomyHeading",
             "loc.ui.settingsAutonomyFunctionsHeading" };
         String[] black = { "ui.name", "loc.ui.decoderType", "layout.ui.address", "loc.ui.settingsPresetSpeed",
             "loc.ui.labelStartYear",
@@ -355,7 +355,34 @@ public class testTheLocomotiveSettingsLooks extends support.SettingsClass
         java.util.List<JLabel> blues = Components.all(SettingsWindow.showing().getContentPane(), JLabel.class,
             l -> UiStyle.BLUE.equals(l.getForeground()));
 
-        assertEquals(blues.size(), blue.length, "the blue labels are not just the six headings");
+        assertEquals(blues.size(), blue.length, "the blue labels are not just the seven headings");
+    }
+
+    /**
+     * The Notes tab opens with a Metadata heading in the heading style, above Start Year and starting where it does.
+     *
+     * MUTATION: drop the Metadata caption from `LocomotiveNotesPanel`, or move it below Start Year, and this fails.
+     */
+    @Test
+    public void testTheMetadataHeadingSitsAboveStartYear() throws Exception
+    {
+        opened();
+        SettingsWindow.selectTab(LocomotiveSettingsFrame.Tab.NOTES.ordinal());
+        Components.settle();
+
+        JLabel heading = labelFor("loc.ui.settingsMetadata");
+        JLabel start = labelFor("loc.ui.labelStartYear");
+
+        assertNotNull(heading, "no Metadata heading on the Notes tab");
+        assertNotNull(start, "precondition: no Start Year label on Notes");
+        assertEquals(heading.getForeground(), UiStyle.BLUE, "the Metadata heading is not blue");
+        assertEquals(heading.getFont(), UiStyle.LABEL_FONT, "the Metadata heading is not Semibold 13");
+
+        java.awt.Rectangle h = inWindow(heading);
+        java.awt.Rectangle s = inWindow(start);
+
+        assertTrue(h.y + h.height <= s.y, "the Metadata heading at " + h + " is not above Start Year at " + s);
+        assertEquals(h.x, s.x, "the Metadata heading does not start where Start Year does");
     }
 
     /** Where a named part of the window is, in the window's own coordinates. */
