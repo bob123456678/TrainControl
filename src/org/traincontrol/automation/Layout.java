@@ -1025,8 +1025,6 @@ public class Layout
 
     /**
      * The station this locomotive belongs at, or null if it has none
-     * @param l
-     * @return
      */
     synchronized public Point getHomeStation(Locomotive l)
     {
@@ -1038,8 +1036,6 @@ public class Layout
     /**
      * Every locomotive that has a home, and where.  A copy taken under this Layout's monitor, since the map is
      * rebuilt and written from several threads.
-     *
-     * @return
      */
     synchronized public Map<Locomotive, Point> getHomeStations()
     {
@@ -1380,8 +1376,6 @@ public class Layout
      * Whether this Layout is still the one in use, or has been superseded by a newer one.
      *
      * Unlike a version captured when a run began, the answer does not depend on when it is asked.
-     *
-     * @return 
      */
     public boolean isCurrentLayout()
     {
@@ -1390,7 +1384,6 @@ public class Layout
 
     /**
      * Whether a staging flow currently owns this Layout, planning or executing.
-     * @return
      */
     public boolean isStagingInProgress()
     {
@@ -1399,7 +1392,6 @@ public class Layout
 
     /**
      * Marks this Layout as owned by a staging flow, or releases it.
-     * @param stagingInProgress
      */
     public void setStagingInProgress(boolean stagingInProgress)
     {
@@ -5247,8 +5239,6 @@ public class Layout
      * The timetable as it stands right now, for readers that only look at it.
      *
      * A copy taken under the monitor, for readers that want one consistent list.
-     *
-     * @return
      */
     synchronized public List<TimetablePath> getTimetableSnapshot()
     {
@@ -6415,8 +6405,6 @@ public class Layout
      * @param path
      * @param loc
      * @param speed
-     * @param ttp
-     * @return 
      */
     private boolean executePathInternal(List<Edge> path, Locomotive loc, int speed, TimetablePath ttp,
         ReversalPolicy reversals, int stopsAtChoice)
@@ -8228,8 +8216,6 @@ public class Layout
 
     /**
      * Reports one disagreement between the staging planner and the runtime's own path check.
-     * @param loc
-     * @param destination
      * @param runtimeAllowsIt - true when the runtime would allow the move and the planner would not
      */
     void logStagingAudit(String loc, String destination, boolean runtimeAllowsIt)

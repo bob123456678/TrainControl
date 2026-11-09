@@ -1305,7 +1305,6 @@ public class MarklinControlStation implements ViewListener, ModelListener
      * The count matters to the caller because an empty proposal list is ambiguous - either nothing
      * needs renaming, or everything that did was refused - and those want different messages.
      *
-     * @return
      * @throws java.lang.Exception
      */
     @Override
@@ -1440,9 +1439,6 @@ public class MarklinControlStation implements ViewListener, ModelListener
 
     /**
      * Whether a locomotive by this name is still waiting to be renamed away
-     * @param name
-     * @param remaining
-     * @return
      */
     private static boolean isPendingRenameSource(String name, List<String[]> remaining)
     {
@@ -4175,7 +4171,6 @@ public class MarklinControlStation implements ViewListener, ModelListener
      * Use getAccessoryByAddressIfPresent for read-only paths - display, export, validation.  This one
      * registers a switch on a miss, which is deliberate for command paths but fills the database with
      * phantoms when called merely to look at something.
-     * @param address
      * @param decoderType
      * @return 
      */

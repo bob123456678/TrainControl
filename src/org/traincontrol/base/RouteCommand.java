@@ -351,7 +351,6 @@ public class RouteCommand implements java.io.Serializable
      * Returns whether this command carries an address.  Accessory, feedback and auto locomotive
      * commands do; speed, direction, function, route and the standalone commands do not.
      * Callers that iterate over a mixed route must check this before calling getAddress.
-     * @return
      */
     public boolean hasAddress()
     {
@@ -361,7 +360,6 @@ public class RouteCommand implements java.io.Serializable
     /**
      * Returns this command's address.  Only valid when hasAddress() is true - other command types
      * have no address and this will throw.
-     * @return
      */
     public int getAddress()
     {

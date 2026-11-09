@@ -52,8 +52,6 @@ public class LocButtonTransferHandler extends TransferHandler
 
     /**
      * Makes the given letter button both a drag source and a drop target
-     * @param ui
-     * @param button
      * @param tabs - the page tabs, used to return to the source page if the drag is canceled
      */
     public static void enable(TrainControlUI ui, JButton button, JTabbedPane tabs)
@@ -102,8 +100,6 @@ public class LocButtonTransferHandler extends TransferHandler
     /**
      * Makes hovering over the given component turn the page during a drag, so that locomotives can be moved across pages.
      * The component itself never accepts the drop.
-     * @param component
-     * @param tabs
      * @param offset - pages to move relative to the current page, or 0 to use the tab under the cursor
      */
     public static void enablePageSwitching(JComponent component, JTabbedPane tabs, int offset)
@@ -195,8 +191,6 @@ public class LocButtonTransferHandler extends TransferHandler
 
     /**
      * Returns the button and page the drag originated from, or null if unavailable
-     * @param transferable
-     * @return
      */
     private static Origin getOrigin(Transferable transferable)
     {

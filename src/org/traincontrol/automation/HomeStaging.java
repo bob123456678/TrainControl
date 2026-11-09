@@ -166,8 +166,6 @@ public final class HomeStaging
 
     /**
      * Copies everything the planner needs out of a layout.  Nothing afterwards reads live state.
-     * @param layout
-     * @return
      */
     public static HomeStaging snapshot(Layout layout)
     {
@@ -441,7 +439,6 @@ public final class HomeStaging
 
     /**
      * Works out how to get every homed locomotive back to its home.
-     * @return
      */
     public Plan plan()
     {

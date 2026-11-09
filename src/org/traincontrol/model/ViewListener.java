@@ -75,9 +75,6 @@ public interface ViewListener
     /**
      * Returns the accessory at the given address, or null if none exists.  Unlike
      * getAccessoryByAddress, this never creates one - use it on display and read-only paths
-     * @param address
-     * @param decoderType
-     * @return
      */
     public Accessory getAccessoryByAddressIfPresent(int address, Accessory.accessoryDecoderType decoderType);
     public boolean getPowerState();
@@ -266,7 +263,6 @@ public interface ViewListener
     /**
      * The rename check with its refusal count, so an empty proposal list can be told apart from
      * everything having been declined
-     * @return
      * @throws java.lang.Exception
      */
     public RenameProposals getRenameProposals() throws Exception;

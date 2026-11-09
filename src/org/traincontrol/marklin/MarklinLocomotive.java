@@ -1017,7 +1017,6 @@ public class MarklinLocomotive extends Locomotive
      * checks live elsewhere: hasEquivalentAddress (address and protocol), getName, getIntUID (both).  Reach for those,
      * not for equals.  An identity hash also does not depend on field state, which matters when HashMap.readObject
      * hashes the keys of the non-transient linkedLocomotives while they are only partly restored.
-     * @param other
      */
     @Override
     public boolean equals(Object other)
@@ -1321,10 +1320,7 @@ public class MarklinLocomotive extends Locomotive
      * step - see there - and the conflict check has to see the members staged so far, not the ones
      * still in the live map from the previous configuration.
      *
-     * @param other
-     * @param logError
      * @param existingMembers members to test the address-conflict rule against
-     * @return 
      */
     private boolean canBeLinkedTo(Locomotive other, boolean logError, java.util.Collection<Locomotive> existingMembers)
     {

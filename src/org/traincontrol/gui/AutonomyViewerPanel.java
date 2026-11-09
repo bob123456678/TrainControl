@@ -516,8 +516,6 @@ public class AutonomyViewerPanel extends JPanel
 
     /**
      * Points the Manage actions at a configuration, for a caller that has no combo box of its own.
-     *
-     * @param name
      */
     public void setSelectedConfiguration(String name)
     {
