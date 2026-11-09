@@ -729,7 +729,7 @@ public class testTheStationIsReachedOverTcp
      * A station that answers each send within the limit, here after 2 s, keeps its connection however many sends it
      * answers so.
      *
-     * MUTATION: set `TCP_ANSWER_LIMIT_MS` to 1500, and this fails.
+     * MUTATION: set `TCP_ANSWER_LIMIT_MS` to 1000, and this fails.
      */
     @Test(timeOut = 60000)
     public void testAStationThatAnswersWithinTheLimitKeepsItsConnection() throws Exception
@@ -751,6 +751,52 @@ public class testTheStationIsReachedOverTcp
         assertFalse(logged("network.tcpLostReconnecting", 2000), "a connection answered within the limit was taken as"
             + " hung after its last answer: " + this.model.lines);
         assertEquals(this.station.connections(), 1, "the connection was replaced");
+    }
+
+    /** A station that answers pings, as every station does, and no other frame. */
+    private static TcpStation answeringPingsOnly() throws Exception
+    {
+        return new TcpStation(STATION).answeringOnly(f -> ((f[1] & 0xFF) >> 1) == CS2Message.CAN_CMD_PING);
+    }
+
+    /**
+     * A station that never answers one frame but answers pings keeps its connection past the answer limit: the proxy
+     * pings once the frame is suspect, and the ping's answer shows the connection is alive.
+     *
+     * MUTATION: take the ping out of `NetworkProxy.readUntilLost`, and this fails.
+     */
+    @Test(timeOut = 60000)
+    public void testAFrameTheStationLeavesUnansweredKeepsTheConnection() throws Exception
+    {
+        connectedAndCarried(answeringPingsOnly());
+
+        this.proxy.sendMessage(new CS2Message(speed(10)));
+
+        assertFalse(logged("network.tcpLostReconnecting", 6000), "a connection whose station answers pings was given up"
+            + " over one frame it leaves unanswered: " + this.model.lines);
+        assertEquals(this.station.connections(), 1, "the connection was replaced");
+    }
+
+    /**
+     * Nor is a reconnected connection, which has carried nothing yet, given up for UDP when its first frame goes
+     * unanswered: the ping's answer is its first.
+     *
+     * MUTATION: take the ping out of `NetworkProxy.readUntilLost`, and this fails.
+     */
+    @Test(timeOut = 60000)
+    public void testAFreshConnectionWhoseFirstFrameGoesUnansweredStaysOnTcp() throws Exception
+    {
+        connectedAndCarried(answeringPingsOnly());
+
+        this.station.drop();
+        assertTrue(logged("network.tcpReconnected", 15000), "no new connection: " + this.model.lines);
+
+        this.proxy.sendMessage(new CS2Message(speed(11)));
+
+        assertFalse(logged("network.tcpLostUsingUdp", 6000), "a fresh connection whose station answers pings was left"
+            + " for UDP over one frame it leaves unanswered: " + this.model.lines);
+        assertEquals(this.model.count("network.tcpLostReconnecting"), 1, "the fresh connection was given up: "
+            + this.model.lines);
     }
 
     /**
