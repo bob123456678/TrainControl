@@ -58,7 +58,7 @@ public class testNoNewCopies
         "AutonomySession:2 (63)",
         "AutonomySession:3 (67)",
         "AutonomySettingsTab:2 (138)",
-        "CS2File:2 (85)",
+        "CS2File:2 (83)",
         "CS2File:2 (79)",
         "CS2Message:1,LayoutDiagramComponent:2 (101)",
         "CS2Message:1,RouteCommand:1 (91)",

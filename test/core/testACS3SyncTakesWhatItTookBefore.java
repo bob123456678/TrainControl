@@ -165,6 +165,31 @@ public class testACS3SyncTakesWhatItTookBefore
         }
     }
 
+    /**
+     * The control: a route naming a locomotive that is not in the list, while another record has no name and so may be
+     * it, is held back, and the start-up still warns of it.
+     *
+     * MUTATION: throw a plain JSONException for a route held back in CS2File.parseRoutesCS3, and the start-up is silent.
+     */
+    @Test
+    public void testARouteHeldBackIsStillWarnedOf() throws Exception
+    {
+        JSONArray locs = locomotives();
+        named(locs, "065 001-0 DB").remove("name");
+
+        for (int i = 0; i < locs.length(); i++)
+        {
+            if ("02#200314-1#20DDR".equals(locs.getJSONObject(i).optString("internname"))) locs.remove(i--);
+        }
+
+        try (StationRig rig = rig(LOCOS, locs))
+        {
+            assertTrue(rig.model.syncWithCS2() >= 0);
+            assertNull(rig.model.getRoute(PROBE), "the route naming the locomotive that is gone is held back");
+            assertTrue(rig.model.wasLastSyncPartial(), "and the start-up warns of it");
+        }
+    }
+
     @SuppressWarnings("unchecked")
     private static Consumer<JSONArray>[] pair(Consumer<JSONArray> given, Consumer<JSONArray> expected)
     {
