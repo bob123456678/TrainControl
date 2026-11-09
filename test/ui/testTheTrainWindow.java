@@ -707,18 +707,7 @@ public class testTheTrainWindow
         assertNull(session.getLocomotiveNameAt(square), "precondition: Down placed " + shown);
 
         // Tab takes the keyboard to the next control in the window
-        java.awt.Component next = StationDoors.part(window, "train.active", java.awt.Component.class);
-
-        Components.onTheEventThread(() ->
-        {
-            for (java.awt.event.FocusListener each : list.getFocusListeners())
-            {
-                each.focusLost(new java.awt.event.FocusEvent(list, java.awt.event.FocusEvent.FOCUS_LOST, false, next));
-            }
-
-            return null;
-        });
-        Components.settle();
+        StationDoors.loseKeyboard(list, false, StationDoors.part(window, "train.active", java.awt.Component.class));
 
         String placed = session.getLocomotiveNameAt(square);
 

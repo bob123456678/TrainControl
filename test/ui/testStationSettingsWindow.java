@@ -209,10 +209,11 @@ public class testStationSettingsWindow
 
         StationDoors.toAnotherWindow(window, StationDoors.part(window, "station.depart.0", javax.swing.JComboBox.class));
 
-        assertEquals(setup(), before, "another window clicked applied the choice shown in May depart");
         assertEquals(mayDepartShows(window), was, "another window clicked left May depart showing a choice not made");
 
         StationDoors.close(window);
+
+        assertEquals(setup(), before, "another window clicked applied the choice shown in May depart");
     }
 
     /**
@@ -226,11 +227,11 @@ public class testStationSettingsWindow
     {
         StationSettingsWindow window = StationDoors.open(panel, aStation());
 
-        String before = setup();
-
-        stepMayDepart(window);
-
         javax.swing.JComboBox<?> stepped = StationDoors.part(window, "station.depart.0", javax.swing.JComboBox.class);
+
+        StationDoors.step(stepped);
+
+        String before = setup();
 
         try (Answering answering = Answering.start(message -> null))
         {
@@ -240,16 +241,7 @@ public class testStationSettingsWindow
                 "precondition: the run did not build May depart again");
 
             // The list taken away had the keyboard, and loses it for good
-            Components.onTheEventThread(() ->
-            {
-                for (java.awt.event.FocusListener each : stepped.getFocusListeners())
-                {
-                    each.focusLost(new java.awt.event.FocusEvent(stepped, java.awt.event.FocusEvent.FOCUS_LOST));
-                }
-
-                return null;
-            });
-            Components.settle();
+            StationDoors.loseKeyboard(stepped, false, null);
 
             assertEquals(answering.asked(), java.util.Collections.emptyList(), "a run starting with May depart stepped asked");
         }
@@ -616,17 +608,7 @@ public class testStationSettingsWindow
 
         assertEquals(session.getPointProperty(square, "maxTrainLength"), before, "typing applied the length before leaving");
 
-        Components.onTheEventThread(() ->
-        {
-            for (java.awt.event.FocusListener each : field.getFocusListeners())
-            {
-                each.focusLost(new java.awt.event.FocusEvent(field, java.awt.event.FocusEvent.FOCUS_LOST));
-            }
-
-            return null;
-        });
-
-        Components.settle();
+        StationDoors.loseKeyboard(field, false, null);
 
         assertEquals(numberOf(session.getPointProperty(square, "maxTrainLength")), 37.0, "leaving did not apply the length");
 

@@ -272,16 +272,28 @@ public final class StationDoors
         return was;
     }
 
-    /** Another window is clicked, as AWT tells it: the control with the keyboard loses it for now, then the window its focus. */
-    public static void toAnotherWindow(java.awt.Window window, Component focused)
+    /** A control loses the keyboard, as AWT tells it: for now (another window clicked) or for good, to `next` (or none). */
+    public static void loseKeyboard(Component focused, boolean forNow, Component next)
     {
         Components.onTheEventThread(() ->
         {
             for (java.awt.event.FocusListener each : focused.getFocusListeners())
             {
-                each.focusLost(new java.awt.event.FocusEvent(focused, java.awt.event.FocusEvent.FOCUS_LOST, true));
+                each.focusLost(new java.awt.event.FocusEvent(focused, java.awt.event.FocusEvent.FOCUS_LOST, forNow, next));
             }
 
+            return null;
+        });
+        Components.settle();
+    }
+
+    /** Another window is clicked, as AWT tells it: the control with the keyboard loses it for now, then the window its focus. */
+    public static void toAnotherWindow(java.awt.Window window, Component focused)
+    {
+        loseKeyboard(focused, true, null);
+
+        Components.onTheEventThread(() ->
+        {
             for (java.awt.event.WindowFocusListener each : window.getWindowFocusListeners())
             {
                 each.windowLostFocus(new java.awt.event.WindowEvent(window, java.awt.event.WindowEvent.WINDOW_LOST_FOCUS));
