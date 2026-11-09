@@ -3084,6 +3084,49 @@ public class testDiagramLooksRight
     }
 
     /**
+     * An active sensor's arrows stop short of its square's edge, so on two sensor tracks side by side the arrows of
+     * neighbors never touch: no arrow red (red over green and blue by more than 24) in the outermost row or column of
+     * any active sensor icon at Small and Large, nor at Medium, the Large art scaled down as `getImage` does.
+     *
+     * MUTATION: put a red pixel back on the edge row of any `s88*_active.gif`, and this fails.
+     */
+    @Test
+    public void testNoSensorArrowReachesTheEdgeOfItsSquare() throws Exception
+    {
+        java.util.List<String> touching = new java.util.ArrayList<>();
+
+        for (String name : new String[] {"s88_active", "s88_curve_active", "s88_double_curve_active"})
+        {
+            for (int size : new int[] {30, TrainControlUI.MEDIUM_TILE_SIZE, 60})
+            {
+                BufferedImage art = icon(org.traincontrol.base.LayoutDiagramComponent.artSize(size), name);
+                BufferedImage drawn = new BufferedImage(size, size, BufferedImage.TYPE_INT_RGB);
+                java.awt.Graphics2D g = drawn.createGraphics();
+
+                // ImageIcon waits for the scaled picture to arrive
+                g.drawImage(size == art.getWidth() ? art : new javax.swing.ImageIcon(
+                    art.getScaledInstance(size, size, java.awt.Image.SCALE_SMOOTH)).getImage(), 0, 0, null);
+                g.dispose();
+
+                for (int i = 0; i < size; i++)
+                {
+                    for (int[] at : new int[][] {{i, 0}, {i, size - 1}, {0, i}, {size - 1, i}})
+                    {
+                        java.awt.Color c = new java.awt.Color(drawn.getRGB(at[0], at[1]));
+
+                        if (c.getRed() - Math.max(c.getGreen(), c.getBlue()) > 24)
+                        {
+                            touching.add(name + " at " + size + ": (" + at[0] + ", " + at[1] + ") " + c);
+                        }
+                    }
+                }
+            }
+        }
+
+        assertTrue(touching.isEmpty(), "sensor arrows reach the edge of their square: " + touching);
+    }
+
+    /**
      * A pill's edge and a destination's ring are as thick on the right and bottom as on the left and top:
      * `drawRoundRect(x, y, w - 1, h - 1)` with anti-aliasing puts left and top half outside the fill; checked at twice
      * the size.

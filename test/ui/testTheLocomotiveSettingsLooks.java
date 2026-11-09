@@ -159,6 +159,40 @@ public class testTheLocomotiveSettingsLooks extends support.SettingsClass
             "the head is not square to the ring: it fans out above its tip");
     }
 
+    /**
+     * The undo arrow's ring is round: below its center, where only the ring is drawn, it is its own mirror image left
+     * to right and across the diagonal, within 48 of 255 in coverage, at the sizes the window draws it at 1x, 1.5x and
+     * 2x.  Snapped to whole pixels it is out by 71 or more.
+     *
+     * MUTATION: drop the pure stroke hint from `RowIcons.revert`, and this fails.
+     */
+    @Test
+    public void testTheUndoArrowsRingIsRound()
+    {
+        for (int size : new int[] {18, 27, 36})
+        {
+            BufferedImage img = new BufferedImage(size, size, BufferedImage.TYPE_INT_ARGB);
+
+            org.traincontrol.gui.widgets.RowIcons.revert(size, java.awt.Color.BLACK).paintIcon(null, img.getGraphics(), 0, 0);
+
+            int half = (size + 1) / 2;
+            int worst = 0;
+
+            for (int y = half; y < size; y++)
+            {
+                for (int x = 0; x < size; x++)
+                {
+                    worst = Math.max(worst, Math.abs((img.getRGB(x, y) >>> 24) - (img.getRGB(size - 1 - x, y) >>> 24)));
+
+                    if (x >= half) worst = Math.max(worst, Math.abs((img.getRGB(x, y) >>> 24) - (img.getRGB(y, x) >>> 24)));
+                }
+            }
+
+            assertTrue(worst <= 48, "at " + size + " pixels the ring is not round: one side differs from its mirror by "
+                + worst + " of 255");
+        }
+    }
+
     private static boolean opaque(BufferedImage img, double c, double r, double degrees)
     {
         double a = Math.toRadians(degrees);
@@ -335,7 +369,7 @@ public class testTheLocomotiveSettingsLooks extends support.SettingsClass
      * Dragged as narrow as the window lets it go, the Functions tab's two button groups still do not overlap, in each
      * language.
      *
-     * MUTATION: drop `keepTheFunctionsRowApart` from `LocomotiveSettingsFrame.fit`, and this fails.
+     * MUTATION: drop `keepTheRowsWhole` from `LocomotiveSettingsFrame.fit`, and this fails.
      */
     @Test
     public void testTheFunctionsRowNeverOverlapsAtTheNarrowestWindow() throws Exception
@@ -379,6 +413,100 @@ public class testTheLocomotiveSettingsLooks extends support.SettingsClass
         }
     }
 
+    /**
+     * As it opens, and dragged as narrow as it lets itself go, the window keeps its five tabs on one row in every
+     * language: each tab sits on the first one's y.
+     *
+     * MUTATION: leave the tab strip out of `LocomotiveSettingsFrame.keepTheRowsWhole`, and this fails.
+     */
+    @Test
+    public void testTheTabsStayOnOneRowAtTheNarrowestWindow() throws Exception
+    {
+        try
+        {
+            for (String lang : new String[] {"en", "de", "da", "es", "fr", "it", "nl", "pl"})
+            {
+                I18n.setLocale(new java.util.Locale(lang));
+
+                JTabbedPane tabs = opened();
+                LocomotiveSettingsFrame window = SettingsWindow.showing();
+
+                for (boolean narrowed : new boolean[] {false, true})
+                {
+                    java.util.List<Integer> rows = Components.onTheEventThread(() ->
+                    {
+                        if (narrowed)
+                        {
+                            window.setSize(window.isMinimumSizeSet() ? Math.max(300, window.getMinimumSize().width) : 300,
+                                window.getHeight());
+                            window.validate();
+                        }
+
+                        java.util.List<Integer> y = new java.util.ArrayList<>();
+
+                        for (int i = 0; i < tabs.getTabCount(); i++) y.add(tabs.getBoundsAt(i).y);
+
+                        return y;
+                    });
+
+                    assertEquals(new java.util.HashSet<>(rows).size(), 1, lang + (narrowed ? ": at the narrowest, " : ": as it opens, ")
+                        + window.getWidth() + " wide, the tabs are on more than one row: " + rows);
+                }
+            }
+        }
+        finally
+        {
+            I18n.setLocale(java.util.Locale.ENGLISH);
+        }
+    }
+
+    /**
+     * The open window's once-a-second watch leaves the tab strip alone: over two of its ticks the strip is not resized.
+     *
+     * MUTATION: measure the tab strip in `LocomotiveSettingsFrame.keepTheRowsWhole`, which the watch calls, instead of
+     * in `fit`, and this fails.
+     */
+    @Test
+    public void testTheWatchDoesNotResizeTheTabStrip() throws Exception
+    {
+        JTabbedPane tabs = opened();
+
+        Components.settle();
+
+        java.util.concurrent.atomic.AtomicInteger resized = new java.util.concurrent.atomic.AtomicInteger();
+        java.awt.event.ComponentListener count = new java.awt.event.ComponentAdapter()
+        {
+            @Override
+            public void componentResized(java.awt.event.ComponentEvent e)
+            {
+                resized.incrementAndGet();
+            }
+        };
+
+        Components.onTheEventThread(() ->
+        {
+            tabs.addComponentListener(count);
+
+            return null;
+        });
+
+        try
+        {
+            // The watch ticks every second, so 2.5 s holds two ticks; measuring on a tick resized the strip twice
+            assertTrue(!Components.waitFor(() -> resized.get() > 0, 2500), "the watch resized the tab strip "
+                + resized.get() + " times");
+        }
+        finally
+        {
+            Components.onTheEventThread(() ->
+            {
+                tabs.removeComponentListener(count);
+
+                return null;
+            });
+        }
+    }
+
     private static java.awt.Rectangle bounds(java.awt.Component c, java.awt.Container pane)
     {
         return javax.swing.SwingUtilities.convertRectangle(c.getParent(), c.getBounds(), pane);
@@ -386,7 +514,7 @@ public class testTheLocomotiveSettingsLooks extends support.SettingsClass
 
     /**
      * Blue is for section headings: exactly "Name and Address", "Customize Behavior" and "Locomotive Icon" on the first
-     * tab, "Notes" over the Notes tab's text box, and the Autonomy tab's two are dark blue, and every item label there
+     * tab, "Metadata" and "Notes" on the Notes tab, and the Autonomy tab's two are dark blue, and every item label there
      * and on the other tabs, and the Functions table's column headings, are black, all Semibold 13.
      *
      * MUTATION: make `LocomotiveSettingsFrame.label` build a blue `UiStyle.heading`, or `UiStyle.style` blue, or the
@@ -399,7 +527,7 @@ public class testTheLocomotiveSettingsLooks extends support.SettingsClass
         opened();
 
         String[] blue = { "loc.ui.settingsNameAndAddress", "loc.ui.settingsCustomizeBehavior",
-            "loc.ui.settingsLocomotiveIcon", "loc.ui.labelNotes", "loc.ui.settingsAutonomyHeading",
+            "loc.ui.settingsLocomotiveIcon", "loc.ui.settingsMetadata", "loc.ui.labelNotes", "loc.ui.settingsAutonomyHeading",
             "loc.ui.settingsAutonomyFunctionsHeading" };
         String[] black = { "ui.name", "loc.ui.decoderType", "layout.ui.address", "loc.ui.settingsPresetSpeed",
             "loc.ui.labelStartYear",
@@ -434,7 +562,34 @@ public class testTheLocomotiveSettingsLooks extends support.SettingsClass
         java.util.List<JLabel> blues = Components.all(SettingsWindow.showing().getContentPane(), JLabel.class,
             l -> UiStyle.BLUE.equals(l.getForeground()));
 
-        assertEquals(blues.size(), blue.length, "the blue labels are not just the six headings");
+        assertEquals(blues.size(), blue.length, "the blue labels are not just the seven headings");
+    }
+
+    /**
+     * The Notes tab opens with a Metadata heading in the heading style, above Start Year and starting where it does.
+     *
+     * MUTATION: drop the Metadata caption from `LocomotiveNotesPanel`, or move it below Start Year, and this fails.
+     */
+    @Test
+    public void testTheMetadataHeadingSitsAboveStartYear() throws Exception
+    {
+        opened();
+        SettingsWindow.selectTab(LocomotiveSettingsFrame.Tab.NOTES.ordinal());
+        Components.settle();
+
+        JLabel heading = labelFor("loc.ui.settingsMetadata");
+        JLabel start = labelFor("loc.ui.labelStartYear");
+
+        assertNotNull(heading, "no Metadata heading on the Notes tab");
+        assertNotNull(start, "precondition: no Start Year label on Notes");
+        assertEquals(heading.getForeground(), UiStyle.BLUE, "the Metadata heading is not blue");
+        assertEquals(heading.getFont(), UiStyle.LABEL_FONT, "the Metadata heading is not Semibold 13");
+
+        java.awt.Rectangle h = inWindow(heading);
+        java.awt.Rectangle s = inWindow(start);
+
+        assertTrue(h.y + h.height <= s.y, "the Metadata heading at " + h + " is not above Start Year at " + s);
+        assertEquals(h.x, s.x, "the Metadata heading does not start where Start Year does");
     }
 
     /** Where a named part of the window is, in the window's own coordinates. */

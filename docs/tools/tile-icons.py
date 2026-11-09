@@ -19,7 +19,7 @@ The geometry is the originals' own, measured off them:
     the middle; the crossing switch adds the north-west and south-east chords
   - a sensor is a ring on the track's middle, outer radius 6.25 and a pixel and a half thick at 30 pixels (thinner
     comes out grey); set, it is yellow, with two red arrows that are mirror images of each other, a curve's farther
-    out (`CURVE_ARROWS_OUT`)
+    out (`CURVE_ARROWS_OUT`), each stopping `EDGE_CLEAR` short of the tile's edge
   - the buffer stop is the straight's band, without its dash, down to a bar as wide as the dash is long
 
 Run from the project folder, to rewrite the icons in place (needs PIL and numpy):
@@ -40,9 +40,14 @@ BLACK, DASH, IDLE, WHITE = (0, 0, 0), (153, 153, 153), (204, 204, 204), (255, 25
 YELLOW, RED = (255, 255, 0), (230, 0, 0)
 
 # How much farther from its contact a curved sensor's arrows stand than a straight's, in units, by pixel size: clear of
-# a locomotive parked there, turned along the rail over the contact, and its halo (OB-400).  The small size's tails are
-# on the border because the halo is never under 2 pixels, so wider there for its size.
+# a locomotive parked there, turned along the rail over the contact, and its halo (OB-400).  Wider at the small size
+# for its size, because the halo is never under 2 pixels there.
 CURVE_ARROWS_OUT = {30: 6.35, 60: 5.5}
+
+# How far short of the tile's edge an arrow's tail stops, in units: a pixel at 30 and two at 60, which Medium (the 60
+# scaled to 46) keeps clear too, so the arrows of two sensor tracks side by side never touch (Adam: "there should be a
+# 1px gap").
+EDGE_CLEAR = 1.0
 
 MID = {"N": (15.0, 0.0), "S": (15.0, 30.0), "E": (30.0, 15.0), "W": (0.0, 15.0)}
 
@@ -186,7 +191,8 @@ class Tile:
             # two arrows at the sensor, mirror images across the curve's axis (the line through the corner and the
             # sensor): one from the top edge pointing down, one from the side pointing across, both out toward the edge
             tip = 6.25 + 0.9 + CURVE_ARROWS_OUT[self.size]
-            shaft = [(-1.0, -tip - 9.0), (1.0, -tip - 9.0), (1.0, -tip - 3.4), (-1.0, -tip - 3.4)]
+            tail = max(-tip - 9.0, EDGE_CLEAR - cy)
+            shaft = [(-1.0, tail), (1.0, tail), (1.0, -tip - 3.4), (-1.0, -tip - 3.4)]
             head = [(-2.6, -tip - 3.6), (2.6, -tip - 3.6), (0.0, -tip)]
             for part in (shaft, head):
                 self.poly([(cx + x, cy + y) for x, y in part], RED)
@@ -209,7 +215,8 @@ class Tile:
         self.ellipse(15.0, 15.0, 4.7, YELLOW if set_ else WHITE)
         if set_:
             tip = 6.25 + 0.9
-            shaft = [(-1.0, -tip - 9.0), (1.0, -tip - 9.0), (1.0, -tip - 3.4), (-1.0, -tip - 3.4)]
+            tail = max(-tip - 9.0, EDGE_CLEAR - 15.0)
+            shaft = [(-1.0, tail), (1.0, tail), (1.0, -tip - 3.4), (-1.0, -tip - 3.4)]
             head = [(-2.6, -tip - 3.6), (2.6, -tip - 3.6), (0.0, -tip)]
             for part in (shaft, head):
                 self.poly([(15.0 + x, 15.0 + y) for x, y in part], RED)

@@ -98,6 +98,9 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
     /** Whether the window is Add Locomotive's: no locomotive yet, the first tab alone and Add for Save. */
     private boolean adding;
 
+    /** How wide the tab strip is with every tab on one row, as `fit` last measured it. */
+    private int tabRow;
+
     /** Asks the rule again every second while the window is open: a run starting or stopping raises no single event. */
     private final javax.swing.Timer watch = new javax.swing.Timer(1000, e -> refresh());
 
@@ -389,19 +392,43 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
 
         pack();
 
-        keepTheFunctionsRowApart();
+        // Measured here, where the tabs are built, and not on the watch's every tick: measuring resizes the strip
+        if (!adding && functionsTab != null) tabRow = tabsOnOneRow();
+
+        keepTheRowsWhole();
 
         if (first) setLocationRelativeTo(main);
     }
 
-    /** The window is never narrower than the Functions tab's button row needs, so its two groups cannot overlap. */
-    private void keepTheFunctionsRowApart()
+    /**
+     * The window is never narrower than its tabs on one row, or than the Functions tab's button row, so its two groups
+     * cannot overlap.  Both are measured, so this holds in every language and at every scale.
+     */
+    private void keepTheRowsWhole()
     {
         if (adding || functionsTab == null) return;
 
-        int chrome = getWidth() - functionsTab.getWidth();
+        int buttons = functionsTab.buttonRowWidth() + getWidth() - functionsTab.getWidth();
 
-        setMinimumSize(new java.awt.Dimension(functionsTab.buttonRowWidth() + chrome, 0));
+        setMinimumSize(new java.awt.Dimension(Math.max(buttons, tabRow + getWidth() - tabs.getWidth()), 0));
+    }
+
+    /** How wide the tab strip is with every tab on one row: it is laid out once wide enough for them, then put back. */
+    private int tabsOnOneRow()
+    {
+        java.awt.Rectangle was = tabs.getBounds();
+
+        tabs.setSize(Short.MAX_VALUE, Math.max(was.height, 1));
+        tabs.doLayout();
+
+        java.awt.Rectangle first = tabs.getBoundsAt(0);
+        java.awt.Rectangle last = tabs.getBoundsAt(tabs.getTabCount() - 1);
+
+        tabs.setBounds(was);
+        tabs.doLayout();
+
+        // The strip's margin on the right is the one on its left
+        return last.x + last.width + first.x;
     }
 
     /** Re-reads the moving rule and the locomotive: the window is told whenever either may have changed. */
@@ -435,7 +462,7 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
         locomotiveTab.refreshPicture();
         functionsTab.setBlocked(blocked);
         functionsTab.refresh();
-        keepTheFunctionsRowApart();
+        keepTheRowsWhole();
         changed();
     }
 
@@ -579,23 +606,6 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
         if (identity && main.refuseWhileARouteDrivesIt(this, loc.getName())) return false;
 
         if (members && main.locomotiveActions.refuseMultiUnitEdit(this, loc, multiUnitTab.chosen().keySet())) return false;
-
-        if (notesTab.panel.isDirty())
-        {
-            try
-            {
-                notesTab.panel.checkYears();
-            }
-            catch (NumberFormatException ex)
-            {
-                tabs.setSelectedIndex(Tab.NOTES.ordinal());
-
-                JOptionPane.showMessageDialog(this, I18n.t("loc.ui.errorStartEndYearMustBeIntegers"),
-                    I18n.t("ui.dialogInputError"), JOptionPane.ERROR_MESSAGE);
-
-                return false;
-            }
-        }
 
         // Only what the operator changed from the loaded values: another door may have changed the rest since
         if (identity && !main.locomotiveActions.writeNameAndAddress(this, loc,
