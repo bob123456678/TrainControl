@@ -410,36 +410,6 @@ final class LayoutMenus
         else ui.layoutMenu().add(ui.editPageMenu);
     }
 
-    /** Drops separators that separate nothing (OB-021), leading and trailing ones too; swept, not removed by index. */
-    private void tidySeparators(javax.swing.JMenu menu)
-    {
-        if (menu == null) return;
-
-        boolean previousWasSeparator = true;
-
-        for (int i = 0; i < menu.getMenuComponentCount(); )
-        {
-            boolean separator = menu.getMenuComponent(i) instanceof javax.swing.JSeparator;
-
-            if (separator && previousWasSeparator)
-            {
-                menu.remove(i);
-                continue;
-            }
-
-            previousWasSeparator = separator;
-
-            i++;
-        }
-
-        while (menu.getMenuComponentCount() > 0
-            && menu.getMenuComponent(menu.getMenuComponentCount() - 1)
-                instanceof javax.swing.JSeparator)
-        {
-            menu.remove(menu.getMenuComponentCount() - 1);
-        }
-    }
-
     /**
      * The three settings that decide what an autonomy setup DRAWS on the ordinary track diagram; none needs a setup.
      */

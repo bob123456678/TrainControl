@@ -607,27 +607,6 @@ public class LocIconCropDialog extends JDialog
         }
 
         /**
-         * Sets the shape of the crop window directly: the same change as dragging an edge, without a pointer, so the
-         * arithmetic is testable.
-         *
-         * @param aspect width over height; zero and negatives are ignored rather than throwing
-         */
-        public void setFrameAspect(double aspect)
-        {
-            if (aspect <= 0 || Double.isNaN(aspect)) return;
-
-            this.frameAspect = aspect;
-
-            // The largest window of its shape that fits, as a drag to the panel's edge would produce; there is no
-            // pointer to take a size from.
-            this.frameSize = 1.0;
-
-            clampCenter();
-
-            repaint();
-        }
-
-        /**
          * Opens on a view taken from a previous crop, rather than on the covering center one (OB-125).  Ignored, not
          * rejected, when it does not describe a view.
          */
@@ -812,12 +791,6 @@ public class LocIconCropDialog extends JDialog
             clampCenter();
 
             repaint();
-        }
-
-        /** The current zoom. */
-        public double getZoomFraction()
-        {
-            return this.zoomFraction;
         }
 
         /** Returns the view to where it started: zoomed out, centered on the middle of the picture. */

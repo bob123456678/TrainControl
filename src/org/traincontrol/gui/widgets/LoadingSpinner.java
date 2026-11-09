@@ -257,16 +257,6 @@ public class LoadingSpinner extends JPanel
     }
 
     /**
-     * Whether the sand is running, for a test that wants to know the animation is live.
-     *
-     * @return true while the timer is advancing frames
-     */
-    public boolean isAnimating()
-    {
-        return timer.isRunning();
-    }
-
-    /**
      * Advances the animation by one frame without waiting for the timer.  Public so a test can step the cycle without
      * sleeping, which would race on a slow machine.
      *

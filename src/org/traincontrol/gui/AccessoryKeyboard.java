@@ -245,12 +245,6 @@ public class AccessoryKeyboard extends JPanel
         g.repaint();
     }
 
-    /** The address on a key of this page. */
-    public int addressOfKey(int index)
-    {
-        return this.addressOf(index - 1);
-    }
-
     /** The key on this page for an address, or 0 when it is on another page. */
     public int keyOf(int address)
     {

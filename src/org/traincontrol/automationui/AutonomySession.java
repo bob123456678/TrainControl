@@ -8080,7 +8080,7 @@ public class AutonomySession
     }
 
     /**
-     * Records one way along a run's OWN tiles, not a path re-derived from its ends (see `applyOneWay`): its boundaries
+     * Records one way along a run's OWN tiles, not a path re-derived from its ends (see `recordAlong`): its boundaries
      * say which way the end tiles go, and one that is null (track that simply stops) is left out (OB-361).
      */
     Set<TileKey> recordAlongTheRun(TileGraph.Run run, boolean towardEnd)
@@ -8108,14 +8108,6 @@ public class AutonomySession
         }
 
         return recordAlong(path, first, last);
-    }
-
-    /** Sets one direction along a known path, the track between its two ends. */
-    private int applyOneWay(List<TileKey> path)
-    {
-        int changed = recordAlong(path, 1, path.size() - 2).size();
-
-        return directionsTouched() ? changed : 0;
     }
 
     /**

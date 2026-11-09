@@ -97,12 +97,6 @@ public final class ConditionOutline
             return new Row(to, joiner, command);
         }
 
-        /** The same joining line, with a different word. */
-        public Row joinedBy(Joiner how)
-        {
-            return isJoiner() ? joining(depth, how) : this;
-        }
-
         /** The same line, about a different condition. */
         public Row about(RouteCommand what)
         {

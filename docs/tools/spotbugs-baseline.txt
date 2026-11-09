@@ -146,7 +146,6 @@ BC_UNCONFIRMED_CAST	org.traincontrol.gui.LayoutLabel$N	mouseExited	val$parent	1
 BC_UNCONFIRMED_CAST	org.traincontrol.gui.LayoutLabel$N	mousePressed	val$parent	1
 BC_UNCONFIRMED_CAST	org.traincontrol.gui.LayoutLabel$N	mouseReleased	val$parent	1
 BC_UNCONFIRMED_CAST	org.traincontrol.gui.layouteditor.LayoutEditor$PointerWatch	eventDispatched		1
-BC_UNCONFIRMED_CAST_OF_RETURN_VALUE	org.traincontrol.gui.AutonomyMenu	showPages		1
 BC_UNCONFIRMED_CAST_OF_RETURN_VALUE	org.traincontrol.gui.RouteEditorFrame	narrowest		1
 BC_VACUOUS_INSTANCEOF	org.traincontrol.gui.RunningLayoutSync	rebuildRunningLayoutFromSetup		1
 BC_VACUOUS_INSTANCEOF	org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel	parentWindow		1
@@ -815,10 +814,8 @@ UG_SYNC_SET_UNSYNC_GET	org.traincontrol.marklin.MarklinLocomotive	getAccessorySt
 UG_SYNC_SET_UNSYNC_GET	org.traincontrol.marklin.MarklinLocomotive	getF		1
 UPM_UNCALLED_PRIVATE_METHOD	org.traincontrol.automation.Layout	claimUpToWhereTheRailsPart		1
 UPM_UNCALLED_PRIVATE_METHOD	org.traincontrol.automation.Layout	logPathError		1
-UPM_UNCALLED_PRIVATE_METHOD	org.traincontrol.automationui.AutonomySession	applyOneWay		1
 UPM_UNCALLED_PRIVATE_METHOD	org.traincontrol.automationui.TileAnnotation	block		1
 UPM_UNCALLED_PRIVATE_METHOD	org.traincontrol.automationui.TileAnnotation	opposite		1
-UPM_UNCALLED_PRIVATE_METHOD	org.traincontrol.gui.LayoutMenus	tidySeparators		1
 UPM_UNCALLED_PRIVATE_METHOD	org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel	askAboutSignals		1
 UPM_UNCALLED_PRIVATE_METHOD	org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel	nameForPrompt		1
 UPM_UNCALLED_PRIVATE_METHOD	org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel	toggle		1

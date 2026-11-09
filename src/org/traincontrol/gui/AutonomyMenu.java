@@ -84,34 +84,6 @@ public class AutonomyMenu extends JMenu
     /** Autonomy Settings as last built, or null: the one item a run leaves live with the guide. */
     private JMenuItem settingsItem;
 
-    /**
-     * Opens this menu with the pages submenu already showing.  Driven through the MenuSelectionManager, not a click,
-     * which would toggle an open menu shut and cannot reach a submenu.
-     */
-    public void showPages()
-    {
-        if (!(getParent() instanceof javax.swing.JMenuBar)) return;
-
-        final javax.swing.JMenuBar bar = (javax.swing.JMenuBar) getParent();
-
-        // Open this menu first, and only then walk into the submenu: selecting the menu fires menuSelected, which
-        // rebuilds every item.
-        javax.swing.MenuSelectionManager.defaultManager().setSelectedPath(
-            new javax.swing.MenuElement[] { bar, this, getPopupMenu() });
-
-        javax.swing.SwingUtilities.invokeLater(() ->
-        {
-            // Unavailable (no configuration chosen): this menu is as far as it goes, and its items say why.
-            if (lastPagesMenu == null || !lastPagesMenu.isEnabled()) return;
-
-            javax.swing.MenuSelectionManager.defaultManager().setSelectedPath(
-                new javax.swing.MenuElement[]
-                {
-                    bar, this, getPopupMenu(), lastPagesMenu, lastPagesMenu.getPopupMenu()
-                });
-        });
-    }
-
     private AutonomyViewerPanel actions()
     {
         return ui.getAutonomyViewerPanel();

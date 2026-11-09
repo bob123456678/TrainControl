@@ -1697,12 +1697,6 @@ public class TileGraph
         {
             return Collections.unmodifiableList(tiles);
         }
-
-        /** The tile that speaks for this run: the first of them, as the author asked. */
-        public TileKey getLeader()
-        {
-            return tiles.isEmpty() ? null : tiles.get(0);
-        }
     }
 
     /** This diagram's runs, found once: they are the diagram's alone, and a graph is one diagram. */

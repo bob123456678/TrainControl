@@ -4193,11 +4193,6 @@ public class RouteEditorFrame extends JFrame
             fireTableDataChanged();
         }
 
-        void removeSelected()
-        {
-            removeAt(getSelectedRow());
-        }
-
         void removeAt(int at)
         {
             if (at < 0 || at >= rows.size()) return;

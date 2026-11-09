@@ -169,7 +169,7 @@ final class SessionImport
 
             if (path == null) continue;
 
-            // As `applyOneWay` does, between the two ends only.
+            // As `recordAlong` does, between the two ends only.
             for (int i = 1; i < path.size() - 1; i++)
             {
                 TileKey tile = path.get(i);

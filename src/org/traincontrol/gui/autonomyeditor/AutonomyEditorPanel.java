@@ -259,9 +259,6 @@ public class AutonomyEditorPanel extends JPanel
 
     private static final String PREF_TRAINS = "autonomyEditorTrains";
 
-    /** Whether the captions name the train parked at a station or the station (FR-030). */
-    private static final String PREF_CAPTION_TRAINS = "autonomyEditorCaptionTrains";
-
     /**
      * What the captions say, as one choice, not three switches that could contradict (FR-061, OB-174).  Adam:
      * *"Station Names should be default, with the setting remembered between open."*
@@ -282,9 +279,6 @@ public class AutonomyEditorPanel extends JPanel
 
     /** The stored Labels Only (OB-272), no longer offered: opens as Station Names with Text Labels ticked (FR-133). */
     private static final int LEGACY_LABELS_ONLY = 4;
-
-    /** Whether captions name each square's home locomotive (MT-261), white when it is not there. */
-    private static final String PREF_CAPTION_HOMES = "autonomyEditorCaptionHomes";
 
     /** Restrictions only by default: open track is most of a layout. */
     private static final int DIRECTIONS_DEFAULT = 1;
@@ -3131,19 +3125,6 @@ public class AutonomyEditorPanel extends JPanel
             ? (int) Math.round(((Number) stored).doubleValue() * 100) : 100;
     }
 
-    void promptPercent(TileKey tile)
-    {
-        String entered = JOptionPane.showInputDialog(owner(),
-            I18n.f("autolayout.ui.promptEnterSpeedMultiplier", describeTile(tile)),
-            String.valueOf(percent(tile)));
-
-        if (entered == null) return;
-
-        String refused = applyPercent(tile, entered);
-
-        if (refused != null) JOptionPane.showMessageDialog(owner(), refused);
-    }
-
     /**
      * Sets the speed multiplier from what was typed; 100% is the default, stored as nothing.
      * @return why it was refused, with nothing written, or null
@@ -5890,11 +5871,6 @@ public class AutonomyEditorPanel extends JPanel
         return signalFor != null || signalWindowOpen;
     }
 
-    public boolean isShowingLengths()
-    {
-        return showLengths.isSelected();
-    }
-
     public Set<TileKey> getSelection()
     {
         return java.util.Collections.unmodifiableSet(selection);
@@ -7268,12 +7244,6 @@ public class AutonomyEditorPanel extends JPanel
     public javax.swing.JComboBox<String> getCaptionChoice()
     {
         return control(captions);
-    }
-
-    /** @return the parked-train toggle, unmounted, the internal half of the choice (FR-061) */
-    public JCheckBox getShowParkedTrains()
-    {
-        return control(showParkedTrains);
     }
 
     /** @return whether captions name the parked train rather than the station (FR-030) */

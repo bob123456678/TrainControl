@@ -110,12 +110,6 @@ public final class SelfUpdate
             this.underWay.set(false);
         }
 
-        /** Whether an update is under way. */
-        public boolean isUnderWay()
-        {
-            return this.underWay.get();
-        }
-
         /** The exit's half: the update to start, taken so that it is started once; null when none is armed. */
         public synchronized Pending take()
         {
