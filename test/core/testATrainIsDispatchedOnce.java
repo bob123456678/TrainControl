@@ -1783,7 +1783,14 @@ public class testATrainIsDispatchedOnce
     /** A railway, made current: one line through the points named, one sensor each, its two ends stations. */
     private static Layout aLine(org.traincontrol.marklin.MarklinFeedback[] s, String... names) throws Exception
     {
-        Layout railway = new Layout(model);
+        return aLine(model, s, names);
+    }
+
+    /** The same, on a control of the test's own. */
+    private static Layout aLine(org.traincontrol.model.ViewListener control, org.traincontrol.marklin.MarklinFeedback[] s,
+        String... names) throws Exception
+    {
+        Layout railway = new Layout(control);
 
         for (int i = 0; i < names.length; i++)
         {
@@ -2438,10 +2445,17 @@ public class testATrainIsDispatchedOnce
     private static void whileReplacing(int firstSensor, int loco, String from, String to, WhileReplacing claim)
         throws Exception
     {
+        whileReplacing(firstSensor, loco, from, to, model, claim);
+    }
+
+    /** The same, the line built on a control of the test's own. */
+    private static void whileReplacing(int firstSensor, int loco, String from, String to,
+        org.traincontrol.model.ViewListener control, WhileReplacing claim) throws Exception
+    {
         org.traincontrol.marklin.MarklinFeedback[] s = sensors(firstSensor, 2);
         final Locomotive train = model.getLocByName(model.getLocList().get(loco));
         final int preferredWas = train.getPreferredSpeed();
-        final Layout rail = aLine(s, from, to);
+        final Layout rail = aLine(control, s, from, to);
         final List<String> said = java.util.Collections.synchronizedList(new ArrayList<String>());
         java.util.logging.Handler tap = aTapOn(said);
 
@@ -2571,9 +2585,6 @@ public class testATrainIsDispatchedOnce
     @Test
     public void testReturnHomeSpendsNoAttemptOnAHeldSend() throws Exception
     {
-        org.traincontrol.marklin.MarklinFeedback[] s = sensors(2111, 2);
-        final Locomotive t = model.getLocByName(model.getLocList().get(9));
-        final int preferredWas = t.getPreferredSpeed();
         final int attempts = layoutConstant("STAGING_MAX_ATTEMPTS");
         final boolean[] lost = {true};
 
@@ -2584,21 +2595,10 @@ public class testATrainIsDispatchedOnce
                     method.getName().equals("isReplacingConnection") ? lost[0] && !calledFrom("waitWhileThePowerIsOff")
                         : method.invoke(model, args));
 
-        final Layout rail = new Layout(control);
-        rail.createPoint("DSA", true, s[0].getName());
-        rail.createPoint("DSB", true, s[1].getName());
-        rail.createEdge("DSA", "DSB");
-        rail.makeCurrent();
-
-        final List<String> said = java.util.Collections.synchronizedList(new ArrayList<String>());
-        java.util.logging.Handler tap = aTapOn(said);
-        final String refused = org.traincontrol.util.I18n.f("autolayout.log.notSentReconnecting", t.getName());
-
-        try
+        whileReplacing(2111, 9, "DSA", "DSB", control, (rail, t, said) ->
         {
-            t.setSpeed(0);
-            t.setPreferredSpeed(30);
-            rail.getPoint("DSA").setLocomotive(t);
+            final String refused = org.traincontrol.util.I18n.f("autolayout.log.notSentReconnecting", t.getName());
+
             rail.setTimetable(Arrays.asList(new org.traincontrol.automation.TimetablePath(t, through(rail, "DSA", "DSB"),
                 0)));
             rail.setTimetableSequential(true);
@@ -2615,15 +2615,7 @@ public class testATrainIsDispatchedOnce
 
             assertTrue(until(() -> t.getSpeed() > 0 || rail.isAlreadyUnderway(t), 10000), "the connection came back and"
                 + " Return Home still started nothing");
-        }
-        finally
-        {
-            lost[0] = false;
-            java.util.logging.Logger.getLogger(MarklinControlStation.class.getName()).removeHandler(tap);
-            rail.stopLocomotives();
-            t.setPreferredSpeed(preferredWas);
-            letGo(s, t, null);
-        }
+        });
     }
 
     /**
