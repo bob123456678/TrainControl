@@ -914,11 +914,12 @@ public final class StationSettingsWindow extends StationWindowBase
     @Override
     void commitFields()
     {
+        // The lists first: a refused field tries again and reads the setup back over a choice stepped
+        super.commitFields();
+
         if (tile == null) return;
 
         for (JTextField part : new ArrayList<>(storedValues.keySet())) commit(part);
-
-        super.commitFields();
     }
 
     private String applyTypedName(TileKey square, String typed)
