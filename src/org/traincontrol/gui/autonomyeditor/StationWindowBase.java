@@ -621,10 +621,10 @@ abstract class StationWindowBase extends JDialog
             else if (!quiet && !isPopupVisible()) settle();
         }
 
-        /** Applies the choice shown, while the window is still about its square. */
+        /** Applies the choice shown, while the window is still about its square and the list on it (a reload rebuilds some). */
         private void settle()
         {
-            if (tile == null || !pending()) return;
+            if (tile == null || !isDisplayable() || !pending()) return;
 
             held = getSelectedItem();
             door.accept(getSelectedIndex());
