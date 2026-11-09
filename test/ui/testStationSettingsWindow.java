@@ -1233,6 +1233,23 @@ public class testStationSettingsWindow
     }
 
     /**
+     * The row choosing All, Blacklist or Whitelist under Advanced is labeled "Allowed trains" (Adam, FR-182).
+     *
+     * MUTATION: put "Which trains" back in the bundle, and this fails.
+     */
+    @Test(timeOut = 120000)
+    public void testTheTrainListRowSaysAllowedTrains() throws Exception
+    {
+        StationSettingsWindow window = StationDoors.open(panel, aStation());
+
+        Components.onTheEventThread(() -> { window.openAdvancedForTest(); return null; });
+
+        StationDoors.current(window);
+
+        assertTrue(Components.onTheEventThread(labelSaying(window, "Allowed trains")::isShowing), "the row is not showing");
+    }
+
+    /**
      * Blue is for the section headings alone (Adam: "it looks very blue"), Presets among them; every other label is black
      * Semibold 13 (docs/UI-standards.md), and a label in an off section still grays.
      *
