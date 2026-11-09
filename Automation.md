@@ -120,7 +120,7 @@ The window is titled "Autonomy Editor: *page* (*configuration*)", naming the pag
 
 1. **`Editing`**: `Track Diagram` and `Autonomy Setup` switch between drawing track and setting up autonomy, on the same page. With two or more pages, a `Page` list above it goes from page to page.
 2. **The message strip** says what just happened and what to do next.
-3. **Your diagram.** Click track to set which way trains may run; right-click any square for everything else. Hover over a station to see its name. Signals are drawn in gray to keep the picture simple; while you pick a guard signal, the ones you can pick are in color.
+3. **Your diagram.** Click track to set which way trains may run; right-click any square for everything else. Hover over a station to see its name. Signals and lamps are drawn in gray to keep the picture simple; while you pick a guard signal, the signals you can pick are in color.
 4. **Things to look at** lists what the [setup check](#the-setup-check) has found. Click a finding to go to its square, or double-click it (or press Control+O) to open that station's `Station Settings`. The `Filter` box above the list narrows it as you type: it matches any part of a row's words, ignoring capitals, and the counts elsewhere still count everything.
 5. **The line under it** says whether the setup is ready to run.
 6. **`Autonomy Tools`**: `Test a path` and `Why not Moving?`; see [the tools](#the-tools-test-a-path-why-not-moving-one-way-run).

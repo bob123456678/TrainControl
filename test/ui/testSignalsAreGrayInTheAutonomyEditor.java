@@ -9,16 +9,19 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 import org.traincontrol.automationui.TileGraph.TileKey;
 import org.traincontrol.base.LayoutDiagramComponent;
+import static org.traincontrol.base.LayoutDiagramComponent.componentType.LAMP;
+import static org.traincontrol.base.LayoutDiagramComponent.componentType.SIGNAL;
 import org.traincontrol.gui.LayoutLabel;
 import org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel;
 import org.traincontrol.gui.layouteditor.LayoutEditor;
+import org.traincontrol.marklin.MarklinAccessory;
 import support.Components;
 import support.Pixels;
 import support.Reflect;
 
 /**
- * The autonomy editor draws signals in gray, and in color again while a guard signal is being picked; everywhere else a
- * signal keeps its color and its aspect, whichever window opened first.
+ * The autonomy editor draws signals and lamps in gray, and the signals that can be picked in color again while a guard
+ * signal is being picked; everywhere else they keep their color and their aspect, whichever window opened first.
  */
 public class testSignalsAreGrayInTheAutonomyEditor
 {
@@ -46,22 +49,50 @@ public class testSignalsAreGrayInTheAutonomyEditor
     @Test(timeOut = 120000)
     public void testASignalIsGrayInTheAutonomyEditor() throws Exception
     {
+        allGrayInTheAutonomyEditor(SIGNAL, false);
+    }
+
+    /**
+     * Every lamp square in the autonomy editor paints with no color, and stays so while a guard signal is being picked:
+     * a lamp cannot be one.
+     *
+     * MUTATION: gray only `componentType.SIGNAL` in `AutonomyEditorPanel.annotationFor`, and this fails.
+     */
+    @Test(timeOut = 120000)
+    public void testALampIsGrayInTheAutonomyEditor() throws Exception
+    {
+        allGrayInTheAutonomyEditor(LAMP, true);
+    }
+
+    /** Every square of this type on the page gray in the autonomy editor, and while a pick is on if asked. */
+    private static void allGrayInTheAutonomyEditor(LayoutDiagramComponent.componentType type, boolean whilePicking)
+        throws Exception
+    {
         LayoutEditor editor = frozen.editorOn(PAGE);
+        AutonomyEditorPanel panel = Components.onTheEventThread(editor::getAutonomyPanel);
 
         try
         {
-            List<LayoutLabel> signals = signalsIn(editor);
+            List<LayoutLabel> squares = squaresIn(editor, type);
 
-            assertFalse(signals.isEmpty(), "precondition: no signal on " + PAGE);
+            assertFalse(squares.isEmpty(), "precondition: no " + type + " on " + PAGE);
 
-            for (LayoutLabel signal : signals)
+            for (boolean picked : whilePicking ? new boolean[] {false, true} : new boolean[] {false})
             {
-                assertEquals(coloredArt(signal), 0, "a signal in the autonomy editor has color at "
-                    + signal.getComponent().getX() + "," + signal.getComponent().getY());
+                if (picked) picking(panel, aStation());
+
+                for (LayoutLabel square : squares)
+                {
+                    assertEquals(coloredArt(square), 0, "a " + type + " in the autonomy editor has color at "
+                        + square.getComponent().getX() + "," + square.getComponent().getY()
+                        + (picked ? " while a guard signal is picked" : ""));
+                }
             }
         }
         finally
         {
+            picking(panel, null);
+
             support.FrozenEditor.dispose(editor);
         }
     }
@@ -85,10 +116,7 @@ public class testSignalsAreGrayInTheAutonomyEditor
             assertNotNull(pickable, "precondition: no signal with an address on " + PAGE);
             assertEquals(coloredArt(pickable), 0, "the signal is not gray before the pick");
 
-            TileKey station = Components.onTheEventThread(() -> frozen.session.getReducer().getPoints().keySet()
-                .stream().filter(k -> frozen.session.getStore().isStation(k)).findFirst().get());
-
-            picking(panel, station);
+            picking(panel, aStation());
 
             assertTrue(colored(pickable) > 20, "a signal that can be picked is not in color while picking");
 
@@ -113,16 +141,33 @@ public class testSignalsAreGrayInTheAutonomyEditor
     @Test(timeOut = 120000)
     public void testTheSignalKeepsItsColorElsewhere() throws Exception
     {
+        keepsItsColorElsewhere(SIGNAL);
+    }
+
+    /**
+     * The same for a lamp: grayed in the autonomy editor, in color in the track diagram editor opened afterwards, and
+     * yellow on the track diagram while it is lit.
+     *
+     * MUTATION: gray the image in `LayoutLabel.setImageOnEDT`'s cache rather than as the tile paints, and this fails.
+     */
+    @Test(timeOut = 120000)
+    public void testTheLampKeepsItsColorElsewhere() throws Exception
+    {
+        keepsItsColorElsewhere(LAMP);
+    }
+
+    private static void keepsItsColorElsewhere(LayoutDiagramComponent.componentType type) throws Exception
+    {
         LayoutEditor autonomy = frozen.editorOn(PAGE);
-        LayoutDiagramComponent signal;
+        LayoutDiagramComponent square;
 
         try
         {
-            LayoutLabel grayed = signalsIn(autonomy).get(0);
+            LayoutLabel grayed = squaresIn(autonomy, type).get(0);
 
-            signal = grayed.getComponent();
+            square = grayed.getComponent();
 
-            assertEquals(coloredArt(grayed), 0, "precondition: the signal is not gray in the autonomy editor");
+            assertEquals(coloredArt(grayed), 0, "precondition: the " + type + " is not gray in the autonomy editor");
         }
         finally
         {
@@ -142,26 +187,42 @@ public class testSignalsAreGrayInTheAutonomyEditor
         {
             Components.settle();
 
-            LayoutLabel there = same(signalsIn(layoutEditor), signal);
-
-            // The editor draws a signal at rest, its green.
-            assertTrue(green(there) > 20, "the signal is not in color in the track diagram editor");
+            // The editor draws a square at rest: a signal green, a lamp unlit, whose only color is its bulb's base.
+            assertTrue(colored(same(squaresIn(layoutEditor, type), square)) > (type == SIGNAL ? 20 : 0),
+                "the " + type + " is not in color in the track diagram editor");
         }
         finally
         {
             support.FrozenEditor.dispose(layoutEditor);
         }
 
-        support.Rendered diagram = support.Rendered.open(frozen.model.getLayout(PAGE), frozen.ui);
+        MarklinAccessory accessory = (MarklinAccessory) square.getAccessory();
 
-        diagram.settle();
+        assertNotNull(accessory, "precondition: the " + type + " has no accessory");
 
-        LayoutLabel shown = same(Components.all(diagram.host(), LayoutLabel.class, l -> l.getComponent() != null), signal);
+        boolean was = accessory.isSwitched();
 
-        boolean red = signal.getAccessory().isSwitched();
+        // Lit, so the lamp has its yellow to show; the station is not asked.
+        if (type == LAMP) accessory.adoptStationPosition(true, System.nanoTime());
 
-        assertTrue((red ? red(shown) : green(shown)) > 20,
-            "the signal is not drawn in its " + (red ? "red" : "green") + " aspect on the track diagram");
+        try
+        {
+            support.Rendered diagram = support.Rendered.open(frozen.model.getLayout(PAGE), frozen.ui);
+
+            diagram.settle();
+
+            LayoutLabel shown = same(Components.all(diagram.host(), LayoutLabel.class, l -> l.getComponent() != null),
+                square);
+
+            String aspect = type == LAMP ? "yellow" : accessory.isSwitched() ? "red" : "green";
+
+            assertTrue(Pixels.count(Pixels.paint(shown, 30), rgb -> chroma(rgb) > 60 && hue(aspect, rgb)) > 20,
+                "the " + type + " is not drawn " + aspect + " on the track diagram");
+        }
+        finally
+        {
+            accessory.adoptStationPosition(was, System.nanoTime());
+        }
     }
 
     /**
@@ -208,10 +269,20 @@ public class testSignalsAreGrayInTheAutonomyEditor
         Components.settle();
     }
 
+    private static TileKey aStation()
+    {
+        return Components.onTheEventThread(() -> frozen.session.getReducer().getPoints().keySet()
+            .stream().filter(k -> frozen.session.getStore().isStation(k)).findFirst().get());
+    }
+
     private static List<LayoutLabel> signalsIn(java.awt.Container window)
     {
-        return Components.all(window, LayoutLabel.class, l -> l.getComponent() != null
-            && l.getComponent().getType() == LayoutDiagramComponent.componentType.SIGNAL);
+        return squaresIn(window, SIGNAL);
+    }
+
+    private static List<LayoutLabel> squaresIn(java.awt.Container window, LayoutDiagramComponent.componentType type)
+    {
+        return Components.all(window, LayoutLabel.class, l -> l.getComponent() != null && l.getComponent().getType() == type);
     }
 
     /** The label showing the same square as `signal`, its picture applied. */
@@ -265,12 +336,15 @@ public class testSignalsAreGrayInTheAutonomyEditor
 
     private static int green(LayoutLabel tile) throws Exception
     {
-        return Pixels.count(Pixels.paint(tile, 30), rgb -> chroma(rgb) > 60 && ((rgb >> 8) & 0xff) > ((rgb >> 16) & 0xff));
+        return Pixels.count(Pixels.paint(tile, 30), rgb -> chroma(rgb) > 60 && hue("green", rgb));
     }
 
-    private static int red(LayoutLabel tile) throws Exception
+    /** Whether a strongly colored pixel is this one of a signal's or a lamp's colors. */
+    private static boolean hue(String aspect, int rgb)
     {
-        return Pixels.count(Pixels.paint(tile, 30), rgb -> chroma(rgb) > 60 && ((rgb >> 16) & 0xff) > ((rgb >> 8) & 0xff));
+        int r = (rgb >> 16) & 0xff, g = (rgb >> 8) & 0xff, b = rgb & 0xff;
+
+        return aspect.equals("yellow") ? r > 150 && g > 150 && b < 100 : aspect.equals("red") ? r > g : g > r;
     }
 
     private static int chroma(int rgb)
