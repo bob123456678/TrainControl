@@ -6073,21 +6073,7 @@ public class Layout
      */
     public boolean isAStationSquare(Point point)
     {
-        if (point == null) return false;
-
-        if (point.isDestination()) return true;
-
-        final String place = point.getBlock();
-
-        // No block is a square with one copy, whose own flag is the whole answer
-        if (place == null) return false;
-
-        for (Point other : this.points.values())
-        {
-            if (other != point && place.equals(other.getBlock()) && other.isDestination()) return true;
-        }
-
-        return false;
+        return onAnyCopy(point, Point::isDestination);
     }
 
     /**
@@ -6096,18 +6082,23 @@ public class Layout
      */
     public boolean mayReverseAt(Point point)
     {
+        return onAnyCopy(point, Point::isReversing);
+    }
+
+    /** Whether a point or another copy of its square says yes; a point with no block is its square's only copy. */
+    private boolean onAnyCopy(Point point, java.util.function.Predicate<Point> says)
+    {
         if (point == null) return false;
 
-        if (point.isReversing()) return true;
+        if (says.test(point)) return true;
 
         final String place = point.getBlock();
 
-        // No block is a square with one copy, and one copy cannot be the plain half of a split.
         if (place == null) return false;
 
         for (Point other : this.points.values())
         {
-            if (other != point && place.equals(other.getBlock()) && other.isReversing()) return true;
+            if (other != point && place.equals(other.getBlock()) && says.test(other)) return true;
         }
 
         return false;
