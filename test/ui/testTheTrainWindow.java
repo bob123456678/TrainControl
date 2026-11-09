@@ -231,6 +231,72 @@ public class testTheTrainWindow
     }
 
     /**
+     * Every (i) of the train popup explains its row in every state (OB-429): where no train stands, each says what its
+     * row is and that no train stands here; beside Tail lies, where the tail is not known, it says what Tail lies means
+     * and why it is not known here.
+     *
+     * MUTATION: give the tail mark no tooltip where `tailFacts` finds no question, as before, and this fails.
+     */
+    @Test(timeOut = 120000)
+    public void testEveryMarkExplainsItsRowWithNoAnswer() throws Exception
+    {
+        AutonomyEditorPanel panel = theEditorsPanel();
+
+        for (TileKey square : new TileKey[] {anEmptyStation(), aSquareWithATrain()})
+        {
+            TrainWindow window = StationDoors.openTrain(panel, square);
+
+            try
+            {
+                java.util.List<String> marks = Components.onTheEventThread(() ->
+                {
+                    java.util.List<String> out = new java.util.ArrayList<>();
+
+                    java.awt.Container form = Components.named(window, "train.form", java.awt.Container.class);
+
+                    for (javax.swing.JLabel mark : Components.all(form, javax.swing.JLabel.class,
+                        l -> l.getIcon() == org.traincontrol.gui.InfoMark.icon()))
+                    {
+                        out.add(mark.getToolTipText() == null ? "" : mark.getToolTipText().replaceAll("<[^>]*>", " ")
+                            .replace("&nbsp;", " ").replaceAll("\\s+", " ").trim());
+                    }
+
+                    return out;
+                });
+
+                assertEquals(marks.size(), 4, "precondition: the popup has not its four (i) marks: " + marks);
+
+                for (String each : marks)
+                {
+                    assertFalse(each.isEmpty(), "an (i) of the popup on " + square + " says nothing: " + marks);
+                }
+
+                String tail = marks.get(3);
+
+                if (session.getLocomotiveNameAt(square) == null)
+                {
+                    assertTrue(tail.contains(said("autosetup.ui.flyNoTrain", null)), "the (i) beside Tail lies does not"
+                        + " say no train stands here: " + tail);
+                }
+                else
+                {
+                    assertNotNull(Components.onTheEventThread(() -> Components.find(Components.named(window,
+                        "train.tail", java.awt.Container.class), javax.swing.JLabel.class,
+                        l -> I18n.t("autosetup.ui.tailCrossedNotKnown").equals(l.getText()))),
+                        "precondition: the tail of the train on " + square + " is known");
+
+                    assertTrue(tail.contains(I18n.t("autosetup.ui.flyTailNow").replaceAll("\\s+", " ")), "the (i)"
+                        + " beside an unknown Tail lies does not say what Tail lies means: " + tail);
+                }
+            }
+            finally
+            {
+                SwingUtilities.invokeAndWait(window::dispose);
+            }
+        }
+    }
+
+    /**
      * Opened and closed, the window changes no setup and dirties nothing.
      *
      * MUTATION: have `fill`'s `train.setSelectedItem` run outside `reading`, so `pressTrain` acts, and this fails.

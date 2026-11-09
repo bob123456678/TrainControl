@@ -127,16 +127,24 @@ public final class TrainWindow extends StationWindowBase
         // Not while nothing stands here; the one control autonomy running leaves live, as the train's card does
         active.setEnabled(standing != null && (!readOnly || autonomyRuns()));
 
-        activeMark.setToolTipText(standing == null ? null : StationFlyovers.active(standing, going));
+        // Every (i) explains its row in every state (OB-429)
+        activeMark.setToolTipText(standing == null ? StationFlyovers.noTrain("autosetup.ui.flyActiveMeans")
+            : StationFlyovers.active(standing, going));
 
         fillFacing(standing, readOnly);
 
         fillRow(arrived, arrivedMark, standing == null ? null : editor.tileMenus.arrivedFacts(tile), "autosetup.ui.labelNone",
-            standing == null ? null : StationFlyovers.arrivedFrom(), (facts, group) -> addArrivals(facts, group, readOnly));
+            standing == null ? StationFlyovers.noTrain("autosetup.ui.flyArrivedMeans") : StationFlyovers.arrivedFrom(),
+            (facts, group) -> addArrivals(facts, group, readOnly));
 
-        EditorTileMenus.TailFacts tailFacts = standing == null ? null : editor.tileMenus.tailFacts(tile);
+        String[] why = new String[1];
 
-        fillRow(tail, tailMark, tailFacts, "autosetup.ui.tailCrossedNotKnown", tailFacts == null ? null : StationFlyovers.tail(),
+        EditorTileMenus.TailFacts tailFacts = standing == null ? null : editor.tileMenus.tailFacts(tile, why);
+
+        String tailSays = standing == null ? StationFlyovers.noTrain("autosetup.ui.flyTailNow") : tailFacts != null
+            ? StationFlyovers.tail() : StationFlyovers.unanswered(I18n.t("autosetup.ui.flyTailNow"), why[0]);
+
+        fillRow(tail, tailMark, tailFacts, "autosetup.ui.tailCrossedNotKnown", tailSays,
             (facts, group) -> addTailChoices(facts, group, readOnly));
 
         shown = signature(standing, model);
@@ -193,7 +201,8 @@ public final class TrainWindow extends StationWindowBase
             facing.add(plain(standing == null ? I18n.t("autosetup.ui.labelNone") : I18n.t("autosetup.ui.hintFacingNoWayOut")));
         }
 
-        facingMark.setToolTipText(standing == null ? null : StationFlyovers.facing(standing));
+        facingMark.setToolTipText(standing == null ? StationFlyovers.noTrain("autosetup.ui.flyFacingMeans")
+            : StationFlyovers.facing(standing));
 
         facing.revalidate();
     }

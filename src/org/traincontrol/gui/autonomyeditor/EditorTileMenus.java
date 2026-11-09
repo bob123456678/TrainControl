@@ -860,19 +860,38 @@ final class EditorTileMenus
     /** The tail question here, or null where it does not matter (`TailCrossedPrompt.wouldAsk`). */
     TailFacts tailFacts(final TileKey target)
     {
+        return tailFacts(target, new String[1]);
+    }
+
+    /** The same, putting why there is no question, in words, in `why[0]` where there is none (OB-429). */
+    TailFacts tailFacts(final TileKey target, final String[] why)
+    {
         org.traincontrol.automation.Layout running = editor.runningLayout == null ? null : editor.runningLayout.get();
 
-        if (running == null) return null;
+        org.traincontrol.automation.Point point = running == null ? null : editor.pointOnTheLayout(running, target);
 
-        org.traincontrol.automation.Point point = editor.pointOnTheLayout(running, target);
+        if (point == null || point.getCurrentLocomotive() == null)
+        {
+            why[0] = I18n.t("autosetup.ui.flyTailNoRailway");
 
-        if (point == null || point.getCurrentLocomotive() == null) return null;
+            return null;
+        }
 
         String side = point.getArrivedFrom() != null ? point.getArrivedFrom() : editor.session.getArrivedFrom(target);
 
         Integer length = point.getCurrentLocomotive().getTrainLength();
 
-        if (!TailCrossedPrompt.wouldAsk(running, point, side, length)) return null;
+        if (side == null) why[0] = I18n.t("autosetup.ui.flyTailNoSide");
+        else if (length == null || length <= 0)
+        {
+            why[0] = I18n.f("autosetup.ui.flyTailNoLength", point.getCurrentLocomotive().getName());
+        }
+        else if (!TailCrossedPrompt.wouldAsk(running, point, side, length))
+        {
+            why[0] = I18n.t("autosetup.ui.flyTailOneRoad");
+        }
+
+        if (why[0] != null) return null;
 
         java.util.List<TailCrossedPrompt.Choice> choices =
             TailCrossedPrompt.choicesFor(running, point, side, length, editor.session::baseNameOf);
