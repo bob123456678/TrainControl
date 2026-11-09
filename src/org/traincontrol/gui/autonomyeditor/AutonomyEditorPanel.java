@@ -5860,7 +5860,9 @@ public class AutonomyEditorPanel extends JPanel
         final boolean focused = isFocusedOnSignals();
 
         // While picking a signal, everything else is grayed, and nothing for its track (OB-353).
-        if (focused) { ignored = !isPairableSignal(componentAt(tile)); stationless = false; }
+        boolean pickable = false;
+
+        if (focused) { pickable = isPairableSignal(componentAt(tile)); ignored = !pickable; stationless = false; }
 
         // An ignored link carries no trains, so no arrows.
         LayoutDiagramComponent atTile =
@@ -5915,6 +5917,10 @@ public class AutonomyEditorPanel extends JPanel
         if (stationless && !ignored && componentAt(tile) != null) annotation.withNoStation();
 
         if (directionsView() == VIEW_ALLOWED) annotation.withoutRestrictions();
+
+        // Signals in gray, to simplify the picture, but in color while they can be picked.
+        if (!pickable && componentAt(tile) != null
+            && componentAt(tile).getType() == LayoutDiagramComponent.componentType.SIGNAL) annotation.inGray();
 
         // A train the setup puts here gets its own mark, unless Show Trains is off.
         if (locomotiveAt(tile) != null && isShowingTrains()) annotation.withTrain();
