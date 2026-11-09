@@ -469,7 +469,7 @@ Tab icons provided by Freepik.
             - `Export Counts` on the accessory keyboard saves every accessory's number of actuations to a CSV file.
             - Click an (i) to read its explanation at once, without waiting for the tooltip.
             - The usage chart, the crop window, the autonomy editor's buttons and the signal window now use the same fonts and spacing as the new windows.
-            - Each line in the log has the time, `File` > `Export Log...` saves the log to a file, and the `File` menu is sorted into four groups.
+            - Each line in the log now shows the time, `File` > `Export Log...` saves the log to a file, and the `File` menu is sorted into four groups.
             - An unexpected error in the background now shows in the log.
         - Central Station
             - TrainControl now connects to a CS3 over TCP, and falls back to UDP, saying so in the log, if that doesn't work. A CS2 still uses UDP.
