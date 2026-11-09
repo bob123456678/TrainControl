@@ -3033,6 +3033,12 @@ public class MarklinControlStation implements ViewListener, ModelListener
     {
         return this.NetworkInterface != null && this.NetworkInterface.isReplacing();
     }
+
+    @Override
+    public int getReplacementEpoch()
+    {
+        return this.NetworkInterface != null ? this.NetworkInterface.replacements() : 0;
+    }
     
     /**
      * Tells the view a feedback changed, if there is one listening (only the route editor's capture wants it; a

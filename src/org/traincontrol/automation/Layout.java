@@ -6254,6 +6254,9 @@ public class Layout
         // between.
         final int powerAtDispatch = this.control.getPowerEpoch();
 
+        // And the connection's replacements, for the same reason
+        final int replacementsAtDispatch = this.control.getReplacementEpoch();
+
         // A stop ordered already sends nothing, and says so.
         if (this.stopsOrdered.get() != stopsAtDispatch)
         {
@@ -6357,8 +6360,9 @@ public class Layout
                 return false;
             }
 
-            // Nor if the connection began to be replaced while its route was set (FR-186).
-            if (this.control.isReplacingConnection())
+            // Nor if the connection was replaced while its route was set, even briefly: a switch frame written into the
+            // lost connection is not sent again (FR-186).
+            if (this.control.isReplacingConnection() || this.control.getReplacementEpoch() != replacementsAtDispatch)
             {
                 giveBackUnrun(path, loc, "autolayout.log.notSentReconnecting");
 

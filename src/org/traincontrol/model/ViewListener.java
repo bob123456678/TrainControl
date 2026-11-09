@@ -164,6 +164,9 @@ public interface ViewListener
     /** Whether the lost TCP connection to the station is being replaced: autonomy starts no new route (FR-186). */
     public boolean isReplacingConnection();
 
+    /** How many replacements of that connection have begun: two reads tell whether one began and ended in between. */
+    public int getReplacementEpoch();
+
     /**
      * Whether this session is simulating rather than driving a real Central Station.
      */
