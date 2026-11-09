@@ -1783,7 +1783,14 @@ public class testATrainIsDispatchedOnce
     /** A railway, made current: one line through the points named, one sensor each, its two ends stations. */
     private static Layout aLine(org.traincontrol.marklin.MarklinFeedback[] s, String... names) throws Exception
     {
-        Layout railway = new Layout(model);
+        return aLine(model, s, names);
+    }
+
+    /** The same, on a control of the test's own. */
+    private static Layout aLine(org.traincontrol.model.ViewListener control, org.traincontrol.marklin.MarklinFeedback[] s,
+        String... names) throws Exception
+    {
+        Layout railway = new Layout(control);
 
         for (int i = 0; i < names.length; i++)
         {
@@ -2416,6 +2423,234 @@ public class testATrainIsDispatchedOnce
 
             letGo(s, t, executor);
         }
+    }
+
+    /** Sets whether the model's proxy is replacing a lost TCP connection, as its listener does (FR-186). */
+    private static void replacing(boolean on) throws Exception
+    {
+        Object proxy = Reflect.get(MarklinControlStation.class, model, "NetworkInterface");
+
+        Reflect.set(proxy.getClass(), proxy, "replacing", on);
+    }
+
+    private interface WhileReplacing
+    {
+        void run(Layout rail, Locomotive train, List<String> said) throws Exception;
+    }
+
+    /**
+     * Runs a claim with a train standing at the start of a line of two points, the log tapped and the connection being
+     * replaced, and puts everything back after.
+     */
+    private static void whileReplacing(int firstSensor, int loco, String from, String to, WhileReplacing claim)
+        throws Exception
+    {
+        whileReplacing(firstSensor, loco, from, to, model, claim);
+    }
+
+    /** The same, the line built on a control of the test's own. */
+    private static void whileReplacing(int firstSensor, int loco, String from, String to,
+        org.traincontrol.model.ViewListener control, WhileReplacing claim) throws Exception
+    {
+        org.traincontrol.marklin.MarklinFeedback[] s = sensors(firstSensor, 2);
+        final Locomotive train = model.getLocByName(model.getLocList().get(loco));
+        final int preferredWas = train.getPreferredSpeed();
+        final Layout rail = aLine(control, s, from, to);
+        final List<String> said = java.util.Collections.synchronizedList(new ArrayList<String>());
+        java.util.logging.Handler tap = aTapOn(said);
+
+        try
+        {
+            train.setSpeed(0);
+            train.setPreferredSpeed(30);
+            rail.getPoint(from).setLocomotive(train);
+            replacing(true);
+
+            claim.run(rail, train, said);
+        }
+        finally
+        {
+            replacing(false);
+            java.util.logging.Logger.getLogger(MarklinControlStation.class.getName()).removeHandler(tap);
+            rail.stopLocomotives();
+            train.setPreferredSpeed(preferredWas);
+            letGo(s, train, null);
+        }
+    }
+
+    /**
+     * A run started while the connection is being replaced sets no train going and says once that new routes are
+     * held; once the connection is back it starts its train and says so.
+     */
+    private static void heldUntilReconnected(Layout rail, Locomotive train, List<String> said, Runnable start,
+        String run) throws Exception
+    {
+        String held = org.traincontrol.util.I18n.t("autolayout.infoRoutesHeld");
+
+        start.run();
+
+        assertTrue(until(() -> rail.isAutoRunning(), 5000), "precondition: the " + run + " did not start");
+        assertFalse(until(() -> train.getSpeed() > 0 || rail.isAlreadyUnderway(train), 2000), "the " + run
+            + " set a train going while the connection to the station was being replaced (FR-186)");
+        assertTrue(rail.isAutoRunning(), "the " + run + " stopped for the lost connection: it is to hold new routes,"
+            + " not stop");
+        assertEquals(java.util.Collections.frequency(new ArrayList<>(said), held), 1, "the " + run + " did not say once"
+            + " that new routes are held: " + said);
+
+        replacing(false);
+
+        assertTrue(until(() -> train.getSpeed() > 0 || rail.isAlreadyUnderway(train), 5000), "the connection came back"
+            + " and the " + run + " still started nothing");
+        assertTrue(until(() -> said.contains(org.traincontrol.util.I18n.t("autolayout.infoRoutesResumed")), 2000),
+            "the " + run + " did not say that new routes start again: " + said);
+    }
+
+    /** The model as a layout's control, but answering `replacing` when asked whether the connection is replaced. */
+    private static org.traincontrol.model.ViewListener answering(java.util.function.BooleanSupplier replacing)
+    {
+        return (org.traincontrol.model.ViewListener) java.lang.reflect.Proxy.newProxyInstance(
+            org.traincontrol.model.ViewListener.class.getClassLoader(),
+            new Class<?>[] {org.traincontrol.model.ViewListener.class}, (proxy, method, args) ->
+                method.getName().equals("isReplacingConnection") ? replacing.getAsBoolean() : method.invoke(model, args));
+    }
+
+    /** Asserts a hand send is refused at once, says why, and sets nothing going; `what` names the send. */
+    private static void refusedForTheConnection(Layout rail, Locomotive train, String from, String to, List<String> said,
+        String what) throws Exception
+    {
+        Future<Boolean> sent = dispatcher.submit(() ->
+            rail.executePathByHand(through(rail, from, to), train, 30, null, -1));
+        Boolean answer;
+
+        try
+        {
+            answer = sent.get(5, TimeUnit.SECONDS);
+        }
+        catch (TimeoutException tookTheRoute)
+        {
+            answer = null;
+        }
+
+        assertEquals(answer, Boolean.FALSE, what + " went ahead (FR-186)");
+        assertTrue(said.contains(org.traincontrol.util.I18n.f("autolayout.log.notSentReconnecting", train.getName())),
+            what + " did not say why it was refused: " + said);
+        assertFalse(rail.isAlreadyUnderway(train) || train.getSpeed() > 0, what + " took its route or set its train"
+            + " going");
+    }
+
+    /**
+     * Autonomy starts no route while the lost connection to the station is replaced, and starts once it is back.
+     *
+     * MUTATION: take `isReplacingConnection()` out of `waitWhileThePowerIsOff`'s loop condition, and this fails.
+     */
+    @Test
+    public void testAutonomyStartsNoRouteWhileTheConnectionIsReplaced() throws Exception
+    {
+        whileReplacing(2081, 5, "DRA", "DRB", (rail, v, said) ->
+        {
+            rail.setLocomotivesToRun(Arrays.asList(v));
+            heldUntilReconnected(rail, v, said, rail::runLocomotives, "autonomy run");
+        });
+    }
+
+    /**
+     * Nor does a timetable (Execute Timetable, and Return Home, whose plan runs as one) start its entry then.
+     *
+     * MUTATION: take `isReplacingConnection()` out of `waitWhileThePowerIsOff`'s loop condition, and this fails.
+     */
+    @Test
+    public void testATimetableStartsNothingWhileTheConnectionIsReplaced() throws Exception
+    {
+        whileReplacing(2091, 16, "DTA", "DTB", (rail, t, said) ->
+        {
+            rail.setTimetable(Arrays.asList(new org.traincontrol.automation.TimetablePath(t, through(rail, "DTA", "DTB"),
+                0)));
+
+            heldUntilReconnected(rail, t, said, () ->
+            {
+                Thread executor = new Thread(rail::executeTimetable, "a timetable run while the connection is replaced");
+                executor.setDaemon(true);
+                executor.start();
+            }, "timetable");
+        });
+    }
+
+    /**
+     * A hand send while the lost connection to the station is replaced is refused at once, says why in the log, and
+     * takes no track (FR-186).
+     *
+     * MUTATION: take the `isReplacingConnection()` refusal out of `executePathInternal`, and this fails.
+     */
+    @Test
+    public void testAHandSendIsRefusedWhileTheConnectionIsReplaced() throws Exception
+    {
+        whileReplacing(2101, 7, "DHA", "DHB", (rail, h, said) ->
+            refusedForTheConnection(rail, h, "DHA", "DHB", said, "a hand send while the connection was being replaced"));
+    }
+
+    /**
+     * Return Home spends no attempt on a send refused while the connection is being replaced: with the connection lost
+     * each time after the wait and before the send, the run goes on past its attempts, and starts its entry once the
+     * connection is back (FR-186).
+     *
+     * MUTATION: take `isReplacingConnection()` out of the timetable's `cut`, and this fails.
+     */
+    @Test
+    public void testReturnHomeSpendsNoAttemptOnAHeldSend() throws Exception
+    {
+        final int attempts = layoutConstant("STAGING_MAX_ATTEMPTS");
+        final boolean[] lost = {true};
+
+        // The wait sees the connection; the send, and the count after it, see it being replaced
+        whileReplacing(2111, 9, "DSA", "DSB", answering(() -> lost[0] && !calledFrom("waitWhileThePowerIsOff")),
+            (rail, t, said) ->
+        {
+            final String refused = org.traincontrol.util.I18n.f("autolayout.log.notSentReconnecting", t.getName());
+
+            rail.setTimetable(Arrays.asList(new org.traincontrol.automation.TimetablePath(t, through(rail, "DSA", "DSB"),
+                0)));
+            rail.setTimetableSequential(true);
+
+            Thread executor = new Thread(rail::executeTimetable, "Return Home while the connection is replaced");
+            executor.setDaemon(true);
+            executor.start();
+
+            assertTrue(until(() -> java.util.Collections.frequency(new ArrayList<>(said), refused) > attempts, 20000),
+                "Return Home gave up on sends refused while the connection was being replaced: " + said);
+            assertTrue(rail.isAutoRunning(), "Return Home stopped while the connection was being replaced");
+
+            lost[0] = false;
+
+            assertTrue(until(() -> t.getSpeed() > 0 || rail.isAlreadyUnderway(t), 10000), "the connection came back and"
+                + " Return Home still started nothing");
+        });
+    }
+
+    /**
+     * Nor is a send whose connection begins to be replaced while its route is set: it is given back, no speed sent and
+     * its track released, and the train goes once the connection is back (FR-186).
+     *
+     * MUTATION: take the `isReplacingConnection()` check after `configureAndLockPath` out of `executePathInternal`.
+     */
+    @Test
+    public void testASendWhoseConnectionIsLostWhileItsRouteIsSetIsGivenBack() throws Exception
+    {
+        final java.util.concurrent.atomic.AtomicInteger asked = new java.util.concurrent.atomic.AtomicInteger();
+        final boolean[] lost = {true};
+
+        // Lost after the gate: the first question is answered no, every later one yes
+        whileReplacing(2121, 10, "DLA", "DLB", answering(() -> lost[0] && asked.incrementAndGet() > 1),
+            (rail, l, said) ->
+        {
+            refusedForTheConnection(rail, l, "DLA", "DLB", said, "a send whose connection began to be replaced while"
+                + " its route was set");
+
+            lost[0] = false;
+            sendOn(rail, through(rail, "DLA", "DLB"), l);
+
+            assertTrue(until(() -> l.getSpeed() > 0 || rail.isAlreadyUnderway(l), 5000), "the connection came back and"
+                + " the train could not be sent: its route was not given back");
+        });
     }
 
     /**
