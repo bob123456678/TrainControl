@@ -684,14 +684,14 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
     }
 
     /**
-     * The Sync button: syncs the locomotive with the Central Station at once, not on Save.  Afterwards the whole window
-     * is reloaded from the locomotive, overwriting anything typed.
+     * The Sync button: syncs the locomotive with the Central Station at once, not on Save, then reloads the whole window
+     * from it.  Typing not saved is asked about first, as Close does.
      */
     private void syncNow()
     {
         final Locomotive target = loc;
 
-        if (target == null) return;
+        if (target == null || isDirty() && !settleUnsaved()) return;
 
         main.syncLocomotive(target, () -> afterSync(target));
     }
