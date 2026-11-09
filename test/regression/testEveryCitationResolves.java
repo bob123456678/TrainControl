@@ -34,11 +34,11 @@ public class testEveryCitationResolves
 
     /**
      * Prefixes that look like a finding and are not one: the trackers `MT`, `FR` and `OB` (checked elsewhere),
-     * protocols and units (`UTF-8`, `MM-2`, `SHA-1`), locomotive classes (`SU45`, `EN57`), function ranges (`F17-32`)
+     * protocols, units and connectors (`UTF-8`, `MM-2`, `SHA-1`, `RJ45-1`), locomotive classes (`SU45`, `EN57`), function ranges (`F17-32`)
      * and the tail of a regex character class (`Z0-9`).
      */
     private static final Pattern NOT_A_FINDING = Pattern.compile(
-        "^(MT|FR|OB|SU45|EN57|F\\d+|Z0|UTF|ISO|CS|MM|DCC|RGB|ARGB|HTTP|JSON|IPV4|SHA|MD5|JDK|API|UI"
+        "^(MT|FR|OB|SU45|EN57|F\\d+|Z0|UTF|ISO|CS|MM|DCC|RGB|ARGB|HTTP|JSON|IPV4|SHA|MD5|JDK|API|UI|RJ45"
         + "|ID|X|Y|Z)-");
 
     /** This file, which names dead ids rather than citing them, so it is left out of the scan. */
