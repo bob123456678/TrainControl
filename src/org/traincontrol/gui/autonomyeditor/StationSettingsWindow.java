@@ -490,9 +490,8 @@ public final class StationSettingsWindow extends StationWindowBase
             });
         });
 
-        typedRow("autosetup.ui.stationMaxLength", "maxLength", maxLength, leftAligned(maxLength), stopSection,
-            this::maxLengthInStore, (each, typed) -> editor.applyNumber(each, "maxTrainLength", blankIsZero(typed), 0));
-        mixedMarks.get(maxLength).setToolTipText(AutonomyEditorPanel.wrapped(mixedTip(LENGTH_BLANK)));
+        numberRow("autosetup.ui.stationMaxLength", "maxLength", maxLength, stopSection, this::maxLengthInStore,
+            "maxTrainLength", LENGTH_BLANK);
 
         rowOf("autosetup.ui.menuArrivalsGroup", "arrivals", arrivals, null, stopSection);
         perStation.addAll(rowsFrom(row - 1));
@@ -541,9 +540,8 @@ public final class StationSettingsWindow extends StationWindowBase
 
         int first = row;
 
-        typedRow("autosetup.ui.stationPriority", "priority", priority, leftAligned(priority), otherControls,
-            this::priorityInStore, (each, typed) -> editor.applyNumber(each, "priority", blankIsZero(typed), 0));
-        mixedMarks.get(priority).setToolTipText(AutonomyEditorPanel.wrapped(mixedTip(PRIORITY_BLANK)));
+        numberRow("autosetup.ui.stationPriority", "priority", priority, otherControls, this::priorityInStore, "priority",
+            PRIORITY_BLANK);
 
         JPanel speedRow = leftAligned(speed);
 
@@ -632,6 +630,16 @@ public final class StationSettingsWindow extends StationWindowBase
         }
 
         return out;
+    }
+
+    /** A typed whole-number property, blank meaning 0, whose triangle says how to set them all (`blankKey`). */
+    private void numberRow(String labelKey, String markName, JTextField part, List<JComponent> section,
+        Function<TileKey, String> stored, String property, String blankKey)
+    {
+        typedRow(labelKey, markName, part, leftAligned(part), section, stored,
+            (each, typed) -> editor.applyNumber(each, property, blankIsZero(typed), 0));
+
+        mixedMarks.get(part).setToolTipText(AutonomyEditorPanel.wrapped(mixedTip(blankKey)));
     }
 
     /**

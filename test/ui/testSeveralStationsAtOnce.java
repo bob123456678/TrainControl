@@ -295,19 +295,7 @@ public class testSeveralStationsAtOnce
     @Test(timeOut = 120000)
     public void testABlankLeavesThemAloneAndTheTipSaysHowToClearThem() throws Exception
     {
-        List<TileKey> two = stations(2);
-
-        Components.onTheEventThread(() ->
-        {
-            session.setPointProperty(two.get(0), "maxTrainLength", 10);
-            session.setPointProperty(two.get(1), "maxTrainLength", 20);
-            session.setPointProperty(two.get(0), "priority", 1);
-            session.setPointProperty(two.get(1), "priority", 2);
-
-            return null;
-        });
-
-        StationSettingsWindow window = pick(two);
+        StationSettingsWindow window = pickDiffering("maxTrainLength", "priority");
 
         Components.onTheEventThread(() -> { window.openAdvancedForTest(); return null; });
 
@@ -345,16 +333,7 @@ public class testSeveralStationsAtOnce
     @Test(timeOut = 120000)
     public void testATriangleGraysWithItsRow() throws Exception
     {
-        List<TileKey> two = stations(2);
-
-        Components.onTheEventThread(() ->
-        {
-            session.setPointProperty(two.get(0), "maxTrainLength", 10);
-            session.setPointProperty(two.get(1), "maxTrainLength", 20);
-            return null;
-        });
-
-        StationSettingsWindow window = pick(two);
+        StationSettingsWindow window = pickDiffering("maxTrainLength");
 
         StationDoors.press(window, "station.stops", message -> Answering.pressAt(0));
         StationDoors.current(window);
@@ -777,6 +756,25 @@ public class testSeveralStationsAtOnce
         editor = frozen.editorOn(PAGE);
 
         panel = Components.onTheEventThread(() -> editor.getAutonomyPanel());
+    }
+
+    /** Two plain stations picked together, differing on each of these numbers (1 and 2). */
+    private StationSettingsWindow pickDiffering(String... properties) throws Exception
+    {
+        List<TileKey> two = stations(2);
+
+        Components.onTheEventThread(() ->
+        {
+            for (String each : properties)
+            {
+                session.setPointProperty(two.get(0), each, 1);
+                session.setPointProperty(two.get(1), each, 2);
+            }
+
+            return null;
+        });
+
+        return pick(two);
     }
 
     /** Arms Pick Stations and clicks each square; the window that opens. */
