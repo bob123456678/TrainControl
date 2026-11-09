@@ -122,8 +122,8 @@ public final class TrainWindow extends StationWindowBase
 
         active.setSelected(going);
 
-        // Not while nothing stands here; the one control a run leaves live, as the diagram's Is Active (FR-187)
-        active.setEnabled(standing != null && (!readOnly || runHolds()));
+        // Not while nothing stands here; on the track diagram, the one control a run leaves live (FR-187)
+        active.setEnabled(standing != null && (!readOnly || pausesAlone()));
 
         // Every (i) explains its row in every state (OB-429)
         activeMark.setToolTipText(standing == null ? StationFlyovers.noTrain("autosetup.ui.flyActiveMeans")
@@ -148,11 +148,15 @@ public final class TrainWindow extends StationWindowBase
         shown = signature(standing, model);
     }
 
-    private boolean runHolds()
+    /**
+     * Whether Active pauses the train alone, as the diagram's Is Active does: a run holds the setup and no editor does,
+     * whose draft would undo a pause it does not hold.
+     */
+    private boolean pausesAlone()
     {
         TrainControlUI main = editor.parentWindow();
 
-        return main != null && main.aRunHoldsTheSetup();
+        return editor.menuOnly && main != null && !main.isLayoutEditorOpen() && main.aRunHoldsTheSetup();
     }
 
     private Locomotive train(String name)
@@ -342,7 +346,7 @@ public final class TrainWindow extends StationWindowBase
 
         if (standing == null) return;
 
-        if (model != null && runHolds())
+        if (model != null && pausesAlone())
         {
             // Decided at the click, as the diagram's Is Active is: during a run, the train alone (FR-059)
             editor.parentWindow().pauseTrainWhileRunning(model, !on);
