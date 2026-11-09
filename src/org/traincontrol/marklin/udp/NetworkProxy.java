@@ -314,7 +314,7 @@ public class NetworkProxy
     }
 
     /** An exception's message for a log line, or its name when it has none. */
-    private static String reasonOf(IOException e)
+    private static String reasonOf(Exception e)
     {
         return e.getMessage() != null ? e.getMessage() : e.getClass().getSimpleName();
     }
@@ -924,13 +924,32 @@ public class NetworkProxy
 
         model.logf("network.canListenerRunningTcp");
 
-        while (!this.stopRequested && (connection = this.tcp) != null)
+        try
         {
-            String reason = readUntilLost(connection, frame);
+            while (!this.stopRequested && (connection = this.tcp) != null)
+            {
+                String reason = readUntilLost(connection, frame);
 
-            if (this.stopRequested) return;
+                if (this.stopRequested) return;
 
-            recover(connection, reason);
+                recover(connection, reason);
+            }
+        }
+        catch (RuntimeException e)
+        {
+            // Nothing is left replacing the connection: UDP for the session, or autonomy would hold new routes for ever
+            closeQuietly(this.tcp);
+
+            synchronized (this)
+            {
+                this.tcp = null;
+                this.replacing = false;
+            }
+
+            setUdpLive(true);
+            model.logf("network.tcpLostUsingUdp", reasonOf(e));
+
+            throw e;
         }
     }
 
