@@ -122,8 +122,8 @@ public class NetworkProxy
     // Guarded by this: when each frame was written since the connection last carried anything, for the loss's log line
     private final ArrayDeque<Long> unconfirmed = new ArrayDeque<>();
 
-    // Guarded by this: the listener is replacing a lost connection, and sends go over UDP meanwhile
-    private boolean replacing;
+    // Written under this: the listener is replacing a lost connection, and sends go over UDP meanwhile
+    private volatile boolean replacing;
 
     // Why a send found the connection broken, for the listener's log line
     private volatile String lostBecause;
@@ -482,6 +482,12 @@ public class NetworkProxy
         }
 
         return true;
+    }
+
+    /** Whether a lost TCP connection is being replaced; never on UDP alone.  Not under the lock a stuck write holds. */
+    public boolean isReplacing()
+    {
+        return this.replacing;
     }
 
     /** A frame's command, as CS2Message reads it. */

@@ -1730,10 +1730,14 @@ public class Layout
     private final java.util.concurrent.atomic.AtomicBoolean waitingForThePower =
         new java.util.concurrent.atomic.AtomicBoolean();
 
+    /** Set by the first train to find new routes held for the connection, so the hold and its end are logged once. */
+    private final java.util.concurrent.atomic.AtomicBoolean routesHeld = new java.util.concurrent.atomic.AtomicBoolean();
+
     /**
      * Waits while the track power is off, before a run chooses or sends a train, so no switch or speed is sent to a
-     * dead railway.  Reads on until a GO, STOP or Overload is heard; Instant Stop leaves it alone (OB-251).  It sleeps, so
-     * it is never called holding this monitor or `activeLocomotives`; a stop or retirement ends it within a poll.
+     * dead railway.  Reads on until a GO, STOP or Overload is heard; Instant Stop leaves it alone (OB-251).  Waits too
+     * while the connection to the station is replaced: no new route until it is back (FR-186).  It sleeps, so it is
+     * never called holding this monitor or `activeLocomotives`; a stop or retirement ends it within a poll.
      *
      * @return whether it waited, so the caller asks again whether its run still goes
      */
@@ -1742,11 +1746,17 @@ public class Layout
         boolean waited = false;
         boolean interrupted = false;
 
-        while (this.running && this.isCurrentLayout() && !this.control.getPowerState())
+        while (this.running && this.isCurrentLayout()
+            && (!this.control.getPowerState() || this.control.isReplacingConnection()))
         {
-            if (this.waitingForThePower.compareAndSet(false, true))
+            if (!this.control.getPowerState() && this.waitingForThePower.compareAndSet(false, true))
             {
                 this.control.logf("autolayout.infoWaitingForTrackPower");
+            }
+
+            if (this.control.isReplacingConnection() && this.routesHeld.compareAndSet(false, true))
+            {
+                this.control.logf("autolayout.infoRoutesHeld");
             }
 
             waited = true;
@@ -1763,6 +1773,11 @@ public class Layout
         }
 
         if (this.control.getPowerState()) this.waitingForThePower.set(false);
+
+        if (!this.control.isReplacingConnection() && this.routesHeld.compareAndSet(true, false))
+        {
+            this.control.logf("autolayout.infoRoutesResumed");
+        }
 
         if (interrupted) Thread.currentThread().interrupt();
 
@@ -6485,6 +6500,13 @@ public class Layout
         }
         
         // No signal sweep here (OB-166): see runLocomotives.
+
+        // No new route while the connection to the station is replaced; trains on their way carry on (FR-186).
+        if (this.control.isReplacingConnection())
+        {
+            this.control.logf("autolayout.log.notSentReconnecting", loc.getName());
+            return false;
+        }
 
         boolean result;
         

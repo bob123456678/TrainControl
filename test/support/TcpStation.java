@@ -19,8 +19,9 @@ import org.traincontrol.marklin.udp.NetworkProxy;
  * keeps every 13-byte frame a client writes, with the number of the connection it came on (1 for the first), and
  * sends frames or raw bytes to the client connected last.  With `answering` on it answers each frame as a station does,
  * with the same frame and the response bit set.  `drop` closes the client's connection; `refuse` stops accepting, so
- * the next connect fails.  It is also a Link S88, device LINK_S88: it keeps its contacts' states, reports a change as
- * the event a station sends, and answers a sensor query for its device with the current state, as Adam's CS3 does.
+ * the next connect fails, until `reopen`.  It is also a Link S88, device LINK_S88: it keeps its contacts' states,
+ * reports a change as the event a station sends, and answers a sensor query for its device with the current state, as
+ * Adam's CS3 does.
  *
  * @author Adam
  */
@@ -39,7 +40,7 @@ public final class TcpStation implements AutoCloseable
         }
     }
 
-    private final ServerSocket server;
+    private volatile ServerSocket server;
 
     private final List<Frame> received = Collections.synchronizedList(new ArrayList<>());
 
@@ -66,8 +67,12 @@ public final class TcpStation implements AutoCloseable
     public TcpStation(String address) throws IOException
     {
         this.server = new ServerSocket(0, 50, InetAddress.getByName(address));
+        accepting(this.server);
+    }
 
-        Thread accepting = new Thread(this::accept, "tcp-station-accept");
+    private void accepting(ServerSocket on)
+    {
+        Thread accepting = new Thread(() -> accept(on), "tcp-station-accept");
         accepting.setDaemon(true);
         accepting.start();
     }
@@ -254,6 +259,16 @@ public final class TcpStation implements AutoCloseable
         this.server.close();
     }
 
+    /** Accepts connections again on the same port, at `address`, after refuse: a station back on the network. */
+    public void reopen(String address) throws IOException
+    {
+        ServerSocket again = new ServerSocket();
+        again.setReuseAddress(true);
+        again.bind(new java.net.InetSocketAddress(InetAddress.getByName(address), port()), 50);
+        this.server = again;
+        accepting(again);
+    }
+
     @Override
     public void close() throws IOException
     {
@@ -277,13 +292,13 @@ public final class TcpStation implements AutoCloseable
         }
     }
 
-    private void accept()
+    private void accept(ServerSocket on)
     {
         try
         {
-            while (!this.server.isClosed())
+            while (!on.isClosed())
             {
-                Socket client = this.server.accept();
+                Socket client = on.accept();
                 int number = this.connections.incrementAndGet();
                 this.clients.add(client);
 

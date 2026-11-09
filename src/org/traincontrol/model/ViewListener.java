@@ -164,6 +164,9 @@ public interface ViewListener
     Accessory newSwitch(int address, Accessory.accessoryDecoderType decoderType, boolean state);
     public boolean getNetworkCommState();
 
+    /** Whether the lost TCP connection to the station is being replaced: autonomy starts no new route (FR-186). */
+    public boolean isReplacingConnection();
+
     /**
      * Whether this session is simulating rather than driving a real Central Station.
      */
