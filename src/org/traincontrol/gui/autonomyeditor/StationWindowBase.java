@@ -55,7 +55,7 @@ abstract class StationWindowBase extends JDialog
 
     private final JLabel strip = new Banner();
 
-    /** The yellow banner naming the stations picked together; hidden for one. */
+    /** The green banner naming the stations picked together; hidden for one. */
     private final JLabel picked = new Banner();
 
     private final JPanel banners = new JPanel(new BorderLayout());
@@ -121,6 +121,10 @@ abstract class StationWindowBase extends JDialog
             banner.setBorder(BorderFactory.createEmptyBorder(6, 12, 6, 12));
             banner.setVisible(false);
         }
+
+        // A list, not a warning: the editor's green for a setup that is ready
+        picked.setBackground(new Color(214, 245, 214));
+        picked.setForeground(Color.BLACK);
 
         strip.setName("station.strip");
         picked.setName("station.picked");
@@ -281,7 +285,7 @@ abstract class StationWindowBase extends JDialog
         if (getHeight() > 0 && getPreferredSize().height > getHeight()) pack();
     }
 
-    /** Names the stations picked together in the yellow banner at the top; null takes it down. */
+    /** Names the stations picked together in the green banner at the top; null takes it down. */
     final void sayWhichArePicked(String said)
     {
         picked.setText(said == null ? "" : AutonomyEditorPanel.wrappedAt(said, stripWrapsAt));

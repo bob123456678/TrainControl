@@ -53,14 +53,13 @@ import org.traincontrol.util.I18n;
 /**
  * The Station Settings window (FR-111, FR-176): every setting of one sensor square, beside what they allow.  Its matrix
  * asks the railway off the event thread (OB-192).  About several squares picked together (FR-052) it has no matrix,
- * picture or per-station rows; a field they disagree on says "(mixed)" and is left alone, and a change goes to each
+ * picture or per-station rows; a field they disagree on wears a warning triangle and is left alone, and a change goes to each
  * square through the door it takes for one.
  */
 public final class StationSettingsWindow extends StationWindowBase
 {
     private static final Color GRAY_ICON = new Color(170, 170, 170);
     private static final Font REGULAR = new Font("Segoe UI", Font.PLAIN, 14);
-    private static final String MIXED = "autosetup.ui.stationMixed";
 
     private static final int NEVER = 0;
     private static final int MAY = 1;
@@ -630,7 +629,15 @@ public final class StationSettingsWindow extends StationWindowBase
     {
         rowOf(labelKey, markName, shown, null, section);
 
-        if (shown != part) section.add(part);
+        if (shown != part)
+        {
+            section.add(part);
+
+            JLabel mixed = mixedLabel(part.getName() + "Mixed");
+
+            shown.add(mixed);
+            mixedMarks.put(part, mixed);
+        }
 
         JLabel problem = problemLine(part.getName() + "Problem");
 
@@ -688,12 +695,12 @@ public final class StationSettingsWindow extends StationWindowBase
         row++;
     }
 
-    /** "(mixed)", shown beside a box or radios the squares picked disagree on. */
+    /** The warning triangle beside a control the squares picked disagree on; its tooltip says what that means. */
     private static JLabel mixedLabel(String partName)
     {
-        JLabel out = styled(new JLabel(I18n.t(MIXED)), partName, REGULAR);
+        JLabel out = styled(new JLabel(RowIcons.warning(16)), partName, REGULAR);
 
-        out.setForeground(Color.BLACK);
+        out.setToolTipText(AutonomyEditorPanel.wrapped(mixedTip()));
         out.setBorder(javax.swing.BorderFactory.createEmptyBorder(0, 6, 0, 0));
         out.setVisible(false);
 
@@ -783,6 +790,7 @@ public final class StationSettingsWindow extends StationWindowBase
     private final Map<JTextField, BiFunction<TileKey, String, String>> typedDoors = new LinkedHashMap<>();
     private final Map<JTextField, Function<TileKey, String>> storedValues = new LinkedHashMap<>();
     private final Map<JTextField, JLabel> problems = new LinkedHashMap<>();
+    private final Map<JTextField, JLabel> mixedMarks = new LinkedHashMap<>();
 
     /** Enter or leaving applies; Escape puts back what it held.  Never per keystroke, as each change rebuilds the railway. */
     private void commitsOnLeaving(JTextField part, Function<TileKey, String> stored)
@@ -799,12 +807,6 @@ public final class StationSettingsWindow extends StationWindowBase
                 if (!e.isTemporary()) commit(part);
             }
 
-            // "(mixed)" is replaced by what is typed
-            @Override
-            public void focusGained(java.awt.event.FocusEvent e)
-            {
-                if (part.getText().equals(I18n.t(MIXED))) part.selectAll();
-            }
         });
 
         part.registerKeyboardAction(e ->
@@ -818,12 +820,20 @@ public final class StationSettingsWindow extends StationWindowBase
         }, KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0), JComponent.WHEN_FOCUSED);
     }
 
-    /** What a field shows: the squares' value, or "(mixed)" where they differ. */
+    /** What a field shows: the squares' value, or nothing where they differ. */
     private String shown(JTextField part)
     {
         String common = agreed(storedValues.get(part));
 
-        return common == null ? I18n.t(MIXED) : common;
+        return common == null ? "" : common;
+    }
+
+    /** A typed field's value, and its triangle where the squares differ. */
+    private void showTyped(JTextField part)
+    {
+        mixedMarks.get(part).setVisible(agreed(storedValues.get(part)) == null);
+
+        keepTyping(part, shown(part));
     }
 
     private void commit(JTextField part)
@@ -832,7 +842,7 @@ public final class StationSettingsWindow extends StationWindowBase
 
         String typed = part.getText();
 
-        // Unchanged writes nothing: an untouched station opened and closed changes no setup, nor "(mixed)" left alone
+        // Unchanged writes nothing: an untouched station opened and closed changes no setup, nor a field they differ on
         if (typed.trim().equals(shown(part).trim())) { showProblem(part, null); return; }
 
         final String[] refused = new String[1];
@@ -964,7 +974,7 @@ public final class StationSettingsWindow extends StationWindowBase
         autoMixed.setVisible(autonomy == null);
         fly("fullAutonomy", autonomy == null ? mixedTip() : StationFlyovers.fullAutonomy(autonomy));
 
-        keepTyping(maxLength, shown(maxLength));
+        showTyped(maxLength);
 
         Integer length = agreed(each -> editor.number(each, "maxTrainLength", 0));
 
@@ -990,13 +1000,13 @@ public final class StationSettingsWindow extends StationWindowBase
         turnMixed.setVisible(turning == null);
         fly("turning", turning == null ? mixedTip() : StationFlyovers.turning(may, must));
 
-        keepTyping(priority, shown(priority));
+        showTyped(priority);
 
         Integer rank = agreed(each -> editor.number(each, "priority", 0));
 
         fly("priority", rank == null ? mixedTip() : StationFlyovers.priority(rank));
 
-        keepTyping(speed, shown(speed));
+        showTyped(speed);
 
         Integer pace = agreed(editor::percent);
 
