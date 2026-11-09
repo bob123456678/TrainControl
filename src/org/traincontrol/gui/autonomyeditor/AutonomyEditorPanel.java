@@ -5428,7 +5428,7 @@ public class AutonomyEditorPanel extends JPanel
 
         try
         {
-            WhyRenderer.submit(() -> workOutWhy(asked, layout, index, setup, tile, byHand));
+            WhyRenderer.execute(() -> workOutWhy(asked, layout, index, setup, tile, byHand));
         }
         catch (RuntimeException refused)
         {
