@@ -52,7 +52,7 @@ public class Layout
     public static int PATH_VALIDATION_MS = 1000;
 
     // The longest path validation waits on a station still busy switching, in PATH_VALIDATION_MS periods
-    public static final int PATH_VALIDATION_BUSY_MAX = 60;
+    public static final int PATH_VALIDATION_BUSY_MAX = 30;
 
     // How often path validation looks for a Stop or a power change while it waits, in ms
     private static final long STOP_CHECK_MS = 250;
