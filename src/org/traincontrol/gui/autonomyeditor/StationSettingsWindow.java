@@ -85,8 +85,11 @@ public final class StationSettingsWindow extends StationWindowBase
     /** The rows that are about one station alone, left out for several: its ways, signals, home and blockers. */
     private final List<JComponent> perStation = new ArrayList<>();
 
-    /** The matrix and picture's column. */
+    /** The matrix and picture, under the presets in the right column. */
     private final JPanel sideColumn = new JPanel(new BorderLayout());
+
+    /** The presets' heading and buttons, at the top of the right column for one station or several. */
+    private final JPanel presetsPanel = new JPanel(new BorderLayout(0, 6));
 
     /** Where the reason at the top wraps, with the side column and without. */
     private int stripWide;
@@ -188,12 +191,19 @@ public final class StationSettingsWindow extends StationWindowBase
 
         sideColumn.add(right, BorderLayout.NORTH);
 
-        columns.add(sideColumn, BorderLayout.EAST);
+        JPanel east = new JPanel(new BorderLayout(0, 12));
+
+        east.add(presetsPanel, BorderLayout.NORTH);
+        east.add(sideColumn, BorderLayout.CENTER);
+
+        columns.add(east, BorderLayout.EAST);
 
         assemble(columns);
 
-        stripNarrow = wrapWithin(form.getPreferredSize().width + 2 * PAD - 24);
-        stripWide = wrapWithin(form.getPreferredSize().width + 14 + matrix.getPreferredSize().width + 2 * PAD - 24);
+        int beside = form.getPreferredSize().width + 14 + 2 * PAD - 24;
+
+        stripNarrow = wrapWithin(beside + presetsPanel.getPreferredSize().width);
+        stripWide = wrapWithin(beside + Math.max(presetsPanel.getPreferredSize().width, matrix.getPreferredSize().width));
         stripWrapsAt = stripWide;
 
         showAdvanced(false);
@@ -426,16 +436,11 @@ public final class StationSettingsWindow extends StationWindowBase
             strip.add(button);
         }
 
-        JLabel presetsLabel = UiStyle.blackLabel(I18n.t("autosetup.ui.stationPresets"));
+        JLabel presetsHeading = UiStyle.heading(I18n.t("autosetup.ui.stationPresets"));
 
-        presetsLabel.setName("station.presetsLabel");
-        form.add(presetsLabel, at(0, row));
-
-        GridBagConstraints presetsAt = at(2, row++);
-
-        presetsAt.gridwidth = 2;
-
-        form.add(strip, presetsAt);
+        presetsHeading.setName("station.presetsHeading");
+        presetsPanel.add(presetsHeading, BorderLayout.NORTH);
+        presetsPanel.add(strip, BorderLayout.CENTER);
 
         closedLine.setName("station.closedLine");
         closedLine.setFont(REGULAR);

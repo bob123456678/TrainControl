@@ -1164,10 +1164,11 @@ public class testStationSettingsWindow
     }
 
     /**
-     * Blue is for the section headings alone (Adam: "it looks very blue"); every other label is black Semibold 13
-     * (docs/UI-standards.md), and a label in an off section still grays.
+     * Blue is for the section headings alone (Adam: "it looks very blue"), Presets among them; every other label is black
+     * Semibold 13 (docs/UI-standards.md), and a label in an off section still grays.
      *
-     * MUTATION: build a row's label with `UiStyle.heading`, or a section heading with `UiStyle.label`, and this fails naming it.
+     * MUTATION: build a row's label with `UiStyle.heading`, or a section heading (Presets) with `UiStyle.label`, and this
+     * fails naming it.
      */
     @Test(timeOut = 120000)
     public void testOnlyTheSectionHeadingsAreBlue() throws Exception
@@ -1192,7 +1193,8 @@ public class testStationSettingsWindow
 
         assertEquals(blue, new java.util.TreeSet<>(Arrays.asList(I18n.t("autosetup.ui.stationSectionStop"),
             I18n.t("autosetup.ui.stationSectionThrough"), I18n.t("autosetup.ui.stationSectionAdvanced"),
-            I18n.t("autosetup.ui.stationMatrixHeading"), I18n.t("autosetup.ui.stationPictureHeading"))),
+            I18n.t("autosetup.ui.stationMatrixHeading"), I18n.t("autosetup.ui.stationPictureHeading"),
+            I18n.t("autosetup.ui.stationPresets"))),
             "what is blue is not the section headings");
 
         for (String key : new String[] {"autosetup.ui.stationMaxLength", "autosetup.ui.menuAutoDestination",
@@ -1216,11 +1218,12 @@ public class testStationSettingsWindow
     }
 
     /**
-     * The presets look like pills, not text: drawn as pills, Bold 12, and starting where the Name box starts, on the row of
-     * their black "Presets" label; and the lit one can be told from the others.
+     * The presets look like pills, not text: drawn as pills, Bold 12, at the top of the right column under a "Presets"
+     * section heading drawn as "What's allowed here" is, which they start under, above that heading; and the lit one can be
+     * told from the others.  The heading and the right column are Adam's (FR-182), for room beside the picture.
      *
-     * MUTATION: put `JButton.buttonType` `toolBarButton` back on them, make them plain `JToggleButton`s, or a gap before the first, or drop the label, and
-     * this fails.
+     * MUTATION: put `JButton.buttonType` `toolBarButton` back on them, make them plain `JToggleButton`s, or a gap before
+     * the first, or put them back in the form beside a black label, and this fails.
      */
     @Test(timeOut = 120000)
     public void testThePresetsLookLikeButtons() throws Exception
@@ -1243,27 +1246,32 @@ public class testStationSettingsWindow
                 assertEquals(button.getFont(), new java.awt.Font("Segoe UI", java.awt.Font.BOLD, 12), preset + " is not Bold 12");
             }
 
-            javax.swing.JPanel form = StationDoors.part(window, "station.form", javax.swing.JPanel.class);
+            java.awt.Container content = window.getContentPane();
 
-            java.awt.image.BufferedImage drawn = drawnOn(form);
+            javax.swing.JPanel form = StationDoors.part(window, "station.form", javax.swing.JPanel.class);
 
             javax.swing.JToggleButton first = StationDoors.part(window, "station.preset.STATION", javax.swing.JToggleButton.class);
             javax.swing.JLabel presets = labelSaying(window, I18n.t("autosetup.ui.stationPresets"));
+            javax.swing.JLabel allowed = labelSaying(window, I18n.t("autosetup.ui.stationMatrixHeading"));
 
-            assertEquals(presets.getForeground(), java.awt.Color.BLACK, "the Presets label is not black");
-            assertEquals(presets.getFont(), UiStyle.LABEL_FONT, "the Presets label is not Semibold 13");
-            assertEquals(rowOf(form, presets), rowOf(form, first), "the Presets label is not beside the buttons");
+            assertEquals(presets.getForeground(), allowed.getForeground(), "the Presets heading is not drawn as What's allowed here is");
+            assertEquals(presets.getFont(), allowed.getFont(), "the Presets heading is not in What's allowed here's font");
 
-            assertTrue(cornerIn(form, presets).x < cornerIn(form, first).x, "the label is not left of the buttons");
+            assertFalse(javax.swing.SwingUtilities.isDescendingFrom(first, form), "the presets are still in the form");
+            assertTrue(cornerIn(content, presets).x >= cornerIn(content, form).x + form.getWidth(),
+                "the Presets heading is not in the right column");
 
-            assertEquals(cornerIn(form, first).x, cornerIn(form, StationDoors.part(window, "station.name",
-                javax.swing.JTextField.class)).x, "the presets do not start where the Name box starts");
+            assertEquals(cornerIn(content, first).x, cornerIn(content, presets).x, "the presets do not start under their heading");
+            assertTrue(cornerIn(content, presets).y + presets.getHeight() <= cornerIn(content, first).y,
+                "the presets are not under their heading");
+            assertTrue(cornerIn(content, first).y + first.getHeight() < cornerIn(content, allowed).y,
+                "the presets are not above What's allowed here");
 
             javax.swing.JToggleButton last = StationDoors.part(window, "station.preset.REVERSING_POINT",
                 javax.swing.JToggleButton.class);
 
-            assertTrue(javax.swing.SwingUtilities.convertRectangle(last.getParent(), last.getBounds(), form).getMaxX()
-                <= form.getWidth(), "the last button runs off the form");
+            assertTrue(javax.swing.SwingUtilities.convertRectangle(last.getParent(), last.getBounds(), content).getMaxX()
+                <= content.getWidth(), "the last button runs off the window");
 
             return null;
         });
@@ -2622,28 +2630,6 @@ public class testStationSettingsWindow
         g.dispose();
 
         return out;
-    }
-
-    /** The middle row, in the form's pixels, of a component somewhere inside it. */
-    private static int rowOf(java.awt.Component form, java.awt.Component part)
-    {
-        return javax.swing.SwingUtilities.convertPoint(part, 0, part.getHeight() / 2, form).y;
-    }
-
-    /** The first column, within this row and the five either side, that is not the background. */
-    private static int firstInk(java.awt.image.BufferedImage image, int row, java.awt.Color background)
-    {
-        int first = image.getWidth();
-
-        for (int y = Math.max(0, row - 5); y <= Math.min(image.getHeight() - 1, row + 5); y++)
-        {
-            for (int x = 0; x < first; x++)
-            {
-                if ((image.getRGB(x, y) & 0xffffff) != (background.getRGB() & 0xffffff)) first = x;
-            }
-        }
-
-        return first;
     }
 
     /** How many pixels differ, from this column on, over the width both share. */

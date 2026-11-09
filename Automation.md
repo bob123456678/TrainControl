@@ -199,7 +199,7 @@ Everything else a station has is in its `Station Settings`: its name, whether tr
 **The settings, from the top:**
 
 - `Name`: the station's name. It is left out when you set several stations at once.
-- `Presets`: four buttons, `Station`, `Terminus`, `Parking` and `Reversing Point`, each of which sets four settings at once and leaves everything else as it was. A button shows as pressed whenever the four settings match its row, however they got there.
+- `Presets`, at the top of the right-hand column: four buttons, `Station`, `Terminus`, `Parking` and `Reversing Point`, each of which sets four settings at once and leaves everything else as it was. A button shows as pressed whenever the four settings match its row, however they got there.
 
 | Button | `Trains can stop here` | `Trains can pass through` | `May choose this station` | `Changing direction` |
 | --- | --- | --- | --- | --- |
