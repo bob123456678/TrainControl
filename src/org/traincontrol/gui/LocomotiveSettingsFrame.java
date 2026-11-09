@@ -591,11 +591,17 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
 
     /**
      * Asks what to do with typing that is not saved, over this window alone: the main window's Stop stays live.  A
-     * second door asking while the question is up is canceled.  True when the caller may go on.
+     * second door asking while the question is up brings it forward and goes no further.  True when the caller may go
+     * on.
      */
     private boolean settleUnsaved()
     {
-        if (asking) return false;
+        if (asking)
+        {
+            bringBack();
+
+            return false;
+        }
 
         bringBack();
 
@@ -621,7 +627,8 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
 
             try
             {
-                question.setVisible(true);
+                // Meanwhile the main window's doors speak over the main window, not the window whose door asked
+                main.pressFromWindow(null, () -> question.setVisible(true));
             }
             finally
             {
