@@ -684,6 +684,140 @@ public class testTheTrainWindow
     }
 
     /**
+     * A train stepped to in the list is placed when the list is left, as a typed field applies on leaving, and the
+     * choice still shown when the window closes is applied too.
+     *
+     * MUTATION: drop the focus listener from `StationWindowBase.Choice`, or the lists from `commitFields`, and this fails.
+     */
+    @Test(timeOut = 120000)
+    public void testLeavingTheListOrClosingTheWindowAppliesTheTrainShown() throws Exception
+    {
+        AutonomyEditorPanel panel = theEditorsPanel();
+
+        TileKey square = anEmptyStation();
+
+        TrainWindow window = StationDoors.openTrain(panel, square);
+
+        javax.swing.JComboBox<?> list = StationDoors.part(window, "train.train", javax.swing.JComboBox.class);
+
+        support.Keys.press(list, java.awt.event.KeyEvent.VK_DOWN);
+
+        Object shown = Components.onTheEventThread(list::getSelectedItem);
+
+        assertNull(session.getLocomotiveNameAt(square), "precondition: Down placed " + shown);
+
+        // The list loses the keyboard, as Tab or a click elsewhere takes it
+        Components.onTheEventThread(() ->
+        {
+            for (java.awt.event.FocusListener each : list.getFocusListeners())
+            {
+                each.focusLost(new java.awt.event.FocusEvent(list, java.awt.event.FocusEvent.FOCUS_LOST));
+            }
+
+            return null;
+        });
+        Components.settle();
+
+        String placed = session.getLocomotiveNameAt(square);
+
+        assertNotNull(placed, "leaving the list placed nothing");
+        assertTrue(String.valueOf(shown).startsWith(placed), "leaving the list placed " + placed + ", not " + shown);
+
+        support.Keys.press(list, java.awt.event.KeyEvent.VK_UP);
+
+        assertEquals(session.getLocomotiveNameAt(square), placed, "precondition: Up took the train off");
+
+        StationDoors.close(window);
+
+        assertNull(session.getLocomotiveNameAt(square), "closing the window dropped None, shown in the list");
+    }
+
+    /**
+     * In the autonomy editor's own train window, Active stays a setup edit, gray while a route runs: a pause of the
+     * railway's train alone would be undone by the editor's draft (the track diagram's window pauses it).
+     *
+     * MUTATION: leave `editor.menuOnly` out of `TrainWindow.pausesAlone`, and this fails.
+     */
+    @Test(timeOut = 180000)
+    public void testInTheEditorActiveIsGrayWhileARouteRuns() throws Exception
+    {
+        AutonomyEditorPanel panel = theEditorsPanel();
+
+        TrainWindow window = StationDoors.openTrain(panel, aSquareWithATrain());
+
+        assertTrue(StationDoors.live(window, "train.active"), "precondition: Active is gray at rest");
+
+        regression.testNoSetupEditWhileARouteRuns.aRouteRuns(ui, true);
+
+        try
+        {
+            assertTrue(Components.waitFor(() -> Components.onTheEventThread(window::isReadOnly), 5000),
+                "precondition: the window is not read-only while a route runs");
+
+            assertFalse(StationDoors.live(window, "train.active"), "the editor's Active is live while a route runs");
+        }
+        finally
+        {
+            regression.testNoSetupEditWhileARouteRuns.aRouteRuns(ui, false);
+
+            StationDoors.close(window);
+        }
+    }
+
+    /**
+     * Station Settings opened from the track diagram goes, writing nothing, when a press comes after a configuration
+     * was loaded and before its watch has looked again: the old setup is as it was.
+     *
+     * MUTATION: drop the `stillAbout` check from `StationWindowBase.refused`, and this fails.
+     */
+    @Test(timeOut = 180000)
+    public void testADiagramWindowWritesNothingOnceAnotherSetupIsLoaded() throws Exception
+    {
+        Mouse.choose(AskingWindows.itemOf(AskingWindows.menuOn(ui, ui, aSquareWithATrain()),
+            I18n.t("autosetup.ui.menuStationSettings")));
+
+        Components.settle();
+
+        org.traincontrol.gui.autonomyeditor.StationSettingsWindow window =
+            StationDoors.showing(org.traincontrol.gui.autonomyeditor.StationSettingsWindow.class);
+
+        assertNotNull(window, "Station Settings did not open from the track diagram");
+        assertTrue(StationDoors.live(window, "station.fullAutonomy"), "precondition: the box is gray");
+
+        String before = Components.onTheEventThread(() -> session.snapshotSetup().toString());
+
+        try
+        {
+            // A load replaces the main window's setup; the press comes before the watch looks again
+            Components.onTheEventThread(() ->
+            {
+                ((javax.swing.Timer) Reflect.get(window.getClass().getSuperclass(), window, "watch")).stop();
+                Reflect.set(TrainControlUI.class, ui, "autonomySession", null);
+
+                return null;
+            });
+
+            assertTrue(Components.onTheEventThread(() -> ui.getAutonomySession() != session), "precondition: no other setup");
+
+            StationDoors.press(window, "station.fullAutonomy", message -> null);
+
+            assertEquals(Components.onTheEventThread(() -> session.snapshotSetup().toString()), before,
+                "a press after a load wrote to the setup the window opened on");
+            assertFalse(Components.onTheEventThread(window::isShowing), "the window stayed open on a setup no longer loaded");
+        }
+        finally
+        {
+            Components.onTheEventThread(() ->
+            {
+                Reflect.set(TrainControlUI.class, ui, "autonomySession", session);
+                window.dispose();
+
+                return null;
+            });
+        }
+    }
+
+    /**
      * Station Settings opened from the track diagram refuses a press made once an editor has opened, before its watch
      * has looked again: said over the window, as a run's refusal is, and the setup is as it was.
      *

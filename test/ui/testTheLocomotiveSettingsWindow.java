@@ -812,6 +812,75 @@ public class testTheLocomotiveSettingsWindow
         assertEquals(SettingsWindow.text("settings.name"), "LS renamed", "Cancel lost the typing");
     }
 
+    /**
+     * While the unsaved-changes question is up, a second door brings it back out of the taskbar rather than being
+     * canceled unseen, and a door of the main window speaks over the main window, though the question was asked from a
+     * door of another window.
+     *
+     * MUTATION: drop `bringBack` from `settleUnsaved`'s early return, or ask the question inside the door's
+     * `pressFromWindow`, and this fails.
+     */
+    @Test
+    public void testWhileTheQuestionIsUpASecondDoorBringsItBack() throws Exception
+    {
+        open(0);
+
+        LocomotiveSettingsFrame window = SettingsWindow.showing();
+
+        SettingsWindow.type("settings.name", "LS renamed");
+
+        javax.swing.JDialog elsewhere = Components.onTheEventThread(() ->
+        {
+            TrainControlUI.installLookAndFeel();
+
+            javax.swing.JDialog out = new javax.swing.JDialog(ui, "another window");
+
+            out.setSize(200, 100);
+            out.setVisible(true);
+
+            return out;
+        });
+
+        java.awt.Window[] parent = new java.awt.Window[1];
+        boolean[] back = new boolean[1];
+
+        try (Answering answering = Answering.start(message ->
+        {
+            try
+            {
+                parent[0] = Components.onTheEventThread(ui::dialogParent);
+
+                support.AskingWindows.minimize(window, true);
+
+                Components.onTheEventThread(() -> ui.openLocomotiveSettings(third, LocomotiveSettingsFrame.Tab.LOCOMOTIVE, null));
+
+                back[0] = Components.waitFor(() -> (Components.onTheEventThread(window::getExtendedState)
+                    & java.awt.Frame.ICONIFIED) == 0, 5000);
+            }
+            catch (Exception e)
+            {
+                throw new IllegalStateException(e);
+            }
+
+            return Answering.press(I18n.t("ui.cancel"));
+        }))
+        {
+            SwingUtilities.invokeLater(() -> ui.pressFromWindow(elsewhere,
+                () -> ui.openLocomotiveSettings(other, LocomotiveSettingsFrame.Tab.LOCOMOTIVE, null)));
+
+            assertTrue(answering.awaitAsked(1, 20000), "the typing was not asked about");
+        }
+        finally
+        {
+            support.AskingWindows.minimize(window, false);
+            SwingUtilities.invokeAndWait(elsewhere::dispose);
+        }
+
+        assertTrue(back[0], "a second door while the question was up left it in the taskbar");
+        assertSame(parent[0], ui, "with the question up, the main window's doors speak over " + parent[0]);
+        assertEquals(SettingsWindow.text("settings.name"), "LS renamed", "Cancel lost the typing");
+    }
+
     /** How many Locomotive Settings windows are open. */
     private static long windowsOpen()
     {

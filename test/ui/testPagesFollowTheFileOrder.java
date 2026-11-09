@@ -330,9 +330,11 @@ public class testPagesFollowTheFileOrder extends support.PageWindowTest
     }
 
     /**
-     * Sort Pages by Name ignores capitals: a page added as "apple yard" goes before one added as "Zebra".
+     * Sort Pages by Name sorts by the letters, capitals and accents aside: a page added as "apple yard" goes before one
+     * added as "Zebra", and "\u00d6lberg" between them.
      *
-     * MUTATION: sort with `Collections.sort` alone in `LayoutFileActions.sorted`, and this fails.
+     * MUTATION: sort with `Collections.sort` alone, or `String.CASE_INSENSITIVE_ORDER`, in `LayoutFileActions.sorted`, and
+     * this fails.
      */
     @Test
     public void testSortPagesByNameIgnoresCapitals() throws Exception
@@ -343,7 +345,7 @@ public class testPagesFollowTheFileOrder extends support.PageWindowTest
 
         String on = "1 - Main";
 
-        for (String name : new String[] {"Zebra", "apple yard"})
+        for (String name : new String[] {"Zebra", "\u00d6lberg", "apple yard"})
         {
             try (Answering answering = Answering.start(message -> Answering.type(name)))
             {
@@ -368,10 +370,10 @@ public class testPagesFollowTheFileOrder extends support.PageWindowTest
 
         List<String> expected = new ArrayList<>(BY_NAME);
 
-        expected.addAll(Arrays.asList("apple yard", "Zebra"));
+        expected.addAll(Arrays.asList("apple yard", "\u00d6lberg", "Zebra"));
 
-        assertTrue(Components.waitFor(() -> namesInTheIndex().equals(expected), 15000), "the index is not in name order,"
-            + " capitals ignored: " + namesInTheIndex());
+        assertTrue(Components.waitFor(() -> namesInTheIndex().equals(expected), 15000), "the index is not in the letters'"
+            + " order: " + namesInTheIndex());
     }
 
     /**

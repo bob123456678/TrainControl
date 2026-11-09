@@ -197,6 +197,49 @@ public class testStationSettingsWindow
     }
 
     /**
+     * A choice stepped to in May depart applies when another window is clicked, before whatever is clicked there, as a
+     * typed field does: the window loses focus with the choice shown and the setup takes it.
+     *
+     * MUTATION: drop the lists from `StationWindowBase.commitFields`, and this fails.
+     */
+    @Test(timeOut = 120000)
+    public void testAChoiceShownAppliesWhenAnotherWindowIsClicked() throws Exception
+    {
+        StationSettingsWindow window = StationDoors.open(panel, aStation());
+
+        javax.swing.JComboBox<?> depart = StationDoors.part(window, "station.depart.0", javax.swing.JComboBox.class);
+
+        Object was = Components.onTheEventThread(depart::getSelectedItem);
+        String before = setup();
+
+        support.Keys.press(depart, Components.onTheEventThread(() -> depart.getSelectedIndex() < depart.getItemCount() - 1)
+            ? java.awt.event.KeyEvent.VK_DOWN : java.awt.event.KeyEvent.VK_UP);
+
+        assertEquals(setup(), before, "precondition: the arrow changed the setup");
+
+        try (Answering answering = Answering.start(message -> null))
+        {
+            Components.onTheEventThread(() ->
+            {
+                for (java.awt.event.WindowFocusListener each : window.getWindowFocusListeners())
+                {
+                    each.windowLostFocus(new java.awt.event.WindowEvent(window, java.awt.event.WindowEvent.WINDOW_LOST_FOCUS));
+                }
+
+                return null;
+            });
+
+            Components.settle();
+        }
+
+        assertNotEquals(setup(), before, "the window lost focus and dropped the choice shown in May depart");
+        assertNotEquals(Components.onTheEventThread(() -> StationDoors.part(window, "station.depart.0",
+            javax.swing.JComboBox.class).getSelectedItem()), was, "the choice shown was put back");
+
+        StationDoors.close(window);
+    }
+
+    /**
      * Every kind of square reads the same way: opened and closed, a sensor with no settings stays as it was too.
      *
      * MUTATION: have `fillHome`'s `setSelectedItem` run outside `reading`, so `pressHome` writes, and this fails.
