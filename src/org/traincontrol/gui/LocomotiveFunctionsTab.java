@@ -270,7 +270,7 @@ final class LocomotiveFunctionsTab extends JPanel
 
         // One row: the copy on the left, the preset on the right
         JPanel copyGroup = group(copyIcons, resetAll);
-        JPanel presetGroup = group(useCurrent, clearPreset, org.traincontrol.gui.InfoMark.label(I18n.t("loc.ui.settingsFunctionsHint")));
+        JPanel presetGroup = group(org.traincontrol.gui.InfoMark.label(I18n.t("loc.ui.settingsFunctionsHint")), useCurrent, clearPreset);
 
         copyGroup.setName("functions.copyGroup");
         presetGroup.setName("functions.presetGroup");

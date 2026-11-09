@@ -295,6 +295,34 @@ public class testTheLocomotiveSettingsLooks extends support.SettingsClass
     }
 
     /**
+     * The (i) on the Functions tab's preset buttons sits to the left of Save Current Functions as Preset, a Save-button
+     * distance from it, as the Save button's own (i) does.
+     *
+     * MUTATION: put the mark last in the `presetGroup` in `LocomotiveFunctionsTab.buttons`, and this fails.
+     */
+    @Test
+    public void testThePresetMarkIsLeftOfItsButton() throws Exception
+    {
+        opened();
+        SettingsWindow.selectTab(LocomotiveSettingsFrame.Tab.FUNCTIONS.ordinal());
+        Components.settle();
+
+        java.awt.Container pane = SettingsWindow.showing().getContentPane();
+        javax.swing.JButton preset = SettingsWindow.part("functions.useCurrent", javax.swing.JButton.class);
+        javax.swing.JButton save = SettingsWindow.save();
+        JLabel mark = Components.find(preset.getParent(), JLabel.class, l -> l.getIcon() == InfoMark.icon());
+        JLabel saveMark = Components.find(save.getParent(), JLabel.class, l -> l.getIcon() == InfoMark.icon());
+
+        assertNotNull(mark, "precondition: no (i) beside the preset buttons");
+
+        int gap = Components.onTheEventThread(() -> bounds(preset, pane).x - (bounds(mark, pane).x + mark.getWidth()));
+        int saveGap = Components.onTheEventThread(() -> bounds(save, pane).x - (bounds(saveMark, pane).x + saveMark.getWidth()));
+
+        assertTrue(Components.onTheEventThread(() -> bounds(mark, pane).x < bounds(preset, pane).x), "the (i) is not left of Save Current Functions");
+        assertEquals(gap, saveGap, "the (i) is not the Save button's distance from its control");
+    }
+
+    /**
      * Dragged as narrow as the window lets it go, the Functions tab's two button groups still do not overlap, in each
      * language.
      *
