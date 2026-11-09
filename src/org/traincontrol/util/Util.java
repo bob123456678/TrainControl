@@ -16,9 +16,11 @@ import java.net.URLConnection;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.StandardCopyOption;
+import java.text.Collator;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 import java.util.function.IntConsumer;
 import org.json.JSONObject;
@@ -855,5 +857,25 @@ public class Util
         int byLength = (a.length() - i) - (b.length() - j);
 
         return byLength != 0 ? byLength : a.compareTo(b);
+    }
+
+    private static final Collator LETTERS = Collator.getInstance(Locale.ROOT);
+
+    static
+    {
+        LETTERS.setStrength(Collator.SECONDARY);
+    }
+
+    /**
+     * Names by their letters, capitals aside and an accented letter beside its plain one, the same on every machine:
+     * "\u00d6lberg" among the O's (Sort Pages, Find a Point).
+     *
+     * @param a one name
+     * @param b the other
+     * @return negative, zero or positive, as Comparator
+     */
+    public static int byLetters(String a, String b)
+    {
+        return LETTERS.compare(a, b);
     }
 }

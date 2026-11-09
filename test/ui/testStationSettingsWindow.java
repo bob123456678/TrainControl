@@ -192,13 +192,13 @@ public class testStationSettingsWindow
     }
 
     /**
-     * A choice stepped to in May depart applies when another window is clicked, before whatever is clicked there, as a
-     * typed field does: the window loses focus with the choice shown and the setup takes it.
+     * A choice stepped to in May depart is put back, applying nothing, when another window is clicked: the click there
+     * is not held up by this window, and the editor's Save saves what the list then shows.
      *
-     * MUTATION: drop the lists from `StationWindowBase.commitFields`, and this fails.
+     * MUTATION: have the window's focus listener settle the lists (`commitFields` alone), and this fails.
      */
     @Test(timeOut = 120000)
-    public void testAChoiceShownAppliesWhenAnotherWindowIsClicked() throws Exception
+    public void testAChoiceShownIsPutBackWhenAnotherWindowIsClicked() throws Exception
     {
         StationSettingsWindow window = StationDoors.open(panel, aStation());
 
@@ -207,38 +207,58 @@ public class testStationSettingsWindow
 
         assertEquals(setup(), before, "precondition: the arrow changed the setup");
 
+        StationDoors.toAnotherWindow(window, StationDoors.part(window, "station.depart.0", javax.swing.JComboBox.class));
+
+        assertEquals(mayDepartShows(window), was, "another window clicked left May depart showing a choice not made");
+
+        StationDoors.close(window);
+
+        assertEquals(setup(), before, "another window clicked applied the choice shown in May depart");
+    }
+
+    /**
+     * A run starting while May depart shows a stepped choice builds the lists again; the old list's choice is dropped,
+     * not applied, so no "no edits while running" message comes up over the run.
+     *
+     * MUTATION: let `StationWindowBase.Choice.settle` act for a list no longer on screen, and this fails.
+     */
+    @Test(timeOut = 180000)
+    public void testARunStartingWhileAChoiceIsSteppedAsksNothing() throws Exception
+    {
+        StationSettingsWindow window = StationDoors.open(panel, aStation());
+
+        javax.swing.JComboBox<?> stepped = StationDoors.part(window, "station.depart.0", javax.swing.JComboBox.class);
+
+        StationDoors.step(stepped);
+
+        String before = setup();
+
         try (Answering answering = Answering.start(message -> null))
         {
-            Components.onTheEventThread(() ->
-            {
-                for (java.awt.event.WindowFocusListener each : window.getWindowFocusListeners())
-                {
-                    each.windowLostFocus(new java.awt.event.WindowEvent(window, java.awt.event.WindowEvent.WINDOW_LOST_FOCUS));
-                }
+            regression.testNoSetupEditWhileARouteRuns.aRouteRuns(ui, true);
 
-                return null;
-            });
+            assertTrue(Components.waitFor(() -> Components.onTheEventThread(() -> !stepped.isDisplayable()), 5000),
+                "precondition: the run did not build May depart again");
 
-            Components.settle();
+            // The list taken away had the keyboard, and loses it for good
+            StationDoors.loseKeyboard(stepped, false, null);
+
+            assertEquals(answering.asked(), java.util.Collections.emptyList(), "a run starting with May depart stepped asked");
+        }
+        finally
+        {
+            regression.testNoSetupEditWhileARouteRuns.aRouteRuns(ui, false);
         }
 
-        assertNotEquals(setup(), before, "the window lost focus and dropped the choice shown in May depart");
-        assertNotEquals(mayDepartShows(window), was, "the choice shown was put back");
+        assertEquals(setup(), before, "a run starting with May depart stepped wrote the choice");
 
         StationDoors.close(window);
     }
 
-    /** Steps May depart's first list with an arrow, down or, at its last answer, up; what it showed before. */
+    /** Steps May depart's first list; what it showed before. */
     private static Object stepMayDepart(StationSettingsWindow window)
     {
-        javax.swing.JComboBox<?> depart = StationDoors.part(window, "station.depart.0", javax.swing.JComboBox.class);
-
-        Object was = Components.onTheEventThread(depart::getSelectedItem);
-
-        support.Keys.press(depart, Components.onTheEventThread(() -> depart.getSelectedIndex() < depart.getItemCount() - 1)
-            ? java.awt.event.KeyEvent.VK_DOWN : java.awt.event.KeyEvent.VK_UP);
-
-        return was;
+        return StationDoors.step(StationDoors.part(window, "station.depart.0", javax.swing.JComboBox.class));
     }
 
     /** What May depart's first list shows now (the list is built again after a change). */
@@ -588,17 +608,7 @@ public class testStationSettingsWindow
 
         assertEquals(session.getPointProperty(square, "maxTrainLength"), before, "typing applied the length before leaving");
 
-        Components.onTheEventThread(() ->
-        {
-            for (java.awt.event.FocusListener each : field.getFocusListeners())
-            {
-                each.focusLost(new java.awt.event.FocusEvent(field, java.awt.event.FocusEvent.FOCUS_LOST));
-            }
-
-            return null;
-        });
-
-        Components.settle();
+        StationDoors.loseKeyboard(field, false, null);
 
         assertEquals(numberOf(session.getPointProperty(square, "maxTrainLength")), 37.0, "leaving did not apply the length");
 

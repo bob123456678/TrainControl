@@ -18,6 +18,7 @@ import javax.swing.ListSelectionModel;
 import org.traincontrol.automationui.TileGraph.TileKey;
 import org.traincontrol.gui.Listen;
 import org.traincontrol.util.I18n;
+import org.traincontrol.util.Util;
 
 /**
  * The small prompt of the editor's Find a Point... (FR-055): a text box over the named points of every page, narrowed
@@ -167,9 +168,9 @@ final class FindAPointPrompt extends JDialog
 
         all.sort((a, b) ->
         {
-            int byName = a.name.compareToIgnoreCase(b.name);
+            int byName = Util.byLetters(a.name, b.name);
 
-            return byName != 0 ? byName : a.tile.getPage().compareToIgnoreCase(b.tile.getPage());
+            return byName != 0 ? byName : Util.byLetters(a.tile.getPage(), b.tile.getPage());
         });
 
         shown.clear();
