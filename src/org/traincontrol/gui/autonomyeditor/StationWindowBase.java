@@ -395,9 +395,19 @@ abstract class StationWindowBase extends JDialog
         reload();
     }
 
-    /** Asked again at the click, in `readHeld`'s order: an editor open over the track diagram's setup, then a run. */
+    /**
+     * Asked again at the click, as the watch asks: the setup still the one the window opened on (else it goes), then in
+     * `readHeld`'s order an editor open over the track diagram's setup, and a run.
+     */
     private boolean refused()
     {
+        if (!stillAbout())
+        {
+            goAway();
+
+            return true;
+        }
+
         TrainControlUI main = editor.parentWindow();
 
         return editor.menuOnly && main != null && main.refuseWhileEditorOpen(this) || editor.refusedWhileRunning();
