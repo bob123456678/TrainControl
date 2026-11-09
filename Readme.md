@@ -474,7 +474,7 @@ Tab icons provided by Freepik.
         - Central Station
             - TrainControl now connects to a CS3 over TCP, and falls back to UDP, saying so in the log, if that doesn't work. A CS2 still uses UDP.
             - If the connection to a CS3 drops, commands go over UDP at once and nothing is sent again, and the log counts the commands that may not have arrived.
-            - When TrainControl starts up or syncs with a CS3, it now asks every sensor for its state, including sensors on a Link S88, so the track diagram shows them as they really are.
+            - When TrainControl starts up or syncs with a CS3, it now asks the sensors for their state, including those on a Link S88, so the track diagram shows them as they really are.
             - When the Central Station turns the track power off after a short circuit, TrainControl now shows the power as off and a warning names the output that tripped.
             - A CS3 sync skips what it can't read, such as something a new firmware changed, and no longer loses a page or fails because of it. The log says what was skipped, and a warning says so at start-up.
         - Documentation
