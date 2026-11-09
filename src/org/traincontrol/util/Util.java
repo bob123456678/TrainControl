@@ -16,11 +16,10 @@ import java.net.URLConnection;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.StandardCopyOption;
-import java.text.Collator;
+import java.text.Normalizer;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Set;
 import java.util.function.IntConsumer;
 import org.json.JSONObject;
@@ -859,16 +858,9 @@ public class Util
         return byLength != 0 ? byLength : a.compareTo(b);
     }
 
-    private static final Collator LETTERS = Collator.getInstance(Locale.ROOT);
-
-    static
-    {
-        LETTERS.setStrength(Collator.SECONDARY);
-    }
-
     /**
-     * Names by their letters, capitals aside and an accented letter beside its plain one, the same on every machine:
-     * "\u00d6lberg" among the O's (Sort Pages, Find a Point).
+     * Names by their letters, the same on every machine: capitals aside, an accented letter as its plain one ("\u00d6lberg"
+     * among the O's), and a space before any letter ("Main Yard" before "Mainline").  Callers break the ties.
      *
      * @param a one name
      * @param b the other
@@ -876,6 +868,11 @@ public class Util
      */
     public static int byLetters(String a, String b)
     {
-        return LETTERS.compare(a, b);
+        return String.CASE_INSENSITIVE_ORDER.compare(plain(a), plain(b));
+    }
+
+    private static String plain(String name)
+    {
+        return Normalizer.normalize(name, Normalizer.Form.NFD).replaceAll("\\p{M}", "");
     }
 }
