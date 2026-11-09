@@ -323,15 +323,23 @@ public class MarklinControlStation implements ViewListener, ModelListener
     // but the default factory makes ordinary threads, which would outlive every caller and keep the JVM up.
     /**
      * Where a task that ended in an error nobody caught is reported, for the pools' thread factories: the stack trace
-     * on stderr, as the JVM's own handler prints it, and a line in the log naming the thread.
+     * on stderr, as the JVM's own handler prints it, and a line in the log window naming the thread, through the
+     * station started last (the Logger alone when none has started).
      */
     public static final Thread.UncaughtExceptionHandler THREAD_ERRORS = (thread, error) ->
     {
         System.err.print("Exception in thread \"" + thread.getName() + "\" ");
         error.printStackTrace();
 
-        MarklinControlStation.log.warning(I18n.f("error.uncaughtInThread", thread.getName(), error));
+        String said = I18n.f("error.uncaughtInThread", thread.getName(), error);
+        MarklinControlStation station = MarklinControlStation.reporter;
+
+        if (station != null) station.log(said);
+        else MarklinControlStation.log.warning(said);
     };
+
+    /** The station started last, which `THREAD_ERRORS` reports through. */
+    private static volatile MarklinControlStation reporter;
 
     private static ExecutorService messageProcessor(final String name)
     {
@@ -377,6 +385,8 @@ public class MarklinControlStation implements ViewListener, ModelListener
      */
     public MarklinControlStation(NetworkProxy network, View view, boolean autoPowerOn, boolean debug, boolean simulate)
     {       
+        reporter = this;
+
         // Configure logger
         log.setUseParentHandlers(false);
 

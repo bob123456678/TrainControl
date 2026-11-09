@@ -299,6 +299,28 @@ public class testTheFunctionButtonMenu
     }
 
     /**
+     * An error thrown while a sensor message is handled is written to TrainControl's log window, naming the thread, and
+     * its stack trace is printed on the console, rather than being lost in a Future nobody reads.
+     *
+     * MUTATION: in `MarklinControlStation.receiveMessage`, `feedbackMessageProcessor.execute(` to `.submit(`; or drop
+     * `thread.setUncaughtExceptionHandler(THREAD_ERRORS)` from `messageProcessor`, or the `station.log(said)` in the
+     * handler.
+     */
+    @Test
+    public void testAFailureInASensorTaskReachesTheLogWindow() throws Exception
+    {
+        javax.swing.JTextArea area = support.WindowField.of(ui, "debugArea");
+
+        // A sensor frame with no payload: the task reads the sensor number from it and fails on the message thread.
+        model.receiveMessage(new org.traincontrol.marklin.udp.CS2Message(
+            org.traincontrol.marklin.udp.CS2Message.CMD_ACC_SENSOR, 0x7b34, true, new byte[0]));
+
+        assertTrue(Components.waitFor(() -> Components.onTheEventThread(area::getText).contains("cs2-feedback-messages"),
+            30000), "an error thrown while a sensor message was handled never reached the log window: submit keeps it "
+            + "in a Future nobody reads, and without the thread's handler nothing is written");
+    }
+
+    /**
      * A train with no saved speed preset has nothing to apply: the menu item is grayed and says why.
      *
      * MUTATION: drop the `getPreferredSpeed() < 1` test in `RightClickMenuListener`, and this fails.

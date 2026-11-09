@@ -702,7 +702,6 @@
         <test-one-class class="testAShortCircuitCutsThePower"/>
         <test-one-class class="testAFlickeringSensorCannotOverflowTheWait"/>
         <test-one-class class="testTheSyncAsksTheSensorsTheirState"/>
-        <test-one-class class="testASensorMessageFailureIsReported"/>
     </target>
     <target name="package-for-store" depends="jar">
         <property name="store.jar.name" value="TrainControl"/>
