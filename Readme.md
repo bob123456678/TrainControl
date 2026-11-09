@@ -462,6 +462,7 @@ Tab icons provided by Freepik.
             - `Hide Right-Click Menu Tips` on the `Preferences` menu hides the tooltips in right-click menus, though an item still shows its shortcut key.
             - The accessory keyboard has 16 tabs of 128 addresses, each key has a red half and a green half, and clicking either sends that color again even if it is already lit.
             - `Export Counts` on the accessory keyboard saves every accessory's number of actuations to a CSV file.
+            - Click an (i) to read its explanation at once, without waiting for the tooltip.
             - The usage chart, the crop window, the autonomy editor's buttons and the signal window now use the same fonts and spacing as the new windows.
         - Central Station
             - A CS3 sync skips what it can't read, such as a key a new firmware renamed or dropped, says so in the log, and no longer loses a page or fails because of it.

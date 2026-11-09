@@ -630,6 +630,63 @@ public class testTheTrainWindow
         }
     }
 
+    /**
+     * A click on an (i) shows its tooltip at once, without the hover delay (Adam: "click on any i should immediately
+     * show the tooltip, so you don't have to wait for the hover timeout"), and leaves every other component's delay as
+     * it was.  The hover delay is set to a minute, so a tooltip within the wait came from the click.
+     *
+     * MUTATION: drop the press listener from `InfoMark.label`, and this fails.
+     */
+    @Test(timeOut = 120000)
+    public void testAClickOnAnInfoMarkShowsItsTooltipAtOnce() throws Exception
+    {
+        AutonomyEditorPanel panel = theEditorsPanel();
+
+        TrainWindow window = StationDoors.openTrain(panel, aSquareWithATrain());
+
+        javax.swing.ToolTipManager tips = javax.swing.ToolTipManager.sharedInstance();
+
+        int was = Components.onTheEventThread(tips::getInitialDelay);
+
+        javax.swing.JLabel mark = Components.onTheEventThread(() -> Components.find(window, javax.swing.JLabel.class,
+            l -> l.getIcon() == org.traincontrol.gui.InfoMark.icon() && l.getToolTipText() != null));
+
+        try
+        {
+            Components.onTheEventThread(() -> { tips.setInitialDelay(60000); return null; });
+
+            Mouse.click(mark);
+
+            assertTrue(Components.waitFor(() -> tipShowingFor(mark), 1000), "a click on an (i) showed no tooltip");
+
+            assertEquals((int) Components.onTheEventThread(tips::getInitialDelay), 60000, "the click changed the hover"
+                + " delay of every other component");
+        }
+        finally
+        {
+            Mouse.exit(mark);
+
+            Components.onTheEventThread(() -> { tips.setInitialDelay(was); return null; });
+
+            SwingUtilities.invokeAndWait(window::dispose);
+        }
+    }
+
+    /** Whether a tooltip of this component is on screen, in any window. */
+    private static boolean tipShowingFor(java.awt.Component owner)
+    {
+        return Components.onTheEventThread(() ->
+        {
+            for (java.awt.Window each : java.awt.Window.getWindows())
+            {
+                if (each.isShowing() && Components.find(each, javax.swing.JToolTip.class,
+                    tip -> tip.isShowing() && tip.getComponent() == owner) != null) return true;
+            }
+
+            return false;
+        });
+    }
+
     // ------------------------------------------------------------------------------------------------------------ menus
 
     /**

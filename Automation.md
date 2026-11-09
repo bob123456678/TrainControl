@@ -194,7 +194,7 @@ Everything else a station has is in its `Station Settings`: its name, whether tr
 
 ### The Station Settings window
 
-`Station Settings...` opens one window for the station you right-clicked. It stays open beside the diagram: right-click another square, or point at one and press Control+O, and it shows that one. In the autonomy editor every change is made at once in the editor's draft, so the editor's `Cancel` undoes it; on the track diagram each change is saved at once. While autonomy runs the window opens, but nothing in it can be changed. An (i) beside a setting says what it is set to now and what changing it does.
+`Station Settings...` opens one window for the station you right-clicked. It stays open beside the diagram: right-click another square, or point at one and press Control+O, and it shows that one. In the autonomy editor every change is made at once in the editor's draft, so the editor's `Cancel` undoes it; on the track diagram each change is saved at once. While autonomy runs the window opens, but nothing in it can be changed. An (i) beside a setting says what it is set to now and what changing it does: rest the pointer on it, or click it to read it at once.
 
 **The settings, from the top:**
 
