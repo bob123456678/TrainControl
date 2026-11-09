@@ -10,7 +10,6 @@ import java.awt.Point;
 import java.awt.Rectangle;
 import java.awt.RenderingHints;
 import java.awt.Shape;
-import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.geom.Ellipse2D;
 import java.awt.geom.Line2D;
@@ -39,6 +38,7 @@ import org.traincontrol.automationui.TilePorts.Side;
 import org.traincontrol.base.LayoutDiagramComponent;
 import org.traincontrol.gui.InfoMark;
 import org.traincontrol.gui.LayoutLabel;
+import org.traincontrol.gui.Listen;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.gui.widgets.UiStyle;
 import org.traincontrol.util.I18n;
@@ -537,18 +537,14 @@ final class StationPicture extends JPanel
 
             setToolTipText("");
 
-            addMouseListener(new MouseAdapter()
+            addMouseListener(Listen.clicked(e ->
             {
-                @Override
-                public void mouseClicked(MouseEvent e)
-                {
-                    if (e.getButton() != MouseEvent.BUTTON1 || doors == null) return;
+                if (e.getButton() != MouseEvent.BUTTON1 || doors == null) return;
 
-                    Mark mark = at(e.getPoint());
+                Mark mark = at(e.getPoint());
 
-                    if (mark != null) doors.press(mark);
-                }
-            });
+                if (mark != null) doors.press(mark);
+            }));
         }
 
         /**
