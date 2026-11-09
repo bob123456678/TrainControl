@@ -290,7 +290,7 @@ public class testTheLocomotiveSettingsLooks extends support.SettingsClass
      * Dragged as narrow as the window lets it go, the Functions tab's two button groups still do not overlap, in each
      * language.
      *
-     * MUTATION: drop `keepTheFunctionsRowApart` from `LocomotiveSettingsFrame.fit`, and this fails.
+     * MUTATION: drop `keepTheRowsWhole` from `LocomotiveSettingsFrame.fit`, and this fails.
      */
     @Test
     public void testTheFunctionsRowNeverOverlapsAtTheNarrowestWindow() throws Exception
@@ -326,6 +326,53 @@ public class testTheLocomotiveSettingsLooks extends support.SettingsClass
                 assertTrue(copy.x + copy.width <= preset.x, lang + ": at " + pane.getWidth() + " wide the preset buttons start at " + preset.x
                     + " and the copy ones end at " + (copy.x + copy.width));
                 assertTrue(preset.x + preset.width <= pane.getWidth(), lang + ": the preset buttons run past the window");
+            }
+        }
+        finally
+        {
+            I18n.setLocale(java.util.Locale.ENGLISH);
+        }
+    }
+
+    /**
+     * As it opens, and dragged as narrow as it lets itself go, the window keeps its five tabs on one row in every
+     * language: each tab sits on the first one's y.
+     *
+     * MUTATION: leave the tab strip out of `LocomotiveSettingsFrame.keepTheRowsWhole`, and this fails.
+     */
+    @Test
+    public void testTheTabsStayOnOneRowAtTheNarrowestWindow() throws Exception
+    {
+        try
+        {
+            for (String lang : new String[] {"en", "de", "da", "es", "fr", "it", "nl", "pl"})
+            {
+                I18n.setLocale(new java.util.Locale(lang));
+
+                JTabbedPane tabs = opened();
+                LocomotiveSettingsFrame window = SettingsWindow.showing();
+
+                for (boolean narrowed : new boolean[] {false, true})
+                {
+                    java.util.List<Integer> rows = Components.onTheEventThread(() ->
+                    {
+                        if (narrowed)
+                        {
+                            window.setSize(window.isMinimumSizeSet() ? Math.max(300, window.getMinimumSize().width) : 300,
+                                window.getHeight());
+                            window.validate();
+                        }
+
+                        java.util.List<Integer> y = new java.util.ArrayList<>();
+
+                        for (int i = 0; i < tabs.getTabCount(); i++) y.add(tabs.getBoundsAt(i).y);
+
+                        return y;
+                    });
+
+                    assertEquals(new java.util.HashSet<>(rows).size(), 1, lang + (narrowed ? ": at the narrowest, " : ": as it opens, ")
+                        + window.getWidth() + " wide, the tabs are on more than one row: " + rows);
+                }
             }
         }
         finally
