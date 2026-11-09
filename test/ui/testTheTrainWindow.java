@@ -748,6 +748,8 @@ public class testTheTrainWindow
 
         javax.swing.JDialog shown = Components.onTheEventThread(() ->
         {
+            TrainControlUI.installLookAndFeel();
+
             javax.swing.JDialog out = new javax.swing.JDialog();
 
             mark[0] = org.traincontrol.gui.InfoMark.label("a sentence");
