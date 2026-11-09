@@ -253,6 +253,48 @@ public class testTheLocomotiveSettingsLooks extends support.SettingsClass
     }
 
     /**
+     * The Multi-Unit tab starts where the Notes tab does (filter row and list box on the Notes labels' left edge), and
+     * each box-column heading starts where its check box's box is painted.
+     *
+     * MUTATION: put `MultiUnitPanel`'s `gbc.insets` or `scrollGbc.insets` back to 5 on the left, or drop the border
+     * from its name or Reverse heading, and this fails.
+     */
+    @Test
+    public void testTheMultiUnitTabAlignsWithTheOthers() throws Exception
+    {
+        fixture.layDcc(NAME, 3805, LocomotiveSettingsFrame.Tab.NOTES);
+        Components.settle();
+
+        java.awt.Container pane = SettingsWindow.showing().getContentPane();
+        JLabel startYear = Components.find(pane, JLabel.class,
+            l -> UiStyle.withoutColon(I18n.t("loc.ui.labelStartYear")).equals(l.getText()));
+        int notes = Components.onTheEventThread(() -> bounds(startYear, pane).x);
+
+        SettingsWindow.selectTab(LocomotiveSettingsFrame.Tab.MULTI_UNIT.ordinal());
+        Components.settle();
+
+        JLabel filter = Components.find(pane, JLabel.class,
+            l -> UiStyle.withoutColon(I18n.t("loc.ui.filterList")).equals(l.getText()));
+        javax.swing.JScrollPane list = (javax.swing.JScrollPane) Components.find(pane, javax.swing.JScrollPane.class,
+            s -> s.isShowing() && s.getViewport().getView() instanceof javax.swing.JPanel);
+        javax.swing.JCheckBox box = Components.find(pane, javax.swing.JCheckBox.class,
+            c -> c.isShowing() && !c.getText().isEmpty());
+        JLabel name = Components.find(pane, JLabel.class,
+            l -> UiStyle.withoutColon(I18n.t("loc.ui.labelLocomotiveName")).equals(l.getText()) && l.isShowing());
+
+        assertNotNull(box, "precondition: no member row on the Multi-Unit tab");
+
+        int filterX = Components.onTheEventThread(() -> bounds(filter, pane).x);
+        int listX = Components.onTheEventThread(() -> bounds(list, pane).x);
+        int headingX = Components.onTheEventThread(() -> bounds(name, pane).x + name.getInsets().left);
+        int boxX = Components.onTheEventThread(() -> bounds(box, pane).x + box.getInsets().left);
+
+        assertEquals(filterX, notes, "the filter row does not start where the Notes labels do");
+        assertEquals(listX, notes, "the list does not start where the Notes labels do");
+        assertEquals(headingX, boxX, "the Locomotive Name heading does not start where the check boxes are drawn");
+    }
+
+    /**
      * Dragged as narrow as the window lets it go, the Functions tab's two button groups still do not overlap, in each
      * language.
      *
