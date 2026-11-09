@@ -240,9 +240,7 @@ public class LayoutEditorAddressPopup extends javax.swing.JPanel
         List<String> out = new java.util.ArrayList<>();
 
         // "No page" first, and it is a real choice: an arrow whose page was deleted carries -1, so that it resolves to
-        // nothing and the operator re-aims it.  Without an entry for that, opening this popup on such an arrow selected
-        // the first item anyway and OK silently aimed the arrow at the first page in the alphabet.  It also gives a way
-        // to BREAK a link on purpose.
+        // nothing and the operator re-aims it.  It also gives a way to BREAK a link on purpose.
         out.add(NO_PAGE);
 
         for (String page : tcui.getModel().getLayoutList())

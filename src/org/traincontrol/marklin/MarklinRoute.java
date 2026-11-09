@@ -659,9 +659,8 @@ public class MarklinRoute extends Route
                             else if (rc.isStop())
                             {                        
                                 // Sent whatever the power flag says (behaviour/routes.md 7a: an emergency stop is
-                                // obeyed whatever else is true): the flag is only the last GO or STOP echo heard, so
-                                // one lost GO skipped the stop of a route fired with nobody present.  It decides the
-                                // notice and the log line only.
+                                // obeyed whatever else is true): the flag is only the last GO or STOP echo heard.  It
+                                // decides the notice and the log line only.
                                 final boolean wasOn = this.network.getPowerState();
 
                                 this.network.stop();
@@ -860,8 +859,7 @@ public class MarklinRoute extends Route
             }
             else
             {
-                // A sensor can fire the route again before it has finished: dropped, and now said, since this door said
-                // nothing.
+                // A sensor can fire the route again before it has finished: dropped, and logged.
                 this.network.logf("route.ui.infoAlreadyRunning", this.getName());
             }
         }).start();

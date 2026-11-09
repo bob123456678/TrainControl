@@ -91,8 +91,7 @@ public final class LocomotiveSelector extends javax.swing.JFrame
 
     public synchronized void refreshLocSelectorList()
     {
-        // singlePass, not invokeLater: see TrainControlUI.singlePass.  A caller that refreshes this
-        // and the route list together now gets both in one pass instead of two.
+        // singlePass, not invokeLater: see TrainControlUI.singlePass.
         TrainControlUI.singlePass(() -> 
         {
             this.MainLocList.removeAll();
@@ -372,9 +371,8 @@ public final class LocomotiveSelector extends javax.swing.JFrame
     }//GEN-LAST:event_LocFilterBoxKeyReleased
 
     private void LocFilterBoxKeyTyped(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_LocFilterBoxKeyTyped
-        // getKeyCode() is VK_UNDEFINED for every KEY_TYPED event, so the Escape branch this
-        // used to have could never fire - dead code, not a missing feature. Escape is already handled
-        // for this window by LocFilterBoxKeyReleased, formKeyPressed and MainLocListKeyPressed.
+        // getKeyCode() is VK_UNDEFINED for every KEY_TYPED event, so Escape cannot be handled here: it is handled for
+        // this window by LocFilterBoxKeyReleased, formKeyPressed and MainLocListKeyPressed.
         filterLocList();
     }//GEN-LAST:event_LocFilterBoxKeyTyped
 

@@ -283,8 +283,7 @@ final class EditorMassAssign
             return I18n.f("autosetup.ui.switchAtSquare", tile.getX() + "," + tile.getY());
         }
 
-        // A CROSSING HAS NO NAME EITHER.  A piece now ends at one as well as at a switch, and naming it by
-        // its raw key put `main:18,10` in the middle of a sentence.
+        // A CROSSING HAS NO NAME EITHER: it is named by where it is, as a switch is.
         if (editor.session.sharedSquaresALengthRuleReads().contains(tile))
         {
             return I18n.f("autosetup.ui.crossingAtSquare", tile.getX() + "," + tile.getY());
@@ -303,8 +302,6 @@ final class EditorMassAssign
      * Asks for one number, with Skip beside OK - the Name Everything dialog, for a number.  Both number walks use it: a
      * stretch's whole length, and a station's maximum train length.
      *
-     * @param question what to say above the field
-     * @param titleKey the bundle key of the walk's name, which is the prompt's title
      * @return the number; -1 for Skip or a blank answer; null for Stop
      */
     private Integer askForWholeLength(String question, String titleKey)
@@ -316,9 +313,6 @@ final class EditorMassAssign
      * The same, the box holding a number to start from (MT-566): the length a train already has.  Selected when the box
      * takes the keyboard, so a number typed replaces it rather than being added to it.
      *
-     * @param question what to say above the field
-     * @param titleKey the bundle key of the walk's name, which is the prompt's title
-     * @param prefill what the box holds to start with, or empty
      * @return the number; -1 for Skip or a blank answer; null for Stop
      */
     private Integer askForWholeLength(String question, String titleKey, String prefill)
@@ -359,9 +353,6 @@ final class EditorMassAssign
     /**
      * The walks' prompt, Name Everything's too (OB-371): the question wrapped over the field, OK, Skip One and Cancel.
      *
-     * @param field what the answer is typed into
-     * @param question what to say above the field
-     * @param titleKey the bundle key of the walk's name, which is the prompt's title
      * @return the field's text; "" for Skip; null for Stop (Cancel, Escape or closing)
      */
     String askInWalkPrompt(final javax.swing.JTextField field, String question, String titleKey)

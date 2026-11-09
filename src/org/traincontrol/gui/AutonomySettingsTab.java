@@ -217,8 +217,8 @@ final class AutonomySettingsTab
         this.ui.turnOnFunctionsOnDeparture().setSelected(auto.isTurnOnFunctionsOnDeparture());
         this.ui.maximumLatency().setValue(auto.getMaxLatency());
 
-        // The routing rule, pulled from the layout like every other setting here (MT-226): a menu read the layout when
-        // it happened to be opened, so the control could show one configuration's rule while another runs.
+        // The routing rule, pulled from the layout like every other setting here (MT-226), so the control shows the
+        // rule of the configuration that runs.
         if (this.ui.algorithmType() != null)
         {
             this.ui.migrateStoredPathPreference(this.ui.getModel().getAutoLayout());

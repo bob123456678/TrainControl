@@ -343,7 +343,7 @@ final class StandingTrains
                     if (segment == null) segment = candidate;
                 }
 
-                // No arriving rail from a plain copy: the first arriving rail, as before, over one running away.
+                // No arriving rail from a plain copy: the first arriving rail, over one running away.
                 if (arriving != null) segment = arriving;
 
                 // NO ROAD, AND THE RAILS BY THAT SIDE PART BEHIND THE PLATFORM: STOP AT THE SWITCH (MT-477; Adam: "stop

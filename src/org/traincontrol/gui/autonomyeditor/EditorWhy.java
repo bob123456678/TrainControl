@@ -411,8 +411,7 @@ final class EditorWhy extends SettledQuestion
 
         for (org.traincontrol.automation.Point point : layout.getPoints())
         {
-            // The rule, asked rather than spelled out again: a third copy without `!isReversing()` overcounted every
-            // reversing station.
+            // The rule, asked rather than spelled out again.
             if (layout.isSendableDestination(point)) count++;
         }
 

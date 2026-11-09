@@ -768,11 +768,7 @@ public class AutonomyBuilder
         }
     }
 
-    /**
-     * Builds the autonomy JSON.
-     *
-     * @return a string suitable for parseAuto
-     */
+    /** Builds the autonomy JSON, in the form parseAuto reads. */
     public String build()
     {
         JSONObject root = new JSONObject();

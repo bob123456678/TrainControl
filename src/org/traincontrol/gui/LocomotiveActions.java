@@ -42,9 +42,7 @@ final class LocomotiveActions
         this.ui = ui;
     }
 
-    /**
-     * Prompts for a locomotive name, and activates that locomotive if found
-     */
+    /** Prompts for a locomotive name, and activates that locomotive if found. */
     void quickLocSearch()
     {
         final java.awt.Window asked = this.ui.dialogParent();
@@ -64,15 +62,11 @@ final class LocomotiveActions
     }
 
     /**
-     * Renames and re-addresses a locomotive: the one door the Locomotive Settings window's Save goes through.  The name is
-     * asked first (OB-301), so a refusal returns before anything has changed.  A route that drives the locomotive is asked
-     * again here, before anything is written, because it can start while a window is open.
-     *
-     * @param source what a refusal hangs off
-     * @param newName the name wanted, or null to keep it
-     * @param newAddress the address as typed, or empty to keep it
-     * @param newDecoderType the decoder wanted
-     * @return true when the write went through, false when something was refused or failed (and said so)
+     * Renames and re-addresses a locomotive: the one door the Locomotive Settings window's Save goes through.  The name
+     * is asked first (OB-301), so a refusal returns before anything has changed.  A route that drives the locomotive is
+     * asked again here, before anything is written, because it can start while a window is open.  A null name or an
+     * empty address keeps the old one; true when the write went through, false when something was refused or failed
+     * (and said so).
      */
     boolean writeNameAndAddress(Component source, Locomotive l, String newName, String newAddress,
         decoderType newDecoderType)
@@ -184,10 +178,8 @@ final class LocomotiveActions
 
     /**
      * The refusals a multi-unit edit meets, in today's order: not while autonomy runs, nor while a route drives the
-     * multi-unit or a member (OB-287), since a multi-unit's commands drive its members.
-     *
-     * @param newMembers the members wanted as well, or null before they are chosen
-     * @return true when it refused (and said so)
+     * multi-unit or a member (OB-287), since a multi-unit's commands drive its members.  `newMembers` is null before
+     * they are chosen; true when it refused (and said so).
      */
     boolean refuseMultiUnitEdit(Component source, Locomotive l, java.util.Collection<String> newMembers)
     {
@@ -210,9 +202,8 @@ final class LocomotiveActions
 
     /**
      * Makes {@code newLinkedLocos} the members of a multi-unit and tells everything that shows it: the one write the
-     * Locomotive Settings window's Multi-Unit tab goes through on Save.
-     *
-     * @return true when it was written, false when a refusal stopped it
+     * Locomotive Settings window's Multi-Unit tab goes through on Save.  True when it was written, false when a refusal
+     * stopped it.
      */
     boolean applyLinkedLocomotives(Component source, Locomotive l, Map<String, Double> newLinkedLocos)
     {
@@ -234,11 +225,9 @@ final class LocomotiveActions
     }
 
     /**
-     * Add Locomotive (FR-179): makes a locomotive with the refusals Add Locomotive always asked, in its order (the name,
-     * then the address), says it was added and puts it on the selected key if that key is empty.
-     *
-     * @param source what the messages hang off
-     * @return the new locomotive, or null when something was refused (and said so)
+     * Add Locomotive (FR-179): makes a locomotive with the refusals Add Locomotive always asked, in its order (the
+     * name, then the address), says it was added and puts it on the selected key if that key is empty.  Answers the new
+     * locomotive, or null when something was refused (and said so).
      */
     Locomotive addLocomotive(Component source, String locName, String typedAddress, decoderType type)
     {
@@ -567,12 +556,7 @@ final class LocomotiveActions
         deleteLoc(value, evt != null ? (Component) evt.getSource() : this.ui.dialogParent());
     }
 
-    /**
-     * Deletes a locomotive from the database after the question, from any door.
-     *
-     * @param source what the refusals and the question hang off
-     * @return true when the locomotive was deleted
-     */
+    /** Deletes a locomotive from the database after the question, from any door; true when it was deleted. */
     boolean deleteLoc(String value, Component source)
     {
         // The moving rule, at every door (FR-048), and asked again at Yes.

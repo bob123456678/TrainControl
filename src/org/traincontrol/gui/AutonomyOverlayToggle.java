@@ -52,9 +52,7 @@ public class AutonomyOverlayToggle extends JPanel
     private javax.swing.AbstractButton start;
     private javax.swing.AbstractButton stop;
 
-    /**
-     * @param ui the main window, whose monitor driver the checkbox switches
-     */
+    /** @param ui the main window, whose monitor driver the checkbox switches */
     public AutonomyOverlayToggle(TrainControlUI ui)
     {
         super(new java.awt.BorderLayout());
@@ -100,8 +98,7 @@ public class AutonomyOverlayToggle extends JPanel
             @Override
             public void mouseClicked(java.awt.event.MouseEvent e)
             {
-                // Straight to the editor, not the Pages menu: "just make it attempt to click the edit button if it's
-                // enabled ... since there is no entry for disabled pages".
+                // Straight to the editor, not the Pages menu: there is no entry for disabled pages.
                 ui.openAutonomyEditorIfItCan();
             }
         });
@@ -168,11 +165,7 @@ public class AutonomyOverlayToggle extends JPanel
         AutonomyViewerPanel.unfocusable(this);
     }
 
-    /**
-     * Sets the checkbox, which also applies it; used when a configuration loads successfully.
-     *
-     * @param selected
-     */
+    /** Sets the checkbox, which also applies it; used when a configuration loads successfully. */
     public void setSelected(boolean selected)
     {
         show.setSelected(selected);
@@ -221,12 +214,7 @@ public class AutonomyOverlayToggle extends JPanel
         return stopPending ? RunButton.STOP_PENDING : RunButton.HIDDEN;
     }
 
-    /**
-     * Tells the strip which buttons it is standing in for.
-     *
-     * @param start the main window's Start Autonomous Operation
-     * @param stop its Graceful Stop
-     */
+    /** Tells the strip which buttons it is standing in for: the main window's Start and its Graceful Stop. */
     public void bindRunButtons(javax.swing.AbstractButton start, javax.swing.AbstractButton stop)
     {
         this.start = start;
@@ -253,8 +241,7 @@ public class AutonomyOverlayToggle extends JPanel
         source = showing == RunButton.START ? start
             : showing == RunButton.STOP || showing == RunButton.STOP_PENDING ? stop : null;
 
-        // Fix it rather than Start, when starting would be refused (OB-090: "the setup refuses to run when there are
-        // errors.  it runs on warnings, but on errors it should say fix it.").  Against START only: Stop keeps winning
+        // Fix it rather than Start, when starting would be refused (OB-090).  Against START only: Stop keeps winning
         // while trains run.  The guard's own question, hasErrors(), not a count: it also covers a graph that will not
         // build.  lastTotalErrors is read only when there is no window to ask.
         boolean broken = ui != null ? ui.autonomyHasErrors() : lastTotalErrors > 0;
@@ -280,15 +267,14 @@ public class AutonomyOverlayToggle extends JPanel
 
         run.setFont(source.getFont());
 
-        // The turning mark, whichever button this stands in for ("Can we show the spinner next to start/graceful stop
-        // on the track diagram viewer page as well?"): Start's own, grayed too during the coast-down (OB-309).
+        // The turning mark, whichever button this stands in for: Start's own, grayed too during the coast-down
+        // (OB-309).
         javax.swing.Icon mark = start != null ? start.getIcon() : null;
 
         run.setIcon(mark);
         run.setDisabledIcon(mark);
 
-        // White, with the strip behind it carrying the color (MT-173): "I would like a shaded background in light
-        // yellow when fix it is active.  then change the color of the fix it button back to white."
+        // White, with the strip behind it carrying the color (MT-173).
         run.setBackground(fixing ? java.awt.Color.WHITE : source.getBackground());
 
         // Held to the checkbox's height, or the strip's tallest child pushes it down.  Cleared first: a preferred size
@@ -317,17 +303,13 @@ public class AutonomyOverlayToggle extends JPanel
         if (run.isVisible() && run.getIcon() != null) run.repaint();
     }
 
-    /**
-     * @return whether the strip's button is showing that something runs (OB-309)
-     */
+    /** Whether the strip's button is showing that something runs (OB-309). */
     public boolean isShowingSomethingRuns()
     {
         return run.isVisible() && run.getIcon() != null;
     }
 
-    /**
-     * @return whether the turning mark fits inside the strip's button, which is held to the checkbox's height
-     */
+    /** Whether the turning mark fits inside the strip's button, which is held to the checkbox's height. */
     public boolean runningMarkFits()
     {
         java.awt.Insets in = run.getInsets();
@@ -340,8 +322,6 @@ public class AutonomyOverlayToggle extends JPanel
      * Sizes another button exactly as the Start button in this strip is sized, so the banner's Load button and the
      * Start that replaces it look the same: font (OB-391), height (`BUTTON_HEIGHT`) and insets.  Re-applied whenever
      * the text changes.
-     *
-     * @param button
      */
     public void styleAsRunButton(javax.swing.AbstractButton button)
     {
@@ -376,13 +356,7 @@ public class AutonomyOverlayToggle extends JPanel
     /** The strip's fill while the setup has something that must be dealt with: light yellow, so black text reads. */
     private static final java.awt.Color FIX_BACKGROUND = new java.awt.Color(255, 248, 205);
 
-    /**
-     * Shows what the checks currently say.
-     *
-     * @param errors how many things are wrong
-     * @param warnings how many are worth looking at
-     * @param first the square to open when the count is clicked, or null for none
-     */
+    /** Shows what the checks currently say; `first` is the square to open when the count is clicked, or null. */
     public void setFindings(int pageErrors, int pageWarnings, int totalErrors, int totalWarnings,
         org.traincontrol.automationui.TileGraph.TileKey first)
     {
@@ -430,12 +404,9 @@ public class AutonomyOverlayToggle extends JPanel
     }
 
     /**
-     * The strip's count, in words that agree with each number ("1 warnings" read wrong, as "1 things" did).
-     *
-     * @param errors errors in the whole setup
-     * @param warnings warnings in the whole setup
-     * @param onThisPage how many of the ones counted are on the page shown
-     * @return "2 errors, 1 warning - 1 on this page", or without the errors where there are none
+     * The strip's count, in words that agree with each number ("1 warnings" read wrong, as "1 things" did): "2 errors,
+     * 1 warning - 1 on this page", or without the errors where there are none.  `onThisPage` is how many of the ones
+     * counted are on the page shown.
      */
     public static String findingsCountText(int errors, int warnings, int onThisPage)
     {
@@ -453,8 +424,6 @@ public class AutonomyOverlayToggle extends JPanel
     /**
      * Whether a configuration is actually running.  The strip exists before one does; the controls here are about a
      * loaded setup and would invite clicks that do nothing.
-     *
-     * @param loaded
      */
     public void setLoaded(boolean loaded)
     {
@@ -480,8 +449,6 @@ public class AutonomyOverlayToggle extends JPanel
     /**
      * Says the page is left out of autonomy, in place of the controls that would act on it.  The checkbox goes rather
      * than being grayed: an unticked box invites a tick that visibly does nothing.  The run button stays.
-     *
-     * @param excluded
      */
     public void setPageExcluded(boolean excluded)
     {
@@ -504,11 +471,7 @@ public class AutonomyOverlayToggle extends JPanel
         syncRun();
     }
 
-    /**
-     * Says, or stops saying, that the setup has changes the railway has not taken yet - see `waiting`.
-     *
-     * @param newer whether it has
-     */
+    /** Says, or stops saying, that the setup has changes the railway has not taken yet - see `waiting`. */
     public void setSetupWaiting(boolean newer)
     {
         setupWaiting = newer;
@@ -521,9 +484,7 @@ public class AutonomyOverlayToggle extends JPanel
         repaint();
     }
 
-    /**
-     * @return whether the strip is saying the setup has changes the railway has not taken yet
-     */
+    /** Whether the strip is saying the setup has changes the railway has not taken yet. */
     public boolean isSetupWaitingShown()
     {
         return waiting.isVisible();
@@ -546,9 +507,7 @@ public class AutonomyOverlayToggle extends JPanel
         repaint();
     }
 
-    /**
-     * Colors the strip for the state it is in.
-     */
+    /** Colors the strip for the state it is in. */
     private void paintState()
     {
         hideIfEmpty();
@@ -576,11 +535,7 @@ public class AutonomyOverlayToggle extends JPanel
     private int lastTotalErrors;
     private int lastTotalWarnings;
 
-    /**
-     * Tells the strip whether the banner above it is saying anything.
-     *
-     * @param showing
-     */
+    /** Tells the strip whether the banner above it is saying anything. */
     public void setBannerShowing(boolean showing)
     {
         if (this.bannerShowing == showing) return;
@@ -594,8 +549,6 @@ public class AutonomyOverlayToggle extends JPanel
     /**
      * Deliberately NOT called isShowing(): that name belongs to java.awt.Component, and JComponent.paintImmediately
      * begins with `if (!isShowing()) return`, so unticking the box froze the strip's repainting altogether.
-     *
-     * @return whether the overlay is switched on
      */
     public boolean isOverlayShown()
     {

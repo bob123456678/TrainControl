@@ -1117,7 +1117,7 @@ public class Point
                 locObj.put("departureFunc", standing.getDepartureFunc());
             }
             
-            // A length nobody has set is null, and unboxing it failed the whole Layout.toJSON.
+            // A length nobody has set is null.
             Integer trainLength = standing.getTrainLength();
 
             if (trainLength != null && trainLength > 0)

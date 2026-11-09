@@ -418,12 +418,8 @@ final class ReturnHomeController extends SettledQuestion
     }
 
     /**
-     * Shared by the cheap triage and the full plan, so the same situation cannot be described two
-     * different ways depending on which one noticed it.
-     *
-     * @param outcome
-     * @param blocked - may be null; only IMPOSSIBLE and POSITION_AMBIGUOUS carry any
-     * @return
+     * Shared by the cheap triage and the full plan, so the same situation cannot be described two different ways
+     * depending on which one noticed it.  `blocked` may be null; only IMPOSSIBLE and POSITION_AMBIGUOUS carry any.
      */
     String describeStagingOutcome(HomeStaging.Outcome outcome, List<Locomotive> blocked)
     {

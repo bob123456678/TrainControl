@@ -65,10 +65,6 @@ public final class BusyDialog extends JDialog
      * Puts the spinner up now, and hands back the thing that takes it down (OB-140), for a caller already on a
      * background thread doing the slow thing itself, where `run` would return before the value arrived.  Safe to close
      * from any thread, and before the dialog has appeared.
-     *
-     * @param parent the window to center on
-     * @param message what is happening, in words
-     * @return the handle that dismisses it
      */
     public static Closer showUntilClosed(Window parent, String message)
     {
@@ -138,12 +134,9 @@ public final class BusyDialog extends JDialog
     }
 
     /**
-     * Runs slow work behind a spinner, then hands back to the event thread.
-     *
-     * @param parent the window to center on
-     * @param message what is happening, in words - a spinner alone says only "wait"
-     * @param work the slow part.  Runs off the event thread, so it must not touch Swing
-     * @param whenDone what to do with the result, on the event thread.  May be null
+     * Runs slow work behind a spinner, then hands back to the event thread.  `message` says what is happening (a
+     * spinner alone says only "wait"); `work` runs off the event thread, so it must not touch Swing; `whenDone` takes
+     * the result on the event thread and may be null.
      */
     public static void run(Window parent, String message, Runnable work, Runnable whenDone)
     {

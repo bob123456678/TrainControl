@@ -70,8 +70,8 @@ public final class ManualReversalPrompt
         // destination, since that dictates where the train can go, and where it is facing."**
         //
         // An intermediate turning copy exists BECAUSE the path chose to turn there, which is the route's business:
-        // asking about one let "keep direction" (the default, Escape and cannot-ask answer) strand the train off its
-        // path.
+        // asking about one would let "keep direction" (the default, Escape and cannot-ask answer) strand the train off
+        // its path.
         first = destinationAskedAbout(asking, railway, path);
 
         // AND A TRAIN THAT CANNOT REVERSE IS NOT ASKED (MT-368): a square that MAY turn is a preference, and a
@@ -276,9 +276,9 @@ public final class ManualReversalPrompt
                 // "KEEP DIRECTION?" - so YES means do NOT reverse: index 0 is Yes and the default, and keeping the
                 // direction changes nothing on the railway, so dismissing this dialog with the keyboard is safe.
                 //
-                // The test is for the ANSWER, not against its opposite (`chose != 0` turned the train on Escape, since
-                // -1 is not 0): only an explicit No reverses.  Yes, Escape, the X or a dialog that could not be shown
-                // leaves the train pointing the way it already points.
+                // The test is for the ANSWER, not against its opposite (`chose != 0` would turn the train on Escape,
+                // since -1 is not 0): only an explicit No reverses.  Yes, Escape, the X or a dialog that could not be
+                // shown leaves the train pointing the way it already points.
                 answer[0] = reverseFor(chose);
             };
 

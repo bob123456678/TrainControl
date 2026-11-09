@@ -26,12 +26,7 @@ public final class RowIcons
     {
     }
 
-    /**
-     * A waste basket: lid, body, and two lines down it.
-     *
-     * @param size how many pixels square
-     * @return the icon
-     */
+    /** A waste basket: lid, body, and two lines down it. */
     public static Icon trash(final int size)
     {
         return trash(size, WARN);
@@ -111,10 +106,6 @@ public final class RowIcons
     /**
      * Where the copy mark's front sheet is drawn in an icon of this size; the sheet behind is drawn from the same
      * figures, a gap up and to the left.
-     *
-     * @param width the icon's width
-     * @param height the icon's height
-     * @return the front sheet's outline
      */
     static Rectangle frontSheet(int width, int height)
     {
@@ -123,12 +114,7 @@ public final class RowIcons
         return new Rectangle(1 + gap, 1 + gap, Math.round(width * 0.52f), Math.round(height * 0.62f));
     }
 
-    /**
-     * A plus.
-     *
-     * @param size how many pixels square
-     * @return the icon
-     */
+    /** A plus. */
     public static Icon plus(final int size)
     {
         return plus(size, new Color(0, 120, 40));
@@ -137,9 +123,6 @@ public final class RowIcons
     /**
      * The same, in a color of the caller's choosing, for a SELECTED row: a mid-green plus is nearly invisible against
      * the look-and-feel's selection blue.
-     *
-     * @param colour what to draw it in
-     * @return the icon
      */
     public static Icon plus(final int size, final Color colour)
     {
@@ -159,24 +142,13 @@ public final class RowIcons
         };
     }
 
-    /**
-     * A solid triangle pointing up or down.
-     *
-     * @param size how many pixels square
-     * @param up true for up
-     * @return the icon
-     */
+    /** A solid triangle pointing up or down. */
     public static Icon arrow(final int size, final boolean up)
     {
         return arrow(size, up, QUIET);
     }
 
-    /**
-     * The same, in a given color: a mark in a fixed gray disappears into a selected row's selection colors.
-     *
-     * @param colour what to draw it in
-     * @return the icon
-     */
+    /** The same, in a given color: a mark in a fixed gray disappears into a selected row's selection colors. */
     public static Icon arrow(final int size, final boolean up, final Color colour)
     {
         return new Painted(size)
@@ -198,12 +170,7 @@ public final class RowIcons
         };
     }
 
-    /**
-     * Six dots in two columns, the grip a row is dragged by.
-     *
-     * @param size how many pixels square
-     * @return the icon
-     */
+    /** Six dots in two columns, the grip a row is dragged by. */
     public static Icon grip(final int size)
     {
         return new Painted(size)
@@ -231,14 +198,7 @@ public final class RowIcons
         YES, SOME, NO
     }
 
-    /**
-     * A tick for a yes, a ring with its left half filled for a "some", and a dash for a no.
-     *
-     * @param size how many pixels square
-     * @param answer which
-     * @param colour its color
-     * @return the icon
-     */
+    /** A tick for a yes, a ring with its left half filled for a "some", and a dash for a no. */
     public static Icon answer(final int size, final Answer answer, final Color colour)
     {
         return new Painted(size)
@@ -269,70 +229,37 @@ public final class RowIcons
         };
     }
 
-    /**
-     * Two lines inside a rounded outline: put rows in a group of their own.
-     *
-     * @param size how many pixels square
-     * @return the icon
-     */
+    /** Two lines inside a rounded outline: put rows in a group of their own. */
     public static Icon group(final int size)
     {
         return group(size, QUIET);
     }
 
-    /**
-     * The same, in a given color.
-     *
-     * @param size how many pixels square
-     * @param colour what to draw it in
-     * @return the icon
-     */
+    /** The same, in a given color. */
     public static Icon group(final int size, final Color colour)
     {
         return outlined(size, colour, false);
     }
 
-    /**
-     * The same two lines with the outline broken: take a group apart.
-     *
-     * @param size how many pixels square
-     * @return the icon
-     */
+    /** The same two lines with the outline broken: take a group apart. */
     public static Icon ungroup(final int size)
     {
         return ungroup(size, QUIET);
     }
 
-    /**
-     * The same, in a given color.
-     *
-     * @param size how many pixels square
-     * @param colour what to draw it in
-     * @return the icon
-     */
+    /** The same, in a given color. */
     public static Icon ungroup(final int size, final Color colour)
     {
         return outlined(size, colour, true);
     }
 
-    /**
-     * Two small outlines one above the other, a line in each: cut a group in two (OB-396).
-     *
-     * @param size how many pixels square
-     * @return the icon
-     */
+    /** Two small outlines one above the other, a line in each: cut a group in two (OB-396). */
     public static Icon split(final int size)
     {
         return split(size, QUIET);
     }
 
-    /**
-     * The same, in a given color.
-     *
-     * @param size how many pixels square
-     * @param colour what to draw it in
-     * @return the icon
-     */
+    /** The same, in a given color. */
     public static Icon split(final int size, final Color colour)
     {
         return new Painted(size)
@@ -356,25 +283,13 @@ public final class RowIcons
         };
     }
 
-    /**
-     * A hooked arrow pointing back: Undo (FR-161).
-     *
-     * @param size how many pixels square
-     * @param colour what to draw it in
-     * @return the icon
-     */
+    /** A hooked arrow pointing back: Undo (FR-161). */
     public static Icon undo(final int size, final Color colour)
     {
         return hooked(size, colour, false);
     }
 
-    /**
-     * Undo's arrow, mirrored: Redo (FR-161).
-     *
-     * @param size how many pixels square
-     * @param colour what to draw it in
-     * @return the icon
-     */
+    /** Undo's arrow, mirrored: Redo (FR-161). */
     public static Icon redo(final int size, final Color colour)
     {
         return hooked(size, colour, true);
@@ -435,12 +350,7 @@ public final class RowIcons
         };
     }
 
-    /**
-     * A warning triangle: amber, a dark edge and an exclamation mark - beside a line that is wrong.
-     *
-     * @param size how many pixels square
-     * @return the icon
-     */
+    /** A warning triangle: amber, a dark edge and an exclamation mark - beside a line that is wrong. */
     public static Icon warning(final int size)
     {
         return new Painted(size)
@@ -472,13 +382,7 @@ public final class RowIcons
         };
     }
 
-    /**
-     * A wrench, head to the upper right, for the mark that opens a row to be edited (FR-164).
-     *
-     * @param size how many pixels square
-     * @param colour what it is drawn in
-     * @return the icon
-     */
+    /** A wrench, head to the upper right, for the mark that opens a row to be edited (FR-164). */
     public static Icon wrench(final int size, final Color colour)
     {
         java.awt.geom.Area shape = new java.awt.geom.Area(
@@ -515,24 +419,13 @@ public final class RowIcons
         };
     }
 
-    /**
-     * A pencil, tip to the lower left, for the mark that renames.
-     *
-     * @param size how many pixels square
-     * @return the icon
-     */
+    /** A pencil, tip to the lower left, for the mark that renames. */
     public static Icon pencil(final int size)
     {
         return pencil(size, QUIET);
     }
 
-    /**
-     * The same, in a color of the caller's choosing.
-     *
-     * @param size how many pixels square
-     * @param colour what it is drawn in
-     * @return the icon
-     */
+    /** The same, in a color of the caller's choosing. */
     public static Icon pencil(final int size, final Color colour)
     {
         // Tip down: the body, the tip cut from it, and a gap where the eraser is set off
@@ -605,13 +498,7 @@ public final class RowIcons
         };
     }
 
-    /**
-     * A ring open at the upper left with an arrowhead at 12 o'clock pointing left: put back what was.
-     *
-     * @param size how many pixels square
-     * @param colour its color
-     * @return the icon
-     */
+    /** A ring open at the upper left with an arrowhead at 12 o'clock pointing left: put back what was. */
     public static Icon revert(final int size, final Color colour)
     {
         return new Painted(size)

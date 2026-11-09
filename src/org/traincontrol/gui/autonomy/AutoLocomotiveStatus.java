@@ -177,10 +177,7 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
 
     private boolean haveGatheredTimetableStart;
 
-    /**
-     * Refreshes the available routes shown in the UI
-     * @param someLoc 
-     */
+    /** Refreshes the available routes shown in the UI */
     public void updateState(Locomotive someLoc)
     {
         updateState(someLoc, null, false);
@@ -210,8 +207,7 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
             // locomotive would get a teal badge while the graph outlined nothing.  Reading the point the locomotive
             // stands on matches the graph exactly and takes no lock (this runs on the EDT).
             final Point at = layout.getLocomotiveLocation(locomotive);
-            // Identity: see the note in HomeStaging on why the name comparison this replaced kept
-            // compiling and always answered false.
+            // Identity: see the note in HomeStaging.
             final boolean atAssignedHome = at != null && locomotive.equals(at.getHomeLoc());
 
             // Gray out locomotives on inactive points / not on the graph
@@ -382,12 +378,8 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
     }
 
     /**
-     * The mark beside a card's second line: the house where its train stands at the home assigned to it (MT-709), the (i)
-     * where hovering there explains something, both side by side where both, and none otherwise.
-     *
-     * @param atHome whether the train stands at its assigned home
-     * @param whyNot whether the second line has a reason to show on hover
-     * @return the mark, or null
+     * The mark beside a card's second line: the house where its train stands at the home assigned to it (MT-709), the
+     * (i) where hovering there explains something, both side by side where both, and none otherwise.
      */
     static javax.swing.Icon markFor(boolean atHome, boolean whyNot)
     {
@@ -646,9 +638,6 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
     /**
      * Puts the report into the pane, with the group headings in bold (MT-160, MT-163).  A heading is recognized by
      * position, not by its text, which would quietly do nothing in the other seven bundles.
-     *
-     * @param pane the window's text
-     * @param report what whyNotReport produced
      */
     private void write(javax.swing.JTextPane pane, String report)
     {
@@ -683,8 +672,6 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
      * which would be a second answer to "can autonomy pick this station" that could drift from the search's.
      * Arrival-side copies are collapsed to the station a person would recognize, and a station counts as choosable if
      * ANY of its copies is.
-     *
-     * @return the report, never null
      */
     private String whyNotReport()
     {
@@ -894,11 +881,7 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
         }
     }
 
-    /**
-     * A path as "from -> to", with both ends named the way the diagram names them.
-     *
-     * @param path the route being described, or null
-     */
+    /** A path as "from -> to", with both ends named the way the diagram names them. */
     private String describePath(List<Edge> path)
     {
         if (path == null || path.isEmpty()) return Edge.pathToString(path == null
@@ -941,9 +924,6 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
     /**
      * Drops the destinations this train may not be sent to at all, by `Layout.isOfferableToOperator` (OB-205); the rule
      * itself, not a copy.  Not the same question as the dash (autonomy will not choose this), and both are wanted.
-     *
-     * @param paths the paths the search returned
-     * @return the ones the operator may actually choose
      */
     private List<List<Edge>> whatTheOperatorMayChoose(List<List<Edge>> paths)
     {

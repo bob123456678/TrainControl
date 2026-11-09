@@ -25,10 +25,9 @@ public class TimetablePath
     // operator's seconds); renaming it would touch nine call sites that are all right.
     private long secondsToNext = 0;
 
-    // An entry the railway cannot build, kept as it was written ("Just keep the entries, and if a path is run that
-    // contains a point on a disabled page, reject it with an error as we do with other autonomy paths"): a Point on a
-    // page left out of autonomy is not on the railway, so its path has no edges.  Dropped at the load, it would be gone
-    // for good at the next fold.
+    // An entry the railway cannot build, kept as it was written: a Point on a page left out of autonomy is not on the
+    // railway, so its path has no edges, and a path run that contains one is rejected with an error.  Dropped at the
+    // load, it would be gone for good at the next fold.
     private final JSONObject unbuilt;
     private final String whyNot;
 

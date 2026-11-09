@@ -191,8 +191,7 @@ public abstract class NodeExpression implements Serializable
         else if (node instanceof NodeGroup)
         {
             // The closing bracket belongs to the group, not to its last child: appended from inside the loop, a group
-            // with no children never wrote it, and every later bracket was read against the wrong opener.  No path
-            // builds an empty group today, but the correction costs nothing.
+            // with no children would never write it, and every later bracket would be read against the wrong opener.
             sb.append("(");
 
             for (NodeExpression child : ((NodeGroup) node).getExpressions())

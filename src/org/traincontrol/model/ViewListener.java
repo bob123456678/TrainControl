@@ -67,8 +67,6 @@ public interface ViewListener
      * miss, which is deliberate on a command path and wrong where one is only looking (a route condition, a keyboard
      * key).  The answer is identical (an absent accessory reads as not switched); only the side effect differs.
      *
-     * @param address
-     * @param decoderType
      * @return whether the accessory is switched; false when there is no such accessory
      */
     public boolean getAccessoryStateIfPresent(int address, Accessory.accessoryDecoderType decoderType);
@@ -124,7 +122,6 @@ public interface ViewListener
 
     /**
      * Every locomotive address in use, mapped to the locomotives using it.
-     * @return
      */
     public Map<Integer, Set<Locomotive>> getLocAddresses();
     public void parseAuto(String s);
@@ -169,7 +166,6 @@ public interface ViewListener
 
     /**
      * Whether this session is simulating rather than driving a real Central Station.
-     * @return
      */
     public boolean isSimulation();
     public int getNumMessagesProcessed();
@@ -259,7 +255,6 @@ public interface ViewListener
      * @param state the state to wait for
      * @param timeoutMs how long to allow the Central Station to answer
      * @return whether the state was reached
-     * @throws InterruptedException
      */
     public boolean waitForPowerState(boolean state, long timeoutMs) throws InterruptedException;
     public void downloadLayout(File path) throws Exception;

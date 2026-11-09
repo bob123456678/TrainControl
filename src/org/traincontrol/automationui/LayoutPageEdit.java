@@ -24,7 +24,6 @@ public class LayoutPageEdit
      * again after one write: harmless for a DELETED page, not for a page whose FILE was merely absent, whose settings
      * are still in the setup under its old number.  The setup remembers, so it is asked; zero when there is no session.
      *
-     * @param session the session already built, or null
      * @return the highest page id the autonomy setup has ever recorded, or 0
      */
     public static int pageIdFloor(AutonomySession session)
@@ -109,8 +108,6 @@ public class LayoutPageEdit
     /**
      * The same, told which absent pages the operator has said are coming back (FR-018); callers without one retire an
      * absent page's id.
-     *
-     * @param keepAbsent names to keep in the index though they are not in the list; null for the behavior above
      */
     public static void renameOrDuplicate(List<String> layoutList, LayoutDiagram page,
         String layoutPath, String currentLayout, String newLayoutName, boolean rename,

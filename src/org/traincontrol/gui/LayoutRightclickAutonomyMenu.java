@@ -17,13 +17,7 @@ import org.traincontrol.util.I18n;
  */
 final class LayoutRightclickAutonomyMenu extends JPopupMenu
 {    
-    /**
-     * Its tooltips wrapped where a line will not hold them, as it is shown (FR-112) - whatever set them.
-     *
-     * @param invoker where it is shown
-     * @param x where it is shown
-     * @param y where it is shown
-     */
+    /** Its tooltips wrapped where a line will not hold them, as it is shown (FR-112) - whatever set them. */
     @Override
     public void show(java.awt.Component invoker, int x, int y)
     {
@@ -136,22 +130,13 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
     /**
      * Whether the menu offers the "..." at the foot of the list: only when there were more destinations than fitted
      * (FR-058), counting only those this menu could have shown (OB-205).
-     *
-     * @param offered how many ordinary destinations this menu has to show, after its own filtering
-     * @param shown how many of them are on screen
-     * @param inMoreDestinations how many are in the submenu
-     * @return whether to add the item
      */
     static boolean theListWasCutShort(int offered, int shown, int inMoreDestinations)
     {
         return offered > shown + inMoreDestinations;
     }
 
-    /**
-     * Whether a setup edit from this menu is refused because trains are running, having said so.
-     *
-     * @return true where the edit is refused
-     */
+    /** Whether a setup edit from this menu is refused because trains are running, having said so. */
     private boolean refusedWhileRunning()
     {
         return ui.refuseWhileARunHoldsTheSetup(ui);
@@ -161,11 +146,6 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
      * Asks the railway everything the paths section needs, on the caller's thread.  MUST NOT BE CALLED ON THE EVENT
      * THREAD (`showFor` arranges that): every call in here is `synchronized` on the `Layout`.  Answers null wherever
      * there is nothing to list.
-     *
-     * @param ui the application
-     * @param current the Point standing on the clicked square, resolved by `showFor` on the event
-     *        thread, or null where there is none
-     * @return the answers, or null when this square has no paths to offer
      */
     private static PathOptions gatherPathOptions(TrainControlUI ui, Point current)
     {
@@ -248,12 +228,10 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
     }
 
     /**
-     * @param station the sensor the caption is about, or null for the diagram-wide menu.  A square rather than a name:
-     * a station is several Points and none is called what the caption says.
-     * @param here the square that was clicked, or null where the click was not on one
-     * @param options what the railway answered about this square's paths, gathered off the event thread by
-     *        `showFor`, or null where there is nothing to list.  NOTHING IN THIS CONSTRUCTOR MAY ASK THE RAILWAY
-     *        ITSELF (see `showFor`).
+     * `station` is the sensor the caption is about, or null for the diagram-wide menu: a square rather than a name,
+     * since a station is several Points and none is called what the caption says.  `here` is the square that was
+     * clicked, or null where the click was not on one.  `options` is what `showFor` gathered off the event thread, or
+     * null where there is nothing to list.  NOTHING IN THIS CONSTRUCTOR MAY ASK THE RAILWAY ITSELF (see `showFor`).
      */
     private LayoutRightclickAutonomyMenu(TrainControlUI ui,
         org.traincontrol.automationui.TileGraph.TileKey station,
@@ -733,10 +711,6 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
      * Drops the paths that end where the train already is.  A square is several Points, so a train at BottomMainB must
      * not be offered BottomMainB, the copy facing the other way.  Filtered here rather than in the layout, which cannot
      * tell: only the setup knows that two Points built from one square are one place.
-     *
-     * @param ui the window, which owns the setup
-     * @param paths what the layout offered
-     * @return the ones that actually go somewhere
      */
     private static List<List<Edge>> withoutGoingNowhere(TrainControlUI ui, List<List<Edge>> paths)
     {
@@ -748,9 +722,6 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
     /**
      * What to call a Point when a person is reading it: the station name, not the built graph's per-copy name.  Falls
      * back to the Point's own name when the setup cannot be asked.
-     *
-     * @param point a Point of the running graph
-     * @return the station name a reader would recognize
      */
     private String stationName(Point point)
     {
@@ -761,8 +732,6 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
     /**
      * The copies of this square a train could actually be driven away from: a copy with no outgoing edge is one the
      * split made arrivable and not leavable, and a train placed there cannot move.
-     *
-     * @return the point names, empty when nothing here can move
      */
     private java.util.List<String> placeableCopies()
     {
@@ -817,8 +786,6 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
     /**
      * Places the active locomotive on the copy it could leave from that faces the way it already faces (OB-296); where
      * no copy can leave, on the copy the build stands an unfaced train on, with no facing recorded (OB-350).
-     *
-     * @param usable the copies a train can be driven away from, empty where there are none
      */
     private void placeSomewhereLegal(java.util.List<String> usable)
     {
@@ -878,8 +845,6 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
      * Whether the operator marked this square as one trains may turn round at.  Asked of the SETUP, because
      * `canReverse` never reaches the running layout (the builder splits the square); the same answer as
      * `TrainControlUI.mayTurnHere`.
-     *
-     * @return true when trains may turn there
      */
     private boolean mayTurnHere()
     {
@@ -1005,12 +970,6 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
     /**
      * One "-> somewhere" item, dispatching this locomotive along this path; shared by the top-level list and `More
      * Destinations` (FR-058), so the checks and the dispatch cannot fall out of step.
-     *
-     * @param ui the window, for the model and for the dialogs
-     * @param railway the railway the path was found on, which it is sent on
-     * @param path the route to take
-     * @param locomotive the train to send
-     * @return the item
      */
     private JMenuItem destinationItem(TrainControlUI ui, org.traincontrol.automation.Layout railway, List<Edge> path,
         Locomotive locomotive)
@@ -1025,11 +984,8 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
     }
 
     /**
-     * The Is Active tick (FR-117), asked again at the click as Edit Locomotive is: a run may have started since the menu
-     * opened.
-     *
-     * @param train the train standing here
-     * @param active whether autonomy may run it
+     * The Is Active tick (FR-117), asked again at the click as Edit Locomotive is: a run may have started since the
+     * menu opened.
      */
     private void setActive(Locomotive train, boolean active)
     {
@@ -1042,8 +998,6 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
      * Takes the standing train off this square, and off the setup with it.  On the event thread, deliberately: it is a
      * click, offered only when `isAutonomyBusy()` is false, and a worker would let the repaint below run before the
      * change.
-     *
-     * @param current the Point the train is standing on
      */
     private void removeLocomotiveHere(Point current)
     {

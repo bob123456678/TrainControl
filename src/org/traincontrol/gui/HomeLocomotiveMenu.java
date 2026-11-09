@@ -26,11 +26,8 @@ final class HomeLocomotiveMenu
      *
      * Shown always, grayed when there is nothing to do or the setup cannot be used, with the setup's own sentence.
      * It reads the button `refreshReturnHomeButton` maintains and never asks `Layout.triageReturnToHome`: a popup is
-     * built on the event thread, and that call takes the Layout monitor.
-     *
-     * @param menu
-     * @param ui
-     * @param broken why the setup refuses a hand send - `whyAHandSendIsRefused` - or null where it does not
+     * built on the event thread, and that call takes the Layout monitor.  `broken` is why the setup refuses a hand send
+     * (`whyAHandSendIsRefused`), or null where it does not.
      */
     static void addReturnHomeItem(JComponent menu, TrainControlUI ui, String broken)
     {

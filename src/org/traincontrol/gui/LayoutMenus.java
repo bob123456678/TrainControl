@@ -592,10 +592,9 @@ final class LayoutMenus
     }
 
     /**
-     * Writes a diagram page to a picture file: asks which page, at what size, and where.  Drawn OFF the event thread
-     * behind a spinner: it WAITS for tile images applied on the event thread, which holding would deadlock.
-     *
-     * @param page the page to draw, or null to ask which one
+     * Writes a diagram page to a picture file: asks which page (unless `page` names one), at what size, and where.
+     * Drawn OFF the event thread behind a spinner: it WAITS for tile images applied on the event thread, which holding
+     * would deadlock.
      */
     private void exportDiagram(String page)
     {
@@ -767,9 +766,6 @@ final class LayoutMenus
     /**
      * What a Recent Layouts item reads (OB-390): the folder's name, or where another listed folder shares it, as many
      * of its last folders as tell the two apart after an ellipsis, the whole path only where nothing shorter does.
-     * @param path the folder
-     * @param shown every folder listed with it
-     * @return the label
      */
     static String recentLabel(String path, List<String> shown)
     {

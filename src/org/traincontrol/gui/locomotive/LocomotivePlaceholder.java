@@ -65,12 +65,11 @@ public class LocomotivePlaceholder
         {
             g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
-            // A thirty-second of the height ("make the edges of the placeholder locomotive icon slightly thinner"):
-            // quieter than the picture that replaces it.  Scaled by the height, floored at one pixel.
+            // A thirty-second of the height: quieter than the picture that replaces it.  Scaled by the height, floored
+            // at one pixel.
             g.setStroke(new BasicStroke(Math.max(1f, h / 32f)));
 
-            // Padding all round, so nothing is cut off at the edges: the wheels and pantographs lost their outermost
-            // pixel ("reduce the overall size slightly to accommodate the pantographs").
+            // Padding all round, so nothing is cut off at the edges, the wheels and pantographs included.
             int pad = Math.max(2, Math.round(h / 10f));
 
             // Bottom up: the wheels are measured against the whole picture and everything else against
@@ -80,7 +79,7 @@ public class LocomotivePlaceholder
             int wheelTop = h - pad - wheel;
             int wheelMiddle = wheelTop + wheel / 2;
 
-            // Room for the pantographs to be SEEN, which is more than they had.
+            // Room for the pantographs to be SEEN.
             int pantograph = Math.max(3, Math.round(h / 8f));
 
             int forBoth = wheelMiddle - pad - pantograph;
@@ -109,8 +108,7 @@ public class LocomotivePlaceholder
 
             int roofTopLeft = bodyLeft + (bodyWidth - roofTopWidth) / 2;
 
-            // One silhouette, not a roof drawn on top of a body: two antialiased shapes sharing an edge read as a seam
-            // ("where the trapezoid meets the square has a rough edge").
+            // One silhouette, not a roof drawn on top of a body: two antialiased shapes sharing an edge read as a seam.
             Polygon body = new Polygon();
 
             body.addPoint(bodyLeft, bodyBottom);
@@ -181,7 +179,7 @@ public class LocomotivePlaceholder
         }
     }
 
-    /** One folded pantograph, drawn as a diamond: "the pantographs need to be diamond - right now the top is flat." */
+    /** One folded pantograph, drawn as a diamond. */
     private static void pantograph(Graphics2D g, int centre, int roofTop, int width, int height)
     {
         int half = Math.max(2, width / 2);

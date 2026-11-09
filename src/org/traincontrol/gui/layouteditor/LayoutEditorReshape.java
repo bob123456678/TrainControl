@@ -24,8 +24,6 @@ final class LayoutEditorReshape
      * Whether shiftUp would do anything.  Public because the menu asks it before offering the item and the method asks
      * it before acting: ONE predicate, so the two cannot drift.  False on the edge, where there is no row below to move
      * up into.
-     *
-     * @return true when there is a hovered square this can work from
      */
     boolean canShiftUp()
     {
@@ -33,13 +31,9 @@ final class LayoutEditorReshape
     }
 
     /**
-     * Whether the page has room to grow by this much: ONE predicate for every gesture that grows the page, asked by the
-     * menu before offering an item and by the methods before acting.  Neither `LayoutDiagram.shiftDown` nor the model's
-     * own grower knows the limit.
-     *
-     * @param rows how many rows the gesture would add
-     * @param columns how many columns it would add
-     * @return true when the result would still be within MAX_SIZE
+     * Whether the page has room to grow by `rows` and `columns` (the result stays within MAX_SIZE): ONE predicate for
+     * every gesture that grows the page, asked by the menu before offering an item and by the methods before acting.
+     * Neither `LayoutDiagram.shiftDown` nor the model's own grower knows the limit.
      */
     boolean roomToGrow(int rows, int columns)
     {
@@ -57,8 +51,6 @@ final class LayoutEditorReshape
      * Whether shiftLeft would do anything.  Public because the menu asks it before offering the item and the method
      * asks it before acting: ONE predicate, so the two cannot drift.  False on the edge, where there is no column to
      * its right to move left into.
-     *
-     * @return true when there is a hovered square this can work from
      */
     boolean canShiftLeft()
     {
@@ -68,8 +60,6 @@ final class LayoutEditorReshape
     /**
      * Whether shiftDown would do anything.  Asked by addShift alongside canShiftUp and canShiftLeft, and the answer
      * goes straight to setEnabled; nearly always true, because opening the popup sets the hovered position.
-     *
-     * @return true when there is a hovered square this can work from
      */
     boolean canShiftDown()
     {
@@ -78,11 +68,7 @@ final class LayoutEditorReshape
         return this.editor.lastHoveredY >= 0 && roomToGrow(1, 0);
     }
 
-    /**
-     * Whether shiftRight would do anything; asked as canShiftDown is.
-     *
-     * @return true when there is a hovered square this can work from
-     */
+    /** Whether shiftRight would do anything; asked as canShiftDown is. */
     boolean canShiftRight()
     {
         // And the ceiling, as in canShiftDown: this grows the page by a column.
@@ -148,10 +134,8 @@ final class LayoutEditorReshape
 
     /**
      * Shifts everything past the hovered row or column by one and carries the setup's keys with it, so every station,
-     * name, facing and restriction stays on its track.
-     *
-     * @param across true for columns, false for rows
-     * @param step -1 to shift up or left (the lines after the hovered one move), 1 for down or right (from it on)
+     * name, facing and restriction stays on its track.  `across` is true for columns, false for rows; `step` is -1 to
+     * shift up or left (the lines after the hovered one move), 1 for down or right (from it on).
      */
     private void shiftAndCarry(boolean across, int step, Shift shift)
     {

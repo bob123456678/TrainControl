@@ -117,8 +117,8 @@ public class TileOverlay
     private static final float ICON_ALPHA = 0.9f;
 
     /**
-     * Whether the icon is only for trains that are moving or drawn standing (FR-027), the dot serving for the rest;
-     * since OB-317 the dot is left for a picture that cannot be read.
+     * Whether the icon is only for trains that are moving or drawn standing (FR-027), the dot serving for the rest and
+     * for a picture that cannot be read (OB-317).
      */
     private static final boolean ICON_ONLY_WHILE_MOVING = true;
 
@@ -363,7 +363,7 @@ public class TileOverlay
         if (Math.abs(4 * Math.abs(dx) - width) > 4 || Math.abs(4 * Math.abs(dy) - height) > 4) return null;
 
         // THE LINE ITSELF, not the rounded difference: the middle of a curve on a 30-pixel tile is (22,22), not
-        // (22.5,22.5), and the difference from there turned the icon several degrees off the rail
+        // (22.5,22.5)
         return new int[] {Integer.signum(dx) * width, Integer.signum(dy) * height};
     }
 
@@ -437,7 +437,7 @@ public class TileOverlay
         return null;
     }
 
-    /** The white halo round the train's icon, worked out once from it (the fifth look proposal). */
+    /** The white halo round the train's icon, worked out once from it. */
     private static java.awt.image.BufferedImage halo;
 
     /** How far the halo reaches past the icon, as a share of the icon's width. */

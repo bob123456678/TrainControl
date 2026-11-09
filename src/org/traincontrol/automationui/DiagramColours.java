@@ -16,7 +16,7 @@ public final class DiagramColours
 
     /**
      * The path ahead of a running train: the stations' blue (Adam, FR-106: "I might prefer the same blue as stations
-     * for pending paths"); the dark red it was reads as "stop" on a railway.
+     * for pending paths").
      */
     public static final Color PATH_AHEAD = STATION;
 

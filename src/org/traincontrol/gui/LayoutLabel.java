@@ -145,16 +145,7 @@ public final class LayoutLabel extends JLabel
         this(c, parent, size, tcUI, edit, null);
     }
 
-    /**
-     * A square, given the editor's grid setting by the grid that makes it, asked once a build.
-     *
-     * @param c the component on the square, or null
-     * @param parent the grid's master
-     * @param size the square's size
-     * @param tcUI the main window
-     * @param edit whether the square is in an editor
-     * @param gridLines the editor's grid setting, or null to ask it
-     */
+    /** A square, given the editor's grid setting by the grid that makes it (null: ask it), asked once a build. */
     public LayoutLabel(LayoutDiagramComponent c, Container parent, int size, TrainControlUI tcUI, boolean edit,
         Boolean gridLines)
     {
@@ -603,9 +594,6 @@ public final class LayoutLabel extends JLabel
      * a page's grid, so its labels are detached but alive); NOT DISPLAYABLE (a replaced grid's labels have no peer).
      * The arriving label is never judged.  Where the square cannot be established the label is kept: a missed prune is
      * a slow leak, a wrong one a dead tile.
-     *
-     * @param registered the labels already registered with the device
-     * @param arriving the label being registered now
      */
     public static void forgetReplaced(java.util.Collection<LayoutLabel> registered, LayoutLabel arriving)
     {
@@ -881,7 +869,6 @@ public final class LayoutLabel extends JLabel
     /**
      * Whether this tile belongs to the diagram editor rather than an operating view: the editor draws autonomy from the
      * panel beside it, the operating views from the setup on disk, so one must not publish over the other.
-     * @return
      */
     public boolean isEditMode()
     {
@@ -900,9 +887,6 @@ public final class LayoutLabel extends JLabel
     /**
      * The same flash, in a color and for a length the caller chooses: the route editor lights what a route commands in
      * yellow and what it merely checks in orange.
-     *
-     * @param wash the color to lay over the tile
-     * @param holdMs how long to hold it
      */
     public void flashHighlight(java.awt.Color wash, int holdMs)
     {
@@ -1015,10 +999,8 @@ public final class LayoutLabel extends JLabel
     }
 
     /**
-     * Sets what autonomy is showing on this square, repainting if it changed.  Repaints here rather than through
-     * updateImage, which returns early unless the icon name changed.
-     *
-     * @param overlay what to show, or null for nothing
+     * Sets what autonomy is showing on this square (null for nothing), repainting if it changed.  Repaints here rather
+     * than through updateImage, which returns early unless the icon name changed.
      */
     public void setAutonomyOverlay(TileOverlay overlay)
     {
@@ -1056,9 +1038,7 @@ public final class LayoutLabel extends JLabel
 
     /**
      * Sets what the autonomy editor is showing on this square (directions, lengths, selection), repainting if it
-     * changed.  Like the overlay, none of it changes the icon name.
-     *
-     * @param annotation what to show, or null for nothing
+     * changed; null for nothing.  Like the overlay, none of it changes the icon name.
      */
     public void setAutonomyAnnotation(org.traincontrol.automationui.TileAnnotation annotation)
     {
@@ -1313,12 +1293,7 @@ public final class LayoutLabel extends JLabel
      * One coach of a train, along one road of a square (T2 of the look's train tails).  Whole coaches, one to a square:
      * a dash pattern restarts at every square and leaves a stub wherever a road is not a whole number of dashes long (a
      * curve's chord is about seven-tenths of a straight one).  Here every road is one coach, its ends trimmed by half a
-     * gap, so the gaps fall exactly at the joins between squares.
-     *
-     * @param g the graphics, its color and stroke set by the caller
-     * @param a one end of the road, a side's midpoint
-     * @param b the other end
-     * @param span the square's size
+     * gap, so the gaps fall exactly at the joins between squares.  `a` and `b` are the road's ends (a side's midpoint).
      */
     public static void paintCoach(java.awt.Graphics2D g, int[] a, int[] b, int span)
     {
@@ -1363,22 +1338,13 @@ public final class LayoutLabel extends JLabel
      */
     private static volatile TailStyle tailStyle = TailStyle.LINE;
 
-    /**
-     * The style trains are drawn in, asked in one place so a preference can choose it later: every square follows on
-     * its next paint.
-     *
-     * @return how a train's body is drawn
-     */
+    /** The style trains are drawn in, asked in one place so a preference can choose it later. */
     public static TailStyle tailStyle()
     {
         return tailStyle;
     }
 
-    /**
-     * Chooses how trains are drawn from now on - for that preference, and for a test.
-     *
-     * @param style the style, null for the default
-     */
+    /** Chooses how trains are drawn from now on - for that preference, and for a test; null is the default. */
     public static void setTailStyle(TailStyle style)
     {
         tailStyle = style == null ? TailStyle.LINE : style;
@@ -1397,21 +1363,13 @@ public final class LayoutLabel extends JLabel
     /** How a train's line ends: rounded.  `TailEnds.SQUARE` is the line cut off flat on the square's edge. */
     private static volatile TailEnds tailEnds = TailEnds.ROUNDED;
 
-    /**
-     * How a train's line ends, asked in ONE place as `tailStyle` and `tailColour` are.
-     *
-     * @return how the line ends where the train ends
-     */
+    /** How a train's line ends, asked in ONE place as `tailStyle` and `tailColour` are. */
     public static TailEnds tailEnds()
     {
         return tailEnds;
     }
 
-    /**
-     * Chooses how a train's line ends from now on - for a preference, and for a test.
-     *
-     * @param ends how, null for the default
-     */
+    /** Chooses how a train's line ends from now on - for a preference, and for a test; null is the default. */
     public static void setTailEnds(TailEnds ends)
     {
         tailEnds = ends == null ? TailEnds.ROUNDED : ends;
@@ -1440,17 +1398,13 @@ public final class LayoutLabel extends JLabel
             this.overTheRun = overTheRun;
         }
 
-        /**
-         * @return the color itself
-         */
+        /** @return the color itself */
         public Color colour()
         {
             return colour;
         }
 
-        /**
-         * @return the color over a running train's own run line, which it comes out as `colour` does over track
-         */
+        /** @return the color over a running train's own run line, which it comes out as `colour` does over track */
         public Color overTheRun()
         {
             return overTheRun;
@@ -1460,21 +1414,13 @@ public final class LayoutLabel extends JLabel
     /** The color trains are drawn in: see-through by default, and easy to switch. */
     private static volatile TailColour tailColour = TailColour.SEE_THROUGH;
 
-    /**
-     * The color trains are drawn in, asked in ONE place so a preference can choose it later, as `tailStyle` is.
-     *
-     * @return the color a train's body is drawn in
-     */
+    /** The color trains are drawn in, asked in ONE place so a preference can choose it later, as `tailStyle` is. */
     public static TailColour tailColour()
     {
         return tailColour;
     }
 
-    /**
-     * Chooses the color trains are drawn in from now on - for that preference, and for a test.
-     *
-     * @param colour the color, null for the default
-     */
+    /** Chooses the color trains are drawn in from now on - for that preference, and for a test; null is the default. */
     public static void setTailColour(TailColour colour)
     {
         tailColour = colour == null ? TailColour.SEE_THROUGH : colour;
@@ -1496,9 +1442,6 @@ public final class LayoutLabel extends JLabel
     /**
      * Draws the train's line, as `paintCoveredMark(g)` does, or over a run line: in the color that comes out there as
      * the line does over plain track.
-     *
-     * @param g where to draw
-     * @param overTheRun whether it is drawn over the run line, not under everything
      */
     private void paintCoveredMark(java.awt.Graphics2D g, boolean overTheRun)
     {
@@ -1745,8 +1688,6 @@ public final class LayoutLabel extends JLabel
      * Draws this tile's train onto the container, above the captions (OB-159): a tile is behind every station caption,
      * so the container paints its children and then asks each tile for this.  Translated to this tile and not clipped
      * to it (MT-642), since on a curve the icon reaches onto the next tiles.
-     *
-     * @param g the container's graphics
      */
     public void paintTrainOverCaptions(java.awt.Graphics g)
     {
@@ -1773,8 +1714,6 @@ public final class LayoutLabel extends JLabel
     /**
      * Whether this square shows no train though trains are shown: the picture is between a wipe and the next one, or
      * not yet made.  A press then may still be on a train the setup says stands here (FR-160).
-     *
-     * @return true when no train is drawn on the square at the moment
      */
     public boolean trainPictureIsMissing()
     {
@@ -1785,10 +1724,7 @@ public final class LayoutLabel extends JLabel
 
     /**
      * Whether the train `paintTrainOverCaptions` draws for this square covers a point (OB-354): a click on it can land
-     * on a caption or on the next square.
-     *
-     * @param at the point, in this square's coordinates
-     * @return true where a train is drawn there
+     * on a caption or on the next square.  The point is in this square's coordinates.
      */
     public boolean trainDrawnAt(java.awt.Point at)
     {
@@ -1806,10 +1742,8 @@ public final class LayoutLabel extends JLabel
 
     /**
      * What of this square's station icon spills onto the squares beside it, drawn by the diagram once every square is
-     * drawn - `TileAnnotation.paintSpill`.
-     *
-     * @param g the diagram's graphics
-     * @return whether anything was drawn: a spill reaching what is being repainted
+     * drawn - `TileAnnotation.paintSpill`.  Answers whether anything was drawn: a spill reaching what is being
+     * repainted.
      */
     public boolean paintStationSpill(java.awt.Graphics g)
     {
@@ -1944,10 +1878,7 @@ public final class LayoutLabel extends JLabel
     }
 
 
-    /**
-     * Refreshes the tile's image
-     * @param highlight
-     */
+    /** Refreshes the tile's image. */
     public void updateImage(boolean highlight)
     {
         // TODO improve the way highlighting is done, delete global variables

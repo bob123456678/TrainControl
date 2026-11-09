@@ -186,26 +186,16 @@ public class CSDetect
     }
     
     /**
-     * Whether there is a Central Station web server on this host, retried (MT-060).  The retry lives in the name every
-     * caller already uses, so no call site has to remember a second method.
-     *
-     * @param host the host, which may carry a port for a test
-     * @param path the path that identifies a Central Station
-     * @return whether one answered
+     * Whether there is a Central Station web server on this host (which may carry a port for a test), retried (MT-060).
+     * The retry lives in the name every caller already uses, so no call site has to remember a second method.  `path`
+     * identifies a Central Station.
      */
     public static boolean checkWebServer(String host, String path)
     {
         return checkWebServer(host, path, WEB_RETRY);
     }
 
-    /**
-     * The same, with the number of attempts named - the way in for a test (MT-060).
-     *
-     * @param host the host, which may carry a port
-     * @param path the path that identifies a Central Station
-     * @param attempts how many times to ask before giving up
-     * @return whether one answered
-     */
+    /** The same, with the number of attempts named - the way in for a test (MT-060). */
     public static boolean checkWebServer(String host, String path, int attempts)
     {
         for (int tries = 0; tries < Math.max(1, attempts); tries++)

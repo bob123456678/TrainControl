@@ -212,13 +212,8 @@ public class ImageUtil
     }
 
     /**
-     * The same wash in a color of the caller's choosing.
-     *
-     * A second color lets a route's COMMANDED squares and the ones it only LOOKS AT be told apart.
-     *
-     * @param originalIcon the tile as it is drawn
-     * @param wash the color to lay over it, alpha included
-     * @return a new icon; the original is not touched
+     * The same wash in a color of the caller's choosing (alpha included), so a route's COMMANDED squares and the ones
+     * it only LOOKS AT can be told apart.  Answers a new icon; the original is not touched.
      */
     public static ImageIcon addHighlightOverlay(ImageIcon originalIcon, Color wash)
     {

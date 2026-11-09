@@ -105,28 +105,17 @@ final class LayoutEditorUndo
         if (changed) this.editor.rememberAutonomy(autonomy);
     }
 
-    /**
-     * Checks if there is any history to undo
-     * @return 
-     */
     boolean canUndo()
     {
         return !this.editor.previousLayoutComponents.isEmpty();
     }
 
-    /**
-     * Checks if there is any history to redo
-     * @return 
-     */
     boolean canRedo()
     {
         return !this.editor.previousLayoutComponentsRedo.isEmpty();
     }
 
-    /**
-     * Creates a copy of the current layout
-     * @return 
-     */
+    /** A copy of the current layout. */
     private List<LayoutDiagramComponent> deepCopyLayout()
     {
         List<LayoutDiagramComponent> history = new ArrayList<>();

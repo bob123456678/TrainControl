@@ -130,7 +130,7 @@ public class AutonomyMenu extends JMenu
             getMenuComponent(i).setEnabled(false);
         }
 
-        // Clickable, and it brings the editor forward (OB-033): disabled, it stated the problem and offered nothing.
+        // Clickable, and it brings the editor forward (OB-033).
         // First in the list, as the only thing that can be done.  It reads menuOpenFullEditor, the label already used
         // for the same action (LayoutRightclickAutonomyMenu.addSetupMenu).
         JMenuItem busy = new JMenuItem(I18n.t("autosetup.ui.menuOpenFullEditor"));
@@ -139,7 +139,7 @@ public class AutonomyMenu extends JMenu
 
         insert(busy, 0);
 
-        // Under the item it belongs to: addSeparator appends, which drew the rule after the last item.
+        // Under the item it belongs to: addSeparator appends.
         insertSeparator(1);
     }
 
@@ -155,8 +155,7 @@ public class AutonomyMenu extends JMenu
 
         JMenuItem documentation = new JMenuItem(I18n.t("ui.main.documentation"));
 
-        // On a thread of its own (Adam, on MT-546: "can it get its own thread?"): opening a browser is a call into
-        // Windows.
+        // On a thread of its own (MT-546): opening a browser is a call into Windows.
         documentation.addActionListener(e -> new Thread(() -> Util.openUrl(TrainControlUI.README_URL),
             "open the automation guide").start());
 
@@ -247,8 +246,8 @@ public class AutonomyMenu extends JMenu
                 return;
             }
 
-            // A setup that is there and would not read says so, with the reason on the grayed line: "needs a layout
-            // stored on this computer" sent the reader looking for a folder they had.  The window keeps why.
+            // A setup that is there and would not read says so, with the reason on the grayed line.  The window keeps
+            // why.
             String unreadable = ui.whyTheSetupCannotBeRead();
 
             JMenuItem none = new JMenuItem(I18n.t(unreadable != null
@@ -559,8 +558,8 @@ public class AutonomyMenu extends JMenu
 
         manage.add(deleteOne);
 
-        // Import and Export are not here (OB-051): they were correct and unfindable, and sit in the Configuration
-        // submenu under a divider, beside the configurations they are about.
+        // Import and Export are not here (OB-051): they sit in the Configuration submenu under a divider, beside the
+        // configurations they are about.
 
         // Everything above acts on the configuration that is running, so it means nothing until one is.  Grayed one at
         // a time rather than the whole submenu, so deleting the lot, below, stays reachable when nothing is loaded.
@@ -583,8 +582,7 @@ public class AutonomyMenu extends JMenu
 
         manage.addSeparator();
 
-        // The way back out of having set autonomy up at all: configurations could only be deleted one at a time and the
-        // last was refused.
+        // The way back out of having set autonomy up at all.
         JMenuItem forget = item(I18n.t("autosetup.ui.menuDeleteSetup"), new Runnable()
         {
             @Override

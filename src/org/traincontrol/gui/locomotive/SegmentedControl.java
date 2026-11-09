@@ -37,9 +37,6 @@ public class SegmentedControl extends JPanel
     /**
      * Adds a segment at the right-hand end.
      *
-     * @param text what it says
-     * @param name its component name
-     * @param chosen whether it is the chosen one
      * @return the segment, whose action listeners are the caller's
      */
     public JToggleButton addSegment(String text, String name, boolean chosen)

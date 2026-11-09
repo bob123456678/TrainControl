@@ -619,12 +619,9 @@ public class AutonomyChecks
 
     /**
      * A square trains turn round at, from which nothing can be reached (OB-113): a NOTICE, as "reaches no station" is
-     * also true of a reversing point on a spur somebody is still drawing.
-     *
-     * @param mayTurn squares where a train may change direction
-     * @param mustTurn squares where it must
-     * @param reach each square to the stations reachable from it, or null to say nothing
-     * @return one finding per reversing square that leads nowhere
+     * also true of a reversing point on a spur somebody is still drawing.  One finding per reversing square that leads
+     * nowhere.  `mayTurn` and `mustTurn` are the squares where a train may or must change direction; a null `reach`
+     * says nothing.
      */
     private static List<Finding> checkReversingGoesSomewhere(GraphReducer reducer,
         Set<TileKey> mayTurn, Set<TileKey> mustTurn, Map<TileKey, Set<TileKey>> reach,
@@ -776,8 +773,6 @@ public class AutonomyChecks
     /**
      * A square that emits an arrival copy nothing can leave, or nothing can reach.  Every other check asks about the
      * SQUARE, so none catch it.  ALL THREE ARE WARNINGS: `errorCount() > 0` refuses to start autonomy at all.
-     *
-     * @param key which of the two messages to report
      */
     private static List<Finding> checkBadCopies(Map<TileKey, String> copies, String key)
     {
@@ -862,11 +857,7 @@ public class AutonomyChecks
         return findings;
     }
 
-    /**
-     * Whether a finding is a trapped arrival, whichever advice it gives.
-     *
-     * @return true for `ARRIVAL_TRAPPED` and `ARRIVAL_TRAPPED_NO_CLOSING`
-     */
+    /** Whether a finding is a trapped arrival (`ARRIVAL_TRAPPED` or `ARRIVAL_TRAPPED_NO_CLOSING`). */
     public static boolean isArrivalTrapped(String messageKey)
     {
         return ARRIVAL_TRAPPED.equals(messageKey) || ARRIVAL_TRAPPED_NO_CLOSING.equals(messageKey);
@@ -1007,9 +998,8 @@ public class AutonomyChecks
     }
 
     /**
-     * Stations that must turn every train round and have more than one way in (MT-361).
-     *
-     * @param termini the squares, mapped to how many unbarred sides reach them
+     * Stations that must turn every train round and have more than one way in (MT-361); `termini` maps each to how
+     * many unbarred sides reach it.
      */
     private static List<Finding> checkTermini(GraphReducer reducer, Map<TileKey, Integer> termini)
     {
@@ -1103,8 +1093,8 @@ public class AutonomyChecks
 
     /**
      * Is every station shown on the track diagram?  A station with no label is a place the user cannot see, and
-     * autonomy would announce arrivals at it.  An error, on the author's instruction.  A station still carrying its
-     * generated name is skipped: naming it comes first.
+     * autonomy would announce arrivals at it.  An error.  A station still carrying its generated name is skipped:
+     * naming it comes first.
      */
     private static List<Finding> checkStationLabels(GraphReducer reducer, Set<TileKey> labelled)
     {

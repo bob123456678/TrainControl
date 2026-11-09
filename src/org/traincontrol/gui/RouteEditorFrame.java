@@ -159,11 +159,7 @@ public class RouteEditorFrame extends JFrame
 
     /**
      * The same window, handed the route rather than sent to look it up, so its read-only behavior can be exercised
-     * without a running control station.
-     *
-     * @param parent the main window, or null
-     * @param routeName what to call it in the title
-     * @param route the route to show, or null for a new one
+     * without a running control station.  A null `route` is a new one.
      */
     public RouteEditorFrame(TrainControlUI parent, String routeName, Route route)
     {
@@ -331,8 +327,6 @@ public class RouteEditorFrame extends JFrame
      * Fills in a name for a route that does not exist yet.  Not the constructor's routeName: a non-empty originalName
      * makes Save an edit of an existing route, not an add.  The signature is re-taken so that closing straight away
      * still throws nothing away.
-     *
-     * @param name the name to offer
      */
     public void proposeName(String name)
     {
@@ -516,12 +510,7 @@ public class RouteEditorFrame extends JFrame
         return content;
     }
 
-    /**
-     * Everything a route says about itself, as one string, tolerant like `stateSignature`.
-     *
-     * @param route the route, or null
-     * @return its signature, or null when there is no such route
-     */
+    /** Everything a route says about itself, as one string, tolerant like `stateSignature`. */
     private static String signatureOf(org.traincontrol.base.Route route)
     {
         if (route == null) return null;
@@ -578,10 +567,6 @@ public class RouteEditorFrame extends JFrame
     /**
      * Which name a save onto a renamed route should use.  The name field still holds the opening name unless the
      * operator typed in it; passing that would rename the route back over somebody else's rename.
-     *
-     * @param typed what the name field holds
-     * @param nowCalled what the route is called now, by whoever renamed it
-     * @return the name to save it under
      */
     public String nameToSaveAs(String typed, String nowCalled)
     {
@@ -593,8 +578,6 @@ public class RouteEditorFrame extends JFrame
     /**
      * What the route this window opened on is called now, or null if no route carries that id (found by walking the
      * list; the view interface has no lookup by id).
-     *
-     * @return the current name, or null
      */
     public String nameNowHeldById()
     {
@@ -613,8 +596,6 @@ public class RouteEditorFrame extends JFrame
     /**
      * Whether closing this window now would throw away work: the question `closeIfThrowingNothingAway` asks, without
      * a dialog.  Compared against what was loaded, not a flag, since six paths change things here.
-     *
-     * @return true when something typed here is not saved
      */
     public boolean hasUnsavedWork()
     {
@@ -627,8 +608,6 @@ public class RouteEditorFrame extends JFrame
     /**
      * Asked by the application's exit, which is a door out of this window too (OB-070).  Answering No leaves the
      * application open.
-     *
-     * @return true when the exit may carry on
      */
     public boolean maySettleBeforeExit()
     {
@@ -687,8 +666,6 @@ public class RouteEditorFrame extends JFrame
     /**
      * Everything the window is currently saying, as one string.  Tolerant: it is compared, never parsed, so a
      * half-typed row still contributes its text.
-     *
-     * @return a signature to compare against loadedSignature
      */
     private String stateSignature()
     {
@@ -740,8 +717,6 @@ public class RouteEditorFrame extends JFrame
     /**
      * Whether any route in the database was imported from the Central Station.  Without one, a new route's id cannot
      * collide with the station's, which is all the sync after a save checks.
-     *
-     * @return whether a sync could tell us anything
      */
     private boolean anyRouteCameFromTheStation()
     {
@@ -776,12 +751,7 @@ public class RouteEditorFrame extends JFrame
         triggerLabelText.setForeground(automatic ? HEADING_BLUE : java.awt.Color.GRAY);
     }
 
-    /**
-     * What a trigger means, in words.
-     *
-     * @param trigger the stored value
-     * @return the line to show for it
-     */
+    /** What a trigger means, in words. */
     private static String triggerLabel(Route.s88Triggers trigger)
     {
         return trigger == Route.s88Triggers.OCCUPIED_THEN_CLEAR
@@ -791,9 +761,6 @@ public class RouteEditorFrame extends JFrame
     /**
      * The trigger behind a line of words, matched against the labels so the two directions cannot disagree; falls
      * back to the arrival trigger, which every older route had.
-     *
-     * @param label what the box is showing
-     * @return the value to store
      */
     private static Route.s88Triggers triggerFor(String label)
     {
@@ -1112,22 +1079,13 @@ public class RouteEditorFrame extends JFrame
         splitButton.setEnabled(conditions.canSplitHere());
     }
 
-    /**
-     * A cell editor that will only accept digits, refused as typed rather than at Save.
-     *
-     * @return the editor
-     */
+    /** A cell editor that will only accept digits, refused as typed rather than at Save. */
     private static javax.swing.table.TableCellEditor digitsOnly()
     {
         return new DefaultCellEditor(AutonomyEditorPanel.digitsOnlyField(null, 0, 0));
     }
 
-    /**
-     * A cell editor offering exactly these values.
-     *
-     * @param values what to offer
-     * @return the editor
-     */
+    /** A cell editor offering exactly these values. */
     private static javax.swing.table.TableCellEditor chooseFrom(String[] values)
     {
         JComboBox<String> box = new JComboBox<>();
@@ -1137,12 +1095,7 @@ public class RouteEditorFrame extends JFrame
         return new DefaultCellEditor(box);
     }
 
-    /**
-     * A cell editor offering setting words: each is shown in the user's language and committed as the stored word.
-     *
-     * @param words the stored words
-     * @return the editor
-     */
+    /** A cell editor offering setting words: each is shown in the user's language and committed as the stored word. */
     private static javax.swing.table.TableCellEditor chooseSetting(String[] words)
     {
         JComboBox<String> box = new JComboBox<>();
@@ -1182,10 +1135,6 @@ public class RouteEditorFrame extends JFrame
      * The names to offer in a locomotive or route cell: the database's, and the name already in the cell.  A combo
      * box handed a value it lacks keeps whatever was selected, so a route naming a since-deleted locomotive would be
      * rewritten to the first name by a click, and the Save gate would be satisfied.
-     *
-     * @param names the database's names, or null
-     * @param has what the cell holds, or null
-     * @return the names to offer
      */
     private static String[] withTheCellsOwn(java.util.List<String> names, String has)
     {
@@ -1197,12 +1146,7 @@ public class RouteEditorFrame extends JFrame
         return out.toArray(new String[0]);
     }
 
-    /**
-     * The number half of a function's setting, which is stored as "3:on".
-     *
-     * @param setting the stored value
-     * @return the function number, or empty
-     */
+    /** The number half of a function's setting, which is stored as "3:on". */
     private static String functionNumberOf(String setting)
     {
         if (setting == null) return "";
@@ -1212,12 +1156,7 @@ public class RouteEditorFrame extends JFrame
         return colon < 0 ? setting : setting.substring(0, colon);
     }
 
-    /**
-     * The on-or-off half.  Defaults to off: a function command with no state is not a command.
-     *
-     * @param setting the stored value
-     * @return "on" or "off"
-     */
+    /** The on-or-off half.  Defaults to off: a function command with no state is not a command. */
     private static String functionStateOf(String setting)
     {
         if (setting == null) return "off";
@@ -1229,12 +1168,7 @@ public class RouteEditorFrame extends JFrame
         return setting.substring(colon + 1).trim();
     }
 
-    /**
-     * The closed set of words a kind's setting may take, or null when it takes a number or a name.
-     *
-     * @param kind the row's kind
-     * @return the words, in the order they should be offered
-     */
+    /** The closed set of words a kind's setting may take, or null when it takes a number or a name. */
     private String[] settingWords(CommandRow row)
     {
         switch (row.getKind())
@@ -1323,9 +1257,6 @@ public class RouteEditorFrame extends JFrame
     /**
      * The row of buttons under a section's table, asked of the layout rather than counted by index, which breaks when
      * a heading is added above the table.
-     *
-     * @param section a panel built by section()
-     * @return its button row
      */
     private static JPanel buttonsOf(JPanel section)
     {
@@ -1333,12 +1264,7 @@ public class RouteEditorFrame extends JFrame
             .getLayoutComponent(BorderLayout.SOUTH);
     }
 
-    /**
-     * A label naming something the reader has to fill in: Segoe UI Semibold 13, black.
-     *
-     * @param text the label
-     * @return the label
-     */
+    /** A label naming something the reader has to fill in: Segoe UI Semibold 13, black. */
     private static JLabel label(String text)
     {
         JLabel out = new JLabel(text);
@@ -1492,8 +1418,6 @@ public class RouteEditorFrame extends JFrame
     /**
      * Adds a command that was captured from the layout: the accessory's own setting line, parsed as the old editor
      * parsed it.  A line this frame has no controls for is kept rather than dropped.
-     *
-     * @param command the captured line
      */
     public void appendCommand(String command)
     {
@@ -1607,11 +1531,7 @@ public class RouteEditorFrame extends JFrame
         captureTarget.setSelectedIndex(intoConditions ? 1 : 0);
     }
 
-    /**
-     * Puts text in the sensor field, for a test about what the editor accepts (OB-178).
-     *
-     * @param text what the user typed, empty for a cleared field
-     */
+    /** Puts text in the sensor field, for a test about what the editor accepts (OB-178). */
     public void setS88TextForTest(String text)
     {
         s88Field.setText(text);
@@ -1619,19 +1539,13 @@ public class RouteEditorFrame extends JFrame
 
     /**
      * Whether auto-fire is ticked, for the same test - ticked as a click ticks it, so what listens to the box hears it.
-     *
-     * @param on whether the route fires itself
      */
     public void setAutoFireForTest(boolean on)
     {
         if (enabledBox.isSelected() != on) enabledBox.doClick();
     }
 
-    /**
-     * Everything this editor would refuse to save, as message keys resolved to text (OB-178).
-     *
-     * @return the problems, empty when the route would save
-     */
+    /** Everything this editor would refuse to save, as message keys resolved to text (OB-178). */
     public java.util.List<String> problemsForTest()
     {
         return everythingWrong();
@@ -1639,9 +1553,6 @@ public class RouteEditorFrame extends JFrame
     /**
      * Sets a cell of the command table, as typing in it would.  These setters go through the table model, where what
      * a row keeps when its kind changes is decided.
-     *
-     * @param row which row
-     * @param kind what to make it
      */
     public void setCommandKindForTest(int row, CommandRow.Kind kind)
     {
@@ -1661,9 +1572,6 @@ public class RouteEditorFrame extends JFrame
     /**
      * The function NUMBER of a row, its own column (MT-464): `setCommandSettingForTest` reaches only the on-or-off
      * half.
-     *
-     * @param row which row
-     * @param number the function number, as typed
      */
     public void setCommandFunctionNumberForTest(int row, String number)
     {
@@ -1690,9 +1598,6 @@ public class RouteEditorFrame extends JFrame
     /**
      * The marks at the end of a command row, driven the way a click drives them (MT-029); MOVE_UP and MOVE_DOWN move
      * the one row, as the menu's Move Up and Move Down do (FR-162).
-     *
-     * @param row which row
-     * @param mark MOVE_UP, MOVE_DOWN, DELETE_ROW or COPY_ROW
      */
     public void clickCommandMarkForTest(int row, String mark)
     {
@@ -1837,11 +1742,7 @@ public class RouteEditorFrame extends JFrame
     /** @return the duplicate mark */
     public static String markCopy() { return COPY_ROW; }
 
-    /**
-     * Whether the command list offers Add Command: showing and able to be pressed.
-     *
-     * @return true when there is a way to add a command
-     */
+    /** Whether the command list offers Add Command: showing and able to be pressed. */
     public boolean offersToAddCommands()
     {
         return offers(commandActions, addCommandButton);
@@ -1894,21 +1795,13 @@ public class RouteEditorFrame extends JFrame
             && (conditionsEditable ? conditionCount() > 0 : conditionsAsFound != null));
     }
 
-    /**
-     * Whether the conditions' warning is showing: there are conditions and Automatically Fire is off.
-     *
-     * @return true while it is shown
-     */
+    /** Whether the conditions' warning is showing: there are conditions and Automatically Fire is off. */
     public boolean warnsTheConditionsAreUnaskedForTest()
     {
         return unasked.isVisible() && unasked.getText().equals(I18n.t("route.ui.frameConditionsNeedAutomaticFire"));
     }
 
-    /**
-     * How the conditions read, in words, as `updateReadsAs` shows them above the warning when there is one.
-     *
-     * @return the text, markup or plain, or a blank
-     */
+    /** How the conditions read, in words, as `updateReadsAs` shows them above the warning when there is one. */
     private String readingOfTheConditions()
     {
         if (!conditionsEditable)
@@ -1992,12 +1885,7 @@ public class RouteEditorFrame extends JFrame
     private static final String DELETE_ROW = "delete";
     private static final String COPY_ROW = "copy";
 
-    /**
-     * Squeezes a column down to the width of the mark in it.
-     *
-     * @param table the table
-     * @param column which column
-     */
+    /** Squeezes a column down to the width of the mark in it. */
     private static void narrow(JTable table, int column)
     {
         TableColumn narrow = table.getColumnModel().getColumn(column);
@@ -2010,9 +1898,6 @@ public class RouteEditorFrame extends JFrame
     /**
      * Draws the marks and makes them do something when pressed.  Drawn by the table's renderer, not as buttons in the
      * cells, because this table reorders and deletes rows constantly and would have to keep live components in step.
-     *
-     * @param table the table
-     * @param marked the columns that hold a mark
      */
     private void actOnRowMarks(final HandledTable table, final int... marked)
     {
@@ -2086,11 +1971,6 @@ public class RouteEditorFrame extends JFrame
     /**
      * A cell with no wash on it (OB-121).  A renderer hands back one recycled component, which may already have been
      * painted gray for the cell before; a selected row is left as super made it.
-     *
-     * @param out the recycled renderer component
-     * @param which the table it is being drawn for
-     * @param selected whether this cell is in the selection
-     * @return the same component, with any wash taken off it
      */
     private static java.awt.Component unshaded(java.awt.Component out, JTable which, boolean selected)
     {
@@ -2106,12 +1986,7 @@ public class RouteEditorFrame extends JFrame
         return out;
     }
 
-    /**
-     * Files an accessory command under its address and the protocol it is sent in.
-     *
-     * @param into the addresses so far
-     * @param command an accessory command
-     */
+    /** Files an accessory command under its address and the protocol it is sent in. */
     private static void byDecoder(
         java.util.Map<Integer, java.util.Set<org.traincontrol.base.Accessory.accessoryDecoderType>> into,
         org.traincontrol.base.RouteCommand command)
@@ -2123,8 +1998,6 @@ public class RouteEditorFrame extends JFrame
     /**
      * Grays every cell somebody cannot type into, since a blank cell that will accept a value and one that will not
      * look identical until clicked.
-     *
-     * @param table the table
      */
     private void greyWhatCannotBeEdited(final JTable table)
     {
@@ -2489,8 +2362,6 @@ public class RouteEditorFrame extends JFrame
     /**
      * Everything wrong with the window, in the order a reader would work through it.  Most of these catch a row that
      * looks right and builds but does nothing when run (a locomotive called "3", say): no error leads back to it.
-     *
-     * @return the problems, empty when there are none
      */
     private List<String> everythingWrong()
     {
@@ -2570,9 +2441,6 @@ public class RouteEditorFrame extends JFrame
      * The function numbers a row's locomotive has, or null where nothing can be said (MT-464).  A number already in
      * the cell is always offered, even out of range: a combo box handed a value it lacks keeps whatever was selected,
      * so a click would quietly rewrite F32 to F0, the lights.
-     *
-     * @param row the row, or null
-     * @return the numbers to offer, or null for a free typed number
      */
     private String[] functionsOffered(CommandRow row)
     {
@@ -2597,48 +2465,26 @@ public class RouteEditorFrame extends JFrame
         return out.toArray(new String[0]);
     }
 
-    /**
-     * What the function column would offer for a row, for a test (MT-464).
-     *
-     * @param row which row
-     * @return the numbers offered, or null where the cell takes a typed number
-     */
+    /** What the function column would offer for a row, for a test (MT-464). */
     public java.util.List<String> functionChoicesForTest(int row)
     {
         // Through the cell editor the table would use, not functionsOffered: the editor decides what can be typed.
         return offeredBy(commands, row, CommandTable.NUMBER);
     }
 
-    /**
-     * What a command's locomotive or route cell would offer, for a test.
-     *
-     * @param row which row
-     * @return the names offered, or null where the cell is not a list
-     */
+    /** What a command's locomotive or route cell would offer, for a test. */
     public java.util.List<String> targetChoicesForTest(int row)
     {
         return offeredBy(commands, row, CommandTable.TARGET);
     }
 
-    /**
-     * What a condition's locomotive cell would offer, for a test.
-     *
-     * @param line which outline row of the conditions
-     * @return the names offered, or null where the cell is not a list
-     */
+    /** What a condition's locomotive cell would offer, for a test. */
     public java.util.List<String> conditionTargetChoicesForTest(int line)
     {
         return offeredBy(conditions, conditions.lineOf(line), ConditionTable.TARGET);
     }
 
-    /**
-     * What one cell's editor offers, read through the editor the table would use.
-     *
-     * @param table the table
-     * @param row its row
-     * @param column its column
-     * @return the values offered, or null where the cell is not a list
-     */
+    /** What one cell's editor offers, read through the editor the table would use. */
     private static java.util.List<String> offeredBy(JTable table, int row, int column)
     {
         javax.swing.table.TableCellEditor editor = table.getCellEditor(row, column);
@@ -2661,9 +2507,6 @@ public class RouteEditorFrame extends JFrame
     /**
      * What is wrong with one row, if anything: a row that cannot be built (the row refuses itself), or one that builds
      * and names something that does not exist (a locomotive nobody owns, an address no decoder can carry).
-     *
-     * @param row the row, or null for a kind the editor has no controls for
-     * @return the problems with it
      */
     private List<String> problemsWith(CommandRow row)
     {
@@ -3181,9 +3024,6 @@ public class RouteEditorFrame extends JFrame
      * `max(delay, DEFAULT_SLEEP_MS)` between commands, so a delay of 1 to 150 would be stored, shown and never used.
      * Zero is left alone: it means no delay asked for.  Applied on the way out as well as in, since a route from an
      * earlier build, a station or a JSON file must show a number the railway will use.
-     *
-     * @param asked what the row holds
-     * @return what the railway will wait
      */
     private static int delayTheRailwayWillUse(int asked)
     {
@@ -4614,12 +4454,7 @@ public class RouteEditorFrame extends JFrame
         private final Caption caption = new Caption();
         private final javax.swing.CellRendererPane stamp = new javax.swing.CellRendererPane();
 
-        /**
-         * Whether a line is a group's caption rather than a condition; asked by the renderers.
-         *
-         * @param line the table line
-         * @return whether it is a caption
-         */
+        /** Whether a line is a group's caption rather than a condition; asked by the renderers. */
         boolean isCaptionLine(int line)
         {
             return line >= 0 && line < lines.size() && lines.get(line).row < 0;
@@ -4767,11 +4602,6 @@ public class RouteEditorFrame extends JFrame
         /**
          * What a cell shows, where that is more than what it holds (FR-141): a train-at-a-sensor line's setting is the
          * sensor's address, which a bare number under "Setting" would not say.  Only the painting changes.
-         *
-         * @param line the table line
-         * @param column the column
-         * @param value what the cell holds
-         * @return what to paint
          */
         Object shownAs(int line, int column, Object value)
         {
@@ -4779,13 +4609,7 @@ public class RouteEditorFrame extends JFrame
                 ? I18n.f("route.ui.frameSensorAddress", String.valueOf(value)) : value;
         }
 
-        /**
-         * The tooltip a cell carries to say what it means, or null for none (FR-141).
-         *
-         * @param line the table line
-         * @param column the column
-         * @return the explanation
-         */
+        /** The tooltip a cell carries to say what it means, or null for none (FR-141). */
         String explains(int line, int column)
         {
             return column == SETTING && asksWhereATrainIs(line) ? I18n.t("route.ui.frameSensorAddressTip") : null;
@@ -5196,12 +5020,7 @@ public class RouteEditorFrame extends JFrame
             return out;
         }
 
-        /**
-         * The caption of a caption line, as it is painted, tooltip included.
-         *
-         * @param line a caption line
-         * @return the shared label, set up for it
-         */
+        /** The caption of a caption line, as it is painted, tooltip included. */
         JLabel captionFor(int line)
         {
             ConditionOutline.Group group = lines.get(line).group;
@@ -5250,12 +5069,7 @@ public class RouteEditorFrame extends JFrame
             if (isCaptionLine(line)) setRowSelectionInterval(line, endsAt.get(lines.get(line).group));
         }
 
-        /**
-         * The caption that shows an outline row's word, as painted.
-         *
-         * @param row a joining word's outline row
-         * @return the shared caption label, or null where no caption shows it
-         */
+        /** The caption that shows an outline row's word, as painted. */
         JLabel captionOf(int row)
         {
             ConditionOutline.Group group = shownGroupOf(row);
@@ -5440,8 +5254,6 @@ public class RouteEditorFrame extends JFrame
 
         /**
          * Moves these conditions into a group before its item `at`, taking its word (OB-396), and leaves them selected.
-         *
-         * @param moving outline rows of conditions
          */
         void dropInto(java.util.Set<Integer> moving, ConditionOutline.Group group, int at)
         {

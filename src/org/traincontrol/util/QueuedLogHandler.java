@@ -135,9 +135,8 @@ public final class QueuedLogHandler extends Handler
     }
 
     /**
-     * Waits until every record published before the call has been written, or the time is up.
-     *
-     * @return whether everything was written in time
+     * Waits until every record published before the call has been written, or the time is up; true if all were written
+     * in time.
      */
     private boolean drain(long timeoutMs)
     {

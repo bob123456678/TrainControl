@@ -40,9 +40,9 @@ final class LayoutEditorRightclickMenu extends JPopupMenu
             addSeparator();
         }
         
-        // Paste, singular, by design: row and column variants filled to the edge of the diagram, so a mis-aimed one
-        // wrote over a whole row of track.  Selecting the squares and dragging says the same thing and can be corrected
-        // before it happens.
+        // Paste, singular, by design: a row or column variant would fill to the edge of the diagram, and a mis-aimed
+        // one would write over a whole row of track.  Selecting the squares and dragging says the same thing and can
+        // be corrected before it happens.
         JMenuItem pasteMenuItem = new JMenuItem(I18n.t("ui.paste"));
 
         pasteMenuItem.addActionListener(event ->
@@ -353,8 +353,7 @@ final class LayoutEditorRightclickMenu extends JPopupMenu
             menuItem.setToolTipText("Control+T");
             add(menuItem);
             
-            // Station labels are placed in the autonomy editor, where the stations are decided; this item wrote a
-            // "Point:" label from the LEGACY graph's point names.  Its Control+S shortcut is gone with it.
+            // Station labels are placed in the autonomy editor, where the stations are decided.
 
             addSeparator();
             
@@ -480,9 +479,7 @@ final class LayoutEditorRightclickMenu extends JPopupMenu
         
         add(diagramSubmenu);
 
-        // SHOW COORDINATES IS NOT HERE ANY MORE (OB-179).  Adam: "hide the show coordinates right click menu option...
-        // this is tied to the show grid option and will be toggled on and off together with the grid."  See
-        // `LayoutGrid.coordinatesVisible`.
+        // Show Coordinates is not here: it follows the grid (OB-179), see `LayoutGrid.coordinatesVisible`.
     }
 
     /** What the Edit Linked Page item shows: the page's name, or why there is none. */

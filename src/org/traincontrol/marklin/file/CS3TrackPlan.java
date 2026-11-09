@@ -37,9 +37,7 @@ public final class CS3TrackPlan
         }
     }
 
-    /**
-     * The plan of the named page, or null if the station has none.
-     */
+    /** The plan of the named page, or null if the station has none. */
     public Page page(String name)
     {
         return this.pages.get(name);
@@ -60,9 +58,7 @@ public final class CS3TrackPlan
         }
     }
 
-    /**
-     * One page's plan: which articles it holds, and the square of each on its grid.
-     */
+    /** One page's plan: which articles it holds, and the square of each on its grid. */
     public static final class Page
     {
         private final boolean grid;

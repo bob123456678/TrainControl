@@ -177,8 +177,6 @@ public class StationCaption extends JLabel
     /**
      * The halo round the letters: a round-joined white stroke round each letter's outline, inside the label's bounds so
      * no row of the diagram moves (OB-115).
-     *
-     * @param g the label's graphics
      */
     private void paintHalo(Graphics g)
     {
@@ -231,12 +229,7 @@ public class StationCaption extends JLabel
         }
     }
 
-    /**
-     * The halo round writing set as HTML: each line outlined where the HTML view draws it.
-     *
-     * @param g the label's graphics
-     * @param text the label's HTML
-     */
+    /** The halo round writing set as HTML: each line outlined where the HTML view draws it. */
     private void paintHtmlHalo(Graphics g, String text)
     {
         Object property = getClientProperty(javax.swing.plaf.basic.BasicHTML.propertyKey);
@@ -319,11 +312,7 @@ public class StationCaption extends JLabel
         }
     }
 
-    /**
-     * Stands this caption on end, or lays it flat again.
-     *
-     * @param on whether the caption reads upwards, for track that runs up the square
-     */
+    /** Stands this caption on end, or lays it flat again. */
     public void setRotated(boolean on)
     {
         this.rotated = on;
@@ -467,9 +456,6 @@ public class StationCaption extends JLabel
     /**
      * How far below where the geometry puts it a caption actually sits: a fraction of the tile, applied to both
      * orientations, since a caption hard against the track it names reads as sitting on the track.
-     *
-     * @param tile the tile size in pixels
-     * @return the extra offset
      */
     private static int nudge(int tile)
     {
@@ -649,9 +635,7 @@ public class StationCaption extends JLabel
 
     /**
      * Where the pill is actually drawn, in this component's own coordinates: the single answer that painting,
-     * hit-testing and sizing all ask.  Stood on end, width and height swap.
-     *
-     * @return the drawn rectangle, or null when there is nothing drawn
+     * hit-testing and sizing all ask; null when nothing is drawn.  Stood on end, width and height swap.
      */
     private java.awt.Rectangle pillBounds()
     {
@@ -743,8 +727,6 @@ public class StationCaption extends JLabel
 
     /**
      * How thick the pill is across its text: the line's height flat, and on end as thick as the letters need (OB-327).
-     *
-     * @return the pill's thickness in pixels
      */
     private int thickness()
     {
@@ -920,8 +902,6 @@ public class StationCaption extends JLabel
     /**
      * Whether this caption names something - a train, a station - rather than holding a placeholder dash or an arrow
      * alone.  Only these get the edge.
-     *
-     * @return whether the text has a letter or a digit in it
      */
     private boolean namesSomething()
     {

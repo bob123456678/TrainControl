@@ -35,16 +35,11 @@ public class FacingPrompt
 
     /**
      * The answer the next question gets, for a test that has to drive a real paste (MT-394): a modal dialog in a test
-     * hangs the suite, and reading the source instead let a paste that ignored the answer pass.  Null means the dialog
-     * is shown.
+     * hangs the suite.  Null means the dialog is shown.
      */
     private static volatile org.traincontrol.automationui.TilePorts.Side answeredByATest;
 
-    /**
-     * Makes every facing question answer this without showing a dialog, until reset with null.  For tests only.
-     *
-     * @param answer the heading to answer with, or null to put the dialog back
-     */
+    /** Makes every facing question answer this without showing a dialog, until reset with null.  For tests only. */
     public static void answerForTests(org.traincontrol.automationui.TilePorts.Side answer)
     {
         answeredByATest = answer;

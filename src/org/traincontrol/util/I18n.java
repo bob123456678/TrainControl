@@ -30,9 +30,7 @@ public final class I18n
         bundle = ResourceBundle.getBundle(BUNDLE_NAME, locale);
     }
 
-    /**
-     * @return the locale of the messages on show
-     */
+    /** The locale of the messages on show. */
     public static Locale getLocale()
     {
         return bundle.getLocale();
@@ -88,7 +86,6 @@ public final class I18n
      *
      * @param key
      * @param args
-     * @return
      */
     public static String f(String key, Object... args)
     {
