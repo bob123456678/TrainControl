@@ -591,8 +591,7 @@ public class NetworkProxy
             {
                 this.socket = openReceiveSocket();
 
-                // And something to listen on it: reopening the socket restored transmission only; the listener had
-                // exited.
+                // And something to listen on it.
                 listen();
             }
 
