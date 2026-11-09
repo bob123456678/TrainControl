@@ -79,9 +79,12 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
     /** The lock strip: its sentence wraps at the window's width, drawn as HTML, and never widens the window. */
     private final JLabel strip = new JLabel()
     {
+        // The watch says the same sentence every second: the HTML is made again only for a new one
         @Override
         public void setText(String text)
         {
+            if (text != null && text.equals(getText())) return;
+
             super.setText(text);
 
             if (text != null && !text.isEmpty())
