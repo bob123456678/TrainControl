@@ -371,8 +371,9 @@ final class EditorTileMenus
             menu.add(editor.item(I18n.t("autosetup.ui.menuSetName"), () -> editor.promptLinkName(target)));
         }
 
-        // On the square's own menu (OB-013): a length belongs to any square, not only a station.  Offered where `offersALength` says and bound to the square it names (FR-066): Control+E and this
-        // item ask the same question, so there is one.
+        // On the square's own menu (OB-013): a length belongs to any square, not only a station.  Offered where
+        // `offersALength` says and bound to the square it names (FR-066): Control+E and this item ask the same
+        // question, so there is one.
         if (editor.offersALength(tile))
         {
             javax.swing.JMenuItem lengthItem = editor.item(I18n.t("autosetup.ui.menuSetLength"),
