@@ -159,6 +159,40 @@ public class testTheLocomotiveSettingsLooks extends support.SettingsClass
             "the head is not square to the ring: it fans out above its tip");
     }
 
+    /**
+     * The undo arrow's ring is round: below its center, where only the ring is drawn, it is its own mirror image left
+     * to right and across the diagonal, within 48 of 255 in coverage, at the sizes the window draws it at 1x, 1.5x and
+     * 2x.  Snapped to whole pixels it is out by 71 or more.
+     *
+     * MUTATION: drop the pure stroke hint from `RowIcons.revert`, and this fails.
+     */
+    @Test
+    public void testTheUndoArrowsRingIsRound()
+    {
+        for (int size : new int[] {18, 27, 36})
+        {
+            BufferedImage img = new BufferedImage(size, size, BufferedImage.TYPE_INT_ARGB);
+
+            org.traincontrol.gui.widgets.RowIcons.revert(size, java.awt.Color.BLACK).paintIcon(null, img.getGraphics(), 0, 0);
+
+            int half = (size + 1) / 2;
+            int worst = 0;
+
+            for (int y = half; y < size; y++)
+            {
+                for (int x = 0; x < size; x++)
+                {
+                    worst = Math.max(worst, Math.abs((img.getRGB(x, y) >>> 24) - (img.getRGB(size - 1 - x, y) >>> 24)));
+
+                    if (x >= half) worst = Math.max(worst, Math.abs((img.getRGB(x, y) >>> 24) - (img.getRGB(y, x) >>> 24)));
+                }
+            }
+
+            assertTrue(worst <= 48, "at " + size + " pixels the ring is not round: one side differs from its mirror by "
+                + worst + " of 255");
+        }
+    }
+
     private static boolean opaque(BufferedImage img, double c, double r, double degrees)
     {
         double a = Math.toRadians(degrees);

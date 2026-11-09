@@ -509,6 +509,8 @@ public final class RowIcons
                 float radius = width * 0.30f;
                 float centre = width * 0.5f;
 
+                // Pure strokes: the default normalizing snaps the arc to whole pixels and the ring comes out uneven
+                g.setRenderingHint(RenderingHints.KEY_STROKE_CONTROL, RenderingHints.VALUE_STROKE_PURE);
                 g.setColor(colour);
                 g.setStroke(new BasicStroke(Math.max(1.5f, width / 9f), BasicStroke.CAP_BUTT, BasicStroke.JOIN_ROUND));
 
