@@ -492,6 +492,18 @@ public class NetworkProxy
         return this.replacing;
     }
 
+    /** Whether a CS3's TCP connection is given up and UDP carries everything instead; never for a CS2. */
+    public boolean isOnUdpInsteadOfTcp()
+    {
+        return this.tcpPort > 0 && this.tcp == null;
+    }
+
+    /** Whether the station is not answering on TCP: a frame unanswered over TCP_SUSPECT_MS, or the connection replaced. */
+    public boolean isNotAnswering()
+    {
+        return this.replacing || this.tcp != null && suspect();
+    }
+
     /** How many replacements have begun; not under the lock either. */
     public int replacements()
     {

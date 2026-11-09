@@ -167,6 +167,12 @@ public interface ViewListener
     /** How many replacements of that connection have begun: two reads tell whether one began and ended in between. */
     public int getReplacementEpoch();
 
+    /** Whether a CS3 is reached over UDP because its TCP connection was given up; never for a CS2. */
+    public boolean isOnUdpInsteadOfTcp();
+
+    /** Whether the station is not answering on TCP: a frame unanswered over a second, or the connection replaced. */
+    public boolean isConnectionNotAnswering();
+
     /**
      * Whether this session is simulating rather than driving a real Central Station.
      */
