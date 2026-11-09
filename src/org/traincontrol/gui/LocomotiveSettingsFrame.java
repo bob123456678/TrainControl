@@ -26,6 +26,8 @@ import javax.swing.KeyStroke;
 import javax.swing.SpinnerNumberModel;
 import javax.swing.SwingUtilities;
 import javax.swing.event.DocumentListener;
+import javax.swing.plaf.basic.BasicHTML;
+import javax.swing.text.View;
 import org.traincontrol.base.Locomotive;
 import org.traincontrol.base.Locomotive.decoderType;
 import org.traincontrol.gui.widgets.RowIcons;
@@ -74,7 +76,50 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
     private final JTabbedPane tabs = new JTabbedPane();
     private final JPanel content = new JPanel(new BorderLayout());
     private final JPanel footer = new JPanel(new BorderLayout());
-    private final JLabel strip = new JLabel();
+    /** The lock strip: its sentence wraps at the window's width, drawn as HTML, and never widens the window. */
+    private final JLabel strip = new JLabel()
+    {
+        @Override
+        public void setText(String text)
+        {
+            super.setText(text);
+
+            if (text != null && !text.isEmpty())
+            {
+                putClientProperty(BasicHTML.propertyKey, BasicHTML.createHTMLView(this, "<html>"
+                    + text.replace("&", "&amp;").replace("<", "&lt;") + "</html>"));
+            }
+        }
+
+        @Override
+        public Dimension getPreferredSize()
+        {
+            Dimension asked = super.getPreferredSize();
+            View html = (View) getClientProperty(BasicHTML.propertyKey);
+            Insets in = getInsets();
+
+            if (html != null && getWidth() > 0)
+            {
+                html.setSize(getWidth() - in.left - in.right, 0);
+                asked.height = (int) Math.ceil(html.getPreferredSpan(View.Y_AXIS)) + in.top + in.bottom;
+            }
+
+            asked.width = 1;
+
+            return asked;
+        }
+
+        // A new width wraps the sentence anew: laid out again for the height that takes
+        @Override
+        public void setBounds(int x, int y, int width, int height)
+        {
+            boolean wider = width != getWidth();
+
+            super.setBounds(x, y, width, height);
+
+            if (wider) revalidate();
+        }
+    };
 
     /** Under the lock strip, when the warning triangle was clicked: who else has this address and decoder (OB-417). */
     private final JPanel sharedStrip = new JPanel(new BorderLayout());
@@ -398,6 +443,9 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
         // The last build's least width would hold the window wider than this one opens
         setMinimumSize(null);
         pack();
+
+        // Again with the strip up: its wrapped height is known once it has a width
+        if (strip.isVisible()) pack();
 
         // Measured here, where the tabs are built, and not on the watch's every tick: measuring resizes the strip, and
         // lays every tab out as wide as it, so the strip goes last.  Basic Settings at its least keeps its labels whole.
