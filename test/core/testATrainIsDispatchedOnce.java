@@ -2562,6 +2562,71 @@ public class testATrainIsDispatchedOnce
     }
 
     /**
+     * Return Home spends no attempt on a send refused while the connection is being replaced: with the connection lost
+     * each time after the wait and before the send, the run goes on past its attempts, and starts its entry once the
+     * connection is back (FR-186).
+     *
+     * MUTATION: take `isReplacingConnection()` out of the timetable's `cut`, and this fails.
+     */
+    @Test
+    public void testReturnHomeSpendsNoAttemptOnAHeldSend() throws Exception
+    {
+        org.traincontrol.marklin.MarklinFeedback[] s = sensors(2111, 2);
+        final Locomotive t = model.getLocByName(model.getLocList().get(9));
+        final int preferredWas = t.getPreferredSpeed();
+        final int attempts = layoutConstant("STAGING_MAX_ATTEMPTS");
+        final boolean[] lost = {true};
+
+        // The wait sees the connection; the send, and the count after it, see it being replaced
+        org.traincontrol.model.ViewListener control = (org.traincontrol.model.ViewListener)
+            java.lang.reflect.Proxy.newProxyInstance(org.traincontrol.model.ViewListener.class.getClassLoader(),
+                new Class<?>[] {org.traincontrol.model.ViewListener.class}, (proxy, method, args) ->
+                    method.getName().equals("isReplacingConnection") ? lost[0] && !calledFrom("waitWhileThePowerIsOff")
+                        : method.invoke(model, args));
+
+        final Layout rail = new Layout(control);
+        rail.createPoint("DSA", true, s[0].getName());
+        rail.createPoint("DSB", true, s[1].getName());
+        rail.createEdge("DSA", "DSB");
+        rail.makeCurrent();
+
+        final List<String> said = java.util.Collections.synchronizedList(new ArrayList<String>());
+        java.util.logging.Handler tap = aTapOn(said);
+        final String refused = org.traincontrol.util.I18n.f("autolayout.log.notSentReconnecting", t.getName());
+
+        try
+        {
+            t.setSpeed(0);
+            t.setPreferredSpeed(30);
+            rail.getPoint("DSA").setLocomotive(t);
+            rail.setTimetable(Arrays.asList(new org.traincontrol.automation.TimetablePath(t, through(rail, "DSA", "DSB"),
+                0)));
+            rail.setTimetableSequential(true);
+
+            Thread executor = new Thread(rail::executeTimetable, "Return Home while the connection is replaced");
+            executor.setDaemon(true);
+            executor.start();
+
+            assertTrue(until(() -> java.util.Collections.frequency(new ArrayList<>(said), refused) > attempts, 20000),
+                "Return Home gave up on sends refused while the connection was being replaced: " + said);
+            assertTrue(rail.isAutoRunning(), "Return Home stopped while the connection was being replaced");
+
+            lost[0] = false;
+
+            assertTrue(until(() -> t.getSpeed() > 0 || rail.isAlreadyUnderway(t), 10000), "the connection came back and"
+                + " Return Home still started nothing");
+        }
+        finally
+        {
+            lost[0] = false;
+            java.util.logging.Logger.getLogger(MarklinControlStation.class.getName()).removeHandler(tap);
+            rail.stopLocomotives();
+            t.setPreferredSpeed(preferredWas);
+            letGo(s, t, null);
+        }
+    }
+
+    /**
      * Nor is a journey set going when the track power goes off while its route is being set: the train is given no
      * speed and the journey is not under way.  Path Integrity Validation off; eight edges, a switch on each.
      *

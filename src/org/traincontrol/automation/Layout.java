@@ -5506,10 +5506,11 @@ public class Layout
                                     break;
                                 }
 
-                                // An attempt the power cut is no refusal, nor the start of a parallel run's clock: the
-                                // route was given back unrun.  The epoch catches a stop between the power wait and the
-                                // read.
-                                boolean cut = this.control.getPowerEpoch() != powerAtAttempt || !this.control.getPowerState();
+                                // An attempt the power cut, or a connection being replaced held (FR-186), is no refusal,
+                                // nor the start of a parallel run's clock.  The epoch catches a stop between the power
+                                // wait and the read.
+                                boolean cut = this.control.getPowerEpoch() != powerAtAttempt || !this.control.getPowerState()
+                                    || this.control.isReplacingConnection();
 
                                 if (!cut)
                                 {
