@@ -453,8 +453,11 @@ public final class StationSettingsWindow extends StationWindowBase
 
         turning.add(turnMixed);
 
-        // Above both sections, as it applies to either
+        // Above both sections, as each applies to either
         rowOf("autosetup.ui.stationTurning", "turning", turning, null, throughSection);
+
+        rowOf("autosetup.ui.stationDepart", "depart", depart, null, throughSection);
+        perStation.addAll(rowsFrom(row - 1));
 
         section(stops, mark("stops"), stopsMixed);
         stops.addActionListener(e -> pressBoxes(stops));
@@ -502,9 +505,6 @@ public final class StationSettingsWindow extends StationWindowBase
 
         section(runsThrough, mark("runsThrough"), throughMixed);
         runsThrough.addActionListener(e -> pressBoxes(runsThrough));
-
-        rowOf("autosetup.ui.stationDepart", "depart", depart, null, throughSection);
-        perStation.addAll(rowsFrom(row - 1));
 
         advanced.setName("station.advanced");
         advanced.setIcon(RowIcons.arrow(14, false));

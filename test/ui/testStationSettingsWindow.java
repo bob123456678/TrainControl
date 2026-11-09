@@ -1129,6 +1129,41 @@ public class testStationSettingsWindow
     }
 
     /**
+     * May depart sits under Changing direction, above both sections, as it belongs to neither box (Adam, FR-182); it
+     * still grays only when both boxes are off.
+     *
+     * MUTATION: put the May depart row back under "Trains can pass through", and this fails.
+     */
+    @Test(timeOut = 120000)
+    public void testMayDepartHeadsBothSectionsUnderChangingDirection() throws Exception
+    {
+        StationSettingsWindow window = StationDoors.open(panel, aStation());
+
+        StationDoors.current(window);
+
+        javax.swing.JPanel form = StationDoors.part(window, "station.form", javax.swing.JPanel.class);
+
+        int turning = cornerIn(form, labelSaying(window, I18n.t("autosetup.ui.stationTurning"))).y;
+        int depart = cornerIn(form, labelSaying(window, I18n.t("autosetup.ui.stationDepart"))).y;
+        int stops = cornerIn(form, StationDoors.part(window, "station.stops", javax.swing.JCheckBox.class)).y;
+
+        assertTrue(turning < depart && depart < stops, "May depart (at " + depart + ") is not between Changing direction (at "
+            + turning + ") and Trains can stop here (at " + stops + ")");
+
+        StationDoors.press(window, "station.stops");
+        StationDoors.current(window);
+
+        assertTrue(StationDoors.live(window, "station.depart.0"), "May depart grays with Trains can stop here alone off");
+
+        StationDoors.press(window, "station.runsThrough");
+        StationDoors.current(window);
+
+        assertFalse(StationDoors.live(window, "station.depart.0"), "May depart is live with both boxes off");
+
+        StationDoors.close(window);
+    }
+
+    /**
      * Blue is for the section headings alone (Adam: "it looks very blue"); every other label is black Semibold 13
      * (docs/UI-standards.md), and a label in an off section still grays.
      *

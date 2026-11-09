@@ -214,8 +214,9 @@ Everything else a station has is in its `Station Settings`: its name, whether tr
     - `May arrive from`: a box for each side trains may arrive from and stop. One side must stay open. Trains can still run through from a side that is closed.
     - `Exit guard` and `Entry guard`: the signals that follow the station; the `Change...` button picks them.
     - `Home locomotive`: the train Return Home brings back here.
-- `Trains can pass through`: whether trains may pass over the square without stopping. It holds `May depart`, the sides trains may leave by. It grays out only when both boxes are unticked, because it also says how a stopped train leaves.
+- `Trains can pass through`: whether trains may pass over the square without stopping.
 - `Changing direction`, above both boxes because it applies to both: `Never`, `May` (a train may stop, reverse and carry on, to reach a siding behind it) or `Must` (every train turns around: a terminus, or a berth trains back into). It grays out when both boxes are unticked.
+- `May depart`, under it and above both boxes too, as it belongs to neither: the sides trains may leave by. It grays out only when both boxes are unticked, because it also says how a stopped train leaves.
 - `Advanced`, folded away until you open it: `Priority` (higher is chosen first; 0 is the default), `Speed into here` (trains run at this percentage of their speed on the track leading in), `Which trains` and `Unavailable while`.
     - `Which trains` is `All`, `Blacklist` or `Whitelist`. `Choose...` opens the list of trains for the last two. A blacklisted train may not stop here, though it can still pass through; on a sensor that is not a station it may not pass at all. On a whitelist only the trains you pick are allowed, so every other one, including any you add later, is kept out, and an empty whitelist keeps every train out. Going back to `All` keeps the list for next time.
     - `Unavailable while` lists other stations that, while occupied, keep trains away from this one.
