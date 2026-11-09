@@ -132,6 +132,12 @@ public final class TcpStation implements AutoCloseable
         return sensorFrame(device, contact, !occupied, occupied);
     }
 
+    /** A station's answer to a query: old and new state both `occupied`. */
+    public static byte[] answer(int device, int contact, boolean occupied)
+    {
+        return sensorFrame(device, contact, occupied, occupied);
+    }
+
     private static byte[] sensorFrame(int device, int contact, boolean was, boolean is)
     {
         return new CS2Message(CS2Message.CMD_ACC_SENSOR, 0x7b34, true, new byte[]
@@ -160,6 +166,15 @@ public final class TcpStation implements AutoCloseable
     public synchronized void sensorUnseen(int contact, boolean occupied)
     {
         this.sensors.put(contact, occupied);
+    }
+
+    // Contacts whose next query is answered late: after an event that changes them, with the state from before
+    private final java.util.Set<Integer> changesBeforeAnswering = new java.util.HashSet<>();
+
+    /** The next query for the contact is answered with its state, but only after it changes: a late answer. */
+    public synchronized void changeBeforeAnswering(int contact)
+    {
+        this.changesBeforeAnswering.add(contact);
     }
 
     /** A contact's state as this station knows it. */
@@ -197,9 +212,11 @@ public final class TcpStation implements AutoCloseable
 
         boolean state = occupied(contact);
 
+        if (this.changesBeforeAnswering.remove(contact)) sensor(contact, !state);
+
         synchronized (client)
         {
-            client.getOutputStream().write(sensorFrame(device, contact, state, state));
+            client.getOutputStream().write(answer(device, contact, state));
         }
     }
 

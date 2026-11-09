@@ -1813,6 +1813,9 @@ public class MarklinControlStation implements ViewListener, ModelListener
             if (tookATrainOff) loadedNow.refreshUI();
         }
 
+        // The sensors' true states, asked of a CS3 only: a query sets nothing on the station (OB-418)
+        if (this.isCS3 && this.NetworkInterface != null) this.NetworkInterface.syncSensors();
+
         this.logf("loc.syncCompleted");
         
         return num;
