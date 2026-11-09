@@ -74,6 +74,7 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
 
     private final JTabbedPane tabs = new JTabbedPane();
     private final JPanel content = new JPanel(new BorderLayout());
+    private final JPanel footer = new JPanel(new BorderLayout());
     private final JLabel strip = new JLabel();
 
     /** Under the lock strip, when the warning triangle was clicked: who else has this address and decoder (OB-417). */
@@ -155,12 +156,6 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
         // The application's compact tabs show the title of the chosen tab only; these keep every title beside its icon
         tabs.putClientProperty("JTabbedPane.tabWidthMode", "preferred");
 
-        // One width, so the two buttons share an edge.
-        int width = Math.max(save.getPreferredSize().width, cancel.getPreferredSize().width);
-
-        save.setPreferredSize(new Dimension(width, save.getPreferredSize().height));
-        cancel.setPreferredSize(new Dimension(width, cancel.getPreferredSize().height));
-
         save.addActionListener(e -> save());
         cancel.addActionListener(e -> close());
 
@@ -171,8 +166,6 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
         buttons.add(InfoMark.label(I18n.t("loc.ui.settingsKeptHere")));
         buttons.add(save);
         buttons.add(cancel);
-
-        JPanel footer = new JPanel(new BorderLayout());
 
         footer.setBorder(BorderFactory.createEmptyBorder(6, PAD, PAD, PAD));
         footer.add(buttons, BorderLayout.EAST);
@@ -287,6 +280,16 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
 
         save.setText(I18n.t(adding ? "ui.add" : "loc.ui.settingsSave"));
 
+        // One width, so the two buttons share an edge, measured again as Save's text changes
+        save.setPreferredSize(null);
+        cancel.setPreferredSize(null);
+
+        Dimension both = new Dimension(Math.max(save.getPreferredSize().width, cancel.getPreferredSize().width),
+            save.getPreferredSize().height);
+
+        save.setPreferredSize(both);
+        cancel.setPreferredSize(both);
+
         // Add shows the first tab's content with no tab strip: one tab alone only takes room
         if (adding)
         {
@@ -390,11 +393,14 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
     {
         boolean first = !isVisible();
 
+        // The last build's least width would hold the window wider than this one opens
+        setMinimumSize(null);
         pack();
 
         // Measured here, where the tabs are built, and not on the watch's every tick: measuring resizes the strip, and
         // lays every tab out as wide as it, so the strip goes last.  Basic Settings at its least keeps its labels whole.
-        least = locomotiveTab.getMinimumSize().width + getWidth() - locomotiveTab.getWidth();
+        least = Math.max(locomotiveTab.getMinimumSize().width + getWidth() - locomotiveTab.getWidth(),
+            footer.getPreferredSize().width + getWidth() - footer.getWidth());
 
         if (!adding)
         {
@@ -409,9 +415,9 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
     }
 
     /**
-     * The window is never narrower than Basic Settings with its labels whole, its tabs on one row, the Multi-Unit list's
-     * columns beside its scroll bar, or the Functions tab's button row, so its two groups cannot overlap.  All are
-     * measured, so this holds in every language and at every scale.
+     * The window is never narrower than Basic Settings with its labels whole, the footer, its tabs on one row, the
+     * Multi-Unit list's columns beside its scroll bar, or the Functions tab's button row, so its two groups cannot
+     * overlap.  All are measured, so this holds in every language and at every scale.
      */
     private void keepTheRowsWhole()
     {

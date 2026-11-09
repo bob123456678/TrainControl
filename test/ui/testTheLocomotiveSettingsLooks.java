@@ -470,9 +470,8 @@ public class testTheLocomotiveSettingsLooks extends support.SettingsClass
         I18n.setLocale(new java.util.Locale(lang));
 
         if (tab != null) fixture.layDcc(NAME, 3806, tab);
-        else assertTrue(Components.onTheEventThread(ui::openAddLocomotive) && SettingsWindow.awaited() != null, "Add did not open");
 
-        LocomotiveSettingsFrame window = SettingsWindow.showing();
+        LocomotiveSettingsFrame window = tab == null ? openAdd() : SettingsWindow.showing();
 
         Components.onTheEventThread(() ->
         {
@@ -486,10 +485,20 @@ public class testTheLocomotiveSettingsLooks extends support.SettingsClass
         return window;
     }
 
-    /** Whether a label shows its whole text: no narrower than its text, icon and border need. */
-    private static boolean whole(JLabel label)
+    /** Opens Add Locomotive, in the window already open if there is one, and gives it once it is on screen. */
+    private static LocomotiveSettingsFrame openAdd() throws Exception
     {
-        return label.getUI().getPreferredSize(label).width <= label.getWidth();
+        assertTrue(Components.onTheEventThread(ui::openAddLocomotive), "Add did not open");
+
+        return SettingsWindow.awaited();
+    }
+
+    /** Whether a label or a button shows its whole text: no narrower than its text, icon and border need. */
+    private static boolean whole(javax.swing.JComponent c)
+    {
+        javax.swing.plaf.ComponentUI look = c instanceof JLabel ? ((JLabel) c).getUI() : ((javax.swing.AbstractButton) c).getUI();
+
+        return look.getPreferredSize(c).width <= c.getWidth();
     }
 
     /**
@@ -537,9 +546,10 @@ public class testTheLocomotiveSettingsLooks extends support.SettingsClass
     }
 
     /**
-     * At the narrowest window, in every language, no label on Basic Settings is cut short, nor on Add Locomotive.
+     * At the narrowest window, in every language, no label on Basic Settings is cut short, nor on Add Locomotive, and the
+     * footer's buttons and (i) are whole and inside the window.
      *
-     * MUTATION: leave Basic Settings out of `least` in `LocomotiveSettingsFrame.fit`, and this fails.
+     * MUTATION: leave Basic Settings, or the footer, out of `least` in `LocomotiveSettingsFrame.fit`, and this fails.
      */
     @Test
     public void testNoBasicSettingsLabelIsCutShortAtTheNarrowestWindow() throws Exception
@@ -557,6 +567,18 @@ public class testTheLocomotiveSettingsLooks extends support.SettingsClass
 
                     assertTrue(cut.isEmpty(), lang + (tab == null ? ": Add Locomotive" : ": Basic Settings") + " at "
                         + window.getWidth() + " wide cuts " + cut);
+
+                    javax.swing.JButton save = SettingsWindow.save();
+
+                    for (javax.swing.JComponent c : new javax.swing.JComponent[] {save, SettingsWindow.cancel(),
+                        Components.find(save.getParent(), JLabel.class, l -> l.getIcon() == InfoMark.icon())})
+                    {
+                        java.awt.Rectangle r = inWindow(c);
+
+                        assertTrue(Components.onTheEventThread(() -> whole(c)) && r.x >= 0 && r.x + r.width <= window.getContentPane().getWidth(),
+                            lang + (tab == null ? ": Add Locomotive" : ": Basic Settings") + " at " + window.getWidth() + " wide shows "
+                            + c.getClass().getSimpleName() + " '" + (c instanceof JLabel ? "(i)" : ((javax.swing.AbstractButton) c).getText()) + "' at " + r + ", cut or outside");
+                    }
                 }
             }
         }
@@ -564,6 +586,26 @@ public class testTheLocomotiveSettingsLooks extends support.SettingsClass
         {
             I18n.setLocale(java.util.Locale.ENGLISH);
         }
+    }
+
+    /**
+     * Add Locomotive opened in a window that was showing a locomotive opens as wide as Add opened on its own, not held at
+     * the locomotive's least width.
+     *
+     * MUTATION: drop `setMinimumSize(null)` from `LocomotiveSettingsFrame.fit`, and this fails.
+     */
+    @Test
+    public void testAddOpensAtItsOwnWidthInAWindowThatShowedALocomotive() throws Exception
+    {
+        SettingsWindow.closeIfOpen();
+        fixture.quiet();
+
+        int own = Components.onTheEventThread(openAdd()::getWidth);
+
+        opened();
+
+        assertEquals((int) Components.onTheEventThread(openAdd()::getWidth), own,
+            "Add opened in the locomotive's window is not as wide as Add on its own");
     }
 
     /**
