@@ -750,23 +750,115 @@ public class testTheStationIsReachedOverTcp
     {
         try (DatagramSocket wire = udpWire())
         {
-            connect(STATION, TcpStation.closedPort());
-            assertTrue(logged("network.tcpUnavailable", WAIT_MS), "precondition: TCP was taken: " + this.model.lines);
-
-            byte[] event = linkS88(1901, true);
-            broadcast(event);
-            assertTrue(Components.waitFor(() -> this.model.heardFrame(event), WAIT_MS), "precondition: not heard");
-
-            Thread syncing = new Thread(this.proxy::syncSensors, "tcp-claim-sync");
-            syncing.start();
-            assertTrue(Arrays.equals(nextOn(wire, WAIT_MS), query(TcpStation.LINK_S88, 1901)),
-                "the contact was not asked over UDP: " + this.model.lines);
+            Thread syncing = syncingOverUdp(wire, 1901);
             broadcast(answer(TcpStation.LINK_S88, 1901, false));
             syncing.join(WAIT_MS);
 
             assertTrue(this.model.lines.contains(I18n.f("network.sensorsSynced", 1, 1, 0)),
                 "the sync did not log 1 asked, 1 answered: " + this.model.lines);
             assertEquals(this.model.lastState(1901), Boolean.FALSE, "the answer did not reach the model");
+        }
+    }
+
+    /**
+     * A proxy on UDP, TCP refused, that has heard the contact occupied from the Link S88, syncing on a thread of its
+     * own, which has just asked the contact over UDP.
+     */
+    private Thread syncingOverUdp(DatagramSocket wire, int contact) throws Exception
+    {
+        connect(STATION, TcpStation.closedPort());
+        assertTrue(logged("network.tcpUnavailable", WAIT_MS), "precondition: TCP was taken: " + this.model.lines);
+
+        byte[] event = linkS88(contact, true);
+        broadcast(event);
+        assertTrue(Components.waitFor(() -> this.model.heardFrame(event), WAIT_MS), "precondition: not heard");
+
+        Thread syncing = new Thread(this.proxy::syncSensors, "tcp-claim-sync");
+        syncing.start();
+        assertTrue(Arrays.equals(nextOn(wire, WAIT_MS), query(TcpStation.LINK_S88, contact)),
+            "the contact was not asked over UDP: " + this.model.lines);
+        return syncing;
+    }
+
+    /** Broadcasts a frame of another contact after the others, and waits until it is heard, so they were read. */
+    private void allRead() throws Exception
+    {
+        byte[] marker = linkS88(1999, true);
+        broadcast(marker);
+        assertTrue(Components.waitFor(() -> this.model.heardFrame(marker), WAIT_MS), "the marker was not heard");
+    }
+
+    /**
+     * Over UDP a real event after the answer beats a copy of the answer that lands after it (the CS3 sends 2 to 4):
+     * the sensor ends at the event's state.
+     *
+     * MUTATION: in `NetworkProxy.learn`, `return older ? Heard.OVERTAKEN` to `return ours && older ? Heard.OVERTAKEN`.
+     */
+    @Test(timeOut = 30000)
+    public void testACopyOfTheAnswerAfterAnEventIsDropped() throws Exception
+    {
+        try (DatagramSocket wire = udpWire())
+        {
+            Thread syncing = syncingOverUdp(wire, 1902);
+            byte[] answer = answer(TcpStation.LINK_S88, 1902, true);
+            broadcast(answer);
+            broadcast(linkS88(1902, false));
+            broadcast(answer);
+            allRead();
+
+            assertEquals(this.model.lastState(1902), Boolean.FALSE, "the copy of the answer won over the later event: "
+                + this.model.states(1902));
+            syncing.join(WAIT_MS);
+        }
+    }
+
+    /**
+     * Over UDP a sync asks twice, as a resync does: a late copy of an older event that lands after the first query
+     * makes the first answer look older than it, and the second pass, half a second on, puts the sensor right.
+     *
+     * MUTATION: in `NetworkProxy.syncSensors`, `overTcp ? 1 : 2` to `1`.
+     */
+    @Test(timeOut = 30000)
+    public void testASyncOverUdpPutsRightALateCopyOfAnOlderEvent() throws Exception
+    {
+        try (DatagramSocket wire = udpWire())
+        {
+            Thread syncing = syncingOverUdp(wire, 1903);
+            broadcast(linkS88(1903, false));
+            broadcast(linkS88(1903, true));
+            broadcast(answer(TcpStation.LINK_S88, 1903, false));
+            allRead();
+
+            assertTrue(Arrays.equals(nextOn(wire, 1500), query(TcpStation.LINK_S88, 1903)),
+                "the contact was not asked a second time: " + this.model.lines);
+            broadcast(answer(TcpStation.LINK_S88, 1903, false));
+            syncing.join(WAIT_MS);
+
+            assertEquals(this.model.lastState(1903), Boolean.FALSE, "the late copy's state was left: "
+                + this.model.states(1903));
+        }
+    }
+
+    /**
+     * An answer counts as overtaken only shortly after the event that overtook it: a frame of no change long after an
+     * event, as the station sends when another program asks, is delivered as before.
+     *
+     * MUTATION: in `NetworkProxy.learn`, `System.nanoTime() - event < RESYNC_WAIT_NS` to `true`.
+     */
+    @Test(timeOut = 30000)
+    public void testAnOvertakenMarkLapses() throws Exception
+    {
+        try (DatagramSocket wire = udpWire())
+        {
+            syncingOverUdp(wire, 1904).join(WAIT_MS);
+            broadcast(linkS88(1904, false));
+
+            // Waiting is the point: the mark lapses RESYNC_WAIT_NS after the event
+            Components.waitFor(() -> false, 1200);
+            broadcast(answer(0, 1904, true));
+            allRead();
+
+            assertEquals(this.model.lastState(1904), Boolean.TRUE, "a frame long after the event was dropped");
         }
     }
 
@@ -796,7 +888,7 @@ public class testTheStationIsReachedOverTcp
      * asked by 0.8 s, not left wrong until a reconnect try fails; also when some of the first pass's queries go
      * unanswered, here four on a device the station does not have.
      *
-     * MUTATION: in `NetworkProxy.recover`, `resync(false, 2);` to `resync(false, 1);`.  And: in `NetworkProxy.resync`,
+     * MUTATION: in `NetworkProxy.recover`, `resync(false, 2);` to `resync(false, 1);`.  And: in `NetworkProxy.ask`,
      * `n + 1 < passes ? start + RESYNC_AGAIN_NS : 0` to `0` (the first pass waits out its unanswered queries).
      */
     @Test(timeOut = 30000)

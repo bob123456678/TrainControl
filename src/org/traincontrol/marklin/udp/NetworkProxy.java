@@ -167,8 +167,9 @@ public class NetworkProxy
     // Set by connectOverTcp and by a sync's syncSensors, both for a CS3 only
     private volatile boolean learnsDevices;
 
-    // Each contact asked, and whether a real event for it came since: its answer, or a late copy, is then older
-    private final Map<Integer, Boolean> overtaken = new ConcurrentHashMap<>();
+    // Each contact asked, and when a real event for it came since (0 for none): an answer, or a late copy, within
+    // RESYNC_WAIT_NS of that event is older than it
+    private final Map<Integer, Long> overtaken = new ConcurrentHashMap<>();
 
     // Held for a whole pass of queries, so the sync's and a resync's cannot share `awaiting`
     private final Object passLock = new Object();
@@ -680,7 +681,7 @@ public class NetworkProxy
     /**
      * Once learnsDevices is set, notes a contact's device from a sensor event, a change of state; a frame with the
      * state unchanged is an answer to a query, counted for the pass that asked, and OVERTAKEN, never delivered, when a
-     * real event for the contact came after its query (OB-418).
+     * real event for the contact came after its query and less than RESYNC_WAIT_NS ago (OB-418).
      */
     private Heard learn(byte[] frame)
     {
@@ -691,7 +692,7 @@ public class NetworkProxy
         if (frame[9] != frame[10])
         {
             this.sensorDevice.put(contact, ((frame[5] & 0xFF) << 8) | (frame[6] & 0xFF));
-            this.overtaken.replace(contact, true);
+            this.overtaken.replace(contact, System.nanoTime());
             return Heard.FRAME;
         }
 
@@ -708,13 +709,17 @@ public class NetworkProxy
             }
         }
 
-        return Boolean.TRUE.equals(this.overtaken.get(contact)) ? Heard.OVERTAKEN : ours ? Heard.ANSWER : Heard.FRAME;
+        Long event = this.overtaken.get(contact);
+        boolean older = event != null && event != 0 && System.nanoTime() - event < RESYNC_WAIT_NS;
+
+        return older ? Heard.OVERTAKEN : ours ? Heard.ANSWER : Heard.FRAME;
     }
 
     /**
      * Asks each sensor whose device a real event showed for its state, on the live transport, and logs the counts;
-     * returns once every query is answered, or RESYNC_WAIT_NS after the last.  For a CS3's sync (OB-418): from the
-     * first call on, events teach their devices also to a proxy never asked for TCP.  Before setModel, only that.
+     * returns once every query is answered, or RESYNC_WAIT_NS after the last.  Over UDP twice, as a resync does.  For a
+     * CS3's sync (OB-418): from the first call on, events teach their devices also to a proxy never asked for TCP.
+     * Before setModel, only that.
      */
     public void syncSensors()
     {
@@ -723,13 +728,15 @@ public class NetworkProxy
         if (this.model == null || this.stopRequested) return;
 
         boolean overTcp;
+        int epoch;
 
         synchronized (this.udpLock)
         {
             overTcp = !this.udpLive;
+            epoch = this.liveEpoch.get();
         }
 
-        askOnce(overTcp, this.liveEpoch.get(), 0, "network.sensorsSynced");
+        ask(overTcp, epoch, overTcp ? 1 : 2, "network.sensorsSynced");
     }
 
     /**
@@ -743,22 +750,24 @@ public class NetworkProxy
     {
         int epoch = this.liveEpoch.get();
 
-        Thread asking = new Thread(() ->
-        {
-            for (int n = 0; n < passes; n++)
-            {
-                long start = System.nanoTime();
-
-                long until = n + 1 < passes ? start + RESYNC_AGAIN_NS : 0;
-
-                if (!askOnce(overTcp, epoch, until, "network.sensorsResynced")) return;
-
-                if (n + 1 < passes && !waitFor(start + RESYNC_AGAIN_NS, epoch, false)) return;
-            }
-        }, "cs2-s88-resync");
+        Thread asking = new Thread(() -> ask(overTcp, epoch, passes, "network.sensorsResynced"), "cs2-s88-resync");
 
         asking.setDaemon(true);
         asking.start();
+    }
+
+    /** Asks `passes` times, each pass RESYNC_AGAIN_NS after the last one's start, until superseded. */
+    private void ask(boolean overTcp, int epoch, int passes, String key)
+    {
+        for (int n = 0; n < passes; n++)
+        {
+            long start = System.nanoTime();
+            long until = n + 1 < passes ? start + RESYNC_AGAIN_NS : 0;
+
+            if (!askOnce(overTcp, epoch, until, key)) return;
+
+            if (n + 1 < passes && !waitFor(start + RESYNC_AGAIN_NS, epoch, false)) return;
+        }
     }
 
     /**
@@ -784,7 +793,7 @@ public class NetworkProxy
                 else
                 {
                     asked.add(contact);
-                    this.overtaken.put(contact, false);
+                    this.overtaken.put(contact, 0L);
                     queries.add(new CS2Message(CS2Message.CMD_ACC_SENSOR, new byte[]
                         {(byte) (device >> 8), (byte) (int) device, (byte) (contact >> 8), (byte) (int) contact}).getRawMessage());
                 }
@@ -807,19 +816,21 @@ public class NetworkProxy
                     break;
                 }
 
-                sent++;
+                boolean written;
 
                 if (overTcp)
                 {
-                    sendQuery(query);
+                    written = sendQuery(query);
                 }
                 else
                 {
                     synchronized (this)
                     {
-                        sendUdp(query);
+                        written = sendUdp(query);
                     }
                 }
+
+                if (written) sent++;
 
                 LockSupport.parkNanos(RESYNC_PACE_NS);
             }
@@ -865,20 +876,22 @@ public class NetworkProxy
     }
 
     /**
-     * Writes a sensor query to the connection.  Not kept to send again, and no start of the answer clock: a resync
-     * runs again on the next live transport, and a query left unanswered says nothing of the connection.
+     * Writes a sensor query to the connection; false when it was not written.  Not kept to send again, and no start of
+     * the answer clock: a resync runs again on the next live transport, and a query left unanswered says nothing of
+     * the connection.
      */
-    private synchronized void sendQuery(byte[] query)
+    private synchronized boolean sendQuery(byte[] query)
     {
         Socket connection = this.tcp;
 
-        if (connection == null || this.replacing) return;
+        if (connection == null || this.replacing) return false;
 
         try
         {
             OutputStream out = connection.getOutputStream();
             out.write(query);
             out.flush();
+            return true;
         }
         catch (IOException e)
         {
@@ -886,6 +899,7 @@ public class NetworkProxy
             this.replacing = true;
             this.lostBecause = reasonOf(e);
             closeQuietly(connection);
+            return false;
         }
     }
 
