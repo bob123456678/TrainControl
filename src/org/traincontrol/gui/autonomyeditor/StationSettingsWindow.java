@@ -638,7 +638,7 @@ public final class StationSettingsWindow extends StationWindowBase
         typedRow(labelKey, markName, part, leftAligned(part), section, stored,
             (each, typed) -> editor.applyNumber(each, property, blankIsZero(typed), 0));
 
-        mixedMarks.get(part).setToolTipText(AutonomyEditorPanel.wrapped(mixedTip(blankKey)));
+        mixedMarks.get(part).setToolTipText(mixedTip(blankKey));
     }
 
     /**
@@ -736,7 +736,7 @@ public final class StationSettingsWindow extends StationWindowBase
         g.dispose();
 
         out.setDisabledIcon(new javax.swing.ImageIcon(javax.swing.GrayFilter.createDisabledImage(drawn)));
-        out.setToolTipText(AutonomyEditorPanel.wrapped(mixedTip()));
+        out.setToolTipText(mixedTip());
         out.setBorder(javax.swing.BorderFactory.createEmptyBorder(0, 6, 0, 0));
         out.setVisible(false);
 
@@ -1104,14 +1104,17 @@ public final class StationSettingsWindow extends StationWindowBase
         for (JComponent part : perStation) part.setVisible(!many && (advancedOpen || !advancedRows.contains(part)));
     }
 
+    /** Says they differ, wrapped as every (i) is; and how to set them all, for a field a blank leaves alone. */
     private static String mixedTip()
     {
-        return I18n.t("autosetup.ui.stationMixedTip");
+        return mixedTip(null);
     }
 
     private static String mixedTip(String blankKey)
     {
-        return mixedTip() + "  " + I18n.t(blankKey);
+        String said = I18n.t("autosetup.ui.stationMixedTip");
+
+        return AutonomyEditorPanel.wrapped(blankKey == null ? said : said + "  " + I18n.t(blankKey));
     }
 
     /** Leaves none of a row's radios chosen, which a group allows only by being told. */
