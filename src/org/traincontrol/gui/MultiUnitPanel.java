@@ -102,8 +102,9 @@ final class MultiUnitPanel extends JPanel
         nameLabel.setBorder(javax.swing.BorderFactory.createEmptyBorder(0, box, 0, 0));
         reverseLabel.setBorder(javax.swing.BorderFactory.createEmptyBorder(0, box, 0, 0));
 
-        // Reverse is as wide as its heading needs, in every row, so the heading still starts at the boxes
-        reverseWidth = Math.max(com.formdev.flatlaf.util.UIScale.scale(84), reverseLabel.getPreferredSize().width);
+        // Reverse is as wide as its heading, in every row, so the heading starts at the boxes and the window's least width
+        // counts no empty room beside them
+        reverseWidth = reverseLabel.getPreferredSize().width + com.formdev.flatlaf.util.UIScale.scale(6);
 
         headingPanel.setOpaque(false);
         columns(headingPanel, nameLabel, multiplierLabel, null, reverseLabel);
