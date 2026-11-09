@@ -121,11 +121,11 @@ public class testACS3SyncTakesWhatItTookBefore
     }
 
     /**
-     * A route's speed or direction item without `lok` is left out of the route, and a direction that is neither 0 nor 1
-     * is forward; the route is imported, and nothing is said of it at start-up.
+     * A route's speed or direction item without `lok`, or a switch item without `typ`, is left out of the route, and a
+     * direction that is neither 0 nor 1 is forward; the route is imported, and nothing is said of it at start-up.
      *
-     * MUTATION: throw in CS2File.parseRoutesCS3 for a train command without `lok`, or for a direction that is neither 0
-     * nor 1, and the route is skipped.
+     * MUTATION: throw in CS2File.parseRoutesCS3 for a train command without `lok`, for an item without `typ`, or for a
+     * direction that is neither 0 nor 1, and the route is skipped.
      */
     @Test
     public void testARouteKeepsTheItemsItCanRead() throws Exception
@@ -135,13 +135,15 @@ public class testACS3SyncTakesWhatItTookBefore
         cases.add(pair(items -> items.getJSONObject(2).remove("lok"), items -> items.remove(2)));
         cases.add(pair(items -> items.getJSONObject(2).put("wert", 2), items -> items.getJSONObject(2).put("wert", 0)));
         cases.add(pair(items -> items.getJSONObject(2).put("wert", "x"), items -> items.getJSONObject(2).put("wert", "0")));
+        cases.add(pair(items -> items.getJSONObject(0).remove("typ"), items -> items.remove(0)));
 
         for (int c = 0; c < cases.size(); c++)
         {
             JSONArray given = routes();
             JSONArray expected = routes();
             JSONArray items = named(given, PROBE).getJSONArray("items");
-            assertTrue("speed".equals(items.getJSONObject(1).getString("typ")) && "dir".equals(items.getJSONObject(2).getString("typ")),
+            assertTrue("mag".equals(items.getJSONObject(0).getString("typ")) && !items.getJSONObject(0).has("lok")
+                && "speed".equals(items.getJSONObject(1).getString("typ")) && "dir".equals(items.getJSONObject(2).getString("typ")),
                 "the probe route of the fixture: " + items);
             cases.get(c)[0].accept(items);
             cases.get(c)[1].accept(named(expected, PROBE).getJSONArray("items"));
