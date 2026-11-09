@@ -749,8 +749,74 @@ public abstract class Locomotive
     public Locomotive waitForOccupiedFeedback(String name, int minDuration, long adviseAfterMs,
         java.util.function.BooleanSupplier abandon)
     {
-        return waitForOccupiedFeedback(name, minDuration, adviseAfterMs,
-            System.currentTimeMillis(), adviseAfterMs <= 0, abandon);
+        // Only so that the thread can look at the clock; the wait is still ended by the feedback itself.  A flicker
+        // restarts the wait but not the clock, and an advisory once said is not said again.
+        final long began = System.currentTimeMillis();
+        boolean advised = adviseAfterMs <= 0;
+
+        // A loop, so a sensor that keeps flickering cannot overflow the stack; each restart forgets an interrupt caught
+        // before it (OB-422)
+        while (true)
+        {
+            boolean interrupted = false;
+
+            synchronized(monitor)
+            {
+                while ((!this.isFeedbackSet(name) || !this.getFeedbackState(name)) && !givenUp(abandon))
+                {
+                    if (!advised && System.currentTimeMillis() - began >= adviseAfterMs)
+                    {
+                        advised = true;
+
+                        waitedTooLongFor(name, System.currentTimeMillis() - began);
+                    }
+
+                    try
+                    {
+                        // Untimed unless somebody is waiting to be told, and untimed again once it has been said.
+                        // Never coarser than the advisory itself, or a half-second advisory would arrive five seconds
+                        // late.
+                        if (advised)
+                        {
+                            monitor.wait();
+                        }
+                        else
+                        {
+                            monitor.wait(Math.max(1, Math.min(FEEDBACK_ADVISORY_POLL, adviseAfterMs)));
+                        }
+                    }
+                    catch (InterruptedException ex)
+                    {
+                        // Remembered, not re-armed (re-arming inside the loop spins at full CPU); put back on the way
+                        // out.
+                        interrupted = true;
+                    }
+                }
+            }
+
+            // GIVEN UP, not arrived: the journey's railway has been retired, and its thread goes without the
+            // debounce - the train it drove may be another railway's now.
+            if (givenUp(abandon))
+            {
+                if (interrupted) Thread.currentThread().interrupt();
+
+                return this;
+            }
+
+            if (minDuration > 0)
+            {
+                this.delay(minDuration);
+
+                // Feedback should still be occupied.  Otherwise, start over
+                if (!this.isFeedbackSet(name) || !this.getFeedbackState(name)) continue;
+            }
+
+            // Put back LAST, after the debounce: delay() is Thread.sleep, which throws at once with the flag set, so an
+            // interrupted wait would skip its confirmation and take a one-millisecond blip for an arrival.
+            if (interrupted) Thread.currentThread().interrupt();
+
+            return this;
+        }
     }
 
     /** Whether a wait has been given up. */
@@ -777,81 +843,6 @@ public abstract class Locomotive
     }
 
     /**
-     * A sensor that flickers restarts the wait but not the clock: `originMs`, when the WAIT began, travels with it, so
-     * the elapsed time reported is the time since the train was sent.  `alreadyAdvised` is whether the advisory was
-     * given.
-     */
-    private Locomotive waitForOccupiedFeedback(String name, int minDuration, long adviseAfterMs,
-        long originMs, boolean alreadyAdvised, java.util.function.BooleanSupplier abandon)
-    {
-        boolean interrupted = false;
-
-        // Only so that the thread can look at the clock; the wait is still ended by the feedback itself.
-        long began = originMs;
-        boolean advised = alreadyAdvised;
-
-        synchronized(monitor)
-        {
-            while ((!this.isFeedbackSet(name) || !this.getFeedbackState(name)) && !givenUp(abandon))
-            {
-                if (!advised && System.currentTimeMillis() - began >= adviseAfterMs)
-                {
-                    advised = true;
-
-                    waitedTooLongFor(name, System.currentTimeMillis() - began);
-                }
-
-                try
-                {
-                    // Untimed unless somebody is waiting to be told, and untimed again once it has been said.  Never
-                    // coarser than the advisory itself, or a half-second advisory would arrive five seconds late.
-                    if (advised)
-                    {
-                        monitor.wait();
-                    }
-                    else
-                    {
-                        monitor.wait(Math.max(1, Math.min(FEEDBACK_ADVISORY_POLL, adviseAfterMs)));
-                    }
-                }
-                catch (InterruptedException ex)
-                {
-                    // Remembered, not re-armed (re-arming inside the loop spins at full CPU); put back on the way out.
-                    interrupted = true;
-                }
-            }  
-        }
-
-        // GIVEN UP, not arrived: the journey's railway has been retired, and its thread goes without the
-        // debounce - the train it drove may be another railway's now.
-        if (givenUp(abandon))
-        {
-            if (interrupted) Thread.currentThread().interrupt();
-
-            return this;
-        }
-
-        if (minDuration > 0)
-        {
-            this.delay(minDuration);
-
-            // Feedback should still be occupied.  Otherwise, start over
-            if (!this.isFeedbackSet(name) || !this.getFeedbackState(name))
-            {
-                // Whatever is left of the advisory goes with it: a flicker is not a fresh journey.  Once SAID, nothing
-                // is left.
-                return this.waitForOccupiedFeedback(name, minDuration, adviseAfterMs, began, advised, abandon);
-            }
-        }
-
-        // Put back LAST, after the debounce: delay() is Thread.sleep, which throws at once with the flag set, so an
-        // interrupted wait would skip its confirmation and take a one-millisecond blip for an arrival.
-        if (interrupted) Thread.currentThread().interrupt();
-        
-        return this;
-    }
-    
-    /**
      * Told when this locomotive has been waiting for a sensor for an unusual length of time.  Does nothing here;
      * MarklinLocomotive logs it.  Called once per wait, from the waiting thread, with the monitor held, so an
      * implementation must not block or call back into the layout.
@@ -872,43 +863,45 @@ public abstract class Locomotive
      * @return 
      */
     public Locomotive waitForClearFeedback(String name, int minDuration)
-    {        
-        boolean interrupted = false;
-
-        synchronized (monitor)
+    {
+        // A loop, as the occupied wait's (OB-422)
+        while (true)
         {
-            while (!this.isFeedbackSet(name) || this.getFeedbackState(name))
-            {
-                try
-                {
-                    monitor.wait();
-                }
-                catch (InterruptedException ex)
-                {
-                    // Remembered, not re-armed (re-arming inside the loop spins at full CPU); put back on the way out.
-                    interrupted = true;
-                }
-            }  
-        }
+            boolean interrupted = false;
 
-        if (minDuration > 0)
-        {
-            this.delay(minDuration);
-
-            // Feedback should still be clear.  Otherwise, start over
-            if (!this.isFeedbackSet(name) || this.getFeedbackState(name))
+            synchronized (monitor)
             {
-                return this.waitForClearFeedback(name, minDuration);
+                while (!this.isFeedbackSet(name) || this.getFeedbackState(name))
+                {
+                    try
+                    {
+                        monitor.wait();
+                    }
+                    catch (InterruptedException ex)
+                    {
+                        // Remembered, not re-armed (re-arming inside the loop spins at full CPU); put back on the way
+                        // out.
+                        interrupted = true;
+                    }
+                }
             }
-        }
 
-        // Put back LAST, after the debounce: delay() is Thread.sleep, which throws at once with the flag set, so an
-        // interrupted wait would skip its confirmation and take a one-millisecond blip for an arrival.
-        if (interrupted) Thread.currentThread().interrupt();
-                
-        return this;
+            if (minDuration > 0)
+            {
+                this.delay(minDuration);
+
+                // Feedback should still be clear.  Otherwise, start over
+                if (!this.isFeedbackSet(name) || this.getFeedbackState(name)) continue;
+            }
+
+            // Put back LAST, after the debounce: delay() is Thread.sleep, which throws at once with the flag set, so an
+            // interrupted wait would skip its confirmation and take a one-millisecond blip for an arrival.
+            if (interrupted) Thread.currentThread().interrupt();
+
+            return this;
+        }
     }
-    
+
     /**
      * Waits for clear feedback lasting the default feedback duration threshold
      * @param name
