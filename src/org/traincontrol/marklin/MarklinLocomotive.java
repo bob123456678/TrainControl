@@ -73,10 +73,6 @@ public class MarklinLocomotive extends Locomotive
     
     /**
      * Constructor with name, type, and address
-     * @param network
-     * @param address
-     * @param type
-     * @param name
      */
     public MarklinLocomotive(MarklinControlStation network, int address, 
         decoderType type, String name)
@@ -91,12 +87,6 @@ public class MarklinLocomotive extends Locomotive
     
     /**
      * Constructor with name, type, address, and function types
-     * @param network
-     * @param address
-     * @param type
-     * @param name
-     * @param functionTypes
-     * @param functionTriggerTypes
      */
     public MarklinLocomotive(MarklinControlStation network, int address, 
         decoderType type, String name, int[] functionTypes, int[] functionTriggerTypes)
@@ -113,21 +103,6 @@ public class MarklinLocomotive extends Locomotive
     
     /**
      * Constructor with full state
-     * @param network
-     * @param address
-     * @param type
-     * @param dir
-     * @param name
-     * @param functions
-     * @param functionTypes
-     * @param functionTriggerTypes
-     * @param preferredFunctions
-     * @param preferredSpeed
-     * @param departureFunc
-     * @param arrivalFunc
-     * @param reversible
-     * @param trainLength
-     * @param historicalOperatingTime
      */
     public MarklinLocomotive(MarklinControlStation network, int address, 
         decoderType type, String name, Locomotive.locDirection dir, boolean[] functions, int[] functionTypes, int[] functionTriggerTypes, boolean[] preferredFunctions, int preferredSpeed,
@@ -146,9 +121,6 @@ public class MarklinLocomotive extends Locomotive
     
     /**
      * Changes the function type for a single function
-     * @param fNo
-     * @param type 
-     * @param triggerType 
      */
     @Override
     public void setFunctionType(int fNo, int type, int triggerType)
@@ -169,7 +141,6 @@ public class MarklinLocomotive extends Locomotive
     
     /**
      * Flags that the functions have been customized
-     * @param state 
      */
     @Override
     public void setCustomFunctions(boolean state)
@@ -179,7 +150,6 @@ public class MarklinLocomotive extends Locomotive
     
     /**
      * Returns whether the functions have been customized
-     * @return 
      */
     @Override
     public boolean isCustomFunctions()
@@ -195,9 +165,6 @@ public class MarklinLocomotive extends Locomotive
     
     /**
      * Validates a proposed address for the locomotive
-     * @param newType
-     * @param newAddress
-     * @return 
      */
     public static boolean validateNewAddress(decoderType newType, int newAddress)
     {
@@ -245,7 +212,6 @@ public class MarklinLocomotive extends Locomotive
     
     /**
      * Returns the number of possible function icons depending on the type of control station
-     * @return 
      */
     @Override
     public int getNumFnIcons()
@@ -260,8 +226,6 @@ public class MarklinLocomotive extends Locomotive
     
     /**
      * Ensures that the function icon type is within a valid range (0-112 for CS2 or 0-296 for CS3)
-     * @param fType
-     * @return 
      */
     @Override
     public int sanitizeFIconIndex(int fType)
@@ -285,10 +249,7 @@ public class MarklinLocomotive extends Locomotive
     /**
      * Returns the image URL for a function number
      * @param fNo - the function number
-     * @param fType
-     * @param active
      * @param yellow - white or yellow version
-     * @return 
      */
     @Override
     public String getFunctionIconUrl(int fNo, int fType, boolean active, boolean yellow)
@@ -308,9 +269,6 @@ public class MarklinLocomotive extends Locomotive
     /**
      * Returns the image URL for a function icon, if any
      * @param fType - the CS2 icon index
-     * @param active
-     * @param yellow
-     * @return 
      */
     @Override
     public String getFunctionIconUrl(int fType, boolean active, boolean yellow)
@@ -342,8 +300,6 @@ public class MarklinLocomotive extends Locomotive
     
     /**
      * Checks if the given function is supposed to only stay on for a short period
-     * @param fNo
-     * @return 
      */
     @Override
     public boolean isFunctionPulse(int fNo)
@@ -358,8 +314,6 @@ public class MarklinLocomotive extends Locomotive
     
     /**
      * Checks if the given function is supposed to only stay on for a short period
-     * @param fNo
-     * @return 
      */
     @Override
     public int isFunctionTimed(int fNo)
@@ -377,8 +331,6 @@ public class MarklinLocomotive extends Locomotive
     
     /**
      * Gets the maximum number of functions for a given decoder type
-     * @param decoder
-     * @return 
      */
     public static int getMaxNumF(decoderType decoder)
     {
@@ -396,7 +348,6 @@ public class MarklinLocomotive extends Locomotive
     
     /**
      * Gets the locomotives UID as defined in the CS2
-     * @return 
      */
     public int getIntUID()
     {
@@ -405,7 +356,6 @@ public class MarklinLocomotive extends Locomotive
     
     /**
      * Gets the locomotives UID - we add the name b/c same mm2 address can be re-used
-     * @return 
      */
     public String getUID()
     {
@@ -414,7 +364,6 @@ public class MarklinLocomotive extends Locomotive
     
     /**
      * Gets the raw locomotive address
-     * @return 
      */
     @Override
     public int getAddress()
@@ -425,8 +374,6 @@ public class MarklinLocomotive extends Locomotive
     /**
      * Sets the raw locomotive address
      * Should only be called when updating state from CS2/CS3
-     * @param newAddress
-     * @param newDecoderType
      * @return validity status
      */
     public boolean setAddress(int newAddress, decoderType newDecoderType)
@@ -447,15 +394,9 @@ public class MarklinLocomotive extends Locomotive
             // A decoder change can shrink the function count (MFX 32 to MM2 5), leaving an arrival or departure
             // function beyond it, which no decoder of the new type has.  Clear through the
             // setter, the only writer that validates; it refuses out-of-range values, so it cannot clamp.
-            if (this.getArrivalFunc() != null && this.getArrivalFunc() >= this.numF)
-            {
-                this.setArrivalFunc(null);
-            }
+            if (this.getArrivalFunc() != null && this.getArrivalFunc() >= this.numF) this.setArrivalFunc(null);
 
-            if (this.getDepartureFunc() != null && this.getDepartureFunc() >= this.numF)
-            {
-                this.setDepartureFunc(null);
-            }
+            if (this.getDepartureFunc() != null && this.getDepartureFunc() >= this.numF) this.setDepartureFunc(null);
 
             return true;
         }
@@ -472,8 +413,6 @@ public class MarklinLocomotive extends Locomotive
        
     /**
      * Checks if the passed locomotive has the same effective address as this one
-     * @param l
-     * @return 
      */
     @Override
     public boolean hasEquivalentAddress(Locomotive l)
@@ -485,7 +424,6 @@ public class MarklinLocomotive extends Locomotive
     
     /**
      * Gets the decoder type
-     * @return 
      */
     @Override
     public decoderType getDecoderType()
@@ -608,7 +546,6 @@ public class MarklinLocomotive extends Locomotive
     
     /**
      * Simulates instant stop functionality for MM2 locomotives
-     * @return 
      */
     @Override
     synchronized public Locomotive instantStop()
@@ -935,8 +872,6 @@ public class MarklinLocomotive extends Locomotive
     
     /**
      * Turns a function on for the default pulse function duration, then back off
-     * @param f
-     * @return 
      */
     @Override
     public Locomotive toggleF(int f)
@@ -948,8 +883,6 @@ public class MarklinLocomotive extends Locomotive
      * Prints a human-readable decoder type and address (1 or greater) based on a raw UID.
      * Used to identify a locomotive we have no record of, so it names the protocol - an address alone
      * does not say which locomotive to look for.
-     * @param UID
-     * @return
      */
     public static String addressFromUID(int UID)
     {
@@ -977,7 +910,6 @@ public class MarklinLocomotive extends Locomotive
     /**
      * User-friendly string representation of the decoder type
      * Should only be used in the UI/log messages, not as authoritative data
-     * @return 
      */
     @Override
     public String getDecoderTypeLabel()
@@ -1017,7 +949,6 @@ public class MarklinLocomotive extends Locomotive
      * checks live elsewhere: hasEquivalentAddress (address and protocol), getName, getIntUID (both).  Reach for those,
      * not for equals.  An identity hash also does not depend on field state, which matters when HashMap.readObject
      * hashes the keys of the non-transient linkedLocomotives while they are only partly restored.
-     * @param other
      */
     @Override
     public boolean equals(Object other)
@@ -1033,7 +964,6 @@ public class MarklinLocomotive extends Locomotive
     
     /**
      * Returns a reference to the model.  Useful for callbacks
-     * @return 
      */
     @Override
     public MarklinControlStation getModel()
@@ -1043,8 +973,6 @@ public class MarklinLocomotive extends Locomotive
     
     /**
      * Checks if this locomotive is linked to another as a multi-unit
-     * @param l
-     * @return 
      */
     @Override
     public boolean isLinkedTo(Locomotive l)
@@ -1080,8 +1008,6 @@ public class MarklinLocomotive extends Locomotive
      * Checks if this locomotive can be in a multi-unit with another, at the same time, based
      * on whether it is already linked to another as a multi-unit, or has the same address
      * Stricter check than isLinkedTo and is used by the autonomy layout to minimize errors
-     * @param l
-     * @return 
      */
     @Override
     public boolean isSimultaneousMultiUnitCompatible(Locomotive l)
@@ -1127,7 +1053,6 @@ public class MarklinLocomotive extends Locomotive
     
     /**
      * Sets a list of locomotives to link to this one. Must call setLinkedLocomotives after this, i.e. once the model has loaded all locs
-     * @param locList
      */
     @Override
     public void preSetLinkedLocomotives(Map<String, Double> locList)
@@ -1274,10 +1199,7 @@ public class MarklinLocomotive extends Locomotive
     {
         for (int i = 0; i < this.drivableFunctionCount(); i++)
         {
-            if (this.getF(i))
-            {
-                this.setF(i, false).delay(FUNCTION_DELAY_MS);
-            }
+            if (this.getF(i)) this.setF(i, false).delay(FUNCTION_DELAY_MS);
         }
 
         return this;
@@ -1303,9 +1225,6 @@ public class MarklinLocomotive extends Locomotive
         
     /**
      * Checks if the passed locomotive can be linked as a multi-unit to the current one
-     * @param other
-     * @param logError
-     * @return 
      */
     @Override
     public boolean canBeLinkedTo(Locomotive other, boolean logError)
@@ -1321,10 +1240,7 @@ public class MarklinLocomotive extends Locomotive
      * step - see there - and the conflict check has to see the members staged so far, not the ones
      * still in the live map from the previous configuration.
      *
-     * @param other
-     * @param logError
      * @param existingMembers members to test the address-conflict rule against
-     * @return 
      */
     private boolean canBeLinkedTo(Locomotive other, boolean logError, java.util.Collection<Locomotive> existingMembers)
     {
@@ -1372,7 +1288,6 @@ public class MarklinLocomotive extends Locomotive
     
     /**
      * Gets the list of linked locomotives
-     * @return 
      */
     @Override
     public Map<Locomotive, Double> getLinkedLocomotives()
@@ -1384,7 +1299,6 @@ public class MarklinLocomotive extends Locomotive
     
     /**
      * Returns true if this locomotive is linked to others as part of a multi-unit
-     * @return 
      */
     @Override
     public boolean hasLinkedLocomotives()
@@ -1422,7 +1336,6 @@ public class MarklinLocomotive extends Locomotive
     
     /**
      * For informational purposes, sets the locomotives linked to this multi unit in the central station
-     * @param l 
      */
     @Override
     public void setModelMultiUnitLocomotives(Map<String, Double> l)
@@ -1435,7 +1348,6 @@ public class MarklinLocomotive extends Locomotive
     
     /**
      * Fetches the raw list of central station multi unit locomotives
-     * @return 
      */
     @Override
     public Map<String, Double> getModelMultiUnitLocomotiveNames()
@@ -1445,7 +1357,6 @@ public class MarklinLocomotive extends Locomotive
     
     /**
      * Returns the locomotives linked to this multi unit in the central station
-     * @return 
      */
     @Override
     public List<Locomotive> getModelMultiUnitLocomotives()

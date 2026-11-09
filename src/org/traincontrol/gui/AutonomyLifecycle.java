@@ -103,10 +103,7 @@ final class AutonomyLifecycle
         // No local copy, no setup (OB-254): the menu above is what such a layout gets.
         if (session == null) return;
 
-        if (ui.autonomyViewerPanel == null)
-        {
-            ui.autonomyViewerPanel = new AutonomyViewerPanel(session, ui);
-        }
+        if (ui.autonomyViewerPanel == null) ui.autonomyViewerPanel = new AutonomyViewerPanel(session, ui);
 
         // Built but not shown: it stays as the home of the actions the Autonomy menu runs.
 
@@ -303,10 +300,7 @@ final class AutonomyLifecycle
             java.util.List<org.traincontrol.base.LayoutDiagram> pages = new java.util.ArrayList<>();
 
             // Name-sorted: a link's number indexes this list
-            for (String name : ui.getModel().getLayoutListByName())
-            {
-                pages.add(ui.getModel().getLayout(name));
-            }
+            for (String name : ui.getModel().getLayoutListByName()) pages.add(ui.getModel().getLayout(name));
 
             session.open(pages);
 
@@ -334,10 +328,7 @@ final class AutonomyLifecycle
             }
 
             // Reported once: the setup was saved that way as it opened (OB-351).
-            for (String line : session.takeSquaresBroughtToTheirArrows())
-            {
-                ui.getModel().log(line);
-            }
+            for (String line : session.takeSquaresBroughtToTheirArrows()) ui.getModel().log(line);
 
             // A page that could not be rewritten keeps its old labels and migrates again next time; the user is told.
             if (!session.getMigrationFailures().isEmpty())
@@ -497,10 +488,7 @@ final class AutonomyLifecycle
 
             // The note repair records its failure in a field; read it, or the next start's revert restores a deleted
             // locomotive.
-            if (session.getStore().didTheNoteRepairFail())
-            {
-                ui.getModel().logf("autosetup.log.noteRepairFailed");
-            }
+            if (session.getStore().didTheNoteRepairFail()) ui.getModel().logf("autosetup.log.noteRepairFailed");
 
             session.getStore().save();
 
@@ -578,10 +566,7 @@ final class AutonomyLifecycle
                 severity == org.traincontrol.automationui.AutonomyChecks.Severity.ERROR;
 
             // Notices and information are not warnings; the editor lists them under a heading of their own.
-            if (!isError && severity != org.traincontrol.automationui.AutonomyChecks.Severity.WARNING)
-            {
-                continue;
-            }
+            if (!isError && severity != org.traincontrol.automationui.AutonomyChecks.Severity.WARNING) continue;
 
             // Counted twice on purpose: on the page in front of the user, and anywhere.
             boolean onThisPage = finding.getTile() != null && page != null

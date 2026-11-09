@@ -199,7 +199,7 @@ public class testAutonomyDiagramTiles
     /**
      * A walk over the track as drawn cannot change tracks at a crossing: a route from a square on the north-south line
      * to one on the east-west line must answer "no continuous track". Taking the union of every route's sides on a
-     * square would let the walk arrive along one line and leave along the other, and `applyOneWay` would skip that
+     * square would let the walk arrive along one line and leave along the other, and `recordAlong` would skip that
      * square in silence.
      */
     @Test

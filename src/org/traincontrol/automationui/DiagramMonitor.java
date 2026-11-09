@@ -270,10 +270,7 @@ public class DiagramMonitor
                     edge.getStart() != null && reachedPoints.contains(edge.getStart().getName())
                         ? State.REACHED : State.ACTIVE);
 
-                for (TileStep step : reduced.getPath())
-                {
-                    append(run, states, step.getTile(), state);
-                }
+                for (TileStep step : reduced.getPath()) append(run, states, step.getTile(), state);
 
                 append(run, states, reduced.getEnd(),
                     reached ? State.REACHED : State.ACTIVE);
@@ -322,10 +319,7 @@ public class DiagramMonitor
 
                     append(held, states, reduced.getStart(), State.LOCKED);
 
-                    for (TileStep step : reduced.getPath())
-                    {
-                        append(held, states, step.getTile(), State.LOCKED);
-                    }
+                    for (TileStep step : reduced.getPath()) append(held, states, step.getTile(), State.LOCKED);
 
                     append(held, states, reduced.getEnd(), State.LOCKED);
 

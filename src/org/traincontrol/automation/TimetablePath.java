@@ -224,17 +224,13 @@ public class TimetablePath
         {
             return false;
         }
-        if (!Objects.equals(this.turnAtTheEnd, other.turnAtTheEnd))
-        {
-            return false;
-        }
+        if (!Objects.equals(this.turnAtTheEnd, other.turnAtTheEnd)) return false;
         
         return Objects.equals(this.path, other.path);
     }
     
     /**
      * Writes a path entry to JSON
-     * @return
      * @throws IllegalArgumentException
      * @throws IllegalAccessException
      * @throws NoSuchFieldException 
@@ -275,10 +271,6 @@ public class TimetablePath
     
     /**
      * Reads a path entry from JSON
-     * @param jsonString
-     * @param model
-     * @param layout
-     * @return
      * @throws Exception 
      */
     public static TimetablePath fromJSON(String jsonString, ViewListener model, Layout layout) throws Exception
@@ -341,10 +333,7 @@ public class TimetablePath
         }
 
         // WHAT THE ARRIVAL WAS TOLD, where it was recorded by hand
-        if (json.has("turnAtTheEnd"))
-        {
-            ttp.setTurnAtTheEnd(json.getBoolean("turnAtTheEnd"));
-        }
+        if (json.has("turnAtTheEnd")) ttp.setTurnAtTheEnd(json.getBoolean("turnAtTheEnd"));
         
         return ttp;
     }

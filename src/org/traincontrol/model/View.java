@@ -63,19 +63,16 @@ public interface View
     
     /**
      * Logs a message
-     * @param message 
      */
     public void log(String message);
     
     /**
      * Callback with latency info
-     * @param latency 
      */
     public void updateLatency(double latency);
     
     /**
      * Alerts that an emergency stop condition was triggered
-     * @param r 
      */
     public void emergencyStopTriggered(Route r);
 

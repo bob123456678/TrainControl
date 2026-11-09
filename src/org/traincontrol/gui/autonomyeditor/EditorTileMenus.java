@@ -106,10 +106,7 @@ final class EditorTileMenus
 
         // The page has to be one the session knows, or "no component here" would mean "I could not find the page"
         // and every square on it would offer to become a station label.
-        if (editor.pageOf(tile) != null && (onPage == null || onPage.isText()))
-        {
-            return buildTextMenu(tile, onPage);
-        }
+        if (editor.pageOf(tile) != null && (onPage == null || onPage.isText())) return buildTextMenu(tile, onPage);
 
         // Nothing on an ignored square is the user's to set, so it says so rather than offering a menu of no-ops.  EXCEPT BULK
         // TOOLS, which are not about this square: on a page excluded from autonomy every square is ignored, and Clear All

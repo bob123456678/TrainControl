@@ -6,10 +6,10 @@ import java.awt.Dimension;
 import java.awt.FontMetrics;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
-import java.awt.RenderingHints;
 import java.awt.geom.RoundRectangle2D;
 import javax.swing.JToggleButton;
 import org.traincontrol.gui.locomotive.SegmentedControl;
+import org.traincontrol.util.ImageUtil;
 
 /** A toggle drawn as a pill: quiet with a light outline, filled with the theme's accent blue while selected. */
 public class PillButton extends JToggleButton
@@ -72,8 +72,7 @@ public class PillButton extends JToggleButton
 
         try
         {
-            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-            g2.setRenderingHint(RenderingHints.KEY_STROKE_CONTROL, RenderingHints.VALUE_STROKE_PURE);
+            ImageUtil.smooth(g2);
 
             Color fill = fillColor();
             Color line = isSelected() ? fill : SegmentedControl.themeColor(new Color(0xB8, 0xBE, 0xC6), "Component.borderColor", "Button.borderColor");

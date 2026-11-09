@@ -485,10 +485,7 @@ public class AutonomySession
 
             live.retainAll(arrivalSides(entry.getKey()));
 
-            if (live.size() != entry.getValue().size())
-            {
-                store.setBarredArrivals(entry.getKey(), live);
-            }
+            if (live.size() != entry.getValue().size()) store.setBarredArrivals(entry.getKey(), live);
         }
     }
 
@@ -2129,14 +2126,7 @@ public class AutonomySession
 
             if (configuration == null) continue;
 
-            org.json.JSONObject globals = configuration.optJSONObject("globals");
-
-            if (globals == null)
-            {
-                globals = new org.json.JSONObject();
-
-                configuration.put("globals", globals);
-            }
+            org.json.JSONObject globals = storedGlobals(configuration);
 
             Set<String> gained = new java.util.TreeSet<>();
             Set<String> lost = new java.util.TreeSet<>();
@@ -2156,14 +2146,7 @@ public class AutonomySession
 
             if (configuration == null) continue;
 
-            org.json.JSONObject globals = configuration.optJSONObject("globals");
-
-            if (globals == null)
-            {
-                globals = new org.json.JSONObject();
-
-                configuration.put("globals", globals);
-            }
+            org.json.JSONObject globals = storedGlobals(configuration);
 
             for (String key : taken.getValue().keySet())
             {
@@ -3056,10 +3039,7 @@ public class AutonomySession
         int each = wholeLength / order.size();
         int over = wholeLength % order.size();
 
-        for (int i = 0; i < order.size(); i++)
-        {
-            store.setTileLength(order.get(i), each + (i < over ? 1 : 0));
-        }
+        for (int i = 0; i < order.size(); i++) store.setTileLength(order.get(i), each + (i < over ? 1 : 0));
 
         touched();
 
@@ -3320,10 +3300,7 @@ public class AutonomySession
     {
         int total = 0;
 
-        for (TileKey tile : stretch.getTiles())
-        {
-            total += Math.max(0, store.getTileLength(tile));
-        }
+        for (TileKey tile : stretch.getTiles()) total += Math.max(0, store.getTileLength(tile));
 
         return total;
     }
@@ -4030,10 +4007,7 @@ public class AutonomySession
         StationIndex current = stationIndex;
 
         // Only before the first rebuild, when nothing runs; otherwise derived eagerly (`deriveStationIndex`).
-        if (current == null)
-        {
-            current = deriveStationIndex();
-        }
+        if (current == null) current = deriveStationIndex();
 
         return current;
     }
@@ -4399,10 +4373,7 @@ public class AutonomySession
 
         org.json.JSONObject points = configuration.getJSONObject("points");
 
-        for (String key : points.keySet())
-        {
-            out.put(key, points.getJSONObject(key));
-        }
+        for (String key : points.keySet()) out.put(key, points.getJSONObject(key));
 
         return out;
     }
@@ -4501,10 +4472,7 @@ public class AutonomySession
                     facing = facings.get(point.optString("name"));
                 }
 
-                if (facing != null && extras.has("loc"))
-                {
-                    extras.put(AutonomyBuilder.FACING, facing.name());
-                }
+                if (facing != null && extras.has("loc")) extras.put(AutonomyBuilder.FACING, facing.name());
 
                 // And a home's facing where the railway holds the home to a copy (OB-282)
                 if (facing != null && extras.has("home") && point.optBoolean(AutonomyBuilder.HOME_FACING_FIXED, false))
@@ -4662,6 +4630,21 @@ public class AutonomySession
         return globals;
     }
 
+    /** A stored configuration's globals, put in place empty when it has none. */
+    static org.json.JSONObject storedGlobals(org.json.JSONObject configuration)
+    {
+        org.json.JSONObject globals = configuration.optJSONObject("globals");
+
+        if (globals == null)
+        {
+            globals = new org.json.JSONObject();
+
+            configuration.put("globals", globals);
+        }
+
+        return globals;
+    }
+
     /**
      * Folds what the railway owns and nothing the setup gained since it was built: train placements and the settings
      * and timetable a run writes.  For a setup newer than the railway.  A null `asBuilt` takes every setting.
@@ -4689,14 +4672,7 @@ public class AutonomySession
 
         org.json.JSONObject now = globalsOf(root);
 
-        org.json.JSONObject globals = configuration.optJSONObject("globals");
-
-        if (globals == null)
-        {
-            globals = new org.json.JSONObject();
-
-            configuration.put("globals", globals);
-        }
+        org.json.JSONObject globals = storedGlobals(configuration);
 
         for (String key : now.keySet())
         {
@@ -4970,10 +4946,7 @@ public class AutonomySession
 
         if (configuration == null) return false;
 
-        if (!configuration.has("globals"))
-        {
-            configuration.put("globals", new org.json.JSONObject());
-        }
+        if (!configuration.has("globals")) configuration.put("globals", new org.json.JSONObject());
 
         configuration.getJSONObject("globals").put(key, value);
 
@@ -5087,10 +5060,7 @@ public class AutonomySession
 
         org.json.JSONObject stored = configuration.getJSONObject("globals");
 
-        for (String key : stored.keySet())
-        {
-            globals.set(key, stored.get(key));
-        }
+        for (String key : stored.keySet()) globals.set(key, stored.get(key));
 
         return globals;
     }
@@ -5215,10 +5185,7 @@ public class AutonomySession
 
         for (GraphReducer.ReducedEdge edge : reducer.getEdges())
         {
-            if (edge.getStart().equals(tile) && edge.getExitSide() != null)
-            {
-                departures.add(edge.getExitSide());
-            }
+            if (edge.getStart().equals(tile) && edge.getExitSide() != null) departures.add(edge.getExitSide());
         }
 
         java.util.Collection<Side> arrivals = arrivalSides(tile);
@@ -5232,10 +5199,7 @@ public class AutonomySession
 
             for (TileGraph.Exit exit : graph.exits(tile, arrival))
             {
-                if (exit.getSide() != null && departures.contains(exit.getSide()))
-                {
-                    onwards.add(exit.getSide());
-                }
+                if (exit.getSide() != null && departures.contains(exit.getSide())) onwards.add(exit.getSide());
             }
 
             onwards.remove(arrival);
@@ -7728,10 +7692,7 @@ public class AutonomySession
     {
         java.util.List<TileKey> limited = tilesWithAMaxTrainLength();
 
-        for (TileKey tile : limited)
-        {
-            writePointProperty(tile, "maxTrainLength", null);
-        }
+        for (TileKey tile : limited) writePointProperty(tile, "maxTrainLength", null);
 
         deriveStationIndex();
 
@@ -8080,7 +8041,7 @@ public class AutonomySession
     }
 
     /**
-     * Records one way along a run's OWN tiles, not a path re-derived from its ends (see `applyOneWay`): its boundaries
+     * Records one way along a run's OWN tiles, not a path re-derived from its ends (see `recordAlong`): its boundaries
      * say which way the end tiles go, and one that is null (track that simply stops) is left out (OB-361).
      */
     Set<TileKey> recordAlongTheRun(TileGraph.Run run, boolean towardEnd)
@@ -8108,14 +8069,6 @@ public class AutonomySession
         }
 
         return recordAlong(path, first, last);
-    }
-
-    /** Sets one direction along a known path, the track between its two ends. */
-    private int applyOneWay(List<TileKey> path)
-    {
-        int changed = recordAlong(path, 1, path.size() - 2).size();
-
-        return directionsTouched() ? changed : 0;
     }
 
     /**
@@ -8493,10 +8446,7 @@ public class AutonomySession
 
         if (!always && barred.isEmpty()) return out;
 
-        for (Side side : arrivalSides(tile))
-        {
-            out.add(new TileAnnotation.Arrival(side, !barred.contains(side)));
-        }
+        for (Side side : arrivalSides(tile)) out.add(new TileAnnotation.Arrival(side, !barred.contains(side)));
 
         return out;
     }
@@ -8610,10 +8560,7 @@ public class AutonomySession
         {
             for (LayoutDiagramComponent component : page.getAll())
             {
-                if (component != null)
-                {
-                    existing.add(new TileKey(page.getName(), component.getX(), component.getY()));
-                }
+                if (component != null) existing.add(new TileKey(page.getName(), component.getX(), component.getY()));
             }
         }
 

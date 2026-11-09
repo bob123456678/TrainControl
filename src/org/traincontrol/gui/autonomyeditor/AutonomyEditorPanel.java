@@ -29,6 +29,7 @@ import org.traincontrol.automationui.TileGraph.Direction;
 import org.traincontrol.automationui.TileGraph.RouteId;
 import org.traincontrol.automationui.TileGraph.TileKey;
 import org.traincontrol.gui.AutonomyViewerPanel;
+import org.traincontrol.gui.Listen;
 import org.traincontrol.gui.RunGates;
 import org.traincontrol.gui.TailCrossedPrompt;
 import org.traincontrol.gui.TrainControlUI;
@@ -262,9 +263,6 @@ public class AutonomyEditorPanel extends JPanel
 
     private static final String PREF_TRAINS = "autonomyEditorTrains";
 
-    /** Whether the captions name the train parked at a station or the station (FR-030). */
-    private static final String PREF_CAPTION_TRAINS = "autonomyEditorCaptionTrains";
-
     /**
      * What the captions say, as one choice, not three switches that could contradict (FR-061, OB-174).  Adam:
      * *"Station Names should be default, with the setting remembered between open."*
@@ -285,9 +283,6 @@ public class AutonomyEditorPanel extends JPanel
 
     /** The stored Labels Only (OB-272), no longer offered: opens as Station Names with Text Labels ticked (FR-133). */
     private static final int LEGACY_LABELS_ONLY = 4;
-
-    /** Whether captions name each square's home locomotive (MT-261), white when it is not there. */
-    private static final String PREF_CAPTION_HOMES = "autonomyEditorCaptionHomes";
 
     /** Restrictions only by default: open track is most of a layout. */
     private static final int DIRECTIONS_DEFAULT = 1;
@@ -808,10 +803,7 @@ public class AutonomyEditorPanel extends JPanel
     /** Stretches buttons to the column's width, as the window's Save and Cancel are (`setColumnWidth`). */
     private void fillWidth(javax.swing.AbstractButton... buttons)
     {
-        for (javax.swing.AbstractButton button : buttons)
-        {
-            stretched.add(button);
-        }
+        for (javax.swing.AbstractButton button : buttons) stretched.add(button);
     }
 
     /**
@@ -1034,10 +1026,7 @@ public class AutonomyEditorPanel extends JPanel
     {
         if (!anythingIsArmed()) return false;
 
-        for (JToggleButton other : toolButtons)
-        {
-            other.setSelected(false);
-        }
+        for (JToggleButton other : toolButtons) other.setSelected(false);
 
         tool = Tool.NONE;
 
@@ -1082,14 +1071,10 @@ public class AutonomyEditorPanel extends JPanel
             AutonomyViewerPanel.FONT_GROUP));
 
         // A double-click, or Control+O, opens the station's settings; one click stays as it is (FR-072).
-        findings.addMouseListener(new java.awt.event.MouseAdapter()
+        findings.addMouseListener(Listen.clicked(e ->
         {
-            @Override
-            public void mouseClicked(java.awt.event.MouseEvent e)
-            {
-                if (e.getClickCount() == 2) openStationSettingsForTheFinding();
-            }
-        });
+            if (e.getClickCount() == 2) openStationSettingsForTheFinding();
+        }));
 
         // Clicking a finding goes to its tile.
         findings.addListSelectionListener(e ->
@@ -1236,15 +1221,11 @@ public class AutonomyEditorPanel extends JPanel
         {
             setFocusable(false);
 
-            addMouseListener(new java.awt.event.MouseAdapter()
+            addMouseListener(Listen.pressed(e ->
             {
-                @Override
-                public void mousePressed(java.awt.event.MouseEvent e)
-                {
-                    setFocusable(true);
-                    requestFocusInWindow();
-                }
-            });
+                setFocusable(true);
+                requestFocusInWindow();
+            }));
 
             addKeyListener(new java.awt.event.KeyAdapter()
             {
@@ -2225,10 +2206,7 @@ public class AutonomyEditorPanel extends JPanel
         if (!mayCarryACaption(onTarget)) return I18n.t("autosetup.ui.errorDropOnControl");
 
         // Refused, not replaced: the name there would vanish without trace.
-        if (session.getCaptionTarget(to) != null)
-        {
-            return I18n.f("autosetup.ui.errorDropOccupied", describeTile(to));
-        }
+        if (session.getCaptionTarget(to) != null) return I18n.f("autosetup.ui.errorDropOccupied", describeTile(to));
 
         return null;
     }
@@ -2283,10 +2261,7 @@ public class AutonomyEditorPanel extends JPanel
         for (org.traincontrol.automationui.GraphReducer.ReducedPoint point
             : session.getReducer().getPoints().values())
         {
-            if (point.isStation() && point.getName() != null && point.getTile() != null)
-            {
-                stations.add(point.getTile());
-            }
+            if (point.isStation() && point.getName() != null && point.getTile() != null) stations.add(point.getTile());
         }
 
         return nearestOf(from, stations);
@@ -2326,10 +2301,7 @@ public class AutonomyEditorPanel extends JPanel
     /** Notes a square if it is a station, so the next label defaults to it. */
     void rememberIfStation(TileKey tile)
     {
-        if (tile != null && session != null && session.getStore().isStation(tile))
-        {
-            lastStationTouched = tile;
-        }
+        if (tile != null && session != null && session.getStore().isStation(tile)) lastStationTouched = tile;
     }
 
     /** The answer to the take-another-station's-name question for tests, or null to ask. */
@@ -2607,7 +2579,7 @@ public class AutonomyEditorPanel extends JPanel
         return tileMenus.settingsItem(tile);
     }
 
-    /** Train at Bramley... or Place a Locomotive Here..., for the track diagram's menu; null where neither applies. */
+    /** Change Train at Bramley... or Place a Locomotive Here..., for the track diagram's menu; null for neither. */
     public javax.swing.JMenuItem trainWindowItem(TileKey tile)
     {
         return tileMenus.trainItem(tile);
@@ -3104,13 +3076,11 @@ public class AutonomyEditorPanel extends JPanel
         return null;
     }
 
-    /** Delegates to `EditorPrompts.promptNumber`. */
     void promptNumber(TileKey tile, String key, String promptKey, int unset)
     {
         prompts.promptNumber(tile, key, promptKey, unset);
     }
 
-    /** Delegates to `EditorPrompts.applyNumber`. */
     String applyNumber(TileKey tile, String key, String entered, int unset)
     {
         return prompts.applyNumber(tile, key, entered, unset);
@@ -3132,19 +3102,6 @@ public class AutonomyEditorPanel extends JPanel
 
         return stored instanceof Number
             ? (int) Math.round(((Number) stored).doubleValue() * 100) : 100;
-    }
-
-    void promptPercent(TileKey tile)
-    {
-        String entered = JOptionPane.showInputDialog(owner(),
-            I18n.f("autolayout.ui.promptEnterSpeedMultiplier", describeTile(tile)),
-            String.valueOf(percent(tile)));
-
-        if (entered == null) return;
-
-        String refused = applyPercent(tile, entered);
-
-        if (refused != null) JOptionPane.showMessageDialog(owner(), refused);
     }
 
     /**
@@ -3191,15 +3148,11 @@ public class AutonomyEditorPanel extends JPanel
     {
         javax.swing.JButton pick = new javax.swing.JButton(label);
 
-        pick.addActionListener(new java.awt.event.ActionListener()
+        pick.addActionListener(e ->
         {
-            @Override
-            public void actionPerformed(java.awt.event.ActionEvent e)
-            {
-                answer[0] = name;
+            answer[0] = name;
 
-                pane.setValue(javax.swing.JOptionPane.OK_OPTION);
-            }
+            pane.setValue(javax.swing.JOptionPane.OK_OPTION);
         });
 
         return pick;
@@ -3310,19 +3263,15 @@ public class AutonomyEditorPanel extends JPanel
         if (row.getComponentCount() > 0) panel.add(row, java.awt.BorderLayout.SOUTH);
 
         // Double-click chooses, as OK does.
-        list.addMouseListener(new java.awt.event.MouseAdapter()
+        list.addMouseListener(Listen.clicked(e ->
         {
-            @Override
-            public void mouseClicked(java.awt.event.MouseEvent e)
+            if (e.getClickCount() == 2 && list.getSelectedValue() != null)
             {
-                if (e.getClickCount() == 2 && list.getSelectedValue() != null)
-                {
-                    answer[0] = list.getSelectedValue();
+                answer[0] = list.getSelectedValue();
 
-                    pane.setValue(javax.swing.JOptionPane.OK_OPTION);
-                }
+                pane.setValue(javax.swing.JOptionPane.OK_OPTION);
             }
-        });
+        }));
 
         javax.swing.JDialog dialog = pane.createDialog(owner, title);
 
@@ -3613,10 +3562,7 @@ public class AutonomyEditorPanel extends JPanel
 
         java.awt.Window window = javax.swing.SwingUtilities.getWindowAncestor(this);
 
-        while (window != null && !(window instanceof TrainControlUI))
-        {
-            window = window.getOwner();
-        }
+        while (window != null && !(window instanceof TrainControlUI)) window = window.getOwner();
 
         return window instanceof TrainControlUI ? (TrainControlUI) window : null;
     }
@@ -3993,7 +3939,6 @@ public class AutonomyEditorPanel extends JPanel
         return chosen;
     }
 
-    /** Delegates to `EditorPrompts.promptTrainList`. */
     boolean promptTrainList(TileKey tile, org.traincontrol.automationui.AutonomySession.WhichTrains which)
     {
         return prompts.promptTrainList(tile, which);
@@ -4269,7 +4214,6 @@ public class AutonomyEditorPanel extends JPanel
         return null;
     }
 
-    /** Delegates to `EditorPrompts.promptLinkName`. */
     void promptLinkName(TileKey tile)
     {
         prompts.promptLinkName(tile);
@@ -4322,10 +4266,7 @@ public class AutonomyEditorPanel extends JPanel
         {
             int at = choice.getSelectedIndex();
 
-            if (at >= 0 && at < candidates.size() && onReveal != null)
-            {
-                onReveal.accept(candidates.get(at));
-            }
+            if (at >= 0 && at < candidates.size() && onReveal != null) onReveal.accept(candidates.get(at));
         });
 
         JPanel panel = new JPanel(new java.awt.BorderLayout(0, 6));
@@ -4361,19 +4302,16 @@ public class AutonomyEditorPanel extends JPanel
             && component.getAccessory() != null;
     }
 
-    /** Delegates to `EditorSignals.pairProtectingSignal`. */
     void pairProtectingSignal(TileKey station)
     {
         signalPairing.pairProtectingSignal(station);
     }
 
-    /** Delegates to `EditorSignals.pairGuardSignals`. */
     void pairGuardSignals(Guard guard, TileKey station)
     {
         signalPairing.pairGuardSignals(guard, station);
     }
 
-    /** Delegates to `EditorSignals.askAboutSignals`. */
     private void askAboutSignals(final Guard guard, TileKey station)
     {
         signalPairing.askAboutSignals(guard, station);
@@ -4411,13 +4349,11 @@ public class AutonomyEditorPanel extends JPanel
         JOptionPane.showMessageDialog(owner(), wrapped(why));
     }
 
-    /** Delegates to `EditorSignals.addGuardSignal`. */
     private String addGuardSignal(Guard guard, TileKey station, TileKey signal, boolean redraw)
     {
         return signalPairing.addGuardSignal(guard, station, signal, redraw);
     }
 
-    /** Delegates to `EditorSignals.signalAddresses`. */
     String signalAddresses(java.util.List<TileKey> signals)
     {
         return signalPairing.signalAddresses(signals);
@@ -4697,10 +4633,7 @@ public class AutonomyEditorPanel extends JPanel
         else
         {
             // A selection is squares, not runs: each gets the number.
-            for (TileKey target : targets)
-            {
-                session.setTileLength(target, typed);
-            }
+            for (TileKey target : targets) session.setTileLength(target, typed);
         }
 
         selection.clear();
@@ -4864,10 +4797,7 @@ public class AutonomyEditorPanel extends JPanel
             if (changed >= 0) annotationsChanged();
 
             // Armed for the next: a yard is several runs.
-            if (changed >= 0 && tool == Tool.ONE_WAY)
-            {
-                say(hint, I18n.f("autosetup.ui.oneWayDoneAgain", changed));
-            }
+            if (changed >= 0 && tool == Tool.ONE_WAY) say(hint, I18n.f("autosetup.ui.oneWayDoneAgain", changed));
 
             refresh();
             return;
@@ -5474,7 +5404,6 @@ public class AutonomyEditorPanel extends JPanel
         }
     }
 
-    /** Delegates to `EditorWhy.composeWhy`. */
     private WhyAnswer composeWhy(org.traincontrol.automation.Layout layout,
         org.traincontrol.automationui.StationIndex index, WhySetup setup, TileKey tile, boolean byHand)
     {
@@ -5754,10 +5683,7 @@ public class AutonomyEditorPanel extends JPanel
      */
     private String legColor(TileKey to, boolean forward)
     {
-        if (endsManualOnly(to))
-        {
-            return I18n.t("autosetup.ui.testColorPurple");
-        }
+        if (endsManualOnly(to)) return I18n.t("autosetup.ui.testColorPurple");
 
         return I18n.t(forward ? "autosetup.ui.testColorYellow" : "autosetup.ui.testColorAmber");
     }
@@ -5776,10 +5702,7 @@ public class AutonomyEditorPanel extends JPanel
 
         for (org.traincontrol.automationui.GraphReducer.ReducedEdge edge : run)
         {
-            for (org.traincontrol.automationui.GraphReducer.TileStep step : edge.getPath())
-            {
-                seq.add(step.getTile());
-            }
+            for (org.traincontrol.automationui.GraphReducer.TileStep step : edge.getPath()) seq.add(step.getTile());
 
             seq.add(edge.getEnd());
         }
@@ -5821,10 +5744,7 @@ public class AutonomyEditorPanel extends JPanel
 
         java.util.List<String> names = new java.util.ArrayList<>();
 
-        for (int i = 0; i < run.size() - 1; i++)
-        {
-            names.add(describeTile(run.get(i).getEnd()));
-        }
+        for (int i = 0; i < run.size() - 1; i++) names.add(describeTile(run.get(i).getEnd()));
 
         // The space is here because Properties strips a value's leading whitespace.
         return " " + I18n.f("autosetup.ui.testVia", String.join(", ", names));
@@ -5891,11 +5811,6 @@ public class AutonomyEditorPanel extends JPanel
     public boolean isFocusedOnSignals()
     {
         return signalFor != null || signalWindowOpen;
-    }
-
-    public boolean isShowingLengths()
-    {
-        return showLengths.isSelected();
     }
 
     public Set<TileKey> getSelection()
@@ -5966,10 +5881,7 @@ public class AutonomyEditorPanel extends JPanel
             marks.addAll(session.directionMarks(tile));
 
             // A bare layout gets one arrow per run between sensors.
-            if (marks.isEmpty() && flowMarks.containsKey(tile))
-            {
-                marks.add(flowMarks.get(tile));
-            }
+            if (marks.isEmpty() && flowMarks.containsKey(tile)) marks.add(flowMarks.get(tile));
         }
 
         // 0 is "does not count", not drawn
@@ -6150,10 +6062,7 @@ public class AutonomyEditorPanel extends JPanel
         // Set on the run, not the tile: a run has one direction.
         int set = session.setRunDirection(tile, routeId, direction);
 
-        if (set == 0)
-        {
-            say(hint, I18n.t("autosetup.ui.oneWayNoPath"));
-        }
+        if (set == 0) say(hint, I18n.t("autosetup.ui.oneWayNoPath"));
 
         refresh();
 
@@ -6227,10 +6136,7 @@ public class AutonomyEditorPanel extends JPanel
         // One re-derivation for the whole run.
         java.util.Map<TileKey, Integer> lengths = new java.util.LinkedHashMap<>();
 
-        for (TileKey square : runTilesOf(tile))
-        {
-            lengths.put(square, square.equals(leader) ? length : 0);
-        }
+        for (TileKey square : runTilesOf(tile)) lengths.put(square, square.equals(leader) ? length : 0);
 
         session.setTileLengths(lengths);
 
@@ -6519,10 +6425,7 @@ public class AutonomyEditorPanel extends JPanel
         // The whole sentence, for a narrow window (OB-342)
         banner.setToolTipText(banner.getText());
 
-        if (!selection.isEmpty())
-        {
-            say(hint, I18n.f("autosetup.ui.labelTilesSelected", selection.size()));
-        }
+        if (!selection.isEmpty()) say(hint, I18n.f("autosetup.ui.labelTilesSelected", selection.size()));
 
         if (onChanged != null) onChanged.run();
 
@@ -6744,7 +6647,6 @@ public class AutonomyEditorPanel extends JPanel
         setupChanged();
     }
 
-    /** Delegates to `EditorMassAssign.massAssignLengths`. */
     private void massAssignLengths()
     {
         massAssignment.massAssignLengths();
@@ -6754,13 +6656,11 @@ public class AutonomyEditorPanel extends JPanel
     static final String MAXIMA_TITLE = "autosetup.ui.menuMassAssignMaxTrainLengths";
     static final String TRAINS_TITLE = "autosetup.ui.menuMassAssignTrainLengths";
 
-    /** Delegates to `EditorMassAssign.massAssignMaxTrainLengths`. */
     private void massAssignMaxTrainLengths()
     {
         massAssignment.massAssignMaxTrainLengths();
     }
 
-    /** Delegates to `EditorMassAssign.massAssignTrainLengths`. */
     private void massAssignTrainLengths()
     {
         massAssignment.massAssignTrainLengths();
@@ -6973,7 +6873,6 @@ public class AutonomyEditorPanel extends JPanel
         return ANSWER_STOP;
     }
 
-    /** Delegates to `EditorMassAssign.nameForPrompt`. */
     private String nameForPrompt(TileKey tile)
     {
         return massAssignment.nameForPrompt(tile);
@@ -7271,12 +7170,6 @@ public class AutonomyEditorPanel extends JPanel
     public javax.swing.JComboBox<String> getCaptionChoice()
     {
         return control(captions);
-    }
-
-    /** @return the parked-train toggle, unmounted, the internal half of the choice (FR-061) */
-    public JCheckBox getShowParkedTrains()
-    {
-        return control(showParkedTrains);
     }
 
     /** @return whether captions name the parked train rather than the station (FR-030) */

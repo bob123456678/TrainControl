@@ -61,14 +61,6 @@ public class LayoutDiagramComponent
     
     /**
      * Constructor
-     * @param type
-     * @param x
-     * @param y
-     * @param orientation
-     * @param state
-     * @param address
-     * @param rawAddress
-     * @param protocol
      * @throws IOException 
      */
     public LayoutDiagramComponent(componentType type, int x, int y, 
@@ -303,8 +295,6 @@ public class LayoutDiagramComponent
     
     /**
      * Generates a buffered image for rotation
-     * @param img
-     * @return 
      */
     public static BufferedImage toBufferedImage(Image img)
     {
@@ -332,9 +322,7 @@ public class LayoutDiagramComponent
     
     /**
      * Gets the image corresponding to the current state of the accessory
-     * @param size
      * @param ignoreState true to never display the active icon (useful for editing)
-     * @return 
      */
     public String getImageName(int size, boolean ignoreState)
     {        
@@ -391,17 +379,11 @@ public class LayoutDiagramComponent
          String imageName = getImageName(size, ignoreState);
          java.net.URL icon = LayoutDiagramComponent.class.getResource(imageName);
 
-         if (icon == null)
-         {
-             throw new IOException(I18n.f("error.missingLayoutIcon", imageName));
-         }
+         if (icon == null) throw new IOException(I18n.f("error.missingLayoutIcon", imageName));
 
          Image img = ImageIO.read(icon);
 
-         if (img == null)
-         {
-             throw new IOException(I18n.f("error.missingLayoutIcon", imageName));
-         }
+         if (img == null) throw new IOException(I18n.f("error.missingLayoutIcon", imageName));
 
          // Resize only if we don't have the right icon
          if (size != img.getWidth(null))
@@ -426,7 +408,6 @@ public class LayoutDiagramComponent
     
     /**
      * The name of the icon file used for this component
-     * @return 
      */
     public String getTypeName()
     {
@@ -489,7 +470,6 @@ public class LayoutDiagramComponent
     
     /**
      * A user-friendly description of the component
-     * @return 
      */
     public String getUserFriendlyTypeName()
     {
@@ -560,7 +540,6 @@ public class LayoutDiagramComponent
    
     /**
      * The low-level address, i.e. separate addresses for red and green
-     * @return 
      */
     public int getRawAddress()
     {
@@ -752,11 +731,6 @@ public class LayoutDiagramComponent
         this.y = y;
     }
 
-    public void setType(componentType type)
-    {
-        this.type = type;
-    }
-    
     public void setRoute(Route route)
     {
         this.route = route;
@@ -816,7 +790,6 @@ public class LayoutDiagramComponent
     
     /**
      * Basic description for the UI
-     * @return 
      */
     public String toSimpleString()
     {        
@@ -876,9 +849,6 @@ public class LayoutDiagramComponent
     
     /**
      * Returns a unique string for this component's image, suitable for caching
-     * @param size
-     * @param ignoreState
-     * @return 
      */
     public String getImageKey(int size, boolean ignoreState)
     {
@@ -966,7 +936,6 @@ public class LayoutDiagramComponent
     /**
      * Exports this component in the CS2 file format
      * Limited to the component types supported in TrainControl
-     * @return
      * @throws Exception
      */
     public String exportToCS2TextFormat() throws Exception
@@ -1115,8 +1084,6 @@ public class LayoutDiagramComponent
 
     /**
      * Converts the internal type to the Marklin format
-     * @param type
-     * @return
      * @throws Exception 
      */
     public static String getTypeString(LayoutDiagramComponent.componentType type) throws Exception
@@ -1187,7 +1154,6 @@ public class LayoutDiagramComponent
     
     /**
      * Gets the number of possible orientations for this tile type
-     * @return 
      */
     public int getNumOrientations()
     {
@@ -1231,8 +1197,6 @@ public class LayoutDiagramComponent
     
     /**
      * Updates the component's address
-     * @param address 
-     * @param protocol 
      * @param isGreen used for uncouplers
      * @throws java.lang.Exception 
      */
@@ -1281,7 +1245,6 @@ public class LayoutDiagramComponent
     
     /**
      * Odd addresses are controlled by the green button - used for uncouplers
-     * @return 
      */
     public boolean isLogicalGreen()
     {
@@ -1290,7 +1253,6 @@ public class LayoutDiagramComponent
     
     /**
      * Gets the human readable version of the address
-     * @return 
      */
     public int getLogicalAddress()
     {

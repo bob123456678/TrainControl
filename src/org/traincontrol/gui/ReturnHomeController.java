@@ -496,10 +496,7 @@ final class ReturnHomeController extends SettledQuestion
     {
         List<String> names = new ArrayList<>();
 
-        for (Locomotive l : (blocked == null ? new ArrayList<Locomotive>() : blocked))
-        {
-            names.add(l.getName());
-        }
+        for (Locomotive l : (blocked == null ? new ArrayList<Locomotive>() : blocked)) names.add(l.getName());
 
         return String.join(", ", names);
     }

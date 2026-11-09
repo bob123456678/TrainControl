@@ -68,7 +68,6 @@ public class RouteCommand implements java.io.Serializable
         
     /**
      * Base constructor
-     * @param type
      */
     private RouteCommand(commandType type)
     {
@@ -78,10 +77,6 @@ public class RouteCommand implements java.io.Serializable
     
     /**
      * Returns a full accessory command
-     * @param address
-     * @param protocol
-     * @param setting
-     * @return 
      */
     public static RouteCommand RouteCommandAccessory(int address, Accessory.accessoryDecoderType protocol, boolean setting)
     {
@@ -96,9 +91,6 @@ public class RouteCommand implements java.io.Serializable
     
     /**
      * Returns a full feedback command
-     * @param address
-     * @param setting
-     * @return
      */
     public static RouteCommand RouteCommandFeedback(int address, boolean setting)
     {
@@ -112,8 +104,6 @@ public class RouteCommand implements java.io.Serializable
     
     /**
      * Returns a full route command
-     * @param name
-     * @return
      */
     public static RouteCommand RouteCommandRoute(String name)
     {
@@ -126,10 +116,6 @@ public class RouteCommand implements java.io.Serializable
     
     /**
      * Returns a full function command
-     * @param name
-     * @param function
-     * @param setting
-     * @return 
      */
     public static RouteCommand RouteCommandFunction(String name, int function, boolean setting)
     {
@@ -144,9 +130,6 @@ public class RouteCommand implements java.io.Serializable
     
     /**
      * Returns a full locomotive speed command
-     * @param name
-     * @param speed
-     * @return 
      */
     public static RouteCommand RouteCommandLocomotiveSpeed(String name, int speed)
     {
@@ -168,9 +151,6 @@ public class RouteCommand implements java.io.Serializable
     
     /**
      * Returns a full locomotive direction command
-     * @param name
-     * @param direction
-     * @return 
      */
     public static RouteCommand RouteCommandLocomotiveDirection(String name, Locomotive.locDirection direction)
     {
@@ -184,9 +164,6 @@ public class RouteCommand implements java.io.Serializable
     
     /**
      * Returns a full auto locomotive command
-     * @param name
-     * @param s88
-     * @return 
      */
     public static RouteCommand RouteCommandAutoLocomotive(String name, int s88)
     {
@@ -208,17 +185,13 @@ public class RouteCommand implements java.io.Serializable
         r.commandConfig.put(KEY_NAME, name);
         r.commandConfig.put(KEY_ADDRESS, Integer.toString(s88));
         
-        if (!at)
-        {
-            r.commandConfig.put(KEY_SETTING, Boolean.toString(false));
-        }
+        if (!at) r.commandConfig.put(KEY_SETTING, Boolean.toString(false));
         
         return r;
     }
     
     /**
      * Returns a stop command
-     * @return 
      */
     public static RouteCommand RouteCommandStop()
     {
@@ -321,7 +294,6 @@ public class RouteCommand implements java.io.Serializable
     /**
      * Changes the stored name of the route command
      * Used primarily when renaming routes
-     * @param name 
      */
     public void setName(String name)
     {
@@ -351,7 +323,6 @@ public class RouteCommand implements java.io.Serializable
      * Returns whether this command carries an address.  Accessory, feedback and auto locomotive
      * commands do; speed, direction, function, route and the standalone commands do not.
      * Callers that iterate over a mixed route must check this before calling getAddress.
-     * @return
      */
     public boolean hasAddress()
     {
@@ -361,7 +332,6 @@ public class RouteCommand implements java.io.Serializable
     /**
      * Returns this command's address.  Only valid when hasAddress() is true - other command types
      * have no address and this will throw.
-     * @return
      */
     public int getAddress()
     {
@@ -686,8 +656,6 @@ public class RouteCommand implements java.io.Serializable
     
     /**
      * Converts a route command integer (1 or 0) to boolean, throws an error otherwise
-     * @param setting
-     * @return
      * @throws Exception 
      */
     private static boolean intToAccessorySwitched(int setting) throws Exception
@@ -710,9 +678,6 @@ public class RouteCommand implements java.io.Serializable
      * unchecked ArrayIndexOutOfBounds/NumberFormatException that splitting and parsing user text can raise are
      * converted here, which covers every branch including any added later.
      *
-     * @param line
-     * @param extractAccessoryType
-     * @return
      * @throws java.lang.Exception
      */
     public static RouteCommand fromLine(String line, boolean extractAccessoryType) throws Exception
@@ -734,9 +699,6 @@ public class RouteCommand implements java.io.Serializable
     /**
      * The parser proper.  Callers go through fromLine, which turns a malformed line into a readable
      * error rather than an unchecked exception.
-     * @param line
-     * @param extractAccessoryType
-     * @return
      * @throws java.lang.Exception
      */
     private static RouteCommand parseLine(String line, boolean extractAccessoryType) throws Exception
@@ -980,7 +942,6 @@ public class RouteCommand implements java.io.Serializable
     
     /**
      * Returns whether this RouteCommand can be a condition, rather than a directly executed command
-     * @return 
      */
     public boolean isConditionCommand()
     {

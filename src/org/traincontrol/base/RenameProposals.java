@@ -24,7 +24,6 @@ public class RenameProposals
 
     /**
      * The renames that can be applied, in the order they must be applied in
-     * @return
      */
     public List<String[]> getProposals()
     {
@@ -37,8 +36,6 @@ public class RenameProposals
      * Counts declined candidates rather than certain renames: the duplicate-address refusals fire
      * before the names are compared, so some of what they skip would have produced no proposal anyway.
      * It is a "was anything held back" signal, not a total - the log carries the detail.
-     *
-     * @return
      */
     public int getRefusedCount()
     {
@@ -47,7 +44,6 @@ public class RenameProposals
 
     /**
      * Whether anything was declined, and the log therefore has something worth reading
-     * @return
      */
     public boolean hasRefusals()
     {

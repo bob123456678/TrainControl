@@ -514,10 +514,7 @@ public final class LayoutLabel extends JLabel
                                                     return;
                                                 }
 
-                                                if (answer == TrainControlUI.RouteConflict.REFUSED)
-                                                {
-                                                    return;
-                                                }
+                                                if (answer == TrainControlUI.RouteConflict.REFUSED) return;
 
                                                 component.execSwitching();
                                             }, ROUTE_CONFLICT_THREAD).start();
@@ -565,7 +562,6 @@ public final class LayoutLabel extends JLabel
     /**
      * Checks if the parent window is visible
      * Used for pruning old label references
-     * @return 
      */
     public boolean isParentVisible()
     {
@@ -1030,12 +1026,6 @@ public final class LayoutLabel extends JLabel
         }
     }
 
-    /** @return what autonomy is showing here, or null */
-    public TileOverlay getAutonomyOverlay()
-    {
-        return autonomyOverlay;
-    }
-
     /**
      * Sets what the autonomy editor is showing on this square (directions, lengths, selection), repainting if it
      * changed; null for nothing.  Like the overlay, none of it changes the icon name.
@@ -1202,10 +1192,7 @@ public final class LayoutLabel extends JLabel
 
             // And the badge back on top of the line (MT-076): a station is where the train is going, so it must not be
             // buried; only where an overlay could have covered it.
-            if (overlay != null && annotation != null)
-            {
-                annotation.paintBadgeOverRun(g2, getWidth(), getHeight());
-            }
+            if (overlay != null && annotation != null) annotation.paintBadgeOverRun(g2, getWidth(), getHeight());
         }
         finally
         {
@@ -1290,19 +1277,10 @@ public final class LayoutLabel extends JLabel
     }
 
     /**
-     * One coach of a train, along one road of a square (T2 of the look's train tails).  Whole coaches, one to a square:
-     * a dash pattern restarts at every square and leaves a stub wherever a road is not a whole number of dashes long (a
-     * curve's chord is about seven-tenths of a straight one).  Here every road is one coach, its ends trimmed by half a
-     * gap, so the gaps fall exactly at the joins between squares.  `a` and `b` are the road's ends (a side's midpoint).
+     * One coach of a train along one road of a square (T2), as a center line, or null where the road is too short to
+     * hold one.  Its ends are trimmed by half a gap, so the gaps fall exactly at the joins between squares, where a
+     * dash pattern would restart at every square and leave stubs.  `a` and `b` are the road's ends.
      */
-    public static void paintCoach(java.awt.Graphics2D g, int[] a, int[] b, int span)
-    {
-        java.awt.geom.Line2D coach = coach(a, b, span);
-
-        if (coach != null) g.draw(coach);
-    }
-
-    /** The coach `paintCoach` draws, as a center line, or null where the road is too short to hold one. */
     private static java.awt.geom.Line2D coach(int[] a, int[] b, int span)
     {
         double dx = b[0] - a[0], dy = b[1] - a[1], len = Math.hypot(dx, dy);
@@ -1329,7 +1307,7 @@ public final class LayoutLabel extends JLabel
         /** A line edge to edge along each road, as since MT-309 and FR-106. */
         LINE,
 
-        /** Whole coaches, one to a square, the gaps at the joins (T2) - see `paintCoach`. */
+        /** Whole coaches, one to a square, the gaps at the joins (T2) - see `coach`. */
         COACHES
     }
 
@@ -1455,8 +1433,7 @@ public final class LayoutLabel extends JLabel
 
         int span = Math.min(getWidth(), getHeight());
 
-        g.setRenderingHint(java.awt.RenderingHints.KEY_ANTIALIASING,
-            java.awt.RenderingHints.VALUE_ANTIALIAS_ON);
+        ImageUtil.antialias(g);
 
         float width = Math.max(3f, span / 7f);
 
@@ -1624,10 +1601,7 @@ public final class LayoutLabel extends JLabel
     /** The roads of this square a standing train is lying across, as the sides they join. */
     private java.util.List<org.traincontrol.automationui.TilePorts.Route> coveredRoads()
     {
-        if (edit || square == null || tcUI == null || component == null)
-        {
-            return new java.util.ArrayList<>();
-        }
+        if (edit || square == null || tcUI == null || component == null) return new java.util.ArrayList<>();
 
         return routesOf(tcUI.coveredRoutesAt(square));
     }

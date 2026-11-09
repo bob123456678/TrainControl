@@ -212,10 +212,7 @@ final class RouteListPanel
 
                     int i = 1;
 
-                    while (this.ui.getModel().getRoute(String.format(proposedName, i)) != null)
-                    {
-                        i++;
-                    }
+                    while (this.ui.getModel().getRoute(String.format(proposedName, i)) != null) i++;
 
                     this.ui.getModel().newRoute(String.format(proposedName, i), currentRoute.getRoute(), 
                             currentRoute.getS88(), currentRoute.getTriggerType(), false, currentRoute.getConditions()); 
@@ -325,10 +322,7 @@ final class RouteListPanel
             TrainControlUI.YES_NO_OPTS[0] // default selection
         );
 
-        if (dialogResult == JOptionPane.YES_OPTION)
-        {
-            executeRoute(route.getName());
-        }
+        if (dialogResult == JOptionPane.YES_OPTION) executeRoute(route.getName());
 
         // Revert preference
         this.ui.windowAlwaysOnTopAsChosen();

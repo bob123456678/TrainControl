@@ -326,7 +326,6 @@ public class AutonomyBanner extends JPanel
     }
 
     /**
-     * @param text
      * @param warning whether this is something that went wrong, rather than something that happened
      */
     public void show(String text, boolean warning)

@@ -9,7 +9,6 @@ import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.Insets;
 import java.awt.event.KeyEvent;
-import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
@@ -776,14 +775,10 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
             // Always the icon's size, so the row does not change width when the triangle appears
             sameAddress.setPreferredSize(new Dimension(RowIcons.warning(16).getIconWidth() + 4,
                 RowIcons.warning(16).getIconHeight()));
-            sameAddress.addMouseListener(new MouseAdapter()
+            sameAddress.addMouseListener(Listen.released(e ->
             {
-                @Override
-                public void mouseReleased(MouseEvent e)
-                {
-                    if (sameAddress.getIcon() != null) showShared(true);
-                }
-            });
+                if (sameAddress.getIcon() != null) showShared(true);
+            }));
 
             sync.setName("settings.sync");
             sync.setFont(BUTTON_FONT);
@@ -1017,16 +1012,12 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
         {
             mark.setToolTipText(tip);
             mark.setCursor(java.awt.Cursor.getPredefinedCursor(java.awt.Cursor.HAND_CURSOR));
-            mark.addMouseListener(new MouseAdapter()
+            mark.addMouseListener(Listen.released(e ->
             {
-                @Override
-                public void mouseReleased(MouseEvent e)
-                {
-                    if (!mark.isVisible() || !moveAllowed()) return;
+                if (!mark.isVisible() || !moveAllowed()) return;
 
-                    doThis.accept(e);
-                }
-            });
+                doThis.accept(e);
+            }));
         }
 
         /** The rule for the picture's marks and the trash can, asked at the click. */

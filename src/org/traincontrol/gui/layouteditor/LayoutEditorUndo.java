@@ -97,10 +97,7 @@ final class LayoutEditorUndo
 
         boolean changed = false;
 
-        for (org.traincontrol.automationui.TileGraph.TileKey tile : gone)
-        {
-            changed |= autonomy.forgetCaptionsAt(tile);
-        }
+        for (org.traincontrol.automationui.TileGraph.TileKey tile : gone) changed |= autonomy.forgetCaptionsAt(tile);
 
         if (changed) this.editor.rememberAutonomy(autonomy);
     }
@@ -202,10 +199,7 @@ final class LayoutEditorUndo
                 }
 
                 // Placed previous components
-                for (LayoutDiagramComponent lc : history)
-                {
-                    this.editor.layout.addComponent(lc, lc.getX(), lc.getY());
-                }
+                for (LayoutDiagramComponent lc : history) this.editor.layout.addComponent(lc, lc.getX(), lc.getY());
 
                 // The setup is put back AFTER the diagram: restoreCaptions rebuilds the graph from the pages, so doing it
                 // first derives a graph from the pre-undo diagram against the post-undo setup, and nothing rebuilds it
@@ -264,10 +258,7 @@ java.util.Map<String, Object> captionsToRestore = this.editor.previousCaptionsRe
                 }
 
                 // Placed previous components
-                for (LayoutDiagramComponent lc : history)
-                {
-                    this.editor.layout.addComponent(lc, lc.getX(), lc.getY());
-                }
+                for (LayoutDiagramComponent lc : history) this.editor.layout.addComponent(lc, lc.getX(), lc.getY());
 
                 // The setup after the diagram - see undo() above for why
                 restoreCaptions(captionsToRestore);

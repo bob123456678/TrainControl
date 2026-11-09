@@ -152,10 +152,7 @@ public class AutonomyViewerPanel extends JPanel
 
         if (component instanceof java.awt.Container)
         {
-            for (java.awt.Component child : ((java.awt.Container) component).getComponents())
-            {
-                unfocusable(child);
-            }
+            for (java.awt.Component child : ((java.awt.Container) component).getComponents()) unfocusable(child);
         }
 
         return component;
@@ -260,17 +257,10 @@ public class AutonomyViewerPanel extends JPanel
 
         // No ActionListener, deliberately: a configuration is chosen from the menu, not by selecting here.  Anything
         // that adds one needs a guard around populate(), which sets the selection itself.
-        configurations.addMouseListener(new java.awt.event.MouseAdapter()
+        configurations.addMouseListener(Listen.pressed(e ->
         {
-            @Override
-            public void mousePressed(java.awt.event.MouseEvent e)
-            {
-                if (javax.swing.SwingUtilities.isRightMouseButton(e))
-                {
-                    manageMenu().show(configurations, e.getX(), e.getY());
-                }
-            }
-        });
+            if (javax.swing.SwingUtilities.isRightMouseButton(e)) manageMenu().show(configurations, e.getX(), e.getY());
+        }));
 
         add(panel, gbc, choose, 0);
 
@@ -338,17 +328,12 @@ public class AutonomyViewerPanel extends JPanel
     {
         javax.swing.JPopupMenu menu = new javax.swing.JPopupMenu();
 
-        menu.add(item(I18n.t("autosetup.ui.menuNewConfiguration"), new Runnable()
-            { public void run() { duplicate(); } }));
-        menu.add(item(I18n.t("autosetup.ui.menuRenameConfiguration"), new Runnable()
-            { public void run() { rename(); } }));
-        menu.add(item(I18n.t("autosetup.ui.menuDeleteConfiguration"), new Runnable()
-            { public void run() { delete(); } }));
+        menu.add(item(I18n.t("autosetup.ui.menuNewConfiguration"), () -> duplicate()));
+        menu.add(item(I18n.t("autosetup.ui.menuRenameConfiguration"), () -> rename()));
+        menu.add(item(I18n.t("autosetup.ui.menuDeleteConfiguration"), () -> delete()));
         menu.addSeparator();
-        menu.add(item(I18n.t("autosetup.ui.btnImportConfiguration"), new Runnable()
-            { public void run() { importConfiguration(); } }));
-        menu.add(item(I18n.t("autosetup.ui.btnExportConfiguration"), new Runnable()
-            { public void run() { exportConfiguration(); } }));
+        menu.add(item(I18n.t("autosetup.ui.btnImportConfiguration"), () -> importConfiguration()));
+        menu.add(item(I18n.t("autosetup.ui.btnExportConfiguration"), () -> exportConfiguration()));
 
         // Debug builds only, last on the menu (the flag is read fresh: the menu is rebuilt on every press).  It writes
         // the derived graph as a diagnostic, so it is offered only with a setup free of blocking problems, as the
@@ -357,8 +342,7 @@ public class AutonomyViewerPanel extends JPanel
             && session().exists() && !session().hasBlockingProblems())
         {
             menu.addSeparator();
-            menu.add(item(I18n.t("autosetup.ui.menuExportRawGraph"), new Runnable()
-                { public void run() { inspect(); } }));
+            menu.add(item(I18n.t("autosetup.ui.menuExportRawGraph"), () -> inspect()));
         }
 
         return menu;
@@ -397,36 +381,32 @@ public class AutonomyViewerPanel extends JPanel
         findings.setFont(FONT_LIST);
 
         // One click, straight to the square it is about, with the tools that can fix it already open.
-        findings.addMouseListener(new java.awt.event.MouseAdapter()
+        findings.addMouseListener(Listen.clicked(e ->
         {
-            @Override
-            public void mouseClicked(java.awt.event.MouseEvent e)
+            int row = findings.locationToIndex(e.getPoint());
+
+            if (row < 0 || row >= findingRows.size()) return;
+
+            // locationToIndex answers the CLOSEST row for a click below the last one, so check the cell bounds.
+            java.awt.Rectangle bounds = findings.getCellBounds(row, row);
+
+            if (bounds == null || !bounds.contains(e.getPoint())) return;
+
+            // AND ITS TEXT ON THE CLIPBOARD, as the editor's list does (MT-767) - a notice only: a heading has no
+            // severity
+            if (row < findingSeverity.size() && findingSeverity.get(row) != null)
             {
-                int row = findings.locationToIndex(e.getPoint());
-
-                if (row < 0 || row >= findingRows.size()) return;
-
-                // locationToIndex answers the CLOSEST row for a click below the last one, so check the cell bounds.
-                java.awt.Rectangle bounds = findings.getCellBounds(row, row);
-
-                if (bounds == null || !bounds.contains(e.getPoint())) return;
-
-                // AND ITS TEXT ON THE CLIPBOARD, as the editor's list does (MT-767) - a notice only: a heading has no
-                // severity
-                if (row < findingSeverity.size() && findingSeverity.get(row) != null)
-                {
-                    AutonomyEditorPanel.copyNoticeToClipboard(findings.getModel().getElementAt(row));
-                }
-
-                org.traincontrol.automationui.TileGraph.TileKey tile = findingRows.get(row);
-
-                // With the squares it names beside its own, outlined there as the editor's own list outlines them
-                if (tile != null)
-                {
-                    ui.openAutonomyEditor(tile, row < findingRelatedRows.size() ? findingRelatedRows.get(row) : null);
-                }
+                AutonomyEditorPanel.copyNoticeToClipboard(findings.getModel().getElementAt(row));
             }
-        });
+
+            org.traincontrol.automationui.TileGraph.TileKey tile = findingRows.get(row);
+
+            // With the squares it names beside its own, outlined there as the editor's own list outlines them
+            if (tile != null)
+            {
+                ui.openAutonomyEditor(tile, row < findingRelatedRows.size() ? findingRelatedRows.get(row) : null);
+            }
+        }));
 
         // The findings are the only thing here genuinely wider than the tab, so this is the only thing
         // that scrolls sideways.  Everything else is bounded, so the tab itself never scrolls at all.
@@ -516,8 +496,6 @@ public class AutonomyViewerPanel extends JPanel
 
     /**
      * Points the Manage actions at a configuration, for a caller that has no combo box of its own.
-     *
-     * @param name
      */
     public void setSelectedConfiguration(String name)
     {
@@ -1770,10 +1748,7 @@ public class AutonomyViewerPanel extends JPanel
 
         configurations.removeAllItems();
 
-        for (String name : session().getStore().getConfigurationNames())
-        {
-            configurations.addItem(name);
-        }
+        for (String name : session().getStore().getConfigurationNames()) configurations.addItem(name);
 
         String active = session().getStore().getActiveConfiguration();
 
@@ -1860,10 +1835,7 @@ public class AutonomyViewerPanel extends JPanel
 
         if (named != null && !named.trim().isEmpty()) return named.trim() + " (" + where + ")";
 
-        if (component.isFeedback())
-        {
-            return I18n.f("autosetup.ui.describeSensor", where, component.getRawAddress());
-        }
+        if (component.isFeedback()) return I18n.f("autosetup.ui.describeSensor", where, component.getRawAddress());
 
         if (component.getAccessory() != null)
         {

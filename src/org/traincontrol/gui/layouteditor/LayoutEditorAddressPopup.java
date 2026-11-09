@@ -21,8 +21,6 @@ public class LayoutEditorAddressPopup extends javax.swing.JPanel
 
     /**
      * Creates new form LayourEditorAddressPopup
-     * @param lc
-     * @param tcui
      */
     public LayoutEditorAddressPopup(LayoutDiagramComponent lc, TrainControlUI tcui)
     {
@@ -165,8 +163,6 @@ public class LayoutEditorAddressPopup extends javax.swing.JPanel
     
     /**
      * Used to add/extract the route ID from a string containing the route name
-     * @param r
-     * @return 
      */
     private String addRouteId(Route r)
     {

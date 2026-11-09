@@ -10,6 +10,7 @@ import java.util.Collections;
 import java.util.List;
 import org.traincontrol.automationui.TileGraph.Direction;
 import org.traincontrol.automationui.TilePorts.Side;
+import org.traincontrol.util.ImageUtil;
 
 /**
  * What a tile has been set to allow, drawn on the tile while autonomy is being set up: the authoring counterpart to
@@ -743,10 +744,7 @@ public class TileAnnotation
         g.setColor(HATCH);
         g.setStroke(new BasicStroke(1f));
 
-        for (int at = -height; at < width; at += 5)
-        {
-            g.drawLine(at, 0, at + height, height);
-        }
+        for (int at = -height; at < width; at += 5) g.drawLine(at, 0, at + height, height);
     }
 
 
@@ -823,7 +821,7 @@ public class TileAnnotation
 
         try
         {
-            g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            ImageUtil.antialias(g);
 
             // A square autonomy takes no notice of is grayed out and nothing else is drawn on it; anything drawn
             // would invite a click.
@@ -1582,7 +1580,7 @@ public class TileAnnotation
 
         try
         {
-            g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            ImageUtil.antialias(g);
 
             g.setComposite(java.awt.AlphaComposite.getInstance(java.awt.AlphaComposite.SRC_OVER, 1f));
 
@@ -1807,8 +1805,7 @@ public class TileAnnotation
         try
         {
             c.clipRect(0, 0, width, height);
-            c.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-            c.setRenderingHint(RenderingHints.KEY_STROKE_CONTROL, RenderingHints.VALUE_STROKE_PURE);
+            ImageUtil.smooth(c);
             c.translate(centre[0], centre[1]);
             c.rotate(Math.atan2(b[1] - a[1], b[0] - a[0]));
 
@@ -1935,8 +1932,7 @@ public class TileAnnotation
             try
             {
                 c.clipRect(0, 0, width, height);
-                c.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                c.setRenderingHint(RenderingHints.KEY_STROKE_CONTROL, RenderingHints.VALUE_STROKE_PURE);
+                ImageUtil.smooth(c);
                 c.translate(centre[0], centre[1]);
                 c.rotate(angle);
 
@@ -1956,11 +1952,9 @@ public class TileAnnotation
             // no pixel is drawn twice and no soft edge darkens where the two meet
             if (spills) s.clip(spilling ? outside(width, height) : new java.awt.Rectangle(0, 0, width, height));
 
-            s.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-
             // PURE, as the page drew them: the default stroke control moves an outline by up to half a pixel, and at 60
             // pixels the must-turn's outlines then met across the gap and hid the track's black line in it
-            s.setRenderingHint(RenderingHints.KEY_STROKE_CONTROL, RenderingHints.VALUE_STROKE_PURE);
+            ImageUtil.smooth(s);
             s.translate(at[0], at[1]);
             s.rotate(angle);
 
@@ -2066,7 +2060,7 @@ public class TileAnnotation
 
         try
         {
-            a.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            ImageUtil.antialias(a);
             a.setComposite(java.awt.AlphaComposite.getInstance(java.awt.AlphaComposite.SRC_OVER, 1f));
 
             paintArrows(a, width, height);
@@ -2298,8 +2292,7 @@ public class TileAnnotation
 
         try
         {
-            c.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-            c.setRenderingHint(RenderingHints.KEY_STROKE_CONTROL, RenderingHints.VALUE_STROKE_PURE);
+            ImageUtil.smooth(c);
             c.translate(on[0], on[1]);
 
             c.setColor(filled ? colour : Color.WHITE);

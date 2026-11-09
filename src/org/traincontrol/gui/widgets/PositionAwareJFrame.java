@@ -215,7 +215,6 @@ public class PositionAwareJFrame extends JFrame
 
     /**
      * Sets a custom index for this window, in case there are multiple of one class
-     * @param thisWindowIndex 
      */
     public void setWindowIndex(String thisWindowIndex)
     {
@@ -283,7 +282,6 @@ public class PositionAwareJFrame extends JFrame
 
     /**
      * Checks if the loadWindowBounds method has previously been called
-     * @return 
      */
     protected boolean isLoaded()
     {
@@ -292,7 +290,6 @@ public class PositionAwareJFrame extends JFrame
     
     /**
      * Gets the fully qualified window name, including the index if set
-     * @return 
      */
     private String getWindowName()
     {

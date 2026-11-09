@@ -169,7 +169,7 @@ final class SessionImport
 
             if (path == null) continue;
 
-            // As `applyOneWay` does, between the two ends only.
+            // As `recordAlong(path, 1, path.size() - 2)` would: between the two ends only.
             for (int i = 1; i < path.size() - 1; i++)
             {
                 TileKey tile = path.get(i);
@@ -703,10 +703,7 @@ final class SessionImport
     {
         if (file == null) return ImportFormat.UNKNOWN;
 
-        if (file.optJSONObject(AutonomyCompanionStore.EXPORT_CONFIGURATION) != null)
-        {
-            return ImportFormat.BUNDLE;
-        }
+        if (file.optJSONObject(AutonomyCompanionStore.EXPORT_CONFIGURATION) != null) return ImportFormat.BUNDLE;
 
         // A list of Points, which is the old graph and nothing else
         if (file.optJSONArray("points") != null) return ImportFormat.LEGACY_GRAPH;

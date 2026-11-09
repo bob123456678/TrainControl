@@ -119,10 +119,7 @@ public class LayoutPageEdit
         // so ids that shift would reattach the whole setup to the wrong pages (MT-135).
         int renamedAt = rename ? layoutList.indexOf(currentLayout) : -1;
 
-        if (rename)
-        {
-            layoutList.remove(currentLayout);
-        }
+        if (rename) layoutList.remove(currentLayout);
 
         // Back in its own slot so the page keeps its id; a duplicate or new page goes at the end.  This is above the
         // write because the arrows must be re-aimed first and that needs the final list.
@@ -180,10 +177,7 @@ public class LayoutPageEdit
             }
         }
 
-        if (blank)
-        {
-            page.clear();
-        }
+        if (blank) page.clear();
 
         page.saveChanges(newLayoutName, duplicate);
 

@@ -190,10 +190,7 @@ public class RouteEditorFrame extends JFrame
         TrainControlUI.applyWindowIcon(this);
 
         // In words, not constants: CLEAR_THEN_OCCUPIED means nothing to somebody who has not read the code.
-        for (Route.s88Triggers trigger : Route.s88Triggers.values())
-        {
-            triggerBox.addItem(triggerLabel(trigger));
-        }
+        for (Route.s88Triggers trigger : Route.s88Triggers.values()) triggerBox.addItem(triggerLabel(trigger));
 
         setContentPane(build());
 
@@ -546,20 +543,14 @@ public class RouteEditorFrame extends JFrame
      */
     public String howTheRouteMoved()
     {
-        if (originalName == null || originalName.isEmpty() || parent == null || parent.getModel() == null)
-        {
-            return null;
-        }
+        if (originalName == null || originalName.isEmpty() || parent == null || parent.getModel() == null) return null;
 
         org.traincontrol.base.Route now = parent.getModel().getRoute(originalName);
 
         if (now == null) return nameNowHeldById() != null ? "renamed" : "gone";
 
         // The name may be held by another route now: saving onto it would overwrite a stranger.
-        if (loadedId != null && now.getId() != loadedId)
-        {
-            return nameNowHeldById() != null ? "renamed" : "gone";
-        }
+        if (loadedId != null && now.getId() != loadedId) return nameNowHeldById() != null ? "renamed" : "gone";
 
         return signatureOf(now).equals(loadedFromDatabase) ? null : "changed";
     }
@@ -860,16 +851,12 @@ public class RouteEditorFrame extends JFrame
 
         area.add(conditions, BorderLayout.NORTH);
 
-        area.addMouseListener(new java.awt.event.MouseAdapter()
+        area.addMouseListener(Listen.pressed(e ->
         {
-            @Override
-            public void mousePressed(java.awt.event.MouseEvent e)
-            {
-                if (conditions.isEditing()) conditions.getCellEditor().stopCellEditing();
+            if (conditions.isEditing()) conditions.getCellEditor().stopCellEditing();
 
-                conditions.clearSelection();
-            }
-        });
+            conditions.clearSelection();
+        }));
 
         area.addMouseListener(new org.traincontrol.gui.widgets.PopupListener()
         {
@@ -1905,20 +1892,16 @@ public class RouteEditorFrame extends JFrame
 
         for (int column : marked) table.getColumnModel().getColumn(column).setCellRenderer(marks);
 
-        table.addMouseListener(new java.awt.event.MouseAdapter()
+        table.addMouseListener(Listen.pressed(e ->
         {
-            @Override
-            public void mousePressed(java.awt.event.MouseEvent e)
-            {
-                // A right-click opens the table's menu rather than working the mark under it.
-                if (!javax.swing.SwingUtilities.isLeftMouseButton(e)) return;
+            // A right-click opens the table's menu rather than working the mark under it.
+            if (!javax.swing.SwingUtilities.isLeftMouseButton(e)) return;
 
-                // With Shift or Ctrl the press only selects: the trash would delete the whole selection it just grew.
-                if (e.isShiftDown() || e.isControlDown()) return;
+            // With Shift or Ctrl the press only selects: the trash would delete the whole selection it just grew.
+            if (e.isShiftDown() || e.isControlDown()) return;
 
-                pressRowMark(table, table.rowAtPoint(e.getPoint()), table.columnAtPoint(e.getPoint()));
-            }
-        });
+            pressRowMark(table, table.rowAtPoint(e.getPoint()), table.columnAtPoint(e.getPoint()));
+        }));
 
         table.addMouseMotionListener(new java.awt.event.MouseMotionAdapter()
         {
@@ -2374,10 +2357,7 @@ public class RouteEditorFrame extends JFrame
         if (s88 < 0) wrong.add(I18n.t("route.ui.frameS88NotANumber"));
 
         // Automatic with no sensor can never fire: the sensor is what fires it.
-        if (enabledBox.isSelected() && s88 == 0)
-        {
-            wrong.add(I18n.t("route.ui.frameAutomaticNeedsSensor"));
-        }
+        if (enabledBox.isSelected() && s88 == 0) wrong.add(I18n.t("route.ui.frameAutomaticNeedsSensor"));
 
 
         if (commands.rows.isEmpty()) wrong.add(I18n.t("route.ui.frameNeedsACommand"));
@@ -2583,10 +2563,7 @@ public class RouteEditorFrame extends JFrame
                 break;
 
             case FEEDBACK:
-                if (numberOr(target, 0) <= 0)
-                {
-                    wrong.add(I18n.f("route.ui.frameNotASensor", target));
-                }
+                if (numberOr(target, 0) <= 0) wrong.add(I18n.f("route.ui.frameNotASensor", target));
 
                 break;
 
@@ -2762,10 +2739,7 @@ public class RouteEditorFrame extends JFrame
             org.traincontrol.util.ImageUtil.HIGHLIGHT, HIGHLIGHT_HOLD_MS);
 
         // Nothing lit is an answer too: a route can name accessories that are not drawn anywhere on the diagram.
-        if (lit == 0)
-        {
-            JOptionPane.showMessageDialog(this, I18n.t("route.ui.infoNothingToHighlight"));
-        }
+        if (lit == 0) JOptionPane.showMessageDialog(this, I18n.t("route.ui.infoNothingToHighlight"));
     }
 
     /** Five seconds: long enough to look from this window to the diagram and back */
@@ -2993,10 +2967,7 @@ public class RouteEditorFrame extends JFrame
             boolean couldCollide = saved == null
                 || !org.traincontrol.marklin.MarklinControlStation.isLocalRouteId(saved.getId());
 
-            if (originalName.isEmpty() && couldCollide && anyRouteCameFromTheStation())
-            {
-                parent.syncWithCS2();
-            }
+            if (originalName.isEmpty() && couldCollide && anyRouteCameFromTheStation()) parent.syncWithCS2();
 
             dispose();
         }
@@ -3678,10 +3649,7 @@ public class RouteEditorFrame extends JFrame
 
                 // A kept command has no columns to fill, so it reads as its own stored line in the
                 // first one.  Better an unfamiliar line than a blank row doing something unexplained.
-                if (!entry.isEditable())
-                {
-                    return column == KIND ? entry.describe() : "";
-                }
+                if (!entry.isEditable()) return column == KIND ? entry.describe() : "";
 
                 CommandRow at = entry.getRow();
 
@@ -3726,10 +3694,7 @@ public class RouteEditorFrame extends JFrame
                 // The columns that are pressed or read rather than typed in
                 if (row >= rows.size()) return false;
 
-                if (column == HANDLE || column == DELETE || column == DUPLICATE || column == POSITION)
-                {
-                    return false;
-                }
+                if (column == HANDLE || column == DELETE || column == DUPLICATE || column == POSITION) return false;
 
                 Entry entry = rows.get(row);
 
@@ -3925,10 +3890,7 @@ public class RouteEditorFrame extends JFrame
         @Override
         public javax.swing.table.TableCellEditor getCellEditor(int row, int column)
         {
-            if (row < 0 || row >= rows.size() || !rows.get(row).isEditable())
-            {
-                return super.getCellEditor(row, column);
-            }
+            if (row < 0 || row >= rows.size() || !rows.get(row).isEditable()) return super.getCellEditor(row, column);
 
             if (column == SETTING)
             {
@@ -3956,10 +3918,7 @@ public class RouteEditorFrame extends JFrame
             {
                 CommandRow.Kind kind = rows.get(row).getRow().getKind();
 
-                if (kind == CommandRow.Kind.ACCESSORY || kind == CommandRow.Kind.FEEDBACK)
-                {
-                    return digitsOnly();
-                }
+                if (kind == CommandRow.Kind.ACCESSORY || kind == CommandRow.Kind.FEEDBACK) return digitsOnly();
 
                 if (kind == CommandRow.Kind.ROUTE)
                 {
@@ -4191,11 +4150,6 @@ public class RouteEditorFrame extends JFrame
         {
             rows.add(Entry.of(new CommandRow(CommandRow.Kind.ACCESSORY, "", "straight")));
             fireTableDataChanged();
-        }
-
-        void removeSelected()
-        {
-            removeAt(getSelectedRow());
         }
 
         void removeAt(int at)
@@ -5564,10 +5518,7 @@ public class RouteEditorFrame extends JFrame
          */
         private void showChanges(List<ConditionOutline.Row> before)
         {
-            if (before.size() != rows.size() || !ConditionOutline.changed(before, rows).isEmpty())
-            {
-                remember(before);
-            }
+            if (before.size() != rows.size() || !ConditionOutline.changed(before, rows).isEmpty()) remember(before);
 
             changed.clear();
 

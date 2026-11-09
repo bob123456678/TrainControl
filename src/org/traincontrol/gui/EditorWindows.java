@@ -89,10 +89,7 @@ final class EditorWindows
 
         // The settings panel's button goes with it: both open the same editor and ask the same guard, so it must not
         // stay lit while an editor is open (OB-057).
-        if (ui.editAutonomyFromSettings() != null)
-        {
-            ui.editAutonomyFromSettings().setEnabled(live);
-        }
+        if (ui.editAutonomyFromSettings() != null) ui.editAutonomyFromSettings().setEnabled(live);
     }
 
     /** Whether there is a track diagram of the user's own to edit (OB-126): not with a CS layout or none loaded. */
@@ -132,10 +129,7 @@ final class EditorWindows
 
     String whyLayoutCannotBeEdited()
     {
-        if (!isLayoutLoaded())
-        {
-            return "layout.ui.errorNoLayoutLoaded";
-        }
+        if (!isLayoutLoaded()) return "layout.ui.errorNoLayoutLoaded";
 
         if (!ui.isLocalLayout()) return "layout.ui.errorEditingOnlySupportedForLocalFiles";
 
@@ -171,10 +165,7 @@ final class EditorWindows
         // Not while a route runs either: the edit refusal's own sentence (`RunGates.refuseWhileARunHoldsTheSetup`)
         if (ui.aRunHoldsTheSetup()) return RunGates.NO_EDITS_WHILE_RUNNING;
 
-        if (!ui.editLayoutButton().isEnabled() && !isLayoutEditorOpen())
-        {
-            return "autosetup.ui.errorEditorAlreadyOpen";
-        }
+        if (!ui.editLayoutButton().isEnabled() && !isLayoutEditorOpen()) return "autosetup.ui.errorEditorAlreadyOpen";
 
         return null;
     }

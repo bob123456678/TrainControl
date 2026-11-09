@@ -475,10 +475,7 @@ public class TileGraph
             // Before the exclusion: a link's destination indexes every page, so skipping would shift later addresses.
             allPages.add(diagram.getName());
 
-            if (excludedPages != null && excludedPages.contains(diagram.getName()))
-            {
-                continue;
-            }
+            if (excludedPages != null && excludedPages.contains(diagram.getName())) continue;
 
             pages.add(diagram.getName());
 
@@ -556,10 +553,7 @@ public class TileGraph
     {
         Map<RouteId, Direction> perTile = directions.get(tile);
 
-        if (perTile != null && perTile.containsKey(routeId))
-        {
-            return perTile.get(routeId);
-        }
+        if (perTile != null && perTile.containsKey(routeId)) return perTile.get(routeId);
 
         return defaultDirection(tile, routeId);
     }
@@ -988,10 +982,7 @@ public class TileGraph
                 continue;
             }
 
-            if (!from.equals(portals.get(to)))
-            {
-                found.add(new Problem(from, ERROR_PORTAL_UNPAIRED, true));
-            }
+            if (!from.equals(portals.get(to))) found.add(new Problem(from, ERROR_PORTAL_UNPAIRED, true));
         }
 
         // A link nobody has paired at all never reaches the loop above, which walks pairings: trains reach it and stop,
@@ -1058,10 +1049,7 @@ public class TileGraph
 
         for (Map.Entry<TileKey, LayoutDiagramComponent> entry : tiles.entrySet())
         {
-            if (entry.getValue().isFeedback())
-            {
-                out.add(entry.getKey());
-            }
+            if (entry.getValue().isFeedback()) out.add(entry.getKey());
         }
 
         return out;
@@ -1122,10 +1110,7 @@ public class TileGraph
 
         if (TilePorts.isTransparent(type))
         {
-            for (Route route : transparentRoutes(tile))
-            {
-                out.put(transparentRouteId(route), route);
-            }
+            for (Route route : transparentRoutes(tile)) out.put(transparentRouteId(route), route);
 
             return out;
         }
@@ -1134,10 +1119,7 @@ public class TileGraph
         {
             List<Route> routes = routesOn(tile, component, state);
 
-            for (int index = 0; index < routes.size(); index++)
-            {
-                out.put(new RouteId(state, index), routes.get(index));
-            }
+            for (int index = 0; index < routes.size(); index++) out.put(new RouteId(state, index), routes.get(index));
         }
 
         return out;
@@ -1190,10 +1172,7 @@ public class TileGraph
             }
         }
 
-        if (out.isEmpty() && facing.size() == 2)
-        {
-            out.add(new Route(facing.get(0), facing.get(1), null));
-        }
+        if (out.isEmpty() && facing.size() == 2) out.add(new Route(facing.get(0), facing.get(1), null));
 
         return out;
     }
@@ -1697,12 +1676,6 @@ public class TileGraph
         {
             return Collections.unmodifiableList(tiles);
         }
-
-        /** The tile that speaks for this run: the first of them, as the author asked. */
-        public TileKey getLeader()
-        {
-            return tiles.isEmpty() ? null : tiles.get(0);
-        }
     }
 
     /** This diagram's runs, found once: they are the diagram's alone, and a graph is one diagram. */
@@ -2087,10 +2060,7 @@ public class TileGraph
      */
     public List<TileKey> findUndirectedPath(TileKey from, TileKey to)
     {
-        if (from == null || to == null || !tiles.containsKey(from) || !tiles.containsKey(to))
-        {
-            return null;
-        }
+        if (from == null || to == null || !tiles.containsKey(from) || !tiles.containsKey(to)) return null;
 
         if (from.equals(to)) return new ArrayList<>(Collections.singletonList(from));
 
@@ -2364,10 +2334,7 @@ public class TileGraph
         for (Route route : getRoutes(here.tile).values())
         {
             // A route that does not touch the side we arrived by is another piece of track across this square.
-            if (here.entrySide != null && !route.touches(here.entrySide))
-            {
-                continue;
-            }
+            if (here.entrySide != null && !route.touches(here.entrySide)) continue;
 
             if (here.entrySide == null)
             {
@@ -2399,10 +2366,7 @@ public class TileGraph
 
         // Not through a link that is switched off: exits() declines to offer a way through one, and a path search that
         // says "reachable" for somewhere no train can get to has something plan a move on it.
-        if (partner != null && !portalClosed(here.tile) && tiles.containsKey(partner))
-        {
-            out.add(new Step(partner, null));
-        }
+        if (partner != null && !portalClosed(here.tile) && tiles.containsKey(partner)) out.add(new Step(partner, null));
 
         return out;
     }

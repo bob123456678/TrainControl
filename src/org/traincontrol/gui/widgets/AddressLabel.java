@@ -7,11 +7,11 @@ import java.awt.Font;
 import java.awt.FontMetrics;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
-import java.awt.RenderingHints;
 import java.awt.Shape;
 import java.awt.font.TextLayout;
 import java.awt.geom.AffineTransform;
 import javax.swing.JLabel;
+import org.traincontrol.util.ImageUtil;
 
 /**
  * A square's address on the diagram: red letters with a white halo round each one, and nothing behind the rest.  A halo
@@ -99,8 +99,7 @@ public class AddressLabel extends JLabel
 
         try
         {
-            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-            g2.setRenderingHint(RenderingHints.KEY_STROKE_CONTROL, RenderingHints.VALUE_STROKE_PURE);
+            ImageUtil.smooth(g2);
 
             Font font = getFont();
             FontMetrics fm = g2.getFontMetrics(font);

@@ -64,15 +64,9 @@ final class LayoutEditorSelection
                     this.editor.getX(destLabel), this.editor.getY(destLabel)));
             }
 
-            if (newComponent.isText() && this.editor.layout.getEditHideText())
-            {
-                this.editor.toggleText();
-            }
+            if (newComponent.isText() && this.editor.layout.getEditHideText()) this.editor.toggleText();
    
-            if (move)
-            {
-                this.editor.layout.addComponent(null, this.editor.lastX, this.editor.lastY);
-            }
+            if (move) this.editor.layout.addComponent(null, this.editor.lastX, this.editor.lastY);
             
             this.editor.layout.addComponent(newComponent, this.editor.getX(destLabel), this.editor.getY(destLabel));
 
@@ -286,20 +280,14 @@ final class LayoutEditorSelection
 
             // Only squares the cut actually emptied.  The clipboard covers a bounding box; the cut
             // emptied the picked squares inside it, and the rest still hold their track.
-            if (this.editor.clipboardCutSquares != null && !this.editor.clipboardCutSquares.contains(origin))
-            {
-                continue;
-            }
+            if (this.editor.clipboardCutSquares != null && !this.editor.clipboardCutSquares.contains(origin)) continue;
 
             // And only squares the cut left empty, on this page, asked of the caller before anything is placed:
             // pasteSelection places its tiles first, so an origin that is also a landing is full again by then.  Per
             // square, not assumed for the whole clipboard, because any edit snapshots and would falsify a flag.
             // A setup is not carried ACROSS pages: paste snapshots only the destination page and arriveAt discards the
             // source page's undo history, so a cross-page move could not be undone.  It stays on the source page.
-            if (!vacated.contains(origin))
-            {
-                continue;
-            }
+            if (!vacated.contains(origin)) continue;
 
             if (!to.equals(origin)) moves.put(origin, to);
         }
@@ -802,10 +790,7 @@ final class LayoutEditorSelection
         org.traincontrol.automationui.AutonomySession autonomy =
             tellAutonomy && !emptied.isEmpty() ? this.editor.parent.getAutonomySession() : null;
 
-        if (autonomy != null && autonomy.forgetTiles(emptied))
-        {
-            this.editor.rememberAutonomy(autonomy);
-        }
+        if (autonomy != null && autonomy.forgetTiles(emptied)) this.editor.rememberAutonomy(autonomy);
 
         this.editor.clearSelection();
 
@@ -882,10 +867,7 @@ final class LayoutEditorSelection
         {       
             try
             {
-                if (!this.editor.pauseRepaint)
-                {
-                    this.editor.snapshotLayout();
-                }
+                if (!this.editor.pauseRepaint) this.editor.snapshotLayout();
 
                 this.editor.layout.addComponent(null, this.editor.getX(label), this.editor.getY(label));
 

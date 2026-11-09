@@ -241,10 +241,7 @@ public class CSDetect
         }
         finally
         {
-            if (connection != null)
-            {
-                connection.disconnect();
-            }
+            if (connection != null) connection.disconnect();
         }
 
         return false;

@@ -126,8 +126,6 @@ public abstract class Locomotive
 
     /**
      * Constructor with name and all functions off
-     * @param name
-     * @param numFunctions 
      */
     public Locomotive(String name, int numFunctions)
     {
@@ -158,7 +156,6 @@ public abstract class Locomotive
     
     /**
      * Retrieves the preferred function preset
-     * @return 
      */
     public boolean[] getPreferredFunctions()
     {
@@ -176,7 +173,6 @@ public abstract class Locomotive
     
     /**
      * Retrieves the function trigger types
-     * @return 
      */
     public int[] getFunctionTriggerTypes()
     {
@@ -193,7 +189,6 @@ public abstract class Locomotive
     
     /**
      * Sets a new preferred speed preset
-     * @param speed
      */
     public void setPreferredSpeed(int speed)
     {
@@ -205,7 +200,6 @@ public abstract class Locomotive
     
     /**
      * Retrieves the preferred speed preset
-     * @return 
      */
     public int getPreferredSpeed()
     {
@@ -214,7 +208,6 @@ public abstract class Locomotive
     
     /**
      * Applies the saved function preset
-     * @return 
      */
     public Locomotive applyPreferredSpeed()
     {
@@ -225,7 +218,6 @@ public abstract class Locomotive
     
     /**
      * Applies the saved function preset
-     * @return 
      */
     public Locomotive applyPreferredFunctions()
     {
@@ -242,7 +234,6 @@ public abstract class Locomotive
     
     /**
      * Turns off all functions known to be on
-     * @return 
      */
     public Locomotive functionsOff()
     {
@@ -259,10 +250,6 @@ public abstract class Locomotive
     
     /**
      * Constructor with name and all functions off
-     * @param name
-     * @param numFunctions 
-     * @param functionTypes 
-     * @param functionTriggerTypes 
      */
     public Locomotive(String name, int numFunctions, int[] functionTypes, int[] functionTriggerTypes)
     {
@@ -285,8 +272,6 @@ public abstract class Locomotive
     
     /**
      * Safely sets the function types
-     * @param functionTypes 
-     * @param functionTriggerTypes 
      */
     public final void setFunctionTypes(int[] functionTypes, int[] functionTriggerTypes)
     {
@@ -296,7 +281,6 @@ public abstract class Locomotive
     
     /**
      * Safely sets the function state
-     * @param functionState 
      */
     public final void setFunctionState(boolean[] functionState)
     {
@@ -305,7 +289,6 @@ public abstract class Locomotive
     
     /**
      * Gets the function type list
-     * @return 
      */    
     public int[] getFunctionTypes()
     {
@@ -314,8 +297,6 @@ public abstract class Locomotive
     
     /**
      * Gets the function type for a given slot
-     * @param fno
-     * @return 
      */    
     public int getFunctionType(int fno)
     {
@@ -329,20 +310,6 @@ public abstract class Locomotive
     
     /**
      * Constructor with full state
-     * @param name
-     * @param speed
-     * @param direction
-     * @param numF
-     * @param functionState 
-     * @param functionTypes 
-     * @param functionTriggerTypes 
-     * @param preferredFunctions 
-     * @param preferredSpeed 
-     * @param departureFunc 
-     * @param arrivalFunc 
-     * @param trainLength
-     * @param reversible 
-     * @param historicalOperatingTime 
      */
     public Locomotive(String name, int speed, locDirection direction, int numF,
         boolean[] functionState, int[] functionTypes, int[] functionTriggerTypes, boolean[] preferredFunctions, 
@@ -381,7 +348,6 @@ public abstract class Locomotive
     
     /**
      * Callback used to pause tracking running times when the power is turned off/on
-     * @param powerOn 
      */
     synchronized public void notifyOfPowerStateChange(boolean powerOn)
     {
@@ -434,7 +400,6 @@ public abstract class Locomotive
     
     /**
      * Sets the speed internally
-     * @param speed 
      */
     protected final void _setSpeed(int speed)
     {
@@ -479,8 +444,6 @@ public abstract class Locomotive
     
     /**
      * Sets a function state internally
-     * @param fNumber
-     * @param state 
      */
     protected final void _setF(int fNumber, boolean state)
     {
@@ -492,7 +455,6 @@ public abstract class Locomotive
     
     /**
      * Sets the locomotive's direction internally
-     * @param direction 
      */
     protected final void _setDirection(locDirection direction)
     {
@@ -504,62 +466,44 @@ public abstract class Locomotive
     /**
      * Sets a locomotive's speed (0-100)
      * Dev note: expects a call to _setSpeed
-     * @param speed
-     * @return 
      */
     public abstract Locomotive setSpeed(int speed);
     
     /**
      * Sets a functions state
      * Expects a call to _setF
-     * @param fNumber
-     * @param state
-     * @return 
      */
     public abstract Locomotive setF(int fNumber, boolean state);
     
     /**
      * Sets a locomotive's direction
      * Expects a call to _setDirection
-     * @param direction
-     * @return 
      */
     public abstract Locomotive setDirection(locDirection direction);
     
     /**
      * Returns whether or not a given feedback name is set (string but most likely a number)
-     * @param name
-     * @return 
      */
     public abstract boolean isFeedbackSet(String name);
             
     /**
      * Returns the state of a given feedback name (string but most likely a number)
-     * @param name
-     * @return 
      */
     public abstract boolean getFeedbackState(String name);
     
     /**
      * Returns the state of a given accessory id (int)
      * This can be a switch or a signal
-     * @param id
-     * @param type
-     * @return 
      */
     public abstract boolean getAccessoryState(int id, Accessory.accessoryDecoderType type);
     
     /**
      * Executes a route by the given name
-     * @param name
-     * @return 
      */
     public abstract Locomotive execRoute(String name);
     
     /**
      * Checks if this locomotive can be linked to another as a multi unit and run at the same time without conflicting
-     * @param l
-     * @return 
      */
     public abstract boolean isSimultaneousMultiUnitCompatible(Locomotive l);
     
@@ -576,19 +520,13 @@ public abstract class Locomotive
         
     /**
      * Sets an accessory state
-     * @param id
-     * @param type
-     * @param state
-     * @return 
      */
     public abstract Locomotive setAccessoryState(int id, Accessory.accessoryDecoderType type, boolean state);
     
     /**
      * Blocks until the specified accessory value is set
      * @param id accessory id
-     * @param type
      * @param state accessory state
-     * @return 
      */
     public Locomotive waitForAccessoryState(int id, Accessory.accessoryDecoderType type, boolean state)
     {        
@@ -618,7 +556,6 @@ public abstract class Locomotive
     
     /**
      * Waits up to maxWait seconds, unless this locomotive starts moving
-     * @param maxWait
      */
     public void blockUntilMotion(int maxWait)
     {
@@ -634,8 +571,6 @@ public abstract class Locomotive
     
     /**
      * Blocks until this locomotive meets or exceeds the threshold speed
-     * @param threshold
-     * @return 
      */
     public Locomotive waitForSpeedAtOrAbove(int threshold)
     {
@@ -678,8 +613,6 @@ public abstract class Locomotive
     
     /**
      * Blocks until this locomotive is below the threshold speed
-     * @param threshold
-     * @return 
      */
     public Locomotive waitForSpeedBelow(int threshold)
     {
@@ -710,9 +643,7 @@ public abstract class Locomotive
     /**
      * Blocks until a certain feedback value is set
      * If feedback is undefined, blocks until it is set
-     * @param name
      * @param minDuration for now many ms must the feedback indicate occupied?
-     * @return 
      */
     public Locomotive waitForOccupiedFeedback(String name, int minDuration)
     {       
@@ -858,9 +789,7 @@ public abstract class Locomotive
     /**
      * Blocks until a certain feedback value is not set
      * If feedback is undefined, blocks until it is set
-     * @param name
      * @param minDuration for now many ms must the feedback indicate clear?
-     * @return 
      */
     public Locomotive waitForClearFeedback(String name, int minDuration)
     {
@@ -904,8 +833,6 @@ public abstract class Locomotive
 
     /**
      * Waits for clear feedback lasting the default feedback duration threshold
-     * @param name
-     * @return 
      */
     public Locomotive waitForClearFeedback(String name)
     {
@@ -914,8 +841,6 @@ public abstract class Locomotive
     
     /**
      * Waits for occupied feedback lasting the default feedback duration threshold
-     * @param name
-     * @return
      */
     public Locomotive waitForOccupiedFeedback(String name)
     {
@@ -925,8 +850,6 @@ public abstract class Locomotive
     /**
      * Chains two feedback commands together
      * waitForClearFeedback then waitForOccupiedFeedback
-     * @param name
-     * @return 
      */
     public Locomotive waitForClearThenOccupied(String name)
     {
@@ -936,8 +859,6 @@ public abstract class Locomotive
     /**
      * Chains two feedback commands together:
      * waitForOccupiedFeedback then waitForClearFeedback
-     * @param name
-     * @return 
      */
     public Locomotive waitForOccupiedThenClear(String name)
     {
@@ -973,9 +894,6 @@ public abstract class Locomotive
     
     /**
      * Turns a function on for the specified number of milliseconds, then off
-     * @param f
-     * @param duration
-     * @return 
      */
     public Locomotive toggleF(int f, int duration)
     {
@@ -984,9 +902,6 @@ public abstract class Locomotive
     
     /**
      * Turns a function on for a pulse, then off - for as long as the subclass says.
-     *
-     * @param f
-     * @return 
      */
     public Locomotive toggleF(int f)
     {
@@ -995,7 +910,6 @@ public abstract class Locomotive
     
     /**
      * Enables the lights (f0 = true)
-     * @return 
      */
     public Locomotive lightsOn()
     {
@@ -1004,7 +918,6 @@ public abstract class Locomotive
     
     /**
      * Disables the lights (f0 = false)
-     * @return 
      */
     public Locomotive lightsOff()
     {
@@ -1013,7 +926,6 @@ public abstract class Locomotive
     
     /**
      * Is the locomotive going forward?
-     * @return 
      */
     public boolean goingForward()
     {
@@ -1022,7 +934,6 @@ public abstract class Locomotive
     
     /**
      * Is the locomotive going backward?
-     * @return 
      */
     public boolean goingBackward()
     {
@@ -1031,7 +942,6 @@ public abstract class Locomotive
     
     /**
      * Switches the locomotive's direction
-     * @return 
      */
     public Locomotive switchDirection()
     {
@@ -1047,7 +957,6 @@ public abstract class Locomotive
     
     /**
      * Sets the locomotive to go forward
-     * @return 
      */
     public Locomotive goForward()
     {
@@ -1058,7 +967,6 @@ public abstract class Locomotive
     
     /**
      * Sets the locomotive to go backward
-     * @return 
      */
     public Locomotive goBackward()
     {
@@ -1069,7 +977,6 @@ public abstract class Locomotive
     
     /**
      * Stops the locomotive (set speed = 0)
-     * @return 
      */
     public Locomotive stop()
     {
@@ -1080,9 +987,6 @@ public abstract class Locomotive
     
     /**
      * Delays for a random number of seconds between min and max
-     * @param min
-     * @param max
-     * @return 
      */
     public Locomotive delay(int min, int max)
     {
@@ -1094,8 +998,6 @@ public abstract class Locomotive
     
     /**
      * Delays execution for the specified number of milliseconds
-     * @param ms
-     * @return 
      */
     public Locomotive delay(long ms)
     {
@@ -1113,8 +1015,6 @@ public abstract class Locomotive
            
     /**
      * Gets a function state
-     * @param fNumber
-     * @return 
      */
     public boolean getF(int fNumber)
     {
@@ -1129,7 +1029,6 @@ public abstract class Locomotive
     
     /**
      * Instantly stops the locomotive
-     * @return 
      */
     abstract public Locomotive instantStop();
     
@@ -1137,7 +1036,6 @@ public abstract class Locomotive
     
     /**
      * Gets the current speed
-     * @return 
      */
     public int getSpeed()
     {
@@ -1146,8 +1044,6 @@ public abstract class Locomotive
     
     /**
      * Returns if the passed f number is a valid function
-     * @param fNumber
-     * @return 
      */
     public boolean validF(int fNumber)
     {
@@ -1166,7 +1062,6 @@ public abstract class Locomotive
 
     /**
      * Returns the number of functions
-     * @return
      */
     public int getNumF()
     {
@@ -1175,7 +1070,6 @@ public abstract class Locomotive
     
     /**
      * Returns the locomotive's name
-     * @return 
      */
     public String getName()
     {
@@ -1184,7 +1078,6 @@ public abstract class Locomotive
     
     /**
      * Renames the locomotive
-     * @param newName 
      */
     public void rename(String newName)
     {
@@ -1193,7 +1086,6 @@ public abstract class Locomotive
 
     /**
      * Returns the current direction
-     * @return 
      */
     public locDirection getDirection()
     {
@@ -1203,7 +1095,6 @@ public abstract class Locomotive
     /**
      * Gets the raw function vector based 
      * on the locomotive's current function state
-     * @return 
      */
     public boolean[] getFunctionState()
     {
@@ -1212,7 +1103,6 @@ public abstract class Locomotive
     
     /**
      * Returns the image URL, if any
-     * @return 
      */
     public String getImageURL()
     {
@@ -1233,7 +1123,6 @@ public abstract class Locomotive
 
     /**
      * Returns the local image URL, if any
-     * @return 
      */
     public String getLocalImageURL()
     {
@@ -1242,7 +1131,6 @@ public abstract class Locomotive
     
     /**
      * Sets the image URL
-     * @param u 
      */
     public void setImageURL(String u)
     {
@@ -1251,7 +1139,6 @@ public abstract class Locomotive
     
     /**
      * Sets a local image URL (this is remembered between saves)
-     * @param u 
      */
     public void setLocalImageURL(String u)
     {
@@ -1262,8 +1149,6 @@ public abstract class Locomotive
          
     /**
      * Checks if the specified callback has been defined
-     * @param callbackName 
-     * @return  
      */
     public boolean hasCallback(String callbackName)
     {
@@ -1272,8 +1157,6 @@ public abstract class Locomotive
     
     /**
      * Returns the requested callback function
-     * @param callbackName
-     * @return 
      */
     public Consumer<Locomotive> getCallback(String callbackName)
     {
@@ -1282,8 +1165,6 @@ public abstract class Locomotive
     
     /**
      * Sets a new callback function for a given name
-     * @param callbackName
-     * @param callback 
      */
     public void setCallback(String callbackName, Consumer<Locomotive> callback)
     {
@@ -1292,7 +1173,6 @@ public abstract class Locomotive
     
     /**
      * Getters and setters for functions
-     * @return 
      */
     public Integer getArrivalFunc()
     {
@@ -1301,7 +1181,6 @@ public abstract class Locomotive
 
     /**
      * Sets an arrival function that will be called when this locomotive ends a path in autonomous mode
-     * @param arrivalFunc 
      */
     public void setArrivalFunc(Integer arrivalFunc)
     {
@@ -1317,7 +1196,6 @@ public abstract class Locomotive
 
     /**
      * Returns the function number of the departure function
-     * @return 
      */
     public Integer getDepartureFunc()
     {
@@ -1326,7 +1204,6 @@ public abstract class Locomotive
     
     /**
      * Sets a departure function that will be called when this locomotive starts a path in autonomous mode
-     * @param departureFunc 
      */
     public void setDepartureFunc(Integer departureFunc)
     {
@@ -1342,7 +1219,6 @@ public abstract class Locomotive
     
     /**
      * Returns if an arrival function is set
-     * @return 
      */
     public boolean hasArrivalFunc()
     {
@@ -1351,7 +1227,6 @@ public abstract class Locomotive
     
     /**
      * Returns if a departure function is set
-     * @return 
      */
     public boolean hasDepartureFunc()
     {
@@ -1360,7 +1235,6 @@ public abstract class Locomotive
     
     /**
      * Returns if this locomotive is reversible
-     * @return 
      */
     public boolean isReversible()
     {
@@ -1369,7 +1243,6 @@ public abstract class Locomotive
 
     /**
      * Sets this locomotive as a reversible train (used in autonomy)
-     * @param reversible 
      */
     public void setReversible(boolean reversible)
     {
@@ -1378,7 +1251,6 @@ public abstract class Locomotive
     
     /**
      * Gets the total number of autonomous paths executed
-     * @return 
      */
     public Integer getNumPaths()
     {
@@ -1396,7 +1268,6 @@ public abstract class Locomotive
     
     /**
      * Gets the last time that an autonomous path was executed
-     * @return 
      */
     public long getLastPathTime()
     {
@@ -1405,7 +1276,6 @@ public abstract class Locomotive
     
     /**
      * Gets the train length
-     * @return 
      */
     public Integer getTrainLength()
     {
@@ -1414,7 +1284,6 @@ public abstract class Locomotive
 
     /**
      * Set the train length (used for automation)
-     * @param trainLength 
      */
     public void setTrainLength(Integer trainLength)
     {
@@ -1424,7 +1293,6 @@ public abstract class Locomotive
     /**
      * Amount of time the locomotive was run on a specific day
      * @param date - String formatted as yyyy-MM-dd
-     * @return 
      */
     public long getRuntimeOnDay(String date)
     {
@@ -1433,7 +1301,6 @@ public abstract class Locomotive
     
     /**
      * Amount of time the locomotive was run today
-     * @return 
      */
     public long getRuntimeToday()
     {
@@ -1442,7 +1309,6 @@ public abstract class Locomotive
     
     /**
      * Total amount of time the locomotive was run
-     * @return 
      */
     public long getTotalRuntime()
     {
@@ -1484,7 +1350,6 @@ public abstract class Locomotive
 
     /**
      * On how many different days was the locomotive run
-     * @return 
      */
     public int getNumDaysRun()
     {
@@ -1493,8 +1358,6 @@ public abstract class Locomotive
     
     /**
      * The most recent date the locomotive was run
-     * @param mostRecent
-     * @return 
      */
     public String getOperatingDate(boolean mostRecent)
     {
@@ -1513,7 +1376,6 @@ public abstract class Locomotive
     
     /**
      * Gets operating time by day
-     * @return 
      */
     public Map<String, Long> getHistoricalOperatingTime()
     {
@@ -1637,7 +1499,6 @@ public abstract class Locomotive
 
     /**
      * Gets the custom icon URLs for every function
-     * @return 
      */
     public Map<Integer, String> getLocalFunctionImageURLs()
     {
@@ -1677,7 +1538,6 @@ public abstract class Locomotive
     
     /**
      * Legacy-compatible setter. Wraps plain text into JSON if needed.
-     * @param notes
      */
     public void setNotes(String notes)
     {
@@ -1700,7 +1560,6 @@ public abstract class Locomotive
 
     /**
      * Returns raw notes string (JSON or plain text).
-     * @return 
      */
     public String getNotes()
     {
@@ -1709,10 +1568,6 @@ public abstract class Locomotive
 
     /**
      * Sets structured notes all at once.
-     * @param startYear
-     * @param endYear
-     * @param railway
-     * @param plainNotes
      */
     public void setStructuredNotes(int startYear, int endYear, String railway, String plainNotes)
     {
@@ -1722,7 +1577,6 @@ public abstract class Locomotive
 
     /**
      * Returns structured notes object.
-     * @return 
      */
     public LocomotiveNotes getStructuredNotes()
     {
@@ -1731,12 +1585,6 @@ public abstract class Locomotive
     
     /**
      * Finds other locomotives with a similar profile to to the specified locomotive
-     * @param target
-     * @param maxResults
-     * @param railroads
-     * @param locList
-     * @param randomize
-     * @return 
      */
     public static List<Locomotive> findSimilarLocomotives(
         Locomotive target,
@@ -1795,7 +1643,6 @@ public abstract class Locomotive
     
     /**
      * Summarizes the metadata in the locomotive notes
-     * @return 
      */
     public String getNotesSummaryLine()
     {
@@ -1833,7 +1680,6 @@ public abstract class Locomotive
     
     /**
      * Flags autonomy as paused so that no further routes are started
-     * @param state 
      */
     public void setAutonomyPaused(boolean state)
     {
@@ -1845,7 +1691,6 @@ public abstract class Locomotive
     
     /**
      * Returns if autonomy has been paused
-     * @return
      */
     public boolean isAutonomyPaused()
     {
@@ -1857,7 +1702,6 @@ public abstract class Locomotive
     
     /**
      * Return the control station model for this locomotive
-     * @return 
      */
     abstract public ViewListener getModel();
     
@@ -1868,7 +1712,6 @@ public abstract class Locomotive
     /**
      * User-friendly string representation of the decoder type
      * Should only be used in the UI/log messages, not as authoritative data
-     * @return 
      */
     abstract public String getDecoderTypeLabel();
     
@@ -1879,10 +1722,7 @@ public abstract class Locomotive
     /**
      * Returns the image URL for a function number
      * @param fNo - the function number
-     * @param fType
-     * @param active
      * @param yellow - white or yellow version
-     * @return 
      */
     abstract public String getFunctionIconUrl(int fNo, int fType, boolean active, boolean yellow);
     abstract public String getFunctionIconUrl(int fType, boolean active, boolean yellow);
@@ -1900,8 +1740,6 @@ public abstract class Locomotive
 
     /**
      * Ensures that the function icon type is within a valid range
-     * @param fType
-     * @return 
      */
     abstract public int sanitizeFIconIndex(int fType);
     

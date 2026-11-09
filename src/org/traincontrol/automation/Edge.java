@@ -59,10 +59,6 @@ public class Edge
     // This is useful if the layout contains crossings that cannot otherwise be modeled as a graph edge
     private final List<Edge> lockEdges;
         
-    /**
-     * @param start
-     * @param end
-     */
     public Edge(Point start, Point end)
     {
         this.start = start;
@@ -75,7 +71,6 @@ public class Edge
     
     /**
      * Returns all the config commands set for this edge
-     * @return 
      */
     public Map<String, Accessory.accessorySetting> getConfigCommands()
     {
@@ -85,9 +80,6 @@ public class Edge
     /**
      * Adds a new config command
      * Excepts a call to validateConfigCommand beforehand
-     * @param acc
-     * @param state 
-     * @return  
      */
     public Edge addConfigCommand(String acc, Accessory.accessorySetting state)
     {
@@ -98,8 +90,6 @@ public class Edge
     
     /**
      * Clears config commands
-     * @param acc 
-     * @return  
      */
     public Edge clearConfigCommand(String acc)
     {
@@ -118,10 +108,6 @@ public class Edge
     
     /**
      * Validates that a command is valid.  Creates accessories in DB if needed.
-     * @param accessory
-     * @param action
-     * @param control
-     * @return 
      * @throws Exception 
      */
     public static Accessory.accessorySetting validateConfigCommand(String accessory, String action, ViewListener control) throws Exception
@@ -191,7 +177,6 @@ public class Edge
         
     /**
      * Returns the name of the same edge going in the opposite direction
-     * @return 
      */
     public String getOppositeName()
     {
@@ -200,7 +185,6 @@ public class Edge
     
     /**
      * Returns the name of this edge
-     * @return 
      */
     public String getName()
     {
@@ -234,7 +218,6 @@ public class Edge
     
     /**
      * Returns the unique id of this edge
-     * @return 
      */
     public String getUniqueId()
     {
@@ -250,10 +233,7 @@ public class Edge
     @Override
     public boolean equals(Object other)
     {
-        if (other == this && start != null && end != null)
-        {
-            return true;
-        }
+        if (other == this && start != null && end != null) return true;
 
         if (!(other instanceof Edge))
         {
@@ -273,7 +253,6 @@ public class Edge
     
     /**
      * Gets the starting point of this edge
-     * @return 
      */
     public Point getStart()
     {
@@ -282,7 +261,6 @@ public class Edge
     
     /**
      * Gets the ending point of this edge
-     * @return 
      */
     public Point getEnd()
     {
@@ -291,8 +269,6 @@ public class Edge
     
     /**
      * Add an edge to the list of edges which must always be locked whenever this edge is locked
-     * @param e
-     * @return 
      */
     public Edge addLockEdge(Edge e)
     {
@@ -303,8 +279,6 @@ public class Edge
     
     /**
      * Removes an edge from the lock edge list
-     * @param e
-     * @return 
      */
     public Edge removeLockEdge(Edge e)
     {
@@ -315,7 +289,6 @@ public class Edge
     
     /**
      * Removes all edges from the lock edge list
-     * @return 
      */
     public Edge clearLockEdges()
     {
@@ -473,7 +446,6 @@ public class Edge
 
     /**
      * Returns the edge length
-     * @return 
      */
     public int getLength()
     {
@@ -510,7 +482,6 @@ public class Edge
 
     /**
      * Sets the length of the edge.  Used in path validity calculation
-     * @param length 
      */
     public void setLength(int length)
     {
@@ -521,9 +492,6 @@ public class Edge
     
     /**
      * Gets the name of an edge based on two points
-     * @param start
-     * @param end 
-     * @return  
      */
     public static String getEdgeName(Point start, Point end)
     {
@@ -532,9 +500,6 @@ public class Edge
     
     /**
      * Gets the ID of an edge based on two points
-     * @param start
-     * @param end
-     * @return 
      */
     public static String getEdgeUniqueId(Point start, Point end)
     {
@@ -543,8 +508,6 @@ public class Edge
     
     /**
      * Tests if the given edge is occupied by a different locomotive than the one specified
-     * @param loc
-     * @return 
      */
     synchronized public boolean isOccupied(Locomotive loc)
     {
@@ -645,7 +608,6 @@ public class Edge
     
     /**
      * Returns lock edges
-     * @return 
      */
     public List<Edge> getLockEdges()
     {
@@ -687,8 +649,6 @@ public class Edge
     
     /**
      * Returns a pretty textual representation of the start and end of a path
-     * @param e
-     * @return 
      */
     public static String pathToString(List<Edge> e)
     {
@@ -708,7 +668,6 @@ public class Edge
     
     /**
      * Converts this edge to a JSON representation
-     * @return 
      * @throws java.lang.IllegalAccessException 
      * @throws java.lang.NoSuchFieldException 
      */
@@ -793,7 +752,6 @@ public class Edge
     
     /**
      * Converts this edge to a simple JSON representation
-     * @return 
      * @throws java.lang.IllegalAccessException 
      * @throws java.lang.NoSuchFieldException 
      */

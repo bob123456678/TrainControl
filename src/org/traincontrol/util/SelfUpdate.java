@@ -110,12 +110,6 @@ public final class SelfUpdate
             this.underWay.set(false);
         }
 
-        /** Whether an update is under way. */
-        public boolean isUnderWay()
-        {
-            return this.underWay.get();
-        }
-
         /** The exit's half: the update to start, taken so that it is started once; null when none is armed. */
         public synchronized Pending take()
         {
@@ -348,10 +342,7 @@ public final class SelfUpdate
         {
             byte[] buffer = new byte[65536];
 
-            for (int read = in.read(buffer); read != -1; read = in.read(buffer))
-            {
-                digest.update(buffer, 0, read);
-            }
+            for (int read = in.read(buffer); read != -1; read = in.read(buffer)) digest.update(buffer, 0, read);
         }
 
         StringBuilder hex = new StringBuilder();

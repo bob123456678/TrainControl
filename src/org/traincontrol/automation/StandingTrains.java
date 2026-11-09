@@ -212,10 +212,7 @@ final class StandingTrains
 
         // THE HEAD IS THE START OF THE PATH, so nothing is driven yet - BY IDENTITY ONLY: by place, a first leg that
         // REVERSES IN PLACE ends at another copy of the start square and HAS been driven.
-        if (path.get(0) != null && path.get(0).getStart() == head)
-        {
-            return driven;
-        }
+        if (path.get(0) != null && path.get(0).getStart() == head) return driven;
 
         for (Edge leg : path)
         {

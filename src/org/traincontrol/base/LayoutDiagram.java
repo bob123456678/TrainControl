@@ -64,10 +64,7 @@ public class LayoutDiagram
    
     // Corresponding accessory reference
     private final List<List<LayoutDiagramComponent>> grid;
-    
-    // Network reference
-    private final ViewListener network;
-    
+
     // Path to the layout file
     private final String url;
     
@@ -78,11 +75,8 @@ public class LayoutDiagram
 
     /**
      * Constructor
-     * @param name
      * @param sx size x
      * @param sy size y
-     * @param url
-     * @param network 
      */
     public LayoutDiagram(String name, int sx, int sy, String url, ViewListener network)
     {
@@ -91,7 +85,6 @@ public class LayoutDiagram
         this.sy = sy;
         this.maxx = sx;
         this.maxy = sy;
-        this.network = network;
         this.url = url;
                 
         this.grid = new ArrayList<>();
@@ -373,11 +366,6 @@ public class LayoutDiagram
         return sy;
     }
     
-    public ViewListener getControl()
-    {
-        return this.network;
-    }
-    
     @Override
     public String toString()
     {        
@@ -386,7 +374,6 @@ public class LayoutDiagram
     
     /**
      * Exports this layout to the CS2 format
-     * @return
      * @throws Exception 
      */
     public String exportToCS2TextFormat() throws Exception
@@ -534,7 +521,6 @@ public class LayoutDiagram
     
     /**
      * Gets the path to the layout file
-     * @return
      * @throws MalformedURLException
      * @throws URISyntaxException 
      */
@@ -723,10 +709,7 @@ public class LayoutDiagram
     {
         // A placeholder is never written: it is blank, and the file it would go over is the one the operator is trying
         // to get back.  Refused here, at the one method that writes a page.
-        if (this.unreadable)
-        {
-            throw new Exception(I18n.f("layout.errorPageWasNotReadSoNotSaved", this.getName()));
-        }
+        if (this.unreadable) throw new Exception(I18n.f("layout.errorPageWasNotReadSoNotSaved", this.getName()));
 
         try
         {
@@ -859,8 +842,6 @@ public class LayoutDiagram
 
     /**
      * Expands the layout by the specified number of rows and columns
-     * @param numRows
-     * @param numColumns
      * @throws IOException 
      */
     synchronized public void addRowsAndColumns(int numRows, int numColumns) throws IOException
@@ -961,7 +942,6 @@ public class LayoutDiagram
     
     /**
      * Adds a new column to the layout at the specified index and shifts all existing components one column to the right.
-     * @param startCol
      * @throws IOException
      */
     public void shiftRight(int startCol) throws IOException
@@ -997,7 +977,6 @@ public class LayoutDiagram
     
     /**
     * Adds a new row to the layout at the specified index and shifts all existing components one row downward.
-    * @param startRow
     * @throws IOException
     */
     public void shiftDown(int startRow) throws IOException
@@ -1034,7 +1013,6 @@ public class LayoutDiagram
     
     /**
     * Removes a row from the layout at the specified index and shifts all existing components one row upward.
-    * @param startRow
     * @throws IOException
     */
     public void shiftUp(int startRow) throws IOException 
@@ -1067,7 +1045,6 @@ public class LayoutDiagram
     
     /**
     * Removes a column from the layout at the specified index and shifts all existing components one column to the left.
-    * @param startCol
     * @throws IOException
     */
     public void shiftLeft(int startCol) throws IOException 
@@ -1157,8 +1134,6 @@ public class LayoutDiagram
     /**
      * Writes a file with the list of all layout pages
      * We just piggyback off Marklin's CS2 format to simplify compatibility
-     * @param path
-     * @param layoutList
      * @throws IOException 
      */
     public static void writeLayoutIndex(String path, List<String> layoutList) throws IOException
@@ -1728,10 +1703,7 @@ public class LayoutDiagram
 
         if (extras == null) return;
 
-        for (String line : extras)
-        {
-            contents.append(line).append("\n");
-        }
+        for (String line : extras) contents.append(line).append("\n");
     }
 
     /**
@@ -1770,10 +1742,7 @@ public class LayoutDiagram
         // is regenerated on every write: after the modeled header and before the pages, where the sample file has it.
         for (List<String> block : readLayoutIndexExtras(path))
         {
-            for (String line : block)
-            {
-                contents.append(line).append("\n");
-            }
+            for (String line : block) contents.append(line).append("\n");
         }
 
         // Write layout details, keeping the id each page already had: an id is a page's IDENTITY (MT-135), kept while
@@ -1828,10 +1797,7 @@ public class LayoutDiagram
             if (id == null) id = next++;
 
             // Taken already, by a page written a moment ago in this same loop.
-            while (!issued.add(id))
-            {
-                id = next++;
-            }
+            while (!issued.add(id)) id = next++;
 
             contents.append("seite\n");
 

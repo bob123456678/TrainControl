@@ -381,10 +381,7 @@ final class EditorSignals
         java.util.List<TileKey> paired
             = new java.util.ArrayList<>(signalsOf(guard, station));
 
-        if (paired.contains(signal))
-        {
-            return I18n.f("autosetup.ui.signalAlreadyPaired", editor.addressOf(signal));
-        }
+        if (paired.contains(signal)) return I18n.f("autosetup.ui.signalAlreadyPaired", editor.addressOf(signal));
 
         // NOT THE STATION'S OTHER GUARD (*"make sure the entry guard can never be the same as the exit guard"*).
         // The store refuses it as well; this is where the operator is told why.
@@ -444,10 +441,7 @@ final class EditorSignals
     {
         java.util.List<String> out = new java.util.ArrayList<>();
 
-        for (TileKey one : signals)
-        {
-            out.add(editor.addressOf(one));
-        }
+        for (TileKey one : signals) out.add(editor.addressOf(one));
 
         return joined(out);
     }

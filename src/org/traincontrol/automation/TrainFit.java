@@ -89,10 +89,7 @@ final class TrainFit
         {
             if (sharing == null || !sharing.getLockEdges().contains(approach)) continue;
 
-            if (berth.isSamePlaceAs(sharing.getStart()) || berth.isSamePlaceAs(sharing.getEnd()))
-            {
-                continue;
-            }
+            if (berth.isSamePlaceAs(sharing.getStart()) || berth.isSamePlaceAs(sharing.getEnd())) continue;
 
             for (String place : sharing.getPlaceIds())
             {
@@ -381,10 +378,7 @@ final class TrainFit
 
             // A station autonomy may choose takes a train its measured route in holds (FR-087; OB-207): it only ever
             // ALLOWS, the room rule above having already refused.  `whyABerthCannotHoldIt` is the other half.
-            if (berth && Layout.theApproachItselfHoldsIt(ordered.subList(0, i + 1), loc))
-            {
-                continue;
-            }
+            if (berth && Layout.theApproachItselfHoldsIt(ordered.subList(0, i + 1), loc)) continue;
 
             if (here == null || berth)
             {

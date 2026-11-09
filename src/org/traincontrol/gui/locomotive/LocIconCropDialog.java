@@ -457,10 +457,7 @@ public class LocIconCropDialog extends JDialog
         /** The pointer shape for whatever is under it (`grabAt`'s result), as a java.awt.Cursor constant. */
         private static int cursorFor(String grabbed)
         {
-            if (grabbed == null || "pan".equals(grabbed))
-            {
-                return java.awt.Cursor.MOVE_CURSOR;
-            }
+            if (grabbed == null || "pan".equals(grabbed)) return java.awt.Cursor.MOVE_CURSOR;
 
             switch (grabbed)
             {
@@ -553,10 +550,7 @@ public class LocIconCropDialog extends JDialog
         {
             Rectangle w = cropWindow();
 
-            if (Math.abs(x - w.getCenterX()) <= PAN_GRIP && Math.abs(y - w.getCenterY()) <= PAN_GRIP)
-            {
-                return "pan";
-            }
+            if (Math.abs(x - w.getCenterX()) <= PAN_GRIP && Math.abs(y - w.getCenterY()) <= PAN_GRIP) return "pan";
 
             // Only along the side it belongs to, so the corners are the only place two of them meet.
             boolean nearLeft = Math.abs(x - w.x) <= GRIP && y >= w.y - GRIP && y <= w.y + w.height + GRIP;
@@ -600,27 +594,6 @@ public class LocIconCropDialog extends JDialog
             // Measured against the biggest window of the NEW shape, so pulling outward stops at the panel edge.
             this.frameSize = Math.max(0.05, Math.min(1.0,
                 biggest.width == 0 ? 1.0 : width / biggest.width));
-
-            clampCenter();
-
-            repaint();
-        }
-
-        /**
-         * Sets the shape of the crop window directly: the same change as dragging an edge, without a pointer, so the
-         * arithmetic is testable.
-         *
-         * @param aspect width over height; zero and negatives are ignored rather than throwing
-         */
-        public void setFrameAspect(double aspect)
-        {
-            if (aspect <= 0 || Double.isNaN(aspect)) return;
-
-            this.frameAspect = aspect;
-
-            // The largest window of its shape that fits, as a drag to the panel's edge would produce; there is no
-            // pointer to take a size from.
-            this.frameSize = 1.0;
 
             clampCenter();
 
@@ -814,12 +787,6 @@ public class LocIconCropDialog extends JDialog
             repaint();
         }
 
-        /** The current zoom. */
-        public double getZoomFraction()
-        {
-            return this.zoomFraction;
-        }
-
         /** Returns the view to where it started: zoomed out, centered on the middle of the picture. */
         public void resetView()
         {
@@ -899,8 +866,7 @@ public class LocIconCropDialog extends JDialog
 
             try
             {
-                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING,
-                    RenderingHints.VALUE_ANTIALIAS_ON);
+                ImageUtil.antialias(g2);
                 g2.setRenderingHint(RenderingHints.KEY_INTERPOLATION,
                     RenderingHints.VALUE_INTERPOLATION_BILINEAR);
 
@@ -986,18 +952,12 @@ public class LocIconCropDialog extends JDialog
             // reads as a selection handle you can drag anywhere, and these only move two edges.
             for (int cx : new int[] {window.x, window.x + window.width - arm})
             {
-                for (int cy : new int[] {window.y, window.y + window.height - thick})
-                {
-                    g2.fillRect(cx, cy, arm, thick);
-                }
+                for (int cy : new int[] {window.y, window.y + window.height - thick}) g2.fillRect(cx, cy, arm, thick);
             }
 
             for (int cx : new int[] {window.x, window.x + window.width - thick})
             {
-                for (int cy : new int[] {window.y, window.y + window.height - arm})
-                {
-                    g2.fillRect(cx, cy, thick, arm);
-                }
+                for (int cy : new int[] {window.y, window.y + window.height - arm}) g2.fillRect(cx, cy, thick, arm);
             }
 
             // And one on the middle of each side, which is where somebody reaches to change only the

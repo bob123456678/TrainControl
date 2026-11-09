@@ -156,10 +156,7 @@ public class LoadingSpinner extends JPanel
             // (OB-129).  getVisibleRect() degrades to the full bounds outside a JScrollPane.
             java.awt.Rectangle visible = getVisibleRect();
 
-            if (visible.isEmpty())
-            {
-                visible = new java.awt.Rectangle(0, 0, getWidth(), getHeight());
-            }
+            if (visible.isEmpty()) visible = new java.awt.Rectangle(0, 0, getWidth(), getHeight());
 
             // Sized off whichever way round the visible space is tighter, so it never overhangs.
             double glassH = Math.max(18.0,
@@ -254,16 +251,6 @@ public class LoadingSpinner extends JPanel
         // The plates, filled rather than stroked so they read as the solid ends of the thing.
         g2.fill(new Rectangle2D.Double(-halfW - line / 2, -halfH, glassW + line, cap));
         g2.fill(new Rectangle2D.Double(-halfW - line / 2, halfH - cap, glassW + line, cap));
-    }
-
-    /**
-     * Whether the sand is running, for a test that wants to know the animation is live.
-     *
-     * @return true while the timer is advancing frames
-     */
-    public boolean isAnimating()
-    {
-        return timer.isRunning();
     }
 
     /**

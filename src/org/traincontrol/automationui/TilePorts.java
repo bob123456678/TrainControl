@@ -121,10 +121,7 @@ public class TilePorts
         @Override
         public String toString()
         {
-            if (directedToward == null)
-            {
-                return a.toString() + "-" + b.toString();
-            }
+            if (directedToward == null) return a.toString() + "-" + b.toString();
 
             return other(directedToward).toString() + "->" + directedToward.toString();
         }
@@ -160,10 +157,7 @@ public class TilePorts
         {
             List<Route> rotated = new ArrayList<>();
 
-            for (Route r : routes)
-            {
-                rotated.add(r.rotateClockwise(quarterTurns));
-            }
+            for (Route r : routes) rotated.add(r.rotateClockwise(quarterTurns));
 
             return new TileState(rotated, commands);
         }
@@ -292,10 +286,7 @@ public class TilePorts
     {
         List<TileState> states = PORTS.get(type);
 
-        if (states == null || state < 0 || state >= states.size())
-        {
-            return Collections.emptyList();
-        }
+        if (states == null || state < 0 || state >= states.size()) return Collections.emptyList();
 
         // getImage rotates by (4 - orientation) * 90 degrees clockwise, so the ports follow
         return states.get(state).rotateClockwise(4 - normalizeOrientation(type, orientation)).getRoutes();
@@ -321,10 +312,7 @@ public class TilePorts
     {
         List<TileState> states = PORTS.get(type);
 
-        if (states == null || state < 0 || state >= states.size())
-        {
-            return Collections.emptyMap();
-        }
+        if (states == null || state < 0 || state >= states.size()) return Collections.emptyMap();
 
         return states.get(state).getCommands();
     }

@@ -27,7 +27,6 @@ abstract public class Route
     
     /**
      * Simple constructor
-     * @param name 
      */
     public Route(String name)
     {
@@ -37,8 +36,6 @@ abstract public class Route
     
     /**
      * Full constructor
-     * @param name
-     * @param route 
      */
     public Route(String name, List<RouteCommand> route)
     {
@@ -48,9 +45,6 @@ abstract public class Route
     
     /**
      * Adds to the route
-     * @param address
-     * @param protocol
-     * @param setting
      */
     public void addAccessory(int address, Accessory.accessoryDecoderType protocol, boolean setting)
     {
@@ -59,7 +53,6 @@ abstract public class Route
     
     /**
      * Adds to the route
-     * @param rc
      */
     public void addItem(RouteCommand rc)
     {
@@ -68,7 +61,6 @@ abstract public class Route
     
     /**
      * Removes from the route
-     * @param rc
      */
     public void removeItem(RouteCommand rc)
     {
@@ -77,7 +69,6 @@ abstract public class Route
     
     /**
      * Sets a full route
-     * @param rcl 
      */
     public final void setRoute(List<RouteCommand> rcl)
     {
@@ -86,7 +77,6 @@ abstract public class Route
     
     /**
      * Returns the route
-     * @return 
      */
     public List<RouteCommand> getRoute()
     {
@@ -101,7 +91,6 @@ abstract public class Route
     
     /**
      * Name of this route
-     * @return 
      */
     public String getName()
     {
@@ -110,7 +99,6 @@ abstract public class Route
     
     /**
      * Marks this route as actively executing
-     * @return 
      */
     synchronized public boolean setExecuting()
     {
@@ -126,8 +114,6 @@ abstract public class Route
     
     /**
      * This will update route commands that reference other routes to ensure the name changes are propagated
-     * @param oldName
-     * @param newName 
      */
     public void otherRouteRenamed(String oldName, String newName)
     {
@@ -199,8 +185,6 @@ abstract public class Route
 
     /**
      * This will update route commands when a locomotive is renamed
-     * @param oldName
-     * @param newName 
      */
     public void locomotiveRenamed(String oldName, String newName)
     {
@@ -302,7 +286,6 @@ abstract public class Route
     
     /**
      * Marks this route as no longer executing
-     * @return 
      */
     synchronized public boolean stopExecuting()
     {
@@ -318,7 +301,6 @@ abstract public class Route
     
     /**
      * Returns executing state
-     * @return 
      */
     synchronized public boolean isExecuting()
     {
@@ -327,7 +309,6 @@ abstract public class Route
     
     /**
      * Returns a CSV representation of the route
-     * @return 
      */
     public String toCSV()
     {
@@ -343,9 +324,6 @@ abstract public class Route
     
     /**
      * Checks if a RouteCommand condition is satisfied
-     * @param rc
-     * @param control
-     * @return 
      */
     public static boolean evaluate(RouteCommand rc, ViewListener control)
     {
@@ -399,10 +377,7 @@ abstract public class Route
         layout.waitForTheRunToRecord(loc, 3000);
 
         // The last milestone reached, while the locomotive is running a path
-        if (s88.equals(layout.getLatestMilestoneS88(loc)))
-        {
-            return true;
-        }
+        if (s88.equals(layout.getLatestMilestoneS88(loc))) return true;
 
         // Otherwise where the train is now (OB-250): the start of the road it was given until it reaches a sensor, and
         // wherever it stands once a path has completed.  Not "which Point holds the train": every Point of a locked
@@ -415,7 +390,6 @@ abstract public class Route
     
     /**
      * Return the network ID of the route
-     * @return 
      */
     abstract public int getId();
     

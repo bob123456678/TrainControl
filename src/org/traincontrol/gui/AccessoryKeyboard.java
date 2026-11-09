@@ -113,10 +113,7 @@ public class AccessoryKeyboard extends JPanel
         grid.setOpaque(false);
         grid.setFocusable(false);
 
-        for (int i = 0; i < KEYS; i++)
-        {
-            grid.add(this.buildKey(i));
-        }
+        for (int i = 0; i < KEYS; i++) grid.add(this.buildKey(i));
 
         this.add(tabRows, BorderLayout.NORTH);
         this.add(grid, BorderLayout.CENTER);
@@ -218,10 +215,7 @@ public class AccessoryKeyboard extends JPanel
         this.page = Math.max(1, Math.min(PAGES, newPage));
         this.tabs[this.page - 1].setSelected(true);
 
-        for (int i = 0; i < KEYS; i++)
-        {
-            this.numbers[i].setText(Integer.toString(this.addressOf(i)));
-        }
+        for (int i = 0; i < KEYS; i++) this.numbers[i].setText(Integer.toString(this.addressOf(i)));
     }
 
     /**
@@ -243,12 +237,6 @@ public class AccessoryKeyboard extends JPanel
         this.numbers[index - 1].setForeground(usable ? Color.BLACK : Color.GRAY);
         r.repaint();
         g.repaint();
-    }
-
-    /** The address on a key of this page. */
-    public int addressOfKey(int index)
-    {
-        return this.addressOf(index - 1);
     }
 
     /** The key on this page for an address, or 0 when it is on another page. */

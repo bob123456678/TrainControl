@@ -666,10 +666,7 @@ public final class CS2File
             boolean probed = !isNotFoundError(getCS3LocDBUrl(260));
             this.cs3Firmware = new FirmwareVersion(2, probed ? 6 : 5, 0);
 
-            if (probed == is260)
-            {
-                throw notThere;
-            }
+            if (probed == is260) throw notThere;
 
             return fetchURL(getCS3LocDBUrl(probed ? 260 : 250));
         }
@@ -691,10 +688,7 @@ public final class CS2File
         {
             JSONObject loc = locomotives.optJSONObject(i);
 
-            if (loc == null || text(loc, "internname") == null || text(loc, "name") == null)
-            {
-                return true;
-            }
+            if (loc == null || text(loc, "internname") == null || text(loc, "name") == null) return true;
         }
 
         return false;
@@ -819,10 +813,7 @@ public final class CS2File
                 found = null;
             }
 
-            if (found == null)
-            {
-                found = new FirmwareVersion(2, isNotFoundError(getCS3LocDBUrl(260)) ? 5 : 6, 0);
-            }
+            if (found == null) found = new FirmwareVersion(2, isNotFoundError(getCS3LocDBUrl(260)) ? 5 : 6, 0);
 
             this.cs3Firmware = found;
         }
@@ -911,10 +902,7 @@ public final class CS2File
         {
             Object value = new JSONTokener(body).nextValue();
 
-            if (value instanceof JSONArray)
-            {
-                return (JSONArray) value;
-            }
+            if (value instanceof JSONArray) return (JSONArray) value;
 
             if (key != null && value instanceof JSONObject && ((JSONObject) value).optJSONArray(key) != null)
             {
@@ -1023,10 +1011,7 @@ public final class CS2File
                     // `kont`.
                     StringBuilder both = new StringBuilder();
 
-                    if (m.get("S88Flag") != null)
-                    {
-                        both.append(m.get("S88Flag")).append("|");
-                    }
+                    if (m.get("S88Flag") != null) both.append(m.get("S88Flag")).append("|");
 
                     both.append(m.get("item"));
 
@@ -1697,10 +1682,7 @@ public final class CS2File
         {
             JSONObject entry = list.getJSONObject(index);
 
-            if (entry.has(key))
-            {
-                return entry.get(key).toString();
-            }
+            if (entry.has(key)) return entry.get(key).toString();
         }
         catch (JSONException e)
         {
@@ -1975,10 +1957,7 @@ public final class CS2File
 
                             // As in the DCC branch below: with no address field the UID was used, and a UID is past the
                             // highest MFX address (only setAddress validates).
-                            if (address > MarklinLocomotive.MFX_MAX_ADDR)
-                            {
-                                address -= MarklinLocomotive.MFX_BASE;
-                            }
+                            if (address > MarklinLocomotive.MFX_MAX_ADDR) address -= MarklinLocomotive.MFX_BASE;
                         }
                         else if ("dcc".equals(m.get("typ")))
                         {
@@ -2518,10 +2497,7 @@ public final class CS2File
 
         List<String> names = new ArrayList<>();
 
-        for (Map<String, String> page : index)
-        {
-            names.add(page.get("name"));
-        }
+        for (Map<String, String> page : index) names.add(page.get("name"));
 
         this.pagesTheIndexNamed = names.size();
         
@@ -2769,10 +2745,7 @@ public final class CS2File
             
                 layout.checkBounds();
 
-                if (!unresolved.isEmpty())
-                {
-                    resolveTwoProtocolTiles(layout, unresolved, twoProtocols, accDB);
-                }
+                if (!unresolved.isEmpty()) resolveTwoProtocolTiles(layout, unresolved, twoProtocols, accDB);
             
                 out.add(layout);
             }
@@ -2892,10 +2865,7 @@ public final class CS2File
 
         for (Map.Entry<Integer, List<String>> e : untold.entrySet())
         {
-            if (!this.twoProtocolsWarned.add(e.getKey() + " " + page.getName()))
-            {
-                continue;
-            }
+            if (!this.twoProtocolsWarned.add(e.getKey() + " " + page.getName())) continue;
 
             logMessage(I18n.f(fromStation ? "layout.cs3TwoProtocolsUnresolved" : "layout.cs3TwoProtocolsNotChecked",
                 twoProtocols.get(e.getKey()), e.getKey(), page.getName(), String.join(" ", e.getValue()),

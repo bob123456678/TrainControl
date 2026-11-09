@@ -503,7 +503,6 @@ public class MarklinControlStation implements ViewListener, ModelListener
         
     /**
      * Returns the URL to the CS3 web app
-     * @return
      */
     @Override
     public String getCS3AppUrl()
@@ -513,7 +512,6 @@ public class MarklinControlStation implements ViewListener, ModelListener
     
     /**
      * Saves the CS2 layout to the local filesystem
-     * @param path
      * @throws Exception 
      */
     @Override
@@ -555,10 +553,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
             
                 this.logf("layout.loadingStaticFiles", overrideLayoutPath);
             
-                if (debug)
-                {
-                    this.logf("layout.configFolderStructureHint");
-                }
+                if (debug) this.logf("layout.configFolderStructureHint");
             
                 try
                 {
@@ -722,19 +717,13 @@ public class MarklinControlStation implements ViewListener, ModelListener
                 {
                     a.adoptStationPosition(turned, asked);
 
-                    if (this.view != null)
-                    {
-                        this.view.repaintSwitch(a.getAddress() + 1, a.getDecoderType());
-                    }
+                    if (this.view != null) this.view.repaintSwitch(a.getAddress() + 1, a.getDecoderType());
                 }
             });
         }
         catch (Exception e)
         {
-            if (this.debug)
-            {
-                this.log(e);
-            }
+            if (this.debug) this.log(e);
         }
     }
 
@@ -808,10 +797,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
                     int uid = MarklinAccessory.UIDfromAddress(c.getAddress() - 1, c.getProtocol());
                     kinds.computeIfAbsent(uid, k -> new HashSet<>()).add(c.isSignal());
 
-                    if (c.isThreeWay())
-                    {
-                        kinds.computeIfAbsent(uid + 1, k -> new HashSet<>()).add(c.isSignal());
-                    }
+                    if (c.isThreeWay()) kinds.computeIfAbsent(uid + 1, k -> new HashSet<>()).add(c.isSignal());
                 }
             }
         }
@@ -858,7 +844,6 @@ public class MarklinControlStation implements ViewListener, ModelListener
     
     /**
      * Delays until the power state matches the specified state
-     * @param state
      * @throws InterruptedException 
      */
     @Override
@@ -939,7 +924,6 @@ public class MarklinControlStation implements ViewListener, ModelListener
 
     /**
      * Returns the auto layout class (and creates it if it does not yet exist)
-     * @return 
      */
     @Override
     public Layout getAutoLayout()
@@ -988,7 +972,6 @@ public class MarklinControlStation implements ViewListener, ModelListener
     /**
      * Parses JSON corresponding to a layout automation config file
      * Resets any existing automation
-     * @param s
      */
     @Override
     public void parseAuto(String s)
@@ -1078,9 +1061,6 @@ public class MarklinControlStation implements ViewListener, ModelListener
     
     /**
      * Gets cumulative locomotive runtime for the number of days specified from the current date
-     * @param days
-     * @param offset
-     * @return 
      */
     @Override
     public TreeMap<String, Long> getDailyRuntimeStats(int days, long offset)
@@ -1094,9 +1074,6 @@ public class MarklinControlStation implements ViewListener, ModelListener
     
     /**
      * Gets the number of locomotives run daily over the number of days specified from the current date
-     * @param days
-     * @param offset
-     * @return 
      */
     @Override
     public TreeMap<String, Integer> getDailyCountStats(int days, long offset)
@@ -1133,9 +1110,6 @@ public class MarklinControlStation implements ViewListener, ModelListener
     
     /**
      * Gets the total number of unique locomotives over the number of days specified from the current date
-     * @param days
-     * @param offset
-     * @return 
      */
     @Override
     public int getTotalLocStats(int days, long offset)
@@ -1290,7 +1264,6 @@ public class MarklinControlStation implements ViewListener, ModelListener
     
     /**
      * Checks the CS data and identifies locomotives with the same address that have a different name in TC
-     * @return
      * @throws Exception 
      */
     @Override
@@ -1305,7 +1278,6 @@ public class MarklinControlStation implements ViewListener, ModelListener
      * The count matters to the caller because an empty proposal list is ambiguous - either nothing
      * needs renaming, or everything that did was refused - and those want different messages.
      *
-     * @return
      * @throws java.lang.Exception
      */
     @Override
@@ -1345,10 +1317,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
         // single local locomotive, so the list would get two proposals with one source.
         Map<Integer, Integer> parsedCountByAddress = new HashMap<>();
 
-        for (MarklinLocomotive l : parsedLocs)
-        {
-            parsedCountByAddress.merge(l.getIntUID(), 1, Integer::sum);
-        }
+        for (MarklinLocomotive l : parsedLocs) parsedCountByAddress.merge(l.getIntUID(), 1, Integer::sum);
 
         for (MarklinLocomotive l : parsedLocs)
         {
@@ -1430,19 +1399,13 @@ public class MarklinControlStation implements ViewListener, ModelListener
         }
 
         // Nothing could be emitted, so every target left is still some other entry's source: a cycle
-        for (String[] proposal : remaining)
-        {
-            this.logf("loc.renameCycleRefused", proposal[0], proposal[1]);
-        }
+        for (String[] proposal : remaining) this.logf("loc.renameCycleRefused", proposal[0], proposal[1]);
 
         return ordered;
     }
 
     /**
      * Whether a locomotive by this name is still waiting to be renamed away
-     * @param name
-     * @param remaining
-     * @return
      */
     private static boolean isPendingRenameSource(String name, List<String[]> remaining)
     {
@@ -1598,7 +1561,6 @@ public class MarklinControlStation implements ViewListener, ModelListener
 
     /**
      * Synchronizes CS2 state
-     * @return 
      */
     @Override
     public final int syncWithCS2()
@@ -1929,10 +1891,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
         }
 
         // Routes from the Central Station are not editable
-        if (this.routeDB.getById(r.getId()) != null)
-        {
-            this.routeDB.getById(r.getId()).setLocked(true);
-        }
+        if (this.routeDB.getById(r.getId()) != null) this.routeDB.getById(r.getId()).setLocked(true);
 
         return added;
     }
@@ -2019,7 +1978,6 @@ public class MarklinControlStation implements ViewListener, ModelListener
     
     /**
      * Queries the central station for locomotive function state
-     * @param name 
      */
     @Override
     public void syncLocomotive(String name)
@@ -2033,7 +1991,6 @@ public class MarklinControlStation implements ViewListener, ModelListener
     
     /**
      * Sets debug state
-     * @param state 
      */
     public final void debug(boolean state)
     {
@@ -2065,7 +2022,6 @@ public class MarklinControlStation implements ViewListener, ModelListener
     
     /**
      * Is the station a CS3?
-     * @return 
      */
     @Override
     public boolean isCS3()
@@ -2087,7 +2043,6 @@ public class MarklinControlStation implements ViewListener, ModelListener
 
     /**
      * Saves initialized component database to a file
-     * @param backup
      */
     @Override
     public void saveState(boolean backup)
@@ -2255,8 +2210,6 @@ public class MarklinControlStation implements ViewListener, ModelListener
 
     /**
      * Restores list of initialized components from a file
-     * @param dataFile
-     * @return 
      */
     public final List<MarklinSimpleComponent> restoreState(String dataFile)
     {
@@ -2325,13 +2278,6 @@ public class MarklinControlStation implements ViewListener, ModelListener
         
     /**
      * Updates a route
-     * @param name
-     * @param newName
-     * @param route 
-     * @param s88 
-     * @param s88Trigger 
-     * @param routeEnabled 
-     * @param conditions
      */
     @Override
     public final boolean editRoute(String name, String newName, List<RouteCommand> route, int s88, MarklinRoute.s88Triggers s88Trigger, boolean routeEnabled,
@@ -2399,10 +2345,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
         this.restoreRouteActivation(id, wasActivated);
 
         // And the lock, onto the route that now holds this id.
-        if (wasLocked && this.routeDB.getById(id) != null)
-        {
-            this.routeDB.getById(id).setLocked(true);
-        }
+        if (wasLocked && this.routeDB.getById(id) != null) this.routeDB.getById(id).setLocked(true);
 
         // Let other routes know this has been renamed
         for (MarklinRoute r : this.getRoutes())
@@ -2415,7 +2358,6 @@ public class MarklinControlStation implements ViewListener, ModelListener
     
     /**
      * Checks the locomotive database for duplicate addresses
-     * @return 
      */
     @Override
     public Map<Integer, Set<Locomotive>> getDuplicateLocAddresses()
@@ -2473,8 +2415,6 @@ public class MarklinControlStation implements ViewListener, ModelListener
 
     /**
      * Returns a route
-     * @param name
-     * @return 
      */
     @Override
     public MarklinRoute getRoute(String name)
@@ -2490,8 +2430,6 @@ public class MarklinControlStation implements ViewListener, ModelListener
     
     /**
      * Adds a new route from file
-     * @param r 
-     * @return  
      */
     public final boolean newRoute(MarklinRoute r)
     {
@@ -2528,14 +2466,6 @@ public class MarklinControlStation implements ViewListener, ModelListener
     
     /**
      * Adds a new route from database
-     * @param name
-     * @param id
-     * @param route 
-     * @param s88 
-     * @param s88Trigger 
-     * @param routeEnabled 
-     * @param conditions
-     * @return  
      */
     public final boolean newRoute(String name, int id, List<RouteCommand> route, int s88, MarklinRoute.s88Triggers s88Trigger, boolean routeEnabled,
             NodeExpression conditions)
@@ -2559,12 +2489,6 @@ public class MarklinControlStation implements ViewListener, ModelListener
     
     /**
      * Adds a new route from user input
-     * @param name
-     * @param route 
-     * @param s88 
-     * @param s88Trigger 
-     * @param routeEnabled 
-     * @param conditions 
      * @return creation status
      */
     @Override
@@ -2604,9 +2528,6 @@ public class MarklinControlStation implements ViewListener, ModelListener
     
     /**
      * Adds an MFX locomotive to the system
-     * @param name
-     * @param address
-     * @return 
      */
     @Override
     public final MarklinLocomotive newMFXLocomotive(String name, int address)
@@ -2616,9 +2537,6 @@ public class MarklinControlStation implements ViewListener, ModelListener
     
     /**
      * Adds a DCC locomotive to the system
-     * @param name
-     * @param address
-     * @return 
      */
     @Override
     public final MarklinLocomotive newDCCLocomotive(String name, int address)
@@ -2628,9 +2546,6 @@ public class MarklinControlStation implements ViewListener, ModelListener
     
     /**
      * Adds a MM2 locomotive to the system
-     * @param name
-     * @param address
-     * @return 
      */
     @Override
     public final MarklinLocomotive newMM2Locomotive(String name, int address)
@@ -2640,8 +2555,6 @@ public class MarklinControlStation implements ViewListener, ModelListener
     
     /**
      * Fetches a locomotive
-     * @param name
-     * @return 
      */
     @Override
     public final MarklinLocomotive getLocByName(String name)
@@ -2655,18 +2568,13 @@ public class MarklinControlStation implements ViewListener, ModelListener
      * A signal and a switch are one physical decoder, but only the name the accessory was created as is registered;
      * without the fallback a route or autonomy edge naming the other one never commands it.  Only the type prefix is
      * swapped.  Never creates anything.
-     * @param name
-     * @return
      */
     @Override
     public final MarklinAccessory getAccessoryByName(String name)
     {
         MarklinAccessory accessory = this.accDB.getByName(name);
 
-        if (accessory != null || name == null)
-        {
-            return accessory;
-        }
+        if (accessory != null || name == null) return accessory;
 
         String switchPrefix = Accessory.accessoryTypeToPrettyString(Accessory.accessoryType.SWITCH);
         String signalPrefix = Accessory.accessoryTypeToPrettyString(Accessory.accessoryType.SIGNAL);
@@ -2687,9 +2595,6 @@ public class MarklinControlStation implements ViewListener, ModelListener
     /**
      * Creates a new signal (with the actuation count from the existing accessory, otherwise with 0 actuations)
      * @param address - the logical address (1 more than mm2 address)
-     * @param decoderType
-     * @param state
-     * @return 
     */
     @Override
     public final MarklinAccessory newSignal(int address, Accessory.accessoryDecoderType decoderType, boolean state)
@@ -2700,9 +2605,6 @@ public class MarklinControlStation implements ViewListener, ModelListener
     /**
      * Creates a new switch (with the actuation count from the existing accessory, otherwise with 0 actuations)
      * @param address - the logical address (1 more than mm2 address)
-     * @param decoderType
-     * @param state
-     * @return 
      */
     @Override
     public final MarklinAccessory newSwitch(int address, Accessory.accessoryDecoderType decoderType, boolean state)
@@ -2712,9 +2614,6 @@ public class MarklinControlStation implements ViewListener, ModelListener
     
     /**
      * Adds a new feedback based on a network message
-     * @param id
-     * @param message
-     * @return 
      */
     @Override
     public final MarklinFeedback newFeedback(int id, CANMessage message)
@@ -2734,8 +2633,6 @@ public class MarklinControlStation implements ViewListener, ModelListener
     
     /**
      * Returns whether or not the passed feedback object has been set
-     * @param name
-     * @return 
      */
     @Override
     public final boolean isFeedbackSet(String name)
@@ -2746,7 +2643,6 @@ public class MarklinControlStation implements ViewListener, ModelListener
     /**
      * Returns the state of the passed feedback
      * @param name (the feedback module number)
-     * @return 
      */
     @Override
     public final boolean getFeedbackState(String name)
@@ -2764,8 +2660,6 @@ public class MarklinControlStation implements ViewListener, ModelListener
     /**
      * Sets feedback state for simulation purposes
      * @param name (the feedback module number)
-     * @param state
-     * @return 
      */
     @Override
     public final boolean setFeedbackState(String name, boolean state) 
@@ -2809,7 +2703,6 @@ public class MarklinControlStation implements ViewListener, ModelListener
     
     /**
      * Fetches the number of CAN messages processed so far
-     * @return 
      */
     @Override
     public int getNumMessagesProcessed()
@@ -2819,7 +2712,6 @@ public class MarklinControlStation implements ViewListener, ModelListener
     
     /**
      * Initializes a message buffer based on the protocol being used
-     * @return 
      */
     @Override
     public byte[] initMessageBuffer()
@@ -2841,7 +2733,6 @@ public class MarklinControlStation implements ViewListener, ModelListener
 
     /**
      * Receives a network messages from the CS2 for interpretation
-     * @param msg
      */
     @Override
     public void receiveMessage(CANMessage msg)
@@ -3068,7 +2959,6 @@ public class MarklinControlStation implements ViewListener, ModelListener
         
     /**
      * Returns the last measured latency.  Should be preceded by a call to sendPing
-     * @return 
      */
     public double getLastLatency()
     {
@@ -3077,7 +2967,6 @@ public class MarklinControlStation implements ViewListener, ModelListener
     
     /**
      * Executes a command
-     * @param m 
      */
     public void exec(CS2Message m)
     {
@@ -3127,7 +3016,6 @@ public class MarklinControlStation implements ViewListener, ModelListener
 
     /**
      * Enables or disables network communication
-     * @param on 
      */
     public void setNetworkCommState(boolean on)
     {
@@ -3169,7 +3057,6 @@ public class MarklinControlStation implements ViewListener, ModelListener
     
     /**
      * Logs a message
-     * @param message 
      */
     @Override
     public final void log(String message)
@@ -3190,7 +3077,6 @@ public class MarklinControlStation implements ViewListener, ModelListener
     
     /**
      * Logs an exception
-     * @param e 
      */
     @Override
     public final void log(Exception e)
@@ -3239,7 +3125,6 @@ public class MarklinControlStation implements ViewListener, ModelListener
     
     /**
      * Returns the timestamp (ms) of the last ping request
-     * @return 
      */
     @Override
     public long getTimeSinceLastPing()
@@ -3297,7 +3182,6 @@ public class MarklinControlStation implements ViewListener, ModelListener
     
     /**
      * Turns off all active functions of the specified locomotive
-     * @param loc 
      */
     @Override
     public void locFunctionsOff(Locomotive loc)
@@ -3307,7 +3191,6 @@ public class MarklinControlStation implements ViewListener, ModelListener
     
     /**
      * Turns on all locomotives' lights
-     * @param locomotives
      */
     @Override
     public void lightsOn(List<String> locomotives)
@@ -3361,10 +3244,6 @@ public class MarklinControlStation implements ViewListener, ModelListener
     
     /**
      * Adds a new locomotive to the internal database with no known state
-     * @param name
-     * @param address
-     * @param type
-     * @return 
      */
     private MarklinLocomotive newLocomotive(String name, int address, 
         MarklinLocomotive.decoderType type)
@@ -3380,10 +3259,6 @@ public class MarklinControlStation implements ViewListener, ModelListener
     
     /**
      * Adds a new locomotive to the internal database with no state except function types
-     * @param name
-     * @param address
-     * @param type
-     * @return 
      */
     private MarklinLocomotive newLocomotive(String name, int address, 
         MarklinLocomotive.decoderType type, int[] functionTypes, int[] functionTriggerTypes)
@@ -3402,8 +3277,6 @@ public class MarklinControlStation implements ViewListener, ModelListener
     
     /**
      * Adds a new locomotive with expanded state from saved data
-     * @param c
-     * @return 
      */
     private MarklinLocomotive newLocomotive(MarklinSimpleComponent c)
     {
@@ -3435,11 +3308,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
     
     /**
      * Adds a new accessory to the internal database (with the acuation count from the existing accessory, otherwise with 0 actuations)
-     * @param name
      * @param address - this should be 1 less than the logical address, i.e. Signal 1 has address 0
-     * @param type
-     * @param state
-     * @return 
      */
     private MarklinAccessory newAccessory(int logicalAddress, int address, Accessory.accessoryType type,
             Accessory.accessoryDecoderType decoderType, boolean state)
@@ -3455,12 +3324,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
     
     /**
      * Adds a new accessory to the internal database
-     * @param name
      * @param address - this should be 1 less than the logical address, i.e. Signal 1 has address 0
-     * @param type
-     * @param state
-     * @param numActuations
-     * @return 
      */
     private MarklinAccessory newAccessory(int logicalAddress, int address, Accessory.accessoryType type, 
             Accessory.accessoryDecoderType decoderType,
@@ -3482,7 +3346,6 @@ public class MarklinControlStation implements ViewListener, ModelListener
 
     /**
      * Returns the names of the locomotives that exist in the database
-     * @return 
      */
     @Override
     public List<String> getLocList()
@@ -3495,9 +3358,6 @@ public class MarklinControlStation implements ViewListener, ModelListener
     
     /**
      * Changes the address / decoder type of a locomotive
-     * @param locName
-     * @param newAddress
-     * @param newDecoderType
      * @throws Exception 
      */
     @Override
@@ -3544,7 +3404,6 @@ public class MarklinControlStation implements ViewListener, ModelListener
     
     /**
      * Checks if autonomous operation is currently engaged
-     * @return 
      */
     @Override
     public boolean isAutonomyRunning()
@@ -3559,8 +3418,6 @@ public class MarklinControlStation implements ViewListener, ModelListener
     
     /**
      * Checks if this locomotive is directly linked to any others as a multi-units
-     * @param l
-     * @return 
      */
     @Override
     public Locomotive isLocLinkedToOthers(Locomotive l)
@@ -3578,7 +3435,6 @@ public class MarklinControlStation implements ViewListener, ModelListener
     
     /**
      * Returns the names of the locomotives that exist in the database
-     * @return 
      */
     @Override
     public final List<Locomotive> getLocomotives()
@@ -3590,7 +3446,6 @@ public class MarklinControlStation implements ViewListener, ModelListener
     
     /**
      * Same as getLocomotives, but without casting
-     * @return 
      */
     public final List<MarklinLocomotive> getMarklinLocomotives()
     {
@@ -3652,8 +3507,6 @@ public class MarklinControlStation implements ViewListener, ModelListener
 
     /**
      * Deletes the locomotive with the given name
-     * @param name
-     * @return 
      */
     @Override
     public boolean deleteLoc(String name)
@@ -3699,10 +3552,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
                     this.logf("route.warnConditionNamesDeletedLocomotive", r.getName(), name);
                 }
 
-                if (drove)
-                {
-                    this.logf("route.warnCommandsRemovedForDeletedLocomotive", r.getName(), name);
-                }
+                if (drove) this.logf("route.warnCommandsRemovedForDeletedLocomotive", r.getName(), name);
             }
         }
 
@@ -3711,8 +3561,6 @@ public class MarklinControlStation implements ViewListener, ModelListener
     
     /**
      * Returns a locomotive address as a string
-     * @param name
-     * @return 
      */
     @Override
     public String getLocAddress(String name)
@@ -3721,10 +3569,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
         String address;
 
         // An unknown name answers null
-        if (l == null)
-        {
-            return null;
-        }
+        if (l == null) return null;
 
         if (l.getDecoderType() == MarklinLocomotive.decoderType.MFX 
                 || l.getDecoderType() == MarklinLocomotive.decoderType.MULTI_UNIT)
@@ -3741,9 +3586,6 @@ public class MarklinControlStation implements ViewListener, ModelListener
     
     /**
      * Renames a locomotive in the database
-     * @param name
-     * @param newName
-     * @return 
      */
     @Override
     public boolean renameLoc(String name, String newName)
@@ -3790,8 +3632,6 @@ public class MarklinControlStation implements ViewListener, ModelListener
      * Sets the state of the passed accessory by address.  
      * If the accessory does not exist, a new switch with that access is created
      * @param address greater than 1
-     * @param state 
-     * @param decoderType
      */
     @Override
     public void setAccessoryState(int address, Accessory.accessoryDecoderType decoderType, boolean state)
@@ -3826,7 +3666,6 @@ public class MarklinControlStation implements ViewListener, ModelListener
     
     /**
      * Gets the configured CS2/3 IP address
-     * @return
      */
     public String getIP()
     {
@@ -3835,7 +3674,6 @@ public class MarklinControlStation implements ViewListener, ModelListener
     
     /**
      * Manually executes a route
-     * @param name 
      */
     @Override
     public final void execRoute(String name)
@@ -3986,8 +3824,6 @@ public class MarklinControlStation implements ViewListener, ModelListener
 
     /**
      * Returns a route ID, or 0 if not found
-     * @param name
-     * @return 
      */
     @Override
     public int getRouteId(String name)
@@ -4002,9 +3838,6 @@ public class MarklinControlStation implements ViewListener, ModelListener
     
     /**
      * Changes the ID of an existing route.  The ID must not be in use
-     * @param name
-     * @param newId
-     * @return 
      */
     @Override
     public boolean changeRouteId(String name, int newId)
@@ -4070,15 +3903,11 @@ public class MarklinControlStation implements ViewListener, ModelListener
 
         if (layout == null) return;
 
-        if (!layout.getActivateRouteIDs().contains((Integer) id))
-        {
-            layout.getActivateRouteIDs().add(id);
-        }
+        if (!layout.getActivateRouteIDs().contains((Integer) id)) layout.getActivateRouteIDs().add(id);
     }
 
     /**
      * Gets all existing routes
-     * @return 
      */
     public List<MarklinRoute> getRoutes()
     {
@@ -4087,7 +3916,6 @@ public class MarklinControlStation implements ViewListener, ModelListener
     
     /**
      * Gets route list, sorted by ID
-     * @return 
      */
     @Override
     public List<String> getRouteList()
@@ -4112,8 +3940,6 @@ public class MarklinControlStation implements ViewListener, ModelListener
      * Gets the state of the accessory with the specified address.  If it does not exist, a new
      * switch is created.
      * @param address greater than 1
-     * @param decoderType
-     * @return 
      */
     @Override
     public boolean getAccessoryState(int address, Accessory.accessoryDecoderType decoderType)
@@ -4158,8 +3984,6 @@ public class MarklinControlStation implements ViewListener, ModelListener
      *
      * The read-only lookup: it never creates a switch, unlike getAccessoryByAddress.
      * @param address greater than 1
-     * @param decoderType
-     * @return 
      */
     @Override
     public MarklinAccessory getAccessoryByAddressIfPresent(int address, Accessory.accessoryDecoderType decoderType)
@@ -4175,9 +3999,6 @@ public class MarklinControlStation implements ViewListener, ModelListener
      * Use getAccessoryByAddressIfPresent for read-only paths - display, export, validation.  This one
      * registers a switch on a miss, which is deliberate for command paths but fills the database with
      * phantoms when called merely to look at something.
-     * @param address
-     * @param decoderType
-     * @return 
      */
     public MarklinAccessory getAccessoryByAddress(int address, Accessory.accessoryDecoderType decoderType)
     { 
@@ -4217,7 +4038,6 @@ public class MarklinControlStation implements ViewListener, ModelListener
 
     /**
      * Returns if the power is on
-     * @return 
      */
     @Override
     public boolean getPowerState()
@@ -4236,7 +4056,6 @@ public class MarklinControlStation implements ViewListener, ModelListener
     
     /**
      * Sets the power
-     * @param state 
      */
     private void setPowerState(boolean state)
     {
@@ -4435,8 +4254,6 @@ public class MarklinControlStation implements ViewListener, ModelListener
 
     /**
      * Fetches a single layout by name
-     * @param name
-     * @return 
      */
     @Override
     public LayoutDiagram getLayout(String name)
@@ -4467,7 +4284,6 @@ public class MarklinControlStation implements ViewListener, ModelListener
     
     /**
      * Gets the UI reference
-     * @return 
      */
     public View getGUI()
     {
@@ -4477,15 +4293,11 @@ public class MarklinControlStation implements ViewListener, ModelListener
     @Override
     public void showAutonomyAlert(String message)
     {
-        if (this.view != null)
-        {
-            this.view.showAutonomyAlert(message);
-        }
+        if (this.view != null) this.view.showAutonomyAlert(message);
     }
 
     /**
      * Initialize with default values
-     * @return
      * @throws UnknownHostException
      * @throws IOException 
      * @throws java.lang.InterruptedException 
@@ -4497,7 +4309,6 @@ public class MarklinControlStation implements ViewListener, ModelListener
     
     /**
      * Export all routes to a JSON string
-     * @return 
      * @throws java.lang.IllegalAccessException
      * @throws java.lang.NoSuchFieldException
      */
@@ -4819,7 +4630,6 @@ public class MarklinControlStation implements ViewListener, ModelListener
         
     /**
      * Exports the locomotive database to a user-friendly CSV file for reference
-     * @return 
      */
     @Override
     public String exportLocsToCSV()
@@ -4882,12 +4692,6 @@ public class MarklinControlStation implements ViewListener, ModelListener
 
     /**
      * Main initialization method
-     * @param initIP
-     * @param simulate
-     * @param showUI
-     * @param autoPowerOn
-     * @param debug
-     * @return
      * @throws UnknownHostException
      * @throws IOException 
      * @throws java.lang.InterruptedException 

@@ -6,7 +6,6 @@ import java.awt.FontMetrics;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.GridLayout;
-import java.awt.RenderingHints;
 import java.awt.Shape;
 import java.awt.geom.AffineTransform;
 import java.awt.geom.Line2D;
@@ -17,6 +16,7 @@ import javax.swing.JPanel;
 import javax.swing.JToggleButton;
 import javax.swing.UIManager;
 import javax.swing.plaf.basic.BasicGraphicsUtils;
+import org.traincontrol.util.ImageUtil;
 
 /**
  * Toggle buttons drawn as one rounded outline with a thin divider between segments, the chosen segment filled with the
@@ -101,8 +101,7 @@ public class SegmentedControl extends JPanel
 
         try
         {
-            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-            g2.setRenderingHint(RenderingHints.KEY_STROKE_CONTROL, RenderingHints.VALUE_STROKE_PURE);
+            ImageUtil.smooth(g2);
             g2.setColor(lineColor());
 
             for (int i = 1; i < getComponentCount(); i++)
@@ -155,7 +154,7 @@ public class SegmentedControl extends JPanel
 
             try
             {
-                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                ImageUtil.antialias(g2);
 
                 Color fill = themeColor(Color.WHITE, "Button.background");
 

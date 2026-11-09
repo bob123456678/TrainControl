@@ -1037,10 +1037,7 @@ public class AutonomyChecks
 
             if (entry.getValue().trim().isEmpty()) continue;
 
-            if (!where.containsKey(entry.getValue()))
-            {
-                where.put(entry.getValue(), new ArrayList<TileKey>());
-            }
+            if (!where.containsKey(entry.getValue())) where.put(entry.getValue(), new ArrayList<TileKey>());
 
             where.get(entry.getValue()).add(entry.getKey());
         }
@@ -1148,10 +1145,7 @@ public class AutonomyChecks
 
         Set<TileKey> stationTiles = new LinkedHashSet<>();
 
-        for (ReducedPoint station : stations)
-        {
-            stationTiles.add(station.getTile());
-        }
+        for (ReducedPoint station : stations) stationTiles.add(station.getTile());
 
         // A STATION NOTHING CAN PASS IS SAID TO BE, and left out of the two sentences below (FR-101).
         for (ReducedPoint station : stations)

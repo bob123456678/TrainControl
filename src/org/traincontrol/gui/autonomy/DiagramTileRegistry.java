@@ -65,10 +65,7 @@ public class DiagramTileRegistry
         {
             LayoutLabel existing = i.next();
 
-            if (existing != label && existing.sharesWindowWith(label) && !existing.isDisplayable())
-            {
-                i.remove();
-            }
+            if (existing != label && existing.sharesWindowWith(label) && !existing.isDisplayable()) i.remove();
         }
 
         here.add(label);
@@ -81,10 +78,7 @@ public class DiagramTileRegistry
 
         org.traincontrol.automationui.TileAnnotation annotation = lastAnnotated.get(key);
 
-        if (annotation != null && annotation != BLANK && !label.isEditMode())
-        {
-            label.setAutonomyAnnotation(annotation);
-        }
+        if (annotation != null && annotation != BLANK && !label.isEditMode()) label.setAutonomyAnnotation(annotation);
     }
 
     /**
@@ -237,10 +231,7 @@ public class DiagramTileRegistry
      */
     public void clearAnnotations()
     {
-        for (TileKey key : new java.util.ArrayList<>(lastAnnotated.keySet()))
-        {
-            annotate(key, null);
-        }
+        for (TileKey key : new java.util.ArrayList<>(lastAnnotated.keySet())) annotate(key, null);
 
         lastAnnotated.clear();
     }
