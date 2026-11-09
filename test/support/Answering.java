@@ -100,6 +100,12 @@ public final class Answering implements AutoCloseable
         /** Whether the dialog stood above other programs. */
         public final boolean alwaysOnTop;
 
+        /** Which windows the dialog blocked. */
+        public final java.awt.Dialog.ModalityType modality;
+
+        /** Whether its owner was minimized while it asked. */
+        public final boolean ownerMinimized;
+
         /** The dialog's title. */
         public final String title;
 
@@ -120,6 +126,9 @@ public final class Answering implements AutoCloseable
             this.owner = dialog.getOwner();
             this.ownerShowing = this.owner != null && this.owner.isShowing();
             this.alwaysOnTop = dialog.isAlwaysOnTop();
+            this.modality = dialog.getModalityType();
+            this.ownerMinimized = this.owner instanceof java.awt.Frame
+                && (((java.awt.Frame) this.owner).getExtendedState() & java.awt.Frame.ICONIFIED) != 0;
             this.title = dialog.getTitle();
             this.message = message;
             this.type = pane.getMessageType();

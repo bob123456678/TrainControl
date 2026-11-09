@@ -355,6 +355,85 @@ public class testTheTrainWindow
     }
 
     /**
+     * A key step in the Train list only shows a train: Down, or a typed letter, places nothing, Escape puts the list
+     * back and leaves the window open, and Enter places the train shown.  A pick from the open list acts as the list
+     * closes; a list closed by canceling puts the choice back.
+     *
+     * MUTATION: have `StationWindowBase.Choice.fireActionEvent` ignore `keying`, and this fails.
+     */
+    @Test(timeOut = 120000)
+    public void testAKeyStepInTheListPlacesNothingUntilEnter() throws Exception
+    {
+        AutonomyEditorPanel panel = theEditorsPanel();
+
+        TileKey square = anEmptyStation();
+
+        TrainWindow window = StationDoors.openTrain(panel, square);
+
+        javax.swing.JComboBox<?> list = StationDoors.part(window, "train.train", javax.swing.JComboBox.class);
+
+        String none = I18n.t("autosetup.ui.labelNone");
+
+        support.Keys.press(list, java.awt.event.KeyEvent.VK_DOWN);
+
+        Object shown = Components.onTheEventThread(list::getSelectedItem);
+
+        assertFalse(none.equals(shown), "precondition: Down did not step the list");
+        assertNull(session.getLocomotiveNameAt(square), "Down placed " + shown);
+
+        // A typed letter steps to the next train whose name starts with it
+        String last = String.valueOf(Components.onTheEventThread(() -> list.getItemAt(list.getItemCount() - 1)));
+        char letter = Character.toUpperCase(last.charAt(0));
+
+        if (letter >= 'A' && letter <= 'Z' || letter >= '0' && letter <= '9')
+        {
+            support.Keys.press(list, letter);
+
+            assertNull(session.getLocomotiveNameAt(square), "typing " + letter + " placed "
+                + Components.onTheEventThread(list::getSelectedItem));
+        }
+
+        support.Keys.press(list, java.awt.event.KeyEvent.VK_ESCAPE);
+
+        assertEquals(Components.onTheEventThread(list::getSelectedItem), none, "Escape did not put the list back");
+        assertTrue(Components.onTheEventThread(window::isShowing), "Escape on a stepped list closed the window");
+
+        support.Keys.press(list, java.awt.event.KeyEvent.VK_DOWN);
+        support.Keys.press(list, java.awt.event.KeyEvent.VK_ENTER);
+
+        String placed = session.getLocomotiveNameAt(square);
+
+        assertNotNull(placed, "Enter placed nothing");
+        assertTrue(String.valueOf(shown).startsWith(placed), "Enter placed " + placed + ", not " + shown);
+
+        // As a pick from the open list: chosen while it is open, acted on as it closes
+        Components.onTheEventThread(() -> { list.setPopupVisible(true); list.setSelectedItem(none); return null; });
+
+        assertEquals(session.getLocomotiveNameAt(square), placed, "a choice in the open list acted before it closed");
+
+        Components.onTheEventThread(() -> { list.setPopupVisible(false); return null; });
+        Components.settle();
+
+        assertNull(session.getLocomotiveNameAt(square), "None picked from the list left the train there");
+
+        Components.onTheEventThread(() ->
+        {
+            list.setPopupVisible(true);
+            list.setSelectedIndex(1);
+            list.firePopupMenuCanceled();
+            list.setPopupVisible(false);
+
+            return null;
+        });
+        Components.settle();
+
+        assertNull(session.getLocomotiveNameAt(square), "a canceled list placed a train");
+        assertEquals(Components.onTheEventThread(list::getSelectedItem), none, "a canceled list did not put the choice back");
+
+        StationDoors.close(window);
+    }
+
+    /**
      * A train placed from the list records the side it came in by, in the setup and on the railway, as every door that
      * puts a train down by hand does (Adam: "the missing arrival side should be set - either from the data, by the
      * user, or randomly"): Tunnel's one way in is from the north, BottomMainB's from the west.  The squares are emptied
@@ -542,6 +621,165 @@ public class testTheTrainWindow
         finally
         {
             if (driving != null) driving.interrupt();
+        }
+    }
+
+    /** The train window on this square, opened from the track diagram's menu. */
+    private static TrainWindow theDiagramsTrainWindow(TileKey square) throws Exception
+    {
+        Mouse.choose(AskingWindows.itemOf(AskingWindows.menuOn(ui, ui, square),
+            I18n.f("autosetup.ui.menuChangeTrainAt", session.describeTile(square))));
+
+        Components.settle();
+
+        TrainWindow window = StationDoors.showing(TrainWindow.class);
+
+        assertNotNull(window, "the train window did not open from the track diagram");
+
+        return window;
+    }
+
+    /**
+     * While a route runs with autonomy idle, the train window's Active pauses the train alone, as the track diagram's
+     * Is Active does (FR-187): live, and the setup is as it was.
+     *
+     * MUTATION: gray Active in `TrainWindow.fill` unless autonomy itself runs, and this fails.
+     */
+    @Test(timeOut = 180000)
+    public void testWhileARouteRunsActivePausesTheTrainAlone() throws Exception
+    {
+        TileKey square = aSquareWithATrain();
+
+        Locomotive train = model.getLocByName(session.getLocomotiveNameAt(square));
+
+        TrainWindow window = theDiagramsTrainWindow(square);
+
+        assertTrue(StationDoors.on(window, "train.active"), "precondition: Active is not ticked");
+
+        regression.testNoSetupEditWhileARouteRuns.aRouteRuns(ui, true);
+
+        try
+        {
+            assertTrue(Components.waitFor(() -> Components.onTheEventThread(window::isReadOnly), 5000),
+                "the window is not read-only while a route runs");
+
+            assertTrue(StationDoors.live(window, "train.active"), "Active is gray while a route runs");
+
+            String before = Components.onTheEventThread(() -> session.snapshotSetup().toString());
+
+            StationDoors.press(window, "train.active");
+
+            assertTrue(train.isAutonomyPaused(), "unticking Active while a route runs did not pause the train");
+            assertEquals(Components.onTheEventThread(() -> session.snapshotSetup().toString()), before,
+                "Active while a route runs edited the setup");
+        }
+        finally
+        {
+            regression.testNoSetupEditWhileARouteRuns.aRouteRuns(ui, false);
+
+            train.setAutonomyPaused(false);
+
+            SwingUtilities.invokeAndWait(window::dispose);
+        }
+    }
+
+    /**
+     * Station Settings opened from the track diagram refuses a press made once an editor has opened, before its watch
+     * has looked again: said over the window, as a run's refusal is, and the setup is as it was.
+     *
+     * MUTATION: drop the editor's check from `StationWindowBase.refused`, and this fails.
+     */
+    @Test(timeOut = 180000)
+    public void testADiagramWindowRefusesAPressOnceAnEditorOpens() throws Exception
+    {
+        TileKey square = aSquareWithATrain();
+
+        Mouse.choose(AskingWindows.itemOf(AskingWindows.menuOn(ui, ui, square), I18n.t("autosetup.ui.menuStationSettings")));
+
+        Components.settle();
+
+        org.traincontrol.gui.autonomyeditor.StationSettingsWindow window =
+            StationDoors.showing(org.traincontrol.gui.autonomyeditor.StationSettingsWindow.class);
+
+        assertNotNull(window, "Station Settings did not open from the track diagram");
+        assertFalse(window.isReadOnly(), "precondition: read-only at rest");
+
+        // The press comes in the second before the watch looks again
+        Components.onTheEventThread(() ->
+        {
+            ((javax.swing.Timer) Reflect.get(window.getClass().getSuperclass(), window, "watch")).stop();
+
+            return null;
+        });
+
+        editor = support.FrozenEditor.editorOn(model, ui, session, PAGE);
+
+        assertTrue(Components.waitFor(() -> Components.onTheEventThread(ui::isLayoutEditorOpen), 10000),
+            "precondition: the editor did not open");
+        assertTrue(Components.onTheEventThread(window::isShowing), "precondition: the editor closed the window");
+        assertTrue(StationDoors.live(window, "station.fullAutonomy"), "precondition: the box is gray");
+
+        String before = Components.onTheEventThread(() -> session.snapshotSetup().toString());
+
+        java.util.List<String> said = StationDoors.press(window, "station.fullAutonomy", message -> null);
+
+        assertEquals(said, java.util.Collections.singletonList(I18n.t("autosetup.ui.menuEditorOpen")),
+            "the press was not refused for the open editor");
+        assertEquals(Components.onTheEventThread(() -> session.snapshotSetup().toString()), before,
+            "a press with the editor open wrote to the setup");
+
+        SwingUtilities.invokeAndWait(window::dispose);
+    }
+
+    /**
+     * Hovering an (i) holds every tooltip up long enough to read, and only while the pointer is on it: a window closed
+     * under the pointer, or a second arrival with no leaving between, still leaves the dismiss delay as it was.
+     *
+     * MUTATION: drop the hierarchy listener from `InfoMark.label`, and this fails.
+     */
+    @Test(timeOut = 60000)
+    public void testAnInfoMarkPutsTheTooltipDelayBack() throws Exception
+    {
+        javax.swing.ToolTipManager tips = javax.swing.ToolTipManager.sharedInstance();
+
+        int was = Components.onTheEventThread(tips::getDismissDelay);
+
+        javax.swing.JLabel[] mark = new javax.swing.JLabel[1];
+
+        javax.swing.JDialog shown = Components.onTheEventThread(() ->
+        {
+            javax.swing.JDialog out = new javax.swing.JDialog();
+
+            mark[0] = org.traincontrol.gui.InfoMark.label("a sentence");
+            out.add(mark[0]);
+            out.pack();
+            out.setVisible(true);
+
+            return out;
+        });
+
+        try
+        {
+            Mouse.enter(mark[0]);
+            Mouse.enter(mark[0]);
+
+            assertTrue(Components.onTheEventThread(tips::getDismissDelay) > was, "precondition: the (i) did not hold its tooltip up");
+
+            Mouse.exit(mark[0]);
+
+            assertEquals((int) Components.onTheEventThread(tips::getDismissDelay), was, "a second arrival kept the long delay");
+
+            Mouse.enter(mark[0]);
+
+            // Escape closes the window under the pointer: no exit comes
+            SwingUtilities.invokeAndWait(shown::dispose);
+
+            assertEquals((int) Components.onTheEventThread(tips::getDismissDelay), was,
+                "a window closed under the pointer left every tooltip at the long delay");
+        }
+        finally
+        {
+            Components.onTheEventThread(() -> { tips.setDismissDelay(was); shown.dispose(); return null; });
         }
     }
 

@@ -771,6 +771,47 @@ public class testTheLocomotiveSettingsWindow
         assertEquals(SettingsWindow.text("settings.name"), THIRD);
     }
 
+    /**
+     * A minimized window opened by another door comes back out of the taskbar.  With typing not saved, its question
+     * asks over the window brought back, and blocks that window alone, so the main window's Stop stays live.
+     *
+     * MUTATION: drop `bringBack` from `LocomotiveSettingsFrame.settleUnsaved`, or ask with an application-modal
+     * `showOptionDialog`, and this fails.
+     */
+    @Test
+    public void testAMinimizedWindowComesBackAndAsksOverItself() throws Exception
+    {
+        open(0);
+
+        LocomotiveSettingsFrame window = SettingsWindow.showing();
+
+        support.AskingWindows.minimize(window, true);
+
+        assertTrue(SettingsWindow.open(ui, other, LocomotiveSettingsFrame.Tab.LOCOMOTIVE, null), "precondition: it did not open");
+        assertTrue(Components.waitFor(() -> (Components.onTheEventThread(window::getExtendedState) & java.awt.Frame.ICONIFIED) == 0,
+            5000), "opened from another door, the window stayed in the taskbar");
+
+        SettingsWindow.type("settings.name", "LS renamed");
+
+        support.AskingWindows.minimize(window, true);
+
+        try (support.Answering answering = support.Answering.start(message -> support.Answering.press(I18n.t("ui.cancel"))))
+        {
+            assertFalse(SettingsWindow.open(ui, third, LocomotiveSettingsFrame.Tab.LOCOMOTIVE, null), "Cancel went on to open it");
+
+            assertEquals(answering.questions().size(), 1, "the typing was not asked about");
+
+            support.Answering.Question asked = answering.questions().get(0);
+
+            assertSame(asked.owner, window, "the question does not hang off the window");
+            assertFalse(asked.ownerMinimized, "the question asked over a minimized window");
+            assertEquals(asked.modality, java.awt.Dialog.ModalityType.DOCUMENT_MODAL,
+                "the question blocks more than its own window");
+        }
+
+        assertEquals(SettingsWindow.text("settings.name"), "LS renamed", "Cancel lost the typing");
+    }
+
     /** How many Locomotive Settings windows are open. */
     private static long windowsOpen()
     {

@@ -22,13 +22,14 @@ import support.SettingsWindow;
 public class testTheLocomotiveSettingsLooks extends support.SettingsClass
 {
     private static final String NAME = "LK train";
+    private static final String LONG = "LK train with a long long name";
     private static final String[] LANGUAGES = {"en", "de", "da", "es", "fr", "it", "nl", "pl"};
 
 
     @Override
     protected String[] made()
     {
-        return new String[] { NAME };
+        return new String[] { NAME, LONG };
     }
 
     private static JTabbedPane opened() throws Exception
@@ -471,8 +472,12 @@ public class testTheLocomotiveSettingsLooks extends support.SettingsClass
 
         if (tab != null) fixture.layDcc(NAME, 3806, tab);
 
-        LocomotiveSettingsFrame window = tab == null ? openAdd() : SettingsWindow.showing();
+        return narrowed(tab == null ? openAdd() : SettingsWindow.showing());
+    }
 
+    /** Drags the window as narrow as it lets itself go. */
+    private static LocomotiveSettingsFrame narrowed(LocomotiveSettingsFrame window)
+    {
         Components.onTheEventThread(() ->
         {
             window.setSize(window.isMinimumSizeSet() ? window.getMinimumSize().width : 200, window.getHeight());
@@ -586,6 +591,84 @@ public class testTheLocomotiveSettingsLooks extends support.SettingsClass
         {
             I18n.setLocale(java.util.Locale.ENGLISH);
         }
+    }
+
+    /**
+     * At the narrowest window, in every language, the lock strip shows its whole sentence, for a moving train with a
+     * thirty-letter name and while autonomy runs: it wraps rather than ending in "...".
+     *
+     * MUTATION: drop the strip's own `getPreferredSize` in `LocomotiveSettingsFrame`, and this fails.
+     */
+    @Test
+    public void testTheLockStripIsWholeAtTheNarrowestWindow() throws Exception
+    {
+        try
+        {
+            for (String lang : LANGUAGES)
+            {
+                for (boolean moving : new boolean[] {true, false})
+                {
+                    I18n.setLocale(new java.util.Locale(lang));
+
+                    org.traincontrol.marklin.MarklinLocomotive train = fixture.layDcc(LONG, 3807,
+                        LocomotiveSettingsFrame.Tab.LOCOMOTIVE);
+
+                    LocomotiveSettingsFrame window = narrowed(SettingsWindow.showing());
+
+                    JLabel strip = SettingsWindow.part("settings.strip", JLabel.class);
+
+                    try
+                    {
+                        if (moving)
+                        {
+                            SettingsWindow.power(ui, fixture.model, true);
+                            train.setSpeed(40);
+                        }
+                        else
+                        {
+                            fixture.model.getAutoLayout().setStagingInProgress(true);
+                        }
+
+                        assertTrue(Components.waitFor(() -> Components.onTheEventThread(strip::isShowing), 8000),
+                            "precondition: no strip came up");
+
+                        Components.settle();
+                        Components.settle();
+
+                        assertTrue(Components.onTheEventThread(() -> wholeSentence(strip)), lang + ": at " + window.getWidth()
+                            + " wide, the strip cuts '" + Components.onTheEventThread(strip::getText) + "' to "
+                            + Components.onTheEventThread(strip::getSize));
+                    }
+                    finally
+                    {
+                        train.setSpeed(0);
+                        SettingsWindow.power(ui, fixture.model, false);
+                        fixture.model.getAutoLayout().setStagingInProgress(false);
+                    }
+                }
+            }
+        }
+        finally
+        {
+            I18n.setLocale(java.util.Locale.ENGLISH);
+        }
+    }
+
+    /** Whether a label's text, plain or wrapped as HTML, fits the room it has. */
+    private static boolean wholeSentence(JLabel label)
+    {
+        java.awt.Insets in = label.getInsets();
+
+        int width = label.getWidth() - in.left - in.right;
+
+        javax.swing.text.View html = javax.swing.plaf.basic.BasicHTML.createHTMLView(label, "<html>"
+            + label.getText().replace("&", "&amp;").replace("<", "&lt;") + "</html>");
+
+        html.setSize(width, 0);
+
+        return html.getMinimumSpan(javax.swing.text.View.X_AXIS) <= width && (label.getClientProperty(
+            javax.swing.plaf.basic.BasicHTML.propertyKey) == null ? label.getFontMetrics(label.getFont()).stringWidth(
+            label.getText()) <= width : html.getPreferredSpan(javax.swing.text.View.Y_AXIS) <= label.getHeight() - in.top - in.bottom);
     }
 
     /**
