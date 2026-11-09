@@ -7777,8 +7777,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                                 // Do this outside of the queue b/c otherwise it would be delayed for the currently selected loc at app startup
                                 repaintIcon(this.currentButton, this.activeLoc, currentButtonlocMappingNumber);
 
-                                ImageLoaderLoc.execute(() -> 
+                                ImageLoaderLoc.execute(() ->
                                 {
+                                    // Deselected since this was queued: nothing to show (an error here now reaches the log)
+                                    if (this.activeLoc == null) return;
+
                                     if (LOAD_IMAGES && this.activeLoc.getImageURL() != null)
                                     {
                                         String url = this.activeLoc.getImageURL();

@@ -4217,6 +4217,8 @@ public class MarklinControlStation implements ViewListener, ModelListener
         this.locMessageProcessor.shutdownNow();
         this.feedbackMessageProcessor.shutdownNow();
         this.systemMessageProcessor.shutdownNow();
+
+        if (reporter == this) reporter = null;
     }
 
     /**
