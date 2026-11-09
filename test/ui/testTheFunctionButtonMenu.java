@@ -369,8 +369,8 @@ public class testTheFunctionButtonMenu
 
     /**
      * A train deselected while its picture task runs: the task runs to its end, here saying the picture is missing,
-     * with no error in the log window, as it reads the shown train once.  The train deselects itself when the task
-     * first asks for its picture, once the render that queued the task is done.
+     * as it reads the shown train once; a second read would end it with a NullPointerException first.  The train
+     * deselects itself when the task first asks for its picture, once the render that queued the task is done.
      *
      * MUTATION: in `TrainControlUI.renderActiveLoc`'s picture task, read `this.activeLoc.getImageURL()` again after
      * the null test, and this fails.
@@ -379,7 +379,6 @@ public class testTheFunctionButtonMenu
     public void testATrainDeselectedWhileItsPictureLoadsLeavesNoError() throws Exception
     {
         javax.swing.JTextArea area = support.WindowField.of(ui, "debugArea");
-        final int from = Components.onTheEventThread(area::getText).length();
         final String missing = new File(folder, "deselected meanwhile.png").toURI().toString();
         final java.util.concurrent.atomic.AtomicBoolean deselected = new java.util.concurrent.atomic.AtomicBoolean();
         final Object shownWas = Reflect.get(TrainControlUI.class, ui, "activeLoc");
@@ -412,13 +411,13 @@ public class testTheFunctionButtonMenu
             Reflect.set(TrainControlUI.class, ui, "activeLoc", train);
             ui.repaintLoc(true, null);
 
-            boolean ended = Components.waitFor(() -> Components.onTheEventThread(area::getText).substring(from)
+            // The window keeps only its latest lines, so the file's own line is looked for, not what came after a mark
+            boolean ended = Components.waitFor(() -> Components.onTheEventThread(area::getText)
                 .contains(I18n.f("loc.ui.errorImageLoad", missing)), WAIT);
 
             assertTrue(deselected.get(), "precondition: the picture task never asked for the train's picture");
-            assertTrue(ended && !Components.onTheEventThread(area::getText).substring(from).contains("Exception"),
-                "a train deselected while its picture loaded ended the picture task with an error: "
-                + Components.onTheEventThread(area::getText).substring(from));
+            assertTrue(ended, "a train deselected while its picture loaded ended the picture task before it loaded the"
+                + " picture, with an error");
         }
         finally
         {
@@ -454,9 +453,7 @@ public class testTheFunctionButtonMenu
     @Test
     public void testAPictureThatWillNotDecodeShowsThePlaceholder() throws Exception
     {
-        javax.swing.JTextArea area = support.WindowField.of(ui, "debugArea");
         final javax.swing.JLabel shown = support.WindowField.of(ui, "locIcon");
-        final int from = Components.onTheEventThread(area::getText).length();
         File text = new File(folder, "not a picture.png");
 
         java.nio.file.Files.write(text.toPath(), "not a picture".getBytes(java.nio.charset.StandardCharsets.US_ASCII));
@@ -470,12 +467,10 @@ public class testTheFunctionButtonMenu
             SwingUtilities.invokeAndWait(() -> shown.setIcon(null));
             ui.repaintLoc(true, null);
 
-            Components.waitFor(() -> shown.getIcon() != null
-                || Components.onTheEventThread(area::getText).substring(from).contains("NullPointerException"), WAIT);
+            Components.waitFor(() -> shown.getIcon() != null, WAIT);
 
-            assertFalse(Components.onTheEventThread(area::getText).substring(from).contains("NullPointerException"),
-                "a picture that will not decode ended its task with an error in the log window");
-            assertNotNull(shown.getIcon(), "a picture that will not decode showed nothing, not the placeholder");
+            assertNotNull(shown.getIcon(), "a picture that will not decode showed nothing, not the placeholder: its"
+                + " task ended with an error");
         }
         finally
         {
