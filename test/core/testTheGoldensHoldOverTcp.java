@@ -18,12 +18,11 @@ import support.StandInStation;
 import support.TcpStation;
 
 /**
- * TCP is for a CS3 the start-up sync found; everything else runs on UDP as before
- * (FR-186).  The CS2 requests, the CS2 sync and the CS3 sync goldens run unchanged with a `support.TcpStation`
- * offered: their start-up sync finds no station, so no model may connect, and each still matches its golden.  A CS2
- * found at start-up never connects, and its proxy has no TCP listener; a CS3 connects.
- * And over TCP the station receives exactly the frames the program handed the network, byte for byte and in order:
- * the bytes `testUdpMessagesReachTheWire` shows a datagram carries.
+ * TCP is for a CS3 the start-up sync found; everything else runs on UDP as before (FR-186).  The CS2 requests, the
+ * CS2 sync and the CS3 sync goldens run unchanged with a `support.TcpStation` offered: their start-up sync finds no
+ * station, so no model may connect, and each still matches its golden.  A CS2 found at start-up never connects, and
+ * its proxy has no TCP listener; a CS3 connects.  And over TCP the station receives exactly the frames the program
+ * handed the network, byte for byte and in order: the bytes `testUdpMessagesReachTheWire` shows a datagram carries.
  *
  * @author Adam
  */
@@ -55,7 +54,7 @@ public class testTheGoldensHoldOverTcp
     /**
      * A station whose type the start-up did not learn runs on UDP as before: no TCP connection, the golden unchanged.
      *
-     * MUTATION: in `MarklinControlStation.init`, take out `model.isCS3() && model.getNetworkCommState()` (and its `&&`).
+     * MUTATION: in `MarklinControlStation.init`, make the `connectOverTcp` condition `true`.
      */
     @Test(dataProvider = "goldens", timeOut = 300000)
     public void testTheGoldenIsAsBefore(String name) throws Exception
