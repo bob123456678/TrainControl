@@ -322,7 +322,12 @@ public class testTheStationIsReachedOverTcp
     /** Connected to a station that never answers, over a connection that has carried a frame, so a loss is retried. */
     private void connectedAndCarried() throws Exception
     {
-        this.station = new TcpStation(STATION);
+        connectedAndCarried(new TcpStation(STATION));
+    }
+
+    private void connectedAndCarried(TcpStation to) throws Exception
+    {
+        this.station = to;
         connect(this.station.port());
 
         this.station.send(sensor(1007, true));
@@ -614,6 +619,28 @@ public class testTheStationIsReachedOverTcp
             "the log does not say why: " + this.model.lines);
         assertTrue(this.model.lines.contains(I18n.f("network.framesMayNotHaveArrived", 1)),
             "the unanswered frame is not counted: " + this.model.lines);
+    }
+
+    /**
+     * A hung connection is reset, not closed in order, so a stalled station that reads again later never gets the
+     * frames written before the loss and runs no old command late (FR-186).
+     *
+     * MUTATION: in `NetworkProxy.recover`, `lost.setSoLinger(true, 0);` to `lost.setSoLinger(false, 0);`.
+     */
+    @Test(timeOut = 60000)
+    public void testAHungConnectionIsResetSoTheStationRunsNothingLate() throws Exception
+    {
+        connectedAndCarried(new TcpStation(STATION).reading(false));
+
+        this.proxy.sendMessage(new CS2Message(speed(5)));
+        this.proxy.sendMessage(new CS2Message(ping(1)));
+
+        assertTrue(logged("network.tcpLostReconnecting", 30000), "the hang was not found: " + this.model.lines);
+        this.station.reading(true);
+
+        assertTrue(Components.waitFor(() -> this.station.ended(1), WAIT_MS), "the lost connection did not end");
+        assertEquals(this.station.receivedOn(1).size(), 0, "the station read frames written before the loss: "
+            + this.model.lines);
     }
 
     /**

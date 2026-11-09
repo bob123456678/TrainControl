@@ -869,8 +869,8 @@ public class NetworkProxy
 
     /**
      * Writes a sensor query to the connection; false when it was not written.  Not counted as a command that may not
-     * have arrived, and no start of the answer clock: a resync runs again on the next live transport, and a query left unanswered says nothing of
-     * the connection.
+     * have arrived, and no start of the answer clock: a resync runs again on the next live transport, and a query
+     * left unanswered says nothing of the connection.
      */
     private synchronized boolean sendQuery(byte[] query)
     {
@@ -972,6 +972,17 @@ public class NetworkProxy
      */
     private void recover(Socket lost, String reason)
     {
+        // Reset, not closed in order, so the station drops what it has not read and runs no old command late.  The
+        // CS3 runs Linux, where a reset discards its unread buffer too as far as we know (unconfirmed on the station).
+        try
+        {
+            lost.setSoLinger(true, 0);
+        }
+        catch (SocketException ignored)
+        {
+            // Already closed
+        }
+
         closeQuietly(lost);
 
         boolean retry = this.carried;
