@@ -2594,6 +2594,17 @@ public class testATrainIsDispatchedOnce
             refusedForTheConnection(rail, h, "DHA", "DHB", said, "a hand send while the connection was being replaced"));
     }
 
+    /** Starts Return Home's plan of one leg, `from` to `to`, on a thread of its own named `thread`. */
+    private static void startReturnHome(Layout rail, Locomotive t, String from, String to, String thread)
+    {
+        rail.setTimetable(Arrays.asList(new org.traincontrol.automation.TimetablePath(t, through(rail, from, to), 0)));
+        rail.setTimetableSequential(true);
+
+        Thread executor = new Thread(rail::executeTimetable, thread);
+        executor.setDaemon(true);
+        executor.start();
+    }
+
     /**
      * Return Home spends no attempt on a send refused while the connection is being replaced: with the connection lost
      * each time after the wait and before the send, the run goes on past its attempts, and starts its entry once the
@@ -2613,13 +2624,7 @@ public class testATrainIsDispatchedOnce
         {
             final String refused = org.traincontrol.util.I18n.f("autolayout.log.notSentReconnecting", t.getName());
 
-            rail.setTimetable(Arrays.asList(new org.traincontrol.automation.TimetablePath(t, through(rail, "DSA", "DSB"),
-                0)));
-            rail.setTimetableSequential(true);
-
-            Thread executor = new Thread(rail::executeTimetable, "Return Home while the connection is replaced");
-            executor.setDaemon(true);
-            executor.start();
+            startReturnHome(rail, t, "DSA", "DSB", "Return Home while the connection is replaced");
 
             assertTrue(until(() -> java.util.Collections.frequency(new ArrayList<>(said), refused) > attempts, 20000),
                 "Return Home gave up on sends refused while the connection was being replaced: " + said);
@@ -2765,13 +2770,7 @@ public class testATrainIsDispatchedOnce
 
             aSwitchOnEach(through(rail, "DWA", "DWB"), 313);
 
-            rail.setTimetable(Arrays.asList(new org.traincontrol.automation.TimetablePath(t, through(rail, "DWA", "DWB"),
-                0)));
-            rail.setTimetableSequential(true);
-
-            Thread executor = new Thread(rail::executeTimetable, "Return Home while its switches are awaited");
-            executor.setDaemon(true);
-            executor.start();
+            startReturnHome(rail, t, "DWA", "DWB", "Return Home while its switches are awaited");
 
             assertTrue(until(() -> java.util.Collections.frequency(new ArrayList<>(said), refused) > attempts
                 || !rail.isAutoRunning(), 30000), "Return Home neither gave up nor went on: " + said);
