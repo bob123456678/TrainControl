@@ -765,13 +765,11 @@ public class testTheTrainWindow
     }
 
     /**
-     * Station Settings opened from the track diagram goes, writing nothing, when a press comes after a configuration
-     * was loaded and before its watch has looked again: the old setup is as it was.
-     *
-     * MUTATION: drop the `stillAbout` check from `StationWindowBase.refused`, and this fails.
+     * Station Settings on a square with a train, opened from the track diagram's menu, with its watch stopped: a press
+     * comes in the second before the watch looks again.
      */
-    @Test(timeOut = 180000)
-    public void testADiagramWindowWritesNothingOnceAnotherSetupIsLoaded() throws Exception
+    private static org.traincontrol.gui.autonomyeditor.StationSettingsWindow theDiagramsStationSettingsUnwatched()
+        throws Exception
     {
         Mouse.choose(AskingWindows.itemOf(AskingWindows.menuOn(ui, ui, aSquareWithATrain()),
             I18n.t("autosetup.ui.menuStationSettings")));
@@ -782,16 +780,37 @@ public class testTheTrainWindow
             StationDoors.showing(org.traincontrol.gui.autonomyeditor.StationSettingsWindow.class);
 
         assertNotNull(window, "Station Settings did not open from the track diagram");
+
+        Components.onTheEventThread(() ->
+        {
+            ((javax.swing.Timer) Reflect.get(window.getClass().getSuperclass(), window, "watch")).stop();
+
+            return null;
+        });
+
+        return window;
+    }
+
+    /**
+     * Station Settings opened from the track diagram goes, writing nothing, when a press comes after a configuration
+     * was loaded and before its watch has looked again: the old setup is as it was.
+     *
+     * MUTATION: drop the `stillAbout` check from `StationWindowBase.refused`, and this fails.
+     */
+    @Test(timeOut = 180000)
+    public void testADiagramWindowWritesNothingOnceAnotherSetupIsLoaded() throws Exception
+    {
+        org.traincontrol.gui.autonomyeditor.StationSettingsWindow window = theDiagramsStationSettingsUnwatched();
+
         assertTrue(StationDoors.live(window, "station.fullAutonomy"), "precondition: the box is gray");
 
         String before = Components.onTheEventThread(() -> session.snapshotSetup().toString());
 
         try
         {
-            // A load replaces the main window's setup; the press comes before the watch looks again
+            // A load replaces the main window's setup
             Components.onTheEventThread(() ->
             {
-                ((javax.swing.Timer) Reflect.get(window.getClass().getSuperclass(), window, "watch")).stop();
                 Reflect.set(TrainControlUI.class, ui, "autonomySession", null);
 
                 return null;
@@ -826,25 +845,9 @@ public class testTheTrainWindow
     @Test(timeOut = 180000)
     public void testADiagramWindowRefusesAPressOnceAnEditorOpens() throws Exception
     {
-        TileKey square = aSquareWithATrain();
+        org.traincontrol.gui.autonomyeditor.StationSettingsWindow window = theDiagramsStationSettingsUnwatched();
 
-        Mouse.choose(AskingWindows.itemOf(AskingWindows.menuOn(ui, ui, square), I18n.t("autosetup.ui.menuStationSettings")));
-
-        Components.settle();
-
-        org.traincontrol.gui.autonomyeditor.StationSettingsWindow window =
-            StationDoors.showing(org.traincontrol.gui.autonomyeditor.StationSettingsWindow.class);
-
-        assertNotNull(window, "Station Settings did not open from the track diagram");
         assertFalse(window.isReadOnly(), "precondition: read-only at rest");
-
-        // The press comes in the second before the watch looks again
-        Components.onTheEventThread(() ->
-        {
-            ((javax.swing.Timer) Reflect.get(window.getClass().getSuperclass(), window, "watch")).stop();
-
-            return null;
-        });
 
         editor = support.FrozenEditor.editorOn(model, ui, session, PAGE);
 

@@ -176,22 +176,17 @@ public class testStationSettingsWindow
             assertTrue(Components.onTheEventThread(window::isShowing), "Escape on a stepped " + name + " closed the window");
         }
 
-        javax.swing.JComboBox<?> depart = StationDoors.part(window, "station.depart.0", javax.swing.JComboBox.class);
-
-        Object was = Components.onTheEventThread(depart::getSelectedItem);
         String before = setup();
-
-        support.Keys.press(depart, Components.onTheEventThread(() -> depart.getSelectedIndex() < depart.getItemCount() - 1)
-            ? java.awt.event.KeyEvent.VK_DOWN : java.awt.event.KeyEvent.VK_UP);
+        Object was = stepMayDepart(window);
 
         try (Answering answering = Answering.start(message -> null))
         {
-            support.Keys.press(depart, java.awt.event.KeyEvent.VK_ENTER);
+            support.Keys.press(StationDoors.part(window, "station.depart.0", javax.swing.JComboBox.class),
+                java.awt.event.KeyEvent.VK_ENTER);
         }
 
         assertNotEquals(setup(), before, "Enter on May depart changed nothing");
-        assertNotEquals(Components.onTheEventThread(() -> StationDoors.part(window, "station.depart.0",
-            javax.swing.JComboBox.class).getSelectedItem()), was, "Enter on May depart did not keep the choice");
+        assertNotEquals(mayDepartShows(window), was, "Enter on May depart did not keep the choice");
 
         StationDoors.close(window);
     }
@@ -207,13 +202,8 @@ public class testStationSettingsWindow
     {
         StationSettingsWindow window = StationDoors.open(panel, aStation());
 
-        javax.swing.JComboBox<?> depart = StationDoors.part(window, "station.depart.0", javax.swing.JComboBox.class);
-
-        Object was = Components.onTheEventThread(depart::getSelectedItem);
         String before = setup();
-
-        support.Keys.press(depart, Components.onTheEventThread(() -> depart.getSelectedIndex() < depart.getItemCount() - 1)
-            ? java.awt.event.KeyEvent.VK_DOWN : java.awt.event.KeyEvent.VK_UP);
+        Object was = stepMayDepart(window);
 
         assertEquals(setup(), before, "precondition: the arrow changed the setup");
 
@@ -233,10 +223,29 @@ public class testStationSettingsWindow
         }
 
         assertNotEquals(setup(), before, "the window lost focus and dropped the choice shown in May depart");
-        assertNotEquals(Components.onTheEventThread(() -> StationDoors.part(window, "station.depart.0",
-            javax.swing.JComboBox.class).getSelectedItem()), was, "the choice shown was put back");
+        assertNotEquals(mayDepartShows(window), was, "the choice shown was put back");
 
         StationDoors.close(window);
+    }
+
+    /** Steps May depart's first list with an arrow, down or, at its last answer, up; what it showed before. */
+    private static Object stepMayDepart(StationSettingsWindow window)
+    {
+        javax.swing.JComboBox<?> depart = StationDoors.part(window, "station.depart.0", javax.swing.JComboBox.class);
+
+        Object was = Components.onTheEventThread(depart::getSelectedItem);
+
+        support.Keys.press(depart, Components.onTheEventThread(() -> depart.getSelectedIndex() < depart.getItemCount() - 1)
+            ? java.awt.event.KeyEvent.VK_DOWN : java.awt.event.KeyEvent.VK_UP);
+
+        return was;
+    }
+
+    /** What May depart's first list shows now (the list is built again after a change). */
+    private static Object mayDepartShows(StationSettingsWindow window)
+    {
+        return Components.onTheEventThread(() -> StationDoors.part(window, "station.depart.0", javax.swing.JComboBox.class)
+            .getSelectedItem());
     }
 
     /**
