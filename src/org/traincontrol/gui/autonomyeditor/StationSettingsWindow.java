@@ -1144,6 +1144,15 @@ public final class StationSettingsWindow extends StationWindowBase
             arriveBoxes.put(side, allow);
         }
 
+        // No track leads a train onto the square: no side to show, so the row says none and its (i) says why
+        if (ways.isEmpty())
+        {
+            JLabel none = value("station.arriveNone");
+
+            none.setText(I18n.t("autosetup.ui.labelNone"));
+            arrivals.add(none);
+        }
+
         fly("arrivals", StationFlyovers.arrivals(open, all));
 
         arrivals.revalidate();

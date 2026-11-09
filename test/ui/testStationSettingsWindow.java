@@ -1164,6 +1164,75 @@ public class testStationSettingsWindow
     }
 
     /**
+     * May arrive from is never blank (Adam, FR-182): on a square no track leads a train onto, as some on his "2 - Bottom"
+     * page are (a closed one, and pass-through ones fed only by track leading away), it says "(none)", and its (i) says
+     * there is no side to choose rather than describing a single side that is not shown.
+     *
+     * MUTATION: drop the "(none)" label from `fillArrivals`, or the empty case from `StationFlyovers.arrivals`, and this
+     * fails.
+     */
+    @Test(timeOut = 180000)
+    public void testMayArriveFromIsNeverBlank() throws Exception
+    {
+        LayoutEditor bottom = frozen.editorOn("2 - Bottom");
+
+        try
+        {
+            AutonomyEditorPanel lower = Components.onTheEventThread(() -> bottom.getAutonomyPanel());
+
+            List<TileKey> noWayIn = Components.onTheEventThread(() ->
+            {
+                List<TileKey> out = new java.util.ArrayList<>();
+
+                for (TileKey each : session.getGraph().getTiles().keySet())
+                {
+                    if ("2 - Bottom".equals(each.getPage()) && lower.offersStationSettings(each)
+                        && session.arrivalSides(each).isEmpty()) out.add(each);
+                }
+
+                return out;
+            });
+
+            assertFalse(noWayIn.isEmpty(), "precondition: every square on 2 - Bottom has a way in");
+
+            for (TileKey square : noWayIn)
+            {
+                StationSettingsWindow window = StationDoors.open(lower, square);
+
+                StationDoors.current(window);
+
+                javax.swing.JPanel arrivals = StationDoors.part(window, "station.arrivals", javax.swing.JPanel.class);
+
+                List<String> shown = Components.onTheEventThread(() ->
+                {
+                    List<String> out = new java.util.ArrayList<>();
+
+                    for (java.awt.Component each : arrivals.getComponents())
+                    {
+                        if (each instanceof javax.swing.JLabel) out.add(((javax.swing.JLabel) each).getText());
+                        if (each instanceof AbstractButton) out.add(((AbstractButton) each).getText());
+                    }
+
+                    return out;
+                });
+
+                assertEquals(shown, Arrays.asList(I18n.t("autosetup.ui.labelNone")), square + ": May arrive from shows " + shown);
+
+                String flyover = Components.onTheEventThread(() -> window.flyoverForTest("arrivals"));
+
+                assertTrue(flyover.contains(I18n.t("autosetup.ui.flyArriveNoneNow")), square + ": the (i) does not say no track"
+                    + " leads in: " + flyover);
+
+                StationDoors.close(window);
+            }
+        }
+        finally
+        {
+            support.FrozenEditor.dispose(bottom);
+        }
+    }
+
+    /**
      * Blue is for the section headings alone (Adam: "it looks very blue"), Presets among them; every other label is black
      * Semibold 13 (docs/UI-standards.md), and a label in an off section still grays.
      *
