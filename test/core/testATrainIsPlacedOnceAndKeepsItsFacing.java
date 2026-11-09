@@ -237,11 +237,7 @@ public class testATrainIsPlacedOnceAndKeepsItsFacing extends AutonomySessionFixt
     {
         LayoutDiagram page = new LayoutDiagram("main", 7, 3, null, null);
 
-        Diagrams.feedback(page, 1, 1, 64, 64);
-        Diagrams.straight(page, 2, 1);
-        Diagrams.feedback(page, 3, 1, 65, 65);
-        Diagrams.straight(page, 4, 1);
-        Diagrams.feedback(page, 5, 1, 66, 66);
+        Diagrams.row(page, 1, 1, "FSFSF", 64, 65, 66);
         page.setPageId("1");
 
         session.open(Arrays.asList(page));
@@ -704,14 +700,7 @@ public class testATrainIsPlacedOnceAndKeepsItsFacing extends AutonomySessionFixt
         LayoutDiagram page = new LayoutDiagram("main", 12, 3, null, null);
 
         page.addComponent(componentType.END, 1, 1, 3, 0, 0, 0, accessoryDecoderType.MM2, null);
-        Diagrams.feedback(page, 2, 1, 81, 81);
-        Diagrams.straight(page, 3, 1);
-        Diagrams.straight(page, 4, 1);
-        Diagrams.feedback(page, 5, 1, 82, 82);
-        Diagrams.straight(page, 6, 1);
-        Diagrams.straight(page, 7, 1);
-        Diagrams.feedback(page, 8, 1, 83, 83);
-        Diagrams.straight(page, 9, 1);
+        Diagrams.row(page, 2, 1, "FSSFSSFS", 81, 82, 83);
         page.setPageId("1");
 
         session.open(Arrays.asList(page));

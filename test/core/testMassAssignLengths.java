@@ -3359,9 +3359,7 @@ public class testMassAssignLengths
         Diagrams.feedback(page, 1, 1, 5, 11);
         Diagrams.straight(page, 2, 1);
         page.addComponent(atThree, 3, 1, 3, 0, 7, 7, accessoryDecoderType.MM2, null);
-        Diagrams.straight(page, 4, 1);
-        Diagrams.straight(page, 5, 1);
-        Diagrams.straight(page, 6, 1);
+        Diagrams.row(page, 4, 1, "SSS");
         Diagrams.feedback(page, 7, 1, 6, 12);
         page.addComponent(componentType.FEEDBACK, 3, 0, 1, 0, 7, 13, accessoryDecoderType.MM2, null);
 
@@ -3442,9 +3440,7 @@ public class testMassAssignLengths
         Diagrams.feedback(page, 1, 1, 5, 11);
         Diagrams.straight(page, 2, 1);
         page.addComponent(componentType.SWITCH_LEFT, 3, 1, 3, 0, 7, 7, accessoryDecoderType.MM2, null);
-        Diagrams.straight(page, 4, 1);
-        Diagrams.straight(page, 5, 1);
-        Diagrams.straight(page, 6, 1);
+        Diagrams.row(page, 4, 1, "SSS");
         Diagrams.feedback(page, 7, 1, 6, 12);
         page.addComponent(componentType.FEEDBACK, 3, 0, 1, 0, 7, 13, accessoryDecoderType.MM2, null);
 
@@ -3629,9 +3625,7 @@ public class testMassAssignLengths
 
         LayoutDiagram other = new LayoutDiagram("other", 9, 4, null, null);
 
-        Diagrams.feedback(other, 1, 1, 21, 21);
-        Diagrams.straight(other, 2, 1);
-        Diagrams.feedback(other, 3, 1, 22, 22);
+        Diagrams.row(other, 1, 1, "FSF", 21, 22);
 
         other.setPageId("2");
 

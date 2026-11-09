@@ -53,9 +53,7 @@ public class testTheGuardWindowIsNotTooWide
         LayoutDiagram page = new LayoutDiagram("main", 9, 4, null, null);
 
         Diagrams.feedback(page, 1, 1, 5, 11);
-        Diagrams.straight(page, 2, 1);
-        Diagrams.straight(page, 3, 1);
-        Diagrams.straight(page, 4, 1);
+        Diagrams.row(page, 2, 1, "SSS");
         Diagrams.feedback(page, 5, 1, 6, 12);
 
         page.setPageId("1");

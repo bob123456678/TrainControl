@@ -266,11 +266,7 @@ public class testAStationsTimetableFollowsItThroughRenamesAndEdits extends Auton
 
         LayoutDiagram yard = new LayoutDiagram("yard", 7, 3, null, null);
 
-        Diagrams.feedback(yard, 1, 1, 64, 64);
-        Diagrams.straight(yard, 2, 1);
-        Diagrams.feedback(yard, 3, 1, 65, 65);
-        Diagrams.straight(yard, 4, 1);
-        Diagrams.feedback(yard, 5, 1, 66, 66);
+        Diagrams.row(yard, 1, 1, "FSFSF", 64, 65, 66);
         yard.setPageId("1");
 
         AutonomySession next = new AutonomySession(layout);
@@ -890,11 +886,7 @@ public class testAStationsTimetableFollowsItThroughRenamesAndEdits extends Auton
 
         for (LayoutDiagram page : new LayoutDiagram[] {main, second})
         {
-            Diagrams.feedback(page, 1, 1, address, address);
-            Diagrams.straight(page, 2, 1);
-            Diagrams.feedback(page, 3, 1, address + 1, address + 1);
-            Diagrams.straight(page, 4, 1);
-            Diagrams.feedback(page, 5, 1, address + 2, address + 2);
+            Diagrams.row(page, 1, 1, "FSFSF", address, address + 1, address + 2);
 
             address += 10;
         }
@@ -1155,11 +1147,7 @@ public class testAStationsTimetableFollowsItThroughRenamesAndEdits extends Auton
 
         for (LayoutDiagram page : new LayoutDiagram[] {main, second})
         {
-            Diagrams.feedback(page, 1, 1, address, address);
-            Diagrams.straight(page, 2, 1);
-            Diagrams.feedback(page, 3, 1, address + 1, address + 1);
-            Diagrams.straight(page, 4, 1);
-            Diagrams.feedback(page, 5, 1, address + 2, address + 2);
+            Diagrams.row(page, 1, 1, "FSFSF", address, address + 1, address + 2);
 
             address += 10;
         }

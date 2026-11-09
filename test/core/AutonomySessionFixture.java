@@ -61,11 +61,7 @@ abstract class AutonomySessionFixture
 
         for (LayoutDiagram page : new LayoutDiagram[] {main, second})
         {
-            Diagrams.feedback(page, 1, 1, address, address);
-            Diagrams.straight(page, 2, 1);
-            Diagrams.feedback(page, 3, 1, address + 1, address + 1);
-            Diagrams.straight(page, 4, 1);
-            Diagrams.feedback(page, 5, 1, address + 2, address + 2);
+            Diagrams.row(page, 1, 1, "FSFSF", address, address + 1, address + 2);
 
             address += 10;
         }
@@ -145,11 +141,7 @@ abstract class AutonomySessionFixture
     {
         LayoutDiagram page = new LayoutDiagram("main", 7, 3, null, null);
 
-        Diagrams.feedback(page, 1, 1, 64, 64);
-        Diagrams.straight(page, 2, 1);
-        Diagrams.feedback(page, 3, 1, 65, 65);
-        Diagrams.straight(page, 4, 1);
-        Diagrams.feedback(page, 5, 1, 66, 66);
+        Diagrams.row(page, 1, 1, "FSFSF", 64, 65, 66);
         page.setPageId("1");
 
         session.open(Arrays.asList(page));
