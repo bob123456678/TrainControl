@@ -314,7 +314,7 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
                     addSeparator();
 
                     // The STATION's name, not the copy's: a square is several Points named apart for the running log.
-                    // It heads the menu's station items, so the menu has no title of its own (Adam).
+                    // It heads the menu's station items, so the menu has no title of its own (FR-182).
                     final JMenuItem stationLabel = new JMenuItem(stationName(current));
                     stationLabel.setEnabled(false);
                     add(stationLabel);
