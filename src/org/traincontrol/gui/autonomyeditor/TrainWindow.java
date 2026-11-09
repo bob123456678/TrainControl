@@ -78,16 +78,13 @@ public final class TrainWindow extends StationWindowBase
         int y = 0;
 
         formRow(form, y++, UiStyle.blackLabel(I18n.t("autosetup.ui.trainTrain")), null, train, 1);
-
-        // Under the list, in its column, so the button never sets the window's width
-        form.add(settings, at(2, y++));
-
         formRow(form, y++, UiStyle.blackLabel(I18n.t("autosetup.ui.trainActive")), activeMark, active, 1);
         formRow(form, y++, UiStyle.blackLabel(I18n.t("autosetup.ui.trainFacing")), facingMark, facing, 1);
         formRow(form, y++, UiStyle.blackLabel(I18n.t("autosetup.ui.trainArrived")), arrivedMark, arrived, 1);
         formRow(form, y, tailLabel, tailMark, tail, 1);
 
-        assemble(form);
+        // Bottom left, on Done Editing's row (Adam)
+        assemble(form).add(settings, java.awt.BorderLayout.WEST);
     }
 
     private static JPanel rowOfChoices(String name)

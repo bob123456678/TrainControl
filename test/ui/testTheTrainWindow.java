@@ -203,6 +203,34 @@ public class testTheTrainWindow
     }
 
     /**
+     * The train popup and Station Settings both end with Done Editing, not Close (Adam): what is changed there is saved
+     * as it is made, so the button only says the editing is over.
+     *
+     * MUTATION: give `StationWindowBase.assemble`'s button `autosetup.ui.stationClose` again, and this fails.
+     */
+    @Test(timeOut = 120000)
+    public void testBothWindowsEndWithDoneEditing() throws Exception
+    {
+        AutonomyEditorPanel panel = theEditorsPanel();
+
+        TileKey square = aSquareWithATrain();
+
+        java.awt.Window train = StationDoors.openTrain(panel, square);
+
+        assertEquals(StationDoors.part(train, "station.close", javax.swing.JButton.class).getText(),
+            said("autosetup.ui.stationDone", null), "the train popup does not end with Done Editing");
+
+        StationDoors.close(train);
+
+        java.awt.Window station = StationDoors.open(panel, square);
+
+        assertEquals(StationDoors.part(station, "station.close", javax.swing.JButton.class).getText(),
+            said("autosetup.ui.stationDone", null), "Station Settings does not end with Done Editing");
+
+        StationDoors.close(station);
+    }
+
+    /**
      * Opened and closed, the window changes no setup and dirties nothing.
      *
      * MUTATION: have `fill`'s `train.setSelectedItem` run outside `reading`, so `pressTrain` acts, and this fails.
@@ -480,10 +508,11 @@ public class testTheTrainWindow
     }
 
     /**
-     * Locomotive Settings... sits under the Train list, at its left edge, and never sets the window's width (Adam: "move
-     * the <wrench> locomotive settings label somewhere that doesn't widen the whole window").
+     * Locomotive Settings... sits in the lower left corner, on Done Editing's row at the form's left edge, and never sets
+     * the window's width (Adam: "move the <wrench> locomotive settings label somewhere that doesn't widen the whole
+     * window"; 2026-11-09: to the lower left, on the close button's row).
      *
-     * MUTATION: put the button back in a column of its own beside the list, and this fails.
+     * MUTATION: put the button back under the Train list in the form, and this fails.
      */
     @Test(timeOut = 120000)
     public void testLocomotiveSettingsDoesNotWidenTheWindow() throws Exception
@@ -496,23 +525,30 @@ public class testTheTrainWindow
         {
             int[] widths = Components.onTheEventThread(() ->
             {
-                java.awt.Component list = Components.named(window, "train.train", java.awt.Component.class);
+                java.awt.Container root = window.getContentPane();
+                java.awt.Container form = Components.named(window, "train.form", java.awt.Container.class);
+                java.awt.Component close = Components.named(window, "station.close", java.awt.Component.class);
                 java.awt.Component settings = Components.named(window, "train.settings", java.awt.Component.class);
 
-                assertEquals(settings.getX(), list.getX(),
-                    "Locomotive Settings... does not share the Train list's left edge");
+                java.awt.Rectangle button = SwingUtilities.convertRectangle(settings.getParent(), settings.getBounds(), root);
+                java.awt.Rectangle done = SwingUtilities.convertRectangle(close.getParent(), close.getBounds(), root);
 
-                assertTrue(settings.getY() >= list.getY() + list.getHeight(), "Locomotive Settings... is not under the"
-                    + " Train list");
+                assertEquals(button.x, SwingUtilities.convertPoint(form, form.getInsets().left, 0, root).x,
+                    "Locomotive Settings... is not at the form's left edge");
+
+                assertTrue(button.y <= done.getCenterY() && done.getCenterY() <= button.y + button.height,
+                    "Locomotive Settings... is not on Done Editing's row: " + button + " and " + done);
+
+                assertTrue(button.x + button.width < done.x, "Locomotive Settings... is not left of Done Editing");
 
                 window.pack();
 
                 int with = window.getWidth();
 
-                java.awt.Container form = settings.getParent();
+                java.awt.Container holder = settings.getParent();
 
-                form.remove(settings);
-                form.revalidate();
+                holder.remove(settings);
+                holder.revalidate();
 
                 window.pack();
 
