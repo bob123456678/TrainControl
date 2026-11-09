@@ -6199,7 +6199,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         if (l != null && l.isRunning() && l.getMaxLatency() > 0 && latency > l.getMaxLatency())
         {
-            // Whatever the power flag says: it is only the last GO/STOP echo heard; one lost GO skipped this cut-off.
+            // Whatever the power flag says: it is only the last GO/STOP/Overload heard; one lost GO skipped this cut-off.
             final boolean wasOn = model.getPowerState();
 
             this.model.stop();
