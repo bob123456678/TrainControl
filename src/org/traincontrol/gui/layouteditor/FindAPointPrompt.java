@@ -168,13 +168,13 @@ final class FindAPointPrompt extends JDialog
     /** The points whose name contains the text, capitals ignored; every point when the box is empty. */
     private void narrow()
     {
-        String wanted = box.getText().trim().toLowerCase();
+        String wanted = box.getText().trim().toLowerCase(java.util.Locale.ROOT);
 
         shown.clear();
 
         for (Entry entry : all)
         {
-            if (wanted.isEmpty() || entry.name.toLowerCase().contains(wanted)) shown.addElement(entry);
+            if (wanted.isEmpty() || entry.name.toLowerCase(java.util.Locale.ROOT).contains(wanted)) shown.addElement(entry);
         }
 
         if (!shown.isEmpty()) list.setSelectedIndex(0);

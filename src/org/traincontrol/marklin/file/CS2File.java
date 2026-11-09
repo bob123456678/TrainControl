@@ -2149,11 +2149,11 @@ public final class CS2File
 
             String name = null;
 
-            for (String line : block) if (line.trim().toLowerCase().startsWith(".name=")) name = line.trim().substring(6);
+            for (String line : block) if (line.trim().toLowerCase(java.util.Locale.ROOT).startsWith(".name=")) name = line.trim().substring(6);
 
             if ("seite".equalsIgnoreCase(block.get(0).trim()) && wanted.containsKey(name))
             {
-                block.removeIf(line -> line.trim().toLowerCase().startsWith(".id="));
+                block.removeIf(line -> line.trim().toLowerCase(java.util.Locale.ROOT).startsWith(".id="));
 
                 block.add(1, " .id=" + wanted.get(name));
             }
