@@ -6,7 +6,6 @@ import java.util.List;
 import java.awt.image.BufferedImage;
 import javax.swing.SwingUtilities;
 import static org.testng.Assert.*;
-import org.testng.SkipException;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
@@ -16,7 +15,9 @@ import org.traincontrol.base.LayoutDiagramComponent;
 import org.traincontrol.gui.autonomy.DiagramExport;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;
+import support.Display;
 import support.Reflect;
+import support.Teardown;
 
 /**
  * Saving a track diagram to a picture.
@@ -46,10 +47,7 @@ public class testDiagramExport
     @BeforeClass
     public static void setUpClass() throws Exception
     {
-        if (GraphicsEnvironment.isHeadless())
-        {
-            throw new SkipException("drawing tiles needs a display");
-        }
+        Display.needed("drawing tiles needs a display");
 
         // BEFORE THE MODEL, not just before the window (OB-111): MarklinControlStation.init reads the layout preference
         // too, so opening the sandbox after it left the model on the operator's real railway.
@@ -67,14 +65,7 @@ public class testDiagramExport
     @AfterClass(alwaysRun = true)
     public static void tearDownClass() throws Exception
     {
-        if (ui != null)
-        {
-            final TrainControlUI toClose = ui;
-
-            SwingUtilities.invokeAndWait(() -> toClose.dispose());
-        }
-
-        if (sandbox != null) sandbox.close();
+        Teardown.close(sandbox, null, ui);
     }
 
     /**

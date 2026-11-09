@@ -16,6 +16,7 @@ import org.traincontrol.base.Locomotive;
 import org.traincontrol.marklin.MarklinControlStation;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 import support.Reflect;
+import support.Teardown;
 
 /**
  * The end of a run gives back only the track that run still holds, whatever Atomic Routes says by then.
@@ -53,9 +54,7 @@ public class testAnUnlockGivesBackOnlyWhatItHolds
     @AfterClass(alwaysRun = true)
     public static void tearDownClass() throws Exception
     {
-        if (model != null) model.stop();
-
-        if (sandbox != null) sandbox.close();
+        Teardown.close(sandbox, model);
     }
 
     /** Train B's claim on the edge A gave back early survives A's unlock after the setting was switched on. */

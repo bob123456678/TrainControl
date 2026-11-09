@@ -28,6 +28,7 @@ import support.Answering;
 import support.Components;
 import support.Reflect;
 import support.Settle;
+import support.Teardown;
 
 /**
  * Start Autonomous Operation and its stops, pressed as the user presses them, and what each leaves (FR-136 Phase 6).
@@ -81,19 +82,10 @@ public class testStartingAutonomyFromTheWindow
         try
         {
             if (model != null && model.hasAutoLayout()) Settle.gracefully(model.getAutoLayout(), Settle.PATIENCE_MS);
-
-            if (ui != null)
-            {
-                final TrainControlUI closing = ui;
-
-                SwingUtilities.invokeAndWait(() -> closing.dispose());
-            }
-
-            if (model != null) model.stop();
         }
         finally
         {
-            if (sandbox != null) sandbox.close();
+            Teardown.close(sandbox, model, ui);
         }
     }
 

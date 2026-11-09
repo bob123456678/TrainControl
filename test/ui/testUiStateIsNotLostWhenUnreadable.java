@@ -8,13 +8,13 @@ import java.nio.file.Files;
 import java.util.concurrent.CountDownLatch;
 import javax.swing.SwingUtilities;
 import static org.testng.Assert.*;
-import org.testng.SkipException;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;
 import static org.traincontrol.marklin.MarklinControlStation.init;
+import support.Display;
 import support.Reflect;
 
 /**
@@ -93,10 +93,7 @@ public class testUiStateIsNotLostWhenUnreadable
     @Test
     public void testAnUnreadableStateFileIsKept() throws Exception
     {
-        if (GraphicsEnvironment.isHeadless())
-        {
-            throw new SkipException("this builds the main window, which needs a display");
-        }
+        Display.needed("this builds the main window, which needs a display");
 
         File live = new File(Util.dataPath(DATA));
 

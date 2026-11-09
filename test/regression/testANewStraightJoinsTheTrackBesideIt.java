@@ -3,7 +3,6 @@ package regression;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertTrue;
-import org.testng.SkipException;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
@@ -19,6 +18,7 @@ import org.traincontrol.automationui.TilePorts;
 import org.traincontrol.automationui.TilePorts.Side;
 import org.traincontrol.marklin.MarklinControlStation;
 import static org.traincontrol.marklin.MarklinControlStation.init;
+import support.Display;
 import support.Reflect;
 
 /**
@@ -49,10 +49,7 @@ public class testANewStraightJoinsTheTrackBesideIt
     @BeforeClass
     public static void setUpClass() throws Exception
     {
-        if (java.awt.GraphicsEnvironment.isHeadless())
-        {
-            throw new SkipException("placing a tile needs the editor, which needs a display");
-        }
+        Display.needed("placing a tile needs the editor, which needs a display");
 
         sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
 

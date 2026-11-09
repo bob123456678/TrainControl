@@ -13,6 +13,7 @@ import static org.testng.Assert.*;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
+import support.Display;
 import support.Reflect;
 
 /**
@@ -240,10 +241,7 @@ public class testTheKeyboardDrag
      */
     private TrainControlUI build() throws Exception
     {
-        if (java.awt.GraphicsEnvironment.isHeadless())
-        {
-            throw new org.testng.SkipException("the keyboard is on a window");
-        }
+        Display.needed("the keyboard is on a window");
 
         // BEFORE the window: its constructor reads the machine-global layout preference and would open Adam's real
         // railway (OB-111).

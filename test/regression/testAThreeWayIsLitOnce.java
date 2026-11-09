@@ -6,7 +6,6 @@ import java.util.List;
 import javax.swing.ImageIcon;
 import javax.swing.SwingUtilities;
 import static org.testng.Assert.*;
-import org.testng.SkipException;
 import org.testng.annotations.Test;
 import org.traincontrol.automationui.TileGraph.TileKey;
 import org.traincontrol.base.Accessory;
@@ -21,6 +20,7 @@ import org.traincontrol.marklin.MarklinRoute;
 import org.traincontrol.util.ImageUtil;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 import support.Components;
+import support.Display;
 import support.Reflect;
 
 /**
@@ -41,10 +41,7 @@ public class testAThreeWayIsLitOnce
     @Test
     public void testAThreeWayCommandedAndCheckedIsLitAsCommanded() throws Exception
     {
-        if (java.awt.GraphicsEnvironment.isHeadless())
-        {
-            throw new SkipException("the highlight is a drawing, and drawing needs a display");
-        }
+        Display.needed("the highlight is a drawing, and drawing needs a display");
 
         // BEFORE init, which opens whatever the layout preference names (OB-111).
         support.LayoutSandbox sandbox = null;

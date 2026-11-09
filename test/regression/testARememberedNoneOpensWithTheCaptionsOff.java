@@ -5,7 +5,6 @@ import java.util.List;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
-import org.testng.SkipException;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
@@ -17,7 +16,9 @@ import org.traincontrol.gui.widgets.StationCaption;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;
 import static org.traincontrol.marklin.MarklinControlStation.init;
+import support.Display;
 import support.Reflect;
+import support.Teardown;
 
 /**
  * A remembered **None** opens with the captions actually gone (MT-292): `AutonomyEditorPanel` restores the remembered
@@ -141,10 +142,7 @@ public class testARememberedNoneOpensWithTheCaptionsOff
     @BeforeClass
     public static void setUpClass() throws Exception
     {
-        if (java.awt.GraphicsEnvironment.isHeadless())
-        {
-            throw new SkipException("reading what the editor drew needs a display");
-        }
+        Display.needed("reading what the editor drew needs a display");
 
         // THE FROZEN COPY, never the railway Adam is operating.
         sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
@@ -206,17 +204,10 @@ public class testARememberedNoneOpensWithTheCaptionsOff
 
             if (textWas == null) prefs().remove(PREF_TEXT_LABELS);
             else prefs().put(PREF_TEXT_LABELS, textWas);
-
-            if (ui != null)
-            {
-                final TrainControlUI closing = ui;
-
-                javax.swing.SwingUtilities.invokeAndWait(() -> closing.dispose());
-            }
         }
         finally
         {
-            if (sandbox != null) sandbox.close();
+            Teardown.close(sandbox, null, ui);
         }
     }
 

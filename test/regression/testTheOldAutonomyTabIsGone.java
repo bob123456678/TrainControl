@@ -24,8 +24,10 @@ import org.traincontrol.util.I18n;
 import org.traincontrol.util.Util;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 import support.Components;
+import support.Display;
 import support.Reflect;
 import support.SourceOf;
+import support.Teardown;
 
 /**
  * Autonomy needs a layout stored on this computer: the old JSON tab and its file are gone (OB-254), and a Central
@@ -53,10 +55,7 @@ public class testTheOldAutonomyTabIsGone
     @BeforeClass
     public static void setUpClass() throws Exception
     {
-        if (java.awt.GraphicsEnvironment.isHeadless())
-        {
-            throw new SkipException("the tab is part of the window, and the window needs a display");
-        }
+        Display.needed("the tab is part of the window, and the window needs a display");
 
         if (System.getProperty(Util.DATA_DIR_PROPERTY) == null)
         {
@@ -120,21 +119,7 @@ public class testTheOldAutonomyTabIsGone
     @AfterClass(alwaysRun = true)
     public static void tearDownClass() throws Exception
     {
-        try
-        {
-            if (ui != null)
-            {
-                final TrainControlUI closing = ui;
-
-                SwingUtilities.invokeAndWait(() -> closing.dispose());
-            }
-
-            if (model != null) model.stop();
-        }
-        finally
-        {
-            if (sandbox != null) sandbox.close();
-        }
+        Teardown.close(sandbox, model, ui);
     }
 
     /** The backup it makes changes the run's saved data; the classes after this one in the lane read it. */

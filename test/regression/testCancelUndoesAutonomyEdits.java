@@ -9,7 +9,6 @@ import javax.swing.AbstractButton;
 import javax.swing.JDialog;
 import javax.swing.SwingUtilities;
 import static org.testng.Assert.*;
-import org.testng.SkipException;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
@@ -22,7 +21,9 @@ import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 import support.Components;
+import support.Display;
 import support.Reflect;
+import support.Teardown;
 
 /**
  * Cancel in the autonomy editor undoes the setup edits made in it (MT-406).  Every setup gesture rebuilds the running
@@ -45,10 +46,7 @@ public class testCancelUndoesAutonomyEdits
     @BeforeClass
     public static void setUpClass() throws Exception
     {
-        if (java.awt.GraphicsEnvironment.isHeadless())
-        {
-            throw new SkipException("the editor and its Cancel button need a display");
-        }
+        Display.needed("the editor and its Cancel button need a display");
 
         sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
 
@@ -90,21 +88,7 @@ public class testCancelUndoesAutonomyEdits
     @AfterClass(alwaysRun = true)
     public static void tearDownClass() throws Exception
     {
-        try
-        {
-            if (ui != null)
-            {
-                final TrainControlUI closing = ui;
-
-                SwingUtilities.invokeAndWait(() -> closing.dispose());
-            }
-
-            if (model != null) model.stop();
-        }
-        finally
-        {
-            if (sandbox != null) sandbox.close();
-        }
+        Teardown.close(sandbox, model, ui);
     }
 
     /** An arrow changed in the autonomy editor is put back by Cancel, in the session and in the file. */

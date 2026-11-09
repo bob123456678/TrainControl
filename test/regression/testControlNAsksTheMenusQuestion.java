@@ -6,7 +6,6 @@ import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.fail;
-import org.testng.SkipException;
 import org.testng.annotations.Test;
 import org.traincontrol.automationui.AutonomySession;
 import org.traincontrol.automationui.TileGraph.TileKey;
@@ -15,6 +14,7 @@ import org.traincontrol.base.LayoutDiagram;
 import org.traincontrol.base.LayoutDiagramComponent.componentType;
 import org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel;
 import org.traincontrol.util.I18n;
+import support.Display;
 import support.Reflect;
 import support.Trees;
 
@@ -768,9 +768,6 @@ public class testControlNAsksTheMenusQuestion
 
     private static void needsADisplay()
     {
-        if (java.awt.GraphicsEnvironment.isHeadless())
-        {
-            throw new SkipException("AutonomyEditorPanel builds real Swing components - this needs a display");
-        }
+        Display.needed("AutonomyEditorPanel builds real Swing components - this needs a display");
     }
 }

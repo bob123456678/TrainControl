@@ -7,7 +7,6 @@ import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
-import org.testng.SkipException;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
@@ -15,7 +14,9 @@ import org.traincontrol.base.Locomotive;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.marklin.MarklinLocomotive;
+import support.Display;
 import support.Reflect;
+import support.Teardown;
 
 /**
  * The function buttons offer what the CONSIST can drive, not what its head can (MT-359).  Driven through `repaintLoc`,
@@ -37,10 +38,7 @@ public class testTheFunctionButtonsFollowTheConsist
     @BeforeClass
     public static void setUpClass() throws Exception
     {
-        if (java.awt.GraphicsEnvironment.isHeadless())
-        {
-            throw new SkipException("the function buttons are on a window");
-        }
+        Display.needed("the function buttons are on a window");
 
         sandbox = support.LayoutSandbox.open();
 
@@ -60,17 +58,10 @@ public class testTheFunctionButtonsFollowTheConsist
             {
                 if (model != null && model.getLocByName(name) != null) model.deleteLoc(name);
             }
-
-            if (ui != null)
-            {
-                final TrainControlUI closing = ui;
-
-                javax.swing.SwingUtilities.invokeAndWait(() -> closing.dispose());
-            }
         }
         finally
         {
-            if (sandbox != null) sandbox.close();
+            Teardown.close(sandbox, null, ui);
         }
     }
 

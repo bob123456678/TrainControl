@@ -9,6 +9,7 @@ import static org.testng.Assert.*;
 import org.testng.annotations.Test;
 import org.traincontrol.gui.locomotive.RightClickPageMenu;
 import org.traincontrol.gui.TrainControlUI;
+import support.Display;
 import support.Reflect;
 import support.SourceOf;
 
@@ -641,10 +642,7 @@ public class testLocMappingPages
     /** A panel with both page preferences set before the window is built; see `Panel.open`. */
     private static void withPanel(Boolean numbers, Boolean tabs, Body body) throws Exception
     {
-        if (java.awt.GraphicsEnvironment.isHeadless())
-        {
-            throw new org.testng.SkipException("the locomotive panel is on a window");
-        }
+        Display.needed("the locomotive panel is on a window");
 
         Panel p = Panel.open(numbers, tabs);
 

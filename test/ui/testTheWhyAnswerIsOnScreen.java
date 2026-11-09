@@ -3,11 +3,11 @@ package ui;
 import java.awt.image.BufferedImage;
 import javax.swing.SwingUtilities;
 import static org.testng.Assert.*;
-import org.testng.SkipException;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 import org.traincontrol.gui.autonomy.AutonomyBanner;
 import support.Components;
+import support.Display;
 
 /**
  * OB-191: "why not moving" painted the paths and then said nothing.  The fault is in the LAYING OUT of the banner's
@@ -52,10 +52,7 @@ public class testTheWhyAnswerIsOnScreen
     @BeforeClass
     public static void setUpClass()
     {
-        if (java.awt.GraphicsEnvironment.isHeadless())
-        {
-            throw new SkipException("the banner has to be laid out and painted, so Swing has to be here");
-        }
+        Display.needed("the banner has to be laid out and painted, so Swing has to be here");
     }
 
     // ---------------------------------------------------------------- the claim

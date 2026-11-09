@@ -13,11 +13,12 @@ import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertTrue;
-import org.testng.SkipException;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 import support.Components;
+import support.Display;
+import support.Teardown;
 
 /**
  * Highlight on Diagram lights a tile of the kind the address names, and not everything numbered alike (MT-462):
@@ -55,10 +56,7 @@ public class testTheRouteHighlightAsksWhatATileIs
     @BeforeClass
     public static void setUpClass() throws Exception
     {
-        if (java.awt.GraphicsEnvironment.isHeadless())
-        {
-            throw new SkipException("the highlight is a drawing, and drawing needs a display");
-        }
+        Display.needed("the highlight is a drawing, and drawing needs a display");
 
         // BEFORE init, which opens whatever the layout preference names - Adam's own railway on his machine (OB-111).
         sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("single-switch"));
@@ -85,14 +83,7 @@ public class testTheRouteHighlightAsksWhatATileIs
     @AfterClass(alwaysRun = true)
     public static void tearDownClass() throws Exception
     {
-        try
-        {
-            if (model != null) model.stop();
-        }
-        finally
-        {
-            if (sandbox != null) sandbox.close();
-        }
+        Teardown.close(sandbox, model);
     }
 
     /** An accessory address that only a sensor carries lights nothing. */

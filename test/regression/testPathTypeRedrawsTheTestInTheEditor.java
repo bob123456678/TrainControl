@@ -2,7 +2,6 @@ package regression;
 
 import javax.swing.SwingUtilities;
 import static org.testng.Assert.*;
-import org.testng.SkipException;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
@@ -16,7 +15,9 @@ import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 import support.Components;
+import support.Display;
 import support.Reflect;
+import support.Teardown;
 
 /**
  * Switching Path Type redraws the path test in the real autonomy editor (OB-225).
@@ -42,10 +43,7 @@ public class testPathTypeRedrawsTheTestInTheEditor
     @BeforeClass
     public static void setUpClass() throws Exception
     {
-        if (java.awt.GraphicsEnvironment.isHeadless())
-        {
-            throw new SkipException("the editor needs a display");
-        }
+        Display.needed("the editor needs a display");
 
         sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
         model = support.TestStation.simulatedInDebug();
@@ -65,21 +63,7 @@ public class testPathTypeRedrawsTheTestInTheEditor
     @AfterClass(alwaysRun = true)
     public static void tearDownClass() throws Exception
     {
-        try
-        {
-            if (ui != null)
-            {
-                final TrainControlUI closing = ui;
-
-                SwingUtilities.invokeAndWait(() -> closing.dispose());
-            }
-
-            if (model != null) model.stop();
-        }
-        finally
-        {
-            if (sandbox != null) sandbox.close();
-        }
+        Teardown.close(sandbox, model, ui);
     }
 
     /** Test a Path to a station autonomy will never choose, then Manual: the note goes, and Auto brings it back. */

@@ -14,10 +14,10 @@ import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertNotEquals;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertTrue;
-import org.testng.SkipException;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
+import support.Display;
 
 /**
  * The route editor refuses a function number the locomotive has not got (MT-464).  Not a claim in
@@ -54,10 +54,7 @@ public class testTheRouteEditorAsksHowManyFunctionsALocomotiveHas
     @BeforeClass
     public static void setUpClass() throws Exception
     {
-        if (java.awt.GraphicsEnvironment.isHeadless())
-        {
-            throw new SkipException("this asks a real editor window, and a window needs a display");
-        }
+        Display.needed("this asks a real editor window, and a window needs a display");
 
         // BEFORE init, which opens whatever the layout preference names - Adam's own railway on his
         // machine (OB-111).

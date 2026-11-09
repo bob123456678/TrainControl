@@ -11,6 +11,7 @@ import org.traincontrol.gui.autonomy.DiagramExport;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.base.LayoutDiagram;
 import org.traincontrol.marklin.MarklinControlStation;
+import support.Display;
 import support.Reflect;
 import support.SourceOf;
 import static org.traincontrol.marklin.MarklinControlStation.init;
@@ -62,10 +63,7 @@ public class testDiagramLooksRight
     @BeforeClass
     public static void setUpClass() throws Exception
     {
-        if (java.awt.GraphicsEnvironment.isHeadless())
-        {
-            throw new SkipException("rendering a diagram needs a display");
-        }
+        Display.needed("rendering a diagram needs a display");
 
         // BEFORE THE MODEL, not just before the window (OB-111): MarklinControlStation.init reads the layout
         // preference too, so the model would stay on the operator's real railway.
@@ -2600,10 +2598,7 @@ public class testDiagramLooksRight
     @Test
     public void testTheTrainIsDrawnOverTheStationCaption() throws Exception
     {
-        if (java.awt.GraphicsEnvironment.isHeadless())
-        {
-            throw new SkipException("rendering a diagram needs a display");
-        }
+        Display.needed("rendering a diagram needs a display");
 
         // A big tile, so there is room to sample the caption where the locomotive does not reach: the icon is drawn at
         // 76% of the square and the run outline is on the very edge.
@@ -2689,10 +2684,7 @@ public class testDiagramLooksRight
     @Test
     public void testTheLocomotiveIsTenPerCentClear()
     {
-        if (java.awt.GraphicsEnvironment.isHeadless())
-        {
-            throw new SkipException("rendering a diagram needs a display");
-        }
+        Display.needed("rendering a diagram needs a display");
 
         final int size = 120;
 
@@ -3511,10 +3503,7 @@ public class testDiagramLooksRight
     @Test
     public void testAnAddressIsDrawnOverTheTrain() throws Exception
     {
-        if (java.awt.GraphicsEnvironment.isHeadless())
-        {
-            throw new SkipException("rendering a diagram needs a display");
-        }
+        Display.needed("rendering a diagram needs a display");
 
         final int size = 120;
 
@@ -3775,10 +3764,7 @@ public class testDiagramLooksRight
     @support.DrawsFR118Icons
     public void testAStationOnACurveSpillsOntoTheSquaresBesideIt()
     {
-        if (java.awt.GraphicsEnvironment.isHeadless())
-        {
-            throw new SkipException("rendering a diagram needs a display");
-        }
+        Display.needed("rendering a diagram needs a display");
 
         final int size = 30;
 
@@ -3912,10 +3898,7 @@ public class testDiagramLooksRight
     @support.DrawsFR118Icons
     public void testASpillIsDrawnUnderTheCaptionsOverIt()
     {
-        if (java.awt.GraphicsEnvironment.isHeadless())
-        {
-            throw new SkipException("rendering a diagram needs a display");
-        }
+        Display.needed("rendering a diagram needs a display");
 
         final int size = 30;
 
@@ -4020,10 +4003,7 @@ public class testDiagramLooksRight
     @support.DrawsFR118Icons
     public void testEveryKindOfSpillIsUnderTheCaptionsAtBothSizes()
     {
-        if (java.awt.GraphicsEnvironment.isHeadless())
-        {
-            throw new SkipException("rendering a diagram needs a display");
-        }
+        Display.needed("rendering a diagram needs a display");
 
         java.util.List<String> wrong = new java.util.ArrayList<>();
 
@@ -4163,10 +4143,7 @@ public class testDiagramLooksRight
     @support.DrawsFR118Icons
     public void testANeighboursArrowsAreDrawnOverASpill()
     {
-        if (java.awt.GraphicsEnvironment.isHeadless())
-        {
-            throw new SkipException("rendering a diagram needs a display");
-        }
+        Display.needed("rendering a diagram needs a display");
 
         for (int size : new int[] {30, 60})
         {
@@ -4326,10 +4303,7 @@ public class testDiagramLooksRight
     @support.DrawsFR118Icons
     public void testANeighboursOutlineIsDrawnOverASpill()
     {
-        if (java.awt.GraphicsEnvironment.isHeadless())
-        {
-            throw new SkipException("rendering a diagram needs a display");
-        }
+        Display.needed("rendering a diagram needs a display");
 
         for (int size : new int[] {30, 60})
         {
@@ -4985,10 +4959,7 @@ public class testDiagramLooksRight
     @Test
     public void testTheEditorsShowTrainsSwitchHidesItsTrains() throws Exception
     {
-        if (java.awt.GraphicsEnvironment.isHeadless())
-        {
-            throw new SkipException("rendering a diagram needs a display");
-        }
+        Display.needed("rendering a diagram needs a display");
 
         java.lang.reflect.Method shown = org.traincontrol.gui.LayoutLabel.class.getMethod("setTrainsShown",
             java.util.function.BooleanSupplier.class);

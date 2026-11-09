@@ -18,6 +18,7 @@ import org.traincontrol.gui.layouteditor.LayoutEditor;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;
 import static org.traincontrol.marklin.MarklinControlStation.init;
+import support.Display;
 import support.Reflect;
 
 /**
@@ -44,10 +45,7 @@ public class testTheVisibleElementsHeadingIsSpacedLikeTheOthers
     @BeforeClass
     public static void setUpClass() throws Exception
     {
-        if (java.awt.GraphicsEnvironment.isHeadless())
-        {
-            throw new SkipException("the editor is a window, and the window needs a display");
-        }
+        Display.needed("the editor is a window, and the window needs a display");
 
         sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("single-switch"));
 

@@ -8,7 +8,6 @@ import javax.swing.JMenuItem;
 import javax.swing.SwingUtilities;
 import javax.swing.event.MenuListener;
 import static org.testng.Assert.*;
-import org.testng.SkipException;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
@@ -17,8 +16,10 @@ import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.util.I18n;
 import static org.traincontrol.marklin.MarklinControlStation.init;
+import support.Display;
 import support.Reflect;
 import support.SourceOf;
+import support.Teardown;
 
 /**
  * The Autonomy menu has a Documentation item, opening the guide the old tab's link opened (OB-254).
@@ -37,10 +38,7 @@ public class testTheAutonomyMenuLinksItsDocumentation
     @BeforeClass
     public static void setUpClass() throws Exception
     {
-        if (java.awt.GraphicsEnvironment.isHeadless())
-        {
-            throw new SkipException("the menu is part of the window, and the window needs a display");
-        }
+        Display.needed("the menu is part of the window, and the window needs a display");
 
         // BEFORE init, which opens whatever the layout preference names (OB-111).
         sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("single-switch"));
@@ -57,21 +55,7 @@ public class testTheAutonomyMenuLinksItsDocumentation
     @AfterClass(alwaysRun = true)
     public static void tearDownClass() throws Exception
     {
-        try
-        {
-            if (ui != null)
-            {
-                final TrainControlUI closing = ui;
-
-                SwingUtilities.invokeAndWait(() -> closing.dispose());
-            }
-
-            if (model != null) model.stop();
-        }
-        finally
-        {
-            if (sandbox != null) sandbox.close();
-        }
+        Teardown.close(sandbox, model, ui);
     }
 
     /** Opened, the Autonomy menu offers Documentation, and it can be chosen. */

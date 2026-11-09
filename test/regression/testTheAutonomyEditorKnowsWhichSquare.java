@@ -7,6 +7,7 @@ import org.traincontrol.automationui.AutonomySession;
 import org.traincontrol.base.Accessory.accessoryDecoderType;
 import org.traincontrol.base.LayoutDiagram;
 import org.traincontrol.base.LayoutDiagramComponent.componentType;
+import support.Display;
 import support.Reflect;
 import support.SourceOf;
 
@@ -202,10 +203,7 @@ public class testTheAutonomyEditorKnowsWhichSquare
     @Test(timeOut = 300000)
     public void testTheEditorRemembersTheSquareUnderThePointer() throws Exception
     {
-        if (java.awt.GraphicsEnvironment.isHeadless())
-        {
-            throw new org.testng.SkipException("the editor is a window");
-        }
+        Display.needed("the editor is a window");
 
         Editor open = open(true);
 
@@ -299,10 +297,7 @@ public class testTheAutonomyEditorKnowsWhichSquare
     @Test(timeOut = 300000)
     public void testTrackModeStillFeedsThePlacementVariables() throws Exception
     {
-        if (java.awt.GraphicsEnvironment.isHeadless())
-        {
-            throw new org.testng.SkipException("the editor is a window");
-        }
+        Display.needed("the editor is a window");
 
         Editor track = open(false);
 
@@ -354,10 +349,7 @@ public class testTheAutonomyEditorKnowsWhichSquare
     @Test(timeOut = 300000)
     public void testAClickableSquareShowsAHandAndSaysSo() throws Exception
     {
-        if (java.awt.GraphicsEnvironment.isHeadless())
-        {
-            throw new org.testng.SkipException("the editor is a window");
-        }
+        Display.needed("the editor is a window");
 
         Editor open = open(true);
 
@@ -420,10 +412,7 @@ public class testTheAutonomyEditorKnowsWhichSquare
     @Test(timeOut = 300000)
     public void testTheClickLineGoesOnceASquareIsClicked() throws Exception
     {
-        if (java.awt.GraphicsEnvironment.isHeadless())
-        {
-            throw new org.testng.SkipException("the editor is a window");
-        }
+        Display.needed("the editor is a window");
 
         final Editor open = open(true);
         Editor reopened = null;

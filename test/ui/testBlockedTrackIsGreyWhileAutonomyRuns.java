@@ -8,7 +8,6 @@ import java.util.Set;
 import javax.swing.JPanel;
 import javax.swing.SwingUtilities;
 import static org.testng.Assert.*;
-import org.testng.SkipException;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
@@ -25,6 +24,7 @@ import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 import support.Components;
+import support.Display;
 import support.Reflect;
 
 /**
@@ -93,10 +93,7 @@ public class testBlockedTrackIsGreyWhileAutonomyRuns
     @BeforeClass
     public static void setUpClass() throws Exception
     {
-        if (java.awt.GraphicsEnvironment.isHeadless())
-        {
-            throw new SkipException("painting a tile needs a display");
-        }
+        Display.needed("painting a tile needs a display");
 
         // The diagram's arrows as they are by default, not as the operator last left them: a run's preferences start as
         // a copy of his, and since MT-675 the green arrows can be drawn on every open square, on top of the fade this

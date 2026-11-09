@@ -2,6 +2,7 @@ package regression;
 
 import static org.testng.Assert.*;
 import org.testng.annotations.Test;
+import support.Display;
 import support.Reflect;
 
 /**
@@ -22,10 +23,7 @@ public class testTheMenusComeBackAtOneMoment
     @Test
     public void testAMenuMountedDuringTheConnectWaitsForTheOthers() throws Exception
     {
-        if (java.awt.GraphicsEnvironment.isHeadless())
-        {
-            throw new org.testng.SkipException("a menu bar is on a window");
-        }
+        Display.needed("a menu bar is on a window");
 
         support.LayoutSandbox sandbox = null;
         org.traincontrol.marklin.MarklinControlStation model = null;
@@ -150,10 +148,7 @@ public class testTheMenusComeBackAtOneMoment
     @Test
     public void testCombineSitsRightAfterDuplicateCurrentPage() throws Exception
     {
-        if (java.awt.GraphicsEnvironment.isHeadless())
-        {
-            throw new org.testng.SkipException("a menu is on a window");
-        }
+        Display.needed("a menu is on a window");
 
         support.LayoutSandbox sandbox = null;
         org.traincontrol.marklin.MarklinControlStation model = null;
@@ -319,10 +314,7 @@ public class testTheMenusComeBackAtOneMoment
     @Test
     public void testTheMenuBarsTooltipsAreShortAndWrapped() throws Exception
     {
-        if (java.awt.GraphicsEnvironment.isHeadless())
-        {
-            throw new org.testng.SkipException("a menu bar is on a window");
-        }
+        Display.needed("a menu bar is on a window");
 
         support.LayoutSandbox sandbox = null;
         org.traincontrol.marklin.MarklinControlStation model = null;

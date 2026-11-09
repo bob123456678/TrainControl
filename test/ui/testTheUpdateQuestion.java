@@ -18,6 +18,7 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
 import org.traincontrol.marklin.MarklinRoute;
 import org.traincontrol.util.I18n;
 import org.traincontrol.util.SelfUpdate;
+import support.Display;
 import support.Reflect;
 
 /**
@@ -143,10 +144,7 @@ public class testTheUpdateQuestion
     @Test
     public void testAModalDialogIsSeen() throws Exception
     {
-        if (java.awt.GraphicsEnvironment.isHeadless())
-        {
-            throw new org.testng.SkipException("a modal dialog needs a display");
-        }
+        Display.needed("a modal dialog needs a display");
 
         assertFalse(TrainControlUI.aModalDialogIsShowing(), "precondition: a modal dialog is already open");
 

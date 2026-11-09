@@ -12,13 +12,14 @@ import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertSame;
 import static org.testng.Assert.assertTrue;
-import org.testng.SkipException;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 import support.Components;
+import support.Display;
 import support.Reflect;
 import support.SourceOf;
+import support.Teardown;
 
 /**
  * A setup edit that could not be applied says so, and is still there after the exit (MT-267, MT-326).  The message
@@ -40,10 +41,7 @@ public class testADeclinedSetupEditSaysSoAndSurvivesTheExit
     @BeforeClass
     public static void setUpClass() throws Exception
     {
-        if (java.awt.GraphicsEnvironment.isHeadless())
-        {
-            throw new SkipException("the viewer panel this asks about needs a display");
-        }
+        Display.needed("the viewer panel this asks about needs a display");
 
         sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
         model = support.TestStation.simulatedInDebug();
@@ -74,21 +72,7 @@ public class testADeclinedSetupEditSaysSoAndSurvivesTheExit
     @AfterClass(alwaysRun = true)
     public static void tearDownClass() throws Exception
     {
-        try
-        {
-            if (ui != null)
-            {
-                final TrainControlUI closing = ui;
-
-                SwingUtilities.invokeAndWait(() -> closing.dispose());
-            }
-
-            if (model != null) model.stop();
-        }
-        finally
-        {
-            if (sandbox != null) sandbox.close();
-        }
+        Teardown.close(sandbox, model, ui);
     }
 
     /** The window's save changes the run's saved data; the classes after this one in the lane read it. */

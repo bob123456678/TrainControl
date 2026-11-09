@@ -5,12 +5,12 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import static org.testng.Assert.*;
-import org.testng.SkipException;
 import org.testng.annotations.Test;
 import org.traincontrol.base.Accessory;
 import org.traincontrol.base.Route;
 import org.traincontrol.base.RouteCommand;
 import org.traincontrol.marklin.MarklinRoute;
+import support.Display;
 import support.Reflect;
 
 /**
@@ -726,9 +726,6 @@ public class testRouteEditorLocked
 
     private static void needsADisplay()
     {
-        if (GraphicsEnvironment.isHeadless())
-        {
-            throw new SkipException("the route editor is a window - this needs a display");
-        }
+        Display.needed("the route editor is a window - this needs a display");
     }
 }

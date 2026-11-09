@@ -7,7 +7,6 @@ import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertNotSame;
 import static org.testng.Assert.assertTrue;
-import org.testng.SkipException;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
@@ -17,6 +16,7 @@ import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 import support.Components;
+import support.Display;
 import support.Reflect;
 
 /**
@@ -49,10 +49,7 @@ public class testAPendingTurnSurvivesTheRebuild
     @BeforeClass
     public static void setUpClass() throws Exception
     {
-        if (java.awt.GraphicsEnvironment.isHeadless())
-        {
-            throw new SkipException("the rebuild is a method on the window");
-        }
+        Display.needed("the rebuild is a method on the window");
 
         // The frozen copy, never the operator's own railway.  `Scenario.folderFor` cannot spell its way out to
         // `cs2_sample_layout`, and the sandbox is opened BEFORE `init`, which reads the layout preference (OB-111).

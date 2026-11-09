@@ -15,6 +15,7 @@ import org.traincontrol.automationui.AutonomySession;
 import org.traincontrol.base.LayoutDiagram;
 import org.traincontrol.base.LayoutDiagramComponent.componentType;
 import org.traincontrol.automationui.TileGraph.TileKey;
+import support.Display;
 import support.Reflect;
 
 /**
@@ -724,10 +725,7 @@ public class testASignalGuardsItsStationAndTheNoticeNamesIt extends AutonomySess
     @Test
     public void testClickingANoticeCopiesItsTextToTheClipboard() throws Exception
     {
-        if (java.awt.GraphicsEnvironment.isHeadless())
-        {
-            throw new org.testng.SkipException("there is no clipboard on a headless machine");
-        }
+        Display.needed("there is no clipboard on a headless machine");
 
         openTheGuardedLine(pageWithAGuardOffTheLine());
 

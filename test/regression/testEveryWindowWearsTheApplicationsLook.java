@@ -10,8 +10,8 @@ import java.util.Map;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
-import org.testng.SkipException;
 import org.testng.annotations.Test;
+import support.Display;
 import support.Reflect;
 
 /**
@@ -52,10 +52,7 @@ public class testEveryWindowWearsTheApplicationsLook
     @Test
     public void testAWindowBuiltColdStillWearsTheApplicationsLook() throws Exception
     {
-        if (java.awt.GraphicsEnvironment.isHeadless())
-        {
-            throw new SkipException("a look and feel needs a display");
-        }
+        Display.needed("a look and feel needs a display");
 
         assertFalse(javax.swing.UIManager.getLookAndFeel() instanceof com.formdev.flatlaf.FlatLightLaf,
             "the application's look and feel was already installed before this test built anything, so "

@@ -11,6 +11,7 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 import org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel;
 import org.traincontrol.gui.widgets.LoadingSpinner;
+import support.Display;
 import support.Reflect;
 import support.SourceOf;
 
@@ -228,10 +229,7 @@ public class testTheWaitMarkIsAnHourglass
     public void testAWindowIsNotAskedWhatContainsIt() throws Exception
     {
         // A frame is built but never shown, so this needs a graphics environment.
-        if (java.awt.GraphicsEnvironment.isHeadless())
-        {
-            throw new org.testng.SkipException("building a frame needs a display");
-        }
+        Display.needed("building a frame needs a display");
 
         final javax.swing.JFrame frame = new javax.swing.JFrame("MT-182");
         final javax.swing.JPanel inside = new javax.swing.JPanel();

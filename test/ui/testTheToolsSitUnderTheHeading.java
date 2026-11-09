@@ -6,7 +6,6 @@ import javax.swing.SwingUtilities;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertTrue;
-import org.testng.SkipException;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
@@ -16,7 +15,9 @@ import org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel;
 import org.traincontrol.gui.layouteditor.LayoutEditor;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;
+import support.Display;
 import support.Reflect;
+import support.Teardown;
 
 /**
  * The autonomy editor's Test a Path button sits right under the window's heading, with only the form's own gap between,
@@ -40,10 +41,7 @@ public class testTheToolsSitUnderTheHeading
     @BeforeClass
     public static void setUpClass() throws Exception
     {
-        if (java.awt.GraphicsEnvironment.isHeadless())
-        {
-            throw new SkipException("the gap is measured in a shown window, and a window needs a display");
-        }
+        Display.needed("the gap is measured in a shown window, and a window needs a display");
 
         sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
 
@@ -71,19 +69,10 @@ public class testTheToolsSitUnderTheHeading
         try
         {
             close(editor);
-
-            if (ui != null)
-            {
-                final TrainControlUI closing = ui;
-
-                SwingUtilities.invokeAndWait(() -> closing.dispose());
-            }
-
-            if (model != null) model.stop();
         }
         finally
         {
-            if (sandbox != null) sandbox.close();
+            Teardown.close(sandbox, model, ui);
         }
     }
 

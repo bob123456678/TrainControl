@@ -3,7 +3,6 @@ package ui;
 import java.util.ArrayList;
 import java.util.List;
 import static org.testng.Assert.*;
-import org.testng.SkipException;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
@@ -15,6 +14,7 @@ import org.traincontrol.marklin.MarklinControlStation;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 import org.traincontrol.marklin.MarklinLocomotive;
 import support.Components;
+import support.Display;
 import support.Reflect;
 
 /**
@@ -67,10 +67,7 @@ public class testARenameReachesTheTimetableOnScreen
     @Test(timeOut = 120000)
     public void testTheRedrawKeyChangesWhenTheNameDoes() throws Exception
     {
-        if (java.awt.GraphicsEnvironment.isHeadless())
-        {
-            throw new SkipException("the timetable is a table in a window");
-        }
+        Display.needed("the timetable is a table in a window");
 
         String config = ("{'points': ["
             + "{'name': 'TT A', 'station': true, 's88': 8490, 'loc': {'name': '" + BEFORE + "'}},"

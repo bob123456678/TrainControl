@@ -17,6 +17,7 @@ import org.traincontrol.marklin.MarklinAccessory;
 import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.marklin.file.CS2File;
 import static org.traincontrol.marklin.MarklinControlStation.init;
+import support.Display;
 import support.Reflect;
 import support.SourceOf;
 import support.Trees;
@@ -243,10 +244,7 @@ public class testARunSurvivesADiagramEdit
     @Test
     public void testTheWindowsCaptureActuallyCapturesAndStopsWhenTrainsMove() throws Exception
     {
-        if (java.awt.GraphicsEnvironment.isHeadless())
-        {
-            throw new org.testng.SkipException("captureRunningLayout is a method on the window");
-        }
+        Display.needed("captureRunningLayout is a method on the window");
 
         File folder = aWorkingCopy();
 

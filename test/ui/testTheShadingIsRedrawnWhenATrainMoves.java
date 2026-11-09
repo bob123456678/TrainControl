@@ -7,7 +7,6 @@ import java.util.List;
 import java.util.Set;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertTrue;
-import org.testng.SkipException;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
@@ -20,6 +19,7 @@ import org.traincontrol.base.Locomotive;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;
 import static org.traincontrol.marklin.MarklinControlStation.init;
+import support.Display;
 
 /**
  * The covered-track shading on the SCREEN follows the train, and comes off when it leaves (OB-180).
@@ -57,10 +57,7 @@ public class testTheShadingIsRedrawnWhenATrainMoves
     @BeforeClass
     public static void setUpClass() throws Exception
     {
-        if (java.awt.GraphicsEnvironment.isHeadless())
-        {
-            throw new SkipException("looking at what is drawn needs a display");
-        }
+        Display.needed("looking at what is drawn needs a display");
 
         // BEFORE THE MODEL (OB-111): init reads the layout preference too.  THE FROZEN COPY, NOT THE RAILWAY HE IS
         // OPERATING (`test/layouts/live-snapshot`): `cs2_sample_layout`'s placements and lengths move as Adam runs

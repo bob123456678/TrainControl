@@ -1,7 +1,6 @@
 package ui;
 
 import static org.testng.Assert.*;
-import org.testng.SkipException;
 import org.testng.annotations.Test;
 import org.traincontrol.automationui.AutonomySession;
 import org.traincontrol.automationui.TileGraph.TileKey;
@@ -9,6 +8,7 @@ import org.traincontrol.base.Accessory.accessoryDecoderType;
 import org.traincontrol.base.LayoutDiagram;
 import org.traincontrol.base.LayoutDiagramComponent.componentType;
 import org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel;
+import support.Display;
 import support.Trees;
 
 /**
@@ -115,10 +115,7 @@ public class testTheMenuShowsWhereALinkGoes
     private static void onASession(String folderPrefix, String skipReason, OnTheSession claim, String... pageNames)
         throws Exception
     {
-        if (java.awt.GraphicsEnvironment.isHeadless())
-        {
-            throw new SkipException(skipReason);
-        }
+        Display.needed(skipReason);
 
         java.io.File layout = java.nio.file.Files.createTempDirectory(folderPrefix).toFile();
 

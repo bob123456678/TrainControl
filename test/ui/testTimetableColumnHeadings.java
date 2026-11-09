@@ -4,6 +4,7 @@ import static org.testng.Assert.*;
 import org.testng.annotations.Test;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.util.I18n;
+import support.Display;
 import support.Reflect;
 
 /**
@@ -23,10 +24,7 @@ public class testTimetableColumnHeadings
     @Test
     public void testTheTimetableIsNamedBeforeItHasAnythingInIt() throws Exception
     {
-        if (java.awt.GraphicsEnvironment.isHeadless())
-        {
-            throw new org.testng.SkipException("the timetable is a table in a window");
-        }
+        Display.needed("the timetable is a table in a window");
 
         javax.swing.JTable timetable = timetableOf(build());
 

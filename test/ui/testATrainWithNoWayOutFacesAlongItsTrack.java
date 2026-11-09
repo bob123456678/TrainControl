@@ -4,7 +4,6 @@ import java.util.Arrays;
 import java.util.List;
 import javax.swing.SwingUtilities;
 import static org.testng.Assert.*;
-import org.testng.SkipException;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
@@ -26,6 +25,7 @@ import org.traincontrol.marklin.MarklinLocomotive;
 import org.traincontrol.util.I18n;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 import support.Components;
+import support.Display;
 import support.Reflect;
 
 /**
@@ -60,10 +60,7 @@ public class testATrainWithNoWayOutFacesAlongItsTrack
     @BeforeClass
     public static void setUpClass() throws Exception
     {
-        if (java.awt.GraphicsEnvironment.isHeadless())
-        {
-            throw new SkipException("the diagram monitor belongs to a window, and a window needs a display");
-        }
+        Display.needed("the diagram monitor belongs to a window, and a window needs a display");
 
         sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
         model = support.TestStation.simulatedInDebug();

@@ -11,8 +11,8 @@ import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.util.I18n;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertTrue;
-import org.testng.SkipException;
 import org.testng.annotations.Test;
+import support.Display;
 import support.Reflect;
 
 /**
@@ -293,10 +293,7 @@ public class testTheToolbarButtonsHonourTheirTooltips
     @Test
     public void testAShortLayoutTooltipIsAsWideAsItsText() throws Exception
     {
-        if (java.awt.GraphicsEnvironment.isHeadless())
-        {
-            throw new SkipException("a tooltip is drawn on a window");
-        }
+        Display.needed("a tooltip is drawn on a window");
 
         Started up = start();
 

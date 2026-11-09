@@ -13,6 +13,7 @@ import org.traincontrol.automationui.TileGraph.TileKey;
 import org.traincontrol.base.Accessory.accessoryDecoderType;
 import org.traincontrol.base.LayoutDiagram;
 import org.traincontrol.base.LayoutDiagramComponent.componentType;
+import support.Display;
 import support.Reflect;
 import support.Trees;
 
@@ -269,10 +270,7 @@ public class testDiagramShiftKeepsSetup
     @Test
     public void testTheEditorsShiftDownRespectsThePageWidth() throws Exception
     {
-        if (java.awt.GraphicsEnvironment.isHeadless())
-        {
-            throw new org.testng.SkipException("the editor is a window");
-        }
+        Display.needed("the editor is a window");
 
         support.LayoutSandbox sandbox = null;
         org.traincontrol.marklin.MarklinControlStation model = null;

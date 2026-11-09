@@ -4,6 +4,7 @@ import static org.testng.Assert.*;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
+import support.Display;
 import support.Reflect;
 
 /**
@@ -74,10 +75,7 @@ public class testTheRoutingChoiceSurvivesTheUpgrade
     @Test
     public void testARefusedRoutingChangePutsTheDropdownBack() throws Exception
     {
-        if (java.awt.GraphicsEnvironment.isHeadless())
-        {
-            throw new org.testng.SkipException("the dropdown lives on a window");
-        }
+        Display.needed("the dropdown lives on a window");
 
         support.LayoutSandbox sandbox = null;
         org.traincontrol.marklin.MarklinControlStation model = null;
@@ -210,10 +208,7 @@ public class testTheRoutingChoiceSurvivesTheUpgrade
     @Test
     public void testTheOldChoiceIsKeptUntilSomethingCanStoreIt() throws Exception
     {
-        if (java.awt.GraphicsEnvironment.isHeadless())
-        {
-            throw new org.testng.SkipException("the migration lives on a window");
-        }
+        Display.needed("the migration lives on a window");
 
         // The window's node, which is the throwaway this class installed.
         java.util.prefs.Preferences prefs = org.traincontrol.gui.TrainControlUI.getPrefs();
@@ -299,10 +294,7 @@ public class testTheRoutingChoiceSurvivesTheUpgrade
     @Test
     public void testAConfigurationWithNoAnswerIsGivenTheOldOne() throws Exception
     {
-        if (java.awt.GraphicsEnvironment.isHeadless())
-        {
-            throw new org.testng.SkipException("the migration lives on a window");
-        }
+        Display.needed("the migration lives on a window");
 
         // The window's node, which is the throwaway this class installed.
         java.util.prefs.Preferences prefs = org.traincontrol.gui.TrainControlUI.getPrefs();
@@ -394,10 +386,7 @@ public class testTheRoutingChoiceSurvivesTheUpgrade
     @Test
     public void testARuleAlreadyInTheLayoutIsNotOverruled() throws Exception
     {
-        if (java.awt.GraphicsEnvironment.isHeadless())
-        {
-            throw new org.testng.SkipException("the migration lives on a window");
-        }
+        Display.needed("the migration lives on a window");
 
         // The window's node, which is the throwaway this class installed.
         java.util.prefs.Preferences prefs = org.traincontrol.gui.TrainControlUI.getPrefs();
@@ -476,10 +465,7 @@ public class testTheRoutingChoiceSurvivesTheUpgrade
     @Test
     public void testTheOldChoiceGoesOnceTheConfigurationHasOne() throws Exception
     {
-        if (java.awt.GraphicsEnvironment.isHeadless())
-        {
-            throw new org.testng.SkipException("the migration lives on a window");
-        }
+        Display.needed("the migration lives on a window");
 
         // The window's node, which is the throwaway this class installed.
         java.util.prefs.Preferences prefs = org.traincontrol.gui.TrainControlUI.getPrefs();
@@ -571,10 +557,7 @@ public class testTheRoutingChoiceSurvivesTheUpgrade
     @Test
     public void testTheAutoTabStaysShutWithALegacyAutonomyJson() throws Exception
     {
-        if (java.awt.GraphicsEnvironment.isHeadless())
-        {
-            throw new org.testng.SkipException("the tab is on a window");
-        }
+        Display.needed("the tab is on a window");
 
         support.LayoutSandbox sandbox = null;
 

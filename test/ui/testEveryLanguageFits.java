@@ -15,10 +15,10 @@ import javax.swing.JComponent;
 import javax.swing.JLabel;
 import javax.swing.JTabbedPane;
 import static org.testng.Assert.*;
-import org.testng.SkipException;
 import org.testng.annotations.Test;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.util.I18n;
+import support.Display;
 
 /**
  * Every language fits in the window it was translated for: `testMessageBundles` checks that strings are CORRECT,
@@ -78,10 +78,7 @@ public class testEveryLanguageFits
     @Test
     public void testTheClippingRuleCanActuallyFail()
     {
-        if (java.awt.GraphicsEnvironment.isHeadless())
-        {
-            throw new SkipException("a font has to be measured");
-        }
+        Display.needed("a font has to be measured");
 
         JLabel label = new JLabel("OK");
 
@@ -104,10 +101,7 @@ public class testEveryLanguageFits
     @Test
     public void testNoLabelIsClippedInAnyLanguage() throws Exception
     {
-        if (java.awt.GraphicsEnvironment.isHeadless())
-        {
-            throw new SkipException("a window has to be laid out to be measured");
-        }
+        Display.needed("a window has to be laid out to be measured");
 
         OUT.mkdirs();
 

@@ -3,6 +3,7 @@ package regression;
 import static org.testng.Assert.*;
 import org.testng.annotations.Test;
 import support.Components;
+import support.Display;
 import support.Reflect;
 import support.SourceOf;
 
@@ -251,10 +252,7 @@ public class testTheWindowTakesTheKeyboard
     @Test(timeOut = 300000)
     public void testAKeystrokeRightAfterStartupChangesTheActiveKey() throws Exception
     {
-        if (java.awt.GraphicsEnvironment.isHeadless())
-        {
-            throw new org.testng.SkipException("the keyboard is on a window");
-        }
+        Display.needed("the keyboard is on a window");
 
         Started up = start();
 
@@ -307,10 +305,7 @@ public class testTheWindowTakesTheKeyboard
     @Test(timeOut = 300000)
     public void testTheKeyboardComesBackWhenTheWindowGainsFocus() throws Exception
     {
-        if (java.awt.GraphicsEnvironment.isHeadless())
-        {
-            throw new org.testng.SkipException("the keyboard is on a window");
-        }
+        Display.needed("the keyboard is on a window");
 
         Started up = start();
 
@@ -408,10 +403,7 @@ public class testTheWindowTakesTheKeyboard
     @Test(timeOut = 300000)
     public void testComingToTheForegroundGivesTheOnTopSettingBack() throws Exception
     {
-        if (java.awt.GraphicsEnvironment.isHeadless())
-        {
-            throw new org.testng.SkipException("the window is a window");
-        }
+        Display.needed("the window is a window");
 
         Started up = start();
 
@@ -495,10 +487,7 @@ public class testTheWindowTakesTheKeyboard
     @Test(timeOut = 300000)
     public void testComingToTheForegroundUnMinimisesWithoutUnMaximising() throws Exception
     {
-        if (java.awt.GraphicsEnvironment.isHeadless())
-        {
-            throw new org.testng.SkipException("the window is a window");
-        }
+        Display.needed("the window is a window");
 
         Started up = start();
 
@@ -563,10 +552,7 @@ public class testTheWindowTakesTheKeyboard
     @Test(timeOut = 300000)
     public void testComingBackToTheWindowDoesNotTakeTheCaretBack() throws Exception
     {
-        if (java.awt.GraphicsEnvironment.isHeadless())
-        {
-            throw new org.testng.SkipException("the keyboard is on a window");
-        }
+        Display.needed("the keyboard is on a window");
 
         Started up = start();
 
@@ -670,10 +656,7 @@ public class testTheWindowTakesTheKeyboard
     @Test(timeOut = 300000)
     public void testTheMenusAreGreyedWhileTheWindowIsConnecting() throws Exception
     {
-        if (java.awt.GraphicsEnvironment.isHeadless())
-        {
-            throw new org.testng.SkipException("the menu bar is on a window");
-        }
+        Display.needed("the menu bar is on a window");
 
         // BEFORE the window (OB-111): its construction reads the machine-global layout preference.
         support.LayoutSandbox sandbox = null;

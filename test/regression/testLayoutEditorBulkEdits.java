@@ -15,6 +15,7 @@ import org.traincontrol.automationui.TileGraph.RouteId;
 import org.traincontrol.automationui.TileGraph.TileKey;
 import org.traincontrol.automationui.TilePorts;
 import org.traincontrol.gui.layouteditor.LayoutEditor;
+import support.Display;
 import support.Reflect;
 
 /**
@@ -467,10 +468,7 @@ public class testLayoutEditorBulkEdits
      */
     private void withEditor(String folder, Gesture gesture, Check check) throws Exception
     {
-        if (java.awt.GraphicsEnvironment.isHeadless())
-        {
-            throw new org.testng.SkipException("the editor is a window");
-        }
+        Display.needed("the editor is a window");
 
         support.LayoutSandbox sandbox = null;
         org.traincontrol.marklin.MarklinControlStation model = null;

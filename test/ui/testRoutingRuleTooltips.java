@@ -5,6 +5,7 @@ import org.testng.annotations.Test;
 import org.traincontrol.automation.Layout.PathPreference;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.util.I18n;
+import support.Display;
 import support.Reflect;
 
 /**
@@ -24,10 +25,7 @@ public class testRoutingRuleTooltips
     @Test
     public void testEachRuleSaysWhatItDoes() throws Exception
     {
-        if (java.awt.GraphicsEnvironment.isHeadless())
-        {
-            throw new org.testng.SkipException("the dropdown is a control in a window");
-        }
+        Display.needed("the dropdown is a control in a window");
 
         TrainControlUI ui = build();
 

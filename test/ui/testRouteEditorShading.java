@@ -4,11 +4,11 @@ import java.awt.Component;
 import java.awt.GraphicsEnvironment;
 import javax.swing.JTable;
 import static org.testng.Assert.*;
-import org.testng.SkipException;
 import org.testng.annotations.Test;
 import org.traincontrol.base.NodeRouteCommand;
 import org.traincontrol.base.RouteCommand;
 import org.traincontrol.marklin.MarklinRoute;
+import support.Display;
 import support.Reflect;
 
 /**
@@ -262,9 +262,6 @@ public class testRouteEditorShading
 
     private void needsADisplay()
     {
-        if (GraphicsEnvironment.isHeadless())
-        {
-            throw new SkipException("the route editor is a window - this needs a display");
-        }
+        Display.needed("the route editor is a window - this needs a display");
     }
 }

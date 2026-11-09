@@ -6,6 +6,7 @@ import static org.testng.Assert.*;
 import org.testng.annotations.Test;
 import org.traincontrol.automation.HomeStaging;
 import org.traincontrol.gui.TrainControlUI;
+import support.Display;
 import support.Reflect;
 
 /**
@@ -28,10 +29,7 @@ public class testStagingOutcomeMessages
     @Test
     public void testEveryRefusalHasItsOwnSentence() throws Exception
     {
-        if (java.awt.GraphicsEnvironment.isHeadless())
-        {
-            throw new org.testng.SkipException("describeStagingOutcome is a method on the window");
-        }
+        Display.needed("describeStagingOutcome is a method on the window");
 
         TrainControlUI ui = build();
 

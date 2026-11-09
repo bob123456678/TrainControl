@@ -14,6 +14,7 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 import support.Reflect;
 import support.SourceOf;
+import support.Teardown;
 
 /**
  * Importing the same 2.7.4c file twice fills what is missing and leaves what is there (MT-298): an import is safe to
@@ -67,9 +68,7 @@ public class testASecondImportFillsGapsAndDoesNotOverwrite
     @AfterClass(alwaysRun = true)
     public static void tearDownClass() throws Exception
     {
-        if (model != null) model.stop();
-
-        if (sandbox != null) sandbox.close();
+        Teardown.close(sandbox, model);
     }
 
     /**

@@ -15,11 +15,11 @@ import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
-import org.testng.SkipException;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 import support.Components;
+import support.Display;
 import support.SourceOf;
 
 /**
@@ -60,10 +60,7 @@ public class testNonAtomicRoutesNeedTheirLengths
     @BeforeClass
     public static void setUpClass() throws Exception
     {
-        if (java.awt.GraphicsEnvironment.isHeadless())
-        {
-            throw new SkipException("the door is a checkbox on a window, and a window needs a display");
-        }
+        Display.needed("the door is a checkbox on a window, and a window needs a display");
 
         // THE FROZEN COPY of the operator's railway, not the railway he is operating (OB-111).
         sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));

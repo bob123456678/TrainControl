@@ -1,5 +1,6 @@
 package ui;
 
+import support.Display;
 import support.TestStationAddress;
 
 import java.awt.GraphicsEnvironment;
@@ -8,7 +9,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.swing.SwingUtilities;
 import static org.testng.Assert.*;
-import org.testng.SkipException;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 import org.traincontrol.gui.widgets.BusyDialog;
@@ -39,10 +39,7 @@ public class testBusyDialogInteraction
     @BeforeClass
     public static void setUpClass() throws Exception
     {
-        if (GraphicsEnvironment.isHeadless())
-        {
-            throw new SkipException("BusyDialog is a window - this needs a display");
-        }
+        Display.needed("BusyDialog is a window - this needs a display");
 
         // THE OPERATOR'S RAILWAY IS NOT THIS TEST'S TO OPEN (OB-111): `init` loads the layout his preference names.
         sandbox = support.LayoutSandbox.open();
@@ -328,10 +325,7 @@ public class testBusyDialogInteraction
     @Test(timeOut = 180000)
     public void testTheWrapperItselfSyncs() throws Exception
     {
-        if (java.awt.GraphicsEnvironment.isHeadless())
-        {
-            throw new SkipException("the wrapper puts a dialog on screen - this needs a display");
-        }
+        Display.needed("the wrapper puts a dialog on screen - this needs a display");
 
         com.sun.net.httpserver.HttpServer station = servingTheSampleFiles();
 
@@ -409,10 +403,7 @@ public class testBusyDialogInteraction
     @Test(timeOut = 180000)
     public void testASecondSyncIsTurnedAway() throws Exception
     {
-        if (java.awt.GraphicsEnvironment.isHeadless())
-        {
-            throw new SkipException("the wrapper puts a dialog on screen - this needs a display");
-        }
+        Display.needed("the wrapper puts a dialog on screen - this needs a display");
 
         final java.util.concurrent.CountDownLatch holdTheFirst =
             new java.util.concurrent.CountDownLatch(1);

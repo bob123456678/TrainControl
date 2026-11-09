@@ -2,13 +2,13 @@ package ui;
 
 import java.awt.GraphicsEnvironment;
 import static org.testng.Assert.*;
-import org.testng.SkipException;
 import org.traincontrol.util.I18n;
 import org.testng.annotations.Test;
 import org.traincontrol.base.Accessory;
 import org.traincontrol.base.CommandRow;
 import org.traincontrol.base.RouteCommand;
 import org.traincontrol.base.ThreeWaySwitch;
+import support.Display;
 import support.Reflect;
 import support.SourceOf;
 
@@ -381,10 +381,7 @@ public class testRouteEditorValidation
 
     private static void needsADisplay()
     {
-        if (GraphicsEnvironment.isHeadless())
-        {
-            throw new SkipException("the route editor is a window - this needs a display");
-        }
+        Display.needed("the route editor is a window - this needs a display");
     }
     /**
      * Deleting an unrelated condition does not turn a leading "or" into "and": `(A or B) and C` minus `C` is still

@@ -12,6 +12,7 @@ import org.testng.annotations.Test;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;
 import support.Components;
+import support.Display;
 import support.Reflect;
 
 /**
@@ -40,10 +41,7 @@ public class testTheKeyMapReachesTheWholeWindow
     @BeforeClass
     public static void setUpClass() throws Exception
     {
-        if (java.awt.GraphicsEnvironment.isHeadless())
-        {
-            throw new SkipException("a keyboard needs a window");
-        }
+        Display.needed("a keyboard needs a window");
 
         sandbox = support.LayoutSandbox.open();
 
