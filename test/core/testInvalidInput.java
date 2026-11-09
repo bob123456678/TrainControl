@@ -21,6 +21,7 @@ import static org.testng.Assert.*;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
+import support.Reflect;
 
 /**
  * Graceful handling of input the user entered incorrectly.
@@ -109,8 +110,7 @@ public class testInvalidInput
     @SuppressWarnings("unchecked")
     private static void clearAccessoryAddress(int logicalAddress) throws Exception
     {
-        Field accDbField = MarklinControlStation.class.getDeclaredField("accDB");
-        accDbField.setAccessible(true);
+        Field accDbField = Reflect.field(MarklinControlStation.class, "accDB");
 
         RemoteDeviceCollection<MarklinAccessory, Integer> accDb =
             (RemoteDeviceCollection<MarklinAccessory, Integer>) accDbField.get(model);

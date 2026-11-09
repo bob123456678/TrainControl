@@ -27,6 +27,7 @@ import org.traincontrol.gui.layouteditor.LayoutEditorAddressPopup;
 import org.traincontrol.util.I18n;
 import support.Components;
 import support.Mouse;
+import support.Reflect;
 
 /**
  * FR-175: pages are SHOWN in the order of the layout file, but an arrow's number stays a place in the NAME-SORTED list,
@@ -165,11 +166,7 @@ public class testArrowsKeepTheirMeaningInAnyDisplayOrder extends support.PageWin
     {
         try
         {
-            java.lang.reflect.Field field = org.traincontrol.gui.TrainControlUI.class.getDeclaredField("popups");
-
-            field.setAccessible(true);
-
-            return (List<LayoutPopupUI>) field.get(ui);
+            return (List<LayoutPopupUI>) Reflect.get(org.traincontrol.gui.TrainControlUI.class, ui, "popups");
         }
         catch (ReflectiveOperationException e)
         {
@@ -241,10 +238,8 @@ public class testArrowsKeepTheirMeaningInAnyDisplayOrder extends support.PageWin
 
         java.awt.Rectangle bounds = Components.onTheEventThread(popup::getBounds);
 
-        java.lang.reflect.Method refresh = org.traincontrol.gui.TrainControlUI.class.getDeclaredMethod("updatePopups",
-            boolean.class);
-
-        refresh.setAccessible(true);
+        java.lang.reflect.Method refresh =
+            Reflect.method(org.traincontrol.gui.TrainControlUI.class, "updatePopups", boolean.class);
 
         SwingUtilities.invokeAndWait(() ->
         {
@@ -345,9 +340,7 @@ public class testArrowsKeepTheirMeaningInAnyDisplayOrder extends support.PageWin
 
         startTheWindow(5);
 
-        java.lang.reflect.Field field = org.traincontrol.gui.TrainControlUI.class.getDeclaredField("autonomyMenu");
-
-        field.setAccessible(true);
+        java.lang.reflect.Field field = Reflect.field(org.traincontrol.gui.TrainControlUI.class, "autonomyMenu");
 
         final javax.swing.JMenu menu = (javax.swing.JMenu) field.get(ui);
 
@@ -577,11 +570,7 @@ public class testArrowsKeepTheirMeaningInAnyDisplayOrder extends support.PageWin
     {
         try
         {
-            java.lang.reflect.Field field = LayoutPopupUI.class.getDeclaredField("layout");
-
-            field.setAccessible(true);
-
-            return ((org.traincontrol.base.LayoutDiagram) field.get(popup)).getName();
+            return ((org.traincontrol.base.LayoutDiagram) Reflect.get(LayoutPopupUI.class, popup, "layout")).getName();
         }
         catch (ReflectiveOperationException e)
         {
@@ -591,11 +580,7 @@ public class testArrowsKeepTheirMeaningInAnyDisplayOrder extends support.PageWin
 
     private javax.swing.JComboBox<?> combo() throws Exception
     {
-        java.lang.reflect.Field field = org.traincontrol.gui.TrainControlUI.class.getDeclaredField("LayoutList");
-
-        field.setAccessible(true);
-
-        return (javax.swing.JComboBox<?>) field.get(ui);
+        return (javax.swing.JComboBox<?>) Reflect.get(org.traincontrol.gui.TrainControlUI.class, ui, "LayoutList");
     }
 
     /** The links and the reduction of the autonomy graph, as sorted lines. */
@@ -603,9 +588,7 @@ public class testArrowsKeepTheirMeaningInAnyDisplayOrder extends support.PageWin
     {
         final AutonomySession session = ui.getAutonomySession();
 
-        java.lang.reflect.Field portals = TileGraph.class.getDeclaredField("portals");
-
-        portals.setAccessible(true);
+        java.lang.reflect.Field portals = Reflect.field(TileGraph.class, "portals");
 
         List<String> lines = new ArrayList<>();
 

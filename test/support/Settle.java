@@ -30,9 +30,6 @@ public final class Settle
      */
     public static final long PATIENCE_MS = 120000;
 
-    /** How often a condition is asked, in milliseconds. */
-    private static final long ASK_EVERY_MS = 20;
-
     private Settle()
     {
     }
@@ -89,27 +86,9 @@ public final class Settle
         return until(() -> layout.getActiveLocomotives().containsKey(train), atMostMs);
     }
 
-    /** Waits for a condition of the program's state, asking it every 20 ms; says whether it came true in time. */
+    /** Waits for a condition of the program's state; whether it came true in time, asked once more at the end. */
     public static boolean until(BooleanSupplier condition, long atMostMs)
     {
-        long end = System.currentTimeMillis() + atMostMs;
-
-        while (!condition.getAsBoolean())
-        {
-            if (System.currentTimeMillis() >= end) return condition.getAsBoolean();
-
-            try
-            {
-                Thread.sleep(ASK_EVERY_MS);
-            }
-            catch (InterruptedException e)
-            {
-                Thread.currentThread().interrupt();
-
-                return condition.getAsBoolean();
-            }
-        }
-
-        return true;
+        return Components.waitFor(condition, atMostMs) || condition.getAsBoolean();
     }
 }

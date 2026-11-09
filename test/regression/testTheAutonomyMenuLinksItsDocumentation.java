@@ -8,7 +8,6 @@ import javax.swing.JMenuItem;
 import javax.swing.SwingUtilities;
 import javax.swing.event.MenuListener;
 import static org.testng.Assert.*;
-import org.testng.SkipException;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
@@ -17,7 +16,10 @@ import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.util.I18n;
 import static org.traincontrol.marklin.MarklinControlStation.init;
+import support.Display;
+import support.Reflect;
 import support.SourceOf;
+import support.Teardown;
 
 /**
  * The Autonomy menu has a Documentation item, opening the guide the old tab's link opened (OB-254).
@@ -36,10 +38,7 @@ public class testTheAutonomyMenuLinksItsDocumentation
     @BeforeClass
     public static void setUpClass() throws Exception
     {
-        if (java.awt.GraphicsEnvironment.isHeadless())
-        {
-            throw new SkipException("the menu is part of the window, and the window needs a display");
-        }
+        Display.needed("the menu is part of the window, and the window needs a display");
 
         // BEFORE init, which opens whatever the layout preference names (OB-111).
         sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("single-switch"));
@@ -56,21 +55,7 @@ public class testTheAutonomyMenuLinksItsDocumentation
     @AfterClass(alwaysRun = true)
     public static void tearDownClass() throws Exception
     {
-        try
-        {
-            if (ui != null)
-            {
-                final TrainControlUI closing = ui;
-
-                SwingUtilities.invokeAndWait(() -> closing.dispose());
-            }
-
-            if (model != null) model.stop();
-        }
-        finally
-        {
-            if (sandbox != null) sandbox.close();
-        }
+        Teardown.close(sandbox, model, ui);
     }
 
     /** Opened, the Autonomy menu offers Documentation, and it can be chosen. */
@@ -103,9 +88,7 @@ public class testTheAutonomyMenuLinksItsDocumentation
     @Test
     public void testDocumentationStaysUsableWhileAnEditorIsOpen() throws Exception
     {
-        Field open = TrainControlUI.class.getDeclaredField("openEditor");
-
-        open.setAccessible(true);
+        Field open = Reflect.field(TrainControlUI.class, "openEditor");
 
         final Object was = open.get(ui);
         final LayoutEditor[] built = new LayoutEditor[1];
@@ -165,11 +148,7 @@ public class testTheAutonomyMenuLinksItsDocumentation
     /** The Autonomy menu, built as opening it builds it: from its own listener, when it is selected. */
     private static JMenu opened() throws Exception
     {
-        Field field = TrainControlUI.class.getDeclaredField("autonomyMenu");
-
-        field.setAccessible(true);
-
-        final JMenu menu = (JMenu) field.get(ui);
+        final JMenu menu = (JMenu) Reflect.get(TrainControlUI.class, ui, "autonomyMenu");
 
         assertNotNull(menu, "precondition: the window has no Autonomy menu on a layout stored on this computer");
 

@@ -11,12 +11,13 @@ import static org.testng.Assert.*;
 import org.testng.annotations.Test;
 import org.traincontrol.automationui.AutonomySession;
 import org.traincontrol.automationui.TileGraph.TileKey;
-import org.traincontrol.base.Accessory.accessoryDecoderType;
 import org.traincontrol.base.LayoutDiagram;
-import org.traincontrol.base.LayoutDiagramComponent.componentType;
 import org.traincontrol.marklin.MarklinAccessory;
 import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.marklin.file.CS2File;
+import support.Diagrams;
+import support.Reflect;
+import support.Trees;
 
 /**
  * A layout folder that is not perfect, and what TrainControl does about it, from hands-on tests 39, 40 and 38: a page
@@ -54,7 +55,7 @@ public class testLayoutFolderRobustness
             LayoutDiagram page = new LayoutDiagram("Up/Down", 8, 6,
                 placeholder.toURI().toURL().toString(), null);
 
-            page.addComponent(componentType.FEEDBACK, 1, 1, 0, 0, 5, 11, accessoryDecoderType.MM2, null);
+            Diagrams.feedback(page, 1, 1, 5, 11);
 
             page.setPageId("1");
             page.checkBounds();
@@ -72,7 +73,7 @@ public class testLayoutFolderRobustness
         }
         finally
         {
-            delete(folder);
+            Trees.delete(folder);
         }
     }
 
@@ -124,7 +125,7 @@ public class testLayoutFolderRobustness
         }
         finally
         {
-            delete(folder);
+            Trees.delete(folder);
         }
     }
 
@@ -174,7 +175,7 @@ public class testLayoutFolderRobustness
         }
         finally
         {
-            delete(folder);
+            Trees.delete(folder);
         }
     }
 
@@ -218,7 +219,7 @@ public class testLayoutFolderRobustness
         }
         finally
         {
-            delete(folder);
+            Trees.delete(folder);
         }
     }
 
@@ -257,7 +258,7 @@ public class testLayoutFolderRobustness
         }
         finally
         {
-            delete(folder);
+            Trees.delete(folder);
         }
     }
 
@@ -308,7 +309,7 @@ public class testLayoutFolderRobustness
         }
         finally
         {
-            delete(folder);
+            Trees.delete(folder);
         }
     }
 
@@ -356,7 +357,7 @@ public class testLayoutFolderRobustness
         }
         finally
         {
-            delete(folder);
+            Trees.delete(folder);
         }
     }
 
@@ -429,16 +430,10 @@ public class testLayoutFolderRobustness
     {
         String path = "file:///" + folder.getAbsolutePath().replace('\\', '/') + "/";
 
-        java.lang.reflect.Field parserField =
-            MarklinControlStation.class.getDeclaredField("fileParser");
-        parserField.setAccessible(true);
-
-        CS2File parser = (CS2File) parserField.get(model);
+        CS2File parser = (CS2File) Reflect.get(MarklinControlStation.class, model, "fileParser");
         parser.setLayoutDataLoc(path);
 
-        java.lang.reflect.Method sync =
-            MarklinControlStation.class.getDeclaredMethod("syncLayouts");
-        sync.setAccessible(true);
+        java.lang.reflect.Method sync = Reflect.method(MarklinControlStation.class, "syncLayouts");
 
         try
         {
@@ -470,7 +465,7 @@ public class testLayoutFolderRobustness
             session.getStore().setStation(new TileKey("main", 1, 1), true);
             session.getStore().save();
 
-            delete(new File(folder, "config/autonomy"));
+            Trees.delete(new File(folder, "config/autonomy"));
 
             AutonomySession after = new AutonomySession(folder);
 
@@ -492,7 +487,7 @@ public class testLayoutFolderRobustness
         }
         finally
         {
-            delete(folder);
+            Trees.delete(folder);
         }
     }
 
@@ -500,8 +495,8 @@ public class testLayoutFolderRobustness
     {
         LayoutDiagram page = new LayoutDiagram(name, 8, 6, null, null);
 
-        page.addComponent(componentType.FEEDBACK, 1, 1, 0, 0, 5, 11, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.STRAIGHT, 2, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
+        Diagrams.feedback(page, 1, 1, 5, 11);
+        Diagrams.straight(page, 2, 1);
 
         page.setPageId("1");
 
@@ -513,14 +508,5 @@ public class testLayoutFolderRobustness
     private static void write(File file, String text) throws IOException
     {
         Files.write(file.toPath(), text.getBytes(StandardCharsets.UTF_8));
-    }
-
-    private static void delete(File file)
-    {
-        File[] kids = file.listFiles();
-
-        if (kids != null) for (File kid : kids) delete(kid);
-
-        file.delete();
     }
 }

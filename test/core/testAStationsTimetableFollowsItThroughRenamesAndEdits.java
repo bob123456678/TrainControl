@@ -12,6 +12,8 @@ import org.traincontrol.automationui.AutonomySession;
 import org.traincontrol.base.LayoutDiagram;
 import org.traincontrol.base.LayoutDiagramComponent.componentType;
 import org.traincontrol.automationui.TileGraph.TileKey;
+import support.Diagrams;
+import support.Reflect;
 
 /**
  * A station's timetable, and the roads its trains stand on, follow it through a rename, a moved square, a ticked-out
@@ -264,11 +266,7 @@ public class testAStationsTimetableFollowsItThroughRenamesAndEdits extends Auton
 
         LayoutDiagram yard = new LayoutDiagram("yard", 7, 3, null, null);
 
-        yard.addComponent(componentType.FEEDBACK, 1, 1, 0, 0, 64, 64, accessoryDecoderType.MM2, null);
-        yard.addComponent(componentType.STRAIGHT, 2, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
-        yard.addComponent(componentType.FEEDBACK, 3, 1, 0, 0, 65, 65, accessoryDecoderType.MM2, null);
-        yard.addComponent(componentType.STRAIGHT, 4, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
-        yard.addComponent(componentType.FEEDBACK, 5, 1, 0, 0, 66, 66, accessoryDecoderType.MM2, null);
+        Diagrams.row(yard, 1, 1, "FSFSF", 64, 65, 66);
         yard.setPageId("1");
 
         AutonomySession next = new AutonomySession(layout);
@@ -497,9 +495,7 @@ public class testAStationsTimetableFollowsItThroughRenamesAndEdits extends Auton
 
         session.endEditSession();
 
-        java.lang.reflect.Field seen = AutonomySession.class.getDeclaredField("squareOfNameSeen");
-
-        seen.setAccessible(true);
+        java.lang.reflect.Field seen = Reflect.field(AutonomySession.class, "squareOfNameSeen");
 
         assertFalse(((java.util.Map<?, ?>) seen.get(session)).containsKey("Omega"), "the memory still knows a name only the"
             + " edit gave, after the edit session: it would be the next one's opening memory (OB-343)");
@@ -697,10 +693,9 @@ public class testAStationsTimetableFollowsItThroughRenamesAndEdits extends Auton
 
         for (int i = 0; i < 4; i++)
         {
-            page.addComponent(componentType.FEEDBACK, 1 + 2 * i, 1, 0, 0, address + i, address + i,
-                accessoryDecoderType.MM2, null);
+            Diagrams.feedback(page, 1 + 2 * i, 1, address + i, address + i);
 
-            if (i < 3) page.addComponent(componentType.STRAIGHT, 2 + 2 * i, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
+            if (i < 3) Diagrams.straight(page, 2 + 2 * i, 1);
         }
 
         page.setPageId("1");
@@ -891,13 +886,7 @@ public class testAStationsTimetableFollowsItThroughRenamesAndEdits extends Auton
 
         for (LayoutDiagram page : new LayoutDiagram[] {main, second})
         {
-            page.addComponent(componentType.FEEDBACK, 1, 1, 0, 0, address, address, accessoryDecoderType.MM2, null);
-            page.addComponent(componentType.STRAIGHT, 2, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
-            page.addComponent(componentType.FEEDBACK, 3, 1, 0, 0, address + 1, address + 1, accessoryDecoderType.MM2,
-                null);
-            page.addComponent(componentType.STRAIGHT, 4, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
-            page.addComponent(componentType.FEEDBACK, 5, 1, 0, 0, address + 2, address + 2, accessoryDecoderType.MM2,
-                null);
+            Diagrams.row(page, 1, 1, "FSFSF", address, address + 1, address + 2);
 
             address += 10;
         }
@@ -1158,13 +1147,7 @@ public class testAStationsTimetableFollowsItThroughRenamesAndEdits extends Auton
 
         for (LayoutDiagram page : new LayoutDiagram[] {main, second})
         {
-            page.addComponent(componentType.FEEDBACK, 1, 1, 0, 0, address, address, accessoryDecoderType.MM2, null);
-            page.addComponent(componentType.STRAIGHT, 2, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
-            page.addComponent(componentType.FEEDBACK, 3, 1, 0, 0, address + 1, address + 1, accessoryDecoderType.MM2,
-                null);
-            page.addComponent(componentType.STRAIGHT, 4, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
-            page.addComponent(componentType.FEEDBACK, 5, 1, 0, 0, address + 2, address + 2, accessoryDecoderType.MM2,
-                null);
+            Diagrams.row(page, 1, 1, "FSFSF", address, address + 1, address + 2);
 
             address += 10;
         }

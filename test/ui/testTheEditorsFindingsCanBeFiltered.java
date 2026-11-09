@@ -21,6 +21,8 @@ import org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel;
 import org.traincontrol.gui.layouteditor.LayoutEditor;
 import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.util.I18n;
+import support.Components;
+import support.Reflect;
 
 /**
  * The autonomy editor's "Things to look at" list has a filter box (FR-073).  Every claim types into the box the
@@ -399,12 +401,10 @@ public class testTheEditorsFindingsCanBeFiltered
 
             // IN PLACE
             final java.lang.reflect.Method leave =
-                LayoutEditor.class.getDeclaredMethod("leaveFor", String.class, boolean.class);
-
-            leave.setAccessible(true);
+                Reflect.method(LayoutEditor.class, "leaveFor", String.class, boolean.class);
             support.Components.onTheEventThread(() -> leave.invoke(editor, OTHER_PAGE, true));
 
-            settle();
+            Components.settle();
 
             assertTrue(editor.isDisplayable(), "precondition: the page change closed the window");
             assertEquals(editor.getAutonomyPanel().getFindingFilter(), word, "the box after a page change in place");
@@ -541,7 +541,7 @@ public class testTheEditorsFindingsCanBeFiltered
             return fresh;
         });
 
-        settle();
+        Components.settle();
 
         return made;
     }
@@ -564,13 +564,7 @@ public class testTheEditorsFindingsCanBeFiltered
             return null;
         });
 
-        settle();
-    }
-
-    /** What a window posts while it opens or closes. */
-    private static void settle() throws Exception
-    {
-        support.Components.settle();
+        Components.settle();
     }
 
     private static javax.swing.JList<?> list(LayoutEditor editor)
@@ -745,11 +739,7 @@ public class testTheEditorsFindingsCanBeFiltered
     /** The listener a panel holds for one of the editor's own reopenings, by its field's name. */
     private static Object doorOf(LayoutEditor from, String field) throws Exception
     {
-        java.lang.reflect.Field held = AutonomyEditorPanel.class.getDeclaredField(field);
-
-        held.setAccessible(true);
-
-        return held.get(from.getAutonomyPanel());
+        return Reflect.get(AutonomyEditorPanel.class, from.getAutonomyPanel(), field);
     }
 
     @SuppressWarnings("unchecked")
@@ -801,9 +791,7 @@ public class testTheEditorsFindingsCanBeFiltered
             return null;
         });
 
-        final java.lang.reflect.Field shown = TrainControlUI.class.getDeclaredField("openEditor");
-
-        shown.setAccessible(true);
+        final java.lang.reflect.Field shown = Reflect.field(TrainControlUI.class, "openEditor");
 
         final LayoutEditor[] now = new LayoutEditor[1];
 
@@ -825,7 +813,7 @@ public class testTheEditorsFindingsCanBeFiltered
 
         assertTrue(came, "precondition: no autonomy editor was opened");
 
-        settle();
+        Components.settle();
 
         return now[0];
     }

@@ -36,6 +36,7 @@ import org.traincontrol.gui.layouteditor.LayoutEditor;
 import org.traincontrol.util.I18n;
 import support.Answering;
 import support.Components;
+import support.Reflect;
 import support.StationDoors;
 
 /**
@@ -611,9 +612,7 @@ public class testSeveralStationsAtOnce
     @Test(timeOut = 120000)
     public void testSeveralAreReadOnlyWhileARunHoldsTheSetup() throws Exception
     {
-        final java.lang.reflect.Field staging = TrainControlUI.class.getDeclaredField("stagingFlowActive");
-
-        staging.setAccessible(true);
+        final java.lang.reflect.Field staging = Reflect.field(TrainControlUI.class, "stagingFlowActive");
 
         try
         {

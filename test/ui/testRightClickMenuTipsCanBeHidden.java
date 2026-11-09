@@ -1,7 +1,6 @@
 package ui;
 
 import java.awt.Component;
-import java.lang.reflect.Field;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -28,6 +27,7 @@ import support.AskingWindows;
 import support.Components;
 import support.EditorsOpen;
 import support.Mouse;
+import support.Reflect;
 
 /**
  * Preferences > Hide Right-Click Menu Tips (FR-168): off, right-click menus keep their tooltips; on, every item loses
@@ -575,10 +575,6 @@ public class testRightClickMenuTipsCanBeHidden
 
     private static Object field(String name) throws Exception
     {
-        Field f = TrainControlUI.class.getDeclaredField(name);
-
-        f.setAccessible(true);
-
-        return f.get(ui);
+        return Reflect.get(TrainControlUI.class, ui, name);
     }
 }

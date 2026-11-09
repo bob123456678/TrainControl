@@ -14,6 +14,7 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 import org.traincontrol.marklin.file.CS2File;
+import support.Reflect;
 
 /**
  *
@@ -98,33 +99,25 @@ public class testAutoDetect
     {
         // Once tests reliably pass, input these values into the class
         // Modify NET_TIMEOUT_MS
-        Field netTimeoutField = CSDetect.class.getDeclaredField("NET_TIMEOUT_MS");
-        netTimeoutField.setAccessible(true);
-        Field netTimeoutModifiersField = Field.class.getDeclaredField("modifiers");
-        netTimeoutModifiersField.setAccessible(true);
+        Field netTimeoutField = Reflect.field(CSDetect.class, "NET_TIMEOUT_MS");
+        Field netTimeoutModifiersField = Reflect.field(Field.class, "modifiers");
         netTimeoutModifiersField.setInt(netTimeoutField, netTimeoutField.getModifiers() & ~Modifier.FINAL);
         netTimeoutField.set(null, TEST_NET_TIMEOUT_MS);
 
         // Modify THREAD_POOL_SIZE
-        Field threadPoolSizeField = CSDetect.class.getDeclaredField("THREAD_POOL_SIZE");
-        threadPoolSizeField.setAccessible(true);
-        Field threadPoolSizeModifiersField = Field.class.getDeclaredField("modifiers");
-        threadPoolSizeModifiersField.setAccessible(true);
+        Field threadPoolSizeField = Reflect.field(CSDetect.class, "THREAD_POOL_SIZE");
+        Field threadPoolSizeModifiersField = Reflect.field(Field.class, "modifiers");
         threadPoolSizeModifiersField.setInt(threadPoolSizeField, threadPoolSizeField.getModifiers() & ~Modifier.FINAL);
         threadPoolSizeField.set(null, TEST_CONCURRENCY);
 
         // Modify WEB_TIMEOUT_MS
-        Field webTimeoutField = CSDetect.class.getDeclaredField("WEB_TIMEOUT_MS");
-        webTimeoutField.setAccessible(true);
-        Field webTimeoutModifiersField = Field.class.getDeclaredField("modifiers");
-        webTimeoutModifiersField.setAccessible(true);
+        Field webTimeoutField = Reflect.field(CSDetect.class, "WEB_TIMEOUT_MS");
+        Field webTimeoutModifiersField = Reflect.field(Field.class, "modifiers");
         webTimeoutModifiersField.setInt(webTimeoutField, webTimeoutField.getModifiers() & ~Modifier.FINAL);
         webTimeoutField.set(null, TEST_WEB_TIMEOUT_MS);
         
-        Field pingRetryField = CSDetect.class.getDeclaredField("PING_RETRY");
-        pingRetryField.setAccessible(true);
-        Field pingRetryMofidiersField = Field.class.getDeclaredField("modifiers");
-        pingRetryMofidiersField.setAccessible(true);
+        Field pingRetryField = Reflect.field(CSDetect.class, "PING_RETRY");
+        Field pingRetryMofidiersField = Reflect.field(Field.class, "modifiers");
         pingRetryMofidiersField.setInt(pingRetryField, pingRetryField.getModifiers() & ~Modifier.FINAL);
         pingRetryField.set(null, TEST_PING_RETRY);
     }

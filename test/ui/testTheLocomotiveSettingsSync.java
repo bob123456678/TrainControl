@@ -19,6 +19,7 @@ import org.traincontrol.gui.LocomotiveSettingsFrame;
 import org.traincontrol.marklin.MarklinLocomotive;
 import org.traincontrol.util.I18n;
 import support.Components;
+import support.Reflect;
 import support.SettingsWindow;
 
 /**
@@ -90,11 +91,7 @@ public class testTheLocomotiveSettingsSync extends support.SettingsClass
     /** Makes the model read as having a real Central Station on the wire, or as a simulation again. */
     private static void connected(boolean on) throws Exception
     {
-        java.lang.reflect.Field simulation = org.traincontrol.marklin.MarklinControlStation.class
-            .getDeclaredField("simulation");
-
-        simulation.setAccessible(true);
-        simulation.set(fixture.model, !on);
+        Reflect.set(org.traincontrol.marklin.MarklinControlStation.class, fixture.model, "simulation", !on);
 
         fixture.model.setNetworkCommState(on);
     }

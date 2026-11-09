@@ -11,6 +11,7 @@ import org.traincontrol.automationui.TilePorts.Side;
 import org.traincontrol.base.LayoutDiagram;
 import org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel;
 import org.traincontrol.util.I18n;
+import support.Reflect;
 
 /**
  * The editor's Test a Path starts a train where the setup check does: on the copies a train sent to the square stands
@@ -205,9 +206,7 @@ public class testTestAPathStartsWhereTheFindingsDo extends AutonomySessionFixtur
     {
         AutonomyEditorPanel panel = new AutonomyEditorPanel(session, null, () -> { });
 
-        java.lang.reflect.Field button = AutonomyEditorPanel.class.getDeclaredField("testButton");
-        button.setAccessible(true);
-        ((javax.swing.AbstractButton) button.get(panel)).doClick();
+        ((javax.swing.AbstractButton) Reflect.get(AutonomyEditorPanel.class, panel, "testButton")).doClick();
 
         return panel;
     }
@@ -224,9 +223,7 @@ public class testTestAPathStartsWhereTheFindingsDo extends AutonomySessionFixtur
         panel.tileClicked(from, session.getGraph().getTiles().get(from), false);
         panel.tileClicked(to, session.getGraph().getTiles().get(to), false);
 
-        java.lang.reflect.Field hint = AutonomyEditorPanel.class.getDeclaredField("hint");
-        hint.setAccessible(true);
-        String said = ((javax.swing.JLabel) hint.get(panel)).getText();
+        String said = ((javax.swing.JLabel) Reflect.get(AutonomyEditorPanel.class, panel, "hint")).getText();
 
         // The legs read out between the message's fixed words, so the claim holds in any language
         String shape = I18n.f("autosetup.ui.testBothWays", session.describeTile(from), session.describeTile(to),

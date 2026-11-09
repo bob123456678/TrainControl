@@ -14,7 +14,6 @@ import javax.swing.JPopupMenu;
 import javax.swing.JTextField;
 import javax.swing.SwingUtilities;
 import static org.testng.Assert.*;
-import org.testng.SkipException;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeClass;
@@ -30,7 +29,9 @@ import org.traincontrol.marklin.file.CS2File;
 import org.traincontrol.util.I18n;
 import support.Answering;
 import support.Components;
+import support.Display;
 import support.Mouse;
+import support.Teardown;
 
 /**
  * The track diagram editor, driven as the user drives it: the Edit button, the pointer over a square, the keys, the
@@ -58,10 +59,7 @@ public class testTheTrackEditorByHand
     @BeforeClass
     public static void setUpClass() throws Exception
     {
-        if (java.awt.GraphicsEnvironment.isHeadless())
-        {
-            throw new SkipException("the editor is a window, and its squares take the mouse");
-        }
+        Display.needed("the editor is a window, and its squares take the mouse");
 
         sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("single-switch"));
 
@@ -84,19 +82,10 @@ public class testTheTrackEditorByHand
         try
         {
             TrainControlUI.getPrefs().putBoolean(TrainControlUI.LAST_EDITOR_AUTONOMY_PREF, lastEditorWasAutonomy);
-
-            if (ui != null)
-            {
-                final TrainControlUI closing = ui;
-
-                SwingUtilities.invokeAndWait(() -> closing.dispose());
-            }
-
-            if (model != null) model.stop();
         }
         finally
         {
-            if (sandbox != null) sandbox.close();
+            Teardown.close(sandbox, model, ui);
         }
     }
 

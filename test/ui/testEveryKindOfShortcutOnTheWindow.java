@@ -28,6 +28,7 @@ import org.traincontrol.marklin.udp.CS2Message;
 import support.Answering;
 import support.Components;
 import support.Keys;
+import support.Reflect;
 import support.WireRecorder;
 
 /**
@@ -346,9 +347,7 @@ public class testEveryKindOfShortcutOnTheWindow
         }
         finally
         {
-            Method selected = TrainControlUI.class.getDeclaredMethod("getSelectedKeyboardType");
-
-            selected.setAccessible(true);
+            Method selected = Reflect.method(TrainControlUI.class, "getSelectedKeyboardType");
 
             int chosen = Components.onTheEventThread(() -> (Integer) selected.invoke(ui));
 
@@ -681,9 +680,7 @@ public class testEveryKindOfShortcutOnTheWindow
     /** Runs the window's own layout switch, which saves no preference. */
     private static void applyLayout(String layout) throws Exception
     {
-        Method apply = TrainControlUI.class.getDeclaredMethod("applyKeyboardType", String.class);
-
-        apply.setAccessible(true);
+        Method apply = Reflect.method(TrainControlUI.class, "applyKeyboardType", String.class);
 
         Components.onTheEventThread(() -> apply.invoke(ui, layout));
 

@@ -3,7 +3,6 @@ package ui;
 import java.awt.Window;
 import java.awt.event.KeyEvent;
 import java.io.File;
-import java.lang.reflect.Field;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.time.LocalDate;
@@ -42,6 +41,7 @@ import org.traincontrol.util.Conversion;
 import org.traincontrol.util.I18n;
 import support.Answering;
 import support.Components;
+import support.Reflect;
 
 /**
  * The locomotive statistics tab as the operator uses it: the table and its totals, the filter, Refresh, the usage
@@ -770,11 +770,7 @@ public class testTheLocomotiveUsageStats
         {
             try
             {
-                Field f = type.getDeclaredField(name);
-
-                f.setAccessible(true);
-
-                return f.get(owner);
+                return Reflect.get(type, owner, name);
             }
             catch (NoSuchFieldException next)
             {

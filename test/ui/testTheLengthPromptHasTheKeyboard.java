@@ -20,6 +20,8 @@ import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.util.I18n;
 import static org.traincontrol.marklin.MarklinControlStation.init;
+import support.Display;
+import support.Teardown;
 
 /**
  * Mass Assign Locomotive Train Lengths' prompt has the keyboard in the real editor window - on the first train, after a
@@ -49,10 +51,7 @@ public class testTheLengthPromptHasTheKeyboard
     @BeforeClass
     public static void setUpClass() throws Exception
     {
-        if (java.awt.GraphicsEnvironment.isHeadless())
-        {
-            throw new SkipException("the autonomy editor and its prompts need a display");
-        }
+        Display.needed("the autonomy editor and its prompts need a display");
 
         sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
 
@@ -126,26 +125,10 @@ public class testTheLengthPromptHasTheKeyboard
             closeEveryPrompt();
 
             for (int i = 0; i < unmeasured.size(); i++) unmeasured.get(i).setTrainLength(theirLengths.get(i));
-
-            if (editor != null)
-            {
-                final LayoutEditor closing = editor;
-
-                SwingUtilities.invokeAndWait(() -> closing.dispose());
-            }
-
-            if (ui != null)
-            {
-                final TrainControlUI closing = ui;
-
-                SwingUtilities.invokeAndWait(() -> closing.dispose());
-            }
-
-            if (model != null) model.stop();
         }
         finally
         {
-            if (sandbox != null) sandbox.close();
+            Teardown.close(sandbox, model, editor, ui);
         }
     }
 

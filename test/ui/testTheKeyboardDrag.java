@@ -13,6 +13,8 @@ import static org.testng.Assert.*;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
+import support.Display;
+import support.Reflect;
 
 /**
  * Dragging a locomotive from one keyboard key to another.
@@ -239,10 +241,7 @@ public class testTheKeyboardDrag
      */
     private TrainControlUI build() throws Exception
     {
-        if (java.awt.GraphicsEnvironment.isHeadless())
-        {
-            throw new org.testng.SkipException("the keyboard is on a window");
-        }
+        Display.needed("the keyboard is on a window");
 
         // BEFORE the window: its constructor reads the machine-global layout preference and would open Adam's real
         // railway (OB-111).
@@ -261,10 +260,7 @@ public class testTheKeyboardDrag
             if (sandbox != null) sandbox.close();
         }
 
-        java.lang.reflect.Field f = TrainControlUI.class.getDeclaredField("model");
-
-        f.setAccessible(true);
-        f.set(built[0], model);
+        Reflect.set(TrainControlUI.class, built[0], "model", model);
 
         // WHATEVER WAS ON THE CLIPBOARD, so the battery can be run without losing it; put back by
         // `giveTheClipboardBack`.
@@ -327,9 +323,7 @@ public class testTheKeyboardDrag
     @SuppressWarnings("unchecked")
     private List<JButton> keysOf(TrainControlUI ui) throws Exception
     {
-        java.lang.reflect.Field f = TrainControlUI.class.getDeclaredField("buttonMapping");
-
-        f.setAccessible(true);
+        java.lang.reflect.Field f = Reflect.field(TrainControlUI.class, "buttonMapping");
 
         HashMap<Integer, JButton> board = (HashMap<Integer, JButton>) f.get(ui);
 
@@ -359,9 +353,7 @@ public class testTheKeyboardDrag
     @SuppressWarnings("unchecked")
     private void put(TrainControlUI ui, int page, JButton key, Locomotive loc) throws Exception
     {
-        java.lang.reflect.Field f = TrainControlUI.class.getDeclaredField("locMapping");
-
-        f.setAccessible(true);
+        java.lang.reflect.Field f = Reflect.field(TrainControlUI.class, "locMapping");
 
         ((List<HashMap<JButton, Locomotive>>) f.get(ui)).get(page - 1).put(key, loc);
     }
@@ -373,9 +365,7 @@ public class testTheKeyboardDrag
     @SuppressWarnings("unchecked")
     private Locomotive at(TrainControlUI ui, int page, JButton key) throws Exception
     {
-        java.lang.reflect.Field f = TrainControlUI.class.getDeclaredField("locMapping");
-
-        f.setAccessible(true);
+        java.lang.reflect.Field f = Reflect.field(TrainControlUI.class, "locMapping");
 
         return ((List<HashMap<JButton, Locomotive>>) f.get(ui)).get(page - 1).get(key);
     }
@@ -386,14 +376,10 @@ public class testTheKeyboardDrag
      */
     private void page(TrainControlUI ui, int page) throws Exception
     {
-        java.lang.reflect.Field f = TrainControlUI.class.getDeclaredField("locMappingNumber");
-
-        f.setAccessible(true);
+        java.lang.reflect.Field f = Reflect.field(TrainControlUI.class, "locMappingNumber");
         f.setInt(ui, page);
 
-        java.lang.reflect.Field count = TrainControlUI.class.getDeclaredField("numLocMappings");
-
-        count.setAccessible(true);
+        java.lang.reflect.Field count = Reflect.field(TrainControlUI.class, "numLocMappings");
 
         if (count.getInt(ui) < page) count.setInt(ui, page);
     }

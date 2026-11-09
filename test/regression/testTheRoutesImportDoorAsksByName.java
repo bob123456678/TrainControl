@@ -27,6 +27,7 @@ import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.util.I18n;
 import org.traincontrol.util.Util;
+import support.Reflect;
 
 /**
  * Routes > Import, driven as Adam drives it: the file chooser answered with an export of his routes, the question about
@@ -425,9 +426,7 @@ public class testTheRoutesImportDoorAsksByName
             answering.setDaemon(true);
             answering.start();
 
-            java.lang.reflect.Field item = TrainControlUI.class.getDeclaredField("importRoutesMenuItem");
-
-            item.setAccessible(true);
+            java.lang.reflect.Field item = Reflect.field(TrainControlUI.class, "importRoutesMenuItem");
 
             final javax.swing.JMenuItem importRoutes = (javax.swing.JMenuItem) item.get(ui[0]);
 

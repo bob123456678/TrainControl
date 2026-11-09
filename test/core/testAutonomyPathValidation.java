@@ -15,6 +15,7 @@ import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.marklin.MarklinFeedback;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 import org.traincontrol.marklin.MarklinLocomotive;
+import support.Reflect;
 
 /**
  * Verifies the configureAndLockPath guard in Layout: autonomy trains must not be released until the
@@ -845,12 +846,9 @@ public class testAutonomyPathValidation
 
         // What executePath does once the tail has provably passed: release the edge, and record that
         // it has been released.  Both halves, because unlockPath reads the record.
-        java.lang.reflect.Field clearedField = Layout.class.getDeclaredField("clearedEdges");
-        clearedField.setAccessible(true);
-
         java.util.Map<org.traincontrol.base.Locomotive, java.util.Set<Edge>> cleared =
             (java.util.Map<org.traincontrol.base.Locomotive, java.util.Set<Edge>>)
-                clearedField.get(layout);
+                Reflect.get(Layout.class, layout, "clearedEdges");
 
         cleared.put(first, java.util.concurrent.ConcurrentHashMap.<Edge>newKeySet());
         cleared.get(first).add(shared);
@@ -858,12 +856,9 @@ public class testAutonomyPathValidation
         // AND THE RECORD OF WHAT WAS GIVEN BACK, which is the one `unlockPath` reads: the cleared set is
         // kept in atomic mode too, where nothing in it has been released, so it cannot say what a run still holds.
         // `executePath` writes both on an early release; this writes both.
-        java.lang.reflect.Field releasedField = Layout.class.getDeclaredField("releasedEarly");
-        releasedField.setAccessible(true);
-
         java.util.Map<org.traincontrol.base.Locomotive, java.util.Set<Edge>> released =
             (java.util.Map<org.traincontrol.base.Locomotive, java.util.Set<Edge>>)
-                releasedField.get(layout);
+                Reflect.get(Layout.class, layout, "releasedEarly");
 
         released.put(first, java.util.concurrent.ConcurrentHashMap.<Edge>newKeySet());
         released.get(first).add(shared);

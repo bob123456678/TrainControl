@@ -10,7 +10,6 @@ import java.util.List;
 import java.util.Map;
 import javax.swing.SwingUtilities;
 import static org.testng.Assert.*;
-import org.testng.SkipException;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
@@ -27,6 +26,9 @@ import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.util.I18n;
 import static org.traincontrol.marklin.MarklinControlStation.init;
+import support.Components;
+import support.Display;
+import support.Reflect;
 
 /**
  * A train pasted onto a may-reverse square faces the way the operator said, on the railway itself (MT-394).  The
@@ -53,10 +55,7 @@ public class testAPastedTrainFacesTheWayTheOperatorChose
     @BeforeClass
     public static void setUpClass() throws Exception
     {
-        if (java.awt.GraphicsEnvironment.isHeadless())
-        {
-            throw new SkipException("the paste door belongs to a window, and a window needs a display");
-        }
+        Display.needed("the paste door belongs to a window, and a window needs a display");
 
         // THE FROZEN COPY, NOT THE RAILWAY HE IS OPERATING (OB-111).
         sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
@@ -68,8 +67,8 @@ public class testAPastedTrainFacesTheWayTheOperatorChose
 
         assertNotNull(ui, "there is no window");
 
-        pump();
-        pump();
+        Components.drain(1);
+        Components.drain(1);
 
         session = ui.getAutonomySession();
 
@@ -219,8 +218,7 @@ public class testAPastedTrainFacesTheWayTheOperatorChose
                     + ", though " + SQUARE_NAME + " is no station");
             }
 
-            Field cut = TrainControlUI.class.getDeclaredField("cutLocomotive");
-            cut.setAccessible(true);
+            Field cut = Reflect.field(TrainControlUI.class, "cutLocomotive");
 
             assertSame(cut.get(ui), train, "the refused paste took the train off the clipboard");
         }
@@ -241,7 +239,7 @@ public class testAPastedTrainFacesTheWayTheOperatorChose
 
         layout = model.getAutoLayout();
 
-        pump();
+        Components.drain(1);
     }
 
     /**
@@ -259,10 +257,7 @@ public class testAPastedTrainFacesTheWayTheOperatorChose
 
         assertNotNull(over, "the main window draws no square at " + target + " to point at");
 
-        Field tab = TrainControlUI.class.getDeclaredField("KeyboardTab");
-        tab.setAccessible(true);
-
-        final Component keyboard = (Component) tab.get(ui);
+        final Component keyboard = (Component) Reflect.get(TrainControlUI.class, ui, "KeyboardTab");
         final LayoutLabel square = over;
 
         SwingUtilities.invokeAndWait(() ->
@@ -278,7 +273,7 @@ public class testAPastedTrainFacesTheWayTheOperatorChose
                 keyCode, KeyEvent.CHAR_UNDEFINED));
         });
 
-        pump();
+        Components.drain(1);
     }
 
     /**
@@ -357,10 +352,8 @@ public class testAPastedTrainFacesTheWayTheOperatorChose
             + " train was put");
 
         // AND CUT, by the same door's Control+X
-        final Method gesture = TrainControlUI.class.getDeclaredMethod("locomotiveGestureOnDiagram", int.class,
-            boolean.class);
-
-        gesture.setAccessible(true);
+        final Method gesture =
+            Reflect.method(TrainControlUI.class, "locomotiveGestureOnDiagram", int.class, boolean.class);
 
         final Object[] handled = new Object[1];
 
@@ -397,7 +390,7 @@ public class testAPastedTrainFacesTheWayTheOperatorChose
 
         for (int tries = 0; tries < 50; tries++)
         {
-            pump();
+            Components.drain(1);
 
             seen = ui.getDiagramTileRegistry().overlayAt(square);
 
@@ -427,16 +420,12 @@ public class testAPastedTrainFacesTheWayTheOperatorChose
 
         // WHAT CONTROL+X LEAVES BEHIND, set directly: the train on the clipboard and no remembered
         // heading, so the facing comes from the question and nothing else.
-        Field cut = TrainControlUI.class.getDeclaredField("cutLocomotive");
-        cut.setAccessible(true);
+        Field cut = Reflect.field(TrainControlUI.class, "cutLocomotive");
 
-        Field cutFacing = TrainControlUI.class.getDeclaredField("cutFacing");
-        cutFacing.setAccessible(true);
+        Field cutFacing = Reflect.field(TrainControlUI.class, "cutFacing");
 
-        final Method gesture = TrainControlUI.class.getDeclaredMethod(
-            "locomotiveGestureOnDiagram", int.class, boolean.class);
-
-        gesture.setAccessible(true);
+        final Method gesture =
+            Reflect.method(TrainControlUI.class, "locomotiveGestureOnDiagram", int.class, boolean.class);
 
         final Object[] handled = new Object[1];
 
@@ -457,7 +446,7 @@ public class testAPastedTrainFacesTheWayTheOperatorChose
             }
         });
 
-        pump();
+        Components.drain(1);
 
         assertEquals(handled[0], Boolean.TRUE,
             "the diagram's paste door did not take Control+V over " + SQUARE_NAME + ": " + handled[0]);
@@ -497,11 +486,6 @@ public class testAPastedTrainFacesTheWayTheOperatorChose
             }
         });
 
-        pump();
-    }
-
-    private static void pump() throws Exception
-    {
-        SwingUtilities.invokeAndWait(() -> { });
+        Components.drain(1);
     }
 }

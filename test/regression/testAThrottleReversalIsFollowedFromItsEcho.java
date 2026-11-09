@@ -2,7 +2,6 @@ package regression;
 
 import javax.swing.SwingUtilities;
 import static org.testng.Assert.*;
-import org.testng.SkipException;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
@@ -14,6 +13,9 @@ import org.traincontrol.base.Route;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;
 import static org.traincontrol.marklin.MarklinControlStation.init;
+import support.Components;
+import support.Display;
+import support.Reflect;
 
 /**
  * A train reversed on the throttle turns around in autonomy, from the throttle's call to the setup's facing (MT-488).
@@ -50,10 +52,7 @@ public class testAThrottleReversalIsFollowedFromItsEcho
     @BeforeClass
     public static void setUpClass() throws Exception
     {
-        if (java.awt.GraphicsEnvironment.isHeadless())
-        {
-            throw new SkipException("the turn is followed by the window, and the window needs a display");
-        }
+        Display.needed("the turn is followed by the window, and the window needs a display");
 
         sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
 
@@ -70,7 +69,7 @@ public class testAThrottleReversalIsFollowedFromItsEcho
 
         assertNotNull(ui, "there is no window, so nothing follows a turn");
 
-        settle();
+        Components.drain(4);
 
         assertNotNull(model.newMM2Locomotive(PROBE, 2397), "could not create this class's train");
 
@@ -93,7 +92,7 @@ public class testAThrottleReversalIsFollowedFromItsEcho
             ui.getDiagramMonitorDriver().bind(session);
         });
 
-        settle();
+        Components.drain(4);
 
         assertFalse(model.getAutoLayout().isRunning(), "precondition: something is running, and a turn is not followed"
             + " while it is");
@@ -141,7 +140,7 @@ public class testAThrottleReversalIsFollowedFromItsEcho
         for (long until = System.currentTimeMillis() + 10000; System.currentTimeMillis() < until
             && facing != Side.W; )
         {
-            settle();
+            Components.drain(4);
 
             Thread.sleep(100);
 
@@ -172,7 +171,7 @@ public class testAThrottleReversalIsFollowedFromItsEcho
 
             waitFor(() -> held().contains(PROBE), "the reversal was not seen by the window while a route runs");
 
-            settle();
+            Components.drain(4);
 
             assertEquals(session.getFacing(MAIN_A), Side.E, "the setup was turned while a route runs - Adam: \"There"
                 + " should be no setup edit possible during a run\"");
@@ -219,11 +218,11 @@ public class testAThrottleReversalIsFollowedFromItsEcho
 
             endTheRoute(hold);
 
-            settle();
+            Components.drain(4);
 
             Thread.sleep(500);
 
-            settle();
+            Components.drain(4);
 
             assertEquals(session.getFacing(MAIN_A), Side.E, "reversed twice during a route, the train runs the way it did,"
                 + " and the setup turned it");
@@ -296,9 +295,7 @@ public class testAThrottleReversalIsFollowedFromItsEcho
     @Test
     public void testADirectionCommandWhileAutonomyRunsChangesNothing() throws Exception
     {
-        final java.lang.reflect.Field running = org.traincontrol.automation.Layout.class.getDeclaredField("running");
-
-        running.setAccessible(true);
+        final java.lang.reflect.Field running = Reflect.field(org.traincontrol.automation.Layout.class, "running");
 
         ignoredWhile(() -> set(running, model.getAutoLayout(), true), () -> set(running, model.getAutoLayout(), false),
             "autonomy runs");
@@ -310,9 +307,7 @@ public class testAThrottleReversalIsFollowedFromItsEcho
     @Test
     public void testADirectionCommandWhileReturnHomeRunsChangesNothing() throws Exception
     {
-        final java.lang.reflect.Field staging = TrainControlUI.class.getDeclaredField("stagingFlowActive");
-
-        staging.setAccessible(true);
+        final java.lang.reflect.Field staging = Reflect.field(TrainControlUI.class, "stagingFlowActive");
 
         ignoredWhile(() -> set(staging, ui, true), () -> set(staging, ui, false), "Return Home runs");
     }
@@ -337,13 +332,13 @@ public class testAThrottleReversalIsFollowedFromItsEcho
             // ends turned around and a turn left over would show after the run
             reverse();
 
-            settle();
+            Components.drain(4);
 
             Thread.sleep(500);
 
             fromTheCentralStation(train, forwardWas);
 
-            settle();
+            Components.drain(4);
 
             Thread.sleep(500);
 
@@ -351,11 +346,11 @@ public class testAThrottleReversalIsFollowedFromItsEcho
 
             reverse();
 
-            settle();
+            Components.drain(4);
 
             Thread.sleep(500);
 
-            settle();
+            Components.drain(4);
 
             assertNothingTurned("a direction command while " + what);
         }
@@ -369,11 +364,11 @@ public class testAThrottleReversalIsFollowedFromItsEcho
 
         train.setSpeed(0);
 
-        settle();
+        Components.drain(4);
 
         Thread.sleep(500);
 
-        settle();
+        Components.drain(4);
 
         assertNothingTurned("a direction command made while " + what + ", once it was over,");
 
@@ -513,7 +508,7 @@ public class testAThrottleReversalIsFollowedFromItsEcho
             ui.getDiagramMonitorDriver().bind(session);
         });
 
-        settle();
+        Components.drain(4);
 
         SwingUtilities.invokeAndWait(() -> ui.reconcileFacingWhenIdle());
 
@@ -531,15 +526,9 @@ public class testAThrottleReversalIsFollowedFromItsEcho
         {
             Object driver = ui.getDiagramMonitorDriver();
 
-            java.lang.reflect.Field monitor = driver.getClass().getDeclaredField("monitor");
+            Object watching = Reflect.get(driver.getClass(), driver, "monitor");
 
-            monitor.setAccessible(true);
-
-            Object watching = monitor.get(driver);
-
-            java.lang.reflect.Field dirty = watching.getClass().getDeclaredField("dirty");
-
-            dirty.setAccessible(true);
+            java.lang.reflect.Field dirty = Reflect.field(watching.getClass(), "dirty");
 
             return ((java.util.concurrent.atomic.AtomicBoolean) dirty.get(watching)).get();
         }
@@ -564,11 +553,7 @@ public class testAThrottleReversalIsFollowedFromItsEcho
     {
         try
         {
-            java.lang.reflect.Field field = TrainControlUI.class.getDeclaredField("turnsHeldByARoute");
-
-            field.setAccessible(true);
-
-            return (java.util.Set<String>) field.get(ui);
+            return (java.util.Set<String>) Reflect.get(TrainControlUI.class, ui, "turnsHeldByARoute");
         }
         catch (ReflectiveOperationException failed)
         {
@@ -580,7 +565,7 @@ public class testAThrottleReversalIsFollowedFromItsEcho
     {
         for (long until = System.currentTimeMillis() + 10000; System.currentTimeMillis() < until; )
         {
-            settle();
+            Components.drain(4);
 
             if (condition.getAsBoolean()) return;
 
@@ -588,10 +573,5 @@ public class testAThrottleReversalIsFollowedFromItsEcho
         }
 
         assertTrue(condition.getAsBoolean(), otherwise);
-    }
-
-    private static void settle() throws Exception
-    {
-        for (int pass = 0; pass < 4; pass++) SwingUtilities.invokeAndWait(() -> { });
     }
 }

@@ -3,7 +3,6 @@ package ui;
 import java.awt.GraphicsEnvironment;
 import java.util.List;
 import static org.testng.Assert.*;
-import org.testng.SkipException;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 import org.traincontrol.base.Accessory;
@@ -12,6 +11,7 @@ import org.traincontrol.base.RouteCommand;
 import org.traincontrol.marklin.MarklinAccessory;
 import org.traincontrol.marklin.MarklinControlStation;
 import static org.traincontrol.marklin.MarklinControlStation.init;
+import support.Display;
 
 /**
  * Capturing a route by working the railway, which is the route editor's most useful trick: the user ticks a box, throws
@@ -113,10 +113,7 @@ public class testRouteCapture
     @Test
     public void testTheNewEditorAppendsACapturedCommand() throws Exception
     {
-        if (GraphicsEnvironment.isHeadless())
-        {
-            throw new SkipException("the route editor is a window - this needs a display");
-        }
+        Display.needed("the route editor is a window - this needs a display");
 
         MarklinAccessory signal = model.newSignal(293, Accessory.accessoryDecoderType.MM2, false);
 
@@ -152,10 +149,7 @@ public class testRouteCapture
     @Test
     public void testAKeptCommandStaysWhereItWasWhenARowIsDeleted() throws Exception
     {
-        if (GraphicsEnvironment.isHeadless())
-        {
-            throw new SkipException("the route editor is a window - this needs a display");
-        }
+        Display.needed("the route editor is a window - this needs a display");
 
         final org.traincontrol.gui.RouteEditorFrame[] frame = new org.traincontrol.gui.RouteEditorFrame[1];
 
@@ -202,10 +196,7 @@ public class testRouteCapture
     @Test
     public void testRubbishDoesNotBreakACapture() throws Exception
     {
-        if (GraphicsEnvironment.isHeadless())
-        {
-            throw new SkipException("the route editor is a window - this needs a display");
-        }
+        Display.needed("the route editor is a window - this needs a display");
 
         final org.traincontrol.gui.RouteEditorFrame[] frame = new org.traincontrol.gui.RouteEditorFrame[1];
 
@@ -234,10 +225,7 @@ public class testRouteCapture
     @Test
     public void testCaptureCanBePointedAtTheConditions() throws Exception
     {
-        if (GraphicsEnvironment.isHeadless())
-        {
-            throw new SkipException("the route editor is a window - this needs a display");
-        }
+        Display.needed("the route editor is a window - this needs a display");
 
         MarklinAccessory turnout = model.newSwitch(294, Accessory.accessoryDecoderType.MM2, false);
 

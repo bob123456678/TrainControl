@@ -15,6 +15,8 @@ import org.traincontrol.automation.Point;
 import org.traincontrol.base.Locomotive;
 import org.traincontrol.marklin.MarklinControlStation;
 import static org.traincontrol.marklin.MarklinControlStation.init;
+import support.Reflect;
+import support.Teardown;
 
 /**
  * The end of a run gives back only the track that run still holds, whatever Atomic Routes says by then.
@@ -52,9 +54,7 @@ public class testAnUnlockGivesBackOnlyWhatItHolds
     @AfterClass(alwaysRun = true)
     public static void tearDownClass() throws Exception
     {
-        if (model != null) model.stop();
-
-        if (sandbox != null) sandbox.close();
+        Teardown.close(sandbox, model);
     }
 
     /** Train B's claim on the edge A gave back early survives A's unlock after the setting was switched on. */
@@ -175,28 +175,18 @@ public class testAnUnlockGivesBackOnlyWhatItHolds
     @SuppressWarnings("unchecked")
     private static Map<Locomotive, Set<Edge>> runMap(Layout layout, String name) throws Exception
     {
-        java.lang.reflect.Field field = Layout.class.getDeclaredField(name);
-
-        field.setAccessible(true);
-
-        return (Map<Locomotive, Set<Edge>>) field.get(layout);
+        return (Map<Locomotive, Set<Edge>>) Reflect.get(Layout.class, layout, name);
     }
 
     @SuppressWarnings("unchecked")
     private static Map<Locomotive, Set<Edge>> clearedEdges(Layout layout) throws Exception
     {
-        java.lang.reflect.Field field = Layout.class.getDeclaredField("clearedEdges");
-
-        field.setAccessible(true);
-
-        return (Map<Locomotive, Set<Edge>>) field.get(layout);
+        return (Map<Locomotive, Set<Edge>>) Reflect.get(Layout.class, layout, "clearedEdges");
     }
 
     private static int occupancy(Edge edge) throws Exception
     {
-        java.lang.reflect.Field field = Edge.class.getDeclaredField("occupancy");
-
-        field.setAccessible(true);
+        java.lang.reflect.Field field = Reflect.field(Edge.class, "occupancy");
 
         return field.getInt(edge);
     }

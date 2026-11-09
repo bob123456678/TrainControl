@@ -8,7 +8,6 @@ import java.util.List;
 import java.util.Map;
 import javax.swing.SwingUtilities;
 import static org.testng.Assert.*;
-import org.testng.SkipException;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeClass;
@@ -29,6 +28,9 @@ import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.util.I18n;
 import static org.traincontrol.marklin.MarklinControlStation.init;
+import support.Components;
+import support.Display;
+import support.Reflect;
 
 /**
  * The track diagram's right-click Place, and Control+X then Control+V, keep a train's heading, on the frozen copy of
@@ -56,10 +58,7 @@ public class testThePlaceDoorsKeepTheHeading
     @BeforeClass
     public static void setUpClass() throws Exception
     {
-        if (java.awt.GraphicsEnvironment.isHeadless())
-        {
-            throw new SkipException("the diagram's doors belong to a window, and a window needs a display");
-        }
+        Display.needed("the diagram's doors belong to a window, and a window needs a display");
 
         // THE FROZEN COPY, NOT THE RAILWAY HE IS OPERATING (OB-111).
         sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
@@ -71,8 +70,8 @@ public class testThePlaceDoorsKeepTheHeading
 
         assertNotNull(ui, "there is no window");
 
-        pump();
-        pump();
+        Components.drain(1);
+        Components.drain(1);
 
         session = ui.getAutonomySession();
 
@@ -121,12 +120,13 @@ public class testThePlaceDoorsKeepTheHeading
     @BeforeMethod
     public static void hisTrainIsActive() throws Exception
     {
-        pump();
+        Components.drain(1);
 
         if (ui.getActiveLoc() == null || !HIS_TRAIN.equals(ui.getActiveLoc().getName())) ui.mapLocToCurrentButton(HIS_TRAIN);
 
         for (long end = System.currentTimeMillis() + 10000; (ui.getActiveLoc() == null
-            || !HIS_TRAIN.equals(ui.getActiveLoc().getName())) && System.currentTimeMillis() < end; ) pump();
+            || !HIS_TRAIN.equals(ui.getActiveLoc().getName())) && System.currentTimeMillis() < end; )
+                Components.drain(1);
 
         assertNotNull(ui.getActiveLoc(), "precondition: " + HIS_TRAIN + " could not be made the active locomotive");
 
@@ -139,7 +139,7 @@ public class testThePlaceDoorsKeepTheHeading
     {
         for (int round = 0; round < 50; round++)
         {
-            pump();
+            Components.drain(1);
 
             boolean any = false;
 
@@ -321,11 +321,9 @@ public class testThePlaceDoorsKeepTheHeading
 
             assertNotNull(editor, "the autonomy editor did not open on " + tunnel.getPage());
 
-            for (int turn = 0; turn < 6; turn++) pump();
+            for (int turn = 0; turn < 6; turn++) Components.drain(1);
 
-            java.lang.reflect.Field panelField = editor.getClass().getDeclaredField("autonomyPanel");
-
-            panelField.setAccessible(true);
+            java.lang.reflect.Field panelField = Reflect.field(editor.getClass(), "autonomyPanel");
 
             final AutonomyEditorPanel panel = (AutonomyEditorPanel) panelField.get(editor);
 
@@ -356,9 +354,7 @@ public class testThePlaceDoorsKeepTheHeading
             // THE QUESTION: the list, in front of the editor, hung off the train window.
             javax.swing.JDialog question = awaitDialogStarting(I18n.t("autolayout.ui.askArrivalSideTitle"));
 
-            java.lang.reflect.Field armed = TailCrossedPrompt.class.getDeclaredField("armed");
-
-            armed.setAccessible(true);
+            java.lang.reflect.Field armed = Reflect.field(TailCrossedPrompt.class, "armed");
 
             assertNull(armed.get(null), "with the editor open the tail question was put on the main window's diagram,"
                 + " which the editor covers (MT-575)");
@@ -386,7 +382,7 @@ public class testThePlaceDoorsKeepTheHeading
 
             support.Components.waitFor(() -> !answered.isShowing(), 10000);
 
-            for (int turn = 0; turn < 6; turn++) pump();
+            for (int turn = 0; turn < 6; turn++) Components.drain(1);
 
             // ANSWERED: the train stands on Tunnel with TunnelPre's road behind it.
             Point standing = railway().getLocomotiveLocation(train);
@@ -445,7 +441,7 @@ public class testThePlaceDoorsKeepTheHeading
             {
                 Thread.sleep(100);
 
-                pump();
+                Components.drain(1);
             }
 
             assertFalse(ui.isLayoutEditorOpen(), "precondition: an editor from the claim before is still open");
@@ -669,7 +665,7 @@ public class testThePlaceDoorsKeepTheHeading
             Thread.sleep(50);
         }
 
-        pump();
+        Components.drain(1);
 
         assertTrue(standsOn(square), "the right-click Place did not put " + HIS_TRAIN + " on " + name(square)
             + "; showing: " + showing());
@@ -745,9 +741,7 @@ public class testThePlaceDoorsKeepTheHeading
         panel.setRunningLayoutSource(() -> model.getAutoLayout());
         panel.setLayoutSource(() -> model.getAutoLayout());
 
-        java.lang.reflect.Field field = AutonomyEditorPanel.class.getDeclaredField("whyButton");
-
-        field.setAccessible(true);
+        java.lang.reflect.Field field = Reflect.field(AutonomyEditorPanel.class, "whyButton");
 
         final javax.swing.AbstractButton why = (javax.swing.AbstractButton) field.get(panel);
 
@@ -764,7 +758,7 @@ public class testThePlaceDoorsKeepTheHeading
         {
             Thread.sleep(100);
 
-            pump();
+            Components.drain(1);
 
             said = hintOf(panel);
         }
@@ -775,10 +769,8 @@ public class testThePlaceDoorsKeepTheHeading
     /** Presses a key over a square, through the diagram's own gesture door. */
     private static Object gesture(TileKey over, int key) throws Exception
     {
-        final Method door = TrainControlUI.class.getDeclaredMethod("locomotiveGestureOnDiagram", int.class,
-            boolean.class);
-
-        door.setAccessible(true);
+        final Method door =
+            Reflect.method(TrainControlUI.class, "locomotiveGestureOnDiagram", int.class, boolean.class);
 
         final Object[] handled = new Object[1];
 
@@ -796,7 +788,7 @@ public class testThePlaceDoorsKeepTheHeading
             }
         });
 
-        pump();
+        Components.drain(1);
 
         return handled[0];
     }
@@ -827,7 +819,7 @@ public class testThePlaceDoorsKeepTheHeading
             railway().moveLocomotive(HIS_TRAIN, onto, false, true);
         });
 
-        pump();
+        Components.drain(1);
 
         assertTrue(standsOn(square), "precondition: " + HIS_TRAIN + " could not be stood on " + onto);
     }
@@ -894,9 +886,7 @@ public class testThePlaceDoorsKeepTheHeading
 
     private static String hintOf(AutonomyEditorPanel panel) throws Exception
     {
-        java.lang.reflect.Field field = AutonomyEditorPanel.class.getDeclaredField("hint");
-
-        field.setAccessible(true);
+        java.lang.reflect.Field field = Reflect.field(AutonomyEditorPanel.class, "hint");
 
         final String[] text = new String[1];
 
@@ -980,10 +970,5 @@ public class testThePlaceDoorsKeepTheHeading
     private static Layout railway()
     {
         return model.getAutoLayout();
-    }
-
-    private static void pump() throws Exception
-    {
-        SwingUtilities.invokeAndWait(() -> { });
     }
 }

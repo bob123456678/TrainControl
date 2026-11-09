@@ -10,6 +10,7 @@ import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.marklin.MarklinFeedback;
 import org.traincontrol.marklin.MarklinLocomotive;
 import static org.traincontrol.marklin.MarklinControlStation.init;
+import support.Reflect;
 
 /**
  * Why a train is not moving, said in words.
@@ -532,17 +533,11 @@ public class testWhyStuck
 
         final org.traincontrol.automation.Point end = layout.getPoint("WS11_B");
 
-        java.lang.reflect.Method dash =
-            org.traincontrol.gui.autonomy.AutoLocomotiveStatus.class.getDeclaredMethod(
-                "notChosenByAutonomy", org.traincontrol.automation.Point.class,
-                org.traincontrol.base.Locomotive.class);
+        java.lang.reflect.Method dash = Reflect.method(org.traincontrol.gui.autonomy.AutoLocomotiveStatus.class,
+            "notChosenByAutonomy", org.traincontrol.automation.Point.class, org.traincontrol.base.Locomotive.class);
 
-        dash.setAccessible(true);
-
-        java.lang.reflect.Method rule = Layout.class.getDeclaredMethod("barredFromAutonomy",
-            org.traincontrol.automation.Point.class, org.traincontrol.base.Locomotive.class);
-
-        rule.setAccessible(true);
+        java.lang.reflect.Method rule = Reflect.method(Layout.class,
+            "barredFromAutonomy", org.traincontrol.automation.Point.class, org.traincontrol.base.Locomotive.class);
 
         // Each case names itself, sets ONE thing, and puts it back.
         java.util.LinkedHashMap<String, Runnable[]> cases = new java.util.LinkedHashMap<>();
@@ -913,10 +908,8 @@ public class testWhyStuck
     @Test
     public void testTheWhyMarkLoads() throws Exception
     {
-        java.lang.reflect.Method markFor = org.traincontrol.gui.autonomy.AutoLocomotiveStatus.class.getDeclaredMethod(
+        java.lang.reflect.Method markFor = Reflect.method(org.traincontrol.gui.autonomy.AutoLocomotiveStatus.class,
             "markFor", boolean.class, boolean.class);
-
-        markFor.setAccessible(true);
 
         javax.swing.ImageIcon info = (javax.swing.ImageIcon) markFor.invoke(null, false, true);
 

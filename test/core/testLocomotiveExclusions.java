@@ -13,6 +13,7 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
 import static org.testng.Assert.*;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
+import support.Reflect;
 
 /**
  * A locomotive excluded from a point is not sent through it, or to it.
@@ -184,9 +185,7 @@ public class testLocomotiveExclusions
         far.setAllowOnlyListed(true);
 
         // and the yield probe agrees with pickPath - the other trains wait for a train autonomy will send somewhere
-        java.lang.reflect.Method probe = Layout.class.getDeclaredMethod("hasAutonomousDestination", Locomotive.class);
-
-        probe.setAccessible(true);
+        java.lang.reflect.Method probe = Reflect.method(Layout.class, "hasAutonomousDestination", Locomotive.class);
 
         assertNotNull(layout.pickPath(first), "the one locomotive an allow-only station names was not sent to it");
 
@@ -431,10 +430,8 @@ public class testLocomotiveExclusions
 
         Locomotive y = rsa65Train("RSA65 Y", 2902);
 
-        java.lang.reflect.Method canEnter = org.traincontrol.automation.HomeStaging.class.getDeclaredMethod("canEnter",
-            Point.class, Locomotive.class, java.util.Set.class, java.util.Map.class);
-
-        canEnter.setAccessible(true);
+        java.lang.reflect.Method canEnter = Reflect.method(org.traincontrol.automation.HomeStaging.class,
+            "canEnter", Point.class, Locomotive.class, java.util.Set.class, java.util.Map.class);
 
         // tag, Beta a station, barred from the west, the mode, the list, whether Y may drive east through Beta
         Object[][] cases = {

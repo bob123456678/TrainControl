@@ -3,7 +3,6 @@ package regression;
 import javax.swing.JMenuItem;
 import javax.swing.SwingUtilities;
 import static org.testng.Assert.*;
-import org.testng.SkipException;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
@@ -20,6 +19,11 @@ import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.util.I18n;
 import static org.traincontrol.marklin.MarklinControlStation.init;
+import support.Components;
+import support.Display;
+import support.Reflect;
+import support.Settle;
+import support.Teardown;
 
 /**
  * After a run, the Facing menu is about the train the railway has on the square, and turns that one.
@@ -46,10 +50,7 @@ public class testTheFacingMenuIsAboutTheTrainThere
     @BeforeClass
     public static void setUpClass() throws Exception
     {
-        if (java.awt.GraphicsEnvironment.isHeadless())
-        {
-            throw new SkipException("the editor and its menus need a display");
-        }
+        Display.needed("the editor and its menus need a display");
 
         sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
         model = support.TestStation.simulatedInDebug();
@@ -71,7 +72,7 @@ public class testTheFacingMenuIsAboutTheTrainThere
 
             SwingUtilities.invokeAndWait(() -> ui.getAutonomyViewerPanel().load(active, false));
 
-            settle();
+            Components.drain(8);
         }
 
         assertNotNull(ui.getActiveDiagramConfiguration(), "precondition: no configuration is loaded");
@@ -80,21 +81,7 @@ public class testTheFacingMenuIsAboutTheTrainThere
     @AfterClass(alwaysRun = true)
     public static void tearDownClass() throws Exception
     {
-        try
-        {
-            if (ui != null)
-            {
-                final TrainControlUI closing = ui;
-
-                SwingUtilities.invokeAndWait(() -> closing.dispose());
-            }
-
-            if (model != null) model.stop();
-        }
-        finally
-        {
-            if (sandbox != null) sandbox.close();
-        }
+        Teardown.close(sandbox, model, ui);
     }
 
     /**
@@ -111,7 +98,7 @@ public class testTheFacingMenuIsAboutTheTrainThere
         {
             SwingUtilities.invokeAndWait(() -> ui.rebuildRunningLayoutFromSetup());
 
-            settle();
+            Components.drain(8);
 
             Layout running = model.getAutoLayout();
 
@@ -190,7 +177,7 @@ public class testTheFacingMenuIsAboutTheTrainThere
                 editor[0].setAutonomyMode(session);
             });
 
-            settle();
+            Components.drain(8);
 
             final AutonomyEditorPanel panel = editor[0].getAutonomyPanel();
             final TileKey target = square;
@@ -212,7 +199,7 @@ public class testTheFacingMenuIsAboutTheTrainThere
 
             SwingUtilities.invokeAndWait(choice::doClick);
 
-            settle();
+            Components.drain(8);
 
             Layout now = model.getAutoLayout();
 
@@ -240,7 +227,7 @@ public class testTheFacingMenuIsAboutTheTrainThere
 
             SwingUtilities.invokeAndWait(() -> ui.rebuildRunningLayoutFromSetup());
 
-            settle();
+            Components.drain(8);
         }
     }
 
@@ -260,7 +247,7 @@ public class testTheFacingMenuIsAboutTheTrainThere
         {
             SwingUtilities.invokeAndWait(() -> ui.rebuildRunningLayoutFromSetup());
 
-            settle();
+            Components.drain(8);
 
             Layout running = model.getAutoLayout();
 
@@ -314,7 +301,7 @@ public class testTheFacingMenuIsAboutTheTrainThere
                 editor[0].setAutonomyMode(session);
             });
 
-            settle();
+            Components.drain(8);
 
             final AutonomyEditorPanel panel = editor[0].getAutonomyPanel();
             final TileKey target = square;
@@ -349,7 +336,7 @@ public class testTheFacingMenuIsAboutTheTrainThere
 
             SwingUtilities.invokeAndWait(() -> ui.rebuildRunningLayoutFromSetup());
 
-            settle();
+            Components.drain(8);
         }
     }
 
@@ -471,15 +458,9 @@ public class testTheFacingMenuIsAboutTheTrainThere
 
         Layout.ReversalPolicy keepDirection = keepingDirectionAt(turning);
 
-        java.lang.reflect.Field journeysField = org.traincontrol.automation.Layout.class.getDeclaredField("activeLocomotives");
+        final Object journeys = Reflect.get(org.traincontrol.automation.Layout.class, running, "activeLocomotives");
 
-        journeysField.setAccessible(true);
-
-        final Object journeys = journeysField.get(running);
-
-        java.lang.reflect.Field takingField = org.traincontrol.automation.Layout.class.getDeclaredField("takingPath");
-
-        takingField.setAccessible(true);
+        java.lang.reflect.Field takingField = Reflect.field(org.traincontrol.automation.Layout.class, "takingPath");
 
         final java.util.Map<?, ?> taking = (java.util.Map<?, ?>) takingField.get(running);
 
@@ -603,7 +584,7 @@ public class testTheFacingMenuIsAboutTheTrainThere
 
             SwingUtilities.invokeAndWait(() -> ui.rebuildRunningLayoutFromSetup());
 
-            settle();
+            Components.drain(8);
         }
 
         assertEquals(flipped[0], square, "precondition: the flip did not act on " + square);
@@ -768,9 +749,7 @@ public class testTheFacingMenuIsAboutTheTrainThere
         model.setFeedbackState(at.turning.getS88(), true);
         model.setFeedbackState(at.approach.getS88(), false);
 
-        long until = System.currentTimeMillis() + 30000;
-
-        while (run != null && run.isAlive() && System.currentTimeMillis() < until) Thread.sleep(100);
+        Settle.until(() -> !(run != null && run.isAlive()), 30000);
 
         running.moveLocomotive(null, at.turning.getName(), false);
         running.moveLocomotive(null, at.plain.getName(), false);
@@ -795,13 +774,5 @@ public class testTheFacingMenuIsAboutTheTrainThere
     private static JMenuItem find(java.awt.Container menu, String text)
     {
         return support.Components.find(menu, JMenuItem.class, item -> text.equals(item.getText()));
-    }
-
-    private static void settle() throws Exception
-    {
-        for (int pass = 0; pass < 8; pass++)
-        {
-            SwingUtilities.invokeAndWait(() -> { });
-        }
     }
 }

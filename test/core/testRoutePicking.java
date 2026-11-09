@@ -13,6 +13,7 @@ import org.traincontrol.base.Locomotive;
 import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.marklin.MarklinFeedback;
 import static org.traincontrol.marklin.MarklinControlStation.init;
+import support.Reflect;
 
 /**
  * Every rule for choosing between routes, measured against a railway where they disagree: a mirror rule (the same
@@ -678,9 +679,7 @@ public class testRoutePicking
      */
     private static int ratioFor(Layout layout, int length, int priority) throws Exception
     {
-        java.lang.reflect.Method ratioOf =
-            Layout.class.getDeclaredMethod("ratioOf", java.util.List.class);
-        ratioOf.setAccessible(true);
+        java.lang.reflect.Method ratioOf = Reflect.method(Layout.class, "ratioOf", java.util.List.class);
 
         org.traincontrol.automation.Edge edge = layout.getEdge("RP_Start", "RP_ViaStation");
 

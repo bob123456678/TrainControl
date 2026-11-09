@@ -21,6 +21,7 @@ import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.marklin.MarklinLocomotive;
 import org.traincontrol.marklin.MarklinRoute;
 import org.traincontrol.util.Util;
+import support.Reflect;
 import support.StandInStation;
 
 /**
@@ -242,8 +243,7 @@ public class testACS2SyncIsAsBefore
     @SuppressWarnings("unchecked")
     private static void dump(MarklinControlStation model, List<String> out) throws Exception
     {
-        java.lang.reflect.Field f = MarklinControlStation.class.getDeclaredField("accDB");
-        f.setAccessible(true);
+        java.lang.reflect.Field f = Reflect.field(MarklinControlStation.class, "accDB");
         RemoteDeviceCollection<MarklinAccessory, Integer> accDB =
             (RemoteDeviceCollection<MarklinAccessory, Integer>) f.get(model);
 

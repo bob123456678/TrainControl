@@ -28,6 +28,7 @@ import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.util.I18n;
 import support.Answering;
 import support.Components;
+import support.Reflect;
 
 /**
  * Three doors of the autonomy setup, pressed as the user presses them and answered both ways: Bulk Tools' Allow Every
@@ -647,11 +648,7 @@ public class testTheAutonomyEditorsBulkDoors
     /** The Autonomy menu's delete item, in the menu opened as the user opens it. */
     private static AbstractButton deleteItem() throws Exception
     {
-        java.lang.reflect.Field field = TrainControlUI.class.getDeclaredField("autonomyMenu");
-
-        field.setAccessible(true);
-
-        final JMenu menu = (JMenu) field.get(ui);
+        final JMenu menu = (JMenu) Reflect.get(TrainControlUI.class, ui, "autonomyMenu");
 
         assertNotNull(menu, "precondition: the window has no Autonomy menu");
 

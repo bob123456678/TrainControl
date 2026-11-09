@@ -5,7 +5,6 @@ import java.util.ArrayList;
 import java.util.List;
 import javax.swing.SwingUtilities;
 import static org.testng.Assert.*;
-import org.testng.SkipException;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeClass;
@@ -20,6 +19,9 @@ import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.util.I18n;
 import static org.traincontrol.marklin.MarklinControlStation.init;
+import support.Components;
+import support.Display;
+import support.Reflect;
 
 /**
  * The Is Active tick on the track diagram's right-click menu and on the autonomy editor's pauses the train standing
@@ -46,10 +48,7 @@ public class testTheActiveTickPausesATrain
     @BeforeClass
     public static void setUpClass() throws Exception
     {
-        if (java.awt.GraphicsEnvironment.isHeadless())
-        {
-            throw new SkipException("the diagram's menus belong to a window, and a window needs a display");
-        }
+        Display.needed("the diagram's menus belong to a window, and a window needs a display");
 
         // THE FROZEN COPY, NOT THE RAILWAY HE IS OPERATING (OB-111).
         sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
@@ -67,8 +66,8 @@ public class testTheActiveTickPausesATrain
 
         assertNotNull(ui, "there is no window");
 
-        pump();
-        pump();
+        Components.drain(1);
+        Components.drain(1);
 
         session = ui.getAutonomySession();
 
@@ -232,7 +231,7 @@ public class testTheActiveTickPausesATrain
 
         session.setLocomotivePaused(HIS_TRAIN, false);
 
-        pump();
+        Components.drain(1);
     }
 
     /**
@@ -301,11 +300,7 @@ public class testTheActiveTickPausesATrain
 
             final AutonomyEditorPanel panel = editorsPanel(editor);
 
-            java.lang.reflect.Field setupField = AutonomyEditorPanel.class.getDeclaredField("session");
-
-            setupField.setAccessible(true);
-
-            final AutonomySession edited = (AutonomySession) setupField.get(panel);
+            final AutonomySession edited = (AutonomySession) Reflect.get(AutonomyEditorPanel.class, panel, "session");
 
             assertEquals(edited.getLocomotiveNameAt(mainB), HIS_TRAIN, "precondition: the editor's setup does not have "
                 + HIS_TRAIN + " on BottomMainB");
@@ -322,7 +317,7 @@ public class testTheActiveTickPausesATrain
 
             click(tick);
 
-            for (int turn = 0; turn < 6; turn++) pump();
+            for (int turn = 0; turn < 6; turn++) Components.drain(1);
 
             assertTrue(train.isAutonomyPaused(), "unticking " + label + " in the editor did not pause the train");
 
@@ -342,9 +337,7 @@ public class testTheActiveTickPausesATrain
     {
         final Class<?> menuClass = Class.forName("org.traincontrol.gui.LayoutRightclickAutonomyMenu");
 
-        final Method gather = menuClass.getDeclaredMethod("gatherPathOptions", TrainControlUI.class, Point.class);
-
-        gather.setAccessible(true);
+        final Method gather = Reflect.method(menuClass, "gatherPathOptions", TrainControlUI.class, Point.class);
 
         final java.lang.reflect.Constructor<?> make = menuClass.getDeclaredConstructor(TrainControlUI.class,
             TileKey.class, TileKey.class, Class.forName("org.traincontrol.gui.LayoutRightclickAutonomyMenu$PathOptions"));
@@ -402,7 +395,7 @@ public class testTheActiveTickPausesATrain
     {
         SwingUtilities.invokeAndWait(item::doClick);
 
-        pump();
+        Components.drain(1);
     }
 
     private static void closeTheEditor(java.awt.Window editor) throws Exception
@@ -514,11 +507,6 @@ public class testTheActiveTickPausesATrain
         return model.getAutoLayout();
     }
 
-    private static void pump() throws Exception
-    {
-        SwingUtilities.invokeAndWait(() -> { });
-    }
-
     /**
      * The Auto tab's pause button pressed after the diagram's tick is not undone by the next rebuild.  The tick pauses
      * the train and records it in the setup; the button then sets it going on the railway alone, for the fold to take
@@ -541,14 +529,14 @@ public class testTheActiveTickPausesATrain
 
         SwingUtilities.invokeAndWait(button::doClick);
 
-        pump();
+        Components.drain(1);
 
         assertFalse(train.isAutonomyPaused(), "precondition: the Auto tab's pause button did not set the train going");
 
         // A SETUP GESTURE'S REBUILD
         SwingUtilities.invokeAndWait(() -> ui.rebuildRunningLayoutFromSetup());
 
-        for (int turn = 0; turn < 10; turn++) pump();
+        for (int turn = 0; turn < 10; turn++) Components.drain(1);
 
         assertFalse(train.isAutonomyPaused(), "the Auto tab's pause button set " + HIS_TRAIN + " going after the diagram's"
             + " tick paused it, and the next rebuild paused it again - the last choice made for it was undone (RSA60-B1)");
@@ -576,7 +564,7 @@ public class testTheActiveTickPausesATrain
         {
             Thread.sleep(100);
 
-            pump();
+            Components.drain(1);
 
             button = autoTabPauseButton(who);
         }
@@ -597,7 +585,7 @@ public class testTheActiveTickPausesATrain
 
         SwingUtilities.invokeAndWait(button::doClick);
 
-        pump();
+        Components.drain(1);
 
         assertEquals(who.isAutonomyPaused(), expectedToPause, "precondition: the card's button did not "
             + (expectedToPause ? "pause " : "set going ") + who.getName());
@@ -610,7 +598,7 @@ public class testTheActiveTickPausesATrain
         {
             Thread.sleep(50);
 
-            pump();
+            Components.drain(1);
         }
     }
 
@@ -847,7 +835,7 @@ public class testTheActiveTickPausesATrain
 
         assertNotNull(editor, "the autonomy editor did not open on " + mainB.getPage());
 
-        for (int turn = 0; turn < 6; turn++) pump();
+        for (int turn = 0; turn < 6; turn++) Components.drain(1);
 
         return editor;
     }
@@ -855,11 +843,7 @@ public class testTheActiveTickPausesATrain
     /** The autonomy panel of an editor window. */
     private static AutonomyEditorPanel editorsPanel(java.awt.Window editor) throws Exception
     {
-        java.lang.reflect.Field panelField = editor.getClass().getDeclaredField("autonomyPanel");
-
-        panelField.setAccessible(true);
-
-        AutonomyEditorPanel panel = (AutonomyEditorPanel) panelField.get(editor);
+        AutonomyEditorPanel panel = (AutonomyEditorPanel) Reflect.get(editor.getClass(), editor, "autonomyPanel");
 
         assertNotNull(panel, "precondition: the editor opened without its autonomy panel");
 
@@ -971,9 +955,7 @@ public class testTheActiveTickPausesATrain
     /** The window's record of how the railway was built, for the railway given. */
     private static org.json.JSONObject recordOf(Layout railway) throws Exception
     {
-        Method record = TrainControlUI.class.getDeclaredMethod("settingsAsBuiltFor", Object.class);
-
-        record.setAccessible(true);
+        Method record = Reflect.method(TrainControlUI.class, "settingsAsBuiltFor", Object.class);
 
         return (org.json.JSONObject) record.invoke(ui, railway);
     }
@@ -1036,10 +1018,8 @@ public class testTheActiveTickPausesATrain
             // THE IMPORT, which folds the railway into the setup first and fails after it
             final org.traincontrol.gui.AutonomyViewerPanel viewer = ui.getAutonomyViewerPanel();
 
-            final Method importIt = org.traincontrol.gui.AutonomyViewerPanel.class.getDeclaredMethod("importLegacyGraph",
-                org.json.JSONObject.class, String.class);
-
-            importIt.setAccessible(true);
+            final Method importIt = Reflect.method(org.traincontrol.gui.AutonomyViewerPanel.class,
+                "importLegacyGraph", org.json.JSONObject.class, String.class);
 
             final org.json.JSONObject file = new org.json.JSONObject("{\"points\": [], \"edges\": {}}");
 
@@ -1055,7 +1035,7 @@ public class testTheActiveTickPausesATrain
                 }
             });
 
-            pump();
+            Components.drain(1);
 
             String unreadable = I18n.f("autosetup.ui.errorImportUnreadable", "#X#").split("#X#")[0].trim();
 
@@ -1767,7 +1747,7 @@ public class testTheActiveTickPausesATrain
         SwingUtilities.invokeAndWait(() -> assertTrue(model.renameLoc(from, to), "precondition: " + from + " could not be"
             + " renamed to " + to));
 
-        pump();
+        Components.drain(1);
     }
 
     /** The card's train called what it is called, whatever a claim did to it. */
@@ -2165,7 +2145,7 @@ public class testTheActiveTickPausesATrain
             // PAUSED THROUGH THE DOOR, as a configuration loaded with it paused leaves it: the train and the setup together
             SwingUtilities.invokeAndWait(() -> ui.setLocomotiveActive(session, away, false));
 
-            pump();
+            Components.drain(1);
 
             assertTrue(session.getPausedLocomotives().contains(NOWHERE), "precondition: the setup does not list " + NOWHERE);
 
@@ -2447,7 +2427,7 @@ public class testTheActiveTickPausesATrain
             }
         });
 
-        pump();
+        Components.drain(1);
     }
 
     /** His train and the crowd: the trains that stand on the layout. */
@@ -2530,14 +2510,14 @@ public class testTheActiveTickPausesATrain
         {
             Thread.sleep(100);
 
-            pump();
+            Components.drain(1);
         }
 
         for (int turn = 0; turn < 8; turn++)
         {
             Thread.sleep(100);
 
-            pump();
+            Components.drain(1);
         }
     }
 
@@ -2576,7 +2556,7 @@ public class testTheActiveTickPausesATrain
     {
         SwingUtilities.invokeAndWait(() -> ui.showAutonomySettingsTab());
 
-        pump();
+        Components.drain(1);
 
         SwingUtilities.invokeAndWait(() -> ui.showAutonomyRunTab());
 
@@ -2623,13 +2603,13 @@ public class testTheActiveTickPausesATrain
             // The commands tab is the one showing, and the user then leaves for the track diagram and returns
             SwingUtilities.invokeAndWait(() -> ui.showAutonomyRunTab());
 
-            pump();
+            Components.drain(1);
 
             goStale();
 
             SwingUtilities.invokeAndWait(() -> ui.showLayoutTab());
 
-            pump();
+            Components.drain(1);
 
             assertNotEquals(cardOrder(), SORTED, "leaving the Auto tab re-sorted the cards, which are due to be sorted when"
                 + " it is opened");
@@ -2763,7 +2743,7 @@ public class testTheActiveTickPausesATrain
 
             SwingUtilities.invokeAndWait(() -> ui.setLocomotiveActive(session, alco, false));
 
-            pump();
+            Components.drain(1);
 
             final List<String> standing = new ArrayList<>(new java.util.TreeSet<>(session.trainsWhereTheyStand().values()));
 
@@ -2784,7 +2764,7 @@ public class testTheActiveTickPausesATrain
 
             click(tool);
 
-            for (int turn = 0; turn < 6; turn++) pump();
+            for (int turn = 0; turn < 6; turn++) Components.drain(1);
 
             for (String name : standing)
             {
@@ -2822,7 +2802,7 @@ public class testTheActiveTickPausesATrain
 
             click(tool);
 
-            for (int turn = 0; turn < 6; turn++) pump();
+            for (int turn = 0; turn < 6; turn++) Components.drain(1);
 
             for (String name : standing)
             {
@@ -2895,7 +2875,7 @@ public class testTheActiveTickPausesATrain
 
             session.setLocomotivePaused(GHOST, true);
 
-            pump();
+            Components.drain(1);
 
             // THE LABELS: Deactivate counts the standing trains going (the resumed one among them); Activate the paused
             // anywhere (the card's, the one away, the ghost) and not the resumed one
@@ -2913,7 +2893,7 @@ public class testTheActiveTickPausesATrain
 
             click(deactivateTool);
 
-            for (int turn = 0; turn < 6; turn++) pump();
+            for (int turn = 0; turn < 6; turn++) Components.drain(1);
 
             for (String name : standing)
             {
@@ -2938,7 +2918,7 @@ public class testTheActiveTickPausesATrain
 
             click(activateTool);
 
-            for (int turn = 0; turn < 6; turn++) pump();
+            for (int turn = 0; turn < 6; turn++) Components.drain(1);
 
             for (String name : standing)
             {
@@ -2991,7 +2971,7 @@ public class testTheActiveTickPausesATrain
 
             SwingUtilities.invokeAndWait(() -> ui.setLocomotiveActive(session, alco, false));
 
-            pump();
+            Components.drain(1);
 
             final List<String> standing = new ArrayList<>(new java.util.TreeSet<>(session.trainsWhereTheyStand().values()));
 
@@ -3004,9 +2984,7 @@ public class testTheActiveTickPausesATrain
 
             assertNotNull(activate, "precondition: Bulk Tools offers no Activate All Trains at rest: " + diagramMenuTexts(mainB));
 
-            java.lang.reflect.Field running = TrainControlUI.class.getDeclaredField("stagingFlowActive");
-
-            running.setAccessible(true);
+            java.lang.reflect.Field running = Reflect.field(TrainControlUI.class, "stagingFlowActive");
 
             running.set(ui, true);
 
@@ -3063,7 +3041,7 @@ public class testTheActiveTickPausesATrain
                 session.setFacing(mainA, org.traincontrol.automationui.TilePorts.Side.N);
             });
 
-            pump();
+            Components.drain(1);
 
             assertTrue(session.trainsOnNoPoint().containsKey(mainA), "precondition: " + stray + ", placed on BottomMainA facing"
                 + " north, is not a train on no Point: " + session.trainsOnNoPoint());
@@ -3077,14 +3055,14 @@ public class testTheActiveTickPausesATrain
 
             SwingUtilities.invokeAndWait(() -> ui.setLocomotiveActive(session, strayTrain, false));
 
-            pump();
+            Components.drain(1);
 
             assertTrue(pausedOnNoPointOnTheDiagram().contains(mainA), "the diagram does not draw " + stray + ", paused by the"
                 + " Is Active door and standing on no Point, grey: " + pausedOnNoPointOnTheDiagram());
 
             SwingUtilities.invokeAndWait(() -> ui.setLocomotiveActive(session, strayTrain, true));
 
-            pump();
+            Components.drain(1);
 
             assertFalse(pausedOnNoPointOnTheDiagram().contains(mainA), "the diagram still draws " + stray + ", set going by"
                 + " the Is Active door, grey: " + pausedOnNoPointOnTheDiagram());
@@ -3102,7 +3080,7 @@ public class testTheActiveTickPausesATrain
             {
                 Thread.sleep(100);
 
-                pump();
+                Components.drain(1);
             }
 
             assertTrue(session.pausedTrainsOnNoPoint().contains(mainA), "precondition: the setup does not list the train on no"
@@ -3122,7 +3100,7 @@ public class testTheActiveTickPausesATrain
             {
                 Thread.sleep(100);
 
-                pump();
+                Components.drain(1);
             }
 
             assertFalse(pausedOnNoPointOnTheDiagram().contains(mainA), "the diagram still draws " + stray + ", set going by"
@@ -3145,23 +3123,15 @@ public class testTheActiveTickPausesATrain
     @SuppressWarnings("unchecked")
     private static java.util.Set<TileKey> pausedOnNoPointOnTheDiagram() throws Exception
     {
-        java.lang.reflect.Field driverField = TrainControlUI.class.getDeclaredField("diagramMonitorDriver");
-
-        driverField.setAccessible(true);
-
         java.lang.reflect.Field monitorField = org.traincontrol.gui.autonomy.DiagramMonitorDriver.class.getDeclaredField("monitor");
 
         monitorField.setAccessible(true);
 
-        Object monitor = monitorField.get(driverField.get(ui));
+        Object monitor = monitorField.get(Reflect.get(TrainControlUI.class, ui, "diagramMonitorDriver"));
 
         assertNotNull(monitor, "precondition: the diagram has no monitor");
 
-        java.lang.reflect.Field paused = monitor.getClass().getDeclaredField("pausedOnNoPoint");
-
-        paused.setAccessible(true);
-
-        return (java.util.Set<TileKey>) paused.get(monitor);
+        return (java.util.Set<TileKey>) Reflect.get(monitor.getClass(), monitor, "pausedOnNoPoint");
     }
 
     /**
@@ -3237,7 +3207,7 @@ public class testTheActiveTickPausesATrain
 
             assertTrue(done.await(30, java.util.concurrent.TimeUnit.SECONDS), "the click did not come back; it put up: " + said);
 
-            pump();
+            Components.drain(1);
 
             return new ArrayList<>(said);
         }
@@ -3252,15 +3222,11 @@ public class testTheActiveTickPausesATrain
     /** What the track diagram's borrowed autonomy menu last said in its message line. */
     private static String hintText() throws Exception
     {
-        java.lang.reflect.Field menus = TrainControlUI.class.getDeclaredField("autonomyTileMenus");
-
-        menus.setAccessible(true);
-
         java.lang.reflect.Field hint = AutonomyEditorPanel.class.getDeclaredField("hint");
 
         hint.setAccessible(true);
 
-        return ((javax.swing.JLabel) hint.get(menus.get(ui))).getText();
+        return ((javax.swing.JLabel) hint.get(Reflect.get(TrainControlUI.class, ui, "autonomyTileMenus"))).getText();
     }
 
     /** The pages the model has, as a setup opens them. */

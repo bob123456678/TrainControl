@@ -1,7 +1,6 @@
 package ui;
 
 import static org.testng.Assert.*;
-import org.testng.SkipException;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
@@ -11,6 +10,7 @@ import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.util.I18n;
 import support.Answering;
 import support.Components;
+import support.Display;
 import support.Packets;
 
 /**
@@ -25,10 +25,7 @@ public class testAShortCircuitCutsThePower
     @BeforeClass
     public static void setUpClass() throws Exception
     {
-        if (java.awt.GraphicsEnvironment.isHeadless())
-        {
-            throw new SkipException("the warning is a window, and a window needs a display");
-        }
+        Display.needed("the warning is a window, and a window needs a display");
 
         sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("single-switch"));
         model = support.TestStation.simulatedWithWindowInDebug();

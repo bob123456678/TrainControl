@@ -2,7 +2,6 @@ package regression;
 
 import javax.swing.SwingUtilities;
 import static org.testng.Assert.*;
-import org.testng.SkipException;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
@@ -15,6 +14,10 @@ import org.traincontrol.gui.layouteditor.LayoutEditor;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;
 import static org.traincontrol.marklin.MarklinControlStation.init;
+import support.Components;
+import support.Display;
+import support.Reflect;
+import support.Teardown;
 
 /**
  * Switching Path Type redraws the path test in the real autonomy editor (OB-225).
@@ -40,10 +43,7 @@ public class testPathTypeRedrawsTheTestInTheEditor
     @BeforeClass
     public static void setUpClass() throws Exception
     {
-        if (java.awt.GraphicsEnvironment.isHeadless())
-        {
-            throw new SkipException("the editor needs a display");
-        }
+        Display.needed("the editor needs a display");
 
         sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
         model = support.TestStation.simulatedInDebug();
@@ -63,21 +63,7 @@ public class testPathTypeRedrawsTheTestInTheEditor
     @AfterClass(alwaysRun = true)
     public static void tearDownClass() throws Exception
     {
-        try
-        {
-            if (ui != null)
-            {
-                final TrainControlUI closing = ui;
-
-                SwingUtilities.invokeAndWait(() -> closing.dispose());
-            }
-
-            if (model != null) model.stop();
-        }
-        finally
-        {
-            if (sandbox != null) sandbox.close();
-        }
+        Teardown.close(sandbox, model, ui);
     }
 
     /** Test a Path to a station autonomy will never choose, then Manual: the note goes, and Auto brings it back. */
@@ -105,7 +91,7 @@ public class testPathTypeRedrawsTheTestInTheEditor
 
             openAnEditorOn(page, built);
 
-            settle();
+            Components.drain(8);
 
             final AutonomyEditorPanel panel = built[0].getAutonomyPanel();
 
@@ -119,7 +105,7 @@ public class testPathTypeRedrawsTheTestInTheEditor
                 panel.tileClicked(to, page.getComponent(to.getX(), to.getY()), false);
             });
 
-            settle();
+            Components.drain(8);
 
             String note = org.traincontrol.util.I18n.t("autosetup.ui.testNotAnAutoDestination");
             String noteStart = note.substring(0, note.indexOf("{0}"));
@@ -133,7 +119,7 @@ public class testPathTypeRedrawsTheTestInTheEditor
 
             SwingUtilities.invokeAndWait(manual::doClick);
 
-            settle();
+            Components.drain(8);
 
             String onManual = shown(panel);
 
@@ -149,7 +135,7 @@ public class testPathTypeRedrawsTheTestInTheEditor
 
             SwingUtilities.invokeAndWait(auto::doClick);
 
-            settle();
+            Components.drain(8);
 
             assertTrue(shown(panel).contains(noteStart),
                 "switching back to Auto did not put the Auto verdict back: " + shown(panel));
@@ -189,7 +175,7 @@ public class testPathTypeRedrawsTheTestInTheEditor
         {
             openAnEditorOn(page, built);
 
-            settle();
+            Components.drain(8);
 
             final AutonomyEditorPanel panel = built[0].getAutonomyPanel();
             final javax.swing.AbstractButton test = (javax.swing.AbstractButton) field(panel, "testButton");
@@ -197,13 +183,13 @@ public class testPathTypeRedrawsTheTestInTheEditor
             assertNull(mark(panel, to), "precondition: a station is marked before Test a Path is pressed");
 
             SwingUtilities.invokeAndWait(test::doClick);
-            settle();
+            Components.drain(8);
 
             everyStationIs(panel, null, null, "armed, with no start chosen");
 
             SwingUtilities.invokeAndWait(() -> panel.tileClicked(from, page.getComponent(from.getX(), from.getY()),
                 false));
-            settle();
+            Components.drain(8);
 
             assertEquals(mark(panel, from), TileAnnotation.ToolMark.PICKED, "the start is not marked as the square"
                 + " clicked");
@@ -213,7 +199,7 @@ public class testPathTypeRedrawsTheTestInTheEditor
             everyStationIs(panel, from, null, "with the start chosen");
 
             SwingUtilities.invokeAndWait(() -> panel.tileClicked(to, page.getComponent(to.getX(), to.getY()), false));
-            settle();
+            Components.drain(8);
 
             assertEquals(mark(panel, from), TileAnnotation.ToolMark.PICKED, "with the answer shown, the start is not"
                 + " marked as clicked");
@@ -225,7 +211,7 @@ public class testPathTypeRedrawsTheTestInTheEditor
             assertFalse(fading(panel), "the Test a Path answer fades on a timer (MT-864)");
 
             SwingUtilities.invokeAndWait(test::doClick);
-            settle();
+            Components.drain(8);
 
             assertNull(mark(panel, to), "putting Test a Path down left the station marked");
             assertNull(mark(panel, from), "putting Test a Path down left the start marked");
@@ -265,7 +251,7 @@ public class testPathTypeRedrawsTheTestInTheEditor
             // The editor first: opening it builds the railway the trains stand on, which this claim run alone has not.
             openAnEditorOn(page, built);
 
-            settle();
+            Components.drain(8);
 
             final TileKey standing = aSquareATrainStandsOn();
 
@@ -281,7 +267,7 @@ public class testPathTypeRedrawsTheTestInTheEditor
             final javax.swing.AbstractButton why = (javax.swing.AbstractButton) field(panel, "whyButton");
 
             SwingUtilities.invokeAndWait(why::doClick);
-            settle();
+            Components.drain(8);
 
             assertEquals(mark(panel, standing), TileAnnotation.ToolMark.CLICKABLE, "while Why not Moving? waits, the"
                 + " square with a train is not marked as one to click");
@@ -329,7 +315,7 @@ public class testPathTypeRedrawsTheTestInTheEditor
             coloursSaid(panel, onManual, "on Manual");
 
             SwingUtilities.invokeAndWait(why::doClick);
-            settle();
+            Components.drain(8);
 
             assertNull(mark(panel, standing), "putting Why not Moving? down left the train's square marked");
 
@@ -376,9 +362,7 @@ public class testPathTypeRedrawsTheTestInTheEditor
                 + " stations");
 
             // And let go by a right-click's menu before the answer can paint
-            final java.lang.reflect.Method cancel = AutonomyEditorPanel.class.getDeclaredMethod("cancelPendingGesture");
-
-            cancel.setAccessible(true);
+            final java.lang.reflect.Method cancel = Reflect.method(AutonomyEditorPanel.class, "cancelPendingGesture");
 
             SwingUtilities.invokeAndWait(() ->
             {
@@ -430,7 +414,7 @@ public class testPathTypeRedrawsTheTestInTheEditor
         {
             openAnEditorOn(page, built);
 
-            settle();
+            Components.drain(8);
 
             final AutonomyEditorPanel panel = built[0].getAutonomyPanel();
             final javax.swing.AbstractButton why = (javax.swing.AbstractButton) field(panel, "whyButton");
@@ -440,17 +424,15 @@ public class testPathTypeRedrawsTheTestInTheEditor
 
             org.traincontrol.automation.Layout layout = model.getAutoLayout();
 
-            java.lang.reflect.Method turns = org.traincontrol.automation.Layout.class.getDeclaredMethod(
-                "reversesAlongTheWay", java.util.List.class);
-
-            turns.setAccessible(true);
+            java.lang.reflect.Method turns =
+                Reflect.method(org.traincontrol.automation.Layout.class, "reversesAlongTheWay", java.util.List.class);
 
             int trains = 0;
             int purple = 0;
             int gray = 0;
 
             SwingUtilities.invokeAndWait(why::doClick);
-            settle();
+            Components.drain(8);
 
             for (org.traincontrol.automation.Point at : layout.getPoints())
             {
@@ -1015,7 +997,7 @@ public class testPathTypeRedrawsTheTestInTheEditor
         {
             openAnEditorOn(page, built);
 
-            settle();
+            Components.drain(8);
 
             final AutonomyEditorPanel panel = built[0].getAutonomyPanel();
             final javax.swing.AbstractButton why = (javax.swing.AbstractButton) field(panel, "whyButton");
@@ -1155,13 +1137,11 @@ public class testPathTypeRedrawsTheTestInTheEditor
     /** Waits for the worker to finish the answer, then for the event thread to paint it. */
     private static void answered(AutonomyEditorPanel panel) throws Exception
     {
-        java.lang.reflect.Method await = AutonomyEditorPanel.class.getDeclaredMethod("awaitWhy", long.class);
-
-        await.setAccessible(true);
+        java.lang.reflect.Method await = Reflect.method(AutonomyEditorPanel.class, "awaitWhy", long.class);
 
         assertTrue((Boolean) await.invoke(panel, 120000L), "the Why answer was not worked out within two minutes");
 
-        settle();
+        Components.drain(8);
     }
 
     /** The count in "can go to N station(s)", or 0 where the answer says it can go nowhere. */
@@ -1225,9 +1205,7 @@ public class testPathTypeRedrawsTheTestInTheEditor
 
     private static String describe(AutonomyEditorPanel panel, TileKey tile) throws Exception
     {
-        java.lang.reflect.Method describe = AutonomyEditorPanel.class.getDeclaredMethod("describeTile", TileKey.class);
-
-        describe.setAccessible(true);
+        java.lang.reflect.Method describe = Reflect.method(AutonomyEditorPanel.class, "describeTile", TileKey.class);
 
         String text = String.valueOf(describe.invoke(panel, tile));
 
@@ -1273,11 +1251,7 @@ public class testPathTypeRedrawsTheTestInTheEditor
         {
             try
             {
-                java.lang.reflect.Field f = type.getDeclaredField(name);
-
-                f.setAccessible(true);
-
-                return f.get(on);
+                return Reflect.get(type, on, name);
             }
             catch (NoSuchFieldException notHere)
             {
@@ -1286,13 +1260,5 @@ public class testPathTypeRedrawsTheTestInTheEditor
         }
 
         throw new NoSuchFieldException(name);
-    }
-
-    private static void settle() throws Exception
-    {
-        for (int pass = 0; pass < 8; pass++)
-        {
-            SwingUtilities.invokeAndWait(() -> { });
-        }
     }
 }

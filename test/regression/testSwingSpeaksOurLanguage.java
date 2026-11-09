@@ -11,6 +11,7 @@ import org.testng.SkipException;
 import org.testng.annotations.Test;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.util.I18n;
+import support.Reflect;
 
 /**
  * Swing's own words - a popup's title and buttons, the file chooser's buttons - are in TrainControl's language
@@ -331,9 +332,7 @@ public class testSwingSpeaksOurLanguage
 
         TrainControlUI.installLookAndFeel();
 
-        java.lang.reflect.Field counted = org.traincontrol.gui.widgets.QuickFileChooser.class.getDeclaredField("asked");
-
-        counted.setAccessible(true);
+        java.lang.reflect.Field counted = Reflect.field(org.traincontrol.gui.widgets.QuickFileChooser.class, "asked");
 
         // AS THE WINDOW OPENS: nothing asked yet - any ask of the choosers before this one finished first
         java.lang.reflect.Field asking = org.traincontrol.gui.widgets.QuickFileChooser.class.getDeclaredField("asking");
@@ -391,11 +390,7 @@ public class testSwingSpeaksOurLanguage
         Object were = desktops.get(null);
 
         // AND THE REAL DESKTOP IS FOUND, which the stand-in below takes the place of
-        java.lang.reflect.Method found = quick.getDeclaredMethod("theDesktops");
-
-        found.setAccessible(true);
-
-        java.util.List<?> real = (java.util.List<?>) found.invoke(null);
+        java.util.List<?> real = (java.util.List<?>) Reflect.method(quick, "theDesktops").invoke(null);
 
         assertFalse(real.isEmpty(), "TrainControl's file chooser finds no Desktop folder to follow (RSA40-C4)");
 
@@ -568,11 +563,7 @@ public class testSwingSpeaksOurLanguage
     /** TrainControlUI.swingSpeaksOurLanguage, which is the window's. */
     private static void speak() throws Exception
     {
-        java.lang.reflect.Method speak = TrainControlUI.class.getDeclaredMethod("swingSpeaksOurLanguage");
-
-        speak.setAccessible(true);
-
-        speak.invoke(null);
+        Reflect.method(TrainControlUI.class, "swingSpeaksOurLanguage").invoke(null);
     }
 
     /** Deletes a folder and everything in it. */

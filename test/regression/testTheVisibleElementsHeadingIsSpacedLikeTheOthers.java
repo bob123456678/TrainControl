@@ -3,7 +3,6 @@ package regression;
 import java.awt.Component;
 import java.awt.Container;
 import java.awt.Point;
-import java.lang.reflect.Field;
 import javax.swing.AbstractButton;
 import javax.swing.JComboBox;
 import javax.swing.JLabel;
@@ -19,6 +18,8 @@ import org.traincontrol.gui.layouteditor.LayoutEditor;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;
 import static org.traincontrol.marklin.MarklinControlStation.init;
+import support.Display;
+import support.Reflect;
 
 /**
  * Under Visible Elements, the first control is as far from the heading as under the editor's other headings (OB-289),
@@ -44,10 +45,7 @@ public class testTheVisibleElementsHeadingIsSpacedLikeTheOthers
     @BeforeClass
     public static void setUpClass() throws Exception
     {
-        if (java.awt.GraphicsEnvironment.isHeadless())
-        {
-            throw new SkipException("the editor is a window, and the window needs a display");
-        }
+        Display.needed("the editor is a window, and the window needs a display");
 
         sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("single-switch"));
 
@@ -1328,11 +1326,7 @@ public class testTheVisibleElementsHeadingIsSpacedLikeTheOthers
 
     private static Object field(LayoutEditor editor, String name) throws ReflectiveOperationException
     {
-        Field field = LayoutEditor.class.getDeclaredField(name);
-
-        field.setAccessible(true);
-
-        return field.get(editor);
+        return Reflect.get(LayoutEditor.class, editor, name);
     }
 
     /**

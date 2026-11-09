@@ -11,6 +11,9 @@ import org.traincontrol.gui.autonomy.DiagramExport;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.base.LayoutDiagram;
 import org.traincontrol.marklin.MarklinControlStation;
+import support.Diagrams;
+import support.Display;
+import support.Reflect;
 import support.SourceOf;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 
@@ -61,10 +64,7 @@ public class testDiagramLooksRight
     @BeforeClass
     public static void setUpClass() throws Exception
     {
-        if (java.awt.GraphicsEnvironment.isHeadless())
-        {
-            throw new SkipException("rendering a diagram needs a display");
-        }
+        Display.needed("rendering a diagram needs a display");
 
         // BEFORE THE MODEL, not just before the window (OB-111): MarklinControlStation.init reads the layout
         // preference too, so the model would stay on the operator's real railway.
@@ -1229,11 +1229,7 @@ public class testDiagramLooksRight
     /** Presses the Medium pop-up button and returns the window it opens, or fails with the message. */
     private org.traincontrol.gui.LayoutPopupUI openedByTheMediumButton(String notOpened) throws Exception
     {
-        java.lang.reflect.Field buttonField = TrainControlUI.class.getDeclaredField("mediumButton");
-
-        buttonField.setAccessible(true);
-
-        final javax.swing.JButton medium = (javax.swing.JButton) buttonField.get(ui);
+        final javax.swing.JButton medium = (javax.swing.JButton) Reflect.get(TrainControlUI.class, ui, "mediumButton");
 
         java.util.Set<java.awt.Window> before = new java.util.HashSet<>(java.util.Arrays.asList(java.awt.Window.getWindows()));
 
@@ -2255,11 +2251,9 @@ public class testDiagramLooksRight
     {
         LayoutDiagram page = new LayoutDiagram("orientation", 4, 4, null, null);
 
-        page.addComponent(org.traincontrol.base.LayoutDiagramComponent.componentType.STRAIGHT,
-            1, 1, 0, 0, 0, 0, org.traincontrol.base.Accessory.accessoryDecoderType.MM2, null);
+        Diagrams.straight(page, 1, 1);
 
-        page.addComponent(org.traincontrol.base.LayoutDiagramComponent.componentType.STRAIGHT,
-            2, 2, 1, 0, 0, 0, org.traincontrol.base.Accessory.accessoryDecoderType.MM2, null);
+        Diagrams.straight(page, 2, 2, 1);
 
         boolean flat = org.traincontrol.gui.LayoutGrid.runsNorthSouth(page.getComponent(1, 1));
         boolean turned = org.traincontrol.gui.LayoutGrid.runsNorthSouth(page.getComponent(2, 2));
@@ -2603,10 +2597,7 @@ public class testDiagramLooksRight
     @Test
     public void testTheTrainIsDrawnOverTheStationCaption() throws Exception
     {
-        if (java.awt.GraphicsEnvironment.isHeadless())
-        {
-            throw new SkipException("rendering a diagram needs a display");
-        }
+        Display.needed("rendering a diagram needs a display");
 
         // A big tile, so there is room to sample the caption where the locomotive does not reach: the icon is drawn at
         // 76% of the square and the run outline is on the very edge.
@@ -2692,10 +2683,7 @@ public class testDiagramLooksRight
     @Test
     public void testTheLocomotiveIsTenPerCentClear()
     {
-        if (java.awt.GraphicsEnvironment.isHeadless())
-        {
-            throw new SkipException("rendering a diagram needs a display");
-        }
+        Display.needed("rendering a diagram needs a display");
 
         final int size = 120;
 
@@ -3514,10 +3502,7 @@ public class testDiagramLooksRight
     @Test
     public void testAnAddressIsDrawnOverTheTrain() throws Exception
     {
-        if (java.awt.GraphicsEnvironment.isHeadless())
-        {
-            throw new SkipException("rendering a diagram needs a display");
-        }
+        Display.needed("rendering a diagram needs a display");
 
         final int size = 120;
 
@@ -3601,9 +3586,8 @@ public class testDiagramLooksRight
     @Test
     public void testTheNoPathsMarkIsTheInfoMarksGray() throws Exception
     {
-        java.lang.reflect.Field field = org.traincontrol.gui.autonomy.AutoLocomotiveStatus.class.getDeclaredField("INFO_ICON");
-
-        field.setAccessible(true);
+        java.lang.reflect.Field field =
+            Reflect.field(org.traincontrol.gui.autonomy.AutoLocomotiveStatus.class, "INFO_ICON");
 
         javax.swing.ImageIcon mark = (javax.swing.ImageIcon) field.get(null);
 
@@ -3618,9 +3602,7 @@ public class testDiagramLooksRight
 
         int ink = commonestInk(drawn);
 
-        java.lang.reflect.Field gray = org.traincontrol.gui.InfoMark.class.getDeclaredField("GRAY");
-
-        gray.setAccessible(true);
+        java.lang.reflect.Field gray = Reflect.field(org.traincontrol.gui.InfoMark.class, "GRAY");
 
         int marks = gray.getInt(null) & 0xFFFFFF;
 
@@ -3781,10 +3763,7 @@ public class testDiagramLooksRight
     @support.DrawsFR118Icons
     public void testAStationOnACurveSpillsOntoTheSquaresBesideIt()
     {
-        if (java.awt.GraphicsEnvironment.isHeadless())
-        {
-            throw new SkipException("rendering a diagram needs a display");
-        }
+        Display.needed("rendering a diagram needs a display");
 
         final int size = 30;
 
@@ -3918,10 +3897,7 @@ public class testDiagramLooksRight
     @support.DrawsFR118Icons
     public void testASpillIsDrawnUnderTheCaptionsOverIt()
     {
-        if (java.awt.GraphicsEnvironment.isHeadless())
-        {
-            throw new SkipException("rendering a diagram needs a display");
-        }
+        Display.needed("rendering a diagram needs a display");
 
         final int size = 30;
 
@@ -4026,10 +4002,7 @@ public class testDiagramLooksRight
     @support.DrawsFR118Icons
     public void testEveryKindOfSpillIsUnderTheCaptionsAtBothSizes()
     {
-        if (java.awt.GraphicsEnvironment.isHeadless())
-        {
-            throw new SkipException("rendering a diagram needs a display");
-        }
+        Display.needed("rendering a diagram needs a display");
 
         java.util.List<String> wrong = new java.util.ArrayList<>();
 
@@ -4169,10 +4142,7 @@ public class testDiagramLooksRight
     @support.DrawsFR118Icons
     public void testANeighboursArrowsAreDrawnOverASpill()
     {
-        if (java.awt.GraphicsEnvironment.isHeadless())
-        {
-            throw new SkipException("rendering a diagram needs a display");
-        }
+        Display.needed("rendering a diagram needs a display");
 
         for (int size : new int[] {30, 60})
         {
@@ -4332,10 +4302,7 @@ public class testDiagramLooksRight
     @support.DrawsFR118Icons
     public void testANeighboursOutlineIsDrawnOverASpill()
     {
-        if (java.awt.GraphicsEnvironment.isHeadless())
-        {
-            throw new SkipException("rendering a diagram needs a display");
-        }
+        Display.needed("rendering a diagram needs a display");
 
         for (int size : new int[] {30, 60})
         {
@@ -4404,8 +4371,7 @@ public class testDiagramLooksRight
     @Test
     public void testTheMediumSizeIsBetweenSmallAndLarge() throws Exception
     {
-        java.lang.reflect.Field sizesField = TrainControlUI.class.getDeclaredField("layoutSizes");
-        sizesField.setAccessible(true);
+        java.lang.reflect.Field sizesField = Reflect.field(TrainControlUI.class, "layoutSizes");
 
         @SuppressWarnings("unchecked")
         java.util.Map<String, Integer> sizes = (java.util.Map<String, Integer>) sizesField.get(ui);
@@ -4417,10 +4383,7 @@ public class testDiagramLooksRight
         assertEquals(new java.util.ArrayList<>(sizes.values()), java.util.Arrays.asList(30, 46, 60),
             "Small, Medium and Large are not 30, 46 and 60 pixels a square - Adam: \"Let's implement the 46px diagram\"");
 
-        java.lang.reflect.Field listField = TrainControlUI.class.getDeclaredField("SizeList");
-        listField.setAccessible(true);
-
-        javax.swing.JComboBox<?> list = (javax.swing.JComboBox<?>) listField.get(ui);
+        javax.swing.JComboBox<?> list = (javax.swing.JComboBox<?>) Reflect.get(TrainControlUI.class, ui, "SizeList");
 
         java.util.List<String> offered = new java.util.ArrayList<>();
 
@@ -4617,11 +4580,9 @@ public class testDiagramLooksRight
 
         assertNotNull(loaded, "precondition: the start-up resume loaded no configuration, so there is none to keep");
 
-        java.lang.reflect.Field activeField = TrainControlUI.class.getDeclaredField("activeLoc");
-        activeField.setAccessible(true);
+        java.lang.reflect.Field activeField = Reflect.field(TrainControlUI.class, "activeLoc");
 
-        java.lang.reflect.Field tickField = TrainControlUI.class.getDeclaredField("activeLocInTitle");
-        tickField.setAccessible(true);
+        java.lang.reflect.Field tickField = Reflect.field(TrainControlUI.class, "activeLocInTitle");
 
         final javax.swing.JCheckBoxMenuItem tick = (javax.swing.JCheckBoxMenuItem) tickField.get(ui);
         final org.traincontrol.base.Locomotive was = (org.traincontrol.base.Locomotive) activeField.get(ui);
@@ -4695,8 +4656,7 @@ public class testDiagramLooksRight
     @SuppressWarnings("unchecked")
     private void waitForTheRender() throws Exception
     {
-        java.lang.reflect.Field futures = TrainControlUI.class.getDeclaredField("locFutures");
-        futures.setAccessible(true);
+        java.lang.reflect.Field futures = Reflect.field(TrainControlUI.class, "locFutures");
 
         long deadline = System.currentTimeMillis() + 10000;
 
@@ -4770,10 +4730,7 @@ public class testDiagramLooksRight
      */
     private org.traincontrol.gui.LayoutPopupUI openAMediumPopUp() throws Exception
     {
-        java.lang.reflect.Field buttonField = TrainControlUI.class.getDeclaredField("mediumButton");
-        buttonField.setAccessible(true);
-
-        final javax.swing.JButton medium = (javax.swing.JButton) buttonField.get(ui);
+        final javax.swing.JButton medium = (javax.swing.JButton) Reflect.get(TrainControlUI.class, ui, "mediumButton");
 
         java.util.Set<java.awt.Window> before = new java.util.HashSet<>(java.util.Arrays.asList(java.awt.Window.getWindows()));
 
@@ -4856,20 +4813,17 @@ public class testDiagramLooksRight
     @Test
     public void testTheDiagramScrollsHalfASquareAtATime() throws Exception
     {
-        java.lang.reflect.Field listField = TrainControlUI.class.getDeclaredField("SizeList");
-        listField.setAccessible(true);
+        java.lang.reflect.Field listField = Reflect.field(TrainControlUI.class, "SizeList");
 
         @SuppressWarnings("unchecked")
         final javax.swing.JComboBox<Object> list = (javax.swing.JComboBox<Object>) listField.get(ui);
 
-        java.lang.reflect.Field sizesField = TrainControlUI.class.getDeclaredField("layoutSizes");
-        sizesField.setAccessible(true);
+        java.lang.reflect.Field sizesField = Reflect.field(TrainControlUI.class, "layoutSizes");
 
         @SuppressWarnings("unchecked")
         java.util.Map<String, Integer> sizes = (java.util.Map<String, Integer>) sizesField.get(ui);
 
-        java.lang.reflect.Field areaField = TrainControlUI.class.getDeclaredField("LayoutArea");
-        areaField.setAccessible(true);
+        java.lang.reflect.Field areaField = Reflect.field(TrainControlUI.class, "LayoutArea");
 
         final javax.swing.JScrollPane area = (javax.swing.JScrollPane) areaField.get(ui);
 
@@ -4948,8 +4902,7 @@ public class testDiagramLooksRight
 
         try
         {
-            java.lang.reflect.Field paneField = org.traincontrol.gui.LayoutPopupUI.class.getDeclaredField("jScrollPane1");
-            paneField.setAccessible(true);
+            java.lang.reflect.Field paneField = Reflect.field(org.traincontrol.gui.LayoutPopupUI.class, "jScrollPane1");
 
             final javax.swing.JScrollPane pane = (javax.swing.JScrollPane) paneField.get(popup);
 
@@ -4979,8 +4932,7 @@ public class testDiagramLooksRight
      */
     private static void settleTheDiagram() throws Exception
     {
-        java.lang.reflect.Field rendererField = TrainControlUI.class.getDeclaredField("LayoutGridRenderer");
-        rendererField.setAccessible(true);
+        java.lang.reflect.Field rendererField = Reflect.field(TrainControlUI.class, "LayoutGridRenderer");
 
         java.util.concurrent.ExecutorService renderer = (java.util.concurrent.ExecutorService) rendererField.get(ui);
 
@@ -5006,10 +4958,7 @@ public class testDiagramLooksRight
     @Test
     public void testTheEditorsShowTrainsSwitchHidesItsTrains() throws Exception
     {
-        if (java.awt.GraphicsEnvironment.isHeadless())
-        {
-            throw new SkipException("rendering a diagram needs a display");
-        }
+        Display.needed("rendering a diagram needs a display");
 
         java.lang.reflect.Method shown = org.traincontrol.gui.LayoutLabel.class.getMethod("setTrainsShown",
             java.util.function.BooleanSupplier.class);
@@ -5141,10 +5090,8 @@ public class testDiagramLooksRight
     @Test
     public void testATrainAtHomeShowsAHouseNotTeal() throws Exception
     {
-        java.lang.reflect.Method markFor = org.traincontrol.gui.autonomy.AutoLocomotiveStatus.class.getDeclaredMethod("markFor",
-            boolean.class, boolean.class);
-
-        markFor.setAccessible(true);
+        java.lang.reflect.Method markFor = Reflect.method(org.traincontrol.gui.autonomy.AutoLocomotiveStatus.class,
+            "markFor", boolean.class, boolean.class);
 
         javax.swing.Icon house = (javax.swing.Icon) markFor.invoke(null, true, false);
         javax.swing.Icon info = (javax.swing.Icon) markFor.invoke(null, false, true);

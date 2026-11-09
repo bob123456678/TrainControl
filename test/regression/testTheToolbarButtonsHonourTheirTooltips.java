@@ -11,8 +11,9 @@ import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.util.I18n;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertTrue;
-import org.testng.SkipException;
 import org.testng.annotations.Test;
+import support.Display;
+import support.Reflect;
 
 /**
  * The four arrow buttons do what their own tooltips say a Control or Alt click does.
@@ -215,13 +216,9 @@ public class testTheToolbarButtonsHonourTheirTooltips
     /** Presses one of the four buttons with the given modifier mask, or null for the keyboard's own plain call. */
     private static void press(Started up, String listener, Integer modifiers) throws Exception
     {
-        final Method door = TrainControlUI.class.getDeclaredMethod(listener, ActionEvent.class);
+        final Method door = Reflect.method(TrainControlUI.class, listener, ActionEvent.class);
 
-        door.setAccessible(true);
-
-        final Field active = TrainControlUI.class.getDeclaredField("activeLoc");
-
-        active.setAccessible(true);
+        final Field active = Reflect.field(TrainControlUI.class, "activeLoc");
 
         final ActionEvent event = modifiers == null ? null
             : new ActionEvent(up.ui, ActionEvent.ACTION_PERFORMED, "pressed", modifiers);
@@ -296,19 +293,14 @@ public class testTheToolbarButtonsHonourTheirTooltips
     @Test
     public void testAShortLayoutTooltipIsAsWideAsItsText() throws Exception
     {
-        if (java.awt.GraphicsEnvironment.isHeadless())
-        {
-            throw new SkipException("a tooltip is drawn on a window");
-        }
+        Display.needed("a tooltip is drawn on a window");
 
         Started up = start();
 
         try
         {
             // The item shown: the Manage Pages menu behind it is hidden
-            Field field = TrainControlUI.class.getDeclaredField("managePagesItem");
-
-            field.setAccessible(true);
+            Field field = Reflect.field(TrainControlUI.class, "managePagesItem");
 
             javax.swing.JMenuItem create = (javax.swing.JMenuItem) field.get(up.ui);
 

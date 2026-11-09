@@ -21,6 +21,7 @@ import org.traincontrol.gui.layouteditor.LayoutEditor;
 import org.traincontrol.util.I18n;
 import support.Answering;
 import support.Components;
+import support.Reflect;
 
 /**
  * FR-175: pages follow the order of the `seite` entries in gleisbild.cs2, not their names and not their ids.  The user
@@ -375,9 +376,7 @@ public class testPagesFollowTheFileOrder extends support.PageWindowTest
 
     private List<String> comboOrder() throws Exception
     {
-        java.lang.reflect.Field field = TrainControlUI.class.getDeclaredField("LayoutList");
-
-        field.setAccessible(true);
+        java.lang.reflect.Field field = Reflect.field(TrainControlUI.class, "LayoutList");
 
         final javax.swing.JComboBox<?> box = (javax.swing.JComboBox<?>) field.get(ui);
 
@@ -393,11 +392,7 @@ public class testPagesFollowTheFileOrder extends support.PageWindowTest
 
     private List<String> editMenuOrder() throws Exception
     {
-        java.lang.reflect.Field field = TrainControlUI.class.getDeclaredField("editPageMenu");
-
-        field.setAccessible(true);
-
-        final javax.swing.JMenu menu = (javax.swing.JMenu) field.get(ui);
+        final javax.swing.JMenu menu = (javax.swing.JMenu) Reflect.get(TrainControlUI.class, ui, "editPageMenu");
 
         assertNotNull(menu, "the Layouts menu has no Edit Layout Page");
 

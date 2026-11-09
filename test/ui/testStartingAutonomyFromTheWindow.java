@@ -26,7 +26,9 @@ import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.util.I18n;
 import support.Answering;
 import support.Components;
+import support.Reflect;
 import support.Settle;
+import support.Teardown;
 
 /**
  * Start Autonomous Operation and its stops, pressed as the user presses them, and what each leaves (FR-136 Phase 6).
@@ -80,19 +82,10 @@ public class testStartingAutonomyFromTheWindow
         try
         {
             if (model != null && model.hasAutoLayout()) Settle.gracefully(model.getAutoLayout(), Settle.PATIENCE_MS);
-
-            if (ui != null)
-            {
-                final TrainControlUI closing = ui;
-
-                SwingUtilities.invokeAndWait(() -> closing.dispose());
-            }
-
-            if (model != null) model.stop();
         }
         finally
         {
-            if (sandbox != null) sandbox.close();
+            Teardown.close(sandbox, model, ui);
         }
     }
 
@@ -317,11 +310,7 @@ public class testStartingAutonomyFromTheWindow
     {
         try
         {
-            java.lang.reflect.Field field = TrainControlUI.class.getDeclaredField(name);
-
-            field.setAccessible(true);
-
-            return (JButton) field.get(ui);
+            return (JButton) Reflect.get(TrainControlUI.class, ui, name);
         }
         catch (ReflectiveOperationException e)
         {
@@ -345,10 +334,8 @@ public class testStartingAutonomyFromTheWindow
     {
         final Class<?> menuClass = Class.forName("org.traincontrol.gui.LayoutRightclickAutonomyMenu");
 
-        final java.lang.reflect.Method gather = menuClass.getDeclaredMethod("gatherPathOptions", TrainControlUI.class,
-            Point.class);
-
-        gather.setAccessible(true);
+        final java.lang.reflect.Method gather =
+            Reflect.method(menuClass, "gatherPathOptions", TrainControlUI.class, Point.class);
 
         final java.lang.reflect.Constructor<?> make = menuClass.getDeclaredConstructor(TrainControlUI.class,
             TileKey.class, TileKey.class, Class.forName("org.traincontrol.gui.LayoutRightclickAutonomyMenu$PathOptions"));

@@ -18,6 +18,7 @@ import org.traincontrol.base.LayoutDiagramComponent;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;
 import support.StandInStation;
+import support.Trees;
 
 /**
  * FR-175: a layout read from the Central Station has links whose number is the page's ID.  A page that states no ID is
@@ -223,7 +224,7 @@ public class testALinkOnAStationGoesByPageId
             {
                 TrainControlUI.getPrefs().put(TrainControlUI.LAYOUT_OVERRIDE_PATH_PREF, "");
 
-                deleteTree(copy);
+                Trees.delete(copy);
             }
         }
 
@@ -273,7 +274,7 @@ public class testALinkOnAStationGoesByPageId
         {
             TrainControlUI.getPrefs().put(TrainControlUI.LAYOUT_OVERRIDE_PATH_PREF, "");
 
-            deleteTree(copy);
+            Trees.delete(copy);
         }
     }
 
@@ -345,15 +346,6 @@ public class testALinkOnAStationGoesByPageId
         }
 
         return out;
-    }
-
-    private static void deleteTree(File file)
-    {
-        File[] inside = file.listFiles();
-
-        if (inside != null) for (File each : inside) deleteTree(each);
-
-        file.delete();
     }
 
     /**

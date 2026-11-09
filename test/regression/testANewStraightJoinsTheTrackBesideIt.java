@@ -3,7 +3,6 @@ package regression;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertTrue;
-import org.testng.SkipException;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
@@ -19,6 +18,9 @@ import org.traincontrol.automationui.TilePorts;
 import org.traincontrol.automationui.TilePorts.Side;
 import org.traincontrol.marklin.MarklinControlStation;
 import static org.traincontrol.marklin.MarklinControlStation.init;
+import support.Diagrams;
+import support.Display;
+import support.Reflect;
 
 /**
  * A straight dropped between two pieces of track is turned to join them (OB-292), and so is every other
@@ -48,10 +50,7 @@ public class testANewStraightJoinsTheTrackBesideIt
     @BeforeClass
     public static void setUpClass() throws Exception
     {
-        if (java.awt.GraphicsEnvironment.isHeadless())
-        {
-            throw new SkipException("placing a tile needs the editor, which needs a display");
-        }
+        Display.needed("placing a tile needs the editor, which needs a display");
 
         sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
 
@@ -479,31 +478,29 @@ public class testANewStraightJoinsTheTrackBesideIt
     {
         LayoutDiagram page = new LayoutDiagram("OB-360", 20, 12, null, null);
 
-        page.addComponent(componentType.STRAIGHT, 1, 2, EAST_WEST, 0, 0, 0, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.STRAIGHT, 3, 2, EAST_WEST, 0, 0, 0, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.STRAIGHT, 5, 1, NORTH_SOUTH, 0, 0, 0, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.STRAIGHT, 5, 3, NORTH_SOUTH, 0, 0, 0, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.STRAIGHT, 9, 5, EAST_WEST, 0, 0, 0, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.STRAIGHT, 2, 8, NORTH_SOUTH, 0, 0, 0, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.STRAIGHT, 5, 5, NORTH_SOUTH, 0, 0, 0, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.STRAIGHT, 7, 2, EAST_WEST, 0, 0, 0, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.STRAIGHT, 12, 9, EAST_WEST, 0, 0, 0, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.STRAIGHT, 6, 9, NORTH_SOUTH, 0, 0, 0, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.STRAIGHT, 13, 5, EAST_WEST, 0, 0, 0, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.STRAIGHT, 12, 4, NORTH_SOUTH, 0, 0, 0, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.STRAIGHT, 12, 6, NORTH_SOUTH, 0, 0, 0, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.STRAIGHT, 17, 2, EAST_WEST, 0, 0, 0, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.STRAIGHT, 16, 3, NORTH_SOUTH, 0, 0, 0, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.STRAIGHT, 16, 5, NORTH_SOUTH, 0, 0, 0, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.STRAIGHT, 17, 9, EAST_WEST, 0, 0, 0, accessoryDecoderType.MM2, null);
+        Diagrams.straight(page, 1, 2, EAST_WEST);
+        Diagrams.straight(page, 3, 2, EAST_WEST);
+        Diagrams.straight(page, 5, 1, NORTH_SOUTH);
+        Diagrams.straight(page, 5, 3, NORTH_SOUTH);
+        Diagrams.straight(page, 9, 5, EAST_WEST);
+        Diagrams.straight(page, 2, 8, NORTH_SOUTH);
+        Diagrams.straight(page, 5, 5, NORTH_SOUTH);
+        Diagrams.straight(page, 7, 2, EAST_WEST);
+        Diagrams.straight(page, 12, 9, EAST_WEST);
+        Diagrams.straight(page, 6, 9, NORTH_SOUTH);
+        Diagrams.straight(page, 13, 5, EAST_WEST);
+        Diagrams.straight(page, 12, 4, NORTH_SOUTH);
+        Diagrams.straight(page, 12, 6, NORTH_SOUTH);
+        Diagrams.straight(page, 17, 2, EAST_WEST);
+        Diagrams.straight(page, 16, 3, NORTH_SOUTH);
+        Diagrams.straight(page, 16, 5, NORTH_SOUTH);
+        Diagrams.straight(page, 17, 9, EAST_WEST);
 
         final LayoutEditor[] editor = {aRenderedEditor(page)};
 
         try
         {
-            java.lang.reflect.Field field = LayoutEditor.class.getDeclaredField("grid");
-
-            field.setAccessible(true);
+            java.lang.reflect.Field field = Reflect.field(LayoutEditor.class, "grid");
 
             int[] landed = new int[helds.length];
 
@@ -562,15 +559,15 @@ public class testANewStraightJoinsTheTrackBesideIt
     {
         LayoutDiagram page = new LayoutDiagram("OB-292", 8, 7, null, null);
 
-        page.addComponent(componentType.STRAIGHT, 1, 2, EAST_WEST, 0, 0, 0, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.STRAIGHT, 3, 2, EAST_WEST, 0, 0, 0, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.STRAIGHT, 5, 1, NORTH_SOUTH, 0, 0, 0, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.STRAIGHT, 5, 3, NORTH_SOUTH, 0, 0, 0, accessoryDecoderType.MM2, null);
+        Diagrams.straight(page, 1, 2, EAST_WEST);
+        Diagrams.straight(page, 3, 2, EAST_WEST);
+        Diagrams.straight(page, 5, 1, NORTH_SOUTH);
+        Diagrams.straight(page, 5, 3, NORTH_SOUTH);
 
         // THE PALETTE'S TILE, the way round it is held: minted on a scratch page, as the palette's own are, and off it.
         LayoutDiagram palette = new LayoutDiagram("palette", 2, 2, null, null);
 
-        palette.addComponent(componentType.STRAIGHT, 0, 0, heldAs, 0, 0, 0, accessoryDecoderType.MM2, null);
+        Diagrams.straight(palette, 0, 0, heldAs);
 
         final LayoutDiagramComponent held = palette.getComponent(0, 0);
 
@@ -580,11 +577,7 @@ public class testANewStraightJoinsTheTrackBesideIt
 
         try
         {
-            java.lang.reflect.Field field = LayoutEditor.class.getDeclaredField("grid");
-
-            field.setAccessible(true);
-
-            final LayoutGrid grid = (LayoutGrid) field.get(editor[0]);
+            final LayoutGrid grid = (LayoutGrid) Reflect.get(LayoutEditor.class, editor[0], "grid");
             final LayoutLabel target = grid.getValueAt(x, y);
 
             assertNotNull(target, "precondition: the editor drew no square at " + x + "," + y);

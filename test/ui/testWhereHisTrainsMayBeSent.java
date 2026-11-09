@@ -6,7 +6,6 @@ import java.util.List;
 import java.util.Map;
 import javax.swing.SwingUtilities;
 import static org.testng.Assert.*;
-import org.testng.SkipException;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeClass;
@@ -23,6 +22,9 @@ import org.traincontrol.gui.TailCrossedPrompt;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.util.I18n;
+import support.Components;
+import support.Display;
+import support.Reflect;
 import support.SourceOf;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 
@@ -52,10 +54,7 @@ public class testWhereHisTrainsMayBeSent
     @BeforeClass
     public static void setUpClass() throws Exception
     {
-        if (java.awt.GraphicsEnvironment.isHeadless())
-        {
-            throw new SkipException("the diagram's doors belong to a window, and a window needs a display");
-        }
+        Display.needed("the diagram's doors belong to a window, and a window needs a display");
 
         // THE FROZEN COPY, NOT THE RAILWAY HE IS OPERATING (OB-111).
         sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
@@ -67,8 +66,8 @@ public class testWhereHisTrainsMayBeSent
 
         assertNotNull(ui, "there is no window");
 
-        pump();
-        pump();
+        Components.drain(1);
+        Components.drain(1);
 
         session = ui.getAutonomySession();
 
@@ -130,9 +129,7 @@ public class testWhereHisTrainsMayBeSent
         // PUT BACK AFTER: a stop is not echoed here, and the claims after this one start trains.
         final boolean powerWas = model.getPowerState();
 
-        final java.lang.reflect.Field power = MarklinControlStation.class.getDeclaredField("powerState");
-
-        power.setAccessible(true);
+        final java.lang.reflect.Field power = Reflect.field(MarklinControlStation.class, "powerState");
 
         try
         {
@@ -357,7 +354,7 @@ public class testWhereHisTrainsMayBeSent
                 if (at != null) railway().moveLocomotive(null, at.getName(), false);
             });
 
-            pump();
+            Components.drain(1);
 
             List<String> again = offered(tunnel);
 
@@ -372,7 +369,7 @@ public class testWhereHisTrainsMayBeSent
                 ui.rebuildRunningLayoutFromSetup();
             });
 
-            pump();
+            Components.drain(1);
         }
     }
 
@@ -491,9 +488,7 @@ public class testWhereHisTrainsMayBeSent
         panel.setRunningLayoutSource(() -> model.getAutoLayout());
         panel.setLayoutSource(() -> model.getAutoLayout());
 
-        java.lang.reflect.Field field = AutonomyEditorPanel.class.getDeclaredField("whyButton");
-
-        field.setAccessible(true);
+        java.lang.reflect.Field field = Reflect.field(AutonomyEditorPanel.class, "whyButton");
 
         final javax.swing.AbstractButton why = (javax.swing.AbstractButton) field.get(panel);
 
@@ -533,9 +528,7 @@ public class testWhereHisTrainsMayBeSent
 
         SwingUtilities.invokeAndWait(() -> panel.tileClicked(clicked, session.getGraph().getTiles().get(clicked), false));
 
-        Method waitsOn = AutonomyEditorPanel.class.getDeclaredMethod("whyWaitsOn", TileKey.class);
-
-        waitsOn.setAccessible(true);
+        Method waitsOn = Reflect.method(AutonomyEditorPanel.class, "whyWaitsOn", TileKey.class);
 
         for (TileKey tile : withTrains)
         {
@@ -552,7 +545,7 @@ public class testWhereHisTrainsMayBeSent
         {
             Thread.sleep(100);
 
-            pump();
+            Components.drain(1);
 
             said = hintOf(panel);
         }
@@ -640,7 +633,7 @@ public class testWhereHisTrainsMayBeSent
             // CLOSED SAVING THE CHANGE: the running railway rebuilt from the setup.
             SwingUtilities.invokeAndWait(() -> ui.rebuildRunningLayoutFromSetup());
 
-            pump();
+            Components.drain(1);
 
             Edge answered = railway().getEdge("BottomSecondary", "TunnelPre");
 
@@ -655,7 +648,7 @@ public class testWhereHisTrainsMayBeSent
             // THE PLAIN SOUTHBOUND COPY: RampDown also has a copy for trains that turn there, which is no station.
             SwingUtilities.invokeAndWait(() -> railway().moveLocomotive(HIS_TRAIN, "RampDown (southbound)", false));
 
-            pump();
+            Components.drain(1);
 
             assertTrue(railway().getLocomotiveLocation(his) != null
                 && "RampDown (southbound)".equals(railway().getLocomotiveLocation(his).getName()), "precondition: 75 407 DB"
@@ -752,7 +745,7 @@ public class testWhereHisTrainsMayBeSent
                 ui.rebuildRunningLayoutFromSetup();
             });
 
-            pump();
+            Components.drain(1);
         }
     }
 
@@ -773,9 +766,7 @@ public class testWhereHisTrainsMayBeSent
     {
         final Class<?> menuClass = Class.forName("org.traincontrol.gui.LayoutRightclickAutonomyMenu");
 
-        final Method gather = menuClass.getDeclaredMethod("gatherPathOptions", TrainControlUI.class, Point.class);
-
-        gather.setAccessible(true);
+        final Method gather = Reflect.method(menuClass, "gatherPathOptions", TrainControlUI.class, Point.class);
 
         final java.lang.reflect.Constructor<?> make = menuClass.getDeclaredConstructor(TrainControlUI.class,
             TileKey.class, TileKey.class, Class.forName("org.traincontrol.gui.LayoutRightclickAutonomyMenu$PathOptions"));
@@ -886,14 +877,14 @@ public class testWhereHisTrainsMayBeSent
 
         awaitNoDialogTitled(title);
 
-        pump();
+        Components.drain(1);
 
         support.StationDoors.close(settings);
 
         // CLOSED SAVING THE CHANGE: the running railway rebuilt from the setup.
         SwingUtilities.invokeAndWait(() -> ui.rebuildRunningLayoutFromSetup());
 
-        pump();
+        Components.drain(1);
     }
 
     /** The right-click menu on this square, as the diagram builds it; the paths it offers. */
@@ -902,9 +893,7 @@ public class testWhereHisTrainsMayBeSent
     {
         final Class<?> menuClass = Class.forName("org.traincontrol.gui.LayoutRightclickAutonomyMenu");
 
-        final Method gather = menuClass.getDeclaredMethod("gatherPathOptions", TrainControlUI.class, Point.class);
-
-        gather.setAccessible(true);
+        final Method gather = Reflect.method(menuClass, "gatherPathOptions", TrainControlUI.class, Point.class);
 
         final Point[] standing = new Point[1];
 
@@ -918,11 +907,7 @@ public class testWhereHisTrainsMayBeSent
 
         for (String field : new String[] {"shown", "other"})
         {
-            java.lang.reflect.Field list = options.getClass().getDeclaredField(field);
-
-            list.setAccessible(true);
-
-            Object paths = list.get(options);
+            Object paths = Reflect.get(options.getClass(), options, field);
 
             if (paths != null) out.addAll((List<List<Edge>>) paths);
         }
@@ -935,9 +920,7 @@ public class testWhereHisTrainsMayBeSent
     {
         final Class<?> menuClass = Class.forName("org.traincontrol.gui.LayoutRightclickAutonomyMenu");
 
-        final Method gather = menuClass.getDeclaredMethod("gatherPathOptions", TrainControlUI.class, Point.class);
-
-        gather.setAccessible(true);
+        final Method gather = Reflect.method(menuClass, "gatherPathOptions", TrainControlUI.class, Point.class);
 
         final java.lang.reflect.Constructor<?> make = menuClass.getDeclaredConstructor(TrainControlUI.class,
             TileKey.class, TileKey.class, Class.forName("org.traincontrol.gui.LayoutRightclickAutonomyMenu$PathOptions"));
@@ -1009,18 +992,14 @@ public class testWhereHisTrainsMayBeSent
 
         if (manual)
         {
-            java.lang.reflect.Field type = AutonomyEditorPanel.class.getDeclaredField("pathTypeManual");
-
-            type.setAccessible(true);
+            java.lang.reflect.Field type = Reflect.field(AutonomyEditorPanel.class, "pathTypeManual");
 
             final javax.swing.AbstractButton byHand = (javax.swing.AbstractButton) type.get(panel);
 
             SwingUtilities.invokeAndWait(byHand::doClick);
         }
 
-        java.lang.reflect.Field field = AutonomyEditorPanel.class.getDeclaredField("whyButton");
-
-        field.setAccessible(true);
+        java.lang.reflect.Field field = Reflect.field(AutonomyEditorPanel.class, "whyButton");
 
         final javax.swing.AbstractButton why = (javax.swing.AbstractButton) field.get(panel);
 
@@ -1037,7 +1016,7 @@ public class testWhereHisTrainsMayBeSent
         {
             Thread.sleep(100);
 
-            pump();
+            Components.drain(1);
 
             said = hintOf(panel);
         }
@@ -1080,7 +1059,7 @@ public class testWhereHisTrainsMayBeSent
             railway().moveLocomotive(loc.getName(), onto, false, true);
         });
 
-        pump();
+        Components.drain(1);
 
         Point at = railway().getLocomotiveLocation(loc);
 
@@ -1155,7 +1134,7 @@ public class testWhereHisTrainsMayBeSent
             copy.setArrivedAlong(java.util.Arrays.asList(cameIn));
         });
 
-        pump();
+        Components.drain(1);
     }
 
     private static void remember(Locomotive loc)
@@ -1211,9 +1190,7 @@ public class testWhereHisTrainsMayBeSent
 
     private static String hintOf(AutonomyEditorPanel panel) throws Exception
     {
-        java.lang.reflect.Field field = AutonomyEditorPanel.class.getDeclaredField("hint");
-
-        field.setAccessible(true);
+        java.lang.reflect.Field field = Reflect.field(AutonomyEditorPanel.class, "hint");
 
         final String[] text = new String[1];
 
@@ -1312,7 +1289,7 @@ public class testWhereHisTrainsMayBeSent
     {
         for (int round = 0; round < 50; round++)
         {
-            pump();
+            Components.drain(1);
 
             boolean any = false;
 
@@ -1334,10 +1311,5 @@ public class testWhereHisTrainsMayBeSent
 
             Thread.sleep(100);
         }
-    }
-
-    private static void pump() throws Exception
-    {
-        SwingUtilities.invokeAndWait(() -> { });
     }
 }

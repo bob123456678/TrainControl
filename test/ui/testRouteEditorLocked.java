@@ -5,12 +5,13 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import static org.testng.Assert.*;
-import org.testng.SkipException;
 import org.testng.annotations.Test;
 import org.traincontrol.base.Accessory;
 import org.traincontrol.base.Route;
 import org.traincontrol.base.RouteCommand;
 import org.traincontrol.marklin.MarklinRoute;
+import support.Display;
+import support.Reflect;
 
 /**
  * A route belonging to the Central Station opens to be read, and cannot be changed: the station sends it again on the
@@ -408,13 +409,9 @@ public class testRouteEditorLocked
     /** RouteEditorFrame.addTo(commands), the private method a real click cannot reach on a locked table. */
     private static void invokeAddTo(org.traincontrol.gui.RouteEditorFrame frame) throws Exception
     {
-        java.lang.reflect.Field commandsField = frame.getClass().getDeclaredField("commands");
-        commandsField.setAccessible(true);
-        Object commandsTable = commandsField.get(frame);
+        Object commandsTable = Reflect.get(frame.getClass(), frame, "commands");
 
-        java.lang.reflect.Method addTo = frame.getClass().getDeclaredMethod("addTo",
-            javax.swing.JTable.class);
-        addTo.setAccessible(true);
+        java.lang.reflect.Method addTo = Reflect.method(frame.getClass(), "addTo", javax.swing.JTable.class);
 
         javax.swing.SwingUtilities.invokeAndWait(() ->
         {
@@ -729,9 +726,6 @@ public class testRouteEditorLocked
 
     private static void needsADisplay()
     {
-        if (GraphicsEnvironment.isHeadless())
-        {
-            throw new SkipException("the route editor is a window - this needs a display");
-        }
+        Display.needed("the route editor is a window - this needs a display");
     }
 }

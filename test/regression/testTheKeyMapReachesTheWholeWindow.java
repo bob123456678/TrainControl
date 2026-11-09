@@ -11,6 +11,9 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;
+import support.Components;
+import support.Display;
+import support.Reflect;
 
 /**
  * The locomotive keys work from anywhere in the window, not only from whatever holds the focus.
@@ -38,10 +41,7 @@ public class testTheKeyMapReachesTheWholeWindow
     @BeforeClass
     public static void setUpClass() throws Exception
     {
-        if (java.awt.GraphicsEnvironment.isHeadless())
-        {
-            throw new SkipException("a keyboard needs a window");
-        }
+        Display.needed("a keyboard needs a window");
 
         sandbox = support.LayoutSandbox.open();
 
@@ -63,7 +63,7 @@ public class testTheKeyMapReachesTheWholeWindow
             }
         });
 
-        settle();
+        Components.drain(5);
     }
 
     @AfterClass(alwaysRun = true)
@@ -164,7 +164,7 @@ public class testTheKeyMapReachesTheWholeWindow
     {
         javax.swing.SwingUtilities.invokeAndWait(() -> tabs().setSelectedIndex(0));
 
-        settle();
+        Components.drain(5);
 
         java.awt.Component keyboard = (java.awt.Component) field("KeyboardTab");
 
@@ -231,7 +231,7 @@ public class testTheKeyMapReachesTheWholeWindow
 
             javax.swing.SwingUtilities.invokeAndWait(() -> tabs().setSelectedIndex(back));
 
-            settle();
+            Components.drain(5);
         }
     }
 
@@ -250,7 +250,7 @@ public class testTheKeyMapReachesTheWholeWindow
 
             javax.swing.SwingUtilities.invokeAndWait(() -> tabs().setSelectedIndex(show));
 
-            settle();
+            Components.drain(5);
 
             javax.swing.text.JTextComponent found = somewhereToType(ui.getContentPane());
 
@@ -299,7 +299,7 @@ public class testTheKeyMapReachesTheWholeWindow
 
         java.awt.Toolkit.getDefaultToolkit().getSystemEventQueue().postEvent(pressed);
 
-        settle();
+        Components.drain(5);
     }
 
     /**
@@ -310,7 +310,7 @@ public class testTheKeyMapReachesTheWholeWindow
     {
         javax.swing.SwingUtilities.invokeAndWait(() -> on.requestFocusInWindow());
 
-        settle();
+        Components.drain(5);
 
         // A DESKTOP THAT WILL NOT GIVE THE WINDOW THE KEYBOARD CANNOT SHOW THIS: asserted, it failed at random on a
         // loaded battery machine; skipped, the class says it could not be asked.
@@ -435,18 +435,6 @@ public class testTheKeyMapReachesTheWholeWindow
 
     private static Object field(String name) throws Exception
     {
-        java.lang.reflect.Field f = TrainControlUI.class.getDeclaredField(name);
-
-        f.setAccessible(true);
-
-        return f.get(ui);
-    }
-
-    private static void settle() throws Exception
-    {
-        for (int pass = 0; pass < 5; pass++)
-        {
-            javax.swing.SwingUtilities.invokeAndWait(() -> { });
-        }
+        return Reflect.get(TrainControlUI.class, ui, name);
     }
 }

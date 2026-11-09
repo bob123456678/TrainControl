@@ -8,7 +8,6 @@ import java.util.Set;
 import javax.swing.JPanel;
 import javax.swing.SwingUtilities;
 import static org.testng.Assert.*;
-import org.testng.SkipException;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
@@ -24,6 +23,9 @@ import org.traincontrol.gui.LayoutLabel;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;
 import static org.traincontrol.marklin.MarklinControlStation.init;
+import support.Components;
+import support.Display;
+import support.Reflect;
 
 /**
  * MT-309, third ruling: the drawing says "track is blocked" again, in gray.  The orange line as long as the train and
@@ -91,10 +93,7 @@ public class testBlockedTrackIsGreyWhileAutonomyRuns
     @BeforeClass
     public static void setUpClass() throws Exception
     {
-        if (java.awt.GraphicsEnvironment.isHeadless())
-        {
-            throw new SkipException("painting a tile needs a display");
-        }
+        Display.needed("painting a tile needs a display");
 
         // The diagram's arrows as they are by default, not as the operator last left them: a run's preferences start as
         // a copy of his, and since MT-675 the green arrows can be drawn on every open square, on top of the fade this
@@ -119,8 +118,8 @@ public class testBlockedTrackIsGreyWhileAutonomyRuns
 
         assertNotNull(ui, "there is no window");
 
-        pump();
-        pump();
+        Components.drain(1);
+        Components.drain(1);
 
         session = ui.getAutonomySession();
 
@@ -503,9 +502,7 @@ public class testBlockedTrackIsGreyWhileAutonomyRuns
      */
     private static void setRunning(boolean value) throws Exception
     {
-        Field running = Layout.class.getDeclaredField("running");
-
-        running.setAccessible(true);
+        Field running = Reflect.field(Layout.class, "running");
         running.setBoolean(layout, value);
     }
 
@@ -515,7 +512,7 @@ public class testBlockedTrackIsGreyWhileAutonomyRuns
         // and `support.CoveredMarks` is the one place that knows it.
         support.CoveredMarks.refresh(ui);
 
-        pump();
+        Components.drain(1);
     }
 
     private static void repaintTheThree() throws Exception
@@ -527,7 +524,7 @@ public class testBlockedTrackIsGreyWhileAutonomyRuns
             freeTile.refreshCoveredMark();
         });
 
-        pump();
+        Components.drain(1);
     }
 
     /** A real tile for a square, drawn and ready to be painted. */
@@ -549,7 +546,7 @@ public class testBlockedTrackIsGreyWhileAutonomyRuns
 
         long until = System.currentTimeMillis() + 30000;
 
-        while (built[0].getIcon() == null && System.currentTimeMillis() < until) pump();
+        while (built[0].getIcon() == null && System.currentTimeMillis() < until) Components.drain(1);
 
         assertNotNull(built[0].getIcon(),
             "the tile never drew its image, so every picture below would be of an empty square");
@@ -611,10 +608,5 @@ public class testBlockedTrackIsGreyWhileAutonomyRuns
     private static void measureEveryTileAs(int units)
     {
         support.TileLengths.measureEveryTileAs(session, units);
-    }
-
-    private static void pump() throws Exception
-    {
-        SwingUtilities.invokeAndWait(() -> { });
     }
 }

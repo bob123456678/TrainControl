@@ -10,9 +10,7 @@ import java.util.Collections;
 import java.util.List;
 import javax.swing.JDialog;
 import javax.swing.JPopupMenu;
-import javax.swing.SwingUtilities;
 import static org.testng.Assert.*;
-import org.testng.SkipException;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeClass;
@@ -29,6 +27,7 @@ import org.traincontrol.marklin.udp.CS2Message;
 import org.traincontrol.util.I18n;
 import support.Answering;
 import support.Components;
+import support.Display;
 import support.Mouse;
 
 /**
@@ -65,10 +64,7 @@ public class testADiagramClickAsksFirst
     @BeforeClass
     public static void setUpClass() throws Exception
     {
-        if (java.awt.GraphicsEnvironment.isHeadless())
-        {
-            throw new SkipException("the diagram is a window, and its squares take the mouse");
-        }
+        Display.needed("the diagram is a window, and its squares take the mouse");
 
         sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("single-switch"));
 

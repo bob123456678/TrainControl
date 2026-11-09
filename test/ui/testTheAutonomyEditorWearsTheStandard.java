@@ -11,6 +11,7 @@ import org.traincontrol.gui.widgets.UiStyle;
 import org.traincontrol.util.I18n;
 import support.Components;
 import support.Looks;
+import support.Reflect;
 
 /** FR-177: the autonomy editor and its signal dialog wear the standard's fonts and colors. */
 public class testTheAutonomyEditorWearsTheStandard
@@ -76,10 +77,8 @@ public class testTheAutonomyEditorWearsTheStandard
             final Object exit = kind.getEnumConstants()[0];
             final TileKey station = Components.onTheEventThread(() -> frozen.session.getReducer().getPoints().keySet()
                 .stream().filter(k -> frozen.session.getStore().isStation(k)).findFirst().get());
-            final java.lang.reflect.Method ask = AutonomyEditorPanel.class.getDeclaredMethod("askAboutSignals", kind,
-                TileKey.class);
-
-            ask.setAccessible(true);
+            final java.lang.reflect.Method ask =
+                Reflect.method(AutonomyEditorPanel.class, "askAboutSignals", kind, TileKey.class);
 
             javax.swing.SwingUtilities.invokeLater(() ->
             {

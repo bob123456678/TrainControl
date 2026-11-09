@@ -1,12 +1,10 @@
 package regression;
 
-import java.lang.reflect.Field;
 import javax.swing.JCheckBoxMenuItem;
 import javax.swing.JMenu;
 import javax.swing.JMenuItem;
 import javax.swing.SwingUtilities;
 import static org.testng.Assert.*;
-import org.testng.SkipException;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
@@ -14,6 +12,8 @@ import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.util.I18n;
 import static org.traincontrol.marklin.MarklinControlStation.init;
+import support.Display;
+import support.Reflect;
 import support.SourceOf;
 
 /**
@@ -39,10 +39,7 @@ public class testTheDebugMenuSwitchesTheEcho
     @BeforeClass
     public static void setUpClass() throws Exception
     {
-        if (java.awt.GraphicsEnvironment.isHeadless())
-        {
-            throw new SkipException("the menu is part of the window, and the window needs a display");
-        }
+        Display.needed("the menu is part of the window, and the window needs a display");
 
         echoWas = MarklinControlStation.DEBUG_SIMULATE_PACKETS;
 
@@ -317,11 +314,7 @@ public class testTheDebugMenuSwitchesTheEcho
 
     private static Object windowField(String name) throws Exception
     {
-        Field field = TrainControlUI.class.getDeclaredField(name);
-
-        field.setAccessible(true);
-
-        return field.get(ui);
+        return Reflect.get(TrainControlUI.class, ui, name);
     }
 
     private static boolean enabled(javax.swing.AbstractButton button)
@@ -337,11 +330,7 @@ public class testTheDebugMenuSwitchesTheEcho
 
     private static JMenu debugMenu() throws Exception
     {
-        Field field = TrainControlUI.class.getDeclaredField("interfaceMenu");
-
-        field.setAccessible(true);
-
-        JMenu preferences = (JMenu) field.get(ui);
+        JMenu preferences = (JMenu) Reflect.get(TrainControlUI.class, ui, "interfaceMenu");
 
         String name = I18n.t("ui.main.toolbar.debug");
 

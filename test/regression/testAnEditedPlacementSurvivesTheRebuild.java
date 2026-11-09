@@ -12,6 +12,8 @@ import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.marklin.MarklinFeedback;
 import static org.traincontrol.marklin.MarklinControlStation.init;
+import support.Diagrams;
+import support.Reflect;
 
 /**
  * A locomotive placed in the autonomy editor is still there when the editor closes (MT-337).  Closing records every
@@ -200,9 +202,7 @@ public class testAnEditedPlacementSurvivesTheRebuild
 
         running.createPoint("OTHER", true, otherSensor.getName());
 
-        java.lang.reflect.Field runningFlag = Layout.class.getDeclaredField("running");
-
-        runningFlag.setAccessible(true);
+        java.lang.reflect.Field runningFlag = Reflect.field(Layout.class, "running");
         runningFlag.setBoolean(running, true);
 
         try
@@ -430,13 +430,11 @@ public class testAnEditedPlacementSurvivesTheRebuild
 
         for (int i = 0; i < 3; i++)
         {
-            page.addComponent(org.traincontrol.base.LayoutDiagramComponent.componentType.FEEDBACK, 1 + 2 * i, 1, 0, 0,
-                firstSensor + i, firstSensor + i, org.traincontrol.base.Accessory.accessoryDecoderType.MM2, null);
+            Diagrams.feedback(page, 1 + 2 * i, 1, firstSensor + i, firstSensor + i);
 
             if (i < 2)
             {
-                page.addComponent(org.traincontrol.base.LayoutDiagramComponent.componentType.STRAIGHT, 2 + 2 * i, 1, 0, 0,
-                    0, 0, org.traincontrol.base.Accessory.accessoryDecoderType.MM2, null);
+                Diagrams.straight(page, 2 + 2 * i, 1);
             }
         }
 
@@ -666,13 +664,11 @@ public class testAnEditedPlacementSurvivesTheRebuild
 
         for (int i = 0; i < names.length; i++)
         {
-            page.addComponent(org.traincontrol.base.LayoutDiagramComponent.componentType.FEEDBACK, 1 + 2 * i, 1, 0, 0,
-                firstSensor + i, firstSensor + i, org.traincontrol.base.Accessory.accessoryDecoderType.MM2, null);
+            Diagrams.feedback(page, 1 + 2 * i, 1, firstSensor + i, firstSensor + i);
 
             if (i + 1 < names.length)
             {
-                page.addComponent(org.traincontrol.base.LayoutDiagramComponent.componentType.STRAIGHT, 2 + 2 * i, 1, 0, 0,
-                    0, 0, org.traincontrol.base.Accessory.accessoryDecoderType.MM2, null);
+                Diagrams.straight(page, 2 + 2 * i, 1);
             }
         }
 
@@ -1440,13 +1436,11 @@ public class testAnEditedPlacementSurvivesTheRebuild
 
         for (int i = 0; i < count; i++)
         {
-            page.addComponent(org.traincontrol.base.LayoutDiagramComponent.componentType.FEEDBACK, offset + 1 + 2 * i, 1,
-                0, 0, firstSensor + i, firstSensor + i, org.traincontrol.base.Accessory.accessoryDecoderType.MM2, null);
+            Diagrams.feedback(page, offset + 1 + 2 * i, 1, firstSensor + i, firstSensor + i);
 
             if (i + 1 < count)
             {
-                page.addComponent(org.traincontrol.base.LayoutDiagramComponent.componentType.STRAIGHT, offset + 2 + 2 * i,
-                    1, 0, 0, 0, 0, org.traincontrol.base.Accessory.accessoryDecoderType.MM2, null);
+                Diagrams.straight(page, offset + 2 + 2 * i, 1);
             }
         }
 

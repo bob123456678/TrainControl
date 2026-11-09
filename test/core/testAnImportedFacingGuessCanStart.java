@@ -23,6 +23,7 @@ import org.traincontrol.automationui.TileGraph.RouteId;
 import org.traincontrol.automationui.TileGraph.TileKey;
 import org.traincontrol.automationui.TilePorts.Side;
 import org.traincontrol.marklin.MarklinControlStation;
+import support.Teardown;
 
 /**
  * The facing an import of a 2.8.1 file gives a train is the way the file ran it, and where the file cannot say, a guess
@@ -56,14 +57,7 @@ public class testAnImportedFacingGuessCanStart
     @AfterClass(alwaysRun = true)
     public static void tearDownClass() throws Exception
     {
-        try
-        {
-            if (model != null) model.stop();
-        }
-        finally
-        {
-            if (sandbox != null) sandbox.close();
-        }
+        Teardown.close(sandbox, model);
     }
 
     /** The guess at BottomMainA is the way trains may arrive there. */

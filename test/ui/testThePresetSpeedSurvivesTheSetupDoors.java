@@ -27,6 +27,7 @@ import support.Answering;
 import support.Components;
 import support.Keys;
 import support.Mouse;
+import support.Reflect;
 import support.SettingsWindow;
 import support.WindowField;
 
@@ -339,9 +340,7 @@ public class testThePresetSpeedSurvivesTheSetupDoors
     {
         assertTrue(Components.waitFor(() -> ui.getActiveLoc() == train, 5000), "precondition: the train is not on show");
 
-        java.lang.reflect.Field running = Layout.class.getDeclaredField("running");
-
-        running.setAccessible(true);
+        java.lang.reflect.Field running = Reflect.field(Layout.class, "running");
 
         train.setSpeed(speed);
 
@@ -693,9 +692,7 @@ public class testThePresetSpeedSurvivesTheSetupDoors
         try
         {
             // The undo point every edit takes, as the edit's first step
-            final java.lang.reflect.Method snapshot = LayoutEditor.class.getDeclaredMethod("snapshotLayout");
-
-            snapshot.setAccessible(true);
+            final java.lang.reflect.Method snapshot = Reflect.method(LayoutEditor.class, "snapshotLayout");
 
             SwingUtilities.invokeAndWait(() ->
             {
@@ -873,9 +870,7 @@ public class testThePresetSpeedSurvivesTheSetupDoors
 
         if (!editor.isDisplayable()) return asked;
 
-        final java.lang.reflect.Field field = LayoutEditor.class.getDeclaredField("cancelButton");
-
-        field.setAccessible(true);
+        final java.lang.reflect.Field field = Reflect.field(LayoutEditor.class, "cancelButton");
 
         final javax.swing.JButton button = (javax.swing.JButton) field.get(editor);
 

@@ -1,6 +1,5 @@
 package core;
 
-import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
@@ -16,6 +15,7 @@ import org.traincontrol.automation.Point;
 import org.traincontrol.base.Locomotive;
 import org.traincontrol.marklin.MarklinControlStation;
 import static org.traincontrol.marklin.MarklinControlStation.init;
+import support.Reflect;
 
 /**
  * One train's tail claim does not hide another train's on the same place.  The walk that claims the track behind every
@@ -223,16 +223,10 @@ public class testATailIsNotHiddenByAnother
 
         HomeStaging staging = HomeStaging.snapshot(layout);
 
-        Method passes = HomeStaging.class.getDeclaredMethod("passesTheTailsOfTrainsThatHaveNotMoved", Edge.class,
-            Locomotive.class, Map.class);
+        Method passes = Reflect.method(HomeStaging.class,
+            "passesTheTailsOfTrainsThatHaveNotMoved", Edge.class, Locomotive.class, Map.class);
 
-        passes.setAccessible(true);
-
-        Field startField = HomeStaging.class.getDeclaredField("start");
-
-        startField.setAccessible(true);
-
-        Map<Point, Locomotive> start = (Map<Point, Locomotive>) startField.get(staging);
+        Map<Point, Locomotive> start = (Map<Point, Locomotive>) Reflect.get(HomeStaging.class, staging, "start");
 
         assertFalse((Boolean) passes.invoke(staging, outOne, one, start), "Return Home let the first train out through"
             + " the switch the second train's tail lies across - its own claim on the switch square hid the other's"
@@ -276,15 +270,9 @@ public class testATailIsNotHiddenByAnother
 
             HomeStaging staging = HomeStaging.snapshot(layout);
 
-            Method blocked = HomeStaging.class.getDeclaredMethod("blockedSensors", Map.class);
+            Method blocked = Reflect.method(HomeStaging.class, "blockedSensors", Map.class);
 
-            blocked.setAccessible(true);
-
-            Field startField = HomeStaging.class.getDeclaredField("start");
-
-            startField.setAccessible(true);
-
-            Map<Point, Locomotive> start = (Map<Point, Locomotive>) startField.get(staging);
+            Map<Point, Locomotive> start = (Map<Point, Locomotive>) Reflect.get(HomeStaging.class, staging, "start");
 
             assertTrue(((java.util.Set<String>) blocked.invoke(staging, start)).contains(junction.getS88()),
                 "precondition: with both trains where they started, the switch's sensor is not shut");

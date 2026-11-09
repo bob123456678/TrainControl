@@ -5,6 +5,7 @@ import java.util.*;
 import static org.testng.Assert.*;
 import org.testng.annotations.Test;
 import org.traincontrol.base.LayoutDiagram;
+import support.Reflect;
 import support.SourceOf;
 
 /**
@@ -249,11 +250,7 @@ public class testSwitchingToACentralStationLayout
 
     private static Object field(Object target, String name) throws Exception
     {
-        java.lang.reflect.Field f = target.getClass().getDeclaredField(name);
-
-        f.setAccessible(true);
-
-        return f.get(target);
+        return Reflect.get(target.getClass(), target, name);
     }
 
     /**
@@ -300,10 +297,8 @@ public class testSwitchingToACentralStationLayout
                     + " autonomy needs a layout on this computer, which is what pressing Start says (REG2-C2)");
 
                 // AND PRESSING IT IS REFUSED SO, by the one gate every door that sends a train asks
-                final java.lang.reflect.Method gate = org.traincontrol.gui.TrainControlUI.class.getDeclaredMethod(
-                    "whyNoTrainMayBeSent", boolean.class);
-
-                gate.setAccessible(true);
+                final java.lang.reflect.Method gate =
+                    Reflect.method(org.traincontrol.gui.TrainControlUI.class, "whyNoTrainMayBeSent", boolean.class);
 
                 final Object[] said = new Object[1];
 

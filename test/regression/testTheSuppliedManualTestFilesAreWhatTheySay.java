@@ -13,6 +13,7 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 import org.traincontrol.automation.Layout;
 import org.traincontrol.marklin.MarklinControlStation;
+import support.Teardown;
 
 /**
  * Every sample file shipped for a manual test still demonstrates the thing its entry says it does: a file is supplied
@@ -48,14 +49,7 @@ public class testTheSuppliedManualTestFilesAreWhatTheySay
     @AfterClass(alwaysRun = true)
     public static void tearDownClass() throws Exception
     {
-        try
-        {
-            if (model != null) model.stop();
-        }
-        finally
-        {
-            if (sandbox != null) sandbox.close();
-        }
+        Teardown.close(sandbox, model);
     }
 
     /**

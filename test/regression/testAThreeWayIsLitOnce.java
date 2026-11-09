@@ -6,7 +6,6 @@ import java.util.List;
 import javax.swing.ImageIcon;
 import javax.swing.SwingUtilities;
 import static org.testng.Assert.*;
-import org.testng.SkipException;
 import org.testng.annotations.Test;
 import org.traincontrol.automationui.TileGraph.TileKey;
 import org.traincontrol.base.Accessory;
@@ -20,6 +19,9 @@ import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.marklin.MarklinRoute;
 import org.traincontrol.util.ImageUtil;
 import static org.traincontrol.marklin.MarklinControlStation.init;
+import support.Components;
+import support.Display;
+import support.Reflect;
 
 /**
  * Highlight on Diagram lights a three-way once, as commanded, where a route commands one of its decoders and checks the
@@ -39,10 +41,7 @@ public class testAThreeWayIsLitOnce
     @Test
     public void testAThreeWayCommandedAndCheckedIsLitAsCommanded() throws Exception
     {
-        if (java.awt.GraphicsEnvironment.isHeadless())
-        {
-            throw new SkipException("the highlight is a drawing, and drawing needs a display");
-        }
+        Display.needed("the highlight is a drawing, and drawing needs a display");
 
         // BEFORE init, which opens whatever the layout preference names (OB-111).
         support.LayoutSandbox sandbox = null;
@@ -65,8 +64,8 @@ public class testAThreeWayIsLitOnce
 
             assertNotNull(ui, "precondition: there is no window");
 
-            settle();
-            settle();
+            Components.drain(3);
+            Components.drain(3);
 
             // A THREE-WAY ON 1 - MAIN, and the label it is drawn as.
             String page = "1 - Main";
@@ -95,7 +94,7 @@ public class testAThreeWayIsLitOnce
 
             SwingUtilities.invokeAndWait(() -> label.endFlash());
 
-            settle();
+            Components.drain(3);
 
             final ImageIcon plain = (ImageIcon) label.getIcon();
 
@@ -122,9 +121,7 @@ public class testAThreeWayIsLitOnce
                     RouteCommand.RouteCommandAccessory(first + 1, protocol, true))));
             });
 
-            final java.lang.reflect.Method highlight = RouteEditorFrame.class.getDeclaredMethod("highlightOnDiagram");
-
-            highlight.setAccessible(true);
+            final java.lang.reflect.Method highlight = Reflect.method(RouteEditorFrame.class, "highlightOnDiagram");
 
             SwingUtilities.invokeLater(() ->
             {
@@ -138,7 +135,7 @@ public class testAThreeWayIsLitOnce
                 }
             });
 
-            settle();
+            Components.drain(3);
 
             assertTrue(label.isFlashOutstanding(), "precondition: the three-way was not lit at all");
 
@@ -189,10 +186,5 @@ public class testAThreeWayIsLitOnce
         g.dispose();
 
         return image.getRGB(0, 0, w, h, null, 0, w);
-    }
-
-    private static void settle() throws Exception
-    {
-        for (int i = 0; i < 3; i++) SwingUtilities.invokeAndWait(() -> { });
     }
 }

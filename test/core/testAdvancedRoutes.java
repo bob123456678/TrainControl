@@ -20,6 +20,9 @@ import static org.testng.Assert.*;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
+import support.Reflect;
+import support.Settle;
+import static support.Settle.until;
 
 /**
  * Conditional routes that act on locomotives, and multi-units inside them.
@@ -842,9 +845,7 @@ public class testAdvancedRoutes
         {
             new Thread(() -> model.execRoute(routeName)).start();
 
-            long armed = System.currentTimeMillis() + 5000;
-
-            while (!model.getRoute(routeName).isExecuting() && System.currentTimeMillis() < armed) Thread.sleep(20);
+            Settle.until(() -> model.getRoute(routeName).isExecuting(), 5000);
 
             assertTrue(model.getRoute(routeName).isExecuting(), "precondition: the route never started");
 
@@ -853,16 +854,12 @@ public class testAdvancedRoutes
 
             String expected = org.traincontrol.util.I18n.f("route.ui.infoAlreadyRunning", routeName);
 
-            long until = System.currentTimeMillis() + 5000;
-
-            while (!said.contains(expected) && System.currentTimeMillis() < until) Thread.sleep(20);
+            Settle.until(() -> said.contains(expected), 5000);
 
             assertTrue(said.contains(expected), "a route started again while it ran was dropped with nothing in the log"
                 + " (GSR-C4): " + said);
 
-            long giveUp = System.currentTimeMillis() + 15000;
-
-            while (model.getRoute(routeName).isExecuting() && System.currentTimeMillis() < giveUp) Thread.sleep(50);
+            Settle.until(() -> !model.getRoute(routeName).isExecuting(), 15000);
         }
         finally
         {
@@ -1274,13 +1271,10 @@ public class testAdvancedRoutes
 
         // THE PAGE HAS TO BE ONE THE MODEL KNOWS, because that is what the re-bind walks - and it is also
         // what makes this the real case: a page the model never heard of is not on anybody's diagram.
-        java.lang.reflect.Field pages = MarklinControlStation.class.getDeclaredField("layoutDB");
-        pages.setAccessible(true);
-
         @SuppressWarnings("unchecked")
         org.traincontrol.base.RemoteDeviceCollection<org.traincontrol.base.LayoutDiagram, String> layouts =
             (org.traincontrol.base.RemoteDeviceCollection<org.traincontrol.base.LayoutDiagram, String>)
-                pages.get(model);
+                Reflect.get(MarklinControlStation.class, model, "layoutDB");
 
         layouts.add(page, page.getName(), page.getName());
 
@@ -1358,16 +1352,6 @@ public class testAdvancedRoutes
 
     // Every command and trigger, run (Adam: "Add the tests.  Advise if any fail") - the gaps
     // a read of the suite found: features that were only parsed or round-tripped, never run as a route
-
-    /** Polls a condition every 50 ms until it holds or the time is up. */
-    private static boolean until(java.util.function.BooleanSupplier holds, long ms) throws InterruptedException
-    {
-        long end = System.currentTimeMillis() + ms;
-
-        while (!holds.getAsBoolean() && System.currentTimeMillis() < end) Thread.sleep(50);
-
-        return holds.getAsBoolean();
-    }
 
     /** A route run by hand, not watching a sensor. */
     private static MarklinRoute byHand(String name, int id, RouteCommand... commands)

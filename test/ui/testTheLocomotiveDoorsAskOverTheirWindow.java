@@ -37,6 +37,7 @@ import support.Answering;
 import support.AskingWindows;
 import support.Components;
 import support.Mouse;
+import support.Reflect;
 import support.SettingsWindow;
 
 /**
@@ -154,11 +155,7 @@ public class testTheLocomotiveDoorsAskOverTheirWindow
     /** The main window's keyboard, which hears the shortcuts there. */
     private static Component keyboard() throws Exception
     {
-        Field field = TrainControlUI.class.getDeclaredField("KeyboardTab");
-
-        field.setAccessible(true);
-
-        return (Component) field.get(ui);
+        return (Component) Reflect.get(TrainControlUI.class, ui, "KeyboardTab");
     }
 
     /** Where a key goes in this window. */
@@ -210,9 +207,7 @@ public class testTheLocomotiveDoorsAskOverTheirWindow
     /** The active button's multi-unit entry, with its menu open. */
     private static JMenuItem keyMenuItem(String name) throws Exception
     {
-        Field current = TrainControlUI.class.getDeclaredField("currentButton");
-
-        current.setAccessible(true);
+        Field current = Reflect.field(TrainControlUI.class, "currentButton");
 
         Components.select((JButton) current.get(ui));
 
@@ -738,11 +733,7 @@ public class testTheLocomotiveDoorsAskOverTheirWindow
     /** A part of the database's window, which its keys really arrive at. */
     private static Component inTheDatabase(String field) throws Exception
     {
-        Field part = LocomotiveSelector.class.getDeclaredField(field);
-
-        part.setAccessible(true);
-
-        return (Component) part.get(database);
+        return (Component) Reflect.get(LocomotiveSelector.class, database, field);
     }
 
     /**

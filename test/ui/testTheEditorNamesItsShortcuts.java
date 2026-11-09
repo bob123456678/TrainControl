@@ -8,7 +8,6 @@ import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
-import org.testng.SkipException;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
@@ -21,6 +20,9 @@ import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.util.I18n;
 import static org.traincontrol.marklin.MarklinControlStation.init;
+import support.Display;
+import support.Reflect;
+import support.Teardown;
 
 /**
  * The autonomy editor's keyboard shortcuts are named where their actions are offered (OB-214).  Asked of the real
@@ -45,10 +47,7 @@ public class testTheEditorNamesItsShortcuts
     @BeforeClass
     public static void setUpClass() throws Exception
     {
-        if (java.awt.GraphicsEnvironment.isHeadless())
-        {
-            throw new SkipException("the autonomy editor and its menus need a display");
-        }
+        Display.needed("the autonomy editor and its menus need a display");
 
         sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
 
@@ -75,28 +74,7 @@ public class testTheEditorNamesItsShortcuts
     @AfterClass(alwaysRun = true)
     public static void tearDownClass() throws Exception
     {
-        try
-        {
-            if (editor != null)
-            {
-                final LayoutEditor closing = editor;
-
-                SwingUtilities.invokeAndWait(() -> closing.dispose());
-            }
-
-            if (ui != null)
-            {
-                final TrainControlUI closing = ui;
-
-                SwingUtilities.invokeAndWait(() -> closing.dispose());
-            }
-
-            if (model != null) model.stop();
-        }
-        finally
-        {
-            if (sandbox != null) sandbox.close();
-        }
+        Teardown.close(sandbox, model, editor, ui);
     }
 
     /**
@@ -190,10 +168,8 @@ public class testTheEditorNamesItsShortcuts
 
             track.addPropertyChangeListener("title", e -> titles.add(String.valueOf(e.getNewValue())));
 
-            final java.lang.reflect.Method arrive = LayoutEditor.class.getDeclaredMethod("arriveAt", String.class,
-                boolean.class);
-
-            arrive.setAccessible(true);
+            final java.lang.reflect.Method arrive =
+                Reflect.method(LayoutEditor.class, "arriveAt", String.class, boolean.class);
 
             SwingUtilities.invokeAndWait(() ->
             {
@@ -469,9 +445,7 @@ public class testTheEditorNamesItsShortcuts
             for (int i = 0; i < 10; i++) SwingUtilities.invokeAndWait(() -> { });
 
             // A SQUARE WITH TRACK ON IT, to open the menu on
-            java.lang.reflect.Field gridField = LayoutEditor.class.getDeclaredField("grid");
-
-            gridField.setAccessible(true);
+            java.lang.reflect.Field gridField = Reflect.field(LayoutEditor.class, "grid");
 
             final org.traincontrol.gui.LayoutGrid grid = (org.traincontrol.gui.LayoutGrid) gridField.get(track);
 
@@ -533,10 +507,8 @@ public class testTheEditorNamesItsShortcuts
             hoverOver(track, on);
 
             // AND THE KEY DOES IT
-            final java.lang.reflect.Method pressed = LayoutEditor.class.getDeclaredMethod("formKeyPressed",
-                java.awt.event.KeyEvent.class);
-
-            pressed.setAccessible(true);
+            final java.lang.reflect.Method pressed =
+                Reflect.method(LayoutEditor.class, "formKeyPressed", java.awt.event.KeyEvent.class);
 
             SwingUtilities.invokeAndWait(() ->
             {
@@ -554,9 +526,7 @@ public class testTheEditorNamesItsShortcuts
 
             for (int i = 0; i < 10; i++) SwingUtilities.invokeAndWait(() -> { });
 
-            java.lang.reflect.Field once = LayoutEditor.class.getDeclaredField("selectOnce");
-
-            once.setAccessible(true);
+            java.lang.reflect.Field once = Reflect.field(LayoutEditor.class, "selectOnce");
 
             assertTrue(once.getBoolean(track), LayoutEditor.SHORTCUT_SELECT_BY_DRAGGING + " did not start Select by"
                 + " Dragging a Box");
@@ -580,9 +550,7 @@ public class testTheEditorNamesItsShortcuts
             // build a new diagram panel, and picking goes on through them - so the new panel shows it too
             SwingUtilities.invokeAndWait(() -> track.setSelectMode(true));
 
-            final java.lang.reflect.Method redraw = LayoutEditor.class.getDeclaredMethod("drawGrid");
-
-            redraw.setAccessible(true);
+            final java.lang.reflect.Method redraw = Reflect.method(LayoutEditor.class, "drawGrid");
 
             SwingUtilities.invokeAndWait(() ->
             {
@@ -676,9 +644,7 @@ public class testTheEditorNamesItsShortcuts
 
             final org.traincontrol.gui.LayoutGrid grid = gridOf(track);
 
-            java.lang.reflect.Field what = org.traincontrol.gui.LayoutLabel.class.getDeclaredField("component");
-
-            what.setAccessible(true);
+            java.lang.reflect.Field what = Reflect.field(org.traincontrol.gui.LayoutLabel.class, "component");
 
             // A TRACK TILE, and another square to hover over
             org.traincontrol.gui.LayoutLabel tile = null, other = null;
@@ -754,16 +720,10 @@ public class testTheEditorNamesItsShortcuts
             final org.traincontrol.gui.LayoutGrid grid = gridOf(track);
 
             // THREE SQUARES PICKED, as a box picks them
-            java.lang.reflect.Field selectionField = LayoutEditor.class.getDeclaredField("selection");
-
-            selectionField.setAccessible(true);
-
             final org.traincontrol.base.TileSelection selection =
-                (org.traincontrol.base.TileSelection) selectionField.get(track);
+                (org.traincontrol.base.TileSelection) Reflect.get(LayoutEditor.class, track, "selection");
 
-            final java.lang.reflect.Method redraw = LayoutEditor.class.getDeclaredMethod("refreshSelectionBorders");
-
-            redraw.setAccessible(true);
+            final java.lang.reflect.Method redraw = Reflect.method(LayoutEditor.class, "refreshSelectionBorders");
 
             SwingUtilities.invokeAndWait(() ->
             {
@@ -844,9 +804,7 @@ public class testTheEditorNamesItsShortcuts
                 // THE RELEASE
                 releaseOn(track, to);
 
-                java.lang.reflect.Field selectionField = LayoutEditor.class.getDeclaredField("selection");
-
-                selectionField.setAccessible(true);
+                java.lang.reflect.Field selectionField = Reflect.field(LayoutEditor.class, "selection");
 
                 assertTrue(((org.traincontrol.base.TileSelection) selectionField.get(track)).isEmpty(), "the box Escape"
                     + " should have dropped was picked on the release (" + (picking ? "picking" : "Shift") + ", RSA33-C2)");
@@ -954,9 +912,7 @@ public class testTheEditorNamesItsShortcuts
 
                 for (int i = 0; i < 10; i++) SwingUtilities.invokeAndWait(() -> { });
 
-                java.lang.reflect.Field selectionField = LayoutEditor.class.getDeclaredField("selection");
-
-                selectionField.setAccessible(true);
+                java.lang.reflect.Field selectionField = Reflect.field(LayoutEditor.class, "selection");
 
                 assertTrue(((org.traincontrol.base.TileSelection) selectionField.get(track)).isEmpty()
                     && !track.hasToolFlag(), "the click after a box Escape dropped " + (picking ? "picked the tile up"
@@ -1007,9 +963,7 @@ public class testTheEditorNamesItsShortcuts
 
             for (int i = 0; i < 10; i++) SwingUtilities.invokeAndWait(() -> { });
 
-            java.lang.reflect.Field picked = LayoutEditor.class.getDeclaredField("COMPONENT_BORDER_SELECTED_COLOR");
-
-            picked.setAccessible(true);
+            java.lang.reflect.Field picked = Reflect.field(LayoutEditor.class, "COMPONENT_BORDER_SELECTED_COLOR");
 
             String outlined = highlightKey(((java.awt.Color) picked.get(null)).getRGB());
 
@@ -1028,26 +982,18 @@ public class testTheEditorNamesItsShortcuts
 
     private static org.traincontrol.gui.LayoutGrid gridOf(LayoutEditor editor) throws ReflectiveOperationException
     {
-        java.lang.reflect.Field gridField = LayoutEditor.class.getDeclaredField("grid");
-
-        gridField.setAccessible(true);
-
-        return (org.traincontrol.gui.LayoutGrid) gridField.get(editor);
+        return (org.traincontrol.gui.LayoutGrid) Reflect.get(LayoutEditor.class, editor, "grid");
     }
 
     /** Picks a rectangle of squares, as a box does, and draws them picked. */
     private static void pick(final LayoutEditor editor, final int fromX, final int fromY, final int toX, final int toY)
         throws Exception
     {
-        java.lang.reflect.Field selectionField = LayoutEditor.class.getDeclaredField("selection");
-
-        selectionField.setAccessible(true);
+        java.lang.reflect.Field selectionField = Reflect.field(LayoutEditor.class, "selection");
 
         final org.traincontrol.base.TileSelection selection = (org.traincontrol.base.TileSelection) selectionField.get(editor);
 
-        final java.lang.reflect.Method redraw = LayoutEditor.class.getDeclaredMethod("refreshSelectionBorders");
-
-        redraw.setAccessible(true);
+        final java.lang.reflect.Method redraw = Reflect.method(LayoutEditor.class, "refreshSelectionBorders");
 
         SwingUtilities.invokeAndWait(() ->
         {
@@ -1067,10 +1013,8 @@ public class testTheEditorNamesItsShortcuts
     /** Escape, through the editor's own keys. */
     private static void escape(final LayoutEditor editor) throws Exception
     {
-        final java.lang.reflect.Method pressed = LayoutEditor.class.getDeclaredMethod("formKeyPressed",
-            java.awt.event.KeyEvent.class);
-
-        pressed.setAccessible(true);
+        final java.lang.reflect.Method pressed =
+            Reflect.method(LayoutEditor.class, "formKeyPressed", java.awt.event.KeyEvent.class);
 
         SwingUtilities.invokeAndWait(() ->
         {
@@ -1091,9 +1035,7 @@ public class testTheEditorNamesItsShortcuts
     /** A square with track on it. */
     private static org.traincontrol.gui.LayoutLabel aTrackSquare(LayoutEditor editor) throws ReflectiveOperationException
     {
-        java.lang.reflect.Field what = org.traincontrol.gui.LayoutLabel.class.getDeclaredField("component");
-
-        what.setAccessible(true);
+        java.lang.reflect.Field what = Reflect.field(org.traincontrol.gui.LayoutLabel.class, "component");
 
         for (java.awt.Component c : gridOf(editor).getContainer().getComponents())
         {
@@ -1114,11 +1056,7 @@ public class testTheEditorNamesItsShortcuts
     /** What the editor's own record says a square wears. */
     private static String keyOf(LayoutEditor editor, javax.swing.JLabel square) throws ReflectiveOperationException
     {
-        java.lang.reflect.Field stateField = LayoutEditor.class.getDeclaredField("borderState");
-
-        stateField.setAccessible(true);
-
-        Object key = ((java.util.Map<?, ?>) stateField.get(editor)).get(square);
+        Object key = ((java.util.Map<?, ?>) Reflect.get(LayoutEditor.class, editor, "borderState")).get(square);
 
         return key == null ? "" : key.toString();
     }
@@ -1150,18 +1088,12 @@ public class testTheEditorNamesItsShortcuts
 
             assertNotNull(over, "precondition: no square at 2,4");
 
-            final java.lang.reflect.Field autonomyHover = LayoutEditor.class.getDeclaredField("autonomyHover");
+            final java.lang.reflect.Field autonomyHover = Reflect.field(LayoutEditor.class, "autonomyHover");
 
-            autonomyHover.setAccessible(true);
+            final java.lang.reflect.Field hoveredX = Reflect.field(LayoutEditor.class, "lastHoveredX");
 
-            final java.lang.reflect.Field hoveredX = LayoutEditor.class.getDeclaredField("lastHoveredX");
-
-            hoveredX.setAccessible(true);
-
-            final java.lang.reflect.Method arrive = LayoutEditor.class.getDeclaredMethod("arriveAt", String.class,
-                boolean.class);
-
-            arrive.setAccessible(true);
+            final java.lang.reflect.Method arrive =
+                Reflect.method(LayoutEditor.class, "arriveAt", String.class, boolean.class);
 
             // THE HOVER, THE SWITCH AND THE READING IN ONE EVENT: this class shows the editor, and a real pointer
             // resting over it moves the keys' square between events - over the palette, to -1 - so the claim could pass
@@ -1225,9 +1157,7 @@ public class testTheEditorNamesItsShortcuts
         {
             settleTheEditor();
 
-            final java.lang.reflect.Method redraw = LayoutEditor.class.getDeclaredMethod("refreshGrid");
-
-            redraw.setAccessible(true);
+            final java.lang.reflect.Method redraw = Reflect.method(LayoutEditor.class, "refreshGrid");
 
             int before = org.traincontrol.gui.LayoutLabel.COUNT_CONSTRUCTED.get();
 
@@ -1513,9 +1443,7 @@ public class testTheEditorNamesItsShortcuts
      */
     private static java.util.Map<String, Object> tiesOf(LayoutEditor editor) throws ReflectiveOperationException
     {
-        java.lang.reflect.Field field = LayoutEditor.class.getDeclaredField("layout");
-
-        field.setAccessible(true);
+        java.lang.reflect.Field field = Reflect.field(LayoutEditor.class, "layout");
 
         java.util.Map<String, Object> out = new java.util.TreeMap<>();
 
@@ -1611,9 +1539,7 @@ public class testTheEditorNamesItsShortcuts
 
             assertNotNull(aTrackSquareWithRoom(track, at), "precondition: no track square on " + PAGE);
 
-            java.lang.reflect.Field gridField = LayoutEditor.class.getDeclaredField("grid");
-
-            gridField.setAccessible(true);
+            java.lang.reflect.Field gridField = Reflect.field(LayoutEditor.class, "grid");
 
             final int x = at[0];
             final int y = at[1];
@@ -1671,9 +1597,7 @@ public class testTheEditorNamesItsShortcuts
 
             assertNotNull(aTrackSquareWithRoom(track, at), "precondition: no track square on " + PAGE);
 
-            final java.lang.reflect.Field gridField = LayoutEditor.class.getDeclaredField("grid");
-
-            gridField.setAccessible(true);
+            final java.lang.reflect.Field gridField = Reflect.field(LayoutEditor.class, "grid");
 
             final int x = at[0];
             final int y = at[1];
@@ -1775,17 +1699,11 @@ public class testTheEditorNamesItsShortcuts
         {
             settleTheEditor();
 
-            final java.lang.reflect.Field gridField = LayoutEditor.class.getDeclaredField("grid");
-
-            gridField.setAccessible(true);
+            final java.lang.reflect.Field gridField = Reflect.field(LayoutEditor.class, "grid");
 
             // ADDRESSES SHOWN, as the box shows them - turned on only when they are off: the run's preferences start as the
             // operator's, and his Show Addresses may already have them on, which a toggle would turn off
-            final java.lang.reflect.Field drawn = LayoutEditor.class.getDeclaredField("layout");
-
-            drawn.setAccessible(true);
-
-            final LayoutDiagram shown = (LayoutDiagram) drawn.get(track);
+            final LayoutDiagram shown = (LayoutDiagram) Reflect.get(LayoutEditor.class, track, "layout");
 
             SwingUtilities.invokeAndWait(() ->
             {
@@ -1867,9 +1785,7 @@ public class testTheEditorNamesItsShortcuts
             assertTrue(wearsTheHover(track, menued), "a menu opened over a square took the outline off the square it is"
                 + " about");
 
-            java.lang.reflect.Field box = LayoutEditor.class.getDeclaredField("showGridCheckbox");
-
-            box.setAccessible(true);
+            java.lang.reflect.Field box = Reflect.field(LayoutEditor.class, "showGridCheckbox");
 
             final java.awt.Component tools = (java.awt.Component) box.get(track);
 
@@ -1979,9 +1895,7 @@ public class testTheEditorNamesItsShortcuts
 
             assertNotNull(aTrackSquareWithRoom(track, at), "precondition: no track square on " + PAGE);
 
-            final java.lang.reflect.Field gridField = LayoutEditor.class.getDeclaredField("grid");
-
-            gridField.setAccessible(true);
+            final java.lang.reflect.Field gridField = Reflect.field(LayoutEditor.class, "grid");
 
             final org.traincontrol.gui.LayoutLabel p = (org.traincontrol.gui.LayoutLabel) squareAt(gridField, track, at[0],
                 at[1]);
@@ -1993,10 +1907,8 @@ public class testTheEditorNamesItsShortcuts
 
             leaveFor(p, p.getWidth() / 2, p.getHeight() / 2);
 
-            java.lang.reflect.Method made = LayoutEditor.class.getDeclaredMethod("menuFor",
-                org.traincontrol.gui.LayoutLabel.class, org.traincontrol.base.LayoutDiagramComponent.class);
-
-            made.setAccessible(true);
+            java.lang.reflect.Method made = Reflect.method(LayoutEditor.class,
+                "menuFor", org.traincontrol.gui.LayoutLabel.class, org.traincontrol.base.LayoutDiagramComponent.class);
 
             final javax.swing.JPopupMenu[] menu = new javax.swing.JPopupMenu[1];
 
@@ -2018,9 +1930,7 @@ public class testTheEditorNamesItsShortcuts
 
             // WHERE THE POINTER IS, said through the editor's own reader rather than read off the screen: the
             // real pointer is wherever it was left, and this window is off the screen
-            final java.lang.reflect.Field pointerOver = LayoutEditor.class.getDeclaredField("pointerOver");
-
-            pointerOver.setAccessible(true);
+            final java.lang.reflect.Field pointerOver = Reflect.field(LayoutEditor.class, "pointerOver");
 
             final Object theScreens = pointerOver.get(track);
 
@@ -2186,11 +2096,7 @@ public class testTheEditorNamesItsShortcuts
     /** This editor window's pointer watch, as the toolkit holds it. */
     private static java.awt.event.AWTEventListener theWatchOf(LayoutEditor editor) throws Exception
     {
-        java.lang.reflect.Field field = LayoutEditor.class.getDeclaredField("pointerWatch");
-
-        field.setAccessible(true);
-
-        return (java.awt.event.AWTEventListener) field.get(editor);
+        return (java.awt.event.AWTEventListener) Reflect.get(LayoutEditor.class, editor, "pointerWatch");
     }
 
     /** The pointer's hover over a square, as its own listener gives it, and the event thread after it. */
@@ -2234,16 +2140,12 @@ public class testTheEditorNamesItsShortcuts
     /** The pointer entering the margin around the diagram, and the event thread after it. */
     private static void enterTheMargin(final LayoutEditor editor) throws Exception
     {
-        java.lang.reflect.Field marginField = LayoutEditor.class.getDeclaredField("ExtLayoutPanel");
-
-        marginField.setAccessible(true);
+        java.lang.reflect.Field marginField = Reflect.field(LayoutEditor.class, "ExtLayoutPanel");
 
         final java.awt.Component margin = (java.awt.Component) marginField.get(editor);
 
-        final java.lang.reflect.Method entered = LayoutEditor.class.getDeclaredMethod("ExtLayoutPanelMouseEntered",
-            java.awt.event.MouseEvent.class);
-
-        entered.setAccessible(true);
+        final java.lang.reflect.Method entered =
+            Reflect.method(LayoutEditor.class, "ExtLayoutPanelMouseEntered", java.awt.event.MouseEvent.class);
 
         SwingUtilities.invokeAndWait(() ->
         {
@@ -2372,9 +2274,8 @@ public class testTheEditorNamesItsShortcuts
             // A PAGE SWITCH IN PLACE keeps it gone - with nothing unsaved, so it asks nothing
             assertFalse(unsaved(a), "precondition: the editor has unsaved work, so leaving the page would ask on the screen");
 
-            java.lang.reflect.Method leave = LayoutEditor.class.getDeclaredMethod("leaveFor", String.class, boolean.class);
-
-            leave.setAccessible(true);
+            java.lang.reflect.Method leave =
+                Reflect.method(LayoutEditor.class, "leaveFor", String.class, boolean.class);
 
             final LayoutEditor switching = a;
 
@@ -2500,9 +2401,7 @@ public class testTheEditorNamesItsShortcuts
         final String was = TrainControlUI.getPrefs().get(key, null);
         final boolean onTopWas = ui.isAlwaysOnTop();
 
-        final java.lang.reflect.Field itemField = TrainControlUI.class.getDeclaredField("windowAlwaysOnTopMenuItem");
-
-        itemField.setAccessible(true);
+        final java.lang.reflect.Field itemField = Reflect.field(TrainControlUI.class, "windowAlwaysOnTopMenuItem");
 
         final javax.swing.JCheckBoxMenuItem item = (javax.swing.JCheckBoxMenuItem) itemField.get(ui);
         final boolean tickedWas = item.isSelected();
@@ -2531,9 +2430,8 @@ public class testTheEditorNamesItsShortcuts
             // A PAGE SWITCH IN PLACE, nothing unsaved
             assertFalse(unsaved(a), "precondition: the editor has unsaved work, so leaving the page would ask on the screen");
 
-            java.lang.reflect.Method leave = LayoutEditor.class.getDeclaredMethod("leaveFor", String.class, boolean.class);
-
-            leave.setAccessible(true);
+            java.lang.reflect.Method leave =
+                Reflect.method(LayoutEditor.class, "leaveFor", String.class, boolean.class);
 
             final LayoutEditor switching = a;
 
@@ -2614,9 +2512,7 @@ public class testTheEditorNamesItsShortcuts
 
         if ("finding".equals(door))
         {
-            java.lang.reflect.Field field = AutonomyEditorPanel.class.getDeclaredField("onJumpToPage");
-
-            field.setAccessible(true);
+            java.lang.reflect.Field field = Reflect.field(AutonomyEditorPanel.class, "onJumpToPage");
 
             @SuppressWarnings("unchecked")
             final java.util.function.Consumer<TileKey> toPage =
@@ -2626,9 +2522,7 @@ public class testTheEditorNamesItsShortcuts
         }
         else if ("notice".equals(door))
         {
-            java.lang.reflect.Field field = AutonomyEditorPanel.class.getDeclaredField("onJumpToNotice");
-
-            field.setAccessible(true);
+            java.lang.reflect.Field field = Reflect.field(AutonomyEditorPanel.class, "onJumpToNotice");
 
             @SuppressWarnings("unchecked")
             final java.util.function.BiConsumer<TileKey, List<TileKey>> toNotice =
@@ -2660,9 +2554,7 @@ public class testTheEditorNamesItsShortcuts
     private static LayoutEditor openedBy(Runnable opening, LayoutEditor not) throws Exception
     {
         // NOT WITH EDIT GRAY: the main window answers that with a dialog that waits on the screen
-        java.lang.reflect.Field button = TrainControlUI.class.getDeclaredField("editLayoutButton");
-
-        button.setAccessible(true);
+        java.lang.reflect.Field button = Reflect.field(TrainControlUI.class, "editLayoutButton");
 
         final boolean[] live = new boolean[1];
 
@@ -2685,9 +2577,7 @@ public class testTheEditorNamesItsShortcuts
 
         SwingUtilities.invokeAndWait(opening);
 
-        java.lang.reflect.Field shown = TrainControlUI.class.getDeclaredField("openEditor");
-
-        shown.setAccessible(true);
+        java.lang.reflect.Field shown = Reflect.field(TrainControlUI.class, "openEditor");
 
         long until = System.currentTimeMillis() + 20000;
 
@@ -2706,9 +2596,7 @@ public class testTheEditorNamesItsShortcuts
 
         Object open = shown.get(ui);
 
-        java.lang.reflect.Field onItsWay = TrainControlUI.class.getDeclaredField("editorOnItsWay");
-
-        onItsWay.setAccessible(true);
+        java.lang.reflect.Field onItsWay = Reflect.field(TrainControlUI.class, "editorOnItsWay");
 
         StringBuilder windows = new StringBuilder();
 
@@ -2726,9 +2614,7 @@ public class testTheEditorNamesItsShortcuts
     /** Whether an editor holds autonomy work its Save has not written. */
     private static boolean unsaved(LayoutEditor on) throws Exception
     {
-        java.lang.reflect.Method asked = LayoutEditor.class.getDeclaredMethod("hasUnsavedAutonomyWork");
-
-        asked.setAccessible(true);
+        java.lang.reflect.Method asked = Reflect.method(LayoutEditor.class, "hasUnsavedAutonomyWork");
 
         final boolean[] out = new boolean[1];
 
@@ -2766,11 +2652,7 @@ public class testTheEditorNamesItsShortcuts
     /** The newest lines of the main window's log, for a failure to say what went wrong. */
     private static String logTop() throws Exception
     {
-        java.lang.reflect.Field area = TrainControlUI.class.getDeclaredField("debugArea");
-
-        area.setAccessible(true);
-
-        String text = ((javax.swing.JTextArea) area.get(ui)).getText();
+        String text = ((javax.swing.JTextArea) Reflect.get(TrainControlUI.class, ui, "debugArea")).getText();
 
         return text.substring(0, Math.min(1500, text.length()));
     }
@@ -2839,9 +2721,7 @@ public class testTheEditorNamesItsShortcuts
 
             assertNotNull(squares, "precondition: no track square on " + PAGE);
 
-            java.lang.reflect.Field gridField = LayoutEditor.class.getDeclaredField("grid");
-
-            gridField.setAccessible(true);
+            java.lang.reflect.Field gridField = Reflect.field(LayoutEditor.class, "grid");
 
             // SOMETHING TO UNDO
             SwingUtilities.invokeAndWait(() -> track.rotate(squares[0]));
@@ -2978,13 +2858,9 @@ public class testTheEditorNamesItsShortcuts
             assertNotNull(squares, "precondition: no track square with a square two to its right on " + PAGE);
 
             // ESCAPE'S OWN ACTION: the key handler posts it, and this is all one event
-            final java.lang.reflect.Method key = LayoutEditor.class.getDeclaredMethod("escapePressed");
+            final java.lang.reflect.Method key = Reflect.method(LayoutEditor.class, "escapePressed");
 
-            key.setAccessible(true);
-
-            final java.lang.reflect.Field ignoring = LayoutEditor.class.getDeclaredField("clickToIgnore");
-
-            ignoring.setAccessible(true);
+            final java.lang.reflect.Field ignoring = Reflect.field(LayoutEditor.class, "clickToIgnore");
 
             for (final boolean outAndBack : new boolean[] {false, true})
             {
@@ -3089,13 +2965,9 @@ public class testTheEditorNamesItsShortcuts
             final int turnedWas = from.getComponent().getOrientation();
 
             // ESCAPE'S OWN ACTION: the key handler posts it, and this is all one event
-            final java.lang.reflect.Method key = LayoutEditor.class.getDeclaredMethod("escapePressed");
+            final java.lang.reflect.Method key = Reflect.method(LayoutEditor.class, "escapePressed");
 
-            key.setAccessible(true);
-
-            final java.lang.reflect.Field ignoring = LayoutEditor.class.getDeclaredField("clickToIgnore");
-
-            ignoring.setAccessible(true);
+            final java.lang.reflect.Field ignoring = Reflect.field(LayoutEditor.class, "clickToIgnore");
 
             final Object[] read = new Object[3];
 
@@ -3194,10 +3066,8 @@ public class testTheEditorNamesItsShortcuts
             assertTrue(track.hasToolFlag() && keyOf(track, piece).startsWith(red), "precondition: the palette piece"
                 + " was not picked up and outlined: " + keyOf(track, piece));
 
-            final java.lang.reflect.Method arrive = LayoutEditor.class.getDeclaredMethod("arriveAt", String.class,
-                boolean.class);
-
-            arrive.setAccessible(true);
+            final java.lang.reflect.Method arrive =
+                Reflect.method(LayoutEditor.class, "arriveAt", String.class, boolean.class);
 
             SwingUtilities.invokeAndWait(() ->
             {
@@ -3215,9 +3085,7 @@ public class testTheEditorNamesItsShortcuts
 
             assertFalse(track.hasToolFlag(), "precondition: the switch did not drop the tool");
 
-            java.lang.reflect.Field paletteField = LayoutEditor.class.getDeclaredField("newComponents");
-
-            paletteField.setAccessible(true);
+            java.lang.reflect.Field paletteField = Reflect.field(LayoutEditor.class, "newComponents");
 
             for (java.awt.Component c : ((java.awt.Container) paletteField.get(track)).getComponents())
             {
@@ -3234,9 +3102,7 @@ public class testTheEditorNamesItsShortcuts
     /** The first piece of the editor's palette. */
     private static org.traincontrol.gui.LayoutLabel aPalettePiece(LayoutEditor editor) throws ReflectiveOperationException
     {
-        java.lang.reflect.Field paletteField = LayoutEditor.class.getDeclaredField("newComponents");
-
-        paletteField.setAccessible(true);
+        java.lang.reflect.Field paletteField = Reflect.field(LayoutEditor.class, "newComponents");
 
         for (java.awt.Component c : ((java.awt.Container) paletteField.get(editor)).getComponents())
         {
@@ -3350,11 +3216,7 @@ public class testTheEditorNamesItsShortcuts
     /** Whether a square wears the hover outline (`COMPONENT_BORDER_HOVERED_COLOR`), read from the editor's own record of what each square wears. */
     private static boolean wearsTheHover(LayoutEditor editor, javax.swing.JLabel square) throws ReflectiveOperationException
     {
-        java.lang.reflect.Field stateField = LayoutEditor.class.getDeclaredField("borderState");
-
-        stateField.setAccessible(true);
-
-        Object key = ((java.util.Map<?, ?>) stateField.get(editor)).get(square);
+        Object key = ((java.util.Map<?, ?>) Reflect.get(LayoutEditor.class, editor, "borderState")).get(square);
 
         return key != null && key.toString().startsWith(highlightKey(editorColour("COMPONENT_BORDER_HOVERED_COLOR").getRGB()));
     }
@@ -3381,9 +3243,8 @@ public class testTheEditorNamesItsShortcuts
 
         final AutonomyEditorPanel panel = editor.getAutonomyPanel();
 
-        final java.lang.reflect.Method pressed = LayoutEditor.class.getDeclaredMethod("formKeyPressed", java.awt.event.KeyEvent.class);
-
-        pressed.setAccessible(true);
+        final java.lang.reflect.Method pressed =
+            Reflect.method(LayoutEditor.class, "formKeyPressed", java.awt.event.KeyEvent.class);
 
         final Runnable controlO = () ->
         {
@@ -3502,9 +3363,7 @@ public class testTheEditorNamesItsShortcuts
     @Test
     public void testTheTrackLengthsToggleNamesItsKey() throws Exception
     {
-        java.lang.reflect.Field field = AutonomyEditorPanel.class.getDeclaredField("showLengths");
-
-        field.setAccessible(true);
+        java.lang.reflect.Field field = Reflect.field(AutonomyEditorPanel.class, "showLengths");
 
         final javax.swing.JCheckBox toggle = (javax.swing.JCheckBox) field.get(editor.getAutonomyPanel());
 

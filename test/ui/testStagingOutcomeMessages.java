@@ -6,6 +6,8 @@ import static org.testng.Assert.*;
 import org.testng.annotations.Test;
 import org.traincontrol.automation.HomeStaging;
 import org.traincontrol.gui.TrainControlUI;
+import support.Display;
+import support.Reflect;
 
 /**
  * Every reason a return home is refused has its own sentence.
@@ -27,17 +29,12 @@ public class testStagingOutcomeMessages
     @Test
     public void testEveryRefusalHasItsOwnSentence() throws Exception
     {
-        if (java.awt.GraphicsEnvironment.isHeadless())
-        {
-            throw new org.testng.SkipException("describeStagingOutcome is a method on the window");
-        }
+        Display.needed("describeStagingOutcome is a method on the window");
 
         TrainControlUI ui = build();
 
-        java.lang.reflect.Method describe = TrainControlUI.class.getDeclaredMethod(
+        java.lang.reflect.Method describe = Reflect.method(TrainControlUI.class,
             "describeStagingOutcome", HomeStaging.Outcome.class, java.util.List.class);
-
-        describe.setAccessible(true);
 
         Map<String, HomeStaging.Outcome> seen = new HashMap<>();
 

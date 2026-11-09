@@ -30,6 +30,8 @@ import static regression.testTheImportDoorReadsAnOldFile.itemCalled;
 import static regression.testTheImportDoorReadsAnOldFile.logged;
 import static regression.testTheImportDoorReadsAnOldFile.openTheWindow;
 import static regression.testTheImportDoorReadsAnOldFile.putTheFolderBack;
+import support.Components;
+import support.Reflect;
 
 /**
  * No setup edit is made while a route runs with autonomy idle, at any door that refuses one while autonomy is busy
@@ -245,7 +247,7 @@ public class testNoSetupEditWhileARouteRuns
 
                     SwingUtilities.invokeAndWait(item::doClick);
 
-                    settle();
+                    Components.drain(6);
 
                     List<String> said = answering.since(from);
 
@@ -258,7 +260,7 @@ public class testNoSetupEditWhileARouteRuns
 
                 SwingUtilities.invokeAndWait(() -> support.StationDoors.fireThoughGrayed(choose));
 
-                settle();
+                Components.drain(6);
 
                 assertTrue(answering.since(fromWindow).contains(refusal), "Station Settings' control, offered at rest and"
                     + " pressed while a route runs, did not say why it did nothing: " + answering.since(fromWindow));
@@ -287,7 +289,7 @@ public class testNoSetupEditWhileARouteRuns
 
             SwingUtilities.invokeAndWait(choose::doClick);
 
-            settle();
+            Components.drain(6);
 
             assertFalse(answering.since(from).contains(refusal), "a setup item refused at rest: " + answering.since(from));
 
@@ -415,7 +417,7 @@ public class testNoSetupEditWhileARouteRuns
 
                     SwingUtilities.invokeAndWait(() -> window.openLayoutEditor(null, autonomy, null));
 
-                    settle();
+                    Components.drain(6);
 
                     assertFalse(ui.isLayoutEditorOpen(), "the " + (autonomy ? "autonomy" : "track") + " editor opened"
                         + " while a route runs");
@@ -432,10 +434,9 @@ public class testNoSetupEditWhileARouteRuns
                 assertTrue(String.valueOf(tab.getToolTipText()).contains(I18n.t(NO_EDITS)), "the track editor's Autonomy tab,"
                     + " greyed while a route runs, does not say why: " + tab.getToolTipText());
 
-                final java.lang.reflect.Method save = org.traincontrol.gui.layouteditor.LayoutEditor.class
-                    .getDeclaredMethod("saveButtonActionPerformed", java.awt.event.ActionEvent.class);
-
-                save.setAccessible(true);
+                final java.lang.reflect.Method save =
+                    Reflect.method(org.traincontrol.gui.layouteditor.LayoutEditor.class,
+                        "saveButtonActionPerformed", java.awt.event.ActionEvent.class);
 
                 int from = answering.count();
 
@@ -451,7 +452,7 @@ public class testNoSetupEditWhileARouteRuns
                     }
                 });
 
-                settle();
+                Components.drain(6);
 
                 assertTrue(answering.since(from).contains(refusal), "the track editor's Save did not refuse while a"
                     + " route runs: " + answering.since(from));
@@ -596,9 +597,7 @@ public class testNoSetupEditWhileARouteRuns
 
         final org.traincontrol.gui.layouteditor.LayoutEditor[] editor = new org.traincontrol.gui.layouteditor.LayoutEditor[1];
 
-        final java.lang.reflect.Field staging = TrainControlUI.class.getDeclaredField("stagingFlowActive");
-
-        staging.setAccessible(true);
+        final java.lang.reflect.Field staging = Reflect.field(TrainControlUI.class, "stagingFlowActive");
 
         try
         {
@@ -631,10 +630,8 @@ public class testNoSetupEditWhileARouteRuns
             final JMenuItem tick = ((javax.swing.JMenu) atRest.get(I18n.t("autosetup.ui.btnExcludePage"))).getItem(0);
             final JMenuItem editPage = ((javax.swing.JMenu) atRest.get(I18n.t("autosetup.ui.menuEditAutonomy"))).getItem(0);
 
-            final java.lang.reflect.Method save = org.traincontrol.gui.layouteditor.LayoutEditor.class
-                .getDeclaredMethod("saveButtonActionPerformed", java.awt.event.ActionEvent.class);
-
-            save.setAccessible(true);
+            final java.lang.reflect.Method save = Reflect.method(org.traincontrol.gui.layouteditor.LayoutEditor.class,
+                "saveButtonActionPerformed", java.awt.event.ActionEvent.class);
 
             final Class<?>[] anEvent = {java.awt.event.ActionEvent.class};
             final Class<?>[] aMouse = {java.awt.event.MouseEvent.class};
@@ -823,7 +820,7 @@ public class testNoSetupEditWhileARouteRuns
 
         SwingUtilities.invokeAndWait(door);
 
-        settle();
+        Components.drain(6);
 
         List<String> said = answering.since(from);
 
@@ -941,7 +938,7 @@ public class testNoSetupEditWhileARouteRuns
 
                     SwingUtilities.invokeAndWait((Runnable) door.getValue()[1]);
 
-                    settle();
+                    Components.drain(6);
 
                     List<String> said = answering.since(from);
 
@@ -970,7 +967,7 @@ public class testNoSetupEditWhileARouteRuns
 
                 SwingUtilities.invokeAndWait((Runnable) doors.get(name)[1]);
 
-                settle();
+                Components.drain(6);
 
                 List<String> said = answering.since(from);
 
@@ -1033,7 +1030,7 @@ public class testNoSetupEditWhileARouteRuns
                 editor[0].setAutonomyMode(session);
             });
 
-            settle();
+            Components.drain(6);
 
             final org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel panel = editor[0].getAutonomyPanel();
 
@@ -1047,15 +1044,11 @@ public class testNoSetupEditWhileARouteRuns
 
             final org.json.JSONObject before = session.snapshotSetup();
 
-            final java.lang.reflect.Field button = org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel.class
-                .getDeclaredField("oneWayButton");
+            final java.lang.reflect.Field button =
+                Reflect.field(org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel.class, "oneWayButton");
 
-            button.setAccessible(true);
-
-            final java.lang.reflect.Field excludeBox = org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel.class
-                .getDeclaredField("excludePage");
-
-            excludeBox.setAccessible(true);
+            final java.lang.reflect.Field excludeBox =
+                Reflect.field(org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel.class, "excludePage");
 
             answering.start();
 
@@ -1145,7 +1138,7 @@ public class testNoSetupEditWhileARouteRuns
             SwingUtilities.invokeAndWait(() -> panel.tileClicked(square, page.getComponent(square.getX(), square.getY()),
                 false));
 
-            settle();
+            Components.drain(6);
 
             assertFalse(session.snapshotSetup().similar(before), "precondition: the arrow click wrote nothing at rest, so"
                 + " its refusal while a route runs shows nothing");
@@ -1177,14 +1170,12 @@ public class testNoSetupEditWhileARouteRuns
     private static String saidBy(final org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel panel, final Runnable gesture)
         throws Exception
     {
-        final java.lang.reflect.Method say = org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel.class.getDeclaredMethod("say",
-            javax.swing.JLabel.class, String.class);
+        final java.lang.reflect.Method say =
+            Reflect.method(org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel.class,
+                "say", javax.swing.JLabel.class, String.class);
 
-        say.setAccessible(true);
-
-        final java.lang.reflect.Field hint = org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel.class.getDeclaredField("hint");
-
-        hint.setAccessible(true);
+        final java.lang.reflect.Field hint =
+            Reflect.field(org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel.class, "hint");
 
         SwingUtilities.invokeAndWait(() ->
         {
@@ -1200,23 +1191,18 @@ public class testNoSetupEditWhileARouteRuns
             gesture.run();
         });
 
-        settle();
+        Components.drain(6);
 
         StringBuilder out = new StringBuilder(String.valueOf(((javax.swing.JLabel) hint.get(panel)).getText()));
 
-        java.lang.reflect.Field banner = org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel.class.getDeclaredField("messageBanner");
-
-        banner.setAccessible(true);
+        java.lang.reflect.Field banner =
+            Reflect.field(org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel.class, "messageBanner");
 
         Object strip = banner.get(panel);
 
         if (strip != null)
         {
-            java.lang.reflect.Field saying = strip.getClass().getDeclaredField("saying");
-
-            saying.setAccessible(true);
-
-            out.append(" | ").append(saying.get(strip));
+            out.append(" | ").append(Reflect.get(strip.getClass(), strip, "saying"));
         }
 
         return out.toString();
@@ -1379,9 +1365,7 @@ public class testNoSetupEditWhileARouteRuns
             });
 
             // AUTONOMY BUSY without moving a train, as the staging flow is
-            final java.lang.reflect.Field staging = TrainControlUI.class.getDeclaredField("stagingFlowActive");
-
-            staging.setAccessible(true);
+            final java.lang.reflect.Field staging = Reflect.field(TrainControlUI.class, "stagingFlowActive");
 
             answering.start();
 
@@ -1400,7 +1384,7 @@ public class testNoSetupEditWhileARouteRuns
 
                         SwingUtilities.invokeAndWait(door.getValue());
 
-                        settle();
+                        Components.drain(6);
 
                         said.put(door.getKey(), answering.since(from));
                     }
@@ -1416,7 +1400,7 @@ public class testNoSetupEditWhileARouteRuns
 
                     SwingUtilities.invokeAndWait(() -> call(panel, "exportConfiguration"));
 
-                    settle();
+                    Components.drain(6);
 
                     assertEquals(answering.since(from), Collections.singletonList(I18n.t(WAIT)), "Export, a door that"
                         + " must wait, did not say so while " + run + " runs");
@@ -1472,9 +1456,7 @@ public class testNoSetupEditWhileARouteRuns
             final String anyRun = I18n.t(ANY_RUN);
             final String noEdits = I18n.t(NO_EDITS);
 
-            final java.lang.reflect.Field sliderField = TrainControlUI.class.getDeclaredField("maxActiveTrains");
-
-            sliderField.setAccessible(true);
+            final java.lang.reflect.Field sliderField = Reflect.field(TrainControlUI.class, "maxActiveTrains");
 
             final javax.swing.JSlider trains = (javax.swing.JSlider) sliderField.get(ui);
 
@@ -1532,7 +1514,7 @@ public class testNoSetupEditWhileARouteRuns
 
                     SwingUtilities.invokeAndWait(door.getValue());
 
-                    settle();
+                    Components.drain(6);
 
                     List<String> said = answering.since(from);
 
@@ -1565,9 +1547,8 @@ public class testNoSetupEditWhileARouteRuns
                 Point standing = aTrainOnASquareWithTwoFacings(window, session);
 
                 final org.json.JSONObject before = session.snapshotSetup();
-                final java.lang.reflect.Method follow = TrainControlUI.class.getDeclaredMethod("followTheTurn", String.class);
-
-                follow.setAccessible(true);
+                final java.lang.reflect.Method follow =
+                    Reflect.method(TrainControlUI.class, "followTheTurn", String.class);
 
                 final Object[] followed = new Object[1];
 
@@ -1603,9 +1584,7 @@ public class testNoSetupEditWhileARouteRuns
             // AND THE TURN IS FOLLOWED at rest, so its refusal above hides something
             final org.json.JSONObject unturned = session.snapshotSetup();
             final String trainTurned = aTrainOnASquareWithTwoFacings(window, session).getCurrentLocomotive().getName();
-            final java.lang.reflect.Method turn = TrainControlUI.class.getDeclaredMethod("followTheTurn", String.class);
-
-            turn.setAccessible(true);
+            final java.lang.reflect.Method turn = Reflect.method(TrainControlUI.class, "followTheTurn", String.class);
 
             final Object[] turned = new Object[1];
 
@@ -1694,7 +1673,7 @@ public class testNoSetupEditWhileARouteRuns
 
                     SwingUtilities.invokeAndWait(door.getValue());
 
-                    settle();
+                    Components.drain(6);
 
                     assertEquals(answering.since(from), Collections.singletonList(anyRun), door.getKey()
                         + " did not refuse, before asking anything, while a route runs - Adam: \"There should be no setup"
@@ -1713,9 +1692,7 @@ public class testNoSetupEditWhileARouteRuns
 
             // WHILE AUTONOMY ITSELF IS BUSY the loads keep their offer to stop the trains (declined here, so nothing is
             // replaced), and Export refuses with the wait sentence as it does while a route runs
-            final java.lang.reflect.Field staging = TrainControlUI.class.getDeclaredField("stagingFlowActive");
-
-            staging.setAccessible(true);
+            final java.lang.reflect.Field staging = Reflect.field(TrainControlUI.class, "stagingFlowActive");
 
             staging.setBoolean(ui, true);
 
@@ -1731,7 +1708,7 @@ public class testNoSetupEditWhileARouteRuns
 
                     SwingUtilities.invokeAndWait(doors.get(door));
 
-                    settle();
+                    Components.drain(6);
 
                     assertEquals(answering.since(from), Collections.singletonList(offer), door + " did not make its offer"
                         + " to stop the trains while autonomy is busy, as it did before routes were refused");
@@ -1755,7 +1732,7 @@ public class testNoSetupEditWhileARouteRuns
                         SwingUtilities.invokeAndWait(door.equals("Unload") ? (Runnable) () -> window.unloadAutonomy()
                             : doors.get(door));
 
-                        settle();
+                        Components.drain(6);
 
                         List<String> said = answering.since(asked);
 
@@ -1781,7 +1758,7 @@ public class testNoSetupEditWhileARouteRuns
 
                 SwingUtilities.invokeAndWait(doors.get("Autonomy: Export"));
 
-                settle();
+                Components.drain(6);
 
                 assertEquals(answering.since(from), Collections.singletonList(I18n.t(WAIT)),
                     "Export did not refuse with the wait sentence while autonomy is busy");
@@ -1803,7 +1780,7 @@ public class testNoSetupEditWhileARouteRuns
 
                 SwingUtilities.invokeAndWait(unload);
 
-                settle();
+                Components.drain(6);
 
                 assertEquals(answering.since(from), Collections.singletonList(anyRun), "Unload did not refuse, before"
                     + " asking anything, while a route runs");
@@ -1824,7 +1801,7 @@ public class testNoSetupEditWhileARouteRuns
 
                 SwingUtilities.invokeAndWait(unload);
 
-                settle();
+                Components.drain(6);
 
                 assertEquals(answering.since(from), Collections.singletonList(
                     I18n.t("autolayout.ui.confirmReloadJsonStopsRunningLocomotives")), "Unload did not make its offer to"
@@ -1844,7 +1821,7 @@ public class testNoSetupEditWhileARouteRuns
 
                 SwingUtilities.invokeAndWait(door.getValue());
 
-                settle();
+                Components.drain(6);
 
                 List<String> said = answering.since(from);
 
@@ -1865,7 +1842,7 @@ public class testNoSetupEditWhileARouteRuns
                 window.refreshAutonomyPrompt();
             });
 
-            settle();
+            Components.drain(6);
 
             final javax.swing.JButton banner = ((org.traincontrol.gui.autonomy.AutonomyBanner) fieldOf("autonomyDiagramBanner", ui))
                 .getActionButton();
@@ -1881,7 +1858,7 @@ public class testNoSetupEditWhileARouteRuns
 
                 SwingUtilities.invokeAndWait(banner::doClick);
 
-                settle();
+                Components.drain(6);
 
                 assertEquals(answering.since(from), Collections.singletonList(anyRun), "the banner's Load this"
                     + " configuration did not refuse, before asking anything, while a route runs");
@@ -1898,7 +1875,7 @@ public class testNoSetupEditWhileARouteRuns
 
             SwingUtilities.invokeAndWait(banner::doClick);
 
-            settle();
+            Components.drain(6);
 
             assertFalse(answering.since(from).contains(anyRun), "the banner refused at rest");
             assertTrue(ui.isAutonomyLoaded(), "the banner did not load the configuration at rest");
@@ -1939,9 +1916,8 @@ public class testNoSetupEditWhileARouteRuns
             ui = openTheWindow();
 
             final TrainControlUI window = ui;
-            final java.lang.reflect.Method why = TrainControlUI.class.getDeclaredMethod("whyNoTrainMayBeSent", boolean.class);
-
-            why.setAccessible(true);
+            final java.lang.reflect.Method why =
+                Reflect.method(TrainControlUI.class, "whyNoTrainMayBeSent", boolean.class);
 
             final Class<?>[] pressed = {java.awt.event.ActionEvent.class};
 
@@ -1977,7 +1953,7 @@ public class testNoSetupEditWhileARouteRuns
 
                     SwingUtilities.invokeAndWait(door.getValue());
 
-                    settle();
+                    Components.drain(6);
 
                     assertNamesTheRoute(answering.since(from), door.getKey());
 
@@ -2035,9 +2011,8 @@ public class testNoSetupEditWhileARouteRuns
             ui = openTheWindow();
 
             final TrainControlUI window = ui;
-            final java.lang.reflect.Method lastMoment = TrainControlUI.class.getDeclaredMethod("refusedForAnEditorOnItsWay");
-
-            lastMoment.setAccessible(true);
+            final java.lang.reflect.Method lastMoment =
+                Reflect.method(TrainControlUI.class, "refusedForAnEditorOnItsWay");
 
             final boolean[] refused = new boolean[1];
 
@@ -2067,7 +2042,7 @@ public class testNoSetupEditWhileARouteRuns
 
                 SwingUtilities.invokeAndWait(ask);
 
-                settle();
+                Components.drain(6);
 
                 assertTrue(refused[0], "the last-moment question let a run through under a route");
                 assertNamesTheRoute(answering.since(from), "the last-moment question");
@@ -2091,7 +2066,7 @@ public class testNoSetupEditWhileARouteRuns
 
             try
             {
-                settle();
+                Components.drain(6);
 
                 assertNamesTheRoute(answering.since(from), "Execute Timetable, the route begun after its press,");
 
@@ -2178,11 +2153,7 @@ public class testNoSetupEditWhileARouteRuns
     {
         try
         {
-            java.lang.reflect.Field field = on.getClass().getDeclaredField(name);
-
-            field.setAccessible(true);
-
-            return field.get(on);
+            return Reflect.get(on.getClass(), on, name);
         }
         catch (ReflectiveOperationException failed)
         {
@@ -2332,7 +2303,7 @@ public class testNoSetupEditWhileARouteRuns
         ui.mapLocToCurrentButton(other);
 
         for (long end = System.currentTimeMillis() + 10000; (ui.getActiveLoc() == null
-            || !other.equals(ui.getActiveLoc().getName())) && System.currentTimeMillis() < end; ) settle();
+            || !other.equals(ui.getActiveLoc().getName())) && System.currentTimeMillis() < end; ) Components.drain(6);
 
         assertTrue(ui.getActiveLoc() != null && other.equals(ui.getActiveLoc().getName()), "precondition: " + other
             + " could not be made the active locomotive");
@@ -2372,10 +2343,8 @@ public class testNoSetupEditWhileARouteRuns
     /** Presses a key over a square, through the diagram's own gesture door; whether it was taken. */
     private static Object pressOver(final TrainControlUI ui, final TileKey over, final int key) throws Exception
     {
-        final java.lang.reflect.Method door = TrainControlUI.class.getDeclaredMethod("locomotiveGestureOnDiagram",
-            int.class, boolean.class);
-
-        door.setAccessible(true);
+        final java.lang.reflect.Method door =
+            Reflect.method(TrainControlUI.class, "locomotiveGestureOnDiagram", int.class, boolean.class);
 
         final Object[] handled = new Object[1];
 
@@ -2393,7 +2362,7 @@ public class testNoSetupEditWhileARouteRuns
             }
         });
 
-        settle();
+        Components.drain(6);
 
         return handled[0];
     }
@@ -2404,9 +2373,8 @@ public class testNoSetupEditWhileARouteRuns
     {
         closeTheProbe(editor);
 
-        final java.lang.reflect.Method mount = org.traincontrol.gui.layouteditor.LayoutEditor.class.getDeclaredMethod("mountSidebar");
-
-        mount.setAccessible(true);
+        final java.lang.reflect.Method mount =
+            Reflect.method(org.traincontrol.gui.layouteditor.LayoutEditor.class, "mountSidebar");
 
         // ITS SIDEBAR, which `render` mounts - without showing the window or taking the diagram for editing
         SwingUtilities.invokeAndWait(() ->
@@ -2423,9 +2391,8 @@ public class testNoSetupEditWhileARouteRuns
             }
         });
 
-        java.lang.reflect.Field field = org.traincontrol.gui.layouteditor.LayoutEditor.class.getDeclaredField("autonomyModeButton");
-
-        field.setAccessible(true);
+        java.lang.reflect.Field field =
+            Reflect.field(org.traincontrol.gui.layouteditor.LayoutEditor.class, "autonomyModeButton");
 
         return (javax.swing.AbstractButton) field.get(editor[0]);
     }
@@ -2441,7 +2408,7 @@ public class testNoSetupEditWhileARouteRuns
 
         SwingUtilities.invokeAndWait(closing::dispose);
 
-        settle();
+        Components.drain(6);
     }
 
     /** The window's Autonomy menu. */
@@ -2487,11 +2454,7 @@ public class testNoSetupEditWhileARouteRuns
     /** The Layout menu opened as the operator opens it: of each item named, whether it is live and its tooltip. */
     private static Map<String, Object[]> layoutMenuAsOpened(final TrainControlUI ui, String[] names) throws Exception
     {
-        final java.lang.reflect.Field menu = TrainControlUI.class.getDeclaredField("layoutMenu");
-
-        menu.setAccessible(true);
-
-        final javax.swing.JMenu layout = (javax.swing.JMenu) menu.get(ui);
+        final javax.swing.JMenu layout = (javax.swing.JMenu) Reflect.get(TrainControlUI.class, ui, "layoutMenu");
 
         SwingUtilities.invokeAndWait(() ->
         {
@@ -2499,17 +2462,13 @@ public class testNoSetupEditWhileARouteRuns
             layout.setSelected(false);
         });
 
-        settle();
+        Components.drain(6);
 
         Map<String, Object[]> out = new java.util.LinkedHashMap<>();
 
         for (String name : names)
         {
-            java.lang.reflect.Field field = TrainControlUI.class.getDeclaredField(name);
-
-            field.setAccessible(true);
-
-            JMenuItem item = (JMenuItem) field.get(ui);
+            JMenuItem item = (JMenuItem) Reflect.get(TrainControlUI.class, ui, name);
 
             assertNotNull(item, "precondition: the window has no " + name);
 
@@ -2547,11 +2506,7 @@ public class testNoSetupEditWhileARouteRuns
     {
         try
         {
-            java.lang.reflect.Method door = TrainControlUI.class.getDeclaredMethod(method, types);
-
-            door.setAccessible(true);
-
-            door.invoke(ui, args);
+            Reflect.method(TrainControlUI.class, method, types).invoke(ui, args);
         }
         catch (ReflectiveOperationException failed)
         {
@@ -2583,11 +2538,6 @@ public class testNoSetupEditWhileARouteRuns
         assertNotNull(found, "the window has no Layouts menu");
 
         return found;
-    }
-
-    private static void settle() throws Exception
-    {
-        for (int turn = 0; turn < 6; turn++) SwingUtilities.invokeAndWait(() -> { });
     }
 
     /** Closes every question as it is asked - No, Cancel, or the file chooser's Cancel - and keeps what each said. */

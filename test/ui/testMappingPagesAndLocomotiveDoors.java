@@ -5,7 +5,6 @@ import java.awt.Window;
 import java.awt.event.InputEvent;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseEvent;
-import java.lang.reflect.Field;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
@@ -38,6 +37,7 @@ import org.traincontrol.util.I18n;
 import support.Answering;
 import support.Components;
 import support.Keys;
+import support.Reflect;
 import support.WireRecorder;
 import support.WireRecorder.Sent;
 
@@ -817,11 +817,7 @@ public class testMappingPagesAndLocomotiveDoors
 
     private static Object field(String name) throws Exception
     {
-        Field f = TrainControlUI.class.getDeclaredField(name);
-
-        f.setAccessible(true);
-
-        return f.get(ui);
+        return Reflect.get(TrainControlUI.class, ui, name);
     }
 
     private static Object field0(String name)

@@ -31,6 +31,7 @@ import org.traincontrol.automationui.TileGraph.RouteId;
 import org.traincontrol.automationui.TileGraph.TileKey;
 import org.traincontrol.automationui.TilePorts.Route;
 import org.traincontrol.automationui.TilePorts.Side;
+import support.Diagrams;
 import support.SourceOf;
 
 /**
@@ -1447,8 +1448,7 @@ public class testAutonomyDiagramReducer
      */
     private void feedback(LayoutDiagram page, int x, int y, int rawAddress) throws IOException
     {
-        page.addComponent(componentType.FEEDBACK, x, y, 0, 0, rawAddress / 2, rawAddress,
-            accessoryDecoderType.MM2, null);
+        Diagrams.feedback(page, x, y, rawAddress / 2, rawAddress);
     }
 
     /**

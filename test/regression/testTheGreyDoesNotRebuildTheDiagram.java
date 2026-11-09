@@ -10,7 +10,6 @@ import javax.swing.JPanel;
 import javax.swing.RepaintManager;
 import javax.swing.SwingUtilities;
 import static org.testng.Assert.*;
-import org.testng.SkipException;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
@@ -28,6 +27,9 @@ import org.traincontrol.gui.LayoutLabel;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;
 import static org.traincontrol.marklin.MarklinControlStation.init;
+import support.Components;
+import support.Display;
+import support.Reflect;
 
 /**
  * MT-334's shape, asked of the gray wash that came back (OB-180): the diagram is not rebuilt, and only what changed
@@ -95,10 +97,7 @@ public class testTheGreyDoesNotRebuildTheDiagram
     @BeforeClass
     public static void setUpClass() throws Exception
     {
-        if (java.awt.GraphicsEnvironment.isHeadless())
-        {
-            throw new SkipException("building a page of tiles needs a display");
-        }
+        Display.needed("building a page of tiles needs a display");
 
         // THE FROZEN COPY, NOT THE RAILWAY HE IS OPERATING (OB-111, `test/layouts/live-snapshot`): `cs2_sample_layout`
         // moves as Adam runs trains on it.  `Scenario.folderFor` cannot spell its way out to his own railway.
@@ -111,8 +110,8 @@ public class testTheGreyDoesNotRebuildTheDiagram
 
         assertNotNull(ui, "there is no window");
 
-        pump();
-        pump();
+        Components.drain(1);
+        Components.drain(1);
 
         session = ui.getAutonomySession();
 
@@ -345,9 +344,7 @@ public class testTheGreyDoesNotRebuildTheDiagram
 
         LayoutLabel tile = null;
 
-        java.lang.reflect.Field what = LayoutLabel.class.getDeclaredField("component");
-
-        what.setAccessible(true);
+        java.lang.reflect.Field what = Reflect.field(LayoutLabel.class, "component");
 
         // A TILE WITH A PICTURE - track, a switch, a sensor - in the diagram's own panel
         for (LayoutLabel t : tiles)
@@ -360,18 +357,14 @@ public class testTheGreyDoesNotRebuildTheDiagram
 
         assertNotNull(tile, "precondition: no tile of the page with a picture sits in a panel of its own");
 
-        java.lang.reflect.Field parentField = LayoutLabel.class.getDeclaredField("parent");
-
-        parentField.setAccessible(true);
+        java.lang.reflect.Field parentField = Reflect.field(LayoutLabel.class, "parent");
 
         assertSame(parentField.get(tile), tab, "precondition: the tile does not call the tab its parent, so this asks"
             + " nothing");
 
         final LayoutLabel changing = tile;
 
-        final java.lang.reflect.Method setImage = LayoutLabel.class.getDeclaredMethod("setImageOnEDT", boolean.class);
-
-        setImage.setAccessible(true);
+        final java.lang.reflect.Method setImage = Reflect.method(LayoutLabel.class, "setImageOnEDT", boolean.class);
 
         Counting counter = new Counting();
 
@@ -504,13 +497,10 @@ public class testTheGreyDoesNotRebuildTheDiagram
             settle();
 
             // PRECONDITION: squares of the window's page wear a mark, so a clear would redraw them
-            java.lang.reflect.Field tilesField = org.traincontrol.gui.autonomy.DiagramTileRegistry.class.getDeclaredField("tiles");
+            java.lang.reflect.Field tilesField =
+                Reflect.field(org.traincontrol.gui.autonomy.DiagramTileRegistry.class, "tiles");
 
-            tilesField.setAccessible(true);
-
-            java.lang.reflect.Field markField = LayoutLabel.class.getDeclaredField("autonomyAnnotation");
-
-            markField.setAccessible(true);
+            java.lang.reflect.Field markField = Reflect.field(LayoutLabel.class, "autonomyAnnotation");
 
             int marked = 0;
 
@@ -797,7 +787,7 @@ public class testTheGreyDoesNotRebuildTheDiagram
     {
         support.CoveredMarks.settle(ui);
 
-        pump();
+        Components.drain(1);
     }
 
     private static void refreshCoveredTrack() throws Exception
@@ -806,7 +796,7 @@ public class testTheGreyDoesNotRebuildTheDiagram
         // `Layout` monitor a dispatch holds), so asking and reading are two moments, known to `support.CoveredMarks`.
         support.CoveredMarks.refresh(ui);
 
-        pump();
+        Components.drain(1);
     }
 
     private static void settle() throws Exception
@@ -818,7 +808,7 @@ public class testTheGreyDoesNotRebuildTheDiagram
 
         settled.await(60, java.util.concurrent.TimeUnit.SECONDS);
 
-        pump();
+        Components.drain(1);
     }
 
     /**
@@ -869,10 +859,5 @@ public class testTheGreyDoesNotRebuildTheDiagram
     private static void measureEveryTileAs(int units)
     {
         support.TileLengths.measureEveryTileAs(session, units);
-    }
-
-    private static void pump() throws Exception
-    {
-        SwingUtilities.invokeAndWait(() -> { });
     }
 }

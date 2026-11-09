@@ -4,7 +4,6 @@ import javax.swing.SwingUtilities;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
-import org.testng.SkipException;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
@@ -13,6 +12,8 @@ import org.traincontrol.gui.layouteditor.LayoutEditor;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;
 import static org.traincontrol.marklin.MarklinControlStation.init;
+import support.Display;
+import support.Teardown;
 
 /**
  * One ceiling, asked by everything that grows the page, about the right dimension.  The one predicate takes the two
@@ -35,10 +36,7 @@ public class testTheDiagramCeiling
     @BeforeClass
     public static void setUpClass() throws Exception
     {
-        if (java.awt.GraphicsEnvironment.isHeadless())
-        {
-            throw new SkipException("the layout editor needs a display");
-        }
+        Display.needed("the layout editor needs a display");
 
         sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("single-switch"));
 
@@ -52,19 +50,7 @@ public class testTheDiagramCeiling
     @AfterClass(alwaysRun = true)
     public static void tearDownClass() throws Exception
     {
-        try
-        {
-            if (ui != null)
-            {
-                final TrainControlUI closing = ui;
-
-                SwingUtilities.invokeAndWait(() -> closing.dispose());
-            }
-        }
-        finally
-        {
-            if (sandbox != null) sandbox.close();
-        }
+        Teardown.close(sandbox, null, ui);
     }
 
     /**
@@ -294,17 +280,6 @@ public class testTheDiagramCeiling
         });
 
         return built[0];
-    }
-
-    /**
-     * Lets everything the editor posted for itself finish: several passes, because a posted task may post another.
-     */
-    private static void settle() throws Exception
-    {
-        for (int pass = 0; pass < 5; pass++)
-        {
-            SwingUtilities.invokeAndWait(() -> { });
-        }
     }
 
     /** Puts the editor's idea of where the pointer is onto a real square (private fields a mouse event sets). */

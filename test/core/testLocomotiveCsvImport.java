@@ -28,6 +28,7 @@ import org.traincontrol.marklin.MarklinLocomotive;
 import org.traincontrol.marklin.MarklinLocomotiveCsv;
 import org.traincontrol.marklin.MarklinLocomotiveCsv.Why;
 import org.traincontrol.marklin.MarklinSimpleComponent;
+import support.Reflect;
 
 /**
  * Locomotives > Import from CSV (FR-049), at the model: the file `exportLocsToCSV` writes is read whole, and a locomotive
@@ -632,9 +633,7 @@ public class testLocomotiveCsvImport
         MarklinLocomotiveCsv csv = MarklinLocomotiveCsv.read(OLD + name + ",,DCC,37,0,0:00:00,0,0,,\n");
 
         // The simulated station starts with the power on and does not echo a stop, so the power is set where the model keeps it.
-        java.lang.reflect.Field power = MarklinControlStation.class.getDeclaredField("powerState");
-
-        power.setAccessible(true);
+        java.lang.reflect.Field power = Reflect.field(MarklinControlStation.class, "powerState");
 
         try
         {

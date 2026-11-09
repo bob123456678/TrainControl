@@ -6,7 +6,6 @@ import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.fail;
-import org.testng.SkipException;
 import org.testng.annotations.Test;
 import org.traincontrol.automationui.AutonomySession;
 import org.traincontrol.automationui.TileGraph.TileKey;
@@ -15,6 +14,10 @@ import org.traincontrol.base.LayoutDiagram;
 import org.traincontrol.base.LayoutDiagramComponent.componentType;
 import org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel;
 import org.traincontrol.util.I18n;
+import support.Diagrams;
+import support.Display;
+import support.Reflect;
+import support.Trees;
 
 /**
  * Control+N offers a station name exactly where the right-click menu does (FR-086): the key asks what the menu asks,
@@ -86,7 +89,7 @@ public class testControlNAsksTheMenusQuestion
         }
         finally
         {
-            deleteRecursively(folder);
+            Trees.delete(folder);
         }
     }
 
@@ -129,9 +132,7 @@ public class testControlNAsksTheMenusQuestion
 
             // Armed through the panel's own field, not its button: on an ignored page the refresh disables Test a Path,
             // so a second doClick would do nothing.
-            final java.lang.reflect.Field tool = AutonomyEditorPanel.class.getDeclaredField("tool");
-
-            tool.setAccessible(true);
+            final java.lang.reflect.Field tool = Reflect.field(AutonomyEditorPanel.class, "tool");
 
             @SuppressWarnings({ "unchecked", "rawtypes" })
             final Object testTool = Enum.valueOf((Class) tool.getType(), "TEST");
@@ -151,7 +152,7 @@ public class testControlNAsksTheMenusQuestion
         }
         finally
         {
-            deleteRecursively(folder);
+            Trees.delete(folder);
         }
     }
 
@@ -216,7 +217,7 @@ public class testControlNAsksTheMenusQuestion
         {
             AutonomyEditorPanel.answerTakeAnotherNameForTests(null);
 
-            deleteRecursively(folder);
+            Trees.delete(folder);
         }
     }
 
@@ -280,7 +281,7 @@ public class testControlNAsksTheMenusQuestion
         {
             AutonomyEditorPanel.answerTakeAnotherNameForTests(null);
 
-            deleteRecursively(folder);
+            Trees.delete(folder);
         }
     }
 
@@ -331,7 +332,7 @@ public class testControlNAsksTheMenusQuestion
         }
         finally
         {
-            deleteRecursively(folder);
+            Trees.delete(folder);
         }
     }
 
@@ -401,7 +402,7 @@ public class testControlNAsksTheMenusQuestion
         }
         finally
         {
-            deleteRecursively(folder);
+            Trees.delete(folder);
         }
     }
 
@@ -419,11 +420,7 @@ public class testControlNAsksTheMenusQuestion
 
     private static Object field(Object on, String name) throws Exception
     {
-        java.lang.reflect.Field f = on.getClass().getDeclaredField(name);
-
-        f.setAccessible(true);
-
-        return f.get(on);
+        return Reflect.get(on.getClass(), on, name);
     }
 
     /**
@@ -476,7 +473,7 @@ public class testControlNAsksTheMenusQuestion
         }
         finally
         {
-            deleteRecursively(folder);
+            Trees.delete(folder);
         }
     }
 
@@ -523,7 +520,7 @@ public class testControlNAsksTheMenusQuestion
         }
         finally
         {
-            deleteRecursively(folder);
+            Trees.delete(folder);
         }
     }
 
@@ -570,7 +567,7 @@ public class testControlNAsksTheMenusQuestion
         }
         finally
         {
-            deleteRecursively(folder);
+            Trees.delete(folder);
         }
     }
 
@@ -648,7 +645,7 @@ public class testControlNAsksTheMenusQuestion
         }
         finally
         {
-            deleteRecursively(folder);
+            Trees.delete(folder);
         }
     }
 
@@ -738,14 +735,14 @@ public class testControlNAsksTheMenusQuestion
     {
         LayoutDiagram page = new LayoutDiagram(name, 12, 4, null, null);
 
-        page.addComponent(componentType.FEEDBACK, 1, 1, 0, 0, 5, 11, accessoryDecoderType.MM2, null);
+        Diagrams.feedback(page, 1, 1, 5, 11);
 
         for (int x = 2; x <= 5; x++)
         {
-            page.addComponent(componentType.STRAIGHT, x, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
+            Diagrams.straight(page, x, 1);
         }
 
-        page.addComponent(componentType.FEEDBACK, 6, 1, 0, 0, 6, 12, accessoryDecoderType.MM2, null);
+        Diagrams.feedback(page, 6, 1, 6, 12);
 
         // A label, the other square the menu sends to its text menu; (4,2) is blank inside the drawn area, (9,2)
         // outside.
@@ -772,21 +769,6 @@ public class testControlNAsksTheMenusQuestion
 
     private static void needsADisplay()
     {
-        if (java.awt.GraphicsEnvironment.isHeadless())
-        {
-            throw new SkipException("AutonomyEditorPanel builds real Swing components - this needs a display");
-        }
-    }
-
-    private static void deleteRecursively(java.io.File file)
-    {
-        java.io.File[] children = file.listFiles();
-
-        if (children != null)
-        {
-            for (java.io.File child : children) deleteRecursively(child);
-        }
-
-        file.delete();
+        Display.needed("AutonomyEditorPanel builds real Swing components - this needs a display");
     }
 }

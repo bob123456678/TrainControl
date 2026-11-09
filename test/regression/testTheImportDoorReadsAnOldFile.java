@@ -28,6 +28,7 @@ import org.traincontrol.automationui.TileGraph.TileKey;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.util.I18n;
+import support.Reflect;
 
 /**
  * The Autonomy menu's Import, driven as Adam drives it, on a sandbox copy of his railway with his own 2.7.4c file.
@@ -197,17 +198,9 @@ public class testTheImportDoorReadsAnOldFile
     {
         if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
 
-        final TrainControlUI[] ui = new TrainControlUI[1];
-
-        final support.SandboxedWindow sandboxed = new support.SandboxedWindow();
-
-        try
+        onItsOwnWindow("live-snapshot", ui ->
         {
-            sandboxed.hold(support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"))).simulated();
-
-            ui[0] = sandboxed.hold(openTheWindow());
-
-            Answerer answerer = pressImport(ui[0], MT491, "MT-491 report", Collections.<String>emptySet());
+            Answerer answerer = pressImport(ui, MT491, "MT-491 report", Collections.<String>emptySet());
 
             String opening = before(I18n.t("autosetup.ui.infoLegacyImported"), "{0}");
 
@@ -237,11 +230,7 @@ public class testTheImportDoorReadsAnOldFile
 
             assertTrue(report.width <= support.PopupShape.MAX_WIDTH, "the report is " + report.width + " px wide: "
                 + report);
-        }
-        finally
-        {
-            sandboxed.close();
-        }
+        });
     }
 
     /**
@@ -258,26 +247,18 @@ public class testTheImportDoorReadsAnOldFile
 
         assertTrue(MT298.isFile(), "precondition: the MT-298 file is not in test/autonomy_formats");
 
-        final TrainControlUI[] ui = new TrainControlUI[1];
-
-        final support.SandboxedWindow sandboxed = new support.SandboxedWindow();
-
-        try
+        onItsOwnWindow("live-snapshot", ui ->
         {
-            sandboxed.hold(support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"))).simulated();
-
-            ui[0] = sandboxed.hold(openTheWindow());
-
-            AutonomySession session = ui[0].getAutonomySession();
+            AutonomySession session = ui.getAutonomySession();
 
             final String inUse = session.getStore().getActiveConfiguration();
 
             final int logFrom = logged().length();
             final int entryFrom = loggedEntries().size();
 
-            List<String> first = importFromTheMenu(ui[0], MT298, "MT-298 import");
+            List<String> first = importFromTheMenu(ui, MT298, "MT-298 import");
 
-            session = ui[0].getAutonomySession();
+            session = ui.getAutonomySession();
 
             assertTrue(session.getStore().getConfigurationNames().contains("MT-298 import"), "precondition: the first"
                 + " import did not go into its own configuration");
@@ -318,7 +299,7 @@ public class testTheImportDoorReadsAnOldFile
                 editing.rebuild();
             });
 
-            List<String> said = importFromTheMenu(ui[0], MT298, "MT-298 import");
+            List<String> said = importFromTheMenu(ui, MT298, "MT-298 import");
 
             // The whole question is compared, since `said` holds whole dialogs.
             assertTrue(said.contains(I18n.f("autosetup.ui.confirmImportFillsGaps", "MT-298 import")), "importing an old"
@@ -387,7 +368,7 @@ public class testTheImportDoorReadsAnOldFile
                 + " left behind does not hold the " + leftNow + " its message counts under its heading - an entry each,"
                 + " which the log shows above the heading: " + leftEntry);
 
-            session = ui[0].getAutonomySession();
+            session = ui.getAutonomySession();
 
             session.getStore().setActiveConfiguration("MT-298 import");
 
@@ -400,11 +381,7 @@ public class testTheImportDoorReadsAnOldFile
             {
                 session.getStore().setActiveConfiguration(inUse);
             }
-        }
-        finally
-        {
-            sandboxed.close();
-        }
+        });
     }
 
     /**
@@ -420,19 +397,11 @@ public class testTheImportDoorReadsAnOldFile
 
         assertTrue(MT298.isFile(), "precondition: the MT-298 file is not in test/autonomy_formats");
 
-        final TrainControlUI[] ui = new TrainControlUI[1];
-
-        final support.SandboxedWindow sandboxed = new support.SandboxedWindow();
-
-        try
+        onItsOwnWindow("live-snapshot", ui ->
         {
-            sandboxed.hold(support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"))).simulated();
+            importFromTheMenu(ui, MT298, "MT-298 import");
 
-            ui[0] = sandboxed.hold(openTheWindow());
-
-            importFromTheMenu(ui[0], MT298, "MT-298 import");
-
-            AutonomySession session = ui[0].getAutonomySession();
+            AutonomySession session = ui.getAutonomySession();
 
             org.json.JSONObject points = session.getStore().getConfiguration("MT-298 import").getJSONObject("points");
 
@@ -477,9 +446,9 @@ public class testTheImportDoorReadsAnOldFile
 
             points.getJSONObject(to).put(AutonomyBuilder.LOCOMOTIVE, standing);
 
-            List<String> said = importFromTheMenu(ui[0], MT298, "MT-298 import");
+            List<String> said = importFromTheMenu(ui, MT298, "MT-298 import");
 
-            session = ui[0].getAutonomySession();
+            session = ui.getAutonomySession();
 
             points = session.getStore().getConfiguration("MT-298 import").getJSONObject("points");
 
@@ -504,11 +473,7 @@ public class testTheImportDoorReadsAnOldFile
 
             assertTrue(said.stream().anyMatch(message -> message.contains(notPlaced)), "the import did not say it left "
                 + train + " where the configuration already has it: " + said);
-        }
-        finally
-        {
-            sandboxed.close();
-        }
+        });
     }
 
     /**
@@ -590,21 +555,11 @@ public class testTheImportDoorReadsAnOldFile
 
         assertTrue(MT491.isFile(), "precondition: the MT-491 file is not in test/autonomy_formats");
 
-        final TrainControlUI[] ui = new TrainControlUI[1];
+        java.lang.reflect.Field staging = Reflect.field(TrainControlUI.class, "stagingFlowActive");
 
-        final support.SandboxedWindow sandboxed = new support.SandboxedWindow();
-
-        java.lang.reflect.Field staging = TrainControlUI.class.getDeclaredField("stagingFlowActive");
-
-        staging.setAccessible(true);
-
-        try
+        onItsOwnWindow("live-snapshot", ui ->
         {
-            sandboxed.hold(support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"))).simulated();
-
-            ui[0] = sandboxed.hold(openTheWindow());
-
-            AutonomySession session = ui[0].getAutonomySession();
+            AutonomySession session = ui.getAutonomySession();
 
             final String inUse = session.getStore().getActiveConfiguration();
 
@@ -614,11 +569,11 @@ public class testTheImportDoorReadsAnOldFile
             List<String> namesBefore = new ArrayList<>(session.getStore().getConfigurationNames());
             String onDiskBefore = setupOnDisk(session).toString();
 
-            staging.set(ui[0], true);
+            staging.set(ui, true);
 
-            Answerer asked = pressImport(ui[0], MT491, "MT-491 while running", Collections.<String>emptySet());
+            Answerer asked = pressImport(ui, MT491, "MT-491 while running", Collections.<String>emptySet());
 
-            session = ui[0].getAutonomySession();
+            session = ui.getAutonomySession();
 
             assertTrue(asked.said.contains(I18n.t("ui.main.errorNoEditsWhileRunning")), "an old file was imported"
                 + " into another configuration while autonomy ran (RSA4-C5), or refused without saying what to do"
@@ -633,13 +588,10 @@ public class testTheImportDoorReadsAnOldFile
                 + inUse);
 
             assertEquals(setupOnDisk(session).toString(), onDiskBefore, "an import refused changed the setup on disk");
-        }
-        finally
+        }, ui ->
         {
-            if (ui[0] != null) staging.set(ui[0], false);
-
-            sandboxed.close();
-        }
+            if (ui != null) staging.set(ui, false);
+        });
     }
 
     /**
@@ -656,23 +608,15 @@ public class testTheImportDoorReadsAnOldFile
 
         assertTrue(MT491.isFile(), "precondition: the MT-491 file is not in test/autonomy_formats");
 
-        final TrainControlUI[] ui = new TrainControlUI[1];
-
-        final support.SandboxedWindow sandboxed = new support.SandboxedWindow();
-
-        try
+        onItsOwnWindow("live-snapshot", ui ->
         {
-            sandboxed.hold(support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"))).simulated();
-
-            ui[0] = sandboxed.hold(openTheWindow());
-
-            AutonomySession session = ui[0].getAutonomySession();
+            AutonomySession session = ui.getAutonomySession();
 
             final String inUse = session.getStore().getActiveConfiguration();
 
             assertNotNull(inUse, "precondition: the frozen railway has no configuration in use");
 
-            assertEquals(ui[0].getActiveDiagramConfiguration(), inUse, "precondition: " + inUse + " is not the"
+            assertEquals(ui.getActiveDiagramConfiguration(), inUse, "precondition: " + inUse + " is not the"
                 + " configuration running");
 
             String before = session.getStore().getConfiguration(inUse).toString();
@@ -686,9 +630,9 @@ public class testTheImportDoorReadsAnOldFile
             java.nio.file.Files.write(bundle.toPath(), session.getStore().exportBundle(inUse).toString()
                 .getBytes(java.nio.charset.StandardCharsets.UTF_8));
 
-            List<String> said = importFromTheMenu(ui[0], bundle, inUse);
+            List<String> said = importFromTheMenu(ui, bundle, inUse);
 
-            session = ui[0].getAutonomySession();
+            session = ui.getAutonomySession();
 
             assertEquals(session.getStore().getConfiguration(inUse).toString(), before, "an import into " + inUse
                 + ", the configuration in use, by its name, changed it: " + said);
@@ -705,11 +649,7 @@ public class testTheImportDoorReadsAnOldFile
 
             assertFalse(said.contains(I18n.f("autosetup.ui.confirmImportOverwrites", inUse)), "the door refused " + inUse
                 + " and then asked to replace it (RLD4-C4): " + said);
-        }
-        finally
-        {
-            sandboxed.close();
-        }
+        });
     }
 
     /**
@@ -859,23 +799,15 @@ public class testTheImportDoorReadsAnOldFile
 
         assertTrue(MT298.isFile(), "precondition: the MT-298 file is not in test/autonomy_formats");
 
-        final TrainControlUI[] ui = new TrainControlUI[1];
-
-        final support.SandboxedWindow sandboxed = new support.SandboxedWindow();
-
-        try
+        onItsOwnWindow("live-snapshot", ui ->
         {
-            sandboxed.hold(support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"))).simulated();
+            importFromTheMenu(ui, MT298, "MT-298 run");
 
-            ui[0] = sandboxed.hold(openTheWindow());
+            SwingUtilities.invokeAndWait(() -> ui.getAutonomyViewerPanel().load("MT-298 run", false));
 
-            importFromTheMenu(ui[0], MT298, "MT-298 run");
+            AutonomySession session = ui.getAutonomySession();
 
-            SwingUtilities.invokeAndWait(() -> ui[0].getAutonomyViewerPanel().load("MT-298 run", false));
-
-            AutonomySession session = ui[0].getAutonomySession();
-
-            assertEquals(ui[0].getActiveDiagramConfiguration(), "MT-298 run", "precondition: the imported configuration"
+            assertEquals(ui.getActiveDiagramConfiguration(), "MT-298 run", "precondition: the imported configuration"
                 + " could not be chosen");
 
             TileKey named = null;
@@ -902,22 +834,18 @@ public class testTheImportDoorReadsAnOldFile
             SwingUtilities.invokeAndWait(() ->
             {
                 editing.setPointProperty(changed, "maxTrainLength", corrected);
-                ui[0].getAutonomyViewerPanel().load("MT-298 run", false, false);
+                ui.getAutonomyViewerPanel().load("MT-298 run", false, false);
             });
 
-            List<String> said = importFromTheMenu(ui[0], MT298, "MT-298 run");
+            List<String> said = importFromTheMenu(ui, MT298, "MT-298 run");
 
-            session = ui[0].getAutonomySession();
+            session = ui.getAutonomySession();
 
             assertNotNull(placedIn(said), "the second import into the configuration in use did not happen: " + said);
 
             assertEquals(maxOf(session, changed), corrected, "the second import into the configuration in use replaced"
                 + " the maximum set by hand between the two (MT-298): " + said);
-        }
-        finally
-        {
-            sandboxed.close();
-        }
+        });
     }
 
     /**
@@ -933,19 +861,11 @@ public class testTheImportDoorReadsAnOldFile
 
         assertTrue(MT491.isFile(), "precondition: the MT-491 file is not in test/autonomy_formats");
 
-        final TrainControlUI[] ui = new TrainControlUI[1];
-
-        final support.SandboxedWindow sandboxed = new support.SandboxedWindow();
-
-        try
+        onItsOwnWindow("live-snapshot", ui ->
         {
-            sandboxed.hold(support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"))).simulated();
+            AutonomySession session = ui.getAutonomySession();
 
-            ui[0] = sandboxed.hold(openTheWindow());
-
-            AutonomySession session = ui[0].getAutonomySession();
-
-            final String inUse = theConfigurationRunning(ui[0], session);
+            final String inUse = theConfigurationRunning(ui, session);
 
             String before = session.getStore().getConfiguration(inUse).toString();
             List<String> namesBefore = new ArrayList<>(session.getStore().getConfigurationNames());
@@ -966,9 +886,9 @@ public class testTheImportDoorReadsAnOldFile
 
             java.nio.file.Files.write(file.toPath(), bare.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8));
 
-            List<String> said = importFromTheMenu(ui[0], file, inUse);
+            List<String> said = importFromTheMenu(ui, file, inUse);
 
-            session = ui[0].getAutonomySession();
+            session = ui.getAutonomySession();
 
             assertTrue(said.contains(I18n.f("autosetup.ui.errorImportIntoConfigurationInUse", inUse, whereChosen(inUse))),
                 "a configuration of the older shape was imported over " + inUse + ", the configuration in use - the reload"
@@ -983,11 +903,7 @@ public class testTheImportDoorReadsAnOldFile
                 + " left a configuration behind");
 
             assertEquals(setupOnDisk(session).toString(), onDiskBefore, "an import refused changed the setup on disk");
-        }
-        finally
-        {
-            sandboxed.close();
-        }
+        });
     }
 
     /**
@@ -1003,33 +919,23 @@ public class testTheImportDoorReadsAnOldFile
 
         assertTrue(MT491.isFile(), "precondition: the MT-491 file is not in test/autonomy_formats");
 
-        final TrainControlUI[] ui = new TrainControlUI[1];
+        java.lang.reflect.Field staging = Reflect.field(TrainControlUI.class, "stagingFlowActive");
 
-        final support.SandboxedWindow sandboxed = new support.SandboxedWindow();
-
-        java.lang.reflect.Field staging = TrainControlUI.class.getDeclaredField("stagingFlowActive");
-
-        staging.setAccessible(true);
-
-        try
+        onItsOwnWindow("live-snapshot", ui ->
         {
-            sandboxed.hold(support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"))).simulated();
+            AutonomySession session = ui.getAutonomySession();
 
-            ui[0] = sandboxed.hold(openTheWindow());
-
-            AutonomySession session = ui[0].getAutonomySession();
-
-            final String inUse = theConfigurationRunning(ui[0], session);
+            final String inUse = theConfigurationRunning(ui, session);
 
             String before = session.getStore().getConfiguration(inUse).toString();
             List<String> namesBefore = new ArrayList<>(session.getStore().getConfigurationNames());
             String onDiskBefore = setupOnDisk(session).toString();
 
-            staging.set(ui[0], true);
+            staging.set(ui, true);
 
-            List<String> said = pressImport(ui[0], MT491, inUse, Collections.<String>emptySet()).said;
+            List<String> said = pressImport(ui, MT491, inUse, Collections.<String>emptySet()).said;
 
-            session = ui[0].getAutonomySession();
+            session = ui.getAutonomySession();
 
             assertTrue(said.contains(I18n.t("ui.main.errorNoEditsWhileRunning")), "an old file was taken into "
                 + inUse + ", the configuration in use, while autonomy runs (RLU4-C1), or refused without saying what to"
@@ -1041,13 +947,10 @@ public class testTheImportDoorReadsAnOldFile
                 + " left a configuration behind");
 
             assertEquals(setupOnDisk(session).toString(), onDiskBefore, "an import refused changed the setup on disk");
-        }
-        finally
+        }, ui ->
         {
-            if (ui[0] != null) staging.set(ui[0], false);
-
-            sandboxed.close();
-        }
+            if (ui != null) staging.set(ui, false);
+        });
     }
 
     /**
@@ -1063,23 +966,13 @@ public class testTheImportDoorReadsAnOldFile
 
         assertTrue(MT491.isFile(), "precondition: the MT-491 file is not in test/autonomy_formats");
 
-        final TrainControlUI[] ui = new TrainControlUI[1];
+        java.lang.reflect.Field declined = Reflect.field(TrainControlUI.class, "setupEditDeclinedDuringRun");
 
-        final support.SandboxedWindow sandboxed = new support.SandboxedWindow();
-
-        java.lang.reflect.Field declined = TrainControlUI.class.getDeclaredField("setupEditDeclinedDuringRun");
-
-        declined.setAccessible(true);
-
-        try
+        onItsOwnWindow("live-snapshot", ui ->
         {
-            sandboxed.hold(support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"))).simulated();
+            AutonomySession session = ui.getAutonomySession();
 
-            ui[0] = sandboxed.hold(openTheWindow());
-
-            AutonomySession session = ui[0].getAutonomySession();
-
-            final String inUse = theConfigurationRunning(ui[0], session);
+            final String inUse = theConfigurationRunning(ui, session);
 
             final TileKey edited = aStationTheFileGivesNoPriority(session, MT491);
 
@@ -1089,11 +982,11 @@ public class testTheImportDoorReadsAnOldFile
 
             SwingUtilities.invokeAndWait(() -> editing.setPointProperty(edited, "priority", 5));
 
-            declined.set(ui[0], true);
+            declined.set(ui, true);
 
-            List<String> said = importFromTheMenu(ui[0], MT491, inUse);
+            List<String> said = importFromTheMenu(ui, MT491, inUse);
 
-            session = ui[0].getAutonomySession();
+            session = ui.getAutonomySession();
 
             assertNotNull(placedIn(said), "precondition: the old file was not imported into " + inUse + ": " + said);
 
@@ -1104,11 +997,11 @@ public class testTheImportDoorReadsAnOldFile
 
             SwingUtilities.invokeAndWait(() -> again.setPointProperty(edited, "priority", 6));
 
-            declined.set(ui[0], true);
+            declined.set(ui, true);
 
-            said = importFromTheMenu(ui[0], MT491, "MT-491 beside");
+            said = importFromTheMenu(ui, MT491, "MT-491 beside");
 
-            session = ui[0].getAutonomySession();
+            session = ui.getAutonomySession();
 
             assertTrue(session.getStore().getConfigurationNames().contains("MT-491 beside"), "precondition: the import"
                 + " made no configuration of the name given: " + said);
@@ -1116,13 +1009,10 @@ public class testTheImportDoorReadsAnOldFile
             assertEquals(priorityIn(session, inUse, edited), Integer.valueOf(6), "an edit waiting for its rebuild was"
                 + " folded away by the reload of " + inUse + " after an import into another configuration (RLD4-C3): "
                 + said);
-        }
-        finally
+        }, ui ->
         {
-            if (ui[0] != null) declined.set(ui[0], false);
-
-            sandboxed.close();
-        }
+            if (ui != null) declined.set(ui, false);
+        });
     }
 
     /**
@@ -1136,27 +1026,17 @@ public class testTheImportDoorReadsAnOldFile
     {
         if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
 
-        final TrainControlUI[] ui = new TrainControlUI[1];
+        java.lang.reflect.Field declined = Reflect.field(TrainControlUI.class, "setupEditDeclinedDuringRun");
 
-        final support.SandboxedWindow sandboxed = new support.SandboxedWindow();
-
-        java.lang.reflect.Field declined = TrainControlUI.class.getDeclaredField("setupEditDeclinedDuringRun");
-
-        declined.setAccessible(true);
-
-        try
+        onItsOwnWindow("live-snapshot", ui ->
         {
-            sandboxed.hold(support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"))).simulated();
+            AutonomySession session = ui.getAutonomySession();
 
-            ui[0] = sandboxed.hold(openTheWindow());
+            final String inUse = theConfigurationRunning(ui, session);
 
-            AutonomySession session = ui[0].getAutonomySession();
+            final Object[] edit = anEditWaits(ui, session, inUse);
 
-            final String inUse = theConfigurationRunning(ui[0], session);
-
-            final Object[] edit = anEditWaits(ui[0], session, inUse);
-
-            final org.traincontrol.automation.Layout railway = ui[0].getModel().getAutoLayout();
+            final org.traincontrol.automation.Layout railway = ui.getModel().getAutoLayout();
 
             org.traincontrol.automation.Point from = null;
             org.traincontrol.automation.Point to = null;
@@ -1187,30 +1067,27 @@ public class testTheImportDoorReadsAnOldFile
 
             assertTheConfigurationHasItWhereItSetOff(session, inUse, new String[] {moved, fromName, toName});
 
-            declined.set(ui[0], true);
+            declined.set(ui, true);
 
-            SwingUtilities.invokeAndWait(() -> ui[0].getAutonomyViewerPanel().load(inUse, false));
+            SwingUtilities.invokeAndWait(() -> ui.getAutonomyViewerPanel().load(inUse, false));
 
-            org.traincontrol.automation.Layout after = ui[0].getModel().getAutoLayout();
+            org.traincontrol.automation.Layout after = ui.getModel().getAutoLayout();
 
-            org.traincontrol.automation.Point where = after.getLocomotiveLocation(ui[0].getModel().getLocByName(moved));
+            org.traincontrol.automation.Point where = after.getLocomotiveLocation(ui.getModel().getLocByName(moved));
 
             assertNotNull(where, moved + " is off the railway after the reload");
 
             assertEquals(where.getName(), toName, moved + ", moved by the run to " + toName + ", is back on " + fromName
                 + " after a reload made while an edit waited - the square it stands on reads free (RLA5-B1)");
 
-            assertFalse((Boolean) declined.get(ui[0]), "the reload carried the edit and left the flag up, so every later"
+            assertFalse((Boolean) declined.get(ui), "the reload carried the edit and left the flag up, so every later"
                 + " reload repeats this");
 
-            assertTheEditStands(ui[0].getAutonomySession(), inUse, edit, "after a reload made while it waited (RLA5-B1)");
-        }
-        finally
+            assertTheEditStands(ui.getAutonomySession(), inUse, edit, "after a reload made while it waited (RLA5-B1)");
+        }, ui ->
         {
-            if (ui[0] != null) declined.set(ui[0], false);
-
-            sandboxed.close();
-        }
+            if (ui != null) declined.set(ui, false);
+        });
     }
 
     /**
@@ -1225,53 +1102,40 @@ public class testTheImportDoorReadsAnOldFile
     {
         if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
 
-        final TrainControlUI[] ui = new TrainControlUI[1];
+        java.lang.reflect.Field declined = Reflect.field(TrainControlUI.class, "setupEditDeclinedDuringRun");
 
-        final support.SandboxedWindow sandboxed = new support.SandboxedWindow();
-
-        java.lang.reflect.Field declined = TrainControlUI.class.getDeclaredField("setupEditDeclinedDuringRun");
-
-        declined.setAccessible(true);
-
-        try
+        onItsOwnWindow("live-snapshot", ui ->
         {
-            sandboxed.hold(support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"))).simulated();
+            AutonomySession session = ui.getAutonomySession();
 
-            ui[0] = sandboxed.hold(openTheWindow());
+            final String inUse = theConfigurationRunning(ui, session);
 
-            AutonomySession session = ui[0].getAutonomySession();
+            final Object[] edit = anEditWaits(ui, session, inUse);
 
-            final String inUse = theConfigurationRunning(ui[0], session);
-
-            final Object[] edit = anEditWaits(ui[0], session, inUse);
-
-            final String[] move = moveAStandingTrain(ui[0], session);
+            final String[] move = moveAStandingTrain(ui, session);
 
             assertTheConfigurationHasItWhereItSetOff(session, inUse, move);
 
-            declined.set(ui[0], true);
+            declined.set(ui, true);
 
             final CountDownLatch done = new CountDownLatch(1);
 
-            SwingUtilities.invokeAndWait(() -> ui[0].layoutEditingComplete(done::countDown));
+            SwingUtilities.invokeAndWait(() -> ui.layoutEditingComplete(done::countDown));
 
             assertTrue(done.await(180, TimeUnit.SECONDS), "precondition: the edit's completion never finished");
 
             for (int turn = 0; turn < 6; turn++) SwingUtilities.invokeAndWait(() -> { });
 
-            assertStandsWhereItWasMoved(ui[0], move, "after an edit completed while a setup edit waited (RLV6-B1, a)");
+            assertStandsWhereItWasMoved(ui, move, "after an edit completed while a setup edit waited (RLV6-B1, a)");
 
-            assertFalse((Boolean) declined.get(ui[0]), "the reload carried the edit and left the flag up");
+            assertFalse((Boolean) declined.get(ui), "the reload carried the edit and left the flag up");
 
-            assertTheEditStands(ui[0].getAutonomySession(), inUse, edit, "after an edit completed while it waited"
+            assertTheEditStands(ui.getAutonomySession(), inUse, edit, "after an edit completed while it waited"
                 + " (RLV6-B1, a)");
-        }
-        finally
+        }, ui ->
         {
-            if (ui[0] != null) declined.set(ui[0], false);
-
-            sandboxed.close();
-        }
+            if (ui != null) declined.set(ui, false);
+        });
     }
 
     /**
@@ -1287,37 +1151,27 @@ public class testTheImportDoorReadsAnOldFile
 
         if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
 
-        final TrainControlUI[] ui = new TrainControlUI[1];
+        java.lang.reflect.Field declined = Reflect.field(TrainControlUI.class, "setupEditDeclinedDuringRun");
 
-        final support.SandboxedWindow sandboxed = new support.SandboxedWindow();
-
-        java.lang.reflect.Field declined = TrainControlUI.class.getDeclaredField("setupEditDeclinedDuringRun");
-
-        declined.setAccessible(true);
-
-        try
+        onItsOwnWindow("live-snapshot", ui ->
         {
-            sandboxed.hold(support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"))).simulated();
+            AutonomySession session = ui.getAutonomySession();
 
-            ui[0] = sandboxed.hold(openTheWindow());
+            final String inUse = theConfigurationRunning(ui, session);
 
-            AutonomySession session = ui[0].getAutonomySession();
+            session = importASecondConfiguration(ui, inUse);
 
-            final String inUse = theConfigurationRunning(ui[0], session);
+            final Object[] edit = anEditWaits(ui, session, inUse);
 
-            session = importASecondConfiguration(ui[0], inUse);
-
-            final Object[] edit = anEditWaits(ui[0], session, inUse);
-
-            final String[] move = moveAStandingTrain(ui[0], session);
+            final String[] move = moveAStandingTrain(ui, session);
 
             assertTheConfigurationHasItWhereItSetOff(session, inUse, move);
 
-            declined.set(ui[0], true);
+            declined.set(ui, true);
 
-            SwingUtilities.invokeAndWait(() -> ui[0].getAutonomyViewerPanel().load("MT-491 other", false));
+            SwingUtilities.invokeAndWait(() -> ui.getAutonomyViewerPanel().load("MT-491 other", false));
 
-            session = ui[0].getAutonomySession();
+            session = ui.getAutonomySession();
 
             TileKey movedTo = session.getStationIndex().squareOf(move[2]);
 
@@ -1329,17 +1183,14 @@ public class testTheImportDoorReadsAnOldFile
                 + " the run to " + move[2] + ", is not there in " + inUse + " after another configuration was chosen while"
                 + " a setup edit waited - " + inUse + " keeps it where it set off (RLV6-B1, b)");
 
-            assertFalse((Boolean) declined.get(ui[0]), "choosing another configuration left the flag up");
+            assertFalse((Boolean) declined.get(ui), "choosing another configuration left the flag up");
 
             assertTheEditStands(session, inUse, edit, "after another configuration was chosen while it waited - the"
                 + " configuration left was folded from the layout built before it (RLV6-B1, b; RLD4-C3)");
-        }
-        finally
+        }, ui ->
         {
-            if (ui[0] != null) declined.set(ui[0], false);
-
-            sandboxed.close();
-        }
+            if (ui != null) declined.set(ui, false);
+        });
     }
 
     /**
@@ -1354,60 +1205,45 @@ public class testTheImportDoorReadsAnOldFile
     {
         if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
 
-        final TrainControlUI[] ui = new TrainControlUI[1];
+        java.lang.reflect.Field declined = Reflect.field(TrainControlUI.class, "setupEditDeclinedDuringRun");
 
-        final support.SandboxedWindow sandboxed = new support.SandboxedWindow();
+        java.lang.reflect.Field staging = Reflect.field(TrainControlUI.class, "stagingFlowActive");
 
-        java.lang.reflect.Field declined = TrainControlUI.class.getDeclaredField("setupEditDeclinedDuringRun");
-
-        declined.setAccessible(true);
-
-        java.lang.reflect.Field staging = TrainControlUI.class.getDeclaredField("stagingFlowActive");
-
-        staging.setAccessible(true);
-
-        try
+        onItsOwnWindow("live-snapshot", ui ->
         {
-            sandboxed.hold(support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"))).simulated();
+            AutonomySession session = ui.getAutonomySession();
 
-            ui[0] = sandboxed.hold(openTheWindow());
+            final String inUse = theConfigurationRunning(ui, session);
 
-            AutonomySession session = ui[0].getAutonomySession();
+            final Object[] edit = anEditWaits(ui, session, inUse);
 
-            final String inUse = theConfigurationRunning(ui[0], session);
-
-            final Object[] edit = anEditWaits(ui[0], session, inUse);
-
-            final String[] move = moveAStandingTrain(ui[0], session);
+            final String[] move = moveAStandingTrain(ui, session);
 
             assertTheConfigurationHasItWhereItSetOff(session, inUse, move);
 
-            final Object before = ui[0].getModel().getAutoLayout();
+            final Object before = ui.getModel().getAutoLayout();
 
-            staging.set(ui[0], true);
+            staging.set(ui, true);
 
-            declined.set(ui[0], true);
+            declined.set(ui, true);
 
-            List<String> asked = answeringYes(() -> ui[0].getAutonomyViewerPanel().load(inUse, true));
+            List<String> asked = answeringYes(() -> ui.getAutonomyViewerPanel().load(inUse, true));
 
             assertTrue(asked.contains(I18n.t("autolayout.ui.confirmReloadJsonStopsRunningLocomotives")), "precondition: the"
                 + " reload did not ask to stop the trains: " + asked);
 
-            assertTrue(ui[0].getModel().getAutoLayout() != before, "the reload the operator confirmed, while autonomy was"
+            assertTrue(ui.getModel().getAutoLayout() != before, "the reload the operator confirmed, while autonomy was"
                 + " busy and a setup edit waited, did nothing - the old layout runs on, reading busy (RLV6-B1, c)");
 
-            assertStandsWhereItWasMoved(ui[0], move, "after a reload confirmed while busy (RLV6-B1, c)");
+            assertStandsWhereItWasMoved(ui, move, "after a reload confirmed while busy (RLV6-B1, c)");
 
-            assertTheEditStands(ui[0].getAutonomySession(), inUse, edit, "after a reload confirmed while busy"
+            assertTheEditStands(ui.getAutonomySession(), inUse, edit, "after a reload confirmed while busy"
                 + " (RLV6-B1, c)");
-        }
-        finally
+        }, ui ->
         {
-            if (ui[0] != null) staging.set(ui[0], false);
-            if (ui[0] != null) declined.set(ui[0], false);
-
-            sandboxed.close();
-        }
+            if (ui != null) staging.set(ui, false);
+            if (ui != null) declined.set(ui, false);
+        });
     }
 
     /**
@@ -1422,51 +1258,38 @@ public class testTheImportDoorReadsAnOldFile
     {
         if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
 
-        final TrainControlUI[] ui = new TrainControlUI[1];
+        java.lang.reflect.Field declined = Reflect.field(TrainControlUI.class, "setupEditDeclinedDuringRun");
 
-        final support.SandboxedWindow sandboxed = new support.SandboxedWindow();
-
-        java.lang.reflect.Field declined = TrainControlUI.class.getDeclaredField("setupEditDeclinedDuringRun");
-
-        declined.setAccessible(true);
-
-        try
+        onItsOwnWindow("live-snapshot", ui ->
         {
-            sandboxed.hold(support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"))).simulated();
+            AutonomySession session = ui.getAutonomySession();
 
-            ui[0] = sandboxed.hold(openTheWindow());
+            final String inUse = theConfigurationRunning(ui, session);
 
-            AutonomySession session = ui[0].getAutonomySession();
+            final Object[] edit = anEditWaits(ui, session, inUse);
 
-            final String inUse = theConfigurationRunning(ui[0], session);
-
-            final Object[] edit = anEditWaits(ui[0], session, inUse);
-
-            final org.traincontrol.base.Locomotive driven = ui[0].getModel().getLocByName(
-                ui[0].getModel().getLocList().get(0));
+            final org.traincontrol.base.Locomotive driven = ui.getModel().getLocByName(
+                ui.getModel().getLocList().get(0));
 
             driven.setSpeed(40);
 
             assertEquals(driven.getSpeed(), 40, "precondition: the locomotive's speed could not be set by hand");
 
-            declined.set(ui[0], true);
+            declined.set(ui, true);
 
-            answeringYes(() -> ui[0].getAutonomyViewerPanel().load(inUse, true));
+            answeringYes(() -> ui.getAutonomyViewerPanel().load(inUse, true));
 
             Thread.sleep(1000);
 
             assertEquals(driven.getSpeed(), 0, driven.getName() + ", driven by hand, rolls on across a reload the operator"
                 + " chose while a setup edit waited - the same reload with nothing waiting stops it (RLV6-C1)");
 
-            assertTheEditStands(ui[0].getAutonomySession(), inUse, edit, "after a reload asked for while it waited"
+            assertTheEditStands(ui.getAutonomySession(), inUse, edit, "after a reload asked for while it waited"
                 + " (RLV6-C1)");
-        }
-        finally
+        }, ui ->
         {
-            if (ui[0] != null) declined.set(ui[0], false);
-
-            sandboxed.close();
-        }
+            if (ui != null) declined.set(ui, false);
+        });
     }
 
     /**
@@ -1486,13 +1309,9 @@ public class testTheImportDoorReadsAnOldFile
 
         final support.SandboxedWindow sandboxed = new support.SandboxedWindow();
 
-        java.lang.reflect.Field running = org.traincontrol.automation.Layout.class.getDeclaredField("running");
+        java.lang.reflect.Field running = Reflect.field(org.traincontrol.automation.Layout.class, "running");
 
-        running.setAccessible(true);
-
-        java.lang.reflect.Field noEditorOpen = TrainControlUI.class.getDeclaredField("noEditorOpen");
-
-        noEditorOpen.setAccessible(true);
+        java.lang.reflect.Field noEditorOpen = Reflect.field(TrainControlUI.class, "noEditorOpen");
 
         org.traincontrol.automation.Layout layout = null;
 
@@ -1535,9 +1354,7 @@ public class testTheImportDoorReadsAnOldFile
             SwingUtilities.invokeAndWait(() -> editor[0] = new org.traincontrol.gui.RouteEditorFrame(ui[0], routeName,
                 ui[0].getModel().getRoute(routeName)));
 
-            final java.lang.reflect.Method save = org.traincontrol.gui.RouteEditorFrame.class.getDeclaredMethod("onSave");
-
-            save.setAccessible(true);
+            final java.lang.reflect.Method save = Reflect.method(org.traincontrol.gui.RouteEditorFrame.class, "onSave");
 
             startAnsweringYes(asked, going);
 
@@ -1619,9 +1436,7 @@ public class testTheImportDoorReadsAnOldFile
 
         final support.SandboxedWindow sandboxed = new support.SandboxedWindow();
 
-        java.lang.reflect.Field declined = TrainControlUI.class.getDeclaredField("setupEditDeclinedDuringRun");
-
-        declined.setAccessible(true);
+        java.lang.reflect.Field declined = Reflect.field(TrainControlUI.class, "setupEditDeclinedDuringRun");
 
         Thread driving = null;
 
@@ -1837,34 +1652,24 @@ public class testTheImportDoorReadsAnOldFile
 
         if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
 
-        final TrainControlUI[] ui = new TrainControlUI[1];
+        java.lang.reflect.Field declined = Reflect.field(TrainControlUI.class, "setupEditDeclinedDuringRun");
 
-        final support.SandboxedWindow sandboxed = new support.SandboxedWindow();
-
-        java.lang.reflect.Field declined = TrainControlUI.class.getDeclaredField("setupEditDeclinedDuringRun");
-
-        declined.setAccessible(true);
-
-        try
+        onItsOwnWindow("live-snapshot", ui ->
         {
-            sandboxed.hold(support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"))).simulated();
+            AutonomySession session = ui.getAutonomySession();
 
-            ui[0] = sandboxed.hold(openTheWindow());
+            final String inUse = theConfigurationRunning(ui, session);
 
-            AutonomySession session = ui[0].getAutonomySession();
+            importFromTheMenu(ui, MT491, "MT-491 other");
 
-            final String inUse = theConfigurationRunning(ui[0], session);
-
-            importFromTheMenu(ui[0], MT491, "MT-491 other");
-
-            session = ui[0].getAutonomySession();
+            session = ui.getAutonomySession();
 
             assertTrue(session.getStore().getConfigurationNames().contains("MT-491 other"), "precondition: the import made"
                 + " no second configuration");
 
-            final String[] move = moveAStandingTrain(ui[0], session);
+            final String[] move = moveAStandingTrain(ui, session);
 
-            final TileKey second = anEmptyStationSquare(ui[0], session, move);
+            final TileKey second = anEmptyStationSquare(ui, session, move);
 
             final AutonomySession editing = session;
 
@@ -1886,11 +1691,11 @@ public class testTheImportDoorReadsAnOldFile
                 + " a second time in " + inUse + " - the store's active configuration is "
                 + session.getStore().getActiveConfiguration());
 
-            declined.set(ui[0], true);
+            declined.set(ui, true);
 
             final int logFrom = logged().length();
 
-            List<String> asked = answeringYes(() -> ui[0].getAutonomyViewerPanel().load("MT-491 other", true));
+            List<String> asked = answeringYes(() -> ui.getAutonomyViewerPanel().load("MT-491 other", true));
 
             final String refusal = I18n.f("autosetup.ui.errorCannotKeepTrainsBeforeChoosing", inUse, "MT-491 other");
 
@@ -1898,26 +1703,23 @@ public class testTheImportDoorReadsAnOldFile
                 + " the edit that waits stops " + inUse + " from building, did not say why it was refused (RLV7-C4): "
                 + asked);
 
-            assertEquals(ui[0].getActiveDiagramConfiguration(), inUse, "MT-491 other was loaded, and " + inUse + " was left"
+            assertEquals(ui.getActiveDiagramConfiguration(), inUse, "MT-491 other was loaded, and " + inUse + " was left"
                 + " with its trains where they stood before the run (RLV7-C4)");
 
             assertFalse(asked.stream().anyMatch(said -> said.contains(" 0 ")), "the refusal counts nothing to deal with: "
                 + asked);
 
-            assertEquals(squaresPlacing(ui[0].getAutonomySession(), inUse, move[0]), 2, "the edit that waits in " + inUse
+            assertEquals(squaresPlacing(ui.getAutonomySession(), inUse, move[0]), 2, "the edit that waits in " + inUse
                 + " was folded away by the refused choice");
 
-            assertTrue((Boolean) declined.get(ui[0]), "the flag came down, though the edit it guards still waits");
+            assertTrue((Boolean) declined.get(ui), "the flag came down, though the edit it guards still waits");
 
             assertFalse(logged().substring(logFrom).contains(I18n.f("autosetup.ui.infoResumeFailed", inUse)), "the log"
                 + " says " + inUse + " could not be loaded at startup, about a load nobody made at start-up (RLV7-C4)");
-        }
-        finally
+        }, ui ->
         {
-            if (ui[0] != null) declined.set(ui[0], false);
-
-            sandboxed.close();
-        }
+            if (ui != null) declined.set(ui, false);
+        });
     }
 
     /** A station square no train stands on, in the running layout or where the moved train set off. */
@@ -1957,9 +1759,7 @@ public class testTheImportDoorReadsAnOldFile
 
         final support.SandboxedWindow sandboxed = new support.SandboxedWindow();
 
-        java.lang.reflect.Field declined = TrainControlUI.class.getDeclaredField("setupEditDeclinedDuringRun");
-
-        declined.setAccessible(true);
+        java.lang.reflect.Field declined = Reflect.field(TrainControlUI.class, "setupEditDeclinedDuringRun");
 
         try
         {
@@ -1973,9 +1773,7 @@ public class testTheImportDoorReadsAnOldFile
 
             final String[] move = moveAStandingTrain(ui[0], session);
 
-            java.lang.reflect.Field forgotten = TrainControlUI.class.getDeclaredField("forgottenByTheReset");
-
-            forgotten.setAccessible(true);
+            java.lang.reflect.Field forgotten = Reflect.field(TrainControlUI.class, "forgottenByTheReset");
 
             declined.set(ui[0], true);
 
@@ -2111,12 +1909,7 @@ public class testTheImportDoorReadsAnOldFile
                 + " driving " + dispatched[0] + " drives it on at line speed when it reaches the sensor it waits for"
                 + " (RLV8-A1)");
 
-            java.lang.reflect.Method finished = org.traincontrol.automation.Layout.class
-                .getDeclaredMethod("announceRunFinished");
-
-            finished.setAccessible(true);
-
-            finished.invoke(unloaded);
+            Reflect.method(org.traincontrol.automation.Layout.class, "announceRunFinished").invoke(unloaded);
 
             for (int turn = 0; turn < 6; turn++) SwingUtilities.invokeAndWait(() -> { });
 
@@ -2141,44 +1934,29 @@ public class testTheImportDoorReadsAnOldFile
     {
         if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
 
-        final TrainControlUI[] ui = new TrainControlUI[1];
+        java.lang.reflect.Field declined = Reflect.field(TrainControlUI.class, "setupEditDeclinedDuringRun");
 
-        final support.SandboxedWindow sandboxed = new support.SandboxedWindow();
+        java.lang.reflect.Field forgotten = Reflect.field(TrainControlUI.class, "forgottenByTheReset");
 
-        java.lang.reflect.Field declined = TrainControlUI.class.getDeclaredField("setupEditDeclinedDuringRun");
-
-        declined.setAccessible(true);
-
-        java.lang.reflect.Field forgotten = TrainControlUI.class.getDeclaredField("forgottenByTheReset");
-
-        forgotten.setAccessible(true);
-
-        try
+        onItsOwnWindow("live-snapshot", ui ->
         {
-            sandboxed.hold(support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"))).simulated();
+            declined.set(ui, true);
 
-            ui[0] = sandboxed.hold(openTheWindow());
-
-            declined.set(ui[0], true);
-
-            SwingUtilities.invokeAndWait(() -> ui[0].autonomySetupDeleted());
+            SwingUtilities.invokeAndWait(() -> ui.autonomySetupDeleted());
 
             for (int turn = 0; turn < 4; turn++) SwingUtilities.invokeAndWait(() -> { });
 
-            assertFalse(ui[0].getModel().hasAutoLayout(), "precondition: the delete door left a railway loaded");
+            assertFalse(ui.getModel().hasAutoLayout(), "precondition: the delete door left a railway loaded");
 
-            assertFalse((Boolean) declined.get(ui[0]), "deleting the setup left the flag up, with no railway for an edit"
+            assertFalse((Boolean) declined.get(ui), "deleting the setup left the flag up, with no railway for an edit"
                 + " to wait for (RLV8-C7)");
 
-            assertEquals(forgotten.get(ui[0]), null, "deleting the setup remembers the configuration it ran, for a load"
+            assertEquals(forgotten.get(ui), null, "deleting the setup remembers the configuration it ran, for a load"
                 + " to carry its trains across (RLV8-C7)");
-        }
-        finally
+        }, ui ->
         {
-            if (ui[0] != null) declined.set(ui[0], false);
-
-            sandboxed.close();
-        }
+            if (ui != null) declined.set(ui, false);
+        });
     }
 
     /**
@@ -2193,107 +1971,83 @@ public class testTheImportDoorReadsAnOldFile
     {
         if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
 
-        final TrainControlUI[] ui = new TrainControlUI[1];
+        java.lang.reflect.Field declined = Reflect.field(TrainControlUI.class, "setupEditDeclinedDuringRun");
 
-        final support.SandboxedWindow sandboxed = new support.SandboxedWindow();
-
-        java.lang.reflect.Field declined = TrainControlUI.class.getDeclaredField("setupEditDeclinedDuringRun");
-
-        declined.setAccessible(true);
-
-        try
+        onItsOwnWindow("live-snapshot", ui ->
         {
-            sandboxed.hold(support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"))).simulated();
-
-            ui[0] = sandboxed.hold(openTheWindow());
-
-            java.lang.reflect.Field covered = TrainControlUI.class.getDeclaredField("coveredTrack");
-
-            covered.setAccessible(true);
+            java.lang.reflect.Field covered = Reflect.field(TrainControlUI.class, "coveredTrack");
 
             long until = System.currentTimeMillis() + 20000;
 
-            while (((java.util.Map<?, ?>) covered.get(ui[0])).isEmpty() && System.currentTimeMillis() < until)
+            while (((java.util.Map<?, ?>) covered.get(ui)).isEmpty() && System.currentTimeMillis() < until)
             {
                 Thread.sleep(100);
             }
 
-            assertFalse(((java.util.Map<?, ?>) covered.get(ui[0])).isEmpty(), "precondition: no track is washed as"
+            assertFalse(((java.util.Map<?, ?>) covered.get(ui)).isEmpty(), "precondition: no track is washed as"
                 + " covered by a standing train");
 
-            declined.set(ui[0], true);
+            declined.set(ui, true);
 
-            answeringYes(() -> ui[0].unloadAutonomy());
+            answeringYes(() -> ui.unloadAutonomy());
 
-            assertFalse(ui[0].getModel().hasAutoLayout(), "precondition: Unload left a railway loaded");
+            assertFalse(ui.getModel().hasAutoLayout(), "precondition: Unload left a railway loaded");
 
             until = System.currentTimeMillis() + 10000;
 
-            while (!((java.util.Map<?, ?>) covered.get(ui[0])).isEmpty() && System.currentTimeMillis() < until)
+            while (!((java.util.Map<?, ?>) covered.get(ui)).isEmpty() && System.currentTimeMillis() < until)
             {
                 Thread.sleep(100);
             }
 
-            assertTrue(((java.util.Map<?, ?>) covered.get(ui[0])).isEmpty(), "after Unload the diagram still washes the"
+            assertTrue(((java.util.Map<?, ?>) covered.get(ui)).isEmpty(), "after Unload the diagram still washes the"
                 + " track the unloaded configuration's trains covered (RLV8-C1)");
 
             // With the power on, the latency ping asked the model for its railway, which makes one where there is none.
-            java.lang.reflect.Field power = MarklinControlStation.class.getDeclaredField("powerState");
+            java.lang.reflect.Field power = Reflect.field(MarklinControlStation.class, "powerState");
 
-            power.setAccessible(true);
-
-            Object powerWas = power.get(ui[0].getModel());
+            Object powerWas = power.get(ui.getModel());
 
             try
             {
-                power.set(ui[0].getModel(), true);
+                power.set(ui.getModel(), true);
 
-                java.lang.reflect.Method ping = TrainControlUI.class.getDeclaredMethod("checkAutoLayoutLatency",
-                    double.class);
+                java.lang.reflect.Method ping =
+                    Reflect.method(TrainControlUI.class, "checkAutoLayoutLatency", double.class);
 
-                ping.setAccessible(true);
+                ping.invoke(ui, 0.0);
 
-                ping.invoke(ui[0], 0.0);
-
-                assertFalse(ui[0].getModel().hasAutoLayout(), "after Unload the latency ping built a railway, which"
+                assertFalse(ui.getModel().hasAutoLayout(), "after Unload the latency ping built a railway, which"
                     + " hasAutoLayout then answers yes about (RLV8-C2)");
 
-                java.lang.reflect.Method repaint = TrainControlUI.class.getDeclaredMethod("repaintTimetable");
-
-                repaint.setAccessible(true);
-
-                repaint.invoke(ui[0]);
+                Reflect.method(TrainControlUI.class, "repaintTimetable").invoke(ui);
 
                 for (int turn = 0; turn < 4; turn++) SwingUtilities.invokeAndWait(() -> { });
 
-                assertFalse(ui[0].getModel().hasAutoLayout(), "after Unload a timetable repaint - every milestone's"
+                assertFalse(ui.getModel().hasAutoLayout(), "after Unload a timetable repaint - every milestone's"
                     + " refresh - built a railway (RLV8-C2)");
             }
             finally
             {
-                power.set(ui[0].getModel(), powerWas);
+                power.set(ui.getModel(), powerWas);
             }
 
-            assertFalse((Boolean) declined.get(ui[0]), "Unload left the flag up, with no railway for an edit to wait for"
+            assertFalse((Boolean) declined.get(ui), "Unload left the flag up, with no railway for an edit to wait for"
                 + " (RLV7-C2)");
 
-            java.lang.reflect.Field forgotten = TrainControlUI.class.getDeclaredField("forgottenByTheReset");
+            java.lang.reflect.Field forgotten = Reflect.field(TrainControlUI.class, "forgottenByTheReset");
 
-            forgotten.setAccessible(true);
-
-            assertEquals(forgotten.get(ui[0]), null, "Unload remembers the configuration it unloaded, for a load to carry"
+            assertEquals(forgotten.get(ui), null, "Unload remembers the configuration it unloaded, for a load to carry"
                 + " its trains across (RLV7-C2)");
 
-            final java.lang.reflect.Method carry = TrainControlUI.class.getDeclaredMethod("carryTheTrainsAcross",
-                Runnable.class);
-
-            carry.setAccessible(true);
+            final java.lang.reflect.Method carry =
+                Reflect.method(TrainControlUI.class, "carryTheTrainsAcross", Runnable.class);
 
             SwingUtilities.invokeAndWait(() ->
             {
                 try
                 {
-                    carry.invoke(ui[0], (Runnable) () -> { });
+                    carry.invoke(ui, (Runnable) () -> { });
                 }
                 catch (ReflectiveOperationException e)
                 {
@@ -2301,15 +2055,12 @@ public class testTheImportDoorReadsAnOldFile
                 }
             });
 
-            assertFalse(ui[0].getModel().hasAutoLayout(), "a carry with no railway loaded built an empty one, which"
+            assertFalse(ui.getModel().hasAutoLayout(), "a carry with no railway loaded built an empty one, which"
                 + " hasAutoLayout then answers yes about (RLV7-C2, CS3-C4)");
-        }
-        finally
+        }, ui ->
         {
-            if (ui[0] != null) declined.set(ui[0], false);
-
-            sandboxed.close();
-        }
+            if (ui != null) declined.set(ui, false);
+        });
     }
 
     /**
@@ -2488,9 +2239,7 @@ public class testTheImportDoorReadsAnOldFile
 
         final support.SandboxedWindow sandboxed = new support.SandboxedWindow();
 
-        java.lang.reflect.Field declined = TrainControlUI.class.getDeclaredField("setupEditDeclinedDuringRun");
-
-        declined.setAccessible(true);
+        java.lang.reflect.Field declined = Reflect.field(TrainControlUI.class, "setupEditDeclinedDuringRun");
 
         final String source = TrainControlUI.getPrefs().get(TrainControlUI.LAYOUT_OVERRIDE_PATH_PREF, "");
 
@@ -2504,16 +2253,12 @@ public class testTheImportDoorReadsAnOldFile
 
             assertFalse(folder.isEmpty(), "precondition: the sandbox's railway is not a folder of his");
 
-            java.lang.reflect.Field remembered = TrainControlUI.class.getDeclaredField("railwaySource");
-
-            remembered.setAccessible(true);
+            java.lang.reflect.Field remembered = Reflect.field(TrainControlUI.class, "railwaySource");
 
             remembered.set(ui[0], "");
 
-            final java.lang.reflect.Method downloaded = TrainControlUI.class.getDeclaredMethod("useTheDownloadedLayout",
-                File.class);
-
-            downloaded.setAccessible(true);
+            final java.lang.reflect.Method downloaded =
+                Reflect.method(TrainControlUI.class, "useTheDownloadedLayout", File.class);
 
             SwingUtilities.invokeAndWait(() ->
             {
@@ -2561,52 +2306,39 @@ public class testTheImportDoorReadsAnOldFile
     {
         if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
 
-        final TrainControlUI[] ui = new TrainControlUI[1];
+        java.lang.reflect.Field declined = Reflect.field(TrainControlUI.class, "setupEditDeclinedDuringRun");
 
-        final support.SandboxedWindow sandboxed = new support.SandboxedWindow();
-
-        java.lang.reflect.Field declined = TrainControlUI.class.getDeclaredField("setupEditDeclinedDuringRun");
-
-        declined.setAccessible(true);
-
-        try
+        onItsOwnWindow("live-snapshot", ui ->
         {
-            sandboxed.hold(support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"))).simulated();
+            AutonomySession session = ui.getAutonomySession();
 
-            ui[0] = sandboxed.hold(openTheWindow());
+            final String inUse = theConfigurationRunning(ui, session);
 
-            AutonomySession session = ui[0].getAutonomySession();
+            final Object[] edit = anEditWaits(ui, session, inUse);
 
-            final String inUse = theConfigurationRunning(ui[0], session);
-
-            final Object[] edit = anEditWaits(ui[0], session, inUse);
-
-            final String[] move = moveAStandingTrain(ui[0], session);
+            final String[] move = moveAStandingTrain(ui, session);
 
             assertTheConfigurationHasItWhereItSetOff(session, inUse, move);
 
-            declined.set(ui[0], true);
+            declined.set(ui, true);
 
-            answeringYes(() -> ui[0].unloadAutonomy());
+            answeringYes(() -> ui.unloadAutonomy());
 
-            assertFalse(ui[0].getModel().hasAutoLayout(), "precondition: Unload left a railway loaded");
+            assertFalse(ui.getModel().hasAutoLayout(), "precondition: Unload left a railway loaded");
 
-            answeringYes(() -> ui[0].getAutonomyViewerPanel().load(inUse, true));
+            answeringYes(() -> ui.getAutonomyViewerPanel().load(inUse, true));
 
-            assertTrue(ui[0].getModel().hasAutoLayout(), "precondition: " + inUse + " did not load again");
+            assertTrue(ui.getModel().hasAutoLayout(), "precondition: " + inUse + " did not load again");
 
-            assertStandsWhereItWasMoved(ui[0], move, "after Stop Using Autonomy while an edit waited, and a load"
+            assertStandsWhereItWasMoved(ui, move, "after Stop Using Autonomy while an edit waited, and a load"
                 + " (RLV10-B1)");
 
-            assertTheEditStands(ui[0].getAutonomySession(), inUse, edit, "after Stop Using Autonomy and a load"
+            assertTheEditStands(ui.getAutonomySession(), inUse, edit, "after Stop Using Autonomy and a load"
                 + " (RLV10-B1)");
-        }
-        finally
+        }, ui ->
         {
-            if (ui[0] != null) declined.set(ui[0], false);
-
-            sandboxed.close();
-        }
+            if (ui != null) declined.set(ui, false);
+        });
     }
 
     /**
@@ -2769,22 +2501,14 @@ public class testTheImportDoorReadsAnOldFile
     {
         if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
 
-        final TrainControlUI[] ui = new TrainControlUI[1];
-
-        final support.SandboxedWindow sandboxed = new support.SandboxedWindow();
-
-        try
+        onItsOwnWindow("live-snapshot", ui ->
         {
-            sandboxed.hold(support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"))).simulated();
-
-            ui[0] = sandboxed.hold(openTheWindow());
-
-            AutonomySession session = ui[0].getAutonomySession();
+            AutonomySession session = ui.getAutonomySession();
 
             TileKey first = null;
             TileKey second = null;
 
-            for (org.traincontrol.automation.Point p : ui[0].getModel().getAutoLayout().getPoints())
+            for (org.traincontrol.automation.Point p : ui.getModel().getAutoLayout().getPoints())
             {
                 TileKey square = p.isDestination() ? session.getStationIndex().squareOf(p.getName()) : null;
 
@@ -2796,24 +2520,20 @@ public class testTheImportDoorReadsAnOldFile
 
             assertNotNull(second, "precondition: no two stations on one page");
 
-            org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel shown = openTheEditorFor(ui[0], first, Collections.emptyList());
+            org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel shown = openTheEditorFor(ui, first, Collections.emptyList());
 
             assertTrue(shown.isOutlined(first), "the editor opened for a finding that names nothing beside its own does"
                 + " not outline its square, as the editor's own list does (OB-352, RLV10-C3)");
 
-            closeTheEditor(ui[0]);
+            closeTheEditor(ui);
 
-            shown = openTheEditorFor(ui[0], first, Collections.singletonList(second));
+            shown = openTheEditorFor(ui, first, Collections.singletonList(second));
 
             assertTrue(shown.isOutlined(first) && shown.isOutlined(second), "the editor opened for a finding that names"
                 + " another square does not outline both (RLV9-C5, RLV10-C5)");
 
-            closeTheEditor(ui[0]);
-        }
-        finally
-        {
-            sandboxed.close();
-        }
+            closeTheEditor(ui);
+        });
     }
 
     /**
@@ -2869,13 +2589,12 @@ public class testTheImportDoorReadsAnOldFile
 
                 final org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel panel = openTheEditorFor(ui[0], station, null);
 
-                java.lang.reflect.Field open = TrainControlUI.class.getDeclaredField("openEditor");
-                open.setAccessible(true);
+                java.lang.reflect.Field open = Reflect.field(TrainControlUI.class, "openEditor");
 
                 final org.traincontrol.gui.layouteditor.LayoutEditor editor = (org.traincontrol.gui.layouteditor.LayoutEditor) open.get(ui[0]);
 
-                java.lang.reflect.Field gridField = org.traincontrol.gui.layouteditor.LayoutEditor.class.getDeclaredField("grid");
-                gridField.setAccessible(true);
+                java.lang.reflect.Field gridField =
+                    Reflect.field(org.traincontrol.gui.layouteditor.LayoutEditor.class, "grid");
 
                 final org.traincontrol.gui.LayoutLabel square =
                     ((org.traincontrol.gui.LayoutGrid) gridField.get(editor)).getValueAt(station.getX(), station.getY());
@@ -3003,11 +2722,7 @@ public class testTheImportDoorReadsAnOldFile
     /** A private field of the editor's panel, by name. */
     private static Object panelPart(org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel panel, String name) throws Exception
     {
-        java.lang.reflect.Field field = org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel.class.getDeclaredField(name);
-
-        field.setAccessible(true);
-
-        return field.get(panel);
+        return Reflect.get(org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel.class, panel, name);
     }
 
     /** Opens the autonomy editor at a square, as a finding's click does, and waits for it to settle. */
@@ -3016,9 +2731,7 @@ public class testTheImportDoorReadsAnOldFile
     {
         answeringYes(() -> ui.openAutonomyEditor(at, related));
 
-        java.lang.reflect.Field open = TrainControlUI.class.getDeclaredField("openEditor");
-
-        open.setAccessible(true);
+        java.lang.reflect.Field open = Reflect.field(TrainControlUI.class, "openEditor");
 
         org.traincontrol.gui.layouteditor.LayoutEditor editor = null;
 
@@ -3050,9 +2763,7 @@ public class testTheImportDoorReadsAnOldFile
     /** Closes the editor `openTheEditorFor` opened. */
     static void closeTheEditor(TrainControlUI ui) throws Exception
     {
-        java.lang.reflect.Field open = TrainControlUI.class.getDeclaredField("openEditor");
-
-        open.setAccessible(true);
+        java.lang.reflect.Field open = Reflect.field(TrainControlUI.class, "openEditor");
 
         final org.traincontrol.gui.layouteditor.LayoutEditor editor = (org.traincontrol.gui.layouteditor.LayoutEditor) open.get(ui);
 
@@ -3085,9 +2796,7 @@ public class testTheImportDoorReadsAnOldFile
 
         final support.SandboxedWindow sandboxed = new support.SandboxedWindow();
 
-        java.lang.reflect.Field declined = TrainControlUI.class.getDeclaredField("setupEditDeclinedDuringRun");
-
-        declined.setAccessible(true);
+        java.lang.reflect.Field declined = Reflect.field(TrainControlUI.class, "setupEditDeclinedDuringRun");
 
         Thread driving = null;
 
@@ -3642,9 +3351,7 @@ public class testTheImportDoorReadsAnOldFile
 
             assertTrue(before >= 2, "precondition: " + train.getName() + " under way holds " + before + " points");
 
-            final java.lang.reflect.Method write = TrainControlUI.class.getDeclaredMethod("writeTheTurnsOwed");
-
-            write.setAccessible(true);
+            final java.lang.reflect.Method write = Reflect.method(TrainControlUI.class, "writeTheTurnsOwed");
 
             SwingUtilities.invokeAndWait(() ->
             {
@@ -3693,17 +3400,9 @@ public class testTheImportDoorReadsAnOldFile
     {
         if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
 
-        final TrainControlUI[] ui = new TrainControlUI[1];
-
-        final support.SandboxedWindow sandboxed = new support.SandboxedWindow();
-
-        try
+        onItsOwnWindow("live-snapshot", ui ->
         {
-            sandboxed.hold(support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"))).simulated();
-
-            ui[0] = sandboxed.hold(openTheWindow());
-
-            final org.traincontrol.automation.Layout railway = ui[0].getModel().getAutoLayout();
+            final org.traincontrol.automation.Layout railway = ui.getModel().getAutoLayout();
 
             org.traincontrol.base.Locomotive train = null;
 
@@ -3725,24 +3424,20 @@ public class testTheImportDoorReadsAnOldFile
             railway.setMinDelay(0);
             railway.setMaxDelay(0);
 
-            answeringYes(() -> ui[0].unloadAutonomy());
+            answeringYes(() -> ui.unloadAutonomy());
 
-            assertFalse(ui[0].getModel().hasAutoLayout(), "precondition: Unload left a railway loaded");
+            assertFalse(ui.getModel().hasAutoLayout(), "precondition: Unload left a railway loaded");
 
             arrived.accept(train);
 
-            assertFalse(ui[0].getModel().hasAutoLayout(), "a train's arrival after Unload built an empty railway, which"
+            assertFalse(ui.getModel().hasAutoLayout(), "a train's arrival after Unload built an empty railway, which"
                 + " hasAutoLayout then answers yes about (RLV11-C5)");
 
             departed.accept(train);
 
-            assertFalse(ui[0].getModel().hasAutoLayout(), "a train's departure after Unload built an empty railway"
+            assertFalse(ui.getModel().hasAutoLayout(), "a train's departure after Unload built an empty railway"
                 + " (RLV11-C5)");
-        }
-        finally
-        {
-            sandboxed.close();
-        }
+        });
     }
 
     /**
@@ -3756,21 +3451,13 @@ public class testTheImportDoorReadsAnOldFile
     {
         if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
 
-        final TrainControlUI[] ui = new TrainControlUI[1];
-
-        final support.SandboxedWindow sandboxed = new support.SandboxedWindow();
-
-        try
+        onItsOwnWindow("live-snapshot", ui ->
         {
-            sandboxed.hold(support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"))).simulated();
-
-            ui[0] = sandboxed.hold(openTheWindow());
-
-            final AutonomySession session = ui[0].getAutonomySession();
+            final AutonomySession session = ui.getAutonomySession();
 
             org.traincontrol.automation.Point standing = null;
 
-            for (org.traincontrol.automation.Point p : ui[0].getModel().getAutoLayout().getPoints())
+            for (org.traincontrol.automation.Point p : ui.getModel().getAutoLayout().getPoints())
             {
                 if (standing == null && p.getCurrentLocomotive() != null
                     && session.getStationIndex().squareOf(p.getName()) != null)
@@ -3784,9 +3471,9 @@ public class testTheImportDoorReadsAnOldFile
             final org.traincontrol.automation.Point at = standing;
             final TileKey square = session.getStationIndex().squareOf(at.getName());
 
-            answeringYes(() -> ui[0].unloadAutonomy());
+            answeringYes(() -> ui.unloadAutonomy());
 
-            assertFalse(ui[0].getModel().hasAutoLayout(), "precondition: Unload left a railway loaded");
+            assertFalse(ui.getModel().hasAutoLayout(), "precondition: Unload left a railway loaded");
 
             final java.lang.reflect.Method arrow = TrainControlUI.class.getDeclaredMethod("facingArrowOf",
                 org.traincontrol.automation.Point.class, TileKey.class);
@@ -3800,10 +3487,10 @@ public class testTheImportDoorReadsAnOldFile
             {
                 try
                 {
-                    labels.invoke(ui[0], at);
-                    arrow.invoke(ui[0], at, square);
-                    ui[0].getAutonomyPointForTile(square);
-                    ui[0].getAutonomyOccupantsForTile(square);
+                    labels.invoke(ui, at);
+                    arrow.invoke(ui, at, square);
+                    ui.getAutonomyPointForTile(square);
+                    ui.getAutonomyOccupantsForTile(square);
                 }
                 catch (ReflectiveOperationException e)
                 {
@@ -3813,13 +3500,9 @@ public class testTheImportDoorReadsAnOldFile
 
             for (int turn = 0; turn < 6; turn++) SwingUtilities.invokeAndWait(() -> { });
 
-            assertFalse(ui[0].getModel().hasAutoLayout(), "the station labels, updated after Unload, built an empty"
+            assertFalse(ui.getModel().hasAutoLayout(), "the station labels, updated after Unload, built an empty"
                 + " railway, which hasAutoLayout then answers yes about (RLV10-B1's builder, RLV11-C6)");
-        }
-        finally
-        {
-            sandboxed.close();
-        }
+        });
     }
 
     /**
@@ -3834,25 +3517,15 @@ public class testTheImportDoorReadsAnOldFile
     {
         if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
 
-        final TrainControlUI[] ui = new TrainControlUI[1];
+        java.lang.reflect.Field declined = Reflect.field(TrainControlUI.class, "setupEditDeclinedDuringRun");
 
-        final support.SandboxedWindow sandboxed = new support.SandboxedWindow();
-
-        java.lang.reflect.Field declined = TrainControlUI.class.getDeclaredField("setupEditDeclinedDuringRun");
-
-        declined.setAccessible(true);
-
-        try
+        onItsOwnWindow("live-snapshot", ui ->
         {
-            sandboxed.hold(support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"))).simulated();
-
-            ui[0] = sandboxed.hold(openTheWindow());
-
-            final AutonomySession session = ui[0].getAutonomySession();
+            final AutonomySession session = ui.getAutonomySession();
 
             final String inUse = session.getStore().getActiveConfiguration();
 
-            final org.traincontrol.automation.Layout railway = ui[0].getModel().getAutoLayout();
+            final org.traincontrol.automation.Layout railway = ui.getModel().getAutoLayout();
 
             org.traincontrol.automation.Point at = null;
 
@@ -3943,13 +3616,13 @@ public class testTheImportDoorReadsAnOldFile
 
             railway.setMaxDelay(delayWas == 7 ? 8 : 7);
 
-            declined.set(ui[0], true);
+            declined.set(ui, true);
 
-            answeringYes(() -> ui[0].unloadAutonomy());
+            answeringYes(() -> ui.unloadAutonomy());
 
-            assertFalse(ui[0].getModel().hasAutoLayout(), "precondition: Unload left a railway loaded");
+            assertFalse(ui.getModel().hasAutoLayout(), "precondition: Unload left a railway loaded");
 
-            org.json.JSONObject after = ui[0].getAutonomySession().getStore().getConfiguration(inUse);
+            org.json.JSONObject after = ui.getAutonomySession().getStore().getConfiguration(inUse);
             org.json.JSONObject written = after.getJSONObject("points").getJSONObject(square.toString());
 
             assertEquals(written.optString("arrivedFrom", null), side, "Stop Using Autonomy while an edit waited did not"
@@ -3976,13 +3649,10 @@ public class testTheImportDoorReadsAnOldFile
                 : after.getJSONObject("globals").optInt("maxDelay", -1), delayWas == 7 ? 8 : 7, "Stop Using Autonomy"
                 + " while an edit waited dropped a setting the railway changed, which every other fold then keeps"
                 + " (RSA21-C2)");
-        }
-        finally
+        }, ui ->
         {
-            if (ui[0] != null) declined.set(ui[0], false);
-
-            sandboxed.close();
-        }
+            if (ui != null) declined.set(ui, false);
+        });
     }
 
     /**
@@ -4299,19 +3969,11 @@ public class testTheImportDoorReadsAnOldFile
 
         assertTrue(MT491.isFile(), "precondition: the MT-491 file is not in test/autonomy_formats");
 
-        final TrainControlUI[] ui = new TrainControlUI[1];
-
-        final support.SandboxedWindow sandboxed = new support.SandboxedWindow();
-
-        try
+        onItsOwnWindow("live-snapshot", ui ->
         {
-            sandboxed.hold(support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"))).simulated();
+            importFromTheMenu(ui, MT491, "MT-491 facings");
 
-            ui[0] = sandboxed.hold(openTheWindow());
-
-            importFromTheMenu(ui[0], MT491, "MT-491 facings");
-
-            AutonomySession session = ui[0].getAutonomySession();
+            AutonomySession session = ui.getAutonomySession();
 
             org.json.JSONObject points = session.getStore().getConfiguration("MT-491 facings").getJSONObject("points");
 
@@ -4347,9 +4009,9 @@ public class testTheImportDoorReadsAnOldFile
             points.getJSONObject(square.toString()).remove(AutonomyBuilder.LOCOMOTIVE);
             points.getJSONObject(square.toString()).put(AutonomyBuilder.FACING, other);
 
-            importFromTheMenu(ui[0], MT491, "MT-491 facings");
+            importFromTheMenu(ui, MT491, "MT-491 facings");
 
-            session = ui[0].getAutonomySession();
+            session = ui.getAutonomySession();
 
             org.json.JSONObject after = session.getStore().getConfiguration("MT-491 facings").getJSONObject("points")
                 .getJSONObject(square.toString());
@@ -4360,11 +4022,7 @@ public class testTheImportDoorReadsAnOldFile
             assertEquals(after.getString(AutonomyBuilder.FACING), ran, "the second import stood " + train + " facing "
                 + after.getString(AutonomyBuilder.FACING) + ", the way the square's last occupant faced, where the file"
                 + " ran it " + ran + " (RLA2-B3)");
-        }
-        finally
-        {
-            sandboxed.close();
-        }
+        });
     }
 
     /**
@@ -4570,6 +4228,46 @@ public class testTheImportDoorReadsAnOldFile
     }
 
     // ---------------------------------------------------------------- the door
+
+    /** What a claim does with its window: the window, or null in a cleanup when it was never built. */
+    interface OnTheWindow
+    {
+        void run(TrainControlUI ui) throws Exception;
+    }
+
+    /** A claim on its own window over a sandboxed copy of the scenario. */
+    static void onItsOwnWindow(String scenario, OnTheWindow claim) throws Exception
+    {
+        onItsOwnWindow(scenario, claim, ui -> { });
+    }
+
+    /** The same, with the claim's own cleanup, run before the window and the sandbox are closed whatever it does. */
+    static void onItsOwnWindow(String scenario, OnTheWindow claim, OnTheWindow cleanup) throws Exception
+    {
+        final support.SandboxedWindow sandboxed = new support.SandboxedWindow();
+
+        TrainControlUI ui = null;
+
+        try
+        {
+            sandboxed.hold(support.LayoutSandbox.open(support.Scenario.folderFor(scenario))).simulated();
+
+            ui = sandboxed.hold(openTheWindow());
+
+            claim.run(ui);
+        }
+        finally
+        {
+            try
+            {
+                cleanup.run(ui);
+            }
+            finally
+            {
+                sandboxed.close();
+            }
+        }
+    }
 
     /** The main window over the sandbox, settled. */
     static TrainControlUI openTheWindow() throws Exception
@@ -4930,11 +4628,7 @@ public class testTheImportDoorReadsAnOldFile
     /** The setup file as the store last saved it - what the next start reads. */
     private static org.json.JSONObject setupOnDisk(AutonomySession session) throws Exception
     {
-        java.lang.reflect.Method setupFile = session.getStore().getClass().getDeclaredMethod("setupFile");
-
-        setupFile.setAccessible(true);
-
-        File file = (File) setupFile.invoke(session.getStore());
+        File file = (File) Reflect.method(session.getStore().getClass(), "setupFile").invoke(session.getStore());
 
         return new org.json.JSONObject(new String(java.nio.file.Files.readAllBytes(file.toPath()),
             java.nio.charset.StandardCharsets.UTF_8));
@@ -5020,25 +4714,17 @@ public class testTheImportDoorReadsAnOldFile
     {
         if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
 
-        final TrainControlUI[] ui = new TrainControlUI[1];
-
-        final support.SandboxedWindow sandboxed = new support.SandboxedWindow();
-
-        try
+        onItsOwnWindow("live-snapshot", ui ->
         {
-            sandboxed.hold(support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"))).simulated();
+            final AutonomySession session = ui.getAutonomySession();
 
-            ui[0] = sandboxed.hold(openTheWindow());
-
-            final AutonomySession session = ui[0].getAutonomySession();
-
-            final String[] move = moveAStandingTrain(ui[0], session);
+            final String[] move = moveAStandingTrain(ui, session);
 
             final TileKey square = session.getStationIndex().squareOf(move[2]);
 
             assertNotNull(square, "precondition: " + move[2] + " is no square of the diagram");
 
-            final Object before = ui[0].getModel().getAutoLayout();
+            final Object before = ui.getModel().getAutoLayout();
 
             final String renamed = "RSA4 renamed station";
 
@@ -5046,27 +4732,23 @@ public class testTheImportDoorReadsAnOldFile
             {
                 session.setPointName(square, renamed);
 
-                ui[0].rebuildRunningLayoutFromSetup(true, null);
+                ui.rebuildRunningLayoutFromSetup(true, null);
             });
 
-            assertTrue(ui[0].getModel().getAutoLayout() != before, "precondition: the rename rebuilt nothing");
+            assertTrue(ui.getModel().getAutoLayout() != before, "precondition: the rename rebuilt nothing");
 
-            org.traincontrol.automation.Point where = ui[0].getModel().getAutoLayout().getLocomotiveLocation(
-                ui[0].getModel().getLocByName(move[0]));
+            org.traincontrol.automation.Point where = ui.getModel().getAutoLayout().getLocomotiveLocation(
+                ui.getModel().getLocByName(move[0]));
 
             assertNotNull(where, move[0] + " is off the railway after its station was renamed (RSA4-A1)");
 
-            assertEquals(ui[0].getAutonomySession().getStationIndex().squareOf(where.getName()), square, move[0]
+            assertEquals(ui.getAutonomySession().getStationIndex().squareOf(where.getName()), square, move[0]
                 + ", moved by the run to " + move[2] + ", is on " + where.getName() + " once that station was renamed "
                 + renamed + " - where the setup last had it, the station it stands on reading free (RSA4-A1)");
 
             assertTrue(where.getName().startsWith(renamed), move[0] + " is on " + where.getName() + ", not the renamed"
                 + " copy of " + move[2]);
-        }
-        finally
-        {
-            sandboxed.close();
-        }
+        });
     }
 
     /**
@@ -5080,20 +4762,12 @@ public class testTheImportDoorReadsAnOldFile
     {
         if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
 
-        final TrainControlUI[] ui = new TrainControlUI[1];
-
-        final support.SandboxedWindow sandboxed = new support.SandboxedWindow();
-
         final List<String> asked = Collections.synchronizedList(new ArrayList<>());
         final java.util.concurrent.atomic.AtomicBoolean going = new java.util.concurrent.atomic.AtomicBoolean(true);
 
-        try
+        onItsOwnWindow("live-snapshot", ui ->
         {
-            sandboxed.hold(support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"))).simulated();
-
-            ui[0] = sandboxed.hold(openTheWindow());
-
-            final AutonomySession session = ui[0].getAutonomySession();
+            final AutonomySession session = ui.getAutonomySession();
 
             String kept = session.getGlobal("timetable");
 
@@ -5102,16 +4776,16 @@ public class testTheImportDoorReadsAnOldFile
 
             startAnsweringYes(asked, going);
 
-            SwingUtilities.invokeAndWait(() -> ui[0].clearTimetable());
+            SwingUtilities.invokeAndWait(() -> ui.clearTimetable());
 
             long until = System.currentTimeMillis() + 10000;
 
-            while (System.currentTimeMillis() < until && !ui[0].getModel().getAutoLayout().getTimetable().isEmpty())
+            while (System.currentTimeMillis() < until && !ui.getModel().getAutoLayout().getTimetable().isEmpty())
             {
                 Thread.sleep(50);
             }
 
-            assertTrue(ui[0].getModel().getAutoLayout().getTimetable().isEmpty(), "precondition: Clear did not clear the"
+            assertTrue(ui.getModel().getAutoLayout().getTimetable().isEmpty(), "precondition: Clear did not clear the"
                 + " running timetable; asked: " + asked);
 
             for (int turn = 0; turn < 6; turn++) SwingUtilities.invokeAndWait(() -> { });
@@ -5120,13 +4794,10 @@ public class testTheImportDoorReadsAnOldFile
 
             assertTrue(after == null || new org.json.JSONArray(after).length() == 0, "Clear left the timetable the"
                 + " configuration keeps, which comes back with a page ticked out of autonomy (RSA5-C1): " + after);
-        }
-        finally
+        }, ui ->
         {
             going.set(false);
-
-            sandboxed.close();
-        }
+        });
     }
 
     /**
@@ -5288,9 +4959,7 @@ public class testTheImportDoorReadsAnOldFile
 
             final int entries = railway.getTimetable().size();
 
-            java.lang.reflect.Field list = TrainControlUI.class.getDeclaredField("LayoutList");
-
-            list.setAccessible(true);
+            java.lang.reflect.Field list = Reflect.field(TrainControlUI.class, "LayoutList");
 
             final javax.swing.JComboBox<?> pages = (javax.swing.JComboBox<?>) list.get(ui[0]);
 
@@ -5299,10 +4968,8 @@ public class testTheImportDoorReadsAnOldFile
             assertEquals(String.valueOf(pages.getSelectedItem()), going, "precondition: " + going + " is not the page"
                 + " shown");
 
-            java.lang.reflect.Method delete = TrainControlUI.class.getDeclaredMethod("deleteLayoutMenuItemActionPerformed",
-                java.awt.event.ActionEvent.class);
-
-            delete.setAccessible(true);
+            java.lang.reflect.Method delete = Reflect.method(TrainControlUI.class,
+                "deleteLayoutMenuItemActionPerformed", java.awt.event.ActionEvent.class);
 
             answers = startAnsweringYes(asked, answering);
 

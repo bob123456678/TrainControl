@@ -19,6 +19,7 @@ import org.testng.SkipException;
 import org.testng.annotations.Test;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.util.I18n;
+import support.Reflect;
 
 /**
  * The main window's log starts each entry with the time it was logged at, and File > Export Log saves the log as it
@@ -66,11 +67,7 @@ public class testTheLogIsStampedAndExports
     {
         try
         {
-            java.lang.reflect.Method read = TrainControlUI.class.getDeclaredMethod("logText");
-
-            read.setAccessible(true);
-
-            return (String) read.invoke(ui);
+            return (String) Reflect.method(TrainControlUI.class, "logText").invoke(ui);
         }
         catch (ReflectiveOperationException e)
         {
@@ -207,11 +204,7 @@ public class testTheLogIsStampedAndExports
 
     private static JMenuItem item(TrainControlUI ui) throws Exception
     {
-        java.lang.reflect.Field field = TrainControlUI.class.getDeclaredField("exportLogMenuItem");
-
-        field.setAccessible(true);
-
-        JMenuItem item = (JMenuItem) field.get(ui);
+        JMenuItem item = (JMenuItem) Reflect.get(TrainControlUI.class, ui, "exportLogMenuItem");
 
         assertNotNull(item, "the File menu has no Export Log item");
 

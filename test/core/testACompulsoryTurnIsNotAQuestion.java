@@ -19,7 +19,9 @@ import org.traincontrol.marklin.MarklinAccessory;
 import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.marklin.file.CS2File;
 import support.SourceOf;
+import support.Trees;
 import static org.traincontrol.marklin.MarklinControlStation.init;
+import static support.Settle.until;
 
 /**
  * A square the railway turns every train at is never put to the operator.
@@ -431,21 +433,6 @@ public class testACompulsoryTurnIsNotAQuestion
         return null;
     }
 
-    /** Waits for something to come true, or gives up. */
-    private static boolean waitFor(java.util.function.BooleanSupplier what, long ms) throws InterruptedException
-    {
-        long until = System.currentTimeMillis() + ms;
-
-        while (System.currentTimeMillis() < until)
-        {
-            if (what.getAsBoolean()) return true;
-
-            Thread.sleep(20);
-        }
-
-        return what.getAsBoolean();
-    }
-
     /** Sends a train by hand through the hand door's own entry to the railway, and plays its arrival sensor. */
     private static void sendByHand(Layout rail, org.traincontrol.base.Locomotive x, List<org.traincontrol.automation.Edge> path,
         Layout.ReversalPolicy answer) throws Exception
@@ -484,13 +471,13 @@ public class testACompulsoryTurnIsNotAQuestion
     /** Waits until the train is moving as one of the railway's active trains. */
     private static boolean waitUntilSetOff(Layout rail, org.traincontrol.base.Locomotive x) throws InterruptedException
     {
-        return waitFor(() -> x.getSpeed() > 0 && rail.getActiveLocomotives().containsKey(x), 10000);
+        return until(() -> x.getSpeed() > 0 && rail.getActiveLocomotives().containsKey(x), 10000);
     }
 
     /** Waits until the train is no longer one of the railway's active trains. */
     private static boolean waitUntilDone(Layout rail, org.traincontrol.base.Locomotive x) throws InterruptedException
     {
-        return waitFor(() -> !rail.getActiveLocomotives().containsKey(x), 15000);
+        return until(() -> !rail.getActiveLocomotives().containsKey(x), 15000);
     }
 
     /** Runs the railway's timetable on a daemon thread of its own; the thread. */
@@ -614,7 +601,7 @@ public class testACompulsoryTurnIsNotAQuestion
 
             model.parseAuto(session.buildConfiguration());
 
-            deleteAll(folder);
+            Trees.delete(folder);
         }
     }
 
@@ -622,15 +609,6 @@ public class testACompulsoryTurnIsNotAQuestion
     private interface ThrowingClaim
     {
         void run(File folder) throws Exception;
-    }
-
-    private static void deleteAll(File f)
-    {
-        File[] inside = f.listFiles();
-
-        if (inside != null) for (File c : inside) deleteAll(c);
-
-        f.delete();
     }
 
     /**

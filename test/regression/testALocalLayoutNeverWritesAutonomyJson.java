@@ -15,6 +15,9 @@ import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.util.Util;
 import static org.traincontrol.marklin.MarklinControlStation.init;
+import support.Display;
+import support.Reflect;
+import support.Teardown;
 
 /**
  * A layout stored on this computer never has autonomy.json written, loaded setup or not (OB-254).
@@ -40,10 +43,7 @@ public class testALocalLayoutNeverWritesAutonomyJson
     @BeforeClass
     public static void setUpClass() throws Exception
     {
-        if (java.awt.GraphicsEnvironment.isHeadless())
-        {
-            throw new SkipException("the save runs from the window, and the window needs a display");
-        }
+        Display.needed("the save runs from the window, and the window needs a display");
 
         if (System.getProperty(Util.DATA_DIR_PROPERTY) == null)
         {
@@ -75,19 +75,10 @@ public class testALocalLayoutNeverWritesAutonomyJson
         {
             if (autoLoadWas == null) TrainControlUI.getPrefs().remove(TrainControlUI.AUTO_LOAD_AUTONOMY);
             else TrainControlUI.getPrefs().put(TrainControlUI.AUTO_LOAD_AUTONOMY, autoLoadWas);
-
-            if (ui != null)
-            {
-                final TrainControlUI closing = ui;
-
-                SwingUtilities.invokeAndWait(() -> closing.dispose());
-            }
-
-            if (model != null) model.stop();
         }
         finally
         {
-            if (sandbox != null) sandbox.close();
+            Teardown.close(sandbox, model, ui);
         }
     }
 
@@ -113,9 +104,7 @@ public class testALocalLayoutNeverWritesAutonomyJson
     @Test
     public void testTheSaveWritesNoAutonomyJson() throws Exception
     {
-        Method local = TrainControlUI.class.getDeclaredMethod("isLocalLayout");
-
-        local.setAccessible(true);
+        Method local = Reflect.method(TrainControlUI.class, "isLocalLayout");
 
         assertTrue((Boolean) local.invoke(ui), "precondition: the sandbox is not a layout stored on this computer");
 

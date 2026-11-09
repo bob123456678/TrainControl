@@ -27,6 +27,8 @@ import org.traincontrol.automationui.TilePorts.Side;
 import org.traincontrol.base.Accessory.accessoryDecoderType;
 import org.traincontrol.base.LayoutDiagram;
 import org.traincontrol.base.LayoutDiagramComponent.componentType;
+import support.Diagrams;
+import support.Reflect;
 
 /**
  * Two permanent Y turnouts drawn toe to toe are one crossing (OB-320), as are two permanent lefts or two rights toe
@@ -415,12 +417,12 @@ public class testTwoYsMakeACrossing
 
         // a turnout with no address, toe east, which ends the room as a switch does (5e)
         page.addComponent(componentType.CUSTOM_PERM_LEFT, 2, 5, 1, 0, 0, 0, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.STRAIGHT, 3, 5, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
+        Diagrams.straight(page, 3, 5);
 
         y(page, 4, 5, 0);
         y(page, 4, 6, 2);
 
-        page.addComponent(componentType.STRAIGHT, 5, 6, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
+        Diagrams.straight(page, 5, 6);
 
         sensor(page, 6, 6, 0, 2);
 
@@ -614,14 +616,12 @@ public class testTwoYsMakeACrossing
                 panel[0] = new org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel(session, "main", () -> { });
 
                 java.lang.reflect.Method cycle =
-                    org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel.class.getDeclaredMethod("cycle", TileKey.class);
-
-                cycle.setAccessible(true);
+                    Reflect.method(org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel.class,
+                        "cycle", TileKey.class);
                 cycle.invoke(panel[0], key(5, 5));
 
-                java.lang.reflect.Field hint = org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel.class.getDeclaredField("hint");
-
-                hint.setAccessible(true);
+                java.lang.reflect.Field hint =
+                    Reflect.field(org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel.class, "hint");
 
                 said[0] = ((javax.swing.JLabel) hint.get(panel[0])).getText();
             }
@@ -915,9 +915,7 @@ public class testTwoYsMakeACrossing
         throws Exception
     {
         final java.lang.reflect.Method cycle =
-            org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel.class.getDeclaredMethod("cycle", TileKey.class);
-
-        cycle.setAccessible(true);
+            Reflect.method(org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel.class, "cycle", TileKey.class);
 
         javax.swing.SwingUtilities.invokeAndWait(() ->
         {

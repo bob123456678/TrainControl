@@ -5,6 +5,7 @@ import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
 import org.testng.annotations.Test;
+import support.Reflect;
 import support.SourceOf;
 
 /**
@@ -64,9 +65,7 @@ public class testTheDestinationDoorsAgree
     {
         Class<?> menu = Class.forName("org.traincontrol.gui.LayoutRightclickAutonomyMenu");
 
-        Method rule = menu.getDeclaredMethod("theListWasCutShort", int.class, int.class, int.class);
-
-        rule.setAccessible(true);
+        Method rule = Reflect.method(menu, "theListWasCutShort", int.class, int.class, int.class);
 
         // Everything this menu offers is on screen - six of six, none in the submenu.
         assertFalse((Boolean) rule.invoke(null, 6, 6, 0),

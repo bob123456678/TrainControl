@@ -15,10 +15,11 @@ import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
-import org.testng.SkipException;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
+import support.Components;
+import support.Display;
 import support.SourceOf;
 
 /**
@@ -59,10 +60,7 @@ public class testNonAtomicRoutesNeedTheirLengths
     @BeforeClass
     public static void setUpClass() throws Exception
     {
-        if (java.awt.GraphicsEnvironment.isHeadless())
-        {
-            throw new SkipException("the door is a checkbox on a window, and a window needs a display");
-        }
+        Display.needed("the door is a checkbox on a window, and a window needs a display");
 
         // THE FROZEN COPY of the operator's railway, not the railway he is operating (OB-111).
         sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
@@ -75,8 +73,8 @@ public class testNonAtomicRoutesNeedTheirLengths
 
         assertNotNull(ui, "there is no window, so the door this is about does not exist");
 
-        settle();
-        settle();
+        Components.drain(1);
+        Components.drain(1);
 
         assertTrue(model.hasAutoLayout(), "the sandbox copy holds no autonomy setup");
 
@@ -641,11 +639,5 @@ public class testNonAtomicRoutesNeedTheirLengths
     private static void remember(Locomotive loc)
     {
         if (!trainsWere.containsKey(loc)) trainsWere.put(loc, loc.getTrainLength());
-    }
-
-    /** Lets the event thread catch up, twice being what the window needs after init (OB-192). */
-    private static void settle() throws Exception
-    {
-        SwingUtilities.invokeAndWait(() -> { });
     }
 }

@@ -4,7 +4,6 @@ import java.io.File;
 import java.util.LinkedList;
 import java.util.List;
 import static org.testng.Assert.*;
-import org.testng.SkipException;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 import org.traincontrol.automationui.AutonomyBuilder;
@@ -15,6 +14,8 @@ import org.traincontrol.marklin.MarklinAccessory;
 import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.marklin.file.CS2File;
 import static org.traincontrol.marklin.MarklinControlStation.init;
+import support.Display;
+import support.Reflect;
 
 /**
  * What drawing the track diagram actually costs, measured rather than guessed.
@@ -331,10 +332,7 @@ public class testRenderingCost
     @Test
     public void testEveryTileOfOneAccessoryStaysRegistered() throws Exception
     {
-        if (java.awt.GraphicsEnvironment.isHeadless())
-        {
-            throw new org.testng.SkipException("building labels needs a display");
-        }
+        Display.needed("building labels needs a display");
 
         File folder = new File("test/test_layout");
 
@@ -437,11 +435,7 @@ public class testRenderingCost
      */
     private static int registeredTiles(MarklinAccessory accessory) throws Exception
     {
-        java.lang.reflect.Field field = MarklinAccessory.class.getDeclaredField("tiles");
-
-        field.setAccessible(true);
-
-        return ((java.util.Collection<?>) field.get(accessory)).size();
+        return ((java.util.Collection<?>) Reflect.get(MarklinAccessory.class, accessory, "tiles")).size();
     }
 
     /**
@@ -454,10 +448,7 @@ public class testRenderingCost
     @Test
     public void testLabelsBuiltPerCell() throws Exception
     {
-        if (java.awt.GraphicsEnvironment.isHeadless())
-        {
-            throw new org.testng.SkipException("building labels needs a display");
-        }
+        Display.needed("building labels needs a display");
 
         final org.traincontrol.gui.TrainControlUI[] ui = new org.traincontrol.gui.TrainControlUI[1];
 

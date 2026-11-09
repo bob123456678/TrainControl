@@ -13,10 +13,12 @@ import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertTrue;
-import org.testng.SkipException;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
+import support.Components;
+import support.Display;
+import support.Teardown;
 
 /**
  * Highlight on Diagram lights a tile of the kind the address names, and not everything numbered alike (MT-462):
@@ -54,10 +56,7 @@ public class testTheRouteHighlightAsksWhatATileIs
     @BeforeClass
     public static void setUpClass() throws Exception
     {
-        if (java.awt.GraphicsEnvironment.isHeadless())
-        {
-            throw new SkipException("the highlight is a drawing, and drawing needs a display");
-        }
+        Display.needed("the highlight is a drawing, and drawing needs a display");
 
         // BEFORE init, which opens whatever the layout preference names - Adam's own railway on his machine (OB-111).
         sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("single-switch"));
@@ -71,8 +70,8 @@ public class testTheRouteHighlightAsksWhatATileIs
 
         assertNotNull(ui, "there is no window, so nothing here can reach the drawing path");
 
-        settle();
-        settle();
+        Components.drain(3);
+        Components.drain(3);
 
         assertFalse(ui.getDiagramTileRegistry().labelsFor(WEST_END).isEmpty(),
             "precondition: no label is registered for WestEnd, so nothing below could light anyway");
@@ -84,14 +83,7 @@ public class testTheRouteHighlightAsksWhatATileIs
     @AfterClass(alwaysRun = true)
     public static void tearDownClass() throws Exception
     {
-        try
-        {
-            if (model != null) model.stop();
-        }
-        finally
-        {
-            if (sandbox != null) sandbox.close();
-        }
+        Teardown.close(sandbox, model);
     }
 
     /** An accessory address that only a sensor carries lights nothing. */
@@ -215,7 +207,7 @@ public class testTheRouteHighlightAsksWhatATileIs
             Collections.singletonMap(ACCESSORY_OF_THE_TURNOUT, Collections.singleton(DCC)),
             org.traincontrol.util.ImageUtil.HIGHLIGHT, 4000));
 
-        settle();
+        Components.drain(3);
 
         assertEquals(lit[0], 0, "a command to DCC " + ACCESSORY_OF_THE_TURNOUT + " lit the scenario's MM2"
             + " turnout numbered alike, which is a different decoder (GUI-C5)");
@@ -226,7 +218,7 @@ public class testTheRouteHighlightAsksWhatATileIs
             Collections.singletonMap(ACCESSORY_OF_THE_TURNOUT, Collections.singleton(MM2)),
             org.traincontrol.util.ImageUtil.HIGHLIGHT, 4000));
 
-        settle();
+        Components.drain(3);
 
         assertTrue(lit[1] > 0, "control: a command to MM2 " + ACCESSORY_OF_THE_TURNOUT + " does not light the"
             + " scenario's turnout, so the door refuses everything");
@@ -254,7 +246,7 @@ public class testTheRouteHighlightAsksWhatATileIs
         SwingUtilities.invokeAndWait(() -> lit[0] = ui.highlightAddresses(
             Collections.singleton(address), kind, org.traincontrol.util.ImageUtil.HIGHLIGHT, 4000));
 
-        settle();
+        Components.drain(3);
 
         return lit[0];
     }
@@ -283,12 +275,6 @@ public class testTheRouteHighlightAsksWhatATileIs
             }
         }
 
-        settle();
-    }
-
-    /** Lets the event thread finish what a gesture posted. */
-    private static void settle() throws Exception
-    {
-        for (int i = 0; i < 3; i++) SwingUtilities.invokeAndWait(() -> { });
+        Components.drain(3);
     }
 }

@@ -16,6 +16,7 @@ import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.marklin.MarklinRoute;
 import org.traincontrol.util.I18n;
+import support.Reflect;
 import support.SourceOf;
 
 /**
@@ -159,9 +160,7 @@ public class testARouteDrivenLocomotiveIsNotEdited
                 + " route drives, naming the route (OB-287)");
 
             // ... and from the keyboard's menu, whose item opens the same window on the same tab
-            final java.lang.reflect.Field current = TrainControlUI.class.getDeclaredField("currentButton");
-
-            current.setAccessible(true);
+            final java.lang.reflect.Field current = Reflect.field(TrainControlUI.class, "currentButton");
 
             final javax.swing.JButton button = (javax.swing.JButton) current.get(window);
 

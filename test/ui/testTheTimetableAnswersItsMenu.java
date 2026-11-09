@@ -29,6 +29,7 @@ import org.traincontrol.marklin.MarklinLocomotive;
 import org.traincontrol.util.I18n;
 import support.Answering;
 import support.Components;
+import support.Reflect;
 
 /**
  * The timetable's right-click menu and its Execute button, used as the operator uses them: a right-click on an entry's
@@ -505,11 +506,7 @@ public class testTheTimetableAnswersItsMenu
 
         railway().setTimetable(entries);
 
-        java.lang.reflect.Method repaint = TrainControlUI.class.getDeclaredMethod("repaintTimetable");
-
-        repaint.setAccessible(true);
-
-        repaint.invoke(ui);
+        Reflect.method(TrainControlUI.class, "repaintTimetable").invoke(ui);
 
         assertTrue(Components.waitFor(() -> rows() == 2, PATIENCE_MS), "precondition: the tab shows " + rows()
             + " rows, not the two entries");
@@ -521,11 +518,7 @@ public class testTheTimetableAnswersItsMenu
     {
         try
         {
-            java.lang.reflect.Field field = TrainControlUI.class.getDeclaredField("timetable");
-
-            field.setAccessible(true);
-
-            return (JTable) field.get(ui);
+            return (JTable) Reflect.get(TrainControlUI.class, ui, "timetable");
         }
         catch (ReflectiveOperationException e)
         {
@@ -590,11 +583,7 @@ public class testTheTimetableAnswersItsMenu
     /** The Auto tab's Execute Timetable button, by its field, and saying what the operator reads on it. */
     private static AbstractButton executeButton() throws Exception
     {
-        java.lang.reflect.Field field = TrainControlUI.class.getDeclaredField("executeTimetable");
-
-        field.setAccessible(true);
-
-        AbstractButton execute = (AbstractButton) field.get(ui);
+        AbstractButton execute = (AbstractButton) Reflect.get(TrainControlUI.class, ui, "executeTimetable");
 
         assertEquals(Components.onTheEventThread(execute::getText), I18n.t("ui.main.executeTimetable"),
             "the window's Execute Timetable does not say so");

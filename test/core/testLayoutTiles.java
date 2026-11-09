@@ -27,6 +27,7 @@ import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 import org.traincontrol.marklin.MarklinFeedback;
+import support.Reflect;
 import support.SourceOf;
 
 /**
@@ -98,9 +99,7 @@ public class testLayoutTiles
     {
         MarklinFeedback fb = new MarklinFeedback(model, 8901, null);
 
-        Field tilesField = MarklinFeedback.class.getDeclaredField("tiles");
-        tilesField.setAccessible(true);
-        Object tiles = tilesField.get(fb);
+        Object tiles = Reflect.get(MarklinFeedback.class, fb, "tiles");
 
         assertFalse(tiles instanceof HashSet,
             "tiles must not be a plain HashSet - " + tiles.getClass().getName());
@@ -266,9 +265,7 @@ public class testLayoutTiles
     {
         try
         {
-            java.lang.reflect.Field hold = LayoutLabel.class.getDeclaredField("HIGHLIGHT_DURATION");
-
-            hold.setAccessible(true);
+            java.lang.reflect.Field hold = Reflect.field(LayoutLabel.class, "HIGHLIGHT_DURATION");
 
             return hold.getInt(null);
         }
@@ -597,8 +594,7 @@ public class testLayoutTiles
 
         final RouteEditorFrame editor = ref.get();
 
-        Field field = TrainControlUI.class.getDeclaredField("routeEditor");
-        field.setAccessible(true);
+        Field field = Reflect.field(TrainControlUI.class, "routeEditor");
 
         Object was = field.get(ui);
 

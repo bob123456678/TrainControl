@@ -15,6 +15,7 @@ import org.traincontrol.base.Accessory;
 import org.traincontrol.base.RouteCommand;
 import org.traincontrol.marklin.MarklinAccessory;
 import org.traincontrol.marklin.udp.CS2Message;
+import support.Reflect;
 import support.SourceOf;
 
 /**
@@ -151,8 +152,7 @@ public class testAccessory
     @SuppressWarnings("unchecked")
     private static RemoteDeviceCollection<MarklinAccessory, Integer> accDb() throws Exception
     {
-        Field accDbField = MarklinControlStation.class.getDeclaredField("accDB");
-        accDbField.setAccessible(true);
+        Field accDbField = Reflect.field(MarklinControlStation.class, "accDB");
 
         return (RemoteDeviceCollection<MarklinAccessory, Integer>) accDbField.get(model);
     }

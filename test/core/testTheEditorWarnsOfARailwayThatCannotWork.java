@@ -17,6 +17,8 @@ import org.traincontrol.automationui.TileGraph.Direction;
 import org.traincontrol.automationui.TileGraph.RouteId;
 import org.traincontrol.automationui.TileGraph.TileKey;
 import org.traincontrol.automationui.TilePorts.Side;
+import support.Diagrams;
+import support.Reflect;
 import support.SourceOf;
 
 /**
@@ -110,7 +112,7 @@ public class testTheEditorWarnsOfARailwayThatCannotWork extends AutonomySessionF
         LayoutDiagram unaddressed = new LayoutDiagram("second", 6, 4, null, null);
 
         unaddressed.addComponent(componentType.FEEDBACK, 1, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
-        unaddressed.addComponent(componentType.FEEDBACK, 3, 1, 0, 0, -1, -1, accessoryDecoderType.MM2, null);
+        Diagrams.feedback(unaddressed, 3, 1, -1, -1);
         unaddressed.setPageId("2");
 
         session.open(Arrays.asList(runOfTrack(), unaddressed));
@@ -167,7 +169,7 @@ public class testTheEditorWarnsOfARailwayThatCannotWork extends AutonomySessionF
     {
         LayoutDiagram page = sensorPage(name, id, address);
 
-        page.addComponent(componentType.FEEDBACK, 3, 1, 0, 0, address, address, accessoryDecoderType.MM2, null);
+        Diagrams.feedback(page, 3, 1, address, address);
 
         return page;
     }
@@ -177,8 +179,8 @@ public class testTheEditorWarnsOfARailwayThatCannotWork extends AutonomySessionF
     {
         LayoutDiagram page = new LayoutDiagram(name, 6, 4, null, null);
 
-        page.addComponent(componentType.FEEDBACK, 1, 1, 0, 0, address, address, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.STRAIGHT, 2, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
+        Diagrams.feedback(page, 1, 1, address, address);
+        Diagrams.straight(page, 2, 1);
         page.setPageId(id);
 
         return page;
@@ -550,8 +552,8 @@ public class testTheEditorWarnsOfARailwayThatCannotWork extends AutonomySessionF
     {
         LayoutDiagram first = new LayoutDiagram("main", 8, 4, null, null);
 
-        first.addComponent(componentType.FEEDBACK, 1, 1, 0, 0, 5, 11, accessoryDecoderType.MM2, null);
-        first.addComponent(componentType.FEEDBACK, 3, 1, 0, 0, 6, 12, accessoryDecoderType.MM2, null);
+        Diagrams.feedback(first, 1, 1, 5, 11);
+        Diagrams.feedback(first, 3, 1, 6, 12);
 
         first.setPageId("1");
         first.checkBounds();
@@ -559,9 +561,9 @@ public class testTheEditorWarnsOfARailwayThatCannotWork extends AutonomySessionF
         // a zoomed copy: it repeats BOTH of main's sensors, and carries one of its own
         LayoutDiagram repeat = new LayoutDiagram("repeat", 8, 4, null, null);
 
-        repeat.addComponent(componentType.FEEDBACK, 1, 1, 0, 0, 5, 11, accessoryDecoderType.MM2, null);
-        repeat.addComponent(componentType.FEEDBACK, 3, 1, 0, 0, 6, 12, accessoryDecoderType.MM2, null);
-        repeat.addComponent(componentType.FEEDBACK, 5, 1, 0, 0, 7, 13, accessoryDecoderType.MM2, null);
+        Diagrams.feedback(repeat, 1, 1, 5, 11);
+        Diagrams.feedback(repeat, 3, 1, 6, 12);
+        Diagrams.feedback(repeat, 5, 1, 7, 13);
 
         repeat.setPageId("2");
         repeat.checkBounds();
@@ -569,7 +571,7 @@ public class testTheEditorWarnsOfARailwayThatCannotWork extends AutonomySessionF
         // and a page sharing only the sensor that "repeat" alone holds
         LayoutDiagram third = new LayoutDiagram("third", 8, 4, null, null);
 
-        third.addComponent(componentType.FEEDBACK, 1, 1, 0, 0, 7, 13, accessoryDecoderType.MM2, null);
+        Diagrams.feedback(third, 1, 1, 7, 13);
 
         third.setPageId("3");
         third.checkBounds();
@@ -677,10 +679,8 @@ public class testTheEditorWarnsOfARailwayThatCannotWork extends AutonomySessionF
 
         assertNotNull(cutCopy, "the middle station built to no copy, so there is none to cut the ways into");
 
-        java.lang.reflect.Method noWayIn = AutonomySession.class.getDeclaredMethod("destinationCopiesWithNoWayIn",
-            org.json.JSONObject.class, java.util.Map.class);
-
-        noWayIn.setAccessible(true);
+        java.lang.reflect.Method noWayIn = Reflect.method(AutonomySession.class,
+            "destinationCopiesWithNoWayIn", org.json.JSONObject.class, java.util.Map.class);
 
         assertTrue(((java.util.Map<?, ?>) noWayIn.invoke(session, injected, null)).isEmpty(),
             "control: the intact graph reports a copy nothing can reach");
@@ -845,10 +845,10 @@ public class testTheEditorWarnsOfARailwayThatCannotWork extends AutonomySessionF
         LayoutDiagram page = pageOnDisk();
 
         // A second run of track, not joined to the first.  The station is over on the original one.
-        page.addComponent(componentType.FEEDBACK, 1, 3, 0, 0, 7, 13, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.STRAIGHT, 2, 3, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.STRAIGHT, 3, 3, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.FEEDBACK, 4, 3, 0, 0, 8, 14, accessoryDecoderType.MM2, null);
+        Diagrams.feedback(page, 1, 3, 7, 13);
+        Diagrams.straight(page, 2, 3);
+        Diagrams.straight(page, 3, 3);
+        Diagrams.feedback(page, 4, 3, 8, 14);
 
         session.open(Arrays.asList(page));
 
@@ -917,10 +917,10 @@ public class testTheEditorWarnsOfARailwayThatCannotWork extends AutonomySessionF
     {
         LayoutDiagram page = pageOnDisk();
 
-        page.addComponent(componentType.FEEDBACK, 1, 3, 0, 0, 7, 13, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.STRAIGHT, 2, 3, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.STRAIGHT, 3, 3, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.FEEDBACK, 4, 3, 0, 0, 8, 14, accessoryDecoderType.MM2, null);
+        Diagrams.feedback(page, 1, 3, 7, 13);
+        Diagrams.straight(page, 2, 3);
+        Diagrams.straight(page, 3, 3);
+        Diagrams.feedback(page, 4, 3, 8, 14);
 
         session.open(Arrays.asList(page));
 

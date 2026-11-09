@@ -13,6 +13,10 @@ import org.traincontrol.automationui.TileGraph.TileKey;
 import org.traincontrol.base.Accessory.accessoryDecoderType;
 import org.traincontrol.base.LayoutDiagram;
 import org.traincontrol.base.LayoutDiagramComponent.componentType;
+import support.Diagrams;
+import support.Display;
+import support.Reflect;
+import support.Trees;
 
 /**
  * Inserting or removing a row or a column, and what happens to the setup on the squares that move.
@@ -151,13 +155,13 @@ public class testDiagramShiftKeepsSetup
             LayoutDiagram far = new LayoutDiagram(FAR, 6, 6, null, null);
 
             // A run of track with a link at the end of it, on each page
-            main.addComponent(componentType.FEEDBACK, 1, 5, 0, 0, 5, 11, accessoryDecoderType.MM2, null);
-            main.addComponent(componentType.STRAIGHT, 2, 5, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
+            Diagrams.feedback(main, 1, 5, 5, 11);
+            Diagrams.straight(main, 2, 5);
             main.addComponent(componentType.LINK, 3, 5, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
 
             far.addComponent(componentType.LINK, 1, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
-            far.addComponent(componentType.STRAIGHT, 2, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
-            far.addComponent(componentType.FEEDBACK, 3, 1, 0, 0, 6, 12, accessoryDecoderType.MM2, null);
+            Diagrams.straight(far, 2, 1);
+            Diagrams.feedback(far, 3, 1, 6, 12);
 
             main.setPageId("1");
             far.setPageId("2");
@@ -194,7 +198,7 @@ public class testDiagramShiftKeepsSetup
         }
         finally
         {
-            delete(folder);
+            Trees.delete(folder);
         }
     }
 
@@ -214,8 +218,8 @@ public class testDiagramShiftKeepsSetup
             LayoutDiagram main = new LayoutDiagram(PAGE, 12, 10, null, null);
             LayoutDiagram far = new LayoutDiagram(FAR, 6, 6, null, null);
 
-            main.addComponent(componentType.FEEDBACK, 5, 2, 0, 0, 5, 11, accessoryDecoderType.MM2, null);
-            main.addComponent(componentType.STRAIGHT, 6, 2, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
+            Diagrams.feedback(main, 5, 2, 5, 11);
+            Diagrams.straight(main, 6, 2);
             main.addComponent(componentType.LINK, 7, 2, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
 
             far.addComponent(componentType.LINK, 1, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
@@ -251,7 +255,7 @@ public class testDiagramShiftKeepsSetup
         }
         finally
         {
-            delete(folder);
+            Trees.delete(folder);
         }
     }
 
@@ -267,10 +271,7 @@ public class testDiagramShiftKeepsSetup
     @Test
     public void testTheEditorsShiftDownRespectsThePageWidth() throws Exception
     {
-        if (java.awt.GraphicsEnvironment.isHeadless())
-        {
-            throw new org.testng.SkipException("the editor is a window");
-        }
+        Display.needed("the editor is a window");
 
         support.LayoutSandbox sandbox = null;
         org.traincontrol.marklin.MarklinControlStation model = null;
@@ -323,21 +324,16 @@ public class testDiagramShiftKeepsSetup
 
             // getAutonomySession() only builds a session when the field is still null: pointed at ours, the editor's
             // real setupShift/moveTiles call writes to the session this test can see.
-            java.lang.reflect.Field sessionField =
-                org.traincontrol.gui.TrainControlUI.class.getDeclaredField("autonomySession");
-            sessionField.setAccessible(true);
-            sessionField.set(ui[0], session);
+            Reflect.set(org.traincontrol.gui.TrainControlUI.class, ui[0], "autonomySession", session);
 
             javax.swing.SwingUtilities.invokeAndWait(() ->
                 editor[0] = new org.traincontrol.gui.layouteditor.LayoutEditor(diagram, 30, ui[0], 0));
 
             java.lang.reflect.Method drawGrid =
-                org.traincontrol.gui.layouteditor.LayoutEditor.class.getDeclaredMethod("drawGrid");
-            drawGrid.setAccessible(true);
+                Reflect.method(org.traincontrol.gui.layouteditor.LayoutEditor.class, "drawGrid");
 
             java.lang.reflect.Field hoveredY =
-                org.traincontrol.gui.layouteditor.LayoutEditor.class.getDeclaredField("lastHoveredY");
-            hoveredY.setAccessible(true);
+                Reflect.field(org.traincontrol.gui.layouteditor.LayoutEditor.class, "lastHoveredY");
 
             javax.swing.SwingUtilities.invokeAndWait(() ->
             {
@@ -377,15 +373,6 @@ public class testDiagramShiftKeepsSetup
 
             if (sandbox != null) sandbox.close();
         }
-    }
-
-    private static void delete(File file)
-    {
-        File[] kids = file.listFiles();
-
-        if (kids != null) for (File kid : kids) delete(kid);
-
-        file.delete();
     }
 
     /**

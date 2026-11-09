@@ -17,6 +17,8 @@ import org.traincontrol.base.LayoutDiagramComponent.componentType;
 import org.traincontrol.automationui.TileGraph.Direction;
 import org.traincontrol.automationui.TileGraph.RouteId;
 import org.traincontrol.automationui.TileGraph.TileKey;
+import support.Diagrams;
+import support.Reflect;
 
 /**
  * The fixtures the autonomy session topic classes share (FR-136): a temporary layout folder and a fresh
@@ -59,13 +61,7 @@ abstract class AutonomySessionFixture
 
         for (LayoutDiagram page : new LayoutDiagram[] {main, second})
         {
-            page.addComponent(componentType.FEEDBACK, 1, 1, 0, 0, address, address, accessoryDecoderType.MM2, null);
-            page.addComponent(componentType.STRAIGHT, 2, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
-            page.addComponent(componentType.FEEDBACK, 3, 1, 0, 0, address + 1, address + 1, accessoryDecoderType.MM2,
-                null);
-            page.addComponent(componentType.STRAIGHT, 4, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
-            page.addComponent(componentType.FEEDBACK, 5, 1, 0, 0, address + 2, address + 2, accessoryDecoderType.MM2,
-                null);
+            Diagrams.row(page, 1, 1, "FSFSF", address, address + 1, address + 2);
 
             address += 10;
         }
@@ -145,11 +141,7 @@ abstract class AutonomySessionFixture
     {
         LayoutDiagram page = new LayoutDiagram("main", 7, 3, null, null);
 
-        page.addComponent(componentType.FEEDBACK, 1, 1, 0, 0, 64, 64, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.STRAIGHT, 2, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.FEEDBACK, 3, 1, 0, 0, 65, 65, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.STRAIGHT, 4, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.FEEDBACK, 5, 1, 0, 0, 66, 66, accessoryDecoderType.MM2, null);
+        Diagrams.row(page, 1, 1, "FSFSF", 64, 65, 66);
         page.setPageId("1");
 
         session.open(Arrays.asList(page));
@@ -164,9 +156,7 @@ abstract class AutonomySessionFixture
     static java.awt.Component panelPart(org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel panel, String field)
         throws Exception
     {
-        java.lang.reflect.Field f = org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel.class.getDeclaredField(field);
-
-        f.setAccessible(true);
+        java.lang.reflect.Field f = Reflect.field(org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel.class, field);
 
         return (java.awt.Component) f.get(panel);
     }
@@ -217,13 +207,13 @@ abstract class AutonomySessionFixture
     {
         LayoutDiagram page = new LayoutDiagram("main", 10, 4, null, null);
 
-        page.addComponent(componentType.FEEDBACK, 1, 1, 0, 0, 5, 11, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.STRAIGHT, 2, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.STRAIGHT, 3, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.FEEDBACK, 4, 1, 0, 0, 6, 12, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.STRAIGHT, 5, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.STRAIGHT, 6, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.FEEDBACK, 7, 1, 0, 0, 7, 13, accessoryDecoderType.MM2, null);
+        Diagrams.feedback(page, 1, 1, 5, 11);
+        Diagrams.straight(page, 2, 1);
+        Diagrams.straight(page, 3, 1);
+        Diagrams.feedback(page, 4, 1, 6, 12);
+        Diagrams.straight(page, 5, 1);
+        Diagrams.straight(page, 6, 1);
+        Diagrams.feedback(page, 7, 1, 7, 13);
 
         page.setPageId("1");
 
@@ -234,10 +224,10 @@ abstract class AutonomySessionFixture
     {
         LayoutDiagram page = new LayoutDiagram("main", 8, 4, null, null);
 
-        page.addComponent(componentType.FEEDBACK, 1, 1, 0, 0, 5, 11, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.STRAIGHT, 2, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.STRAIGHT, 3, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.FEEDBACK, 4, 1, 0, 0, 6, 12, accessoryDecoderType.MM2, null);
+        Diagrams.feedback(page, 1, 1, 5, 11);
+        Diagrams.straight(page, 2, 1);
+        Diagrams.straight(page, 3, 1);
+        Diagrams.feedback(page, 4, 1, 6, 12);
 
         page.setPageId("1");
 
@@ -248,8 +238,8 @@ abstract class AutonomySessionFixture
     {
         LayoutDiagram page = new LayoutDiagram("second", 6, 4, null, null);
 
-        page.addComponent(componentType.FEEDBACK, 1, 1, 0, 0, 10, 21, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.STRAIGHT, 2, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
+        Diagrams.feedback(page, 1, 1, 10, 21);
+        Diagrams.straight(page, 2, 1);
 
         page.setPageId("2");
 
@@ -316,11 +306,11 @@ abstract class AutonomySessionFixture
 
         LayoutDiagram page = new LayoutDiagram("main", 8, 4, url, null);
 
-        page.addComponent(componentType.FEEDBACK, 1, 1, 0, 0, 5, 11, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.STRAIGHT, 2, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.FEEDBACK, 3, 1, 0, 0, 6, 12, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.STRAIGHT, 4, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.FEEDBACK, 5, 1, 0, 0, 7, 13, accessoryDecoderType.MM2, null);
+        Diagrams.feedback(page, 1, 1, 5, 11);
+        Diagrams.straight(page, 2, 1);
+        Diagrams.feedback(page, 3, 1, 6, 12);
+        Diagrams.straight(page, 4, 1);
+        Diagrams.feedback(page, 5, 1, 7, 13);
 
         page.setPageId("1");
 
@@ -342,10 +332,10 @@ abstract class AutonomySessionFixture
 
         LayoutDiagram page = new LayoutDiagram("main", 8, 4, url, null);
 
-        page.addComponent(componentType.FEEDBACK, 1, 1, 0, 0, 5, 11, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.STRAIGHT, 2, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.STRAIGHT, 3, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.FEEDBACK, 4, 1, 0, 0, 6, 12, accessoryDecoderType.MM2, null);
+        Diagrams.feedback(page, 1, 1, 5, 11);
+        Diagrams.straight(page, 2, 1);
+        Diagrams.straight(page, 3, 1);
+        Diagrams.feedback(page, 4, 1, 6, 12);
 
         page.setPageId("1");
 
@@ -373,8 +363,8 @@ abstract class AutonomySessionFixture
     {
         LayoutDiagram page = platformBehindASwitch();
 
-        page.addComponent(componentType.STRAIGHT, 6, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.FEEDBACK, 7, 1, 0, 0, 8, 14, accessoryDecoderType.MM2, null);
+        Diagrams.straight(page, 6, 1);
+        Diagrams.feedback(page, 7, 1, 8, 14);
 
         return page;
     }
@@ -398,11 +388,11 @@ abstract class AutonomySessionFixture
     {
         LayoutDiagram page = new LayoutDiagram("main", 9, 4, null, null);
 
-        page.addComponent(componentType.FEEDBACK, 1, 1, 0, 0, 5, 11, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.STRAIGHT, 2, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
+        Diagrams.feedback(page, 1, 1, 5, 11);
+        Diagrams.straight(page, 2, 1);
         page.addComponent(componentType.SWITCH_LEFT, 3, 1, 3, 0, 7, 7, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.STRAIGHT, 4, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.FEEDBACK, 5, 1, 0, 0, 6, 12, accessoryDecoderType.MM2, null);
+        Diagrams.straight(page, 4, 1);
+        Diagrams.feedback(page, 5, 1, 6, 12);
 
         // The branch off the switch, lying north-south so that it has a port facing the switch at all.
         page.addComponent(componentType.FEEDBACK, 3, 0, 1, 0, 7, 13, accessoryDecoderType.MM2, null);
@@ -444,11 +434,11 @@ abstract class AutonomySessionFixture
 
         LayoutDiagram page = new LayoutDiagram("main", 8, 4, url, null);
 
-        page.addComponent(componentType.FEEDBACK, 1, 1, 0, 0, 5, 11, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.STRAIGHT, 2, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.FEEDBACK, 3, 1, 0, 0, 6, 12, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.STRAIGHT, 4, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.FEEDBACK, 5, 1, 0, 0, 7, 13, accessoryDecoderType.MM2, null);
+        Diagrams.feedback(page, 1, 1, 5, 11);
+        Diagrams.straight(page, 2, 1);
+        Diagrams.feedback(page, 3, 1, 6, 12);
+        Diagrams.straight(page, 4, 1);
+        Diagrams.feedback(page, 5, 1, 7, 13);
 
         page.setPageId("1");
 
@@ -462,10 +452,9 @@ abstract class AutonomySessionFixture
     static void answerTheStationMenu(final org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel panel, final TileKey square,
         final boolean station) throws Exception
     {
-        final java.lang.reflect.Method usage = org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel.class.getDeclaredMethod("setUsage",
-            TileKey.class, boolean.class, boolean.class);
-
-        usage.setAccessible(true);
+        final java.lang.reflect.Method usage =
+            Reflect.method(org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel.class,
+                "setUsage", TileKey.class, boolean.class, boolean.class);
 
         javax.swing.SwingUtilities.invokeAndWait(() ->
         {

@@ -8,7 +8,6 @@ import javax.swing.JMenuItem;
 import javax.swing.JPopupMenu;
 import javax.swing.SwingUtilities;
 import static org.testng.Assert.*;
-import org.testng.SkipException;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeClass;
@@ -23,6 +22,7 @@ import org.traincontrol.gui.autonomy.ArrivalSidePrompt;
 import org.traincontrol.gui.layouteditor.LayoutEditor;
 import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.util.I18n;
+import support.Teardown;
 
 /**
  * A station's right-click menu turns the train standing there in one click (FR-181): "Change Direction (now facing
@@ -74,16 +74,7 @@ public class testChangeDirectionIsOneClick
     @AfterClass(alwaysRun = true)
     public static void tearDownClass() throws Exception
     {
-        try
-        {
-            if (ui != null) SwingUtilities.invokeAndWait(() -> ui.dispose());
-
-            if (model != null) model.stop();
-        }
-        finally
-        {
-            if (sandbox != null) sandbox.close();
-        }
+        Teardown.close(sandbox, model, ui);
     }
 
     @BeforeMethod

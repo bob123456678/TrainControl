@@ -16,6 +16,7 @@ import org.traincontrol.base.LayoutDiagramComponent.componentType;
 import org.traincontrol.marklin.MarklinAccessory;
 import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.marklin.file.CS2File;
+import support.Diagrams;
 
 /**
  * Route buttons placed where what they conduct is not what was drawn (OB-160): two buttons side by side with track
@@ -342,8 +343,7 @@ public class testRouteTilePlacement
      */
     private static void track(LayoutDiagram page, int x, int y, int orientation) throws Exception
     {
-        page.addComponent(componentType.STRAIGHT, x, y, orientation, 0, 0, 0,
-            accessoryDecoderType.MM2, null);
+        Diagrams.straight(page, x, y, orientation);
     }
 
     /** A route button, which carries no track of its own. */

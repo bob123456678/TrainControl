@@ -8,7 +8,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import javax.swing.SwingUtilities;
 import static org.testng.Assert.*;
-import org.testng.SkipException;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
@@ -18,6 +17,9 @@ import org.traincontrol.base.Accessory;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;
 import static org.traincontrol.marklin.MarklinControlStation.init;
+import support.Components;
+import support.Display;
+import support.Reflect;
 
 /**
  * OB-192: the window froze while autonomy ran.  One test per half: the railway must not take the window's monitor
@@ -53,10 +55,7 @@ public class testTheDiagramRefreshDoesNotWaitOnTheRailway
     @BeforeClass
     public static void setUpClass() throws Exception
     {
-        if (java.awt.GraphicsEnvironment.isHeadless())
-        {
-            throw new SkipException("the window and its event thread are the subject here");
-        }
+        Display.needed("the window and its event thread are the subject here");
 
         // The frozen copy, never the operator's railway; opened before `init`, which reads the layout preference.
         sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
@@ -68,8 +67,8 @@ public class testTheDiagramRefreshDoesNotWaitOnTheRailway
 
         assertNotNull(ui, "there is no window, so there is no event thread to block");
 
-        pump();
-        pump();
+        Components.drain(1);
+        Components.drain(1);
 
         session = ui.getAutonomySession();
 
@@ -167,11 +166,7 @@ public class testTheDiagramRefreshDoesNotWaitOnTheRailway
     {
         final Accessory accessory = anAccessoryAPathCommands();
 
-        java.lang.reflect.Method lockOf = Layout.class.getDeclaredMethod("signalLock", Accessory.class);
-
-        lockOf.setAccessible(true);
-
-        final Object signalLock = lockOf.invoke(layout, accessory);
+        final Object signalLock = Reflect.method(Layout.class, "signalLock", Accessory.class).invoke(layout, accessory);
 
         final CountDownLatch driverIsIn = new CountDownLatch(1);
         final CountDownLatch driverIsOut = new CountDownLatch(1);
@@ -250,12 +245,7 @@ public class testTheDiagramRefreshDoesNotWaitOnTheRailway
         {
             try
             {
-                java.lang.reflect.Method door =
-                    TrainControlUI.class.getDeclaredMethod("refreshReturnHomeButton");
-
-                door.setAccessible(true);
-
-                door.invoke(ui);
+                Reflect.method(TrainControlUI.class, "refreshReturnHomeButton").invoke(ui);
             }
             catch (Exception failed)
             {
@@ -264,24 +254,17 @@ public class testTheDiagramRefreshDoesNotWaitOnTheRailway
         });
 
         // The answer must also land: "did not block" is true of a method with an empty body.
-        java.lang.reflect.Method waiting =
-            TrainControlUI.class.getDeclaredMethod("awaitReturnHomeTriage", long.class);
-
-        waiting.setAccessible(true);
+        java.lang.reflect.Method waiting = Reflect.method(TrainControlUI.class, "awaitReturnHomeTriage", long.class);
 
         assertTrue((Boolean) waiting.invoke(ui, 30000L),
             "the return-home triage never landed, so the button is never painted from it");
 
-        java.lang.reflect.Field button = TrainControlUI.class.getDeclaredField("returnHomeButton");
-
-        button.setAccessible(true);
-
-        javax.swing.JButton offered = (javax.swing.JButton) button.get(ui);
+        javax.swing.JButton offered = (javax.swing.JButton) Reflect.get(TrainControlUI.class, ui, "returnHomeButton");
 
         // The railway asked directly, from this thread, which may block.
         final boolean somethingToDo = layout.triageReturnToHome() == null;
 
-        pump();
+        Components.drain(1);
 
         assertEquals(offered.isEnabled(), somethingToDo,
             "the button says " + (offered.isEnabled() ? "there is" : "there is nothing")
@@ -303,10 +286,8 @@ public class testTheDiagramRefreshDoesNotWaitOnTheRailway
                 Class<?> menu = Class.forName("org.traincontrol.gui.HomeLocomotiveMenu");
 
                 // The sentence as the menu hands it where Start is offered: none.
-                java.lang.reflect.Method door = menu.getDeclaredMethod("addReturnHomeItem",
-                    javax.swing.JComponent.class, TrainControlUI.class, String.class);
-
-                door.setAccessible(true);
+                java.lang.reflect.Method door = Reflect.method(menu,
+                    "addReturnHomeItem", javax.swing.JComponent.class, TrainControlUI.class, String.class);
 
                 door.invoke(null, new javax.swing.JPanel(), ui, null);
             }
@@ -339,10 +320,8 @@ public class testTheDiagramRefreshDoesNotWaitOnTheRailway
 
         try
         {
-            final java.lang.reflect.Method rule = TrainControlUI.class.getDeclaredMethod(
+            final java.lang.reflect.Method rule = Reflect.method(TrainControlUI.class,
                 "captionIsActive", org.traincontrol.automationui.TileGraph.TileKey.class);
-
-            rule.setAccessible(true);
 
             final java.util.List<org.traincontrol.automationui.TileGraph.TileKey> squares =
                 new java.util.ArrayList<>(session.getStationIndex().squares());
@@ -400,10 +379,8 @@ public class testTheDiagramRefreshDoesNotWaitOnTheRailway
 
         // Off the event thread, as the worker does; the square is resolved first, on the event thread, as `showFor`
         // does.
-        java.lang.reflect.Method gather = menu.getDeclaredMethod("gatherPathOptions",
-            TrainControlUI.class, org.traincontrol.automation.Point.class);
-
-        gather.setAccessible(true);
+        java.lang.reflect.Method gather =
+            Reflect.method(menu, "gatherPathOptions", TrainControlUI.class, org.traincontrol.automation.Point.class);
 
         final Object answers = gather.invoke(null, ui, ui.getAutonomyPointForTile(occupied));
 
@@ -459,7 +436,7 @@ public class testTheDiagramRefreshDoesNotWaitOnTheRailway
         // The answer must also land: "did not block" is true of an `applyWhy` that does nothing (OB-191).
         assertTrue(awaitWhy(panel), "the why answer never landed, so nothing was ever painted from it");
 
-        pump();
+        Components.drain(1);
 
         String said = whatTheEditorSays(panel);
 
@@ -576,9 +553,7 @@ public class testTheDiagramRefreshDoesNotWaitOnTheRailway
         if (!aRunExists) return;
 
         java.lang.reflect.Field traces =
-            org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel.class.getDeclaredField("traces");
-
-        traces.setAccessible(true);
+            Reflect.field(org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel.class, "traces");
 
         assertFalse(((java.util.Map<?, ?>) traces.get(panel)).isEmpty(),
             "the reduction can draw a run from " + occupied + " to a station the railway offers, and"
@@ -791,7 +766,7 @@ public class testTheDiagramRefreshDoesNotWaitOnTheRailway
 
         assertTrue(awaitWhy(panel), "the why answer never landed");
 
-        pump();
+        Components.drain(1);
 
         return panel;
     }
@@ -972,9 +947,7 @@ public class testTheDiagramRefreshDoesNotWaitOnTheRailway
     private static boolean awaitWhy(org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel panel) throws Exception
     {
         java.lang.reflect.Method waiting =
-            org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel.class.getDeclaredMethod("awaitWhy", long.class);
-
-        waiting.setAccessible(true);
+            Reflect.method(org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel.class, "awaitWhy", long.class);
 
         return (Boolean) waiting.invoke(panel, 60000L);
     }
@@ -987,9 +960,7 @@ public class testTheDiagramRefreshDoesNotWaitOnTheRailway
         throws Exception
     {
         java.lang.reflect.Field label =
-            org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel.class.getDeclaredField("hint");
-
-        label.setAccessible(true);
+            Reflect.field(org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel.class, "hint");
 
         String said = ((javax.swing.JLabel) label.get(panel)).getText();
 
@@ -1217,10 +1188,5 @@ public class testTheDiagramRefreshDoesNotWaitOnTheRailway
         }
 
         return "    (no event thread found at all)";
-    }
-
-    private static void pump() throws Exception
-    {
-        SwingUtilities.invokeAndWait(() -> { });
     }
 }

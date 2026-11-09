@@ -44,6 +44,7 @@ import org.traincontrol.util.I18n;
 import org.traincontrol.util.Util;
 import support.Answering;
 import support.Components;
+import support.Reflect;
 
 /**
  * File &gt; Restore from Backup puts back what Backup TrainControl Data wrote, keeps a backup of the data it replaces,
@@ -887,14 +888,10 @@ public class testRestoreFromBackup
      */
     private void onACentralStation(java.util.concurrent.Callable<?> work) throws Exception
     {
-        java.lang.reflect.Field simulation = MarklinControlStation.class.getDeclaredField("simulation");
-
-        simulation.setAccessible(true);
+        java.lang.reflect.Field simulation = Reflect.field(MarklinControlStation.class, "simulation");
 
         // A message counted, so the window's watch for a silent station does not raise its warning mid-claim
-        java.lang.reflect.Field counted = MarklinControlStation.class.getDeclaredField("numMessagesProcessed");
-
-        counted.setAccessible(true);
+        java.lang.reflect.Field counted = Reflect.field(MarklinControlStation.class, "numMessagesProcessed");
 
         boolean simulationWas = simulation.getBoolean(model);
 

@@ -5,7 +5,6 @@ import java.util.function.BooleanSupplier;
 import javax.swing.SwingUtilities;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertTrue;
-import org.testng.SkipException;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
@@ -14,6 +13,10 @@ import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.marklin.MarklinRoute;
 import org.traincontrol.util.I18n;
 import static org.traincontrol.marklin.MarklinControlStation.init;
+import support.Display;
+import support.Reflect;
+import support.Teardown;
+import static support.Settle.until;
 
 /**
  * Turning automatic execution on or off for a route the Central Station never carried does not sync with it (MT-467):
@@ -39,10 +42,7 @@ public class testYourOwnRoutesToggleWithoutASync
     @BeforeClass
     public static void setUpClass() throws Exception
     {
-        if (java.awt.GraphicsEnvironment.isHeadless())
-        {
-            throw new SkipException("the main window needs a display");
-        }
+        Display.needed("the main window needs a display");
 
         sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
 
@@ -64,19 +64,10 @@ public class testYourOwnRoutesToggleWithoutASync
             {
                 if (name.startsWith(PREFIX)) model.deleteRoute(name);
             }
-
-            if (ui != null)
-            {
-                final TrainControlUI closing = ui;
-
-                SwingUtilities.invokeAndWait(() -> closing.dispose());
-            }
-
-            if (model != null) model.stop();
         }
         finally
         {
-            if (sandbox != null) sandbox.close();
+            Teardown.close(sandbox, model, ui);
         }
     }
 
@@ -97,7 +88,7 @@ public class testYourOwnRoutesToggleWithoutASync
 
             ui.enableOrDisableRoute(own, true);
 
-            assertTrue(waitFor(() -> isEnabled(own), 10000), "precondition: the toggle never reached the route");
+            assertTrue(until(() -> isEnabled(own), 10000), "precondition: the toggle never reached the route");
 
             settle();
 
@@ -109,7 +100,7 @@ public class testYourOwnRoutesToggleWithoutASync
             // THE CONTROL: a route the station carried still syncs, so a sync is something this test can see.
             ui.enableOrDisableRoute(station, true);
 
-            assertTrue(waitFor(() -> syncsAskedFor() > before, 10000), "a route the Central Station carried was"
+            assertTrue(until(() -> syncsAskedFor() > before, 10000), "a route the Central Station carried was"
                 + " toggled and no sync was asked for, so this test cannot see a sync at all and the claim above"
                 + " says nothing");
         }
@@ -139,13 +130,13 @@ public class testYourOwnRoutesToggleWithoutASync
             // delete-and-re-add over the same database, which is not what this is about.
             ui.enableOrDisableMatching(PREFIX + "bulk f", true);
 
-            assertTrue(waitFor(() -> isEnabled(first), 10000), "precondition: the first batch never reached its route");
+            assertTrue(until(() -> isEnabled(first), 10000), "precondition: the first batch never reached its route");
 
             settle();
 
             ui.enableOrDisableMatching(PREFIX + "bulk s", true);
 
-            assertTrue(waitFor(() -> isEnabled(second) && isEnabled(station), 10000),
+            assertTrue(until(() -> isEnabled(second) && isEnabled(station), 10000),
                 "precondition: the second batch never reached its routes");
 
             settle();
@@ -198,11 +189,7 @@ public class testYourOwnRoutesToggleWithoutASync
             {
                 try
                 {
-                    java.lang.reflect.Field area = TrainControlUI.class.getDeclaredField("debugArea");
-
-                    area.setAccessible(true);
-
-                    text[0] = ((javax.swing.JTextArea) area.get(ui)).getText();
+                    text[0] = ((javax.swing.JTextArea) Reflect.get(TrainControlUI.class, ui, "debugArea")).getText();
                 }
                 catch (ReflectiveOperationException e)
                 {
@@ -230,9 +217,7 @@ public class testYourOwnRoutesToggleWithoutASync
      */
     private static void holdTheSync(boolean held) throws Exception
     {
-        java.lang.reflect.Field field = TrainControlUI.class.getDeclaredField("syncInFlight");
-
-        field.setAccessible(true);
+        java.lang.reflect.Field field = Reflect.field(TrainControlUI.class, "syncInFlight");
 
         java.util.concurrent.atomic.AtomicBoolean flag = (java.util.concurrent.atomic.AtomicBoolean) field.get(ui);
 
@@ -243,7 +228,7 @@ public class testYourOwnRoutesToggleWithoutASync
             return;
         }
 
-        assertTrue(waitFor(() -> flag.compareAndSet(false, true), 60000),
+        assertTrue(until(() -> flag.compareAndSet(false, true), 60000),
             "precondition: a sync has been running for a minute, so the flag cannot be taken");
     }
 
@@ -256,19 +241,5 @@ public class testYourOwnRoutesToggleWithoutASync
         Thread.sleep(1500);
 
         SwingUtilities.invokeAndWait(() -> { });
-    }
-
-    private static boolean waitFor(BooleanSupplier condition, long millis) throws Exception
-    {
-        long until = System.currentTimeMillis() + millis;
-
-        while (System.currentTimeMillis() < until)
-        {
-            if (condition.getAsBoolean()) return true;
-
-            Thread.sleep(50);
-        }
-
-        return condition.getAsBoolean();
     }
 }

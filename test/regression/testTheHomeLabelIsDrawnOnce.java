@@ -5,7 +5,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import static org.testng.Assert.*;
-import org.testng.SkipException;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
@@ -18,6 +17,8 @@ import org.traincontrol.gui.widgets.StationCaption;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;
 import static org.traincontrol.marklin.MarklinControlStation.init;
+import support.Display;
+import support.Teardown;
 
 /**
  * MT-337, second half: a station named twice draws its home locomotive twice.  The home appears once, on the caption
@@ -97,10 +98,7 @@ public class testTheHomeLabelIsDrawnOnce
     @BeforeClass
     public static void setUpClass() throws Exception
     {
-        if (java.awt.GraphicsEnvironment.isHeadless())
-        {
-            throw new SkipException("reading what the editor drew needs a display");
-        }
+        Display.needed("reading what the editor drew needs a display");
 
         // The operator's own railway, COPIED: the frozen `live-snapshot` (OB-111), never written in place.  It carries
         // a doubly captioned station, and reading the live folder made a sibling class red when his trains moved.
@@ -229,23 +227,7 @@ public class testTheHomeLabelIsDrawnOnce
     @AfterClass(alwaysRun = true)
     public static void tearDownClass() throws Exception
     {
-        if (editor != null)
-        {
-            final LayoutEditor closing = editor;
-
-            javax.swing.SwingUtilities.invokeAndWait(() -> closing.dispose());
-        }
-
-        if (ui != null)
-        {
-            final TrainControlUI closing = ui;
-
-            javax.swing.SwingUtilities.invokeAndWait(() -> closing.dispose());
-        }
-
-        if (model != null) model.stop();
-
-        if (sandbox != null) sandbox.close();
+        Teardown.close(sandbox, model, editor, ui);
     }
 
     /** The defect: one station, two captions, one home written on the diagram twice. */

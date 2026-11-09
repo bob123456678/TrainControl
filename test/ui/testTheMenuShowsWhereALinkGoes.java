@@ -1,7 +1,6 @@
 package ui;
 
 import static org.testng.Assert.*;
-import org.testng.SkipException;
 import org.testng.annotations.Test;
 import org.traincontrol.automationui.AutonomySession;
 import org.traincontrol.automationui.TileGraph.TileKey;
@@ -9,6 +8,9 @@ import org.traincontrol.base.Accessory.accessoryDecoderType;
 import org.traincontrol.base.LayoutDiagram;
 import org.traincontrol.base.LayoutDiagramComponent.componentType;
 import org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel;
+import support.Diagrams;
+import support.Display;
+import support.Trees;
 
 /**
  * FR-056: right-clicking a tunnel flashes the square it is joined to, limited to a partner on the page being looked at:
@@ -44,10 +46,10 @@ public class testTheMenuShowsWhereALinkGoes
 
         // A tunnel at orientation 0 opens to the south, so the track it meets runs vertically.
         page.addComponent(componentType.TUNNEL, 1, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.STRAIGHT, 1, 2, 1, 0, 0, 0, accessoryDecoderType.MM2, null);
+        Diagrams.straight(page, 1, 2, 1);
 
         page.addComponent(componentType.TUNNEL, 5, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.STRAIGHT, 5, 2, 1, 0, 0, 0, accessoryDecoderType.MM2, null);
+        Diagrams.straight(page, 5, 2, 1);
 
         page.setPageId(name);
 
@@ -114,10 +116,7 @@ public class testTheMenuShowsWhereALinkGoes
     private static void onASession(String folderPrefix, String skipReason, OnTheSession claim, String... pageNames)
         throws Exception
     {
-        if (java.awt.GraphicsEnvironment.isHeadless())
-        {
-            throw new SkipException(skipReason);
-        }
+        Display.needed(skipReason);
 
         java.io.File layout = java.nio.file.Files.createTempDirectory(folderPrefix).toFile();
 
@@ -135,7 +134,7 @@ public class testTheMenuShowsWhereALinkGoes
         }
         finally
         {
-            deleteTree(layout);
+            Trees.delete(layout);
         }
     }
 
@@ -164,19 +163,6 @@ public class testTheMenuShowsWhereALinkGoes
         }
 
         return out.toString();
-    }
-
-    /** Removes a temporary folder and everything in it. */
-    private static void deleteTree(java.io.File where)
-    {
-        java.io.File[] children = where.listFiles();
-
-        if (children != null)
-        {
-            for (java.io.File child : children) deleteTree(child);
-        }
-
-        where.delete();
     }
 
     /**

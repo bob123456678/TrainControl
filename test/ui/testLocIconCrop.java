@@ -4,6 +4,9 @@ import java.io.File;
 import static org.testng.Assert.*;
 import org.testng.annotations.Test;
 import org.traincontrol.gui.TrainControlUI;
+import support.Components;
+import support.Reflect;
+import support.Settle;
 import support.SourceOf;
 
 /**
@@ -536,10 +539,9 @@ public class testLocIconCrop
             "the rectangle at full zoom-out no longer overhangs the source, so this test is not "
             + "exercising the branch it is about: " + region);
 
-        java.lang.reflect.Method contentOf = org.traincontrol.gui.locomotive.LocIconCropDialog.CropPanel.class
-            .getDeclaredMethod("contentOf", java.awt.Rectangle.class);
-
-        contentOf.setAccessible(true);
+        java.lang.reflect.Method contentOf =
+            Reflect.method(org.traincontrol.gui.locomotive.LocIconCropDialog.CropPanel.class,
+                "contentOf", java.awt.Rectangle.class);
 
         java.awt.image.BufferedImage cut =
             (java.awt.image.BufferedImage) contentOf.invoke(panel, region);
@@ -651,10 +653,7 @@ public class testLocIconCrop
             final org.traincontrol.marklin.MarklinLocomotive loc = new org.traincontrol.marklin.MarklinLocomotive(model,
                 84, org.traincontrol.marklin.MarklinLocomotive.decoderType.MM2, "FR-104 wrench");
 
-            java.lang.reflect.Field active = TrainControlUI.class.getDeclaredField("activeLoc");
-
-            active.setAccessible(true);
-            active.set(ui, loc);
+            Reflect.set(TrainControlUI.class, ui, "activeLoc", loc);
 
             javax.swing.SwingUtilities.invokeAndWait(() -> wrench.dispatchEvent(new java.awt.event.MouseEvent(wrench,
                 java.awt.event.MouseEvent.MOUSE_RELEASED, System.currentTimeMillis(), java.awt.event.InputEvent.BUTTON1_MASK,
@@ -746,9 +745,7 @@ public class testLocIconCrop
 
             javax.swing.SwingUtilities.invokeAndWait(ok::doClick);
 
-            long giveUp = System.currentTimeMillis() + 10000;
-
-            while (loc.getLocalImageURL() == null && System.currentTimeMillis() < giveUp) Thread.sleep(50);
+            Settle.until(() -> !(loc.getLocalImageURL() == null), 10000);
 
             crop = loc.getLocalImageURL();
 
@@ -776,10 +773,8 @@ public class testLocIconCrop
                 + " from is not the whole of the Central Station's picture");
 
             // AND THE MARK IS OFFERED OVER SUCH A PICTURE - and over no picture at all, nothing
-            java.lang.reflect.Method offers = TrainControlUI.class.getDeclaredMethod("offersACrop",
-                org.traincontrol.base.Locomotive.class);
-
-            offers.setAccessible(true);
+            java.lang.reflect.Method offers =
+                Reflect.method(TrainControlUI.class, "offersACrop", org.traincontrol.base.Locomotive.class);
 
             loc.setLocalImageURL(null);
 
@@ -864,10 +859,7 @@ public class testLocIconCrop
 
             loc.setLocalImageURL(goodUrl);
 
-            java.lang.reflect.Field active = TrainControlUI.class.getDeclaredField("activeLoc");
-
-            active.setAccessible(true);
-            active.set(ui, loc);
+            Reflect.set(TrainControlUI.class, ui, "activeLoc", loc);
 
             // CROP UNTICKED, as the chooser opens
             prefs.putBoolean(TrainControlUI.CROP_LOC_ICON_PREF, false);
@@ -890,7 +882,7 @@ public class testLocIconCrop
             assertEquals(said.get(0), org.traincontrol.util.I18n.f("loc.ui.errorPictureCouldNotBeRead",
                 unreadable.getName()), "the refusal does not name the picture");
 
-            settle();
+            Components.drain(4);
 
             assertEquals(loc.getLocalImageURL(), goodUrl, "an unreadable picture replaced the locomotive's icon");
 
@@ -958,11 +950,7 @@ public class testLocIconCrop
 
     private static <T> T field(Object owner, String name, Class<T> type) throws Exception
     {
-        java.lang.reflect.Field f = owner.getClass().getDeclaredField(name);
-
-        f.setAccessible(true);
-
-        return type.cast(f.get(owner));
+        return type.cast(Reflect.get(owner.getClass(), owner, name));
     }
 
     /** A file chooser showing in a window, within the time, or null. */
@@ -1096,9 +1084,8 @@ public class testLocIconCrop
         org.traincontrol.marklin.MarklinControlStation model = null;
         TrainControlUI ui = null;
 
-        java.lang.reflect.Field power = org.traincontrol.marklin.MarklinControlStation.class.getDeclaredField("powerState");
-
-        power.setAccessible(true);
+        java.lang.reflect.Field power =
+            Reflect.field(org.traincontrol.marklin.MarklinControlStation.class, "powerState");
 
         try
         {
@@ -1111,15 +1098,11 @@ public class testLocIconCrop
 
             final TrainControlUI window = ui;
 
-            java.lang.reflect.Field active = TrainControlUI.class.getDeclaredField("activeLoc");
-
-            active.setAccessible(true);
+            java.lang.reflect.Field active = Reflect.field(TrainControlUI.class, "activeLoc");
             active.set(ui, new org.traincontrol.marklin.MarklinLocomotive(model, 88,
                 org.traincontrol.marklin.MarklinLocomotive.decoderType.MM2, "RSA89 start-up"));
 
-            java.lang.reflect.Method offers = TrainControlUI.class.getDeclaredMethod("offersTheIconTools");
-
-            offers.setAccessible(true);
+            java.lang.reflect.Method offers = Reflect.method(TrainControlUI.class, "offersTheIconTools");
 
             java.lang.reflect.Field heard = TrainControlUI.class.getDeclaredField("powerHeard");
             java.lang.reflect.Field atStartUp = TrainControlUI.class.getDeclaredField("poweredOnAtStartUp");
@@ -1223,9 +1206,8 @@ public class testLocIconCrop
         org.traincontrol.marklin.MarklinControlStation model = null;
         TrainControlUI ui = null;
 
-        java.lang.reflect.Field power = org.traincontrol.marklin.MarklinControlStation.class.getDeclaredField("powerState");
-
-        power.setAccessible(true);
+        java.lang.reflect.Field power =
+            Reflect.field(org.traincontrol.marklin.MarklinControlStation.class, "powerState");
 
         java.util.prefs.Preferences prefs = TrainControlUI.getPrefs();
 
@@ -1244,22 +1226,18 @@ public class testLocIconCrop
 
             final javax.swing.JLabel picture = field(ui, "locIcon", javax.swing.JLabel.class);
 
-            java.lang.reflect.Field active = TrainControlUI.class.getDeclaredField("activeLoc");
-
-            active.setAccessible(true);
+            java.lang.reflect.Field active = Reflect.field(TrainControlUI.class, "activeLoc");
             active.set(ui, new org.traincontrol.marklin.MarklinLocomotive(model, 87,
                 org.traincontrol.marklin.MarklinLocomotive.decoderType.MM2, "MT-591 power"));
 
-            java.lang.reflect.Method offers = TrainControlUI.class.getDeclaredMethod("offersTheIconTools");
-
-            offers.setAccessible(true);
+            java.lang.reflect.Method offers = Reflect.method(TrainControlUI.class, "offersTheIconTools");
 
             // THE POWER ON, told as the station tells it
             power.set(model, true);
 
             ui.updatePowerState();
 
-            settle();
+            Components.drain(4);
 
             assertFalse((Boolean) offers.invoke(ui), "the picture's tools are offered while the power is on (MT-591)");
 
@@ -1283,7 +1261,7 @@ public class testLocIconCrop
 
             ui.updatePowerState();
 
-            settle();
+            Components.drain(4);
 
             assertTrue((Boolean) offers.invoke(ui), "the picture's tools are not offered with the power off");
 
@@ -1303,7 +1281,7 @@ public class testLocIconCrop
 
             ui.repaintLoc();
 
-            settle();
+            Components.drain(4);
 
             assertNull(picture.getToolTipText(), "with no locomotive, the picture still says to right-click it");
         }
@@ -1348,23 +1326,17 @@ public class testLocIconCrop
 
             ui = windowOver(model);
 
-            settle();
+            Components.drain(4);
 
             final javax.swing.JLabel wrench = field(ui, "iconWrench", javax.swing.JLabel.class);
             final javax.swing.JLabel revert = field(ui, "iconRevert", javax.swing.JLabel.class);
 
-            java.lang.reflect.Field active = TrainControlUI.class.getDeclaredField("activeLoc");
+            java.lang.reflect.Field active = Reflect.field(TrainControlUI.class, "activeLoc");
 
-            active.setAccessible(true);
+            java.lang.reflect.Method fit = Reflect.method(TrainControlUI.class, "fitTheIconTools");
 
-            java.lang.reflect.Method fit = TrainControlUI.class.getDeclaredMethod("fitTheIconTools");
-
-            fit.setAccessible(true);
-
-            java.lang.reflect.Method reverts = TrainControlUI.class.getDeclaredMethod("revertsInstead",
-                org.traincontrol.base.Locomotive.class);
-
-            reverts.setAccessible(true);
+            java.lang.reflect.Method reverts =
+                Reflect.method(TrainControlUI.class, "revertsInstead", org.traincontrol.base.Locomotive.class);
 
             final TrainControlUI window = ui;
 
@@ -1426,9 +1398,7 @@ public class testLocIconCrop
                 java.awt.event.MouseEvent.MOUSE_RELEASED, System.currentTimeMillis(), java.awt.event.InputEvent.BUTTON1_MASK,
                 5, 5, 1, false, java.awt.event.MouseEvent.BUTTON1)));
 
-            long giveUp = System.currentTimeMillis() + 10000;
-
-            while (replaced.getLocalImageURL() != null && System.currentTimeMillis() < giveUp) Thread.sleep(50);
+            Settle.until(() -> !(replaced.getLocalImageURL() != null), 10000);
 
             assertNull(replaced.getLocalImageURL(), "a click on the revert did not clear the icon of this computer's"
                 + " (MT-591)");
@@ -1473,13 +1443,11 @@ public class testLocIconCrop
 
             ui = windowOver(model);
 
-            settle();
+            Components.drain(4);
 
             final javax.swing.JLabel wrench = field(ui, "iconWrench", javax.swing.JLabel.class);
 
-            java.lang.reflect.Field active = TrainControlUI.class.getDeclaredField("activeLoc");
-
-            active.setAccessible(true);
+            java.lang.reflect.Field active = Reflect.field(TrainControlUI.class, "activeLoc");
 
             // A name of its own in the icon folder, which is the real one (see the first claim of this class)
             ours = org.traincontrol.util.Util.getLocIconFile("fr142_test_" + java.util.UUID.randomUUID() + ".png");
@@ -1578,11 +1546,7 @@ public class testLocIconCrop
 
         javax.swing.Icon revert = (javax.swing.Icon) made.newInstance();
 
-        java.lang.reflect.Method head = mark.getDeclaredMethod("head");
-
-        head.setAccessible(true);
-
-        java.awt.Shape shape = (java.awt.Shape) head.invoke(null);
+        java.awt.Shape shape = (java.awt.Shape) Reflect.method(mark, "head").invoke(null);
 
         java.awt.geom.Rectangle2D bounds = shape.getBounds2D();
 
@@ -1621,11 +1585,6 @@ public class testLocIconCrop
         }
     }
 
-    private static void settle() throws Exception
-    {
-        for (int pass = 0; pass < 4; pass++) javax.swing.SwingUtilities.invokeAndWait(() -> { });
-    }
-
     /**
      * The crop window is owned by the window it is given (MT-703): `crop` asked for the window AROUND its parent, and
      * the main window has none, so the modal crop window opened under an always-on-top main window.
@@ -1635,10 +1594,8 @@ public class testLocIconCrop
     @Test
     public void testTheCropWindowIsOwnedByTheWindowItIsGiven() throws Exception
     {
-        java.lang.reflect.Method ownerOf = org.traincontrol.gui.locomotive.LocIconCropDialog.class.getDeclaredMethod("ownerOf",
-            java.awt.Component.class);
-
-        ownerOf.setAccessible(true);
+        java.lang.reflect.Method ownerOf = Reflect.method(org.traincontrol.gui.locomotive.LocIconCropDialog.class,
+            "ownerOf", java.awt.Component.class);
 
         final javax.swing.JFrame[] frame = new javax.swing.JFrame[1];
 

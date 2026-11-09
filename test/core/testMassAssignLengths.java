@@ -21,7 +21,10 @@ import org.traincontrol.base.LayoutDiagram;
 import org.traincontrol.base.LayoutDiagramComponent.componentType;
 import org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel;
 import org.traincontrol.gui.autonomyeditor.StationSettingsWindow;
+import support.Diagrams;
+import support.Reflect;
 import support.SourceOf;
+import support.Trees;
 
 /**
  * Mass Assign Lengths and the Unmeasured Track display: which squares they ask for, and how a piece's whole length is
@@ -46,7 +49,7 @@ public class testMassAssignLengths
     @AfterMethod
     public void tearDown()
     {
-        delete(folder);
+        Trees.delete(folder);
     }
 
     /**
@@ -166,11 +169,11 @@ public class testMassAssignLengths
         // trail it only, from 5,1 to 1,1.
         LayoutDiagram page = new LayoutDiagram("main", 9, 4, null, null);
 
-        page.addComponent(componentType.FEEDBACK, 1, 1, 0, 0, 5, 11, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.STRAIGHT, 2, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
+        Diagrams.feedback(page, 1, 1, 5, 11);
+        Diagrams.straight(page, 2, 1);
         page.addComponent(componentType.CUSTOM_PERM_LEFT, 3, 1, 3, 0, 0, 0, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.STRAIGHT, 4, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.FEEDBACK, 5, 1, 0, 0, 6, 12, accessoryDecoderType.MM2, null);
+        Diagrams.straight(page, 4, 1);
+        Diagrams.feedback(page, 5, 1, 6, 12);
 
         page.setPageId("1");
 
@@ -392,9 +395,7 @@ public class testMassAssignLengths
 
         session.setTileLength(key(4, 1), 3);
 
-        java.lang.reflect.Method setupChanged = AutonomyEditorPanel.class.getDeclaredMethod("setupChanged");
-        setupChanged.setAccessible(true);
-        setupChanged.invoke(panel);
+        Reflect.method(AutonomyEditorPanel.class, "setupChanged").invoke(panel);
 
         assertFalse(marked(panel, key(4, 1)), "the square was measured through Control+E's path and is still amber");
         assertFalse(marked(panel, key(5, 1)), "the rest of a piece that now has a length is still amber");
@@ -1167,9 +1168,7 @@ public class testMassAssignLengths
                 assertTrue(oneWay.isSelected() && String.valueOf(hintOf(main)).contains(first), "precondition: One-Way Run"
                     + " did not arm on " + MAIN + ", or does not ask for the first square: " + hintOf(main));
 
-                java.lang.reflect.Field boxField = AutonomyEditorPanel.class.getDeclaredField("excludePage");
-
-                boxField.setAccessible(true);
+                java.lang.reflect.Field boxField = Reflect.field(AutonomyEditorPanel.class, "excludePage");
 
                 final javax.swing.AbstractButton box = (javax.swing.AbstractButton) boxField.get(main);
 
@@ -1213,11 +1212,7 @@ public class testMassAssignLengths
 
     private static javax.swing.AbstractButton oneWayButtonOf(AutonomyEditorPanel panel) throws Exception
     {
-        java.lang.reflect.Field field = AutonomyEditorPanel.class.getDeclaredField("oneWayButton");
-
-        field.setAccessible(true);
-
-        return (javax.swing.AbstractButton) field.get(panel);
+        return (javax.swing.AbstractButton) Reflect.get(AutonomyEditorPanel.class, panel, "oneWayButton");
     }
 
     private static String stripped(String html)
@@ -1370,11 +1365,7 @@ public class testMassAssignLengths
 
     private static String hintOf(AutonomyEditorPanel panel) throws Exception
     {
-        java.lang.reflect.Field hintField = AutonomyEditorPanel.class.getDeclaredField("hint");
-
-        hintField.setAccessible(true);
-
-        String text = ((javax.swing.JLabel) hintField.get(panel)).getText();
+        String text = ((javax.swing.JLabel) Reflect.get(AutonomyEditorPanel.class, panel, "hint")).getText();
 
         return text == null ? null : text.replaceAll("<[^>]*>", "").replace("&lt;", "<").replace("&gt;", ">")
             .replace("&amp;", "&").trim();
@@ -1383,9 +1374,7 @@ public class testMassAssignLengths
     @SuppressWarnings("unchecked")
     private static Set<TileKey> selectionOf(AutonomyEditorPanel panel) throws Exception
     {
-        java.lang.reflect.Field field = AutonomyEditorPanel.class.getDeclaredField("selection");
-
-        field.setAccessible(true);
+        java.lang.reflect.Field field = Reflect.field(AutonomyEditorPanel.class, "selection");
 
         final Set<TileKey> out = new java.util.LinkedHashSet<>();
 
@@ -1406,11 +1395,7 @@ public class testMassAssignLengths
 
     private static String nameForPrompt(AutonomyEditorPanel panel, TileKey tile) throws Exception
     {
-        java.lang.reflect.Method name = AutonomyEditorPanel.class.getDeclaredMethod("nameForPrompt", TileKey.class);
-
-        name.setAccessible(true);
-
-        return (String) name.invoke(panel, tile);
+        return (String) Reflect.method(AutonomyEditorPanel.class, "nameForPrompt", TileKey.class).invoke(panel, tile);
     }
 
     private static Object initialValueOf(final javax.swing.JDialog dialog) throws Exception
@@ -1671,11 +1656,11 @@ public class testMassAssignLengths
     {
         LayoutDiagram page = new LayoutDiagram("main", 9, 4, null, null);
 
-        page.addComponent(componentType.FEEDBACK, 1, 1, 0, 0, 5, 11, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.STRAIGHT, 2, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
+        Diagrams.feedback(page, 1, 1, 5, 11);
+        Diagrams.straight(page, 2, 1);
         page.addComponent(componentType.SWITCH_LEFT, 3, 1, 3, 0, 7, 7, accessoryDecoderType.MM2, null);
         page.addComponent(componentType.ROUTE, 4, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.FEEDBACK, 5, 1, 0, 0, 6, 12, accessoryDecoderType.MM2, null);
+        Diagrams.feedback(page, 5, 1, 6, 12);
         page.addComponent(componentType.FEEDBACK, 3, 0, 1, 0, 7, 13, accessoryDecoderType.MM2, null);
 
         wire(page, 3, 1, 7);
@@ -1711,11 +1696,11 @@ public class testMassAssignLengths
     {
         LayoutDiagram page = new LayoutDiagram("main", 9, 4, null, null);
 
-        page.addComponent(componentType.FEEDBACK, 1, 1, 0, 0, 5, 11, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.STRAIGHT, 2, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
+        Diagrams.feedback(page, 1, 1, 5, 11);
+        Diagrams.straight(page, 2, 1);
         page.addComponent(componentType.ROUTE, 3, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.STRAIGHT, 4, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.FEEDBACK, 5, 1, 0, 0, 6, 12, accessoryDecoderType.MM2, null);
+        Diagrams.straight(page, 4, 1);
+        Diagrams.feedback(page, 5, 1, 6, 12);
 
         page.setPageId("1");
 
@@ -1842,9 +1827,7 @@ public class testMassAssignLengths
     {
         openTwoSwitchesBackToBack();
 
-        java.lang.reflect.Method asked = AutonomySession.class.getDeclaredMethod("piecesToMeasure");
-
-        asked.setAccessible(true);
+        java.lang.reflect.Method asked = Reflect.method(AutonomySession.class, "piecesToMeasure");
 
         java.util.Map<TileKey, String> keys = (java.util.Map<TileKey, String>) asked.invoke(session);
 
@@ -1869,11 +1852,7 @@ public class testMassAssignLengths
 
     private org.json.JSONObject inspected() throws Exception
     {
-        java.lang.reflect.Method built = AutonomySession.class.getDeclaredMethod("builtForInspection");
-
-        built.setAccessible(true);
-
-        return (org.json.JSONObject) built.invoke(session);
+        return (org.json.JSONObject) Reflect.method(AutonomySession.class, "builtForInspection").invoke(session);
     }
 
     private static org.json.JSONArray placesEndingAt(org.json.JSONObject built, String end)
@@ -1916,11 +1895,11 @@ public class testMassAssignLengths
 
         LayoutDiagram page = new LayoutDiagram("main", 9, 4, null, null);
 
-        page.addComponent(componentType.FEEDBACK, 1, 1, 0, 0, 5, 11, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.STRAIGHT, 2, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
+        Diagrams.feedback(page, 1, 1, 5, 11);
+        Diagrams.straight(page, 2, 1);
         page.addComponent(componentType.ROUTE, 3, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.STRAIGHT, 4, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.FEEDBACK, 5, 1, 0, 0, 6, 12, accessoryDecoderType.MM2, null);
+        Diagrams.straight(page, 4, 1);
+        Diagrams.feedback(page, 5, 1, 6, 12);
 
         page.setPageId("1");
 
@@ -1949,12 +1928,12 @@ public class testMassAssignLengths
     {
         LayoutDiagram page = new LayoutDiagram("main", 9, 4, null, null);
 
-        page.addComponent(componentType.FEEDBACK, 1, 1, 0, 0, 5, 11, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.STRAIGHT, 2, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
+        Diagrams.feedback(page, 1, 1, 5, 11);
+        Diagrams.straight(page, 2, 1);
         page.addComponent(componentType.ROUTE, 3, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.FEEDBACK, 4, 1, 0, 0, 6, 12, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.STRAIGHT, 5, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.FEEDBACK, 6, 1, 0, 0, 7, 13, accessoryDecoderType.MM2, null);
+        Diagrams.feedback(page, 4, 1, 6, 12);
+        Diagrams.straight(page, 5, 1);
+        Diagrams.feedback(page, 6, 1, 7, 13);
 
         page.setPageId("1");
 
@@ -2021,9 +2000,9 @@ public class testMassAssignLengths
         LayoutDiagram page = new LayoutDiagram("main", 6, 6, null, null);
 
         page.addComponent(componentType.FEEDBACK, 2, 1, 1, 0, 21, 21, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.FEEDBACK, 1, 2, 0, 0, 22, 22, accessoryDecoderType.MM2, null);
+        Diagrams.feedback(page, 1, 2, 22, 22);
         page.addComponent(componentType.ROUTE, 2, 2, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.FEEDBACK, 3, 2, 0, 0, 23, 23, accessoryDecoderType.MM2, null);
+        Diagrams.feedback(page, 3, 2, 23, 23);
         page.addComponent(componentType.FEEDBACK, 2, 3, 1, 0, 24, 24, accessoryDecoderType.MM2, null);
 
         page.setPageId("1");
@@ -2083,8 +2062,7 @@ public class testMassAssignLengths
     /** Starts the named mass-assign walk of the panel on the event thread without waiting for it, as its menu item does. */
     private static void startTheWalk(final AutonomyEditorPanel panel, String name) throws Exception
     {
-        final java.lang.reflect.Method walk = AutonomyEditorPanel.class.getDeclaredMethod(name);
-        walk.setAccessible(true);
+        final java.lang.reflect.Method walk = Reflect.method(AutonomyEditorPanel.class, name);
 
         javax.swing.SwingUtilities.invokeLater(() ->
         {
@@ -2453,9 +2431,7 @@ public class testMassAssignLengths
 
         final AutonomyEditorPanel panel = new AutonomyEditorPanel(session, "main", () -> { });
 
-        java.lang.reflect.Field field = AutonomyEditorPanel.class.getDeclaredField("oneWayButton");
-
-        field.setAccessible(true);
+        java.lang.reflect.Field field = Reflect.field(AutonomyEditorPanel.class, "oneWayButton");
 
         final javax.swing.AbstractButton oneWay = (javax.swing.AbstractButton) field.get(panel);
 
@@ -2474,19 +2450,13 @@ public class testMassAssignLengths
         assertFalse(oneWay.isSelected(), "One-Way Run was left armed on a page left out of autonomy - a click there waits"
             + " for its second square (OB-235)");
 
-        java.lang.reflect.Field toolField = AutonomyEditorPanel.class.getDeclaredField("tool");
-
-        toolField.setAccessible(true);
+        java.lang.reflect.Field toolField = Reflect.field(AutonomyEditorPanel.class, "tool");
 
         assertEquals(String.valueOf(toolField.get(panel)), "NONE", "the One-Way Run button was put down on a page left"
             + " out, and the tool it arms was not - tick the page back in and the next click starts a one-way run with"
             + " nothing pressed (TDD2-C7)");
 
-        java.lang.reflect.Field hintField = AutonomyEditorPanel.class.getDeclaredField("hint");
-
-        hintField.setAccessible(true);
-
-        String hint = ((javax.swing.JLabel) hintField.get(panel)).getText();
+        String hint = ((javax.swing.JLabel) Reflect.get(AutonomyEditorPanel.class, panel, "hint")).getText();
 
         assertFalse(hint != null && hint.contains(org.traincontrol.util.I18n.t("autosetup.ui.promptOneWayFrom")),
             "One-Way Run was put down on a page left out and its prompt still asks for the first square (TDD2-C7): "
@@ -2705,11 +2675,11 @@ public class testMassAssignLengths
     {
         LayoutDiagram page = new LayoutDiagram("main", 9, 6, null, null);
 
-        page.addComponent(componentType.FEEDBACK, 1, 2, 0, 0, 5, 11, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.STRAIGHT, 2, 2, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
+        Diagrams.feedback(page, 1, 2, 5, 11);
+        Diagrams.straight(page, 2, 2);
         page.addComponent(componentType.CROSSING, 3, 2, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.STRAIGHT, 4, 2, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.FEEDBACK, 5, 2, 0, 0, 6, 12, accessoryDecoderType.MM2, null);
+        Diagrams.straight(page, 4, 2);
+        Diagrams.feedback(page, 5, 2, 6, 12);
 
         page.setPageId("1");
 
@@ -2738,15 +2708,15 @@ public class testMassAssignLengths
     {
         LayoutDiagram page = new LayoutDiagram("main", 9, 6, null, null);
 
-        page.addComponent(componentType.FEEDBACK, 1, 2, 0, 0, 5, 11, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.STRAIGHT, 2, 2, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
+        Diagrams.feedback(page, 1, 2, 5, 11);
+        Diagrams.straight(page, 2, 2);
         page.addComponent(componentType.CROSSING, 3, 2, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.STRAIGHT, 4, 2, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.FEEDBACK, 5, 2, 0, 0, 6, 12, accessoryDecoderType.MM2, null);
+        Diagrams.straight(page, 4, 2);
+        Diagrams.feedback(page, 5, 2, 6, 12);
 
         page.addComponent(componentType.FEEDBACK, 3, 0, 1, 0, 7, 13, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.STRAIGHT, 3, 1, 1, 0, 0, 0, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.STRAIGHT, 3, 3, 1, 0, 0, 0, accessoryDecoderType.MM2, null);
+        Diagrams.straight(page, 3, 1, 1);
+        Diagrams.straight(page, 3, 3, 1);
         page.addComponent(componentType.FEEDBACK, 3, 4, 1, 0, 8, 14, accessoryDecoderType.MM2, null);
 
         page.setPageId("1");
@@ -3243,10 +3213,8 @@ public class testMassAssignLengths
     @SuppressWarnings("unchecked")
     private java.util.Map<TileKey, int[]> runInsSaid() throws Exception
     {
-        java.lang.reflect.Method runIns = org.traincontrol.automationui.AutonomySession.class.getDeclaredMethod(
-            "runInsShorterThanTheBerth");
-
-        runIns.setAccessible(true);
+        java.lang.reflect.Method runIns =
+            Reflect.method(org.traincontrol.automationui.AutonomySession.class, "runInsShorterThanTheBerth");
 
         return (java.util.Map<TileKey, int[]>) runIns.invoke(session);
     }
@@ -3388,13 +3356,11 @@ public class testMassAssignLengths
     {
         LayoutDiagram page = new LayoutDiagram("main", 11, 4, null, null);
 
-        page.addComponent(componentType.FEEDBACK, 1, 1, 0, 0, 5, 11, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.STRAIGHT, 2, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
+        Diagrams.feedback(page, 1, 1, 5, 11);
+        Diagrams.straight(page, 2, 1);
         page.addComponent(atThree, 3, 1, 3, 0, 7, 7, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.STRAIGHT, 4, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.STRAIGHT, 5, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.STRAIGHT, 6, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.FEEDBACK, 7, 1, 0, 0, 6, 12, accessoryDecoderType.MM2, null);
+        Diagrams.row(page, 4, 1, "SSS");
+        Diagrams.feedback(page, 7, 1, 6, 12);
         page.addComponent(componentType.FEEDBACK, 3, 0, 1, 0, 7, 13, accessoryDecoderType.MM2, null);
 
         if (atThree == componentType.SWITCH_LEFT) wire(page, 3, 1, 7);
@@ -3426,8 +3392,8 @@ public class testMassAssignLengths
     {
         LayoutDiagram page = new LayoutDiagram("main", 11, 4, null, null);
 
-        page.addComponent(componentType.FEEDBACK, 1, 1, 0, 0, 5, 11, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.STRAIGHT, 2, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
+        Diagrams.feedback(page, 1, 1, 5, 11);
+        Diagrams.straight(page, 2, 1);
 
         if (withTheSwitch)
         {
@@ -3436,18 +3402,18 @@ public class testMassAssignLengths
         }
         else
         {
-            page.addComponent(componentType.STRAIGHT, 3, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
-            page.addComponent(componentType.FEEDBACK, 1, 0, 0, 0, 10, 16, accessoryDecoderType.MM2, null);
-            page.addComponent(componentType.STRAIGHT, 2, 0, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
-            page.addComponent(componentType.STRAIGHT, 3, 0, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
+            Diagrams.straight(page, 3, 1);
+            Diagrams.feedback(page, 1, 0, 10, 16);
+            Diagrams.straight(page, 2, 0);
+            Diagrams.straight(page, 3, 0);
         }
 
-        page.addComponent(componentType.STRAIGHT, 4, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
+        Diagrams.straight(page, 4, 1);
         page.addComponent(componentType.CROSSING, 5, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.STRAIGHT, 6, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.FEEDBACK, 7, 1, 0, 0, 6, 12, accessoryDecoderType.MM2, null);
+        Diagrams.straight(page, 6, 1);
+        Diagrams.feedback(page, 7, 1, 6, 12);
 
-        page.addComponent(componentType.FEEDBACK, 4, 0, 0, 0, 7, 13, accessoryDecoderType.MM2, null);
+        Diagrams.feedback(page, 4, 0, 7, 13);
         page.addComponent(componentType.CURVE, 5, 0, 3, 0, 0, 0, accessoryDecoderType.MM2, null);
         page.addComponent(componentType.FEEDBACK, 5, 2, 1, 0, 9, 15, accessoryDecoderType.MM2, null);
 
@@ -3471,13 +3437,11 @@ public class testMassAssignLengths
     {
         LayoutDiagram page = new LayoutDiagram("main", 11, 4, null, null);
 
-        page.addComponent(componentType.FEEDBACK, 1, 1, 0, 0, 5, 11, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.STRAIGHT, 2, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
+        Diagrams.feedback(page, 1, 1, 5, 11);
+        Diagrams.straight(page, 2, 1);
         page.addComponent(componentType.SWITCH_LEFT, 3, 1, 3, 0, 7, 7, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.STRAIGHT, 4, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.STRAIGHT, 5, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.STRAIGHT, 6, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.FEEDBACK, 7, 1, 0, 0, 6, 12, accessoryDecoderType.MM2, null);
+        Diagrams.row(page, 4, 1, "SSS");
+        Diagrams.feedback(page, 7, 1, 6, 12);
         page.addComponent(componentType.FEEDBACK, 3, 0, 1, 0, 7, 13, accessoryDecoderType.MM2, null);
 
         wire(page, 3, 1, 7);
@@ -3496,10 +3460,10 @@ public class testMassAssignLengths
     {
         LayoutDiagram page = new LayoutDiagram("main", 9, 4, null, null);
 
-        page.addComponent(componentType.FEEDBACK, 1, 1, 0, 0, 5, 11, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.STRAIGHT, 2, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.STRAIGHT, 3, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.FEEDBACK, 4, 1, 0, 0, 6, 12, accessoryDecoderType.MM2, null);
+        Diagrams.feedback(page, 1, 1, 5, 11);
+        Diagrams.straight(page, 2, 1);
+        Diagrams.straight(page, 3, 1);
+        Diagrams.feedback(page, 4, 1, 6, 12);
 
         page.setPageId("1");
 
@@ -3625,11 +3589,11 @@ public class testMassAssignLengths
     {
         LayoutDiagram page = new LayoutDiagram("main", 9, 4, null, null);
 
-        page.addComponent(componentType.FEEDBACK, 1, 1, 0, 0, 5, 11, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.STRAIGHT, 2, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
+        Diagrams.feedback(page, 1, 1, 5, 11);
+        Diagrams.straight(page, 2, 1);
         page.addComponent(componentType.SWITCH_LEFT, 3, 1, 3, 0, 7, 7, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.STRAIGHT, 4, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.FEEDBACK, 5, 1, 0, 0, 6, 12, accessoryDecoderType.MM2, null);
+        Diagrams.straight(page, 4, 1);
+        Diagrams.feedback(page, 5, 1, 6, 12);
         page.addComponent(componentType.FEEDBACK, 3, 0, 1, 0, 7, 13, accessoryDecoderType.MM2, null);
 
         wire(page, 3, 1, 7);
@@ -3648,11 +3612,11 @@ public class testMassAssignLengths
     {
         LayoutDiagram page = new LayoutDiagram("main", 9, 4, null, null);
 
-        page.addComponent(componentType.FEEDBACK, 1, 1, 0, 0, 5, 11, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.STRAIGHT, 2, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
+        Diagrams.feedback(page, 1, 1, 5, 11);
+        Diagrams.straight(page, 2, 1);
         page.addComponent(componentType.SWITCH_LEFT, 3, 1, 3, 0, 7, 7, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.STRAIGHT, 4, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.FEEDBACK, 5, 1, 0, 0, 6, 12, accessoryDecoderType.MM2, null);
+        Diagrams.straight(page, 4, 1);
+        Diagrams.feedback(page, 5, 1, 6, 12);
         page.addComponent(componentType.FEEDBACK, 3, 0, 1, 0, 7, 13, accessoryDecoderType.MM2, null);
 
         wire(page, 3, 1, 7);
@@ -3661,9 +3625,7 @@ public class testMassAssignLengths
 
         LayoutDiagram other = new LayoutDiagram("other", 9, 4, null, null);
 
-        other.addComponent(componentType.FEEDBACK, 1, 1, 0, 0, 21, 21, accessoryDecoderType.MM2, null);
-        other.addComponent(componentType.STRAIGHT, 2, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
-        other.addComponent(componentType.FEEDBACK, 3, 1, 0, 0, 22, 22, accessoryDecoderType.MM2, null);
+        Diagrams.row(other, 1, 1, "FSF", 21, 22);
 
         other.setPageId("2");
 
@@ -3679,10 +3641,10 @@ public class testMassAssignLengths
     {
         LayoutDiagram page = new LayoutDiagram("main", 9, 4, null, null);
 
-        page.addComponent(componentType.FEEDBACK, 1, 1, 0, 0, 5, 11, accessoryDecoderType.MM2, null);
+        Diagrams.feedback(page, 1, 1, 5, 11);
         page.addComponent(componentType.SWITCH_LEFT, 2, 1, 3, 0, 7, 7, accessoryDecoderType.MM2, null);
         page.addComponent(componentType.SWITCH_LEFT, 3, 1, 3, 0, 8, 8, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.FEEDBACK, 4, 1, 0, 0, 6, 12, accessoryDecoderType.MM2, null);
+        Diagrams.feedback(page, 4, 1, 6, 12);
         page.addComponent(componentType.FEEDBACK, 2, 0, 1, 0, 7, 13, accessoryDecoderType.MM2, null);
         page.addComponent(componentType.FEEDBACK, 3, 0, 1, 0, 8, 14, accessoryDecoderType.MM2, null);
 
@@ -3792,20 +3754,6 @@ public class testMassAssignLengths
         for (AutonomySession.Stretch stretch : stretches) out.append(stretch.getTiles()).append("; ");
 
         return out.append("]").toString();
-    }
-
-    private static void delete(File file)
-    {
-        if (file == null) return;
-
-        File[] children = file.listFiles();
-
-        if (children != null)
-        {
-            for (File child : children) delete(child);
-        }
-
-        file.delete();
     }
 
     /**
@@ -3919,17 +3867,17 @@ public class testMassAssignLengths
     {
         LayoutDiagram page = new LayoutDiagram("main", 9, 6, null, null);
 
-        page.addComponent(componentType.FEEDBACK, 1, 2, 0, 0, 5, 11, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.STRAIGHT, 2, 2, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
+        Diagrams.feedback(page, 1, 2, 5, 11);
+        Diagrams.straight(page, 2, 2);
         page.addComponent(componentType.CROSSING, 3, 2, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.STRAIGHT, 4, 2, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
+        Diagrams.straight(page, 4, 2);
 
         page.addComponent(componentType.CURVE, 5, 2, 2, 0, 0, 0, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.STRAIGHT, 5, 1, 1, 0, 0, 0, accessoryDecoderType.MM2, null);
+        Diagrams.straight(page, 5, 1, 1);
         page.addComponent(componentType.CURVE, 5, 0, 3, 0, 0, 0, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.STRAIGHT, 4, 0, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
+        Diagrams.straight(page, 4, 0);
         page.addComponent(componentType.CURVE, 3, 0, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.STRAIGHT, 3, 1, 1, 0, 0, 0, accessoryDecoderType.MM2, null);
+        Diagrams.straight(page, 3, 1, 1);
 
         // The second sensor sits directly below the crossing, so the crossing is the last intermediate square on the
         // leg: only then does the off-by-one (`i + 1 < leg.size() - 1`, dropping that square) differ from the rule.

@@ -18,6 +18,7 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 import org.traincontrol.automationui.AutonomyCompanionStore;
 import org.traincontrol.automationui.TileGraph.TileKey;
+import support.Trees;
 
 /**
  * Importing an export brings in only the pages this layout has, and says which it left out (MT-380).
@@ -44,8 +45,8 @@ public class testAnImportKeepsOnlyThisLayoutsPages
     @AfterMethod
     public void tearDown()
     {
-        delete(theirs);
-        delete(mine);
+        Trees.delete(theirs);
+        Trees.delete(mine);
     }
 
     /** A page the exporter had and this layout does not is left out: not recorded, not held, reported. */
@@ -453,19 +454,5 @@ public class testAnImportKeepsOnlyThisLayoutsPages
         assertTrue(all.length() > 0, "precondition: the save wrote no setup file under " + folder);
 
         return all.toString();
-    }
-
-    private static void delete(File file)
-    {
-        if (file == null || !file.exists()) return;
-
-        File[] children = file.listFiles();
-
-        if (children != null)
-        {
-            for (File child : children) delete(child);
-        }
-
-        file.delete();
     }
 }

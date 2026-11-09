@@ -36,6 +36,7 @@ import org.traincontrol.util.I18n;
 import org.traincontrol.util.Util;
 import support.Components;
 import support.Mouse;
+import support.Reflect;
 
 /**
  * Re-cropping a locomotive's icon from the crop mark over the picture: the crop window opens over the photograph, the
@@ -450,11 +451,7 @@ public class testRecroppingALocomotiveIcon
     /** Left-clicks the crop mark over the picture, and the crop window that opens. */
     private static JDialog openTheCrop() throws Exception
     {
-        java.lang.reflect.Field mark = TrainControlUI.class.getDeclaredField("cropOverlay");
-
-        mark.setAccessible(true);
-
-        final JLabel overlay = (JLabel) mark.get(ui);
+        final JLabel overlay = (JLabel) Reflect.get(TrainControlUI.class, ui, "cropOverlay");
 
         Components.onTheEventThread(() ->
         {
@@ -596,9 +593,7 @@ public class testRecroppingALocomotiveIcon
     /** The file beside a crop that names the photograph it was cut from. */
     private static File noteOf(File crop) throws Exception
     {
-        java.lang.reflect.Field suffix = TrainControlUI.class.getDeclaredField("CROP_SOURCE_SUFFIX");
-
-        suffix.setAccessible(true);
+        java.lang.reflect.Field suffix = Reflect.field(TrainControlUI.class, "CROP_SOURCE_SUFFIX");
 
         return new File(crop.getAbsolutePath() + suffix.get(null));
     }
@@ -624,11 +619,7 @@ public class testRecroppingALocomotiveIcon
 
     private static Object field(String name) throws Exception
     {
-        java.lang.reflect.Field f = TrainControlUI.class.getDeclaredField(name);
-
-        f.setAccessible(true);
-
-        return f.get(ui);
+        return Reflect.get(TrainControlUI.class, ui, name);
     }
 
     private static boolean isColor(int argb, Color color)

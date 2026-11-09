@@ -1,8 +1,8 @@
 package core;
 
 import support.CS3TestServer;
+import support.Reflect;
 
-import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -122,10 +122,7 @@ public class testImportRename
 
     private static void set(String field, Object value) throws Exception
     {
-        Field f = MarklinControlStation.class.getDeclaredField(field);
-
-        f.setAccessible(true);
-        f.set(model, value);
+        Reflect.set(MarklinControlStation.class, model, field, value);
     }
 
     /**

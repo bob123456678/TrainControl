@@ -2,7 +2,6 @@ package core;
 
 import java.io.IOException;
 import java.io.InterruptedIOException;
-import java.lang.reflect.Field;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.PortUnreachableException;
@@ -24,6 +23,7 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
 import org.traincontrol.marklin.udp.CS2Message;
 import org.traincontrol.marklin.udp.NetworkProxy;
 import org.traincontrol.util.I18n;
+import support.Reflect;
 
 /**
  * Tests for NetworkProxy: the CAN listener's fault handling, and the address it reports.
@@ -85,9 +85,7 @@ public class testNetworkProxy
 
         model = init(null, true, false, false, true);
 
-        Field proxyField = MarklinControlStation.class.getDeclaredField("NetworkInterface");
-        proxyField.setAccessible(true);
-        proxy = (NetworkProxy) proxyField.get(model);
+        proxy = (NetworkProxy) Reflect.get(MarklinControlStation.class, model, "NetworkInterface");
 
         assertNotNull(proxy, "the model must have a network proxy");
     }
@@ -159,16 +157,12 @@ public class testNetworkProxy
 
     private static DatagramSocket socketOf(NetworkProxy p) throws Exception
     {
-        Field socketField = NetworkProxy.class.getDeclaredField("socket");
-        socketField.setAccessible(true);
-        return (DatagramSocket) socketField.get(p);
+        return (DatagramSocket) Reflect.get(NetworkProxy.class, p, "socket");
     }
 
     private static void setSocket(NetworkProxy p, DatagramSocket s) throws Exception
     {
-        Field socketField = NetworkProxy.class.getDeclaredField("socket");
-        socketField.setAccessible(true);
-        socketField.set(p, s);
+        Reflect.set(NetworkProxy.class, p, "socket", s);
     }
 
     /**

@@ -20,6 +20,7 @@ import org.traincontrol.marklin.MarklinAccessory;
 import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.marklin.file.CS2File;
 import static org.traincontrol.marklin.MarklinControlStation.init;
+import support.Trees;
 
 /**
  * A station, and the train standing on it, travel with the tile when it is dragged (MT-171).
@@ -341,29 +342,10 @@ public class testAMovedTileCarriesItsSetup
 
         assertTrue(temp.delete(), "making room for a directory of the same name");
 
-        copyTree(from, temp);
+        Trees.copyForTheRun(from, temp);
 
         temp.deleteOnExit();
 
         return temp;
-    }
-
-    private static void copyTree(File from, File to) throws Exception
-    {
-        assertTrue(to.mkdirs() || to.isDirectory(), "could not make " + to);
-
-        File[] children = from.listFiles();
-
-        if (children == null) return;
-
-        for (File one : children)
-        {
-            File target = new File(to, one.getName());
-
-            if (one.isDirectory()) copyTree(one, target);
-            else Files.copy(one.toPath(), target.toPath());
-
-            target.deleteOnExit();
-        }
     }
 }

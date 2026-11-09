@@ -29,6 +29,7 @@ import org.traincontrol.automation.Edge;
 import org.traincontrol.base.RouteCommand;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinRoute;
+import support.Reflect;
 
 /**
  *
@@ -653,9 +654,7 @@ public class testAutoLayout
             + " is still held on for it: " + layout.unmeasuredTrackThatCouldBeReleased());
 
         // THE ESCAPE AGREES, or the gate lets through a railway the runtime then releases under a train.
-        java.lang.reflect.Method unmeasured = Layout.class.getDeclaredMethod("pathIsUnmeasured", List.class);
-
-        unmeasured.setAccessible(true);
+        java.lang.reflect.Method unmeasured = Reflect.method(Layout.class, "pathIsUnmeasured", List.class);
 
         assertEquals(unmeasured.invoke(null, java.util.Arrays.asList(ab)), Boolean.FALSE, "a path over track answered 0"
             + " is still taken for one with nothing measured, so `tailHasProvablyPassed` hands its edges back at once -"
@@ -768,10 +767,8 @@ public class testAutoLayout
             assertEquals(places.keySet(), new java.util.LinkedHashSet<>(java.util.Arrays.asList("RP:p", "RP:s")), "the"
                 + " claim up to where the rails part does not claim the two squares they share: " + places.keySet());
 
-            java.lang.reflect.Method reach = org.traincontrol.gui.TailCrossedPrompt.class.getDeclaredMethod("reachOf",
-                Edge.class, int.class);
-
-            reach.setAccessible(true);
+            java.lang.reflect.Method reach =
+                Reflect.method(org.traincontrol.gui.TailCrossedPrompt.class, "reachOf", Edge.class, int.class);
 
             java.util.Set<String> covered = (java.util.Set<String>) reach.invoke(null, xp, 3);
 
@@ -1286,11 +1283,7 @@ public class testAutoLayout
 
             Layout restored = model.getAutoLayout();
 
-            java.lang.reflect.Field visits = Layout.class.getDeclaredField("lastArrival");
-
-            visits.setAccessible(true);
-
-            ((java.util.Map<?, ?>) visits.get(restored)).clear();
+            ((java.util.Map<?, ?>) Reflect.get(Layout.class, restored, "lastArrival")).clear();
 
             restored.restoreVisitHistory(visitsWere);
         }
@@ -2227,14 +2220,10 @@ public class testAutoLayout
         path.add(first);
 
         // And the tail having already given `first` up, which is what clearedEdges records.
-        java.lang.reflect.Field cleared = Layout.class.getDeclaredField("clearedEdges");
-
-        cleared.setAccessible(true);
-
         @SuppressWarnings("unchecked")
         java.util.Map<Locomotive, java.util.Set<org.traincontrol.automation.Edge>> map =
             (java.util.Map<Locomotive, java.util.Set<org.traincontrol.automation.Edge>>)
-                cleared.get(layout);
+                Reflect.get(Layout.class, layout, "clearedEdges");
 
 
         // The claim is made IN BETWEEN, after the path is locked and before it fails, because that is the sequence the
@@ -2256,9 +2245,7 @@ public class testAutoLayout
             // in atomic mode too, where nothing in it is released, so it alone no longer says so.
             try
             {
-                java.lang.reflect.Field releasedField = Layout.class.getDeclaredField("releasedEarly");
-
-                releasedField.setAccessible(true);
+                java.lang.reflect.Field releasedField = Reflect.field(Layout.class, "releasedEarly");
 
                 @SuppressWarnings("unchecked")
                 java.util.Map<Locomotive, java.util.Set<org.traincontrol.automation.Edge>> released =
@@ -2276,10 +2263,7 @@ public class testAutoLayout
 
             try
             {
-                java.lang.reflect.Field held =
-                    org.traincontrol.automation.Edge.class.getDeclaredField("occupancy");
-
-                held.setAccessible(true);
+                java.lang.reflect.Field held = Reflect.field(org.traincontrol.automation.Edge.class, "occupancy");
 
                 atTheMoment[0] = held.getInt(second);
             }
@@ -2313,10 +2297,7 @@ public class testAutoLayout
 
         // THE COUNT, not the boolean.  `release()` floors at zero and occupancy is a COUNT, so a throat held by two
         // claims and released once is still "occupied", and asserting isOccupied would pass against both orderings.
-        java.lang.reflect.Field occupancy =
-            org.traincontrol.automation.Edge.class.getDeclaredField("occupancy");
-
-        occupancy.setAccessible(true);
+        java.lang.reflect.Field occupancy = Reflect.field(org.traincontrol.automation.Edge.class, "occupancy");
 
         assertTrue(atTheMoment[0] > 0, "the callback never ran, so nothing below is exercised");
 
@@ -2634,9 +2615,7 @@ public class testAutoLayout
 
             assertNull(layout.pickPath(loc), "precondition: autonomy found somewhere to send the train of 4");
 
-            java.lang.reflect.Method probe = Layout.class.getDeclaredMethod("hasAutonomousDestination", Locomotive.class);
-
-            probe.setAccessible(true);
+            java.lang.reflect.Method probe = Reflect.method(Layout.class, "hasAutonomousDestination", Locomotive.class);
 
             assertFalse((Boolean) probe.invoke(layout, loc), "the yield probe says autonomy has somewhere to send the"
                 + " train of 4, whose only station is a terminus it could not leave - the other trains would stop and wait"

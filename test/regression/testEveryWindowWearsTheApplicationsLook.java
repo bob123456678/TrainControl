@@ -10,8 +10,9 @@ import java.util.Map;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
-import org.testng.SkipException;
 import org.testng.annotations.Test;
+import support.Display;
+import support.Reflect;
 
 /**
  * A window of this application looks the same whoever built it, and is the same SIZE.
@@ -51,10 +52,7 @@ public class testEveryWindowWearsTheApplicationsLook
     @Test
     public void testAWindowBuiltColdStillWearsTheApplicationsLook() throws Exception
     {
-        if (java.awt.GraphicsEnvironment.isHeadless())
-        {
-            throw new SkipException("a look and feel needs a display");
-        }
+        Display.needed("a look and feel needs a display");
 
         assertFalse(javax.swing.UIManager.getLookAndFeel() instanceof com.formdev.flatlaf.FlatLightLaf,
             "the application's look and feel was already installed before this test built anything, so "
@@ -100,9 +98,8 @@ public class testEveryWindowWearsTheApplicationsLook
 
             try
             {
-                java.lang.reflect.Method states = org.traincontrol.gui.TrainControlUI.class.getDeclaredMethod("uiScaleFor", int.class);
-
-                states.setAccessible(true);
+                java.lang.reflect.Method states =
+                    Reflect.method(org.traincontrol.gui.TrainControlUI.class, "uiScaleFor", int.class);
 
                 expected = Double.parseDouble((String) states.invoke(null,
                     java.awt.Toolkit.getDefaultToolkit().getScreenResolution()));

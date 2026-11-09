@@ -1,14 +1,12 @@
 package ui;
 
 import java.awt.event.KeyEvent;
-import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import javax.swing.SwingUtilities;
 import static org.testng.Assert.*;
-import org.testng.SkipException;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
@@ -24,6 +22,9 @@ import org.traincontrol.gui.TailCrossedPrompt;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;
 import static org.traincontrol.marklin.MarklinControlStation.init;
+import support.Components;
+import support.Display;
+import support.Reflect;
 
 /**
  * A cut train is pasted facing the way it would arrive if it drove there, and stands on that copy (Adam, OB-270;
@@ -54,10 +55,7 @@ public class testACutTrainArrivesTheWayItWouldDrive
     @BeforeClass
     public static void setUpClass() throws Exception
     {
-        if (java.awt.GraphicsEnvironment.isHeadless())
-        {
-            throw new SkipException("the paste door belongs to a window, and a window needs a display");
-        }
+        Display.needed("the paste door belongs to a window, and a window needs a display");
 
         // THE FROZEN COPY, NOT THE RAILWAY HE IS OPERATING (OB-111).
         sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
@@ -69,8 +67,8 @@ public class testACutTrainArrivesTheWayItWouldDrive
 
         assertNotNull(ui, "there is no window");
 
-        pump();
-        pump();
+        Components.drain(1);
+        Components.drain(1);
 
         session = ui.getAutonomySession();
 
@@ -173,9 +171,7 @@ public class testACutTrainArrivesTheWayItWouldDrive
         // GOING WEST, as he described it: the heading the cut remembered.  Set here rather than read, because what
         // the claim is about is a train cut facing west - and west is also the heading BottomMainA's westbound copy
         // holds, which is exactly what let the cut heading through.
-        Field cutFacing = TrainControlUI.class.getDeclaredField("cutFacing");
-        cutFacing.setAccessible(true);
-        cutFacing.set(ui, Side.W);
+        Reflect.set(TrainControlUI.class, ui, "cutFacing", Side.W);
 
         // CONTROL+V, with every question answered so nothing waits for a person.
         FacingPrompt.answerForTests(null);
@@ -205,10 +201,8 @@ public class testACutTrainArrivesTheWayItWouldDrive
     /** Presses a key over a square, through the diagram's own gesture door. */
     private static Object gesture(TileKey over, int key) throws Exception
     {
-        final Method door = TrainControlUI.class.getDeclaredMethod("locomotiveGestureOnDiagram", int.class,
-            boolean.class);
-
-        door.setAccessible(true);
+        final Method door =
+            Reflect.method(TrainControlUI.class, "locomotiveGestureOnDiagram", int.class, boolean.class);
 
         final Object[] handled = new Object[1];
 
@@ -226,7 +220,7 @@ public class testACutTrainArrivesTheWayItWouldDrive
             }
         });
 
-        pump();
+        Components.drain(1);
 
         return handled[0];
     }
@@ -255,10 +249,5 @@ public class testACutTrainArrivesTheWayItWouldDrive
         }
 
         throw new AssertionError("this railway has no " + name);
-    }
-
-    private static void pump() throws Exception
-    {
-        SwingUtilities.invokeAndWait(() -> { });
     }
 }
