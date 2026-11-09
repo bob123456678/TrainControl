@@ -684,8 +684,8 @@ public class testTheTrainWindow
     }
 
     /**
-     * A train stepped to in the list is placed when the list is left, as a typed field applies on leaving, and the
-     * choice still shown when the window closes is applied too.
+     * A train stepped to in the list is placed when the keyboard moves on in the window (Tab, another control clicked),
+     * as a typed field applies on leaving, and the choice still shown when the window closes is applied too.
      *
      * MUTATION: drop the focus listener from `StationWindowBase.Choice`, or the lists from `commitFields`, and this fails.
      */
@@ -706,12 +706,14 @@ public class testTheTrainWindow
 
         assertNull(session.getLocomotiveNameAt(square), "precondition: Down placed " + shown);
 
-        // The list loses the keyboard, as Tab or a click elsewhere takes it
+        // Tab takes the keyboard to the next control in the window
+        java.awt.Component next = StationDoors.part(window, "train.active", java.awt.Component.class);
+
         Components.onTheEventThread(() ->
         {
             for (java.awt.event.FocusListener each : list.getFocusListeners())
             {
-                each.focusLost(new java.awt.event.FocusEvent(list, java.awt.event.FocusEvent.FOCUS_LOST));
+                each.focusLost(new java.awt.event.FocusEvent(list, java.awt.event.FocusEvent.FOCUS_LOST, false, next));
             }
 
             return null;
@@ -730,6 +732,51 @@ public class testTheTrainWindow
         StationDoors.close(window);
 
         assertNull(session.getLocomotiveNameAt(square), "closing the window dropped None, shown in the list");
+    }
+
+    /**
+     * A train stepped to in the list is put back, asking nothing, when another window is clicked, so a placement question
+     * never swallows that click (the main window's Stop, the editor's Save).  Locomotive Settings... opens the train
+     * standing, not the one shown.
+     *
+     * MUTATION: have the Choice's focus listener settle a loss for now, or the window's settle the lists, and this fails.
+     */
+    @Test(timeOut = 120000)
+    public void testAnotherWindowClickedPutsTheListBackAndAsksNothing() throws Exception
+    {
+        AutonomyEditorPanel panel = theEditorsPanel();
+
+        TileKey square = aSquareWithATrain();
+        String standing = session.getLocomotiveNameAt(square);
+
+        TrainWindow window = StationDoors.openTrain(panel, square);
+
+        javax.swing.JComboBox<?> list = StationDoors.part(window, "train.train", javax.swing.JComboBox.class);
+
+        Object was = StationDoors.step(list);
+
+        LocomotiveSettingsFrame frame = null;
+
+        try (support.Answering answering = support.Answering.start(message -> null))
+        {
+            StationDoors.press(window, "train.settings");
+            StationDoors.toAnotherWindow(window, list);
+
+            frame = StationDoors.showing(LocomotiveSettingsFrame.class);
+
+            assertEquals(answering.asked(), java.util.Collections.emptyList(), "another window clicked asked");
+        }
+        finally
+        {
+            if (frame != null) SwingUtilities.invokeAndWait(frame::dispose);
+        }
+
+        assertEquals(session.getLocomotiveNameAt(square), standing, "another window clicked placed the train shown");
+        assertEquals(Components.onTheEventThread(list::getSelectedItem), was, "the list still shows a train not placed");
+        assertNotNull(frame, "Locomotive Settings did not open");
+        assertEquals(frame.getLocomotive(), model.getLocByName(standing), "Locomotive Settings opened on the train shown");
+
+        StationDoors.close(window);
     }
 
     /**
