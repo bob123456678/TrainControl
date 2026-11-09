@@ -183,7 +183,7 @@ Right-click any square for everything else. The menu opens with the square's nam
 | *train*`'s Tail Reaches Back To...` | Only where it matters: which sensor behind the train its tail has crossed. `Pick on the diagram...` lets you click it |
 | `Train at` *station* `...` / `Place a Locomotive Here...` | Opens the train window: which train is standing here, and the details of how it stands. On a station with no train it puts one there. See [the train window](#the-train-window) |
 | `Place` *train* | On the track diagram, when a train is selected in the main window and is not the one standing here: puts it here |
-| `Remove` *train* `from This Square` | Takes the train off this square |
+| `Remove` *train* | Takes the train off this square |
 | `Edit` *train* `...` | On the track diagram only, when a train is standing here: opens that train's `Locomotive Settings` on the `Autonomy` tab. It opens grayed out while autonomy runs |
 | `Station Settings...` | Opens the window with every setting of the station (Control+O): see [the Station Settings window](#the-station-settings-window) |
 | `Segment Length...` | How long this piece of track counts as, in your own units; see [Track lengths](#track-lengths-what-they-are-for) (Control+E) |
