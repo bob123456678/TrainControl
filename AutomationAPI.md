@@ -431,7 +431,7 @@ If you want to adjust the graph once created, maximize it, and simply use your m
 TrainControl supports terminus stations.  For any `Point` that represents a terminus station (`station` must be `true` in the JSON),
 also specify `"terminus" : true`.  For the corresponding locomotive, set `"reversible" : true`, and it will automatically change direction after arrival.
 
-*Since v3.0.0*, **a terminus is only for a reversible locomotive** - in full autonomy, and when you send a train by hand - unless it is a parking berth (`Can Be Chosen in Full Autonomy` unticked), where you may still back in a train that cannot reverse.
+*Since v3.0.0*, **a terminus is only for a reversible locomotive** - in full autonomy, and when you send a train by hand - unless it is a parking berth (`May choose this station` unticked in its `Station Settings`), where you may still back in a train that cannot reverse.
 
 The three tiers differ, and it is worth knowing which is which:
 

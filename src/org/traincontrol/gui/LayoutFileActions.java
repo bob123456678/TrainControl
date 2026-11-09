@@ -427,11 +427,11 @@ final class LayoutFileActions
         return out;
     }
 
-    /** The pages in name order by their letters, as the language sorts them (ties in a fixed order); null when they are. */
+    /** The pages in name order by their letters (`Util.byLetters`; ties in a fixed order); null when they are. */
     private static List<String> sorted(List<String> pages)
     {
         List<String> out = new ArrayList<>(pages);
-        java.util.Comparator<String> letters = java.text.Collator.getInstance()::compare;
+        java.util.Comparator<String> letters = Util::byLetters;
 
         out.sort(letters.thenComparing(java.util.Comparator.naturalOrder()));
 

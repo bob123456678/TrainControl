@@ -331,7 +331,8 @@ public class testPagesFollowTheFileOrder extends support.PageWindowTest
 
     /**
      * Sort Pages by Name sorts by the letters, capitals and accents aside: a page added as "apple yard" goes before one
-     * added as "Zebra", and "\u00d6lberg" between them.
+     * added as "Zebra", and "\u00d6lberg" between them, on any machine: here one set to Swedish, whose own order puts
+     * \u00d6 after Z.
      *
      * MUTATION: sort with `Collections.sort` alone, or `String.CASE_INSENSITIVE_ORDER`, in `LayoutFileActions.sorted`, and
      * this fails.
@@ -366,14 +367,24 @@ public class testPagesFollowTheFileOrder extends support.PageWindowTest
 
         Components.press(tools);
 
-        Components.press(Components.withText(editorOn(on), I18n.t("ui.main.toolbar.sortPages")));
-
+        java.util.Locale was = java.util.Locale.getDefault();
         List<String> expected = new ArrayList<>(BY_NAME);
 
         expected.addAll(Arrays.asList("apple yard", "\u00d6lberg", "Zebra"));
 
-        assertTrue(Components.waitFor(() -> namesInTheIndex().equals(expected), 15000), "the index is not in the letters'"
-            + " order: " + namesInTheIndex());
+        try
+        {
+            java.util.Locale.setDefault(new java.util.Locale("sv"));
+
+            Components.press(Components.withText(editorOn(on), I18n.t("ui.main.toolbar.sortPages")));
+
+            assertTrue(Components.waitFor(() -> namesInTheIndex().equals(expected), 15000), "the index is not in the"
+                + " letters' order: " + namesInTheIndex());
+        }
+        finally
+        {
+            java.util.Locale.setDefault(was);
+        }
     }
 
     /**
