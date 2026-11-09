@@ -2789,6 +2789,38 @@ public class testATrainIsDispatchedOnce
     }
 
     /**
+     * A run stopped while new routes are held leaves nothing held: the next run, the connection back, does not say the
+     * connection is back.
+     *
+     * MUTATION: in `waitWhileThePowerIsOff`, leave `routesHeld` set when the run has stopped, and this fails.
+     */
+    @Test
+    public void testARunStoppedWhileRoutesAreHeldLeavesNothingHeld() throws Exception
+    {
+        whileReplacing(2161, 14, "DXA", "DXB", (rail, x, said) ->
+        {
+            rail.setLocomotivesToRun(Arrays.asList(x));
+            rail.runLocomotives();
+
+            assertTrue(until(() -> said.contains(org.traincontrol.util.I18n.t("autolayout.infoRoutesHeld")), 5000),
+                "precondition: the run held no routes: " + said);
+
+            rail.stopLocomotives();
+
+            assertTrue(until(() -> !rail.isRunning(), 5000), "precondition: the run did not stop");
+
+            replacing(false);
+            said.clear();
+            rail.runLocomotives();
+
+            assertTrue(until(() -> x.getSpeed() > 0 || rail.isAlreadyUnderway(x), 5000),
+                "precondition: the next run started nothing");
+            assertFalse(said.contains(org.traincontrol.util.I18n.t("autolayout.infoRoutesResumed")), "the next run said"
+                + " the connection is back, though it held no route: " + said);
+        });
+    }
+
+    /**
      * Nor is a journey set going when the track power goes off while its route is being set: the train is given no
      * speed and the journey is not under way.  Path Integrity Validation off; eight edges, a switch on each.
      *
