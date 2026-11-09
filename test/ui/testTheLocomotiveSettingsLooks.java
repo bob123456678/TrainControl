@@ -22,6 +22,7 @@ import support.SettingsWindow;
 public class testTheLocomotiveSettingsLooks extends support.SettingsClass
 {
     private static final String NAME = "LK train";
+    private static final String[] LANGUAGES = {"en", "de", "da", "es", "fr", "it", "nl", "pl"};
 
 
     @Override
@@ -424,7 +425,7 @@ public class testTheLocomotiveSettingsLooks extends support.SettingsClass
     {
         try
         {
-            for (String lang : new String[] {"en", "de", "da", "es", "fr", "it", "nl", "pl"})
+            for (String lang : LANGUAGES)
             {
                 I18n.setLocale(new java.util.Locale(lang));
 
@@ -458,6 +459,153 @@ public class testTheLocomotiveSettingsLooks extends support.SettingsClass
         {
             I18n.setLocale(java.util.Locale.ENGLISH);
         }
+    }
+
+    /**
+     * Opens the window on a tab, or as Add Locomotive for a null tab, in a language, and drags it as narrow as it lets
+     * itself go (an unset minimum stops nothing: to 200).
+     */
+    private static LocomotiveSettingsFrame narrowest(String lang, LocomotiveSettingsFrame.Tab tab) throws Exception
+    {
+        I18n.setLocale(new java.util.Locale(lang));
+
+        if (tab != null) fixture.layDcc(NAME, 3806, tab);
+
+        LocomotiveSettingsFrame window = tab == null ? openAdd() : SettingsWindow.showing();
+
+        Components.onTheEventThread(() ->
+        {
+            window.setSize(window.isMinimumSizeSet() ? window.getMinimumSize().width : 200, window.getHeight());
+            window.validate();
+
+            return null;
+        });
+        Components.settle();
+
+        return window;
+    }
+
+    /** Opens Add Locomotive, in the window already open if there is one, and gives it once it is on screen. */
+    private static LocomotiveSettingsFrame openAdd() throws Exception
+    {
+        assertTrue(Components.onTheEventThread(ui::openAddLocomotive), "Add did not open");
+
+        return SettingsWindow.awaited();
+    }
+
+    /** Whether a label or a button shows its whole text: no narrower than its text, icon and border need. */
+    private static boolean whole(javax.swing.JComponent c)
+    {
+        javax.swing.plaf.ComponentUI look = c instanceof JLabel ? ((JLabel) c).getUI() : ((javax.swing.AbstractButton) c).getUI();
+
+        return look.getPreferredSize(c).width <= c.getWidth();
+    }
+
+    /**
+     * At the narrowest window, in every language, the Multi-Unit list's Reverse column shows whole: its heading's text
+     * uncut, and the heading and every Reverse box end inside the list's view, left of its scroll bar.
+     *
+     * MUTATION: leave the Multi-Unit list out of `least` in `LocomotiveSettingsFrame.fit`, and this fails.
+     */
+    @Test
+    public void testTheReverseColumnIsWholeAtTheNarrowestWindow() throws Exception
+    {
+        try
+        {
+            for (String lang : LANGUAGES)
+            {
+                java.awt.Container pane = narrowest(lang, LocomotiveSettingsFrame.Tab.MULTI_UNIT).getContentPane();
+                javax.swing.JScrollPane list = Components.find(pane, javax.swing.JScrollPane.class,
+                    s -> s.isShowing() && s.getViewport().getView() instanceof javax.swing.JPanel);
+                java.awt.Component view = list.getViewport().getView();
+                JLabel heading = Components.find(pane, JLabel.class,
+                    l -> UiStyle.withoutColon(I18n.t("loc.ui.labelReverse")).equals(l.getText()) && l.isShowing());
+                java.util.List<java.awt.Component> ends = new java.util.ArrayList<>(Components.all(view, javax.swing.JCheckBox.class,
+                    c -> c.isShowing() && c.getText().isEmpty()));
+
+                assertTrue(!ends.isEmpty() && Components.onTheEventThread(list.getVerticalScrollBar()::isShowing),
+                    "precondition: no Reverse box, or no scroll bar, on the Multi-Unit tab");
+                assertTrue(Components.onTheEventThread(() -> whole(heading)), lang + ": the Reverse heading is cut short");
+
+                ends.add(heading);
+
+                for (java.awt.Component c : ends)
+                {
+                    int right = Components.onTheEventThread(() -> bounds(c, (java.awt.Container) view).x + c.getWidth());
+                    int visible = Components.onTheEventThread(() -> list.getViewport().getViewRect().x + list.getViewport().getWidth());
+
+                    assertTrue(right <= visible, lang + ": at " + pane.getWidth() + " wide the Reverse column ends at " + right
+                        + ", under the scroll bar from " + visible);
+                }
+            }
+        }
+        finally
+        {
+            I18n.setLocale(java.util.Locale.ENGLISH);
+        }
+    }
+
+    /**
+     * At the narrowest window, in every language, no label on Basic Settings is cut short, nor on Add Locomotive, and the
+     * footer's buttons and (i) are whole and inside the window.
+     *
+     * MUTATION: leave Basic Settings, or the footer, out of `least` in `LocomotiveSettingsFrame.fit`, and this fails.
+     */
+    @Test
+    public void testNoBasicSettingsLabelIsCutShortAtTheNarrowestWindow() throws Exception
+    {
+        try
+        {
+            for (String lang : LANGUAGES)
+            {
+                for (LocomotiveSettingsFrame.Tab tab : new LocomotiveSettingsFrame.Tab[] {LocomotiveSettingsFrame.Tab.LOCOMOTIVE, null})
+                {
+                    LocomotiveSettingsFrame window = narrowest(lang, tab);
+                    java.util.List<String> cut = Components.onTheEventThread(() -> Components.all(window.getContentPane(), JLabel.class,
+                        l -> l.isShowing() && l.getText() != null && !l.getText().isEmpty() && !whole(l)).stream()
+                        .map(l -> "'" + l.getText() + "' " + l.getWidth() + " wide").collect(java.util.stream.Collectors.toList()));
+
+                    assertTrue(cut.isEmpty(), lang + (tab == null ? ": Add Locomotive" : ": Basic Settings") + " at "
+                        + window.getWidth() + " wide cuts " + cut);
+
+                    javax.swing.JButton save = SettingsWindow.save();
+
+                    for (javax.swing.JComponent c : new javax.swing.JComponent[] {save, SettingsWindow.cancel(),
+                        Components.find(save.getParent(), JLabel.class, l -> l.getIcon() == InfoMark.icon())})
+                    {
+                        java.awt.Rectangle r = inWindow(c);
+
+                        assertTrue(Components.onTheEventThread(() -> whole(c)) && r.x >= 0 && r.x + r.width <= window.getContentPane().getWidth(),
+                            lang + (tab == null ? ": Add Locomotive" : ": Basic Settings") + " at " + window.getWidth() + " wide shows "
+                            + c.getClass().getSimpleName() + " '" + (c instanceof JLabel ? "(i)" : ((javax.swing.AbstractButton) c).getText()) + "' at " + r + ", cut or outside");
+                    }
+                }
+            }
+        }
+        finally
+        {
+            I18n.setLocale(java.util.Locale.ENGLISH);
+        }
+    }
+
+    /**
+     * Add Locomotive opened in a window that was showing a locomotive opens as wide as Add opened on its own, not held at
+     * the locomotive's least width.
+     *
+     * MUTATION: drop `setMinimumSize(null)` from `LocomotiveSettingsFrame.fit`, and this fails.
+     */
+    @Test
+    public void testAddOpensAtItsOwnWidthInAWindowThatShowedALocomotive() throws Exception
+    {
+        SettingsWindow.closeIfOpen();
+        fixture.quiet();
+
+        int own = Components.onTheEventThread(openAdd()::getWidth);
+
+        opened();
+
+        assertEquals((int) Components.onTheEventThread(openAdd()::getWidth), own,
+            "Add opened in the locomotive's window is not as wide as Add on its own");
     }
 
     /**

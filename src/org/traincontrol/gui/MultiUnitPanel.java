@@ -40,7 +40,9 @@ final class MultiUnitPanel extends JPanel
         org.traincontrol.gui.widgets.UiStyle.withoutColon(I18n.t("loc.ui.filterList")));
     private final JTextField filterField = new JTextField();
     private final List<JPanel> rowPanels = new ArrayList<>();
+    private final JScrollPane scrollPane = new JScrollPane(scrollPanel);
     private final Runnable onChange;
+    private final int reverseWidth;
     private Map<String, Double> loaded;
 
     /** @param onChange told whenever a tick or a number changes, or null */
@@ -100,6 +102,10 @@ final class MultiUnitPanel extends JPanel
         nameLabel.setBorder(javax.swing.BorderFactory.createEmptyBorder(0, box, 0, 0));
         reverseLabel.setBorder(javax.swing.BorderFactory.createEmptyBorder(0, box, 0, 0));
 
+        // Reverse is as wide as its heading, in every row, so the heading starts at the boxes and the window's least width
+        // counts no empty room beside them
+        reverseWidth = reverseLabel.getPreferredSize().width + com.formdev.flatlaf.util.UIScale.scale(6);
+
         headingPanel.setOpaque(false);
         columns(headingPanel, nameLabel, multiplierLabel, null, reverseLabel);
 
@@ -123,7 +129,6 @@ final class MultiUnitPanel extends JPanel
             filterLabel.setVisible(false);
         }
 
-        JScrollPane scrollPane = new JScrollPane(scrollPanel);
         scrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
 
         // Make scrolling faster
@@ -143,11 +148,20 @@ final class MultiUnitPanel extends JPanel
         top.add(org.traincontrol.gui.InfoMark.label(note), java.awt.BorderLayout.EAST);
     }
 
+    /** How many pixels wider the list must be to show every column beside its scroll bar (negative: to spare). */
+    int shortfall()
+    {
+        Insets around = scrollPane.getInsets();
+
+        return scrollPanel.getPreferredSize().width + scrollPane.getVerticalScrollBar().getPreferredSize().width
+            - (scrollPane.getWidth() - around.left - around.right);
+    }
+
     /**
      * Lays out a heading or a row in the same four columns: name, slider, its value, Reverse.  A null `value` lets the
      * slider's column take the value's room.
      */
-    private static void columns(JPanel panel, java.awt.Component name, java.awt.Component slider,
+    private void columns(JPanel panel, java.awt.Component name, java.awt.Component slider,
         java.awt.Component value, java.awt.Component reverse)
     {
         GridBagConstraints c = new GridBagConstraints();
@@ -168,7 +182,7 @@ final class MultiUnitPanel extends JPanel
         c.gridwidth = 1;
         c.weightx = 0;
         c.insets = new Insets(0, 0, 0, 0);
-        reverse.setPreferredSize(new Dimension(com.formdev.flatlaf.util.UIScale.scale(84), reverse.getPreferredSize().height));
+        reverse.setPreferredSize(new Dimension(reverseWidth, reverse.getPreferredSize().height));
         panel.add(reverse, c);
 
         // Added last, so a row's first three components stay the name, the slider and Reverse
