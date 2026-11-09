@@ -176,6 +176,10 @@ public class testFindAPoint
 
         String renamed = "Qx Renamed Siding";
 
+        // The editor's own setup, which it copied as it opened
+        AutonomySession editing = (AutonomySession) Reflect.get(AutonomyEditorPanel.class, editor.getAutonomyPanel(),
+            "session");
+
         try
         {
             JDialog prompt = pressControlF(editor);
@@ -184,7 +188,7 @@ public class testFindAPoint
 
             assertEquals(rows(prompt), java.util.Arrays.asList(rowOf(HERE, here)), "precondition: the list typed to \"qx here\"");
 
-            support.Components.onTheEventThread(() -> { session.getStore().setPointName(here, renamed); return null; });
+            support.Components.onTheEventThread(() -> { editing.getStore().setPointName(here, renamed); return null; });
 
             // Enter on the row read before the rename: the prompt reads again rather than go to a name now gone
             support.Keys.press(boxOf(prompt), KeyEvent.VK_ENTER);
@@ -198,7 +202,7 @@ public class testFindAPoint
         }
         finally
         {
-            support.Components.onTheEventThread(() -> { session.getStore().setPointName(here, HERE); return null; });
+            support.Components.onTheEventThread(() -> { editing.getStore().setPointName(here, HERE); return null; });
 
             closeThem();
         }
