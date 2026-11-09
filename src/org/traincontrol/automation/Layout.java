@@ -5344,8 +5344,9 @@ public class Layout
                             // When this entry first refused, so a parallel run can give up on time
                             long refusingSince = 0;
 
-                            // The power's epoch as this attempt began; see below.
+                            // The power's and the connection's epochs as this attempt began; see below.
                             int powerAtAttempt = this.control.getPowerEpoch();
+                            int replacementsAtAttempt = this.control.getReplacementEpoch();
 
                             while (this.running && !this.executePath(ttp.getPath(), ttp.getLoc(),
                                 ttp.getLoc().getPreferredSpeed(), ttp, playedBack(ttp), stopsAtChoice))
@@ -5366,10 +5367,11 @@ public class Layout
                                 }
 
                                 // An attempt the power cut, or a connection being replaced held (FR-186), is no refusal,
-                                // nor the start of a parallel run's clock.  The epoch catches a stop between the power
-                                // wait and the read.
+                                // nor the start of a parallel run's clock.  The epochs catch a cut or a replacement over
+                                // by the time of the read.
                                 boolean cut = this.control.getPowerEpoch() != powerAtAttempt || !this.control.getPowerState()
-                                    || this.control.isReplacingConnection();
+                                    || this.control.isReplacingConnection()
+                                    || this.control.getReplacementEpoch() != replacementsAtAttempt;
 
                                 if (!cut)
                                 {
@@ -5430,6 +5432,7 @@ public class Layout
                                 if (this.waitWhileThePowerIsOff()) refusingSince = 0;
 
                                 powerAtAttempt = this.control.getPowerEpoch();
+                                replacementsAtAttempt = this.control.getReplacementEpoch();
                             }
 
                             this.control.logf("autolayout.infoTimetablePathFinished");
