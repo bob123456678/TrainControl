@@ -2173,7 +2173,6 @@ public class LayoutEditor extends PositionAwareJFrame
         return false;
     }
 
-    /** Delegates to `LayoutEditorSelection.execCopy`. */
     synchronized private void execCopy(LayoutLabel destLabel, boolean move)
     {
         this.selectionOps.execCopy(destLabel, move);
@@ -2184,13 +2183,11 @@ public class LayoutEditor extends PositionAwareJFrame
         return layout;
     }
     
-    /** Delegates to `LayoutEditorSelection.resetClipboard`. */
     synchronized void resetClipboard()
     {
         this.selectionOps.resetClipboard();
     }
 
-    /** Delegates to `LayoutEditorSelection.placingFromPalette`. */
     private boolean placingFromPalette()
     {
         return this.selectionOps.placingFromPalette();
@@ -3216,19 +3213,16 @@ public class LayoutEditor extends PositionAwareJFrame
         this.reshapeOps.shiftUp();
     }
     
-    /** Delegates to `LayoutEditorReshape.shiftDown`. */
     public void shiftDown()
     {
         this.reshapeOps.shiftDown();
     }
     
-    /** Delegates to `LayoutEditorReshape.shiftLeft`. */
     public void shiftLeft()
     {
         this.reshapeOps.shiftLeft();
     }
     
-    /** Delegates to `LayoutEditorReshape.shiftRight`. */
     public void shiftRight()
     {
         this.reshapeOps.shiftRight();
@@ -3275,7 +3269,6 @@ public class LayoutEditor extends PositionAwareJFrame
         this.reshapeOps.shrinkEdges();
     }
 
-    /** Delegates to `LayoutEditorReshape.addRowsAndColumns`. */
     public void addRowsAndColumns(int rows, int cols)
     {
         this.reshapeOps.addRowsAndColumns(rows, cols);
@@ -3565,7 +3558,6 @@ public class LayoutEditor extends PositionAwareJFrame
         return this.undoOps.canRedo();
     }
     
-    /** Delegates to `LayoutEditorUndo.snapshotLayout`. */
     synchronized void snapshotLayout()
     {
         this.undoOps.snapshotLayout();

@@ -2598,7 +2598,7 @@ public class AutonomyEditorPanel extends JPanel
         return tileMenus.settingsItem(tile);
     }
 
-    /** Train at Bramley... or Place a Locomotive Here..., for the track diagram's menu; null where neither applies. */
+    /** Change Train at Bramley... or Place a Locomotive Here..., for the track diagram's menu; null for neither. */
     public javax.swing.JMenuItem trainWindowItem(TileKey tile)
     {
         return tileMenus.trainItem(tile);
@@ -3095,13 +3095,11 @@ public class AutonomyEditorPanel extends JPanel
         return null;
     }
 
-    /** Delegates to `EditorPrompts.promptNumber`. */
     void promptNumber(TileKey tile, String key, String promptKey, int unset)
     {
         prompts.promptNumber(tile, key, promptKey, unset);
     }
 
-    /** Delegates to `EditorPrompts.applyNumber`. */
     String applyNumber(TileKey tile, String key, String entered, int unset)
     {
         return prompts.applyNumber(tile, key, entered, unset);
@@ -3971,7 +3969,6 @@ public class AutonomyEditorPanel extends JPanel
         return chosen;
     }
 
-    /** Delegates to `EditorPrompts.promptTrainList`. */
     boolean promptTrainList(TileKey tile, org.traincontrol.automationui.AutonomySession.WhichTrains which)
     {
         return prompts.promptTrainList(tile, which);
@@ -4247,7 +4244,6 @@ public class AutonomyEditorPanel extends JPanel
         return null;
     }
 
-    /** Delegates to `EditorPrompts.promptLinkName`. */
     void promptLinkName(TileKey tile)
     {
         prompts.promptLinkName(tile);
@@ -4339,19 +4335,16 @@ public class AutonomyEditorPanel extends JPanel
             && component.getAccessory() != null;
     }
 
-    /** Delegates to `EditorSignals.pairProtectingSignal`. */
     void pairProtectingSignal(TileKey station)
     {
         signalPairing.pairProtectingSignal(station);
     }
 
-    /** Delegates to `EditorSignals.pairGuardSignals`. */
     void pairGuardSignals(Guard guard, TileKey station)
     {
         signalPairing.pairGuardSignals(guard, station);
     }
 
-    /** Delegates to `EditorSignals.askAboutSignals`. */
     private void askAboutSignals(final Guard guard, TileKey station)
     {
         signalPairing.askAboutSignals(guard, station);
@@ -4389,13 +4382,11 @@ public class AutonomyEditorPanel extends JPanel
         JOptionPane.showMessageDialog(owner(), wrapped(why));
     }
 
-    /** Delegates to `EditorSignals.addGuardSignal`. */
     private String addGuardSignal(Guard guard, TileKey station, TileKey signal, boolean redraw)
     {
         return signalPairing.addGuardSignal(guard, station, signal, redraw);
     }
 
-    /** Delegates to `EditorSignals.signalAddresses`. */
     String signalAddresses(java.util.List<TileKey> signals)
     {
         return signalPairing.signalAddresses(signals);
@@ -5452,7 +5443,6 @@ public class AutonomyEditorPanel extends JPanel
         }
     }
 
-    /** Delegates to `EditorWhy.composeWhy`. */
     private WhyAnswer composeWhy(org.traincontrol.automation.Layout layout,
         org.traincontrol.automationui.StationIndex index, WhySetup setup, TileKey tile, boolean byHand)
     {
@@ -6717,7 +6707,6 @@ public class AutonomyEditorPanel extends JPanel
         setupChanged();
     }
 
-    /** Delegates to `EditorMassAssign.massAssignLengths`. */
     private void massAssignLengths()
     {
         massAssignment.massAssignLengths();
@@ -6727,13 +6716,11 @@ public class AutonomyEditorPanel extends JPanel
     static final String MAXIMA_TITLE = "autosetup.ui.menuMassAssignMaxTrainLengths";
     static final String TRAINS_TITLE = "autosetup.ui.menuMassAssignTrainLengths";
 
-    /** Delegates to `EditorMassAssign.massAssignMaxTrainLengths`. */
     private void massAssignMaxTrainLengths()
     {
         massAssignment.massAssignMaxTrainLengths();
     }
 
-    /** Delegates to `EditorMassAssign.massAssignTrainLengths`. */
     private void massAssignTrainLengths()
     {
         massAssignment.massAssignTrainLengths();
@@ -6946,7 +6933,6 @@ public class AutonomyEditorPanel extends JPanel
         return ANSWER_STOP;
     }
 
-    /** Delegates to `EditorMassAssign.nameForPrompt`. */
     private String nameForPrompt(TileKey tile)
     {
         return massAssignment.nameForPrompt(tile);
