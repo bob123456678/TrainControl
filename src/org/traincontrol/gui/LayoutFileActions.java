@@ -427,12 +427,13 @@ final class LayoutFileActions
         return out;
     }
 
-    /** The pages in name order, capitals ignored (ties in a fixed order), or null when they already are. */
+    /** The pages in name order by their letters, as the language sorts them (ties in a fixed order); null when they are. */
     private static List<String> sorted(List<String> pages)
     {
         List<String> out = new ArrayList<>(pages);
+        java.util.Comparator<String> letters = java.text.Collator.getInstance()::compare;
 
-        out.sort(String.CASE_INSENSITIVE_ORDER.thenComparing(java.util.Comparator.naturalOrder()));
+        out.sort(letters.thenComparing(java.util.Comparator.naturalOrder()));
 
         return out.equals(pages) ? null : out;
     }

@@ -176,24 +176,76 @@ public class testStationSettingsWindow
             assertTrue(Components.onTheEventThread(window::isShowing), "Escape on a stepped " + name + " closed the window");
         }
 
+        String before = setup();
+        Object was = stepMayDepart(window);
+
+        try (Answering answering = Answering.start(message -> null))
+        {
+            support.Keys.press(StationDoors.part(window, "station.depart.0", javax.swing.JComboBox.class),
+                java.awt.event.KeyEvent.VK_ENTER);
+        }
+
+        assertNotEquals(setup(), before, "Enter on May depart changed nothing");
+        assertNotEquals(mayDepartShows(window), was, "Enter on May depart did not keep the choice");
+
+        StationDoors.close(window);
+    }
+
+    /**
+     * A choice stepped to in May depart applies when another window is clicked, before whatever is clicked there, as a
+     * typed field does: the window loses focus with the choice shown and the setup takes it.
+     *
+     * MUTATION: drop the lists from `StationWindowBase.commitFields`, and this fails.
+     */
+    @Test(timeOut = 120000)
+    public void testAChoiceShownAppliesWhenAnotherWindowIsClicked() throws Exception
+    {
+        StationSettingsWindow window = StationDoors.open(panel, aStation());
+
+        String before = setup();
+        Object was = stepMayDepart(window);
+
+        assertEquals(setup(), before, "precondition: the arrow changed the setup");
+
+        try (Answering answering = Answering.start(message -> null))
+        {
+            Components.onTheEventThread(() ->
+            {
+                for (java.awt.event.WindowFocusListener each : window.getWindowFocusListeners())
+                {
+                    each.windowLostFocus(new java.awt.event.WindowEvent(window, java.awt.event.WindowEvent.WINDOW_LOST_FOCUS));
+                }
+
+                return null;
+            });
+
+            Components.settle();
+        }
+
+        assertNotEquals(setup(), before, "the window lost focus and dropped the choice shown in May depart");
+        assertNotEquals(mayDepartShows(window), was, "the choice shown was put back");
+
+        StationDoors.close(window);
+    }
+
+    /** Steps May depart's first list with an arrow, down or, at its last answer, up; what it showed before. */
+    private static Object stepMayDepart(StationSettingsWindow window)
+    {
         javax.swing.JComboBox<?> depart = StationDoors.part(window, "station.depart.0", javax.swing.JComboBox.class);
 
         Object was = Components.onTheEventThread(depart::getSelectedItem);
-        String before = setup();
 
         support.Keys.press(depart, Components.onTheEventThread(() -> depart.getSelectedIndex() < depart.getItemCount() - 1)
             ? java.awt.event.KeyEvent.VK_DOWN : java.awt.event.KeyEvent.VK_UP);
 
-        try (Answering answering = Answering.start(message -> null))
-        {
-            support.Keys.press(depart, java.awt.event.KeyEvent.VK_ENTER);
-        }
+        return was;
+    }
 
-        assertNotEquals(setup(), before, "Enter on May depart changed nothing");
-        assertNotEquals(Components.onTheEventThread(() -> StationDoors.part(window, "station.depart.0",
-            javax.swing.JComboBox.class).getSelectedItem()), was, "Enter on May depart did not keep the choice");
-
-        StationDoors.close(window);
+    /** What May depart's first list shows now (the list is built again after a change). */
+    private static Object mayDepartShows(StationSettingsWindow window)
+    {
+        return Components.onTheEventThread(() -> StationDoors.part(window, "station.depart.0", javax.swing.JComboBox.class)
+            .getSelectedItem());
     }
 
     /**

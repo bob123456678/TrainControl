@@ -79,9 +79,12 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
     /** The lock strip: its sentence wraps at the window's width, drawn as HTML, and never widens the window. */
     private final JLabel strip = new JLabel()
     {
+        // The watch says the same sentence every second: the HTML is made again only for a new one
         @Override
         public void setText(String text)
         {
+            if (text != null && text.equals(getText())) return;
+
             super.setText(text);
 
             if (text != null && !text.isEmpty())
@@ -591,11 +594,17 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
 
     /**
      * Asks what to do with typing that is not saved, over this window alone: the main window's Stop stays live.  A
-     * second door asking while the question is up is canceled.  True when the caller may go on.
+     * second door asking while the question is up brings it forward and goes no further.  True when the caller may go
+     * on.
      */
     private boolean settleUnsaved()
     {
-        if (asking) return false;
+        if (asking)
+        {
+            bringBack();
+
+            return false;
+        }
 
         bringBack();
 
@@ -621,7 +630,8 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
 
             try
             {
-                question.setVisible(true);
+                // Meanwhile the main window's doors speak over the main window, not the window whose door asked
+                main.pressFromWindow(null, () -> question.setVisible(true));
             }
             finally
             {
@@ -664,9 +674,9 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
     }
 
     /**
-     * Writes everything typed onto the locomotive, with each refusal asked once and in this order: the moving rule,
-     * autonomy, routes and the multi-unit, then the name before the address.  The multi-unit's is asked again last,
-     * after the rest is written: refused there, the window stays dirty and the next Save writes it all again.
+     * Writes everything typed onto the locomotive.  Each refusal is asked before the first write, in this order: the
+     * moving rule, autonomy, routes and the multi-unit, then the name before the address; the multi-unit's again after
+     * the rest is written, and refused there the window stays dirty and the next Save writes it all again.
      *
      * @return true when everything went through
      */

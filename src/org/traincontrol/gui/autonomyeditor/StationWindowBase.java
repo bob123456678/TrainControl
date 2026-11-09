@@ -2,14 +2,22 @@ package org.traincontrol.gui.autonomyeditor;
 
 import java.awt.BorderLayout;
 import java.awt.Color;
+import java.awt.Component;
+import java.awt.Container;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Font;
 import java.awt.GridBagConstraints;
 import java.awt.Insets;
 import java.awt.Window;
+import java.awt.event.ActionEvent;
+import java.awt.event.FocusAdapter;
+import java.awt.event.FocusEvent;
 import java.awt.event.KeyEvent;
+import java.util.Objects;
 import java.util.function.BooleanSupplier;
+import java.util.function.IntConsumer;
+import javax.swing.AbstractAction;
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
@@ -18,6 +26,9 @@ import javax.swing.JDialog;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.KeyStroke;
+import javax.swing.SwingUtilities;
+import javax.swing.event.PopupMenuEvent;
+import javax.swing.event.PopupMenuListener;
 import org.traincontrol.automationui.TileGraph.TileKey;
 import org.traincontrol.gui.InfoMark;
 import org.traincontrol.gui.RunGates;
@@ -237,9 +248,19 @@ abstract class StationWindowBase extends JDialog
     /** Sets every control from the setup, and grays what may not be touched. */
     abstract void fill(boolean readOnly);
 
-    /** Commits a field being typed in, as leaving it does. */
+    /** Commits what is being typed or chosen, as leaving it does: the base, every list's choice. */
     void commitFields()
     {
+        settleChoicesIn(getContentPane());
+    }
+
+    private static void settleChoicesIn(Container in)
+    {
+        for (Component each : in.getComponents())
+        {
+            if (each instanceof Choice) ((Choice) each).settle();
+            else if (each instanceof Container) settleChoicesIn((Container) each);
+        }
     }
 
     /** What the watch sees change without the panel saying so; the base reads who holds the setup. */
@@ -374,9 +395,19 @@ abstract class StationWindowBase extends JDialog
         reload();
     }
 
-    /** Asked again at the click, in `readHeld`'s order: an editor open over the track diagram's setup, then a run. */
+    /**
+     * Asked again at the click, as the watch asks: the setup still the one the window opened on (else it goes), then in
+     * `readHeld`'s order an editor open over the track diagram's setup, and a run.
+     */
     private boolean refused()
     {
+        if (!stillAbout())
+        {
+            goAway();
+
+            return true;
+        }
+
         TrainControlUI main = editor.parentWindow();
 
         return editor.menuOnly && main != null && main.refuseWhileEditorOpen(this) || editor.refusedWhileRunning();
@@ -482,54 +513,56 @@ abstract class StationWindowBase extends JDialog
     }
 
     /**
-     * A list that acts only on a deliberate choice: a pick from the open list, Enter, or the list closing on a keyboard
-     * choice.  A typed letter or an arrow on the closed list only shows; Escape, or leaving the list, puts back what it held.
+     * A list that acts on a choice made, as a typed field does: a pick from the open list, Enter, or leaving the list
+     * (`commitFields`).  A typed letter or an arrow alone only shows the choice; Escape puts back what it held.
      */
     class Choice extends JComboBox<String>
     {
-        private final transient java.util.function.IntConsumer door;
+        private final transient IntConsumer door;
         private Object held;
-        private boolean keying;
+
+        /** True while a key or `putBack` moves the list, which then only shows. */
+        private boolean quiet;
         private boolean canceled;
 
         /** @param door given the index chosen */
-        Choice(java.util.function.IntConsumer door, String... items)
+        Choice(IntConsumer door, String... items)
         {
             super(items);
 
             this.door = door;
             this.held = getSelectedItem();
 
-            addPopupMenuListener(new javax.swing.event.PopupMenuListener()
+            addPopupMenuListener(new PopupMenuListener()
             {
                 @Override
-                public void popupMenuWillBecomeVisible(javax.swing.event.PopupMenuEvent e)
+                public void popupMenuWillBecomeVisible(PopupMenuEvent e)
                 {
                 }
 
                 @Override
-                public void popupMenuCanceled(javax.swing.event.PopupMenuEvent e)
+                public void popupMenuCanceled(PopupMenuEvent e)
                 {
                     canceled = true;
                 }
 
                 // Once closed: the door may ask
                 @Override
-                public void popupMenuWillBecomeInvisible(javax.swing.event.PopupMenuEvent e)
+                public void popupMenuWillBecomeInvisible(PopupMenuEvent e)
                 {
                     final boolean undo = canceled;
 
                     canceled = false;
-                    javax.swing.SwingUtilities.invokeLater(undo ? Choice.this::putBack : Choice.this::settle);
+                    SwingUtilities.invokeLater(undo ? Choice.this::putBack : Choice.this::settle);
                 }
             });
 
-            addFocusListener(new java.awt.event.FocusAdapter()
+            addFocusListener(new FocusAdapter()
             {
                 @Override
-                public void focusLost(java.awt.event.FocusEvent e)
+                public void focusLost(FocusEvent e)
                 {
-                    if (!e.isTemporary() && !isPopupVisible()) putBack();
+                    if (!isPopupVisible()) settle();
                 }
             });
 
@@ -537,20 +570,26 @@ abstract class StationWindowBase extends JDialog
             onKey(KeyEvent.VK_ESCAPE, this::putBack);
         }
 
-        /** A key of the closed list with a choice shown and not made; otherwise the key goes where it went. */
+        /** Whether a choice is shown and not made. */
+        private boolean pending()
+        {
+            return !Objects.equals(getSelectedItem(), held);
+        }
+
+        /** A key of the closed list with a choice pending; otherwise the key goes where it went. */
         private void onKey(int key, Runnable action)
         {
             getInputMap(WHEN_FOCUSED).put(KeyStroke.getKeyStroke(key, 0), action);
-            getActionMap().put(action, new javax.swing.AbstractAction()
+            getActionMap().put(action, new AbstractAction()
             {
                 @Override
                 public boolean isEnabled()
                 {
-                    return !isPopupVisible() && !java.util.Objects.equals(getSelectedItem(), held);
+                    return !isPopupVisible() && pending();
                 }
 
                 @Override
-                public void actionPerformed(java.awt.event.ActionEvent e)
+                public void actionPerformed(ActionEvent e)
                 {
                     action.run();
                 }
@@ -560,7 +599,7 @@ abstract class StationWindowBase extends JDialog
         @Override
         public void processKeyEvent(KeyEvent e)
         {
-            keying = e.getKeyCode() != KeyEvent.VK_ENTER;
+            quiet = e.getKeyCode() != KeyEvent.VK_ENTER;
 
             try
             {
@@ -568,7 +607,7 @@ abstract class StationWindowBase extends JDialog
             }
             finally
             {
-                keying = false;
+                quiet = false;
             }
         }
 
@@ -576,12 +615,13 @@ abstract class StationWindowBase extends JDialog
         protected void fireActionEvent()
         {
             if (reading) held = getSelectedItem();
-            else if (!keying && !isPopupVisible()) settle();
+            else if (!quiet && !isPopupVisible()) settle();
         }
 
+        /** Applies the choice shown, while the window is still about its square. */
         private void settle()
         {
-            if (java.util.Objects.equals(getSelectedItem(), held)) return;
+            if (tile == null || !pending()) return;
 
             held = getSelectedItem();
             door.accept(getSelectedIndex());
@@ -589,20 +629,9 @@ abstract class StationWindowBase extends JDialog
 
         private void putBack()
         {
-            if (java.util.Objects.equals(getSelectedItem(), held)) return;
-
-            boolean was = reading;
-
-            reading = true;
-
-            try
-            {
-                setSelectedItem(held);
-            }
-            finally
-            {
-                reading = was;
-            }
+            quiet = true;
+            setSelectedItem(held);
+            quiet = false;
         }
     }
 
