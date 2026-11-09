@@ -80,11 +80,14 @@ public class NetworkProxy
     private static final long TCP_RECONNECT_BACKOFF_MS = 1000;
 
     /**
-     * A connection that has carried nothing for this long since a frame was sent on it is taken as hung: the station
-     * answers every command, 99% within 0.42 s in live captures.  Silence alone is not, as a CS2 may send nothing
-     * unasked.
+     * A connection that has carried nothing for this long since a frame was sent on it is taken as hung.  A frame
+     * unanswered past TCP_SUSPECT_MS draws one ping, which every station answers, so the limit is about the connection,
+     * not one frame the station leaves unanswered.  Silence alone is not, as a CS2 may send nothing unasked.
      */
     private static final long TCP_ANSWER_LIMIT_MS = 3000;
+
+    /** The ping the window sends, which every station answers: the probe of a suspect connection. */
+    private static final byte[] PROBE = new CS2Message(CS2Message.CAN_CMD_PING, new byte[0]).getRawMessage();
 
     /** A send unanswered this long makes the connection suspect: a Stop then goes over UDP as well. */
     private static final long TCP_SUSPECT_MS = 1000;
@@ -138,6 +141,9 @@ public class NetworkProxy
 
     // Whether the current connection has carried a frame; one that never has is not worth reconnecting
     private volatile boolean carried;
+
+    // The listener's own: the first unanswered send it has probed for, so a suspect spell draws one ping
+    private long probed;
 
     private volatile boolean stopRequested;
 
@@ -1003,6 +1009,15 @@ public class NetworkProxy
                     if (this.stopRequested) return "";
 
                     long first = this.firstUnansweredAt;
+
+                    // On a thread of its own, as the write may wait behind a send stuck on a hung station
+                    if (first != this.probed && suspect())
+                    {
+                        this.probed = first;
+                        Thread probe = new Thread(() -> sendQuery(PROBE), "cs2-tcp-probe");
+                        probe.setDaemon(true);
+                        probe.start();
+                    }
 
                     if (first != 0 && first - this.lastHeardAt > 0 && System.nanoTime() - first > TCP_ANSWER_LIMIT_MS * 1000000L)
                     {
