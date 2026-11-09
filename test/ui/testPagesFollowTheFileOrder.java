@@ -388,6 +388,43 @@ public class testPagesFollowTheFileOrder extends support.PageWindowTest
     }
 
     /**
+     * The letters' order is the same on a machine set to Swedish from the start: `Util` loaded afresh under that default
+     * still puts "Ölberg" among the O's, before "Zebra", with capitals aside.  The Sort Pages claim above switches the
+     * default once `Util` is loaded, so it cannot see an order fixed as `Util` loads.
+     *
+     * MUTATION: build `Util.byLetters`' collator for the default locale (`Collator.getInstance()`), and this fails.
+     */
+    @Test
+    public void testTheLettersOrderIsTheSameOnAMachineSetToSwedish() throws Exception
+    {
+        java.util.Locale was = java.util.Locale.getDefault();
+
+        try
+        {
+            java.util.Locale.setDefault(new java.util.Locale("sv"));
+
+            try (java.net.URLClassLoader fresh = new java.net.URLClassLoader(new java.net.URL[] {
+                org.traincontrol.util.Util.class.getProtectionDomain().getCodeSource().getLocation(),
+                org.json.JSONObject.class.getProtectionDomain().getCodeSource().getLocation()},
+                ClassLoader.getSystemClassLoader().getParent()))
+            {
+                Class<?> util = Class.forName("org.traincontrol.util.Util", true, fresh);
+
+                assertTrue(util != org.traincontrol.util.Util.class, "precondition: Util was not loaded afresh");
+
+                java.lang.reflect.Method byLetters = util.getMethod("byLetters", String.class, String.class);
+
+                assertTrue((int) byLetters.invoke(null, "Ölberg", "Zebra") < 0, "Ölberg sorts after Zebra");
+                assertEquals((int) byLetters.invoke(null, "apple yard", "Apple Yard"), 0, "capitals are not aside");
+            }
+        }
+        finally
+        {
+            java.util.Locale.setDefault(was);
+        }
+    }
+
+    /**
      * On a Central Station layout (not the user's own folder) the arrows are refused as the other page edits are, and
      * nothing is written.
      *
