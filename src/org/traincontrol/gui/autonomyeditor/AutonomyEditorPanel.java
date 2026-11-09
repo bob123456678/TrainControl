@@ -135,6 +135,9 @@ public class AutonomyEditorPanel extends JPanel
 
     static final java.awt.Color HEADING_COLOUR = new java.awt.Color(0, 0, 155);
 
+    /** The banner's green for a setup that is ready, and Station Settings' for the stations picked. */
+    static final java.awt.Color READY_GREEN = new java.awt.Color(214, 245, 214);
+
     /** The findings list and the sentences beside it, one size down to fit the column. */
     static final java.awt.Font FONT_HINT = new java.awt.Font("Segoe UI", java.awt.Font.PLAIN, 12);
 
@@ -6510,7 +6513,7 @@ public class AutonomyEditorPanel extends JPanel
                 choosable, stations));
 
             banner.setBackground(warningRows.size() > 0
-                ? new java.awt.Color(255, 240, 200) : new java.awt.Color(214, 245, 214));
+                ? new java.awt.Color(255, 240, 200) : READY_GREEN);
         }
 
         // The whole sentence, for a narrow window (OB-342)

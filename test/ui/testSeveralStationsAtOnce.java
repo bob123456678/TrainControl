@@ -41,7 +41,7 @@ import support.StationDoors;
 
 /**
  * Station Settings for several stations at once (FR-052), pressed as the user presses it on the frozen railway: Pick
- * Stations picks and drops them, a field they disagree on says "(mixed)" and is left alone, and a change reaches each
+ * Stations picks and drops them, a field they disagree on wears a warning triangle and is left alone, and a change reaches each
  * through the door one station's window takes, writing what the same change made one station at a time writes.
  *
  * @author Adam
@@ -121,13 +121,15 @@ public class testSeveralStationsAtOnce
     }
 
     /**
-     * Several stations show a yellow banner at the top naming every one in full, like the app's other yellow notices,
-     * and leave out the Name row; with one station left the banner goes and the Name row is back.
+     * Several stations show a green banner at the top naming every one in full, in the editor's green for a ready setup
+     * with black text, not the yellow of a warning; they leave out the Name row; with one station left the banner goes
+     * and the Name row is back.
      *
-     * MUTATION: stop calling `sayWhichArePicked` in `fill`, or leave the Name row out of `showForHowMany`, and this fails.
+     * MUTATION: stop calling `sayWhichArePicked` in `fill`, or leave the Name row out of `showForHowMany`, or give the
+     * banner the strip's yellow again, and this fails.
      */
     @Test(timeOut = 120000)
-    public void testSeveralStationsAreNamedInAYellowBannerAndHaveNoNameRow() throws Exception
+    public void testSeveralStationsAreNamedInAGreenBannerAndHaveNoNameRow() throws Exception
     {
         List<TileKey> three = stations(3);
 
@@ -136,8 +138,10 @@ public class testSeveralStationsAtOnce
         javax.swing.JLabel banner = StationDoors.part(window, "station.picked", javax.swing.JLabel.class);
 
         assertTrue(on(banner::isShowing), "no banner names the stations picked");
-        assertEquals(on(banner::getBackground), StationDoors.part(window, "station.strip", javax.swing.JLabel.class)
-            .getBackground(), "the banner is not the yellow of the window's other notice");
+        assertEquals(on(banner::getBackground), new java.awt.Color(214, 245, 214), "the banner is not the editor's green");
+        assertEquals(on(banner::getForeground), java.awt.Color.BLACK, "the banner's text is not black");
+        assertNotEquals(on(banner::getBackground), StationDoors.part(window, "station.strip", javax.swing.JLabel.class)
+            .getBackground(), "the banner is the yellow of the window's warnings");
 
         for (TileKey each : three)
         {
@@ -283,8 +287,82 @@ public class testSeveralStationsAtOnce
     }
 
     /**
-     * A field the stations disagree on says "(mixed)", and nothing is written to it unless the user changes it; a change
-     * to another field leaves it as each station has it.
+     * A blank Enter leaves a length or priority they differ on as each has it, where before it cleared them all, so the
+     * triangle and the row's (i) say how to set them all instead: 0 for any length, 0 for the default priority.
+     *
+     * MUTATION: give the two fields' triangles and flyovers the plain `mixedTip()`, and this fails.
+     */
+    @Test(timeOut = 120000)
+    public void testABlankLeavesThemAloneAndTheTipSaysHowToClearThem() throws Exception
+    {
+        StationSettingsWindow window = pickDiffering("maxTrainLength", "priority");
+
+        Components.onTheEventThread(() -> { window.openAdvancedForTest(); return null; });
+
+        StationDoors.current(window);
+
+        String[][] fields = {{"maxLength", "autosetup.ui.stationMixedLengthTip"},
+            {"priority", "autosetup.ui.stationMixedPriorityTip"}};
+
+        for (String[] field : fields)
+        {
+            String how = I18n.t(field[1]);
+
+            javax.swing.JLabel triangle = StationDoors.part(window, "station." + field[0] + "Mixed", javax.swing.JLabel.class);
+
+            assertTrue(on(triangle::isShowing), "precondition: no triangle beside " + field[0]);
+            assertTrue(on(triangle::getToolTipText).contains(how), field[0] + "'s triangle does not say how to set them all: "
+                + on(triangle::getToolTipText));
+            assertTrue(on(() -> window.flyoverForTest(field[0])).contains(how), field[0] + "'s (i) does not say how to set"
+                + " them all");
+        }
+
+        String before = setup();
+
+        StationDoors.typeAndEnter(window, "station.priority", "");
+
+        assertEquals(setup(), before, "a blank Enter on the priority they differ on wrote to the stations");
+    }
+
+    /**
+     * A triangle grays with its row: with Trains can stop here unticked for all, the triangle beside Maximum train length
+     * is disabled and drawn gray, as the row's field is.  (Unticked, May choose this station reads the same for both.)
+     *
+     * MUTATION: leave the triangles out of their section's list, or drop `mixedLabel`'s gray disabled icon, and this fails.
+     */
+    @Test(timeOut = 120000)
+    public void testATriangleGraysWithItsRow() throws Exception
+    {
+        StationSettingsWindow window = pickDiffering("maxTrainLength");
+
+        StationDoors.press(window, "station.stops", message -> Answering.pressAt(0));
+        StationDoors.current(window);
+
+        assertFalse(StationDoors.on(window, "station.stops"), "precondition: Trains can stop here is still ticked");
+        assertFalse(StationDoors.live(window, "station.maxLength"), "precondition: the length field did not gray");
+
+        javax.swing.JLabel triangle = StationDoors.part(window, "station.maxLengthMixed", javax.swing.JLabel.class);
+
+        assertTrue(on(triangle::isShowing), "precondition: the length's triangle is not showing");
+        assertFalse(on(triangle::isEnabled), "the triangle stays live in a grayed row");
+        assertNotNull(on(triangle::getDisabledIcon), "the triangle has no grayed drawing, so Swing draws nothing");
+
+        List<Integer> pixels = on(() -> painted(triangle.getDisabledIcon()));
+
+        assertTrue(pixels.stream().anyMatch(p -> (p >>> 24) > 0), "the triangle's grayed drawing is empty");
+
+        for (int p : pixels)
+        {
+            if ((p >>> 24) == 0) continue;
+
+            assertTrue(((p >> 16) & 0xff) == ((p >> 8) & 0xff) && ((p >> 8) & 0xff) == (p & 0xff),
+                "the triangle is drawn in color in a grayed row: #" + Integer.toHexString(p));
+        }
+    }
+
+    /**
+     * A field the stations disagree on is blank beside a warning triangle, and nothing is written to it unless the user
+     * changes it; a change to another field leaves it as each station has it.
      *
      * MUTATION: have `agreed` answer the first station's value whatever the others hold, and this fails.
      */
@@ -311,23 +389,23 @@ public class testSeveralStationsAtOnce
 
         StationSettingsWindow window = pick(three);
 
-        String mixed = I18n.t("autosetup.ui.stationMixed");
-
-        assertEquals(StationDoors.text(window, "station.maxLength"), mixed, "lengths that differ do not say so");
+        assertEquals(StationDoors.text(window, "station.maxLength"), "", "lengths that differ show a value");
+        assertTrue(showing(window, "station.maxLengthMixed"), "lengths that differ do not say so");
 
         assertTrue(showing(window, "station.fullAutonomyMixed"), "May choose this station does not say it differs");
 
         assertFalse(StationDoors.on(window, "station.fullAutonomy"), "a box they differ on is ticked");
 
-        assertEquals(StationDoors.text(window, "station.priority"), "0", "a priority they share is not shown");
-
         String before = setup();
 
-        StationDoors.typeAndEnter(window, "station.maxLength", mixed);
+        StationDoors.typeAndEnter(window, "station.maxLength", "");
 
-        assertEquals(setup(), before, "Enter on \"(mixed)\" wrote to the stations");
+        assertEquals(setup(), before, "Enter on the blank they differ on wrote to the stations");
 
         Components.onTheEventThread(() -> { window.openAdvancedForTest(); return null; });
+
+        assertEquals(StationDoors.text(window, "station.priority"), "0", "a priority they share is not shown");
+        assertFalse(showing(window, "station.priorityMixed"), "a priority they share is marked as differing");
 
         StationDoors.typeAndEnter(window, "station.priority", "7");
 
@@ -520,13 +598,15 @@ public class testSeveralStationsAtOnce
     }
 
     /**
-     * "(mixed)" and the line saying changes apply to every station picked are item text: black, in the standard's
-     * regular text (Adam: "blue for section headings, black for item text").
+     * Where they differ, a warning triangle stands in for "(mixed)", and hovering it says they differ and each keeps its
+     * own; the line saying changes apply to every station picked points at the triangle and is item text: black, in the
+     * standard's regular text (Adam: "blue for section headings, black for item text").
      *
-     * MUTATION: give `mixedLabel` its gray back, and this fails.
+     * MUTATION: give `mixedLabel` its "(mixed)" text back instead of `RowIcons.warning`, or drop its tooltip, or the
+     * line its black, and this fails.
      */
     @Test(timeOut = 120000)
-    public void testMixedAndTheLineAboveAreItemText() throws Exception
+    public void testATriangleMarksWhatTheyDifferOnAndTheLineAboveSaysSo() throws Exception
     {
         final List<TileKey> two = stations(2);
 
@@ -540,16 +620,43 @@ public class testSeveralStationsAtOnce
 
         StationSettingsWindow window = pick(two);
 
-        java.awt.Font regular = new java.awt.Font("Segoe UI", java.awt.Font.PLAIN, 14);
+        javax.swing.JLabel triangle = StationDoors.part(window, "station.fullAutonomyMixed", javax.swing.JLabel.class);
 
-        for (String name : new String[] {"station.fullAutonomyMixed", "station.several"})
-        {
-            javax.swing.JLabel label = StationDoors.part(window, name, javax.swing.JLabel.class);
+        assertTrue(on(triangle::isShowing), "nothing marks May choose this station, which they differ on");
+        assertTrue(on(() -> triangle.getText() == null || triangle.getText().isEmpty()), "the mark still says "
+            + on(triangle::getText));
+        assertNotNull(on(triangle::getIcon), "the mark has no triangle");
+        assertEquals(on(() -> painted(triangle.getIcon())), on(() -> painted(org.traincontrol.gui.widgets.RowIcons.warning(16))),
+            "the mark is not the warning triangle");
+        assertEquals(on(triangle::getToolTipText), AutonomyEditorPanel.wrapped(I18n.t("autosetup.ui.stationMixedTip")),
+            "hovering the triangle does not say they differ and each keeps its own");
 
-            assertTrue(on(label::isShowing), "precondition: " + name + " is not showing");
-            assertEquals(on(label::getForeground), java.awt.Color.BLACK, name + " is not black");
-            assertEquals(on(label::getFont), regular, name + " is not the standard's regular text");
-        }
+        javax.swing.JLabel line = StationDoors.part(window, "station.several", javax.swing.JLabel.class);
+
+        assertTrue(on(line::isShowing), "precondition: the line above is not showing");
+        assertTrue(on(line::getText).contains("warning triangle") && !on(line::getText).contains("(mixed)"),
+            "the line above does not point at the triangle: " + on(line::getText));
+        assertEquals(on(line::getForeground), java.awt.Color.BLACK, "the line above is not black");
+        assertEquals(on(line::getFont), new java.awt.Font("Segoe UI", java.awt.Font.PLAIN, 14),
+            "the line above is not the standard's regular text");
+    }
+
+    /** An icon's pixels, to tell one drawing from another. */
+    private static List<Integer> painted(javax.swing.Icon icon)
+    {
+        java.awt.image.BufferedImage image = new java.awt.image.BufferedImage(icon.getIconWidth(), icon.getIconHeight(),
+            java.awt.image.BufferedImage.TYPE_INT_ARGB);
+
+        java.awt.Graphics2D g = image.createGraphics();
+
+        icon.paintIcon(null, g, 0, 0);
+        g.dispose();
+
+        List<Integer> out = new ArrayList<>();
+
+        for (int each : image.getRGB(0, 0, image.getWidth(), image.getHeight(), null, 0, image.getWidth())) out.add(each);
+
+        return out;
     }
 
     /**
@@ -649,6 +756,25 @@ public class testSeveralStationsAtOnce
         editor = frozen.editorOn(PAGE);
 
         panel = Components.onTheEventThread(() -> editor.getAutonomyPanel());
+    }
+
+    /** Two plain stations picked together, differing on each of these numbers (1 and 2). */
+    private StationSettingsWindow pickDiffering(String... properties) throws Exception
+    {
+        List<TileKey> two = stations(2);
+
+        Components.onTheEventThread(() ->
+        {
+            for (String each : properties)
+            {
+                session.setPointProperty(two.get(0), each, 1);
+                session.setPointProperty(two.get(1), each, 2);
+            }
+
+            return null;
+        });
+
+        return pick(two);
     }
 
     /** Arms Pick Stations and clicks each square; the window that opens. */
