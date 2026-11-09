@@ -896,24 +896,26 @@ public class testRestoreFromBackup
 
         counted.setAccessible(true);
 
+        boolean simulationWas = simulation.getBoolean(model);
+
         int countedWas = counted.getInt(model);
 
         boolean connectedWas = model.getNetworkCommState();
 
         String layout = TrainControlUI.getPrefs().get(TrainControlUI.LAYOUT_OVERRIDE_PATH_PREF, null);
 
-        TrainControlUI.getPrefs().remove(TrainControlUI.LAYOUT_OVERRIDE_PATH_PREF);
-        simulation.setBoolean(model, false);
-        counted.setInt(model, Math.max(1, countedWas));
-        model.setNetworkCommState(true);
-
         try
         {
+            TrainControlUI.getPrefs().remove(TrainControlUI.LAYOUT_OVERRIDE_PATH_PREF);
+            simulation.setBoolean(model, false);
+            counted.setInt(model, Math.max(1, countedWas));
+            model.setNetworkCommState(true);
+
             work.call();
         }
         finally
         {
-            simulation.setBoolean(model, true);
+            simulation.setBoolean(model, simulationWas);
             model.setNetworkCommState(connectedWas);
             counted.setInt(model, countedWas);
             putBack(TrainControlUI.LAYOUT_OVERRIDE_PATH_PREF, layout);

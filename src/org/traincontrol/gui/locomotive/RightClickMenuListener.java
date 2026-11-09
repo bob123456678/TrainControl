@@ -130,7 +130,7 @@ public class RightClickMenuListener extends PopupListener
                 menuItem.addActionListener(event -> ui.applyPreferredSpeed(ui.getButtonLocomotive(source)));
                 menuItem.setToolTipText("Alt-V");
 
-                if (ui.getButtonLocomotive(source).getPreferredSpeed() < 1)
+                if (!TrainControlUI.hasSpeedPreset(ui.getButtonLocomotive(source)))
                 {
                     menuItem.setEnabled(false);
                     menuItem.setToolTipText(I18n.t("loc.ui.tooltip.noSpeedPreset"));

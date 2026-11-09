@@ -6529,10 +6529,16 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         }
     }
     
+    /** Whether the locomotive has a saved speed preset: what Apply Saved Speed Preset needs, in the menu and on Alt+V. */
+    public static boolean hasSpeedPreset(Locomotive l)
+    {
+        return l != null && l.getPreferredSpeed() > 0;
+    }
+
     public void applyPreferredSpeed(Locomotive l)
     {
         // Nothing to apply without a saved preset: the menu item is grayed, and the hotkey does nothing
-        if (l != null && l.getPreferredSpeed() > 0)
+        if (hasSpeedPreset(l))
         {
             new Thread(() -> {
                 this.model.getLocByName(l.getName()).applyPreferredSpeed();
