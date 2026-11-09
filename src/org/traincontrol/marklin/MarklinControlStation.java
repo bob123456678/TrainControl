@@ -2875,7 +2875,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
         // Send the message to the appropriate listener
         if (message.isFeedbackCommand())
         {
-            this.feedbackMessageProcessor.submit(() ->
+            this.feedbackMessageProcessor.execute(() ->
             {
                 int id = message.extractShortUID();
 

@@ -2691,7 +2691,7 @@ public class AutonomyEditorPanel extends JPanel
     /** Runs a question for the railway on the worker Why Not Moving? uses (OB-192). */
     void offTheEventThread(Runnable question)
     {
-        WhyRenderer.submit(question);
+        WhyRenderer.execute(question);
     }
 
     /**

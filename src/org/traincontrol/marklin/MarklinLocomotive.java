@@ -748,7 +748,7 @@ public class MarklinLocomotive extends Locomotive
         final String said = this.getName();
         final long elapsed = waitedMs;
 
-        ADVISORIES.submit(() -> this.network.logf("autolayout.warnLocomotiveWaitingLong",
+        ADVISORIES.execute(() -> this.network.logf("autolayout.warnLocomotiveWaitingLong",
             said, feedbackName, Math.round(elapsed / 60000.0)));
     }
 
