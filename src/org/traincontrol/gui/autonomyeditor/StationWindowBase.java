@@ -331,15 +331,15 @@ abstract class StationWindowBase extends JDialog
     }
 
     /**
-     * A control's press: asked again at the click (a run may have begun), then the door, whose questions hang off this
-     * window, then saved, drawn and rebuilt as the menus' items do.  A door answering false changed nothing, so nothing
-     * is written or rebuilt.
+     * A control's press: asked again at the click (a run may have begun, or an editor opened), then the door, whose
+     * questions hang off this window, then saved, drawn and rebuilt as the menus' items do.  A door answering false
+     * changed nothing, so nothing is written or rebuilt.
      */
     final void act(BooleanSupplier door)
     {
         editor.pressedFrom(this, () ->
         {
-            if (editor.refusedWhileRunning())
+            if (refused())
             {
                 reload();
 
@@ -368,10 +368,18 @@ abstract class StationWindowBase extends JDialog
     {
         editor.pressedFrom(this, () ->
         {
-            if (!editor.refusedWhileRunning()) door.run();
+            if (!refused()) door.run();
         });
 
         reload();
+    }
+
+    /** Asked again at the click, in `readHeld`'s order: an editor open over the track diagram's setup, then a run. */
+    private boolean refused()
+    {
+        TrainControlUI main = editor.parentWindow();
+
+        return editor.menuOnly && main != null && main.refuseWhileEditorOpen(this) || editor.refusedWhileRunning();
     }
 
     /** Closed by the user: what is being typed applies, as leaving the field does. */

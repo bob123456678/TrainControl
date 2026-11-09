@@ -3712,7 +3712,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /** The same, said over the window a press read before it left the event thread. */
-    boolean refuseWhileEditorOpen(java.awt.Window asked)
+    public boolean refuseWhileEditorOpen(java.awt.Window asked)
     {
         return RunGates.refuseWhileEditorOpen(this, asked);
     }
