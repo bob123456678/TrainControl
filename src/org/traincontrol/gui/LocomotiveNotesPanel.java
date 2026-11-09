@@ -48,8 +48,8 @@ final class LocomotiveNotesPanel extends JPanel
     {
         super(new GridBagLayout());
 
-        this.startYear = AutonomyEditorPanel.digitsOnlyField(null, 10, 4);
-        this.endYear = AutonomyEditorPanel.digitsOnlyField(null, 10, 4);
+        this.startYear = yearField();
+        this.endYear = yearField();
         this.railway = new JComboBox<>(railways.toArray(new String[0]));
         this.railway.setEditable(true);
         this.railwayText = (JTextField) railway.getEditor().getEditorComponent();
@@ -210,12 +210,45 @@ final class LocomotiveNotesPanel extends JPanel
         document.setDocumentFilter(typing);
     }
 
-    /** A year field as a number, zero when blank; it holds only digits, or a stored year's minus sign. */
+    /** Four digits, typed or pasted; the whitespace around a paste ("1950" and a line break) is dropped first. */
+    private static JTextField yearField()
+    {
+        JTextField year = AutonomyEditorPanel.digitsOnlyField(null, 10, 4);
+        javax.swing.text.AbstractDocument document = (javax.swing.text.AbstractDocument) year.getDocument();
+        javax.swing.text.DocumentFilter digits = document.getDocumentFilter();
+
+        document.setDocumentFilter(new javax.swing.text.DocumentFilter()
+        {
+            @Override
+            public void insertString(FilterBypass fb, int offset, String text, javax.swing.text.AttributeSet attr)
+                throws javax.swing.text.BadLocationException
+            {
+                replace(fb, offset, 0, text, attr);
+            }
+
+            @Override
+            public void replace(FilterBypass fb, int offset, int length, String text, javax.swing.text.AttributeSet attr)
+                throws javax.swing.text.BadLocationException
+            {
+                String trimmed = text == null ? null : text.trim();
+
+                // A space alone is refused, not taken as an empty paste that would clear the selection
+                if (trimmed == null || !trimmed.isEmpty() || text.isEmpty()) digits.replace(fb, offset, length, trimmed, attr);
+            }
+        });
+
+        return year;
+    }
+
+    /**
+     * A year field as a number, zero when blank: digits of any script, as typing takes them; a stored year's minus sign
+     * is dropped.  Read as a long: Integer.MIN_VALUE's digits overflow an int, and the cast returns that one as stored.
+     */
     private static int year(JTextField field)
     {
-        String digits = field.getText().replaceAll("[^0-9]", "");
+        String digits = field.getText().replaceAll("[^\\p{Nd}]", "");
 
-        return digits.isEmpty() ? 0 : Integer.parseInt(digits);
+        return digits.isEmpty() ? 0 : (int) Long.parseLong(digits);
     }
 
     /** Writes what is shown onto the locomotive. */

@@ -526,6 +526,92 @@ public class testTheLocomotiveSettingsWindow
     }
 
     /**
+     * A year typed in another script's digits is saved as its value, as before the fields took digits only: full-width
+     * 1950 in Start Year and Arabic-Indic 1950 in End Year are both saved as 1950.
+     *
+     * MUTATION: read the years in `LocomotiveNotesPanel.year` with `[^0-9]` stripped, and this fails.
+     */
+    @Test
+    public void testAYearInAnotherScriptsDigitsIsSavedAsItsValue() throws Exception
+    {
+        open(2);
+
+        Components.onTheEventThread(() ->
+        {
+            typeDigits(SettingsWindow.part("notes.startYear", JTextField.class), "1950", 0xFF10);
+            typeDigits(SettingsWindow.part("notes.endYear", JTextField.class), "1950", 0x0660);
+
+            return null;
+        });
+
+        SettingsWindow.press(SettingsWindow.save());
+
+        assertTrue(Components.waitFor(() -> SettingsWindow.showing() == null, WAIT), "Save did not close the window");
+        assertEquals(loc.getStructuredNotes().getStartYear(), 1950, "the full-width year was not saved as 1950");
+        assertEquals(loc.getStructuredNotes().getEndYear(), 1950, "the Arabic-Indic year was not saved as 1950");
+    }
+
+    /** Clears a year field and types these digits a key at a time, in the script whose zero is at `zero`. */
+    private static void typeDigits(JTextField year, String digits, int zero)
+    {
+        year.selectAll();
+        year.replaceSelection("");
+
+        for (char c : digits.toCharArray()) year.replaceSelection(String.valueOf((char) (zero + c - '0')));
+    }
+
+    /**
+     * A year pasted with whitespace around it, a line break after it or a space on either side, is taken without it.
+     *
+     * MUTATION: build the year fields in `LocomotiveNotesPanel` as plain `digitsOnlyField`s, without the trimming
+     * filter, and this fails.
+     */
+    @Test
+    public void testAPastedYearLosesItsSurroundingWhitespace() throws Exception
+    {
+        open(2);
+
+        String crlf = String.valueOf((char) 13) + (char) 10;
+
+        for (String paste : new String[] { "1950" + crlf, "1950" + (char) 10, " 1950", "1950 " })
+        {
+            String shown = Components.onTheEventThread(() ->
+            {
+                JTextField year = SettingsWindow.part("notes.startYear", JTextField.class);
+
+                year.selectAll();
+                year.replaceSelection("");
+                year.replaceSelection(paste);
+
+                return year.getText();
+            });
+
+            assertEquals(shown, "1950", "a paste of \"" + paste.trim() + "\" with whitespace around it was not taken");
+        }
+    }
+
+    /**
+     * The lowest stored year an import can write, Integer.MIN_VALUE, saves without an error beside an edit of the
+     * notes and is kept as it was.
+     *
+     * MUTATION: parse the year as an int in `LocomotiveNotesPanel.year`, and this fails.
+     */
+    @Test
+    public void testTheLowestStoredYearSavesWithoutAnError() throws Exception
+    {
+        loc.setStructuredNotes(Integer.MIN_VALUE, 1970, "LS Railway", "first notes");
+
+        open(2);
+
+        typeArea("notes.text", "second notes");
+        SettingsWindow.press(SettingsWindow.save());
+
+        assertTrue(Components.waitFor(() -> SettingsWindow.showing() == null, WAIT), "Save did not go through");
+        assertEquals(loc.getStructuredNotes().getStartYear(), Integer.MIN_VALUE, "saving the notes changed the stored year");
+        assertEquals(loc.getStructuredNotes().getNotes(), "second notes");
+    }
+
+    /**
      * A stored year longer than four digits, as an import may write, is shown whole and does not light Save, and a
      * save of the notes beside it keeps it.
      *
