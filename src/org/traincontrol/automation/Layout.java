@@ -8565,6 +8565,38 @@ public class Layout
         return values;
     }
 
+    /** One of a point's setters, which may refuse its value by throwing. */
+    private interface Setter<E extends Exception>
+    {
+        void set(Point at) throws E;
+    }
+
+    /**
+     * One optional, typed setting of a point read from its JSON: absent is left alone, the wrong type invalidates the
+     * layout with `invalidKey`, and a setter that throws invalidates it with the failure.
+     */
+    private static void readSetting(Layout layout, JSONObject point, String key, Class<?> type, String invalidKey,
+        Setter<?> set)
+    {
+        if (!point.has(key)) return;
+
+        if (!type.isInstance(point.get(key)))
+        {
+            layout.invalidate(I18n.f(invalidKey, point.toString()));
+
+            return;
+        }
+
+        try
+        {
+            set.set(layout.getPoint(point.getString("name")));
+        }
+        catch (Exception e)
+        {
+            layout.invalidate(I18n.f("autolayout.errorSettingValueFailed", point.toString(), e.getMessage()));
+        }
+    }
+
     /**
      * Parses TrainControl's autonomous operation configuration file
      */
@@ -9049,51 +9081,11 @@ public class Layout
                     layout.getPoint(point.getString("name")).setY(y);
                 }
                 
-                if (point.has("terminus"))
-                {
-                    if (point.get("terminus") instanceof Boolean)
-                    {
-                        try
-                        {
-                            layout.getPoint(point.getString("name")).setTerminus(point.getBoolean("terminus"));
-                        } 
-                        catch (Exception e)
-                        {
-                            layout.invalidate(
-                                I18n.f("autolayout.errorSettingValueFailed", point.toString(), e.getMessage())
-                            );
-                        }
-                    }
-                    else
-                    {
-                        layout.invalidate(
-                            I18n.f("autolayout.errorTerminusInvalidValue", point.toString())
-                        );
-                    }
-                }  
+                readSetting(layout, point, "terminus", Boolean.class, "autolayout.errorTerminusInvalidValue",
+                    at -> at.setTerminus(point.getBoolean("terminus")));
                 
-                if (point.has("active"))
-                {
-                    if (point.get("active") instanceof Boolean)
-                    {
-                        try
-                        {
-                            layout.getPoint(point.getString("name")).setActive(point.getBoolean("active"));
-                        } 
-                        catch (Exception e)
-                        {
-                            layout.invalidate(
-                                I18n.f("autolayout.errorSettingValueFailed", point.toString(), e.getMessage())
-                            );
-                        }
-                    }
-                    else
-                    {
-                        layout.invalidate(
-                            I18n.f("autolayout.errorActiveInvalidValue", point.toString())
-                        );
-                    }
-                }
+                readSetting(layout, point, "active", Boolean.class, "autolayout.errorActiveInvalidValue",
+                    at -> at.setActive(point.getBoolean("active")));
 
                 if (point.has("autoDestination"))
                 {
@@ -9110,74 +9102,15 @@ public class Layout
                     }
                 }
 
-                if (point.has("reversing"))
-                {
-                    if (point.get("reversing") instanceof Boolean)
-                    {
-                        try
-                        {
-                            layout.getPoint(point.getString("name")).setReversing(point.getBoolean("reversing"));
-                        } 
-                        catch (Exception e)
-                        {
-                            layout.invalidate(
-                                I18n.f("autolayout.errorSettingValueFailed", point.toString(), e.getMessage())
-                            );
-                        }
-                    }
-                    else
-                    {
-                        layout.invalidate(
-                            I18n.f("autolayout.errorReversingInvalidValue", point.toString())
-                        );
-                    }
-                }
+                readSetting(layout, point, "reversing", Boolean.class, "autolayout.errorReversingInvalidValue",
+                    at -> at.setReversing(point.getBoolean("reversing")));
 
-                if (point.has("speedMultiplier"))
-                {
-                    if (point.get("speedMultiplier") instanceof Number)
-                    {
-                        try
-                        {
-                            layout.getPoint(point.getString("name")).setSpeedMultiplier(point.getDouble("speedMultiplier"));
-                        } 
-                        catch (Exception e)
-                        {
-                            layout.invalidate(
-                                I18n.f("autolayout.errorSettingValueFailed", point.toString(), e.getMessage())
-                            );
-                        }
-                    }
-                    else
-                    {
-                        layout.invalidate(
-                            I18n.f("autolayout.errorSpeedMultiplierInvalidValue", point.toString())
-                        );
-                    }
-                } 
+                readSetting(layout, point, "speedMultiplier", Number.class,
+                    "autolayout.errorSpeedMultiplierInvalidValue",
+                    at -> at.setSpeedMultiplier(point.getDouble("speedMultiplier")));
                 
-                if (point.has("priority"))
-                {
-                    if (point.get("priority") instanceof Integer)
-                    {
-                        try
-                        {
-                            layout.getPoint(point.getString("name")).setPriority(point.getInt("priority"));
-                        } 
-                        catch (Exception e)
-                        {
-                            layout.invalidate(
-                                I18n.f("autolayout.errorSettingValueFailed", point.toString(), e.getMessage())
-                            );
-                        }
-                    }
-                    else
-                    {
-                        layout.invalidate(
-                            I18n.f("autolayout.errorPriorityInvalidValue", point.toString())
-                        );
-                    }
-                } 
+                readSetting(layout, point, "priority", Integer.class, "autolayout.errorPriorityInvalidValue",
+                    at -> at.setPriority(point.getInt("priority")));
             } 
             catch (Exception ex)
             {
