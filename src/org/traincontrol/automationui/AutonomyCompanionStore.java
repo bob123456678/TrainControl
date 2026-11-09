@@ -226,25 +226,29 @@ public class AutonomyCompanionStore
     /** Replaces the squares that hold a station back; empty or null clears the restriction. */
     public void setBlockingPoints(TileKey station, List<TileKey> blockers)
     {
+        // De-duplicated here rather than in the picker, and never the station itself: standing at a station already
+        // decides whether it is free, so watching it from itself would leave nothing able to be sent there.
+        putList(blockedPoints, station, blockers, blocker -> blocker.equals(station));
+    }
+
+    /**
+     * Stores a station's list in one of the square-to-squares maps, de-duplicated, without nulls or what `refused`
+     * turns away; an empty list clears the station's entry.
+     */
+    private static void putList(Map<TileKey, List<TileKey>> into, TileKey station, List<TileKey> given,
+        java.util.function.Predicate<TileKey> refused)
+    {
         if (station == null) return;
 
         List<TileKey> keys = new ArrayList<>();
 
-        if (blockers != null)
+        if (given != null)
         {
-            for (TileKey blocker : blockers)
-            {
-                // De-duplicated here rather than in the picker, and never the station itself: standing at a station
-                // already decides whether it is free, so watching it from itself would leave nothing able to be sent there.
-                if (blocker != null && !blocker.equals(station) && !keys.contains(blocker))
-                {
-                    keys.add(blocker);
-                }
-            }
+            for (TileKey one : given) if (one != null && !keys.contains(one) && !refused.test(one)) keys.add(one);
         }
 
-        if (keys.isEmpty()) blockedPoints.remove(station);
-        else blockedPoints.put(station, keys);
+        if (keys.isEmpty()) into.remove(station);
+        else into.put(station, keys);
     }
 
     /** Every station held back by something, against the squares watched for it. */
@@ -277,28 +281,9 @@ public class AutonomyCompanionStore
     /** Replaces every signal protecting a station; empty or null unpairs. */
     public void setProtectingSignals(TileKey station, List<TileKey> signals)
     {
-        if (station == null) return;
-
-        List<TileKey> keys = new ArrayList<>();
-
-        if (signals != null)
-        {
-            for (TileKey signal : signals)
-            {
-                // De-duplicated here so no writer (an import, a restored snapshot) can leave one signal twice; never
-                // the station's own entry guard.
-                if (signal != null && !keys.contains(signal) && !onList(entrySignals, station, signal)) keys.add(signal);
-            }
-        }
-
-        if (keys.isEmpty())
-        {
-            stationSignals.remove(station);
-        }
-        else
-        {
-            stationSignals.put(station, keys);
-        }
+        // De-duplicated here so no writer (an import, a restored snapshot) can leave one signal twice; never the
+        // station's own entry guard.
+        putList(stationSignals, station, signals, signal -> onList(entrySignals, station, signal));
     }
 
     /** Every station that has protecting signals, against those signals' squares. */
@@ -316,23 +301,9 @@ public class AutonomyCompanionStore
     /** Replaces every signal guarding the way into a station (FR-096); empty or null unpairs. */
     public void setEntrySignals(TileKey station, List<TileKey> signals)
     {
-        if (station == null) return;
-
-        List<TileKey> keys = new ArrayList<>();
-
-        if (signals != null)
-        {
-            // De-duplicated as the protecting list is, and never the station's own exit guard: a signal on both lists
-            // is thrown red on arrival and then set by the platform's occupancy.  Refused in both setters; the editor
-            // says why.
-            for (TileKey signal : signals)
-            {
-                if (signal != null && !keys.contains(signal) && !onList(stationSignals, station, signal)) keys.add(signal);
-            }
-        }
-
-        if (keys.isEmpty()) entrySignals.remove(station);
-        else entrySignals.put(station, keys);
+        // De-duplicated as the protecting list is, and never the station's own exit guard: a signal on both lists is
+        // thrown red on arrival and then set by the platform's occupancy.  Refused in both setters; the editor says why.
+        putList(entrySignals, station, signals, signal -> onList(stationSignals, station, signal));
     }
 
     /** Whether a station's list in one of the two guard maps holds this signal */
@@ -2597,6 +2568,12 @@ public class AutonomyCompanionStore
         return key != null && key.getPage().equals(page);
     }
 
+    /** Adds the squares of `from` on this page to `into`, read from a copy of `from`. */
+    private static void addOnPage(java.util.Collection<TileKey> from, String page, Set<TileKey> into)
+    {
+        for (TileKey key : new ArrayList<>(from)) if (isOnPage(key, page)) into.add(key);
+    }
+
     /**
      * Whether a stored key belongs to this page, by what the key PARSES to, not what it starts with: a page may be
      * called "Yard: Upper", and "Yard: Upper:2,3" starts with "Yard:".  parseTileKey splits on the LAST colon.
@@ -3559,10 +3536,7 @@ public class AutonomyCompanionStore
 
         @Override void squaresOn(String page, Set<TileKey> into)
         {
-            for (TileKey key : new LinkedHashSet<>(map.keySet()))
-            {
-                if (isOnPage(key, page)) into.add(key);
-            }
+            addOnPage(map.keySet(), page, into);
         }
     }
 
@@ -3729,15 +3703,8 @@ public class AutonomyCompanionStore
 
         @Override void squaresOn(String page, Set<TileKey> into)
         {
-            for (TileKey key : new LinkedHashSet<>(map.keySet()))
-            {
-                if (isOnPage(key, page)) into.add(key);
-            }
-
-            for (TileKey value : new ArrayList<>(map.values()))
-            {
-                if (isOnPage(value, page)) into.add(value);
-            }
+            addOnPage(map.keySet(), page, into);
+            addOnPage(map.values(), page, into);
         }
     }
 
@@ -3800,10 +3767,7 @@ public class AutonomyCompanionStore
 
         @Override void squaresOn(String page, Set<TileKey> into)
         {
-            for (TileKey key : new LinkedHashSet<>(map.keySet()))
-            {
-                if (isOnPage(key, page)) into.add(key);
-            }
+            addOnPage(map.keySet(), page, into);
 
             for (List<TileKey> pointed : new ArrayList<>(map.values()))
             {
@@ -3870,10 +3834,7 @@ public class AutonomyCompanionStore
 
         @Override void squaresOn(String page, Set<TileKey> into)
         {
-            for (TileKey key : new LinkedHashSet<>(set))
-            {
-                if (isOnPage(key, page)) into.add(key);
-            }
+            addOnPage(set, page, into);
         }
     }
 
