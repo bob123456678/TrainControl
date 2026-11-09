@@ -24,3 +24,11 @@
 1304	  Sync complete.	  Sensors asked for their state by the sync: 0. Answered: 0. Not asked, as their device is not known: 1.\n  Sync complete.
 1314	  Sync complete.	  Sensors asked for their state by the sync: 0. Answered: 0. Not asked, as their device is not known: 1.\n  Sync complete.
 1325	  Sync complete.	  Sensors asked for their state by the sync: 0. Answered: 0. Not asked, as their device is not known: 1.\n  Sync complete.
+17	## resync -> 0	  /app/api/devs\n## resync -> 0
+25	## rename proposals -> 0	  /app/api/devs\n## rename proposals -> 0
+56	## sync with a local folder -> 0	  /app/api/devs\n## sync with a local folder -> 0
+64	## rename proposals with a local folder -> 0	  /app/api/devs\n## rename proposals with a local folder -> 0
+699	## resync -> 0	  /app/api/devs\n## resync -> 0
+707	## rename proposals -> 0	  /app/api/devs\n## rename proposals -> 0
+738	## sync with a local folder -> 0	  /app/api/devs\n## sync with a local folder -> 0
+746	## rename proposals with a local folder -> 0	  /app/api/devs\n## rename proposals with a local folder -> 0

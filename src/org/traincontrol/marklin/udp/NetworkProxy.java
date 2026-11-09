@@ -167,7 +167,8 @@ public class NetworkProxy
     // Set by connectOverTcp and by a sync's syncSensors, both for a CS3 only
     private volatile boolean learnsDevices;
 
-    // Each contact's device as last saved, for a contact no event placed
+    // Each contact's device as the station's device list has it, and as last saved, for a contact no event placed
+    private volatile Map<Integer, Integer> listedDevice = new java.util.HashMap<>();
     private volatile Map<Integer, Integer> savedDevice = new java.util.HashMap<>();
 
     // Each contact asked, and when a real event for it came since (0 for none): an answer, or a late copy, within
@@ -742,17 +743,29 @@ public class NetworkProxy
         ask(overTcp, epoch, overTcp ? 1 : 2, "network.sensorsSynced");
     }
 
-    /** The device a contact is asked at: the one a real event showed, else the one saved; null when neither. */
+    /**
+     * The device a contact is asked at: the one a real event showed, else the station's device list's, else the one
+     * saved; null when none.
+     */
     public Integer deviceOf(int contact)
     {
         Integer device = this.sensorDevice.get(contact);
 
+        if (device == null) device = this.listedDevice.get(contact);
+
         return device != null ? device : this.savedDevice.get(contact);
     }
 
-    /** The devices saved before a restart, each used until an event shows one (OB-418). */
-    public void rememberDevices(Map<Integer, Integer> saved)
+    /** The device a real event showed for a contact, or null. */
+    public Integer learnedDeviceOf(int contact)
     {
+        return this.sensorDevice.get(contact);
+    }
+
+    /** The devices the station's device list places, and those saved before a restart (OB-418). */
+    public void knowDevices(Map<Integer, Integer> listed, Map<Integer, Integer> saved)
+    {
+        this.listedDevice = new java.util.HashMap<>(listed);
         this.savedDevice = new java.util.HashMap<>(saved);
     }
 

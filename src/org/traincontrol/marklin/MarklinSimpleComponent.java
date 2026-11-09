@@ -73,6 +73,11 @@ public class MarklinSimpleComponent implements java.io.Serializable
         this.accessoryDecoderType = a.getDecoderType();
     }
     
+    public MarklinSimpleComponent(MarklinFeedback a)
+    {
+        this(a, null);
+    }
+
     /** A sensor, with the s88 device a CS3 is asked at for it, or null (OB-418). */
     public MarklinSimpleComponent(MarklinFeedback a, Integer device)
     {

@@ -852,6 +852,8 @@ public class testTheStationIsReachedOverTcp
         {
             syncingOverUdp(wire, 1904).join(WAIT_MS);
             broadcast(linkS88(1904, false));
+            assertTrue(Components.waitFor(() -> this.model.heardFrame(linkS88(1904, false)), WAIT_MS),
+                "precondition: the event was not heard");
 
             // Waiting is the point: the mark lapses RESYNC_WAIT_NS after the event
             Components.waitFor(() -> false, 1200);
@@ -860,6 +862,36 @@ public class testTheStationIsReachedOverTcp
 
             assertEquals(this.model.lastState(1904), Boolean.TRUE, "a frame long after the event was dropped");
         }
+    }
+
+    /**
+     * A query the proxy could not write, the connection being replaced, is not counted as asked.
+     *
+     * MUTATION: in `NetworkProxy.askOnce`, `if (written) sent++;` to `sent++;`.
+     */
+    @Test(timeOut = 30000)
+    public void testAQueryNotWrittenIsNotCounted() throws Exception
+    {
+        connectedToASilentStation();
+        this.station.sensor(1905, true);
+        assertTrue(Components.waitFor(() -> this.model.heardFrame(linkS88(1905, true)), WAIT_MS), "precondition");
+
+        java.lang.reflect.Field replacing = NetworkProxy.class.getDeclaredField("replacing");
+        replacing.setAccessible(true);
+        replacing.setBoolean(this.proxy, true);
+
+        try
+        {
+            this.proxy.syncSensors();
+        }
+        finally
+        {
+            replacing.setBoolean(this.proxy, false);
+        }
+
+        assertTrue(this.model.lines.contains(I18n.f("network.sensorsSynced", 0, 0, 0)),
+            "a query not written was counted: " + this.model.lines);
+        assertTrue(this.station.queries().isEmpty(), "precondition: the query was written");
     }
 
     /** The queries the station received, as {device, contact}, sorted. */

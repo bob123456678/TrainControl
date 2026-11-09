@@ -1821,7 +1821,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
         // The sensors' true states, asked of a CS3 only: a query sets nothing on the station (OB-418)
         if (this.isCS3 && this.NetworkInterface != null)
         {
-            this.NetworkInterface.rememberDevices(this.savedS88Devices);
+            this.NetworkInterface.knowDevices(this.fileParser.parseS88DevicesCS3(), this.savedS88Devices);
             this.NetworkInterface.syncSensors();
         }
 
@@ -2054,10 +2054,14 @@ public class MarklinControlStation implements ViewListener, ModelListener
         return this.isCS3;
     }
     
-    /** A sensor's s88 device to save: the one a CS3 is asked at, else the one saved before (OB-418). */
+    /**
+     * A sensor's s88 device to save: the one a CS3's real event showed, else the one saved before; never one only the
+     * station's device list gave, as the list is read again at each sync (OB-418).
+     */
     private Integer s88DeviceToSave(int contact)
     {
-        Integer device = this.isCS3 && this.NetworkInterface != null ? this.NetworkInterface.deviceOf(contact) : null;
+        Integer device = this.isCS3 && this.NetworkInterface != null
+            ? this.NetworkInterface.learnedDeviceOf(contact) : null;
 
         return device != null ? device : this.savedS88Devices.get(contact);
     }
@@ -5276,6 +5280,9 @@ public class MarklinControlStation implements ViewListener, ModelListener
 
         // Start execution
         proxy.setModel(model);
+
+        // The start-up sync ran before the proxy had its model: its sensors are asked now (OB-418)
+        if (model.isCS3() && model.getNetworkCommState()) proxy.syncSensors();
         
         // Connection failed - ask for IP on next run
         if (forgetsTheAddress(simulate, model.getNetworkCommState()))

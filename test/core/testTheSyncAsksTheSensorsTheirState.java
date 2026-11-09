@@ -5,6 +5,8 @@ import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.function.BiFunction;
 import static org.testng.Assert.assertEquals;
@@ -12,6 +14,7 @@ import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
 import org.testng.annotations.Test;
 import org.traincontrol.marklin.MarklinSimpleComponent;
+import org.traincontrol.marklin.file.CS2File;
 import org.traincontrol.marklin.udp.CS2Message;
 import org.traincontrol.util.I18n;
 import support.Components;
@@ -22,7 +25,8 @@ import support.TcpStation;
 /**
  * Sync with Central Station asks a CS3 for its sensors' true states and puts TrainControl's right (OB-418).  Read-only
  * on the station: the only frame it adds is the s88 query (0x11, device and contact), sent only for a contact whose
- * device is known, at that device: the one a real event showed, else the one saved before a restart.  An answer older
+ * device is known, at that device: the one a real event showed, else the one the station's device list gives, else the
+ * one saved before a restart.  The sync after start-up asks too.  An answer older
  * than an event since its query never wins, and a station that does not answer holds the sync up by the resync's bound
  * only.  A CS2's sync asks nothing: its goldens hold.
  *
@@ -42,6 +46,10 @@ public class testTheSyncAsksTheSensorsTheirState
 
     private static final BiFunction<String, Integer, byte[]> CS3 =
         StandInStation.cs3("260", "{\"softwareVersion\":\"2.6.1 (Build 3)\"}");
+
+    /** The same CS3, serving Adam's station's device list (`test/cs3_v261/app/api/devs.json`) at /app/api/devs. */
+    private static final BiFunction<String, Integer, byte[]> CS3_LISTING = (path, n) -> "/app/api/devs".equals(path)
+        ? StandInStation.file("test/cs3_v261/app/api/devs.json") : CS3.apply(path, n);
 
     /** Runs a claim against a model connected over TCP to a CS3. */
     private static void connected(Claim claim) throws Exception
@@ -191,7 +199,7 @@ public class testTheSyncAsksTheSensorsTheirState
      * asked, then answers "occupied", the state from before.  The contact stays clear; a later event of another
      * contact, carried after the answer, shows the answer was read.
      *
-     * MUTATION: in `NetworkProxy.learn`, take out `this.overtaken.replace(contact, true);`.
+     * MUTATION: in `NetworkProxy.learn`, take out `this.overtaken.replace(contact, System.nanoTime());`.
      */
     @Test(timeOut = 120000)
     public void testAnEventAfterTheQueryBeatsTheAnswer() throws Exception
@@ -243,12 +251,27 @@ public class testTheSyncAsksTheSensorsTheirState
      * event of its own (OB-418).  The sensor is the stand-in's diagram's, as a CS3 sync takes out sensors on no page.
      *
      * MUTATION: in `MarklinControlStation.saveState`, `s88DeviceToSave(f.getUID())` to `null`.  And: in
-     * `MarklinControlStation.syncWithCS2`, take out `this.NetworkInterface.rememberDevices(this.savedS88Devices);`.
+     * `MarklinControlStation.syncWithCS2`, pass `new java.util.HashMap<>()` for `this.savedS88Devices` to `knowDevices`.
      */
     @Test(timeOut = 180000)
     public void testADeviceLearnedBeforeARestartIsAskedAfterIt() throws Exception
     {
         File root = Files.createTempDirectory("tc-sync-s88-restart").toFile();
+        int contact = savedAtDevice3(root);
+
+        connected(root, CS3, (rig, station) ->
+        {
+            List<byte[]> during = synced(rig, station);
+            assertTrue(queries(during).contains("3/" + contact), "the saved device was not asked: " + queries(during));
+        });
+    }
+
+    /**
+     * A first run in `root` that hears the diagram's one sensor (a CS3 sync takes out sensors on no page), 1002 and 50
+     * from device 3 and saves; returns the diagram's sensor.
+     */
+    private static int savedAtDevice3(File root) throws Exception
+    {
         int[] contact = new int[1];
 
         connected(root, CS3, (rig, station) ->
@@ -256,15 +279,188 @@ public class testTheSyncAsksTheSensorsTheirState
             assertEquals(rig.model.knownSensors().size(), 1, "precondition: the diagram has not one sensor");
             contact[0] = rig.model.knownSensors().get(0);
             station.send(TcpStation.event(3, contact[0], true));
-            assertTrue(shows(rig, contact[0], true), "precondition: the event did not arrive");
+            station.send(TcpStation.event(3, 1002, true));
+            station.send(TcpStation.event(3, 50, true));
+            assertTrue(shows(rig, contact[0], true) && shows(rig, 1002, true) && shows(rig, 50, true),
+                "precondition: the events did not arrive");
             rig.model.saveState(false);
         });
 
-        connected(root, CS3, (rig, station) ->
+        return contact[0];
+    }
+
+    /**
+     * The start-up sync asks the sensors once the proxy can hear the answers: a device saved before a restart is asked
+     * as the model starts, before any sync of the operator's (OB-418).
+     *
+     * MUTATION: in `MarklinControlStation.init`, take out the `proxy.syncSensors();` after `proxy.setModel(model);`.
+     */
+    @Test(timeOut = 180000)
+    public void testTheStartUpAsksTheSensors() throws Exception
+    {
+        File root = Files.createTempDirectory("tc-sync-s88-start").toFile();
+        int contact = savedAtDevice3(root);
+
+        connected(root, CS3, (rig, station) -> assertTrue(Components.waitFor(() -> asked(station).contains("3/" + contact),
+            WAIT_MS), "the start-up did not ask the saved device: " + asked(station)));
+    }
+
+    /**
+     * Adam's station's device list places his sensors at the Link S88 (device 2): 1-16, 1001-1032, 2001-2016 and
+     * 3001-3016.  1-16 goes to the Link S88 although the station's own bus (device 1, five modules configured, nothing
+     * on it) covers 1-80 too: the own bus never places a sensor, as Adam ruled ("L88 is much safer").  A sync asks a
+     * sensor no event placed at the device the list gives (OB-418).
+     *
+     * MUTATION: in `CS2File.contactsOf`, `"64".equals(device.optString("typ"))` to `true`.  And: in
+     * `MarklinControlStation.syncWithCS2`, `this.fileParser.parseS88DevicesCS3()` to `new java.util.HashMap<>()`.
+     */
+    @Test(timeOut = 120000)
+    public void testAdamsDeviceListPlacesHisSensors() throws Exception
+    {
+        connected(Files.createTempDirectory("tc-sync-s88-list").toFile(), CS3_LISTING, (rig, station) ->
         {
-            synced(rig, station);
-            assertTrue(asked(station).contains("3/" + contact[0]), "the saved device was not asked: " + asked(station));
+            Map<Integer, Integer> want = new TreeMap<>();
+
+            for (int c = 1; c <= 16; c++) want.put(c, 2);
+            for (int c = 1001; c <= 1032; c++) want.put(c, 2);
+            for (int c = 2001; c <= 2016; c++) want.put(c, 2);
+            for (int c = 3001; c <= 3016; c++) want.put(c, 2);
+
+            assertEquals(new TreeMap<>(new CS2File(rig.station.address(), rig.model).parseS88DevicesCS3()), want,
+                "the list does not place the sensors as Adam's station has them");
+
+            for (int c : new int[] {5, 17, 1032}) rig.model.newFeedback(c, null);
+
+            TreeSet<String> asked = queries(synced(rig, station));
+            assertTrue(asked.contains("2/1032") && asked.contains("2/5"), "the list's devices were not asked: " + asked);
+            assertTrue(asked.stream().noneMatch(q -> q.endsWith("/17")), "the own bus placed a sensor: " + asked);
         });
+    }
+
+    /**
+     * Only a device a real event showed is saved: a sensor the Link S88 list placed, with no event, is saved with none,
+     * as the list is read again at each sync.
+     *
+     * MUTATION: in `MarklinControlStation.s88DeviceToSave`, `learnedDeviceOf(contact)` to `deviceOf(contact)`.
+     */
+    @Test(timeOut = 120000)
+    public void testADeviceOnlyTheListGaveIsNotSaved() throws Exception
+    {
+        connected(Files.createTempDirectory("tc-sync-s88-nosave").toFile(), CS3_LISTING, (rig, station) ->
+        {
+            int contact = rig.model.knownSensors().get(0);
+            synced(rig, station);
+            assertTrue(asked(station).contains("2/" + contact), "precondition: the list did not place the sensor");
+            rig.model.saveState(false);
+            int found = 0;
+
+            for (MarklinSimpleComponent c : rig.model.restoreState(
+                org.traincontrol.util.Util.dataPath(org.traincontrol.marklin.MarklinControlStation.DATA_FILE_NAME)))
+            {
+                if (c.getType() == MarklinSimpleComponent.Type.FEEDBACK && c.getAddress() == contact)
+                {
+                    found++;
+                    assertEquals(c.getS88Device(), null, "a device only the list gave was saved");
+                }
+            }
+
+            assertEquals(found, 1, "precondition: the sensor was not saved");
+        });
+    }
+
+    /**
+     * A contact two Link S88s have is placed by neither, the station's own bus places nothing, and an entry with no
+     * device number (0xffff) is skipped: here 1-16 is in both Link S88s, 1001-1016 only in device 3's, and 2001-2016
+     * only in the 0xffff entry's.
+     *
+     * MUTATION: in `CS2File.parseS88DevicesCS3`, take out `owner.keySet().removeAll(shared);`.  And: there, take out
+     * `|| device == 0xffff`.
+     */
+    @Test(timeOut = 120000)
+    public void testTwoLinkS88sShareNothingAndTheOwnBusPlacesNothing() throws Exception
+    {
+        String list = "[{\"kennung\":\"0x2\",\"typ\":\"64\",\"kanal\":[{\"name\":\"Auswertung 1 - 16\"}]},"
+            + "{\"kennung\":\"0x3\",\"typ\":\"64\",\"kanal\":[{\"name\":\"Auswertung 1 - 16\",\"wert\":\"0\"},"
+            + "{\"name\":\"L\u00e4nge Bus 1 (RJ45-1)\",\"wert\":\"1\"}]},"
+            + "{\"kennung\":\"0x1\",\"typ\":\"80\",\"kanal\":[{\"name\":\"L\u00e4nge S88Bus\",\"wert\":\"5\"}]},"
+            + "{\"kennung\":\"0xffff\",\"typ\":\"64\","
+            + "\"kanal\":[{\"name\":\"L\u00e4nge Bus 2 (RJ45-2)\",\"wert\":\"1\"}]}]";
+
+        connected(Files.createTempDirectory("tc-sync-s88-two").toFile(), (path, n) -> "/app/api/devs".equals(path)
+            ? list.getBytes(java.nio.charset.StandardCharsets.UTF_8) : CS3.apply(path, n), (rig, station) ->
+        {
+            Map<Integer, Integer> want = new TreeMap<>();
+
+            for (int c = 1001; c <= 1016; c++) want.put(c, 3);
+
+            assertEquals(new TreeMap<>(new CS2File(rig.station.address(), rig.model).parseS88DevicesCS3()), want,
+                "the list placed a shared contact, the own bus's, or an entry with no device number");
+        });
+    }
+
+    /**
+     * Where they disagree a live event beats the station's list, and the list beats the saved device; the saved device
+     * places what the list leaves out.  Saved at device 3: the diagram's sensor (in the Link S88's 1-16), 1002 and 50
+     * (on no Link S88); after the restart an event for 1003 comes from device 3.
+     *
+     * MUTATION: in `NetworkProxy.deviceOf`, look in `savedDevice` before `listedDevice`.  And: look in `listedDevice`
+     * before `sensorDevice`.
+     */
+    @Test(timeOut = 180000)
+    public void testAnEventBeatsTheListAndTheListBeatsTheSavedDevice() throws Exception
+    {
+        File root = Files.createTempDirectory("tc-sync-s88-order").toFile();
+        int contact = savedAtDevice3(root);
+        assertTrue(contact >= 1 && contact <= 16, "precondition: the diagram's sensor is not in the Link S88's 1-16");
+
+        connected(root, CS3_LISTING, (rig, station) ->
+        {
+            rig.model.newFeedback(1002, null);
+            rig.model.newFeedback(50, null);
+            station.send(TcpStation.event(3, 1003, true));
+            assertTrue(shows(rig, 1003, true), "precondition: the event did not arrive");
+
+            TreeSet<String> asked = queries(synced(rig, station));
+            assertTrue(asked.contains("3/50"), "the saved device did not place what the list leaves: " + asked);
+            assertTrue(asked.contains("2/" + contact) && !asked.contains("3/" + contact)
+                && asked.contains("2/1002") && !asked.contains("3/1002"), "the saved device beat the list: " + asked);
+            assertTrue(asked.contains("3/1003") && !asked.contains("2/1003"), "the list beat a live event: " + asked);
+        });
+    }
+
+    /**
+     * A station whose device list is missing (not found) or will not read is synced as before, and nothing is said of
+     * it: devices come from events and the saved file.
+     *
+     * MUTATION: in `CS2File.parseS88DevicesCS3`, `return new HashMap<>();` to
+     * `throw new IllegalStateException(unreadable);`.
+     */
+    @Test(timeOut = 180000)
+    public void testAMissingOrUnreadableListIsQuiet() throws Exception
+    {
+        List<BiFunction<String, Integer, byte[]>> stations = Arrays.asList(CS3, (path, n) -> "/app/api/devs".equals(path)
+            ? "<html>busy</html>".getBytes(java.nio.charset.StandardCharsets.UTF_8) : CS3.apply(path, n));
+
+        for (BiFunction<String, Integer, byte[]> answer : stations)
+        {
+            connected(Files.createTempDirectory("tc-sync-s88-nolist").toFile(), answer, (rig, station) ->
+            {
+                assertTrue(new CS2File(rig.station.address(), rig.model).parseS88DevicesCS3().isEmpty(),
+                    "an unreadable list placed sensors");
+
+                station.sensor(2601, true);
+                assertTrue(shows(rig, 2601, true), "precondition: the event did not arrive");
+                rig.takeLog();
+
+                List<byte[]> during = synced(rig, station);
+                assertTrue(queries(during).contains("2/2601"), "the sensor was not asked: " + queries(during));
+
+                for (String line : rig.takeLog())
+                {
+                    assertFalse(line.contains("devs"), "the log spoke of the device list: " + line);
+                }
+            });
+        }
     }
 
     /**
