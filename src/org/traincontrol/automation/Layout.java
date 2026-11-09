@@ -3270,6 +3270,9 @@ public class Layout
         boolean configureFailed = false;
         int edgesLocked = 0;
 
+        // Before the first switch: a replacement from here on loses switch frames, which the validation wait then misses
+        final int replacements = this.control.getReplacementEpoch();
+
         // A throw out of the lock loop, rethrown once the track is given back: executePath's handler does not unlock
         // (right mid-run), but here the train has not moved, and the edges taken would stay occupied for the session.
         RuntimeException lockFailure = null;
@@ -3386,12 +3389,16 @@ public class Layout
         int stops = this.stopsOrdered.get();
         int power = this.control.getPowerEpoch();
 
-        if (!this.validatePathActuation(path, stops, power))
+        if (!this.validatePathActuation(path, stops, power, replacements))
         {
-            // A Stop or a power change ended the wait: the train goes back unrun, as executePath gives one back, and
-            // nothing is counted against the accessories.
+            // A Stop, a power change or a replaced connection ended the wait: the train goes back unrun, as executePath
+            // gives one back, and nothing is counted against the accessories.
             if (this.stopsOrdered.get() != stops) giveBackUnrun(path, loc, "autolayout.log.notSentAfterTheStop");
             else if (this.control.getPowerEpoch() != power) giveBackUnrun(path, loc, "autolayout.log.notSentPowerOff");
+            else if (this.control.getReplacementEpoch() != replacements)
+            {
+                giveBackUnrun(path, loc, "autolayout.log.notSentReconnecting");
+            }
             else
             {
                 this.handleMisconfiguredPath(path, loc);
@@ -3408,14 +3415,16 @@ public class Layout
      * Waits up to PATH_VALIDATION_MS * (accessories on the path + 1) for every accessory on the path to reach its
      * CS-confirmed commanded state, on Accessory.actuationConfirmedMonitor rather than polling.  While the station is
      * still answering it waits on, up to PATH_VALIDATION_BUSY_MAX: a CS3 switches one accessory at a time, about a
-     * second each, so ours may be queued behind another train's (OB-425).  A Stop or a power change ends the wait.
-     * Must be called WITHOUT holding the Layout monitor so concurrent path checks are not blocked.
+     * second each, so ours may be queued behind another train's (OB-425).  A Stop, a power change or a replaced
+     * connection ends the wait.  Must be called WITHOUT holding the Layout monitor so concurrent path checks are not
+     * blocked.
      *
      * @param stops `stopsOrdered()` as read before the path was configured
      * @param power the power epoch as read then
+     * @param replacements the connection's replacement epoch as read then
      * @return true if all accessories on the path are confirmed at their commanded state
      */
-    private boolean validatePathActuation(List<Edge> path, int stops, int power)
+    private boolean validatePathActuation(List<Edge> path, int stops, int power, int replacements)
     {
         List<Accessory> accessories = new ArrayList<>();
         List<Boolean> desired = new ArrayList<>();
@@ -3438,7 +3447,7 @@ public class Layout
         if (accessories.isEmpty()) return true;
 
         // Woken by every CS echo (MarklinAccessory notifies the monitor), and at least every STOP_CHECK_MS so a Stop, a
-        // power change or a stopped run ends the wait at once instead of after the station's backlog.
+        // power change or a replaced connection ends the wait at once instead of after the station's backlog.
         long start = System.currentTimeMillis();
         long deadline = start + PATH_VALIDATION_MS + PATH_VALIDATION_MS * accessories.size();
         synchronized (Accessory.actuationConfirmedMonitor)
@@ -3447,7 +3456,8 @@ public class Layout
             {
                 long remaining = deadline - System.currentTimeMillis();
 
-                if (remaining <= 0 || this.stopsOrdered.get() != stops || this.control.getPowerEpoch() != power) break;
+                if (remaining <= 0 || this.stopsOrdered.get() != stops || this.control.getPowerEpoch() != power
+                    || this.control.getReplacementEpoch() != replacements) break;
 
                 long echoesBefore = Accessory.echoes;
 
