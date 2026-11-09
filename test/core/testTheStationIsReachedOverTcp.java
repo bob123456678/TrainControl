@@ -309,6 +309,13 @@ public class testTheStationIsReachedOverTcp
         }, WAIT_MS), "the proxy did not set the broadcast frame aside: " + this.model.lines);
     }
 
+    /** The station shows the contact occupied, and the model has heard it. */
+    private void occupiedAndHeard(int contact) throws Exception
+    {
+        this.station.sensor(contact, true);
+        assertTrue(Components.waitFor(() -> this.model.heardFrame(linkS88(contact, true)), WAIT_MS), "precondition");
+    }
+
     private boolean logged(String key, long ms)
     {
         return Components.waitFor(() -> this.model.count(key) > 0, ms);
@@ -564,26 +571,35 @@ public class testTheStationIsReachedOverTcp
 
     /**
      * An unexpected error that ends the listener while it replaces a lost connection leaves nothing being replaced:
-     * UDP takes over for the session, logged, so autonomy does not hold new routes for ever.
+     * UDP takes over for the session, logged, so autonomy does not hold new routes for ever; and the sensors are asked
+     * again over UDP, so one changed in the gap ends at the station's state.
      *
-     * MUTATION: take the catch out of `NetworkProxy.readTcp`, and this fails.
+     * MUTATION: take the catch out of `NetworkProxy.readTcp`, or its `resync`, and this fails.
      */
     @Test(timeOut = 30000)
     public void testAListenerEndedByAnErrorLeavesNothingBeingReplaced() throws Exception
     {
-        connectedAndAnswered();
+        try (DatagramSocket wire = udpWire())
+        {
+            connectedAndAnswered();
+            occupiedAndHeard(1202);
 
-        Thread listener = (Thread) field("tcpReader");
+            Thread listener = (Thread) field("tcpReader");
 
-        this.model.failOnce = "network.tcpLostReconnecting";
-        this.station.drop();
-        listener.join(15000);
+            this.model.failOnce = "network.tcpLostReconnecting";
+            this.station.sensorUnseen(1202, false);
+            this.station.drop();
+            listener.join(15000);
 
-        assertFalse(listener.isAlive(), "precondition: the listener did not end on the injected fault");
-        assertFalse(this.proxy.isReplacing(), "the listener ended with the lost connection still being replaced, so new"
-            + " routes would be held for the rest of the session: " + this.model.lines);
-        assertTrue(logged("network.tcpLostUsingUdp", WAIT_MS), "the loss is not logged: " + this.model.lines);
-        assertReachedOverUdp();
+            assertFalse(listener.isAlive(), "precondition: the listener did not end on the injected fault");
+            assertFalse(this.proxy.isReplacing(), "the listener ended with the lost connection still being replaced, so"
+                + " new routes would be held for the rest of the session: " + this.model.lines);
+            assertTrue(logged("network.tcpLostUsingUdp", WAIT_MS), "the loss is not logged: " + this.model.lines);
+
+            askedAndAnsweredOverUdp(wire, 1202, WAIT_MS);
+            assertEndsAtTheStationsState(1202);
+            assertReachedOverUdp();
+        }
     }
 
     /**
@@ -719,8 +735,7 @@ public class testTheStationIsReachedOverTcp
         try (DatagramSocket wire = udpWire())
         {
             connectedToASilentStation();
-            this.station.sensor(1201, true);
-            assertTrue(Components.waitFor(() -> this.model.heardFrame(linkS88(1201, true)), WAIT_MS), "precondition");
+            occupiedAndHeard(1201);
 
             this.station.sensorUnseen(1201, false);
             broadcastSetAside(linkS88(1201, false));
@@ -787,8 +802,7 @@ public class testTheStationIsReachedOverTcp
     public void testASensorChangedDuringADropIsPutRightOnTheNewConnection() throws Exception
     {
         connectedToASilentStation();
-        this.station.sensor(1202, true);
-        assertTrue(Components.waitFor(() -> this.model.heardFrame(linkS88(1202, true)), WAIT_MS), "precondition");
+        occupiedAndHeard(1202);
 
         this.station.drop();
         this.station.sensorUnseen(1202, false);
@@ -966,8 +980,7 @@ public class testTheStationIsReachedOverTcp
     public void testAQueryNotWrittenIsNotCounted() throws Exception
     {
         connectedToASilentStation();
-        this.station.sensor(1905, true);
-        assertTrue(Components.waitFor(() -> this.model.heardFrame(linkS88(1905, true)), WAIT_MS), "precondition");
+        occupiedAndHeard(1905);
 
         java.lang.reflect.Field replacing = Reflect.field(NetworkProxy.class, "replacing");
         replacing.setBoolean(this.proxy, true);

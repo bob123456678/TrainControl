@@ -1407,9 +1407,8 @@ public final class CS2File
                     {
                         JSONObject item = items.getJSONObject(j);
 
-                        // An item says what it is; a train command without its locomotive is left out, as a func item is
-                        item.getString("typ");
-
+                        // An item of no known type, or a train command without its locomotive, is left out, as a func
+                        // item is; a train command must say what it is, or its route is skipped
                         if (item.has("lok") && "speed".equals(item.getString("typ")) && item.has("lok"))
                         {
                             String locName = routeLocomotiveName(item, locs, heldBack);

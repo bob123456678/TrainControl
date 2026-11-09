@@ -946,7 +946,9 @@ public class NetworkProxy
                 this.replacing = false;
             }
 
+            // As recover does on its own move to UDP: what changed while UDP was set aside is asked again
             setUdpLive(true);
+            resync(false, 2);
             model.logf("network.tcpLostUsingUdp", reasonOf(e));
 
             throw e;

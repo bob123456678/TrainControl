@@ -356,15 +356,15 @@ public class testACS3ReadersSurviveFirmwareChanges
         {
             String routes = routeAnswer();
 
-            // A key retyped, or an item without its type.  A key removed or renamed in every item cannot be told from a
-            // station that leaves it out for its default, so those are not asked here; a train command without its
-            // locomotive is left out of the route (testACS3SyncTakesWhatItTookBefore).
+            // A key retyped.  A key removed or renamed in every item cannot be told from a station that leaves it out
+            // for its default, so those are not asked here; a train command without its locomotive is left out of the
+            // route (testACS3SyncTakesWhatItTookBefore), and an item without its type is asked below.
             for (String key : new String[] {"stellung", "magnetartikel", "typ", "lok", "items"})
             {
                 for (int mode = 0; mode < MODES; mode++)
                 {
-                    boolean left = mode <= 1 && ("stellung".equals(key) || "magnetartikel".equals(key) || "lok".equals(key))
-                        || mode == 5 && "items".equals(key);
+                    boolean left = mode <= 1 && ("stellung".equals(key) || "magnetartikel".equals(key) || "lok".equals(key)
+                        || "typ".equals(key)) || mode == 5 && "items".equals(key);
 
                     // (not to another valid article number: that is another article)
                     if (!left && !("magnetartikel".equals(key) && mode == 2))
@@ -372,6 +372,38 @@ public class testACS3ReadersSurviveFirmwareChanges
                         assertHeldUnchanged(rig, replaced, held, key + ", mode " + mode, only(ROUTES, mutated(routes, key, mode)),
                             false);
                     }
+                }
+            }
+
+            // Items without their type are passed over, as 3.0.8 did: a route of switches alone is imported without them,
+            // one that drives a train is skipped, and nothing is said at start-up.  A good sync brings the items back; a
+            // route whose trigger sensor was passed over stays unarmed, as in 3.0.8.
+            Map<String, List<Object>> commands = new ConcurrentHashMap<>();
+
+            for (MarklinRoute r : rig.model.getRoutes()) commands.put(r.getName(), new ArrayList<>(r.getRoute()));
+
+            JSONArray answered = listOf(new JSONTokener(routes).nextValue());
+
+            for (int mode = 0; mode <= 1; mode++)
+            {
+                assertTrue(syncWith(rig, replaced, only(ROUTES, mutated(routes, "typ", mode))) >= 0);
+                assertFalse(rig.model.wasLastSyncPartial(), "items without their type are not warned of, mode " + mode);
+
+                for (int i = 0; i < answered.length(); i++)
+                {
+                    String name = answered.getJSONObject(i).getString("name");
+                    boolean drives = answered.getJSONObject(i).getJSONArray("items").toString().contains("\"lok\"");
+
+                    assertEquals(new ArrayList<Object>(rig.model.getRoute(name).getRoute()),
+                        drives ? commands.get(name) : new ArrayList<>(), name + ", mode " + mode);
+                }
+
+                assertTrue(rig.model.syncWithCS2() >= 0);
+
+                for (MarklinRoute r : rig.model.getRoutes())
+                {
+                    assertEquals(new ArrayList<Object>(r.getRoute()), commands.get(r.getName()), "a good sync after it"
+                        + " gives the items back, " + r.getName() + ", mode " + mode);
                 }
             }
 
