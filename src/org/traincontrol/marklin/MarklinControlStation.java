@@ -254,6 +254,9 @@ public class MarklinControlStation implements ViewListener, ModelListener
     // Whether the track power is on.  volatile because getPowerState() takes no monitor (MarklinRoute reads it on the
     // route thread, the UI on the event thread); without a happens-before edge a route could run with the power off.
     private volatile boolean powerState = true; // default to true unless power is turned off
+
+    /** Whether this power cut has warned already; read and set on `locMessageProcessor` only. */
+    private boolean powerCutWarned;
         
     // Unique ID of the central station (0 for all stations)
     private int UID = 0;
@@ -2945,37 +2948,42 @@ public class MarklinControlStation implements ViewListener, ModelListener
                 }
             });
         }
-        else if (message.isSysCommand() && 
-           (message.getSubCommand() == CS2Message.CMD_SYSSUB_GO || message.getSubCommand() == CS2Message.CMD_SYSSUB_STOP)
-        )
+        else if (message.isSysCommand() && (message.getSubCommand() == CS2Message.CMD_SYSSUB_GO
+            || message.getSubCommand() == CS2Message.CMD_SYSSUB_STOP
+            || message.getSubCommand() == CS2Message.CMD_SYSSUB_OVERLOAD))
         {
             this.locMessageProcessor.submit(() ->
             {
-                if (message.getSubCommand() == CS2Message.CMD_SYSSUB_GO)
+                boolean on = message.getSubCommand() == CS2Message.CMD_SYSSUB_GO;
+
+                // An overload is the station cutting the track power by itself, after a short circuit, with no Stop
+                // (OB-426); its channel is the output that tripped.
+                boolean overload = message.getSubCommand() == CS2Message.CMD_SYSSUB_OVERLOAD;
+
+                this.setPowerState(on);
+                if (on) this.powerCutWarned = false;
+
+                // For correctly tracking locomotive stats
+                for (MarklinLocomotive l : this.locDB.getItems())
                 {
-                    this.setPowerState(true);
-
-                    // For correctly tracking locomotive stats
-                    for (MarklinLocomotive l : this.locDB.getItems())
-                    {
-                        l.notifyOfPowerStateChange(true);
-                    }
-
-                    if (this.view != null) this.view.updatePowerState();
-                    this.logf("log.powerOn");
+                    l.notifyOfPowerStateChange(on);
                 }
-                else if (message.getSubCommand() == CS2Message.CMD_SYSSUB_STOP)
+
+                if (this.view != null) this.view.updatePowerState();
+
+                if (overload)
                 {
-                    this.setPowerState(false);
+                    int channel = message.getLength() >= 6 ? message.getData()[5] & 0xFF : 0;
 
-                    // For correctly tracking locomotive stats
-                    for (MarklinLocomotive l : this.locDB.getItems())
-                    {
-                        l.notifyOfPowerStateChange(false);   
-                    }
+                    this.logf("log.powerOffOverload", channel);
 
-                    if (this.view != null) this.view.updatePowerState();
-                    this.logf("log.powerOff");
+                    // Once per cut, whether or not a Stop came first: a short repeats the message while it lasts
+                    if (!this.powerCutWarned && this.view != null) this.view.showPowerCut(channel);
+                    this.powerCutWarned = true;
+                }
+                else
+                {
+                    this.logf(on ? "log.powerOn" : "log.powerOff");
                 }
             });
         }

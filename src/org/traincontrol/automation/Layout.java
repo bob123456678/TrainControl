@@ -1743,7 +1743,7 @@ public class Layout
 
     /**
      * Waits while the track power is off, before a run chooses or sends a train, so no switch or speed is sent to a
-     * dead railway.  Reads on until a GO or STOP echo is heard; Instant Stop leaves it alone (OB-251).  It sleeps, so
+     * dead railway.  Reads on until a GO, STOP or Overload is heard; Instant Stop leaves it alone (OB-251).  It sleeps, so
      * it is never called holding this monitor or `activeLocomotives`; a stop or retirement ends it within a poll.
      *
      * @return whether it waited, so the caller asks again whether its run still goes

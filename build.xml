@@ -699,6 +699,7 @@
         <test-one-class class="testTheStationIsReachedOverTcp"/>
         <test-one-class class="testTheGoldensHoldOverTcp"/>
         <test-one-class class="testTheLogIsStampedAndExports"/>
+        <test-one-class class="testAShortCircuitCutsThePower"/>
     </target>
     <target name="package-for-store" depends="jar">
         <property name="store.jar.name" value="TrainControl"/>

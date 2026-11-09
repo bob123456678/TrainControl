@@ -6199,7 +6199,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         if (l != null && l.isRunning() && l.getMaxLatency() > 0 && latency > l.getMaxLatency())
         {
-            // Whatever the power flag says: it is only the last GO/STOP echo heard; one lost GO skipped this cut-off.
+            // Whatever the power flag says: it is only the last GO/STOP/Overload heard; one lost GO skipped this cut-off.
             final boolean wasOn = model.getPowerState();
 
             this.model.stop();
@@ -20144,6 +20144,13 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     {
         javax.swing.SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(this, I18n.t("ui.startupSyncPartial"),
             I18n.t("ui.startupSyncPartialTitle"), JOptionPane.WARNING_MESSAGE));
+    }
+
+    @Override
+    public void showPowerCut(int channel)
+    {
+        javax.swing.SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(this, I18n.f("ui.powerCut", channel),
+            I18n.t("ui.powerCutTitle"), JOptionPane.WARNING_MESSAGE));
     }
 
     @Override
