@@ -57,7 +57,7 @@ final class SaveToFileDoor
         {
             File chosen = fc.getSelectedFile();
 
-            if (!chosen.getName().toLowerCase().endsWith("." + extension)) chosen = new File(chosen.getPath() + "." + extension);
+            if (!chosen.getName().toLowerCase(java.util.Locale.ROOT).endsWith("." + extension)) chosen = new File(chosen.getPath() + "." + extension);
 
             try
             {

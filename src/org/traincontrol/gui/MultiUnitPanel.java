@@ -267,7 +267,7 @@ final class MultiUnitPanel extends JPanel
     /** Lays out the heading and the rows that match the filter, or says none do. */
     private void render()
     {
-        String text = filterField.getText().toLowerCase();
+        String text = filterField.getText().toLowerCase(java.util.Locale.ROOT);
 
         scrollPanel.removeAll();
 
@@ -287,7 +287,7 @@ final class MultiUnitPanel extends JPanel
         {
             JCheckBox checkBox = (JCheckBox) rowPanel.getComponent(0);
 
-            if (checkBox.getText().toLowerCase().contains(text))
+            if (checkBox.getText().toLowerCase(java.util.Locale.ROOT).contains(text))
             {
                 scrollGbc.gridy++;
                 scrollPanel.add(rowPanel, scrollGbc);

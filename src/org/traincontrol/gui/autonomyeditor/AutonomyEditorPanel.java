@@ -6578,7 +6578,7 @@ public class AutonomyEditorPanel extends JPanel
         findingRelated.clear();
         findingSeverity.clear();
 
-        String wanted = findingFilter.getText().trim().toLowerCase();
+        String wanted = findingFilter.getText().trim().toLowerCase(java.util.Locale.ROOT);
 
         section("autosetup.ui.headingErrors", "autosetup.ui.headingErrorsOf", errorFindings, wanted,
             AutonomyChecks.Severity.ERROR);
@@ -6617,7 +6617,7 @@ public class AutonomyEditorPanel extends JPanel
 
         for (Object[] row : all)
         {
-            if (wanted.isEmpty() || String.valueOf(row[1]).toLowerCase().contains(wanted)) rows.add(row);
+            if (wanted.isEmpty() || String.valueOf(row[1]).toLowerCase(java.util.Locale.ROOT).contains(wanted)) rows.add(row);
         }
 
         if (rows.isEmpty()) return;

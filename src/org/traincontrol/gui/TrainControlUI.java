@@ -818,9 +818,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         }
     }
 
-    /** "Use UDP Only": a CS3 is reached over UDP as before, not over TCP (FR-186); read at connect. */
-    public static final String UDP_ONLY_PREF = "UseUdpOnly";
-
     public TrainControlUI()
     {
         // `PositionAwareJFrame`'s static initializer installs the look and feel before the root pane is created.
@@ -829,8 +826,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         installCurrentKeyRow();
 
         installShowPageNumbersMenuItem();
-
-        installUdpOnlyMenuItem();
 
         installImportLocsFromCSVMenuItem();
 
@@ -5088,18 +5083,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         }
 
         this.locomotiveControlMenu.insert(this.showPageNumbersMenuItem, at);
-    }
-
-    /** "Use UDP Only" at the end of the Preferences menu's Startup submenu (FR-186), built here as the form is generated. */
-    private void installUdpOnlyMenuItem()
-    {
-        javax.swing.JCheckBoxMenuItem udpOnly = new javax.swing.JCheckBoxMenuItem(I18n.t("ui.main.toolbar.udpOnly"));
-
-        udpOnly.setToolTipText(AutonomyEditorPanel.wrappedIfLong(I18n.t("ui.main.toolbar.tooltip.udpOnly")));
-        udpOnly.setSelected(prefs.getBoolean(UDP_ONLY_PREF, false));
-        udpOnly.addActionListener(event -> prefs.putBoolean(UDP_ONLY_PREF, udpOnly.isSelected()));
-
-        this.startupToolbarMenu.add(udpOnly);
     }
 
     /** Whether page numbers go before page names ("Show Page Numbers", FR-128); false before the item exists. */
