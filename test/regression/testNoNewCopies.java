@@ -27,10 +27,10 @@ import support.CopyScan;
 public class testNoNewCopies
 {
     /** The groups as they stand.  Never raise it. */
-    private static final int GROUPS_ALLOWED = 94;
+    private static final int GROUPS_ALLOWED = 85;
 
     /** The tokens standing in a second or later copy in `test/`, summed over its groups.  Never raise it. */
-    private static final long TEST_COPIED_TOKENS_ALLOWED = 221235;
+    private static final long TEST_COPIED_TOKENS_ALLOWED = 221163;
 
     /** Each group: the classes holding its copies with how many each, and the tokens of its longest copy. */
     private static final String[] GROUPS = {
@@ -40,15 +40,13 @@ public class testNoNewCopies
         "AutonomyCompanionStore:2 (67)",
         "AutonomyCompanionStore:2 (65)",
         "AutonomyCompanionStore:2 (63)",
-        "AutonomyCompanionStore:3 (136)",
-        "AutonomyCompanionStore:3 (85)",
-        "AutonomyCompanionStore:5 (185)",
+        "AutonomyCompanionStore:3 (118)",
+        "AutonomyCompanionStore:5 (173)",
         "AutonomyEditorPanel:1,EditorPrompts:1 (80)",
         "AutonomyEditorPanel:2 (66)",
         "AutonomyEditorPanel:3 (108)",
         "AutonomyEditorPanel:4 (146)",
         "AutonomyEditorPanel:4 (98)",
-        "AutonomyMenu:2 (64)",
         "AutonomySession:2 (76)",
         "AutonomySession:2 (75)",
         "AutonomySession:2 (70)",
@@ -58,10 +56,8 @@ public class testNoNewCopies
         "AutonomySession:2 (64)",
         "AutonomySession:2 (64)",
         "AutonomySession:2 (63)",
-        "AutonomySession:2 (60)",
         "AutonomySession:3 (67)",
         "AutonomySettingsTab:2 (138)",
-        "AutonomyViewerPanel:3 (62)",
         "CS2File:2 (85)",
         "CS2File:2 (79)",
         "CS2Message:1,LayoutDiagramComponent:2 (101)",
@@ -74,9 +70,7 @@ public class testNoNewCopies
         "HomeStaging:2 (60)",
         "ImageUtil:2 (113)",
         "Layout:1,TrainControlUI:1 (94)",
-        "Layout:2 (85)",
         "Layout:2 (63)",
-        "Layout:4 (189)",
         "LayoutDiagram:2 (122)",
         "LayoutDiagram:2 (78)",
         "LayoutDiagramComponent:2 (189)",
@@ -86,8 +80,6 @@ public class testNoNewCopies
         "LayoutEditorUndo:2 (84)",
         "LayoutEditorUndo:2 (67)",
         "LayoutLabel:2 (63)",
-        "LocIconActions:3 (83)",
-        "LocIconActions:3 (75)",
         "LocIconCropDialog:1,TileAnnotation:1 (95)",
         "LocIconCropDialog:2 (66)",
         "LocomotiveKeyboardMapping:1,MarklinAccessory:1,TimetablePath:1 (105)",
@@ -107,7 +99,6 @@ public class testNoNewCopies
         "RouteEditorFrame:2 (73)",
         "RouteEditorFrame:2 (65)",
         "RowIcons:2 (64)",
-        "StationCaption:2 (86)",
         "TileAnnotation:1,TileOverlay:1 (101)",
         "TileAnnotation:2 (84)",
         "TileAnnotation:2 (68)",
