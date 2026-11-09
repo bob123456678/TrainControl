@@ -514,8 +514,6 @@ public class LayoutEditor extends PositionAwareJFrame
      * Popup window showing editable train layouts
      * @param l reference to the layout
      * @param size size of each tile, in pixels
-     * @param ui
-     * @param pageIndex
      */
     public LayoutEditor(LayoutDiagram l, int size, TrainControlUI ui, int pageIndex)
     {
@@ -683,9 +681,6 @@ public class LayoutEditor extends PositionAwareJFrame
     
     /**
      * Generates a new label based on the specified type, so that it can be placed on the diagram
-     * @param type
-     * @param defaultText
-     * @return 
      */
     private LayoutLabel getLabel(LayoutDiagramComponent.componentType type, String defaultText)
     {
@@ -734,8 +729,6 @@ public class LayoutEditor extends PositionAwareJFrame
     
     /**
      * Key press on a tile
-     * @param e
-     * @param label 
      */
     public void receiveKeyEvent(KeyEvent e, LayoutLabel label)
     {
@@ -2198,9 +2191,7 @@ public class LayoutEditor extends PositionAwareJFrame
      *
      * Delegates to `LayoutEditorSelection.initCopy`.
      *
-     * @param label
      * @param component - the component at the label location, or one that's specified
-     * @param move
      */
     synchronized public void initCopy(LayoutLabel label, LayoutDiagramComponent component, boolean move)
     {
@@ -2482,8 +2473,6 @@ public class LayoutEditor extends PositionAwareJFrame
      * Deletes this label from the layout
      *
      * Delegates to `LayoutEditorSelection.delete`.
-     *
-     * @param label 
      */
     synchronized public void delete(LayoutLabel label)
     {
@@ -2504,8 +2493,6 @@ public class LayoutEditor extends PositionAwareJFrame
      * Rotates the specified label
      *
      * Delegates to `LayoutEditorSelection.rotate`.
-     *
-     * @param label 
      */
     synchronized public void rotate(LayoutLabel label)
     {
@@ -2514,7 +2501,6 @@ public class LayoutEditor extends PositionAwareJFrame
     
     /**
      * Changes the text
-     * @param label 
      */
     public void editText(LayoutLabel label)
     {       
@@ -2558,7 +2544,6 @@ public class LayoutEditor extends PositionAwareJFrame
     
      /**
      * Changes the address
-     * @param label 
      */
     public void editAddress(LayoutLabel label)
     {               
@@ -3538,8 +3523,6 @@ public class LayoutEditor extends PositionAwareJFrame
      * Checks if there is any history to undo
      *
      * Delegates to `LayoutEditorUndo.canUndo`.
-     *
-     * @return 
      */
     public boolean canUndo()
     {
@@ -3550,8 +3533,6 @@ public class LayoutEditor extends PositionAwareJFrame
      * Checks if there is any history to redo
      *
      * Delegates to `LayoutEditorUndo.canRedo`.
-     *
-     * @return 
      */
     public boolean canRedo()
     {
@@ -4869,7 +4850,6 @@ public class LayoutEditor extends PositionAwareJFrame
     
     /**
      * Gets the last label that was hovered by the user
-     * @return 
      */
     private LayoutLabel getLastHoveredLabel()
     {

@@ -234,7 +234,6 @@ public class TimetablePath
     
     /**
      * Writes a path entry to JSON
-     * @return
      * @throws IllegalArgumentException
      * @throws IllegalAccessException
      * @throws NoSuchFieldException 
@@ -275,10 +274,6 @@ public class TimetablePath
     
     /**
      * Reads a path entry from JSON
-     * @param jsonString
-     * @param model
-     * @param layout
-     * @return
      * @throws Exception 
      */
     public static TimetablePath fromJSON(String jsonString, ViewListener model, Layout layout) throws Exception

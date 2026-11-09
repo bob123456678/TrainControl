@@ -98,8 +98,6 @@ public class Conversion
     
     /**
      * Generates a hash of the current working directory
-     * @param lastN
-     * @return 
      */
     public static String getFolderHash(int lastN)
     {
@@ -141,9 +139,6 @@ public class Conversion
     /**
      * Compared version numbers, i.e. 1.2.3
      * Returns 1 if version1 is higher than version2
-     * @param version1
-     * @param version2
-     * @return
      */
     public static int compareVersions(String version1, String version2)
     {

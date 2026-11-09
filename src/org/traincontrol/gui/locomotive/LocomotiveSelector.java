@@ -39,8 +39,6 @@ public final class LocomotiveSelector extends javax.swing.JFrame
         
     /**
      * Creates new form LocomotiveSelector
-     * @param model
-     * @param ui
      */
     public LocomotiveSelector(ViewListener model, TrainControlUI ui)
     {
@@ -52,7 +50,6 @@ public final class LocomotiveSelector extends javax.swing.JFrame
     
     /**
      * Gets the assignment checkbox
-     * @return 
      */
     public JCheckBox getClickToAssign()
     {
@@ -61,7 +58,6 @@ public final class LocomotiveSelector extends javax.swing.JFrame
     
     /**
      * Returns the list of locomotives
-     * @return 
      */
     public JPanel getMainLocList()
     {
@@ -70,7 +66,6 @@ public final class LocomotiveSelector extends javax.swing.JFrame
     
     /**
      * Returns the main UI
-     * @return 
      */
     public TrainControlUI getUI()
     {

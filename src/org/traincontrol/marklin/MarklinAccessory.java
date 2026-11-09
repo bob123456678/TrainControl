@@ -71,7 +71,6 @@ public class MarklinAccessory extends Accessory
     
     /**
      * Validates the accessory address
-     * @return 
      */
     public boolean isValidAddress()
     {
@@ -87,9 +86,6 @@ public class MarklinAccessory extends Accessory
      
     /**
      * Returns the UID for the specified integer address
-     * @param address
-     * @param type
-     * @return 
      */
     public static int UIDfromAddress(int address, accessoryDecoderType type)
     {
@@ -105,7 +101,6 @@ public class MarklinAccessory extends Accessory
         
     /**
      * Adds a UI tile to be updated whenever a CS2 event fires
-     * @param l 
      */
     @Override
     public void addTile(LayoutLabel l)//, boolean dynamic)
@@ -120,7 +115,6 @@ public class MarklinAccessory extends Accessory
     /**
      * Refreshes tile images on all tiles in the list
      * Deletes tiles that are no longer visible (e.g., from closed windows)
-     * @param forceHighlight
      */
     @Override
     public void updateTiles(boolean forceHighlight)
@@ -263,7 +257,6 @@ public class MarklinAccessory extends Accessory
     
     /**
      * Gets the raw accessory address
-     * @return 
      */
     public int getAddress()
     {
@@ -272,7 +265,6 @@ public class MarklinAccessory extends Accessory
     
     /**
      * Gets the accessory's UID
-     * @return 
      */
     public int getUID()
     {
@@ -281,7 +273,6 @@ public class MarklinAccessory extends Accessory
     
     /**
      * Returns an accessory setting string for this accessory
-     * @return 
      */
     @Override
     public String toAccessorySettingString()
@@ -292,8 +283,6 @@ public class MarklinAccessory extends Accessory
     
     /**
      * Returns an accessory setting string for this accessory and a hypothetical setting
-     * @param setting
-     * @return 
      */
     @Override
     public String toAccessorySettingString(boolean setting, String protocol)
@@ -303,7 +292,6 @@ public class MarklinAccessory extends Accessory
         
     /**
      * Gets the decoder type
-     * @return 
      */
     @Override
     public accessoryDecoderType getDecoderType()
@@ -323,10 +311,6 @@ public class MarklinAccessory extends Accessory
      * Gets the standardized accessory name along with the protocol
      * DCC Signal 1: "Signal 1 DCC"
      * MM2 Signal 1: "Signal 1"
-     * @param address
-     * @param type
-     * @param decoder
-     * @return 
      */
     public static String getNameWithProtocol(int address, accessoryType type, accessoryDecoderType decoder)
     {
@@ -341,7 +325,6 @@ public class MarklinAccessory extends Accessory
      * database is keyed on the logical one, so passing this.address produced a name one lower than
      * getName() and than anything getAccessoryByName could resolve.  Has no callers today; this is
      * corrected so the first one does not inherit an off-by-one.
-     * @return
      */
     public String getNameWithProtocol()
     {

@@ -33,7 +33,6 @@ public class LocomotiveStats extends javax.swing.JPanel
     
     /**
      * Creates new form LocomotiveStats
-     * @param tcui
      */
     public LocomotiveStats(TrainControlUI tcui)
     {

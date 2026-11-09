@@ -47,8 +47,6 @@ public class Util
 
     /**
      * Opens a URL in a browser
-     * @param url
-     * @return 
      */
     public static boolean openUrl(String url)
     {
@@ -625,8 +623,6 @@ public class Util
 
     /**
      * Downloads a file from a URL
-     * @param fileURL
-     * @param saveOutputFile
      * @throws IOException
      */
     public static void downloadFile(String fileURL, File saveOutputFile) throws IOException
@@ -638,8 +634,6 @@ public class Util
      * Downloads a file from a URL, reporting progress as it goes.
      * The output file is written under a temporary name and only renamed once complete,
      * so that an interrupted download never looks like a finished one.
-     * @param fileURL
-     * @param saveOutputFile
      * @param progress - receives the percentage downloaded, or -1 if the size is unknown
      * @throws IOException
      */
@@ -702,7 +696,6 @@ public class Util
      * rather than by the letter: a name with no "v", or another "v" ("TrainControl Preview v3.0.0"), must not throw or
      * hand back a piece of the name.  Release names are typed by hand at tag time.
      *
-     * @param gitHubReleaseInfo
      * @return the version, or null when the name carries no number
      */
     public static String parseReleaseVersion(JSONObject gitHubReleaseInfo)
@@ -745,8 +738,6 @@ public class Util
     
     /**
      * Parses the release download URL from getLatestReleaseInfo
-     * @param gitHubReleaseInfo
-     * @return 
      */
     public static String parseDownloadURL(JSONObject gitHubReleaseInfo)
     {
@@ -777,8 +768,6 @@ public class Util
     
     /**
      * Parses the release page URL from getLatestReleaseInfo
-     * @param gitHubReleaseInfo
-     * @return 
      */
     public static String parseReleaseURL(JSONObject gitHubReleaseInfo)
     {
@@ -788,7 +777,6 @@ public class Util
     /**
      * Fetches the latest release info from github
      * @param repo "username/repo_name"
-     * @return 
      * @throws java.io.IOException 
      */
     public static JSONObject getLatestReleaseInfo(String repo) throws IOException, Exception
@@ -814,8 +802,6 @@ public class Util
     
     /**
      * Escapes data for a CSV
-     * @param input
-     * @return 
      */
     public static String escapeCsv(String input)
     {

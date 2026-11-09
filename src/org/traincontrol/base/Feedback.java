@@ -23,7 +23,6 @@ public abstract class Feedback
     
     /**
      * Initialized the object with empty state
-     * @param name 
      */
     public Feedback(String name)
     {
@@ -34,8 +33,6 @@ public abstract class Feedback
     
     /**
      * Returns whether or not enough time has elapsed to consider an update
-     * @param time
-     * @return 
      */
     protected boolean readyForUpdate(long time)
     {
@@ -53,7 +50,6 @@ public abstract class Feedback
     
     /**
      * Returns the state of the feedback
-     * @return 
      */
     public boolean isSet()
     {
@@ -62,7 +58,6 @@ public abstract class Feedback
     
     /**
      * Sets the state of the feedback
-     * @param set
      */
     protected void _setState(boolean set)
     {
@@ -80,7 +75,6 @@ public abstract class Feedback
     
     /**
      * Returns the name of the feedback
-     * @return 
      */
     public String getName()
     {

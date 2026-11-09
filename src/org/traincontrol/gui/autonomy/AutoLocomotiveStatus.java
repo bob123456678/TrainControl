@@ -32,8 +32,6 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
     
     /**
      * Creates new form AutoLocomotiveStatus
-     * @param loc
-     * @param parent
      */
     public AutoLocomotiveStatus(Locomotive loc, TrainControlUI parent)
     {

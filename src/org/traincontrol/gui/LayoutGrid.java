@@ -723,7 +723,6 @@ public class LayoutGrid
      * @param parent panel to contain the layout
      * @param master container with the panel
      * @param popup is this layout being rendered in a separate window?
-     * @param ui
      */
     public LayoutGrid(LayoutDiagram layout, int size, JPanel parent, Container master, boolean popup, TrainControlUI ui)
     {
@@ -1614,7 +1613,6 @@ public class LayoutGrid
 
     /**
      * Return the container that was generated
-     * @return 
      */
     public JPanel getContainer()
     {
@@ -1628,8 +1626,6 @@ public class LayoutGrid
     
     /**
      * Gets the coordinates of the specified layout label
-     * @param target
-     * @return 
      */
     public int[] getCoordinates(LayoutLabel target)
     {

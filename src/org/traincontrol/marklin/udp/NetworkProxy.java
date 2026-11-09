@@ -343,7 +343,6 @@ public class NetworkProxy
     
     /**
      * Gets the Central Station's address, as a literal IP suitable for building URLs
-     * @return
      */
     public String getIP()
     {

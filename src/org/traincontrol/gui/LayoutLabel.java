@@ -565,7 +565,6 @@ public final class LayoutLabel extends JLabel
     /**
      * Checks if the parent window is visible
      * Used for pruning old label references
-     * @return 
      */
     public boolean isParentVisible()
     {

@@ -20,8 +20,6 @@ public final class LocomotiveSelectorItem extends javax.swing.JPanel
     
     /**
      * Creates new form LocomotiveSelectorItem
-     * @param loc
-     * @param selector
      */
     public LocomotiveSelectorItem(Locomotive loc, LocomotiveSelector selector)
     {

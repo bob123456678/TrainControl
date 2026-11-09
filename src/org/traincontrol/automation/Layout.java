@@ -607,9 +607,6 @@ public class Layout
     
     /**
      * Adds a new locomotive to the timetable
-     * @param loc
-     * @param path
-     * @return 
      */
     private boolean addTimetableEntry(Locomotive loc, List<Edge> path)
     {
@@ -618,9 +615,6 @@ public class Layout
     
     /**
      * Adds a path to the history list
-     * @param loc
-     * @param path 
-     * @param timestamp
      */
     synchronized private boolean addTimetableEntry(Locomotive loc, List<Edge> path, long timestamp)
     {
@@ -663,7 +657,6 @@ public class Layout
 
     /**
      * Returns the timetable/path history
-     * @return 
      */
     public List<TimetablePath> getTimetable()
     {
@@ -672,7 +665,6 @@ public class Layout
             
     /**
      * Sets the list of locomotives that will be run
-     * @param locs 
      */
     public void setLocomotivesToRun(List<Locomotive> locs)
     {
@@ -682,7 +674,6 @@ public class Layout
       
     /**
      * Gets the locomotives that will be run
-     * @return  
      */
     public Set<Locomotive> getLocomotivesToRun()
     {
@@ -691,7 +682,6 @@ public class Layout
     
     /**
      * Sets the maximum allowed network latency. (minimum of 100ms)
-     * @param latency 
      */
     public void setMaxLatency(int latency)
     {
@@ -716,8 +706,6 @@ public class Layout
      * Not synchronized: the event thread reads it while configureAndLockPath holds this monitor across its sleeps, so
      * taking it would freeze the window, Stop included.  Safe without it, as activeLocomotives is concurrent and its
      * lists are replaced whole; the answer may straddle one path being replaced.
-     *
-     * @return 
      */
     public Set<Accessory> getActiveAccs()
     {
@@ -814,7 +802,6 @@ public class Layout
     
     /**
      * To be called externally when a locomotive is deleted from the database
-     * @param l
      */
     synchronized public void locDeleted(Locomotive l)
     {
@@ -1044,8 +1031,6 @@ public class Layout
     
     /**
      * Gets the destination of this active locomotive
-     * @param locomotive
-     * @return 
      */
     public Point getDestination(Locomotive locomotive)
     {
@@ -1063,8 +1048,6 @@ public class Layout
     
     /**
      * Gets the starting point of this active locomotive
-     * @param locomotive
-     * @return 
      */
     public Point getStart(Locomotive locomotive)
     {
@@ -1082,8 +1065,6 @@ public class Layout
     
     /**
      * Gets the destination of this active locomotive
-     * @param locomotive
-     * @return 
      */
     public Set<Point> getPointsInActivePath(Locomotive locomotive)
     {
@@ -1107,7 +1088,6 @@ public class Layout
            
     /**
      * Gets locomotives currently running
-     * @return  
      */
     public Map<Locomotive, List<Edge>> getActiveLocomotives()
     {
@@ -1116,8 +1096,6 @@ public class Layout
     
     /**
      * Gets milestones already reached by a locomotive
-     * @param loc
-     * @return  
      */
     public List<Point> getReachedMilestones(Locomotive loc)
     {
@@ -1418,7 +1396,6 @@ public class Layout
     /**
      * Marks the layout state as invalid
      * Prints and logs the error
-     * @param message
      */
     public void invalidate(String message)
     {
@@ -1451,7 +1428,6 @@ public class Layout
     
     /**
      * Returns validity status
-     * @return 
      */
     public boolean isValid()
     {
@@ -1460,7 +1436,6 @@ public class Layout
     
     /**
      * Enables/disables simulation mode 
-     * @param simulate
      * @throws Exception 
      */
     public void setSimulate(boolean simulate) throws Exception
@@ -1541,7 +1516,6 @@ public class Layout
 
     /**
      * Returns whether simulation mode is enabled
-     * @return 
      */
     public boolean isSimulate()
     {
@@ -1556,7 +1530,6 @@ public class Layout
     
     /**
      * Returns auto or manual running status
-     * @return 
      */
     public boolean isRunning()
     {
@@ -1566,7 +1539,6 @@ public class Layout
     
     /**
      * Returns auto running status
-     * @return 
      */
     public boolean isAutoRunning()
     {
@@ -1876,8 +1848,6 @@ public class Layout
     
     /**
      * Retrieves a saved point by its name
-     * @param name
-     * @return 
      */
     public Point getPoint(String name)
     {
@@ -1886,8 +1856,6 @@ public class Layout
     
     /**
      * Retrieves a saved point by its unique id
-     * @param id
-     * @return 
      */
     public Point getPointById(String id)
     {
@@ -1904,8 +1872,6 @@ public class Layout
     
     /**
      * Retrieves a saved edge by its unique id
-     * @param id
-     * @return 
      */
     public Edge getEdgeById(String id)
     {
@@ -1922,7 +1888,6 @@ public class Layout
     
     /**
      * Change how much locomotives are slowed one edge prior to arrival
-     * @param preArrivalSpeedReduction 
      * @throws java.lang.Exception 
      */
     public void setPreArrivalSpeedReduction(double preArrivalSpeedReduction) throws Exception
@@ -1941,8 +1906,6 @@ public class Layout
     
     /**
      * Retrieves a saved edge by its name 
-     * @param name
-     * @return 
      */
     public Edge getEdge(String name)
     {
@@ -1951,9 +1914,6 @@ public class Layout
     
     /**
      * Retrieve a saved edge by its start and end points
-     * @param startPointName
-     * @param endPointName
-     * @return 
      */
     public Edge getEdge(String startPointName, String endPointName)
     {
@@ -1972,7 +1932,6 @@ public class Layout
      * @param name a unique identifier for the point
      * @param isDest are trains allowed to stop at this point?  Requires s88 feedback to work properly.
      * @param feedback address of the corresponding feedback module, or null if none
-     * @return
      * @throws Exception
      */
     synchronized public Point createPoint(String name, boolean isDest, String feedback) throws Exception
@@ -2012,7 +1971,6 @@ public class Layout
      * Requires points to be added first
      * @param startPoint name of the starting point
      * @param endPoint name of the ending point
-     * @return 
      * @throws java.lang.Exception 
      */
     synchronized public Edge createEdge(String startPoint, String endPoint) throws Exception
@@ -2051,8 +2009,6 @@ public class Layout
     
     /**
      * Returns false if any of the given point's incoming edges are from non-reversing points
-     * @param p
-     * @return 
      */
     public boolean hasOnlyReversingIncoming(Point p)
     {        
@@ -2066,8 +2022,6 @@ public class Layout
     
     /**
      * Returns false if any of the given point's incoming edges are from active points
-     * @param p
-     * @return 
      */
     public boolean hasOnlyInactiveIncoming(Point p)
     {        
@@ -2081,8 +2035,6 @@ public class Layout
     
     /**
      * Returns false if any of the given point's neighbors are active points
-     * @param p
-     * @return 
      */
     public boolean hasOnlyInactiveNeighbors(Point p)
     {               
@@ -2096,8 +2048,6 @@ public class Layout
     
     /**
      * Returns false if any of the given point's neighbors are reversing points
-     * @param p
-     * @return 
      */
     public boolean hasOnlyReversingNeighbors(Point p)
     {               
@@ -2111,8 +2061,6 @@ public class Layout
     
     /**
      * Gets all incoming edges connected to the given point
-     * @param p
-     * @return 
      */
     public List<Edge> getIncomingEdges(Point p)
     {
@@ -2131,8 +2079,6 @@ public class Layout
 
     /**
      * Gets all edges neighboring a point
-     * @param p
-     * @return 
      */
     public List<Edge> getNeighbors(Point p)
     {
@@ -2148,8 +2094,6 @@ public class Layout
     
     /**
      * Gets all edges neighboring and incoming to a point
-     * @param p
-     * @return 
      */
     public List<Edge> getNeighborsAndIncoming(Point p)
     {
@@ -2187,8 +2131,6 @@ public class Layout
 
     /**
      * Writes a log message that the specified path is impossible
-     * @param loc
-     * @param path 
      */
     private void logPathError(Locomotive loc, List<Edge> path, String message)
     {
@@ -2286,9 +2228,6 @@ public class Layout
 
     /**
      * Checks if the provided path is unoccupied
-     * @param path
-     * @param loc
-     * @return 
      */
     public boolean isPathClear(List<Edge> path, Locomotive loc)
     {
@@ -2633,8 +2572,6 @@ public class Layout
         
     /**
      * Returns the length of the given path
-     * @param path
-     * @return 
      */
     public int getPathLength(List<Edge> path)
     {
@@ -2768,7 +2705,6 @@ public class Layout
     
     /**
      * Deletes a point from the graph.  Requires that no edges connect it.
-     * @param name
      * @throws Exception 
      */
     synchronized public void deletePoint(String name) throws Exception
@@ -2838,10 +2774,7 @@ public class Layout
     
     /**
      * Creates a new edge with a different start ending point
-     * @param original
-     * @param newPoint
      * @param changeEnd true to change end, otherwise will change start
-     * @return
      * @throws Exception 
      */
     synchronized public Edge copyEdge(Edge original, String newPoint, boolean changeEnd) throws Exception
@@ -2877,8 +2810,6 @@ public class Layout
     
     /**
      * Deletes an edge from the graph
-     * @param start
-     * @param end
      * @throws Exception 
      */
     synchronized public void deleteEdge(String start, String end) throws Exception
@@ -2912,8 +2843,6 @@ public class Layout
     
     /**
      * Renames a point
-     * @param name
-     * @param newName
      * @throws Exception 
      */
     synchronized public void renamePoint(String name, String newName) throws Exception
@@ -3343,8 +3272,6 @@ public class Layout
     /**
      * Marks all the edges in a path as occupied, effectively locking it
      * @param path a list of edges to traverse
-     * @param loc
-     * @return 
      */
     public boolean configureAndLockPath(List<Edge> path, Locomotive loc)
     {
@@ -3716,8 +3643,6 @@ public class Layout
 
     /**
      * Marks all the edges in a path as unoccupied, unlocking it so that other trains may pass
-     * @param path
-     * @param loc
      * @return edges whose own occupancy flag was left alone because another locomotive has since claimed their end
      *        point.  Informational only: their lock edges are still released, so there is nothing for the caller to act
      *        on.
@@ -4058,7 +3983,6 @@ public class Layout
      * Checks if any locomotive has been inactive longer than the threshold time, and returns the locomotive with the oldest timestamp
      * @param threshold seconds
      * @param currentLoc the current locomotive
-     * @return 
      */
     public Locomotive checkForSlowerLoc(int threshold, Locomotive currentLoc)
     {
@@ -4095,7 +4019,6 @@ public class Layout
     
     /**
      * Continuously looks for a valid path for the given locomotive, and executes the path when found
-     * @param loc
      * @param speed how fast the locomotive should travel, 1-100
      * @throws java.lang.Exception
      */
@@ -4178,8 +4101,6 @@ public class Layout
     
     /**
      * Returns the current location of the given locomotive
-     * @param loc
-     * @return 
      */
     public Point getLocomotiveLocation(Locomotive loc)
     {
@@ -4234,8 +4155,6 @@ public class Layout
     /**
      * Picks a random (valid and unoccupied) path for a given locomotive
      * and returns the path
-     * @param loc 
-     * @return  
      */
     public List<Edge> pickPath(Locomotive loc)
     {
@@ -5032,10 +4951,6 @@ public class Layout
 
     /**
      * Debugs a connection between two points.  Output value will be null for valid paths
-     * @param loc
-     * @param start
-     * @param end
-     * @return
      * @throws Exception 
      */
     public Map<List<Edge>, String> debugPath(Locomotive loc, Point start, Point end) throws Exception
@@ -5083,9 +4998,7 @@ public class Layout
     
     /**
      * Returns all possible paths for a given locomotive
-     * @param loc 
      * @param uniqueDest - do we want to return multiple possible paths for the same start and end?
-     * @return  
      */
     synchronized public List<List<Edge>> getPossiblePaths(Locomotive loc, boolean uniqueDest)
     {
@@ -5247,8 +5160,6 @@ public class Layout
 
     /**
      * Fetches the starting station for a given locomotive
-     * @param l
-     * @return 
      */
     synchronized public Point getTimetableStartingPoint(Locomotive l)
     {
@@ -5269,7 +5180,6 @@ public class Layout
     
     /**
      * Checks whether the timetable has any unfinished paths
-     * @return 
      */
     private boolean timetableHasUnfinishedPaths()
     {
@@ -5690,8 +5600,6 @@ public class Layout
 
     /**
      * If targetS88 is the nextS88 for the given locomotive, this method will wait until it isn't
-     * @param l
-     * @param targetS88 
      */
     public void waitForS88Reached(Locomotive l, String targetS88)
     {
@@ -5724,8 +5632,6 @@ public class Layout
     
     /**
      * Updates the pending S88 state so we can track what s88 each locomotive is waiting for
-     * @param loc
-     * @param s88 
      */
     private void updatePendingS88(Locomotive loc, String s88)
     {
@@ -6402,9 +6308,6 @@ public class Layout
 
     /**
      * The body of executePath.  Call executePath, which adds the cleanup this cannot do for itself.
-     * @param path
-     * @param loc
-     * @param speed
      */
     private boolean executePathInternal(List<Edge> path, Locomotive loc, int speed, TimetablePath ttp,
         ReversalPolicy reversals, int stopsAtChoice)
@@ -7134,10 +7037,7 @@ public class Layout
     
     /**
      * Requests to move a locomotive to a new station.  Called from the UI.
-     * @param locomotive
-     * @param targetPoint
      * @param purge if locomotive is null, do we also permanently remove it from the list to run?
-     * @return 
      */
     synchronized public boolean moveLocomotive(String locomotive, String targetPoint, boolean purge)
     {
@@ -7447,8 +7347,6 @@ public class Layout
      * the event thread would freeze the window behind a dispatch, and deadlock against the UI monitor
      * (TrainControlUI.updateVisiblePoints is synchronized on the UI and calls getPoints); a copy per call would make
      * this class's own sweeps quadratic.
-     *
-     * @return 
      */
     public Collection<Edge> getEdges()
     {
@@ -7459,8 +7357,6 @@ public class Layout
      * Returns all points in the graph
      *
      * Live and unsynchronized, as getEdges is.
-     *
-     * @return 
      */
     public Collection<Point> getPoints()
     {
@@ -8046,8 +7942,6 @@ public class Layout
     
     /**
      * Checks if the specified callback has been defined
-     * @param callbackName 
-     * @return  
      */
     public boolean hasCallback(String callbackName)
     {
@@ -8056,8 +7950,6 @@ public class Layout
     
     /**
      * Returns the requested callback function
-     * @param callbackName
-     * @return 
      */
     public TriFunction<List<Edge>, Locomotive, Boolean, Void> getCallback(String callbackName)
     {
@@ -8066,8 +7958,6 @@ public class Layout
     
     /**
      * Sets a new callback function for a given name
-     * @param callbackName
-     * @param callback 
      */
     public void setCallback(String callbackName, TriFunction<List<Edge>, Locomotive, Boolean, Void> callback)
     {
@@ -8076,10 +7966,6 @@ public class Layout
     
     /**
      * Lambda with 3 arguments
-     * @param <T>
-     * @param <U>
-     * @param <V>
-     * @param <R> 
      */
     @FunctionalInterface
     public interface TriFunction<T, U, V, R>
@@ -8199,7 +8085,6 @@ public class Layout
     /**
      * Replaces the timetable with the one passed
      * Used when loading from JSON
-     * @param lst 
      */
     public void setTimetable(List<TimetablePath> lst)
     {
@@ -8422,7 +8307,6 @@ public class Layout
     
     /**
      * If false, we skip route-related settings
-     * @return 
      */
     public boolean isActivateRoutes()
     {
@@ -8431,7 +8315,6 @@ public class Layout
 
     /**
      * Route IDs to activate with this layout (those listed are deactivated)
-     * @return 
      */
     public List<Integer> getActivateRouteIDs()
     {
@@ -8453,8 +8336,6 @@ public class Layout
     
     /**
      * Returns a concise string representing a path
-     * @param path
-     * @return 
      */
     public String pathToString(List<Edge> path)
     {
@@ -8484,7 +8365,6 @@ public class Layout
     /**
      * Applies a default set of callbacks for the given locomotive.  
      * Will turn on preset functions on departure and disable them on arrival
-     * @param l 
      */
     public void applyDefaultLocCallbacks(Locomotive l)
     {        
@@ -8532,7 +8412,6 @@ public class Layout
     
     /**
      * Returns the layout configuration as a JSON string
-     * @return 
      * @throws java.lang.IllegalAccessException 
      * @throws java.lang.NoSuchFieldException 
      */
@@ -8697,9 +8576,6 @@ public class Layout
 
     /**
      * Parses TrainControl's autonomous operation configuration file
-     * @param config 
-     * @param control 
-     * @return  
      */
     public static Layout fromJSON(String config, ViewListener control)
     {           

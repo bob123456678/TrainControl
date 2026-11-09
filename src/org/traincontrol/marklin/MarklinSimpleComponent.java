@@ -115,7 +115,6 @@ public class MarklinSimpleComponent implements java.io.Serializable
     
     /**
      * Returns the locomotive decoderType, or null if not a locomotive
-     * @return 
      */
     public MarklinLocomotive.decoderType getLocType()
     {

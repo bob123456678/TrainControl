@@ -9,8 +9,6 @@ abstract public class CANMessage
     
     /**
      * Get the raw message bytes
-     *
-     * @return
      */
     public byte[] getRawMessage()
     {

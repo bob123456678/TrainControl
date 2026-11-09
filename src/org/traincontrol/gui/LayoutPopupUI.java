@@ -26,8 +26,6 @@ public class LayoutPopupUI extends PositionAwareJFrame
      * Popup window showing train layouts
      * @param l reference to the layout
      * @param size size of each tile, in pixels
-     * @param ui
-     * @param pageIndex
      */
     public LayoutPopupUI(LayoutDiagram l, int size, TrainControlUI ui, int pageIndex)
     {

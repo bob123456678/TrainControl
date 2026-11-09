@@ -30,10 +30,6 @@ public class ImageUtil
 
     /**
      * https://stackoverflow.com/questions/15975610/java-image-scaling-improve-quality
-     * @param image
-     * @param width
-     * @param height
-     * @return 
      */
     public static BufferedImage getScaledImage(BufferedImage image, int width, int height)
     {
@@ -83,16 +79,6 @@ public class ImageUtil
     
     /**
      * Generates an image with a rectangle matching the size of the string
-     * @param text
-     * @param textColor
-     * @param font
-     * @param width
-     * @param height
-     * @param xOffset
-     * @param yOffset
-     * @param widthAdjust
-     * @param heightAdjust
-     * @return 
      */
     public static BufferedImage generateImageWithRect(String text, Color textColor, Font font, int width, int height, int xOffset, int yOffset,
             int widthAdjust, int heightAdjust)
@@ -124,14 +110,6 @@ public class ImageUtil
     
     /**
      * Generates an image with text with the passed font and offset relative to the center of the canvas
-     * @param text
-     * @param textColor
-     * @param font
-     * @param width
-     * @param height
-     * @param xOffset
-     * @param yOffset
-     * @return 
      */
     public static BufferedImage generateImageWithText(String text, Color textColor, Font font, int width, int height, int xOffset, int yOffset)
     {
@@ -162,9 +140,6 @@ public class ImageUtil
     
     /**
      * Combines two images
-     * @param image1
-     * @param image2
-     * @return 
      */
     public static BufferedImage mergeImages(BufferedImage image1, BufferedImage image2)
     {
@@ -203,8 +178,6 @@ public class ImageUtil
 
     /**
      * Highlights an icon
-     * @param originalIcon
-     * @return 
      */
     public static ImageIcon addHighlightOverlay(ImageIcon originalIcon)
     {

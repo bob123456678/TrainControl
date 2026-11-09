@@ -143,9 +143,6 @@ public abstract class NodeExpression implements Serializable
     
     /**
      * Converts this expression to a parseable text representation
-     * @param expression
-     * @param network
-     * @return 
      */
     public static String toTextRepresentation(NodeExpression expression, ViewListener network)
     {
@@ -205,9 +202,6 @@ public abstract class NodeExpression implements Serializable
 
     /**
      * Converts a text representation into a complete expression
-     * @param text
-     * @param network
-     * @return
      * @throws Exception 
      */
     public static NodeExpression fromTextRepresentation(String text, ViewListener network) throws Exception 

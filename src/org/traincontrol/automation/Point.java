@@ -138,7 +138,6 @@ public class Point
     
     /**
      * Get the speed multiplier for this point
-     * @return 
      */
     public double getSpeedMultiplier()
     {
@@ -147,7 +146,6 @@ public class Point
     
     /**
      * Get the speed multiplier for this point
-     * @return 
      */
     public int getSpeedMultiplierPercent()
     {
@@ -156,7 +154,6 @@ public class Point
         
     /**
      * Change how much locomotives are slowed when this point is traversed
-     * @param speedMultiplier 
      * @throws java.lang.Exception 
      */
     public void setSpeedMultiplier(double speedMultiplier) throws Exception
@@ -175,7 +172,6 @@ public class Point
     
     /**
      * Sets the point as active or inactive
-     * @param status 
      */
     public void setActive(boolean status)
     {
@@ -201,7 +197,6 @@ public class Point
      * Returns if the point is active.
      * Active means the point will be selected by autonomous logic
      * `isPathClear` refuses a path THROUGH an inactive point whatever it is (the editor's Out of service).
-     * @return 
      */
     public boolean isActive()
     {        
@@ -210,7 +205,6 @@ public class Point
     
     /**
      * Returns this node's unique ID
-     * @return 
      */
     public String getUniqueId()
     {
@@ -219,8 +213,6 @@ public class Point
     
     /**
      * Sets an S88 value for this point
-     * @param value 
-     * @return  
      */
     public Point setS88(Integer value)
     {
@@ -245,8 +237,6 @@ public class Point
     
     /**
      * Sets the point's priority
-     * @param value 
-     * @return  
      */
     public Point setPriority(Integer value)
     {
@@ -314,7 +304,6 @@ public class Point
 
     /**
      * Returns the point's priority
-     * @return 
      */
     public int getPriority()
     {
@@ -323,8 +312,6 @@ public class Point
     
     /**
      * Changes the state of this station
-     * @param state
-     * @return 
      * @throws Exception 
      */
     public Point setDestination(boolean state) throws Exception
@@ -346,8 +333,6 @@ public class Point
     
     /**
      * A terminus station will require the departing train to change direction
-     * @param state
-     * @return 
      * @throws Exception 
      */
     public Point setTerminus(boolean state) throws Exception
@@ -374,8 +359,6 @@ public class Point
     
     /**
      * A reversing station will require the departing train to change direction, as part of shunting operations
-     * @param state
-     * @return 
      * @throws Exception 
      */
     public Point setReversing(boolean state) throws Exception
@@ -425,7 +408,6 @@ public class Point
     
     /**
      * Renames the point
-     * @param newName 
      */
     public void rename(String newName)
     {
@@ -879,8 +861,6 @@ public class Point
 
     /**
      * Sets the maximum train length allowed at this point
-     * @param maxTrainLength 
-     * @return  
      */
     public Point setMaxTrainLength(Integer maxTrainLength)
     {
@@ -894,7 +874,6 @@ public class Point
     
     /**
      * Checks if this station's train length is long enough for the passed locomotive to stop there
-     * @param loc 
      * @return (true if OK to proceed)
      */
     public boolean validateTrainLength(Locomotive loc)
@@ -981,7 +960,6 @@ public class Point
 
     /**
      * Converts this point to a JSON representation
-     * @return 
      * @throws java.lang.IllegalAccessException 
      * @throws java.lang.NoSuchFieldException 
      */

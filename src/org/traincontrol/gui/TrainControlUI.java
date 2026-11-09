@@ -1169,7 +1169,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     
     /**
      * Recalculates the appropriate height of a tabbed pane based on the height of its tabs
-     * @param tabbedPane 
      */
     public static final void adjustTabbedPaneHeight(JTabbedPane tabbedPane)
     {
@@ -1519,7 +1518,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     
     /**
      * Gets the keyboard type preference from the radio button group
-     * @return 
      */
     private int getSelectedKeyboardType()
     {        
@@ -1535,7 +1533,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     
     /**
      * Switches to a different keyboard layout
-     * @param type 
      */
     private void applyKeyboardType(String type)
     {            
@@ -1584,8 +1581,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
        
     /**
      * Utility function to facilitate button swapping
-     * @param key1
-     * @param key2 
      */
     private void swapButton(int key1, int key2)
     {
@@ -1667,7 +1662,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
     /**
      * Returns the key code corresponding to the currently selected locomotive button
-     * @return 
      */
     public Integer getKeyForCurrentButton()
     {
@@ -1810,7 +1804,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
     /**
      * Saves initialized component database to a file
-     * @param backup
      */
     public void saveState(boolean backup)
     {
@@ -1957,8 +1950,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     
     /**
      * Gets a list of all buttons mapped to the given locomotive
-     * @param l
-     * @return 
      */
     @Override
     public List<String> getAllLocButtonMappings(Locomotive l)
@@ -1983,8 +1974,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         
     /**
      * Gets a map of all buttons mapped to the given locomotive name, prioritizing exact matches
-     * @param s
-     * @return 
      */
     public LinkedHashSet<LocomotiveKeyboardMapping> getAllLocButtonMappingsMap(String s)
     {
@@ -2022,7 +2011,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     /**
      * Finds a locomotive matching the passed string, and activates its button
      * Gives priority to exact matches
-     * @param s
      */
     public void jumpToLocomotive(String s)
     {        
@@ -2102,7 +2090,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
     /**
      * Restores list of initialized components from a file
-     * @return 
      */
     public final List<Map<Integer,String>> restoreState()
     {
@@ -4781,7 +4768,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     
     /**
      * Logs a message
-     * @param message 
      */
     @Override
     public void log(String message)
@@ -4957,7 +4943,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     
     /**
      * Sets the name of the currently active mapping page
-     * @param name 
      */
     private void setPageName(String name)
     {
@@ -5070,7 +5055,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
     /**
      * Returns the currently shown page number
-     * @return 
      */
     public int getLocMappingNumber()
     {
@@ -5080,7 +5064,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     /**
      * Gets the name of the specified mapping page in the program's own words: "Page 5 (Example)" (the name cut to
      * `MAX_PAGE_NAME_LENGTH_TOP` letters), or "Page 5" with no name.  Menus and dialogs ignore "Show Page Numbers".
-     * @param mappingNumber
      * @param raw - the name as typed, or empty for none, without the program's words round it
      */
     private String getPageName(int mappingNumber, boolean raw)
@@ -5248,9 +5231,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
     /**
      * Fetches and scales a resource icon
-     * @param size
-     * @param file
-     * @return 
      */
     private static ImageIcon getTabIcon(int size, String file)
     {
@@ -6094,7 +6074,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     
     /**
      * Updates the latency value
-     * @param latency
      */
     @Override
     public void updateLatency(double latency)
@@ -6120,7 +6099,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     
     /**
      * Turns off the power in autonomy mode when the set latency limit is exceeded
-     * @param latency 
      */
     private void checkAutoLayoutLatency(double latency)
     {
@@ -6171,8 +6149,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
     /**
      * Self-contained method to initialize a blank layout
-     * @param folderName
-     * @param verify
      */
     public void createAndApplyEmptyLayout(String folderName, boolean verify)
     {
@@ -6255,7 +6231,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     
     /**
      * Shows the layout tab and re-loads the track diagram
-     * @param showTab
      */
     synchronized public void initializeTrackDiagram(boolean showTab)
     {
@@ -6366,8 +6341,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     
     /**
      * Clipboard copy
-     * @param button 
-     * @param cut 
      */
     public void setCopyTarget(JButton button, boolean cut)
     {
@@ -6403,7 +6376,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     
     /**
      * Has the copy target been set?
-     * @return 
      */
     public boolean hasCopyTarget()
     {
@@ -6429,7 +6401,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     
     /**
      * Gets the locomotive which will be swapped to where the pasted loc came from
-     * @return 
      */
     public Locomotive getSwapTarget()
     {
@@ -6443,7 +6414,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     
     /**
      * Gets the locomotive to be pasted
-     * @return 
      */
     public Locomotive getCopyTarget()
     {
@@ -6452,7 +6422,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     
     /**
      * Gets the active locomotive
-     * @return 
      */
     public Locomotive getActiveLoc()
     {
@@ -6461,7 +6430,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     
     /**
      * Apply function presets
-     * @param l 
      */
     public void applyPreferredFunctions(Locomotive l)
     {
@@ -6500,7 +6468,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     
     /**
      * Save function presets
-     * @param l 
      */
     public void savePreferredFunctions(Locomotive l)
     {
@@ -6553,7 +6520,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     
     /**
      * Synchronizes the state of a locomotive w/ the Central Station
-     * @param l 
      */
     public void syncLocomotive(Locomotive l)
     {
@@ -6582,7 +6548,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         
     /**
      * Pastes to copied locomotive to a given UI button
-     * @param b 
      * @param swap - swaps the copied locomotive with the source
      * @param move - (if swap is false) this will clear the source button
      */
@@ -6668,7 +6633,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     
     /**
      * Repaints the locomotive keyboard
-     * @param forceUpdateLoc 
      */
     synchronized void repaintMappings(List<Locomotive> forceUpdateLoc, boolean updateIcon)
     {         
@@ -6857,8 +6821,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     
     /**
      * Maps a specific list of locomotives to a page
-     * @param pageNumber
-     * @param locs 
      */
     public void mapLocomotivesToPage(int pageNumber, List<Locomotive> locs)
     {
@@ -6925,7 +6887,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     
     /**
      * Visually configures a button without an image
-     * @param b 
      */
     private void noImageButton(JButton b)
     {
@@ -6940,9 +6901,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
     /**
      * Returns a scaled locomotive image
-     * @param url
-     * @param size
-     * @return
      * @throws IOException 
      */
     public Image getLocImage(String url, int size) throws IOException, Exception
@@ -6953,10 +6911,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     /**
      * Returns a scaled locomotive image no taller than maxHeight (Integer.MAX_VALUE: no limit).  The limit is part of
      * the cache key: one URL and width asked with and without a limit are two pictures.
-     * @param url
-     * @param size
-     * @param maxHeight
-     * @return
      * @throws IOException 
      */
     public Image getLocImageMaxHeight(String url, int size, int maxHeight) throws IOException
@@ -6990,9 +6944,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     
     /**
      * Repaints a locomotive button
-     * @param b
-     * @param l 
-     * @param correspondingLocMappingNumber
      */
     private void repaintIcon(JButton b, Locomotive l, Integer correspondingLocMappingNumber)
     {
@@ -7580,7 +7531,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
     /**
      * Gets the locomotive name to display in pop-up window titles
-     * @return 
      */
     public String getWindowTitleString()
     {
@@ -7986,8 +7936,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     
     /**
      * Same as currentLocMapping, but filters on the locomotives in the passed array
-     * @param l
-     * @return 
      */
     private Map<JButton, Locomotive> currentLocMapping(List<Locomotive> l)
     {
@@ -14808,7 +14756,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     
     /**
      * Is there anything on the page clipboard?
-     * @return 
      */
     public boolean pageCopied()
     {
@@ -14881,7 +14828,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     
     /**
      * Prompts for a new route ID and attempts to change the ID of the given route
-     * @param routeName 
      */
     public void changeRouteId(String routeName)
     {        
@@ -14936,8 +14882,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     
     /**
      * Shows the user locomotives similar to searchLoc, and maps them to a page if requested
-     * @param searchLoc
-     * @param evt 
      */ 
     public void findSimilarLocs(Locomotive searchLoc, MouseEvent evt)
     {
@@ -15025,8 +14969,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     
     /**
      * Validates that a component's value is an integer
-     * @param evt 
-     * @param hex 
      */
     public static void validateInt(java.awt.event.KeyEvent evt, boolean hex)
     {
@@ -15054,7 +14996,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     
     /**
      * Validates that a component's value is simple string
-     * @param evt 
      */
     public static void validateLayoutName(java.awt.event.KeyEvent evt)
     {
@@ -15070,8 +15011,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     
     /**
      * Validates that a component's value is an integer
-     * @param evt 
-     * @param maxLength 
      */
     public static void limitLength(java.awt.event.KeyEvent evt, int maxLength)
     {
@@ -15254,7 +15193,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
     /**
      * Checks if the current OS is Windows
-     * @return 
      */
     private boolean isWindows()
     {
@@ -16156,7 +16094,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     
     /**
      * Opens the layout editor app for the current layout
-     * @param evt 
      */
     private void editLayoutButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_editLayoutButtonActionPerformed
 
@@ -17675,8 +17612,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     /**
      * Opens a window and prompts the user for layout name
      * @param over the window that asked
-     * @param defaultVal
-     * @return 
      */
     private String promptUserForLayout(Component over, String defaultVal)
     {
@@ -18082,7 +18017,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
     /**
      * Returns whether addresses should be shown in track diagrams, and ensures the setting is propagated to all layouts
-     * @return 
      */
     private boolean getShowLayoutAddresses()
     {
@@ -19352,8 +19286,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     
     /**
      * Allows a local image to be set for a locomotive
-     * @param l 
-     * @param evt
      */
     public void setLocIcon(Locomotive l, MouseEvent evt)
     {
@@ -19419,9 +19351,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     
     /**
      * Returns a file chooser for autonomy files
-     * @param type
-     * @param extension
-     * @return 
      */
     public JFileChooser getFileChooser(int type, String extension)
     {
@@ -20560,7 +20489,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     
     /**
      * Returns the scroll bar for access by the autonomy windows
-     * @return 
      */
     public JScrollPane getAutoLocScroll()
     {
@@ -21189,8 +21117,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     
     /**
      * Gets the active layout path
-     * @param showFolder
-     * @return 
      */
     public String getLayoutPath(boolean showFolder)
     {

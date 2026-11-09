@@ -75,11 +75,8 @@ public class LayoutDiagram
 
     /**
      * Constructor
-     * @param name
      * @param sx size x
      * @param sy size y
-     * @param url
-     * @param network 
      */
     public LayoutDiagram(String name, int sx, int sy, String url, ViewListener network)
     {
@@ -377,7 +374,6 @@ public class LayoutDiagram
     
     /**
      * Exports this layout to the CS2 format
-     * @return
      * @throws Exception 
      */
     public String exportToCS2TextFormat() throws Exception
@@ -525,7 +521,6 @@ public class LayoutDiagram
     
     /**
      * Gets the path to the layout file
-     * @return
      * @throws MalformedURLException
      * @throws URISyntaxException 
      */
@@ -850,8 +845,6 @@ public class LayoutDiagram
 
     /**
      * Expands the layout by the specified number of rows and columns
-     * @param numRows
-     * @param numColumns
      * @throws IOException 
      */
     synchronized public void addRowsAndColumns(int numRows, int numColumns) throws IOException
@@ -952,7 +945,6 @@ public class LayoutDiagram
     
     /**
      * Adds a new column to the layout at the specified index and shifts all existing components one column to the right.
-     * @param startCol
      * @throws IOException
      */
     public void shiftRight(int startCol) throws IOException
@@ -988,7 +980,6 @@ public class LayoutDiagram
     
     /**
     * Adds a new row to the layout at the specified index and shifts all existing components one row downward.
-    * @param startRow
     * @throws IOException
     */
     public void shiftDown(int startRow) throws IOException
@@ -1025,7 +1016,6 @@ public class LayoutDiagram
     
     /**
     * Removes a row from the layout at the specified index and shifts all existing components one row upward.
-    * @param startRow
     * @throws IOException
     */
     public void shiftUp(int startRow) throws IOException 
@@ -1058,7 +1048,6 @@ public class LayoutDiagram
     
     /**
     * Removes a column from the layout at the specified index and shifts all existing components one column to the left.
-    * @param startCol
     * @throws IOException
     */
     public void shiftLeft(int startCol) throws IOException 
@@ -1148,8 +1137,6 @@ public class LayoutDiagram
     /**
      * Writes a file with the list of all layout pages
      * We just piggyback off Marklin's CS2 format to simplify compatibility
-     * @param path
-     * @param layoutList
      * @throws IOException 
      */
     public static void writeLayoutIndex(String path, List<String> layoutList) throws IOException

@@ -43,7 +43,6 @@ public class MarklinFeedback extends Feedback
 
     /**
      * Adds a UI tile to be updated whenever a CS2 event fires
-     * @param l 
      */
     @Override
     public void addTile(LayoutLabel l)
@@ -120,7 +119,6 @@ public class MarklinFeedback extends Feedback
     
     /**
      * Sets the feedback state
-     * @param val 
      */
     @Override
     synchronized public void setState(boolean val)
@@ -147,7 +145,6 @@ public class MarklinFeedback extends Feedback
     
     /**
      * Returns the feedback identifier
-     * @return 
      */
     @Override
     public int getUID()
