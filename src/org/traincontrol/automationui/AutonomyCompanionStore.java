@@ -4811,14 +4811,7 @@ public class AutonomyCompanionStore
 
         if (aside == null || aside.length() == 0) return;
 
-        JSONObject globals = configuration.optJSONObject("globals");
-
-        if (globals == null)
-        {
-            globals = new JSONObject();
-
-            configuration.put("globals", globals);
-        }
+        JSONObject globals = AutonomySession.storedGlobals(configuration);
 
         JSONArray table = globals.optJSONArray("timetable");
 

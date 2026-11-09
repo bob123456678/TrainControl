@@ -2129,14 +2129,7 @@ public class AutonomySession
 
             if (configuration == null) continue;
 
-            org.json.JSONObject globals = configuration.optJSONObject("globals");
-
-            if (globals == null)
-            {
-                globals = new org.json.JSONObject();
-
-                configuration.put("globals", globals);
-            }
+            org.json.JSONObject globals = storedGlobals(configuration);
 
             Set<String> gained = new java.util.TreeSet<>();
             Set<String> lost = new java.util.TreeSet<>();
@@ -2156,14 +2149,7 @@ public class AutonomySession
 
             if (configuration == null) continue;
 
-            org.json.JSONObject globals = configuration.optJSONObject("globals");
-
-            if (globals == null)
-            {
-                globals = new org.json.JSONObject();
-
-                configuration.put("globals", globals);
-            }
+            org.json.JSONObject globals = storedGlobals(configuration);
 
             for (String key : taken.getValue().keySet())
             {
@@ -4662,6 +4648,21 @@ public class AutonomySession
         return globals;
     }
 
+    /** A stored configuration's globals, put in place empty when it has none. */
+    static org.json.JSONObject storedGlobals(org.json.JSONObject configuration)
+    {
+        org.json.JSONObject globals = configuration.optJSONObject("globals");
+
+        if (globals == null)
+        {
+            globals = new org.json.JSONObject();
+
+            configuration.put("globals", globals);
+        }
+
+        return globals;
+    }
+
     /**
      * Folds what the railway owns and nothing the setup gained since it was built: train placements and the settings
      * and timetable a run writes.  For a setup newer than the railway.  A null `asBuilt` takes every setting.
@@ -4689,14 +4690,7 @@ public class AutonomySession
 
         org.json.JSONObject now = globalsOf(root);
 
-        org.json.JSONObject globals = configuration.optJSONObject("globals");
-
-        if (globals == null)
-        {
-            globals = new org.json.JSONObject();
-
-            configuration.put("globals", globals);
-        }
+        org.json.JSONObject globals = storedGlobals(configuration);
 
         for (String key : now.keySet())
         {
