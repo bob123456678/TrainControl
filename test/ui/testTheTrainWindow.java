@@ -576,7 +576,7 @@ public class testTheTrainWindow
     /**
      * Locomotive Settings... sits in the lower left corner, on Done Editing's row at the form's left edge, and never sets
      * the window's width (Adam: "move the <wrench> locomotive settings label somewhere that doesn't widen the whole
-     * window"; 2026-11-09: to the lower left, on the close button's row).
+     * window"; and to the lower left, on the close button's row).
      *
      * MUTATION: put the button back under the Train list in the form, and this fails.
      */
@@ -777,7 +777,7 @@ public class testTheTrainWindow
     }
 
     /**
-     * The diagram's menu over a train is grouped as Adam drew it (FR-182, rearranged 2026-11-09): no title row, as the
+     * The diagram's menu over a train is grouped as Adam drew it (FR-182) and reordered it: no title row, as the
      * station's name heads the train's own items, Is Active first, then Change Direction and Change Arrived From with
      * Station Settings... right below; behind a divider Change Train at..., Place, Remove and Edit <name>..., and
      * nothing else.  "Edit Locomotive doesn't exist in the same grouping as any of the autonomy options"; no divider
@@ -845,8 +845,8 @@ public class testTheTrainWindow
 
     /**
      * Over an empty station Station Settings... is the station's own item, and the two ways to put a train there are a
-     * group of their own behind a divider, on the track diagram and in the autonomy editor (FR-182, rearranged
-     * 2026-11-09).
+     * group of their own behind a divider, on the track diagram and in the autonomy editor (FR-182, as Adam
+     * reordered it).
      *
      * MUTATION: put the editor's Station Settings back below Place, and this fails.
      */
@@ -888,7 +888,7 @@ public class testTheTrainWindow
     }
 
     /**
-     * The autonomy editor's station menu is grouped the same way, with no Edit (FR-182, rearranged 2026-11-09): the
+     * The autonomy editor's station menu is grouped the same way, with no Edit (FR-182 as Adam reordered it): the
      * train's own items with Station Settings... last, then Change Train at..., Place and Remove.
      *
      * MUTATION: put Change Train at... back with the train's own items in `EditorTileMenus.buildTileMenu`, and this
