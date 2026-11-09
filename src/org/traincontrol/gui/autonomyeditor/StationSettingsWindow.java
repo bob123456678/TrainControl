@@ -917,6 +917,8 @@ public final class StationSettingsWindow extends StationWindowBase
         if (tile == null) return;
 
         for (JTextField part : new ArrayList<>(storedValues.keySet())) commit(part);
+
+        super.commitFields();
     }
 
     private String applyTypedName(TileKey square, String typed)
