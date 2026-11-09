@@ -2654,6 +2654,83 @@ public class testATrainIsDispatchedOnce
     }
 
     /**
+     * The model as a layout's control, with the connection replaced and back inside the method named: asked there, it
+     * is being replaced, and each call from there counts in `replacements`, the count the control reports.
+     */
+    private static org.traincontrol.model.ViewListener replacedWhile(String method,
+        java.util.concurrent.atomic.AtomicInteger replacements)
+    {
+        return (org.traincontrol.model.ViewListener) java.lang.reflect.Proxy.newProxyInstance(
+            org.traincontrol.model.ViewListener.class.getClassLoader(),
+            new Class<?>[] {org.traincontrol.model.ViewListener.class}, (proxy, call, args) ->
+        {
+            boolean inside = calledFrom(method);
+
+            if (inside) replacements.incrementAndGet();
+
+            if (call.getName().equals("isReplacingConnection")) return inside;
+
+            return call.getName().equals("getReplacementEpoch") ? replacements.get() : call.invoke(model, args);
+        });
+    }
+
+    /**
+     * Nor is a send whose connection is replaced and back while its route is set, though the connection is live by the
+     * check after the lock: a switch frame written into the lost connection is not sent again (FR-186), so the train
+     * would set off over a switch the station never threw.  Path Integrity Validation off; five edges, a switch on each.
+     *
+     * MUTATION: after `configureAndLockPath`, ask only `isReplacingConnection()`, not the replacements counted since
+     * the dispatch, and this fails.
+     */
+    @Test
+    public void testASendWhoseConnectionIsReplacedAndBackWhileItsRouteIsSetIsGivenBack() throws Exception
+    {
+        org.traincontrol.marklin.MarklinFeedback[] s = sensors(2131, 6);
+        final Locomotive train = model.getLocByName(model.getLocList().get(11));
+        final String[] names = {"DBA", "DB1", "DB2", "DB3", "DB4", "DBB"};
+        final java.util.concurrent.atomic.AtomicInteger replacements = new java.util.concurrent.atomic.AtomicInteger();
+        final Layout rail = aLine(replacedWhile("configureEdge", replacements), s, names);
+        final List<Edge> path = through(rail, names);
+        final List<String> said = java.util.Collections.synchronizedList(new ArrayList<String>());
+        java.util.logging.Handler tap = aTapOn(said);
+        final boolean validatingWas = Layout.PATH_INTEGRITY_VALIDATION;
+
+        aSwitchOnEach(path, 301);
+
+        try
+        {
+            Layout.PATH_INTEGRITY_VALIDATION = false;
+            train.setSpeed(0);
+            rail.getPoint("DBA").setLocomotive(train);
+
+            Future<Boolean> sent = dispatcher.submit(() -> rail.executePathByHand(path, train, 30, null, -1));
+            Boolean answer;
+
+            try
+            {
+                answer = sent.get(10, TimeUnit.SECONDS);
+            }
+            catch (TimeoutException tookTheRoute)
+            {
+                answer = null;
+            }
+
+            assertTrue(replacements.get() > 0, "precondition: the route's switches were not set");
+            assertEquals(answer, Boolean.FALSE, "a train was sent over switches set while the connection to the station"
+                + " was replaced: " + said);
+            assertTrue(said.contains(org.traincontrol.util.I18n.f("autolayout.log.notSentReconnecting", train.getName())),
+                "the send given back did not say why: " + said);
+            assertFalse(rail.isAlreadyUnderway(train) || train.getSpeed() > 0, "the train took its route or was set going");
+        }
+        finally
+        {
+            Layout.PATH_INTEGRITY_VALIDATION = validatingWas;
+            java.util.logging.Logger.getLogger(MarklinControlStation.class.getName()).removeHandler(tap);
+            letGo(s, train, null);
+        }
+    }
+
+    /**
      * Nor is a journey set going when the track power goes off while its route is being set: the train is given no
      * speed and the journey is not under way.  Path Integrity Validation off; eight edges, a switch on each.
      *
