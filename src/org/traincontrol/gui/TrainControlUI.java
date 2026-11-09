@@ -7650,19 +7650,22 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
                                 ImageLoaderLoc.execute(() ->
                                 {
-                                    // Deselected since this was queued: nothing to show (an error here now reaches the log)
-                                    if (this.activeLoc == null) return;
+                                    // Read once: the event thread can deselect it at any moment, and nothing is shown then
+                                    Locomotive shown = this.activeLoc;
 
-                                    if (LOAD_IMAGES && this.activeLoc.getImageURL() != null)
+                                    if (shown == null) return;
+
+                                    String url = shown.getImageURL();
+
+                                    if (LOAD_IMAGES && url != null)
                                     {
-                                        String url = this.activeLoc.getImageURL();
-
                                         try 
                                         {
-                                            ImageIcon icon = new javax.swing.ImageIcon(
-                                                getLocImageMaxHeight(this.activeLoc.getImageURL(), LOC_ICON_WIDTH, LOC_ICON_HEIGHT)
-                                                // getLocImage(this.activeLoc.getImageURL(), LOC_ICON_WIDTH)
-                                            );
+                                            Image picture = getLocImageMaxHeight(url, LOC_ICON_WIDTH, LOC_ICON_HEIGHT);
+
+                                            // A picture that will not decode shows the placeholder, as no picture does
+                                            ImageIcon icon = new javax.swing.ImageIcon(picture != null ? picture
+                                                : LocomotivePlaceholder.image(LOC_ICON_WIDTH));
                                             
                                             // If the network is laggy, this could show an icon even though no loc is selected
                                             // Check to ensure there is still an active loc and it hasn't changed
@@ -15810,7 +15813,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             }, KEYBOARD_SWITCH_THREAD).start();
     }
 
-    /** The generated keys' handler: those keys are no longer shown, and the new ones go through `keyboardKeyClicked`. */
+    /** The generated keys' handler: these keys' clicks go through `keyboardKeyClicked`. */
     private void UpdateSwitchState(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_UpdateSwitchState
         javax.swing.JToggleButton b = (javax.swing.JToggleButton) evt.getSource();
 

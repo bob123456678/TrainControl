@@ -83,7 +83,7 @@ public final class TrainWindow extends StationWindowBase
         formRow(form, y++, UiStyle.blackLabel(I18n.t("autosetup.ui.trainArrived")), arrivedMark, arrived, 1);
         formRow(form, y, tailLabel, tailMark, tail, 1);
 
-        // Bottom left, on Done Editing's row (Adam)
+        // Locomotive settings sit at the bottom left, on Done Editing's row
         assemble(form).add(settings, java.awt.BorderLayout.WEST);
     }
 

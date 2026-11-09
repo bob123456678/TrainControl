@@ -585,4 +585,80 @@ public class testStandingRulesAnswerAsTheDoorsDo
             }
         }
     }
+
+    /**
+     * A train claiming its route never waits for the window's question: while the search is held up partway, inside a
+     * switch-setting preview, another thread takes the railway's monitor, the one `configureAndLockPath` locks a route
+     * under.  The search runs over every station, so a hold for all of it stops every train at its next milestone.
+     *
+     * MUTATION: put `synchronized` back on `Layout.standingRulesAt`, and this fails.
+     */
+    @Test(timeOut = 60000)
+    public void testATrainClaimingItsRouteDoesNotWaitForTheSearch() throws Exception
+    {
+        java.util.concurrent.CountDownLatch inside = new java.util.concurrent.CountDownLatch(1);
+        java.util.concurrent.CountDownLatch letGo = new java.util.concurrent.CountDownLatch(1);
+        org.traincontrol.model.ViewListener model = scenario.getModel();
+
+        // The scenario's control, holding up the search's first lookup of an accessory until let go
+        Layout railway = Layout.fromJSON(session.buildConfiguration(), (org.traincontrol.model.ViewListener)
+            java.lang.reflect.Proxy.newProxyInstance(org.traincontrol.model.ViewListener.class.getClassLoader(),
+            new Class<?>[] {org.traincontrol.model.ViewListener.class}, (proxy, method, args) ->
+            {
+                if (method.getName().equals("getAccessoryByName") && inside.getCount() > 0 && inTheSearch())
+                {
+                    inside.countDown();
+                    letGo.await(30, java.util.concurrent.TimeUnit.SECONDS);
+                }
+
+                return method.invoke(model, args);
+            }));
+
+        java.util.concurrent.ExecutorService threads = java.util.concurrent.Executors.newFixedThreadPool(2);
+
+        try
+        {
+            java.util.concurrent.Future<StandingRules> asked = threads.submit(() -> rules(railway));
+
+            assertTrue(inside.await(20, java.util.concurrent.TimeUnit.SECONDS),
+                "precondition: the search never previewed a switch setting, so nothing held it up");
+
+            java.util.concurrent.Future<Boolean> claimed = threads.submit(() ->
+            {
+                synchronized (railway)
+                {
+                    return true;
+                }
+            });
+
+            try
+            {
+                claimed.get(5, java.util.concurrent.TimeUnit.SECONDS);
+            }
+            catch (java.util.concurrent.TimeoutException waited)
+            {
+                fail("a train claiming its route waited for Station Settings' search: the search holds the railway's"
+                    + " monitor, so every train stops at its next milestone until it ends");
+            }
+
+            letGo.countDown();
+
+            assertNotNull(asked.get(20, java.util.concurrent.TimeUnit.SECONDS), "the search, let go, gave no answer");
+        }
+        finally
+        {
+            letGo.countDown();
+            threads.shutdownNow();
+        }
+    }
+
+    private static boolean inTheSearch()
+    {
+        for (StackTraceElement frame : Thread.currentThread().getStackTrace())
+        {
+            if (frame.getClassName().equals("org.traincontrol.automation.LayoutStandingRules")) return true;
+        }
+
+        return false;
+    }
 }

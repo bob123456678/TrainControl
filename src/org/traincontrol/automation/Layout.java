@@ -559,9 +559,6 @@ public class Layout
     /** Why a train cannot start, and why a station is not offered or reached. */
     private final LayoutExplanations layoutExplanations = new LayoutExplanations(this);
 
-    /** What the square's copies allow, for Station Settings. */
-    private final LayoutStandingRules layoutStandingRules = new LayoutStandingRules(this, layoutExplanations);
-
     /** Where each standing train's body lies: the tail walks behind the covered track and places. */
     private final StandingTrains standingTrains = new StandingTrains(this);
 
@@ -1723,7 +1720,9 @@ public class Layout
 
         if (this.control.getPowerState()) this.waitingForThePower.set(false);
 
-        if (!this.control.isReplacingConnection() && this.routesHeld.compareAndSet(true, false))
+        // A stopped run holds nothing, so the next one does not say the connection is back
+        if (!this.running) this.routesHeld.set(false);
+        else if (!this.control.isReplacingConnection() && this.routesHeld.compareAndSet(true, false))
         {
             this.control.logf("autolayout.infoRoutesResumed");
         }
@@ -3270,6 +3269,9 @@ public class Layout
         boolean configureFailed = false;
         int edgesLocked = 0;
 
+        // Before the first switch: a replacement from here on loses switch frames, which the validation wait then misses
+        final int replacements = this.control.getReplacementEpoch();
+
         // A throw out of the lock loop, rethrown once the track is given back: executePath's handler does not unlock
         // (right mid-run), but here the train has not moved, and the edges taken would stay occupied for the session.
         RuntimeException lockFailure = null;
@@ -3386,12 +3388,16 @@ public class Layout
         int stops = this.stopsOrdered.get();
         int power = this.control.getPowerEpoch();
 
-        if (!this.validatePathActuation(path, stops, power))
+        if (!this.validatePathActuation(path, stops, power, replacements))
         {
-            // A Stop or a power change ended the wait: the train goes back unrun, as executePath gives one back, and
-            // nothing is counted against the accessories.
+            // A Stop, a power change or a replaced connection ended the wait: the train goes back unrun, as executePath
+            // gives one back, and nothing is counted against the accessories.
             if (this.stopsOrdered.get() != stops) giveBackUnrun(path, loc, "autolayout.log.notSentAfterTheStop");
             else if (this.control.getPowerEpoch() != power) giveBackUnrun(path, loc, "autolayout.log.notSentPowerOff");
+            else if (this.control.getReplacementEpoch() != replacements)
+            {
+                giveBackUnrun(path, loc, "autolayout.log.notSentReconnecting");
+            }
             else
             {
                 this.handleMisconfiguredPath(path, loc);
@@ -3408,14 +3414,16 @@ public class Layout
      * Waits up to PATH_VALIDATION_MS * (accessories on the path + 1) for every accessory on the path to reach its
      * CS-confirmed commanded state, on Accessory.actuationConfirmedMonitor rather than polling.  While the station is
      * still answering it waits on, up to PATH_VALIDATION_BUSY_MAX: a CS3 switches one accessory at a time, about a
-     * second each, so ours may be queued behind another train's (OB-425).  A Stop or a power change ends the wait.
-     * Must be called WITHOUT holding the Layout monitor so concurrent path checks are not blocked.
+     * second each, so ours may be queued behind another train's (OB-425).  A Stop, a power change or a replaced
+     * connection ends the wait.  Must be called WITHOUT holding the Layout monitor so concurrent path checks are not
+     * blocked.
      *
      * @param stops `stopsOrdered()` as read before the path was configured
      * @param power the power epoch as read then
+     * @param replacements the connection's replacement epoch as read then
      * @return true if all accessories on the path are confirmed at their commanded state
      */
-    private boolean validatePathActuation(List<Edge> path, int stops, int power)
+    private boolean validatePathActuation(List<Edge> path, int stops, int power, int replacements)
     {
         List<Accessory> accessories = new ArrayList<>();
         List<Boolean> desired = new ArrayList<>();
@@ -3438,7 +3446,7 @@ public class Layout
         if (accessories.isEmpty()) return true;
 
         // Woken by every CS echo (MarklinAccessory notifies the monitor), and at least every STOP_CHECK_MS so a Stop, a
-        // power change or a stopped run ends the wait at once instead of after the station's backlog.
+        // power change or a replaced connection ends the wait at once instead of after the station's backlog.
         long start = System.currentTimeMillis();
         long deadline = start + PATH_VALIDATION_MS + PATH_VALIDATION_MS * accessories.size();
         synchronized (Accessory.actuationConfirmedMonitor)
@@ -3447,7 +3455,8 @@ public class Layout
             {
                 long remaining = deadline - System.currentTimeMillis();
 
-                if (remaining <= 0 || this.stopsOrdered.get() != stops || this.control.getPowerEpoch() != power) break;
+                if (remaining <= 0 || this.stopsOrdered.get() != stops || this.control.getPowerEpoch() != power
+                    || this.control.getReplacementEpoch() != replacements) break;
 
                 long echoesBefore = Accessory.echoes;
 
@@ -4439,9 +4448,10 @@ public class Layout
     /**
      * What a square's standing rules let a train do (FR-111), from its copies on this railway, whoever stands where
      * (`copies` as `StationIndex.pointNamesAt` gives them).  Null when none of those names is on this railway.
-     * Synchronized on this Layout, so never on the event thread (OB-192).
+     * Takes no lock: it reads only the graph and the squares' settings, which no run writes, and holding the monitor
+     * for a search over every station would stop every running train.  Still a search: never on the event thread.
      */
-    synchronized public StandingRules standingRulesAt(java.util.Collection<String> copies)
+    public StandingRules standingRulesAt(java.util.Collection<String> copies)
     {
         List<Point> found = new ArrayList<>();
 
@@ -4450,7 +4460,7 @@ public class Layout
             if (this.getPoint(name) != null) found.add(this.getPoint(name));
         }
 
-        return found.isEmpty() ? null : layoutStandingRules.at(found);
+        return found.isEmpty() ? null : new LayoutStandingRules(this, layoutExplanations).at(found);
     }
 
     /** The standing bar on this square, for no train in particular, or null. */
@@ -5056,7 +5066,7 @@ public class Layout
 
     /**
      * Whether the path search gives a route from `start`, to a station `ends` accepts, that `wanted` accepts: as
-     * getPossiblePaths would with nobody on the track and no list or length (FR-111).  Under the caller's monitor.
+     * getPossiblePaths would with nobody on the track and no list or length (FR-111).  Takes no lock.
      */
     boolean anyStandingRoute(Point start, java.util.function.Predicate<Point> ends,
         java.util.function.Predicate<List<Edge>> wanted)
@@ -5334,8 +5344,9 @@ public class Layout
                             // When this entry first refused, so a parallel run can give up on time
                             long refusingSince = 0;
 
-                            // The power's epoch as this attempt began; see below.
+                            // The power's and the connection's epochs as this attempt began; see below.
                             int powerAtAttempt = this.control.getPowerEpoch();
+                            int replacementsAtAttempt = this.control.getReplacementEpoch();
 
                             while (this.running && !this.executePath(ttp.getPath(), ttp.getLoc(),
                                 ttp.getLoc().getPreferredSpeed(), ttp, playedBack(ttp), stopsAtChoice))
@@ -5356,10 +5367,11 @@ public class Layout
                                 }
 
                                 // An attempt the power cut, or a connection being replaced held (FR-186), is no refusal,
-                                // nor the start of a parallel run's clock.  The epoch catches a stop between the power
-                                // wait and the read.
+                                // nor the start of a parallel run's clock.  The epochs catch a cut or a replacement over
+                                // by the time of the read.
                                 boolean cut = this.control.getPowerEpoch() != powerAtAttempt || !this.control.getPowerState()
-                                    || this.control.isReplacingConnection();
+                                    || this.control.isReplacingConnection()
+                                    || this.control.getReplacementEpoch() != replacementsAtAttempt;
 
                                 if (!cut)
                                 {
@@ -5420,6 +5432,7 @@ public class Layout
                                 if (this.waitWhileThePowerIsOff()) refusingSince = 0;
 
                                 powerAtAttempt = this.control.getPowerEpoch();
+                                replacementsAtAttempt = this.control.getReplacementEpoch();
                             }
 
                             this.control.logf("autolayout.infoTimetablePathFinished");
@@ -6254,6 +6267,9 @@ public class Layout
         // between.
         final int powerAtDispatch = this.control.getPowerEpoch();
 
+        // And the connection's replacements, for the same reason
+        final int replacementsAtDispatch = this.control.getReplacementEpoch();
+
         // A stop ordered already sends nothing, and says so.
         if (this.stopsOrdered.get() != stopsAtDispatch)
         {
@@ -6357,8 +6373,9 @@ public class Layout
                 return false;
             }
 
-            // Nor if the connection began to be replaced while its route was set (FR-186).
-            if (this.control.isReplacingConnection())
+            // Nor if the connection was replaced while its route was set, even briefly: a switch frame written into the
+            // lost connection is not sent again (FR-186).
+            if (this.control.isReplacingConnection() || this.control.getReplacementEpoch() != replacementsAtDispatch)
             {
                 giveBackUnrun(path, loc, "autolayout.log.notSentReconnecting");
 
@@ -8171,7 +8188,7 @@ public class Layout
         
     /**
      * Says whether the timetable's entries must run one at a time (each waits for the one before to arrive).
-     * setTimetable clears it; the application no longer calls this, and tests use it to set the flag by hand.
+     * setTimetable clears it; the application does not call this; tests use it to set the flag by hand.
      */
     public void setTimetableSequential(boolean sequential)
     {

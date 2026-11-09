@@ -26,7 +26,7 @@ import org.traincontrol.util.I18n;
  */
 public class CurrentKeyRow extends JComponent
 {
-    /** The decoder pill's fill: the exact navy of `CurrentKeyLabel`'s foreground (Adam's choice). */
+    /** The decoder pill's fill: the exact navy of `CurrentKeyLabel`'s foreground. */
     public static final Color DECODER_FILL = new Color(0, 0, 115);
 
     /** The words on the decoder pill, and the line between its two parts. */

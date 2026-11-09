@@ -14,7 +14,7 @@
 # no change among them, and at least one Return Home plan was compared.  A Return Home plan's moves are compared too when
 # both builds plan by route work (OB-413); against an older build, 3.0.8 included, whose wall clock picks among plans run
 # to run, they are printed and do not fail (see old-setups.py).
-# The 3.0.8 build is `dev-3.0.9`.  Later builders: also the commit your branch started from.  TC_KEEP=1 keeps the base
+# The 3.0.8 build is the tag `v3_0_8`.  Later builders: also the commit your branch started from.  TC_KEEP=1 keeps the base
 # worktree.
 #
 # TC_OLD_SETUPS_LOCOS, _ROUTES and _TRIPS size the sample.  Routine use is 6 trips a setup, over 10 minutes a build, so
@@ -22,7 +22,7 @@
 # TC_OLD_SETUPS_ONLY=<part of a setup's name> dumps only the setups it names, and is the way to look again at one.
 #
 # --opens-in: the same worktree trick for core.testASetupFromANewerBuildOpens over test/layouts/saved-by-3-1-0, then the
-# files that build saved are read back by this one.  The 3.0.8 build is `dev-3.0.9` (it is only renumbered).
+# files that build saved are read back by this one.  The 3.0.8 build is the tag `v3_0_8` (it is only renumbered).
 
 set -u
 

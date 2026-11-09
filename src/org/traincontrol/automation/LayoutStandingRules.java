@@ -15,14 +15,14 @@ import org.traincontrol.util.I18n;
  * The body of `Layout.standingRulesAt` (FR-111): which copies of a square the build emitted, read with the clauses the
  * real doors ask (`isSendableDestination`, `autonomyMayEndAt`, `strandsATrainThatCannotReverse`, the start rules) and,
  * for ways on and out, the path search (`anyStandingRoute`), so it holds no rule of its own.  Occupancy, lengths and
- * lists are left out.  Takes no lock: the caller holds the railway's monitor.
+ * lists are left out.  Takes no lock, so one is made for each question.
  */
 final class LayoutStandingRules
 {
     private final Layout owner;
     private final LayoutExplanations explanations;
 
-    /** `mayEndAt`'s answers, for one question only. */
+    /** `mayEndAt`'s answers. */
     private final Map<Point, Boolean> endings = new HashMap<>();
 
     LayoutStandingRules(Layout owner, LayoutExplanations explanations)
@@ -34,8 +34,6 @@ final class LayoutStandingRules
     StandingRules at(List<Point> copies)
     {
         StandingRules rules = new StandingRules();
-
-        endings.clear();
 
         Set<String> arrivals = new LinkedHashSet<>();
 

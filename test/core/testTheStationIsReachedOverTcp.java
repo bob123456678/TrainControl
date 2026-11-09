@@ -135,11 +135,20 @@ public class testTheStationIsReachedOverTcp
         @Override
         public void logf(String key, Object... args)
         {
+            if (key.equals(this.failOnce))
+            {
+                this.failOnce = null;
+                throw new IllegalStateException("a fault injected into " + key);
+            }
+
             this.keys.add(key);
             this.lines.add(I18n.f(key, args));
 
             if (args.length > 0 && args[0] instanceof Integer) this.sums.merge(key, (Integer) args[0], Integer::sum);
         }
+
+        // A key whose next logf throws, once: an unexpected fault in the proxy's own thread
+        volatile String failOnce;
 
         // Each key's first number, summed over its lines
         final Map<String, Integer> sums = new java.util.concurrent.ConcurrentHashMap<>();
@@ -550,6 +559,30 @@ public class testTheStationIsReachedOverTcp
         this.station.close();
 
         assertTrue(logged("network.tcpReconnectFailed", 30000), "no fallback to UDP: " + this.model.lines);
+        assertReachedOverUdp();
+    }
+
+    /**
+     * An unexpected error that ends the listener while it replaces a lost connection leaves nothing being replaced:
+     * UDP takes over for the session, logged, so autonomy does not hold new routes for ever.
+     *
+     * MUTATION: take the catch out of `NetworkProxy.readTcp`, and this fails.
+     */
+    @Test(timeOut = 30000)
+    public void testAListenerEndedByAnErrorLeavesNothingBeingReplaced() throws Exception
+    {
+        connectedAndAnswered();
+
+        Thread listener = (Thread) field("tcpReader");
+
+        this.model.failOnce = "network.tcpLostReconnecting";
+        this.station.drop();
+        listener.join(15000);
+
+        assertFalse(listener.isAlive(), "precondition: the listener did not end on the injected fault");
+        assertFalse(this.proxy.isReplacing(), "the listener ended with the lost connection still being replaced, so new"
+            + " routes would be held for the rest of the session: " + this.model.lines);
+        assertTrue(logged("network.tcpLostUsingUdp", WAIT_MS), "the loss is not logged: " + this.model.lines);
         assertReachedOverUdp();
     }
 

@@ -2518,8 +2518,14 @@ public class testATrainIsDispatchedOnce
     private static void refusedForTheConnection(Layout rail, Locomotive train, String from, String to, List<String> said,
         String what) throws Exception
     {
-        Future<Boolean> sent = dispatcher.submit(() ->
-            rail.executePathByHand(through(rail, from, to), train, 30, null, -1));
+        refusedForTheConnection(rail, train, through(rail, from, to), said, what);
+    }
+
+    /** The same, along a path. */
+    private static void refusedForTheConnection(Layout rail, Locomotive train, List<Edge> path, List<String> said,
+        String what) throws Exception
+    {
+        Future<Boolean> sent = dispatcher.submit(() -> rail.executePathByHand(path, train, 30, null, -1));
         Boolean answer;
 
         try
@@ -2588,6 +2594,17 @@ public class testATrainIsDispatchedOnce
             refusedForTheConnection(rail, h, "DHA", "DHB", said, "a hand send while the connection was being replaced"));
     }
 
+    /** Starts Return Home's plan of one leg, `from` to `to`, on a thread of its own named `thread`. */
+    private static void startReturnHome(Layout rail, Locomotive t, String from, String to, String thread)
+    {
+        rail.setTimetable(Arrays.asList(new org.traincontrol.automation.TimetablePath(t, through(rail, from, to), 0)));
+        rail.setTimetableSequential(true);
+
+        Thread executor = new Thread(rail::executeTimetable, thread);
+        executor.setDaemon(true);
+        executor.start();
+    }
+
     /**
      * Return Home spends no attempt on a send refused while the connection is being replaced: with the connection lost
      * each time after the wait and before the send, the run goes on past its attempts, and starts its entry once the
@@ -2607,13 +2624,7 @@ public class testATrainIsDispatchedOnce
         {
             final String refused = org.traincontrol.util.I18n.f("autolayout.log.notSentReconnecting", t.getName());
 
-            rail.setTimetable(Arrays.asList(new org.traincontrol.automation.TimetablePath(t, through(rail, "DSA", "DSB"),
-                0)));
-            rail.setTimetableSequential(true);
-
-            Thread executor = new Thread(rail::executeTimetable, "Return Home while the connection is replaced");
-            executor.setDaemon(true);
-            executor.start();
+            startReturnHome(rail, t, "DSA", "DSB", "Return Home while the connection is replaced");
 
             assertTrue(until(() -> java.util.Collections.frequency(new ArrayList<>(said), refused) > attempts, 20000),
                 "Return Home gave up on sends refused while the connection was being replaced: " + said);
@@ -2650,6 +2661,153 @@ public class testATrainIsDispatchedOnce
 
             assertTrue(until(() -> l.getSpeed() > 0 || rail.isAlreadyUnderway(l), 5000), "the connection came back and"
                 + " the train could not be sent: its route was not given back");
+        });
+    }
+
+    /**
+     * The model as a layout's control, with the connection replaced and back inside the method named: asked there, it
+     * is being replaced, and each call from there counts in `replacements`, the count the control reports.
+     */
+    private static org.traincontrol.model.ViewListener replacedWhile(String method,
+        java.util.concurrent.atomic.AtomicInteger replacements)
+    {
+        return (org.traincontrol.model.ViewListener) java.lang.reflect.Proxy.newProxyInstance(
+            org.traincontrol.model.ViewListener.class.getClassLoader(),
+            new Class<?>[] {org.traincontrol.model.ViewListener.class}, (proxy, call, args) ->
+        {
+            boolean inside = calledFrom(method);
+
+            if (inside) replacements.incrementAndGet();
+
+            if (call.getName().equals("isReplacingConnection")) return inside;
+
+            return call.getName().equals("getReplacementEpoch") ? replacements.get() : call.invoke(model, args);
+        });
+    }
+
+    /**
+     * Nor is a send whose connection is replaced and back while its route is set, though the connection is live by the
+     * check after the lock: a switch frame written into the lost connection is not sent again (FR-186), so the train
+     * would set off over a switch the station never threw.  Path Integrity Validation off; five edges, a switch on each.
+     *
+     * MUTATION: after `configureAndLockPath`, ask only `isReplacingConnection()`, not the replacements counted since
+     * the dispatch, and this fails.
+     */
+    @Test
+    public void testASendWhoseConnectionIsReplacedAndBackWhileItsRouteIsSetIsGivenBack() throws Exception
+    {
+        org.traincontrol.marklin.MarklinFeedback[] s = sensors(2131, 6);
+        final Locomotive train = model.getLocByName(model.getLocList().get(11));
+        final String[] names = {"DBA", "DB1", "DB2", "DB3", "DB4", "DBB"};
+        final java.util.concurrent.atomic.AtomicInteger replacements = new java.util.concurrent.atomic.AtomicInteger();
+        final Layout rail = aLine(replacedWhile("configureEdge", replacements), s, names);
+        final List<Edge> path = through(rail, names);
+        final List<String> said = java.util.Collections.synchronizedList(new ArrayList<String>());
+        java.util.logging.Handler tap = aTapOn(said);
+        final boolean validatingWas = Layout.PATH_INTEGRITY_VALIDATION;
+
+        aSwitchOnEach(path, 301);
+
+        try
+        {
+            Layout.PATH_INTEGRITY_VALIDATION = false;
+            train.setSpeed(0);
+            rail.getPoint("DBA").setLocomotive(train);
+
+            refusedForTheConnection(rail, train, path, said, "a send over switches set while the connection to the"
+                + " station was replaced");
+
+            assertTrue(replacements.get() > 0, "precondition: the route's switches were not set");
+        }
+        finally
+        {
+            Layout.PATH_INTEGRITY_VALIDATION = validatingWas;
+            java.util.logging.Logger.getLogger(MarklinControlStation.class.getName()).removeHandler(tap);
+            letGo(s, train, null);
+        }
+    }
+
+    /**
+     * A send whose connection is replaced while its switches are awaited is given back as one refused for the
+     * connection, not reported as misconfigured accessories nor counted toward that alert.  A simulated station sends
+     * no echo, so the wait fails.
+     *
+     * MUTATION: take the replacement test out of `configureAndLockPath`'s failure branch, and this fails.
+     */
+    @Test
+    public void testASendWhoseConnectionIsReplacedWhileItsSwitchesAreAwaitedIsNotMisconfigured() throws Exception
+    {
+        final java.util.concurrent.atomic.AtomicInteger replacements = new java.util.concurrent.atomic.AtomicInteger();
+
+        whileReplacing(2141, 12, "DVA", "DVB", replacedWhile("validatePathActuation", replacements), (rail, v, said) ->
+        {
+            aSwitchOnEach(through(rail, "DVA", "DVB"), 311);
+
+            refusedForTheConnection(rail, v, "DVA", "DVB", said, "a send whose connection was replaced while its switches"
+                + " were awaited");
+
+            assertTrue(replacements.get() > 0, "precondition: the switches were not awaited");
+            assertEquals(rail.getPathValidationFailureCount(), 0, "a send given back for the connection counted toward"
+                + " the misconfigured-accessories alert: " + said);
+        });
+    }
+
+    /**
+     * Return Home spends no attempt on a send given back because the connection was replaced while its switches were
+     * awaited, though the replacement is over by the time the attempt is counted.
+     *
+     * MUTATION: in the timetable's `cut`, drop the replacements counted since the attempt began, and this fails.
+     */
+    @Test
+    public void testReturnHomeSpendsNoAttemptOnASendReplacedWhileItsSwitchesWereAwaited() throws Exception
+    {
+        final int attempts = layoutConstant("STAGING_MAX_ATTEMPTS");
+
+        whileReplacing(2151, 13, "DWA", "DWB", replacedWhile("validatePathActuation",
+            new java.util.concurrent.atomic.AtomicInteger()), (rail, t, said) ->
+        {
+            final String refused = org.traincontrol.util.I18n.f("autolayout.log.notSentReconnecting", t.getName());
+
+            aSwitchOnEach(through(rail, "DWA", "DWB"), 313);
+
+            startReturnHome(rail, t, "DWA", "DWB", "Return Home while its switches are awaited");
+
+            assertTrue(until(() -> java.util.Collections.frequency(new ArrayList<>(said), refused) > attempts
+                || !rail.isAutoRunning(), 30000), "Return Home neither gave up nor went on: " + said);
+            assertTrue(rail.isAutoRunning(), "Return Home gave up on sends given back for the replaced connection: "
+                + said);
+        });
+    }
+
+    /**
+     * A run stopped while new routes are held leaves nothing held: the next run, the connection back, does not say the
+     * connection is back.
+     *
+     * MUTATION: in `waitWhileThePowerIsOff`, leave `routesHeld` set when the run has stopped, and this fails.
+     */
+    @Test
+    public void testARunStoppedWhileRoutesAreHeldLeavesNothingHeld() throws Exception
+    {
+        whileReplacing(2161, 14, "DXA", "DXB", (rail, x, said) ->
+        {
+            rail.setLocomotivesToRun(Arrays.asList(x));
+            rail.runLocomotives();
+
+            assertTrue(until(() -> said.contains(org.traincontrol.util.I18n.t("autolayout.infoRoutesHeld")), 5000),
+                "precondition: the run held no routes: " + said);
+
+            rail.stopLocomotives();
+
+            assertTrue(until(() -> !rail.isRunning(), 5000), "precondition: the run did not stop");
+
+            replacing(false);
+            said.clear();
+            rail.runLocomotives();
+
+            assertTrue(until(() -> x.getSpeed() > 0 || rail.isAlreadyUnderway(x), 5000),
+                "precondition: the next run started nothing");
+            assertFalse(said.contains(org.traincontrol.util.I18n.t("autolayout.infoRoutesResumed")), "the next run said"
+                + " the connection is back, though it held no route: " + said);
         });
     }
 

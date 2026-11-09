@@ -125,6 +125,9 @@ public class NetworkProxy
     // Written under this: the listener is replacing a lost connection, and sends go over UDP meanwhile
     private volatile boolean replacing;
 
+    // Counts the times `replacing` went true, so two reads tell whether a replacement began between them
+    private final AtomicInteger replacements = new AtomicInteger();
+
     // Why a send found the connection broken, for the listener's log line
     private volatile String lostBecause;
 
@@ -311,7 +314,7 @@ public class NetworkProxy
     }
 
     /** An exception's message for a log line, or its name when it has none. */
-    private static String reasonOf(IOException e)
+    private static String reasonOf(Exception e)
     {
         return e.getMessage() != null ? e.getMessage() : e.getClass().getSimpleName();
     }
@@ -473,8 +476,7 @@ public class NetworkProxy
         catch (IOException e)
         {
             // The listener, woken by the close, replaces the connection; the frame did not go out on it
-            this.replacing = true;
-            this.lostBecause = reasonOf(e);
+            startReplacing(reasonOf(e));
             closeQuietly(connection);
 
             if (!overUdp) return sendUdp(message);
@@ -487,6 +489,21 @@ public class NetworkProxy
     public boolean isReplacing()
     {
         return this.replacing;
+    }
+
+    /** How many replacements have begun; not under the lock either. */
+    public int replacements()
+    {
+        return this.replacements.get();
+    }
+
+    /** Under this: the connection is lost and being replaced, the replacement counted as it begins. */
+    private void startReplacing(String because)
+    {
+        if (!this.replacing) this.replacements.incrementAndGet();
+
+        this.replacing = true;
+        this.lostBecause = because;
     }
 
     /** A frame's command, as CS2Message reads it. */
@@ -893,8 +910,7 @@ public class NetworkProxy
         catch (IOException e)
         {
             // As in sendMessage: the listener, woken by the close, replaces the connection
-            this.replacing = true;
-            this.lostBecause = reasonOf(e);
+            startReplacing(reasonOf(e));
             closeQuietly(connection);
             return false;
         }
@@ -908,13 +924,32 @@ public class NetworkProxy
 
         model.logf("network.canListenerRunningTcp");
 
-        while (!this.stopRequested && (connection = this.tcp) != null)
+        try
         {
-            String reason = readUntilLost(connection, frame);
+            while (!this.stopRequested && (connection = this.tcp) != null)
+            {
+                String reason = readUntilLost(connection, frame);
 
-            if (this.stopRequested) return;
+                if (this.stopRequested) return;
 
-            recover(connection, reason);
+                recover(connection, reason);
+            }
+        }
+        catch (RuntimeException e)
+        {
+            // Nothing is left replacing the connection: UDP for the session, or autonomy would hold new routes for ever
+            closeQuietly(this.tcp);
+
+            synchronized (this)
+            {
+                this.tcp = null;
+                this.replacing = false;
+            }
+
+            setUdpLive(true);
+            model.logf("network.tcpLostUsingUdp", reasonOf(e));
+
+            throw e;
         }
     }
 
@@ -995,8 +1030,7 @@ public class NetworkProxy
 
         synchronized (this)
         {
-            this.replacing = true;
-            this.lostBecause = null;
+            startReplacing(null);
             forgetReceived();
             cutOff = this.unconfirmed.size();
             this.unconfirmed.clear();
