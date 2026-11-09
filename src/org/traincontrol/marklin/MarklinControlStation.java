@@ -211,6 +211,9 @@ public class MarklinControlStation implements ViewListener, ModelListener
 
     // Feedback database
     private final RemoteDeviceCollection<MarklinFeedback, Integer> feedbackDB;
+
+    // Each sensor's s88 device as the saved file had it, handed to a CS3's proxy only (OB-418)
+    private final Map<Integer, Integer> savedS88Devices = new java.util.concurrent.ConcurrentHashMap<>();
     
     // Route database
     private final RemoteDeviceCollection<MarklinRoute, Integer> routeDB;
@@ -431,6 +434,8 @@ public class MarklinControlStation implements ViewListener, ModelListener
                 // When we restore the state, it might be invalid if the CS2 was used without this program running
                 // Feedbacks are clickable and should be synced manually
                 this.feedbackDB.getById(c.getAddress()).setState(c.getState());
+
+                if (c.getS88Device() != null) this.savedS88Devices.put(c.getAddress(), c.getS88Device());
             }
             else if (c.getType() == MarklinSimpleComponent.Type.ROUTE)
             {
@@ -1814,7 +1819,11 @@ public class MarklinControlStation implements ViewListener, ModelListener
         }
 
         // The sensors' true states, asked of a CS3 only: a query sets nothing on the station (OB-418)
-        if (this.isCS3 && this.NetworkInterface != null) this.NetworkInterface.syncSensors();
+        if (this.isCS3 && this.NetworkInterface != null)
+        {
+            this.NetworkInterface.rememberDevices(this.savedS88Devices);
+            this.NetworkInterface.syncSensors();
+        }
 
         this.logf("loc.syncCompleted");
         
@@ -2045,6 +2054,14 @@ public class MarklinControlStation implements ViewListener, ModelListener
         return this.isCS3;
     }
     
+    /** A sensor's s88 device to save: the one a CS3 is asked at, else the one saved before (OB-418). */
+    private Integer s88DeviceToSave(int contact)
+    {
+        Integer device = this.isCS3 && this.NetworkInterface != null ? this.NetworkInterface.deviceOf(contact) : null;
+
+        return device != null ? device : this.savedS88Devices.get(contact);
+    }
+
     /**
      * Saves initialized component database to a file
      * @param backup
@@ -2073,7 +2090,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
         
         for (MarklinFeedback f : this.feedbackDB.getItems())
         {
-            l.add(new MarklinSimpleComponent(f));
+            l.add(new MarklinSimpleComponent(f, s88DeviceToSave(f.getUID())));
         }
         
         // The database that would not load is copied aside first, once, and said out loud: a transient read failure at

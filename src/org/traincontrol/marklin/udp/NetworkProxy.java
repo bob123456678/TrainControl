@@ -167,6 +167,9 @@ public class NetworkProxy
     // Set by connectOverTcp and by a sync's syncSensors, both for a CS3 only
     private volatile boolean learnsDevices;
 
+    // Each contact's device as last saved, for a contact no event placed
+    private volatile Map<Integer, Integer> savedDevice = new java.util.HashMap<>();
+
     // Each contact asked, and when a real event for it came since (0 for none): an answer, or a late copy, within
     // RESYNC_WAIT_NS of that event is older than it
     private final Map<Integer, Long> overtaken = new ConcurrentHashMap<>();
@@ -716,7 +719,7 @@ public class NetworkProxy
     }
 
     /**
-     * Asks each sensor whose device a real event showed for its state, on the live transport, and logs the counts;
+     * Asks each sensor whose device is known (deviceOf) for its state, on the live transport, and logs the counts;
      * returns once every query is answered, or RESYNC_WAIT_NS after the last.  Over UDP twice, as a resync does.  For a
      * CS3's sync (OB-418): from the first call on, events teach their devices also to a proxy never asked for TCP.
      * Before setModel, only that.
@@ -739,10 +742,24 @@ public class NetworkProxy
         ask(overTcp, epoch, overTcp ? 1 : 2, "network.sensorsSynced");
     }
 
+    /** The device a contact is asked at: the one a real event showed, else the one saved; null when neither. */
+    public Integer deviceOf(int contact)
+    {
+        Integer device = this.sensorDevice.get(contact);
+
+        return device != null ? device : this.savedDevice.get(contact);
+    }
+
+    /** The devices saved before a restart, each used until an event shows one (OB-418). */
+    public void rememberDevices(Map<Integer, Integer> saved)
+    {
+        this.savedDevice = new java.util.HashMap<>(saved);
+    }
+
     /**
      * Asks each sensor the model knows for its state, on the transport just made live, as frames missed meanwhile are
      * gone.  The station answers with the state as it answers, on the same transport and after any event it sent
-     * before, so no answer overtakes a newer event.  Only a contact whose device a real event showed is asked.
+     * before, so no answer overtakes a newer event.  Only a contact whose device is known (deviceOf) is asked.
      * `passes` above 1 asks again RESYNC_AGAIN_NS after each start, for a UDP copy that lands after the answer.  On a
      * thread of its own that stops when the live transport changes.
      */
@@ -784,7 +801,7 @@ public class NetworkProxy
 
             for (Integer contact : model.knownSensors())
             {
-                Integer device = this.sensorDevice.get(contact);
+                Integer device = deviceOf(contact);
 
                 if (device == null)
                 {

@@ -1,14 +1,17 @@
 package core;
 
+import java.io.File;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.TreeSet;
+import java.util.function.BiFunction;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
 import org.testng.annotations.Test;
+import org.traincontrol.marklin.MarklinSimpleComponent;
 import org.traincontrol.marklin.udp.CS2Message;
 import org.traincontrol.util.I18n;
 import support.Components;
@@ -19,8 +22,9 @@ import support.TcpStation;
 /**
  * Sync with Central Station asks a CS3 for its sensors' true states and puts TrainControl's right (OB-418).  Read-only
  * on the station: the only frame it adds is the s88 query (0x11, device and contact), sent only for a contact whose
- * device a real event showed, at that device.  An answer older than an event since its query never wins, and a station
- * that does not answer holds the sync up by the resync's bound only.  A CS2's sync asks nothing: its goldens hold.
+ * device is known, at that device: the one a real event showed, else the one saved before a restart.  An answer older
+ * than an event since its query never wins, and a station that does not answer holds the sync up by the resync's bound
+ * only.  A CS2's sync asks nothing: its goldens hold.
  *
  * Each claim starts a model whose start-up sync finds a CS3 at a `support.StandInStation` and connects over TCP to a
  * `support.TcpStation`, the Link S88 (device 2), which answers queries for its own device only.
@@ -36,15 +40,23 @@ public class testTheSyncAsksTheSensorsTheirState
         void run(StationRig rig, TcpStation station) throws Exception;
     }
 
+    private static final BiFunction<String, Integer, byte[]> CS3 =
+        StandInStation.cs3("260", "{\"softwareVersion\":\"2.6.1 (Build 3)\"}");
+
     /** Runs a claim against a model connected over TCP to a CS3. */
     private static void connected(Claim claim) throws Exception
+    {
+        connected(Files.createTempDirectory("tc-sync-s88").toFile(), CS3, claim);
+    }
+
+    /** The same, the model's data in `root`, the station's web server answering as `answer` does. */
+    private static void connected(File root, BiFunction<String, Integer, byte[]> answer, Claim claim) throws Exception
     {
         try (TcpStation station = new TcpStation())
         {
             TcpStation.forSimulations(station.port(), () ->
             {
-                try (StationRig rig = new StationRig(Files.createTempDirectory("tc-sync-s88").toFile(),
-                    StandInStation.cs3("260", "{\"softwareVersion\":\"2.6.1 (Build 3)\"}"), false, true))
+                try (StationRig rig = new StationRig(root, answer, false, true))
                 {
                     assertTrue(rig.model.isCS3(), "precondition: the stand-in was not taken for a CS3");
                     assertTrue(Components.waitFor(() -> station.connections() == 1, WAIT_MS),
@@ -80,6 +92,32 @@ public class testTheSyncAsksTheSensorsTheirState
         return during;
     }
 
+    /** The queries among frames, as device/contact, sorted. */
+    private static TreeSet<String> queries(List<byte[]> frames)
+    {
+        TreeSet<String> out = new TreeSet<>();
+
+        for (byte[] f : frames)
+        {
+            if ((f[1] & 0xff) == CS2Message.CMD_ACC_SENSOR << 1 && f[4] == 4)
+            {
+                out.add(((f[5] & 0xff) << 8 | (f[6] & 0xff)) + "/" + ((f[7] & 0xff) << 8 | (f[8] & 0xff)));
+            }
+        }
+
+        return out;
+    }
+
+    /** Every query the station received, as device/contact, sorted. */
+    private static TreeSet<String> asked(TcpStation station)
+    {
+        List<byte[]> all = new ArrayList<>();
+
+        for (TcpStation.Frame f : station.received()) all.add(f.bytes);
+
+        return queries(all);
+    }
+
     private static boolean logged(StationRig rig, int asked, int answered, int skipped)
     {
         return rig.takeLog().contains(I18n.f("network.sensorsSynced", asked, answered, skipped));
@@ -92,7 +130,7 @@ public class testTheSyncAsksTheSensorsTheirState
      * bytes and no response bit.
      *
      * MUTATION: in `MarklinControlStation.syncWithCS2`, take out `this.NetworkInterface.syncSensors();`.  And: in
-     * `NetworkProxy.askOnce`, `this.sensorDevice.get(contact)` to `this.sensorDevice.getOrDefault(contact, 2)`.
+     * `NetworkProxy.deviceOf`, `this.sensorDevice.get(contact)` to `this.sensorDevice.getOrDefault(contact, 2)`.
      */
     @Test(timeOut = 120000)
     public void testTheSyncAsksEachSensorAtTheDeviceItsEventsCameFrom() throws Exception
@@ -109,18 +147,15 @@ public class testTheSyncAsksTheSensorsTheirState
 
             List<byte[]> during = synced(rig, station);
 
-            TreeSet<String> queries = new TreeSet<>();
-
             for (byte[] f : during)
             {
                 assertEquals(f[1] & 0xff, CS2Message.CMD_ACC_SENSOR << 1, "the sync sent a frame other than a query: "
                     + Arrays.toString(f));
                 assertEquals(f[4], 4, "a query without four data bytes: " + Arrays.toString(f));
-                queries.add(((f[5] & 0xff) << 8 | (f[6] & 0xff)) + "/" + ((f[7] & 0xff) << 8 | (f[8] & 0xff)));
             }
 
             assertEquals(during.size(), 2, "not one query per sensor with a known device");
-            assertEquals(queries.toString(), "[2/2101, 3/2102]", "the queries are not each sensor at its device");
+            assertEquals(queries(during).toString(), "[2/2101, 3/2102]", "the queries are not each sensor at its device");
             assertTrue(logged(rig, 2, 1, known - 2), "the sync did not log 2 asked, 1 answered, " + (known - 2)
                 + " not asked");
         });
@@ -202,4 +237,75 @@ public class testTheSyncAsksTheSensorsTheirState
             assertFalse(station.queries().isEmpty(), "the contact was not asked");
         });
     }
+
+    /**
+     * A device learned from an event is saved with its sensor, and after a restart the sensor is asked at it before any
+     * event of its own (OB-418).  The sensor is the stand-in's diagram's, as a CS3 sync takes out sensors on no page.
+     *
+     * MUTATION: in `MarklinControlStation.saveState`, `s88DeviceToSave(f.getUID())` to `null`.  And: in
+     * `MarklinControlStation.syncWithCS2`, take out `this.NetworkInterface.rememberDevices(this.savedS88Devices);`.
+     */
+    @Test(timeOut = 180000)
+    public void testADeviceLearnedBeforeARestartIsAskedAfterIt() throws Exception
+    {
+        File root = Files.createTempDirectory("tc-sync-s88-restart").toFile();
+        int[] contact = new int[1];
+
+        connected(root, CS3, (rig, station) ->
+        {
+            assertEquals(rig.model.knownSensors().size(), 1, "precondition: the diagram has not one sensor");
+            contact[0] = rig.model.knownSensors().get(0);
+            station.send(TcpStation.event(3, contact[0], true));
+            assertTrue(shows(rig, contact[0], true), "precondition: the event did not arrive");
+            rig.model.saveState(false);
+        });
+
+        connected(root, CS3, (rig, station) ->
+        {
+            synced(rig, station);
+            assertTrue(asked(station).contains("3/" + contact[0]), "the saved device was not asked: " + asked(station));
+        });
+    }
+
+    /**
+     * A file an older build saved, its sensors with no device, opens: its 58 sensors read back with none.
+     * And the saved file keeps 3.0.8's shape: the device rides in a field 3.0.8 already had (a route's trigger), so a
+     * 3.0.8 build reads a file this one saved as before, and takes only a sensor's address and state from it.
+     *
+     * MUTATION: in `MarklinSimpleComponent.getS88Device`, take out `&& this.s88 > 0`.  And: add a field to
+     * `MarklinSimpleComponent`.
+     */
+    @Test(timeOut = 120000)
+    public void testAnOlderFileOpensAndTheFileKeeps308sShape() throws Exception
+    {
+        connected((rig, station) ->
+        {
+            int sensors = 0;
+
+            for (MarklinSimpleComponent c : rig.model.restoreState("test/LocDB3_0_0.data"))
+            {
+                if (c.getType() != MarklinSimpleComponent.Type.FEEDBACK) continue;
+
+                sensors++;
+                assertEquals(c.getS88Device(), null, "an older file's sensor " + c.getAddress() + " read with a device");
+            }
+
+            assertEquals(sensors, 58, "the older file's sensors did not read back");
+        });
+
+        java.io.ObjectStreamClass shape = java.io.ObjectStreamClass.lookup(MarklinSimpleComponent.class);
+        StringBuilder fields = new StringBuilder(String.valueOf(shape.getSerialVersionUID()));
+
+        for (java.io.ObjectStreamField f : shape.getFields()) fields.append(' ').append(f.getName()).append(f.getTypeCode());
+
+        assertEquals(fields.toString(), SHAPE_308, "the saved file's shape is no longer 3.0.8's");
+    }
+
+    /** MarklinSimpleComponent's serialized shape in 3.0.8: its serialVersionUID, then each field's name and type code. */
+    private static final String SHAPE_308 =
+        "-9111893030704758839 addressI customFunctionsZ numActuationsI preferredSpeedI reversibleZ "
+        + "routeEnabledZ s88I stateZ accessoryDecoderTypeL arrivalFunctionL centralStationLinkedLocomotivesL "
+        + "conditionsL departureFunctionL functionTriggerTypes[ functionTypes[ functions[ "
+        + "historicalOperatingTimeNewL linkedLocomotivesL localFunctionImageURLsL localImageURLL nameL notesL "
+        + "preferredFunctions[ routeL s88TriggerTypeL trainLengthL typeL";
 }
