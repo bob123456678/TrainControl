@@ -407,7 +407,8 @@ public class testAPageWindowsSetupMenuAsksOverIt
             JPopupMenu menu = AskingWindows.menuOn(ui, window, station);
 
             Mouse.choose(AskingWindows.itemOf(menu, session.getLocomotiveNameAt(station) == null
-                ? I18n.t("autosetup.ui.menuPlaceHere") : I18n.f("autosetup.ui.menuTrainAt", session.describeTile(station))));
+                ? I18n.t("autosetup.ui.menuPlaceHere")
+                : I18n.f("autosetup.ui.menuChangeTrainAt", session.describeTile(station))));
 
             Components.settle();
 

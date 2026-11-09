@@ -163,12 +163,10 @@ final class EditorTileMenus
             final String standing = editor.locomotiveAt(target);
 
             // PUTTING a train down is only at a station; TAKING one off is not, as a square can stop being one under it.
-            // The train's own items, then the hand doors, then the square's window, each group behind a divider (FR-182).
+            // The train's own items and the square's window, then the hand doors, each group behind a divider (FR-182),
+            // as on the track diagram.
             if (!editor.menuOnly)
             {
-                // A group's divider only when it added something: tidy() takes the heading off an empty section.
-                int before = menu.getComponentCount();
-
                 // Whether it runs (FR-117): read off the train and written to it and the setup together; only at rest.
                 if (standing != null && (editor.parentWindow() == null || !editor.parentWindow().aRunHoldsTheSetup()))
                 {
@@ -180,17 +178,25 @@ final class EditorTileMenus
 
                 // Which way round the train is standing, and where its tail lies (OB-039).
                 if (isStation) addFacingItems(menu, target);
+            }
 
+            // Every setting of the square is in its window (FR-111), which a key opens too.
+            javax.swing.JMenuItem settings = settingsItem(target);
+
+            if (!editor.menuOnly) settings.setToolTipText(AutonomyEditorPanel.SHORTCUT_SETTINGS);
+
+            menu.add(settings);
+
+            menu.addSeparator();
+
+            if (!editor.menuOnly)
+            {
                 javax.swing.JMenuItem train = trainItem(target);
 
-                // Place a Locomotive Here... is a hand door, Train at... the train's own
+                // Change Train at... first, Place a Locomotive Here... last; an empty group's divider goes in tidy()
                 boolean placesOne = trainStanding(target) == null;
 
                 if (train != null && !placesOne) menu.add(train);
-
-                if (menu.getComponentCount() > before) menu.addSeparator();
-
-                before = menu.getComponentCount();
 
                 javax.swing.JMenuItem placeSelected = placeSelectedItem(target, trainStanding(target));
 
@@ -204,17 +210,8 @@ final class EditorTileMenus
 
                 if (train != null && placesOne) menu.add(train);
 
-                if (menu.getComponentCount() > before) menu.addSeparator();
+                menu.addSeparator();
             }
-
-            // Every setting of the square is in its window (FR-111), which a key opens too.
-            javax.swing.JMenuItem settings = settingsItem(target);
-
-            if (!editor.menuOnly) settings.setToolTipText(AutonomyEditorPanel.SHORTCUT_SETTINGS);
-
-            menu.add(settings);
-
-            menu.addSeparator();
         }
 
         // Everything about where trains may run, under one heading: each item is a different sentence about the same
@@ -459,7 +456,7 @@ final class EditorTileMenus
         return editor.item(I18n.f("layout.ui.menuPlaceLocomotive", name), () -> editor.placeLocomotive(target, name));
     }
 
-    /** Train at Bramley..., or Place a Locomotive Here... on an empty station; null on an empty square of neither kind. */
+    /** Change Train at Bramley..., or Place a Locomotive Here... on an empty station; null on an empty non-station. */
     javax.swing.JMenuItem trainItem(final TileKey target)
     {
         final String standing = trainStanding(target);
@@ -467,7 +464,7 @@ final class EditorTileMenus
         if (standing == null && !editor.session.getStore().isStation(target)) return null;
 
         javax.swing.JMenuItem item = new javax.swing.JMenuItem(standing == null ? I18n.t("autosetup.ui.menuPlaceHere")
-            : I18n.f("autosetup.ui.menuTrainAt", editor.describeTile(target)));
+            : I18n.f("autosetup.ui.menuChangeTrainAt", editor.describeTile(target)));
 
         item.addActionListener(e -> editor.openTrainWindow(target));
 

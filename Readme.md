@@ -446,7 +446,7 @@ Tab icons provided by Freepik.
             - Two boxes, `Trains can stop here` and `Trains can pass through`, replace the `Station (...)` choices, and the `Station`, `Terminus`, `Parking` and `Reversing Point` buttons set the usual combinations and light up when your settings match one.
             - A station with only `Trains can stop here` ticked can't be run through by autonomy or by a trip you send, though it doesn't make the train turn around, and `Return Home` may still run through it.
             - `Bulk Edit...`, under `Path Type` in the autonomy editor, lets you click several stations and change them all in one `Station Settings` window.
-            - `Train at` *station* is a window for the train standing there, with its locomotive, `Active`, `Facing`, `Arrived` and `Tail lies`, and `Locomotive Settings...` opens the `Autonomy` tab.
+            - `Change Train at` *station* `...` opens a window for the train standing there, with its locomotive, `Active`, `Facing`, `Arrived` and `Tail lies`, and `Locomotive Settings...` opens the `Autonomy` tab.
             - On the track diagram, a station's right-click menu now always has `Edit` *locomotive* `...` when a train is standing there, `Place` *locomotive* when another one is selected, and `Place a Locomotive Here...`, together under their own divider.
             - A station's right-click menu turns the train standing there around in one click with `Change Direction (now facing` *East* `)`, and changes the side it came in by with `Change Arrived From (currently` *West* `)`.
             - While autonomy is running, a station's right-click menu on the track diagram has `Is Active` to pause or resume the train standing there.
