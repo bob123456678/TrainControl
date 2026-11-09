@@ -90,9 +90,10 @@ public final class BackupAction
      * `backupData`'s body, which only `backupData` calls.  It takes no lock of its own: it is called only through
      * `TrainControlUI.backupData`, which holds `oneBackupAtATime` around it.
      *
+     * @param offerStationLayout whether to ask about a Central Station layout: not for the safety backup of a restore
      * @return the archive, or no archive, and what could not be saved
      */
-    public BackupOutcome writeTheBackup()
+    public BackupOutcome writeTheBackup(boolean offerStationLayout)
     {
         // The track diagram and the autonomy setup beside it: for a locally stored layout, config/ holds the pages AND config/autonomy holds
         // every station name, direction, caption and configuration, and that folder is the only copy of them anywhere.
@@ -170,7 +171,7 @@ public final class BackupAction
             // assumed, because it is a network fetch of every page.  Not offered without a station answering (OB-098),
             // through the one predicate: `getNetworkCommState` alone says whether the last SYNC succeeded, and a
             // simulated session calls itself connected.
-            if ((localLayout == null || localLayout.isEmpty())
+            if (offerStationLayout && (localLayout == null || localLayout.isEmpty())
                 && this.ui.isCentralStationConnected()
                 && askOnEventThread(I18n.t("ui.askBackupIncludeCentralStationLayout")))
             {

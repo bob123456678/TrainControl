@@ -15577,9 +15577,15 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      */
     public BackupAction.BackupOutcome backupData()
     {
+        return backupData(true);
+    }
+
+    /** As `backupData`; `offerStationLayout` false skips the question about the Central Station's layout (OB-427). */
+    public BackupAction.BackupOutcome backupData(boolean offerStationLayout)
+    {
         synchronized (this.oneBackupAtATime)
         {
-            return this.backupAction.writeTheBackup();
+            return this.backupAction.writeTheBackup(offerStationLayout);
         }
     }
 
