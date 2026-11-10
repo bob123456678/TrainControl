@@ -1045,6 +1045,58 @@ public class testDrivingFromTheKeyboard
     }
 
     /**
+     * With MM2 chosen, every tab from the fourth (385 and up, past the MM2 addresses) comes up DCC with all its keys
+     * usable, a click sends the DCC command, and MM2 is still the choice on the first tab afterward.
+     *
+     * MUTATION: `repaintSwitches` forces DCC only on the last tab (`keyboardNumber == NUM_KEYBOARDS`), or saves the choice there
+     * (`prefs.putBoolean(PREFERRED_KEYBOARD_MM2, false)`).
+     */
+    @Test
+    public void testEveryTabPastTheMM2AddressesForcesDCCWithoutSavingIt() throws Exception
+    {
+        AccessoryKeyboard keys = keys();
+
+        try
+        {
+            goToPage(1);
+            chooseProtocol(false);
+
+            assertTrue(waitFor(() -> keyboardProtocol() == Accessory.accessoryDecoderType.MM2), "MM2 was not chosen");
+
+            for (int page = 4; page <= 16; page++)
+            {
+                goToPage(page);
+
+                assertTrue(waitFor(() -> keyboardProtocol() == Accessory.accessoryDecoderType.DCC),
+                    "tab " + page + " is not DCC with MM2 chosen");
+
+                assertTrue(Components.onTheEventThread(() -> keys.half(1, true).isEnabled() && keys.half(128, false).isEnabled()),
+                    "tab " + page + " has unusable keys");
+
+                int first = 128 * (page - 1) + 1;
+                int mark = wire.mark();
+
+                click(first, true);
+
+                int uid = uidOf(first);
+
+                assertTrue(waitFor(() -> !wire.accessoryCommandsSince(mark, uid).isEmpty()),
+                    "a click on " + first + " did not send the DCC command: " + wire.since(mark));
+            }
+
+            goToPage(1);
+
+            assertTrue(waitFor(() -> keyboardProtocol() == Accessory.accessoryDecoderType.MM2),
+                "reaching the DCC tabs saved DCC as the choice");
+        }
+        finally
+        {
+            goToPage(1);
+            chooseProtocol(false);
+        }
+    }
+
+    /**
      * A page number past the last tab (the keyboard once had 32 pages) lands on the last tab.
      *
      * MUTATION: take the `Math.min` out of `switchKeyboard`, and this fails.
