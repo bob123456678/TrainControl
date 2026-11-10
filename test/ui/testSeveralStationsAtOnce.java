@@ -811,6 +811,42 @@ public class testSeveralStationsAtOnce
     }
 
     /**
+     * Several stations are taken out of service together by unticking both boxes, and the window says nothing can pass;
+     * ticking both puts every one back (Adam: "does this page allow the user to take the point out of service?").
+     *
+     * MUTATION: have `pressBoxes` set only the first station picked, and this fails.
+     */
+    @Test(timeOut = 120000)
+    public void testSeveralAreTakenOutOfServiceTogether() throws Exception
+    {
+        List<TileKey> three = stations(3);
+
+        on(() ->
+        {
+            for (TileKey each : three) session.setStopsAndRunsThrough(each, true, true);
+
+            return null;
+        });
+
+        StationSettingsWindow window = pick(three);
+
+        StationDoors.press(window, "station.stops");
+        StationDoors.press(window, "station.runsThrough");
+        StationDoors.current(window);
+
+        assertEquals(read(three, "active"), sameFor(three, Boolean.FALSE), "unticking both boxes did not take every"
+            + " station picked out of service");
+        assertTrue(showing(window, "station.closedLine"), "the window does not say nothing can pass");
+
+        StationDoors.press(window, "station.stops");
+        StationDoors.press(window, "station.runsThrough");
+        StationDoors.current(window);
+
+        assertEquals(read(three, "active"), sameFor(three, null), "ticking both boxes did not put every station back");
+        assertFalse(showing(window, "station.closedLine"), "the window still says nothing can pass");
+    }
+
+    /**
      * While a run holds the setup the window opens read-only for several stations, and a press that gets through anyway
      * is refused and writes nothing.
      *

@@ -478,6 +478,93 @@ public class testStationSettingsWindow
     }
 
     /**
+     * A square no track leads onto (ParkingTrack12, whose May arrive from says "(none)") is taken out of service and back
+     * with the two boxes, as any square is (Adam: "does this page allow the user to take the point out of service?").
+     * While a run holds the setup the boxes are gray, and a press says why and changes nothing.
+     *
+     * MUTATION: have `fill` gray "Trains can pass through" on a square with no way in, and this fails.
+     */
+    @Test(timeOut = 180000)
+    public void testASquareWithNoWayInIsTakenOutOfServiceAndBack() throws Exception
+    {
+        TileKey parking = Components.onTheEventThread(() ->
+        {
+            for (TileKey each : session.getStore().getNamedTiles())
+            {
+                if ("ParkingTrack12".equals(session.getStore().getPointName(each))) return each;
+            }
+
+            return null;
+        });
+
+        assertNotNull(parking, "precondition: the snapshot has no ParkingTrack12");
+        assertTrue(Components.onTheEventThread(() -> session.arrivalSides(parking).isEmpty()),
+            "precondition: a track leads onto ParkingTrack12");
+
+        LayoutEditor page = frozen.editorOn(parking.getPage());
+
+        final java.lang.reflect.Field staging = Reflect.field(TrainControlUI.class, "stagingFlowActive");
+
+        try
+        {
+            AutonomyEditorPanel own = Components.onTheEventThread(() -> page.getAutonomyPanel());
+
+            StationSettingsWindow window = StationDoors.open(own, parking);
+
+            StationDoors.current(window);
+
+            for (String box : new String[] {"station.stops", "station.runsThrough"})
+            {
+                if (StationDoors.on(window, box)) StationDoors.press(window, box);
+            }
+
+            StationDoors.current(window);
+
+            assertEquals(session.getPointProperty(parking, "active"), Boolean.FALSE, "both boxes off is not out of service");
+            assertTrue(visible(window, "station.closedLine"), "out of service does not say nothing can pass");
+
+            StationDoors.press(window, "station.runsThrough");
+            StationDoors.current(window);
+
+            assertNull(session.getPointProperty(parking, "active"), "ticking a box left it out of service");
+            assertFalse(visible(window, "station.closedLine"), "back in service still says nothing can pass");
+
+            StationDoors.press(window, "station.runsThrough");
+            StationDoors.current(window);
+
+            assertEquals(session.getPointProperty(parking, "active"), Boolean.FALSE, "unticking it again is not out of service");
+
+            StationDoors.close(window);
+
+            Components.onTheEventThread(() -> { staging.set(ui, true); return null; });
+
+            StationSettingsWindow held = StationDoors.open(own, parking);
+
+            StationDoors.current(held);
+
+            assertTrue(held.isReadOnly(), "precondition: the window is not read-only during a run");
+            assertFalse(StationDoors.live(held, "station.runsThrough"), "a box is live during a run");
+
+            String before = setup();
+
+            List<String> said = StationDoors.pressThoughGrayed(StationDoors.part(held, "station.runsThrough",
+                AbstractButton.class));
+
+            assertTrue(said.contains(I18n.t(org.traincontrol.gui.RunGates.NO_EDITS_WHILE_RUNNING)), "a press during a run"
+                + " did not say why: " + said);
+            assertEquals(setup(), before, "a press during a run changed the setup");
+
+            StationDoors.close(held);
+        }
+        finally
+        {
+            Components.onTheEventThread(() -> { staging.set(ui, false); return null; });
+
+            support.FrozenEditor.dispose(page);
+        }
+    }
+
+    /**
      * On a station, the (i) of "Trains can pass through" says that unticking it means every train must stop there first
      * (Adam), the stop-only rule; on a sensor that is not a station it does not, as there unticking it closes the square.
      *
