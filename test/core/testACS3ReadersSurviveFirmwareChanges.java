@@ -26,9 +26,9 @@ import support.StationRig;
  *
  * Each test syncs well, arms the routes, and keeps what is held (support.HeldState).  Then a mutated answer is served:
  * the sync must succeed and leave what is held as it was where the answer could not be read, and a good sync must give
- * the right result again.  A list that cannot be read, or has no way to match its records, skips that import whole and
- * the sync says so; a record missing what it needs is skipped alone with its log line, and the sync says so only of a
- * unit or route held back because it may name a record that would not read.
+ * the right result again.  A list that cannot be read skips that import whole and the sync says so; a record missing
+ * what it needs is skipped alone with its log line, and the sync says so only of a unit or route held back because it
+ * may name a record that would not read.
  *
  * MUTATION (each test names what it finds): CS2File.readList returning an empty list instead of throwing
  * UnreadableAnswerException; reading `funktionen` with optJSONArray, or `dectyp` with optString; skipping the
@@ -296,9 +296,8 @@ public class testACS3ReadersSurviveFirmwareChanges
                 }
             }
 
-            // Empty lists, while the routes use accessories and locomotives
+            // No accessories while the routes use them: each route with a switch item is held back
             assertHeldUnchanged(rig, replaced, held, "no accessories", only(ACCESSORIES, "[]"));
-            assertHeldUnchanged(rig, replaced, held, "no locomotives", only(LOCOS, "[]"));
 
             // Lists whose records cannot be matched: the key that names them renamed, or not what it was
             for (int mode : new int[] {0, 1, 2})
@@ -528,6 +527,90 @@ public class testACS3ReadersSurviveFirmwareChanges
         });
     }
 
+    /**
+     * One accessory without an id holds back only the routes whose switches may be that one; an empty locomotive list
+     * drops the train commands with a warning and imports every route, as 3.0.8 did.
+     * MUTATION: CS2File.parseRoutesCS3(boolean) refusing every route when an accessory has no id, or there are no locomotives.
+     */
+    @Test
+    public void testOneAccessoryWithoutAnIdOrNoLocomotivesCostsOnlyWhatNeedsThem() throws Exception
+    {
+        Map<String, List<org.traincontrol.base.RouteCommand>> good = new ConcurrentHashMap<>();
+
+        try (StationRig rig = rig(new ConcurrentHashMap<>()))
+        {
+            assertTrue(rig.model.syncWithCS2() >= 0);
+            for (MarklinRoute r : rig.model.getRoutes()) good.put(r.getName(), new ArrayList<>(r.getRoute()));
+        }
+
+        // The first switch item's accessory loses its id: the routes naming it, or an accessory not in the list, wait
+        JSONArray routes = listOf(routeAnswer());
+        JSONArray mags = new JSONArray(read(MAGS[0]));
+        Set<Integer> ids = new java.util.HashSet<>();
+        Set<String> heldBack = new java.util.HashSet<>();
+        int gone = Integer.MIN_VALUE;
+
+        for (int pass = 0; pass < 2; pass++)
+        {
+            for (int i = 0; i < routes.length(); i++)
+            {
+                JSONArray items = routes.getJSONObject(i).getJSONArray("items");
+
+                for (int j = 0; j < items.length(); j++)
+                {
+                    JSONObject item = items.getJSONObject(j);
+                    int article = item.has("lok") || !"mag".equals(item.opt("typ")) ? Integer.MIN_VALUE
+                        : item.optInt("magnetartikel", Integer.MIN_VALUE);
+
+                    if (article == Integer.MIN_VALUE) continue;
+                    if (gone == Integer.MIN_VALUE) gone = article;
+                    if (pass == 1 && !ids.contains(article)) heldBack.add(routes.getJSONObject(i).getString("name"));
+                }
+            }
+
+            for (int i = 0; pass == 0 && i < mags.length(); i++)
+            {
+                if (mags.getJSONObject(i).getInt("id") == gone) mags.getJSONObject(i).remove("id");
+                else ids.add(mags.getJSONObject(i).getInt("id"));
+            }
+        }
+
+        assertTrue(!heldBack.isEmpty() && heldBack.size() < good.size() / 2, "a few routes name it: " + heldBack);
+
+        try (StationRig rig = rig(only(ACCESSORIES, bytes(mags))))
+        {
+            assertTrue(rig.model.syncWithCS2() >= 0);
+            assertTrue(rig.model.wasLastSyncPartial(), "the routes held back are warned of");
+
+            for (String name : good.keySet())
+            {
+                MarklinRoute r = rig.model.getRoute(name);
+                assertEquals(r == null ? null : new ArrayList<>(r.getRoute()), heldBack.contains(name) ? null : good.get(name), name);
+            }
+        }
+
+        // No locomotives: every route, without its train commands
+        try (StationRig rig = rig(only(LOCOS, "[]")))
+        {
+            assertTrue(rig.model.syncWithCS2() >= 0);
+            assertFalse(rig.model.wasLastSyncPartial(), "an empty locomotive list is an ordinary answer");
+            assertTrue(rig.takeLog().stream().anyMatch(l -> l.contains("no locomotives provided")), "warned of in the log");
+            assertEquals(rig.model.getRoutes().size(), good.size(), "every route is imported");
+
+            int dropped = 0;
+
+            for (String name : good.keySet())
+            {
+                List<org.traincontrol.base.RouteCommand> expected = new ArrayList<>(good.get(name));
+                expected.removeIf(c -> c.isLocomotiveSpeed() || c.isLocomotiveDirection());
+                dropped += good.get(name).size() - expected.size();
+                assertEquals(new ArrayList<>(rig.model.getRoute(name).getRoute()), expected, name);
+            }
+
+            assertTrue(dropped > 0, "some route drives a train");
+        }
+    }
+
     /** The commands of every route a railway gives, by route id. */
     private static java.util.List<java.util.List<org.traincontrol.base.RouteCommand>> commandsOf(StationRig rig)
     {
@@ -747,11 +830,14 @@ public class testACS3ReadersSurviveFirmwareChanges
                 syncKeepingThePages(rig, replaced, pages, "all answers, mode " + mode);
             }
 
-            // And each answer in turn something else altogether
+            // And each answer in turn something else altogether; no locomotives is an honest answer, which drops the
+            // routes' train commands (testOneAccessoryWithoutAnIdOrNoLocomotivesCostsOnlyWhatNeedsThem)
             for (String path : served)
             {
                 for (String other : new String[] {"", "{}", "[]", "null", "7", "\"text\"", "<html>", "[[],{},7]"})
                 {
+                    if (LOCOS.equals(path) && "[]".equals(other)) continue;
+
                     replaced.put(path, other.getBytes(StandardCharsets.UTF_8));
                     syncKeepingThePages(rig, replaced, pages, path + " answering " + other);
                 }

@@ -839,55 +839,25 @@ public final class CS2File
              BufferedReader locBR   = openCS3Locos(is260))
         {
             // The routes are the list itself from firmware 2.6, and under "automatics" before; either is read
-            JSONArray routes = readList(routeBR, "automatics");
-            JSONArray mags = readList(magBR, null);
-            JSONArray locs = readList(locBR, null);
-
-            requireUsable(routes, mags, "mag", o -> o.optInt("id", Integer.MIN_VALUE) != Integer.MIN_VALUE, "accessories");
-            requireUsable(routes, locs, "lok", o -> true, "locomotives");
-
-            return parseRoutesCS3(routes, mags, locs);
+            return parseRoutesCS3(readList(routeBR, "automatics"), readList(magBR, null), readList(locBR, null));
         }
     }
 
-    /**
-     * Whether the routes' items name records of `list` (a "typ" of `reference`, or any "lok" for locomotives): then every
-     * record must carry what matches them, and there must be some, or no route could be read right.
-     */
-    private static void requireUsable(JSONArray routes, JSONArray list, String reference,
-        java.util.function.Predicate<JSONObject> usable, String what) throws UnreadableAnswerException
+    /** Whether an accessory a route names may be missing from the list: it has no records, or one without a numeric id. */
+    private static boolean mayLackAccessories(JSONArray mags)
     {
-        boolean referred = false;
-
-        for (int i = 0; i < routes.length(); i++)
-        {
-            JSONArray items = routes.optJSONObject(i) == null ? null : routes.optJSONObject(i).optJSONArray("items");
-
-            for (int j = 0; items != null && j < items.length(); j++)
-            {
-                JSONObject item = items.optJSONObject(j);
-                referred |= item != null && ("lok".equals(reference) ? item.has("lok") : reference.equals(item.opt("typ")));
-            }
-        }
-
         boolean any = false;
 
-        for (int i = 0; referred && i < list.length(); i++)
+        for (int i = 0; i < mags.length(); i++)
         {
-            JSONObject record = list.optJSONObject(i);
+            JSONObject o = mags.optJSONObject(i);
 
-            if (record != null && !usable.test(record))
-            {
-                throw new UnreadableAnswerException("a record of the " + what + " cannot be matched");
-            }
+            if (o != null && o.optInt("id", Integer.MIN_VALUE) == Integer.MIN_VALUE) return true;
 
-            any |= record != null;
+            any |= o != null;
         }
 
-        if (referred && !any)
-        {
-            throw new UnreadableAnswerException("the routes use " + what + ", and there are none");
-        }
+        return !any;
     }
 
     /**
@@ -1384,6 +1354,9 @@ public final class CS2File
         JSONException heldBack = !hasUnnameableRecord(locs, "internname", "name") ? null
             : hasUnnameableRecord(locs, "internname") ? new JSONException(why) : new HeldBack(why);
 
+        // An accessory not found holds back its route only while the list may lack it
+        JSONException magHeldBack = mayLackAccessories(mags) ? new HeldBack("the accessory may be missing") : null;
+
         if (locs.isEmpty())
         {
             logMessage(I18n.f("route.warningNoLocomotivesProvidedCs3"));
@@ -1460,7 +1433,9 @@ public final class CS2File
                         else if (item.has("typ") && "mag".equals(item.getString("typ")) && item.has("magnetartikel"))
                         {
                             // To get the address, we need to look up this accessory in the accessory DB
-                            JSONObject accessory = getCS3MagById(item.getInt("magnetartikel"), mags); 
+                            JSONObject accessory = getCS3MagById(item.getInt("magnetartikel"), mags);
+
+                            if (accessory == null && magHeldBack != null) throw magHeldBack;
 
                             if (accessory != null)
                             {
