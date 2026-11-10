@@ -446,6 +446,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
     // The keyboard being displayed
     private int keyboardNumber = 1;
+
+    // A click on a key past MM2's range flipped the radio to DCC; the saved choice is untouched and comes back with the tab
+    private boolean keyboardFlippedToDCC = false;
     
     // The locomotive mapping page being displayed
     private int locMappingNumber = 1;
@@ -5134,6 +5137,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         {
             // Bounds: a page past the last tab lands on the last one, and one before the first on the first
             this.keyboardNumber = Math.max(1, Math.min(TrainControlUI.NUM_KEYBOARDS, keyboardNum));
+            this.keyboardFlippedToDCC = false;
 
             this.keyboardKeys.showPage(this.keyboardNumber);
 
@@ -5163,7 +5167,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             {
                 // Without creating: this runs on every mouse movement over the keyboard, and the creating lookup
                 // would register an accessory for any address that had none.
-                Accessory acc = model == null ? null : model.getAccessoryByAddressIfPresent(address, getKeyboardProtocol());
+                Accessory acc = model == null ? null : model.getAccessoryByAddressIfPresent(address, keyboardProtocolFor(address));
 
                 // No accessory yet means nothing has ever been actuated here, so there is no count to show.
                 return acc == null ? null : I18n.f("acc.ui.tooltip.actuationCount", acc.getName(), acc.getNumActuations());
@@ -6804,7 +6808,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
             if (key > 0)
             {
-                this.keyboardKeys.setKey(key, this.model.getAccessoryStateIfPresent(address, getKeyboardProtocol()),
+                this.keyboardKeys.setKey(key, this.model.getAccessoryStateIfPresent(address, keyboardProtocolFor(address)),
                     keyboardAddressExists(address));
             }
             
@@ -6909,7 +6913,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             int offset = this.getKeyboardOffset();
             
             // DCC-only addresses
-            if (!Accessory.isValidLogicalAddress(offset + 1, Accessory.accessoryDecoderType.MM2))
+            if (this.keyboardFlippedToDCC || !Accessory.isValidLogicalAddress(offset + 1, Accessory.accessoryDecoderType.MM2))
             {
                 this.DCC.setSelected(true);                  
             }
@@ -6921,16 +6925,25 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             for (int i = 1; i <= TrainControlUI.KEYBOARD_KEYS; i++)
             {
                 // Painting is looking: getAccessoryState creates a switch on a miss, registering every address.
-                this.keyboardKeys.setKey(i, this.model.getAccessoryStateIfPresent(i + offset, getKeyboardProtocol()),
+                this.keyboardKeys.setKey(i, this.model.getAccessoryStateIfPresent(i + offset, keyboardProtocolFor(i + offset)),
                     keyboardAddressExists(i + offset));
             }
         });
     }
 
-    /** Whether the protocol chosen on the keyboard has this address; the MM2 ones end at 320. */
+    /** Whether a key's address exists in the protocol it would send. */
     private boolean keyboardAddressExists(int address)
     {
-        return Accessory.isValidLogicalAddress(address, getKeyboardProtocol());
+        return Accessory.isValidLogicalAddress(address, keyboardProtocolFor(address));
+    }
+
+    /** What a key sends: the radio's protocol, but DCC past MM2's last address (320) with MM2 chosen. */
+    private Accessory.accessoryDecoderType keyboardProtocolFor(int address)
+    {
+        Accessory.accessoryDecoderType chosen = getKeyboardProtocol();
+
+        return chosen == Accessory.accessoryDecoderType.MM2 && !Accessory.isValidLogicalAddress(address, chosen)
+            ? Accessory.accessoryDecoderType.DCC : chosen;
     }
     
     /**
@@ -15800,7 +15813,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         if (layout == null) return true;
 
         org.traincontrol.base.Accessory accessory =
-            this.model.getAccessoryByAddressIfPresent(address, getKeyboardProtocol());
+            this.model.getAccessoryByAddressIfPresent(address, keyboardProtocolFor(address));
 
         if (accessory == null) return true;
 
@@ -15836,12 +15849,20 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         final int switchId = address;
 
         // Read now: the worker below may wait on the power, and the radio can be changed meanwhile
-        final Accessory.accessoryDecoderType protocol = getKeyboardProtocol();
+        final Accessory.accessoryDecoderType protocol = keyboardProtocolFor(address);
 
         // Asked before the key is repainted: a refusal has to leave it as it was (MT-261).
         final KeyboardSwitch allowed = keyboardSwitchAllowed(address, red);
 
         if (allowed == KeyboardSwitch.REFUSED) return;
+
+        // A key past MM2's range turns the radio to DCC without saving it; the tab's repaint puts the choice back
+        if (protocol != getKeyboardProtocol())
+        {
+            this.DCC.setSelected(true);
+            this.keyboardFlippedToDCC = true;
+            repaintSwitches();
+        }
 
         int key = this.keyboardKeys.keyOf(address);
 
@@ -18013,11 +18034,13 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }//GEN-LAST:event_addBlankPageMenuItemActionPerformed
 
     private void MM2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_MM2ActionPerformed
+        keyboardFlippedToDCC = false;
         repaintSwitches();
         prefs.putBoolean(PREFERRED_KEYBOARD_MM2, ((JRadioButton) evt.getSource()).isSelected());
     }//GEN-LAST:event_MM2ActionPerformed
 
     private void DCCActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_DCCActionPerformed
+        keyboardFlippedToDCC = false;
         repaintSwitches();
         prefs.putBoolean(PREFERRED_KEYBOARD_MM2, !((JRadioButton) evt.getSource()).isSelected());
     }//GEN-LAST:event_DCCActionPerformed

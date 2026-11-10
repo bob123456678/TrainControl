@@ -32,6 +32,7 @@ import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.marklin.MarklinLocomotive;
 import org.traincontrol.marklin.udp.CS2Message;
 import org.traincontrol.util.I18n;
+import org.traincontrol.util.Util;
 import support.Answering;
 import support.Components;
 import support.Keys;
@@ -993,7 +994,7 @@ public class testDrivingFromTheKeyboard
 
     /**
      * Address 2048 is the last key of the last tab, DCC only, and a click on it goes to the railway.  The MM2 addresses
-     * end at 320: the keys past it do nothing, and a tab wholly past it is DCC.
+     * end at 320: the keys past it are DCC, and a tab wholly past it is DCC.
      *
      * MUTATION: `page * KEYS` for `(page - 1) * KEYS` in `AccessoryKeyboard.rangeStart`, and this fails.
      */
@@ -1023,23 +1024,66 @@ public class testDrivingFromTheKeyboard
 
             assertTrue(waitFor(() -> keyboardProtocol() == Accessory.accessoryDecoderType.MM2), "MM2 was not chosen");
             assertTrue(Components.onTheEventThread(() -> keys.half(64, true).isEnabled()), "MM2 320 is not usable");
-            assertFalse(Components.onTheEventThread(() -> keys.half(65, true).isEnabled()), "MM2 321 is usable");
-
-            int quiet = wire.mark();
-
-            click(321, true);
-
-            keySendingHasFinished();
-
-            assertTrue(wire.accessoryCommandsSince(quiet, MarklinAccessory.UIDfromAddress(320, keyboardProtocol())).isEmpty(),
-                "a click past the MM2 addresses sent a command");
-
-            chooseProtocol(true);
-
-            assertTrue(Components.onTheEventThread(() -> keys.half(65, true).isEnabled()), "DCC 321 is not usable");
+            assertTrue(Components.onTheEventThread(() -> keys.half(65, true).isEnabled()), "321 is not usable with MM2");
         }
         finally
         {
+            chooseProtocol(false);
+        }
+    }
+
+    /**
+     * With MM2 chosen, keys 321 to 384 on the third tab are usable; a click on one turns the radio to DCC without
+     * saving it and sends the DCC command, and a visit to another tab and back shows MM2 again.
+     *
+     * MUTATION: `keyboardAddressExists` asks the radio's protocol (the key stays gray), or the click's flip is
+     * `DCC.doClick()` (saves DCC), or `switchKeyboard` leaves `keyboardFlippedToDCC` set.
+     */
+    @Test
+    public void testAKeyPastMM2OnTheThirdTabFlipsTheRadioToDCCForAWhile() throws Exception
+    {
+        AccessoryKeyboard keys = keys();
+
+        try
+        {
+            goToPage(1);
+            chooseProtocol(false);
+            goToPage(3);
+
+            assertTrue(waitFor(() -> keyboardProtocol() == Accessory.accessoryDecoderType.MM2), "MM2 was not chosen");
+
+            // 330 is the 74th key of the tab
+            assertTrue(Components.onTheEventThread(() -> keys.half(74, true).isEnabled()), "330 is gray with MM2 chosen");
+
+            int mark = wire.mark();
+
+            click(330, true);
+
+            assertTrue(waitFor(() -> keyboardProtocol() == Accessory.accessoryDecoderType.DCC),
+                "a click on 330 did not turn the radio to DCC");
+
+            int uid = uidOf(330);
+
+            assertTrue(waitFor(() -> !wire.accessoryCommandsSince(mark, uid).isEmpty()),
+                "a click on 330 did not send the DCC command: " + wire.since(mark));
+
+            keySendingHasFinished();
+
+            assertEquals(Util.preferencesFor(TrainControlUI.class).getBoolean(TrainControlUI.PREFERRED_KEYBOARD_MM2, false),
+                true, "the click saved DCC as the choice");
+
+            goToPage(1);
+
+            assertTrue(waitFor(() -> keyboardProtocol() == Accessory.accessoryDecoderType.MM2), "tab 1 is not MM2");
+
+            goToPage(3);
+
+            assertTrue(waitFor(() -> keyboardProtocol() == Accessory.accessoryDecoderType.MM2),
+                "tab 3 did not come back as MM2");
+        }
+        finally
+        {
+            goToPage(1);
             chooseProtocol(false);
         }
     }
