@@ -96,7 +96,7 @@ public final class StationSettingsWindow extends StationWindowBase
     /** The presets' heading and buttons: at the top of the right column for one station, over the form for several. */
     private final JPanel presetsPanel = new JPanel(new BorderLayout(0, 6));
 
-    /** How many stations the banner names before saying how many more (Adam). */
+    /** How many stations the banner names before saying how many more. */
     private static final int NAMED = 4;
 
     /** Where the reason at the top wraps, with the side column and without. */
@@ -1110,7 +1110,7 @@ public final class StationSettingsWindow extends StationWindowBase
         severalLine.setVisible(many);
         rightColumn.setVisible(!many);
 
-        // Several keep the form's width: their presets stand over it (Adam: "no need to widen")
+        // Several keep the form's width: their presets stand over it
         JPanel presetsGo = many ? leftColumn : rightColumn;
 
         if (presetsPanel.getParent() != presetsGo) presetsGo.add(presetsPanel, BorderLayout.NORTH);
