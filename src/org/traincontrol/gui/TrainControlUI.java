@@ -14540,7 +14540,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
     /**
      * Goes to the page a link tile leads to, found by the page ID it carries (FR-175).  A link to nothing clicks to
-     * nothing, its tooltip says so; one to a page that is gone says so in the log.
+     * nothing, its tooltip says so; one to a page that is gone, or a number past the page list, says so in the log.
      *
      * @param link the arrow that was clicked
      */
@@ -14551,6 +14551,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         if (page == null)
         {
             if (link.linksToAPageThatIsGone()) this.model.logf("layout.ui.errorLinkedPageGone", link.getLinkPageId());
+            else if (!link.linksNowhere()) this.model.logf("layout.ui.errorLayoutPageDoesNotExist", link.getRawAddress() + 1);
 
             return;
         }
