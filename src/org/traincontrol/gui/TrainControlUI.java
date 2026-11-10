@@ -2939,10 +2939,18 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     private String lastCapturedFeedbackCommand;
     private long lastCapturedFeedbackCommandTime;
 
-    /** Adds Change Direction and the other items about the train on a square (FR-181); false when none stands there. */
+    /**
+     * Adds Change Direction and the other items about the train on a square of the track diagram (FR-181); false when
+     * no train stands there on the railway, as one only the setup records is not on this diagram.
+     */
     public boolean addAutonomyFacingItems(javax.swing.JPopupMenu menu,
         org.traincontrol.automationui.TileGraph.TileKey tile)
     {
+        org.traincontrol.automationui.AutonomySession session = getAutonomySession();
+
+        if (session == null || model == null || !model.hasAutoLayout()
+            || session.trainOnTheRailway(tile, model.getAutoLayout()) == null) return false;
+
         // Through the same door, so the panel exists and is wired to the current session
         if (buildAutonomyTileMenu(tile) == null) return false;
 
