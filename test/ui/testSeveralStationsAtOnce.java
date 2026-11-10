@@ -164,6 +164,67 @@ public class testSeveralStationsAtOnce
     }
 
     /**
+     * Several stations' window is as narrow as its form, with the Presets over the form in the left column (Adam: "the
+     * presets should be in the left column here, no need to widen"), and nine picked are no wider than two.  The banner
+     * names the first four, then how many more, with every name in its tooltip (Adam: "list A, B, C, D ... (5 more) and
+     * then a tooltip with the full list").
+     *
+     * MUTATION: leave the Presets in the right column for several, or have the banner name every station, and this fails.
+     */
+    @Test(timeOut = 180000)
+    public void testSeveralKeepTheFormsWidthAndTheBannerNamesFour() throws Exception
+    {
+        int two = on(pick(stations(2))::getWidth);
+
+        closeTheEditor();
+        frozen.putBack();
+        open();
+
+        List<TileKey> nine = stations(9);
+
+        StationSettingsWindow window = pick(nine);
+
+        javax.swing.JPanel form = StationDoors.part(window, "station.form", javax.swing.JPanel.class);
+        javax.swing.JLabel presets = StationDoors.part(window, "station.presetsHeading", javax.swing.JLabel.class);
+        javax.swing.JLabel banner = StationDoors.part(window, "station.picked", javax.swing.JLabel.class);
+
+        on(() ->
+        {
+            java.awt.Container content = window.getContentPane();
+            java.awt.Point formAt = javax.swing.SwingUtilities.convertPoint(form, 0, 0, content);
+            java.awt.Point presetsAt = javax.swing.SwingUtilities.convertPoint(presets, 0, 0, content);
+
+            assertEquals(presetsAt.x, formAt.x, "the Presets do not start where the form does");
+            assertTrue(presetsAt.y < formAt.y, "the Presets are not above the form");
+
+            // The content's border is the window's own padding, 10 a side
+            assertTrue(content.getWidth() <= form.getWidth() + 2 * 10, "the window is " + content.getWidth() + " wide"
+                + " inside, wider than its form (" + form.getWidth() + ") and padding");
+
+            assertEquals(window.getWidth(), two, "nine stations picked make the window wider than two do");
+
+            return null;
+        });
+
+        List<String> names = new ArrayList<>();
+
+        for (TileKey each : nine) names.add(on(() -> session.describeTile(each)));
+
+        String shown = on(banner::getText).replaceAll("<[^>]*>", "");
+
+        assertEquals(shown, I18n.f("autosetup.ui.stationsPickedNamed",
+            I18n.f("autosetup.ui.stationsNamedMore", String.join(", ", names.subList(0, 4)), 5)),
+            "the banner does not name the first four and say how many more");
+        assertTrue(shown.contains("(5 more)"), "the banner does not say \"(5 more)\": " + shown);
+
+        String tip = on(banner::getToolTipText);
+
+        assertNotNull(tip, "the banner has no tooltip");
+
+        for (String each : names) assertTrue(tip.contains(each), "the banner's tooltip leaves out " + each + ": " + tip);
+    }
+
+    /**
      * The tool is called Bulk Edit...; while it is on every square a click can pick wears the editor's light gray grid
      * line, a pick keeps its own mark over it, squares that cannot be picked wear nothing, and nothing is outlined once
      * the tool is down.

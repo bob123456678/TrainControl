@@ -89,11 +89,15 @@ public final class StationSettingsWindow extends StationWindowBase
     /** The rows that are about one station alone, left out for several: its ways, signals, home and blockers. */
     private final List<JComponent> perStation = new ArrayList<>();
 
-    /** The matrix and picture, under the presets in the right column. */
-    private final JPanel sideColumn = new JPanel(new BorderLayout());
+    /** The form's column, and the right one: the presets over the matrix and picture.  Several have no right column. */
+    private final JPanel leftColumn = new JPanel(new BorderLayout(0, 12));
+    private final JPanel rightColumn = new JPanel(new BorderLayout(0, 12));
 
-    /** The presets' heading and buttons, at the top of the right column for one station or several. */
+    /** The presets' heading and buttons: at the top of the right column for one station, over the form for several. */
     private final JPanel presetsPanel = new JPanel(new BorderLayout(0, 6));
+
+    /** How many stations the banner names before saying how many more (Adam). */
+    private static final int NAMED = 4;
 
     /** Where the reason at the top wraps, with the side column and without. */
     private int stripWide;
@@ -182,32 +186,34 @@ public final class StationSettingsWindow extends StationWindowBase
 
         JPanel columns = new JPanel(new BorderLayout(14, 0));
 
-        JPanel left = new JPanel(new BorderLayout());
+        JPanel formTop = new JPanel(new BorderLayout());
 
-        left.add(form, BorderLayout.NORTH);
+        formTop.add(form, BorderLayout.NORTH);
+        leftColumn.add(formTop, BorderLayout.CENTER);
 
-        columns.add(left, BorderLayout.CENTER);
+        columns.add(leftColumn, BorderLayout.CENTER);
 
         JPanel right = new JPanel(new BorderLayout(0, 12));
 
         right.add(matrix, BorderLayout.NORTH);
         right.add(picture, BorderLayout.CENTER);
 
+        JPanel sideColumn = new JPanel(new BorderLayout());
+
         sideColumn.add(right, BorderLayout.NORTH);
 
-        JPanel east = new JPanel(new BorderLayout(0, 12));
+        rightColumn.add(presetsPanel, BorderLayout.NORTH);
+        rightColumn.add(sideColumn, BorderLayout.CENTER);
 
-        east.add(presetsPanel, BorderLayout.NORTH);
-        east.add(sideColumn, BorderLayout.CENTER);
-
-        columns.add(east, BorderLayout.EAST);
+        columns.add(rightColumn, BorderLayout.EAST);
 
         assemble(columns);
 
-        int beside = form.getPreferredSize().width + 14 + 2 * PAD - 24;
+        int formOnly = form.getPreferredSize().width + 2 * PAD - 24;
+        int presetsWidth = presetsPanel.getPreferredSize().width;
 
-        stripNarrow = wrapWithin(beside + presetsPanel.getPreferredSize().width);
-        stripWide = wrapWithin(beside + Math.max(presetsPanel.getPreferredSize().width, matrix.getPreferredSize().width));
+        stripNarrow = wrapWithin(Math.max(formOnly, presetsWidth + 2 * PAD - 24));
+        stripWide = wrapWithin(formOnly + 14 + Math.max(presetsWidth, matrix.getPreferredSize().width));
         stripWrapsAt = stripWide;
 
         showAdvanced(false);
@@ -964,7 +970,9 @@ public final class StationSettingsWindow extends StationWindowBase
         setTitle(I18n.f("autosetup.ui.titleStationSettings", many
             ? I18n.f("autosetup.ui.stationsPicked", several.size()) : editor.describeTile(tile)));
 
-        sayWhichArePicked(many ? I18n.f("autosetup.ui.stationsPickedNamed", namesOf(several)) : null);
+        sayWhichArePicked(many ? I18n.f("autosetup.ui.stationsPickedNamed", namesOf(several, NAMED)) : null,
+            many && several.size() > NAMED ? AutonomyEditorPanel.wrapped(I18n.f("autosetup.ui.stationsPickedNamed",
+            namesOf(several))) : null);
 
         severalLine.setText(many ? AutonomyEditorPanel.wrappedAt(I18n.f("autosetup.ui.stationSeveral", several.size()),
             wrapWithin(formWidth - 8)) : "");
@@ -1100,7 +1108,12 @@ public final class StationSettingsWindow extends StationWindowBase
     private void showForHowMany(boolean many)
     {
         severalLine.setVisible(many);
-        sideColumn.setVisible(!many);
+        rightColumn.setVisible(!many);
+
+        // Several keep the form's width: their presets stand over it (Adam: "no need to widen")
+        JPanel presetsGo = many ? leftColumn : rightColumn;
+
+        if (presetsPanel.getParent() != presetsGo) presetsGo.add(presetsPanel, BorderLayout.NORTH);
 
         for (JComponent part : nameRow) part.setVisible(!many);
 
@@ -1294,13 +1307,21 @@ public final class StationSettingsWindow extends StationWindowBase
 
     private String namesOf(List<TileKey> squares)
     {
+        return namesOf(squares, Integer.MAX_VALUE);
+    }
+
+    /** The first `shown` names, then how many more; null for none. */
+    private String namesOf(List<TileKey> squares, int shown)
+    {
         if (squares.isEmpty()) return null;
 
         List<String> names = new ArrayList<>();
 
         for (TileKey each : squares) names.add(editor.describeTile(each));
 
-        return String.join(", ", names);
+        if (names.size() <= shown) return String.join(", ", names);
+
+        return I18n.f("autosetup.ui.stationsNamedMore", String.join(", ", names.subList(0, shown)), names.size() - shown);
     }
 
     // ------------------------------------------------------------------------------------------------- pressing
