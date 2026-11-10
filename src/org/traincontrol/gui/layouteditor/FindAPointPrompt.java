@@ -18,11 +18,12 @@ import javax.swing.ListSelectionModel;
 import org.traincontrol.automationui.TileGraph.TileKey;
 import org.traincontrol.gui.Listen;
 import org.traincontrol.util.I18n;
+import org.traincontrol.util.Util;
 
 /**
  * The small prompt of the editor's Find a Point... (FR-055): a text box over the named points of every page, narrowed
- * as typed with capitals ignored.  Enter or a double-click chooses, Escape cancels.  Hangs off the editor window and
- * leaves nothing behind in it.
+ * as typed with capitals ignored, and read again at every use.  Enter or a double-click chooses, Escape cancels.
+ * Hangs off the editor window and leaves nothing behind in it.
  */
 final class FindAPointPrompt extends JDialog
 {
@@ -44,6 +45,11 @@ final class FindAPointPrompt extends JDialog
             this.name = name;
         }
 
+        boolean isNow(List<Entry> now)
+        {
+            return now.stream().anyMatch(each -> each.tile.equals(tile) && each.name.equals(name));
+        }
+
         /** The row as the user reads it: the page is always named, as two pages can hold the same name. */
         @Override
         public String toString()
@@ -52,26 +58,19 @@ final class FindAPointPrompt extends JDialog
         }
     }
 
-    private final List<Entry> all;
+    private final java.util.function.Supplier<List<Entry>> points;
     private final Consumer<TileKey> chosen;
     private final JTextField box = new JTextField(24);
     private final DefaultListModel<Entry> shown = new DefaultListModel<>();
     private final JList<Entry> list = new JList<>(shown);
     private final JLabel status = new JLabel(" ");
 
-    FindAPointPrompt(java.awt.Frame owner, List<Entry> points, Consumer<TileKey> chosen)
+    FindAPointPrompt(java.awt.Frame owner, java.util.function.Supplier<List<Entry>> points, Consumer<TileKey> chosen)
     {
         super(owner, I18n.t("layout.ui.findPointTitle"), false);
 
-        this.all = new ArrayList<>(points);
+        this.points = points;
         this.chosen = chosen;
-
-        all.sort((a, b) ->
-        {
-            int byName = a.name.compareToIgnoreCase(b.name);
-
-            return byName != 0 ? byName : a.tile.getPage().compareToIgnoreCase(b.tile.getPage());
-        });
 
         setDefaultCloseOperation(DISPOSE_ON_CLOSE);
         org.traincontrol.gui.TrainControlUI.applyWindowIcon(this);
@@ -165,6 +164,15 @@ final class FindAPointPrompt extends JDialog
     {
         String wanted = box.getText().trim().toLowerCase(java.util.Locale.ROOT);
 
+        List<Entry> all = new ArrayList<>(points.get());
+
+        all.sort((a, b) ->
+        {
+            int byName = Util.byLetters(a.name, b.name);
+
+            return byName != 0 ? byName : Util.byLetters(a.tile.getPage(), b.tile.getPage());
+        });
+
         shown.clear();
 
         for (Entry entry : all)
@@ -189,12 +197,22 @@ final class FindAPointPrompt extends JDialog
         list.ensureIndexIsVisible(next);
     }
 
-    /** Closes the prompt and goes to the selected point; with nothing to choose, Enter does nothing. */
+    /**
+     * Closes the prompt and goes to the selected point; with nothing to choose, Enter does nothing.  A point renamed or
+     * gone since the list was drawn lists the points again instead.
+     */
     private void choose()
     {
         Entry entry = list.getSelectedValue();
 
         if (entry == null) return;
+
+        if (!entry.isNow(points.get()))
+        {
+            narrow();
+
+            return;
+        }
 
         dispose();
 

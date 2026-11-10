@@ -261,6 +261,49 @@ public final class StationDoors
         return Components.onTheEventThread(() -> part(window, name, AbstractButton.class).isSelected());
     }
 
+    /** Steps a list with an arrow, down or, at its last answer, up, as the user does (it only shows); what it showed before. */
+    public static Object step(JComboBox<?> list)
+    {
+        Object was = Components.onTheEventThread(list::getSelectedItem);
+
+        Keys.press(list, Components.onTheEventThread(() -> list.getSelectedIndex() < list.getItemCount() - 1)
+            ? java.awt.event.KeyEvent.VK_DOWN : java.awt.event.KeyEvent.VK_UP);
+
+        return was;
+    }
+
+    /** A control loses the keyboard, as AWT tells it: for now (another window clicked) or for good, to `next` (or none). */
+    public static void loseKeyboard(Component focused, boolean forNow, Component next)
+    {
+        Components.onTheEventThread(() ->
+        {
+            for (java.awt.event.FocusListener each : focused.getFocusListeners())
+            {
+                each.focusLost(new java.awt.event.FocusEvent(focused, java.awt.event.FocusEvent.FOCUS_LOST, forNow, next));
+            }
+
+            return null;
+        });
+        Components.settle();
+    }
+
+    /** Another window is clicked, as AWT tells it: the control with the keyboard loses it for now, then the window its focus. */
+    public static void toAnotherWindow(java.awt.Window window, Component focused)
+    {
+        loseKeyboard(focused, true, null);
+
+        Components.onTheEventThread(() ->
+        {
+            for (java.awt.event.WindowFocusListener each : window.getWindowFocusListeners())
+            {
+                each.windowLostFocus(new java.awt.event.WindowEvent(window, java.awt.event.WindowEvent.WINDOW_LOST_FOCUS));
+            }
+
+            return null;
+        });
+        Components.settle();
+    }
+
     /** Closes a window with its Close button. */
     public static void close(Component window) throws Exception
     {

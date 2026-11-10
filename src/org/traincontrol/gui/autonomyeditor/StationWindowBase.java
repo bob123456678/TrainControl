@@ -2,21 +2,33 @@ package org.traincontrol.gui.autonomyeditor;
 
 import java.awt.BorderLayout;
 import java.awt.Color;
+import java.awt.Component;
+import java.awt.Container;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Font;
 import java.awt.GridBagConstraints;
 import java.awt.Insets;
 import java.awt.Window;
+import java.awt.event.ActionEvent;
+import java.awt.event.FocusAdapter;
+import java.awt.event.FocusEvent;
 import java.awt.event.KeyEvent;
+import java.util.Objects;
 import java.util.function.BooleanSupplier;
+import java.util.function.IntConsumer;
+import javax.swing.AbstractAction;
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
+import javax.swing.JComboBox;
 import javax.swing.JComponent;
 import javax.swing.JDialog;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.KeyStroke;
+import javax.swing.SwingUtilities;
+import javax.swing.event.PopupMenuEvent;
+import javax.swing.event.PopupMenuListener;
 import org.traincontrol.automationui.TileGraph.TileKey;
 import org.traincontrol.gui.InfoMark;
 import org.traincontrol.gui.RunGates;
@@ -103,7 +115,7 @@ abstract class StationWindowBase extends JDialog
             }
         });
 
-        // Applied before whatever is clicked next: the editor's Save or Cancel, or a question of this window's
+        // Typed text applies before whatever is clicked next (the editor's Save); a list's choice its own loss put back
         addWindowFocusListener(new java.awt.event.WindowAdapter()
         {
             @Override
@@ -236,9 +248,19 @@ abstract class StationWindowBase extends JDialog
     /** Sets every control from the setup, and grays what may not be touched. */
     abstract void fill(boolean readOnly);
 
-    /** Commits a field being typed in, as leaving it does. */
+    /** Commits what is being typed or chosen, as leaving it does: the base, every list's choice. */
     void commitFields()
     {
+        settleChoicesIn(getContentPane());
+    }
+
+    private static void settleChoicesIn(Container in)
+    {
+        for (Component each : in.getComponents())
+        {
+            if (each instanceof Choice) ((Choice) each).settle();
+            else if (each instanceof Container) settleChoicesIn((Container) each);
+        }
     }
 
     /** What the watch sees change without the panel saying so; the base reads who holds the setup. */
@@ -330,15 +352,15 @@ abstract class StationWindowBase extends JDialog
     }
 
     /**
-     * A control's press: asked again at the click (a run may have begun), then the door, whose questions hang off this
-     * window, then saved, drawn and rebuilt as the menus' items do.  A door answering false changed nothing, so nothing
-     * is written or rebuilt.
+     * A control's press: asked again at the click (a run may have begun, or an editor opened), then the door, whose
+     * questions hang off this window, then saved, drawn and rebuilt as the menus' items do.  A door answering false
+     * changed nothing, so nothing is written or rebuilt.
      */
     final void act(BooleanSupplier door)
     {
         editor.pressedFrom(this, () ->
         {
-            if (editor.refusedWhileRunning())
+            if (refused())
             {
                 reload();
 
@@ -367,10 +389,28 @@ abstract class StationWindowBase extends JDialog
     {
         editor.pressedFrom(this, () ->
         {
-            if (!editor.refusedWhileRunning()) door.run();
+            if (!refused()) door.run();
         });
 
         reload();
+    }
+
+    /**
+     * Asked again at the click, as the watch asks: the setup still the one the window opened on (else it goes), then in
+     * `readHeld`'s order an editor open over the track diagram's setup, and a run.
+     */
+    private boolean refused()
+    {
+        if (!stillAbout())
+        {
+            goAway();
+
+            return true;
+        }
+
+        TrainControlUI main = editor.parentWindow();
+
+        return editor.menuOnly && main != null && main.refuseWhileEditorOpen(this) || editor.refusedWhileRunning();
     }
 
     /** Closed by the user: what is being typed applies, as leaving the field does. */
@@ -470,6 +510,132 @@ abstract class StationWindowBase extends JDialog
         asked.width = 1;
 
         return asked;
+    }
+
+    /**
+     * A list that acts on a choice made, as a typed field does: a pick from the open list, Enter, or leaving the list
+     * within the window (`commitFields`).  A typed letter or an arrow alone only shows the choice; Escape, or another
+     * window taking the keyboard, puts back what it held.
+     */
+    class Choice extends JComboBox<String>
+    {
+        private final transient IntConsumer door;
+        private Object held;
+
+        /** True while a key or `putBack` moves the list, which then only shows. */
+        private boolean quiet;
+        private boolean canceled;
+
+        /** @param door given the index chosen */
+        Choice(IntConsumer door, String... items)
+        {
+            super(items);
+
+            this.door = door;
+            this.held = getSelectedItem();
+
+            addPopupMenuListener(new PopupMenuListener()
+            {
+                @Override
+                public void popupMenuWillBecomeVisible(PopupMenuEvent e)
+                {
+                }
+
+                @Override
+                public void popupMenuCanceled(PopupMenuEvent e)
+                {
+                    canceled = true;
+                }
+
+                // Once closed: the door may ask
+                @Override
+                public void popupMenuWillBecomeInvisible(PopupMenuEvent e)
+                {
+                    final boolean undo = canceled;
+
+                    canceled = false;
+                    SwingUtilities.invokeLater(undo ? Choice.this::putBack : Choice.this::settle);
+                }
+            });
+
+            addFocusListener(new FocusAdapter()
+            {
+                // Another window took the keyboard (a loss for now): put back, so no question swallows its click
+                @Override
+                public void focusLost(FocusEvent e)
+                {
+                    if (e.isTemporary()) putBack();
+                    else if (!isPopupVisible()) settle();
+                }
+            });
+
+            onKey(KeyEvent.VK_ENTER, this::settle);
+            onKey(KeyEvent.VK_ESCAPE, this::putBack);
+        }
+
+        /** Whether a choice is shown and not made. */
+        private boolean pending()
+        {
+            return !Objects.equals(getSelectedItem(), held);
+        }
+
+        /** A key of the closed list with a choice pending; otherwise the key goes where it went. */
+        private void onKey(int key, Runnable action)
+        {
+            getInputMap(WHEN_FOCUSED).put(KeyStroke.getKeyStroke(key, 0), action);
+            getActionMap().put(action, new AbstractAction()
+            {
+                @Override
+                public boolean isEnabled()
+                {
+                    return !isPopupVisible() && pending();
+                }
+
+                @Override
+                public void actionPerformed(ActionEvent e)
+                {
+                    action.run();
+                }
+            });
+        }
+
+        @Override
+        public void processKeyEvent(KeyEvent e)
+        {
+            quiet = e.getKeyCode() != KeyEvent.VK_ENTER;
+
+            try
+            {
+                super.processKeyEvent(e);
+            }
+            finally
+            {
+                quiet = false;
+            }
+        }
+
+        @Override
+        protected void fireActionEvent()
+        {
+            if (reading) held = getSelectedItem();
+            else if (!quiet && !isPopupVisible()) settle();
+        }
+
+        /** Applies the choice shown, while the window is still about its square and the list on it (a reload rebuilds some). */
+        private void settle()
+        {
+            if (tile == null || !isDisplayable() || !pending()) return;
+
+            held = getSelectedItem();
+            door.accept(getSelectedIndex());
+        }
+
+        private void putBack()
+        {
+            quiet = true;
+            setSelectedItem(held);
+            quiet = false;
+        }
     }
 
     /** Names a control and gives it its font. */

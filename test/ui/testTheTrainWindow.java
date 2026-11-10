@@ -355,6 +355,85 @@ public class testTheTrainWindow
     }
 
     /**
+     * A key step in the Train list only shows a train: Down, or a typed letter, places nothing, Escape puts the list
+     * back and leaves the window open, and Enter places the train shown.  A pick from the open list acts as the list
+     * closes; a list closed by canceling puts the choice back.
+     *
+     * MUTATION: have `StationWindowBase.Choice.fireActionEvent` ignore `quiet`, and this fails.
+     */
+    @Test(timeOut = 120000)
+    public void testAKeyStepInTheListPlacesNothingUntilEnter() throws Exception
+    {
+        AutonomyEditorPanel panel = theEditorsPanel();
+
+        TileKey square = anEmptyStation();
+
+        TrainWindow window = StationDoors.openTrain(panel, square);
+
+        javax.swing.JComboBox<?> list = StationDoors.part(window, "train.train", javax.swing.JComboBox.class);
+
+        String none = I18n.t("autosetup.ui.labelNone");
+
+        support.Keys.press(list, java.awt.event.KeyEvent.VK_DOWN);
+
+        Object shown = Components.onTheEventThread(list::getSelectedItem);
+
+        assertFalse(none.equals(shown), "precondition: Down did not step the list");
+        assertNull(session.getLocomotiveNameAt(square), "Down placed " + shown);
+
+        // A typed letter steps to the next train whose name starts with it
+        String last = String.valueOf(Components.onTheEventThread(() -> list.getItemAt(list.getItemCount() - 1)));
+        char letter = Character.toUpperCase(last.charAt(0));
+
+        if (letter >= 'A' && letter <= 'Z' || letter >= '0' && letter <= '9')
+        {
+            support.Keys.press(list, letter);
+
+            assertNull(session.getLocomotiveNameAt(square), "typing " + letter + " placed "
+                + Components.onTheEventThread(list::getSelectedItem));
+        }
+
+        support.Keys.press(list, java.awt.event.KeyEvent.VK_ESCAPE);
+
+        assertEquals(Components.onTheEventThread(list::getSelectedItem), none, "Escape did not put the list back");
+        assertTrue(Components.onTheEventThread(window::isShowing), "Escape on a stepped list closed the window");
+
+        support.Keys.press(list, java.awt.event.KeyEvent.VK_DOWN);
+        support.Keys.press(list, java.awt.event.KeyEvent.VK_ENTER);
+
+        String placed = session.getLocomotiveNameAt(square);
+
+        assertNotNull(placed, "Enter placed nothing");
+        assertTrue(String.valueOf(shown).startsWith(placed), "Enter placed " + placed + ", not " + shown);
+
+        // As a pick from the open list: chosen while it is open, acted on as it closes
+        Components.onTheEventThread(() -> { list.setPopupVisible(true); list.setSelectedItem(none); return null; });
+
+        assertEquals(session.getLocomotiveNameAt(square), placed, "a choice in the open list acted before it closed");
+
+        Components.onTheEventThread(() -> { list.setPopupVisible(false); return null; });
+        Components.settle();
+
+        assertNull(session.getLocomotiveNameAt(square), "None picked from the list left the train there");
+
+        Components.onTheEventThread(() ->
+        {
+            list.setPopupVisible(true);
+            list.setSelectedIndex(1);
+            list.firePopupMenuCanceled();
+            list.setPopupVisible(false);
+
+            return null;
+        });
+        Components.settle();
+
+        assertNull(session.getLocomotiveNameAt(square), "a canceled list placed a train");
+        assertEquals(Components.onTheEventThread(list::getSelectedItem), none, "a canceled list did not put the choice back");
+
+        StationDoors.close(window);
+    }
+
+    /**
      * A train placed from the list records the side it came in by, in the setup and on the railway, as every door that
      * puts a train down by hand does (Adam: "the missing arrival side should be set - either from the data, by the
      * user, or randomly"): Tunnel's one way in is from the north, BottomMainB's from the west.  The squares are emptied
@@ -542,6 +621,340 @@ public class testTheTrainWindow
         finally
         {
             if (driving != null) driving.interrupt();
+        }
+    }
+
+    /** The train window on this square, opened from the track diagram's menu. */
+    private static TrainWindow theDiagramsTrainWindow(TileKey square) throws Exception
+    {
+        Mouse.choose(AskingWindows.itemOf(AskingWindows.menuOn(ui, ui, square),
+            I18n.f("autosetup.ui.menuChangeTrainAt", session.describeTile(square))));
+
+        Components.settle();
+
+        TrainWindow window = StationDoors.showing(TrainWindow.class);
+
+        assertNotNull(window, "the train window did not open from the track diagram");
+
+        return window;
+    }
+
+    /**
+     * While a route runs with autonomy idle, the train window's Active pauses the train alone, as the track diagram's
+     * Is Active does (FR-187): live, and the setup is as it was.
+     *
+     * MUTATION: gray Active in `TrainWindow.fill` unless autonomy itself runs, and this fails.
+     */
+    @Test(timeOut = 180000)
+    public void testWhileARouteRunsActivePausesTheTrainAlone() throws Exception
+    {
+        TileKey square = aSquareWithATrain();
+
+        Locomotive train = model.getLocByName(session.getLocomotiveNameAt(square));
+
+        TrainWindow window = theDiagramsTrainWindow(square);
+
+        assertTrue(StationDoors.on(window, "train.active"), "precondition: Active is not ticked");
+
+        regression.testNoSetupEditWhileARouteRuns.aRouteRuns(ui, true);
+
+        try
+        {
+            assertTrue(Components.waitFor(() -> Components.onTheEventThread(window::isReadOnly), 5000),
+                "the window is not read-only while a route runs");
+
+            assertTrue(StationDoors.live(window, "train.active"), "Active is gray while a route runs");
+
+            String before = Components.onTheEventThread(() -> session.snapshotSetup().toString());
+
+            StationDoors.press(window, "train.active");
+
+            assertTrue(train.isAutonomyPaused(), "unticking Active while a route runs did not pause the train");
+            assertEquals(Components.onTheEventThread(() -> session.snapshotSetup().toString()), before,
+                "Active while a route runs edited the setup");
+        }
+        finally
+        {
+            regression.testNoSetupEditWhileARouteRuns.aRouteRuns(ui, false);
+
+            train.setAutonomyPaused(false);
+
+            SwingUtilities.invokeAndWait(window::dispose);
+        }
+    }
+
+    /**
+     * A train stepped to in the list is placed when the keyboard moves on in the window (Tab, another control clicked),
+     * as a typed field applies on leaving, and the choice still shown when the window closes is applied too.
+     *
+     * MUTATION: drop the focus listener from `StationWindowBase.Choice`, or the lists from `commitFields`, and this fails.
+     */
+    @Test(timeOut = 120000)
+    public void testLeavingTheListOrClosingTheWindowAppliesTheTrainShown() throws Exception
+    {
+        AutonomyEditorPanel panel = theEditorsPanel();
+
+        TileKey square = anEmptyStation();
+
+        TrainWindow window = StationDoors.openTrain(panel, square);
+
+        javax.swing.JComboBox<?> list = StationDoors.part(window, "train.train", javax.swing.JComboBox.class);
+
+        support.Keys.press(list, java.awt.event.KeyEvent.VK_DOWN);
+
+        Object shown = Components.onTheEventThread(list::getSelectedItem);
+
+        assertNull(session.getLocomotiveNameAt(square), "precondition: Down placed " + shown);
+
+        // Tab takes the keyboard to the next control in the window
+        StationDoors.loseKeyboard(list, false, StationDoors.part(window, "train.active", java.awt.Component.class));
+
+        String placed = session.getLocomotiveNameAt(square);
+
+        assertNotNull(placed, "leaving the list placed nothing");
+        assertTrue(String.valueOf(shown).startsWith(placed), "leaving the list placed " + placed + ", not " + shown);
+
+        support.Keys.press(list, java.awt.event.KeyEvent.VK_UP);
+
+        assertEquals(session.getLocomotiveNameAt(square), placed, "precondition: Up took the train off");
+
+        StationDoors.close(window);
+
+        assertNull(session.getLocomotiveNameAt(square), "closing the window dropped None, shown in the list");
+    }
+
+    /**
+     * A train stepped to in the list is put back, asking nothing, when another window is clicked, so a placement question
+     * never swallows that click (the main window's Stop, the editor's Save).  Locomotive Settings... opens the train
+     * standing, not the one shown.
+     *
+     * MUTATION: have the Choice's focus listener settle a loss for now, or the window's settle the lists, and this fails.
+     */
+    @Test(timeOut = 120000)
+    public void testAnotherWindowClickedPutsTheListBackAndAsksNothing() throws Exception
+    {
+        AutonomyEditorPanel panel = theEditorsPanel();
+
+        TileKey square = aSquareWithATrain();
+        String standing = session.getLocomotiveNameAt(square);
+
+        TrainWindow window = StationDoors.openTrain(panel, square);
+
+        javax.swing.JComboBox<?> list = StationDoors.part(window, "train.train", javax.swing.JComboBox.class);
+
+        Object was = StationDoors.step(list);
+
+        LocomotiveSettingsFrame frame = null;
+
+        try (support.Answering answering = support.Answering.start(message -> null))
+        {
+            StationDoors.press(window, "train.settings");
+            StationDoors.toAnotherWindow(window, list);
+
+            frame = StationDoors.showing(LocomotiveSettingsFrame.class);
+
+            assertEquals(answering.asked(), java.util.Collections.emptyList(), "another window clicked asked");
+        }
+        finally
+        {
+            if (frame != null) SwingUtilities.invokeAndWait(frame::dispose);
+        }
+
+        assertEquals(session.getLocomotiveNameAt(square), standing, "another window clicked placed the train shown");
+        assertEquals(Components.onTheEventThread(list::getSelectedItem), was, "the list still shows a train not placed");
+        assertNotNull(frame, "Locomotive Settings did not open");
+        assertEquals(frame.getLocomotive(), model.getLocByName(standing), "Locomotive Settings opened on the train shown");
+
+        StationDoors.close(window);
+    }
+
+    /**
+     * In the autonomy editor's own train window, Active stays a setup edit, gray while a route runs: a pause of the
+     * railway's train alone would be undone by the editor's draft (the track diagram's window pauses it).
+     *
+     * MUTATION: leave `editor.menuOnly` out of `TrainWindow.pausesAlone`, and this fails.
+     */
+    @Test(timeOut = 180000)
+    public void testInTheEditorActiveIsGrayWhileARouteRuns() throws Exception
+    {
+        AutonomyEditorPanel panel = theEditorsPanel();
+
+        TrainWindow window = StationDoors.openTrain(panel, aSquareWithATrain());
+
+        assertTrue(StationDoors.live(window, "train.active"), "precondition: Active is gray at rest");
+
+        regression.testNoSetupEditWhileARouteRuns.aRouteRuns(ui, true);
+
+        try
+        {
+            assertTrue(Components.waitFor(() -> Components.onTheEventThread(window::isReadOnly), 5000),
+                "precondition: the window is not read-only while a route runs");
+
+            assertFalse(StationDoors.live(window, "train.active"), "the editor's Active is live while a route runs");
+        }
+        finally
+        {
+            regression.testNoSetupEditWhileARouteRuns.aRouteRuns(ui, false);
+
+            StationDoors.close(window);
+        }
+    }
+
+    /**
+     * Station Settings on a square with a train, opened from the track diagram's menu, with its watch stopped: a press
+     * comes in the second before the watch looks again.
+     */
+    private static org.traincontrol.gui.autonomyeditor.StationSettingsWindow theDiagramsStationSettingsUnwatched()
+        throws Exception
+    {
+        Mouse.choose(AskingWindows.itemOf(AskingWindows.menuOn(ui, ui, aSquareWithATrain()),
+            I18n.t("autosetup.ui.menuStationSettings")));
+
+        Components.settle();
+
+        org.traincontrol.gui.autonomyeditor.StationSettingsWindow window =
+            StationDoors.showing(org.traincontrol.gui.autonomyeditor.StationSettingsWindow.class);
+
+        assertNotNull(window, "Station Settings did not open from the track diagram");
+
+        Components.onTheEventThread(() ->
+        {
+            ((javax.swing.Timer) Reflect.get(window.getClass().getSuperclass(), window, "watch")).stop();
+
+            return null;
+        });
+
+        return window;
+    }
+
+    /**
+     * Station Settings opened from the track diagram goes, writing nothing, when a press comes after a configuration
+     * was loaded and before its watch has looked again: the old setup is as it was.
+     *
+     * MUTATION: drop the `stillAbout` check from `StationWindowBase.refused`, and this fails.
+     */
+    @Test(timeOut = 180000)
+    public void testADiagramWindowWritesNothingOnceAnotherSetupIsLoaded() throws Exception
+    {
+        org.traincontrol.gui.autonomyeditor.StationSettingsWindow window = theDiagramsStationSettingsUnwatched();
+
+        assertTrue(StationDoors.live(window, "station.fullAutonomy"), "precondition: the box is gray");
+
+        String before = Components.onTheEventThread(() -> session.snapshotSetup().toString());
+
+        try
+        {
+            // A load replaces the main window's setup
+            Components.onTheEventThread(() ->
+            {
+                Reflect.set(TrainControlUI.class, ui, "autonomySession", null);
+
+                return null;
+            });
+
+            assertTrue(Components.onTheEventThread(() -> ui.getAutonomySession() != session), "precondition: no other setup");
+
+            StationDoors.press(window, "station.fullAutonomy", message -> null);
+
+            assertEquals(Components.onTheEventThread(() -> session.snapshotSetup().toString()), before,
+                "a press after a load wrote to the setup the window opened on");
+            assertFalse(Components.onTheEventThread(window::isShowing), "the window stayed open on a setup no longer loaded");
+        }
+        finally
+        {
+            Components.onTheEventThread(() ->
+            {
+                Reflect.set(TrainControlUI.class, ui, "autonomySession", session);
+                window.dispose();
+
+                return null;
+            });
+        }
+    }
+
+    /**
+     * Station Settings opened from the track diagram refuses a press made once an editor has opened, before its watch
+     * has looked again: said over the window, as a run's refusal is, and the setup is as it was.
+     *
+     * MUTATION: drop the editor's check from `StationWindowBase.refused`, and this fails.
+     */
+    @Test(timeOut = 180000)
+    public void testADiagramWindowRefusesAPressOnceAnEditorOpens() throws Exception
+    {
+        org.traincontrol.gui.autonomyeditor.StationSettingsWindow window = theDiagramsStationSettingsUnwatched();
+
+        assertFalse(window.isReadOnly(), "precondition: read-only at rest");
+
+        editor = support.FrozenEditor.editorOn(model, ui, session, PAGE);
+
+        assertTrue(Components.waitFor(() -> Components.onTheEventThread(ui::isLayoutEditorOpen), 10000),
+            "precondition: the editor did not open");
+        assertTrue(Components.onTheEventThread(window::isShowing), "precondition: the editor closed the window");
+        assertTrue(StationDoors.live(window, "station.fullAutonomy"), "precondition: the box is gray");
+
+        String before = Components.onTheEventThread(() -> session.snapshotSetup().toString());
+
+        java.util.List<String> said = StationDoors.press(window, "station.fullAutonomy", message -> null);
+
+        assertEquals(said, java.util.Collections.singletonList(I18n.t("autosetup.ui.menuEditorOpen")),
+            "the press was not refused for the open editor");
+        assertEquals(Components.onTheEventThread(() -> session.snapshotSetup().toString()), before,
+            "a press with the editor open wrote to the setup");
+
+        SwingUtilities.invokeAndWait(window::dispose);
+    }
+
+    /**
+     * Hovering an (i) holds every tooltip up long enough to read, and only while the pointer is on it: a window closed
+     * under the pointer, or a second arrival with no leaving between, still leaves the dismiss delay as it was.
+     *
+     * MUTATION: drop the hierarchy listener from `InfoMark.label`, and this fails.
+     */
+    @Test(timeOut = 60000)
+    public void testAnInfoMarkPutsTheTooltipDelayBack() throws Exception
+    {
+        javax.swing.ToolTipManager tips = javax.swing.ToolTipManager.sharedInstance();
+
+        int was = Components.onTheEventThread(tips::getDismissDelay);
+
+        javax.swing.JLabel[] mark = new javax.swing.JLabel[1];
+
+        javax.swing.JDialog shown = Components.onTheEventThread(() ->
+        {
+            TrainControlUI.installLookAndFeel();
+
+            javax.swing.JDialog out = new javax.swing.JDialog();
+
+            mark[0] = org.traincontrol.gui.InfoMark.label("a sentence");
+            out.add(mark[0]);
+            out.pack();
+            out.setVisible(true);
+
+            return out;
+        });
+
+        try
+        {
+            Mouse.enter(mark[0]);
+            Mouse.enter(mark[0]);
+
+            assertTrue(Components.onTheEventThread(tips::getDismissDelay) > was, "precondition: the (i) did not hold its tooltip up");
+
+            Mouse.exit(mark[0]);
+
+            assertEquals((int) Components.onTheEventThread(tips::getDismissDelay), was, "a second arrival kept the long delay");
+
+            Mouse.enter(mark[0]);
+
+            // Escape closes the window under the pointer: no exit comes
+            SwingUtilities.invokeAndWait(shown::dispose);
+
+            assertEquals((int) Components.onTheEventThread(tips::getDismissDelay), was,
+                "a window closed under the pointer left every tooltip at the long delay");
+        }
+        finally
+        {
+            Components.onTheEventThread(() -> { tips.setDismissDelay(was); shown.dispose(); return null; });
         }
     }
 

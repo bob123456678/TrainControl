@@ -22,13 +22,17 @@ import support.SettingsWindow;
 public class testTheLocomotiveSettingsLooks extends support.SettingsClass
 {
     private static final String NAME = "LK train";
+    private static final String LONG = "LK train with a long long name";
+
+    /** As long as a name may be, in the widest letter. */
+    private static final String WIDEST = "WWWWWWWWWWWWWWWWWWWWWWWWWWWWWW";
     private static final String[] LANGUAGES = {"en", "de", "da", "es", "fr", "it", "nl", "pl"};
 
 
     @Override
     protected String[] made()
     {
-        return new String[] { NAME };
+        return new String[] { NAME, LONG, WIDEST };
     }
 
     private static JTabbedPane opened() throws Exception
@@ -471,8 +475,12 @@ public class testTheLocomotiveSettingsLooks extends support.SettingsClass
 
         if (tab != null) fixture.layDcc(NAME, 3806, tab);
 
-        LocomotiveSettingsFrame window = tab == null ? openAdd() : SettingsWindow.showing();
+        return narrowed(tab == null ? openAdd() : SettingsWindow.showing());
+    }
 
+    /** Drags the window as narrow as it lets itself go. */
+    private static LocomotiveSettingsFrame narrowed(LocomotiveSettingsFrame window)
+    {
         Components.onTheEventThread(() ->
         {
             window.setSize(window.isMinimumSizeSet() ? window.getMinimumSize().width : 200, window.getHeight());
@@ -585,6 +593,174 @@ public class testTheLocomotiveSettingsLooks extends support.SettingsClass
         finally
         {
             I18n.setLocale(java.util.Locale.ENGLISH);
+        }
+    }
+
+    /**
+     * At the narrowest window, in every language, the lock strip shows its whole sentence, for a moving train with a
+     * thirty-letter name and while autonomy runs, in a window just opened: it wraps rather than ending in "...", and is
+     * as tall as its lines.
+     *
+     * MUTATION: drop the strip's own `getPreferredSize` in `LocomotiveSettingsFrame`, and this fails.
+     */
+    @Test
+    public void testTheLockStripIsWholeAtTheNarrowestWindow() throws Exception
+    {
+        try
+        {
+            for (String lang : LANGUAGES)
+            {
+                for (boolean moving : new boolean[] {true, false})
+                {
+                    I18n.setLocale(new java.util.Locale(lang));
+
+                    // A window of its own each time: the strip first comes up with no width
+                    SettingsWindow.closeIfOpen();
+
+                    org.traincontrol.marklin.MarklinLocomotive train = fixture.layDcc(LONG, 3807,
+                        LocomotiveSettingsFrame.Tab.LOCOMOTIVE);
+
+                    LocomotiveSettingsFrame window = narrowed(SettingsWindow.showing());
+
+                    JLabel strip = SettingsWindow.part("settings.strip", JLabel.class);
+
+                    try
+                    {
+                        if (moving)
+                        {
+                            SettingsWindow.power(ui, fixture.model, true);
+                            train.setSpeed(40);
+                        }
+                        else
+                        {
+                            fixture.model.getAutoLayout().setStagingInProgress(true);
+                        }
+
+                        assertTrue(Components.waitFor(() -> Components.onTheEventThread(strip::isShowing), 8000),
+                            "precondition: no strip came up");
+
+                        Components.settle();
+                        Components.settle();
+
+                        assertTrue(Components.onTheEventThread(() -> wholeSentence(strip)), lang + ": at " + window.getWidth()
+                            + " wide, the strip cuts '" + Components.onTheEventThread(strip::getText) + "' to "
+                            + Components.onTheEventThread(strip::getSize));
+                    }
+                    finally
+                    {
+                        train.setSpeed(0);
+                        SettingsWindow.power(ui, fixture.model, false);
+                        fixture.model.getAutoLayout().setStagingInProgress(false);
+                    }
+                }
+            }
+        }
+        finally
+        {
+            I18n.setLocale(java.util.Locale.ENGLISH);
+        }
+    }
+
+    /** Whether a label's text, plain or wrapped as HTML, fits the room it shows: its own, cut to its parents'. */
+    private static boolean wholeSentence(JLabel label)
+    {
+        java.awt.Insets in = label.getInsets();
+        java.awt.Rectangle shown = label.getVisibleRect();
+
+        int width = shown.width - in.left - in.right;
+
+        javax.swing.text.View html = javax.swing.plaf.basic.BasicHTML.createHTMLView(label, "<html>"
+            + label.getText().replace("&", "&amp;").replace("<", "&lt;") + "</html>");
+
+        html.setSize(width, 0);
+
+        return html.getMinimumSpan(javax.swing.text.View.X_AXIS) <= width && (label.getClientProperty(
+            javax.swing.plaf.basic.BasicHTML.propertyKey) == null ? label.getFontMetrics(label.getFont()).stringWidth(
+            label.getText()) <= width : html.getPreferredSpan(javax.swing.text.View.Y_AXIS) <= shown.height - in.top - in.bottom);
+    }
+
+    /**
+     * The lock strip never widens the window: opened while its train moves, its strip up from the start, the window is
+     * as wide as it opens at rest, in every language, for a name as long as names go in its widest letter.
+     *
+     * MUTATION: drop the strip's own `getPreferredSize` in `LocomotiveSettingsFrame`, and the window opens as wide as
+     * the sentence and this fails.
+     */
+    @Test
+    public void testTheLockStripNeverWidensTheWindow() throws Exception
+    {
+        try
+        {
+            for (String lang : LANGUAGES)
+            {
+                I18n.setLocale(new java.util.Locale(lang));
+
+                org.traincontrol.marklin.MarklinLocomotive train = fixture.layDcc(WIDEST, 3808,
+                    LocomotiveSettingsFrame.Tab.LOCOMOTIVE);
+
+                int atRest = Components.onTheEventThread(SettingsWindow.showing()::getWidth);
+
+                SettingsWindow.closeIfOpen();
+
+                try
+                {
+                    SettingsWindow.power(ui, fixture.model, true);
+                    train.setSpeed(40);
+                    fixture.show(train, LocomotiveSettingsFrame.Tab.LOCOMOTIVE);
+
+                    LocomotiveSettingsFrame locked = SettingsWindow.showing();
+                    JLabel strip = SettingsWindow.part("settings.strip", JLabel.class);
+
+                    assertTrue(Components.onTheEventThread(strip::isVisible), lang + ": precondition: no strip at opening");
+                    assertEquals((int) Components.onTheEventThread(locked::getWidth), atRest, lang + ": the strip '"
+                        + Components.onTheEventThread(strip::getText) + "' widened the window");
+                }
+                finally
+                {
+                    train.setSpeed(0);
+                    SettingsWindow.power(ui, fixture.model, false);
+                }
+            }
+        }
+        finally
+        {
+            I18n.setLocale(java.util.Locale.ENGLISH);
+        }
+    }
+
+    /**
+     * The window's watch says the lock strip's sentence again every second: the strip keeps the HTML it drew for that
+     * sentence, and draws it again only for a new one.
+     *
+     * MUTATION: drop the early return for an unchanged sentence from the strip's `setText` in `LocomotiveSettingsFrame`,
+     * and this fails.
+     */
+    @Test
+    public void testTheWatchDrawsTheStripAgainOnlyForANewSentence() throws Exception
+    {
+        fixture.layDcc(LONG, 3807, LocomotiveSettingsFrame.Tab.LOCOMOTIVE);
+
+        LocomotiveSettingsFrame window = SettingsWindow.showing();
+        JLabel strip = SettingsWindow.part("settings.strip", JLabel.class);
+        java.lang.reflect.Method tick = support.Reflect.method(LocomotiveSettingsFrame.class, "refresh");
+
+        try
+        {
+            fixture.model.getAutoLayout().setStagingInProgress(true);
+            Components.onTheEventThread(() -> tick.invoke(window));
+
+            Object drawn = Components.onTheEventThread(() -> strip.getClientProperty(javax.swing.plaf.basic.BasicHTML.propertyKey));
+
+            assertNotNull(drawn, "precondition: the strip is not drawn as HTML");
+
+            Components.onTheEventThread(() -> tick.invoke(window));
+
+            org.testng.Assert.assertSame(Components.onTheEventThread(() -> strip.getClientProperty(
+                javax.swing.plaf.basic.BasicHTML.propertyKey)), drawn, "the watch drew the same sentence again");
+        }
+        finally
+        {
+            fixture.model.getAutoLayout().setStagingInProgress(false);
         }
     }
 

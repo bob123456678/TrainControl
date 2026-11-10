@@ -451,7 +451,7 @@ Tab icons provided by Freepik.
             - `Change Train at` *station* `...` opens a window for the train standing there, with its locomotive, `Active`, `Facing`, `Arrived` and `Tail lies`, and `Locomotive Settings...` opens the `Autonomy` tab.
             - On the track diagram, a station's right-click menu now always has `Edit` *locomotive* `...` when a train is standing there, `Place` *locomotive* when another one is selected, and `Place a Locomotive Here...`, together under their own divider.
             - A station's right-click menu turns the train standing there around in one click with `Change Direction (now facing` *East* `)`, and changes the side it came in by with `Change Arrived From (currently` *West* `)`.
-            - While autonomy or a route is running, a station's right-click menu on the track diagram has `Is Active` to pause or resume the train standing there.
+            - While trains are running, whether sent by autonomy, a timetable, a route, you or `Return Home`, a station's right-click menu on the track diagram has `Is Active` to pause or resume the train standing there, and so does its train window.
             - On the track diagram, you can send a standing train from its right-click menu while another train you sent is still on its way.
             - In the autonomy editor, a station's right-click menu has `Place` *locomotive* to put the locomotive selected in the main window there.
             - If the connection to a CS3 drops, autonomy, timetables and `Return Home` start no new trips until it is back, and trains already on their way carry on.
@@ -459,6 +459,7 @@ Tab icons provided by Freepik.
             - A `Filter` box above `Things to look at` narrows the list as you type.
             - `Find a Point...` on the editor's `Tools` menu (Ctrl+F) goes to a named point on any page, in the autonomy editor.
             - In the autonomy editor, you can drag a train from one station to another to move it there.
+            - The autonomy editor draws signals and lamps in gray to keep the picture simple, and shows the signals you can pick in color while you choose a guard signal.
         - Track Diagram
             - The track diagram editor has a strip of icons under `Page` to add, duplicate, rename and delete a page and to move it up or down, and its `Manage Pages` menu is now `Tools`.
             - Pages are shown in the order of the layout's files rather than by name, and `Sort Pages by Name` puts them back in name order.
@@ -473,10 +474,11 @@ Tab icons provided by Freepik.
             - An unexpected error in the background now shows in the log.
         - Central Station
             - TrainControl now connects to a CS3 over TCP, and falls back to UDP, saying so in the log, if that doesn't work. A CS2 still uses UDP.
-            - If the connection to a CS3 drops, commands go over UDP at once and nothing is sent again, and the log counts the commands that may not have arrived.
+            - If the connection to a CS3 drops, or the CS3 answers nothing for 3 seconds after a command, commands go over UDP at once and nothing is sent again, and the log counts the commands that may not have arrived.
+            - The network latency in the main window reads `(UDP)` when a CS3 is reached over UDP instead of TCP, and `Power OFF` shows a warning triangle while the Central Station isn't answering.
             - When TrainControl starts up or syncs with a CS3, it now asks the sensors for their state, including those on a Link S88, so the track diagram shows them as they really are.
             - When the Central Station turns the track power off after a short circuit, TrainControl now shows the power as off and a warning names the output that tripped.
-            - A CS3 sync skips what it can't read, such as something a new firmware changed, and no longer loses a page or fails because of it. The log says what was skipped, and a warning says so at start-up.
+            - A CS3 sync skips what it can't read, such as something a new firmware changed, and keeps the rest, so it no longer loses a page or fails because of it.
         - Documentation
             - The Readme and the autonomy guide now describe `Locomotive Settings`, `Station Settings` and the other new windows and shortcuts.
     - Bug Fixes

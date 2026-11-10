@@ -423,6 +423,45 @@ public class testSeveralStationsAtOnce
     }
 
     /**
+     * Where they differ, each row's (i) is wrapped as every other (i) is, not one line across the screen.
+     *
+     * MUTATION: return the sentence unwrapped from `StationSettingsWindow.mixedTip`, and this fails.
+     */
+    @Test(timeOut = 120000)
+    public void testTheTipsOfWhatTheyDifferOnAreWrapped() throws Exception
+    {
+        List<TileKey> two = stations(2);
+
+        Components.onTheEventThread(() ->
+        {
+            session.setAutoDestination(two.get(1), !session.isAutoDestination(two.get(0)));
+
+            for (String each : new String[] {"maxTrainLength", "priority"})
+            {
+                session.setPointProperty(two.get(0), each, 1);
+                session.setPointProperty(two.get(1), each, 2);
+            }
+
+            return null;
+        });
+
+        StationSettingsWindow window = pick(two);
+
+        Components.onTheEventThread(() -> { window.openAdvancedForTest(); return null; });
+
+        StationDoors.current(window);
+
+        for (String row : new String[] {"fullAutonomy", "maxLength", "priority"})
+        {
+            String tip = on(() -> window.flyoverForTest(row));
+
+            assertTrue(tip.contains(I18n.t("autosetup.ui.stationMixedTip")), "precondition: " + row + "'s (i) does not say"
+                + " they differ: " + tip);
+            assertTrue(tip.startsWith("<html"), row + "'s (i) is one unwrapped line: " + tip);
+        }
+    }
+
+    /**
      * A change in the window reaches every station picked: a preset, a box, a typed field and a radio.
      *
      * MUTATION: have `actOnEach` act on the first station only, and this fails.

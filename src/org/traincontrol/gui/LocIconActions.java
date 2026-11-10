@@ -114,8 +114,6 @@ final class LocIconActions
         /**
          * The solid head at the end of the ring, in the icon's own coordinates: a triangle whose base straddles the
          * ring's end and whose tip points the way the ring runs there.
-         *
-         * @return the head
          */
         static java.awt.Shape head()
         {

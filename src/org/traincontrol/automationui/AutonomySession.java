@@ -4236,8 +4236,8 @@ public class AutonomySession
      * box again brings it back.  Names nothing: a square becoming a station needs its name set first by whoever asks.
      *
      * @param tile the square, a sensor where `stops` is set
-     * @param stops When trains stop here
-     * @param runsThrough Running through
+     * @param stops Trains can stop here
+     * @param runsThrough Trains can pass through
      */
     public void setStopsAndRunsThrough(TileKey tile, boolean stops, boolean runsThrough)
     {
@@ -7502,7 +7502,7 @@ public class AutonomySession
 
     /**
      * The setup's recorded facing for the train here where the track runs that way, else null (OB-348); the record as
-     * it stands where the track cannot be asked.  The icon, caption and Is Facing menu all read this.
+     * it stands where the track cannot be asked.  The icon, caption and Change Direction menu all read this.
      */
     public Side recordedFacingAlongTheTrack(TileKey square)
     {

@@ -80,10 +80,17 @@ public class NetworkProxy
     private static final long TCP_RECONNECT_BACKOFF_MS = 1000;
 
     /**
-     * A connection that has carried nothing for this long since a frame was sent on it is taken as hung: the station
-     * answers every command, and the window pings every 5 s.  Silence alone is not, as a CS2 may send nothing unasked.
+     * A connection that has carried nothing for this long since a frame was sent on it is taken as hung.  A frame
+     * unanswered past TCP_SUSPECT_MS draws one ping, which every station answers, so the limit is about the connection,
+     * not one frame the station leaves unanswered.  Silence alone is not, as a CS2 may send nothing unasked.
      */
-    private static final long TCP_ANSWER_LIMIT_MS = 15000;
+    private static final long TCP_ANSWER_LIMIT_MS = 3000;
+
+    /**
+     * The ping the window sends, which every station answers: the probe of a suspect connection.  Its answer is read as
+     * the window's ping's, so a latency reading taken across a probe may come out low by up to one ping interval.
+     */
+    private static final byte[] PROBE = new CS2Message(CS2Message.CAN_CMD_PING, new byte[0]).getRawMessage();
 
     /** A send unanswered this long makes the connection suspect: a Stop then goes over UDP as well. */
     private static final long TCP_SUSPECT_MS = 1000;
@@ -125,6 +132,9 @@ public class NetworkProxy
     // Written under this: the listener is replacing a lost connection, and sends go over UDP meanwhile
     private volatile boolean replacing;
 
+    // Counts the times `replacing` went true, so two reads tell whether a replacement began between them
+    private final AtomicInteger replacements = new AtomicInteger();
+
     // Why a send found the connection broken, for the listener's log line
     private volatile String lostBecause;
 
@@ -134,6 +144,9 @@ public class NetworkProxy
 
     // Whether the current connection has carried a frame; one that never has is not worth reconnecting
     private volatile boolean carried;
+
+    // The listener's own: the first unanswered send it has probed for, so a suspect spell draws one ping
+    private long probed;
 
     private volatile boolean stopRequested;
 
@@ -311,7 +324,7 @@ public class NetworkProxy
     }
 
     /** An exception's message for a log line, or its name when it has none. */
-    private static String reasonOf(IOException e)
+    private static String reasonOf(Exception e)
     {
         return e.getMessage() != null ? e.getMessage() : e.getClass().getSimpleName();
     }
@@ -473,8 +486,7 @@ public class NetworkProxy
         catch (IOException e)
         {
             // The listener, woken by the close, replaces the connection; the frame did not go out on it
-            this.replacing = true;
-            this.lostBecause = reasonOf(e);
+            startReplacing(reasonOf(e));
             closeQuietly(connection);
 
             if (!overUdp) return sendUdp(message);
@@ -487,6 +499,33 @@ public class NetworkProxy
     public boolean isReplacing()
     {
         return this.replacing;
+    }
+
+    /** Whether a CS3's TCP connection is given up and UDP carries everything instead; never for a CS2. */
+    public boolean isOnUdpInsteadOfTcp()
+    {
+        return this.tcpPort > 0 && this.tcp == null;
+    }
+
+    /** Whether the station is not answering on TCP: a frame unanswered over TCP_SUSPECT_MS, or the connection replaced. */
+    public boolean isNotAnswering()
+    {
+        return this.replacing || this.tcp != null && suspect();
+    }
+
+    /** How many replacements have begun; not under the lock either. */
+    public int replacements()
+    {
+        return this.replacements.get();
+    }
+
+    /** Under this: the connection is lost and being replaced, the replacement counted as it begins. */
+    private void startReplacing(String because)
+    {
+        if (!this.replacing) this.replacements.incrementAndGet();
+
+        this.replacing = true;
+        this.lostBecause = because;
     }
 
     /** A frame's command, as CS2Message reads it. */
@@ -509,7 +548,7 @@ public class NetworkProxy
             || sub == CS2Message.CMD_SYSSUB_TRAINSTOP;
     }
 
-    /** Whether a frame sent on the connection has gone unanswered for TCP_SUSPECT_MS.  Holds this. */
+    /** Whether a frame sent on the connection has gone unanswered for TCP_SUSPECT_MS.  Reads volatiles only. */
     private boolean suspect()
     {
         long first = this.firstUnansweredAt;
@@ -873,9 +912,9 @@ public class NetworkProxy
     }
 
     /**
-     * Writes a sensor query to the connection; false when it was not written.  Not counted as a command that may not
-     * have arrived, and no start of the answer clock: a resync runs again on the next live transport, and a query
-     * left unanswered says nothing of the connection.
+     * Writes a sensor query or the probe to the connection; false when it was not written.  Not counted as a command
+     * that may not have arrived, and no start of the answer clock: a resync runs again on the next live transport, and
+     * neither left unanswered says anything of the connection on its own.
      */
     private synchronized boolean sendQuery(byte[] query)
     {
@@ -893,8 +932,7 @@ public class NetworkProxy
         catch (IOException e)
         {
             // As in sendMessage: the listener, woken by the close, replaces the connection
-            this.replacing = true;
-            this.lostBecause = reasonOf(e);
+            startReplacing(reasonOf(e));
             closeQuietly(connection);
             return false;
         }
@@ -908,13 +946,34 @@ public class NetworkProxy
 
         model.logf("network.canListenerRunningTcp");
 
-        while (!this.stopRequested && (connection = this.tcp) != null)
+        try
         {
-            String reason = readUntilLost(connection, frame);
+            while (!this.stopRequested && (connection = this.tcp) != null)
+            {
+                String reason = readUntilLost(connection, frame);
 
-            if (this.stopRequested) return;
+                if (this.stopRequested) return;
 
-            recover(connection, reason);
+                recover(connection, reason);
+            }
+        }
+        catch (RuntimeException e)
+        {
+            // Nothing is left replacing the connection: UDP for the session, or autonomy would hold new routes for ever
+            closeQuietly(this.tcp);
+
+            synchronized (this)
+            {
+                this.tcp = null;
+                this.replacing = false;
+            }
+
+            // As recover does on its own move to UDP: what changed while UDP was set aside is asked again
+            setUdpLive(true);
+            resync(false, 2);
+            model.logf("network.tcpLostUsingUdp", reasonOf(e));
+
+            throw e;
         }
     }
 
@@ -954,7 +1013,17 @@ public class NetworkProxy
 
                     long first = this.firstUnansweredAt;
 
-                    if (first != 0 && first - this.lastHeardAt > 0 && System.nanoTime() - first > TCP_ANSWER_LIMIT_MS * 1000000L)
+                    // On a thread of its own, as the write may wait behind a send stuck on a hung station
+                    if (first != this.probed && suspect())
+                    {
+                        this.probed = first;
+                        Thread probe = new Thread(() -> sendQuery(PROBE), "cs2-tcp-probe");
+                        probe.setDaemon(true);
+                        probe.start();
+                    }
+
+                    // Else: after a whole-program pause the probe gets its own wake before the limit is asked
+                    else if (first != 0 && first - this.lastHeardAt > 0 && System.nanoTime() - first > TCP_ANSWER_LIMIT_MS * 1000000L)
                     {
                         return I18n.f("network.tcpNoAnswer", TCP_ANSWER_LIMIT_MS / 1000);
                     }
@@ -995,8 +1064,7 @@ public class NetworkProxy
 
         synchronized (this)
         {
-            this.replacing = true;
-            this.lostBecause = null;
+            startReplacing(null);
             forgetReceived();
             cutOff = this.unconfirmed.size();
             this.unconfirmed.clear();

@@ -36,6 +36,8 @@ New hand-written windows take these rather than setting fonts and colors themsel
 - **The warning triangle**, `RowIcons.warning(16)`, sits right of a field to flag something to look at, and its
   tooltip says what: Locomotive Settings shows it beside `Address` when another locomotive shares the address, and
   Station Settings beside a setting the stations picked disagree on. It appears by itself, with no button to ask for it.
+  It also marks a problem inside a button: `Power OFF` wears it, with a tooltip saying why, while the Central Station
+  isn't answering, and drops it when answers return.
   `RowIcons` also has the row marks (trash, copy, plus, arrows, grip) the same windows use.
 
 ## The reference screen

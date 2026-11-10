@@ -137,6 +137,138 @@ public class testStationSettingsWindow
     }
 
     /**
+     * A key step in Home or May depart only shows a choice: an arrow asks nothing and changes no setup, and Escape puts
+     * the list back with the window still open.  Enter applies what May depart shows.
+     *
+     * MUTATION: have `StationWindowBase.Choice.fireActionEvent` ignore `quiet`, and this fails.
+     */
+    @Test(timeOut = 120000)
+    public void testAKeyStepInHomeOrMayDepartChangesNothing() throws Exception
+    {
+        StationSettingsWindow window = StationDoors.open(panel, aStation());
+
+        for (String name : new String[] {"station.home", "station.depart.0"})
+        {
+            javax.swing.JComboBox<?> list = StationDoors.part(window, name, javax.swing.JComboBox.class);
+
+            assertTrue(StationDoors.live(window, name) && Components.onTheEventThread(list::getItemCount) > 1,
+                "precondition: " + name + " offers no choice");
+
+            Object was = Components.onTheEventThread(list::getSelectedItem);
+            int key = Components.onTheEventThread(() -> list.getSelectedIndex() < list.getItemCount() - 1)
+                ? java.awt.event.KeyEvent.VK_DOWN : java.awt.event.KeyEvent.VK_UP;
+
+            String before = setup();
+
+            try (Answering answering = Answering.start(message -> null))
+            {
+                support.Keys.press(list, key);
+
+                assertNotEquals(Components.onTheEventThread(list::getSelectedItem), was, "precondition: the arrow did not step "
+                    + name);
+                assertEquals(answering.asked(), java.util.Collections.emptyList(), "an arrow in " + name + " asked");
+                assertEquals(setup(), before, "an arrow in " + name + " changed the setup");
+
+                support.Keys.press(list, java.awt.event.KeyEvent.VK_ESCAPE);
+            }
+
+            assertEquals(Components.onTheEventThread(list::getSelectedItem), was, "Escape did not put " + name + " back");
+            assertTrue(Components.onTheEventThread(window::isShowing), "Escape on a stepped " + name + " closed the window");
+        }
+
+        String before = setup();
+        Object was = stepMayDepart(window);
+
+        try (Answering answering = Answering.start(message -> null))
+        {
+            support.Keys.press(StationDoors.part(window, "station.depart.0", javax.swing.JComboBox.class),
+                java.awt.event.KeyEvent.VK_ENTER);
+        }
+
+        assertNotEquals(setup(), before, "Enter on May depart changed nothing");
+        assertNotEquals(mayDepartShows(window), was, "Enter on May depart did not keep the choice");
+
+        StationDoors.close(window);
+    }
+
+    /**
+     * A choice stepped to in May depart is put back, applying nothing, when another window is clicked: the click there
+     * is not held up by this window, and the editor's Save saves what the list then shows.
+     *
+     * MUTATION: have the window's focus listener settle the lists (`commitFields` alone), and this fails.
+     */
+    @Test(timeOut = 120000)
+    public void testAChoiceShownIsPutBackWhenAnotherWindowIsClicked() throws Exception
+    {
+        StationSettingsWindow window = StationDoors.open(panel, aStation());
+
+        String before = setup();
+        Object was = stepMayDepart(window);
+
+        assertEquals(setup(), before, "precondition: the arrow changed the setup");
+
+        StationDoors.toAnotherWindow(window, StationDoors.part(window, "station.depart.0", javax.swing.JComboBox.class));
+
+        assertEquals(mayDepartShows(window), was, "another window clicked left May depart showing a choice not made");
+
+        StationDoors.close(window);
+
+        assertEquals(setup(), before, "another window clicked applied the choice shown in May depart");
+    }
+
+    /**
+     * A run starting while May depart shows a stepped choice builds the lists again; the old list's choice is dropped,
+     * not applied, so no "no edits while running" message comes up over the run.
+     *
+     * MUTATION: let `StationWindowBase.Choice.settle` act for a list no longer on screen, and this fails.
+     */
+    @Test(timeOut = 180000)
+    public void testARunStartingWhileAChoiceIsSteppedAsksNothing() throws Exception
+    {
+        StationSettingsWindow window = StationDoors.open(panel, aStation());
+
+        javax.swing.JComboBox<?> stepped = StationDoors.part(window, "station.depart.0", javax.swing.JComboBox.class);
+
+        StationDoors.step(stepped);
+
+        String before = setup();
+
+        try (Answering answering = Answering.start(message -> null))
+        {
+            regression.testNoSetupEditWhileARouteRuns.aRouteRuns(ui, true);
+
+            assertTrue(Components.waitFor(() -> Components.onTheEventThread(() -> !stepped.isDisplayable()), 5000),
+                "precondition: the run did not build May depart again");
+
+            // The list taken away had the keyboard, and loses it for good
+            StationDoors.loseKeyboard(stepped, false, null);
+
+            assertEquals(answering.asked(), java.util.Collections.emptyList(), "a run starting with May depart stepped asked");
+        }
+        finally
+        {
+            regression.testNoSetupEditWhileARouteRuns.aRouteRuns(ui, false);
+        }
+
+        assertEquals(setup(), before, "a run starting with May depart stepped wrote the choice");
+
+        StationDoors.close(window);
+    }
+
+    /** Steps May depart's first list; what it showed before. */
+    private static Object stepMayDepart(StationSettingsWindow window)
+    {
+        return StationDoors.step(StationDoors.part(window, "station.depart.0", javax.swing.JComboBox.class));
+    }
+
+    /** What May depart's first list shows now (the list is built again after a change). */
+    private static Object mayDepartShows(StationSettingsWindow window)
+    {
+        return Components.onTheEventThread(() -> StationDoors.part(window, "station.depart.0", javax.swing.JComboBox.class)
+            .getSelectedItem());
+    }
+
+    /**
      * Every kind of square reads the same way: opened and closed, a sensor with no settings stays as it was too.
      *
      * MUTATION: have `fillHome`'s `setSelectedItem` run outside `reading`, so `pressHome` writes, and this fails.
@@ -476,17 +608,7 @@ public class testStationSettingsWindow
 
         assertEquals(session.getPointProperty(square, "maxTrainLength"), before, "typing applied the length before leaving");
 
-        Components.onTheEventThread(() ->
-        {
-            for (java.awt.event.FocusListener each : field.getFocusListeners())
-            {
-                each.focusLost(new java.awt.event.FocusEvent(field, java.awt.event.FocusEvent.FOCUS_LOST));
-            }
-
-            return null;
-        });
-
-        Components.settle();
+        StationDoors.loseKeyboard(field, false, null);
 
         assertEquals(numberOf(session.getPointProperty(square, "maxTrainLength")), 37.0, "leaving did not apply the length");
 
@@ -512,15 +634,7 @@ public class testStationSettingsWindow
         TileKey square = aStation();
 
         String mine = session.getStore().getPointName(square);
-
-        String other = null;
-
-        for (TileKey each : session.getStore().getNamedTiles())
-        {
-            if (!each.equals(square)) other = session.getStore().getPointName(each);
-        }
-
-        assertNotNull(other, "precondition: no other named square");
+        String other = anotherSquaresName(square);
 
         StationSettingsWindow window = StationDoors.open(panel, square);
 
@@ -543,6 +657,46 @@ public class testStationSettingsWindow
         assertEquals(session.getStore().getPointName(square), "A Name Nobody Has", "the new name was not written");
 
         assertFalse(visible(window, "station.nameProblem"), "the reason stayed after the fix");
+    }
+
+    /**
+     * Closing the window with a refused name still in its field applies a choice stepped in May depart too: the lists
+     * are settled before the typed fields try again and read the setup back.
+     *
+     * MUTATION: settle the lists after the typed fields in `StationSettingsWindow.commitFields`, and this fails.
+     */
+    @Test(timeOut = 120000)
+    public void testClosingWithARefusedNameAppliesAChoiceStepped() throws Exception
+    {
+        TileKey square = aStation();
+
+        StationSettingsWindow window = StationDoors.open(panel, square);
+
+        StationDoors.typeAndEnter(window, "station.name", anotherSquaresName(square));
+
+        assertTrue(visible(window, "station.nameProblem"), "precondition: the taken name was not refused");
+
+        String before = setup();
+
+        stepMayDepart(window);
+        StationDoors.close(window);
+
+        assertNotEquals(setup(), before, "closing with a refused name showing dropped the choice stepped in May depart");
+    }
+
+    /** The name of a named square other than this one. */
+    private static String anotherSquaresName(TileKey square)
+    {
+        String other = null;
+
+        for (TileKey each : session.getStore().getNamedTiles())
+        {
+            if (!each.equals(square)) other = session.getStore().getPointName(each);
+        }
+
+        assertNotNull(other, "precondition: no other named square");
+
+        return other;
     }
 
     // ------------------------------------------------------------------------------------------------------ Which Trains

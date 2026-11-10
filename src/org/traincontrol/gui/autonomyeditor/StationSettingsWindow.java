@@ -121,7 +121,7 @@ public final class StationSettingsWindow extends StationWindowBase
     private final JLabel exitGuard = value("station.exitGuard");
     private final JLabel entryGuard = value("station.entryGuard");
 
-    private final JComboBox<String> home = new JComboBox<String>()
+    private final Choice home = new Choice(at -> pressHome())
     {
         @Override
         public Dimension getPreferredSize()
@@ -509,7 +509,6 @@ public final class StationSettingsWindow extends StationWindowBase
         entryGuardChange.addActionListener(e -> pressGuard(AutonomyEditorPanel.Guard.ENTRY));
 
         home.setName("station.home");
-        home.addActionListener(e -> pressHome());
         rowOf("autosetup.ui.stationHome", "home", home, null, stopSection);
         perStation.addAll(rowsFrom(row - 1));
         fly("home", AutonomyEditorPanel.wrapped(I18n.t("autosetup.ui.stationHomeTip")));
@@ -639,7 +638,7 @@ public final class StationSettingsWindow extends StationWindowBase
         typedRow(labelKey, markName, part, leftAligned(part), section, stored,
             (each, typed) -> editor.applyNumber(each, property, blankIsZero(typed), 0));
 
-        mixedMarks.get(part).setToolTipText(AutonomyEditorPanel.wrapped(mixedTip(blankKey)));
+        mixedMarks.get(part).setToolTipText(mixedTip(blankKey));
     }
 
     /**
@@ -737,7 +736,7 @@ public final class StationSettingsWindow extends StationWindowBase
         g.dispose();
 
         out.setDisabledIcon(new javax.swing.ImageIcon(javax.swing.GrayFilter.createDisabledImage(drawn)));
-        out.setToolTipText(AutonomyEditorPanel.wrapped(mixedTip()));
+        out.setToolTipText(mixedTip());
         out.setBorder(javax.swing.BorderFactory.createEmptyBorder(0, 6, 0, 0));
         out.setVisible(false);
 
@@ -915,6 +914,9 @@ public final class StationSettingsWindow extends StationWindowBase
     @Override
     void commitFields()
     {
+        // The lists first: a refused field tries again and reads the setup back over a choice stepped
+        super.commitFields();
+
         if (tile == null) return;
 
         for (JTextField part : new ArrayList<>(storedValues.keySet())) commit(part);
@@ -1105,14 +1107,17 @@ public final class StationSettingsWindow extends StationWindowBase
         for (JComponent part : perStation) part.setVisible(!many && (advancedOpen || !advancedRows.contains(part)));
     }
 
+    /** Says they differ, wrapped as every (i) is; and how to set them all, for a field a blank leaves alone. */
     private static String mixedTip()
     {
-        return I18n.t("autosetup.ui.stationMixedTip");
+        return mixedTip(null);
     }
 
     private static String mixedTip(String blankKey)
     {
-        return mixedTip() + "  " + I18n.t(blankKey);
+        String said = I18n.t("autosetup.ui.stationMixedTip");
+
+        return AutonomyEditorPanel.wrapped(blankKey == null ? said : said + "  " + I18n.t(blankKey));
     }
 
     /** Leaves none of a row's radios chosen, which a group allows only by being told. */
@@ -1260,7 +1265,8 @@ public final class StationSettingsWindow extends StationWindowBase
 
             Direction current = TileGraph.inForce(session.directionAsDrawn(tile, entry.getKey()), route);
 
-            final JComboBox<String> choice = new JComboBox<>(labels.toArray(new String[0]));
+            final JComboBox<String> choice = new Choice(at -> actAlone(() -> editor.setRunDirection(tile, entry.getKey(),
+                answers.get(at))), labels.toArray(new String[0]));
 
             choice.setName("station.depart." + y);
             choice.setEnabled(live && carries);
@@ -1268,15 +1274,6 @@ public final class StationSettingsWindow extends StationWindowBase
             if (answers.contains(current)) choice.setSelectedIndex(answers.indexOf(current));
 
             if (said == null) said = String.valueOf(choice.getSelectedItem());
-
-            choice.addActionListener(e ->
-            {
-                if (reading) return;
-
-                final Direction picked = answers.get(choice.getSelectedIndex());
-
-                actAlone(() -> editor.setRunDirection(tile, entry.getKey(), picked));
-            });
 
             GridBagConstraints c = at(0, y++);
 
@@ -1341,8 +1338,6 @@ public final class StationSettingsWindow extends StationWindowBase
 
     private void pressHome()
     {
-        if (reading) return;
-
         final String chosen = (String) home.getSelectedItem();
         final String picked = home.getSelectedIndex() <= 0 ? null : chosen;
 

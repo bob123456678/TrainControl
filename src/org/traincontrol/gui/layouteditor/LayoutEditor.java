@@ -4347,10 +4347,23 @@ public class LayoutEditor extends PositionAwareJFrame
             }
         }
 
-        java.util.List<String> pages = parent.getModel().getLayoutList();
+        new FindAPointPrompt(this, this::findablePoints, tile ->
+        {
+            if (!isAutonomyMode() || switching || changingPage) return;
+
+            autonomyPanel.goToNotice(tile, new java.util.ArrayList<>());
+        }).setVisible(true);
+    }
+
+    /** The named points as they are now; one on a page that is not there to open is left out. */
+    private java.util.List<FindAPointPrompt.Entry> findablePoints()
+    {
         java.util.List<FindAPointPrompt.Entry> points = new java.util.ArrayList<>();
 
-        // A point on a page that is not there to open is left out
+        if (!isAutonomyMode() || parent == null || parent.getModel() == null) return points;
+
+        java.util.List<String> pages = parent.getModel().getLayoutList();
+
         for (java.util.Map.Entry<org.traincontrol.automationui.TileGraph.TileKey, String> named
             : autonomyPanel.namedPoints().entrySet())
         {
@@ -4360,10 +4373,7 @@ public class LayoutEditor extends PositionAwareJFrame
             }
         }
 
-        new FindAPointPrompt(this, points, tile ->
-        {
-            if (isAutonomyMode()) autonomyPanel.goToNotice(tile, new java.util.ArrayList<>());
-        }).setVisible(true);
+        return points;
     }
 
     private javax.swing.JMenuItem pageMenuItem(String key, Runnable action)

@@ -77,3 +77,4 @@ It also produces something else the suite has never had by hand: **a split squar
 - `core.testStandingRulesAnswerAsTheDoorsDo`
 - `ui.testPageLinksGoByPageId`
 - `ui.testAShortCircuitCutsThePower`
+- `ui.testTheWindowShowsTheConnection`

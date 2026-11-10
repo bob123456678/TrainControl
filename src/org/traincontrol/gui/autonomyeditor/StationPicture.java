@@ -14,7 +14,6 @@ import java.awt.event.MouseEvent;
 import java.awt.geom.Ellipse2D;
 import java.awt.geom.Line2D;
 import java.awt.geom.Path2D;
-import java.awt.image.BufferedImage;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumMap;
@@ -25,7 +24,6 @@ import java.util.TreeSet;
 import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
-import javax.swing.JComponent;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import org.traincontrol.automation.StandingRules;
@@ -617,7 +615,8 @@ final class StationPicture extends JPanel
                 {
                     Rectangle at = cell(each.getKey());
 
-                    inGray(g2, each.getValue(), at);
+                    // Without color, so a signal's lamps are not read as the station's arrows.
+                    org.traincontrol.util.ImageUtil.inGray(g2, at, each.getValue()::paint);
 
                     TileAnnotation their = nextMarks.get(each.getKey());
 
@@ -657,33 +656,5 @@ final class StationPicture extends JPanel
                 g2.dispose();
             }
         }
-    }
-
-    /** A next square's art without its color, so a signal's lamps are not read as the station's arrows. */
-    private static void inGray(Graphics2D g, JComponent part, Rectangle at)
-    {
-        double scale = Math.max(1, g.getTransform().getScaleX());
-
-        BufferedImage image = new BufferedImage((int) Math.ceil(at.width * scale), (int) Math.ceil(at.height * scale),
-            BufferedImage.TYPE_INT_ARGB);
-
-        Graphics2D on = image.createGraphics();
-
-        on.scale(scale, scale);
-        part.paint(on);
-        on.dispose();
-
-        for (int y = 0; y < image.getHeight(); y++)
-        {
-            for (int x = 0; x < image.getWidth(); x++)
-            {
-                int argb = image.getRGB(x, y);
-                int light = (((argb >> 16) & 0xff) * 299 + ((argb >> 8) & 0xff) * 587 + (argb & 0xff) * 114) / 1000;
-
-                image.setRGB(x, y, (argb & 0xff000000) | light << 16 | light << 8 | light);
-            }
-        }
-
-        g.drawImage(image, at.x, at.y, at.width, at.height, null);
     }
 }

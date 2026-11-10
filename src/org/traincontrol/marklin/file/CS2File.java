@@ -678,17 +678,17 @@ public final class CS2File
     }
 
     /**
-     * Whether some record of the locomotive list cannot be told by its internal name and name, which the members of a
-     * multi-unit and the locomotives of a route are named by: then a member or a locomotive that is not found may be
-     * that record, and what names it is left as it is (FR-169).
+     * Whether some record of the locomotive list lacks one of the keys as text; with "internname" and "name", which the
+     * members of a multi-unit and the locomotives of a route are named by, a member or a locomotive that is not found
+     * may be that record, and what names it is left as it is (FR-169).
      */
-    private static boolean hasUnnameableRecord(JSONArray locomotives)
+    private static boolean hasUnnameableRecord(JSONArray locomotives, String... keys)
     {
         for (int i = 0; i < locomotives.length(); i++)
         {
             JSONObject loc = locomotives.optJSONObject(i);
 
-            if (loc == null || text(loc, "internname") == null || text(loc, "name") == null) return true;
+            if (loc == null || Arrays.stream(keys).anyMatch(k -> text(loc, k) == null)) return true;
         }
 
         return false;
@@ -1318,8 +1318,8 @@ public final class CS2File
         return new ArrayList<>(this.unreadableRouteIds);
     }
 
-    // Whether a route of the last parse that would not read has no id to keep it by, and how many records of routes and
-    // locomotives would not read
+    // Whether a route of the last parse that would not read has no id to keep it by, and how many skipped records of
+    // routes and locomotives the start-up warns of
     private boolean unreadableRouteWithoutId;
 
     private int unreadableRecords;
@@ -1330,17 +1330,32 @@ public final class CS2File
         return this.unreadableRouteWithoutId;
     }
 
-    /** How many route and locomotive records the parsers had to skip. */
+    /** How many skipped route and locomotive records the start-up warns of (countUnreadable). */
     public int getUnreadableRecords()
     {
         return this.unreadableRecords;
     }
 
+    /** What skips a unit or route held back because it may name a record that would not read (FR-169). */
+    private static final class HeldBack extends JSONException
+    {
+        HeldBack(String message)
+        {
+            super(message);
+        }
+    }
+
+    /** A skipped record is warned of when held back or not of the shape read; one whose keys fail is logged alone. */
+    private void countUnreadable(RuntimeException e)
+    {
+        if (e instanceof HeldBack || e instanceof ClassCastException) this.unreadableRecords++;
+    }
+
     /**
      * The name of the locomotive a route item names, or null with a warning if the list has none by that name; if some
-     * record of the list would not read, it may be that one, and the route is skipped instead (FR-169).
+     * record of the list would not read, it may be that one, and the route is skipped with `heldBack` instead (FR-169).
      */
-    private String routeLocomotiveName(JSONObject item, JSONArray locs, boolean unnameable)
+    private String routeLocomotiveName(JSONObject item, JSONArray locs, JSONException heldBack)
     {
         JSONObject found = this.getCS3LocById(item.getString("lok"), locs);
 
@@ -1349,9 +1364,9 @@ public final class CS2File
             return found.getString("name");
         }
 
-        if (unnameable)
+        if (heldBack != null)
         {
-            throw new JSONException("the locomotive may be a record that would not read");
+            throw heldBack;
         }
 
         logMessage(I18n.f("route.warningLocomotiveNotExistInDb", item.getString("lok")));
@@ -1363,7 +1378,11 @@ public final class CS2File
         this.cs3Mags = mags;
         this.unreadableRouteIds.clear();
         this.unreadableRouteWithoutId = false;
-        boolean unnameable = hasUnnameableRecord(locs);
+
+        // A route held back while some record has no internal name is logged alone, as such a route always was (FR-169)
+        String why = "the locomotive may be a record that would not read";
+        JSONException heldBack = !hasUnnameableRecord(locs, "internname", "name") ? null
+            : hasUnnameableRecord(locs, "internname") ? new JSONException(why) : new HeldBack(why);
 
         if (locs.isEmpty())
         {
@@ -1388,17 +1407,11 @@ public final class CS2File
                     {
                         JSONObject item = items.getJSONObject(j);
 
-                        // An item says what it is, and a train command names its locomotive
-                        String itemType = item.getString("typ");
-
-                        if (("speed".equals(itemType) || "dir".equals(itemType)) && !item.has("lok"))
-                        {
-                            throw new JSONException("a train command names no locomotive");
-                        }
-
+                        // An item of no known type, or a train command without its locomotive, is left out, as a func
+                        // item is; a train command must say what it is, or its route is skipped
                         if (item.has("lok") && "speed".equals(item.getString("typ")) && item.has("lok"))
                         {
-                            String locName = routeLocomotiveName(item, locs, unnameable);
+                            String locName = routeLocomotiveName(item, locs, heldBack);
 
                             if (locName != null)
                             {
@@ -1426,31 +1439,13 @@ public final class CS2File
                         // icon, which is non-unique).
                         else if (item.has("lok") && "dir".equals(item.getString("typ")) && item.has("lok"))
                         {
-                            String locName = routeLocomotiveName(item, locs, unnameable);
+                            String locName = routeLocomotiveName(item, locs, heldBack);
 
                             if (locName != null)
                             {
-                                // wert is 1 for backward and 0 for forward, as a number or as text, and omitted for forward
-                                // like the other defaults; any other value does not say which way, and its route is skipped
-                                Locomotive.locDirection dir = Locomotive.locDirection.DIR_FORWARD;
-                                double wert = 0;
-
-                                if (item.has("wert"))
-                                {
-                                    Object given = item.get("wert");
-                                    wert = given instanceof Number ? ((Number) given).doubleValue()
-                                        : Double.parseDouble(String.valueOf(given).trim());
-                                }
-
-                                if (wert != 0 && wert != 1)
-                                {
-                                    throw new JSONException("a direction is 0 or 1");
-                                }
-
-                                if (wert == 1)
-                                {
-                                    dir = Locomotive.locDirection.DIR_BACKWARD;
-                                }
+                                // wert 1, as a number or as text, is backward; 0, omitted or any other value is forward
+                                Locomotive.locDirection dir = item.optDouble("wert", 0) == 1
+                                    ? Locomotive.locDirection.DIR_BACKWARD : Locomotive.locDirection.DIR_FORWARD;
 
                                 RouteCommand rc = RouteCommand.RouteCommandLocomotiveDirection(locName, dir);
 
@@ -1641,7 +1636,7 @@ public final class CS2File
                 catch (NumberFormatException | JSONException | ClassCastException e)
                 {
                     JSONObject skipped = routeList.optJSONObject(i);
-                    this.unreadableRecords++;
+                    countUnreadable(e);
 
                     if (skipped != null && skipped.optInt("id", Integer.MIN_VALUE) != Integer.MIN_VALUE)
                     {
@@ -1698,8 +1693,7 @@ public final class CS2File
         
         Map<String, String> internalNames = new HashMap<>();
         
-        // For multi-units, we need to parse the internal CS3 locomotive names.  A record with no name or internal name is
-        // warned of in the loop below.
+        // For multi-units, we need to parse the internal CS3 locomotive names
         for (int i = 0 ; i < locomotiveList.length(); i++)
         {
             JSONObject loc = locomotiveList.optJSONObject(i);
@@ -1710,16 +1704,13 @@ public final class CS2File
             }
         }
 
-        boolean unnameable = hasUnnameableRecord(locomotiveList);
-        
+        boolean unnameable = hasUnnameableRecord(locomotiveList, "internname", "name");
+
         for (int i = 0 ; i < locomotiveList.length(); i++)
         {
             try
             {
                 JSONObject loc = locomotiveList.getJSONObject(i);
-
-                // What names it for a multi-unit and a route: a record without it is skipped, as one without a uid is
-                loc.getString("internname");
 
                 Integer uid = Integer.decode(loc.getString("uid"));
 
@@ -1750,7 +1741,7 @@ public final class CS2File
                             JSONObject entry = trakObj.getJSONObject(key);
 
                             // Extract the locomotive identifier
-                            String identifier = entry.getString("lokname");
+                            String identifier = entry.optString("lokname", null);
 
                             if (internalNames.containsKey(identifier))
                             {
@@ -1760,12 +1751,12 @@ public final class CS2File
                             else
                             {
                                 // Not found because its record would not read: the unit is skipped, keeping its members
-                                if (unnameable) throw new JSONException("a member may be a record that would not read");
+                                if (unnameable) throw new HeldBack("a member may be a record that would not read");
 
                                 logMessage(
                                     I18n.f("loc.warningUnmatchedMultiUnitIdentifier", identifier)
                                 );
-                            }   
+                            }
                         }
                     }
                     // CS3 v2.5.x and older
@@ -1782,11 +1773,11 @@ public final class CS2File
                             else
                             {
                                 // Not found because its record would not read: the unit is skipped, keeping its members
-                                if (unnameable) throw new JSONException("a member may be a record that would not read");
+                                if (unnameable) throw new HeldBack("a member may be a record that would not read");
 
                                 logMessage(
                                     I18n.f("loc.warningUnmatchedMultiUnitIdentifier", identifier)
-                                );                        
+                                );
                             }
                         }
                     }
@@ -1867,7 +1858,7 @@ public final class CS2File
             }
             catch (NumberFormatException | JSONException | ClassCastException e)
             {
-                this.unreadableRecords++;
+                countUnreadable(e);
 
                 logMessage(
                     I18n.f("loc.invalidCs3Locomotive",

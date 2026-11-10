@@ -26,15 +26,15 @@ import support.StationRig;
  *
  * Each test syncs well, arms the routes, and keeps what is held (support.HeldState).  Then a mutated answer is served:
  * the sync must succeed and leave what is held as it was where the answer could not be read, and a good sync must give
- * the right result again.  A list that cannot be read, or has no way to match its records, skips that import whole; a
- * record missing what it needs is skipped alone.
+ * the right result again.  A list that cannot be read, or has no way to match its records, skips that import whole and
+ * the sync says so; a record missing what it needs is skipped alone with its log line, and the sync says so only of a
+ * unit or route held back because it may name a record that would not read.
  *
  * MUTATION (each test names what it finds): CS2File.readList returning an empty list instead of throwing
- * UnreadableAnswerException; reading `funktionen` with optJSONArray, a multi-unit's `lokname` or `dectyp` with
- * optString; skipping the record-level answer in parseLocomotivesCS3 or parseRoutesCS3; reading a `typ` with optString
- * or dropping the missing-`lok` check; unlocking routes whatever skipped (canTellDeleted); dropping the partial flag;
- * accepting a route list with switch items and none carrying `stellung`, or six empty routes; reading the direction 1.5
- * as backward, or refusing a direction left out.
+ * UnreadableAnswerException; reading `funktionen` with optJSONArray, or `dectyp` with optString; skipping the
+ * record-level answer in parseLocomotivesCS3 or parseRoutesCS3; reading a `typ` with optString; unlocking routes
+ * whatever skipped (canTellDeleted); dropping the partial flag; accepting a route list with switch items and none
+ * carrying `stellung`, or six empty routes; reading the direction 1.5 as backward, or refusing a direction left out.
  *
  * @author Adam
  */
@@ -311,25 +311,26 @@ public class testACS3ReadersSurviveFirmwareChanges
         });
     }
 
-    /** A record missing what it needs is skipped, with one warning, and the one held is not touched. */
+    /** A record missing what it needs is skipped, with one warning in the log only, and the one held is not touched. */
     @Test
     public void testALocomotiveThatCannotBeReadIsSkippedAndTheHeldOneKept() throws Exception
     {
         onHeld((rig, replaced, held) ->
         {
-            String[] keys = {"uid", "name", "dectyp", "funktionen", "typ", "typ2", "isMoment", "dauer", "lokname"};
+            String[] keys = {"uid", "name", "dectyp", "funktionen", "typ", "typ2", "isMoment", "dauer"};
 
             for (String key : keys)
             {
                 for (int mode : new int[] {0, 1, 2})
                 {
                     assertHeldUnchanged(rig, replaced, held, key + ", mode " + mode,
-                        only(LOCOS, mutated(read(LOCS[1]), key, mode)));
+                        only(LOCOS, mutated(read(LOCS[1]), key, mode)), false);
                 }
             }
 
             // A multi-unit's members are the whole of its entry: one entry that will not read skips the unit
-            assertHeldUnchanged(rig, replaced, held, "traktion retyped", only(LOCOS, mutated(read(LOCS[1]), "traktion", 2)));
+            assertHeldUnchanged(rig, replaced, held, "traktion retyped", only(LOCOS, mutated(read(LOCS[1]), "traktion", 2)),
+                false);
 
             // An icon is not needed: a locomotive without one keeps the one it holds
             assertHeldUnchanged(rig, replaced, held, "icon removed", only(LOCOS, mutated(read(LOCS[1]), "icon", 0)), false);
@@ -355,19 +356,54 @@ public class testACS3ReadersSurviveFirmwareChanges
         {
             String routes = routeAnswer();
 
-            // A key retyped, or an item without its type or its locomotive.  A key removed or renamed in every item cannot
-            // be told from a station that leaves it out for its default, so those are not asked here.
+            // A key retyped.  A key removed or renamed in every item cannot be told from a station that leaves it out
+            // for its default, so those are not asked here; a train command without its locomotive is left out of the
+            // route (testACS3SyncTakesWhatItTookBefore), and an item without its type is asked below.
             for (String key : new String[] {"stellung", "magnetartikel", "typ", "lok", "items"})
             {
                 for (int mode = 0; mode < MODES; mode++)
                 {
-                    boolean left = mode <= 1 && ("stellung".equals(key) || "magnetartikel".equals(key)) || mode == 5 && "items".equals(key);
+                    boolean left = mode <= 1 && ("stellung".equals(key) || "magnetartikel".equals(key) || "lok".equals(key)
+                        || "typ".equals(key)) || mode == 5 && "items".equals(key);
 
                     // (not to another valid article number: that is another article)
                     if (!left && !("magnetartikel".equals(key) && mode == 2))
                     {
-                        assertHeldUnchanged(rig, replaced, held, key + ", mode " + mode, only(ROUTES, mutated(routes, key, mode)));
+                        assertHeldUnchanged(rig, replaced, held, key + ", mode " + mode, only(ROUTES, mutated(routes, key, mode)),
+                            false);
                     }
+                }
+            }
+
+            // Items without their type are passed over, as 3.0.8 did: a route of switches alone is imported without them,
+            // one that drives a train is skipped, and nothing is said at start-up.  A good sync brings the items back; a
+            // route whose trigger sensor was passed over stays unarmed, as in 3.0.8.
+            Map<String, List<Object>> commands = new ConcurrentHashMap<>();
+
+            for (MarklinRoute r : rig.model.getRoutes()) commands.put(r.getName(), new ArrayList<>(r.getRoute()));
+
+            JSONArray answered = listOf(new JSONTokener(routes).nextValue());
+
+            for (int mode = 0; mode <= 1; mode++)
+            {
+                assertTrue(syncWith(rig, replaced, only(ROUTES, mutated(routes, "typ", mode))) >= 0);
+                assertFalse(rig.model.wasLastSyncPartial(), "items without their type are not warned of, mode " + mode);
+
+                for (int i = 0; i < answered.length(); i++)
+                {
+                    String name = answered.getJSONObject(i).getString("name");
+                    boolean drives = answered.getJSONObject(i).getJSONArray("items").toString().contains("\"lok\"");
+
+                    assertEquals(new ArrayList<Object>(rig.model.getRoute(name).getRoute()),
+                        drives ? commands.get(name) : new ArrayList<>(), name + ", mode " + mode);
+                }
+
+                assertTrue(rig.model.syncWithCS2() >= 0);
+
+                for (MarklinRoute r : rig.model.getRoutes())
+                {
+                    assertEquals(new ArrayList<Object>(r.getRoute()), commands.get(r.getName()), "a good sync after it"
+                        + " gives the items back, " + r.getName() + ", mode " + mode);
                 }
             }
 
@@ -421,14 +457,14 @@ public class testACS3ReadersSurviveFirmwareChanges
                 assertTrue(rig.model.syncWithCS2() >= 0);
                 replaced.clear();
 
-                assertTrue(rig.model.wasLastSyncPartial(), "the sync says part could not be read (" + junk + ")");
+                assertFalse(rig.model.wasLastSyncPartial(), "a record that will not read is said in the log only (" + junk + ")");
                 assertTrue(rig.model.getRoute(gone).isLocked(), "the route the station may or may not have is left locked (" + junk + ")");
                 assertTrue(rig.model.syncWithCS2() >= 0);
             }
         });
     }
 
-    /** One locomotive record without its internal name is skipped alone: its unit and the routes naming it wait, the rest is read. */
+    /** One locomotive record without its internal name is imported: its unit and the routes naming it wait, the rest is read. */
     @Test
     public void testOneLocomotiveWithoutAnInternalNameCostsOnlyWhatNamesIt() throws Exception
     {
@@ -462,16 +498,16 @@ public class testACS3ReadersSurviveFirmwareChanges
         try (StationRig rig = rig(served))
         {
             assertTrue(rig.model.syncWithCS2() >= 0);
-            assertEquals(rig.model.getLocomotives().size(), goodLocomotives - 1, "every other locomotive is imported");
-            assertEquals(rig.model.getRoutes().size(), goodRoutes - 1, "and every other route, but the one naming it");
-            assertTrue(rig.model.wasLastSyncPartial());
-            assertEquals(rig.takeLog().stream().filter(l -> l.contains("could not be parsed")).count(), 2, "a warning for the locomotive and one for the route");
+            assertEquals(rig.model.getLocomotives().size(), goodLocomotives, "every locomotive is imported");
+            assertEquals(rig.model.getRoutes().size(), goodRoutes - 1, "and every route but the one naming it");
+            assertFalse(rig.model.wasLastSyncPartial(), "which is said in the log only");
+            assertEquals(rig.takeLog().stream().filter(l -> l.contains("could not be parsed")).count(), 1, "a warning for the route");
         }
 
         // A database holding them all: the held locomotive, the unit that may name it, and the route are as they were
         onHeld((rig, replaced, held) ->
         {
-            assertHeldUnchanged(rig, replaced, held, "one locomotive without an internal name", only(LOCOS, bytes(locs)));
+            assertHeldUnchanged(rig, replaced, held, "one locomotive without an internal name", only(LOCOS, bytes(locs)), false);
 
             // A unit's member without one: the units that name it keep their members, the others are read
             JSONArray members = new JSONArray(read(LOCS[1]));
@@ -585,29 +621,28 @@ public class testACS3ReadersSurviveFirmwareChanges
         }
     }
 
-    /** A direction is 0 or 1, as a number or as text, and omitted for forward; any other value keeps the held route. */
+    /** A direction of 1, as a number or as text, is backward; one left out (as firmware leaves a default out) or any other is forward. */
     @Test
-    public void testADirectionThatCannotBeReadKeepsTheHeldRoute() throws Exception
+    public void testADirectionIsBackwardOnlyAtOne() throws Exception
     {
         onHeld((rig, replaced, held) ->
         {
             String routes = routeAnswer();
 
-            for (Object wert : new Object[] {"x", 2, 1.5})
-            {
-                assertHeldUnchanged(rig, replaced, held, "direction " + wert, only(ROUTES, withDirection(routes, wert)));
-            }
-
             // The number 1 means backward, as the text "1" does
             assertHeldUnchanged(rig, replaced, held, "direction 1", only(ROUTES, withDirection(routes, 1)), false);
-
-            // One that is left out is forward, as real firmware leaves a default out: the route is read, not skipped
             assertTrue(held.contains("DIRECTION=DIR_BACKWARD") && !held.contains("DIRECTION=DIR_FORWARD"));
-            replaced.putAll(only(ROUTES, withDirection(routes, null)));
-            assertTrue(rig.model.syncWithCS2() >= 0);
-            replaced.clear();
-            assertFalse(rig.model.wasLastSyncPartial(), "a direction left out is read");
-            assertTrue(state(rig).contains("DIRECTION=DIR_FORWARD"), "as forward");
+
+            for (Object wert : new Object[] {null, 0, "x", 2, 1.5})
+            {
+                replaced.putAll(only(ROUTES, withDirection(routes, wert)));
+                assertTrue(rig.model.syncWithCS2() >= 0);
+                replaced.clear();
+                assertFalse(rig.model.wasLastSyncPartial(), "direction " + wert + " is read");
+                assertTrue(state(rig).contains("DIRECTION=DIR_FORWARD") && !state(rig).contains("DIRECTION=DIR_BACKWARD"),
+                    "as forward: " + wert);
+                assertTrue(rig.model.syncWithCS2() >= 0);
+            }
         });
     }
 

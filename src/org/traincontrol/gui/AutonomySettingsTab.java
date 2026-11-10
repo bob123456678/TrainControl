@@ -142,7 +142,7 @@ final class AutonomySettingsTab
     {
         letGo(evt, () ->
         {
-            // Not without lengths (Adam): asked only when switching OFF; going back to atomic is always safe.
+            // Only switching OFF can be refused (while lengths are missing); going back to atomic is always safe.
             if (!this.ui.atomicRoutes().isSelected())
             {
                 String why = this.ui.whyNonAtomicRoutesAreRefused();

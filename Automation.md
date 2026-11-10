@@ -120,7 +120,7 @@ The window is titled "Autonomy Editor: *page* (*configuration*)", naming the pag
 
 1. **`Editing`**: `Track Diagram` and `Autonomy Setup` switch between drawing track and setting up autonomy, on the same page. With two or more pages, a `Page` list above it goes from page to page.
 2. **The message strip** says what just happened and what to do next.
-3. **Your diagram.** Click track to set which way trains may run; right-click any square for everything else. Hover over a station to see its name.
+3. **Your diagram.** Click track to set which way trains may run; right-click any square for everything else. Hover over a station to see its name. Signals and lamps are drawn in gray to keep the picture simple; while you pick a guard signal, the signals you can pick are in color.
 4. **Things to look at** lists what the [setup check](#the-setup-check) has found. Click a finding to go to its square, or double-click it (or press Control+O) to open that station's `Station Settings`. The `Filter` box above the list narrows it as you type: it matches any part of a row's words, ignoring capitals, and the counts elsewhere still count everything.
 5. **The line under it** says whether the setup is ready to run.
 6. **`Autonomy Tools`**: `Test a path` and `Why not Moving?`; see [the tools](#the-tools-test-a-path-why-not-moving-one-way-run).
@@ -171,13 +171,13 @@ With no tool armed, a left-click on track changes which way trains may run on it
 
 ## The right-click menu
 
-Right-click any square for everything else. In the autonomy editor the menu opens with the square's name or kind as a heading; on the track diagram a station's name heads the station's own items. The menu offers only what makes sense there. Settings on plain track act on the whole run. Nothing in it can be changed while autonomy or a route is busy, except `Is Active` on the track diagram; `Station Settings` and the train window open then, but read only.
+Right-click any square for everything else. In the autonomy editor the menu opens with the square's name or kind as a heading; on the track diagram a station's name heads the station's own items. The menu offers only what makes sense there. Settings on plain track act on the whole run. Nothing in it can be changed while trains are running (autonomy, a timetable, a route, a train you sent or Return Home), except `Is Active` on the track diagram; `Station Settings` and the train window open then, but read only, except `Active` in the train window opened from the track diagram.
 
 ### On a sensor or a station
 
 | Item | What it does |
 | --- | --- |
-| *train* `Is Active` | Untick it to pause the train: autonomy and Return Home then leave it where it stands. On the track diagram it is on the menu while autonomy or a route runs too, and then pauses that train alone, as the pause button on the train's card on the Auto tab does |
+| *train* `Is Active` | Untick it to pause the train: autonomy and Return Home then leave it where it stands. On the track diagram it is on the menu while trains are running too, and then pauses that train alone, as the pause button on the train's card on the Auto tab does |
 | `Change Direction (now facing` *East* `)` | Turns the train standing here around in one click. If you are not sure which way it faces, leave it: autonomy corrects it the first time the train runs. Grayed out, with the reason, where the track lets a train face only one way or no track leads out |
 | `Change Arrived From (currently` *West* `)` | Changes the side the train came in by, which is where its tail lies, to the other side in one click. Where there is no single other side, it opens a list of the sides |
 | *train*`'s Tail Reaches Back To...` | Only where it matters: which sensor behind the train its tail has crossed. `Pick on the diagram...` lets you click it |
@@ -244,10 +244,10 @@ On a station with a train on it, `Change Train at` *station* `...` opens a windo
 
 - `Train`: the locomotive standing here. Pick another to put it here, or `(none)` to take it off.
 - `Locomotive Settings...`: opens the `Autonomy` tab of that locomotive's `Locomotive Settings`: its `Train Length`, `Reversible`, `Active`, and the `Departure Function` and `Arrival Function` switched as it sets off and arrives.
-- `Active`: untick it to pause the train, as on its card on the Auto tab. It also works while autonomy runs.
+- `Active`: untick it to pause the train, as on its card on the Auto tab. On the track diagram it also works while trains are running (autonomy, a timetable, a route, a train you sent or Return Home), and then pauses that train alone.
 - `Facing`, `Arrived` and `Tail lies`: which way the train points, which side it came in by and where its tail lies, as `Change Direction` and `Change Arrived From` above set them. `Pick...`, in the autonomy editor, lets you click the sensor.
 
-Putting a train here asks which way it came in, and where its tail lies, in the same way as the other ways of placing one. While autonomy runs everything in the window is read only except `Active`.
+Putting a train here asks which way it came in, and where its tail lies, in the same way as the other ways of placing one. While trains are running (autonomy, a timetable, a route, a train you sent or Return Home), everything in the window is read only, except `Active` in the window opened from the track diagram.
 
 ### On track, switches and signals
 
@@ -704,7 +704,7 @@ The log is verbose about all of this too, and worth reading: it names the train,
 
 **The track power is off.** Start, Execute Timetable, Return Home and every train you send by hand are refused until it is on: "To start autonomy, please turn the track power on, or cycle the power." If the power goes off while autonomy, a timetable or Return Home is already running, nothing new is sent, the log says autonomy is waiting for the power, and the run carries on by itself once the power is back. This includes a short circuit: when the Central Station cuts the power after one, TrainControl shows the power as off and a warning names the output that tripped.
 
-**The connection to the Central Station was lost.** TrainControl talks to a CS3 over TCP. If that connection drops (a network cable pulled, say), every command goes over UDP at once instead, while TrainControl tries to reconnect over TCP three times; if it can't, it stays on UDP until you restart it. Nothing is held back or sent again, because the handset or another computer may have commanded the train since: the log only counts the commands that may not have arrived. While it reconnects, autonomy, a timetable and Return Home start no new trip, a train you send is refused with the reason in the log, and trains already on their way carry on. The log says when trips are held and when they start again.
+**The connection to the Central Station was lost.** TrainControl talks to a CS3 over TCP, and if the CS3 won't take TCP it uses UDP instead, which can add up to 2 seconds to starting up. If that connection drops (a network cable pulled, say, or the CS3 answering nothing for 3 seconds after a command), every command goes over UDP at once instead, while TrainControl tries to reconnect over TCP three times; if it can't, it stays on UDP until you restart it. Nothing is held back or sent again, because the handset or another computer may have commanded the train since: the log only counts the commands that may not have arrived. While it reconnects, autonomy, a timetable and Return Home start no new trip, a train you send is refused with the reason in the log, and trains already on their way carry on. The log says when trips are held and when they start again. While the Central Station isn't answering, `Power OFF` in the main window shows a warning triangle, and once TrainControl has gone over to UDP for good, the network latency reads `(UDP)`.
 
 **The autonomy editor is open.** No train is sent while it is open. Save or Cancel first.
 

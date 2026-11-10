@@ -159,7 +159,7 @@ public class AutonomyBuilder
     private static final List<String> DERIVED = Arrays.asList("terminus", "reversing");
 
     /**
-     * The key of a list a square remembers while Which Trains says All (FR-111): the setup's alone, never emitted, so
+     * The key of a list a square remembers while Allowed trains says All (FR-111): the setup's alone, never emitted, so
      * the list keeps nobody out and an older build, which does not know the key, reads the square as open to all.
      */
     public static final String REMEMBERED_LOCS = "rememberedLocs";

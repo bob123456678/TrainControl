@@ -243,14 +243,76 @@ public class testTheLocomotiveSettingsSync extends support.SettingsClass
     }
 
     /**
-     * A sync reloads the whole window from the locomotive and overwrites what was typed: the typed name and the edited
-     * Functions table are replaced by the synced values, Save goes gray, and the tab selected and the window's place
-     * stay.
+     * Sync over typing not saved asks first, as Close does: Cancel syncs nothing and keeps the typing, the Notes
+     * included, which only TrainControl holds.
+     *
+     * MUTATION: drop the `settleUnsaved` from `LocomotiveSettingsFrame.syncNow`, and this fails.
+     */
+    @Test
+    public void testSyncAsksBeforeItDropsTheTyping() throws Exception
+    {
+        connected(true);
+
+        JButton button = sync();
+
+        awaitLook(() -> Components.onTheEventThread(button::isEnabled));
+
+        SettingsWindow.type("settings.name", "SY typed name");
+
+        Components.onTheEventThread(() ->
+        {
+            SettingsWindow.part("notes.text", javax.swing.JTextArea.class).setText("SY typed notes");
+
+            return null;
+        });
+
+        int address = loc.getAddress();
+
+        assertTrue(loc.setAddress(address + 1, decoderType.DCC), "precondition: the address was refused");
+
+        LocomotiveSettingsFrame.unsavedAnswerForTest = 2;
+
+        try
+        {
+            Components.press(sync());
+
+            Components.drain(2);
+
+            assertFalse(Components.waitFor(() -> SettingsWindow.text("settings.address").equals(Integer.toString(loc.getAddress())),
+                2000), "Cancel on the question went on to sync");
+            assertEquals(SettingsWindow.text("settings.name"), "SY typed name", "the sync dropped the typed name");
+            assertEquals(Components.onTheEventThread(SettingsWindow.part("notes.text", javax.swing.JTextArea.class)::getText),
+                "SY typed notes", "the sync dropped the typed notes");
+        }
+        finally
+        {
+            LocomotiveSettingsFrame.unsavedAnswerForTest = null;
+        }
+    }
+
+    /**
+     * A sync reloads the whole window from the locomotive and overwrites what was typed, when Discard is the answer to
+     * the question: the typed name and the edited Functions table are replaced by the synced values, Save goes gray,
+     * and the tab selected and the window's place stay.
      *
      * MUTATION: keep dirty fields and tabs in `LocomotiveSettingsFrame.afterSync` (rebuild nothing), and this fails.
      */
     @Test
     public void testSyncReloadsTheWholeWindowOverTheTyping() throws Exception
+    {
+        LocomotiveSettingsFrame.unsavedAnswerForTest = 1;
+
+        try
+        {
+            syncOverTheTyping();
+        }
+        finally
+        {
+            LocomotiveSettingsFrame.unsavedAnswerForTest = null;
+        }
+    }
+
+    private void syncOverTheTyping() throws Exception
     {
         connected(true);
 

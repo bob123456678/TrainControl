@@ -368,6 +368,117 @@ public class testTheFunctionButtonMenu
     }
 
     /**
+     * A train deselected while its picture task runs: the task runs to its end, here saying the picture is missing,
+     * as it reads the shown train once; a second read would end it with a NullPointerException first.  The train
+     * deselects itself when the task first asks for its picture, once the render that queued the task is done.
+     *
+     * MUTATION: in `TrainControlUI.renderActiveLoc`'s picture task, read `this.activeLoc.getImageURL()` again after
+     * the null test, and this fails.
+     */
+    @Test
+    public void testATrainDeselectedWhileItsPictureLoadsLeavesNoError() throws Exception
+    {
+        javax.swing.JTextArea area = support.WindowField.of(ui, "debugArea");
+        final String missing = new File(folder, "deselected meanwhile.png").toURI().toString();
+        final java.util.concurrent.atomic.AtomicBoolean deselected = new java.util.concurrent.atomic.AtomicBoolean();
+        final Object shownWas = Reflect.get(TrainControlUI.class, ui, "activeLoc");
+
+        // Named as the class's train, so the render finds it in the model
+        MarklinLocomotive train = new MarklinLocomotive(model, ADDRESS, MarklinLocomotive.decoderType.MM2, NAME)
+        {
+            @Override
+            public String getImageURL()
+            {
+                if (onThePictureTask() && deselected.compareAndSet(false, true))
+                {
+                    try
+                    {
+                        SwingUtilities.invokeAndWait(() -> { });
+                        Reflect.set(TrainControlUI.class, ui, "activeLoc", null);
+                    }
+                    catch (InterruptedException | ReflectiveOperationException e)
+                    {
+                        throw new IllegalStateException(e);
+                    }
+                }
+
+                return missing;
+            }
+        };
+
+        try
+        {
+            Reflect.set(TrainControlUI.class, ui, "activeLoc", train);
+            ui.repaintLoc(true, null);
+
+            // The window keeps only its latest lines, so the file's own line is looked for, not what came after a mark
+            boolean ended = Components.waitFor(() -> Components.onTheEventThread(area::getText)
+                .contains(I18n.f("loc.ui.errorImageLoad", missing)), WAIT);
+
+            assertTrue(deselected.get(), "precondition: the picture task never asked for the train's picture");
+            assertTrue(ended, "a train deselected while its picture loaded ended the picture task before it loaded the"
+                + " picture, with an error");
+        }
+        finally
+        {
+            Reflect.set(TrainControlUI.class, ui, "activeLoc", shownWas);
+            ui.repaintLoc(true, null);
+        }
+    }
+
+    /** Whether the caller is the active train's picture task: a window task off the event thread, not a key's. */
+    private static boolean onThePictureTask()
+    {
+        if (SwingUtilities.isEventDispatchThread()) return false;
+
+        boolean inATask = false;
+
+        for (StackTraceElement frame : Thread.currentThread().getStackTrace())
+        {
+            if (frame.getMethodName().contains("repaintIcon")) return false;
+
+            inATask |= frame.getClassName().equals(TrainControlUI.class.getName())
+                && frame.getMethodName().startsWith("lambda$");
+        }
+
+        return inATask;
+    }
+
+    /**
+     * A picture that will not decode shows the placeholder, as a train with no picture does, with no error in the log
+     * window.
+     *
+     * MUTATION: in `TrainControlUI.repaintLoc`'s picture task, hand `getLocImageMaxHeight`'s null to `ImageIcon`.
+     */
+    @Test
+    public void testAPictureThatWillNotDecodeShowsThePlaceholder() throws Exception
+    {
+        final javax.swing.JLabel shown = support.WindowField.of(ui, "locIcon");
+        File text = new File(folder, "not a picture.png");
+
+        java.nio.file.Files.write(text.toPath(), "not a picture".getBytes(java.nio.charset.StandardCharsets.US_ASCII));
+
+        String imageWas = loc.getImageURL();
+
+        loc.setImageURL(text.toURI().toString());
+
+        try
+        {
+            SwingUtilities.invokeAndWait(() -> shown.setIcon(null));
+            ui.repaintLoc(true, null);
+
+            Components.waitFor(() -> shown.getIcon() != null, WAIT);
+
+            assertNotNull(shown.getIcon(), "a picture that will not decode showed nothing, not the placeholder: its"
+                + " task ended with an error");
+        }
+        finally
+        {
+            loc.setImageURL(imageWas);
+        }
+    }
+
+    /**
      * A train with no saved speed preset has nothing to apply: the menu item is grayed and says why.
      *
      * MUTATION: drop the `getPreferredSpeed() < 1` test in `RightClickMenuListener`, and this fails.

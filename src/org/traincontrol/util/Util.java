@@ -16,9 +16,11 @@ import java.net.URLConnection;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.StandardCopyOption;
+import java.text.Normalizer;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 import java.util.function.IntConsumer;
 import org.json.JSONObject;
@@ -855,5 +857,27 @@ public class Util
         int byLength = (a.length() - i) - (b.length() - j);
 
         return byLength != 0 ? byLength : a.compareTo(b);
+    }
+
+    /**
+     * Names by their letters, the same on every machine.  Both are put in lower case, lose the accents Unicode splits
+     * off ("\u00d6lberg" among the O's), and have \u00df, \u00e6, \u0153, \u00fe, \u00f0, \u0111, \u00f8 and \u0142 written as
+     * ss, ae, oe, th, d, d, o and l ("Stra\u00dfe" beside "Strasse"); then they compare character by character, so a
+     * space comes before any letter ("Main Yard" before "Mainline").  Callers break the ties.
+     *
+     * @param a one name
+     * @param b the other
+     * @return negative, zero or positive, as Comparator
+     */
+    public static int byLetters(String a, String b)
+    {
+        return plain(a).compareTo(plain(b));
+    }
+
+    private static String plain(String name)
+    {
+        return Normalizer.normalize(name.toLowerCase(Locale.ROOT), Normalizer.Form.NFD).replaceAll("\\p{M}", "")
+            .replace("\u00df", "ss").replace("\u00e6", "ae").replace("\u0153", "oe").replace("\u00fe", "th")
+            .replace("\u00f0", "d").replace("\u0111", "d").replace("\u00f8", "o").replace("\u0142", "l");
     }
 }

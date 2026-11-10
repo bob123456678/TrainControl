@@ -10,7 +10,6 @@ import javax.swing.ButtonGroup;
 import javax.swing.DefaultComboBoxModel;
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
-import javax.swing.JComboBox;
 import javax.swing.JComponent;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
@@ -34,7 +33,7 @@ public final class TrainWindow extends StationWindowBase
 {
     private static final Font REGULAR = new Font("Segoe UI", Font.PLAIN, 14);
 
-    private final JComboBox<String> train = new JComboBox<>();
+    private final Choice train = new Choice(at -> pressTrain());
     private final JButton settings = new JButton(I18n.t("autosetup.ui.trainLocomotiveSettings"),
         RowIcons.wrench(16, new java.awt.Color(110, 110, 110)));
 
@@ -63,7 +62,6 @@ public final class TrainWindow extends StationWindowBase
         form.setName("train.form");
 
         train.setName("train.train");
-        train.addActionListener(e -> pressTrain());
 
         settings.setName("train.settings");
         settings.putClientProperty("JButton.buttonType", "toolBarButton");
@@ -83,7 +81,7 @@ public final class TrainWindow extends StationWindowBase
         formRow(form, y++, UiStyle.blackLabel(I18n.t("autosetup.ui.trainArrived")), arrivedMark, arrived, 1);
         formRow(form, y, tailLabel, tailMark, tail, 1);
 
-        // Bottom left, on Done Editing's row (Adam)
+        // Locomotive settings sit at the bottom left, on Done Editing's row
         assemble(form).add(settings, java.awt.BorderLayout.WEST);
     }
 
@@ -124,8 +122,8 @@ public final class TrainWindow extends StationWindowBase
 
         active.setSelected(going);
 
-        // Not while nothing stands here; the one control autonomy running leaves live, as the train's card does
-        active.setEnabled(standing != null && (!readOnly || autonomyRuns()));
+        // Not while nothing stands here; on the track diagram, the one control a run leaves live (FR-187)
+        active.setEnabled(standing != null && (!readOnly || pausesAlone()));
 
         // Every (i) explains its row in every state (OB-429)
         activeMark.setToolTipText(standing == null ? StationFlyovers.noTrain("autosetup.ui.flyActiveMeans")
@@ -150,11 +148,15 @@ public final class TrainWindow extends StationWindowBase
         shown = signature(standing, model);
     }
 
-    private boolean autonomyRuns()
+    /**
+     * Whether Active pauses the train alone, as the diagram's Is Active does: a run holds the setup and no editor does,
+     * whose draft would undo a pause it does not hold.
+     */
+    private boolean pausesAlone()
     {
         TrainControlUI main = editor.parentWindow();
 
-        return main != null && main.getModel() != null && main.getModel().isAutonomyRunning();
+        return editor.menuOnly && main != null && !main.isLayoutEditorOpen() && main.aRunHoldsTheSetup();
     }
 
     private Locomotive train(String name)
@@ -306,8 +308,6 @@ public final class TrainWindow extends StationWindowBase
 
     private void pressTrain()
     {
-        if (reading) return;
-
         final int at = train.getSelectedIndex();
         final String chosen = (String) train.getSelectedItem();
 
@@ -343,14 +343,13 @@ public final class TrainWindow extends StationWindowBase
         final String standing = editor.tileMenus.trainStanding(tile);
         final Locomotive model = train(standing);
         final boolean on = active.isSelected();
-        final TrainControlUI main = editor.parentWindow();
 
         if (standing == null) return;
 
-        if (isReadOnly() && model != null && main != null)
+        if (model != null && pausesAlone())
         {
-            // While autonomy runs: the train alone, as its card's pause button does (FR-059)
-            main.pauseTrainWhileRunning(model, !on);
+            // Decided at the click, as the diagram's Is Active is: during a run, the train alone (FR-059)
+            editor.parentWindow().pauseTrainWhileRunning(model, !on);
         }
         else
         {

@@ -164,6 +164,105 @@ public class testFindAPoint
     }
 
     /**
+     * The prompt reads the points when it is used, not as it opened: a point renamed while it is open is found by its
+     * new name and no longer by its old one, and choosing the old row goes nowhere.
+     *
+     * MUTATION: have `FindAPointPrompt` keep the points it opened with, and this fails.
+     */
+    @Test
+    public void testThePromptReadsThePointsWhenItIsUsed() throws Exception
+    {
+        LayoutEditor editor = anAutonomyEditor(PAGE);
+
+        String renamed = "Qx Renamed Siding";
+
+        // The editor's own setup, which it copied as it opened
+        AutonomySession editing = (AutonomySession) Reflect.get(AutonomyEditorPanel.class, editor.getAutonomyPanel(),
+            "session");
+
+        try
+        {
+            JDialog prompt = pressControlF(editor);
+
+            type(prompt, "qx here");
+
+            assertEquals(rows(prompt), java.util.Arrays.asList(rowOf(HERE, here)), "precondition: the list typed to \"qx here\"");
+
+            support.Components.onTheEventThread(() -> { editing.getStore().setPointName(here, renamed); return null; });
+
+            // Enter on the row read before the rename: the prompt reads again rather than go to a name now gone
+            support.Keys.press(boxOf(prompt), KeyEvent.VK_ENTER);
+
+            assertTrue(prompt.isShowing(), "Enter went to a point by the name it no longer has");
+            assertTrue(rows(prompt).isEmpty(), "the old name is still listed: " + rows(prompt));
+
+            type(prompt, "renamed");
+
+            assertEquals(rows(prompt), java.util.Arrays.asList(rowOf(renamed, here)), "the new name is not found");
+        }
+        finally
+        {
+            support.Components.onTheEventThread(() -> { editing.getStore().setPointName(here, HERE); return null; });
+
+            closeThem();
+        }
+    }
+
+    /**
+     * The points are listed by their letters, as Sort Pages orders pages (`Util.byLetters`): a space counts, so "Main
+     * Yard" comes before "Mainline", and "\u00d6lberg" sorts among the O's, before "Zebra", on a machine set to Swedish too.
+     *
+     * MUTATION: compare the names with `compareToIgnoreCase` in `FindAPointPrompt.narrow`, and this fails.
+     */
+    @Test
+    public void testThePointsAreListedByTheirLetters() throws Exception
+    {
+        LayoutEditor editor = anAutonomyEditor(PAGE);
+
+        AutonomySession editing = (AutonomySession) Reflect.get(AutonomyEditorPanel.class, editor.getAutonomyPanel(),
+            "session");
+
+        TileKey[] tiles = {twinThere, here, there, twinHere};
+        String[] names = {"Qy Zebra", "Qy Mainline", "Qy \u00d6lberg", "Qy Main Yard"};
+
+        java.util.Locale was = java.util.Locale.getDefault();
+
+        try
+        {
+            java.util.Locale.setDefault(new java.util.Locale("sv"));
+
+            support.Components.onTheEventThread(() ->
+            {
+                for (int i = 0; i < tiles.length; i++) editing.getStore().setPointName(tiles[i], names[i]);
+
+                return null;
+            });
+
+            JDialog prompt = pressControlF(editor);
+
+            type(prompt, "qy");
+
+            assertEquals(rows(prompt), java.util.Arrays.asList(rowOf(names[3], twinHere), rowOf(names[1], here),
+                rowOf(names[2], there), rowOf(names[0], twinThere)), "the points are not in their letters' order");
+        }
+        finally
+        {
+            java.util.Locale.setDefault(was);
+
+            support.Components.onTheEventThread(() ->
+            {
+                String[] named = {TWIN, HERE, THERE, TWIN};
+
+                for (int i = 0; i < tiles.length; i++) editing.getStore().setPointName(tiles[i], named[i]);
+
+                return null;
+            });
+
+            closeThem();
+        }
+    }
+
+    /**
      * Choosing a point on another page opens that page's editor with the square outlined and flashing.
      *
      * MUTATION: in `LayoutEditor.findAPoint`, call `autonomyPanel.outlineTheNotice(tile, null)` in place of `goToNotice`,

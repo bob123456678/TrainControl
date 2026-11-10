@@ -141,6 +141,7 @@ import org.traincontrol.gui.widgets.BackupAction;
 import org.traincontrol.gui.widgets.BusyDialog;
 import org.traincontrol.gui.widgets.DetailsArea;
 import org.traincontrol.gui.widgets.HandScrollListener;
+import org.traincontrol.gui.widgets.RowIcons;
 import org.traincontrol.gui.widgets.PositionAwareJFrame;
 import org.traincontrol.gui.widgets.QuickFileChooser;
 import org.traincontrol.gui.widgets.RestoreAction;
@@ -554,11 +555,12 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             this.locomotiveSettings = new LocomotiveSettingsFrame(this);
         }
 
+        // Before aiming, which may ask about unsaved typing over it
+        this.locomotiveSettings.setAlwaysOnTop(asking.isAlwaysOnTop());
+
         if (!aim.test(this.locomotiveSettings)) return false;
 
-        this.locomotiveSettings.setAlwaysOnTop(asking.isAlwaysOnTop());
-        this.locomotiveSettings.setVisible(true);
-        this.locomotiveSettings.toFront();
+        this.locomotiveSettings.bringBack();
 
         return true;
     }
@@ -3712,7 +3714,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /** The same, said over the window a press read before it left the event thread. */
-    boolean refuseWhileEditorOpen(java.awt.Window asked)
+    public boolean refuseWhileEditorOpen(java.awt.Window asked)
     {
         return RunGates.refuseWhileEditorOpen(this, asked);
     }
@@ -4307,9 +4309,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         return roads == null ? java.util.Collections.<org.traincontrol.automationui.TileGraph.RouteId>emptySet() : roads;
     }
 
-    /**
-     * Delegates to `CoveredTrackView.refreshCoveredTrack`.
-     */
     void refreshCoveredTrack()
     {
         this.coveredTrackView.refreshCoveredTrack();
@@ -5580,20 +5579,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 {
                     try
                     {
-                        if (model.getTimeSinceLastPing() > 0 && model.getTimeSinceLastPing() > PING_INTERVAL)
-                        {
-                            javax.swing.SwingUtilities.invokeLater(() ->
-                            {
-                                latencyLabel.setText(
-                                    I18n.t("ui.labelLostNetworkConnection")
-                                );
-                                latencyLabel.setForeground(Color.red);
-                            });
-                            
-                            checkAutoLayoutLatency(PING_INTERVAL);
-                        }
-                        
-                        model.sendPing(false);
+                        watchTheConnection();
                     }
                     catch (Exception e)
                     {
@@ -6055,7 +6041,40 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
     
     /**
-     * Updates the latency value
+     * The ping timer's watch: pings unanswered past PING_INTERVAL show as a lost connection, and Power OFF wears the
+     * warning triangle while they go unanswered or the station is not answering on TCP.
+     */
+    private void watchTheConnection()
+    {
+        boolean lost = model.getTimeSinceLastPing() > 0 && model.getTimeSinceLastPing() > PING_INTERVAL;
+        boolean notAnswering = lost || model.isConnectionNotAnswering();
+
+        javax.swing.SwingUtilities.invokeLater(() ->
+        {
+            if (lost)
+            {
+                latencyLabel.setText(I18n.t("ui.labelLostNetworkConnection"));
+                latencyLabel.setForeground(Color.red);
+            }
+
+            warnOnStop(notAnswering);
+        });
+
+        if (lost) checkAutoLayoutLatency(PING_INTERVAL);
+
+        model.sendPing(false);
+    }
+
+    /** Power OFF wears the warning triangle while the station is not answering; its text, size and action stay. */
+    private void warnOnStop(boolean on)
+    {
+        this.PowerOff.setIcon(on ? RowIcons.warning(16) : null);
+        this.PowerOff.setToolTipText(on ? I18n.t("ui.main.tooltip.stationNotAnswering") : "Escape");
+    }
+
+    /**
+     * Updates the latency value, "(UDP)" after it once a CS3's TCP connection was given up, and takes the triangle off
+     * Power OFF once the station answers on TCP again.
      */
     @Override
     public void updateLatency(double latency)
@@ -6066,13 +6085,15 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             {
                 this.latencyLabel.setText(
                     I18n.f(
-                        "ui.labelNetworkLatency",
+                        this.model.isOnUdpInsteadOfTcp() ? "ui.labelNetworkLatencyUdp" : "ui.labelNetworkLatency",
                         (this.model.isCS3() ? "3" : "2"),
                         String.format("%.0f", latency)
                     )
                 );
 
                 this.latencyLabel.setForeground(latency > PING_ORANGE ? (latency > PING_RED ? Color.RED : Color.MAGENTA) : Color.BLACK);
+
+                warnOnStop(this.model.isConnectionNotAnswering());
             });
             
             this.checkAutoLayoutLatency(latency);
@@ -7650,19 +7671,22 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
                                 ImageLoaderLoc.execute(() ->
                                 {
-                                    // Deselected since this was queued: nothing to show (an error here now reaches the log)
-                                    if (this.activeLoc == null) return;
+                                    // Read once: the event thread can deselect it at any moment, and nothing is shown then
+                                    Locomotive shown = this.activeLoc;
 
-                                    if (LOAD_IMAGES && this.activeLoc.getImageURL() != null)
+                                    if (shown == null) return;
+
+                                    String url = shown.getImageURL();
+
+                                    if (LOAD_IMAGES && url != null)
                                     {
-                                        String url = this.activeLoc.getImageURL();
-
                                         try 
                                         {
-                                            ImageIcon icon = new javax.swing.ImageIcon(
-                                                getLocImageMaxHeight(this.activeLoc.getImageURL(), LOC_ICON_WIDTH, LOC_ICON_HEIGHT)
-                                                // getLocImage(this.activeLoc.getImageURL(), LOC_ICON_WIDTH)
-                                            );
+                                            Image picture = getLocImageMaxHeight(url, LOC_ICON_WIDTH, LOC_ICON_HEIGHT);
+
+                                            // A picture that will not decode shows the placeholder, as no picture does
+                                            ImageIcon icon = new javax.swing.ImageIcon(picture != null ? picture
+                                                : LocomotivePlaceholder.image(LOC_ICON_WIDTH));
                                             
                                             // If the network is laggy, this could show an icon even though no loc is selected
                                             // Check to ensure there is still an active loc and it hasn't changed
@@ -15175,9 +15199,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         return System.getProperty("os.name").startsWith("Windows");
     }
     
-    /**
-     * Delegates to `LayoutFileActions.initializeEmptyLayout`.
-     */
     private String initializeEmptyLayout(String folderName)
     {
         return this.layoutFileActions.initializeEmptyLayout(folderName);
@@ -15810,7 +15831,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             }, KEYBOARD_SWITCH_THREAD).start();
     }
 
-    /** The generated keys' handler: those keys are no longer shown, and the new ones go through `keyboardKeyClicked`. */
+    /** The generated keys' handler: these keys' clicks go through `keyboardKeyClicked`. */
     private void UpdateSwitchState(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_UpdateSwitchState
         javax.swing.JToggleButton b = (javax.swing.JToggleButton) evt.getSource();
 
@@ -16610,9 +16631,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         }
     }
 
-    /**
-     * Delegates to `ReturnHomeController.requestReturnToHome`.
-     */
     public void requestReturnToHome()
     {
         this.returnHomeController.requestReturnToHome();
@@ -16666,9 +16684,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         return this.gracefulStopRequested && isAutonomyBusy();
     }
 
-    /**
-     * Delegates to `ReturnHomeController.refreshReturnHomeButton`.
-     */
     void refreshReturnHomeButton()
     {
         this.returnHomeController.refreshReturnHomeButton();
@@ -16970,9 +16985,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         this.returnHomeButton.setToolTipText(AutonomyEditorPanel.wrapped(reason));
     }
 
-    /**
-     * Delegates to `ReturnHomeController.describeStagingOutcome`.
-     */
     String describeStagingOutcome(HomeStaging.Outcome outcome, List<Locomotive> blocked)
     {
         return this.returnHomeController.describeStagingOutcome(outcome, blocked);
@@ -17782,9 +17794,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         duplicateOrRenameCurrentLayout(newName, false, true, false);
     }//GEN-LAST:event_duplicateLayoutMenuItemActionPerformed
 
-    /**
-     * Delegates to `LayoutFileActions.combineLinkedPages`.
-     */
     private void combineLinkedPages()
     {
         this.layoutFileActions.combineLinkedPages(pageActionFrom);
@@ -19331,9 +19340,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         return true;
     }
     
-    /**
-     * Delegates to `AutonomySettingsTab.loadAutoLayoutSettings`.
-     */
     private void loadAutoLayoutSettings()
     {
         this.autonomySettingsTab.loadAutoLayoutSettings();

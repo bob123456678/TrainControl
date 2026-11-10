@@ -521,6 +521,20 @@ public class TileAnnotation
 
     private boolean stationless = false;
 
+    /** Has the square's own art drawn without color, as the editor draws its signals and lamps. */
+    public TileAnnotation inGray()
+    {
+        this.gray = true;
+        return this;
+    }
+
+    private boolean gray = false;
+
+    public boolean isInGray()
+    {
+        return gray;
+    }
+
     /** Whether this square is grayed for having no station on its track (OB-353). */
     public boolean isStationless()
     {
@@ -777,7 +791,7 @@ public class TileAnnotation
         // `editing` is deliberately NOT here, unlike in equals and hashCode: on its own it paints nothing (it only
         // says what color a badge is), so an annotation carrying it and nothing else is still blank.
         return marks.isEmpty() && length < 0 && !selected && badge == null && !ignored && !stationless
-            && traces.isEmpty() && arrivals.isEmpty() && !occupied && !unmeasured && toolMark == null;
+            && traces.isEmpty() && arrivals.isEmpty() && !occupied && !unmeasured && toolMark == null && !gray;
     }
 
     public List<Trace> getTraces()
@@ -2523,7 +2537,7 @@ public class TileAnnotation
             && portal == other.portal
             && traces.equals(other.traces) && blockedOnly == other.blockedOnly
             && occupied == other.occupied && editing == other.editing && unmeasured == other.unmeasured
-            && toolMark == other.toolMark
+            && toolMark == other.toolMark && gray == other.gray
             && allowedToo == other.allowedToo && allowedOnly == other.allowedOnly && bareSide == other.bareSide
             && marks.equals(other.marks) && arrivals.equals(other.arrivals);
     }
@@ -2537,7 +2551,7 @@ public class TileAnnotation
             + traces.hashCode() * 3
             + (blockedOnly ? 512 : 0) + (editing ? 2048 : 0) + (unmeasured ? 4096 : 0) + (allowedToo ? 8192 : 0) + (allowedOnly ? 16384 : 0)
             + (bareSide == null ? 0 : (bareSide.ordinal() + 1) * 32768) + (stationless ? 131072 : 0)
-            + arrivals.hashCode() * 7 + (toolMark == null ? 0 : (toolMark.ordinal() + 1) * 262144);
+            + arrivals.hashCode() * 7 + (toolMark == null ? 0 : (toolMark.ordinal() + 1) * 262144) + (gray ? 8 : 0);
     }
 
     @Override

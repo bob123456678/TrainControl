@@ -1070,6 +1070,8 @@ public final class LayoutLabel extends JLabel
         // Everything autonomy draws on top is painted at full strength afterwards.
         boolean refused = !edit && square != null && tcUI != null && tcUI.isTrackBlocked(square);
 
+        org.traincontrol.automationui.TileAnnotation annotation = autonomyAnnotation;
+
         if (refused)
         {
             // One road of a double curve, where that is what is covered (OB-207): a double curve is one tile with two
@@ -1117,13 +1119,18 @@ public final class LayoutLabel extends JLabel
 
             paintCurvedSensorsArrowsWhole(g);
         }
+        else if (annotation != null && annotation.isInGray() && flashTimer == null)
+        {
+            // Grayed as it is painted, so the shared icon keeps its color; a flash keeps its yellow.
+            ImageUtil.inGray((java.awt.Graphics2D) g, new java.awt.Rectangle(getWidth(), getHeight()),
+                art -> super.paintComponent(art));
+        }
         else
         {
             super.paintComponent(g);
         }
 
         TileOverlay overlay = autonomyOverlay;
-        org.traincontrol.automationui.TileAnnotation annotation = autonomyAnnotation;
 
         // The train first, under everything autonomy draws (MT-309): the arrows and the run line are more urgent and go
         // on top.  Except under a run line, where it is drawn again over the line (FR-106, below).

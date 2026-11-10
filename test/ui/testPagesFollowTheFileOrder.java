@@ -330,6 +330,114 @@ public class testPagesFollowTheFileOrder extends support.PageWindowTest
     }
 
     /**
+     * Sort Pages by Name sorts by the letters, capitals and accents aside: a page added as "apple yard" goes before one
+     * added as "Zebra", and "\u00d6lberg" between them, on any machine: here one set to Swedish, whose own order puts
+     * \u00d6 after Z.  A space counts: "Main Yard" comes before "Mainline".
+     *
+     * MUTATION: sort with `Collections.sort` alone, or `String.CASE_INSENSITIVE_ORDER`, in `LayoutFileActions.sorted`, and
+     * this fails.
+     */
+    @Test
+    public void testSortPagesByNameIgnoresCapitals() throws Exception
+    {
+        open(null);
+
+        edit("1 - Main");
+
+        String on = "1 - Main";
+
+        for (String name : new String[] {"Zebra", "\u00d6lberg", "Mainline", "Main Yard", "apple yard"})
+        {
+            try (Answering answering = Answering.start(message -> Answering.type(name)))
+            {
+                press(editorOn(on), "ui.main.toolbar.addBlackPage");
+
+                assertTrue(Components.waitFor(() -> namesInTheIndex().contains(name), 15000), "no page was added");
+            }
+
+            assertTrue(Components.waitFor(() -> editorOn(name) != null, 15000), "the editor did not show " + name);
+
+            Components.settle();
+
+            on = name;
+        }
+
+        javax.swing.JMenu tools = Components.find(editorOn(on), javax.swing.JMenu.class,
+            m -> I18n.t("layout.ui.menuTools").equals(m.getText()));
+
+        Components.press(tools);
+
+        java.util.Locale was = java.util.Locale.getDefault();
+        List<String> expected = new ArrayList<>(BY_NAME);
+
+        expected.addAll(Arrays.asList("apple yard", "Main Yard", "Mainline", "\u00d6lberg", "Zebra"));
+
+        try
+        {
+            java.util.Locale.setDefault(new java.util.Locale("sv"));
+
+            Components.press(Components.withText(editorOn(on), I18n.t("ui.main.toolbar.sortPages")));
+
+            assertTrue(Components.waitFor(() -> namesInTheIndex().equals(expected), 15000), "the index is not in the"
+                + " letters' order: " + namesInTheIndex());
+        }
+        finally
+        {
+            java.util.Locale.setDefault(was);
+        }
+    }
+
+    /**
+     * The letters' order is the same on a machine set to Swedish from the start: `Util` loaded afresh under that default
+     * still puts "Ölberg" among the O's, before "Zebra", with capitals aside: no default locale reaches `byLetters`.
+     *
+     * MUTATION: compare with a `Collator.getInstance()` in `Util.byLetters`, and this fails.
+     */
+    @Test
+    public void testTheLettersOrderIsTheSameOnAMachineSetToSwedish() throws Exception
+    {
+        java.util.Locale was = java.util.Locale.getDefault();
+
+        try
+        {
+            java.util.Locale.setDefault(new java.util.Locale("sv"));
+
+            try (java.net.URLClassLoader fresh = new java.net.URLClassLoader(new java.net.URL[] {
+                org.traincontrol.util.Util.class.getProtectionDomain().getCodeSource().getLocation(),
+                org.json.JSONObject.class.getProtectionDomain().getCodeSource().getLocation()},
+                ClassLoader.getSystemClassLoader().getParent()))
+            {
+                Class<?> util = Class.forName("org.traincontrol.util.Util", true, fresh);
+
+                assertTrue(util != org.traincontrol.util.Util.class, "precondition: Util was not loaded afresh");
+
+                java.lang.reflect.Method byLetters = util.getMethod("byLetters", String.class, String.class);
+
+                assertTrue((int) byLetters.invoke(null, "Ölberg", "Zebra") < 0, "Ölberg sorts after Zebra");
+                assertEquals((int) byLetters.invoke(null, "apple yard", "Apple Yard"), 0, "capitals are not aside");
+            }
+        }
+        finally
+        {
+            java.util.Locale.setDefault(was);
+        }
+    }
+
+    /**
+     * Letters with no accent to take off sort as the letters they stand for: "Stra\u00dfe" beside "Strasse" and before
+     * "Strasser", "\u00c6beltoft" among the A's, before "Bergen".
+     *
+     * MUTATION: drop the writing out of \u00df, \u00e6 and the like from `Util.byLetters`, and this fails.
+     */
+    @Test
+    public void testLettersWrittenAsTwoSortAsThoseTwo()
+    {
+        assertEquals(org.traincontrol.util.Util.byLetters("Stra\u00dfe", "Strasse"), 0, "Stra\u00dfe is not beside Strasse");
+        assertTrue(org.traincontrol.util.Util.byLetters("Stra\u00dfe", "Strasser") < 0, "Stra\u00dfe sorts after Strasser");
+        assertTrue(org.traincontrol.util.Util.byLetters("\u00c6beltoft", "Bergen") < 0, "\u00c6beltoft sorts after Bergen");
+    }
+
+    /**
      * On a Central Station layout (not the user's own folder) the arrows are refused as the other page edits are, and
      * nothing is written.
      *
