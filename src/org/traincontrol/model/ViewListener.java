@@ -167,8 +167,8 @@ public interface ViewListener
     /** How many replacements of that connection have begun: two reads tell whether one began and ended in between. */
     public int getReplacementEpoch();
 
-    /** Whether a CS3 is reached over UDP because its TCP connection was given up; never for a CS2. */
-    public boolean isOnUdpInsteadOfTcp();
+    /** The protocol frames go by, "TCP" or "UDP", or null with no station. */
+    public String getProtocol();
 
     /** Whether the station is not answering on TCP: a frame unanswered over a second, or the connection replaced. */
     public boolean isConnectionNotAnswering();

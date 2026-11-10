@@ -312,10 +312,11 @@ abstract class StationWindowBase extends JDialog
         if (getHeight() > 0 && getPreferredSize().height > getHeight()) pack();
     }
 
-    /** Names the stations picked together in the green banner at the top; null takes it down. */
-    final void sayWhichArePicked(String said)
+    /** Names the stations picked together in the green banner at the top, `tip` on hover; null takes it down. */
+    final void sayWhichArePicked(String said, String tip)
     {
         picked.setText(said == null ? "" : AutonomyEditorPanel.wrappedAt(said, stripWrapsAt));
+        picked.setToolTipText(tip);
 
         if (picked.isVisible() != (said != null))
         {

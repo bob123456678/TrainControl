@@ -1379,7 +1379,7 @@ public final class CS2File
         this.unreadableRouteIds.clear();
         this.unreadableRouteWithoutId = false;
 
-        // A route held back while some record has no internal name is logged alone, as such a route always was (FR-169)
+        // A route held back while some record has no internal name is logged alone (FR-169)
         String why = "the locomotive may be a record that would not read";
         JSONException heldBack = !hasUnnameableRecord(locs, "internname", "name") ? null
             : hasUnnameableRecord(locs, "internname") ? new JSONException(why) : new HeldBack(why);

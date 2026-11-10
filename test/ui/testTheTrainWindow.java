@@ -1533,7 +1533,7 @@ public class testTheTrainWindow
      * loc"), on the running menu and on the menu while a run holds the setup, and the window opens locked ("open
      * locked").
      *
-     * MUTATION: leave `addEditLocomotive` out of `addWhileRunning`, and this fails.
+     * MUTATION: leave `editLocomotiveItem` off the running menu, and this fails.
      */
     @Test(timeOut = 120000)
     public void testDuringARunTheDiagramsMenuStillEditsTheTrain() throws Exception
@@ -1603,9 +1603,9 @@ public class testTheTrainWindow
 
     /**
      * On the menu shown while autonomy runs, Edit <name>... is never in a group with the autonomy items (FR-182): not
-     * with Stop, Is Active or Train at.
+     * with Stop or Is Active.  Change Train at... is a hand door beside it, as on the menu at rest.
      *
-     * MUTATION: drop the divider before Edit in `LayoutRightclickAutonomyMenu.addWhileRunning`, and this fails.
+     * MUTATION: drop the divider before the hand doors in `LayoutRightclickAutonomyMenu`, and this fails.
      */
     @Test(timeOut = 120000)
     public void testDuringARunEditIsApartFromTheAutonomyItems() throws Exception
@@ -1623,12 +1623,109 @@ public class testTheTrainWindow
         java.util.List<String> edit = groupWith(groups, said("autolayout.ui.menuEditLocomotive", train));
 
         for (String autonomy : new String[] {I18n.t("autolayout.ui.menuStopAutonomyGracefully"),
-            said("autolayout.ui.menuLocomotiveActive", train),
-            said("autosetup.ui.menuChangeTrainAt", session.describeTile(full))})
+            said("autolayout.ui.menuLocomotiveActive", train)})
         {
             assertFalse(edit.contains(autonomy), "Edit is in a group with \"" + autonomy + "\" on the running menu: "
                 + groups);
         }
+    }
+
+    /**
+     * The menu while autonomy runs is ordered as the menu at rest is: no title row, the
+     * station's name heading Is Active and Station Settings..., then Change Train at... and Edit <name>... behind a
+     * divider.  The items both menus have stand in the same order and the same groups.
+     *
+     * MUTATION: put Station Settings... back behind a divider of its own at the end of the running menu, and this fails.
+     */
+    @Test(timeOut = 120000)
+    public void testTheRunningMenuIsOrderedAsTheMenuAtRest() throws Exception
+    {
+        TileKey full = aSquareWithATrain();
+
+        String train = session.getLocomotiveNameAt(full);
+
+        AskingWindows.showThePageOf(ui, full);
+
+        java.util.List<java.util.List<String>> atRest = groups(AskingWindows.menuOn(ui, ui, full));
+
+        Mouse.closeMenus();
+
+        JPopupMenu runningMenu = runningMenuOn(full);
+
+        java.util.List<String> shape = shape(runningMenu);
+        java.util.List<java.util.List<String>> running = groups(runningMenu);
+
+        Mouse.closeMenus();
+
+        assertEquals(shape.get(0), I18n.t("autolayout.ui.menuStopAutonomyGracefully"), "the running menu has a title row: "
+            + shape);
+
+        java.util.Set<String> both = new java.util.LinkedHashSet<>();
+
+        for (java.util.List<String> group : atRest) both.addAll(group);
+
+        java.util.Set<String> inRunning = new java.util.HashSet<>();
+
+        for (java.util.List<String> group : running) inRunning.addAll(group);
+
+        both.retainAll(inRunning);
+
+        for (String item : new String[] {said("autolayout.ui.menuLocomotiveActive", train),
+            I18n.t("autosetup.ui.menuStationSettings"), said("autosetup.ui.menuChangeTrainAt", session.describeTile(full)),
+            said("autolayout.ui.menuEditLocomotive", train)})
+        {
+            assertTrue(both.contains(item), "precondition: \"" + item + "\" is not on both menus: " + atRest + " and "
+                + running);
+        }
+
+        assertEquals(only(running, both), only(atRest, both), "the running menu's order or groups differ from the menu"
+            + " at rest for the items both have");
+    }
+
+    /**
+     * While autonomy runs, an empty station's menu offers no way to place a train there: neither Place a Locomotive
+     * Here... nor Place <the active locomotive>.
+     *
+     * MUTATION: drop `busy && locomotive == null` from the train window's line in `LayoutRightclickAutonomyMenu`, and
+     * this fails.
+     */
+    @Test
+    public void testTheRunningMenuPlacesNothingOnAnEmptyStation() throws Exception
+    {
+        TileKey empty = anEmptyStation();
+
+        AskingWindows.showThePageOf(ui, empty);
+
+        JPopupMenu running = runningMenuOn(empty);
+
+        Mouse.closeMenus();
+
+        assertFalse(AskingWindows.hasItem(running, I18n.t("autosetup.ui.menuPlaceHere")),
+            "the running menu over an empty station offers Place a Locomotive Here...");
+
+        if (ui.getActiveLoc() != null)
+        {
+            assertFalse(AskingWindows.hasItem(running, I18n.f("layout.ui.menuPlaceLocomotive", ui.getActiveLoc().getName())),
+                "the running menu over an empty station offers to place the active locomotive");
+        }
+    }
+
+    /** The menu's groups with only these items, empty groups left out. */
+    private static java.util.List<java.util.List<String>> only(java.util.List<java.util.List<String>> groups,
+        java.util.Set<String> items)
+    {
+        java.util.List<java.util.List<String>> out = new java.util.ArrayList<>();
+
+        for (java.util.List<String> group : groups)
+        {
+            java.util.List<String> kept = new java.util.ArrayList<>(group);
+
+            kept.retainAll(items);
+
+            if (!kept.isEmpty()) out.add(kept);
+        }
+
+        return out;
     }
 
     /**

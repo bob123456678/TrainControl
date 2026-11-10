@@ -593,9 +593,8 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
     }
 
     /**
-     * Asks what to do with typing that is not saved, over this window alone: the main window's Stop stays live.  A
-     * second door asking while the question is up brings it forward and goes no further.  True when the caller may go
-     * on.
+     * Asks what to do with unsaved typing, over this window alone so the main window's Stop stays live; a second ask
+     * while it is up only brings it forward.  True when the caller may go on.
      */
     private boolean settleUnsaved()
     {
@@ -931,9 +930,6 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
             trash.setContentAreaFilled(false);
             trash.addActionListener(e -> delete());
 
-            // The fields are at the tab's left edge under their heading, the picture at its right under its own, level
-            // with Name; the divider is midway between the address row and the next heading, the trash can at the lower
-            // left
             final Insets edge = new Insets(4, 4, 4, 6);
             final Insets inner = new Insets(4, 4, 4, 6);
 

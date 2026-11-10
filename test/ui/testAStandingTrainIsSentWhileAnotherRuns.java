@@ -237,7 +237,7 @@ public class testAStandingTrainIsSentWhileAnotherRuns
      * The menu over a standing train during a hand send offers no setup edit (FR-129): Is Active, which pauses the train
      * alone, and the read-only windows only.
      *
-     * MUTATION: add the facing items (`addAutonomyFacingItems`) in `addWhileRunning`, and this fails.
+     * MUTATION: add the facing items (`addAutonomyFacingItems`) to the running menu whatever holds the setup, and this fails.
      */
     @Test(timeOut = 300000)
     public void testNoSetupEditWhileATrainIsSentByHand() throws Exception
