@@ -2603,6 +2603,9 @@ public class testATrainIsDispatchedOnce
         Thread executor = new Thread(rail::executeTimetable, thread);
         executor.setDaemon(true);
         executor.start();
+
+        // The claims read a stopped run as given up, so the run must be under way first
+        assertTrue(until(rail::isAutoRunning, 5000), "precondition: " + thread + " did not start");
     }
 
     /**

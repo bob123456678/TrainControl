@@ -303,14 +303,13 @@ public class testAutonomyRidesOutADroppedConnection
             station.refuse();
 
             Stamped<String> lost = awaitLine("network.tcpLostReconnecting", 5000);
-            java.util.concurrent.atomic.AtomicInteger epoch =
-                (java.util.concurrent.atomic.AtomicInteger) Reflect.get(NetworkProxy.class, proxy, "liveEpoch");
-            int atLoss = epoch.get();
+            java.util.concurrent.atomic.AtomicInteger triesFailed =
+                (java.util.concurrent.atomic.AtomicInteger) Reflect.get(NetworkProxy.class, proxy, "triesFailed");
 
             assertTrue(said("network.framesMayNotHaveArrived"), "the loss did not count the commands that may not have"
                 + " arrived: " + texts());
 
-            // The handset's, broadcast by the station before the first reconnect try sets UDP aside
+            // The handset's, broadcast by the station while the connection is replaced
             broadcast(proxy, Packets.speedEcho(driven, 600).getRawMessage());
             broadcast(proxy, Packets.accessoryEcho(thrown, true).getRawMessage());
             assertTrue(until(() -> driven.getSpeed() > 0 && thrown.isSwitched(), 900), "the handset's broadcasts did not"
@@ -332,8 +331,7 @@ public class testAutonomyRidesOutADroppedConnection
 
             if (reconnects)
             {
-                // The live transport changes twice for each failed reconnect try
-                assertTrue(until(() -> epoch.get() >= atLoss + 2 * TRIES_REFUSED, 30000), "the reconnect tries never"
+                assertTrue(until(() -> triesFailed.get() >= TRIES_REFUSED, 30000), "the reconnect tries never"
                     + " failed: " + texts());
                 station.answering(true);
                 station.reopen(STATION);
