@@ -843,7 +843,10 @@ public final class CS2File
         }
     }
 
-    /** Whether an accessory a route names may be missing from the list: it is empty, or has a record without a numeric id. */
+    /**
+     * Whether an accessory a route names may be missing from the list: a record isn't an object with a numeric id.  An
+     * empty list is the station's whole answer, so its routes import without their switches, as 3.0.8 did.
+     */
     private static boolean mayLackAccessories(JSONArray mags)
     {
         for (int i = 0; i < mags.length(); i++)
@@ -853,7 +856,7 @@ public final class CS2File
             if (o == null || o.optInt("id", Integer.MIN_VALUE) == Integer.MIN_VALUE) return true;
         }
 
-        return mags.length() == 0;
+        return false;
     }
 
     /**
