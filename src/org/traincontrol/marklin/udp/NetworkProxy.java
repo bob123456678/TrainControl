@@ -501,10 +501,10 @@ public class NetworkProxy
         return this.replacing;
     }
 
-    /** Whether a CS3's TCP connection is given up and UDP carries everything instead; never for a CS2. */
-    public boolean isOnUdpInsteadOfTcp()
+    /** Whether TCP carries the frames: a CS3's connection, live and not being replaced; UDP carries them otherwise. */
+    public boolean isOnTcp()
     {
-        return this.tcpPort > 0 && this.tcp == null;
+        return this.tcp != null && !this.replacing;
     }
 
     /** Whether the station is not answering on TCP: a frame unanswered over TCP_SUSPECT_MS, or the connection replaced. */

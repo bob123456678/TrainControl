@@ -6115,8 +6115,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * Updates the latency value, "(UDP)" after it once a CS3's TCP connection was given up, and takes the triangle off
-     * Power OFF once the station answers on TCP again.
+     * Updates the latency value, with the protocol in use after it, and shows the triangle beside Power OFF only while the station
+     * isn't answering.
      */
     @Override
     public void updateLatency(double latency)
@@ -6125,11 +6125,14 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         {
             javax.swing.SwingUtilities.invokeLater(() ->
             {
+                String protocol = this.model.getProtocol();
+
                 this.latencyLabel.setText(
                     I18n.f(
-                        this.model.isOnUdpInsteadOfTcp() ? "ui.labelNetworkLatencyUdp" : "ui.labelNetworkLatency",
+                        protocol != null ? "ui.labelNetworkLatencyOver" : "ui.labelNetworkLatency",
                         (this.model.isCS3() ? "3" : "2"),
-                        String.format("%.0f", latency)
+                        String.format("%.0f", latency),
+                        protocol
                     )
                 );
 
