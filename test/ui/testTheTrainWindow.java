@@ -1631,7 +1631,7 @@ public class testTheTrainWindow
     }
 
     /**
-     * The menu while autonomy runs is ordered as the menu at rest is (Adam: "Follow D20 there too"): no title row, the
+     * The menu while autonomy runs is ordered as the menu at rest is: no title row, the
      * station's name heading Is Active and Station Settings..., then Change Train at... and Edit <name>... behind a
      * divider.  The items both menus have stand in the same order and the same groups.
      *

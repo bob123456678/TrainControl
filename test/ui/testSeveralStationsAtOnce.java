@@ -812,7 +812,7 @@ public class testSeveralStationsAtOnce
 
     /**
      * Several stations are taken out of service together by unticking both boxes, and the window says nothing can pass;
-     * ticking both puts every one back (Adam: "does this page allow the user to take the point out of service?").
+     * ticking both puts every one back.
      *
      * MUTATION: have `pressBoxes` set only the first station picked, and this fails.
      */

@@ -479,7 +479,7 @@ public class testStationSettingsWindow
 
     /**
      * A square no track leads onto (ParkingTrack12, whose May arrive from says "(none)") is taken out of service and back
-     * with the two boxes, as any square is (Adam: "does this page allow the user to take the point out of service?").
+     * with the two boxes, as any square is.
      * While a run holds the setup the boxes are gray, and a press says why and changes nothing.
      *
      * MUTATION: have `fill` gray "Trains can pass through" on a square with no way in, and this fails.
@@ -566,7 +566,7 @@ public class testStationSettingsWindow
 
     /**
      * On a station, the (i) of "Trains can pass through" says that unticking it means every train must stop there first
-     * (Adam), the stop-only rule; on a sensor that is not a station it does not, as there unticking it closes the square.
+     * (the stop-only rule); on a sensor that is not a station it does not, as there unticking it closes the square.
      *
      * MUTATION: have `StationFlyovers.through` give a station the sensor's "If you change it" line, and this fails.
      */
