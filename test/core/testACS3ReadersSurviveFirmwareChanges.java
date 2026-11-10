@@ -529,6 +529,7 @@ public class testACS3ReadersSurviveFirmwareChanges
      * accessory list drops the commands that need it and imports every route, as 3.0.8 did.
      * MUTATION: CS2File.parseRoutesCS3(boolean) refusing every route when an accessory has no id, or there are no locomotives.
      * MUTATION: CS2File.mayLackAccessories passing over a record that is not an object.
+     * MUTATION: CS2File.mayLackAccessories answering true for an empty list (Adam: 3.0.8's behavior).
      */
     @Test
     public void testOneAccessoryWithoutAnIdOrNoLocomotivesCostsOnlyWhatNeedsThem() throws Exception
