@@ -258,7 +258,9 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
             // Start versus Graceful Stop asks isAutonomyBusy(), as every item in this branch does: isAutoRunning()
             // clears the instant Graceful Stop is pressed while trains coast, so Stop stays offered and Start does not
             // appear.
-            if (!ui.isAutonomyBusy())
+            final boolean busy = ui.isAutonomyBusy();
+
+            if (!busy)
             {
                 menuItem = new JMenuItem(I18n.t("autolayout.ui.menuStartAutonomy"));
 
@@ -298,120 +300,6 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
                 String broken = why == null ? null : why[1];
 
                 HomeLocomotiveMenu.addReturnHomeItem(this, ui, broken);
-
-                // The Point standing on that square, preferring one with a train on it, from the SQUARE rather than the
-                // station (MT-069): `station` is null on a pass-through Point.
-                Point current = ui.getAutonomyPointForTile(station != null ? station : here);
-
-                // A destination, or anywhere a train is actually standing: a copy made a non-destination by barring a
-                // side can still hold a train placed by hand.
-                if (current != null && (current.isDestination() || current.getCurrentLocomotive() != null))
-                {
-                    Locomotive locomotive = current.getCurrentLocomotive();
-
-                    addDestinations(locomotive, options);
-
-                    addSeparator();
-
-                    // The STATION's name, not the copy's: a square is several Points named apart for the running log.
-                    // It heads the menu's station items, so the menu has no title of its own (FR-182).
-                    final JMenuItem stationLabel = new JMenuItem(stationName(current));
-                    stationLabel.setEnabled(false);
-                    add(stationLabel);
-
-                    headed = true;
-
-                    // THE TRAIN'S OWN ITEMS and Station Settings, then the hand doors behind a divider: Edit <loc> is
-                    // never in a group with the autonomy items (FR-182).
-                    if (locomotive != null) addActive(locomotive);
-
-                    if (!ui.aRunHoldsTheSetup()) ui.addAutonomyFacingItems(this, here);
-
-                    JMenuItem settings = ui.stationSettingsItem(here);
-
-                    settingsOffered = settings != null;
-
-                    if (settingsOffered) add(settings);
-
-                    // The train's own window, first of the hand doors, or placing one by name on an empty station, last
-                    // (FR-111).
-                    JMenuItem trainWindow = here == null ? null : ui.trainWindowItem(here);
-
-                    trainOffered = trainWindow != null;
-
-                    boolean placesOne = trainWindow != null && I18n.t("autosetup.ui.menuPlaceHere").equals(trainWindow.getText());
-
-                    java.util.List<JMenuItem> hand = new java.util.ArrayList<>();
-
-                    if (trainWindow != null && !placesOne) hand.add(trainWindow);
-
-                    // Place a different locomotive at this station, FACING a chosen way.  A square is several Points,
-                    // one per side a train can arrive by, each leaving only the way its own facing allows, so "put it
-                    // here" must pick the copy.  Offered only on a destination.  Which copy the train stands on is its
-                    // heading's (Change Direction), including a copy trains may not arrive at (OB-284).
-                    if (ui.getActiveLoc() != null
-                        && current.isDestination()
-                        && !ui.aRunHoldsTheSetup()
-                        && !ui.getActiveLoc().equals(locomotive))
-                    {
-                        // Chosen for them, from the ways a train could actually leave: the copy facing the way the
-                        // train already faces, wherever that copy has a way out (OB-284), otherwise the first this menu
-                        // offers (OB-296: "Yes, keep the train's heading.").  Where no copy can leave, offered all the
-                        // same, as the editor's Place is (OB-350): `placeSomewhereLegal` stands the train where the
-                        // build would and records no facing.
-                        final java.util.List<String> usable = placeableCopies();
-
-                        // Offered on the action's own question: every copy the train could leave by, including one
-                        // trains may not arrive at (`placeableCopies` never offers one).
-                        final java.util.Map<String, org.traincontrol.automationui.TilePorts.Side> departable =
-                            session == null || !ui.getModel().hasAutoLayout()
-                                ? new java.util.LinkedHashMap<String, org.traincontrol.automationui.TilePorts.Side>()
-                                : session.departableFacingsFor(station, ui.getModel().getAutoLayout());
-
-                        final java.util.List<String> offered = new java.util.ArrayList<>(usable);
-
-                        for (String copy : departable.keySet())
-                        {
-                            if (!offered.contains(copy)) offered.add(copy);
-                        }
-
-                        menuItem = new JMenuItem(
-                            I18n.f("layout.ui.menuPlaceLocomotive", ui.getActiveLoc().getName())
-                        );
-
-                        menuItem.addActionListener(event -> placeSomewhereLegal(offered));
-
-                        hand.add(menuItem);
-                    }
-
-                    // Left out while a route runs.  Turning it is Change Direction, above (MT-086).
-                    if (current.getCurrentLocomotive() != null && !ui.aRunHoldsTheSetup())
-                    {
-                        menuItem = new JMenuItem(
-                            I18n.f("layout.ui.menuRemoveLocomotive", current.getCurrentLocomotive().getName())
-                        );
-                        // A method rather than a lambda, so this constructor asks the railway nothing (`moveLocomotive`
-                        // is `synchronized` on the `Layout`).
-                        menuItem.addActionListener(event -> removeLocomotiveHere(current));
-
-                        hand.add(menuItem);
-                    }
-
-                    if (placesOne) hand.add(trainWindow);
-
-                    if (locomotive != null) hand.add(editLocomotiveItem(locomotive));
-
-                    if (!hand.isEmpty() && !(getComponent(getComponentCount() - 1) == stationLabel)) addSeparator();
-
-                    for (JMenuItem each : hand) add(each);
-
-                    // Which locomotive belongs here is offered from the setup menu below, which works from the SQUARE.
-                }
-
-                // A train the setup alone stands here, where no Point of the railway is offered above.
-                if (!headed && !ui.aRunHoldsTheSetup()) ui.addAutonomyFacingItems(this, here);
-
-                addSetupMenu();
             }
             else
             {
@@ -429,44 +317,136 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
                 });    
 
                 add(menuItem);
-
-                addWhileRunning(options);
             }
-        }
-    }
 
-    /**
-     * The standing train's destinations where it may still be sent by hand (FR-187), whether it runs, as its Auto tab
-     * card does (FR-059), and both windows, read-only.  Asks the Point what stands on it, which takes no monitor.
-     */
-    private void addWhileRunning(PathOptions options)
-    {
-        Point current = ui.getAutonomyPointForTile(station != null ? station : here);
+            // The Point standing on that square, preferring one with a train on it, from the SQUARE rather than the
+            // station (MT-069): `station` is null on a pass-through Point.
+            Point current = ui.getAutonomyPointForTile(station != null ? station : here);
 
-        final Locomotive train = current == null ? null : current.getCurrentLocomotive();
+            // A destination, or anywhere a train is actually standing: a copy made a non-destination by barring a
+            // side can still hold a train placed by hand.  The menu while autonomy runs shares this order.
+            if (current != null && (current.isDestination() || current.getCurrentLocomotive() != null))
+            {
+                Locomotive locomotive = current.getCurrentLocomotive();
 
-        if (addDestinations(train, options)) addSeparator();
+                addDestinations(locomotive, options);
 
-        if (train != null) addActive(train);
+                addSeparator();
 
-        JMenuItem trainWindow = train == null ? null : ui.trainWindowItem(here);
-        JMenuItem settings = ui.stationSettingsItem(here);
+                // The STATION's name, not the copy's: a square is several Points named apart for the running log.
+                // It heads the menu's station items, so the menu has no title of its own (FR-182).
+                final JMenuItem stationLabel = new JMenuItem(stationName(current));
+                stationLabel.setEnabled(false);
+                add(stationLabel);
 
-        if (trainWindow != null) add(trainWindow);
+                headed = true;
 
-        // Edit <loc> in a group of its own, apart from the autonomy items (FR-182)
-        if (train != null)
-        {
-            addSeparator();
+                // THE TRAIN'S OWN ITEMS and Station Settings, then the hand doors behind a divider: Edit <loc> is
+                // never in a group with the autonomy items (FR-182).
+                if (locomotive != null) addActive(locomotive);
 
-            add(editLocomotiveItem(train));
-        }
+                if (!ui.aRunHoldsTheSetup()) ui.addAutonomyFacingItems(this, here);
 
-        if (settings != null)
-        {
-            addSeparator();
+                JMenuItem settings = ui.stationSettingsItem(here);
 
-            add(settings);
+                settingsOffered = settings != null;
+
+                if (settingsOffered) add(settings);
+
+                // The train's own window, first of the hand doors, or placing one by name on an empty station, last
+                // (FR-111); while autonomy runs, only over a train.
+                JMenuItem trainWindow = here == null || busy && locomotive == null ? null : ui.trainWindowItem(here);
+
+                trainOffered = trainWindow != null;
+
+                boolean placesOne = trainWindow != null && I18n.t("autosetup.ui.menuPlaceHere").equals(trainWindow.getText());
+
+                java.util.List<JMenuItem> hand = new java.util.ArrayList<>();
+
+                if (trainWindow != null && !placesOne) hand.add(trainWindow);
+
+                // Place a different locomotive at this station, FACING a chosen way.  A square is several Points,
+                // one per side a train can arrive by, each leaving only the way its own facing allows, so "put it
+                // here" must pick the copy.  Offered only on a destination.  Which copy the train stands on is its
+                // heading's (Change Direction), including a copy trains may not arrive at (OB-284).
+                if (ui.getActiveLoc() != null
+                    && current.isDestination()
+                    && !ui.aRunHoldsTheSetup()
+                    && !ui.getActiveLoc().equals(locomotive))
+                {
+                    // Chosen for them, from the ways a train could actually leave: the copy facing the way the
+                    // train already faces, wherever that copy has a way out (OB-284), otherwise the first this menu
+                    // offers (OB-296: "Yes, keep the train's heading.").  Where no copy can leave, offered all the
+                    // same, as the editor's Place is (OB-350): `placeSomewhereLegal` stands the train where the
+                    // build would and records no facing.
+                    final java.util.List<String> usable = placeableCopies();
+
+                    // Offered on the action's own question: every copy the train could leave by, including one
+                    // trains may not arrive at (`placeableCopies` never offers one).
+                    final java.util.Map<String, org.traincontrol.automationui.TilePorts.Side> departable =
+                        session == null || !ui.getModel().hasAutoLayout()
+                            ? new java.util.LinkedHashMap<String, org.traincontrol.automationui.TilePorts.Side>()
+                            : session.departableFacingsFor(station, ui.getModel().getAutoLayout());
+
+                    final java.util.List<String> offered = new java.util.ArrayList<>(usable);
+
+                    for (String copy : departable.keySet())
+                    {
+                        if (!offered.contains(copy)) offered.add(copy);
+                    }
+
+                    menuItem = new JMenuItem(
+                        I18n.f("layout.ui.menuPlaceLocomotive", ui.getActiveLoc().getName())
+                    );
+
+                    menuItem.addActionListener(event -> placeSomewhereLegal(offered));
+
+                    hand.add(menuItem);
+                }
+
+                // Left out while a route runs.  Turning it is Change Direction, above (MT-086).
+                if (current.getCurrentLocomotive() != null && !ui.aRunHoldsTheSetup())
+                {
+                    menuItem = new JMenuItem(
+                        I18n.f("layout.ui.menuRemoveLocomotive", current.getCurrentLocomotive().getName())
+                    );
+                    // A method rather than a lambda, so this constructor asks the railway nothing (`moveLocomotive`
+                    // is `synchronized` on the `Layout`).
+                    menuItem.addActionListener(event -> removeLocomotiveHere(current));
+
+                    hand.add(menuItem);
+                }
+
+                if (placesOne) hand.add(trainWindow);
+
+                if (locomotive != null) hand.add(editLocomotiveItem(locomotive));
+
+                if (!hand.isEmpty() && !(getComponent(getComponentCount() - 1) == stationLabel)) addSeparator();
+
+                for (JMenuItem each : hand) add(each);
+
+                // Which locomotive belongs here is offered from the setup menu below, which works from the SQUARE.
+            }
+
+            if (busy)
+            {
+                // Of the setup's items, the running menu keeps Station Settings... alone
+                JMenuItem settings = settingsOffered ? null : ui.stationSettingsItem(here);
+
+                if (settings != null)
+                {
+                    addSeparator();
+
+                    add(settings);
+                }
+            }
+            else
+            {
+                // A train the setup alone stands here, where no Point of the railway is offered above.
+                if (!headed && !ui.aRunHoldsTheSetup()) ui.addAutonomyFacingItems(this, here);
+
+                addSetupMenu();
+            }
         }
     }
 
