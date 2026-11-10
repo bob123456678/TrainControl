@@ -186,7 +186,7 @@ public class testTheWindowShowsTheConnection
     }
 
     /**
-     * The triangle beside Power OFF is drawn true at 1x (Adam: "make sure the exclamation point is aligned"): the mark is
+     * The triangle beside Power OFF is drawn true at 1x: the mark is
      * mirror-even about the triangle's middle, a row of amber parts its dot from the base, and the triangle stands
      * centered on the button's text line.
      *

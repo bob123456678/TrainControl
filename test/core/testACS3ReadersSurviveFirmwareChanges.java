@@ -375,9 +375,9 @@ public class testACS3ReadersSurviveFirmwareChanges
                 }
             }
 
-            // Items without their type are passed over: a route of switches alone is imported without them,
+            // Items without their type are passed over, as 3.0.8 did: a route of switches alone is imported without them,
             // one that drives a train is skipped, and nothing is said at start-up.  A good sync brings the items back; a
-            // route whose trigger sensor was passed over stays unarmed.
+            // route whose trigger sensor was passed over stays unarmed, as in 3.0.8.
             Map<String, List<Object>> commands = new ConcurrentHashMap<>();
 
             for (MarklinRoute r : rig.model.getRoutes()) commands.put(r.getName(), new ArrayList<>(r.getRoute()));

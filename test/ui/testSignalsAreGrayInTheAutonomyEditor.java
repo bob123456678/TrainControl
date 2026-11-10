@@ -226,8 +226,7 @@ public class testSignalsAreGrayInTheAutonomyEditor
     }
 
     /**
-     * The same editor switched from Autonomy Setup back to Track Diagram draws its signals in color again (FR-193, Adam:
-     * "Make sure it goes back to color in the track diagram editor too").
+     * The same editor switched from Autonomy Setup back to Track Diagram draws its signals in color again (FR-193).
      *
      * MUTATION: have `LayoutEditor.refreshAutonomyAnnotations` return when the panel is not active, so nothing clears the
      * gray, and this fails.
