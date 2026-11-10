@@ -87,29 +87,31 @@ public class testTheWindowShowsTheConnection
     }
 
     /**
-     * Power OFF wears the warning triangle, with a tooltip saying why, while the connection is being replaced, while a
-     * frame has gone unanswered over a second, and while the pings go unanswered; it is gone again once the station
-     * answers, and the button keeps its text and size throughout.
+     * The warning triangle shows left of Power OFF, with a tooltip saying why, while the connection is being replaced,
+     * while a frame has gone unanswered over a second, and while the pings go unanswered; it is gone again once the
+     * station answers, and the button has its text and size back.
      *
-     * MUTATION: never set the icon in `TrainControlUI.warnOnStop`, and this fails.
+     * MUTATION: never show the triangle in `TrainControlUI.warnOnStop`, and this fails.
      */
     @Test
     public void testStopWearsTheTriangleWhileTheStationIsNotAnswering() throws Exception
     {
         JButton stop = WindowField.of(ui, "PowerOff");
+        JLabel triangle = WindowField.of(ui, "stationNotAnswering");
         String text = Components.onTheEventThread(stop::getText);
         Dimension size = Components.onTheEventThread(stop::getSize);
 
         answered();
-        assertNull(stop.getIcon(), "precondition: Power OFF wears a triangle while the station answers");
+        assertFalse(triangle.isVisible(), "precondition: the triangle shows while the station answers");
 
         Reflect.set(NetworkProxy.class, proxy, "replacing", true);
 
         try
         {
             answered();
-            assertNotNull(stop.getIcon(), "no triangle while the connection is replaced");
-            assertNotEquals(stop.getToolTipText(), "Escape", "the triangle does not say why");
+            assertTrue(triangle.isVisible(), "no triangle while the connection is replaced");
+            assertEquals(triangle.getToolTipText(), org.traincontrol.util.I18n.t("ui.main.tooltip.stationNotAnswering"),
+                "the triangle does not say why");
         }
         finally
         {
@@ -117,7 +119,7 @@ public class testTheWindowShowsTheConnection
         }
 
         answered();
-        assertNull(stop.getIcon(), "the triangle stayed once the connection was back and answering");
+        assertFalse(triangle.isVisible(), "the triangle stayed once the connection was back and answering");
 
         // A frame written 2 s ago on a live connection, nothing heard since
         long now = System.nanoTime();
@@ -128,7 +130,7 @@ public class testTheWindowShowsTheConnection
         try
         {
             answered();
-            assertNotNull(stop.getIcon(), "no triangle while a frame has gone unanswered over a second");
+            assertTrue(triangle.isVisible(), "no triangle while a frame has gone unanswered over a second");
         }
         finally
         {
@@ -137,7 +139,7 @@ public class testTheWindowShowsTheConnection
         }
 
         answered();
-        assertNull(stop.getIcon(), "the triangle stayed once the frame was answered");
+        assertFalse(triangle.isVisible(), "the triangle stayed once the frame was answered");
 
         // The pings unanswered for 10 s, as the 5 s watch finds them
         Reflect.set(MarklinControlStation.class, model, "pingOutstandingSince", System.nanoTime() - 10000000000L);
@@ -146,7 +148,7 @@ public class testTheWindowShowsTheConnection
         {
             Reflect.method(TrainControlUI.class, "watchTheConnection").invoke(ui);
             SwingUtilities.invokeAndWait(() -> { });
-            assertNotNull(stop.getIcon(), "no triangle while the pings go unanswered");
+            assertTrue(triangle.isVisible(), "no triangle while the pings go unanswered");
         }
         finally
         {
@@ -154,14 +156,15 @@ public class testTheWindowShowsTheConnection
         }
 
         answered();
-        assertNull(stop.getIcon(), "the triangle stayed once the pings were answered");
-        assertEquals(stop.getToolTipText(), "Escape", "the tooltip was not given back");
+        assertFalse(triangle.isVisible(), "the triangle stayed once the pings were answered");
+        assertEquals(stop.getToolTipText(), "Escape", "Power OFF's tooltip changed");
         assertEquals(Components.onTheEventThread(stop::getText), text, "Power OFF's text changed");
-        assertEquals(Components.onTheEventThread(stop::getSize), size, "Power OFF changed size");
+        Components.onTheEventThread(() -> { ui.validate(); return null; });
+        assertEquals(Components.onTheEventThread(stop::getSize), size, "Power OFF did not get its size back");
     }
 
     /**
-     * The triangle on Power OFF is drawn true at 1x (Adam: "make sure the exclamation point is aligned"): the mark is
+     * The triangle beside Power OFF is drawn true at 1x (Adam: "make sure the exclamation point is aligned"): the mark is
      * mirror-even about the triangle's middle, a row of amber parts its dot from the base, and the triangle stands
      * centered on the button's text line.
      *
@@ -172,30 +175,41 @@ public class testTheWindowShowsTheConnection
     public void testTheTrianglesMarkIsCenteredAndSitsOnTheTextLine() throws Exception
     {
         JButton stop = WindowField.of(ui, "PowerOff");
+        JLabel shown = WindowField.of(ui, "stationNotAnswering");
 
-        javax.swing.Icon was = Components.onTheEventThread(stop::getIcon);
+        notAnswering(true);
 
         try
         {
             Components.onTheEventThread(() ->
             {
-                stop.setIcon(org.traincontrol.gui.widgets.RowIcons.warning(16));
+                java.awt.Container row = stop.getParent().getParent();
 
-                java.awt.image.BufferedImage drawn = new java.awt.image.BufferedImage(stop.getWidth(), stop.getHeight(),
+                java.awt.image.BufferedImage drawn = new java.awt.image.BufferedImage(row.getWidth(), row.getHeight(),
                     java.awt.image.BufferedImage.TYPE_INT_RGB);
                 java.awt.Graphics2D g = drawn.createGraphics();
 
-                stop.paint(g);
+                row.paint(g);
                 g.dispose();
 
-                java.awt.Rectangle icon = new java.awt.Rectangle(), text = new java.awt.Rectangle();
+                // Where the label puts its icon, as its painter does
+                java.awt.Rectangle icon = new java.awt.Rectangle(), unused = new java.awt.Rectangle();
+
+                SwingUtilities.layoutCompoundLabel(shown, shown.getFontMetrics(shown.getFont()), null, shown.getIcon(),
+                    shown.getVerticalAlignment(), shown.getHorizontalAlignment(), shown.getVerticalTextPosition(),
+                    shown.getHorizontalTextPosition(), new java.awt.Rectangle(shown.getSize()), icon, unused, 0);
+
+                icon = SwingUtilities.convertRectangle(shown, icon, row);
+                java.awt.Rectangle text = new java.awt.Rectangle(), none = new java.awt.Rectangle();
                 java.awt.Insets in = stop.getInsets();
                 java.awt.Rectangle view = new java.awt.Rectangle(in.left, in.top, stop.getWidth() - in.left - in.right,
                     stop.getHeight() - in.top - in.bottom);
 
-                SwingUtilities.layoutCompoundLabel(stop, stop.getFontMetrics(stop.getFont()), stop.getText(), stop.getIcon(),
+                SwingUtilities.layoutCompoundLabel(stop, stop.getFontMetrics(stop.getFont()), stop.getText(), null,
                     stop.getVerticalAlignment(), stop.getHorizontalAlignment(), stop.getVerticalTextPosition(),
-                    stop.getHorizontalTextPosition(), view, icon, text, stop.getIconTextGap());
+                    stop.getHorizontalTextPosition(), view, none, text, stop.getIconTextGap());
+
+                text = SwingUtilities.convertRectangle(stop, text, row);
 
                 int back = drawn.getRGB(icon.x, icon.y);
 
@@ -208,10 +222,11 @@ public class testTheWindowShowsTheConnection
                 // The text's ink, caps top to baseline
                 int[] words = inkBox(drawn, text, rgb -> distance(rgb, back) > 128);
 
-                double middle = (box[0] + box[2]) / 2.0;
+                // The icon's middle: its outline's antialiasing need not fall evenly on the two sides at 1x
+                double middle = icon.x + (icon.width - 1) / 2.0;
 
                 assertEquals((mark[0] + mark[2]) / 2.0, middle, 0.01, "the mark is not on the triangle's middle: mark"
-                    + " columns " + mark[0] + ".." + mark[2] + ", triangle " + box[0] + ".." + box[2]);
+                    + " columns " + mark[0] + ".." + mark[2] + ", icon " + icon.x + ".." + (icon.x + icon.width - 1));
 
                 for (int y = icon.y; y < icon.y + icon.height; y++)
                 {
@@ -240,8 +255,90 @@ public class testTheWindowShowsTheConnection
         }
         finally
         {
-            Components.onTheEventThread(() -> { stop.setIcon(was); return null; });
+            notAnswering(false);
         }
+    }
+
+    /** The triangle shown or taken down, as a connection being replaced does, and the row laid out. */
+    private static void notAnswering(boolean not) throws Exception
+    {
+        Reflect.set(NetworkProxy.class, proxy, "replacing", not);
+
+        answered();
+
+        Components.onTheEventThread(() -> { ui.validate(); return null; });
+    }
+
+    /** {left, right} of a part, in the coordinates of the row Power OFF stands in. */
+    private static int[] across(java.awt.Component part, java.awt.Component row)
+    {
+        return Components.onTheEventThread(() ->
+        {
+            java.awt.Rectangle at = SwingUtilities.convertRectangle(part.getParent(), part.getBounds(), row);
+
+            return new int[] {at.x, at.x + at.width};
+        });
+    }
+
+    /**
+     * The triangle stands left of Power OFF, not in it (Adam: "put it to the left of the button, while ensuring the button
+     * rescales dynamically in width when the triangle is/isn't there"): shown, it takes its room from the button, so the
+     * two end where the button alone did and Power ON does not move; gone, the button has its whole width back.  Power
+     * OFF's text still fits the narrower button in every language.
+     *
+     * MUTATION: have `warnOnStop` set the triangle as Power OFF's icon again, or leave the shared panel's width to the
+     * triangle plus the button's own, and this fails.
+     */
+    @Test
+    public void testTheTriangleTakesItsRoomFromTheButton() throws Exception
+    {
+        JButton stop = WindowField.of(ui, "PowerOff");
+        JButton on = WindowField.of(ui, "OnButton");
+        java.awt.Container row = Components.onTheEventThread(on::getParent);
+
+        notAnswering(false);
+
+        int[] alone = across(stop, row);
+        int[] onAt = across(on, row);
+
+        try
+        {
+            notAnswering(true);
+
+            assertNull(Components.onTheEventThread(stop::getIcon), "the triangle is still inside Power OFF");
+
+            JLabel triangle = WindowField.of(ui, "stationNotAnswering");
+
+            assertTrue(Components.onTheEventThread(triangle::isVisible), "no triangle while the station is not answering");
+
+            int[] mark = across(triangle, row);
+            int[] narrower = across(stop, row);
+
+            assertEquals(mark[0], alone[0], "the triangle does not start where Power OFF did");
+            assertTrue(mark[1] <= narrower[0], "the triangle is not left of Power OFF");
+            assertEquals(narrower[1], alone[1], "Power OFF's right edge moved");
+            assertEquals(across(on, row)[0], onAt[0], "Power ON moved");
+
+            for (String language : new String[] {"en", "da", "de", "es", "fr", "it", "nl", "pl"})
+            {
+                String text = java.util.ResourceBundle.getBundle("org.traincontrol.resources.messages",
+                    new java.util.Locale(language)).getString("ui.main.powerOFF");
+
+                int needs = Components.onTheEventThread(() -> stop.getFontMetrics(stop.getFont()).stringWidth(text)
+                    + stop.getInsets().left + stop.getInsets().right);
+
+                assertTrue(needs <= narrower[1] - narrower[0], language + ": \"" + text + "\" needs " + needs + " and the"
+                    + " narrower Power OFF is " + (narrower[1] - narrower[0]));
+            }
+        }
+        finally
+        {
+            notAnswering(false);
+        }
+
+        assertEquals(java.util.Arrays.toString(across(stop, row)), java.util.Arrays.toString(alone),
+            "Power OFF did not get its whole width back");
+        assertEquals(across(on, row)[0], onAt[0], "Power ON moved once the triangle went");
     }
 
     /** {left, top, right, bottom} of the pixels in `in` that pass; fails where none do. */

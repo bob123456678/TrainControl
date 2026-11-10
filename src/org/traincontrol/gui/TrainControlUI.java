@@ -831,6 +831,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         installCurrentKeyRow();
 
+        installNotAnsweringMark();
+
         installShowPageNumbersMenuItem();
 
         installImportLocsFromCSVMenuItem();
@@ -6041,8 +6043,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
     
     /**
-     * The ping timer's watch: pings unanswered past PING_INTERVAL show as a lost connection, and Power OFF wears the
-     * warning triangle while they go unanswered or the station is not answering on TCP.
+     * The ping timer's watch: pings unanswered past PING_INTERVAL show as a lost connection, and the warning triangle
+     * shows left of Power OFF while they go unanswered or the station is not answering on TCP.
      */
     private void watchTheConnection()
     {
@@ -6065,11 +6067,51 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         model.sendPing(false);
     }
 
-    /** Power OFF wears the warning triangle while the station is not answering; its text, size and action stay. */
+    /** The warning triangle left of Power OFF while the station is not answering (FR-192). */
+    private final javax.swing.JLabel stationNotAnswering = new javax.swing.JLabel(RowIcons.warning(16));
+
+    /**
+     * Power OFF and its triangle share the place the generated layout gives the button: shown, the triangle takes its
+     * width and gap from the button, so nothing else in the row moves.
+     */
+    private void installNotAnsweringMark()
+    {
+        javax.swing.JPanel shared = new javax.swing.JPanel(new java.awt.BorderLayout(4, 0))
+        {
+            // The row lines up on the button's text
+            @Override
+            public int getBaseline(int width, int height)
+            {
+                return PowerOff.getBaseline(width, height);
+            }
+
+            @Override
+            public java.awt.Component.BaselineResizeBehavior getBaselineResizeBehavior()
+            {
+                return PowerOff.getBaselineResizeBehavior();
+            }
+        };
+
+        shared.setOpaque(false);
+        shared.setPreferredSize(PowerOff.getPreferredSize());
+        shared.setMinimumSize(PowerOff.getMinimumSize());
+        shared.setMaximumSize(PowerOff.getMaximumSize());
+
+        ((javax.swing.GroupLayout) LocFunctionsPanel.getLayout()).replace(PowerOff, shared);
+
+        stationNotAnswering.setToolTipText(I18n.t("ui.main.tooltip.stationNotAnswering"));
+        stationNotAnswering.setVisible(false);
+
+        shared.add(stationNotAnswering, java.awt.BorderLayout.WEST);
+        shared.add(PowerOff, java.awt.BorderLayout.CENTER);
+    }
+
     private void warnOnStop(boolean on)
     {
-        this.PowerOff.setIcon(on ? RowIcons.warning(16) : null);
-        this.PowerOff.setToolTipText(on ? I18n.t("ui.main.tooltip.stationNotAnswering") : "Escape");
+        if (stationNotAnswering.isVisible() == on) return;
+
+        stationNotAnswering.setVisible(on);
+        stationNotAnswering.getParent().revalidate();
     }
 
     /**
