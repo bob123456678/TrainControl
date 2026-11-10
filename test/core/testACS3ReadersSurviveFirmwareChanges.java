@@ -296,9 +296,6 @@ public class testACS3ReadersSurviveFirmwareChanges
                 }
             }
 
-            // No accessories while the routes use them: each route with a switch item is held back
-            assertHeldUnchanged(rig, replaced, held, "no accessories", only(ACCESSORIES, "[]"));
-
             // Lists whose records cannot be matched: the key that names them renamed, or not what it was
             for (int mode : new int[] {0, 1, 2})
             {
@@ -528,8 +525,8 @@ public class testACS3ReadersSurviveFirmwareChanges
     }
 
     /**
-     * One accessory without an id holds back only the routes whose switches may be that one; an empty locomotive list
-     * drops the train commands with a warning and imports every route, as 3.0.8 did.
+     * One accessory without an id holds back only the routes whose switches may be that one; an empty locomotive or
+     * accessory list drops the commands that need it and imports every route, as 3.0.8 did.
      * MUTATION: CS2File.parseRoutesCS3(boolean) refusing every route when an accessory has no id, or there are no locomotives.
      * MUTATION: CS2File.mayLackAccessories passing over a record that is not an object.
      */
@@ -598,25 +595,32 @@ public class testACS3ReadersSurviveFirmwareChanges
             }
         }
 
-        // No locomotives: every route, without its train commands
-        try (StationRig rig = rig(only(LOCOS, "[]")))
+        // No locomotives, or no accessories: every route, without the commands that need them, as 3.0.8 did
+        for (String empty : new String[] {LOCOS, ACCESSORIES})
         {
-            assertTrue(rig.model.syncWithCS2() >= 0);
-            assertFalse(rig.model.wasLastSyncPartial(), "an empty locomotive list is an ordinary answer");
-            assertTrue(rig.takeLog().stream().anyMatch(l -> l.contains("no locomotives provided")), "warned of in the log");
-            assertEquals(rig.model.getRoutes().size(), good.size(), "every route is imported");
-
-            int dropped = 0;
-
-            for (String name : good.keySet())
+            try (StationRig rig = rig(only(empty, "[]")))
             {
-                List<org.traincontrol.base.RouteCommand> expected = new ArrayList<>(good.get(name));
-                expected.removeIf(c -> c.isLocomotiveSpeed() || c.isLocomotiveDirection());
-                dropped += good.get(name).size() - expected.size();
-                assertEquals(new ArrayList<>(rig.model.getRoute(name).getRoute()), expected, name);
-            }
+                assertTrue(rig.model.syncWithCS2() >= 0);
+                assertFalse(rig.model.wasLastSyncPartial(), "an empty list is an ordinary answer: " + empty);
+                if (empty == LOCOS)
+                {
+                    assertTrue(rig.takeLog().stream().anyMatch(l -> l.contains("no locomotives provided")), "warned of");
+                }
+                assertEquals(rig.model.getRoutes().size(), good.size(), "every route is imported: " + empty);
 
-            assertTrue(dropped > 0, "some route drives a train");
+                int dropped = 0;
+
+                for (String name : good.keySet())
+                {
+                    List<org.traincontrol.base.RouteCommand> expected = new ArrayList<>(good.get(name));
+                    expected.removeIf(c -> empty == LOCOS ? c.isLocomotiveSpeed() || c.isLocomotiveDirection()
+                        : c.isAccessory());
+                    dropped += good.get(name).size() - expected.size();
+                    assertEquals(new ArrayList<>(rig.model.getRoute(name).getRoute()), expected, name + ", " + empty);
+                }
+
+                assertTrue(dropped > 0, "some route needs what is missing: " + empty);
+            }
         }
     }
 
@@ -839,13 +843,14 @@ public class testACS3ReadersSurviveFirmwareChanges
                 syncKeepingThePages(rig, replaced, pages, "all answers, mode " + mode);
             }
 
-            // And each answer in turn something else altogether; no locomotives is an honest answer, which drops the
-            // routes' train commands (testOneAccessoryWithoutAnIdOrNoLocomotivesCostsOnlyWhatNeedsThem)
+            // And each answer in turn something else altogether; no locomotives or no accessories is an honest answer,
+            // which drops the routes' commands that need them
+            // (testOneAccessoryWithoutAnIdOrNoLocomotivesCostsOnlyWhatNeedsThem)
             for (String path : served)
             {
                 for (String other : new String[] {"", "{}", "[]", "null", "7", "\"text\"", "<html>", "[[],{},7]"})
                 {
-                    if (LOCOS.equals(path) && "[]".equals(other)) continue;
+                    if ((LOCOS.equals(path) || ACCESSORIES.equals(path)) && "[]".equals(other)) continue;
 
                     replaced.put(path, other.getBytes(StandardCharsets.UTF_8));
                     syncKeepingThePages(rig, replaced, pages, path + " answering " + other);

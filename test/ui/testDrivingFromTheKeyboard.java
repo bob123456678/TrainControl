@@ -1034,10 +1034,12 @@ public class testDrivingFromTheKeyboard
 
     /**
      * With MM2 chosen, keys 321 to 384 on the third tab are usable; a click on one turns the radio to DCC without
-     * saving it and sends the DCC command, and a visit to another tab and back shows MM2 again.
+     * saving it and sends the DCC command; a click on a key within MM2's range then sends MM2 and turns the radio back,
+     * and a visit to another tab and back shows MM2 again.
      *
      * MUTATION: `keyboardAddressExists` asks the radio's protocol (the key stays gray), or the click's flip is
-     * `DCC.doClick()` (saves DCC), or `switchKeyboard` leaves `keyboardFlippedToDCC` set.
+     * `DCC.doClick()` (saves DCC), or `switchKeyboard` leaves `keyboardFlippedToDCC` set, or `keyboardProtocolFor` reads
+     * the radio while it is flipped (300 sends DCC).
      */
     @Test
     public void testAKeyPastMM2OnTheThirdTabFlipsTheRadioToDCCForAWhile() throws Exception
@@ -1071,6 +1073,22 @@ public class testDrivingFromTheKeyboard
 
             assertEquals(Util.preferencesFor(TrainControlUI.class).getBoolean(TrainControlUI.PREFERRED_KEYBOARD_MM2, false),
                 true, "the click saved DCC as the choice");
+
+            // A key within MM2's range sends MM2, and the radio goes back to the user's MM2
+            int back = wire.mark();
+            int mm2 = MarklinAccessory.UIDfromAddress(299, Accessory.accessoryDecoderType.MM2);
+
+            click(300, true);
+
+            assertTrue(waitFor(() -> keyboardProtocol() == Accessory.accessoryDecoderType.MM2),
+                "a click on 300 did not turn the radio back to MM2");
+            assertTrue(waitFor(() -> !wire.accessoryCommandsSince(back, mm2).isEmpty()),
+                "a click on 300 did not send the MM2 command: " + wire.since(back));
+            int dcc = MarklinAccessory.UIDfromAddress(299, Accessory.accessoryDecoderType.DCC);
+
+            assertTrue(wire.accessoryCommandsSince(back, dcc).isEmpty(), "a click on 300 sent DCC");
+
+            keySendingHasFinished();
 
             goToPage(1);
 

@@ -447,7 +447,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     // The keyboard being displayed
     private int keyboardNumber = 1;
 
-    // A click on a key past MM2's range flipped the radio to DCC; the saved choice is untouched and comes back with the tab
+    // A click on a key past MM2's range flipped the radio to DCC; the saved MM2 stays, and comes back with
+    // the tab or a key within MM2's range
     private boolean keyboardFlippedToDCC = false;
     
     // The locomotive mapping page being displayed
@@ -6937,10 +6938,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         return Accessory.isValidLogicalAddress(address, keyboardProtocolFor(address));
     }
 
-    /** What a key sends: the radio's protocol, but DCC past MM2's last address (320) with MM2 chosen. */
+    /** What a key sends: the protocol the user chose, but DCC past MM2's last address (320) with MM2 chosen. */
     private Accessory.accessoryDecoderType keyboardProtocolFor(int address)
     {
-        Accessory.accessoryDecoderType chosen = getKeyboardProtocol();
+        Accessory.accessoryDecoderType chosen =
+            this.keyboardFlippedToDCC ? Accessory.accessoryDecoderType.MM2 : getKeyboardProtocol();
 
         return chosen == Accessory.accessoryDecoderType.MM2 && !Accessory.isValidLogicalAddress(address, chosen)
             ? Accessory.accessoryDecoderType.DCC : chosen;
@@ -15856,11 +15858,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         if (allowed == KeyboardSwitch.REFUSED) return;
 
-        // A key past MM2's range turns the radio to DCC without saving it; the tab's repaint puts the choice back
+        // The radio shows what the key sends, unsaved: DCC past MM2's range, the user's MM2 within it
         if (protocol != getKeyboardProtocol())
         {
-            this.DCC.setSelected(true);
-            this.keyboardFlippedToDCC = true;
+            this.keyboardFlippedToDCC = protocol == Accessory.accessoryDecoderType.DCC;
+            (this.keyboardFlippedToDCC ? this.DCC : this.MM2).setSelected(true);
             repaintSwitches();
         }
 
