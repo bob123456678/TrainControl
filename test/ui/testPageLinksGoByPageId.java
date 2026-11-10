@@ -942,6 +942,56 @@ public class testPageLinksGoByPageId extends support.PageWindowTest
         assertTrue(ids.get("3 - Top Parking") > 5, "the other page did not take a fresh ID: " + ids);
     }
 
+    /**
+     * An arrow whose stored number is past the page list, with no page ID, logs that the page does not exist when
+     * clicked, and shows no dialog; an arrow that links nowhere stays silent.
+     *
+     * MUTATION: `followLink` returns without logging when `linksToAPageThatIsGone()` is false.
+     */
+    @Test
+    public void testAnArrowPastThePageListLogsThatThePageDoesNotExist() throws Exception
+    {
+        startTheWindow(5);
+
+        LayoutDiagramComponent link = null;
+
+        for (String page : model.getLayoutList())
+        {
+            for (LayoutDiagramComponent tile : model.getLayout(page).getAll())
+            {
+                if (link == null && tile != null && tile.isLink()) link = tile;
+            }
+        }
+
+        assertNotNull(link, "precondition: the layout has no link");
+
+        List<String> logged = java.util.Collections.synchronizedList(new ArrayList<String>());
+
+        java.util.logging.Handler tap = support.LogTap.messagesInto(logged);
+
+        java.util.logging.Logger.getLogger(org.traincontrol.marklin.MarklinControlStation.class.getName()).addHandler(tap);
+
+        try
+        {
+            link.setLinkTarget(null, null, -1);
+
+            ui.followLink(link);
+
+            assertTrue(logged.isEmpty(), "an arrow that links nowhere logged: " + logged);
+
+            link.setLinkTarget(null, null, 99);
+
+            ui.followLink(link);
+        }
+        finally
+        {
+            java.util.logging.Logger.getLogger(org.traincontrol.marklin.MarklinControlStation.class.getName()).removeHandler(tap);
+        }
+
+        assertEquals(logged, Collections.singletonList(I18n.f("layout.ui.errorLayoutPageDoesNotExist", 100)),
+            "clicking an arrow past the page list did not log that the page does not exist");
+    }
+
     // ------------------------------------------------------------------------------------------------
 
     private void saveEveryPage() throws Exception
