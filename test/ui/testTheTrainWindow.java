@@ -1682,6 +1682,34 @@ public class testTheTrainWindow
             + " at rest for the items both have");
     }
 
+    /**
+     * While autonomy runs, an empty station's menu offers no way to place a train there: neither Place a Locomotive
+     * Here... nor Place <the active locomotive>.
+     *
+     * MUTATION: drop `busy && locomotive == null` from the train window's line in `LayoutRightclickAutonomyMenu`, and
+     * this fails.
+     */
+    @Test
+    public void testTheRunningMenuPlacesNothingOnAnEmptyStation() throws Exception
+    {
+        TileKey empty = anEmptyStation();
+
+        AskingWindows.showThePageOf(ui, empty);
+
+        JPopupMenu running = runningMenuOn(empty);
+
+        Mouse.closeMenus();
+
+        assertFalse(AskingWindows.hasItem(running, I18n.t("autosetup.ui.menuPlaceHere")),
+            "the running menu over an empty station offers Place a Locomotive Here...");
+
+        if (ui.getActiveLoc() != null)
+        {
+            assertFalse(AskingWindows.hasItem(running, I18n.f("layout.ui.menuPlaceLocomotive", ui.getActiveLoc().getName())),
+                "the running menu over an empty station offers to place the active locomotive");
+        }
+    }
+
     /** The menu's groups with only these items, empty groups left out. */
     private static java.util.List<java.util.List<String>> only(java.util.List<java.util.List<String>> groups,
         java.util.Set<String> items)

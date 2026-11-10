@@ -428,25 +428,11 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
                 // Which locomotive belongs here is offered from the setup menu below, which works from the SQUARE.
             }
 
-            if (busy)
-            {
-                // Of the setup's items, the running menu keeps Station Settings... alone
-                JMenuItem settings = settingsOffered ? null : ui.stationSettingsItem(here);
+            // A train the setup alone stands here, where no Point of the railway is offered above; while a run holds
+            // the setup, the setup menu keeps Station Settings... alone
+            if (!headed && !ui.aRunHoldsTheSetup()) ui.addAutonomyFacingItems(this, here);
 
-                if (settings != null)
-                {
-                    addSeparator();
-
-                    add(settings);
-                }
-            }
-            else
-            {
-                // A train the setup alone stands here, where no Point of the railway is offered above.
-                if (!headed && !ui.aRunHoldsTheSetup()) ui.addAutonomyFacingItems(this, here);
-
-                addSetupMenu();
-            }
+            addSetupMenu();
         }
     }
 
