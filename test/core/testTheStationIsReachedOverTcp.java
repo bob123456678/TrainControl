@@ -570,6 +570,70 @@ public class testTheStationIsReachedOverTcp
     }
 
     /**
+     * UDP stays live while a connect hangs (a closed loopback port on Windows times out after about 2 s): every frame
+     * the station broadcasts meanwhile, a handset's locomotive, accessory or GO/STOP frame as much as a sensor's,
+     * reaches the model.
+     *
+     * MUTATION: in `NetworkProxy.startTcp`, move `setUdpLive(false);` to before `connectTcp()`.
+     */
+    @Test(timeOut = 30000)
+    public void testUdpIsHeardWhileTheFirstConnectHangs() throws Exception
+    {
+        this.proxy = new NetworkProxy(InetAddress.getByName("127.0.0.1"));
+        this.proxy.setModel(this.model);
+        assertTrue(logged("network.canListenerRunning", WAIT_MS), "no UDP listener started: " + this.model.lines);
+
+        int port = TcpStation.closedPort();
+        Thread connecting = new Thread(() -> this.proxy.connectOverTcp(port), "tcp-claim-connect");
+        long start = System.nanoTime();
+        connecting.start();
+
+        assertAllHeard(broadcastWhile(3000, connecting::isAlive), start, 1000);
+    }
+
+    /**
+     * The same while each try to replace a lost connection hangs, until UDP takes over for the session.
+     *
+     * MUTATION: in `NetworkProxy.recover`, add `setUdpLive(false);` before `Socket fresh = connectTcp();`.
+     */
+    @Test(timeOut = 60000)
+    public void testUdpIsHeardWhileAReconnectHangs() throws Exception
+    {
+        connectedAndAnswered();
+
+        long start = System.nanoTime();
+        this.station.close();
+
+        assertAllHeard(broadcastWhile(4000, () -> this.model.count("network.tcpReconnectFailed") == 0
+            && System.nanoTime() - start < 30000000000L), start, 8000);
+    }
+
+    /** Broadcasts a sensor frame every 20 ms, from `contact` up, while `going` holds; returns them. */
+    private List<byte[]> broadcastWhile(int contact, java.util.function.BooleanSupplier going) throws Exception
+    {
+        List<byte[]> sent = new ArrayList<>();
+
+        while (going.getAsBoolean())
+        {
+            sent.add(sensor(contact++, true));
+            broadcast(sent.get(sent.size() - 1));
+            LockSupport.parkNanos(20000000L);
+        }
+
+        return sent;
+    }
+
+    /** Every frame broadcast reached the model, over a spell since `start` long enough that the connects hung. */
+    private void assertAllHeard(List<byte[]> sent, long start, long hungMs)
+    {
+        long tookMs = (System.nanoTime() - start) / 1000000L;
+        assertTrue(tookMs >= hungMs, "precondition: the connect did not hang (" + tookMs + " ms): " + this.model.lines);
+        assertTrue(Components.waitFor(() -> sent.stream().allMatch(this.model::heardFrame), WAIT_MS), "of "
+            + sent.size() + " frames broadcast while connecting, "
+            + sent.stream().filter(f -> !this.model.heardFrame(f)).count() + " never reached the model");
+    }
+
+    /**
      * An unexpected error that ends the listener while it replaces a lost connection leaves nothing being replaced:
      * UDP takes over for the session, logged, so autonomy does not hold new routes for ever; and the sensors are asked
      * again over UDP, so one changed in the gap ends at the station's state.

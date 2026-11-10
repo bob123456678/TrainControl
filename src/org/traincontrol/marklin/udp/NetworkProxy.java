@@ -165,6 +165,9 @@ public class NetworkProxy
     // Changes whenever the live transport does, so a resync for an earlier one stops
     private final AtomicInteger liveEpoch = new AtomicInteger();
 
+    // How many tries to replace a lost connection have failed
+    private final AtomicInteger triesFailed = new AtomicInteger();
+
     // Each s88 contact's device, learned from the station's events once learnsDevices is set: for a CS3 only
     private final Map<Integer, Integer> sensorDevice = new ConcurrentHashMap<>();
 
@@ -267,12 +270,13 @@ public class NetworkProxy
         startTcp();
     }
 
-    /** Connects and starts the TCP listener, UDP set aside from before the connect; on a failure logs it, UDP live. */
+    /**
+     * Connects and starts the TCP listener; on a failure logs it.  UDP stays live until the connection is made, as a
+     * connect can hang for TCP_CONNECT_TIMEOUT_MS.
+     */
     private void startTcp()
     {
         Socket connected;
-
-        setUdpLive(false);
 
         try
         {
@@ -280,11 +284,11 @@ public class NetworkProxy
         }
         catch (IOException e)
         {
-            setUdpLive(true);
             model.logf("network.tcpUnavailable", reasonOf(e));
             return;
         }
 
+        setUdpLive(false);
         useTcp(connected);
         model.logf("network.tcpConnected");
 
@@ -1086,8 +1090,6 @@ public class NetworkProxy
 
             try
             {
-                setUdpLive(false);
-
                 Socket fresh = connectTcp();
 
                 synchronized (this)
@@ -1102,6 +1104,7 @@ public class NetworkProxy
                     this.replacing = false;
                 }
 
+                setUdpLive(false);
                 model.logf("network.tcpReconnected");
                 resync(true, 1);
                 return;
@@ -1109,8 +1112,7 @@ public class NetworkProxy
             catch (IOException e)
             {
                 failed = e;
-                setUdpLive(true);
-                resync(false, 1);
+                this.triesFailed.incrementAndGet();
             }
         }
 
