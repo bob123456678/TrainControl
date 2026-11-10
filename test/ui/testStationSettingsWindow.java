@@ -478,6 +478,36 @@ public class testStationSettingsWindow
     }
 
     /**
+     * On a station, the (i) of "Trains can pass through" says that unticking it means every train must stop there first
+     * (Adam), the stop-only rule; on a sensor that is not a station it does not, as there unticking it closes the square.
+     *
+     * MUTATION: have `StationFlyovers.through` give a station the sensor's "If you change it" line, and this fails.
+     */
+    @Test(timeOut = 120000)
+    public void testPassThroughOnAStationSaysTrainsMustStopFirst() throws Exception
+    {
+        TileKey square = aStation();
+
+        StationSettingsWindow window = StationDoors.open(panel, square);
+
+        StationDoors.current(window);
+
+        String station = Components.onTheEventThread(() -> window.flyoverForTest("runsThrough"));
+
+        assertTrue(station.contains("every train must stop here first"), "a station's pass-through (i) does not say"
+            + " unticking it makes every train stop here first: " + station);
+
+        StationDoors.press(window, "station.stops");
+        StationDoors.current(window);
+
+        String sensor = Components.onTheEventThread(() -> window.flyoverForTest("runsThrough"));
+
+        assertFalse(sensor.contains("must stop here first"), "a sensor's pass-through (i) says trains stop there: " + sensor);
+
+        StationDoors.close(window);
+    }
+
+    /**
      * A nameless sensor made a station asks its name first; Cancel changes nothing, and the box goes back.
      *
      * MUTATION: have `setUsage` carry on after a Cancel, and this fails.

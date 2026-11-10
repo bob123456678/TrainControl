@@ -35,8 +35,9 @@ final class StationFlyovers
                 I18n.t("autosetup.ui.flyThroughOffChange"));
         }
 
+        // On a station, unticking it makes every trip end here first (stop-only)
         return nowThenChange(I18n.t(must ? "autosetup.ui.flyThroughMustNow" : "autosetup.ui.flyThroughOnNow"),
-            I18n.t("autosetup.ui.flyThroughOnChange"));
+            I18n.t(boxes.stops ? "autosetup.ui.flyThroughOnStopsChange" : "autosetup.ui.flyThroughOnChange"));
     }
 
     static String fullAutonomy(boolean on)
