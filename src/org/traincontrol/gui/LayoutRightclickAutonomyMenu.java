@@ -416,7 +416,7 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
 
             }
 
-            // Facing items for a train only the setup has here; while a run holds the setup, only Station Settings stays
+            // Facing items for a train on another copy of this square; while a run holds the setup, only Station Settings stays
             if (!headed && !ui.aRunHoldsTheSetup()) ui.addAutonomyFacingItems(this, here);
 
             addSetupMenu();

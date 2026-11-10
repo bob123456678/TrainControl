@@ -1710,6 +1710,63 @@ public class testTheTrainWindow
         }
     }
 
+    /**
+     * The diagram's menu offers Change Direction only over a train on the railway: lifted off, its station's menu has
+     * none, though the setup still records it there.
+     *
+     * MUTATION: drop the `trainOnTheRailway` check from `TrainControlUI.addAutonomyFacingItems`, and this fails.
+     */
+    @Test
+    public void testTheDiagramsMenuTurnsOnlyATrainOnTheRailway() throws Exception
+    {
+        TileKey full = aSquareWithATrain();
+        String train = session.getLocomotiveNameAt(full);
+        String turn = I18n.t("autosetup.ui.menuChangeDirectionUnknown");
+
+        AskingWindows.showThePageOf(ui, full);
+
+        assertTrue(offers(AskingWindows.menuOn(ui, ui, full), turn), "precondition: no Change Direction over " + train);
+
+        Mouse.closeMenus();
+
+        java.util.List<org.traincontrol.automation.Point> lifted = new java.util.ArrayList<>();
+        Locomotive loc = null;
+
+        try
+        {
+            for (org.traincontrol.automation.Point p : model.getAutoLayout().getPoints())
+            {
+                if (p.getCurrentLocomotive() != null && train.equals(p.getCurrentLocomotive().getName())) lifted.add(p);
+            }
+
+            loc = lifted.get(0).getCurrentLocomotive();
+
+            for (org.traincontrol.automation.Point p : lifted) p.setLocomotive(null);
+
+            assertEquals(session.getLocomotiveNameAt(full), train, "precondition: the setup no longer records " + train);
+            assertFalse(offers(AskingWindows.menuOn(ui, ui, full), turn),
+                "Change Direction is offered over a station the railway has no train on");
+
+        }
+        finally
+        {
+            Mouse.closeMenus();
+
+            for (org.traincontrol.automation.Point p : lifted) p.setLocomotive(loc);
+        }
+    }
+
+    /** Whether any item of the menu, its submenus included, starts with this text. */
+    private static boolean offers(JPopupMenu menu, String start)
+    {
+        for (javax.swing.JMenuItem item : Components.all(menu, javax.swing.JMenuItem.class, null))
+        {
+            if (item.getText() != null && item.getText().startsWith(start)) return true;
+        }
+
+        return false;
+    }
+
     /** The menu's groups with only these items, empty groups left out. */
     private static java.util.List<java.util.List<String>> only(java.util.List<java.util.List<String>> groups,
         java.util.Set<String> items)
