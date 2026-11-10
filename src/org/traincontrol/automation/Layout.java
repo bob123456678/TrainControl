@@ -3269,8 +3269,11 @@ public class Layout
         boolean configureFailed = false;
         int edgesLocked = 0;
 
-        // Before the first switch: a replacement from here on loses switch frames, which the validation wait then misses
+        // Before the first switch: a replacement from here on loses switch frames, which the validation wait then misses;
+        // a Stop or a power change while the switches are set is said as itself, not as an accessory failure
         final int replacements = this.control.getReplacementEpoch();
+        final int stops = this.stopsOrdered.get();
+        final int power = this.control.getPowerEpoch();
 
         // A throw out of the lock loop, rethrown once the track is given back: executePath's handler does not unlock
         // (right mid-run), but here the train has not moved, and the edges taken would stay occupied for the session.
@@ -3385,9 +3388,6 @@ public class Layout
         // Layout monitor).  If not, stop the locomotive and release its locks (returning false so
         // executePath does not run it); power is left on and autonomy re-attempts the path organically on
         // its next cycle, so no explicit retry is needed here.
-        int stops = this.stopsOrdered.get();
-        int power = this.control.getPowerEpoch();
-
         if (!this.validatePathActuation(path, stops, power, replacements))
         {
             // A Stop, a power change or a replaced connection ended the wait: the train goes back unrun, as executePath

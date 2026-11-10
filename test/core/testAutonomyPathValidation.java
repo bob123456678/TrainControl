@@ -499,6 +499,44 @@ public class testAutonomyPathValidation
         assertEndedUncounted(tp, behindABusyStation(tp, 175, 200, tp.layout::stopEveryTrainWhereItIs));
     }
 
+    /**
+     * A power cut while the switches are still being set (CONFIGURE_SLEEP an edge) is a power cut too: the switches
+     * never confirm, and the train goes back unrun without counting against the accessories.
+     * MUTATION: in `Layout.configureAndLockPath`, read `stops` and `power` after the lock loop instead of beside
+     * `replacements`; the wait runs to its deadline and the failure is counted.
+     */
+    @Test
+    public void testAPowerCutWhileTheSwitchesAreSetEndsTheWait() throws Exception
+    {
+        model.go();
+        waitForPower(true, 1000);
+
+        TestPath tp = buildThreePointPath(180, "_cutWhileSet");
+        MarklinControlStation.DEBUG_SIMULATE_PACKETS = false;
+
+        // Within the first edge's CONFIGURE_SLEEP, as the path has two
+        java.util.concurrent.ScheduledExecutorService station =
+            java.util.concurrent.Executors.newSingleThreadScheduledExecutor();
+        station.schedule(() -> model.receiveMessage(support.Packets.powerStop()), 50,
+            java.util.concurrent.TimeUnit.MILLISECONDS);
+
+        try
+        {
+            long start = System.currentTimeMillis();
+            boolean passed = tp.layout.configureAndLockPath(tp.path, dummyLoc());
+
+            assertEndedUncounted(tp, new long[] {passed ? 1 : 0, System.currentTimeMillis() - start});
+        }
+        finally
+        {
+            MarklinControlStation.DEBUG_SIMULATE_PACKETS = true;
+            station.shutdownNow();
+            station.awaitTermination(5, java.util.concurrent.TimeUnit.SECONDS);
+            model.go();
+            waitForPower(true, 1000);
+        }
+    }
+
     private static void assertEndedUncounted(TestPath tp, long[] outcome)
     {
         assertEquals(outcome[0], 0L, "A path still waiting when the trains are stopped must not be released");
