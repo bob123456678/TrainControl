@@ -62,27 +62,49 @@ public class testTheWindowShowsTheConnection
     }
 
     /**
-     * The latency says "(UDP)" once a CS3 that would not take TCP is reached over UDP instead, and not for a station
-     * never asked for TCP, as a CS2 is.
+     * The latency names the protocol in use: TCP while a CS3 is on TCP, UDP once that connection is given up, and UDP
+     * for a CS2, which uses nothing else; none in a simulation with no station.
      *
-     * MUTATION: answer false from `NetworkProxy.isOnUdpInsteadOfTcp`, and this fails.
+     * MUTATION: name UDP in `TrainControlUI.updateLatency` whatever the model's transport is, and this fails.
      */
-    @Test
-    public void testTheLatencySaysUdpAfterACS3FellBackToIt() throws Exception
+    @Test(timeOut = 60000)
+    public void testTheLatencyNamesTheProtocolInUse() throws Exception
     {
-        assertFalse(latency().contains("(UDP)"), "a station never asked for TCP, as a CS2, was said to be on UDP"
-            + " instead: " + latency());
+        assertFalse(latency().endsWith("P)"), "a simulation with no station named a protocol: " + latency());
+
+        TcpStation station = new TcpStation();
 
         try
         {
-            proxy.connectOverTcp(TcpStation.closedPort());
+            model.setNetworkCommState(true);
+            assertTrue(latency().endsWith("(UDP)"), "a CS2, which uses UDP, was not said to: " + latency());
 
-            assertTrue(latency().contains("(UDP)"), "a CS3 that would not take TCP, reached over UDP, was not said to be"
-                + " on UDP: " + latency());
+            proxy.connectOverTcp(station.port());
+            assertTrue(latency().endsWith("(TCP)"), "a CS3 on TCP was not said to be: " + latency());
+
+            station.close();
+            assertTrue(Components.waitFor(() -> tcpGivenUp(), 30000), "precondition: the closed connection was kept");
+            assertTrue(latency().endsWith("(UDP)"), "a CS3 whose TCP connection was given up was not said to be on UDP: "
+                + latency());
         }
         finally
         {
+            station.close();
+            model.setNetworkCommState(false);
             Reflect.set(NetworkProxy.class, proxy, "tcpPort", 0);
+        }
+    }
+
+    /** Whether the proxy has no TCP connection and is replacing none. */
+    private static boolean tcpGivenUp()
+    {
+        try
+        {
+            return Reflect.get(NetworkProxy.class, proxy, "tcp") == null && !proxy.isReplacing();
+        }
+        catch (ReflectiveOperationException e)
+        {
+            throw new IllegalStateException(e);
         }
     }
 
