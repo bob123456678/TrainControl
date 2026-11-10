@@ -86,7 +86,10 @@ public class NetworkProxy
      */
     private static final long TCP_ANSWER_LIMIT_MS = 3000;
 
-    /** The ping the window sends, which every station answers: the probe of a suspect connection. */
+    /**
+     * The ping the window sends, which every station answers: the probe of a suspect connection.  Its answer is read as
+     * the window's ping's, so a latency reading taken across a probe may come out low by up to one ping interval.
+     */
     private static final byte[] PROBE = new CS2Message(CS2Message.CAN_CMD_PING, new byte[0]).getRawMessage();
 
     /** A send unanswered this long makes the connection suspect: a Stop then goes over UDP as well. */
@@ -545,7 +548,7 @@ public class NetworkProxy
             || sub == CS2Message.CMD_SYSSUB_TRAINSTOP;
     }
 
-    /** Whether a frame sent on the connection has gone unanswered for TCP_SUSPECT_MS.  Holds this. */
+    /** Whether a frame sent on the connection has gone unanswered for TCP_SUSPECT_MS.  Reads volatiles only. */
     private boolean suspect()
     {
         long first = this.firstUnansweredAt;
@@ -909,9 +912,9 @@ public class NetworkProxy
     }
 
     /**
-     * Writes a sensor query to the connection; false when it was not written.  Not counted as a command that may not
-     * have arrived, and no start of the answer clock: a resync runs again on the next live transport, and a query
-     * left unanswered says nothing of the connection.
+     * Writes a sensor query or the probe to the connection; false when it was not written.  Not counted as a command
+     * that may not have arrived, and no start of the answer clock: a resync runs again on the next live transport, and
+     * neither left unanswered says anything of the connection on its own.
      */
     private synchronized boolean sendQuery(byte[] query)
     {
@@ -1019,7 +1022,8 @@ public class NetworkProxy
                         probe.start();
                     }
 
-                    if (first != 0 && first - this.lastHeardAt > 0 && System.nanoTime() - first > TCP_ANSWER_LIMIT_MS * 1000000L)
+                    // Else: after a whole-program pause the probe gets its own wake before the limit is asked
+                    else if (first != 0 && first - this.lastHeardAt > 0 && System.nanoTime() - first > TCP_ANSWER_LIMIT_MS * 1000000L)
                     {
                         return I18n.f("network.tcpNoAnswer", TCP_ANSWER_LIMIT_MS / 1000);
                     }
