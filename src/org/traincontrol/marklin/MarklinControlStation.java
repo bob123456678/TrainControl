@@ -3041,9 +3041,11 @@ public class MarklinControlStation implements ViewListener, ModelListener
     }
 
     @Override
-    public boolean isOnUdpInsteadOfTcp()
+    public String getProtocol()
     {
-        return this.NetworkInterface != null && this.NetworkInterface.isOnUdpInsteadOfTcp();
+        if (!this.getNetworkCommState() || this.NetworkInterface == null) return null;
+
+        return this.NetworkInterface.isOnTcp() ? "TCP" : "UDP";
     }
 
     @Override
