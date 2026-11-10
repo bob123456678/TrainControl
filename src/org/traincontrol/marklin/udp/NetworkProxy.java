@@ -1092,6 +1092,9 @@ public class NetworkProxy
             {
                 Socket fresh = connectTcp();
 
+                // From here the TCP buffer holds every frame, so UDP is set aside before TCP is read
+                setUdpLive(false);
+
                 synchronized (this)
                 {
                     if (this.stopRequested)
@@ -1104,7 +1107,6 @@ public class NetworkProxy
                     this.replacing = false;
                 }
 
-                setUdpLive(false);
                 model.logf("network.tcpReconnected");
                 resync(true, 1);
                 return;

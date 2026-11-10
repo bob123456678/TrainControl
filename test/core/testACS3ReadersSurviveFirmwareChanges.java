@@ -531,6 +531,7 @@ public class testACS3ReadersSurviveFirmwareChanges
      * One accessory without an id holds back only the routes whose switches may be that one; an empty locomotive list
      * drops the train commands with a warning and imports every route, as 3.0.8 did.
      * MUTATION: CS2File.parseRoutesCS3(boolean) refusing every route when an accessory has no id, or there are no locomotives.
+     * MUTATION: CS2File.mayLackAccessories passing over a record that is not an object.
      */
     @Test
     public void testOneAccessoryWithoutAnIdOrNoLocomotivesCostsOnlyWhatNeedsThem() throws Exception
@@ -577,15 +578,23 @@ public class testACS3ReadersSurviveFirmwareChanges
 
         assertTrue(!heldBack.isEmpty() && heldBack.size() < good.size() / 2, "a few routes name it: " + heldBack);
 
-        try (StationRig rig = rig(only(ACCESSORIES, bytes(mags))))
-        {
-            assertTrue(rig.model.syncWithCS2() >= 0);
-            assertTrue(rig.model.wasLastSyncPartial(), "the routes held back are warned of");
+        // The same with that record not an object at all
+        JSONArray notAnObject = new JSONArray(mags.toString());
+        for (int i = 0; i < notAnObject.length(); i++) if (!notAnObject.getJSONObject(i).has("id")) notAnObject.put(i, 7);
 
-            for (String name : good.keySet())
+        for (JSONArray answer : new JSONArray[] {mags, notAnObject})
+        {
+            try (StationRig rig = rig(only(ACCESSORIES, bytes(answer))))
             {
-                MarklinRoute r = rig.model.getRoute(name);
-                assertEquals(r == null ? null : new ArrayList<>(r.getRoute()), heldBack.contains(name) ? null : good.get(name), name);
+                assertTrue(rig.model.syncWithCS2() >= 0);
+                assertTrue(rig.model.wasLastSyncPartial(), "the routes held back are warned of");
+
+                for (String name : good.keySet())
+                {
+                    MarklinRoute r = rig.model.getRoute(name);
+                    assertEquals(r == null ? null : new ArrayList<>(r.getRoute()), heldBack.contains(name) ? null : good.get(name),
+                        name + (answer == mags ? "" : ", the record not an object"));
+                }
             }
         }
 

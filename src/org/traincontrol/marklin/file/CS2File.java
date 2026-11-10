@@ -843,21 +843,17 @@ public final class CS2File
         }
     }
 
-    /** Whether an accessory a route names may be missing from the list: it has no records, or one without a numeric id. */
+    /** Whether an accessory a route names may be missing from the list: it is empty, or has a record without a numeric id. */
     private static boolean mayLackAccessories(JSONArray mags)
     {
-        boolean any = false;
-
         for (int i = 0; i < mags.length(); i++)
         {
             JSONObject o = mags.optJSONObject(i);
 
-            if (o != null && o.optInt("id", Integer.MIN_VALUE) == Integer.MIN_VALUE) return true;
-
-            any |= o != null;
+            if (o == null || o.optInt("id", Integer.MIN_VALUE) == Integer.MIN_VALUE) return true;
         }
 
-        return !any;
+        return mags.length() == 0;
     }
 
     /**
