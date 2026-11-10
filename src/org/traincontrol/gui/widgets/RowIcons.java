@@ -358,6 +358,9 @@ public final class RowIcons
             @Override
             void draw(Graphics2D g, int width, int height)
             {
+                // Strokes left where they are drawn: the default nudges the edge half a pixel off the mark's middle
+                g.setRenderingHint(RenderingHints.KEY_STROKE_CONTROL, RenderingHints.VALUE_STROKE_PURE);
+
                 java.awt.geom.Path2D.Float triangle = new java.awt.geom.Path2D.Float();
 
                 triangle.moveTo(width / 2f, 1f);
@@ -372,12 +375,14 @@ public final class RowIcons
                 g.setStroke(new BasicStroke(1.1f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
                 g.draw(triangle);
 
-                float middle = width / 2f;
+                // The mark on whole pixels, two wide about the middle: a dot a pixel clear of the base, a gap, the bar
+                float left = width / 2f - 1;
+                int dot = height - 5;
+                int bar = dot - 1 - (height - 4) / 3;
 
                 g.setColor(new Color(40, 30, 0));
-                g.setStroke(new BasicStroke(1.6f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
-                g.draw(new java.awt.geom.Line2D.Float(middle, height * 0.38f, middle, height * 0.64f));
-                g.fill(new java.awt.geom.Ellipse2D.Float(middle - 0.95f, height * 0.73f, 1.9f, 1.9f));
+                g.fill(new java.awt.geom.RoundRectangle2D.Float(left, bar, 2, dot - 1 - bar, 1, 1));
+                g.fill(new java.awt.geom.RoundRectangle2D.Float(left, dot, 2, 2, 1, 1));
             }
         };
     }

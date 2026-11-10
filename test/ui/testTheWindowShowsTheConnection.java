@@ -159,4 +159,131 @@ public class testTheWindowShowsTheConnection
         assertEquals(Components.onTheEventThread(stop::getText), text, "Power OFF's text changed");
         assertEquals(Components.onTheEventThread(stop::getSize), size, "Power OFF changed size");
     }
+
+    /**
+     * The triangle on Power OFF is drawn true at 1x (Adam: "make sure the exclamation point is aligned"): the mark is
+     * mirror-even about the triangle's middle, a row of amber parts its dot from the base, and the triangle stands
+     * centered on the button's text line.
+     *
+     * MUTATION: take the `VALUE_STROKE_PURE` hint out of `RowIcons.warning`, or put the dot back on the base, and this
+     * fails.
+     */
+    @Test
+    public void testTheTrianglesMarkIsCenteredAndSitsOnTheTextLine() throws Exception
+    {
+        JButton stop = WindowField.of(ui, "PowerOff");
+
+        javax.swing.Icon was = Components.onTheEventThread(stop::getIcon);
+
+        try
+        {
+            Components.onTheEventThread(() ->
+            {
+                stop.setIcon(org.traincontrol.gui.widgets.RowIcons.warning(16));
+
+                java.awt.image.BufferedImage drawn = new java.awt.image.BufferedImage(stop.getWidth(), stop.getHeight(),
+                    java.awt.image.BufferedImage.TYPE_INT_RGB);
+                java.awt.Graphics2D g = drawn.createGraphics();
+
+                stop.paint(g);
+                g.dispose();
+
+                java.awt.Rectangle icon = new java.awt.Rectangle(), text = new java.awt.Rectangle();
+                java.awt.Insets in = stop.getInsets();
+                java.awt.Rectangle view = new java.awt.Rectangle(in.left, in.top, stop.getWidth() - in.left - in.right,
+                    stop.getHeight() - in.top - in.bottom);
+
+                SwingUtilities.layoutCompoundLabel(stop, stop.getFontMetrics(stop.getFont()), stop.getText(), stop.getIcon(),
+                    stop.getVerticalAlignment(), stop.getHorizontalAlignment(), stop.getVerticalTextPosition(),
+                    stop.getHorizontalTextPosition(), view, icon, text, stop.getIconTextGap());
+
+                int back = drawn.getRGB(icon.x, icon.y);
+
+                // The triangle: rows and columns where the icon's box differs from the button behind it by half or more
+                int[] box = inkBox(drawn, icon, rgb -> distance(rgb, back) > 128);
+
+                // The mark: near-black inside the triangle
+                int[] mark = inkBox(drawn, icon, rgb -> ((rgb >> 16) & 255) < 100 && ((rgb >> 8) & 255) < 100);
+
+                // The text's ink, caps top to baseline
+                int[] words = inkBox(drawn, text, rgb -> distance(rgb, back) > 128);
+
+                double middle = (box[0] + box[2]) / 2.0;
+
+                assertEquals((mark[0] + mark[2]) / 2.0, middle, 0.01, "the mark is not on the triangle's middle: mark"
+                    + " columns " + mark[0] + ".." + mark[2] + ", triangle " + box[0] + ".." + box[2]);
+
+                for (int y = icon.y; y < icon.y + icon.height; y++)
+                {
+                    for (int x = icon.x; x < icon.x + icon.width; x++)
+                    {
+                        int mirror = (int) Math.round(2 * middle - x);
+
+                        assertEquals(dark(drawn.getRGB(x, y)), dark(drawn.getRGB(mirror, y)), "the mark is not mirror-even:"
+                            + " row " + (y - icon.y) + ", columns " + (x - icon.x) + " and " + (mirror - icon.x));
+                    }
+                }
+
+                // Below the dot, before the base's edge, a row of the triangle's amber
+                int column = (int) Math.floor(middle);
+
+                assertTrue(amber(drawn.getRGB(column, mark[3] + 1)), "the dot sits on the base, with no amber between");
+
+                double triangle = (box[1] + box[3]) / 2.0;
+                double line = (words[1] + words[3]) / 2.0;
+
+                assertEquals(triangle, line, 1.0, "the triangle (rows " + box[1] + ".." + box[3] + ") is not centered on"
+                    + " the text line (rows " + words[1] + ".." + words[3] + ")");
+
+                return null;
+            });
+        }
+        finally
+        {
+            Components.onTheEventThread(() -> { stop.setIcon(was); return null; });
+        }
+    }
+
+    /** {left, top, right, bottom} of the pixels in `in` that pass; fails where none do. */
+    private static int[] inkBox(java.awt.image.BufferedImage drawn, java.awt.Rectangle in,
+        java.util.function.IntPredicate ink)
+    {
+        int[] out = {Integer.MAX_VALUE, Integer.MAX_VALUE, -1, -1};
+
+        for (int y = in.y; y < in.y + in.height; y++)
+        {
+            for (int x = in.x; x < in.x + in.width; x++)
+            {
+                if (!ink.test(drawn.getRGB(x, y))) continue;
+
+                out[0] = Math.min(out[0], x);
+                out[1] = Math.min(out[1], y);
+                out[2] = Math.max(out[2], x);
+                out[3] = Math.max(out[3], y);
+            }
+        }
+
+        assertTrue(out[2] >= 0, "nothing drawn in " + in);
+
+        return out;
+    }
+
+    private static int distance(int one, int other)
+    {
+        int out = 0;
+
+        for (int shift = 0; shift <= 16; shift += 8) out = Math.max(out, Math.abs(((one >> shift) & 255) - ((other >> shift) & 255)));
+
+        return out;
+    }
+
+    private static boolean dark(int rgb)
+    {
+        return ((rgb >> 16) & 255) < 100 && ((rgb >> 8) & 255) < 100;
+    }
+
+    private static boolean amber(int rgb)
+    {
+        return ((rgb >> 16) & 255) > 220 && ((rgb >> 8) & 255) > 150 && (rgb & 255) < 120;
+    }
 }
