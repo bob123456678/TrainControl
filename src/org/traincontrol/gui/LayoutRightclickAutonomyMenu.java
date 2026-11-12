@@ -424,7 +424,7 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
     }
 
     /**
-     * The standing train's destinations under its name, from the answer gathered for it (equality says it is about the
+     * The standing train's destinations under "Send <name> To:" (MT-922), from the answer gathered for it (equality says it is about the
      * train standing here now); true when it added any.
      */
     private boolean addDestinations(Locomotive locomotive, PathOptions options)
@@ -434,7 +434,7 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
 
         addSeparator();
 
-        JMenuItem whose = new JMenuItem(locomotive.getName());
+        JMenuItem whose = new JMenuItem(I18n.f("autolayout.ui.menuSendTo", locomotive.getName()));
         whose.setEnabled(false);
         add(whose);
 

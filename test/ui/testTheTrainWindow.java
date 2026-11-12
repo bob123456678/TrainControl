@@ -1381,6 +1381,57 @@ public class testTheTrainWindow
     }
 
     /**
+     * Over a train, the destinations the diagram's menu offers are headed "Send <name> To:", not the train's bare name
+     * (Adam: "change the gray <loc name> heading to Send <locname> To: if there are ANY destination options below it");
+     * the heading is there only with a destination under it.
+     *
+     * MUTATION: head the destinations with `locomotive.getName()` again in `LayoutRightclickAutonomyMenu.addDestinations`,
+     * and this fails.
+     */
+    @Test(timeOut = 120000)
+    public void testTheDestinationsAreHeadedSendTo() throws Exception
+    {
+        java.util.List<String> shape = null;
+        String train = null;
+
+        // A train with somewhere to go: under either heading, the new or the bare name
+        for (Map.Entry<TileKey, String> each : session.trainsWhereTheyStand().entrySet())
+        {
+            if (!PAGE.equals(each.getKey().getPage()) || !each.getValue().equals(session.getLocomotiveNameAt(each.getKey())))
+            {
+                continue;
+            }
+
+            AskingWindows.showThePageOf(ui, each.getKey());
+
+            java.util.List<String> menu = shape(AskingWindows.menuOn(ui, ui, each.getKey()));
+
+            Mouse.closeMenus();
+
+            if (menu.contains("(heading) " + I18n.f("autolayout.ui.menuSendTo", each.getValue()))
+                || menu.contains("(heading) " + each.getValue()))
+            {
+                shape = menu;
+                train = each.getValue();
+
+                break;
+            }
+        }
+
+        assertNotNull(shape, "precondition: no train on " + PAGE + " has a destination on its menu");
+
+        int heading = shape.indexOf("(heading) " + I18n.f("autolayout.ui.menuSendTo", train));
+
+        assertTrue(heading >= 0, "the destinations are not headed Send " + train + " To: " + shape);
+
+        assertFalse(shape.contains("(heading) " + train), "the train's bare name still heads something: " + shape);
+
+        String first = shape.get(heading + 1);
+
+        assertTrue(!first.startsWith("(heading)") && !"----".equals(first), "no destination follows the heading: " + shape);
+    }
+
+    /**
      * Over an empty station Station Settings... is the station's own item, and the two ways to put a train there are a
      * group of their own behind a divider, on the track diagram and in the autonomy editor (FR-182, as Adam
      * reordered it).
