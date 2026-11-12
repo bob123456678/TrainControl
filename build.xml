@@ -707,6 +707,7 @@
         <test-one-class class="testAStandingTrainIsSentWhileAnotherRuns"/>
         <test-one-class class="testACS3SyncTakesWhatItTookBefore"/>
         <test-one-class class="testTheWindowShowsTheConnection"/>
+        <test-one-class class="testTheKeyboardHeadingSitsWhereTheRoutesDoes"/>
     </target>
     <target name="package-for-store" depends="jar">
         <property name="store.jar.name" value="TrainControl"/>

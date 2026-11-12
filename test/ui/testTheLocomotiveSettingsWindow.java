@@ -1168,6 +1168,188 @@ public class testTheLocomotiveSettingsWindow
         assertNotNull(model.getLocByName("LS renamed"), "Save on the question did not write the typing");
     }
 
+    /**
+     * A blank address is not a quiet close: Save keeps the window open with a message saying what is wrong and writes
+     * nothing, and the X and Escape ask Save, Discard or Cancel; Discard closes with the address as it was (OB-439).
+     *
+     * MUTATION: let `LocomotiveTab.addressText` hand a blank address on as "no change" (return null for it), and Save
+     * closes the window without a word.
+     */
+    @Test
+    public void testABlankAddressIsRefusedAndNeverClosesQuietly() throws Exception
+    {
+        open(0);
+
+        SettingsWindow.type("settings.address", "");
+
+        assertEquals(saveAndAnswer(), Arrays.asList(I18n.t("loc.errorAddressNotNumeric")), "a blank address was not refused");
+        assertNotNull(SettingsWindow.showing(), "Save closed the window over a blank address");
+        assertEquals(loc.getAddress(), 3401, "a blank address was written");
+
+        for (boolean byEscape : new boolean[] { true, false })
+        {
+            LocomotiveSettingsFrame.unsavedAnswerForTest = 2;
+
+            assertFalse(closeBy(byEscape), "the window closed over a blank address without asking");
+        }
+
+        // Save on the question is the same refusal, and the window stays
+        LocomotiveSettingsFrame.unsavedAnswerForTest = 0;
+
+        try (Answering answering = Answering.start(message -> Answering.pressAt(0)))
+        {
+            assertFalse(closeBy(true), "Save on the question closed the window over a blank address");
+            assertEquals(answering.asked(), Arrays.asList(I18n.t("loc.errorAddressNotNumeric")));
+        }
+
+        LocomotiveSettingsFrame.unsavedAnswerForTest = 1;
+
+        assertTrue(closeBy(true), "Discard did not close the window");
+        assertEquals(loc.getAddress(), 3401, "Discard wrote the blank address");
+    }
+
+    /** The arrow button of the address field, "next" or "previous". */
+    private static JButton addressArrow(boolean next)
+    {
+        return Components.onTheEventThread(() -> Components.find(SettingsWindow.part("settings.addressSpinner", JSpinner.class),
+            JButton.class, b -> next == "Spinner.nextButton".equals(b.getName())));
+    }
+
+    /**
+     * The address field has up and down arrows like the length field: one step each, written only at Save, and held to
+     * the chosen decoder type's range (MM2 stops at 80), from a blank as from zero (OB-439).
+     *
+     * MUTATION: let `AddressModel.ifValid` answer any value, and the MM2 stop at 80 is passed.
+     */
+    @Test
+    public void testTheAddressArrowsStepWithinTheDecodersRange() throws Exception
+    {
+        open(0);
+
+        assertNotNull(addressArrow(true), "the address field has no up arrow");
+
+        Components.press(addressArrow(true));
+        assertEquals(SettingsWindow.text("settings.address"), "3402", "the up arrow did not step the address");
+
+        Components.press(addressArrow(false));
+        Components.press(addressArrow(false));
+        assertEquals(SettingsWindow.text("settings.address"), "3400", "the down arrow did not step the address");
+        assertEquals(loc.getAddress(), 3401, "the arrows wrote before Save");
+        assertTrue(SettingsWindow.save().isEnabled(), "stepping the address left Save grayed");
+
+        decoder(Locomotive.decoderType.MM2);
+        SettingsWindow.type("settings.address", "80");
+        Components.press(addressArrow(true));
+        assertEquals(SettingsWindow.text("settings.address"), "80", "the up arrow went past MM2's last address");
+
+        SettingsWindow.type("settings.address", "1");
+        Components.press(addressArrow(false));
+        assertEquals(SettingsWindow.text("settings.address"), "1", "the down arrow went below address 1");
+
+        SettingsWindow.type("settings.address", "");
+        Components.press(addressArrow(true));
+        assertEquals(SettingsWindow.text("settings.address"), "1", "the up arrow did not start a blank at 1");
+
+        // An address outside the chosen type's range steps to the nearest one inside it
+        for (boolean up : new boolean[] { true, false })
+        {
+            SettingsWindow.type("settings.address", "3401");
+            Components.press(addressArrow(up));
+            assertEquals(SettingsWindow.text("settings.address"), "80", "an address above MM2's range did not step to its last");
+        }
+    }
+
+    /**
+     * Changing the decoder type changes the Functions tab's rows at once, to the count that type gets on reopening;
+     * nothing is written until Save.
+     *
+     * MUTATION: leave `functionsTab.showCount` out of the decoder box's listener in `LocomotiveTab`, and this fails.
+     */
+    @Test
+    public void testTheDecoderChoiceSetsTheFunctionCountAtOnce() throws Exception
+    {
+        open(1);
+
+        assertEquals(functionRows(), MarklinLocomotive.getMaxNumF(Locomotive.decoderType.MFX), "the MFX locomotive has the wrong rows");
+
+        for (Locomotive.decoderType type : new Locomotive.decoderType[] { Locomotive.decoderType.DCC,
+            Locomotive.decoderType.MM2, Locomotive.decoderType.MFX })
+        {
+            decoder(type);
+
+            assertEquals(functionRows(), MarklinLocomotive.getMaxNumF(type), "the Functions tab did not follow " + type);
+            assertEquals(loc.getNumF(), MarklinLocomotive.MFX_NUM_FN, "choosing " + type + " wrote before Save");
+        }
+
+        decoder(Locomotive.decoderType.MM2);
+        SettingsWindow.type("settings.address", "20");
+        SettingsWindow.press(SettingsWindow.save());
+
+        assertTrue(Components.waitFor(() -> SettingsWindow.showing() == null, WAIT), "the Save did not go through");
+
+        open(1);
+
+        assertEquals(functionRows(), loc.getNumF(), "what the tab showed is not what reopening shows");
+        assertEquals(loc.getNumF(), MarklinLocomotive.getMaxNumF(Locomotive.decoderType.MM2));
+    }
+
+    /**
+     * Stored function images and the Autonomy tab's function lists follow the decoder type chosen in the window: an
+     * image above a smaller type's count is back when the bigger type is chosen again, Reset All clears it wherever it
+     * sits, and a departure function the new type does not have is not offered, kept or recorded.
+     *
+     * MUTATION: seed a new row with a null image (the `getLocalFunctionImageURLs` lookup in `showCount`), skip the
+     * set-aside rows in Reset All, or drop `autonomyTab.showCount` from the decoder listener, and this fails.
+     */
+    @Test
+    public void testTheTabsFollowTheDecoderChosenInTheWindow() throws Exception
+    {
+        fixture.needPictures("lwindow");
+
+        loc.setLocalFunctionImageURL(30, SettingsWindow.picture(fixture.folder, "f30.png", java.awt.Color.RED).toPath().toUri().toString());
+        loc.setDepartureFunc(20);
+
+        open(1);
+
+        decoder(Locomotive.decoderType.DCC);
+        decoder(Locomotive.decoderType.MFX);
+
+        assertEquals(iconComboIndex(30), -1, "the image stored for F30 did not come back with MFX's 32 functions");
+
+        decoder(Locomotive.decoderType.DCC);
+        SettingsWindow.resetAll("Yes");
+        decoder(Locomotive.decoderType.MFX);
+
+        assertTrue(iconComboIndex(30) >= 0, "Reset All left the image on a function the decoder had no room for");
+
+        SettingsWindow.selectTab(4);
+        decoder(Locomotive.decoderType.MM2);
+
+        javax.swing.JComboBox<?> departure = SettingsWindow.part("autonomy.departure", JComboBox.class);
+
+        assertEquals((int) Components.onTheEventThread(departure::getItemCount), 1 + MarklinLocomotive.MM2_NUM_FN,
+            "the departure list is not MM2's");
+        assertEquals((int) Components.onTheEventThread(departure::getSelectedIndex), 0, "F20 stayed chosen under MM2");
+
+        SettingsWindow.type("settings.address", "20");
+        SettingsWindow.press(SettingsWindow.save());
+
+        assertTrue(Components.waitFor(() -> SettingsWindow.showing() == null, WAIT), "the Save did not go through");
+        assertNull(loc.getDepartureFunc(), "a departure function MM2 does not have was kept");
+    }
+
+    private static int iconComboIndex(int row)
+    {
+        javax.swing.JComboBox<?> combo = SettingsWindow.inEditor(row, 1, "functions.iconCombo", JComboBox.class);
+
+        return Components.onTheEventThread(combo::getSelectedIndex);
+    }
+
+    private static int functionRows()
+    {
+        return Components.onTheEventThread(() -> SettingsWindow.part("functions.table", javax.swing.JTable.class).getRowCount());
+    }
+
     /** Closes by Escape or by the X, and says whether the window went. */
     private static boolean closeBy(boolean escape) throws Exception
     {

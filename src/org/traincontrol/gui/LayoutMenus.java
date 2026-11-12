@@ -64,12 +64,6 @@ final class LayoutMenus
         // The items that need a local layout to act on (OB-128); left alone when an editor is open.
         if (!busy)
         {
-            boolean workable = ui.layoutCanBeEdited();
-
-            // Manage Pages is left to `applyLayoutEditingAvailability`: this menu opens on its own schedule and
-            // disagreed with it during a rebuild.
-            if (ui.editPageMenu != null) ui.editPageMenu.setEnabled(workable && ui.isLayoutLoaded());
-
             refreshRecentLayouts();
 
             // Pop-outs and the picture export need loaded pages, not a local folder (a Central Station diagram works),
@@ -96,7 +90,6 @@ final class LayoutMenus
         greyForTheRun(recentLayoutsMenu, running, false, why);
         greyForTheRun(ui.modifyLocalLayoutMenu(), running, false, why);
         greyForTheRun(ui.managePagesItem, running, false, why);
-        greyForTheRun(ui.editPageMenu, running, false, why);
         greyForTheRun(ui.initializeLocalLayoutMenuItem(), running, true, why);
 
         // The two Central Station items' owner works them out again once they are given back
@@ -227,7 +220,7 @@ final class LayoutMenus
     }
 
     /**
-     * Layouts > Manage Pages...: opens the layout editor as Edit does, or brings the open one forward (FR-146); the
+     * Layouts > Edit/Add Pages...: opens the layout editor as Edit does, or brings the open one forward (FR-146); the
      * page actions are the icons down its left side.  It stands in for the hidden Manage Pages menu.
      */
     void mountManagePages()
@@ -370,44 +363,6 @@ final class LayoutMenus
         }
 
         ui.showCurrentLayoutFolderMenuItem().setText(I18n.f("ui.main.toolbar.dataSource", source));
-    }
-
-    /** "Edit Layout Page..." on the Layouts menu, one entry per page; rebuilt on every mount as the pages change. */
-    void mountEditPageMenu()
-    {
-        if (ui.layoutMenu() == null) return;
-
-        if (ui.editPageMenu != null) ui.layoutMenu().remove(ui.editPageMenu);
-
-        ui.editPageMenu = new javax.swing.JMenu(I18n.t("layout.ui.menuEditLayoutPage"));
-
-        List<String> pages = ui.getModel() == null ? new ArrayList<>() : ui.getModel().getLayoutList();
-
-        for (final String page : pages)
-        {
-            javax.swing.JMenuItem item = new javax.swing.JMenuItem(page);
-
-            item.addActionListener(event -> ui.openLayoutEditor(page, null, null));
-
-            ui.editPageMenu.add(item);
-        }
-
-        ui.editPageMenu.setEnabled(!pages.isEmpty() && ui.isLocalLayout());
-
-        // Directly under Manage Pages, its other half (OB-021); add() would put it at the bottom.
-        int under = -1;
-
-        for (int i = 0; i < ui.layoutMenu().getMenuComponentCount(); i++)
-        {
-            if (ui.layoutMenu().getMenuComponent(i) == ui.modifyLocalLayoutMenu())
-            {
-                under = i;
-                break;
-            }
-        }
-
-        if (under >= 0) ui.layoutMenu().add(ui.editPageMenu, under + 1);
-        else ui.layoutMenu().add(ui.editPageMenu);
     }
 
     /**

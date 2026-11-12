@@ -674,7 +674,7 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
 
     /**
      * Writes everything typed onto the locomotive.  Each refusal is asked before the first write, in this order: the
-     * moving rule, autonomy, routes and the multi-unit, then the name before the address; the multi-unit's again after
+     * moving rule, autonomy, a blank address, routes and the multi-unit, then the name; the multi-unit's again after
      * the rest is written, and refused there the window stays dirty and the next Save writes it all again.
      *
      * @return true when everything went through
@@ -699,6 +699,16 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
         boolean identity = locomotiveTab.identityChanged();
         boolean members = multiUnitTab.isDirty();
 
+        String address = locomotiveTab.addressText();
+
+        // Blank would read as "no change" below
+        if (identity && address != null && address.trim().isEmpty())
+        {
+            JOptionPane.showMessageDialog(this, I18n.t("loc.errorAddressNotNumeric"));
+
+            return false;
+        }
+
         if (identity && main.refuseWhileARouteDrivesIt(this, loc.getName())) return false;
 
         if (members && main.locomotiveActions.refuseMultiUnitEdit(this, loc, multiUnitTab.chosen().keySet())) return false;
@@ -706,8 +716,7 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
         // Only what the operator changed from the loaded values: another door may have changed the rest since
         if (identity && !main.locomotiveActions.writeNameAndAddress(this, loc,
             locomotiveTab.nameChanged() ? locomotiveTab.name.getText() : null,
-            locomotiveTab.addressText(),
-            (decoderType) locomotiveTab.decoder.getSelectedItem()))
+            address, locomotiveTab.chosenDecoder()))
         {
             return false;
         }
@@ -807,6 +816,8 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
         final JComboBox<decoderType> decoder = new JComboBox<>(adding
             ? new decoderType[] { decoderType.MFX, decoderType.MM2, decoderType.DCC } : decoderType.values());
         final JTextField address = new JTextField(16);
+        final AddressModel addressModel = new AddressModel();
+        final JSpinner addressSpinner = new JSpinner(addressModel);
         final JSpinner speed = typedAtOnce(new JSpinner(new SpinnerNumberModel(0, 0, 100, 1)));
         final JLabel sameAddress = new JLabel();
         final JButton sync = new JButton(I18n.t("loc.ui.menuSyncCentralStation"));
@@ -887,7 +898,18 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
                     TrainControlUI.limitLength(e, 6);
                 }
             });
-            decoder.addActionListener(e -> typed());
+            decoder.addActionListener(e ->
+            {
+                if (!adding)
+                {
+                    int count = org.traincontrol.marklin.MarklinLocomotive.getMaxNumF(chosenDecoder());
+
+                    functionsTab.showCount(count);
+                    autonomyTab.showCount(count);
+                }
+
+                typed();
+            });
             speed.addChangeListener(e -> typed());
 
             // Add Locomotive's limit on a new name; a rename is refused at Save instead
@@ -995,12 +1017,14 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
                     JLabel addressHint = InfoMark.label(I18n.t("loc.ui.settingsAddressHint"));
 
                     addressHint.setName("settings.addressHint");
-                    address.setPreferredSize(new Dimension(name.getPreferredSize().width
+                    addressSpinner.setEditor(address);
+                    addressSpinner.setName("settings.addressSpinner");
+                    addressSpinner.setPreferredSize(new Dimension(name.getPreferredSize().width
                         - addressHint.getPreferredSize().width - 4, name.getPreferredSize().height));
 
                     JPanel addressRow = new JPanel(new BorderLayout(4, 0));
                     addressRow.setOpaque(false);
-                    addressRow.add(address, BorderLayout.CENTER);
+                    addressRow.add(addressSpinner, BorderLayout.CENTER);
                     addressRow.add(addressHint, BorderLayout.EAST);
                     fieldCell = addressRow;
                 }
@@ -1115,8 +1139,14 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
             main.locomotiveActions.deleteLoc(loc.getName(), LocomotiveSettingsFrame.this);
         }
 
+        decoderType chosenDecoder()
+        {
+            return (decoderType) decoder.getSelectedItem();
+        }
+
         private void typed()
         {
+            addressModel.refresh();
             warnAboutTheSameAddress();
             changed();
         }
@@ -1163,20 +1193,70 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
             sync.setToolTipText(connected ? null : I18n.t("loc.ui.settingsSyncNoStation"));
         }
 
+        /** The address field's arrows: one up or down within the chosen decoder type's range, from a blank as from zero. */
+        private final class AddressModel extends javax.swing.AbstractSpinnerModel
+        {
+            private int typed()
+            {
+                try
+                {
+                    return Math.abs(org.traincontrol.util.Conversion.parseTypedAddress(address.getText().trim(),
+                        chosenDecoder() == decoderType.MFX));
+                }
+                catch (NumberFormatException blankOrNotANumber)
+                {
+                    return 0;
+                }
+            }
+
+            private Object ifValid(int value)
+            {
+                return org.traincontrol.marklin.MarklinLocomotive.validateNewAddress(chosenDecoder(), value) ? (Object) value : null;
+            }
+
+            @Override public Object getValue() { return typed(); }
+            @Override public Object getNextValue() { return step(1); }
+            @Override public Object getPreviousValue() { return step(-1); }
+
+            /** One step within the range; from outside it, the nearest address inside. */
+            private Object step(int by)
+            {
+                int now = typed();
+
+                if (ifValid(now) != null) return ifValid(now + by);
+
+                while (now > 1 && ifValid(now) == null) now--;
+
+                return ifValid(Math.max(now, 1));
+            }
+
+            @Override
+            public void setValue(Object value)
+            {
+                address.setText(String.valueOf(value));
+                fireStateChanged();
+            }
+
+            void refresh()
+            {
+                fireStateChanged();
+            }
+        }
+
         boolean nameChanged()
         {
             return !name.getText().equals(loadedName);
         }
 
         /**
-         * The address to write: the typed one when it was changed; the locomotive's own when only the decoder was, since
-         * the write needs an address and a sync may have changed it since; none otherwise.
+         * The address to write: the typed one when it was changed, blank included; the locomotive's own when only the
+         * decoder was, since the write needs an address and a sync may have changed it since; null when neither.
          */
         String addressText()
         {
             if (!address.getText().equals(loadedAddress)) return address.getText();
 
-            return decoder.getSelectedItem() != loadedDecoder ? Integer.toString(loc.getAddress()) : "";
+            return decoder.getSelectedItem() != loadedDecoder ? Integer.toString(loc.getAddress()) : null;
         }
 
         boolean identityChanged()
@@ -1428,19 +1508,30 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
         /** None, then F0 up to the last function, and to the one set if it lies beyond. */
         private JComboBox<String> functionChoices(Integer set)
         {
-            int count = Math.max(loc.getNumF(), set == null ? 0 : set + 1);
+            JComboBox<String> out = new JComboBox<>();
 
+            fill(out, Math.max(loc.getNumF(), set == null ? 0 : set + 1), set);
+
+            return out;
+        }
+
+        private void fill(JComboBox<String> box, int count, Integer set)
+        {
             String[] items = new String[count + 1];
 
             items[0] = I18n.t("autosetup.ui.labelNone");
 
             for (int i = 0; i < count; i++) items[i + 1] = "F" + i;
 
-            JComboBox<String> out = new JComboBox<>(items);
+            box.setModel(new javax.swing.DefaultComboBoxModel<>(items));
+            box.setSelectedIndex(set == null || set >= count ? 0 : set + 1);
+        }
 
-            out.setSelectedIndex(set == null ? 0 : set + 1);
-
-            return out;
+        /** The functions the chosen decoder type has, before Save; a choice beyond them goes back to none. */
+        void showCount(int count)
+        {
+            fill(departure, count, function(departure));
+            fill(arrival, count, function(arrival));
         }
 
         private Integer function(JComboBox<String> box)
@@ -1483,14 +1574,14 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
             {
                 loc.setDepartureFunc(function(departure));
 
-                stored.put("departureFunc", function(departure));
+                stored.put("departureFunc", loc.getDepartureFunc());
             }
 
             if (!java.util.Objects.equals(function(arrival), loadedArrival))
             {
                 loc.setArrivalFunc(function(arrival));
 
-                stored.put("arrivalFunc", function(arrival));
+                stored.put("arrivalFunc", loc.getArrivalFunc());
             }
 
             org.traincontrol.automation.Layout railway = main.getModel().getAutoLayoutIfLoaded();

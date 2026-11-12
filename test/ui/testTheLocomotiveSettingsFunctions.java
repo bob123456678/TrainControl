@@ -120,6 +120,47 @@ public class testTheLocomotiveSettingsFunctions
     // The table and its buffer
 
     /**
+     * A row's icon dropdown opens a list with six columns of icons across, as the old function dialog's did, and the
+     * preset button says Active (MT-924).
+     *
+     * MUTATION: take the popup-widening listener out of `IconCell`, and the list is two columns wide.
+     */
+    @Test
+    public void testTheIconDropdownShowsSixColumnsAndThePresetButtonSaysActive() throws Exception
+    {
+        JComboBox<?> combo = SettingsWindow.inEditor(0, 1, "functions.iconCombo", JComboBox.class);
+
+        Components.onTheEventThread(() ->
+        {
+            combo.showPopup();
+
+            return null;
+        });
+
+        Components.settle();
+
+        int columns = Components.onTheEventThread(() ->
+        {
+            javax.swing.JList<?> list = Components.find(((javax.swing.plaf.basic.BasicComboPopup)
+                combo.getAccessibleContext().getAccessibleChild(0)), javax.swing.JList.class, null);
+
+            int across = 0;
+
+            while (across < list.getModel().getSize() && list.getCellBounds(across, across).y == list.getCellBounds(0, 0).y)
+            {
+                across++;
+            }
+
+            return across;
+        });
+
+        assertEquals(columns, 6, "the icon dropdown does not show six columns of icons");
+
+        assertEquals(SettingsWindow.part("functions.useCurrent", JButton.class).getText(), "Save Active Functions as Preset");
+    }
+
+
+    /**
      * The table has a row for each function the locomotive has, with the icon, the behavior, whether it is on now and
      * whether it is in the preset, as the locomotive holds them; nothing is written by looking.
      *

@@ -857,7 +857,7 @@ public class testTheLayoutEditorManagesPages
     }
 
     /**
-     * Layouts > Manage Pages... stands where the Manage Pages menu was, which is hidden, and opens the layout editor
+     * Layouts > Edit/Add Pages... stands where the Manage Pages menu was, which is hidden, and opens the layout editor
      * on the main window's page, with no menu open: the page actions are the icons in its sidebar (FR-174).
      *
      * MUTATION: the editor opens its Tools menu after Manage Pages... (a `doClick` on the menu from
@@ -880,20 +880,9 @@ public class testTheLayoutEditorManagesPages
 
         assertFalse(hidden.isVisible(), "the Layouts menu still shows the Manage Pages menu");
 
-        List<java.awt.Component> shown = Components.onTheEventThread(() ->
-        {
-            List<java.awt.Component> visible = new ArrayList<>();
+        List<java.awt.Component> all = Components.onTheEventThread(() -> java.util.Arrays.asList(layouts.getMenuComponents()));
 
-            for (java.awt.Component c : layouts.getMenuComponents()) if (c.isVisible()) visible.add(c);
-
-            return visible;
-        });
-
-        int at = shown.indexOf(item);
-
-        assertTrue(at >= 0 && at + 1 < shown.size() && shown.get(at + 1) instanceof javax.swing.JMenu
-            && I18n.t("layout.ui.menuEditLayoutPage").equals(((javax.swing.JMenu) shown.get(at + 1)).getText()),
-            "Manage Pages... is not where the Manage Pages menu was, above Edit Layout Page");
+        assertEquals(all.indexOf(item) + 1, all.indexOf(hidden), "Edit/Add Pages... is not where the hidden Manage Pages menu is");
 
         assertTrue(item.isEnabled(), "precondition: Manage Pages... is grayed with a page loaded");
 
@@ -917,6 +906,36 @@ public class testTheLayoutEditorManagesPages
 
         assertNotNull(iconsOf(editorOn(page)).get(I18n.t("ui.main.toolbar.addBlackPage")),
             "the editor Manage Pages... opened has no Add icon");
+    }
+
+    /**
+     * The Layouts menu has one entry for the page editor, named Edit/Add Pages..., and no Edit Layout Page submenu
+     * beside it (OB-434).
+     *
+     * MUTATION: mount the page-per-item submenu again after Edit/Add Pages (or restore the old label), and this fails.
+     */
+    @Test
+    public void testTheLayoutsMenuHasEditAddPagesAndNoEditLayoutPageSubmenu() throws Exception
+    {
+        final javax.swing.JMenu layouts = field("layoutMenu", javax.swing.JMenu.class);
+
+        openTheLayoutsMenu();
+
+        List<String> texts = Components.onTheEventThread(() ->
+        {
+            List<String> out = new ArrayList<>();
+
+            for (java.awt.Component c : layouts.getMenuComponents())
+            {
+                if (c.isVisible() && c instanceof javax.swing.AbstractButton) out.add(((javax.swing.AbstractButton) c).getText());
+            }
+
+            return out;
+        });
+
+        assertTrue(texts.contains(I18n.t("ui.main.toolbar.managePages")), "the Layouts menu has no Edit/Add Pages...: " + texts);
+        assertFalse(texts.contains("Edit Layout Page"), "the Layouts menu still has an Edit Layout Page submenu: " + texts);
+        assertFalse(texts.contains("Manage Pages..."), "the Layouts menu still says Manage Pages...: " + texts);
     }
 
     /**

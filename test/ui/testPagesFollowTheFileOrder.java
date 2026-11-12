@@ -85,8 +85,6 @@ public class testPagesFollowTheFileOrder extends support.PageWindowTest
 
         assertEquals(comboOrder(), order, "the main window's page list is not in file order");
 
-        assertEquals(editMenuOrder(), order, "Layouts > Edit Layout Page does not list the pages in file order");
-
         edit("3 - Top Parking");
 
         assertEquals(sidebarOrder(editorOn("3 - Top Parking")), order, "the editor's page list is not in file order");
@@ -161,8 +159,6 @@ public class testPagesFollowTheFileOrder extends support.PageWindowTest
         assertEquals(sidebarOrder(editorOn("1 - Main")), moved, "the editor's page list is not in the new order");
 
         assertEquals(comboOrder(), moved, "the main window's page list is not in the new order");
-
-        assertEquals(editMenuOrder(), moved, "Layouts > Edit Layout Page is not in the new order");
 
         assertEquals(editors().size(), 1, "more than one editor is open: " + titles());
     }
@@ -493,22 +489,6 @@ public class testPagesFollowTheFileOrder extends support.PageWindowTest
             List<String> out = new ArrayList<>();
 
             for (int i = 0; i < box.getItemCount(); i++) out.add(String.valueOf(box.getItemAt(i)));
-
-            return out;
-        });
-    }
-
-    private List<String> editMenuOrder() throws Exception
-    {
-        final javax.swing.JMenu menu = (javax.swing.JMenu) Reflect.get(TrainControlUI.class, ui, "editPageMenu");
-
-        assertNotNull(menu, "the Layouts menu has no Edit Layout Page");
-
-        return Components.onTheEventThread(() ->
-        {
-            List<String> out = new ArrayList<>();
-
-            for (int i = 0; i < menu.getItemCount(); i++) out.add(menu.getItem(i).getText());
 
             return out;
         });
