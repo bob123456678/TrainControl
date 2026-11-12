@@ -376,43 +376,127 @@ public class testTheAutonomyEditorsTriageNotes
     @Test(timeOut = 180000)
     public void testARefusedLengthLosesNoPressAwayFromIt() throws Exception
     {
-        TileKey square = null;
-        StationSettingsWindow window = null;
-        javax.swing.JCheckBox box = null;
-
-        for (TileKey each : stations())
-        {
-            window = StationDoors.open(panel, each);
-            box = Components.find(window, javax.swing.JCheckBox.class, b -> b.getName() != null && b.getName().startsWith("station.arrive.") && b.isEnabled());
-
-            if (box != null) { square = each; break; }
-        }
-
-        assertNotNull(square, "precondition: no station has an arrival side to shut");
-
-        final TileKey at = square;
-        final String side = box.getName().substring("station.arrive.".length());
+        ArrivalBox pick = new ArrivalBox(false);
+        final TileKey at = pick.square;
+        final String side = pick.side;
+        StationSettingsWindow window = pick.window;
         JTextField field = StationDoors.part(window, "station.maxLength", JTextField.class);
 
         Components.onTheEventThread(() -> { field.setText("abc"); return null; });
 
         for (int press = 1; press <= 2; press++)
         {
-            boolean barred = Components.onTheEventThread(() -> session.getBarredArrivals(at).contains(org.traincontrol.automationui.TilePorts.Side.valueOf(side)));
+            boolean barred = barred(at, side);
 
-            // The release goes to the box at the pointer by then, as AWT sends it: a box rebuilt under the press never
-            // saw the press, and does nothing
-            support.Mouse.press(StationDoors.part(window, "station.arrive." + side, javax.swing.JCheckBox.class), java.awt.event.MouseEvent.BUTTON1);
-            Components.settle();
-            support.Mouse.release(StationDoors.part(window, "station.arrive." + side, javax.swing.JCheckBox.class), java.awt.event.MouseEvent.BUTTON1);
+            pressAndRelease(window, "station.arrive." + side);
 
             StationDoors.current(window);
 
-            assertEquals((boolean) Components.onTheEventThread(() -> session.getBarredArrivals(at).contains(org.traincontrol.automationui.TilePorts.Side.valueOf(side))), !barred,
-                "press " + press + " on the arrive-from box was lost");
+            assertEquals(barred(at, side), !barred, "press " + press + " on the arrive-from box was lost");
         }
 
         assertEquals(Components.onTheEventThread(field::getText), "abc", "the refused length lost its text");
+    }
+
+    /**
+     * A length that is taken applies on the press away from it, and the press still does what it presses: an
+     * arrive-from box toggles, and a May depart list opens without an error.  The window updates its boxes and lists in
+     * place, so none is rebuilt under the pointer.
+     *
+     * MUTATION: have `StationSettingsWindow.fillArrivals` rebuild its boxes on every reload, and the box does not toggle;
+     * have `fillDepart` rebuild its lists on every reload, and the list does not open.
+     */
+    @Test(timeOut = 180000)
+    public void testATakenLengthLosesNoPressAwayFromIt() throws Exception
+    {
+        ArrivalBox pick = new ArrivalBox(true);
+        final TileKey at = pick.square;
+        final String side = pick.side;
+        final StationSettingsWindow open = pick.window, window = open;
+        JTextField field = StationDoors.part(window, "station.maxLength", JTextField.class);
+
+        boolean barred = barred(at, side);
+
+        Components.onTheEventThread(() -> { field.setText("300"); return null; });
+
+        pressAndRelease(window, "station.arrive." + side);
+
+        StationDoors.current(window);
+
+        assertEquals(((Number) session.getPointProperty(at, "maxTrainLength")).intValue(), 300, "the press away did not apply the length");
+        assertEquals(barred(at, side), !barred, "the press on the arrive-from box was lost");
+
+        // A press on May depart opens its list
+        Components.onTheEventThread(() -> { field.setText("301"); return null; });
+
+        java.util.List<Throwable> thrown = new java.util.concurrent.CopyOnWriteArrayList<>();
+        Thread.UncaughtExceptionHandler before = Thread.getDefaultUncaughtExceptionHandler();
+
+        Thread.setDefaultUncaughtExceptionHandler((t, e) -> thrown.add(e));
+
+        try
+        {
+            support.Mouse.press(StationDoors.part(window, "station.depart.0", javax.swing.JComboBox.class), java.awt.event.MouseEvent.BUTTON1);
+            Components.settle();
+
+            assertTrue(thrown.isEmpty(), "the press on May depart threw " + thrown);
+            assertTrue(Components.onTheEventThread(() -> StationDoors.part(open, "station.depart.0", javax.swing.JComboBox.class).isPopupVisible()),
+                "the press on May depart did not open its list");
+        }
+        finally
+        {
+            Thread.setDefaultUncaughtExceptionHandler(before);
+            support.Mouse.release(StationDoors.part(window, "station.depart.0", javax.swing.JComboBox.class), java.awt.event.MouseEvent.BUTTON1);
+            Components.onTheEventThread(() -> { StationDoors.part(open, "station.depart.0", javax.swing.JComboBox.class).hidePopup(); return null; });
+        }
+
+        assertEquals(((Number) session.getPointProperty(at, "maxTrainLength")).intValue(), 301, "the press on May depart did not apply the length");
+    }
+
+    /** Station Settings open on the first station with an arrival side to shut, and a live May depart list if asked. */
+    private final class ArrivalBox
+    {
+        TileKey square;
+        StationSettingsWindow window;
+        String side;
+
+        ArrivalBox(boolean depart)
+        {
+            for (TileKey each : stations())
+            {
+                window = StationDoors.open(panel, each);
+
+                javax.swing.JCheckBox box = Components.find(window, javax.swing.JCheckBox.class,
+                    b -> b.getName() != null && b.getName().startsWith("station.arrive.") && b.isEnabled());
+
+                if (box == null || depart && !StationDoors.live(window, "station.depart.0")) continue;
+
+                square = each;
+                side = box.getName().substring("station.arrive.".length());
+
+                return;
+            }
+
+            throw new AssertionError("precondition: no station has an arrival side to shut"
+                + (depart ? " and a May depart list" : ""));
+        }
+    }
+
+    /** Whether the station bars arrivals from the side. */
+    private boolean barred(TileKey at, String side)
+    {
+        return Components.onTheEventThread(() -> session.getBarredArrivals(at).contains(org.traincontrol.automationui.TilePorts.Side.valueOf(side)));
+    }
+
+    /**
+     * A press on a named control, then its release on the control of that name at the pointer by then: AWT forgets a
+     * press target removed from the window, so a control rebuilt under the press gets a release it never saw pressed.
+     */
+    private static void pressAndRelease(Component window, String name)
+    {
+        support.Mouse.press(StationDoors.part(window, name, Component.class), java.awt.event.MouseEvent.BUTTON1);
+        Components.settle();
+        support.Mouse.release(StationDoors.part(window, name, Component.class), java.awt.event.MouseEvent.BUTTON1);
     }
 
     /**
