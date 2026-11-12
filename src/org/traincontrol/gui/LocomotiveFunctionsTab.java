@@ -246,14 +246,14 @@ final class LocomotiveFunctionsTab extends JPanel
 
         useCurrent.addActionListener(e ->
         {
-            for (Row r : rows) r.preset = r.function < loc.getNumF() && loc.getF(r.function);
+            for (Row r : everyRow()) r.preset = r.function < loc.getNumF() && loc.getF(r.function);
 
             changed();
         });
 
         clearPreset.addActionListener(e ->
         {
-            for (Row r : rows) r.preset = false;
+            for (Row r : everyRow()) r.preset = false;
 
             changed();
         });
@@ -372,7 +372,7 @@ final class LocomotiveFunctionsTab extends JPanel
         int[] triggers = c.getTriggers();
         Map<Integer, String> icons = c.getIcons();
 
-        for (Row r : rows)
+        for (Row r : everyRow())
         {
             if (r.function < types.length) r.icon = loc.sanitizeFIconIndex(types[r.function]);
 
@@ -407,14 +407,12 @@ final class LocomotiveFunctionsTab extends JPanel
         reset = true;
         copied = false;
 
-        for (Row r : rows)
+        for (Row r : everyRow())
         {
             r.icon = r.icon0;
             r.behavior = r.behavior0;
             r.custom = null;
         }
-
-        for (Row r : setAside) r.custom = null;
 
         changed();
     }
@@ -462,6 +460,16 @@ final class LocomotiveFunctionsTab extends JPanel
         refreshReverts();
     }
 
+    /** The rows shown and the rows a smaller decoder type has set aside: the table's actions reach both. */
+    private List<Row> everyRow()
+    {
+        List<Row> all = new ArrayList<>(rows);
+
+        all.addAll(setAside);
+
+        return all;
+    }
+
     /** Ends a cell edit in progress, as Enter would, so what it shows is in the buffer. */
     void commitEdit()
     {
@@ -488,7 +496,7 @@ final class LocomotiveFunctionsTab extends JPanel
     {
         boolean preset = false;
 
-        for (Row r : rows) preset |= r.preset;
+        for (Row r : everyRow()) preset |= r.preset;
 
         clearPreset.setEnabled(preset);
         resetAll.setEnabled(loc.isCustomFunctions() || reset);

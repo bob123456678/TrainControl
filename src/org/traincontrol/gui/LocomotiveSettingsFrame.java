@@ -1426,6 +1426,11 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
         private final Integer loadedArrival = loc.getArrivalFunc();
         private final boolean loadedActive = !loc.isAutonomyPaused();
 
+        /** What the operator wants in each box, kept apart from what a smaller decoder type lets it show. */
+        private Integer wantedDeparture = loadedDeparture;
+        private Integer wantedArrival = loadedArrival;
+        private boolean filling;
+
         final JSpinner length = typedAtOnce(new JSpinner(new SpinnerNumberModel(loadedLength, 0,
             Math.max(TrainControlUI.ROUTE_TRAIN_LENGTH_MAX, loadedLength), 1)));
         final javax.swing.JCheckBox reversible = new javax.swing.JCheckBox(I18n.t("loc.ui.settingsReversibleBox"));
@@ -1440,6 +1445,14 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
             length.setName("autonomy.length");
             reversible.setName("autonomy.reversible");
             active.setName("autonomy.active");
+            departure.addActionListener(e ->
+            {
+                if (!filling) wantedDeparture = function(departure);
+            });
+            arrival.addActionListener(e ->
+            {
+                if (!filling) wantedArrival = function(arrival);
+            });
             departure.setName("autonomy.departure");
             arrival.setName("autonomy.arrival");
 
@@ -1523,15 +1536,17 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
 
             for (int i = 0; i < count; i++) items[i + 1] = "F" + i;
 
+            filling = true;
             box.setModel(new javax.swing.DefaultComboBoxModel<>(items));
             box.setSelectedIndex(set == null || set >= count ? 0 : set + 1);
+            filling = false;
         }
 
-        /** The functions the chosen decoder type has, before Save; a choice beyond them goes back to none. */
+        /** The functions the chosen decoder type has, before Save; a choice beyond them shows none until a type has it. */
         void showCount(int count)
         {
-            fill(departure, count, function(departure));
-            fill(arrival, count, function(arrival));
+            fill(departure, count, wantedDeparture);
+            fill(arrival, count, wantedArrival);
         }
 
         private Integer function(JComboBox<String> box)

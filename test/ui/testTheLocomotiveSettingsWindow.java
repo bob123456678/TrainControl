@@ -1338,6 +1338,29 @@ public class testTheLocomotiveSettingsWindow
         assertNull(loc.getDepartureFunc(), "a departure function MM2 does not have was kept");
     }
 
+    /**
+     * Clear Preset reaches the rows a smaller decoder type has set aside, so they do not come back with an old tick.
+     *
+     * MUTATION: loop over `rows` instead of `everyRow()` in the Clear Preset listener, and this fails.
+     */
+    @Test
+    public void testClearPresetReachesTheRowsADecoderSetAside() throws Exception
+    {
+        boolean[] preset = new boolean[loc.getNumF()];
+
+        preset[30] = true;
+        loc.setPreferredFunctions(preset);
+
+        open(1);
+
+        decoder(Locomotive.decoderType.DCC);
+        Components.press(SettingsWindow.part("functions.clearPreset", JButton.class));
+        decoder(Locomotive.decoderType.MFX);
+
+        assertEquals(Components.onTheEventThread(() -> SettingsWindow.part("functions.table", javax.swing.JTable.class).getValueAt(30, 3)),
+            (Object) Boolean.FALSE, "F30's preset tick came back after Clear Preset");
+    }
+
     private static int iconComboIndex(int row)
     {
         javax.swing.JComboBox<?> combo = SettingsWindow.inEditor(row, 1, "functions.iconCombo", JComboBox.class);
