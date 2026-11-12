@@ -270,9 +270,9 @@ public class testThePlaceDoorsKeepTheHeading
     }
 
     /**
-     * Placed from the autonomy editor's train window, the train records the side it came in by and is asked where its
-     * tail lies: the list, hung off the window that asked, in front of the editor, and choosing TunnelPre answers it
-     * (MT-575).  His 75 407 DB with a length of 5, on Tunnel, whose one way in is from the north.
+     * Placed from the autonomy editor's Station Settings Train tab, the train records the side it came in by and is
+     * asked where its tail lies: the list, hung off the window that asked, in front of the editor, and choosing
+     * TunnelPre answers it (MT-575).  His 75 407 DB with a length of 5, on Tunnel, whose one way in is from the north.
      *
      * MUTATION: drop `askWhereTheTailIsOnceBuilt` from `AutonomyEditorPanel.placeLocomotive`, and no question comes and
      * this fails.
@@ -329,10 +329,10 @@ public class testThePlaceDoorsKeepTheHeading
 
             assertNotNull(panel, "precondition: the editor opened without its autonomy panel");
 
-            // THE TRAIN WINDOW ON TUNNEL, and his train chosen in its list.
+            // STATION SETTINGS' TRAIN TAB ON TUNNEL, and his train chosen in its list.
             final org.traincontrol.gui.autonomyeditor.StationSettingsWindow window = support.StationDoors.openTrain(panel, tunnel);
 
-            assertNotNull(window, "the editor opened no train window on Tunnel");
+            assertNotNull(window, "the editor opened no Station Settings Train tab on Tunnel");
 
             final javax.swing.JComboBox<?> trains = support.StationDoors.part(window, "train.train", javax.swing.JComboBox.class);
 
@@ -351,7 +351,7 @@ public class testThePlaceDoorsKeepTheHeading
                 }
             });
 
-            // THE QUESTION: the list, in front of the editor, hung off the train window.
+            // THE QUESTION: the list, in front of the editor, hung off Station Settings.
             javax.swing.JDialog question = awaitDialogStarting(I18n.t("autolayout.ui.askArrivalSideTitle"));
 
             java.lang.reflect.Field armed = Reflect.field(TailCrossedPrompt.class, "armed");
@@ -359,7 +359,7 @@ public class testThePlaceDoorsKeepTheHeading
             assertNull(armed.get(null), "with the editor open the tail question was put on the main window's diagram,"
                 + " which the editor covers (MT-575)");
 
-            assertEquals(question.getOwner(), window, "the tail question's list does not hang off the train window that"
+            assertEquals(question.getOwner(), window, "the tail question's list does not hang off the Station Settings that"
                 + " asked: its owner is " + question.getOwner());
 
             assertEquals(session.getArrivedFrom(tunnel), "N", "the placement recorded no arrival side, or the wrong one");
@@ -387,7 +387,7 @@ public class testThePlaceDoorsKeepTheHeading
             // ANSWERED: the train stands on Tunnel with TunnelPre's road behind it.
             Point standing = railway().getLocomotiveLocation(train);
 
-            assertNotNull(standing, "the train window put the train nowhere");
+            assertNotNull(standing, "Station Settings' Train tab put the train nowhere");
 
             assertEquals(standing.getArrivedFrom(), "N", "the railway's copy holds no arrival side, or the wrong one");
 

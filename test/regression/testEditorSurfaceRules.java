@@ -2950,9 +2950,9 @@ public class testEditorSurfaceRules
             + "hiding them (GSE-C1)");
 
         // And the windows' `act`, which the scan exempts the same way.
-        assertTrue(codeOf("    final void act(BooleanSupplier door)").contains("placementChanged(null)"),
-            "the windows' act() no longer announces, so every control of Station Settings and the train window is silent"
-            + " and the exemption is hiding them (FR-111)");
+        assertTrue(codeOf("    final void act(BooleanSupplier door, boolean putBack)").contains("placementChanged(null)"),
+            "the windows' act() no longer announces, so every control of Station Settings is silent and the exemption is"
+            + " hiding them (FR-111)");
 
         // And the light door's exemption is only sound while it announces (MT-334), as for radio above.
         assertTrue(codeOf("private void annotationsChanged()")

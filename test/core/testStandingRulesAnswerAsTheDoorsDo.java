@@ -649,6 +649,83 @@ public class testStandingRulesAnswerAsTheDoorsDo
     }
 
     /**
+     * On a square that is no station, the path search refuses a trip through it or starting from it for a train its list
+     * keeps out, so Sent through here and Sent from here say Some trains under a blacklist, naming it, and No under an
+     * empty whitelist; checked against the door, the trips from WestEnd to MainPlatform over Approach made a plain
+     * sensor, and those from Approach.
+     *
+     * MUTATION: have `LayoutStandingRules.limited` hand back its cell for a trip that does not end there, and this
+     * fails; have `leaving` leave out `limited`, and this fails.
+     */
+    @Test
+    public void testAListOnASquareThatIsNoStationLimitsRunningThroughAndStarting() throws Exception
+    {
+        // Before any list: the Sent from cells that say Yes, which the list must limit
+        session.setStopsAndRunsThrough(approach, false, true);
+
+        Map<String, StandingRules.Cell> before = rules(scenario.build()).cells(Row.SENT_FROM, true);
+
+        assertTrue(before.values().stream().anyMatch(c -> c.getAnswer() == Answer.YES), "precondition: no train may be sent from Approach");
+
+        for (boolean empty : new boolean[] {false, true})
+        {
+            session.restoreSetup(new JSONObject(pristine.toString()));
+            session.setStopsAndRunsThrough(approach, false, true);
+            session.setWhichTrains(approach, empty ? AutonomySession.WhichTrains.WHITELIST : AutonomySession.WhichTrains.BLACKLIST,
+                empty ? java.util.Collections.<String>emptyList() : java.util.Collections.singletonList(oneWay.getName()));
+
+            Layout railway = scenario.build();
+            List<Point> copies = copiesOf(railway);
+            Point to = railway.getPoint("MainPlatform");
+
+            Predicate<List<Edge>> over = path ->
+            {
+                if (path.get(path.size() - 1).getEnd() != to) return false;
+
+                for (Edge e : path.subList(0, path.size() - 1))
+                {
+                    if (copies.contains(e.getEnd())) return true;
+                }
+
+                return false;
+            };
+
+            // The door: the path search
+            assertEquals(reaches(railway, reversible, railway.getPoint("WestEnd"), over), !empty, "the door, the reversible train (" + empty + ")");
+            assertFalse(reaches(railway, oneWay, railway.getPoint("WestEnd"), over), "the door, the listed train (" + empty + ")");
+
+            String side = sideFrom(railway, "WestEnd");
+            assertLimited(rules(railway).cells(Row.SENT_THROUGH, true).get(side), empty, "Sent through by hand");
+
+            // The door: a train stood on Approach
+            boolean anyReversible = false;
+            boolean anyListed = false;
+
+            for (Point copy : copies)
+            {
+                anyReversible |= reaches(railway, reversible, copy, path -> true);
+                anyListed |= reaches(railway, oneWay, copy, path -> true);
+            }
+
+            assertEquals(anyReversible, !empty, "the door from Approach, the reversible train (" + empty + ")");
+            assertFalse(anyListed, "the door from Approach, the listed train (" + empty + ")");
+
+            for (Map.Entry<String, StandingRules.Cell> each : rules(railway).cells(Row.SENT_FROM, true).entrySet())
+            {
+                if (before.get(each.getKey()).getAnswer() == Answer.YES) assertLimited(each.getValue(), empty, "Sent from by hand to " + each.getKey());
+            }
+        }
+    }
+
+    /** A cell limited by Approach's blacklist of the one-way train, or by an empty whitelist. */
+    private static void assertLimited(StandingRules.Cell cell, boolean empty, String say)
+    {
+        assertEquals(cell.getAnswer(), empty ? Answer.NO : Answer.SOME, say + ": " + cell.getWhy());
+        assertTrue(cell.getWhy().contains(empty ? org.traincontrol.util.I18n.t("autolayout.rules.limitNoneThrough")
+            : org.traincontrol.util.I18n.f("autolayout.rules.limitBlacklist", oneWay.getName())), say + ", the reason: " + cell.getWhy());
+    }
+
+    /**
      * A train claiming its route never waits for the window's question: while the search is held up partway, inside a
      * switch-setting preview, another thread takes the railway's monitor, the one `configureAndLockPath` locks a route
      * under.  The search runs over every station, so a hold for all of it stops every train at its next milestone.

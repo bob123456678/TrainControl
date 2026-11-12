@@ -1265,8 +1265,16 @@ public final class StationSettingsWindow extends StationWindowBase
         List<TilePorts.Side> ways = session.arrivalSides(tile);
         java.util.Set<TilePorts.Side> barred = session.getBarredArrivals(tile);
 
-        arrivals.removeAll();
-        arriveBoxes.clear();
+        // The boxes stay while the sides do: one rebuilt under a press would never see its release (OB-436)
+        boolean same = !ways.isEmpty() && ways.equals(arriveSides);
+
+        if (!same)
+        {
+            arrivals.removeAll();
+            arriveBoxes.clear();
+        }
+
+        arriveSides = new ArrayList<>(ways);
 
         List<String> open = new ArrayList<>();
         List<String> all = new ArrayList<>();
@@ -1279,24 +1287,17 @@ public final class StationSettingsWindow extends StationWindowBase
 
             if (!barred.contains(side)) open.add(sideName);
 
-            final JCheckBox allow = new JCheckBox(I18n.f("autosetup.ui.stationArriveFrom", sideName), !barred.contains(side));
+            JCheckBox allow = same ? arriveBoxes.get(side) : arriveBox(side, sideName);
 
-            allow.setName("station.arrive." + side.name());
-            allow.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+            allow.setSelected(!barred.contains(side));
 
             // The last way in cannot be shut: unticking one at a time is the same as barring a single-sided station
             allow.setEnabled(live && ways.size() > 1 && (barred.contains(side)
                 || session.arrivalsCanBeClosed(tile, java.util.Collections.singleton(side))));
 
-            if (ways.size() == 1)
-            {
-                allow.setToolTipText(AutonomyEditorPanel.wrapped(I18n.f("autosetup.ui.hintOneWayIn", sideName)));
-            }
+            allow.setToolTipText(ways.size() != 1 ? null : AutonomyEditorPanel.wrapped(I18n.f("autosetup.ui.hintOneWayIn", sideName)));
 
-            allow.addActionListener(e ->
-            {
-                if (!reading) act(() -> { editor.setArrivalAllowed(tile, side, allow.isSelected()); return true; });
-            });
+            if (same) continue;
 
             arrivals.add(allow);
             arriveBoxes.put(side, allow);
@@ -1315,6 +1316,24 @@ public final class StationSettingsWindow extends StationWindowBase
         fly("arrivals", StationFlyovers.arrivals(open, all));
 
         arrivals.revalidate();
+    }
+
+    /** The sides the arrival boxes were built for. */
+    private List<TilePorts.Side> arriveSides;
+
+    private JCheckBox arriveBox(final TilePorts.Side side, String sideName)
+    {
+        final JCheckBox allow = new JCheckBox(I18n.f("autosetup.ui.stationArriveFrom", sideName));
+
+        allow.setName("station.arrive." + side.name());
+        allow.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+
+        allow.addActionListener(e ->
+        {
+            if (!reading) act(() -> { editor.setArrivalAllowed(tile, side, allow.isSelected()); return true; });
+        });
+
+        return allow;
     }
 
     private void fillGuard(JLabel shown, String markName, List<TileKey> signals, boolean exit)
@@ -1339,11 +1358,28 @@ public final class StationSettingsWindow extends StationWindowBase
     {
         AutonomySession session = editor.session;
 
-        depart.removeAll();
-        departChoices.clear();
-        departAnswers.clear();
-
         Map<RouteId, TilePorts.Route> routes = session.getRoutes(tile);
+
+        // The lists stay while the roads do, as the arrival boxes (OB-436); a run starting or ending builds them again,
+        // dropping a choice stepped to but not made
+        List<Object> shape = new ArrayList<>(java.util.Collections.singleton(live));
+
+        for (Map.Entry<RouteId, TilePorts.Route> entry : routes.entrySet())
+        {
+            shape.add(entry.getKey());
+            shape.add(String.valueOf(entry.getValue().getA()) + entry.getValue().getB());
+        }
+
+        boolean same = shape.equals(departShape);
+
+        departShape = shape;
+
+        if (!same)
+        {
+            depart.removeAll();
+            departChoices.clear();
+            departAnswers.clear();
+        }
 
         boolean carries = session.canCarryDirection(tile);
 
@@ -1381,8 +1417,9 @@ public final class StationSettingsWindow extends StationWindowBase
 
             Direction current = TileGraph.inForce(session.directionAsDrawn(tile, entry.getKey()), route);
 
-            final JComboBox<String> choice = new Choice(at -> actAlone(() -> editor.setRunDirection(tile, entry.getKey(),
-                answers.get(at))), labels.toArray(new String[0]));
+            final JComboBox<String> choice = same ? departChoices.get(entry.getKey())
+                : new Choice(at -> actAlone(() -> editor.setRunDirection(tile, entry.getKey(), answers.get(at))),
+                    labels.toArray(new String[0]));
 
             choice.setName("station.depart." + y);
             choice.setEnabled(live && carries);
@@ -1390,6 +1427,8 @@ public final class StationSettingsWindow extends StationWindowBase
             if (answers.contains(current)) choice.setSelectedIndex(answers.indexOf(current));
 
             if (said == null) said = String.valueOf(choice.getSelectedItem());
+
+            if (same) { y++; continue; }
 
             GridBagConstraints c = at(0, y++);
 
@@ -1407,6 +1446,9 @@ public final class StationSettingsWindow extends StationWindowBase
 
         depart.revalidate();
     }
+
+    /** The roads, with their sides, the May depart lists were built for. */
+    private List<Object> departShape;
 
     private String namesOf(List<TileKey> squares)
     {
