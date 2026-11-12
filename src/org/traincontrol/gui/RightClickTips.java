@@ -10,14 +10,13 @@ import javax.swing.MenuElement;
 import javax.swing.MenuSelectionManager;
 
 /**
- * The "Hide Right-Click Menu Tips" setting (FR-168): when on, every enabled item of a right-click menu loses its tooltip
- * as the menu opens, except an item with a hotkey, which keeps just the hotkey.  A menu is a right-click menu when the
- * last mouse press was the right button; a left-click pop-up keeps its tips.  Done here for every pop-up menu rooted on a
- * component, so no menu builder knows of it; menu bar menus are untouched.
+ * The "Hide Menu Tips" setting (FR-168): when on, every enabled item of an open menu, the menu bar's and pop-ups alike,
+ * shows no tooltip but its hotkey; a grayed item keeps the tip that says why.  The tips are taken off only while their
+ * menu is open and put back as it closes, so code that saves and restores a tooltip never keeps a hidden one.
  */
 public final class RightClickTips
 {
-    /** The preference that holds the setting.  Off by default. */
+    /** The preference that holds the setting.  Off by default; its name stays, so a saved choice carries over. */
     public static final String PREF = "HideRightClickMenuTips";
 
     private static final String HELD = "RightClickTips.held";
@@ -25,14 +24,10 @@ public final class RightClickTips
     private static final Pattern HOTKEY = Pattern.compile(
         "(?:(?:Control|Ctrl|Alt|Shift)[+-]\\S+|Delete)(?: / (?:(?:Control|Alt|Shift)[+-])?\\S+)*");
 
-    private static final String KIND = "RightClickTips.kind";
-
     private static boolean installed;
 
-    /** Whether the last mouse press or release was a right button, as when a menu is asked for. */
-    private static volatile boolean lastWasRight;
-
-    private static JPopupMenu lastRoot;
+    /** The items whose tips this setting has taken off, to put back once their menu closes. */
+    private static final java.util.Set<JMenuItem> stripped = new java.util.HashSet<>();
 
     private RightClickTips()
     {
@@ -65,17 +60,6 @@ public final class RightClickTips
 
         installed = true;
 
-        java.awt.Toolkit.getDefaultToolkit().addAWTEventListener(event ->
-        {
-            java.awt.event.MouseEvent mouse = (java.awt.event.MouseEvent) event;
-
-            if (mouse.getID() == java.awt.event.MouseEvent.MOUSE_PRESSED
-                || mouse.getID() == java.awt.event.MouseEvent.MOUSE_RELEASED)
-            {
-                lastWasRight = mouse.isPopupTrigger() || mouse.getButton() == java.awt.event.MouseEvent.BUTTON3;
-            }
-        }, java.awt.AWTEvent.MOUSE_EVENT_MASK);
-
         MenuSelectionManager.defaultManager().addChangeListener(e -> apply());
     }
 
@@ -104,68 +88,69 @@ public final class RightClickTips
         return null;
     }
 
-    /** Sets the tooltips of the right-click menu now open, or puts back those this setting hid. */
+    /** Hides the tips of the menus now open, and puts back those of every menu that has closed. */
     private static void apply()
     {
-        MenuElement[] path = MenuSelectionManager.defaultManager().getSelectedPath();
+        java.util.Set<JMenuItem> open = new java.util.HashSet<>();
 
-        if (path.length == 0 || !(path[0] instanceof JPopupMenu))
+        for (MenuElement each : MenuSelectionManager.defaultManager().getSelectedPath())
         {
-            if (path.length == 0 && lastRoot != null)
-            {
-                lastRoot.putClientProperty(KIND, null);
-
-                lastRoot = null;
-            }
-
-            return;
+            if (each instanceof JPopupMenu) collect(((JPopupMenu) each).getComponents(), open);
         }
 
-        JPopupMenu root = (JPopupMenu) path[0];
+        for (JMenuItem item : stripped) if (!open.contains(item)) putBack(item);
 
-        if (root.getInvoker() instanceof JMenu) return;
+        stripped.retainAll(open);
 
-        // How it was asked for is settled when it opens: a click inside it must not change its kind.
-        if (root.getClientProperty(KIND) == null) root.putClientProperty(KIND, lastWasRight);
+        boolean hide = hidden();
 
-        lastRoot = root;
-
-        apply(root.getComponents(), hidden() && Boolean.TRUE.equals(root.getClientProperty(KIND)));
+        for (JMenuItem item : open)
+        {
+            // A grayed item's tip says why, which is live information.
+            if (hide && item.isEnabled()) strip(item);
+            else putBack(item);
+        }
     }
 
-    private static void apply(Component[] items, boolean hide)
+    private static void collect(Component[] items, java.util.Set<JMenuItem> into)
     {
         for (Component each : items)
         {
             if (!(each instanceof JMenuItem)) continue;
 
-            JMenuItem item = (JMenuItem) each;
+            into.add((JMenuItem) each);
 
-            String now = item.getToolTipText();
-
-            Object held = item.getClientProperty(HELD);
-
-            // A tip set since the last open is the new original.
-            String original = held instanceof Held && Objects.equals(now, ((Held) held).applied)
-                ? ((Held) held).original : now;
-
-            // A grayed item's tip says why, which is live information.
-            if (hide && item.isEnabled())
-            {
-                String shown = hotkeyIn(original);
-
-                if (!Objects.equals(now, shown)) item.setToolTipText(shown);
-
-                item.putClientProperty(HELD, new Held(original, shown));
-            }
-            else if (held instanceof Held)
-            {
-                if (Objects.equals(now, ((Held) held).applied)) item.setToolTipText(original);
-
-                item.putClientProperty(HELD, null);
-            }
-
-            if (item instanceof JMenu) apply(((JMenu) item).getMenuComponents(), hide);
+            if (each instanceof JMenu) collect(((JMenu) each).getMenuComponents(), into);
         }
+    }
+
+    private static void strip(JMenuItem item)
+    {
+        String now = item.getToolTipText();
+
+        Object held = item.getClientProperty(HELD);
+
+        // A tip set while the menu is open is the new original.
+        String original = held instanceof Held && Objects.equals(now, ((Held) held).applied)
+            ? ((Held) held).original : now;
+
+        String shown = hotkeyIn(original);
+
+        if (!Objects.equals(now, shown)) item.setToolTipText(shown);
+
+        item.putClientProperty(HELD, new Held(original, shown));
+
+        stripped.add(item);
+    }
+
+    private static void putBack(JMenuItem item)
+    {
+        Object held = item.getClientProperty(HELD);
+
+        if (!(held instanceof Held)) return;
+
+        if (Objects.equals(item.getToolTipText(), ((Held) held).applied)) item.setToolTipText(((Held) held).original);
+
+        item.putClientProperty(HELD, null);
     }
 }

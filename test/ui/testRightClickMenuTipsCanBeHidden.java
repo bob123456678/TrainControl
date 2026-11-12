@@ -31,14 +31,15 @@ import support.Mouse;
 import support.Reflect;
 
 /**
- * Preferences > Hide Right-Click Menu Tips (FR-168): off, right-click menus keep their tooltips; on, every item loses
- * its tooltip but a hotkey's, which shows exactly the hotkey; the choice is stored; tooltips outside right-click menus
- * are untouched.  The menus are opened by right-clicks on the loc buttons, the diagram in the main window and in a page
- * window, and the track editor.
+ * Preferences > Hide Menu Tips (FR-168): off, menus keep their tooltips; on, every enabled item of any menu, the menu
+ * bar's and left-click pop-ups included (D37 on MT-910), loses its tooltip but a hotkey's, which shows exactly the
+ * hotkey; a closed menu's items have their own tips back; the choice is stored; tooltips outside menus are untouched.
+ * The menus are opened by right-clicks on the loc buttons, the diagram in the main window and in a page window, and
+ * the track editor, and by clicks on the menu bar and a button.
  *
  * MUTATIONS, each seen red: the strip skipped (the on claims); the strip made even when off (the off claim); hotkeys
- * stripped too (the hotkey claim); the choice not written to the preferences (the persistence claim); the menu bar's
- * menus stripped too (the outside claim).
+ * stripped too (the hotkey claim); the choice not written to the preferences (the persistence claim); right-click
+ * menus only (the menu bar and left-click claims); tips put back on the next opening only (the closed-menu claim).
  */
 public class testRightClickMenuTipsCanBeHidden
 {
@@ -153,14 +154,7 @@ public class testRightClickMenuTipsCanBeHidden
 
         assertNotNull(menu, "a right-click for " + door + " opened no menu");
 
-        Map<String, String> tips = Components.onTheEventThread(() ->
-        {
-            Map<String, String> read = new LinkedHashMap<>();
-
-            collect(menu.getComponents(), read);
-
-            return read;
-        });
+        Map<String, String> tips = tipsOf(menu);
 
         Mouse.closeMenus();
 
@@ -397,23 +391,14 @@ public class testRightClickMenuTipsCanBeHidden
     }
 
     /**
-     * On, the tooltips of the menu bar's items and of a button are as they were, after right-click menus and a menu
-     * bar menu have opened.
+     * On, a button's tooltip is as it was while right-click menus and a menu bar menu are open and after they close.
      *
-     * MUTATION: strip every pop-up menu of the open path, the menu bar's included.
+     * MUTATION: strip the tip of every component in an open menu's window, not only the menu's items.
      */
     @Test
-    public void testTipsOutsideRightClickMenusAreUntouched() throws Exception
+    public void testTipsOutsideMenusAreUntouched() throws Exception
     {
         hide(false);
-
-        AbstractButton bar = Components.withText(ui, I18n.t("ui.main.toolbar.greyStationLabels"));
-
-        assertNotNull(bar, "precondition: no Gray Station Labels item");
-
-        String barTip = bar.getToolTipText();
-
-        assertNotNull(barTip, "precondition: the menu bar item has no tooltip");
 
         AbstractButton button = (AbstractButton) field("OnButton");
 
@@ -434,16 +419,168 @@ public class testRightClickMenuTipsCanBeHidden
 
         Components.settle();
 
-        assertEquals(bar.getToolTipText(), barTip, "a menu bar item lost its tooltip");
-
-        List<AbstractButton> inBar = Components.all(preferences.getPopupMenu(), AbstractButton.class,
-            b -> b.getToolTipText() != null);
-
-        assertFalse(inBar.isEmpty(), "precondition: no Preferences item has a tooltip");
+        assertEquals(button.getToolTipText(), buttonTip, "a button lost its tooltip while a menu was open");
 
         Mouse.closeMenus();
 
         assertEquals(button.getToolTipText(), buttonTip, "a button lost its tooltip");
+    }
+
+    /**
+     * As the owner tests it (D37 on MT-910): ticked through the Preferences checkbox, the track diagram's autonomy menu
+     * over a station with a train and the menu bar's Preferences menu, each hovered item by item through its window,
+     * show only hotkeys and grayed items' reasons; cleared, both show every tip they showed before, without a restart.
+     *
+     * MUTATION: hide the tips in right-click menus only (the Preferences menu keeps its sentences while ticked).
+     */
+    @Test(timeOut = 300000)
+    public void testTheDiagramAndTheMenuBarFollowTheCheckbox() throws Exception
+    {
+        AbstractButton tick = Components.withText(ui, I18n.t("ui.main.toolbar.hideRightClickTips"));
+
+        JMenu preferences = (JMenu) field("interfaceMenu");
+
+        ToolTipManager tips = ToolTipManager.sharedInstance();
+
+        int delay = tips.getInitialDelay();
+
+        try
+        {
+            hide(false);
+
+            if (tick.isSelected()) SwingUtilities.invokeAndWait(tick::doClick);
+
+            tips.setInitialDelay(0);
+
+            Components.select((Component) field("LayoutList"));
+
+            Component station = AskingWindows.awaitTileIn(ui, ui, aStationWithATrain());
+
+            Map<String, String> diagram = hovered(station);
+
+            java.util.Set<String> diagramGray = new java.util.HashSet<>(grayed);
+
+            Map<String, String> bar = hoveredBar(preferences);
+
+            java.util.Set<String> barGray = new java.util.HashSet<>(grayed);
+
+            for (Map<String, String> before : java.util.Arrays.asList(diagram, bar))
+            {
+                assertTrue(before.values().stream().anyMatch(t -> t != null && hotkeyOnly(t) == null),
+                    "precondition: no item shows a sentence: " + before);
+            }
+
+            SwingUtilities.invokeAndWait(tick::doClick);
+
+            assertOnlyHotkeysLeft("hovered while ticked, the diagram's menu", diagram, diagramGray, hovered(station));
+
+            assertOnlyHotkeysLeft("hovered while ticked, the Preferences menu", bar, barGray, hoveredBar(preferences));
+
+            SwingUtilities.invokeAndWait(tick::doClick);
+
+            assertEquals(hovered(station), diagram, "cleared, the diagram menu's hovered tips are not as they were");
+
+            assertEquals(hoveredBar(preferences), bar, "cleared, the Preferences menu's hovered tips are not as they were");
+        }
+        finally
+        {
+            tips.setInitialDelay(delay);
+
+            if (tick.isSelected()) SwingUtilities.invokeAndWait(tick::doClick);
+        }
+    }
+
+    /** A station in the main window's diagram with a train standing on it, whose menu has a sentence to hide. */
+    private static TileKey aStationWithATrain()
+    {
+        org.traincontrol.automation.Layout layout = ui.getModel().getAutoLayoutIfLoaded();
+
+        for (TileKey key : ui.getAutonomySession().getStore().getNamedTiles())
+        {
+            String name = ui.getAutonomySession().getStore().getPointName(key);
+
+            for (org.traincontrol.automation.Point point : layout.getPoints())
+            {
+                if (name.equals(point.getName()) && point.getCurrentLocomotive() != null
+                    && AskingWindows.tileIn(ui, ui, key) != null) return key;
+            }
+        }
+
+        throw new AssertionError("precondition: no train stands at a station drawn in the main window");
+    }
+
+    /** {@link #hovered}, for a menu of the menu bar opened by a click on its title. */
+    private static Map<String, String> hoveredBar(JMenu title) throws Exception
+    {
+        return hovered(() ->
+        {
+            Mouse.click(title);
+
+            return Components.waitFor(title::isPopupMenuVisible, PATIENCE_MS) ? title.getPopupMenu() : null;
+        });
+    }
+
+    /**
+     * Ticked, a closed menu's items have their own tips back at once, not only when it next opens: code that saves an
+     * item's tooltip, as graying a Layout menu item for a run does, must never save a hidden one.
+     *
+     * MUTATION: put the tips back on the next opening instead of at the close.
+     */
+    @Test
+    public void testAClosedMenuHasItsOwnTipsBack() throws Exception
+    {
+        javax.swing.JFrame[] frame = new javax.swing.JFrame[1];
+
+        try
+        {
+            hide(true);
+
+            JPopupMenu menu = openedByALeftClick(frame);
+
+            assertNull(tipsOf(menu).get("Sentence"), "precondition: the open menu kept its sentence");
+
+            Mouse.closeMenus();
+
+            Components.settle();
+
+            Map<String, String> tips = tipsOf(menu);
+
+            assertEquals(tips.get("Sentence"), "An explanation.", "closed, an item has not got its own tip back");
+            assertEquals(tips.get("Grayed"), "Close the editor first.", "closed, a grayed item lost its tip");
+            assertEquals(tips.get("Keyed"), "Control+Q", "closed, a hotkey item has not got its own tip back");
+        }
+        finally
+        {
+            Mouse.closeMenus();
+
+            if (frame[0] != null) SwingUtilities.invokeAndWait(frame[0]::dispose);
+        }
+    }
+
+    /** The stand-in's pop-up, opened by a left-click on its button. */
+    private static JPopupMenu openedByALeftClick(javax.swing.JFrame[] frame) throws Exception
+    {
+        javax.swing.JButton button = standIn(false, frame);
+
+        Mouse.enter(button);
+        Mouse.click(button);
+
+        assertTrue(Components.waitFor(() -> Components.popupShowing() != null, PATIENCE_MS),
+            "the left-click opened no pop-up");
+
+        return Components.popupShowing();
+    }
+
+    private static Map<String, String> tipsOf(JPopupMenu menu)
+    {
+        return Components.onTheEventThread(() ->
+        {
+            Map<String, String> read = new LinkedHashMap<>();
+
+            collect(menu.getComponents(), read);
+
+            return read;
+        });
     }
 
     /** A window with one button that opens a pop-up of three items, on a right-click or on a left-click as asked. */
@@ -515,14 +652,7 @@ public class testRightClickMenuTipsCanBeHidden
 
             assertNotNull(menu, "the right-click opened no menu");
 
-            Map<String, String> tips = Components.onTheEventThread(() ->
-            {
-                Map<String, String> read = new LinkedHashMap<>();
-
-                collect(menu.getComponents(), read);
-
-                return read;
-            });
+            Map<String, String> tips = tipsOf(menu);
 
             assertEquals(tips.get("Grayed"), "Close the editor first.", "a grayed item lost its reason");
             assertNull(tips.get("Sentence"), "an enabled item kept its sentence");
@@ -537,12 +667,13 @@ public class testRightClickMenuTipsCanBeHidden
     }
 
     /**
-     * A pop-up opened by a left-click keeps every tooltip even with the setting on.
+     * A pop-up opened by a left-click, such as a button's drop-down, hides its tips as a right-click menu does (D37 on
+     * MT-910, which replaced the ruling that it keeps them): a grayed item keeps its reason, a hotkey item its hotkey.
      *
-     * MUTATION: treat every pop-up as a right-click menu.
+     * MUTATION: hide the tips in right-click menus only.
      */
     @Test
-    public void testALeftClickPopupKeepsItsTips() throws Exception
+    public void testALeftClickPopupHidesItsTipsToo() throws Exception
     {
         javax.swing.JFrame[] frame = new javax.swing.JFrame[1];
 
@@ -550,28 +681,13 @@ public class testRightClickMenuTipsCanBeHidden
         {
             hide(true);
 
-            javax.swing.JButton button = standIn(false, frame);
+            JPopupMenu menu = openedByALeftClick(frame);
 
-            Mouse.enter(button);
-            Mouse.click(button);
+            Map<String, String> tips = tipsOf(menu);
 
-            assertTrue(Components.waitFor(() -> Components.popupShowing() != null, PATIENCE_MS),
-                "the left-click opened no pop-up");
-
-            JPopupMenu menu = Components.popupShowing();
-
-            Map<String, String> tips = Components.onTheEventThread(() ->
-            {
-                Map<String, String> read = new LinkedHashMap<>();
-
-                collect(menu.getComponents(), read);
-
-                return read;
-            });
-
-            assertEquals(tips.get("Sentence"), "An explanation.", "a left-click pop-up lost a tip");
-            assertEquals(tips.get("Grayed"), "Close the editor first.", "a left-click pop-up lost a tip");
-            assertEquals(tips.get("Keyed"), "Control+Q", "a left-click pop-up lost a tip");
+            assertNull(tips.get("Sentence"), "a left-click pop-up kept a sentence");
+            assertEquals(tips.get("Grayed"), "Close the editor first.", "a left-click pop-up's grayed item lost its reason");
+            assertEquals(tips.get("Keyed"), "Control+Q", "a left-click pop-up's hotkey item does not show its hotkey");
         }
         finally
         {
@@ -665,18 +781,24 @@ public class testRightClickMenuTipsCanBeHidden
         }
     }
 
-    /**
-     * Right-clicks the square, then moves the pointer over each item through the window it is drawn in, as a real
-     * pointer does, opening submenus by hovering them; answers the tip the tooltip manager shows over each item.
-     */
+    /** {@link #hovered(java.util.concurrent.Callable)}, for the menu a right-click on the square opens. */
     private static Map<String, String> hovered(Component target) throws Exception
+    {
+        return hovered(() -> Mouse.rightClick(target, PATIENCE_MS));
+    }
+
+    /**
+     * Opens the menu, then moves the pointer over each item through the window it is drawn in, as a real pointer does,
+     * opening submenus by hovering them; answers the tip the tooltip manager shows over each item.
+     */
+    private static Map<String, String> hovered(java.util.concurrent.Callable<JPopupMenu> open) throws Exception
     {
         // A window taking the focus, such as another test run's, closes the menu under the pointer: walk again.
         for (int attempt = 1; ; attempt++)
         {
             grayed.clear();
 
-            JPopupMenu menu = Mouse.rightClick(target, PATIENCE_MS);
+            JPopupMenu menu = open.call();
 
             Map<String, String> shown = new LinkedHashMap<>();
 
@@ -726,10 +848,31 @@ public class testRightClickMenuTipsCanBeHidden
     /** The tip on screen once the pointer rests on the item, or null when none is shown for it. */
     private static String tipShownOver(JMenuItem item) throws Exception
     {
+        // Hovered afresh, as after a pause: moving straight on from a tip, the manager may still show the last item's.
+        Components.onTheEventThread(() ->
+        {
+            ToolTipManager.sharedInstance().mousePressed(null);
+
+            return null;
+        });
+
         moveTo(item);
 
+        // Read the moment it shows, as the manager takes it down again after its dismiss delay.
+        final String[] seen = new String[1];
+
         java.util.function.BooleanSupplier showing = () ->
-            tipManager("insideComponent") == item && Boolean.TRUE.equals(tipManager("tipShowing"));
+        {
+            Object tip = tipManager("tip");
+
+            if (tipManager("insideComponent") == item && Boolean.TRUE.equals(tipManager("tipShowing"))
+                && tip instanceof javax.swing.JToolTip && ((javax.swing.JToolTip) tip).getComponent() == item)
+            {
+                seen[0] = ((javax.swing.JToolTip) tip).getTipText();
+            }
+
+            return seen[0] != null;
+        };
 
         // The manager shows tips only for the items it listens to; for those, its timer may take a while under load.
         if (Components.onTheEventThread(() -> java.util.Arrays.asList(item.getMouseListeners())
@@ -738,8 +881,7 @@ public class testRightClickMenuTipsCanBeHidden
             Components.waitFor(showing, PATIENCE_MS);
         }
 
-        return Components.onTheEventThread(() -> showing.getAsBoolean()
-            ? ((javax.swing.JToolTip) tipManager("tip")).getTipText() : null);
+        return seen[0];
     }
 
     /** A field of the tooltip manager, which keeps what it shows to itself. */

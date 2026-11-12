@@ -61,7 +61,7 @@ final class LayoutMenus
 
         refreshDataSourceLabel();
 
-        // The items that need a local layout to act on (OB-128); left alone when an editor is open.
+        // The items that need loaded pages or a Central Station 3 (OB-128); left alone while an editor is open.
         if (!busy)
         {
             refreshRecentLayouts();
@@ -457,7 +457,7 @@ final class LayoutMenus
         autonomyToolbarMenu.add(this.allowedDirectionsMenuItem);
     }
 
-    /** Preferences > Hide Right-Click Menu Tips (FR-168); read when a menu opens, so it needs no refresh. */
+    /** Preferences > Hide Menu Tips (FR-168); read when a menu opens, so it needs no refresh. */
     void mountRightClickTipsMenu()
     {
         RightClickTips.install();

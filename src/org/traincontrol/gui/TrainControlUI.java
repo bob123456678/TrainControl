@@ -17593,7 +17593,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         }
     }//GEN-LAST:event_rememberLocationMenuItemActionPerformed
 
-    /** Preferences > Remember Window Locations, which the right-click tips setting sits under. */
+    /** Preferences > Remember Window Locations, which the menu tips setting sits under. */
     javax.swing.JMenuItem rememberLocationMenuItem()
     {
         return this.rememberLocationMenuItem;
