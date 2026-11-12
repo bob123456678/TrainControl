@@ -363,8 +363,8 @@ public class testTheAutonomyEditorsTriageNotes
 
         StationDoors.current(several);
 
-        assertEquals(((Number) session.getPointProperty(two.get(0), "maxTrainLength")).intValue(), 11, "a blank field wrote the first");
-        assertEquals(((Number) session.getPointProperty(two.get(1), "maxTrainLength")).intValue(), 12, "a blank field wrote the second");
+        assertEquals(String.valueOf(session.getPointProperty(two.get(0), "maxTrainLength")), "11", "a blank field wrote the first");
+        assertEquals(String.valueOf(session.getPointProperty(two.get(1), "maxTrainLength")), "12", "a blank field wrote the second");
     }
 
     /**
@@ -400,7 +400,11 @@ public class testTheAutonomyEditorsTriageNotes
         {
             boolean barred = Components.onTheEventThread(() -> session.getBarredArrivals(at).contains(org.traincontrol.automationui.TilePorts.Side.valueOf(side)));
 
-            support.Mouse.click(StationDoors.part(window, "station.arrive." + side, javax.swing.JCheckBox.class));
+            // The release goes to the box at the pointer by then, as AWT sends it: a box rebuilt under the press never
+            // saw the press, and does nothing
+            support.Mouse.press(StationDoors.part(window, "station.arrive." + side, javax.swing.JCheckBox.class), java.awt.event.MouseEvent.BUTTON1);
+            Components.settle();
+            support.Mouse.release(StationDoors.part(window, "station.arrive." + side, javax.swing.JCheckBox.class), java.awt.event.MouseEvent.BUTTON1);
 
             StationDoors.current(window);
 
