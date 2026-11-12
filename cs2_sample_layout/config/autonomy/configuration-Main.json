@@ -292,20 +292,10 @@
     "1 - Main:13,11": {
       "loc": {"name": "02 0314-1 DDR"},
       "maxTrainLength": 4,
-      "arrivedAlong": [
-        [
-          "TopMainR1",
-          "TopMainPost (eastbound)"
-        ],
-        [
-          "TopMainPost (eastbound)",
-          "RampDown (southbound)"
-        ],
-        [
-          "RampDown (southbound)",
-          "BottomSecondary"
-        ]
-      ],
+      "arrivedAlong": [[
+        "RampDown (southbound)",
+        "BottomSecondary"
+      ]],
       "homeFacing": "W",
       "facing": "W",
       "arrivedFrom": "E",
