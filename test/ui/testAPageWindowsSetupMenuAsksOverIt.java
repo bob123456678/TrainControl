@@ -413,9 +413,9 @@ public class testAPageWindowsSetupMenuAsksOverIt
 
             StationSettingsWindow opened = StationDoors.showing(StationSettingsWindow.class);
 
-            assertNotNull(opened, "the train window did not open");
+            assertNotNull(opened, "Station Settings' Train tab did not open");
 
-            assertSame(opened.getOwner(), window, "the train window hangs off the wrong window");
+            assertSame(opened.getOwner(), window, "Station Settings' Train tab hangs off the wrong window");
 
             StationDoors.close(opened);
         }
@@ -645,7 +645,7 @@ public class testAPageWindowsSetupMenuAsksOverIt
     }
 
     /**
-     * With no train left to offer, none placed elsewhere and none in the database, the train window's list offers only None.
+     * With no train left to offer, none placed elsewhere and none in the database, the Train tab's list offers only None.
      *
      * MUTATION: `dialogOwner` for `((TrainControlUI) dialogOwner).dialogParent()` in `AutonomyEditorPanel.owner`, and it
      * hangs off the main window.
@@ -672,9 +672,9 @@ public class testAPageWindowsSetupMenuAsksOverIt
 
                 StationSettingsWindow opened = StationDoors.showing(StationSettingsWindow.class);
 
-                assertNotNull(opened, "the train window did not open");
+                assertNotNull(opened, "Station Settings' Train tab did not open");
 
-                assertSame(opened.getOwner(), window, "the train window hangs off the wrong window");
+                assertSame(opened.getOwner(), window, "Station Settings' Train tab hangs off the wrong window");
 
                 assertEquals(StationDoors.part(opened, "train.train", javax.swing.JComboBox.class).getItemCount(), 1,
                     "the list offers a train where none exists");

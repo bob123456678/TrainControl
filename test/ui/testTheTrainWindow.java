@@ -33,8 +33,8 @@ import support.Reflect;
 import support.StationDoors;
 
 /**
- * The train window and the menus that lead to it and to Station Settings (FR-111), pressed as the user presses them on
- * the frozen railway.
+ * Station Settings' Train tab and the menus that lead to it and to the rest of Station Settings (FR-111), pressed as
+ * the user presses them on the frozen railway.
  *
  * @author Adam
  */
