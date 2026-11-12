@@ -61,17 +61,15 @@ public final class TabIcons
         });
     }
 
-    /** A station: a building under a pitched roof, its doorway open, on the locomotive's rail. */
+    /** A station: its nameboard on two legs, two lines of name on it, by the locomotive's rail (D36). */
     public static Icon station()
     {
         return icon((g, w, h) ->
         {
             g.setColor(INK);
-            g.fillPolygon(new int[] {Math.round(w * 0.04f), Math.round(w * 0.50f), Math.round(w * 0.96f)},
-                new int[] {Math.round(h * 0.40f), Math.round(h * 0.08f), Math.round(h * 0.40f)}, 3);
-            shapes(g, w, h, "0.14 0.38 0.72 0.46, " + RAIL, "");
+            shapes(g, w, h, "0.04 0.16 0.92 0.36, 0.16 0.50 0.08 0.38, 0.76 0.50 0.08 0.38, " + RAIL, "");
             g.setColor(Color.WHITE);
-            shapes(g, w, h, "0.42 0.56 0.16 0.28", "");
+            shapes(g, w, h, "0.12 0.25 0.76 0.06, 0.12 0.37 0.52 0.06", "");
         });
     }
 
