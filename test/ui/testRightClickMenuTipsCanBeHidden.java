@@ -39,7 +39,8 @@ import support.Reflect;
  *
  * MUTATIONS, each seen red: the strip skipped (the on claims); the strip made even when off (the off claim); hotkeys
  * stripped too (the hotkey claim); the choice not written to the preferences (the persistence claim); right-click
- * menus only (the menu bar and left-click claims); tips put back on the next opening only (the closed-menu claim).
+ * menus only (the menu bar and left-click claims); tips put back on the next opening only (the closed-menu claim); a
+ * key found only as the whole tip or bracketed (the mid-sentence claim); the accelerator ignored (the shortcut claim).
  */
 public class testRightClickMenuTipsCanBeHidden
 {
@@ -202,10 +203,19 @@ public class testRightClickMenuTipsCanBeHidden
         return Components.find(editor, LayoutLabel.class, Component::isShowing);
     }
 
-    /** What a tooltip should come to when only a hotkey is allowed; written here, not asked of the code. */
+    /**
+     * What a tooltip should come to when only a hotkey is allowed; written here, not asked of the code.  A tip naming
+     * its key inside a sentence is listed with the key it must come to.
+     */
     private static String hotkeyOnly(String tip)
     {
         if (tip == null) return null;
+
+        String text = tip.replaceAll("<[^>]*>", "").trim();
+
+        if (text.equals(I18n.t("layout.ui.tooltipFindAPoint"))) return "Control+F";
+
+        if (text.equals(I18n.t("layout.ui.tooltipDeselect"))) return "Escape";
 
         if (HOTKEY.matcher(tip).matches()) return tip;
 
@@ -340,7 +350,7 @@ public class testRightClickMenuTipsCanBeHidden
         }
         finally
         {
-            EditorsOpen.closeAll();
+            closeEditors();
         }
     }
 
@@ -607,6 +617,12 @@ public class testRightClickMenuTipsCanBeHidden
             key.setToolTipText("Control+Q");
             menu.add(key);
 
+            JMenuItem accelerated = new JMenuItem("Accelerated");
+            accelerated.setToolTipText("Closes it.  Shortcut: Control+Q.");
+            accelerated.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_W,
+                java.awt.event.InputEvent.CTRL_DOWN_MASK));
+            menu.add(accelerated);
+
             if (onRightClick)
             {
                 button.addMouseListener(new java.awt.event.MouseAdapter()
@@ -664,6 +680,125 @@ public class testRightClickMenuTipsCanBeHidden
 
             if (frame[0] != null) SwingUtilities.invokeAndWait(frame[0]::dispose);
         }
+    }
+
+    /**
+     * An item with a shortcut of its own (an accelerator) shows that shortcut, not a key its tip happens to name.
+     *
+     * MUTATION: ignore the accelerator (the tip's Control+Q shows).
+     */
+    @Test
+    public void testAnItemsOwnShortcutIsTheHotkeyItShows() throws Exception
+    {
+        javax.swing.JFrame[] frame = new javax.swing.JFrame[1];
+
+        try
+        {
+            hide(true);
+
+            JPopupMenu menu = Mouse.rightClick(standIn(true, frame), PATIENCE_MS);
+
+            assertNotNull(menu, "the right-click opened no menu");
+
+            assertEquals(tipsOf(menu).get("Accelerated"), "Ctrl+W", "the item does not show its own shortcut");
+        }
+        finally
+        {
+            Mouse.closeMenus();
+
+            if (frame[0] != null) SwingUtilities.invokeAndWait(frame[0]::dispose);
+        }
+    }
+
+    /**
+     * Ticked, an item whose tip names its key inside a sentence shows that key, hovered through its window: the
+     * autonomy editor's Find a Point... ("Shortcut: Control+F") on its Tools menu, and the track editor's Deselect All
+     * ("Escape lets go") with squares picked.
+     *
+     * MUTATION: find a key only as the whole tip or bracketed at its end (both show nothing).
+     */
+    @Test(timeOut = 300000)
+    public void testTipsThatNameAKeyMidSentenceShowIt() throws Exception
+    {
+        ToolTipManager tips = ToolTipManager.sharedInstance();
+
+        int delay = tips.getInitialDelay();
+
+        try
+        {
+            hide(true);
+
+            tips.setInitialDelay(0);
+
+            LayoutEditor autonomy = openedEditor(Boolean.TRUE);
+
+            Map<String, String> shown = hoveredBar(Components.onTheEventThread(() -> autonomy.getJMenuBar().getMenu(0)));
+
+            assertEquals(shown.get(I18n.t("layout.ui.menuFindAPoint")), "Control+F",
+                "Find a Point... does not show its key: " + shown);
+
+            Component square = Components.find(openedEditor(Boolean.FALSE), LayoutLabel.class, Component::isShowing);
+
+            Mouse.choose(AskingWindows.itemOf(Mouse.rightClick(square, PATIENCE_MS), I18n.t("layout.ui.menuSelectAll")));
+
+            shown = hovered(square);
+
+            String deselect = shown.keySet().stream()
+                .filter(k -> k.endsWith(" > " + I18n.t("layout.ui.menuDeselectAll"))).findFirst().orElse(null);
+
+            assertTrue(deselect != null && !grayed.contains(deselect), "precondition: no live Deselect All: " + shown);
+
+            assertEquals(shown.get(deselect), "Escape", "Deselect All does not show its key");
+        }
+        finally
+        {
+            tips.setInitialDelay(delay);
+
+            closeEditors();
+        }
+    }
+
+    /** Closes every editor by its close box, as the user does: disposed, the main window would still count it open. */
+    private static void closeEditors()
+    {
+        for (LayoutEditor editor : EditorsOpen.editors())
+        {
+            SwingUtilities.invokeLater(() ->
+                editor.dispatchEvent(new java.awt.event.WindowEvent(editor, java.awt.event.WindowEvent.WINDOW_CLOSING)));
+        }
+
+        // Until the main window would open one again: its menus gray what an editor holds, and give it back late.
+        assertTrue(Components.waitFor(() -> EditorsOpen.editors().isEmpty() && ui.whyAutonomyEditorCannotOpen() == null,
+            PATIENCE_MS), "an editor did not close: " + EditorsOpen.titles() + " " + ui.whyAutonomyEditorCannotOpen());
+
+        Components.settle();
+    }
+
+    /** An editor on the page of BottomMainB, in the mode asked for, once it draws its squares. */
+    private static LayoutEditor openedEditor(Boolean autonomy) throws Exception
+    {
+        closeEditors();
+
+        String page = mainB.getPage();
+
+        Components.onTheEventThread(() ->
+        {
+            ui.openLayoutEditor(page, autonomy, null);
+
+            return null;
+        });
+
+        assertTrue(Components.waitFor(() ->
+        {
+            LayoutEditor editor = EditorsOpen.editorOn(page);
+
+            return editor != null && editor.getJMenuBar() != null && editor.isAutonomyMode() == autonomy
+                && Components.find(editor, LayoutLabel.class, Component::isShowing) != null;
+        }, PATIENCE_MS), "precondition: no editor opened on " + page + ": " + EditorsOpen.titles());
+
+        Components.settle();
+
+        return EditorsOpen.editorOn(page);
     }
 
     /**

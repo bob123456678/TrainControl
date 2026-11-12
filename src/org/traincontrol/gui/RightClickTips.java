@@ -21,8 +21,19 @@ public final class RightClickTips
 
     private static final String HELD = "RightClickTips.held";
 
-    private static final Pattern HOTKEY = Pattern.compile(
-        "(?:(?:Control|Ctrl|Alt|Shift)[+-]\\S+|Delete)(?: / (?:(?:Control|Alt|Shift)[+-])?\\S+)*");
+    /**
+     * A key a tip names anywhere in it, in every bundle's wording: a combination such as Control+F, Strg+Umschalt+G or
+     * Alt-P (a modifier with a click or a drag is a mouse gesture, not a key), or Escape as each language spells it.
+     */
+    private static final String KEY = "(?:(?:Control|Ctrl|Strg|Alt|Shift|Umschalt|Maj|Mayús|Maiusc)[+-])+"
+        + "(?:[A-Z0-9]|F\\d{1,2}|Up|Down|Left|Right|Delete|Escape|Enter|Space|Tab|Home|End|Insert)"
+        + "|Escape|Échap|Esc";
+
+    private static final Pattern HOTKEY = Pattern.compile("(?<![\\w+-])(?:" + KEY + ")(?![\\w+-])");
+
+    /** A tip that is nothing but keys, such as "Delete" or "Control-2 / F12": words that mid-sentence are not keys. */
+    private static final Pattern ONLY_KEYS = Pattern.compile(
+        "(?:" + KEY + "|Delete|F\\d{1,2})(?: / (?:" + KEY + "|Delete|F\\d{1,2}))*");
 
     private static boolean installed;
 
@@ -64,28 +75,34 @@ public final class RightClickTips
     }
 
     /**
-     * The hotkey a tooltip names, such as "Control+E": the whole tooltip, or the one in brackets at its end.
-     * @param tip a tooltip, or null
-     * @return the hotkey text, or null when the tooltip is not or does not end in one
+     * The hotkey an item's tooltip is cut down to, such as "Control+E": the item's own accelerator where it has one,
+     * else every key the tooltip names, wherever it names them.
+     * @param item the menu item
+     * @param tip its tooltip, or null
+     * @return the hotkey text, or null when the item has no tooltip or the tooltip names no key
      */
-    static String hotkeyIn(String tip)
+    static String hotkeyIn(JMenuItem item, String tip)
     {
         if (tip == null) return null;
 
-        String text = tip.replaceAll("<[^>]*>", "").trim();
+        javax.swing.KeyStroke key = item.getAccelerator();
 
-        if (HOTKEY.matcher(text).matches()) return text;
-
-        int open = text.lastIndexOf('(');
-
-        if (open >= 0 && text.endsWith(")"))
+        if (key != null)
         {
-            String inside = text.substring(open + 1, text.length() - 1).trim();
+            String held = java.awt.event.InputEvent.getModifiersExText(key.getModifiers());
 
-            if (HOTKEY.matcher(inside).matches()) return inside;
+            return (held.isEmpty() ? "" : held + "+") + java.awt.event.KeyEvent.getKeyText(key.getKeyCode());
         }
 
-        return null;
+        String text = tip.replaceAll("<[^>]*>", "").trim();
+
+        if (ONLY_KEYS.matcher(text).matches()) return text;
+
+        java.util.Set<String> named = new java.util.LinkedHashSet<>();
+
+        for (java.util.regex.Matcher found = HOTKEY.matcher(text); found.find(); ) named.add(found.group());
+
+        return named.isEmpty() ? null : String.join(" / ", named);
     }
 
     /** Hides the tips of the menus now open, and puts back those of every menu that has closed. */
@@ -134,7 +151,7 @@ public final class RightClickTips
         String original = held instanceof Held && Objects.equals(now, ((Held) held).applied)
             ? ((Held) held).original : now;
 
-        String shown = hotkeyIn(original);
+        String shown = hotkeyIn(item, original);
 
         if (!Objects.equals(now, shown)) item.setToolTipText(shown);
 
