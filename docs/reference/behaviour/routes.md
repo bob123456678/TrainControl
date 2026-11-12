@@ -72,7 +72,7 @@ route tile on the diagram run the route whatever its conditions say: the same ru
 
 A station can be paired with signals of two kinds, each set up from the station's right-click menu in the autonomy
 editor through the same dialog (the list, **Click It on the Diagram**, **Enter Its Address...** (several at once,
-comma-separated), **Remove Selected**, **Done**), and each may hold several signals, because a platform reachable from
+comma-separated), the red X at the end of each row, or Delete or Backspace on a selected row, to take one off, **Done**), and each may hold several signals, because a platform reachable from
 two ends needs one on each approach. Each item says what its guard does in a tooltip (OB-293; Adam: *"add brief tooltips on what
 entry guards and exit guards are"*).
 
