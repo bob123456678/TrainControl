@@ -2322,8 +2322,9 @@ public class testStationSettingsWindow
         assertTrue(StationDoors.on(window, "station.arrive.E"), "the click did not tick May Arrive From East");
         assertFalse(Components.onTheEventThread(() -> session.getBarredArrivals(square).contains(east)),
             "the setup still bars arrivals from the east");
+        // Some trains rather than Yes, as BottomMainA has a Maximum train length (OB-440)
         assertEquals(Components.onTheEventThread(() -> window.drawnForTest(StandingRules.Row.SENT_HERE, "hand")).get("E"),
-            StandingRules.Answer.YES, "the table did not follow the way in");
+            StandingRules.Answer.SOME, "the table did not follow the way in");
         assertTrue(Components.onTheEventThread(() -> window.pictureWaysForTest(false)).contains("E"),
             "the picture did not follow the way in");
 
