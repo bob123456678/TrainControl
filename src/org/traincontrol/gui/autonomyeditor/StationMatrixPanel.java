@@ -45,7 +45,7 @@ final class StationMatrixPanel extends JPanel
     /** A cell as drawn, for a test to compare with the real doors: row, tier and answer per side. */
     private final Map<String, Map<String, Answer>> drawn = new java.util.LinkedHashMap<>();
 
-    /** The width the two lines under the table wrap at, and the panel's. */
+    /** The width its lines wrap at, the problem's too, and the panel's. */
     private final int lineWidth;
 
     StationMatrixPanel()
@@ -79,9 +79,7 @@ final class StationMatrixPanel extends JPanel
 
         lines.setLayout(new BoxLayout(lines, BoxLayout.Y_AXIS));
         lines.setOpaque(false);
-        problem.setAlignmentX(LEFT_ALIGNMENT);
         also.setAlignmentX(LEFT_ALIGNMENT);
-        lines.add(problem);
         lines.add(also);
 
         JPanel below = new JPanel(new BorderLayout(0, 6));
@@ -93,6 +91,12 @@ final class StationMatrixPanel extends JPanel
         add(below, BorderLayout.CENTER);
 
         lineWidth = lockTheColumns();
+    }
+
+    /** Why the setup stops this square, for the window to show under the picture, so it moves nothing above (MT-919). */
+    JLabel problemLine()
+    {
+        return problem;
     }
 
     /**

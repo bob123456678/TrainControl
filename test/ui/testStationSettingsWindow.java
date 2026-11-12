@@ -1245,6 +1245,65 @@ public class testStationSettingsWindow
         assertEveryCellSaysNo(window);
     }
 
+    /**
+     * A preset that brings the matrix's problem, and one that clears it, moves neither the table nor the picture (Adam:
+     * "the error below 'on the track diagram' so that the table and diagram don't move when changing presets"): the
+     * problem stands under the picture.
+     *
+     * MUTATION: put `problem` back in the lines under the table in `StationMatrixPanel`, and this fails.
+     */
+    @Test(timeOut = 120000)
+    public void testAPresetsProblemMovesNeitherTheTableNorThePicture() throws Exception
+    {
+        StationSettingsWindow window = StationDoors.open(panel, aStationWithTwoWaysIn());
+
+        StationDoors.press(window, "station.preset.STATION", message -> support.Answering.pressAt(0));
+        StationDoors.current(window);
+
+        assertFalse(visible(window, "station.matrixProblem"), "precondition: the matrix has a problem as a Station");
+
+        String before = whereAre(window, "station.matrix", "station.picture");
+
+        StationDoors.press(window, "station.preset.TERMINUS", message -> support.Answering.pressAt(0));
+        StationDoors.current(window);
+
+        assertTrue(visible(window, "station.matrixProblem"), "precondition: a Terminus with two sides open has no problem");
+
+        assertEquals(whereAre(window, "station.matrix", "station.picture"), before, "the problem moved the table or picture");
+
+        assertTrue(Components.onTheEventThread(() ->
+        {
+            java.awt.Component picture = Components.named(window, "station.picture", JComponent.class);
+            java.awt.Component problem = Components.named(window, "station.matrixProblem", JComponent.class);
+
+            return problem.getLocationOnScreen().y >= picture.getLocationOnScreen().y + picture.getHeight();
+        }), "the problem is not under the picture");
+
+        StationDoors.press(window, "station.preset.STATION", message -> support.Answering.pressAt(0));
+        StationDoors.current(window);
+
+        assertEquals(whereAre(window, "station.matrix", "station.picture"), before, "clearing the problem moved the table"
+            + " or picture");
+
+        StationDoors.close(window);
+    }
+
+    /** Where each named part stands on the screen. */
+    private static String whereAre(java.awt.Component window, String... names)
+    {
+        return Components.onTheEventThread(() ->
+        {
+            StringBuilder out = new StringBuilder();
+
+            for (String name : names)
+            {
+                out.append(name).append(Components.named(window, name, JComponent.class).getLocationOnScreen()).append(' ');
+            }
+
+            return out.toString();
+        });
+    }
+
     // -------------------------------------------------------------------------------------------------- following squares
 
     /**
