@@ -159,7 +159,7 @@ public class testTheTailCanBeGivenInTheEditor
      * The train window's tail row, where the tail has a choice, ends in a Pick button in the application's button font,
      * Segoe UI Bold 12, as the Locomotive Settings button above it.
      *
-     * MUTATION: give `train.tailPick` a Plain 13 font again in `TrainWindow.addTailChoices`, and this fails.
+     * MUTATION: give `train.tailPick` a Plain 13 font again in `TrainTab.addTailChoices`, and this fails.
      */
     @Test
     public void testTheTrainWindowsPickButtonWearsTheButtonFont() throws Exception
@@ -168,11 +168,107 @@ public class testTheTailCanBeGivenInTheEditor
 
         try
         {
-            org.traincontrol.gui.autonomyeditor.TrainWindow window = support.StationDoors.openTrain(f.panel, f.tile);
+            org.traincontrol.gui.autonomyeditor.StationSettingsWindow window = support.StationDoors.openTrain(f.panel, f.tile);
 
             javax.swing.JButton pick = support.StationDoors.part(window, "train.tailPick", javax.swing.JButton.class);
 
             assertEquals(pick.getFont(), org.traincontrol.gui.widgets.UiStyle.BUTTON_FONT, "Pick is not Bold 12");
+
+            support.StationDoors.close(window);
+        }
+        finally
+        {
+            f.close();
+        }
+    }
+
+    /**
+     * On Station Settings' Train tab each answer of Tail lies stands on a line of its own, one under the other (Adam: "put
+     * each radio button for 'tail lies' on its own line, so that wide station names don't further widen the window").
+     *
+     * MUTATION: lay `train.tail` out as a row again (`FlowLayout`) in `TrainTab`, and this fails.
+     */
+    @Test
+    public void testEachTailAnswerStandsOnItsOwnLine() throws Exception
+    {
+        Fixture f = Fixture.open();
+
+        try
+        {
+            java.awt.Window window = support.StationDoors.openTrain(f.panel, f.tile);
+
+            List<java.awt.Point> at = Components.onTheEventThread(() ->
+            {
+                List<java.awt.Point> out = new ArrayList<>();
+
+                for (javax.swing.JRadioButton each : Components.all(Components.named(window, "train.tail",
+                    java.awt.Container.class), javax.swing.JRadioButton.class, null)) out.add(each.getLocation());
+
+                return out;
+            });
+
+            assertTrue(at.size() >= 3, "precondition: Tail lies has not two sensors and Not known: " + at);
+
+            for (int i = 1; i < at.size(); i++)
+            {
+                assertEquals(at.get(i).x, at.get(0).x, "the answers of Tail lies do not start at one left edge: " + at);
+                assertTrue(at.get(i).y > at.get(i - 1).y, "an answer of Tail lies is not on a line below the last: " + at);
+            }
+
+            support.StationDoors.close(window);
+        }
+        finally
+        {
+            f.close();
+        }
+    }
+
+    /**
+     * A station named at great length, among Tail lies' answers, leaves Station Settings as wide as it opened before
+     * (FR-195): the Train tab takes the room the window has and asks for none.
+     *
+     * MUTATION: have `TrainTab` extend `JPanel`, which asks for its width, rather than `RoomyPanel`, and this fails.
+     */
+    @Test
+    public void testALongStationNameDoesNotWidenTheWindow() throws Exception
+    {
+        Fixture f = Fixture.open();
+
+        try
+        {
+            org.traincontrol.gui.autonomyeditor.StationSettingsWindow window = support.StationDoors.openTrain(f.panel, f.tile);
+
+            int before = Components.onTheEventThread(window::getWidth);
+
+            support.StationDoors.close(window);
+
+            TileKey named = session.getStationIndex().squareOf(f.choices().get(0).getFarthest());
+
+            assertNotNull(named, "precondition: the first answer of Tail lies has no square to name");
+
+            // Longer than the window is wide, so a tab that asked for its width would have to widen it
+            String longName = "Upper Ballymacarrett Junction Carriage Sidings and Goods Yard (Northbound Loop), beside"
+                + " the Lower Ballymacarrett Junction Carriage Sidings and Goods Yard (Southbound Loop)";
+
+            window = support.StationDoors.open(f.panel, named);
+
+            support.StationDoors.typeAndEnter(window, "station.name", longName);
+
+            support.StationDoors.close(window);
+
+            window = support.StationDoors.openTrain(f.panel, f.tile);
+
+            final java.awt.Window shown = window;
+
+            javax.swing.JRadioButton carrying = Components.onTheEventThread(() -> Components.find(Components.named(shown,
+                "train.tail", java.awt.Container.class), javax.swing.JRadioButton.class, r -> r.getText().contains(longName)));
+
+            assertNotNull(carrying, "precondition: no answer of Tail lies carries the long name");
+
+            assertTrue(Components.onTheEventThread(() -> carrying.getPreferredSize().width) > before,
+                "precondition: the long name is not wider than the window");
+
+            assertEquals((int) Components.onTheEventThread(window::getWidth), before, "a long station name widened the window");
 
             support.StationDoors.close(window);
         }

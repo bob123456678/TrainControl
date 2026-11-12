@@ -318,6 +318,22 @@ public class testSeveralStationsAtOnce
     }
 
     /**
+     * Several stations' window has no tabs (FR-195): the Train tab is about one station's train, so the window is the
+     * Settings tab's content alone, with no tab strip over it.
+     *
+     * MUTATION: have `StationSettingsWindow.showForHowMany` leave the tabs in the window for several, and this fails.
+     */
+    @Test(timeOut = 120000)
+    public void testSeveralHaveNoTrainTab() throws Exception
+    {
+        StationSettingsWindow window = pick(stations(2));
+
+        assertFalse(showing(window, "station.tabs"), "several stations' window has tabs");
+        assertFalse(showing(window, "train.form"), "several stations' window shows a train");
+        assertTrue(showing(window, "station.form"), "several stations' window does not show their settings");
+    }
+
+    /**
      * Several stations' window has no matrix, picture or row about one station alone, and its name cannot be typed.
      *
      * MUTATION: have `showForHowMany` leave the side column showing, and this fails.

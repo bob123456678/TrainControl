@@ -96,6 +96,13 @@ public final class StationSettingsWindow extends StationWindowBase
     /** The presets' heading and buttons: at the top of the right column for one station, over the form for several. */
     private final JPanel presetsPanel = new JPanel(new BorderLayout(0, 6));
 
+    /** Both columns: the Settings tab for one station, the whole window for several, which have no Train tab (FR-195). */
+    private final JPanel columns = new JPanel(new BorderLayout(14, 0));
+    private final JPanel settingsTab = new JPanel(new BorderLayout());
+    private final TrainTab trainTab = new TrainTab(this);
+    private final javax.swing.JTabbedPane tabs = new javax.swing.JTabbedPane();
+    private final JPanel middle = new JPanel(new BorderLayout());
+
     /** How many stations the banner names before saying how many more. */
     private static final int NAMED = 4;
 
@@ -184,8 +191,6 @@ public final class StationSettingsWindow extends StationWindowBase
 
         lockTheWidth();
 
-        JPanel columns = new JPanel(new BorderLayout(14, 0));
-
         JPanel formTop = new JPanel(new BorderLayout());
 
         formTop.add(form, BorderLayout.NORTH);
@@ -207,7 +212,19 @@ public final class StationSettingsWindow extends StationWindowBase
 
         columns.add(rightColumn, BorderLayout.EAST);
 
-        assemble(columns);
+        settingsTab.setBorder(javax.swing.BorderFactory.createEmptyBorder(PAD, 0, 0, 0));
+
+        tabs.setName("station.tabs");
+        tabs.putClientProperty("JTabbedPane.tabWidthMode", "preferred");
+        // Icons drawn as Locomotive Settings' tabs are
+        tabs.addTab(I18n.t("autosetup.ui.stationTabSettings"), org.traincontrol.gui.widgets.TabIcons.station(), settingsTab);
+        tabs.addTab(I18n.t("autosetup.ui.stationTabTrain"), org.traincontrol.gui.widgets.TabIcons.locomotive(), trainTab);
+        tabs.addChangeListener(e -> trainTab.settings.setVisible(tabs.getSelectedComponent() == trainTab));
+
+        trainTab.settings.setVisible(false);
+
+        // Locomotive Settings... sits on Done Editing's row, at the bottom left
+        assemble(middle).add(trainTab.settings, BorderLayout.WEST);
 
         int formOnly = form.getPreferredSize().width + 2 * PAD - 24;
         int presetsWidth = presetsPanel.getPreferredSize().width;
@@ -413,6 +430,30 @@ public final class StationSettingsWindow extends StationWindowBase
         super.watched();
 
         if (tile != null && targets().size() != before) reload();
+        else if (tile != null && !isSeveral() && trainTab.stale())
+        {
+            // A train moved on the railway: the Train tab alone, so nothing being typed on the other is read over
+            reading = true;
+
+            try
+            {
+                trainTab.fill(isReadOnly());
+            }
+            finally
+            {
+                reading = false;
+            }
+        }
+    }
+
+    /** Shows the Train tab, or the Settings tab; one station's window has both (FR-195). */
+    void showTab(boolean train)
+    {
+        if (isSeveral()) return;
+
+        tabs.setSelectedComponent(train ? trainTab : settingsTab);
+
+        if (train) trainTab.takeTheKeyboard();
     }
 
     // ------------------------------------------------------------------------------------------- building the form
@@ -1137,6 +1178,8 @@ public final class StationSettingsWindow extends StationWindowBase
             return;
         }
 
+        trainTab.fill(readOnly);
+
         picture.show(session, tile, editor.parentWindow(), pictureDoors);
 
         askTheRailway();
@@ -1147,6 +1190,20 @@ public final class StationSettingsWindow extends StationWindowBase
     {
         severalLine.setVisible(many);
         rightColumn.setVisible(!many);
+
+        if (many && columns.getParent() != middle)
+        {
+            middle.removeAll();
+            middle.add(columns, BorderLayout.CENTER);
+        }
+        else if (!many && columns.getParent() != settingsTab)
+        {
+            settingsTab.add(columns, BorderLayout.CENTER);
+            middle.removeAll();
+            middle.add(tabs, BorderLayout.CENTER);
+        }
+
+        trainTab.settings.setVisible(!many && tabs.getSelectedComponent() == trainTab);
 
         // Several keep the form's width: their presets stand over it
         JPanel presetsGo = many ? leftColumn : rightColumn;

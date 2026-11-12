@@ -61,6 +61,26 @@ public final class TabIcons
         });
     }
 
+    /** A station: a building under a pitched roof, its doorway open, on the locomotive's rail. */
+    public static Icon station()
+    {
+        return icon((g, w, h) ->
+        {
+            Path2D.Float roof = new Path2D.Float();
+
+            roof.moveTo(w * 0.04f, h * 0.40f);
+            roof.lineTo(w * 0.50f, h * 0.08f);
+            roof.lineTo(w * 0.96f, h * 0.40f);
+            roof.closePath();
+
+            g.setColor(INK);
+            g.fill(roof);
+            shapes(g, w, h, "0.14 0.38 0.72 0.46, " + RAIL, "");
+            g.setColor(Color.WHITE);
+            shapes(g, w, h, "0.42 0.56 0.16 0.28", "");
+        });
+    }
+
     /** Two switches, one on and one off: the locomotive's functions.  Same size, the knobs the same distance from their ends. */
     public static Icon functions()
     {

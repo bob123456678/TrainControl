@@ -462,7 +462,7 @@ final class EditorTileMenus
         javax.swing.JMenuItem item = new javax.swing.JMenuItem(standing == null ? I18n.t("autosetup.ui.menuPlaceHere")
             : I18n.f("autosetup.ui.menuChangeTrainAt", editor.describeTile(target)));
 
-        item.addActionListener(e -> editor.openTrainWindow(target));
+        item.addActionListener(e -> editor.openTrainTab(target));
 
         return item;
     }

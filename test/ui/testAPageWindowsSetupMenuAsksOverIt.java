@@ -21,7 +21,6 @@ import org.traincontrol.base.LayoutDiagramComponent;
 import org.traincontrol.gui.LayoutPopupUI;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.gui.autonomyeditor.StationSettingsWindow;
-import org.traincontrol.gui.autonomyeditor.TrainWindow;
 import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.util.I18n;
 import support.Answering;
@@ -393,9 +392,9 @@ public class testAPageWindowsSetupMenuAsksOverIt
     }
 
     /**
-     * Train at..., from the window's own menu, opens the train window over that window, and looking places nothing.
+     * Train at..., from the window's own menu, opens Station Settings' Train tab over that window, and looking places nothing.
      *
-     * MUTATION: have `StationWindows.train` hang the window off `dialogParent()`, and it hangs off the main window.
+     * MUTATION: have `StationWindows.stations` hang the window off `dialogParent()`, and it hangs off the main window.
      */
     @Test(priority = -1)
     public void testTheTrainWindowHangsOffTheWindow() throws Exception
@@ -412,7 +411,7 @@ public class testAPageWindowsSetupMenuAsksOverIt
 
             Components.settle();
 
-            TrainWindow opened = StationDoors.showing(TrainWindow.class);
+            StationSettingsWindow opened = StationDoors.showing(StationSettingsWindow.class);
 
             assertNotNull(opened, "the train window did not open");
 
@@ -671,7 +670,7 @@ public class testAPageWindowsSetupMenuAsksOverIt
 
                 Components.settle();
 
-                TrainWindow opened = StationDoors.showing(TrainWindow.class);
+                StationSettingsWindow opened = StationDoors.showing(StationSettingsWindow.class);
 
                 assertNotNull(opened, "the train window did not open");
 

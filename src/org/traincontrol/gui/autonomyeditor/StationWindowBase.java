@@ -36,7 +36,7 @@ import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.util.I18n;
 
 /**
- * What Station Settings and the train window share (FR-111): non-modal, hung off the window that asked, about one square.
+ * Station Settings' window apart from its tabs' content (FR-111): non-modal, hung off the window that asked, about one square.
  * Changes apply at once through the panel's doors; into the editor's draft there, saved at once on the track diagram.
  * Reading never writes.  Read-only while a run holds the setup, or while an editor holds it from the track diagram.
  */
@@ -482,7 +482,7 @@ abstract class StationWindowBase extends JDialog
     }
 
     /** The same for a panel of answers that vary. */
-    static final class RoomyPanel extends JPanel
+    static class RoomyPanel extends JPanel
     {
         RoomyPanel(java.awt.LayoutManager layout)
         {

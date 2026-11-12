@@ -2566,7 +2566,7 @@ public class AutonomyEditorPanel extends JPanel
         return dialogOwner == null ? this : dialogOwner;
     }
 
-    /** This surface's Station Settings and train windows (FR-111). */
+    /** This surface's Station Settings window (FR-111). */
     final StationWindows stationWindows;
 
     /**
@@ -2587,17 +2587,27 @@ public class AutonomyEditorPanel extends JPanel
 
         flashSquare(leaderOf(tile));
 
-        return stationWindows.station(leaderOf(tile));
+        return showTab(stationWindows.station(leaderOf(tile)), false);
     }
 
-    /** Opens the train window on a square, from its menu.  @return the window, or null where there is none to show */
-    public TrainWindow openTrainWindow(TileKey tile)
+    /**
+     * Opens Station Settings on its Train tab (FR-195), from the square's Change Train at... or Place a Locomotive Here...
+     * @return the window, or null where there is none to show
+     */
+    public StationSettingsWindow openTrainTab(TileKey tile)
     {
         if (!offersStationSettings(tile)) return null;
 
         cancelPendingGesture();
 
-        return stationWindows.train(leaderOf(tile));
+        return showTab(stationWindows.station(leaderOf(tile)), true);
+    }
+
+    private static StationSettingsWindow showTab(StationSettingsWindow window, boolean train)
+    {
+        if (window != null) window.showTab(train);
+
+        return window;
     }
 
     /** Station Settings..., for the track diagram's menu to carry. */
@@ -2626,12 +2636,6 @@ public class AutonomyEditorPanel extends JPanel
     public StationSettingsWindow stationSettingsWindow()
     {
         return stationWindows.stationWindow();
-    }
-
-    /** The train window on screen for this surface, or null. */
-    public TrainWindow trainWindow()
-    {
-        return stationWindows.trainWindow();
     }
 
     /** Closes this surface's windows, whose square may be about to move. */

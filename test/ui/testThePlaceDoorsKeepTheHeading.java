@@ -330,7 +330,7 @@ public class testThePlaceDoorsKeepTheHeading
             assertNotNull(panel, "precondition: the editor opened without its autonomy panel");
 
             // THE TRAIN WINDOW ON TUNNEL, and his train chosen in its list.
-            final org.traincontrol.gui.autonomyeditor.TrainWindow window = support.StationDoors.openTrain(panel, tunnel);
+            final org.traincontrol.gui.autonomyeditor.StationSettingsWindow window = support.StationDoors.openTrain(panel, tunnel);
 
             assertNotNull(window, "the editor opened no train window on Tunnel");
 
