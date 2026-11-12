@@ -17592,6 +17592,12 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             this.restoreLayoutTitles();
         }
     }//GEN-LAST:event_rememberLocationMenuItemActionPerformed
+
+    /** Preferences > Remember Window Locations, which the right-click tips setting sits under. */
+    javax.swing.JMenuItem rememberLocationMenuItem()
+    {
+        return this.rememberLocationMenuItem;
+    }
     
     // Track the last hovered row and column
     private int lastRow = -1;

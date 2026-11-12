@@ -473,7 +473,11 @@ final class LayoutMenus
         hide.addActionListener(event ->
             TrainControlUI.getPrefs().putBoolean(RightClickTips.PREF, hide.isSelected()));
 
-        ui.interfaceMenu().add(hide);
+        // Under Remember Window Locations, above the divider (MT-910).
+        int under = ui.interfaceMenu().getPopupMenu().getComponentIndex(ui.rememberLocationMenuItem());
+
+        if (under >= 0) ui.interfaceMenu().add(hide, under + 1);
+        else ui.interfaceMenu().add(hide);
     }
 
     /** "Save diagram as a picture", on the Layout menu; built by hand so the feature is one method and one class. */

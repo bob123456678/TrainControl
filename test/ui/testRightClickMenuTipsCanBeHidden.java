@@ -11,6 +11,7 @@ import javax.swing.JMenu;
 import javax.swing.JMenuItem;
 import javax.swing.JPopupMenu;
 import javax.swing.SwingUtilities;
+import javax.swing.ToolTipManager;
 import static org.testng.Assert.*;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.AfterMethod;
@@ -219,6 +220,20 @@ public class testRightClickMenuTipsCanBeHidden
         return bracketed.find() ? bracketed.group(1) : null;
     }
 
+    /** The same items as before hiding, each showing what hiding leaves: a grayed one its reason, any other its hotkey. */
+    private static void assertOnlyHotkeysLeft(String which, Map<String, String> before, java.util.Set<String> gray,
+        Map<String, String> after)
+    {
+        assertEquals(after.keySet(), before.keySet(), which + " offers other items on the second opening");
+
+        for (Map.Entry<String, String> item : before.entrySet())
+        {
+            assertEquals(after.get(item.getKey()),
+                gray.contains(item.getKey()) ? item.getValue() : hotkeyOnly(item.getValue()), "\"" + item.getKey()
+                + "\" was \"" + item.getValue() + "\" and now shows the wrong thing");
+        }
+    }
+
     private static boolean isHotkey(String tip)
     {
         return tip != null && HOTKEY.matcher(tip).matches();
@@ -323,14 +338,7 @@ public class testRightClickMenuTipsCanBeHidden
 
             Map<String, String> hidden = tipsOn(Door.EDITOR);
 
-            assertEquals(hidden.keySet(), before.keySet(), "the editor menu offers other items on the second opening");
-
-            for (Map.Entry<String, String> item : before.entrySet())
-            {
-                assertEquals(hidden.get(item.getKey()),
-                    gray.contains(item.getKey()) ? item.getValue() : hotkeyOnly(item.getValue()), "\"" + item.getKey()
-                    + "\" was \"" + item.getValue() + "\" and now shows the wrong thing");
-            }
+            assertOnlyHotkeysLeft("the editor menu", before, gray, hidden);
 
             hide(false);
 
@@ -571,6 +579,201 @@ public class testRightClickMenuTipsCanBeHidden
 
             if (frame[0] != null) SwingUtilities.invokeAndWait(frame[0]::dispose);
         }
+    }
+
+    /**
+     * The setting sits under Remember Window Locations, above the divider (MT-910).
+     *
+     * MUTATION: add the item at the end of Preferences again.
+     */
+    @Test
+    public void testTheSettingSitsUnderRememberWindowLocations() throws Exception
+    {
+        JMenu preferences = (JMenu) field("interfaceMenu");
+
+        List<Component> items = Components.onTheEventThread(() ->
+            java.util.Arrays.asList(preferences.getMenuComponents()));
+
+        int remember = items.indexOf(Components.withText(preferences.getPopupMenu(),
+            I18n.t("ui.main.toolbar.rememberWindowLoc")));
+
+        int hide = items.indexOf(Components.withText(preferences.getPopupMenu(),
+            I18n.t("ui.main.toolbar.hideRightClickTips")));
+
+        assertTrue(remember >= 0 && hide >= 0, "precondition: Preferences lacks one of the two items");
+
+        assertEquals(hide, remember + 1, "the setting is not directly under Remember Window Locations");
+
+        assertTrue(items.get(hide + 1) instanceof JPopupMenu.Separator, "the divider does not follow the setting");
+    }
+
+    /**
+     * As the owner tests it: the Preferences checkbox ticked, then cleared, with the track editor's right-click menu
+     * hovered item by item through its window each time, its Bulk Tools submenu opened by hovering, and the tip the
+     * tooltip manager actually shows read off it.  Ticked, an enabled item shows only its hotkey or nothing, a grayed
+     * one its reason; cleared, every item shows what it showed before ticking.
+     *
+     * MUTATION: skip the strip (the sentences show while ticked).
+     *
+     * Leaves the editor open for testTheTrackEditorsMenuFollowsTheSetting, later by name: a disposed editor is not
+     * reopened.
+     */
+    @Test(timeOut = 300000)
+    public void testTheHoveredTipsFollowTheCheckbox() throws Exception
+    {
+        AbstractButton tick = Components.withText(ui, I18n.t("ui.main.toolbar.hideRightClickTips"));
+
+        ToolTipManager tips = ToolTipManager.sharedInstance();
+
+        int delay = tips.getInitialDelay();
+
+        try
+        {
+            hide(false);
+
+            if (tick.isSelected()) SwingUtilities.invokeAndWait(tick::doClick);
+
+            tips.setInitialDelay(0);
+
+            Component tile = anEditorTile();
+
+            Map<String, String> before = hovered(tile);
+
+            assertTrue(before.keySet().stream().anyMatch(k -> k.contains(" > ")), "precondition: no submenu was hovered: "
+                + before);
+
+            assertTrue(before.values().stream().anyMatch(t -> t != null && hotkeyOnly(t) == null),
+                "precondition: no item shows a sentence: " + before);
+
+            java.util.Set<String> gray = new java.util.HashSet<>(grayed);
+
+            SwingUtilities.invokeAndWait(tick::doClick);
+
+            Map<String, String> ticked = hovered(tile);
+
+            assertOnlyHotkeysLeft("hovered while ticked, the menu", before, gray, ticked);
+
+            SwingUtilities.invokeAndWait(tick::doClick);
+
+            assertEquals(hovered(tile), before, "cleared, the hovered tips are not as they were");
+        }
+        finally
+        {
+            tips.setInitialDelay(delay);
+
+            if (tick.isSelected()) SwingUtilities.invokeAndWait(tick::doClick);
+        }
+    }
+
+    /**
+     * Right-clicks the square, then moves the pointer over each item through the window it is drawn in, as a real
+     * pointer does, opening submenus by hovering them; answers the tip the tooltip manager shows over each item.
+     */
+    private static Map<String, String> hovered(Component target) throws Exception
+    {
+        // A window taking the focus, such as another test run's, closes the menu under the pointer: walk again.
+        for (int attempt = 1; ; attempt++)
+        {
+            grayed.clear();
+
+            JPopupMenu menu = Mouse.rightClick(target, PATIENCE_MS);
+
+            Map<String, String> shown = new LinkedHashMap<>();
+
+            try
+            {
+                if (menu != null) hoverAll("", menu, shown);
+
+                if (menu != null && menu.isShowing()) return shown;
+
+                assertTrue(attempt < 5, "the menu closed before every item was hovered, five times: " + shown);
+            }
+            finally
+            {
+                Mouse.closeMenus();
+
+                Components.settle();
+            }
+        }
+    }
+
+    private static void hoverAll(String path, JPopupMenu menu, Map<String, String> into) throws Exception
+    {
+        for (Component each : Components.onTheEventThread(menu::getComponents))
+        {
+            if (!(each instanceof JMenuItem) || !each.isShowing()) continue;
+
+            JMenuItem item = (JMenuItem) each;
+
+            if (!item.isEnabled()) grayed.add(path + item.getText());
+
+            into.put(path + item.getText(), tipShownOver(item));
+
+            if (item instanceof JMenu)
+            {
+                JMenu sub = (JMenu) item;
+
+                // Not opened is a closed menu, walked again, or a submenu missing from what the claim compares.
+                if (!Components.waitFor(sub::isPopupMenuVisible, 3000)) return;
+
+                hoverAll(path + item.getText() + " > ", sub.getPopupMenu(), into);
+
+                moveTo(item);
+            }
+        }
+    }
+
+    /** The tip on screen once the pointer rests on the item, or null when none is shown for it. */
+    private static String tipShownOver(JMenuItem item) throws Exception
+    {
+        moveTo(item);
+
+        java.util.function.BooleanSupplier showing = () ->
+            tipManager("insideComponent") == item && Boolean.TRUE.equals(tipManager("tipShowing"));
+
+        // The manager shows tips only for the items it listens to; for those, its timer may take a while under load.
+        if (Components.onTheEventThread(() -> java.util.Arrays.asList(item.getMouseListeners())
+            .contains(ToolTipManager.sharedInstance())))
+        {
+            Components.waitFor(showing, PATIENCE_MS);
+        }
+
+        return Components.onTheEventThread(() -> showing.getAsBoolean()
+            ? ((javax.swing.JToolTip) tipManager("tip")).getTipText() : null);
+    }
+
+    /** A field of the tooltip manager, which keeps what it shows to itself. */
+    private static Object tipManager(String name)
+    {
+        try
+        {
+            return Reflect.get(ToolTipManager.class, ToolTipManager.sharedInstance(), name);
+        }
+        catch (ReflectiveOperationException e)
+        {
+            throw new IllegalStateException(e);
+        }
+    }
+
+    /** A pointer move to the item's middle, posted to the window it is drawn in, which passes it on as AWT does. */
+    private static void moveTo(Component item)
+    {
+        SwingUtilities.invokeLater(() ->
+        {
+            java.awt.Window window = SwingUtilities.getWindowAncestor(item);
+
+            java.awt.Point at = SwingUtilities.convertPoint(item, item.getWidth() / 2, item.getHeight() / 2, window);
+
+            java.awt.Point screen = new java.awt.Point(at);
+
+            SwingUtilities.convertPointToScreen(screen, window);
+
+            java.awt.Toolkit.getDefaultToolkit().getSystemEventQueue().postEvent(new java.awt.event.MouseEvent(window,
+                java.awt.event.MouseEvent.MOUSE_MOVED, System.currentTimeMillis(), 0, at.x, at.y, screen.x, screen.y,
+                0, false, java.awt.event.MouseEvent.NOBUTTON));
+        });
+
+        Components.settle();
     }
 
     private static Object field(String name) throws Exception
