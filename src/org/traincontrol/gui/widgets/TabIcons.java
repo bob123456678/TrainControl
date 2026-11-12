@@ -66,15 +66,9 @@ public final class TabIcons
     {
         return icon((g, w, h) ->
         {
-            Path2D.Float roof = new Path2D.Float();
-
-            roof.moveTo(w * 0.04f, h * 0.40f);
-            roof.lineTo(w * 0.50f, h * 0.08f);
-            roof.lineTo(w * 0.96f, h * 0.40f);
-            roof.closePath();
-
             g.setColor(INK);
-            g.fill(roof);
+            g.fillPolygon(new int[] {Math.round(w * 0.04f), Math.round(w * 0.50f), Math.round(w * 0.96f)},
+                new int[] {Math.round(h * 0.40f), Math.round(h * 0.08f), Math.round(h * 0.40f)}, 3);
             shapes(g, w, h, "0.14 0.38 0.72 0.46, " + RAIL, "");
             g.setColor(Color.WHITE);
             shapes(g, w, h, "0.42 0.56 0.16 0.28", "");
