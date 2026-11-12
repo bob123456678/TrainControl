@@ -9,6 +9,7 @@ import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertNull;
+import static org.testng.Assert.assertSame;
 import static org.testng.Assert.assertTrue;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.AfterMethod;
@@ -21,7 +22,7 @@ import org.traincontrol.base.Locomotive;
 import org.traincontrol.gui.LocomotiveSettingsFrame;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel;
-import org.traincontrol.gui.autonomyeditor.TrainWindow;
+import org.traincontrol.gui.autonomyeditor.StationSettingsWindow;
 import org.traincontrol.gui.layouteditor.LayoutEditor;
 import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.util.I18n;
@@ -147,8 +148,8 @@ public class testTheTrainWindow
     // ---------------------------------------------------------------------------------------------------- the window
 
     /**
-     * Blue is for section headings and the train popup has none: its row labels (Train, Active, Facing, Arrived from, Tail
-     * lies) are black Semibold 13, as Station Settings' are, and nothing in it is blue.
+     * Blue is for section headings and the Train tab has none: its row labels (Train, Active, Facing, Arrived from, Tail
+     * lies) are black Semibold 13, as the Settings tab's are, and nothing in it is blue.
      *
      * MUTATION: build a row label with `UiStyle.label`, which is blue, and this fails.
      */
@@ -157,24 +158,26 @@ public class testTheTrainWindow
     {
         AutonomyEditorPanel panel = theEditorsPanel();
 
-        TrainWindow window = StationDoors.openTrain(panel, aSquareWithATrain());
+        StationSettingsWindow window = StationDoors.openTrain(panel, aSquareWithATrain());
+
+        java.awt.Container form = StationDoors.part(window, "train.form", java.awt.Container.class);
 
         java.util.List<String> blue = new java.util.ArrayList<>();
 
-        for (javax.swing.JLabel each : Components.all(window, javax.swing.JLabel.class, null))
+        for (javax.swing.JLabel each : Components.all(form, javax.swing.JLabel.class, null))
         {
             if (org.traincontrol.gui.widgets.UiStyle.BLUE.equals(each.getForeground())) blue.add(each.getText());
         }
 
-        assertTrue(blue.isEmpty(), "blue in a window with no section headings: " + blue);
+        assertTrue(blue.isEmpty(), "blue in a tab with no section headings: " + blue);
 
         for (String key : new String[] {"autosetup.ui.trainTrain", "autosetup.ui.trainActive", "autosetup.ui.trainFacing",
             "autosetup.ui.trainArrived", "autosetup.ui.trainTail"})
         {
-            java.util.List<javax.swing.JLabel> found = Components.all(window, javax.swing.JLabel.class,
+            java.util.List<javax.swing.JLabel> found = Components.all(form, javax.swing.JLabel.class,
                 label -> I18n.t(key).equals(label.getText()));
 
-            assertEquals(found.size(), 1, key + " is not one label of the window");
+            assertEquals(found.size(), 1, key + " is not one label of the tab");
             assertEquals(found.get(0).getForeground(), java.awt.Color.BLACK, key + " is not black");
             assertEquals(found.get(0).getFont(), org.traincontrol.gui.widgets.UiStyle.LABEL_FONT, key + " is not Semibold 13");
         }
@@ -186,14 +189,14 @@ public class testTheTrainWindow
      * The train window's Locomotive Settings button wears the application's button font, Segoe UI Bold 12, as every other
      * window's buttons do (the tail's Pick button is held in testTheTailCanBeGivenInTheEditor).
      *
-     * MUTATION: give `train.settings` a Plain 13 font again in `TrainWindow`, and this fails.
+     * MUTATION: give `train.settings` a Plain 13 font again in `TrainTab`, and this fails.
      */
     @Test(timeOut = 120000)
     public void testTheWindowsButtonsWearTheButtonFont() throws Exception
     {
         AutonomyEditorPanel panel = theEditorsPanel();
 
-        TrainWindow window = StationDoors.openTrain(panel, aSquareWithATrain());
+        StationSettingsWindow window = StationDoors.openTrain(panel, aSquareWithATrain());
 
         javax.swing.JButton settings = StationDoors.part(window, "train.settings", javax.swing.JButton.class);
 
@@ -231,6 +234,125 @@ public class testTheTrainWindow
     }
 
     /**
+     * The train is a tab of Station Settings (FR-195; Adam: "change the 'change train at station' to just open the new
+     * tab"): Change Train at... on the editor's menu brings forward the Station Settings already open and switches it to
+     * its Train tab, Station Settings... switches it back, and Place a Locomotive Here... on an empty station opens the
+     * Train tab too.  No second window opens.
+     *
+     * MUTATION: leave `showTab` out of `AutonomyEditorPanel.openTrainTab`, and this fails.
+     */
+    @Test(timeOut = 120000)
+    public void testChangeTrainOpensStationSettingsOnItsTrainTab() throws Exception
+    {
+        AutonomyEditorPanel panel = theEditorsPanel();
+
+        TileKey full = aSquareWithATrain();
+        TileKey empty = anEmptyStation();
+
+        StationSettingsWindow open = StationDoors.open(panel, full);
+
+        assertFalse(StationDoors.showsTheTrainTab(open), "precondition: Station Settings opened on its Train tab");
+
+        fromTheEditorsMenu(panel, full, I18n.f("autosetup.ui.menuChangeTrainAt", session.describeTile(full)));
+
+        assertSame(StationDoors.showing(StationSettingsWindow.class), open, "Change Train at did not bring forward the"
+            + " Station Settings already open");
+
+        assertTrue(StationDoors.showsTheTrainTab(open), "Change Train at did not switch Station Settings to its Train tab");
+
+        assertEquals(stationWindowsShowing(), 1, "Change Train at opened a second window");
+
+        fromTheEditorsMenu(panel, full, I18n.t("autosetup.ui.menuStationSettings"));
+
+        assertFalse(StationDoors.showsTheTrainTab(open), "Station Settings... did not switch back to the Settings tab");
+
+        StationDoors.close(open);
+
+        fromTheEditorsMenu(panel, empty, I18n.t("autosetup.ui.menuPlaceHere"));
+
+        StationSettingsWindow placing = StationDoors.showing(StationSettingsWindow.class);
+
+        assertNotNull(placing, "Place a Locomotive Here did not open Station Settings");
+        assertEquals(placing.squareForTest(), empty, "Place a Locomotive Here opened another square");
+        assertTrue(StationDoors.showsTheTrainTab(placing), "Place a Locomotive Here did not open the Train tab");
+
+        StationDoors.close(placing);
+    }
+
+    /**
+     * Station Settings' tabs wear icons as Locomotive Settings' do (Adam: "a station icon and a locomotive icon, similar
+     * to the style in the locomotive editor window"): the Settings tab the drawn station, the Train tab the locomotive
+     * of Locomotive Settings' first tab, each beside its title.
+     *
+     * MUTATION: drop the icon from the Train tab's `tabs.addTab` in `StationSettingsWindow`, and this fails.
+     */
+    @Test(timeOut = 120000)
+    public void testTheTabsWearAStationAndALocomotive() throws Exception
+    {
+        StationSettingsWindow window = StationDoors.open(theEditorsPanel(), aSquareWithATrain());
+
+        javax.swing.JTabbedPane tabs = StationDoors.part(window, "station.tabs", javax.swing.JTabbedPane.class);
+
+        javax.swing.Icon[] expected = {org.traincontrol.gui.widgets.TabIcons.station(),
+            org.traincontrol.gui.widgets.TabIcons.locomotive()};
+
+        for (int i = 0; i < 2; i++)
+        {
+            final int tab = i;
+
+            javax.swing.Icon icon = Components.onTheEventThread(() -> tabs.getIconAt(tab));
+
+            assertNotNull(icon, "tab " + i + " has no icon");
+            assertEquals(painted(icon), painted(expected[i]), "tab " + i + " does not wear its drawn icon");
+            assertFalse(Components.onTheEventThread(() -> tabs.getTitleAt(tab)).isEmpty(), "tab " + i + " lost its title");
+        }
+
+        StationDoors.close(window);
+    }
+
+    /** An icon's pixels, as one string to compare. */
+    private static String painted(javax.swing.Icon icon)
+    {
+        java.awt.image.BufferedImage image = new java.awt.image.BufferedImage(icon.getIconWidth(), icon.getIconHeight(),
+            java.awt.image.BufferedImage.TYPE_INT_ARGB);
+
+        icon.paintIcon(null, image.getGraphics(), 0, 0);
+
+        return icon.getIconWidth() + "x" + icon.getIconHeight() + java.util.Arrays.toString(
+            image.getRGB(0, 0, image.getWidth(), image.getHeight(), null, 0, image.getWidth()));
+    }
+
+    /** Clicks an item of the editor's menu on a square, as a right-click and a click do. */
+    private static void fromTheEditorsMenu(AutonomyEditorPanel panel, TileKey square, String item) throws Exception
+    {
+        JPopupMenu menu = Components.onTheEventThread(() -> panel.buildTileMenu(square, null));
+
+        AbstractButton chosen = Components.withText(menu, item);
+
+        assertNotNull(chosen, "the editor's menu on " + square + " has no \"" + item + "\"");
+
+        Components.onTheEventThread(() -> { chosen.doClick(); return null; });
+
+        Components.settle();
+    }
+
+    /** How many of the autonomy editor's square windows are showing. */
+    private static int stationWindowsShowing()
+    {
+        return Components.onTheEventThread(() ->
+        {
+            int out = 0;
+
+            for (java.awt.Window each : java.awt.Window.getWindows())
+            {
+                if (each.isShowing() && each.getClass().getPackage().getName().endsWith(".autonomyeditor")) out++;
+            }
+
+            return out;
+        });
+    }
+
+    /**
      * Every (i) of the train popup explains its row in every state (OB-429): where no train stands, each says what its
      * row is and that no train stands here; beside Tail lies, where the tail is not known, it says what Tail lies means
      * and why it is not known here.
@@ -244,7 +366,7 @@ public class testTheTrainWindow
 
         for (TileKey square : new TileKey[] {anEmptyStation(), aSquareWithATrain()})
         {
-            TrainWindow window = StationDoors.openTrain(panel, square);
+            StationSettingsWindow window = StationDoors.openTrain(panel, square);
 
             try
             {
@@ -308,7 +430,7 @@ public class testTheTrainWindow
 
         String before = session.snapshotSetup().toString();
 
-        TrainWindow window = StationDoors.openTrain(panel, aSquareWithATrain());
+        StationSettingsWindow window = StationDoors.openTrain(panel, aSquareWithATrain());
 
         StationDoors.close(window);
 
@@ -333,7 +455,7 @@ public class testTheTrainWindow
 
         String train = aTrainNotPlaced();
 
-        TrainWindow window = StationDoors.openTrain(panel, square);
+        StationSettingsWindow window = StationDoors.openTrain(panel, square);
 
         assertFalse(StationDoors.live(window, "train.active"), "Active takes clicks with no train to pause");
 
@@ -368,7 +490,7 @@ public class testTheTrainWindow
 
         TileKey square = anEmptyStation();
 
-        TrainWindow window = StationDoors.openTrain(panel, square);
+        StationSettingsWindow window = StationDoors.openTrain(panel, square);
 
         javax.swing.JComboBox<?> list = StationDoors.part(window, "train.train", javax.swing.JComboBox.class);
 
@@ -463,7 +585,7 @@ public class testTheTrainWindow
 
                 String train = aTrainNotPlaced();
 
-                TrainWindow window = StationDoors.openTrain(panel, square);
+                StationSettingsWindow window = StationDoors.openTrain(panel, square);
 
                 StationDoors.pick(window, "train.train", train);
 
@@ -520,7 +642,7 @@ public class testTheTrainWindow
 
             assertFalse(tick.isSelected(), "the editor's tick reads going for a train its card paused");
 
-            TrainWindow window = StationDoors.openTrain(panel, square);
+            StationSettingsWindow window = StationDoors.openTrain(panel, square);
 
             assertFalse(StationDoors.on(window, "train.active"), "the window reads going for a train its card paused");
 
@@ -571,7 +693,7 @@ public class testTheTrainWindow
 
             Components.settle();
 
-            TrainWindow window = StationDoors.showing(TrainWindow.class);
+            StationSettingsWindow window = StationDoors.showing(StationSettingsWindow.class);
 
             assertNotNull(window, "the train window did not open during a run");
 
@@ -625,14 +747,14 @@ public class testTheTrainWindow
     }
 
     /** The train window on this square, opened from the track diagram's menu. */
-    private static TrainWindow theDiagramsTrainWindow(TileKey square) throws Exception
+    private static StationSettingsWindow theDiagramsTrainWindow(TileKey square) throws Exception
     {
         Mouse.choose(AskingWindows.itemOf(AskingWindows.menuOn(ui, ui, square),
             I18n.f("autosetup.ui.menuChangeTrainAt", session.describeTile(square))));
 
         Components.settle();
 
-        TrainWindow window = StationDoors.showing(TrainWindow.class);
+        StationSettingsWindow window = StationDoors.showing(StationSettingsWindow.class);
 
         assertNotNull(window, "the train window did not open from the track diagram");
 
@@ -643,7 +765,7 @@ public class testTheTrainWindow
      * While a route runs with autonomy idle, the train window's Active pauses the train alone, as the track diagram's
      * Is Active does (FR-187): live, and the setup is as it was.
      *
-     * MUTATION: gray Active in `TrainWindow.fill` unless autonomy itself runs, and this fails.
+     * MUTATION: gray Active in `TrainTab.fill` unless autonomy itself runs, and this fails.
      */
     @Test(timeOut = 180000)
     public void testWhileARouteRunsActivePausesTheTrainAlone() throws Exception
@@ -652,7 +774,7 @@ public class testTheTrainWindow
 
         Locomotive train = model.getLocByName(session.getLocomotiveNameAt(square));
 
-        TrainWindow window = theDiagramsTrainWindow(square);
+        StationSettingsWindow window = theDiagramsTrainWindow(square);
 
         assertTrue(StationDoors.on(window, "train.active"), "precondition: Active is not ticked");
 
@@ -696,7 +818,7 @@ public class testTheTrainWindow
 
         TileKey square = anEmptyStation();
 
-        TrainWindow window = StationDoors.openTrain(panel, square);
+        StationSettingsWindow window = StationDoors.openTrain(panel, square);
 
         javax.swing.JComboBox<?> list = StationDoors.part(window, "train.train", javax.swing.JComboBox.class);
 
@@ -738,7 +860,7 @@ public class testTheTrainWindow
         TileKey square = aSquareWithATrain();
         String standing = session.getLocomotiveNameAt(square);
 
-        TrainWindow window = StationDoors.openTrain(panel, square);
+        StationSettingsWindow window = StationDoors.openTrain(panel, square);
 
         javax.swing.JComboBox<?> list = StationDoors.part(window, "train.train", javax.swing.JComboBox.class);
 
@@ -772,14 +894,14 @@ public class testTheTrainWindow
      * In the autonomy editor's own train window, Active stays a setup edit, gray while a route runs: a pause of the
      * railway's train alone would be undone by the editor's draft (the track diagram's window pauses it).
      *
-     * MUTATION: leave `editor.menuOnly` out of `TrainWindow.pausesAlone`, and this fails.
+     * MUTATION: leave `editor.menuOnly` out of `TrainTab.pausesAlone`, and this fails.
      */
     @Test(timeOut = 180000)
     public void testInTheEditorActiveIsGrayWhileARouteRuns() throws Exception
     {
         AutonomyEditorPanel panel = theEditorsPanel();
 
-        TrainWindow window = StationDoors.openTrain(panel, aSquareWithATrain());
+        StationSettingsWindow window = StationDoors.openTrain(panel, aSquareWithATrain());
 
         assertTrue(StationDoors.live(window, "train.active"), "precondition: Active is gray at rest");
 
@@ -970,7 +1092,7 @@ public class testTheTrainWindow
 
         TileKey square = aSquareWithATrain();
 
-        TrainWindow window = StationDoors.openTrain(panel, square);
+        StationSettingsWindow window = StationDoors.openTrain(panel, square);
 
         StationDoors.press(window, "train.settings");
 
@@ -998,7 +1120,7 @@ public class testTheTrainWindow
     {
         AutonomyEditorPanel panel = theEditorsPanel();
 
-        TrainWindow window = StationDoors.openTrain(panel, aSquareWithATrain());
+        StationSettingsWindow window = StationDoors.openTrain(panel, aSquareWithATrain());
 
         try
         {
@@ -1055,13 +1177,15 @@ public class testTheTrainWindow
     {
         AutonomyEditorPanel panel = theEditorsPanel();
 
-        TrainWindow window = StationDoors.openTrain(panel, aSquareWithATrain());
+        StationSettingsWindow window = StationDoors.openTrain(panel, aSquareWithATrain());
 
         javax.swing.ToolTipManager tips = javax.swing.ToolTipManager.sharedInstance();
 
         int was = Components.onTheEventThread(tips::getInitialDelay);
 
-        javax.swing.JLabel mark = Components.onTheEventThread(() -> Components.find(window, javax.swing.JLabel.class,
+        java.awt.Container form = StationDoors.part(window, "train.form", java.awt.Container.class);
+
+        javax.swing.JLabel mark = Components.onTheEventThread(() -> Components.find(form, javax.swing.JLabel.class,
             l -> l.getIcon() == org.traincontrol.gui.InfoMark.icon() && l.getToolTipText() != null));
 
         try
@@ -1257,6 +1381,57 @@ public class testTheTrainWindow
     }
 
     /**
+     * Over a train, the destinations the diagram's menu offers are headed "Send <name> To:", not the train's bare name
+     * (Adam: "change the gray <loc name> heading to Send <locname> To: if there are ANY destination options below it");
+     * the heading is there only with a destination under it.
+     *
+     * MUTATION: head the destinations with `locomotive.getName()` again in `LayoutRightclickAutonomyMenu.addDestinations`,
+     * and this fails.
+     */
+    @Test(timeOut = 120000)
+    public void testTheDestinationsAreHeadedSendTo() throws Exception
+    {
+        java.util.List<String> shape = null;
+        String train = null;
+
+        // A train with somewhere to go: under either heading, the new or the bare name
+        for (Map.Entry<TileKey, String> each : session.trainsWhereTheyStand().entrySet())
+        {
+            if (!PAGE.equals(each.getKey().getPage()) || !each.getValue().equals(session.getLocomotiveNameAt(each.getKey())))
+            {
+                continue;
+            }
+
+            AskingWindows.showThePageOf(ui, each.getKey());
+
+            java.util.List<String> menu = shape(AskingWindows.menuOn(ui, ui, each.getKey()));
+
+            Mouse.closeMenus();
+
+            if (menu.contains("(heading) " + I18n.f("autolayout.ui.menuSendTo", each.getValue()))
+                || menu.contains("(heading) " + each.getValue()))
+            {
+                shape = menu;
+                train = each.getValue();
+
+                break;
+            }
+        }
+
+        assertNotNull(shape, "precondition: no train on " + PAGE + " has a destination on its menu");
+
+        int heading = shape.indexOf("(heading) " + I18n.f("autolayout.ui.menuSendTo", train));
+
+        assertTrue(heading >= 0, "the destinations are not headed Send " + train + " To: " + shape);
+
+        assertFalse(shape.contains("(heading) " + train), "the train's bare name still heads something: " + shape);
+
+        String first = shape.get(heading + 1);
+
+        assertTrue(!first.startsWith("(heading)") && !"----".equals(first), "no destination follows the heading: " + shape);
+    }
+
+    /**
      * Over an empty station Station Settings... is the station's own item, and the two ways to put a train there are a
      * group of their own behind a divider, on the track diagram and in the autonomy editor (FR-182, as Adam
      * reordered it).
@@ -1301,8 +1476,9 @@ public class testTheTrainWindow
     }
 
     /**
-     * The autonomy editor's station menu is grouped the same way, with no Edit (FR-182 as Adam reordered it): the
-     * train's own items with Station Settings... last, then Change Train at..., Place and Remove.
+     * The autonomy editor's station menu is grouped the same way, with no Edit (FR-182 as Adam reordered it): Station
+     * Settings... alone right under the square's name (OB-437), the train's own items, then Change Train at..., Place
+     * and Remove.
      *
      * MUTATION: put Change Train at... back with the train's own items in `EditorTileMenus.buildTileMenu`, and this
      * fails.
@@ -1327,11 +1503,11 @@ public class testTheTrainWindow
         assertEquals(own.get(0), said("autolayout.ui.menuLocomotiveActive", train), "Is Active is not the first of the"
             + " train's own items: " + groups);
 
-        assertEquals(own.get(own.size() - 1), I18n.t("autosetup.ui.menuStationSettings"), "Station Settings is not the"
-            + " last of the train's own items: " + groups);
+        assertEquals(groups.get(1), java.util.Collections.singletonList(I18n.t("autosetup.ui.menuStationSettings")),
+            "Station Settings is not alone in the group right under the square's name: " + groups);
 
-        assertTrue(own.get(own.size() - 2).startsWith(said("autosetup.ui.menuChangeArrivedFromUnknown", null)),
-            "Station Settings is not right below Change Arrived From: " + groups);
+        assertTrue(own.get(own.size() - 1).startsWith(said("autosetup.ui.menuChangeArrivedFromUnknown", null)),
+            "Change Arrived From is not the last of the train's own items: " + groups);
 
         assertEquals(groups.get(groups.indexOf(own) + 1), java.util.Arrays.asList(
             said("autosetup.ui.menuChangeTrainAt", session.describeTile(full)),
@@ -1377,6 +1553,41 @@ public class testTheTrainWindow
             assertFalse("----".equals(shape.get(shape.size() - 1)), "the editor's menu on " + square + " ends in a"
                 + " divider: " + shape);
         }
+    }
+
+    /**
+     * On the track diagram, a station with every arrival barred has no copy that is a destination, so its menu has no
+     * headed station block, and Station Settings... tops the group it shares with Place a Locomotive Here... (FR-195:
+     * "move the Station Settings item to the top of its divider section").
+     *
+     * MUTATION: add the train item before Station Settings in `LayoutRightclickAutonomyMenu.addStationItems`, and this
+     * fails.
+     */
+    @Test(timeOut = 120000)
+    public void testStationSettingsTopsAnUnheadedStationsGroupOnTheDiagram() throws Exception
+    {
+        TileKey sensor = anEmptyStation();
+
+        Components.onTheEventThread(() ->
+        {
+            session.setBarredArrivals(sensor, new java.util.HashSet<>(session.arrivalSides(sensor)));
+            ui.rebuildRunningLayoutFromSetup(false, new java.util.LinkedHashSet<>(session.placementsAutonomyWillWrite().values()));
+
+            return null;
+        });
+
+        Components.settle();
+
+        AskingWindows.showThePageOf(ui, sensor);
+
+        java.util.List<java.util.List<String>> groups = groups(AskingWindows.menuOn(ui, ui, sensor));
+
+        Mouse.closeMenus();
+
+        java.util.List<String> group = groupWith(groups, I18n.t("autosetup.ui.menuStationSettings"));
+
+        assertEquals(group.get(0), I18n.t("autosetup.ui.menuStationSettings"), "Station Settings does not top its group: " + groups);
+        assertTrue(group.contains(I18n.t("autosetup.ui.menuPlaceHere")), "precondition: Place a Locomotive Here... is elsewhere: " + groups);
     }
 
     /**
@@ -2010,7 +2221,7 @@ public class testTheTrainWindow
     {
         return name ->
         {
-            TrainWindow window = StationDoors.openTrain(panel, support.StandingTrain.squareNamed(session, "Tunnel"));
+            StationSettingsWindow window = StationDoors.openTrain(panel, support.StandingTrain.squareNamed(session, "Tunnel"));
 
             StationDoors.pick(window, "train.train", name);
 
@@ -2144,7 +2355,7 @@ public class testTheTrainWindow
     /** A door that places the named train on Tunnel; returns the window it left open, or null. */
     private interface PlacingDoor
     {
-        TrainWindow place(String name) throws Exception;
+        StationSettingsWindow place(String name) throws Exception;
     }
 
     /**
@@ -2160,7 +2371,7 @@ public class testTheTrainWindow
         // `putBack` leaves a train an earlier claim placed standing on the railway, so Tunnel is emptied there too
         offTheRailwayAt(tunnel);
 
-        TrainWindow window = null;
+        StationSettingsWindow window = null;
 
         String was = aTrainOffTheRailway();
 
@@ -2168,7 +2379,7 @@ public class testTheTrainWindow
 
         org.traincontrol.gui.TailCrossedPrompt.answerForTests(org.traincontrol.gui.TailCrossedPrompt.DISMISSED);
 
-        TrainWindow first = door.place(was);
+        StationSettingsWindow first = door.place(was);
 
         if (first != null) StationDoors.close(first);
 

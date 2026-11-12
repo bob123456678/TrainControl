@@ -21,7 +21,7 @@ window whose items need setting apart gets a blue heading over them, not blue it
 ## The parts to build with
 
 New hand-written windows take these rather than setting fonts and colors themselves. The 3.1.0 windows
-(`LocomotiveSettingsFrame`, `StationSettingsWindow`, `TrainWindow`) are built from them.
+(`LocomotiveSettingsFrame`, `StationSettingsWindow` with its `TrainTab`) are built from them.
 
 - **`widgets/UiStyle`** holds the table above: `UiStyle.heading(...)` for a section heading, `UiStyle.label(...)` or
   `blackLabel(...)` for an item label, `UiStyle.button(...)` to put a button in Bold 12, and `withoutColon(...)` for
@@ -38,7 +38,7 @@ New hand-written windows take these rather than setting fonts and colors themsel
   Station Settings beside a setting the stations picked disagree on. It appears by itself, with no button to ask for it.
   It also marks a problem inside a button: `Power OFF` wears it, with a tooltip saying why, while the Central Station
   isn't answering, and drops it when answers return.
-  `RowIcons` also has the row marks (trash, copy, plus, arrows, grip) the same windows use.
+  `RowIcons` also has the row marks (trash, copy, plus, arrows, grip) the same windows use, and `cross`, the red X at the end of a row that removes it, as the guard signal windows have.
 
 ## The reference screen
 

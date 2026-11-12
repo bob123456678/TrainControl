@@ -582,7 +582,7 @@ public class testNoSelfRecursiveWrappers
      */
     private static final String[] EDITOR_FILES = {
         "AutonomyEditorPanel", "EditorTileMenus", "EditorPrompts", "EditorSignals", "EditorMassAssign", "EditorWhy",
-        "StationSettingsWindow", "TrainWindow" };
+        "StationSettingsWindow", "TrainTab" };
 
     /**
      * What a file reaches into an AutonomyEditorPanel for: each `session`, `promptName(` or `applyLength(` taken from

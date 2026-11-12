@@ -142,6 +142,25 @@ public final class RowIcons
         };
     }
 
+    /** A red X, for the mark that removes its row. */
+    public static Icon cross(final int size)
+    {
+        return new Painted(size)
+        {
+            @Override
+            void draw(Graphics2D g, int width, int height)
+            {
+                g.setColor(new Color(204, 40, 40));
+                g.setStroke(new BasicStroke(2f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+
+                int pad = width / 4;
+
+                g.drawLine(pad, pad, width - pad, height - pad);
+                g.drawLine(pad, height - pad, width - pad, pad);
+            }
+        };
+    }
+
     /** A solid triangle pointing up or down. */
     public static Icon arrow(final int size, final boolean up)
     {

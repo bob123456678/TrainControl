@@ -370,7 +370,8 @@ public class testStandingRulesAnswerAsTheDoorsDo
      * On the live snapshot, every cell of every square, by hand and automatically, says what the doors do with a
      * reversible train and one that cannot reverse put on each point in turn: the routes `getPossiblePaths` gives, the
      * ones offered, the ones autonomy would choose from a square it starts trains from, and where a train can be sent
-     * from.  Lists are left out of the matrix, so whitelists are set to All first.
+     * from.  The probe trains have no length and are on no list, so lists and lengths, which turn a Yes into Some trains
+     * (`testALengthOrAListMakesEndingHereSomeTrains`), are taken off first.
      *
      * MUTATION: answer `passing`'s automatic cell with the manual one, as the merged row did, and this fails.
      */
@@ -385,10 +386,8 @@ public class testStandingRulesAnswerAsTheDoorsDo
 
             for (TileKey square : setup.getStationIndex().squares())
             {
-                if (setup.getWhichTrains(square) == AutonomySession.WhichTrains.WHITELIST)
-                {
-                    setup.setWhichTrains(square, AutonomySession.WhichTrains.ALL);
-                }
+                setup.setWhichTrains(square, AutonomySession.WhichTrains.ALL);
+                setup.setPointProperty(square, "maxTrainLength", 0);
             }
 
             Locomotive[] trains = {live.newTrain("Live reversible", 2311), live.newTrain("Live one way", 2312)};
@@ -562,28 +561,91 @@ public class testStandingRulesAnswerAsTheDoorsDo
     }
 
     /**
-     * The window's list and lengths are said below the matrix, not in it: a blacklist, a whitelist and a maximum length
-     * change no cell.
+     * A maximum length or a list in force turns a Yes for a trip ending here into Some trains, in both columns, the
+     * reason naming the limit; running through and leaving, which neither limits, stay Yes (OB-440, D34).
      *
-     * MUTATION: ask `Point.excludes` for a probe train in `LayoutStandingRules`, and a whitelist turns every Sent Here cell
-     * to no, and this fails.
+     * MUTATION: have `LayoutStandingRules.limited` hand back its cell unchanged, and this fails.
      */
     @Test
-    public void testTheListAndTheLengthChangeNoCell() throws Exception
+    public void testALengthOrAListMakesEndingHereSomeTrains() throws Exception
     {
-        session.setWhichTrains(approach, AutonomySession.WhichTrains.WHITELIST,
-            java.util.Collections.<String>emptyList());
-        session.setPointProperty(approach, "maxTrainLength", 1);
+        for (int limit = 0; limit < 3; limit++)
+        {
+            session.restoreSetup(new JSONObject(pristine.toString()));
 
-        StandingRules rules = rules(scenario.build());
+            String named;
+
+            if (limit == 0)
+            {
+                session.setPointProperty(approach, "maxTrainLength", 3);
+                named = org.traincontrol.util.I18n.f("autolayout.rules.limitLength", 3);
+            }
+            else
+            {
+                AutonomySession.WhichTrains which = limit == 1 ? AutonomySession.WhichTrains.BLACKLIST : AutonomySession.WhichTrains.WHITELIST;
+
+                session.setWhichTrains(approach, which, java.util.Collections.singletonList(oneWay.getName()));
+                named = org.traincontrol.util.I18n.f(limit == 1 ? "autolayout.rules.limitBlacklist" : "autolayout.rules.limitWhitelist", oneWay.getName());
+            }
+
+            StandingRules rules = rules(scenario.build());
+
+            for (boolean byHand : new boolean[] {false, true})
+            {
+                for (StandingRules.Cell cell : rules.cells(Row.SENT_HERE, byHand).values())
+                {
+                    assertEquals(cell.getAnswer(), Answer.SOME, "limit " + limit + ", by hand " + byHand + ": " + cell.getWhy());
+                    assertTrue(cell.getWhy().contains(named), "the reason does not name the limit: " + cell.getWhy());
+                }
+
+                for (Row row : new Row[] {Row.SENT_THROUGH, Row.SENT_FROM})
+                {
+                    for (StandingRules.Cell cell : rules.cells(row, byHand).values())
+                    {
+                        assertEquals(cell.getAnswer(), Answer.YES, row + " is limited (" + limit + "): " + cell.getWhy());
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * An Allowed trains whitelist naming no train keeps every train out (`Point.excludes`), so every cell for a trip
+     * ending here says No with its own reason, and no side is a way in.
+     *
+     * MUTATION: drop the empty-whitelist answer from `LayoutStandingRules.limited`, and this fails.
+     */
+    @Test
+    public void testAnEmptyWhitelistSaysNoTrainEndsHere() throws Exception
+    {
+        session.setWhichTrains(approach, AutonomySession.WhichTrains.WHITELIST, java.util.Collections.<String>emptyList());
+
+        Layout railway = scenario.build();
+
+        for (Point copy : copiesOf(railway))
+        {
+            assertTrue(copy.excludes(reversible) && copy.excludes(oneWay), "precondition: the empty whitelist lets a train in");
+        }
+
+        StandingRules rules = rules(railway);
 
         for (boolean byHand : new boolean[] {false, true})
         {
+            for (Row row : new Row[] {Row.SENT_HERE, Row.TURNED_ROUND})
+            {
+                for (StandingRules.Cell cell : rules.cells(row, byHand).values())
+                {
+                    assertEquals(cell.getAnswer(), Answer.NO, row + ", by hand " + byHand + ": " + cell.getWhy());
+                }
+            }
+
             for (StandingRules.Cell cell : rules.cells(Row.SENT_HERE, byHand).values())
             {
-                assertEquals(cell.getAnswer(), Answer.YES, "the list reached the matrix: " + cell.getWhy());
+                assertEquals(cell.getWhy(), org.traincontrol.util.I18n.t("autolayout.rules.limitNoneAllowed"), "the reason");
             }
         }
+
+        assertTrue(rules.waysIn().isEmpty(), "the picture would draw ways in: " + rules.waysIn());
     }
 
     /**

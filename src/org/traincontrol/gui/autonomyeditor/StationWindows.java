@@ -7,8 +7,8 @@ import org.traincontrol.automationui.AutonomySession;
 import org.traincontrol.automationui.TileGraph.TileKey;
 
 /**
- * This panel's Station Settings and train windows: one of each per surface (FR-111).  They follow every edit, close when
- * the square or the setup they are about has gone, and outline what they are about in the editor.
+ * This panel's Station Settings window, one per surface (FR-111).  It follows every edit, closes when the square or the
+ * setup it is about has gone, and outlines what it is about in the editor.
  */
 final class StationWindows
 {
@@ -16,7 +16,6 @@ final class StationWindows
     private final AutonomySession session;
 
     private StationSettingsWindow station;
-    private TrainWindow train;
 
     /** What the window on screen outlines: its square and guard signals. */
     private final Set<TileKey> outlined = new LinkedHashSet<>();
@@ -51,20 +50,7 @@ final class StationWindows
         return station;
     }
 
-    TrainWindow train(TileKey square)
-    {
-        Window owner = editor.ownerWindow();
-
-        if (train != null && train.getOwner() != owner) train.closeWindow();
-
-        if (train == null) train = new TrainWindow(editor, owner);
-
-        train.aim(square);
-
-        return train;
-    }
-
-    /** Right-clicking another square switches a window already open (FR-111). */
+    /** Right-clicking another square switches the window already open, on the tab it shows (FR-111). */
     void rightClicked(TileKey square)
     {
         if (station != null && station.tile != null && !station.isSeveral() && !square.equals(station.tile)
@@ -72,17 +58,12 @@ final class StationWindows
         {
             station(square);
         }
-
-        if (train != null && train.tile != null && !square.equals(train.tile) && editor.offersStationSettings(square))
-        {
-            train(square);
-        }
     }
 
     /** Something may have changed: read again once this gesture is over, after the rebuild it posted. */
     void changed()
     {
-        if (reloadPending || (station == null && train == null)) return;
+        if (reloadPending || station == null) return;
 
         reloadPending = true;
 
@@ -91,8 +72,6 @@ final class StationWindows
             reloadPending = false;
 
             if (station != null) station.reload();
-
-            if (train != null) train.reload();
 
             outline();
         });
@@ -107,11 +86,12 @@ final class StationWindows
         return current && session.getReducer() != null && session.getReducer().getPoints().containsKey(square);
     }
 
-    void closed(StationWindowBase window)
+    void closed(StationWindowBase window, TileKey square)
     {
-        if (window == station) station = null;
+        // A guard pick its pencil started goes with the window (MT-948)
+        if (window == station && square != null) editor.endGuardPick(square);
 
-        if (window == train) train = null;
+        if (window == station) station = null;
 
         outline();
     }
@@ -119,8 +99,6 @@ final class StationWindows
     void closeAll()
     {
         if (station != null) station.goAway();
-
-        if (train != null) train.goAway();
     }
 
     boolean outlines(TileKey square)
@@ -131,11 +109,6 @@ final class StationWindows
     StationSettingsWindow stationWindow()
     {
         return station;
-    }
-
-    TrainWindow trainWindow()
-    {
-        return train;
     }
 
     /** In the editor; the track diagram has no outline layer, and flashes the square instead (`flashSquare`). */

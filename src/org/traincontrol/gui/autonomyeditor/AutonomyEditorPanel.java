@@ -612,8 +612,8 @@ public class AutonomyEditorPanel extends JPanel
 
         // Which tier the check answers for (Adam: **"Radio button Auto or Manual dictates what is in scope for the
         // routing check."**): only which stations a train may be sent to differs.
-        // The window's blue group heading (OB-217)
-        pathTypeLabel = org.traincontrol.gui.widgets.UiStyle.heading(I18n.t("autosetup.ui.labelPathType"));
+        // An item label: black, as only section headings are blue (OB-438)
+        pathTypeLabel = org.traincontrol.gui.widgets.UiStyle.label(I18n.t("autosetup.ui.labelPathType"));
 
         pathTypeAuto = new javax.swing.JRadioButton(I18n.t("autosetup.ui.pathTypeAuto"), true);
         pathTypeManual = new javax.swing.JRadioButton(I18n.t("autosetup.ui.pathTypeManual"), false);
@@ -629,8 +629,18 @@ public class AutonomyEditorPanel extends JPanel
         pathTypeAuto.setToolTipText(pathTypeTip);
         pathTypeManual.setToolTipText(pathTypeTip);
 
-        pathTypeAuto.setFont(FONT_CONTROL);
-        pathTypeManual.setFont(FONT_CONTROL);
+        // Flush with the buttons and label above and below, so the column's left edge is one line (OB-438)
+        for (javax.swing.JRadioButton radio : new javax.swing.JRadioButton[] {pathTypeAuto, pathTypeManual})
+        {
+            radio.setFont(FONT_CONTROL);
+            radio.setMargin(new java.awt.Insets(0, 0, 0, 0));
+            radio.setBorder(BorderFactory.createEmptyBorder());
+        }
+
+        // The air a heading has above and below it, as Station Tools has
+        pathTypeLabel.setBorder(BorderFactory.createEmptyBorder(
+            org.traincontrol.gui.layouteditor.LayoutEditor.HEADING_GAP + 6, 0,
+            org.traincontrol.gui.layouteditor.LayoutEditor.HEADING_GAP, 0));
 
         // The route on screen follows the tier (MT-399)
         pathTypeAuto.addActionListener(e -> retestForTheNewTier());
@@ -674,6 +684,14 @@ public class AutonomyEditorPanel extends JPanel
         panel.add(row(pathTypeAuto));
         panel.add(row(pathTypeManual));
 
+        // A section of its own, headed as the Visible Elements column's headings are (MT-890)
+        JLabel stationTools = org.traincontrol.gui.widgets.UiStyle.heading(I18n.t("autosetup.ui.headingStationTools"));
+
+        stationTools.setBorder(BorderFactory.createEmptyBorder(
+            org.traincontrol.gui.layouteditor.LayoutEditor.HEADING_GAP + 6, 0,
+            org.traincontrol.gui.layouteditor.LayoutEditor.HEADING_GAP, 0));
+
+        panel.add(row(stationTools));
         panel.add(row(pickButton));
 
         // One-Way Run and Name Everything are in Bulk Tools (OB-217); the disarm path still un-presses One-Way Run
@@ -1013,7 +1031,8 @@ public class AutonomyEditorPanel extends JPanel
 
         if (!stationPicks.remove(square)) stationPicks.add(square);
 
-        if (!stationPicks.isEmpty()) stationWindows.stations(new java.util.ArrayList<>(stationPicks));
+        // Bulk Edit sets settings: never the Train tab one station's window was left on (FR-195)
+        if (!stationPicks.isEmpty()) stationWindows.stations(new java.util.ArrayList<>(stationPicks)).showTab(false);
         else if (stationWindows.stationWindow() != null) stationWindows.stationWindow().closeWindow();
     }
 
@@ -1140,7 +1159,8 @@ public class AutonomyEditorPanel extends JPanel
         javax.swing.JPanel box = new javax.swing.JPanel(new BorderLayout(4, 0));
 
         box.setOpaque(false);
-        box.setBorder(BorderFactory.createEmptyBorder(0, 4, 2, 4));
+        // Air above, as under a heading, so the box does not touch the diagram over it (MT-889)
+        box.setBorder(BorderFactory.createEmptyBorder(org.traincontrol.gui.layouteditor.LayoutEditor.HEADING_GAP, 4, 2, 4));
 
         JLabel label = org.traincontrol.gui.widgets.UiStyle.label(I18n.t("autosetup.ui.labelFilterFindings"));
 
@@ -1149,20 +1169,28 @@ public class AutonomyEditorPanel extends JPanel
         findingFilter.setFont(FONT_CONTROL);
         findingFilter.setToolTipText(wrapped(I18n.t("autosetup.ui.tooltipFilterFindings")));
 
-        // Reshaped from the last check's rows, so typing costs no new check and leaves the banner alone.
-        ((FilterField) findingFilter).onChange = this::showFindings;
-
+        // Inside the field's right end, as a search field has it, and shown while there is text to clear
         JButton clear = new JButton("×");
 
         clear.setFont(FONT_CONTROL);
         clear.setFocusable(false);
+        clear.putClientProperty("JButton.buttonType", "toolBarButton");
         clear.setMargin(new java.awt.Insets(0, 6, 0, 6));
         clear.setToolTipText(wrapped(I18n.t("autosetup.ui.tooltipClearFilterFindings")));
         clear.addActionListener(e -> findingFilter.setText(""));
+        clear.setVisible(false);
+
+        findingFilter.putClientProperty("JTextField.trailingComponent", clear);
+
+        // Reshaped from the last check's rows, so typing costs no new check and leaves the banner alone.
+        ((FilterField) findingFilter).onChange = () ->
+        {
+            clear.setVisible(!findingFilter.getText().isEmpty());
+            showFindings();
+        };
 
         box.add(label, BorderLayout.WEST);
         box.add(findingFilter, BorderLayout.CENTER);
-        box.add(clear, BorderLayout.EAST);
 
         javax.swing.JPanel whole = new javax.swing.JPanel(new BorderLayout());
 
@@ -1982,25 +2010,6 @@ public class AutonomyEditorPanel extends JPanel
     }
 
     /**
-     * How wide to wrap so the longest sentence takes two lines, at least `atLeast` (MT-479): half its width plus the
-     * longest word, as lines break between words.
-     */
-    static int twoLineWidth(java.awt.FontMetrics metrics, int atLeast, String... sentences)
-    {
-        int widest = 0;
-        int longestWord = 0;
-
-        for (String sentence : sentences)
-        {
-            widest = Math.max(widest, metrics.stringWidth(sentence));
-
-            for (String word : sentence.split("\\s+")) longestWord = Math.max(longestWord, metrics.stringWidth(word));
-        }
-
-        return Math.max(atLeast, widest / 2 + longestWord);
-    }
-
-    /**
      * Text wrapped at a width, as `wrapped` wraps a tooltip.
      * @param width the width in pixels, or 0 or less to leave it on one line
      */
@@ -2539,7 +2548,7 @@ public class AutonomyEditorPanel extends JPanel
         return dialogOwner == null ? this : dialogOwner;
     }
 
-    /** This surface's Station Settings and train windows (FR-111). */
+    /** This surface's Station Settings window (FR-111). */
     final StationWindows stationWindows;
 
     /**
@@ -2560,17 +2569,27 @@ public class AutonomyEditorPanel extends JPanel
 
         flashSquare(leaderOf(tile));
 
-        return stationWindows.station(leaderOf(tile));
+        return showTab(stationWindows.station(leaderOf(tile)), false);
     }
 
-    /** Opens the train window on a square, from its menu.  @return the window, or null where there is none to show */
-    public TrainWindow openTrainWindow(TileKey tile)
+    /**
+     * Opens Station Settings on its Train tab (FR-195), from the square's Change Train at... or Place a Locomotive Here...
+     * @return the window, or null where there is none to show
+     */
+    public StationSettingsWindow openTrainTab(TileKey tile)
     {
         if (!offersStationSettings(tile)) return null;
 
         cancelPendingGesture();
 
-        return stationWindows.train(leaderOf(tile));
+        return showTab(stationWindows.station(leaderOf(tile)), true);
+    }
+
+    private static StationSettingsWindow showTab(StationSettingsWindow window, boolean train)
+    {
+        if (window != null) window.showTab(train);
+
+        return window;
     }
 
     /** Station Settings..., for the track diagram's menu to carry. */
@@ -2599,12 +2618,6 @@ public class AutonomyEditorPanel extends JPanel
     public StationSettingsWindow stationSettingsWindow()
     {
         return stationWindows.stationWindow();
-    }
-
-    /** The train window on screen for this surface, or null. */
-    public TrainWindow trainWindow()
-    {
-        return stationWindows.trainWindow();
     }
 
     /** Closes this surface's windows, whose square may be about to move. */
@@ -2684,6 +2697,31 @@ public class AutonomyEditorPanel extends JPanel
         }
 
         return null;
+    }
+
+    /** The setup check's findings that say a train at a station could not leave it again (OB-441). */
+    private static final java.util.Set<String> CANNOT_LEAVE = new java.util.HashSet<>(java.util.Arrays.asList(
+        AutonomyChecks.STATION_REACHES_NOTHING, AutonomyChecks.TERMINUS_STRANDED, AutonomyChecks.COPY_NO_WAY_OUT,
+        AutonomyChecks.STATION_AT_THE_END_OF_A_LINE, AutonomyChecks.ARRIVAL_TRAPPED, AutonomyChecks.ARRIVAL_TRAPPED_NO_CLOSING));
+
+    /** What the setup check says, in the findings' words, where a train at this square could not leave again; else null. */
+    String whyTrainsCannotLeave(TileKey tile)
+    {
+        List<AutonomyChecks.Finding> about = new java.util.ArrayList<>();
+
+        for (AutonomyChecks.Finding finding : session.check())
+        {
+            if (CANNOT_LEAVE.contains(finding.getMessageKey()) && tile.equals(finding.getTile())) about.add(finding);
+        }
+
+        List<String> said = new java.util.ArrayList<>();
+
+        for (List<Object[]> rows : AutonomyViewerPanel.findingRows(about, this::describeTile).values())
+        {
+            for (Object[] row : rows) said.add((String) row[1]);
+        }
+
+        return said.isEmpty() ? null : String.join("  ", said);
     }
 
     /** The window whose control is being pressed (`pressedFrom`), or null. */
@@ -3765,7 +3803,7 @@ public class AutonomyEditorPanel extends JPanel
         return names;
     }
 
-    /** That list for the train window: "none", then the train here, then the rest. */
+    /** That list for Station Settings' Train tab: "none", then the train here, then the rest. */
     List<String> trainChoices(TileKey tile, String none)
     {
         List<String> names = new java.util.ArrayList<>();
@@ -4312,6 +4350,23 @@ public class AutonomyEditorPanel extends JPanel
         signalPairing.pairGuardSignals(guard, station);
     }
 
+    /**
+     * Station Settings closed: a guard pick waiting for a click on its square ends as if canceled (MT-948).  The guard
+     * window, which hangs off Station Settings, closes with it.
+     */
+    void endGuardPick(TileKey station)
+    {
+        if (!station.equals(signalFor)) return;
+
+        signalFor = null;
+
+        highlightedSignals.clear();
+
+        backToEditing();
+
+        refresh();
+    }
+
     private void askAboutSignals(final Guard guard, TileKey station)
     {
         signalPairing.askAboutSignals(guard, station);
@@ -4335,6 +4390,72 @@ public class AutonomyEditorPanel extends JPanel
         y = Math.min(y, Math.max(parent.y, parent.y + parent.height - dialog.height));
 
         return new java.awt.Point(x, y);
+    }
+
+    /**
+     * Where Station Settings first opens, off the diagram (MT-948): right of `window` where the screen has room, else
+     * inside its right edge from `top` down, over the editor's right-hand column; on the screen either way.
+     */
+    public static java.awt.Point besideTheWindow(java.awt.Rectangle window, int top, java.awt.Dimension dialog,
+        java.awt.Rectangle screen)
+    {
+        boolean room = window.x + window.width + dialog.width <= screen.x + screen.width;
+
+        return onScreen(new java.awt.Point(window.x + window.width - (room ? 0 : dialog.width), room ? window.y : top), dialog, screen);
+    }
+
+    /**
+     * Under `above`, touching it and left-aligned; beside it, right where there is room and else left, when the screen
+     * has no room below (MT-948).
+     */
+    public static java.awt.Point under(java.awt.Rectangle above, java.awt.Dimension dialog, java.awt.Rectangle screen)
+    {
+        if (above.y + above.height + dialog.height <= screen.y + screen.height)
+        {
+            return onScreen(new java.awt.Point(above.x, above.y + above.height), dialog, screen);
+        }
+
+        boolean right = above.x + above.width + dialog.width <= screen.x + screen.width;
+
+        return onScreen(new java.awt.Point(right ? above.x + above.width : above.x - dialog.width, above.y), dialog, screen);
+    }
+
+    private static java.awt.Point onScreen(java.awt.Point at, java.awt.Dimension dialog, java.awt.Rectangle screen)
+    {
+        at.x = Math.max(screen.x, Math.min(at.x, screen.x + screen.width - dialog.width));
+        at.y = Math.max(screen.y, Math.min(at.y, screen.y + screen.height - dialog.height));
+
+        return at;
+    }
+
+    /** The usable part of the screen a window is on: the taskbar left out. */
+    public static java.awt.Rectangle screenOf(java.awt.Window window)
+    {
+        java.awt.GraphicsConfiguration screen = window.getGraphicsConfiguration();
+        java.awt.Rectangle bounds = screen.getBounds();
+        java.awt.Insets taken = window.getToolkit().getScreenInsets(screen);
+
+        return new java.awt.Rectangle(bounds.x + taken.left, bounds.y + taken.top,
+            bounds.width - taken.left - taken.right, bounds.height - taken.top - taken.bottom);
+    }
+
+    /**
+     * Where Station Settings first opens over `window`: `besideTheWindow`, the column's top this panel's.  The track
+     * diagram's window has no column to spare, its right side being the throttle and Power: without room beside it,
+     * `besideOwner`.
+     */
+    java.awt.Point whereStationSettingsOpens(java.awt.Window window, java.awt.Dimension size)
+    {
+        java.awt.Rectangle bounds = window.getBounds();
+        java.awt.Rectangle screen = screenOf(window);
+
+        if (javax.swing.SwingUtilities.getWindowAncestor(this) == window)
+        {
+            return besideTheWindow(bounds, bounds.y + javax.swing.SwingUtilities.convertPoint(this, 0, 0, window).y, size, screen);
+        }
+
+        return bounds.x + bounds.width + size.width <= screen.x + screen.width
+            ? besideTheWindow(bounds, bounds.y, size, screen) : besideOwner(bounds, size);
     }
 
     /**

@@ -36,7 +36,7 @@ import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.util.I18n;
 
 /**
- * What Station Settings and the train window share (FR-111): non-modal, hung off the window that asked, about one square.
+ * Station Settings' window apart from its tabs' content (FR-111): non-modal, hung off the window that asked, about one square.
  * Changes apply at once through the panel's doors; into the editor's draft there, saved at once on the track diagram.
  * Reading never writes.  Read-only while a run holds the setup, or while an editor holds it from the track diagram.
  */
@@ -185,7 +185,7 @@ abstract class StationWindowBase extends JDialog
         return footer;
     }
 
-    /** Points the window at a square and shows it, beside the window that asked. */
+    /** Points the window at a square and shows it, first beside the window that asked (MT-948). */
     final void aim(TileKey square)
     {
         commitFields();
@@ -202,7 +202,7 @@ abstract class StationWindowBase extends JDialog
         {
             Window parent = getOwner();
 
-            if (parent != null) setLocation(AutonomyEditorPanel.besideOwner(parent.getBounds(), getSize()));
+            if (parent != null) setLocation(editor.whereStationSettingsOpens(parent, getSize()));
 
             watch.start();
             setVisible(true);
@@ -359,6 +359,17 @@ abstract class StationWindowBase extends JDialog
      */
     final void act(BooleanSupplier door)
     {
+        act(door, true);
+    }
+
+    /**
+     * `act`, where `putBack` false leaves the window as it is when the door changed nothing: a refused typed field keeps
+     * its text, and a rebuild under a press away from it would lose that press.
+     */
+    final void act(BooleanSupplier door, boolean putBack)
+    {
+        final boolean[] changed = {false};
+
         editor.pressedFrom(this, () ->
         {
             if (refused())
@@ -368,21 +379,19 @@ abstract class StationWindowBase extends JDialog
                 return;
             }
 
-            boolean changed = false;
-
             try
             {
-                changed = door.getAsBoolean();
+                changed[0] = door.getAsBoolean();
             }
             catch (RuntimeException ex)
             {
                 editor.reportFailedDoor(ex);
             }
 
-            if (changed) editor.placementChanged(null);
+            if (changed[0]) editor.placementChanged(null);
         });
 
-        reload();
+        if (putBack || changed[0]) reload();
     }
 
     /** A control's press whose door saves and draws for itself. */
@@ -425,13 +434,15 @@ abstract class StationWindowBase extends JDialog
     /** Closed because its surface or square has gone. */
     final void goAway()
     {
+        TileKey was = tile;
+
         tile = null;
 
         watch.stop();
 
         dispose();
 
-        editor.stationWindows.closed(this);
+        editor.stationWindows.closed(this, was);
     }
 
     /** Grid constraints for a form row's cell. */
@@ -480,7 +491,7 @@ abstract class StationWindowBase extends JDialog
     }
 
     /** The same for a panel of answers that vary. */
-    static final class RoomyPanel extends JPanel
+    static class RoomyPanel extends JPanel
     {
         RoomyPanel(java.awt.LayoutManager layout)
         {

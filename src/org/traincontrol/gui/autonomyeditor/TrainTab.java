@@ -1,11 +1,14 @@
 package org.traincontrol.gui.autonomyeditor;
 
+import java.awt.BorderLayout;
 import java.awt.FlowLayout;
 import java.awt.Font;
+import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
-import java.awt.Window;
 import java.util.List;
 import java.util.function.BiConsumer;
+import javax.swing.BorderFactory;
+import javax.swing.BoxLayout;
 import javax.swing.ButtonGroup;
 import javax.swing.DefaultComboBoxModel;
 import javax.swing.JButton;
@@ -26,15 +29,21 @@ import org.traincontrol.gui.widgets.UiStyle;
 import org.traincontrol.util.I18n;
 
 /**
- * "Train at Bramley" (FR-111): which train stands on a square, and which way round.  Read-only during a run except
- * Active, which pauses the train as its Auto tab card does.  Saved as Station Settings is.
+ * Station Settings' Train tab (FR-111, FR-195): which train stands on the window's square, and which way round.
+ * Read-only during a run except Active, which pauses the train as its Auto tab card does.  It asks for no width, so a
+ * long name in a row never widens the window.
  */
-public final class TrainWindow extends StationWindowBase
+final class TrainTab extends StationWindowBase.RoomyPanel
 {
     private static final Font REGULAR = new Font("Segoe UI", Font.PLAIN, 14);
 
-    private final Choice train = new Choice(at -> pressTrain());
-    private final JButton settings = new JButton(I18n.t("autosetup.ui.trainLocomotiveSettings"),
+    private final StationWindowBase window;
+    private final AutonomyEditorPanel editor;
+
+    private final StationWindowBase.Choice train;
+
+    /** On the footer's left, on Done Editing's row, while this tab shows. */
+    final JButton settings = new JButton(I18n.t("autosetup.ui.trainLocomotiveSettings"),
         RowIcons.wrench(16, new java.awt.Color(110, 110, 110)));
 
     private final JCheckBox active = new JCheckBox(I18n.t("autosetup.ui.trainMayBeMoved"));
@@ -46,16 +55,22 @@ public final class TrainWindow extends StationWindowBase
     private final JPanel arrived = rowOfChoices("train.arrived");
     private final JLabel arrivedMark = InfoMark.label("");
 
+    /** One answer a line, as a station's name can make each long. */
     private final JPanel tail = rowOfChoices("train.tail");
     private final JLabel tailMark = InfoMark.label("");
     private final JLabel tailLabel = UiStyle.blackLabel(I18n.t("autosetup.ui.trainTail"));
 
-    /** What the window last showed, so the watch redraws only when a train moved. */
+    /** What the tab last showed, so the watch redraws only when a train moved. */
     private String shown;
 
-    TrainWindow(AutonomyEditorPanel editor, Window owner)
+    TrainTab(StationWindowBase window)
     {
-        super(editor, owner);
+        super(new BorderLayout());
+
+        this.window = window;
+        this.editor = window.editor;
+
+        train = window.new Choice(at -> pressTrain());
 
         JPanel form = new JPanel(new GridBagLayout());
 
@@ -73,16 +88,32 @@ public final class TrainWindow extends StationWindowBase
         active.setFont(REGULAR);
         active.addActionListener(e -> pressActive());
 
+        tail.setLayout(new BoxLayout(tail, BoxLayout.Y_AXIS));
+
         int y = 0;
 
-        formRow(form, y++, UiStyle.blackLabel(I18n.t("autosetup.ui.trainTrain")), null, train, 1);
-        formRow(form, y++, UiStyle.blackLabel(I18n.t("autosetup.ui.trainActive")), activeMark, active, 1);
-        formRow(form, y++, UiStyle.blackLabel(I18n.t("autosetup.ui.trainFacing")), facingMark, facing, 1);
-        formRow(form, y++, UiStyle.blackLabel(I18n.t("autosetup.ui.trainArrived")), arrivedMark, arrived, 1);
-        formRow(form, y, tailLabel, tailMark, tail, 1);
+        StationWindowBase.formRow(form, y++, UiStyle.blackLabel(I18n.t("autosetup.ui.trainTrain")), null, train, 1);
+        StationWindowBase.formRow(form, y++, UiStyle.blackLabel(I18n.t("autosetup.ui.trainActive")), activeMark, active, 1);
+        StationWindowBase.formRow(form, y++, UiStyle.blackLabel(I18n.t("autosetup.ui.trainFacing")), facingMark, facing, 1);
+        StationWindowBase.formRow(form, y++, UiStyle.blackLabel(I18n.t("autosetup.ui.trainArrived")), arrivedMark, arrived, 1);
+        StationWindowBase.formRow(form, y, tailLabel, tailMark, tail, 1);
 
-        // Locomotive settings sit at the bottom left, on Done Editing's row
-        assemble(form).add(settings, java.awt.BorderLayout.WEST);
+        // Tail lies and its (i) beside the first of its lines
+        GridBagLayout layout = (GridBagLayout) form.getLayout();
+
+        for (JComponent top : new JComponent[] {tailLabel, tailMark})
+        {
+            GridBagConstraints c = layout.getConstraints(top);
+
+            c.anchor = GridBagConstraints.NORTHWEST;
+            c.insets.top += 4;
+
+            layout.setConstraints(top, c);
+        }
+
+        setBorder(BorderFactory.createEmptyBorder(StationWindowBase.PAD, 0, 0, 0));
+
+        add(form, BorderLayout.NORTH);
     }
 
     private static JPanel rowOfChoices(String name)
@@ -94,10 +125,15 @@ public final class TrainWindow extends StationWindowBase
         return out;
     }
 
-    @Override
+    /** Gives the keyboard to the train list, as a window of its own did on opening. */
+    void takeTheKeyboard()
+    {
+        train.requestFocusInWindow();
+    }
+
     void fill(boolean readOnly)
     {
-        setTitle(I18n.f("autosetup.ui.titleTrainAt", editor.describeTile(tile)));
+        TileKey tile = window.tile;
 
         String standing = editor.tileMenus.trainStanding(tile);
 
@@ -169,33 +205,30 @@ public final class TrainWindow extends StationWindowBase
     /** What may change on the railway with no edit: which train stands here, and whether it is paused. */
     private String signature(String standing, Locomotive model)
     {
-        return standing + "|" + (model != null && model.isAutonomyPaused()) + "|" + editor.session.getArrivedFrom(tile);
+        return standing + "|" + (model != null && model.isAutonomyPaused()) + "|" + editor.session.getArrivedFrom(window.tile);
     }
 
-    @Override
-    void watched()
+    /** Whether the railway moved under what the tab shows, which edits alone do not say. */
+    boolean stale()
     {
-        super.watched();
+        String standing = editor.tileMenus.trainStanding(window.tile);
 
-        if (tile == null) return;
-
-        String standing = editor.tileMenus.trainStanding(tile);
-
-        if (!signature(standing, train(standing)).equals(shown)) reload();
+        return !signature(standing, train(standing)).equals(shown);
     }
 
     private void fillFacing(String standing, boolean readOnly)
     {
         ButtonGroup group = emptied(facing);
 
-        EditorTileMenus.FacingFacts facts = standing == null ? null : editor.tileMenus.facingFacts(tile);
+        EditorTileMenus.FacingFacts facts = standing == null ? null : editor.tileMenus.facingFacts(window.tile);
 
         if (facts != null && !facts.facings.isEmpty())
         {
             for (final TilePorts.Side side : facts.facings)
             {
                 facing.add(choice("train.facing." + side.name(), I18n.t("autosetup.ui.facing" + side.name()), group,
-                    facts.isTicked(side), !readOnly && facts.facings.size() > 1, () -> editor.tileMenus.chooseFacing(tile, side)));
+                    facts.isTicked(side), !readOnly && facts.facings.size() > 1,
+                    () -> editor.tileMenus.chooseFacing(window.tile, side)));
             }
         }
         else
@@ -228,7 +261,7 @@ public final class TrainWindow extends StationWindowBase
         for (final String side : facts.sides)
         {
             arrived.add(choice("train.arrived." + side, org.traincontrol.gui.autonomy.ArrivalSidePrompt.labelFor(side),
-                group, side.equals(facts.recorded), !readOnly, () -> editor.tileMenus.setArrivedFrom(tile, side)));
+                group, side.equals(facts.recorded), !readOnly, () -> editor.tileMenus.setArrivedFrom(window.tile, side)));
         }
 
         if (facts.recordedButGone == null) return;
@@ -247,11 +280,11 @@ public final class TrainWindow extends StationWindowBase
         for (final TailCrossedPrompt.Choice each : facts.choices)
         {
             tail.add(choice("train.tail." + each.getLabel(), each.getLabel(), group, each == facts.ticked, !readOnly,
-                () -> editor.recordTailRoad(tile, each.getRoad())));
+                () -> editor.recordTailRoad(window.tile, each.getRoad())));
         }
 
         tail.add(choice("train.tail.unknown", I18n.t("autosetup.ui.tailCrossedNotKnown"), group, facts.ticked == null,
-            !readOnly, () -> editor.recordTailRoad(tile, null)));
+            !readOnly, () -> editor.recordTailRoad(window.tile, null)));
 
         // Clicking is the editor's: the track diagram's panel has no grid to be clicked on
         if (editor.menuOnly) return;
@@ -263,7 +296,7 @@ public final class TrainWindow extends StationWindowBase
         pick.setFont(org.traincontrol.gui.widgets.UiStyle.BUTTON_FONT);
         pick.setFocusable(false);
         pick.setEnabled(!readOnly);
-        pick.addActionListener(e -> actAlone(() -> editor.armTailPick(tile)));
+        pick.addActionListener(e -> window.actAlone(() -> editor.armTailPick(window.tile)));
 
         tail.add(pick);
     }
@@ -276,10 +309,10 @@ public final class TrainWindow extends StationWindowBase
         return new ButtonGroup();
     }
 
-    /** One answer of a row; pressing it runs the door, as every control of this window does. */
+    /** One answer of a row; pressing it runs the door, as every control of the window does. */
     private JRadioButton choice(String name, String text, ButtonGroup group, boolean on, boolean live, Runnable door)
     {
-        JRadioButton out = styled(new JRadioButton(text, on), name, REGULAR);
+        JRadioButton out = StationWindowBase.styled(new JRadioButton(text, on), name, REGULAR);
 
         out.setEnabled(live);
 
@@ -289,7 +322,7 @@ public final class TrainWindow extends StationWindowBase
         {
             out.addActionListener(e ->
             {
-                if (!reading) act(() -> { door.run(); return true; });
+                if (!window.reading) window.act(() -> { door.run(); return true; });
             });
         }
 
@@ -311,36 +344,36 @@ public final class TrainWindow extends StationWindowBase
         final int at = train.getSelectedIndex();
         final String chosen = (String) train.getSelectedItem();
 
-        final String standing = editor.tileMenus.trainStanding(tile);
+        final String standing = editor.tileMenus.trainStanding(window.tile);
 
         if (at <= 0)
         {
-            if (standing != null) actAlone(() -> editor.removeLocomotive(tile));
+            if (standing != null) window.actAlone(() -> editor.removeLocomotive(window.tile));
 
             return;
         }
 
         final String name = editor.withoutMark(chosen);
 
-        if (!name.equals(standing)) actAlone(() -> editor.placeLocomotive(tile, name));
+        if (!name.equals(standing)) window.actAlone(() -> editor.placeLocomotive(window.tile, name));
     }
 
     private void pressSettings()
     {
         TrainControlUI main = editor.parentWindow();
 
-        Locomotive model = train(editor.tileMenus.trainStanding(tile));
+        Locomotive model = train(editor.tileMenus.trainStanding(window.tile));
 
         if (main == null || model == null) return;
 
-        main.pressFromWindow(this, () -> main.openLocomotiveSettings(model, LocomotiveSettingsFrame.Tab.AUTONOMY, null));
+        main.pressFromWindow(window, () -> main.openLocomotiveSettings(model, LocomotiveSettingsFrame.Tab.AUTONOMY, null));
     }
 
     private void pressActive()
     {
-        if (reading) return;
+        if (window.reading) return;
 
-        final String standing = editor.tileMenus.trainStanding(tile);
+        final String standing = editor.tileMenus.trainStanding(window.tile);
         final Locomotive model = train(standing);
         final boolean on = active.isSelected();
 
@@ -353,15 +386,9 @@ public final class TrainWindow extends StationWindowBase
         }
         else
         {
-            act(() -> { editor.setActive(standing, on); return true; });
+            window.act(() -> { editor.setActive(standing, on); return true; });
         }
 
-        reload();
-    }
-
-    /** @return the square the window is about */
-    public TileKey squareForTest()
-    {
-        return tile;
+        window.reload();
     }
 }

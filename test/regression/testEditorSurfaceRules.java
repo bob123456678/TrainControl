@@ -1146,8 +1146,8 @@ public class testEditorSurfaceRules
         String panel = codeOf("    FacingFacts facingFacts(final TileKey target)") + codeOf("    void chooseFacing(final TileKey target,");
 
         assertTrue(codeOf("    boolean addFacingItems(javax.swing.JPopupMenu menu, final TileKey target)").contains("facingFacts(target)")
-            && SourceOf.withoutComments(SourceOf.declaration("public final class TrainWindow extends StationWindowBase"))
-                .contains("facingFacts(tile)"), "the facing menu or the train window works out the facing itself again");
+            && SourceOf.withoutComments(SourceOf.declaration("final class TrainTab extends StationWindowBase.RoomyPanel"))
+                .contains("facingFacts(window.tile)"), "the facing menu or the train window works out the facing itself again");
 
         assertTrue(panel.contains("session.facingOnTheRailway(target, showing)"),
             "the facing menu reads the stored value again rather than the railway, so it disagrees with"
@@ -1449,7 +1449,7 @@ public class testEditorSurfaceRules
     {
         String door = codeOf("    void setArrivedFrom(TileKey target, String side)");
 
-        String window = SourceOf.withoutComments(SourceOf.declaration("public final class TrainWindow extends StationWindowBase"));
+        String window = SourceOf.withoutComments(SourceOf.declaration("final class TrainTab extends StationWindowBase.RoomyPanel"));
 
         String facts = codeOf("    ArrivedFacts arrivedFacts(final TileKey target)");
 
@@ -1457,7 +1457,7 @@ public class testEditorSurfaceRules
             "the door no longer sets the arrival side at all, so the absence checked below is the"
             + " absence of a door rather than the absence of a clear");
 
-        assertFalse(door.contains("setArrivedFrom(target, null)") || window.contains("setArrivedFrom(tile, null)"),
+        assertFalse(door.contains("setArrivedFrom(target, null)") || window.contains("setArrivedFrom(window.tile, null)"),
             "the train window offers a way to clear the arrival side. Adam, 2026-09-07: \"clearing"
             + " should not be possible, only setting\" - a wrong answer is corrected by choosing the"
             + " right side, and what clearing offered was a way to switch the tail blocking off");

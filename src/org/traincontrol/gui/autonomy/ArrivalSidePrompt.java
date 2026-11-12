@@ -228,7 +228,7 @@ public class ArrivalSidePrompt
     }
 
     /**
-     * What one side is called where an operator reads it, for the dialog's buttons and the train window's, so a side is
+     * What one side is called where an operator reads it, for the dialog's buttons and Station Settings' Train tab, so a side is
      * worded the same wherever it is offered.
      */
     public static String labelFor(String side)

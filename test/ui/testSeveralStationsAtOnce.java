@@ -225,16 +225,16 @@ public class testSeveralStationsAtOnce
     }
 
     /**
-     * The tool is called Bulk Edit...; while it is on every square a click can pick wears the editor's light gray grid
-     * line, a pick keeps its own mark over it, squares that cannot be picked wear nothing, and nothing is outlined once
+     * The tool is called Bulk Edit...; while it is on every square a click can pick wears a gray outline darker than the
+     * editor's light gray grid line (MT-920), a pick keeps its own mark over it, squares that cannot be picked wear nothing, and nothing is outlined once
      * the tool is down.
      *
      * MUTATION: have `toolMark` answer null for a station that is not picked, or PICKABLE for a square that cannot be
-     * picked, or leave the mark on when the tool goes down, or color PICKABLE otherwise than `Color.LIGHT_GRAY`, and this
+     * picked, or leave the mark on when the tool goes down, or color PICKABLE otherwise than gray (128), and this
      * fails.
      */
     @Test(timeOut = 120000)
-    public void testBulkEditOutlinesWhatCanBePickedInLightGray() throws Exception
+    public void testBulkEditOutlinesWhatCanBePickedInGray() throws Exception
     {
         assertEquals(StationDoors.part(panel, "autonomy.pickStations", AbstractButton.class).getText(), "Bulk Edit...");
 
@@ -278,7 +278,7 @@ public class testSeveralStationsAtOnce
 
         java.awt.image.BufferedImage square = drawn(bare(false).markedByATool(TileAnnotation.ToolMark.PICKABLE));
 
-        assertEquals(square.getRGB(0, 30) & 0xFFFFFF, java.awt.Color.LIGHT_GRAY.getRGB() & 0xFFFFFF, "the outline is not light gray");
+        assertEquals(square.getRGB(1, 30) & 0xFFFFFF, 0x808080, "the outline is not gray");
         assertEquals(square.getRGB(30, 30) & 0xFFFFFF, 0xFFFFFF, "the outline washes the square");
 
         StationDoors.press(panel, "autonomy.pickStations");
@@ -315,6 +315,22 @@ public class testSeveralStationsAtOnce
             assertFalse(colorsIn(drawn(other)).contains(edge), "the picked mark's edge, #" + Integer.toHexString(edge)
                 + ", is drawn by " + other + " too");
         }
+    }
+
+    /**
+     * Several stations' window has no tabs (FR-195): the Train tab is about one station's train, so the window is the
+     * Settings tab's content alone, with no tab strip over it.
+     *
+     * MUTATION: have `StationSettingsWindow.showForHowMany` leave the tabs in the window for several, and this fails.
+     */
+    @Test(timeOut = 120000)
+    public void testSeveralHaveNoTrainTab() throws Exception
+    {
+        StationSettingsWindow window = pick(stations(2));
+
+        assertFalse(showing(window, "station.tabs"), "several stations' window has tabs");
+        assertFalse(showing(window, "train.form"), "several stations' window shows a train");
+        assertTrue(showing(window, "station.form"), "several stations' window does not show their settings");
     }
 
     /**

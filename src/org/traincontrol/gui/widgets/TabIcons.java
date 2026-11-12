@@ -61,6 +61,20 @@ public final class TabIcons
         });
     }
 
+    /** A station: a building under a pitched roof, its doorway open, on the locomotive's rail. */
+    public static Icon station()
+    {
+        return icon((g, w, h) ->
+        {
+            g.setColor(INK);
+            g.fillPolygon(new int[] {Math.round(w * 0.04f), Math.round(w * 0.50f), Math.round(w * 0.96f)},
+                new int[] {Math.round(h * 0.40f), Math.round(h * 0.08f), Math.round(h * 0.40f)}, 3);
+            shapes(g, w, h, "0.14 0.38 0.72 0.46, " + RAIL, "");
+            g.setColor(Color.WHITE);
+            shapes(g, w, h, "0.42 0.56 0.16 0.28", "");
+        });
+    }
+
     /** Two switches, one on and one off: the locomotive's functions.  Same size, the knobs the same distance from their ends. */
     public static Icon functions()
     {

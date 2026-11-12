@@ -14,8 +14,8 @@ import org.traincontrol.util.I18n;
 /**
  * The body of `Layout.standingRulesAt` (FR-111): which copies of a square the build emitted, read with the clauses the
  * real doors ask (`isSendableDestination`, `autonomyMayEndAt`, `strandsATrainThatCannotReverse`, the start rules) and,
- * for ways on and out, the path search (`anyStandingRoute`), so it holds no rule of its own.  Occupancy, lengths and
- * lists are left out.  Takes no lock, so one is made for each question.
+ * for ways on and out, the path search (`anyStandingRoute`), so it holds no rule of its own.  Occupancy is left out; a
+ * length or list limit only turns a Yes into Some trains (`limited`).  Takes no lock, so one is made for each question.
  */
 final class LayoutStandingRules
 {
@@ -187,7 +187,7 @@ final class LayoutStandingRules
                 here = cell(Answer.NO, "autolayout.rules.couldNotLeave");
             }
 
-            best = better(best, here);
+            best = better(best, limited(here, stop));
         }
 
         return best;
@@ -203,7 +203,7 @@ final class LayoutStandingRules
                 ? cell(Answer.SOME, "autolayout.rules.reversibleOffered")
                 : cell(Answer.YES, stop.isAutoDestination() ? "autolayout.rules.mayBeSentHere" : "autolayout.rules.mayBeSentHereMore");
 
-            best = better(best, here);
+            best = better(best, limited(here, stop));
         }
 
         return best;
@@ -372,6 +372,9 @@ final class LayoutStandingRules
             hand = plain ? cell(Answer.SOME, "autolayout.rules.askedWhenSent")
                 : explanations.strandsATrainThatCannotReverse(terminus) ? cell(Answer.SOME, "autolayout.rules.reversibleOffered")
                 : cell(Answer.YES, "autolayout.rules.mayBeSentAndTurns");
+
+            auto = limited(auto, terminus);
+            hand = limited(hand, terminus);
         }
 
         rules.put(Row.TURNED_ROUND, side, auto, hand);
@@ -465,6 +468,38 @@ final class LayoutStandingRules
     private static Cell better(Cell one, Cell other)
     {
         return one == null || other.getAnswer().ordinal() < one.getAnswer().ordinal() ? other : one;
+    }
+
+    /**
+     * A Yes for a trip ending at `end` says Some trains while its maximum length or its list keeps trains out, the
+     * reason naming the limit (OB-440); an empty whitelist, which keeps every train out (`Point.excludes`), says No.
+     * Only ending is limited: a station's list and length let any train run through.
+     */
+    private static Cell limited(Cell yes, Point end)
+    {
+        if (yes.getAnswer() != Answer.NO && end.isAllowOnlyListed() && end.getExcludedLocs().isEmpty())
+        {
+            return cell(Answer.NO, "autolayout.rules.limitNoneAllowed");
+        }
+
+        List<String> limits = new ArrayList<>();
+
+        if (end.isDestination() && end.getMaxTrainLength() > 0) limits.add(I18n.f("autolayout.rules.limitLength", end.getMaxTrainLength()));
+
+        if (end.isAllowOnlyListed() || !end.getExcludedLocs().isEmpty())
+        {
+            List<String> names = new ArrayList<>();
+
+            for (org.traincontrol.base.Locomotive each : end.getExcludedLocs()) names.add(each.getName());
+
+            java.util.Collections.sort(names);
+
+            limits.add(I18n.f(end.isAllowOnlyListed() ? "autolayout.rules.limitWhitelist" : "autolayout.rules.limitBlacklist",
+                String.join(", ", names)));
+        }
+
+        return yes.getAnswer() != Answer.YES || limits.isEmpty() ? yes
+            : new Cell(Answer.SOME, yes.getWhy() + "  " + String.join("  ", limits));
     }
 
     private static Cell closed()

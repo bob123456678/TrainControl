@@ -708,6 +708,7 @@
         <test-one-class class="testACS3SyncTakesWhatItTookBefore"/>
         <test-one-class class="testTheWindowShowsTheConnection"/>
         <test-one-class class="testTheKeyboardHeadingSitsWhereTheRoutesDoes"/>
+        <test-one-class class="testTheAutonomyEditorsTriageNotes"/>
     </target>
     <target name="package-for-store" depends="jar">
         <property name="store.jar.name" value="TrainControl"/>

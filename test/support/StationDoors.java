@@ -17,10 +17,9 @@ import org.testng.Assert;
 import org.traincontrol.automationui.TileGraph.TileKey;
 import org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel;
 import org.traincontrol.gui.autonomyeditor.StationSettingsWindow;
-import org.traincontrol.gui.autonomyeditor.TrainWindow;
 
 /**
- * Drives the Station Settings and train windows as the user does (FR-111): by their controls' names, on the event thread,
+ * Drives Station Settings and its Train tab as the user does (FR-111): by their controls' names, on the event thread,
  * with the program's own questions answered by {@link Answering}.
  */
 public final class StationDoors
@@ -39,14 +38,26 @@ public final class StationDoors
         return window;
     }
 
-    /** Opens the train window on a square. */
-    public static TrainWindow openTrain(final AutonomyEditorPanel panel, final TileKey square)
+    /** Opens Station Settings on a square's Train tab, as Change Train at... does. */
+    public static StationSettingsWindow openTrain(final AutonomyEditorPanel panel, final TileKey square)
     {
-        TrainWindow window = Components.onTheEventThread(() -> panel.openTrainWindow(square));
+        StationSettingsWindow window = Components.onTheEventThread(() -> panel.openTrainTab(square));
 
         Components.settle();
 
         return window;
+    }
+
+    /** Whether Station Settings shows its tabs with the Train tab chosen (FR-195). */
+    public static boolean showsTheTrainTab(final java.awt.Window window)
+    {
+        return Components.onTheEventThread(() ->
+        {
+            javax.swing.JTabbedPane tabs = Components.named(window, "station.tabs", javax.swing.JTabbedPane.class);
+
+            return tabs != null && tabs.isShowing() && Components.named(tabs.getSelectedComponent(), "train.form",
+                java.awt.Container.class) != null;
+        });
     }
 
     /** Waits until the rebuild a change posted has reached the window and its matrix answers the latest question. */
@@ -177,10 +188,10 @@ public final class StationDoors
         Components.settle();
     }
 
-    /** Puts a train on a square through the editor's train window, picked from its list, and closes the window. */
+    /** Puts a train on a square through Station Settings' Train tab in the editor, picked from its list, and closes the window. */
     public static void placeFromTheList(AutonomyEditorPanel panel, TileKey square, String train) throws Exception
     {
-        TrainWindow window = openTrain(panel, square);
+        StationSettingsWindow window = openTrain(panel, square);
 
         pick(window, "train.train", train);
 
@@ -216,6 +227,26 @@ public final class StationDoors
 
             return answering.questions();
         }
+    }
+
+    /** The guard signal window (Exit or Entry) showing, or null. */
+    public static javax.swing.JDialog guardWindow()
+    {
+        return Components.onTheEventThread(() ->
+        {
+            for (java.awt.Window each : java.awt.Window.getWindows())
+            {
+                String title = each instanceof javax.swing.JDialog ? ((javax.swing.JDialog) each).getTitle() : null;
+
+                if (each.isShowing() && (org.traincontrol.util.I18n.t("autosetup.ui.menuPairSignal").equals(title)
+                    || org.traincontrol.util.I18n.t("autosetup.ui.menuPairEntrySignal").equals(title)))
+                {
+                    return (javax.swing.JDialog) each;
+                }
+            }
+
+            return null;
+        });
     }
 
     /** The one showing window of this kind, or null. */

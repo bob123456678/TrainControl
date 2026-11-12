@@ -424,7 +424,7 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
     }
 
     /**
-     * The standing train's destinations under its name, from the answer gathered for it (equality says it is about the
+     * The standing train's destinations under "Send <name> To:" (MT-922), from the answer gathered for it (equality says it is about the
      * train standing here now); true when it added any.
      */
     private boolean addDestinations(Locomotive locomotive, PathOptions options)
@@ -434,7 +434,7 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
 
         addSeparator();
 
-        JMenuItem whose = new JMenuItem(locomotive.getName());
+        JMenuItem whose = new JMenuItem(I18n.f("autolayout.ui.menuSendTo", locomotive.getName()));
         whose.setEnabled(false);
         add(whose);
 
@@ -496,7 +496,7 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
         return edit;
     }
 
-    /** Whether the train window's item, Station Settings... and the station's name are on this menu already. */
+    /** Whether the Train tab's item, Station Settings... and the station's name are on this menu already. */
     private boolean trainOffered, settingsOffered, headed;
 
     /**
@@ -551,9 +551,10 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
 
         if (getComponentCount() > 0) addSeparator();
 
-        if (trainWindow != null) add(trainWindow);
-
+        // Station Settings tops its divider group (FR-195)
         if (!settingsOffered) add(ui.stationSettingsItem(here));
+
+        if (trainWindow != null) add(trainWindow);
 
         if (built == null) return;
 

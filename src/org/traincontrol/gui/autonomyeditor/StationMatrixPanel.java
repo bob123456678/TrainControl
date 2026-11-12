@@ -45,7 +45,7 @@ final class StationMatrixPanel extends JPanel
     /** A cell as drawn, for a test to compare with the real doors: row, tier and answer per side. */
     private final Map<String, Map<String, Answer>> drawn = new java.util.LinkedHashMap<>();
 
-    /** The width the two lines under the table wrap at, and the panel's. */
+    /** The width its lines wrap at, the problem's too, and the panel's. */
     private final int lineWidth;
 
     StationMatrixPanel()
@@ -79,9 +79,7 @@ final class StationMatrixPanel extends JPanel
 
         lines.setLayout(new BoxLayout(lines, BoxLayout.Y_AXIS));
         lines.setOpaque(false);
-        problem.setAlignmentX(LEFT_ALIGNMENT);
         also.setAlignmentX(LEFT_ALIGNMENT);
-        lines.add(problem);
         lines.add(also);
 
         JPanel below = new JPanel(new BorderLayout(0, 6));
@@ -93,6 +91,12 @@ final class StationMatrixPanel extends JPanel
         add(below, BorderLayout.CENTER);
 
         lineWidth = lockTheColumns();
+    }
+
+    /** Why the setup stops this square, for the window to show under the picture, so it moves nothing above (MT-919). */
+    JLabel problemLine()
+    {
+        return problem;
     }
 
     /**
@@ -166,9 +170,10 @@ final class StationMatrixPanel extends JPanel
     /**
      * @param rules what the railway answered, or null with `error` to say
      * @param error why every cell reads No, or null
+     * @param stuck why a train here could not leave again, said in red where `error` is not (OB-441); or null
      * @param alsoLine what a cell cannot say: the length, the list, what must be free; or null
      */
-    void show(StandingRules rules, String error, String alsoLine)
+    void show(StandingRules rules, String error, String stuck, String alsoLine)
     {
         table.removeAll();
         drawn.clear();
@@ -189,8 +194,10 @@ final class StationMatrixPanel extends JPanel
         row(c, Row.SENT_FROM, "autosetup.ui.stationRowSentFrom", "autosetup.ui.stationSideTo", rules, error);
         row(c, Row.TURNED_ROUND, "autosetup.ui.stationRowTurned", "autosetup.ui.stationSideFrom", rules, error);
 
-        problem.setText(error == null ? "" : wrapAt(error));
-        problem.setVisible(error != null);
+        String said = error != null ? error : stuck;
+
+        problem.setText(said == null ? "" : wrapAt(said));
+        problem.setVisible(said != null);
 
         also.setText(alsoLine == null ? "" : wrapAt(alsoLine));
         also.setVisible(alsoLine != null);
