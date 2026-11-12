@@ -30,7 +30,7 @@ import support.Components;
 import support.StationDoors;
 
 /**
- * The owner's notes from testing the autonomy editor (MT-889, MT-890, MT-920, OB-436, OB-437, OB-438, MT-948), each
+ * The owner's notes from testing the autonomy editor (MT-889, MT-890, MT-920, OB-436, OB-437, OB-438, MT-948, OB-441), each
  * pressed on the frozen railway as a user presses it.
  */
 public class testTheAutonomyEditorsTriageNotes
@@ -663,6 +663,94 @@ public class testTheAutonomyEditorsTriageNotes
             .equals(signals.subList(1, 2)), 10000), "the X did not remove its row's signal: "
             + Components.onTheEventThread(() -> session.getProtectingSignals(station)));
         assertEquals((int) Components.onTheEventThread(() -> list.getModel().getSize()), 1, "the list did not follow");
+    }
+
+    // ------------------------------------------------------------------------------------------------ OB-441
+
+    /**
+     * Where a setting leaves a train at the station unable to leave, the setup check's own sentence stands in red under
+     * the picture, and goes when the setting is put right: TopR1ParkLong, at the end of its line, made a plain station
+     * and then a terminus again.
+     *
+     * MUTATION: pass null for `stuck` to `StationMatrixPanel.show` in `StationSettingsWindow.askTheRailway`, and this fails.
+     */
+    @Test(timeOut = 180000)
+    public void testAStationTrainsCannotLeaveSaysSoUnderThePicture() throws Exception
+    {
+        TileKey square = named("TopR1ParkLong");
+        StationSettingsWindow window = StationDoors.open(panel, square);
+        JLabel problem = StationDoors.part(window, "station.matrixProblem", JLabel.class);
+
+        StationDoors.press(window, "station.preset.STATION");
+        StationDoors.current(window);
+
+        String said = I18n.f("autosetup.ui.checkStationAtTheEndOfALine", Components.onTheEventThread(() -> session.describeTile(square)))
+            .replaceAll("\\s+", " ");
+
+        assertTrue(Components.onTheEventThread(problem::isVisible), "no warning under the picture for a station trains cannot leave");
+        assertTrue(StationDoors.said(window, "station.matrixProblem").contains(said), "the warning is not the setup check's: "
+            + StationDoors.said(window, "station.matrixProblem"));
+
+        StationDoors.press(window, "station.preset.TERMINUS");
+        StationDoors.current(window);
+
+        assertFalse(Components.onTheEventThread(problem::isVisible), "the warning stayed once trains could leave");
+    }
+
+    /**
+     * The picture draws a way in only where the editor's arrivals view does: on every arrival side of a station, and
+     * none on a square that is no station.
+     *
+     * MUTATION: put back `session.arrivalSides(showing)` as the test in `StationPicture.stationMarks`, and this fails.
+     */
+    @Test(timeOut = 180000)
+    public void testThePictureDrawsTheEditorsWaysIn() throws Exception
+    {
+        TileKey plain = Components.onTheEventThread(() ->
+        {
+            for (TileKey k : session.getReducer().getPoints().keySet())
+            {
+                if (PAGE.equals(k.getPage()) && !session.getStore().isStation(k) && !session.arrivalSides(k).isEmpty()) return k;
+            }
+
+            return null;
+        });
+
+        assertNotNull(plain, "precondition: no plain sensor with ways in on " + PAGE);
+
+        for (TileKey square : new TileKey[] {plain, named("TopR1ParkLong")})
+        {
+            StationSettingsWindow window = StationDoors.open(panel, square);
+
+            java.util.Set<String> drawn = new java.util.TreeSet<>();
+
+            for (String mark : Components.onTheEventThread(window::pictureStateForTest))
+            {
+                if (mark.startsWith("IN.")) drawn.add(mark.substring(3, 4));
+            }
+
+            java.util.Set<String> editors = new java.util.TreeSet<>();
+
+            for (org.traincontrol.automationui.TileAnnotation.Arrival arrival : Components.onTheEventThread(() -> session.arrivalMarks(square, true)))
+            {
+                editors.add(arrival.getSide().name());
+            }
+
+            assertEquals(drawn, editors, "the picture's ways in at " + square + " are not the editor's");
+        }
+    }
+
+    private static TileKey named(String name)
+    {
+        return Components.onTheEventThread(() ->
+        {
+            for (TileKey k : session.getReducer().getPoints().keySet())
+            {
+                if (name.equals(session.getStore().getPointName(k))) return k;
+            }
+
+            throw new AssertionError("precondition: no " + name);
+        });
     }
 
     // ------------------------------------------------------------------------------------------------ helpers

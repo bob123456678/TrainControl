@@ -388,7 +388,12 @@ final class StationPicture extends JPanel
 
         out.add(new Mark(Mark.Kind.OUT, showing, side, leaves, arrow, tip, heading));
 
-        if (!session.arrivalSides(showing).contains(side)) return;
+        // The ways in the editor's arrivals view draws, none on a square that is no station (OB-441)
+        boolean wayIn = false;
+
+        for (TileAnnotation.Arrival arrival : session.arrivalMarks(showing, true)) wayIn |= arrival.getSide() == side;
+
+        if (!wayIn) return;
 
         out.add(new Mark(Mark.Kind.IN, showing, side, rules.waysIn().contains(side.name()), apartChevron(at, side, other, bent),
             null, null));

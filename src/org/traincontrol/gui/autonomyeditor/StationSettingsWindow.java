@@ -1685,6 +1685,8 @@ public final class StationSettingsWindow extends StationWindowBase
 
         final String error = editor.whyTheSetupStopsThisSquare(tile);
 
+        final String stuck = editor.whyTrainsCannotLeave(tile);
+
         final String line = alsoLine();
 
         editor.offTheEventThread(() ->
@@ -1705,7 +1707,7 @@ public final class StationSettingsWindow extends StationWindowBase
 
                     String shown = error != null || rules != null ? error : I18n.t("autosetup.ui.stationMatrixNotBuilt");
 
-                    matrix.show(rules, shown, line);
+                    matrix.show(rules, shown, stuck, line);
 
                     shownRules = error == null ? rules : null;
 

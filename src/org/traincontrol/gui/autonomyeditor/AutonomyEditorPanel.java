@@ -2699,6 +2699,31 @@ public class AutonomyEditorPanel extends JPanel
         return null;
     }
 
+    /** The setup check's findings that say a train at a station could not leave it again (OB-441). */
+    private static final java.util.Set<String> CANNOT_LEAVE = new java.util.HashSet<>(java.util.Arrays.asList(
+        AutonomyChecks.STATION_REACHES_NOTHING, AutonomyChecks.TERMINUS_STRANDED, AutonomyChecks.COPY_NO_WAY_OUT,
+        AutonomyChecks.STATION_AT_THE_END_OF_A_LINE, AutonomyChecks.ARRIVAL_TRAPPED, AutonomyChecks.ARRIVAL_TRAPPED_NO_CLOSING));
+
+    /** What the setup check says, in the findings' words, where a train at this square could not leave again; else null. */
+    String whyTrainsCannotLeave(TileKey tile)
+    {
+        List<AutonomyChecks.Finding> about = new java.util.ArrayList<>();
+
+        for (AutonomyChecks.Finding finding : session.check())
+        {
+            if (CANNOT_LEAVE.contains(finding.getMessageKey()) && tile.equals(finding.getTile())) about.add(finding);
+        }
+
+        List<String> said = new java.util.ArrayList<>();
+
+        for (List<Object[]> rows : AutonomyViewerPanel.findingRows(about, this::describeTile).values())
+        {
+            for (Object[] row : rows) said.add((String) row[1]);
+        }
+
+        return said.isEmpty() ? null : String.join("  ", said);
+    }
+
     /** The window whose control is being pressed (`pressedFrom`), or null. */
     private java.awt.Window askingWindow;
 
@@ -4368,35 +4393,6 @@ public class AutonomyEditorPanel extends JPanel
     }
 
     /**
-     * A guard signal refused, said in a popup too (MT-505; Adam: *"any rejection errors should trigger a popup."*): the
-     * guard window covers the gray line.
-     * @param why the sentence
-     */
-    private void refuseGuard(String why)
-    {
-        say(hint, why);
-
-        JOptionPane.showMessageDialog(owner(), wrapped(why));
-    }
-
-    private String addGuardSignal(Guard guard, TileKey station, TileKey signal, boolean redraw)
-    {
-        return signalPairing.addGuardSignal(guard, station, signal, redraw);
-    }
-
-    String signalAddresses(java.util.List<TileKey> signals)
-    {
-        return signalPairing.signalAddresses(signals);
-    }
-
-    /** A digits-only text field; empty stays reachable, as clearing it removes a length. */
-    javax.swing.JTextField digitsOnly(String initial)
-    {
-        // Three digits, 0 to 999 (OB-048).
-        return digitsOnlyField(initial, 8, MAX_LENGTH_DIGITS);
-    }
-
-    /**
      * Where Station Settings first opens, off the diagram (MT-948): right of `window` where the screen has room, else
      * inside its right edge from `top` down, over the editor's right-hand column; on the screen either way.
      */
@@ -4460,6 +4456,35 @@ public class AutonomyEditorPanel extends JPanel
 
         return bounds.x + bounds.width + size.width <= screen.x + screen.width
             ? besideTheWindow(bounds, bounds.y, size, screen) : besideOwner(bounds, size);
+    }
+
+    /**
+     * A guard signal refused, said in a popup too (MT-505; Adam: *"any rejection errors should trigger a popup."*): the
+     * guard window covers the gray line.
+     * @param why the sentence
+     */
+    private void refuseGuard(String why)
+    {
+        say(hint, why);
+
+        JOptionPane.showMessageDialog(owner(), wrapped(why));
+    }
+
+    private String addGuardSignal(Guard guard, TileKey station, TileKey signal, boolean redraw)
+    {
+        return signalPairing.addGuardSignal(guard, station, signal, redraw);
+    }
+
+    String signalAddresses(java.util.List<TileKey> signals)
+    {
+        return signalPairing.signalAddresses(signals);
+    }
+
+    /** A digits-only text field; empty stays reachable, as clearing it removes a length. */
+    javax.swing.JTextField digitsOnly(String initial)
+    {
+        // Three digits, 0 to 999 (OB-048).
+        return digitsOnlyField(initial, 8, MAX_LENGTH_DIGITS);
     }
 
     /**

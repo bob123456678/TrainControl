@@ -170,9 +170,10 @@ final class StationMatrixPanel extends JPanel
     /**
      * @param rules what the railway answered, or null with `error` to say
      * @param error why every cell reads No, or null
+     * @param stuck why a train here could not leave again, said in red where `error` is not (OB-441); or null
      * @param alsoLine what a cell cannot say: the length, the list, what must be free; or null
      */
-    void show(StandingRules rules, String error, String alsoLine)
+    void show(StandingRules rules, String error, String stuck, String alsoLine)
     {
         table.removeAll();
         drawn.clear();
@@ -193,8 +194,10 @@ final class StationMatrixPanel extends JPanel
         row(c, Row.SENT_FROM, "autosetup.ui.stationRowSentFrom", "autosetup.ui.stationSideTo", rules, error);
         row(c, Row.TURNED_ROUND, "autosetup.ui.stationRowTurned", "autosetup.ui.stationSideFrom", rules, error);
 
-        problem.setText(error == null ? "" : wrapAt(error));
-        problem.setVisible(error != null);
+        String said = error != null ? error : stuck;
+
+        problem.setText(said == null ? "" : wrapAt(said));
+        problem.setVisible(said != null);
 
         also.setText(alsoLine == null ? "" : wrapAt(alsoLine));
         also.setVisible(alsoLine != null);
