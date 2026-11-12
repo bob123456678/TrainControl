@@ -260,7 +260,7 @@
       "maxTrainLength": 2,
       "autoDestination": false
     },
-    "1 - Main:9,12": {"mustReverse": true},
+    "1 - Main:9,12": {},
     "3 - Top Parking:5,9": {},
     "3 - Top Parking:7,6": {},
     "1 - Main:22,6": {
