@@ -82,7 +82,7 @@ The pictures in this guide are of a small demo layout: an oval with stations Ash
 - **Right-click a square on the track diagram** → `Autonomy Setup` → `Open the Full Editor...` opens the editor on that square.
 - **Inside the editor**, the sidebar on the left switches between `Track Diagram` and `Autonomy Setup`, and between pages.
 - The Auto tab's Settings has `Edit Autonomy Paths in Track Diagram`, which opens the autonomy editor.
-- The diagram's `Edit` button and `Layouts` → `Edit Layout Page` open whichever editor you used last: the track diagram or the autonomy setup.
+- The diagram's `Edit` button and `Layouts` → `Edit/Add Pages...` open whichever editor you used last: the track diagram or the autonomy setup.
 
 ![Step 2: Autonomy, Edit Autonomy on Page, and the page to open](assets/automation/03-edit-on-page.png)
 
@@ -636,7 +636,7 @@ These live on the Auto tab's **Settings** tab; `Autonomy` → `Autonomy Settings
 
 | Setting | What it is for |
 | --- | --- |
-| Turn Off Functions on Arrival, Turn On Functions on Departure | On departure, switch on the locomotive's saved function preset (right-click the locomotive → `Save Current Functions as Preset`, or Alt+S); on arrival, switch all its functions off. Untick the arrival one to keep sound running between routes. Separately, one function can be toggled as each train leaves and one as it arrives, whatever these two say: open the locomotive's `Locomotive Settings` and set `Departure Function` and `Arrival Function` on its `Autonomy` tab |
+| Turn Off Functions on Arrival, Turn On Functions on Departure | On departure, switch on the locomotive's saved function preset (right-click the locomotive → `Save Active Functions as Preset`, or Alt+S); on arrival, switch all its functions off. Untick the arrival one to keep sound running between routes. Separately, one function can be toggled as each train leaves and one as it arrives, whatever these two say: open the locomotive's `Locomotive Settings` and set `Departure Function` and `Arrival Function` on its `Autonomy` tab |
 | Linked Routes | `Toggle specified routes`: whenever this configuration is loaded, and as soon as you tick a route, the routes ticked in the list are switched on and every other route is switched off, and they stay that way after autonomy stops. Use it for emergency stops, sound effects, or safety signals. Only routes triggered by a sensor can be switched on this way |
 
 **Testing**

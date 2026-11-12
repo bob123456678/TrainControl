@@ -2878,7 +2878,7 @@ public class testNoSetupEditDuringARun
 
         java.lang.reflect.Field staging = Reflect.field(TrainControlUI.class, "stagingFlowActive");
 
-        String[] greyed = {"chooseLocalDataFolderMenuItem", "modifyLocalLayoutMenu", "editPageMenu",
+        String[] greyed = {"chooseLocalDataFolderMenuItem", "modifyLocalLayoutMenu",
             "initializeLocalLayoutMenuItem", "switchCSLayoutMenuItem", "downloadCSLayoutMenuItem"};
 
         String[] kept = {"showCurrentLayoutFolderMenuItem", "popUpAllMenuItem", "exportDiagramItem", "openCS3AppMenuItem"};

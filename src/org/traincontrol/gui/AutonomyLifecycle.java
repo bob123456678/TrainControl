@@ -106,8 +106,6 @@ final class AutonomyLifecycle
         if (ui.autonomyViewerPanel == null) ui.autonomyViewerPanel = new AutonomyViewerPanel(session, ui);
 
         // Built but not shown: it stays as the home of the actions the Autonomy menu runs.
-
-        ui.layoutMenus.mountEditPageMenu();
     }
 
     /** Shows or hides the tabs that only mean something with a valid autonomy layout loaded. */

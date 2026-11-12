@@ -2302,9 +2302,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     /** Layouts > Manage Pages..., in place of the hidden menu of that name. */
     javax.swing.JMenuItem managePagesItem;
 
-    /** The one Edit Layout Page menu, rebuilt rather than duplicated. */
-    javax.swing.JMenu editPageMenu;
-
     /** The autonomy menu, built in code as its items are rebuilt from the configurations on disk at each opening. */
     AutonomyMenu autonomyMenu;
 
@@ -5192,7 +5189,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         at.anchor = java.awt.GridBagConstraints.NORTHWEST;
 
         at.gridy = 0;
-        at.insets = new java.awt.Insets(6, 6, 6, 0);
+        at.insets = new java.awt.Insets(6, 0, 6, 0);
         this.KeyboardPanel.add(this.KeyboardLabel, at);
 
         at.gridy = 1;

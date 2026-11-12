@@ -221,7 +221,7 @@ TrainControl's key mappings are designed to allow you to send any command nearly
 * Locomotive shortcuts
     * Alt+P (apply saved function preset for current loc)
     * Alt+O (turn off all functions for current loc)
-    * Alt+S (save current functions as a preset for current loc)
+    * Alt+S (save active functions as a preset for current loc)
     * Alt+U (save current speed as a preset for current loc)
     * Alt+V (apply saved speed preset for current loc)
 * Locomotive management
@@ -443,6 +443,8 @@ Tab icons provided by Freepik.
             - `Export to CSV` now writes a `LastRun` column, and an imported running time is used only when its last run is later than yours.
             - `Apply Saved Speed Preset` is grayed out, with the reason, on a locomotive with no saved speed, and a `Preset Speed` of 0 means none.
             - `Save Current Speed as Preset` (Alt+U) also sets the speed autonomy runs the locomotive at, even during a run.
+            - The `Address` box on `Basic Settings` has up and down arrows, an empty address is refused with a message before the window closes, and the `Functions` tab shows the number of functions the chosen decoder type has as soon as you pick it.
+            - `Save Current Functions as Preset` is now `Save Active Functions as Preset`, and the icon dropdown on the `Functions` tab shows six columns of icons again.
         - Autonomy
             - `Station Settings` puts all of a station's settings in one window, opened from a station's right-click menu or with Ctrl+O, beside a picture of the station and a table of what trains may do there.
             - Two boxes, `Trains can stop here` and `Trains can pass through`, replace the `Station (...)` choices, and the `Station`, `Terminus`, `Parking` and `Reversing Point` buttons set the usual combinations and light up when your settings match one.
@@ -465,6 +467,7 @@ Tab icons provided by Freepik.
             - Pages are shown in the order of the layout's files rather than by name, and `Sort Pages by Name` puts them back in name order.
             - A page link keeps going to the same page when pages are renamed or moved.
         - Interface
+            - `Layouts` > `Manage Pages...` is now `Edit/Add Pages...`, and the separate `Edit Layout Page` menu is gone.
             - `Hide Right-Click Menu Tips` on the `Preferences` menu hides the tooltips in right-click menus, though an item still shows its shortcut key.
             - The accessory keyboard has 16 tabs of 128 addresses, each key has a red half and a green half, and clicking either sends that color again even if it is already lit.
             - `Export Counts` on the accessory keyboard saves every accessory's number of actuations to a CSV file.

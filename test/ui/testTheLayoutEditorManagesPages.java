@@ -889,12 +889,6 @@ public class testTheLayoutEditorManagesPages
             return visible;
         });
 
-        int at = shown.indexOf(item);
-
-        assertTrue(at >= 0 && at + 1 < shown.size() && shown.get(at + 1) instanceof javax.swing.JMenu
-            && I18n.t("layout.ui.menuEditLayoutPage").equals(((javax.swing.JMenu) shown.get(at + 1)).getText()),
-            "Manage Pages... is not where the Manage Pages menu was, above Edit Layout Page");
-
         assertTrue(item.isEnabled(), "precondition: Manage Pages... is grayed with a page loaded");
 
         try (Answering answering = Answering.start(message -> null))
@@ -917,6 +911,36 @@ public class testTheLayoutEditorManagesPages
 
         assertNotNull(iconsOf(editorOn(page)).get(I18n.t("ui.main.toolbar.addBlackPage")),
             "the editor Manage Pages... opened has no Add icon");
+    }
+
+    /**
+     * The Layouts menu has one entry for the page editor, named Edit/Add Pages..., and no Edit Layout Page submenu
+     * beside it (OB-434).
+     *
+     * MUTATION: mount the page-per-item submenu again after Edit/Add Pages (or restore the old label), and this fails.
+     */
+    @Test
+    public void testTheLayoutsMenuHasEditAddPagesAndNoEditLayoutPageSubmenu() throws Exception
+    {
+        final javax.swing.JMenu layouts = field("layoutMenu", javax.swing.JMenu.class);
+
+        openTheLayoutsMenu();
+
+        List<String> texts = Components.onTheEventThread(() ->
+        {
+            List<String> out = new ArrayList<>();
+
+            for (java.awt.Component c : layouts.getMenuComponents())
+            {
+                if (c.isVisible() && c instanceof javax.swing.AbstractButton) out.add(((javax.swing.AbstractButton) c).getText());
+            }
+
+            return out;
+        });
+
+        assertTrue(texts.contains(I18n.t("ui.main.toolbar.managePages")), "the Layouts menu has no Edit/Add Pages...: " + texts);
+        assertFalse(texts.contains("Edit Layout Page"), "the Layouts menu still has an Edit Layout Page submenu: " + texts);
+        assertFalse(texts.contains("Manage Pages..."), "the Layouts menu still says Manage Pages...: " + texts);
     }
 
     /**

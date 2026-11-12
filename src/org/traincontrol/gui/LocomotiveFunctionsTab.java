@@ -87,6 +87,7 @@ final class LocomotiveFunctionsTab extends JPanel
     private final Locomotive loc;
     private final Runnable onChange;
     private final List<Row> rows = new ArrayList<>();
+    private final List<Row> setAside = new ArrayList<>();
     private final String[] behaviorNames = new String[BEHAVIORS];
 
     /** The standard icons, null until loaded. */
@@ -436,6 +437,26 @@ final class LocomotiveFunctionsTab extends JPanel
 
         table.setRowSelectionInterval(function, function);
         table.scrollRectToVisible(table.getCellRect(function, 0, true));
+    }
+
+    /**
+     * Shows as many functions as the chosen decoder type has, before Save: rows it has no room for are set aside and
+     * come back as they were when the type is chosen again.
+     */
+    void showCount(int count)
+    {
+        commitEdit();
+
+        while (rows.size() > count) setAside.add(0, rows.remove(rows.size() - 1));
+
+        while (rows.size() < count)
+        {
+            rows.add(setAside.isEmpty() ? new Row(rows.size(), loc.sanitizeFIconIndex(0), 0, null, false)
+                : setAside.remove(0));
+        }
+
+        model.fireTableDataChanged();
+        refreshReverts();
     }
 
     /** Ends a cell edit in progress, as Enter would, so what it shows is in the buffer. */
@@ -815,6 +836,23 @@ final class LocomotiveFunctionsTab extends JPanel
         return out;
     }
 
+    /** Opens the dropdown's list six icons across, with room for the scroll bar: the dropdown is narrow, the list is not. */
+    private static void widen(BasicComboPopup popup, JScrollPane scroll, JList<?> list)
+    {
+        if (!popup.isVisible()) return;
+
+        Dimension wide = new Dimension(6 * (TrainControlUI.BUTTON_ICON_WIDTH + 12) + 24, scroll.getPreferredSize().height);
+        java.awt.Insets in = popup.getInsets();
+
+        scroll.setMaximumSize(wide);
+        scroll.setPreferredSize(wide);
+        popup.setPopupSize(wide.width + in.left + in.right, wide.height + in.top + in.bottom);
+
+        // The list laid its cells out for the narrow width: a changed cell width makes it do so again
+        list.setFixedCellWidth(list.getFixedCellWidth() + 1);
+        list.setFixedCellWidth(list.getFixedCellWidth() - 1);
+    }
+
     /** Lays icons out across the width, in rows of equal cells. */
     private static void gridLayout(JList<?> list)
     {
@@ -968,6 +1006,26 @@ final class LocomotiveFunctionsTab extends JPanel
 
                 gridLayout(list);
                 popup.setMinimumSize(new Dimension(300, 400));
+
+                // The dropdown is narrow, its list is not: six icons across, with room for the scroll bar
+                combo.addPopupMenuListener(new javax.swing.event.PopupMenuListener()
+                {
+                    @Override
+                    public void popupMenuWillBecomeVisible(javax.swing.event.PopupMenuEvent e)
+                    {
+                        SwingUtilities.invokeLater(() -> widen(popup, scrollPane, list));
+                    }
+
+                    @Override
+                    public void popupMenuWillBecomeInvisible(javax.swing.event.PopupMenuEvent e)
+                    {
+                    }
+
+                    @Override
+                    public void popupMenuCanceled(javax.swing.event.PopupMenuEvent e)
+                    {
+                    }
+                });
 
                 combo.addActionListener(e ->
                 {

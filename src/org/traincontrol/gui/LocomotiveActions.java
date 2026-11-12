@@ -131,6 +131,14 @@ final class LocomotiveActions
                         return false;
                     }
 
+                    String problem = addressProblem(newAddress, newDecoderType);
+
+                    if (problem != null)
+                    {
+                        JOptionPane.showMessageDialog(source, problem);
+                        return false;
+                    }
+
                     this.ui.getModel().changeLocAddress(l.getName(), proposedAddress, newDecoderType);
                 }
             }
@@ -221,6 +229,28 @@ final class LocomotiveActions
         return true;
     }
 
+    /** What is wrong with a typed address for this decoder type, in plain words, or null when it will do. */
+    String addressProblem(String typedAddress, decoderType type)
+    {
+        int address;
+
+        try
+        {
+            address = Math.abs(Conversion.parseTypedAddress(typedAddress, type == decoderType.MFX));
+        }
+        catch (NumberFormatException e)
+        {
+            return I18n.t("loc.errorAddressNotNumeric");
+        }
+
+        // The model's own rule, asked rather than re-stated; the message names the type's range
+        if (org.traincontrol.marklin.MarklinLocomotive.validateNewAddress(type, address)) return null;
+
+        return I18n.t(type == decoderType.MM2 ? "loc.errorMM2AddressOutOfRange"
+            : type == decoderType.DCC ? "loc.errorDCCAddressOutOfRange"
+            : type == decoderType.MFX ? "loc.errorMFXAddressOutOfRange" : "loc.errorAddressOutOfRange");
+    }
+
     /**
      * Add Locomotive (FR-179): makes a locomotive with the refusals Add Locomotive always asked, in its order (the
      * name, then the address), says it was added and puts it on the selected key if that key is empty.  Answers the new
@@ -256,26 +286,15 @@ final class LocomotiveActions
             return null;
         }
 
-        int locAddress;
+        String problem = addressProblem(typedAddress, type);
 
-        try
+        if (problem != null)
         {
-            locAddress = Math.abs(Conversion.parseTypedAddress(typedAddress, type == decoderType.MFX));
-        }
-        catch (NumberFormatException e)
-        {
-            JOptionPane.showMessageDialog(source, I18n.t("loc.errorAddressNotNumeric"));
+            JOptionPane.showMessageDialog(source, problem);
             return null;
         }
 
-        // The model's own rule, asked rather than re-stated; the message names the type's range
-        if (!org.traincontrol.marklin.MarklinLocomotive.validateNewAddress(type, locAddress))
-        {
-            JOptionPane.showMessageDialog(source, I18n.t(type == decoderType.MM2 ? "loc.errorMM2AddressOutOfRange"
-                : type == decoderType.DCC ? "loc.errorDCCAddressOutOfRange"
-                : type == decoderType.MFX ? "loc.errorMFXAddressOutOfRange" : "loc.errorAddressOutOfRange"));
-            return null;
-        }
+        int locAddress = Math.abs(Conversion.parseTypedAddress(typedAddress, type == decoderType.MFX));
 
         Locomotive made = type == decoderType.MFX ? this.ui.getModel().newMFXLocomotive(locName, locAddress)
             : type == decoderType.DCC ? this.ui.getModel().newDCCLocomotive(locName, locAddress)

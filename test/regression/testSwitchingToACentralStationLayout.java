@@ -147,7 +147,7 @@ public class testSwitchingToACentralStationLayout
 
         // The answer is fresh when the menu opens because the menu asks `applyLayoutEditingAvailability`, the one owner
         // of that property, rather than guardLayoutMenu writing it too; that is asserted below.
-        for (String item : new String[] { "editPageMenu", "popUpAllMenuItem()" })
+        for (String item : new String[] { "popUpAllMenuItem()" })
         {
             assertTrue(body.contains(item + ".setEnabled("),
                 "guardLayoutMenu no longer decides whether " + item + " is available, so it stays "

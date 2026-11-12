@@ -521,7 +521,7 @@ public class testNoSetupEditWhileARouteRuns
 
         String folderWas = TrainControlUI.getPrefs().get(TrainControlUI.LAST_USED_FOLDER, null);
 
-        String[] layoutItems = {"chooseLocalDataFolderMenuItem", "modifyLocalLayoutMenu", "editPageMenu"};
+        String[] layoutItems = {"chooseLocalDataFolderMenuItem", "modifyLocalLayoutMenu"};
 
         String[] autonomyItems = {I18n.t("autosetup.ui.btnManage"), I18n.t("autosetup.ui.btnExcludePage")};
 
@@ -718,8 +718,6 @@ public class testNoSetupEditWhileARouteRuns
                     layoutDoors.put("modifyLocalLayoutMenu", () -> callUi(window, "duplicateOrRenameCurrentLayout",
                         new Class<?>[] {String.class, boolean.class, boolean.class, boolean.class}, "renamed", true, false,
                         false));
-                    layoutDoors.put("editPageMenu", () -> ((javax.swing.JMenu) fieldOf("editPageMenu", window)).getItem(0)
-                        .doClick());
                     layoutDoors.put("initializeLocalLayoutMenuItem", () -> callUi(window,
                         "initializeLocalLayoutMenuItemActionPerformed", anEvent, (Object) null));
                     layoutDoors.put("switchCSLayoutMenuItem", () -> callUi(window,
