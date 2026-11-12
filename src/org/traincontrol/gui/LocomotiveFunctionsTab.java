@@ -414,6 +414,8 @@ final class LocomotiveFunctionsTab extends JPanel
             r.custom = null;
         }
 
+        for (Row r : setAside) r.custom = null;
+
         changed();
     }
 
@@ -451,8 +453,9 @@ final class LocomotiveFunctionsTab extends JPanel
 
         while (rows.size() < count)
         {
-            rows.add(setAside.isEmpty() ? new Row(rows.size(), loc.sanitizeFIconIndex(0), 0, null, false)
-                : setAside.remove(0));
+            // A stored image outlives a smaller decoder, and comes back with the bigger one
+            rows.add(setAside.isEmpty() ? new Row(rows.size(), loc.sanitizeFIconIndex(0), 0,
+                loc.getLocalFunctionImageURLs().get(rows.size()), false) : setAside.remove(0));
         }
 
         model.fireTableDataChanged();
@@ -841,7 +844,7 @@ final class LocomotiveFunctionsTab extends JPanel
     {
         if (!popup.isVisible()) return;
 
-        Dimension wide = new Dimension(6 * (TrainControlUI.BUTTON_ICON_WIDTH + 12) + 24, scroll.getPreferredSize().height);
+        Dimension wide = new Dimension(6 * (TrainControlUI.BUTTON_ICON_WIDTH + 12) + scroll.getVerticalScrollBar().getPreferredSize().width, scroll.getPreferredSize().height);
         java.awt.Insets in = popup.getInsets();
 
         scroll.setMaximumSize(wide);

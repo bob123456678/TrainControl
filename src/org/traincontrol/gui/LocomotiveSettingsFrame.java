@@ -900,7 +900,13 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
             });
             decoder.addActionListener(e ->
             {
-                if (!adding) functionsTab.showCount(org.traincontrol.marklin.MarklinLocomotive.getMaxNumF(chosenDecoder()));
+                if (!adding)
+                {
+                    int count = org.traincontrol.marklin.MarklinLocomotive.getMaxNumF(chosenDecoder());
+
+                    functionsTab.showCount(count);
+                    autonomyTab.showCount(count);
+                }
 
                 typed();
             });
@@ -1209,8 +1215,20 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
             }
 
             @Override public Object getValue() { return typed(); }
-            @Override public Object getNextValue() { return ifValid(typed() + 1); }
-            @Override public Object getPreviousValue() { return ifValid(typed() - 1); }
+            @Override public Object getNextValue() { return step(1); }
+            @Override public Object getPreviousValue() { return step(-1); }
+
+            /** One step within the range; from outside it, the nearest address inside. */
+            private Object step(int by)
+            {
+                int now = typed();
+
+                if (ifValid(now) != null) return ifValid(now + by);
+
+                while (now > 1 && ifValid(now) == null) now--;
+
+                return ifValid(Math.max(now, 1));
+            }
 
             @Override
             public void setValue(Object value)
@@ -1490,19 +1508,30 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
         /** None, then F0 up to the last function, and to the one set if it lies beyond. */
         private JComboBox<String> functionChoices(Integer set)
         {
-            int count = Math.max(loc.getNumF(), set == null ? 0 : set + 1);
+            JComboBox<String> out = new JComboBox<>();
 
+            fill(out, Math.max(loc.getNumF(), set == null ? 0 : set + 1), set);
+
+            return out;
+        }
+
+        private void fill(JComboBox<String> box, int count, Integer set)
+        {
             String[] items = new String[count + 1];
 
             items[0] = I18n.t("autosetup.ui.labelNone");
 
             for (int i = 0; i < count; i++) items[i + 1] = "F" + i;
 
-            JComboBox<String> out = new JComboBox<>(items);
+            box.setModel(new javax.swing.DefaultComboBoxModel<>(items));
+            box.setSelectedIndex(set == null || set >= count ? 0 : set + 1);
+        }
 
-            out.setSelectedIndex(set == null ? 0 : set + 1);
-
-            return out;
+        /** The functions the chosen decoder type has, before Save; a choice beyond them goes back to none. */
+        void showCount(int count)
+        {
+            fill(departure, count, function(departure));
+            fill(arrival, count, function(arrival));
         }
 
         private Integer function(JComboBox<String> box)
@@ -1545,14 +1574,14 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
             {
                 loc.setDepartureFunc(function(departure));
 
-                stored.put("departureFunc", function(departure));
+                stored.put("departureFunc", loc.getDepartureFunc());
             }
 
             if (!java.util.Objects.equals(function(arrival), loadedArrival))
             {
                 loc.setArrivalFunc(function(arrival));
 
-                stored.put("arrivalFunc", function(arrival));
+                stored.put("arrivalFunc", loc.getArrivalFunc());
             }
 
             org.traincontrol.automation.Layout railway = main.getModel().getAutoLayoutIfLoaded();

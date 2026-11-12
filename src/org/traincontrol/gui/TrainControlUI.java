@@ -2299,7 +2299,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         this.autonomyLifecycle.resetAutonomySession();
     }
 
-    /** Layouts > Manage Pages..., in place of the hidden menu of that name. */
+    /** Layouts > Edit/Add Pages..., in place of the hidden menu of that name. */
     javax.swing.JMenuItem managePagesItem;
 
     /** The autonomy menu, built in code as its items are rebuilt from the configurations on disk at each opening. */

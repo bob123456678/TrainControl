@@ -1249,6 +1249,14 @@ public class testTheLocomotiveSettingsWindow
         SettingsWindow.type("settings.address", "");
         Components.press(addressArrow(true));
         assertEquals(SettingsWindow.text("settings.address"), "1", "the up arrow did not start a blank at 1");
+
+        // An address outside the chosen type's range steps to the nearest one inside it
+        for (boolean up : new boolean[] { true, false })
+        {
+            SettingsWindow.type("settings.address", "3401");
+            Components.press(addressArrow(up));
+            assertEquals(SettingsWindow.text("settings.address"), "80", "an address above MM2's range did not step to its last");
+        }
     }
 
     /**
@@ -1283,6 +1291,58 @@ public class testTheLocomotiveSettingsWindow
 
         assertEquals(functionRows(), loc.getNumF(), "what the tab showed is not what reopening shows");
         assertEquals(loc.getNumF(), MarklinLocomotive.getMaxNumF(Locomotive.decoderType.MM2));
+    }
+
+    /**
+     * Stored function images and the Autonomy tab's function lists follow the decoder type chosen in the window: an
+     * image above a smaller type's count is back when the bigger type is chosen again, Reset All clears it wherever it
+     * sits, and a departure function the new type does not have is not offered, kept or recorded.
+     *
+     * MUTATION: seed a new row with a null image (the `getLocalFunctionImageURLs` lookup in `showCount`), skip the
+     * set-aside rows in Reset All, or drop `autonomyTab.showCount` from the decoder listener, and this fails.
+     */
+    @Test
+    public void testTheTabsFollowTheDecoderChosenInTheWindow() throws Exception
+    {
+        fixture.needPictures("lwindow");
+
+        loc.setLocalFunctionImageURL(30, SettingsWindow.picture(fixture.folder, "f30.png", java.awt.Color.RED).toPath().toUri().toString());
+        loc.setDepartureFunc(20);
+
+        open(1);
+
+        decoder(Locomotive.decoderType.DCC);
+        decoder(Locomotive.decoderType.MFX);
+
+        assertEquals(iconComboIndex(30), -1, "the image stored for F30 did not come back with MFX's 32 functions");
+
+        decoder(Locomotive.decoderType.DCC);
+        SettingsWindow.resetAll("Yes");
+        decoder(Locomotive.decoderType.MFX);
+
+        assertTrue(iconComboIndex(30) >= 0, "Reset All left the image on a function the decoder had no room for");
+
+        SettingsWindow.selectTab(4);
+        decoder(Locomotive.decoderType.MM2);
+
+        javax.swing.JComboBox<?> departure = SettingsWindow.part("autonomy.departure", JComboBox.class);
+
+        assertEquals((int) Components.onTheEventThread(departure::getItemCount), 1 + MarklinLocomotive.MM2_NUM_FN,
+            "the departure list is not MM2's");
+        assertEquals((int) Components.onTheEventThread(departure::getSelectedIndex), 0, "F20 stayed chosen under MM2");
+
+        SettingsWindow.type("settings.address", "20");
+        SettingsWindow.press(SettingsWindow.save());
+
+        assertTrue(Components.waitFor(() -> SettingsWindow.showing() == null, WAIT), "the Save did not go through");
+        assertNull(loc.getDepartureFunc(), "a departure function MM2 does not have was kept");
+    }
+
+    private static int iconComboIndex(int row)
+    {
+        javax.swing.JComboBox<?> combo = SettingsWindow.inEditor(row, 1, "functions.iconCombo", JComboBox.class);
+
+        return Components.onTheEventThread(combo::getSelectedIndex);
     }
 
     private static int functionRows()

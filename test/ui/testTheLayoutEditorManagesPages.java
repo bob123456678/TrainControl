@@ -857,7 +857,7 @@ public class testTheLayoutEditorManagesPages
     }
 
     /**
-     * Layouts > Manage Pages... stands where the Manage Pages menu was, which is hidden, and opens the layout editor
+     * Layouts > Edit/Add Pages... stands where the Manage Pages menu was, which is hidden, and opens the layout editor
      * on the main window's page, with no menu open: the page actions are the icons in its sidebar (FR-174).
      *
      * MUTATION: the editor opens its Tools menu after Manage Pages... (a `doClick` on the menu from
@@ -880,14 +880,9 @@ public class testTheLayoutEditorManagesPages
 
         assertFalse(hidden.isVisible(), "the Layouts menu still shows the Manage Pages menu");
 
-        List<java.awt.Component> shown = Components.onTheEventThread(() ->
-        {
-            List<java.awt.Component> visible = new ArrayList<>();
+        List<java.awt.Component> all = Components.onTheEventThread(() -> java.util.Arrays.asList(layouts.getMenuComponents()));
 
-            for (java.awt.Component c : layouts.getMenuComponents()) if (c.isVisible()) visible.add(c);
-
-            return visible;
-        });
+        assertEquals(all.indexOf(item) + 1, all.indexOf(hidden), "Edit/Add Pages... is not where the hidden Manage Pages menu is");
 
         assertTrue(item.isEnabled(), "precondition: Manage Pages... is grayed with a page loaded");
 
