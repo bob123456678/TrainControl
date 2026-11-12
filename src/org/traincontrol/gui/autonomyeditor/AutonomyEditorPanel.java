@@ -2010,25 +2010,6 @@ public class AutonomyEditorPanel extends JPanel
     }
 
     /**
-     * How wide to wrap so the longest sentence takes two lines, at least `atLeast` (MT-479): half its width plus the
-     * longest word, as lines break between words.
-     */
-    static int twoLineWidth(java.awt.FontMetrics metrics, int atLeast, String... sentences)
-    {
-        int widest = 0;
-        int longestWord = 0;
-
-        for (String sentence : sentences)
-        {
-            widest = Math.max(widest, metrics.stringWidth(sentence));
-
-            for (String word : sentence.split("\\s+")) longestWord = Math.max(longestWord, metrics.stringWidth(word));
-        }
-
-        return Math.max(atLeast, widest / 2 + longestWord);
-    }
-
-    /**
      * Text wrapped at a width, as `wrapped` wraps a tooltip.
      * @param width the width in pixels, or 0 or less to leave it on one line
      */
@@ -4413,6 +4394,72 @@ public class AutonomyEditorPanel extends JPanel
     {
         // Three digits, 0 to 999 (OB-048).
         return digitsOnlyField(initial, 8, MAX_LENGTH_DIGITS);
+    }
+
+    /**
+     * Where Station Settings first opens, off the diagram (MT-948): right of `window` where the screen has room, else
+     * inside its right edge from `top` down, over the editor's right-hand column; on the screen either way.
+     */
+    public static java.awt.Point besideTheWindow(java.awt.Rectangle window, int top, java.awt.Dimension dialog,
+        java.awt.Rectangle screen)
+    {
+        boolean room = window.x + window.width + dialog.width <= screen.x + screen.width;
+
+        return onScreen(new java.awt.Point(window.x + window.width - (room ? 0 : dialog.width), room ? window.y : top), dialog, screen);
+    }
+
+    /**
+     * Under `above`, touching it and left-aligned; beside it, right where there is room and else left, when the screen
+     * has no room below (MT-948).
+     */
+    public static java.awt.Point under(java.awt.Rectangle above, java.awt.Dimension dialog, java.awt.Rectangle screen)
+    {
+        if (above.y + above.height + dialog.height <= screen.y + screen.height)
+        {
+            return onScreen(new java.awt.Point(above.x, above.y + above.height), dialog, screen);
+        }
+
+        boolean right = above.x + above.width + dialog.width <= screen.x + screen.width;
+
+        return onScreen(new java.awt.Point(right ? above.x + above.width : above.x - dialog.width, above.y), dialog, screen);
+    }
+
+    private static java.awt.Point onScreen(java.awt.Point at, java.awt.Dimension dialog, java.awt.Rectangle screen)
+    {
+        at.x = Math.max(screen.x, Math.min(at.x, screen.x + screen.width - dialog.width));
+        at.y = Math.max(screen.y, Math.min(at.y, screen.y + screen.height - dialog.height));
+
+        return at;
+    }
+
+    /** The usable part of the screen a window is on: the taskbar left out. */
+    public static java.awt.Rectangle screenOf(java.awt.Window window)
+    {
+        java.awt.GraphicsConfiguration screen = window.getGraphicsConfiguration();
+        java.awt.Rectangle bounds = screen.getBounds();
+        java.awt.Insets taken = window.getToolkit().getScreenInsets(screen);
+
+        return new java.awt.Rectangle(bounds.x + taken.left, bounds.y + taken.top,
+            bounds.width - taken.left - taken.right, bounds.height - taken.top - taken.bottom);
+    }
+
+    /**
+     * Where Station Settings first opens over `window`: `besideTheWindow`, the column's top this panel's.  The track
+     * diagram's window has no column to spare, its right side being the throttle and Power: without room beside it,
+     * `besideOwner`.
+     */
+    java.awt.Point whereStationSettingsOpens(java.awt.Window window, java.awt.Dimension size)
+    {
+        java.awt.Rectangle bounds = window.getBounds();
+        java.awt.Rectangle screen = screenOf(window);
+
+        if (javax.swing.SwingUtilities.getWindowAncestor(this) == window)
+        {
+            return besideTheWindow(bounds, bounds.y + javax.swing.SwingUtilities.convertPoint(this, 0, 0, window).y, size, screen);
+        }
+
+        return bounds.x + bounds.width + size.width <= screen.x + screen.width
+            ? besideTheWindow(bounds, bounds.y, size, screen) : besideOwner(bounds, size);
     }
 
     /**

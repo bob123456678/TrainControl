@@ -26,11 +26,12 @@ import support.Reflect;
  * wide."
  *
  * The real window, opened through the method the menu item calls, on a panel with a station of its own.  Two claims:
- * the entry window is narrower than its sentence on one line; and neither window's first sentence (the one before a
- * signal is paired) takes more than two lines.
+ * the entry window is narrower than its sentence on one line; and neither window is wider than its row of buttons
+ * needs, its sentence wrapping instead (MT-948: "make the 'exit guard signal' and 'entry guard signal' windows
+ * narrower", which retired MT-479's two lines).
  *
- * MUTATION: wrap it at no width, as it was, and the first claim fails; wrap it at a tooltip's 320 pixels and the second
- * does.
+ * MUTATION: wrap it at no width, as it was, and the first claim fails; wrap it at half its sentence, as MT-479 did, and
+ * the second does.
  *
  * @author Adam
  */
@@ -88,18 +89,19 @@ public class testTheGuardWindowIsNotTooWide
             + " sentence.  Adam, MT-479: \"make the sentence split over 2 lines so the window isn't too wide\"");
     }
 
-    /** Neither window's first sentence takes more than two lines. */
+    /** Neither window is wider than its row of buttons and its border; the sentence wraps instead. */
     @Test
-    public void testNeitherFirstSentenceTakesMoreThanTwoLines() throws Exception
+    public void testNeitherWindowIsWiderThanItsButtons() throws Exception
     {
         for (String[] guard : new String[][] { { "EXIT", "autosetup.ui.menuPairSignal" },
             { "ENTRY", "autosetup.ui.menuPairEntrySignal" } })
         {
             Measured window = open(guard[0], guard[1]);
 
-            assertTrue(window.sentenceHeight <= window.lineHeight * 5 / 2, "the " + I18n.t(guard[1]) + " window's"
-                + " sentence is " + window.sentenceHeight + " pixels tall at " + window.lineHeight + " a line - more than"
-                + " the two lines Adam asked for, which trades a wide window for a tall one");
+            assertTrue(window.width <= window.buttons + 60, "the " + I18n.t(guard[1]) + " window is " + window.width
+                + " pixels wide for " + window.buttons + " of buttons.  Adam, MT-948: \"make the 'exit guard signal' and"
+                + " 'entry guard signal' windows narrower\"");
+            assertTrue(window.sentenceHeight > window.lineHeight, "precondition: the sentence does not wrap");
 
             closeTheWindows();
         }
@@ -112,6 +114,7 @@ public class testTheGuardWindowIsNotTooWide
         int sentenceOnOneLine;
         int sentenceHeight;
         int lineHeight;
+        int buttons;
     }
 
     /** Opens one guard's window through `askAboutSignals`, which the menu item calls, and measures it. */
@@ -189,6 +192,7 @@ public class testTheGuardWindowIsNotTooWide
             measured.sentenceHeight = view == null ? heading.getPreferredSize().height
                 : (int) Math.ceil(view.getPreferredSpan(javax.swing.text.View.Y_AXIS));
             measured.lineHeight = metrics.getHeight();
+            measured.buttons = support.Components.withText(open, I18n.t("autosetup.ui.optionSignalsDone")).getParent().getPreferredSize().width;
         });
 
         return measured;

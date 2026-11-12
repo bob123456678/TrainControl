@@ -531,7 +531,172 @@ public class testTheAutonomyEditorsTriageNotes
         assertTrue(Components.waitFor(() -> StationDoors.guardWindow() == null, 10000), "the guard window stayed open");
     }
 
+    /**
+     * Station Settings first opens off the diagram (MT-948): right of the editor where the screen has room, else inside
+     * the editor's right edge from its right-hand column's top; on the screen; and it stays where the user put it when
+     * another station is opened.
+     *
+     * MUTATION: put `AutonomyEditorPanel.besideOwner` back in `StationWindowBase.aim`, and this fails.
+     */
+    @Test(timeOut = 180000)
+    public void testStationSettingsOpensBesideTheDiagram() throws Exception
+    {
+        java.awt.Rectangle screen = Components.onTheEventThread(() -> AutonomyEditorPanel.screenOf(editor));
+
+        StationSettingsWindow window = StationDoors.open(panel, stations().get(0));
+        java.awt.Dimension size = Components.onTheEventThread(window::getSize);
+
+        StationDoors.close(window);
+
+        // Room on the right
+        java.awt.Rectangle roomy = new java.awt.Rectangle(screen.x, screen.y, screen.width - size.width - 40, 700);
+
+        java.awt.Rectangle at = boundsOfAFreshWindow(roomy);
+
+        assertEquals(at.x, roomy.x + roomy.width, "Station Settings is not right of the editor: " + at + ", editor " + roomy);
+        assertEquals(at.y, roomy.y, "Station Settings is not level with the editor's top: " + at);
+
+        // No room: over the right-hand column, inside the editor's right edge
+        java.awt.Rectangle full = new java.awt.Rectangle(screen.x, screen.y, screen.width, screen.height);
+
+        at = boundsOfAFreshWindow(full);
+
+        int column = Components.onTheEventThread(() -> SwingUtilities.convertPoint(panel, 0, 0, editor).y) + full.y;
+
+        assertEquals(at.x + at.width, full.x + full.width, "Station Settings does not end at the editor's right edge: " + at);
+        assertEquals(at.y, Math.min(column, screen.y + screen.height - at.height), "Station Settings is not at the column's top: " + at);
+        assertTrue(screen.contains(at), "Station Settings is off the screen: " + at + " on " + screen);
+
+        // Moved by the user, it stays there for the next station
+        StationSettingsWindow open = StationDoors.showing(StationSettingsWindow.class);
+
+        Components.onTheEventThread(() -> { open.setLocation(screen.x + 30, screen.y + 30); return null; });
+
+        StationDoors.open(panel, stations().get(1));
+
+        assertEquals(Components.onTheEventThread(open::getLocation), new java.awt.Point(screen.x + 30, screen.y + 30),
+            "Station Settings moved when another station was opened in it");
+    }
+
+    /**
+     * The guard window opens under Station Settings, touching its bottom edge and left-aligned, covering none of it;
+     * where the screen has no room below, beside it at its top (MT-948).
+     *
+     * MUTATION: have `EditorSignals.place` always use `besideOwner`, and this fails.
+     */
+    @Test(timeOut = 180000)
+    public void testTheGuardWindowOpensUnderStationSettings() throws Exception
+    {
+        java.awt.Rectangle screen = Components.onTheEventThread(() -> AutonomyEditorPanel.screenOf(editor));
+        StationSettingsWindow window = StationDoors.open(panel, stations().get(0));
+
+        Components.onTheEventThread(() -> { window.setLocation(screen.x + 40, screen.y + 20); return null; });
+
+        java.awt.Rectangle settings = Components.onTheEventThread(window::getBounds);
+        JDialog guard = openTheGuardWindow(StationDoors.part(window, "station.exitGuardChange", AbstractButton.class));
+        java.awt.Rectangle under = Components.onTheEventThread(guard::getBounds);
+
+        assertEquals(under.getLocation(), new java.awt.Point(settings.x, settings.y + settings.height),
+            "the guard window is not under Station Settings: " + under + " under " + settings);
+
+        Components.onTheEventThread(() -> { guard.dispose(); return null; });
+        assertTrue(Components.waitFor(() -> StationDoors.guardWindow() == null, 10000), "precondition: the guard window stayed");
+
+        // Near the screen's bottom: beside it
+        Components.onTheEventThread(() -> { window.setLocation(screen.x + 40, screen.y + screen.height - settings.height - 10); return null; });
+
+        java.awt.Rectangle low = Components.onTheEventThread(window::getBounds);
+        JDialog again = openTheGuardWindow(StationDoors.part(window, "station.exitGuardChange", AbstractButton.class));
+        java.awt.Rectangle beside = Components.onTheEventThread(again::getBounds);
+
+        assertFalse(beside.intersects(low), "the guard window covers Station Settings: " + beside + " over " + low);
+        assertEquals(beside.y, low.y, "the guard window is not beside Station Settings at its top: " + beside);
+    }
+
+    /**
+     * The guard window is no wider than its buttons, at most `GUARD_WIDTH` and its border, its sentence wrapping; each
+     * row has a red X at its right end, Remove as its tooltip, which removes that signal; Remove Selected is gone
+     * (MT-948).
+     *
+     * MUTATION: drop the `remove.accept` in `EditorSignals.RemovableList`'s click, and this fails.
+     */
+    @Test(timeOut = 180000)
+    public void testTheGuardWindowIsNarrowAndEachRowHasARemovingX() throws Exception
+    {
+        TileKey station = stations().get(0);
+        List<TileKey> signals = signals(2);
+
+        Components.onTheEventThread(() -> { session.setProtectingSignals(station, signals); return null; });
+
+        StationSettingsWindow window = StationDoors.open(panel, station);
+        JDialog guard = openTheGuardWindow(StationDoors.part(window, "station.exitGuardChange", AbstractButton.class));
+
+        int width = Components.onTheEventThread(guard::getWidth);
+
+        assertTrue(width <= 480, "the guard window is " + width + " pixels wide");
+        assertNull(Components.withText(guard, "Remove Selected"), "Remove Selected is still there");
+
+        javax.swing.JList<?> list = Components.find(guard, javax.swing.JList.class, null);
+        java.awt.Point cross = Components.onTheEventThread(() ->
+        {
+            java.awt.Rectangle row = list.getCellBounds(0, 0);
+
+            return new java.awt.Point(row.x + row.width - 10, row.y + row.height / 2);
+        });
+
+        assertEquals(Components.onTheEventThread(() -> list.getToolTipText(mouse(list, java.awt.event.MouseEvent.MOUSE_MOVED, cross))),
+            I18n.t("autosetup.ui.optionRemoveSignal"), "the X's tooltip");
+        assertNull(Components.onTheEventThread(() -> list.getToolTipText(mouse(list, java.awt.event.MouseEvent.MOUSE_MOVED,
+            new java.awt.Point(8, cross.y)))), "the row's text has the X's tooltip");
+
+        for (int kind : new int[] {java.awt.event.MouseEvent.MOUSE_PRESSED, java.awt.event.MouseEvent.MOUSE_RELEASED,
+            java.awt.event.MouseEvent.MOUSE_CLICKED})
+        {
+            Components.onTheEventThread(() -> { list.dispatchEvent(mouse(list, kind, cross)); return null; });
+        }
+
+        assertTrue(Components.waitFor(() -> Components.onTheEventThread(() -> session.getProtectingSignals(station))
+            .equals(signals.subList(1, 2)), 10000), "the X did not remove its row's signal: "
+            + Components.onTheEventThread(() -> session.getProtectingSignals(station)));
+        assertEquals((int) Components.onTheEventThread(() -> list.getModel().getSize()), 1, "the list did not follow");
+    }
+
     // ------------------------------------------------------------------------------------------------ helpers
+
+    private static java.awt.event.MouseEvent mouse(Component on, int kind, java.awt.Point at)
+    {
+        return new java.awt.event.MouseEvent(on, kind, System.currentTimeMillis(),
+            kind == java.awt.event.MouseEvent.MOUSE_PRESSED ? java.awt.event.InputEvent.BUTTON1_DOWN_MASK : 0,
+            at.x, at.y, 1, false, kind == java.awt.event.MouseEvent.MOUSE_MOVED ? 0 : java.awt.event.MouseEvent.BUTTON1);
+    }
+
+    /** Station Settings' bounds as it first opens over an editor with these bounds. */
+    private java.awt.Rectangle boundsOfAFreshWindow(java.awt.Rectangle bounds) throws Exception
+    {
+        support.AskingWindows.closeEveryDialog();
+
+        Components.onTheEventThread(() -> { editor.setBounds(bounds); editor.validate(); return null; });
+
+        StationSettingsWindow window = StationDoors.open(panel, stations().get(0));
+
+        return Components.onTheEventThread(window::getBounds);
+    }
+
+    private static List<TileKey> signals(int count)
+    {
+        return Components.onTheEventThread(() ->
+        {
+            List<TileKey> out = new ArrayList<>();
+
+            for (java.util.Map.Entry<TileKey, org.traincontrol.base.LayoutDiagramComponent> each : session.getGraph().getTiles().entrySet())
+            {
+                if (out.size() < count && each.getValue().getType() == org.traincontrol.base.LayoutDiagramComponent.componentType.SIGNAL
+                    && each.getValue().getAccessory() != null && PAGE.equals(each.getKey().getPage())) out.add(each.getKey());
+            }
+
+            return out;
+        });
+    }
 
     private void closeBy(String route, StationSettingsWindow window) throws Exception
     {

@@ -185,7 +185,7 @@ abstract class StationWindowBase extends JDialog
         return footer;
     }
 
-    /** Points the window at a square and shows it, beside the window that asked. */
+    /** Points the window at a square and shows it, first beside the window that asked (MT-948). */
     final void aim(TileKey square)
     {
         commitFields();
@@ -202,7 +202,7 @@ abstract class StationWindowBase extends JDialog
         {
             Window parent = getOwner();
 
-            if (parent != null) setLocation(AutonomyEditorPanel.besideOwner(parent.getBounds(), getSize()));
+            if (parent != null) setLocation(editor.whereStationSettingsOpens(parent, getSize()));
 
             watch.start();
             setVisible(true);

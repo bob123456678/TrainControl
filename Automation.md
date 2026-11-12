@@ -194,7 +194,7 @@ Everything else a station has is in its `Station Settings`: its name, whether tr
 
 ### The Station Settings window
 
-`Station Settings...` opens one window for the station you right-clicked. It stays open beside the diagram: right-click another square, or point at one and press Control+O, and it shows that one. In the autonomy editor every change is made at once in the editor's draft, so the editor's `Cancel` undoes it; on the track diagram each change is saved at once. While autonomy runs the window opens, but nothing in it can be changed. An (i) beside a setting says what it is set to now and what changing it does: rest the pointer on it, or click it to read it at once.
+`Station Settings...` opens one window for the station you right-clicked. In the autonomy editor it first opens to the right of the editor, or over the editor's right-hand column where the screen has no room there; from the track diagram it opens to the right of that window where there is room. It stays open beside the diagram: right-click another square, or point at one and press Control+O, and it shows that one. In the autonomy editor every change is made at once in the editor's draft, so the editor's `Cancel` undoes it; on the track diagram each change is saved at once. While autonomy runs the window opens, but nothing in it can be changed. An (i) beside a setting says what it is set to now and what changing it does: rest the pointer on it, or click it to read it at once.
 
 **The settings, from the top of the left-hand column:**
 
@@ -205,7 +205,7 @@ Everything else a station has is in its `Station Settings`: its name, whether tr
     - `May choose this station`: untick it and autonomy never chooses the station, though Return Home and the trips you send by hand still use it. This is for a parking berth.
     - `Maximum train length`: the longest train that may be sent here. Blank means any length.
     - `May arrive from`: a box for each side trains may arrive from and stop. One side must stay open. Trains can still run through from a side that is closed. On a square no track leads a train onto it says `(none)`, as there is no side to choose.
-    - `Exit guard` and `Entry guard`: the signals that follow the station; the pencil beside each picks them.
+    - `Exit guard` and `Entry guard`: the signals that follow the station; the pencil beside each picks them, in a window that opens just under `Station Settings`. Add a signal with `Click It on the Diagram` or `Enter Its Address...`, and take one off with the red X at the end of its row.
     - `Home locomotive`: the train Return Home brings back here, or `(none)`.
 - `Trains can pass through`: whether trains may pass over the square without stopping.
 - `Advanced`, folded away until you open it: `Priority` (higher is chosen first; 0 is the default), `Speed into here` (trains run at this percentage of their speed on the track leading in), `Allowed trains` and `Unavailable while`.

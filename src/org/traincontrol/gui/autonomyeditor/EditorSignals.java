@@ -98,15 +98,13 @@ final class EditorSignals
         TrainControlUI.applyWindowIcon(dialog);
 
         final javax.swing.DefaultListModel<String> model = new javax.swing.DefaultListModel<>();
-        final javax.swing.JList<String> list = new javax.swing.JList<>(model);
+        final RemovableList list = new RemovableList(model);
         final javax.swing.JLabel heading = new javax.swing.JLabel();
 
         final javax.swing.JButton byClick = org.traincontrol.gui.widgets.UiStyle.button(
             new javax.swing.JButton(I18n.t("autosetup.ui.optionClickSignal")));
         final javax.swing.JButton byAddress = org.traincontrol.gui.widgets.UiStyle.button(
             new javax.swing.JButton(I18n.t("autosetup.ui.optionSignalAddress")));
-        final javax.swing.JButton remove = org.traincontrol.gui.widgets.UiStyle.button(
-            new javax.swing.JButton(I18n.t("autosetup.ui.optionRemoveSignal")));
         final javax.swing.JButton done = org.traincontrol.gui.widgets.UiStyle.button(
             new javax.swing.JButton(I18n.t("autosetup.ui.optionSignalsDone")));
 
@@ -138,13 +136,19 @@ final class EditorSignals
                 : I18n.f(guard.paired, editor.describeTile(station)), headingWidth[0]));
 
             list.setEnabled(!paired.isEmpty());
-            remove.setEnabled(!paired.isEmpty());
-
-            if (!paired.isEmpty()) list.setSelectedIndex(0);
         };
 
-        list.setSelectionMode(javax.swing.ListSelectionModel.SINGLE_SELECTION);
         list.setVisibleRowCount(6);
+        list.setSelectionMode(javax.swing.ListSelectionModel.SINGLE_SELECTION);
+
+        list.onRemove(at ->
+        {
+            java.util.List<TileKey> paired = signalsOf(guard, station);
+
+            if (at < paired.size()) removeGuardSignal(guard, station, paired.get(at));
+
+            show.run();
+        });
 
         javax.swing.JPanel panel = new javax.swing.JPanel(new java.awt.BorderLayout(0, 6));
 
@@ -157,18 +161,15 @@ final class EditorSignals
 
         buttons.add(byClick);
         buttons.add(byAddress);
-        buttons.add(remove);
         buttons.add(done);
 
         panel.add(buttons, java.awt.BorderLayout.SOUTH);
 
-        // THE SENTENCE ON TWO LINES, NOT ONE (MT-479): the heading wraps at half the first sentence, never narrower
-        // than the row of buttons, and keeps the taller of the two heights, so pairing the first signal changes the
-        // words and not the window.
+        // As wide as the row of buttons, up to `GUARD_WIDTH`, the sentence wrapping (MT-948); the heading keeps the
+        // taller of its two sentences, so pairing the first signal changes the words and not the window (MT-479).
         String[] sentences = { I18n.f(guard.how, editor.describeTile(station)), I18n.f(guard.paired, editor.describeTile(station)) };
 
-        headingWidth[0] = AutonomyEditorPanel.twoLineWidth(heading.getFontMetrics(heading.getFont()), buttons.getPreferredSize().width,
-            sentences[0]);
+        headingWidth[0] = StationWindowBase.wrapWithin(Math.min(GUARD_WIDTH, buttons.getPreferredSize().width));
 
         int tallest = 0;
 
@@ -184,17 +185,6 @@ final class EditorSignals
         byAddress.addActionListener(e ->
         {
             pairSignalsByAddress(guard, station);
-
-            show.run();
-        });
-
-        remove.addActionListener(e ->
-        {
-            java.util.List<TileKey> paired = signalsOf(guard, station);
-
-            int at = list.getSelectedIndex();
-
-            if (at >= 0 && at < paired.size()) removeGuardSignal(guard, station, paired.get(at));
 
             show.run();
         });
@@ -237,31 +227,97 @@ final class EditorSignals
         // Not smaller than it packed to (OB-107): dragging the edge up would hide the buttons that finish the pairing.
         dialog.setMinimumSize(dialog.getSize());
 
-        // Beside the diagram rather than on top of it (OB-107): this window's text says the signals "are outlined on
-        // the diagram behind this window", so centring would cover them.
-        placeBesideOwner(dialog);
+        place(dialog, station);
 
         dialog.setVisible(true);
     }
 
+    /** At most this wide, its sentence wrapping, unless its buttons need more (MT-948). */
+    static final int GUARD_WIDTH = 420;
+
     /**
-     * Puts a dialog beside the diagram rather than over the middle of it, for the windows that describe something drawn
-     * behind them (OB-107).
-     *
-     * @param dialog a packed dialog, ready to show
+     * Under Station Settings on this station, which it must not cover (MT-948); without one, beside the diagram rather
+     * than over the middle of it, as its text says the signals are outlined behind it (OB-107).
      */
-    private void placeBesideOwner(java.awt.Window dialog)
+    private void place(java.awt.Window dialog, TileKey station)
     {
+        StationSettingsWindow settings = editor.stationWindows.stationWindow();
         java.awt.Window parent = editor.ownerWindow();
 
-        if (parent == null)
+        if (settings != null && settings.isShowing() && station.equals(settings.tile))
         {
-            dialog.setLocationRelativeTo(editor.owner());
+            dialog.setLocation(AutonomyEditorPanel.under(settings.getBounds(), dialog.getSize(), AutonomyEditorPanel.screenOf(settings)));
+        }
+        else if (parent == null) dialog.setLocationRelativeTo(editor.owner());
+        else dialog.setLocation(AutonomyEditorPanel.besideOwner(parent.getBounds(), dialog.getSize()));
+    }
 
-            return;
+    /**
+     * The paired signals, each row with a red X at its right end that removes it, Remove as the X's tooltip (MT-948).
+     * Grayed, as it is while it only says none is paired, it shows no X.
+     */
+    static final class RemovableList extends JList<String>
+    {
+        /** The X's room at a row's right end. */
+        private static final int MARK = 26;
+
+        private transient java.util.function.IntConsumer remove = at -> { };
+
+        RemovableList(DefaultListModel<String> model)
+        {
+            super(model);
+
+            final JLabel mark = new JLabel(org.traincontrol.gui.widgets.RowIcons.cross(14));
+            final javax.swing.ListCellRenderer<? super String> plain = getCellRenderer();
+
+            mark.setPreferredSize(new Dimension(MARK, 14));
+
+            setCellRenderer((shown, value, index, selected, focused) ->
+            {
+                java.awt.Component text = plain.getListCellRendererComponent(shown, value, index, selected, focused);
+                JPanel row = new JPanel(new BorderLayout());
+
+                row.setBackground(text.getBackground());
+                row.add(text, BorderLayout.CENTER);
+
+                if (shown.isEnabled()) row.add(mark, BorderLayout.EAST);
+
+                return row;
+            });
+
+            addMouseListener(new java.awt.event.MouseAdapter()
+            {
+                @Override
+                public void mouseClicked(java.awt.event.MouseEvent e)
+                {
+                    int at = crossAt(e.getPoint());
+
+                    if (at >= 0) remove.accept(at);
+                }
+            });
+
+            setToolTipText("");
         }
 
-        dialog.setLocation(AutonomyEditorPanel.besideOwner(parent.getBounds(), dialog.getSize()));
+        void onRemove(java.util.function.IntConsumer remove)
+        {
+            this.remove = remove;
+        }
+
+        /** @return the row whose X is at this point, or -1 */
+        int crossAt(java.awt.Point p)
+        {
+            int at = isEnabled() ? locationToIndex(p) : -1;
+            java.awt.Rectangle cell = at < 0 ? null : getCellBounds(at, at);
+
+            return cell != null && cell.contains(p) && p.x >= cell.x + cell.width - MARK ? at : -1;
+        }
+
+        @Override
+        public String getToolTipText(java.awt.event.MouseEvent e)
+        {
+            return crossAt(e.getPoint()) >= 0 ? I18n.t("autosetup.ui.optionRemoveSignal") : null;
+        }
     }
 
     /**
