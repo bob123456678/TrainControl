@@ -16,8 +16,8 @@ import org.traincontrol.util.I18n;
  * real doors ask (`isSendableDestination`, `autonomyMayEndAt`, `strandsATrainThatCannotReverse`, the start rules) and,
  * for ways on and out, the path search (`anyStandingRoute`), so it holds no rule of its own.  Occupancy is left out.  A
  * length or list limit turns a Yes into Some trains, or No for an empty whitelist (`limited`): for a trip ending here,
- * and, by its list alone, for one running through a square that is no station.  Takes no lock, so one is made for each
- * question.
+ * and, by its list alone, for one running through, turning on or starting from a square that is no station.  Takes no
+ * lock, so one is made for each question.
  */
 final class LayoutStandingRules
 {
@@ -362,7 +362,7 @@ final class LayoutStandingRules
             // station's arrivals-shut side would have to be run through to use it
             auto = cell(Answer.NO, turn.isStopOnly() ? "autolayout.rules.mustStop" : "autolayout.rules.noTurnPartway");
             hand = turn.isStopOnly() ? auto
-                : sentOver(turn, side) ? cell(Answer.YES, "autolayout.rules.mayTurnOnTheWay")
+                : sentOver(turn, side) ? limited(cell(Answer.YES, "autolayout.rules.mayTurnOnTheWay"), turn, false)
                 : cell(Answer.NO, "autolayout.rules.noTripTurnsHere");
         }
         else
@@ -409,11 +409,12 @@ final class LayoutStandingRules
 
             if (refused == null) refused = explanations.whyItReachesNoStation(copy);
 
+            // Not `limited`: autonomy starts trains at stations only, so off one this is No before any list counts
             auto = better(auto, refused == null ? cell(Answer.YES, "autolayout.rules.mayStart")
                 : !copy.isActive() ? closed() : new Cell(Answer.NO, refused));
 
-            hand = better(hand, cell(Answer.YES, copy.isActive() ? "autolayout.rules.maySendOut"
-                : "autolayout.rules.maySendOutClosed"));
+            hand = better(hand, limited(cell(Answer.YES, copy.isActive() ? "autolayout.rules.maySendOut"
+                : "autolayout.rules.maySendOutClosed"), copy, false));
         }
 
         if (auto == null)
@@ -481,8 +482,8 @@ final class LayoutStandingRules
     /**
      * A Yes says Some trains while a limit keeps trains out, the reason naming it (OB-440), and an empty whitelist, which
      * keeps every train out (`Point.excludes`), says No.  A trip ending at `at` meets its maximum length and its list; one
-     * running through meets only the list of a square that is no station, as the path search refuses a listed train
-     * there, while a station's list and length let any train run through.
+     * running through, turning on or starting from it meets only the list of a square that is no station, as the path
+     * search refuses a listed train there, while a station's list and length let any train through.
      */
     private Cell limited(Cell yes, Point at, boolean ending)
     {
