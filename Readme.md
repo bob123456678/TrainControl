@@ -451,7 +451,7 @@ Tab icons provided by Freepik.
             - `Change Train at` *station* `...` opens a window for the train standing there, with its locomotive, `Active`, `Facing`, `Arrived` and `Tail lies`, and `Locomotive Settings...` opens the `Autonomy` tab.
             - On the track diagram, a station's right-click menu now always has `Edit` *locomotive* `...` when a train is standing there, `Place` *locomotive* when another one is selected, and `Place a Locomotive Here...`, together under their own divider.
             - A station's right-click menu turns the train standing there around in one click with `Change Direction (now facing` *East* `)`, and changes the side it came in by with `Change Arrived From (currently` *West* `)`.
-            - While trains are running, whether sent by autonomy, a timetable, a route, you or `Return Home`, a station's right-click menu on the track diagram has `Is Active` to pause or resume the train standing there, and so does its train window.
+            - While trains are running, whether sent by autonomy, a timetable, a route, you or `Return Home`, a station's right-click menu on the track diagram has `Is Active` to pause or resume the train standing there, and so does the `Train` tab of its `Station Settings`.
             - On the track diagram, you can send a standing train from its right-click menu while another train you sent is still on its way.
             - In the autonomy editor, a station's right-click menu has `Place` *locomotive* to put the locomotive selected in the main window there.
             - If the connection to a CS3 drops, autonomy, timetables and `Return Home` start no new trips until it is back, and trains already on their way carry on.

@@ -1031,7 +1031,8 @@ public class AutonomyEditorPanel extends JPanel
 
         if (!stationPicks.remove(square)) stationPicks.add(square);
 
-        if (!stationPicks.isEmpty()) stationWindows.stations(new java.util.ArrayList<>(stationPicks));
+        // Bulk Edit sets settings: never the Train tab one station's window was left on (FR-195)
+        if (!stationPicks.isEmpty()) stationWindows.stations(new java.util.ArrayList<>(stationPicks)).showTab(false);
         else if (stationWindows.stationWindow() != null) stationWindows.stationWindow().closeWindow();
     }
 

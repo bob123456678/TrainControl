@@ -19,7 +19,7 @@ import org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel;
 import org.traincontrol.gui.autonomyeditor.StationSettingsWindow;
 
 /**
- * Drives the Station Settings and train windows as the user does (FR-111): by their controls' names, on the event thread,
+ * Drives Station Settings and its Train tab as the user does (FR-111): by their controls' names, on the event thread,
  * with the program's own questions answered by {@link Answering}.
  */
 public final class StationDoors
@@ -188,7 +188,7 @@ public final class StationDoors
         Components.settle();
     }
 
-    /** Puts a train on a square through the editor's train window, picked from its list, and closes the window. */
+    /** Puts a train on a square through Station Settings' Train tab in the editor, picked from its list, and closes the window. */
     public static void placeFromTheList(AutonomyEditorPanel panel, TileKey square, String train) throws Exception
     {
         StationSettingsWindow window = openTrain(panel, square);

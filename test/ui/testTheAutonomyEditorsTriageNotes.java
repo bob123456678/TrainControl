@@ -342,6 +342,112 @@ public class testTheAutonomyEditorsTriageNotes
             "the Only trains up to line did not follow: " + Components.onTheEventThread(line::getText));
 
         StationDoors.close(window);
+
+        // Several stations differing on the length show a blank field; a press away writes nothing to either
+        List<TileKey> two = stations().subList(0, 2);
+
+        Components.onTheEventThread(() ->
+        {
+            session.setPointProperty(two.get(0), "maxTrainLength", 11);
+            session.setPointProperty(two.get(1), "maxTrainLength", 12);
+
+            return null;
+        });
+
+        StationSettingsWindow several = bulkEdit(two);
+        JTextField blank = StationDoors.part(several, "station.maxLength", JTextField.class);
+
+        assertEquals(Components.onTheEventThread(blank::getText), "", "precondition: the differing length is not blank");
+
+        support.Mouse.press(StationDoors.part(several, "station.several", JLabel.class), java.awt.event.MouseEvent.BUTTON1);
+
+        StationDoors.current(several);
+
+        assertEquals(((Number) session.getPointProperty(two.get(0), "maxTrainLength")).intValue(), 11, "a blank field wrote the first");
+        assertEquals(((Number) session.getPointProperty(two.get(1), "maxTrainLength")).intValue(), 12, "a blank field wrote the second");
+    }
+
+    /**
+     * A refused Maximum train length keeps its text, and a press away from it still does what it presses, the first and
+     * every later one: the refusal rebuilds nothing under the press.
+     *
+     * MUTATION: have `StationSettingsWindow.commit` call `actOnEach` with `putBack` true, and this fails.
+     */
+    @Test(timeOut = 180000)
+    public void testARefusedLengthLosesNoPressAwayFromIt() throws Exception
+    {
+        TileKey square = null;
+        StationSettingsWindow window = null;
+        javax.swing.JCheckBox box = null;
+
+        for (TileKey each : stations())
+        {
+            window = StationDoors.open(panel, each);
+            box = Components.find(window, javax.swing.JCheckBox.class, b -> b.getName() != null && b.getName().startsWith("station.arrive.") && b.isEnabled());
+
+            if (box != null) { square = each; break; }
+        }
+
+        assertNotNull(square, "precondition: no station has an arrival side to shut");
+
+        final TileKey at = square;
+        final String side = box.getName().substring("station.arrive.".length());
+        JTextField field = StationDoors.part(window, "station.maxLength", JTextField.class);
+
+        Components.onTheEventThread(() -> { field.setText("abc"); return null; });
+
+        for (int press = 1; press <= 2; press++)
+        {
+            boolean barred = Components.onTheEventThread(() -> session.getBarredArrivals(at).contains(org.traincontrol.automationui.TilePorts.Side.valueOf(side)));
+
+            support.Mouse.click(StationDoors.part(window, "station.arrive." + side, javax.swing.JCheckBox.class));
+
+            StationDoors.current(window);
+
+            assertEquals((boolean) Components.onTheEventThread(() -> session.getBarredArrivals(at).contains(org.traincontrol.automationui.TilePorts.Side.valueOf(side))), !barred,
+                "press " + press + " on the arrive-from box was lost");
+        }
+
+        assertEquals(Components.onTheEventThread(field::getText), "abc", "the refused length lost its text");
+    }
+
+    /**
+     * Bulk Edit shows the Settings tab, whichever tab one station's window was left on (FR-195).
+     *
+     * MUTATION: drop the `showTab(false)` in `AutonomyEditorPanel.pickStation`, and this fails.
+     */
+    @Test(timeOut = 180000)
+    public void testBulkEditShowsTheSettingsTab() throws Exception
+    {
+        TileKey station = stations().get(0);
+
+        StationDoors.openTrain(panel, station);
+
+        assertTrue(StationDoors.showsTheTrainTab(StationDoors.showing(StationSettingsWindow.class)), "precondition: the Train tab is not shown");
+
+        StationSettingsWindow window = bulkEdit(java.util.Collections.singletonList(station));
+
+        assertFalse(StationDoors.showsTheTrainTab(window), "Bulk Edit left the Train tab showing");
+    }
+
+    /** Arms Bulk Edit and clicks each square; the window that opens. */
+    private StationSettingsWindow bulkEdit(List<TileKey> squares) throws Exception
+    {
+        StationDoors.press(panel, "autonomy.pickStations");
+
+        for (TileKey each : squares)
+        {
+            Components.onTheEventThread(() -> { panel.tileClicked(each, session.getGraph().getTiles().get(each), false); return null; });
+            Components.settle();
+        }
+
+        StationSettingsWindow window = StationDoors.showing(StationSettingsWindow.class);
+
+        assertNotNull(window, "Bulk Edit opened no window");
+
+        StationDoors.current(window);
+
+        return window;
     }
 
     // ------------------------------------------------------------------------------------------------ MT-948

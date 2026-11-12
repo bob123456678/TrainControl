@@ -697,7 +697,7 @@ final class EditorTileMenus
         return onTheRailway != null ? onTheRailway : editor.locomotiveAt(target);
     }
 
-    /** The one door of a facing chosen by hand, from the menu or the train window. */
+    /** The one door of a facing chosen by hand, from the menu or Station Settings' Train tab. */
     void chooseFacing(final TileKey target, final org.traincontrol.automationui.TilePorts.Side facing)
     {
         editor.session.setFacingAndMove(target, facing);

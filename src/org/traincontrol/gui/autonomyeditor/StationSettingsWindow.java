@@ -311,6 +311,12 @@ public final class StationSettingsWindow extends StationWindowBase
      */
     private void actOnEach(Predicate<TileKey> needs, Predicate<TileKey> door)
     {
+        actOnEach(needs, door, true);
+    }
+
+    /** `actOnEach`, with `act`'s `putBack`. */
+    private void actOnEach(Predicate<TileKey> needs, Predicate<TileKey> door, boolean putBack)
+    {
         final List<TileKey> squares = new ArrayList<>(targets());
         final int[] changed = {0};
         final boolean[] stopped = {false};
@@ -343,7 +349,7 @@ public final class StationSettingsWindow extends StationWindowBase
             }
 
             return changed[0] > 0;
-        });
+        }, putBack);
 
         if (stopped[0] && changed[0] > 0 && squares.size() > 1)
         {
@@ -931,12 +937,12 @@ public final class StationSettingsWindow extends StationWindowBase
 
         final String[] refused = new String[1];
 
-        actOnEach(each ->
+        actOnEach(each -> true, each ->
         {
             refused[0] = typedDoors.get(part).apply(each, typed);
 
             return refused[0] == null;
-        });
+        }, false);
 
         showProblem(part, refused[0]);
 
@@ -977,7 +983,8 @@ public final class StationSettingsWindow extends StationWindowBase
 
     /**
      * A press anywhere in the window but on a text field applies what is typed, as leaving the field does: most of the
-     * window cannot take the keyboard, so a click on it would leave the field holding it (OB-436).
+     * window cannot take the keyboard, so a click on it would leave the field holding it (OB-436).  A refusal rebuilds
+     * nothing, so the press still lands.
      */
     private final java.awt.event.AWTEventListener pressAway = event ->
     {

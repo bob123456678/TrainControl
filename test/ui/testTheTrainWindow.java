@@ -1556,6 +1556,41 @@ public class testTheTrainWindow
     }
 
     /**
+     * On the track diagram, a station with every arrival barred has no copy that is a destination, so its menu has no
+     * headed station block, and Station Settings... tops the group it shares with Place a Locomotive Here... (FR-195:
+     * "move the Station Settings item to the top of its divider section").
+     *
+     * MUTATION: add the train item before Station Settings in `LayoutRightclickAutonomyMenu.addStationItems`, and this
+     * fails.
+     */
+    @Test(timeOut = 120000)
+    public void testStationSettingsTopsAnUnheadedStationsGroupOnTheDiagram() throws Exception
+    {
+        TileKey sensor = anEmptyStation();
+
+        Components.onTheEventThread(() ->
+        {
+            session.setBarredArrivals(sensor, new java.util.HashSet<>(session.arrivalSides(sensor)));
+            ui.rebuildRunningLayoutFromSetup(false, new java.util.LinkedHashSet<>(session.placementsAutonomyWillWrite().values()));
+
+            return null;
+        });
+
+        Components.settle();
+
+        AskingWindows.showThePageOf(ui, sensor);
+
+        java.util.List<java.util.List<String>> groups = groups(AskingWindows.menuOn(ui, ui, sensor));
+
+        Mouse.closeMenus();
+
+        java.util.List<String> group = groupWith(groups, I18n.t("autosetup.ui.menuStationSettings"));
+
+        assertEquals(group.get(0), I18n.t("autosetup.ui.menuStationSettings"), "Station Settings does not top its group: " + groups);
+        assertTrue(group.contains(I18n.t("autosetup.ui.menuPlaceHere")), "precondition: Place a Locomotive Here... is elsewhere: " + groups);
+    }
+
+    /**
      * The train popup's row is "Arrived", not "Arrived from" (FR-182): its choices already say "From the East (right)",
      * so the label must not end in the word they begin with, in any language.
      *

@@ -359,6 +359,17 @@ abstract class StationWindowBase extends JDialog
      */
     final void act(BooleanSupplier door)
     {
+        act(door, true);
+    }
+
+    /**
+     * `act`, where `putBack` false leaves the window as it is when the door changed nothing: a refused typed field keeps
+     * its text, and a rebuild under a press away from it would lose that press.
+     */
+    final void act(BooleanSupplier door, boolean putBack)
+    {
+        final boolean[] changed = {false};
+
         editor.pressedFrom(this, () ->
         {
             if (refused())
@@ -368,21 +379,19 @@ abstract class StationWindowBase extends JDialog
                 return;
             }
 
-            boolean changed = false;
-
             try
             {
-                changed = door.getAsBoolean();
+                changed[0] = door.getAsBoolean();
             }
             catch (RuntimeException ex)
             {
                 editor.reportFailedDoor(ex);
             }
 
-            if (changed) editor.placementChanged(null);
+            if (changed[0]) editor.placementChanged(null);
         });
 
-        reload();
+        if (putBack || changed[0]) reload();
     }
 
     /** A control's press whose door saves and draws for itself. */

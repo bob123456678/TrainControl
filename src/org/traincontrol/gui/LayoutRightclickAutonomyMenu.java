@@ -496,7 +496,7 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
         return edit;
     }
 
-    /** Whether the train window's item, Station Settings... and the station's name are on this menu already. */
+    /** Whether the Train tab's item, Station Settings... and the station's name are on this menu already. */
     private boolean trainOffered, settingsOffered, headed;
 
     /**
@@ -551,9 +551,10 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
 
         if (getComponentCount() > 0) addSeparator();
 
-        if (trainWindow != null) add(trainWindow);
-
+        // Station Settings tops its divider group (FR-195)
         if (!settingsOffered) add(ui.stationSettingsItem(here));
+
+        if (trainWindow != null) add(trainWindow);
 
         if (built == null) return;
 

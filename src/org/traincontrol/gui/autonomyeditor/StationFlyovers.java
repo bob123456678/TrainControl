@@ -5,7 +5,7 @@ import org.traincontrol.automationui.AutonomySession;
 import org.traincontrol.util.I18n;
 
 /**
- * What each (i) on Station Settings and the train window says (FR-111): what the setting means now and what changing it
+ * What each (i) on Station Settings and its Train tab says (FR-111): what the setting means now and what changing it
  * does, from the value it has.  Dynamic information, so FR-168's off switch leaves these on.
  */
 final class StationFlyovers
