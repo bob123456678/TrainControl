@@ -105,6 +105,9 @@ final class LocomotiveFunctionsTab extends JPanel
     private int phase;
     private boolean reset;
     private boolean copied;
+
+    /** What Copy Icons took, for the rows a bigger decoder type adds afterwards. */
+    private Locomotive.Customizations copiedFrom;
     private boolean blocked;
 
     LocomotiveFunctionsTab(TrainControlUI ui, Locomotive loc, Runnable onChange)
@@ -246,14 +249,14 @@ final class LocomotiveFunctionsTab extends JPanel
 
         useCurrent.addActionListener(e ->
         {
-            for (Row r : rows) r.preset = r.function < loc.getNumF() && loc.getF(r.function);
+            for (Row r : everyRow()) r.preset = r.function < loc.getNumF() && loc.getF(r.function);
 
             changed();
         });
 
         clearPreset.addActionListener(e ->
         {
-            for (Row r : rows) r.preset = false;
+            for (Row r : everyRow()) r.preset = false;
 
             changed();
         });
@@ -366,24 +369,25 @@ final class LocomotiveFunctionsTab extends JPanel
     {
         if (from == null) return;
 
-        Locomotive.Customizations c = from.captureCustomizations();
+        copiedFrom = from.captureCustomizations();
 
-        int[] types = c.getTypes();
-        int[] triggers = c.getTriggers();
-        Map<Integer, String> icons = c.getIcons();
-
-        for (Row r : rows)
-        {
-            if (r.function < types.length) r.icon = loc.sanitizeFIconIndex(types[r.function]);
-
-            if (r.function < triggers.length) r.behavior = behaviorOfTrigger(triggers[r.function]);
-
-            r.custom = icons.get(r.function);
-        }
+        for (Row r : everyRow()) takeTheCopy(r);
 
         copied = true;
 
         changed();
+    }
+
+    private void takeTheCopy(Row r)
+    {
+        int[] types = copiedFrom.getTypes();
+        int[] triggers = copiedFrom.getTriggers();
+
+        if (r.function < types.length) r.icon = loc.sanitizeFIconIndex(types[r.function]);
+
+        if (r.function < triggers.length) r.behavior = behaviorOfTrigger(triggers[r.function]);
+
+        r.custom = copiedFrom.getIcons().get(r.function);
     }
 
     /** Asks, then marks every customization to go at Save and shows the table without them. */
@@ -406,15 +410,14 @@ final class LocomotiveFunctionsTab extends JPanel
 
         reset = true;
         copied = false;
+        copiedFrom = null;
 
-        for (Row r : rows)
+        for (Row r : everyRow())
         {
             r.icon = r.icon0;
             r.behavior = r.behavior0;
             r.custom = null;
         }
-
-        for (Row r : setAside) r.custom = null;
 
         changed();
     }
@@ -453,13 +456,35 @@ final class LocomotiveFunctionsTab extends JPanel
 
         while (rows.size() < count)
         {
-            // A stored image outlives a smaller decoder, and comes back with the bigger one
-            rows.add(setAside.isEmpty() ? new Row(rows.size(), loc.sanitizeFIconIndex(0), 0,
-                loc.getLocalFunctionImageURLs().get(rows.size()), false) : setAside.remove(0));
+            if (!setAside.isEmpty())
+            {
+                rows.add(setAside.remove(0));
+
+                continue;
+            }
+
+            // A stored image outlives a smaller decoder and comes back with a bigger one, unless Reset All or Copy
+            // Icons has since said what the rows are to hold
+            Row added = new Row(rows.size(), loc.sanitizeFIconIndex(0), 0,
+                reset ? null : loc.getLocalFunctionImageURLs().get(rows.size()), false);
+
+            if (copiedFrom != null) takeTheCopy(added);
+
+            rows.add(added);
         }
 
         model.fireTableDataChanged();
         refreshReverts();
+    }
+
+    /** The rows shown and the rows a smaller decoder type has set aside: the table's actions reach both. */
+    private List<Row> everyRow()
+    {
+        List<Row> all = new ArrayList<>(rows);
+
+        all.addAll(setAside);
+
+        return all;
     }
 
     /** Ends a cell edit in progress, as Enter would, so what it shows is in the buffer. */
@@ -488,7 +513,7 @@ final class LocomotiveFunctionsTab extends JPanel
     {
         boolean preset = false;
 
-        for (Row r : rows) preset |= r.preset;
+        for (Row r : everyRow()) preset |= r.preset;
 
         clearPreset.setEnabled(preset);
         resetAll.setEnabled(loc.isCustomFunctions() || reset);

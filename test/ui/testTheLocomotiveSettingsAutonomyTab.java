@@ -185,6 +185,87 @@ public class testTheLocomotiveSettingsAutonomyTab
         assertEquals(values(), "6 true 3 null", "a load put the old setup's copy over what was saved in the tab");
     }
 
+    private static void chooseDecoder(Locomotive.decoderType type)
+    {
+        Components.onTheEventThread(() ->
+        {
+            SettingsWindow.part("settings.decoder", JComboBox.class).setSelectedItem(type);
+
+            return null;
+        });
+    }
+
+    /**
+     * A function chosen for departure comes back when a decoder type that has it is chosen again, and the tab is not
+     * dirty for the round trip.
+     *
+     * MUTATION: have `AutonomyTab.showCount` fill the boxes from `function(departure)` rather than the wanted value, and
+     * this fails.
+     */
+    @Test
+    public void testASmallerDecoderDoesNotForgetTheDepartureFunction() throws Exception
+    {
+        startFrom(2, false, 30, null);
+
+        openTheTab();
+
+        JComboBox<?> departure = SettingsWindow.part("autonomy.departure", JComboBox.class);
+
+        SettingsWindow.selectTab(0);
+        chooseDecoder(Locomotive.decoderType.DCC);
+        assertEquals((int) Components.onTheEventThread(departure::getSelectedIndex), 0, "F30 is shown under DCC's 29 functions");
+
+        chooseDecoder(Locomotive.decoderType.MFX);
+        assertEquals((int) Components.onTheEventThread(departure::getSelectedIndex), 31, "F30 did not come back with MFX");
+        assertFalse(Components.onTheEventThread(SettingsWindow.save()::isEnabled), "the round trip left the window dirty");
+
+        SettingsWindow.closeIfOpen();
+    }
+
+    /**
+     * A departure function the chosen decoder type does not have is not kept on the train, and not recorded in the
+     * setup either.
+     *
+     * MUTATION: record `function(departure)` instead of `loc.getDepartureFunc()` in `AutonomyTab.apply` and drop
+     * `autonomyTab.showCount` from the decoder listener, and the setup keeps F20.
+     */
+    @Test
+    public void testADepartureFunctionTheDecoderLacksIsNotRecorded() throws Exception
+    {
+        startFrom(2, false, 20, null);
+
+        try
+        {
+            openTheTab();
+            SettingsWindow.selectTab(0);
+            chooseDecoder(Locomotive.decoderType.MM2);
+            SettingsWindow.type("settings.address", "20");
+            save();
+
+            assertEquals(train.getDepartureFunc(), null, "MM2 kept a departure function it does not have");
+
+            org.json.JSONObject record = Components.onTheEventThread(() -> (org.json.JSONObject) session.getPointProperty(square, "loc"));
+
+            assertFalse(record.has("departureFunc"), "the setup recorded a function MM2 does not have: " + record);
+        }
+        finally
+        {
+            Components.onTheEventThread(() ->
+            {
+                try
+                {
+                    model.changeLocAddress(TRAIN, 0xCE9, Locomotive.decoderType.MFX);
+                }
+                catch (Exception e)
+                {
+                    throw new IllegalStateException(e);
+                }
+
+                return null;
+            });
+        }
+    }
+
     /**
      * Unticking Active pauses the train in the setup as the station menu's Is Active does, and a load keeps it paused;
      * ticking it again sets it going.

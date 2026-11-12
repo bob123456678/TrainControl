@@ -1338,6 +1338,90 @@ public class testTheLocomotiveSettingsWindow
         assertNull(loc.getDepartureFunc(), "a departure function MM2 does not have was kept");
     }
 
+    /**
+     * Clear Preset reaches the rows a smaller decoder type has set aside, so they do not come back with an old tick.
+     *
+     * MUTATION: loop over `rows` instead of `everyRow()` in the Clear Preset listener, and this fails.
+     */
+    @Test
+    public void testClearPresetReachesTheRowsADecoderSetAside() throws Exception
+    {
+        boolean[] preset = new boolean[loc.getNumF()];
+
+        preset[30] = true;
+        loc.setPreferredFunctions(preset);
+
+        open(1);
+
+        decoder(Locomotive.decoderType.DCC);
+        Components.press(SettingsWindow.part("functions.clearPreset", JButton.class));
+        decoder(Locomotive.decoderType.MFX);
+
+        assertEquals(Components.onTheEventThread(() -> SettingsWindow.part("functions.table", javax.swing.JTable.class).getValueAt(30, 3)),
+            (Object) Boolean.FALSE, "F30's preset tick came back after Clear Preset");
+    }
+
+    /** The locomotive as a DCC one with an image of its own stored for F30, as a Save under DCC leaves it. */
+    private void withAnImageBeyondDcc() throws Exception
+    {
+        fixture.needPictures("lwindow");
+
+        loc.setLocalFunctionImageURL(30, SettingsWindow.picture(fixture.folder, "f30.png", java.awt.Color.RED).toPath().toUri().toString());
+        model.changeLocAddress(NAME, 20, Locomotive.decoderType.DCC);
+    }
+
+    /**
+     * Rows a bigger decoder type adds take Reset All's word, not the image stored for them: Reset All under DCC, then
+     * MFX, shows F30 without its own image.
+     *
+     * MUTATION: take the stored image whatever `reset` says in `LocomotiveFunctionsTab.showCount`, and this fails.
+     */
+    @Test
+    public void testRowsABiggerDecoderAddsFollowResetAll() throws Exception
+    {
+        withAnImageBeyondDcc();
+
+        open(1);
+
+        SettingsWindow.resetAll("Yes");
+        decoder(Locomotive.decoderType.MFX);
+
+        assertTrue(iconComboIndex(30) >= 0, "F30 came back with its own image after Reset All");
+    }
+
+    /**
+     * Rows a bigger decoder type adds take what Copy Icons copied: the copied icon and behavior for F30 under MFX.
+     *
+     * MUTATION: leave `takeTheCopy` out of the new-row branch of `LocomotiveFunctionsTab.showCount`, and this fails.
+     */
+    @Test
+    public void testRowsABiggerDecoderAddsFollowCopyIcons() throws Exception
+    {
+        withAnImageBeyondDcc();
+
+        other.setFunctionType(30, 21, Locomotive.FUNCTION_PULSE);
+
+        key = SettingsWindow.showOnKeyA(ui, other);
+
+        JButton keyA = SettingsWindow.key(ui, java.awt.event.KeyEvent.VK_A);
+
+        Components.onTheEventThread(() ->
+        {
+            ui.setCopyTarget(keyA, false);
+
+            return null;
+        });
+
+        key = SettingsWindow.showOnKeyA(ui, loc);
+
+        open(1);
+
+        Components.press(SettingsWindow.part("functions.copyIcons", JButton.class));
+        decoder(Locomotive.decoderType.MFX);
+
+        assertEquals(iconComboIndex(30), 21, "F30 did not get the copied icon");
+    }
+
     private static int iconComboIndex(int row)
     {
         javax.swing.JComboBox<?> combo = SettingsWindow.inEditor(row, 1, "functions.iconCombo", JComboBox.class);
