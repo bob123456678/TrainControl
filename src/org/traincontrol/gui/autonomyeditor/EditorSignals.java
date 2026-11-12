@@ -136,6 +136,8 @@ final class EditorSignals
                 : I18n.f(guard.paired, editor.describeTile(station)), headingWidth[0]));
 
             list.setEnabled(!paired.isEmpty());
+
+            if (!paired.isEmpty()) list.setSelectedIndex(0);
         };
 
         list.setVisibleRowCount(6);
@@ -285,16 +287,42 @@ final class EditorSignals
                 return row;
             });
 
+            // A left press and release on the same row's X, the first click only: the list rebuilds at once, and a
+            // double click's second click would land on the next row's X
             addMouseListener(new java.awt.event.MouseAdapter()
             {
-                @Override
-                public void mouseClicked(java.awt.event.MouseEvent e)
-                {
-                    int at = crossAt(e.getPoint());
+                private int pressed = -1;
 
-                    if (at >= 0) remove.accept(at);
+                @Override
+                public void mousePressed(java.awt.event.MouseEvent e)
+                {
+                    pressed = javax.swing.SwingUtilities.isLeftMouseButton(e) && e.getClickCount() == 1 ? crossAt(e.getPoint()) : -1;
+                }
+
+                @Override
+                public void mouseReleased(java.awt.event.MouseEvent e)
+                {
+                    int at = pressed;
+
+                    pressed = -1;
+
+                    if (at >= 0 && javax.swing.SwingUtilities.isLeftMouseButton(e) && crossAt(e.getPoint()) == at) remove.accept(at);
                 }
             });
+
+            // And from the keyboard, the row chosen
+            javax.swing.Action removeChosen = new javax.swing.AbstractAction()
+            {
+                @Override
+                public void actionPerformed(java.awt.event.ActionEvent e)
+                {
+                    if (isEnabled() && getSelectedIndex() >= 0) remove.accept(getSelectedIndex());
+                }
+            };
+
+            getActionMap().put("removeChosen", removeChosen);
+            getInputMap(WHEN_FOCUSED).put(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_DELETE, 0), "removeChosen");
+            getInputMap(WHEN_FOCUSED).put(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_BACK_SPACE, 0), "removeChosen");
 
             setToolTipText("");
         }

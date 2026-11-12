@@ -199,7 +199,7 @@ Part of the behavior reference: [`../behaviour.md`](../behaviour.md) is the inde
   `rebuildRunningLayoutFromSetup` ends in `blockedTrackChanged()`, and every setup change goes through it; the refresh
   diffs the two sets and repaints only the squares whose mark changed. A **placement** also reaches it through
   `updateVisiblePoints` at each placement door (Control+X / Control+V / Delete, the right-click Place and Remove items,
-  the train popup); a **tile length** through the setup rebuild it needs anyway (an edge's length is baked in by
+  Station Settings' Train tab); a **tile length** through the setup rebuild it needs anyway (an edge's length is baked in by
   `GraphReducer`); a **train length** through `TrainControlUI.blockedTrackChanged`, since
   `Layout.edgesCoveredByStandingTrains` reads `getTrainLength()` every time it is asked.
 - **The line follows the road, not the square**, which is why a wash was the wrong way to say *"a train is here"*. Adam:

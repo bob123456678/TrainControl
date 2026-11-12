@@ -665,6 +665,81 @@ public class testTheAutonomyEditorsTriageNotes
         assertEquals((int) Components.onTheEventThread(() -> list.getModel().getSize()), 1, "the list did not follow");
     }
 
+    /**
+     * A double click on the first row's X removes that signal alone, not the next row's that comes up under the second
+     * click; a right click on an X removes nothing; Delete and Backspace remove the row chosen.
+     *
+     * MUTATION: have `RemovableList` take any button and any click count on an X, and the right click takes one; drop
+     * its Delete binding, and the keys take one too few.
+     */
+    @Test(timeOut = 180000)
+    public void testTheXTakesOneSignalPerClickAndTheKeysTakeTheChosenOne() throws Exception
+    {
+        TileKey station = stations().get(0);
+        List<TileKey> signals = signals(4);
+
+        assertEquals(signals.size(), 4, "precondition: the page has four signals");
+
+        Components.onTheEventThread(() -> { session.setProtectingSignals(station, signals); return null; });
+
+        StationSettingsWindow window = StationDoors.open(panel, station);
+        JDialog guard = openTheGuardWindow(StationDoors.part(window, "station.exitGuardChange", AbstractButton.class));
+        javax.swing.JList<?> list = Components.find(guard, javax.swing.JList.class, null);
+        java.awt.Point cross = Components.onTheEventThread(() ->
+        {
+            java.awt.Rectangle row = list.getCellBounds(0, 0);
+
+            return new java.awt.Point(row.x + row.width - 10, row.y + row.height / 2);
+        });
+
+        // A right click
+        clickAt(list, cross, java.awt.event.MouseEvent.BUTTON3, 1);
+
+        assertEquals(Components.onTheEventThread(() -> session.getProtectingSignals(station)), signals, "a right click removed a signal");
+
+        // A double click
+        clickAt(list, cross, java.awt.event.MouseEvent.BUTTON1, 1);
+        clickAt(list, cross, java.awt.event.MouseEvent.BUTTON1, 2);
+
+        assertEquals(Components.onTheEventThread(() -> session.getProtectingSignals(station)), signals.subList(1, 4),
+            "a double click on the first X did not remove that signal alone");
+
+        // The keys, on the row chosen
+        int[] keys = {java.awt.event.KeyEvent.VK_DELETE, java.awt.event.KeyEvent.VK_BACK_SPACE};
+
+        for (int k = 0; k < keys.length; k++)
+        {
+            final int chosen = k;
+
+            Components.onTheEventThread(() -> { list.setSelectedIndex(1 - chosen); return null; });
+
+            support.Keys.press(list, keys[k]);
+        }
+
+        // Delete on the second row (the third signal), then Backspace on the first (the second)
+        assertEquals(Components.onTheEventThread(() -> session.getProtectingSignals(station)), signals.subList(3, 4),
+            "Delete and Backspace did not each remove the row chosen");
+    }
+
+    /** Press, release and click with a button, as the n-th click of a run, dispatched where AWT would send them. */
+    private static void clickAt(Component on, java.awt.Point at, int button, int count)
+    {
+        int down = button == java.awt.event.MouseEvent.BUTTON3 ? java.awt.event.InputEvent.BUTTON3_DOWN_MASK : java.awt.event.InputEvent.BUTTON1_DOWN_MASK;
+
+        for (int kind : new int[] {java.awt.event.MouseEvent.MOUSE_PRESSED, java.awt.event.MouseEvent.MOUSE_RELEASED,
+            java.awt.event.MouseEvent.MOUSE_CLICKED})
+        {
+            Components.onTheEventThread(() ->
+            {
+                on.dispatchEvent(new java.awt.event.MouseEvent(on, kind, System.currentTimeMillis(),
+                    kind == java.awt.event.MouseEvent.MOUSE_PRESSED ? down : 0, at.x, at.y, count, button == java.awt.event.MouseEvent.BUTTON3
+                    && kind == java.awt.event.MouseEvent.MOUSE_PRESSED, button));
+
+                return null;
+            });
+        }
+    }
+
     // ------------------------------------------------------------------------------------------------ OB-441
 
     /**

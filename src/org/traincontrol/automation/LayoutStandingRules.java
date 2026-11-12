@@ -176,7 +176,7 @@ final class LayoutStandingRules
             }
             else if (!stop.isTerminus())
             {
-                here = limited(cell(Answer.YES, hasAWayOut(stop) ? "autolayout.rules.mayEndHere" : "autolayout.rules.mayEndHereStuck"), stop);
+                here = cell(Answer.YES, hasAWayOut(stop) ? "autolayout.rules.mayEndHere" : "autolayout.rules.mayEndHereStuck");
             }
             else if (mayEndAt(stop))
             {
@@ -187,7 +187,7 @@ final class LayoutStandingRules
                 here = cell(Answer.NO, "autolayout.rules.couldNotLeave");
             }
 
-            best = better(best, here);
+            best = better(best, limited(here, stop));
         }
 
         return best;
@@ -201,9 +201,9 @@ final class LayoutStandingRules
         {
             Cell here = explanations.strandsATrainThatCannotReverse(stop)
                 ? cell(Answer.SOME, "autolayout.rules.reversibleOffered")
-                : limited(cell(Answer.YES, stop.isAutoDestination() ? "autolayout.rules.mayBeSentHere" : "autolayout.rules.mayBeSentHereMore"), stop);
+                : cell(Answer.YES, stop.isAutoDestination() ? "autolayout.rules.mayBeSentHere" : "autolayout.rules.mayBeSentHereMore");
 
-            best = better(best, here);
+            best = better(best, limited(here, stop));
         }
 
         return best;
@@ -371,7 +371,10 @@ final class LayoutStandingRules
 
             hand = plain ? cell(Answer.SOME, "autolayout.rules.askedWhenSent")
                 : explanations.strandsATrainThatCannotReverse(terminus) ? cell(Answer.SOME, "autolayout.rules.reversibleOffered")
-                : limited(cell(Answer.YES, "autolayout.rules.mayBeSentAndTurns"), terminus);
+                : cell(Answer.YES, "autolayout.rules.mayBeSentAndTurns");
+
+            auto = limited(auto, terminus);
+            hand = limited(hand, terminus);
         }
 
         rules.put(Row.TURNED_ROUND, side, auto, hand);
@@ -469,10 +472,16 @@ final class LayoutStandingRules
 
     /**
      * A Yes for a trip ending at `end` says Some trains while its maximum length or its list keeps trains out, the
-     * reason naming the limit (OB-440).  Only ending is limited: a station's list and length let any train run through.
+     * reason naming the limit (OB-440); an empty whitelist, which keeps every train out (`Point.excludes`), says No.
+     * Only ending is limited: a station's list and length let any train run through.
      */
     private static Cell limited(Cell yes, Point end)
     {
+        if (yes.getAnswer() != Answer.NO && end.isAllowOnlyListed() && end.getExcludedLocs().isEmpty())
+        {
+            return cell(Answer.NO, "autolayout.rules.limitNoneAllowed");
+        }
+
         List<String> limits = new ArrayList<>();
 
         if (end.isDestination() && end.getMaxTrainLength() > 0) limits.add(I18n.f("autolayout.rules.limitLength", end.getMaxTrainLength()));
@@ -486,7 +495,7 @@ final class LayoutStandingRules
             java.util.Collections.sort(names);
 
             limits.add(I18n.f(end.isAllowOnlyListed() ? "autolayout.rules.limitWhitelist" : "autolayout.rules.limitBlacklist",
-                names.isEmpty() ? I18n.t("autolayout.rules.limitNone") : String.join(", ", names)));
+                String.join(", ", names)));
         }
 
         return yes.getAnswer() != Answer.YES || limits.isEmpty() ? yes

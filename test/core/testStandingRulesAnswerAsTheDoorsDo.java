@@ -610,6 +610,45 @@ public class testStandingRulesAnswerAsTheDoorsDo
     }
 
     /**
+     * An Allowed trains whitelist naming no train keeps every train out (`Point.excludes`), so every cell for a trip
+     * ending here says No with its own reason, and no side is a way in.
+     *
+     * MUTATION: drop the empty-whitelist answer from `LayoutStandingRules.limited`, and this fails.
+     */
+    @Test
+    public void testAnEmptyWhitelistSaysNoTrainEndsHere() throws Exception
+    {
+        session.setWhichTrains(approach, AutonomySession.WhichTrains.WHITELIST, java.util.Collections.<String>emptyList());
+
+        Layout railway = scenario.build();
+
+        for (Point copy : copiesOf(railway))
+        {
+            assertTrue(copy.excludes(reversible) && copy.excludes(oneWay), "precondition: the empty whitelist lets a train in");
+        }
+
+        StandingRules rules = rules(railway);
+
+        for (boolean byHand : new boolean[] {false, true})
+        {
+            for (Row row : new Row[] {Row.SENT_HERE, Row.TURNED_ROUND})
+            {
+                for (StandingRules.Cell cell : rules.cells(row, byHand).values())
+                {
+                    assertEquals(cell.getAnswer(), Answer.NO, row + ", by hand " + byHand + ": " + cell.getWhy());
+                }
+            }
+
+            for (StandingRules.Cell cell : rules.cells(Row.SENT_HERE, byHand).values())
+            {
+                assertEquals(cell.getWhy(), org.traincontrol.util.I18n.t("autolayout.rules.limitNoneAllowed"), "the reason");
+            }
+        }
+
+        assertTrue(rules.waysIn().isEmpty(), "the picture would draw ways in: " + rules.waysIn());
+    }
+
+    /**
      * A train claiming its route never waits for the window's question: while the search is held up partway, inside a
      * switch-setting preview, another thread takes the railway's monitor, the one `configureAndLockPath` locks a route
      * under.  The search runs over every station, so a hold for all of it stops every train at its next milestone.

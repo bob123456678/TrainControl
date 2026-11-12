@@ -3803,7 +3803,7 @@ public class AutonomyEditorPanel extends JPanel
         return names;
     }
 
-    /** That list for the train window: "none", then the train here, then the rest. */
+    /** That list for Station Settings' Train tab: "none", then the train here, then the rest. */
     List<String> trainChoices(TileKey tile, String none)
     {
         List<String> names = new java.util.ArrayList<>();
