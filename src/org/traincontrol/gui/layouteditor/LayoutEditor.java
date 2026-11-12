@@ -4739,7 +4739,7 @@ public class LayoutEditor extends PositionAwareJFrame
     private static final int SIDEBAR_TABS_BEFORE_SCROLLING = 20;
 
     /** The strip's height in rows however few pages there are; the rows past the last page stay empty. */
-    public static final int SIDEBAR_ROWS_AT_LEAST = 6;
+    public static final int SIDEBAR_ROWS_AT_LEAST = 8;
 
     /** The air under a blue heading, as the form leaves. */
     public static final int HEADING_GAP = 6;

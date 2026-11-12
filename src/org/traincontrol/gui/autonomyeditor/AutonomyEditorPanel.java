@@ -612,8 +612,8 @@ public class AutonomyEditorPanel extends JPanel
 
         // Which tier the check answers for (Adam: **"Radio button Auto or Manual dictates what is in scope for the
         // routing check."**): only which stations a train may be sent to differs.
-        // The window's blue group heading (OB-217)
-        pathTypeLabel = org.traincontrol.gui.widgets.UiStyle.heading(I18n.t("autosetup.ui.labelPathType"));
+        // An item label: black, as only section headings are blue (OB-438)
+        pathTypeLabel = org.traincontrol.gui.widgets.UiStyle.label(I18n.t("autosetup.ui.labelPathType"));
 
         pathTypeAuto = new javax.swing.JRadioButton(I18n.t("autosetup.ui.pathTypeAuto"), true);
         pathTypeManual = new javax.swing.JRadioButton(I18n.t("autosetup.ui.pathTypeManual"), false);
@@ -629,8 +629,18 @@ public class AutonomyEditorPanel extends JPanel
         pathTypeAuto.setToolTipText(pathTypeTip);
         pathTypeManual.setToolTipText(pathTypeTip);
 
-        pathTypeAuto.setFont(FONT_CONTROL);
-        pathTypeManual.setFont(FONT_CONTROL);
+        // Flush with the buttons and label above and below, so the column's left edge is one line (OB-438)
+        for (javax.swing.JRadioButton radio : new javax.swing.JRadioButton[] {pathTypeAuto, pathTypeManual})
+        {
+            radio.setFont(FONT_CONTROL);
+            radio.setMargin(new java.awt.Insets(0, 0, 0, 0));
+            radio.setBorder(BorderFactory.createEmptyBorder());
+        }
+
+        // The air a heading has above and below it, as Station Tools has
+        pathTypeLabel.setBorder(BorderFactory.createEmptyBorder(
+            org.traincontrol.gui.layouteditor.LayoutEditor.HEADING_GAP + 6, 0,
+            org.traincontrol.gui.layouteditor.LayoutEditor.HEADING_GAP, 0));
 
         // The route on screen follows the tier (MT-399)
         pathTypeAuto.addActionListener(e -> retestForTheNewTier());
@@ -674,6 +684,14 @@ public class AutonomyEditorPanel extends JPanel
         panel.add(row(pathTypeAuto));
         panel.add(row(pathTypeManual));
 
+        // A section of its own, headed as the Visible Elements column's headings are (MT-890)
+        JLabel stationTools = org.traincontrol.gui.widgets.UiStyle.heading(I18n.t("autosetup.ui.headingStationTools"));
+
+        stationTools.setBorder(BorderFactory.createEmptyBorder(
+            org.traincontrol.gui.layouteditor.LayoutEditor.HEADING_GAP + 6, 0,
+            org.traincontrol.gui.layouteditor.LayoutEditor.HEADING_GAP, 0));
+
+        panel.add(row(stationTools));
         panel.add(row(pickButton));
 
         // One-Way Run and Name Everything are in Bulk Tools (OB-217); the disarm path still un-presses One-Way Run
@@ -1140,7 +1158,8 @@ public class AutonomyEditorPanel extends JPanel
         javax.swing.JPanel box = new javax.swing.JPanel(new BorderLayout(4, 0));
 
         box.setOpaque(false);
-        box.setBorder(BorderFactory.createEmptyBorder(0, 4, 2, 4));
+        // Air above, as under a heading, so the box does not touch the diagram over it (MT-889)
+        box.setBorder(BorderFactory.createEmptyBorder(org.traincontrol.gui.layouteditor.LayoutEditor.HEADING_GAP, 4, 2, 4));
 
         JLabel label = org.traincontrol.gui.widgets.UiStyle.label(I18n.t("autosetup.ui.labelFilterFindings"));
 
@@ -1149,20 +1168,28 @@ public class AutonomyEditorPanel extends JPanel
         findingFilter.setFont(FONT_CONTROL);
         findingFilter.setToolTipText(wrapped(I18n.t("autosetup.ui.tooltipFilterFindings")));
 
-        // Reshaped from the last check's rows, so typing costs no new check and leaves the banner alone.
-        ((FilterField) findingFilter).onChange = this::showFindings;
-
+        // Inside the field's right end, as a search field has it, and shown while there is text to clear
         JButton clear = new JButton("×");
 
         clear.setFont(FONT_CONTROL);
         clear.setFocusable(false);
+        clear.putClientProperty("JButton.buttonType", "toolBarButton");
         clear.setMargin(new java.awt.Insets(0, 6, 0, 6));
         clear.setToolTipText(wrapped(I18n.t("autosetup.ui.tooltipClearFilterFindings")));
         clear.addActionListener(e -> findingFilter.setText(""));
+        clear.setVisible(false);
+
+        findingFilter.putClientProperty("JTextField.trailingComponent", clear);
+
+        // Reshaped from the last check's rows, so typing costs no new check and leaves the banner alone.
+        ((FilterField) findingFilter).onChange = () ->
+        {
+            clear.setVisible(!findingFilter.getText().isEmpty());
+            showFindings();
+        };
 
         box.add(label, BorderLayout.WEST);
         box.add(findingFilter, BorderLayout.CENTER);
-        box.add(clear, BorderLayout.EAST);
 
         javax.swing.JPanel whole = new javax.swing.JPanel(new BorderLayout());
 
@@ -4310,6 +4337,23 @@ public class AutonomyEditorPanel extends JPanel
     void pairGuardSignals(Guard guard, TileKey station)
     {
         signalPairing.pairGuardSignals(guard, station);
+    }
+
+    /**
+     * Station Settings closed: a guard pick waiting for a click on its square ends as if canceled (MT-948).  The guard
+     * window, which hangs off Station Settings, closes with it.
+     */
+    void endGuardPick(TileKey station)
+    {
+        if (!station.equals(signalFor)) return;
+
+        signalFor = null;
+
+        highlightedSignals.clear();
+
+        backToEditing();
+
+        refresh();
     }
 
     private void askAboutSignals(final Guard guard, TileKey station)

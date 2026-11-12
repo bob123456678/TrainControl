@@ -606,7 +606,7 @@ public class TileAnnotation
         /** Picked to be set with others in Station Settings (FR-052), in a color no other mark uses. */
         TOGETHER,
 
-        /** Can be picked for Bulk Edit: the editor's light gray grid line, no wash. */
+        /** Can be picked for Bulk Edit (MT-920): a gray outline that shows against the grid, no wash. */
         PICKABLE
     }
 
@@ -653,9 +653,9 @@ public class TileAnnotation
     {
         if (toolMark == ToolMark.PICKABLE)
         {
-            g.setStroke(new BasicStroke(1f));
+            g.setStroke(new BasicStroke(2f));
             g.setColor(markColour());
-            g.drawRect(0, 0, width - 1, height - 1);
+            g.drawRect(1, 1, width - 3, height - 3);
 
             return;
         }
@@ -696,6 +696,9 @@ public class TileAnnotation
         g.drawRect(1, 1, width - 3, height - 3);
     }
 
+    /** Darker than the grid's light gray, which an outline on it cannot be told from. */
+    private static final Color PICKABLE_GRAY = new Color(128, 128, 128);
+
     /** TOGETHER's teal, which no other mark on the diagram uses. */
     private static final Color MARK_TEAL = new Color(0, 140, 140);
 
@@ -708,7 +711,7 @@ public class TileAnnotation
             case CAN_GO: return MARK_GREEN;
             case NEVER: return TRACE_MANUAL;
             case TOGETHER: return MARK_TEAL;
-            case PICKABLE: return Color.LIGHT_GRAY;
+            case PICKABLE: return PICKABLE_GRAY;
             default: return MARK_GRAY;
         }
     }

@@ -425,13 +425,15 @@ abstract class StationWindowBase extends JDialog
     /** Closed because its surface or square has gone. */
     final void goAway()
     {
+        TileKey was = tile;
+
         tile = null;
 
         watch.stop();
 
         dispose();
 
-        editor.stationWindows.closed(this);
+        editor.stationWindows.closed(this, was);
     }
 
     /** Grid constraints for a form row's cell. */

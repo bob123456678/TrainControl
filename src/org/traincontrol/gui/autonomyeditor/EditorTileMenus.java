@@ -159,9 +159,18 @@ final class EditorTileMenus
             final boolean isStation = editor.session.getStore().isStation(target);
             final String standing = editor.locomotiveAt(target);
 
+            // The square's window, right under its name whether or not a train stands here (OB-437), every setting of
+            // the square being in it (FR-111), which a key opens too.
+            javax.swing.JMenuItem settings = settingsItem(target);
+
+            if (!editor.menuOnly) settings.setToolTipText(AutonomyEditorPanel.SHORTCUT_SETTINGS);
+
+            menu.add(settings);
+
+            menu.addSeparator();
+
             // PUTTING a train down is only at a station; TAKING one off is not, as a square can stop being one under it.
-            // The train's own items and the square's window, then the hand doors, each group behind a divider (FR-182),
-            // as on the track diagram.
+            // The train's own items, then the hand doors, each group behind a divider (FR-182), as on the track diagram.
             if (!editor.menuOnly)
             {
                 // Whether it runs (FR-117): read off the train and written to it and the setup together; only at rest.
@@ -175,19 +184,9 @@ final class EditorTileMenus
 
                 // Which way round the train is standing, and where its tail lies (OB-039).
                 if (isStation) addFacingItems(menu, target);
-            }
 
-            // Every setting of the square is in its window (FR-111), which a key opens too.
-            javax.swing.JMenuItem settings = settingsItem(target);
+                menu.addSeparator();
 
-            if (!editor.menuOnly) settings.setToolTipText(AutonomyEditorPanel.SHORTCUT_SETTINGS);
-
-            menu.add(settings);
-
-            menu.addSeparator();
-
-            if (!editor.menuOnly)
-            {
                 javax.swing.JMenuItem train = trainItem(target);
 
                 // Change Train at... first, Place a Locomotive Here... last; an empty group's divider goes in tidy()

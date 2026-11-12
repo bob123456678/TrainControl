@@ -218,6 +218,26 @@ public final class StationDoors
         }
     }
 
+    /** The guard signal window (Exit or Entry) showing, or null. */
+    public static javax.swing.JDialog guardWindow()
+    {
+        return Components.onTheEventThread(() ->
+        {
+            for (java.awt.Window each : java.awt.Window.getWindows())
+            {
+                String title = each instanceof javax.swing.JDialog ? ((javax.swing.JDialog) each).getTitle() : null;
+
+                if (each.isShowing() && (org.traincontrol.util.I18n.t("autosetup.ui.menuPairSignal").equals(title)
+                    || org.traincontrol.util.I18n.t("autosetup.ui.menuPairEntrySignal").equals(title)))
+                {
+                    return (javax.swing.JDialog) each;
+                }
+            }
+
+            return null;
+        });
+    }
+
     /** The one showing window of this kind, or null. */
     public static <T extends java.awt.Window> T showing(Class<T> kind)
     {

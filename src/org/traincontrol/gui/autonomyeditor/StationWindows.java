@@ -107,8 +107,11 @@ final class StationWindows
         return current && session.getReducer() != null && session.getReducer().getPoints().containsKey(square);
     }
 
-    void closed(StationWindowBase window)
+    void closed(StationWindowBase window, TileKey square)
     {
+        // A guard pick its pencil started goes with the window (MT-948)
+        if (window == station && square != null) editor.endGuardPick(square);
+
         if (window == station) station = null;
 
         if (window == train) train = null;

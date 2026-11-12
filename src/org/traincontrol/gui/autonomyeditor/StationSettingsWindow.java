@@ -923,9 +923,47 @@ public final class StationSettingsWindow extends StationWindowBase
         // The lists first: a refused field tries again and reads the setup back over a choice stepped
         super.commitFields();
 
+        commitTypedFields();
+    }
+
+    private void commitTypedFields()
+    {
         if (tile == null) return;
 
         for (JTextField part : new ArrayList<>(storedValues.keySet())) commit(part);
+    }
+
+    /**
+     * A press anywhere in the window but on a text field applies what is typed, as leaving the field does: most of the
+     * window cannot take the keyboard, so a click on it would leave the field holding it (OB-436).
+     */
+    private final java.awt.event.AWTEventListener pressAway = event ->
+    {
+        if (event.getID() != java.awt.event.MouseEvent.MOUSE_PRESSED || !(event.getSource() instanceof java.awt.Component))
+        {
+            return;
+        }
+
+        java.awt.Component source = (java.awt.Component) event.getSource();
+
+        if (!(source instanceof javax.swing.text.JTextComponent)
+            && javax.swing.SwingUtilities.getWindowAncestor(source) == this) commitTypedFields();
+    };
+
+    @Override
+    public void addNotify()
+    {
+        super.addNotify();
+
+        java.awt.Toolkit.getDefaultToolkit().addAWTEventListener(pressAway, java.awt.AWTEvent.MOUSE_EVENT_MASK);
+    }
+
+    @Override
+    public void removeNotify()
+    {
+        java.awt.Toolkit.getDefaultToolkit().removeAWTEventListener(pressAway);
+
+        super.removeNotify();
     }
 
     private String applyTypedName(TileKey square, String typed)
