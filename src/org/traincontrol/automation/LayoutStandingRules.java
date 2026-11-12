@@ -14,8 +14,10 @@ import org.traincontrol.util.I18n;
 /**
  * The body of `Layout.standingRulesAt` (FR-111): which copies of a square the build emitted, read with the clauses the
  * real doors ask (`isSendableDestination`, `autonomyMayEndAt`, `strandsATrainThatCannotReverse`, the start rules) and,
- * for ways on and out, the path search (`anyStandingRoute`), so it holds no rule of its own.  Occupancy is left out; a
- * length or list limit only turns a Yes into Some trains (`limited`).  Takes no lock, so one is made for each question.
+ * for ways on and out, the path search (`anyStandingRoute`), so it holds no rule of its own.  Occupancy is left out.  A
+ * length or list limit turns a Yes into Some trains, or No for an empty whitelist (`limited`): for a trip ending here,
+ * and, by its list alone, for one running through a square that is no station.  Takes no lock, so one is made for each
+ * question.
  */
 final class LayoutStandingRules
 {
@@ -248,8 +250,8 @@ final class LayoutStandingRules
                 continue;
             }
 
-            Cell yes = cell(Answer.YES, copy.isDestination() || !owner.isABarredCopyOfAStation(copy)
-                ? "autolayout.rules.runsThrough" : "autolayout.rules.runsThroughNoStop");
+            Cell yes = limited(cell(Answer.YES, copy.isDestination() || !owner.isABarredCopyOfAStation(copy)
+                ? "autolayout.rules.runsThrough" : "autolayout.rules.runsThroughNoStop"), copy, false);
 
             hand = better(hand, yes);
             auto = better(auto, chosenOver(copy, side) ? yes : cell(Answer.NO, "autolayout.rules.noTripThroughAuto"));
@@ -470,31 +472,40 @@ final class LayoutStandingRules
         return one == null || other.getAnswer().ordinal() < one.getAnswer().ordinal() ? other : one;
     }
 
-    /**
-     * A Yes for a trip ending at `end` says Some trains while its maximum length or its list keeps trains out, the
-     * reason naming the limit (OB-440); an empty whitelist, which keeps every train out (`Point.excludes`), says No.
-     * Only ending is limited: a station's list and length let any train run through.
-     */
-    private static Cell limited(Cell yes, Point end)
+    /** `limited` for a trip ending at `end`. */
+    private Cell limited(Cell yes, Point end)
     {
-        if (yes.getAnswer() != Answer.NO && end.isAllowOnlyListed() && end.getExcludedLocs().isEmpty())
+        return limited(yes, end, true);
+    }
+
+    /**
+     * A Yes says Some trains while a limit keeps trains out, the reason naming it (OB-440), and an empty whitelist, which
+     * keeps every train out (`Point.excludes`), says No.  A trip ending at `at` meets its maximum length and its list; one
+     * running through meets only the list of a square that is no station, as the path search refuses a listed train
+     * there, while a station's list and length let any train run through.
+     */
+    private Cell limited(Cell yes, Point at, boolean ending)
+    {
+        if (!ending && owner.isAStationSquare(at)) return yes;
+
+        if (yes.getAnswer() != Answer.NO && at.isAllowOnlyListed() && at.getExcludedLocs().isEmpty())
         {
-            return cell(Answer.NO, "autolayout.rules.limitNoneAllowed");
+            return cell(Answer.NO, ending ? "autolayout.rules.limitNoneAllowed" : "autolayout.rules.limitNoneThrough");
         }
 
         List<String> limits = new ArrayList<>();
 
-        if (end.isDestination() && end.getMaxTrainLength() > 0) limits.add(I18n.f("autolayout.rules.limitLength", end.getMaxTrainLength()));
+        if (ending && at.isDestination() && at.getMaxTrainLength() > 0) limits.add(I18n.f("autolayout.rules.limitLength", at.getMaxTrainLength()));
 
-        if (end.isAllowOnlyListed() || !end.getExcludedLocs().isEmpty())
+        if (at.isAllowOnlyListed() || !at.getExcludedLocs().isEmpty())
         {
             List<String> names = new ArrayList<>();
 
-            for (org.traincontrol.base.Locomotive each : end.getExcludedLocs()) names.add(each.getName());
+            for (org.traincontrol.base.Locomotive each : at.getExcludedLocs()) names.add(each.getName());
 
             java.util.Collections.sort(names);
 
-            limits.add(I18n.f(end.isAllowOnlyListed() ? "autolayout.rules.limitWhitelist" : "autolayout.rules.limitBlacklist",
+            limits.add(I18n.f(at.isAllowOnlyListed() ? "autolayout.rules.limitWhitelist" : "autolayout.rules.limitBlacklist",
                 String.join(", ", names)));
         }
 

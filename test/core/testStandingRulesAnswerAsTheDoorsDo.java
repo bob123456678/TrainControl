@@ -649,6 +649,52 @@ public class testStandingRulesAnswerAsTheDoorsDo
     }
 
     /**
+     * On a square that is no station, the path search refuses a trip through it for a train its list keeps out, so Sent
+     * through here says Some trains under a blacklist, naming it, and No under an empty whitelist; checked against the
+     * door, the trips from WestEnd to MainPlatform over Approach made a plain sensor.
+     *
+     * MUTATION: have `LayoutStandingRules.limited` hand back its cell for a trip running through, and this fails.
+     */
+    @Test
+    public void testAListOnASquareThatIsNoStationLimitsRunningThrough() throws Exception
+    {
+        for (boolean empty : new boolean[] {false, true})
+        {
+            session.restoreSetup(new JSONObject(pristine.toString()));
+            session.setStopsAndRunsThrough(approach, false, true);
+            session.setWhichTrains(approach, empty ? AutonomySession.WhichTrains.WHITELIST : AutonomySession.WhichTrains.BLACKLIST,
+                empty ? java.util.Collections.<String>emptyList() : java.util.Collections.singletonList(oneWay.getName()));
+
+            Layout railway = scenario.build();
+            List<Point> copies = copiesOf(railway);
+            Point to = railway.getPoint("MainPlatform");
+
+            Predicate<List<Edge>> over = path ->
+            {
+                if (path.get(path.size() - 1).getEnd() != to) return false;
+
+                for (Edge e : path.subList(0, path.size() - 1))
+                {
+                    if (copies.contains(e.getEnd())) return true;
+                }
+
+                return false;
+            };
+
+            // The door: the path search
+            assertEquals(reaches(railway, reversible, railway.getPoint("WestEnd"), over), !empty, "the door, the reversible train (" + empty + ")");
+            assertFalse(reaches(railway, oneWay, railway.getPoint("WestEnd"), over), "the door, the listed train (" + empty + ")");
+
+            String side = sideFrom(railway, "WestEnd");
+            StandingRules.Cell hand = rules(railway).cells(Row.SENT_THROUGH, true).get(side);
+
+            assertEquals(hand.getAnswer(), empty ? Answer.NO : Answer.SOME, "Sent through by hand: " + hand.getWhy());
+            assertTrue(hand.getWhy().contains(empty ? org.traincontrol.util.I18n.t("autolayout.rules.limitNoneThrough")
+                : org.traincontrol.util.I18n.f("autolayout.rules.limitBlacklist", oneWay.getName())), "the reason: " + hand.getWhy());
+        }
+    }
+
+    /**
      * A train claiming its route never waits for the window's question: while the search is held up partway, inside a
      * switch-setting preview, another thread takes the railway's monitor, the one `configureAndLockPath` locks a route
      * under.  The search runs over every station, so a hold for all of it stops every train at its next milestone.
