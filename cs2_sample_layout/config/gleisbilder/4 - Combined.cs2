@@ -3,11 +3,13 @@ version
  .major=1
 element
  .typ=rechtsweiche
+ .prot=MM2
  .artikel=256
 element
  .id=0x1
  .typ=linksweiche
  .drehung=1
+ .prot=MM2
  .artikel=18
  .zustand=1
 element
@@ -156,6 +158,7 @@ element
 element
  .id=0x10a
  .typ=signal
+ .prot=MM2
  .artikel=162
  .zustand=1
 element
@@ -192,6 +195,7 @@ element
  .id=0x207
  .typ=linksweiche
  .drehung=2
+ .prot=MM2
  .artikel=134
  .zustand=1
 element
@@ -206,23 +210,27 @@ element
 element
  .id=0x20a
  .typ=signal
+ .prot=MM2
  .artikel=162
  .zustand=1
 element
  .id=0x20b
  .typ=dreiwegweiche
  .drehung=1
+ .prot=MM2
  .artikel=36
  .zustand=2
 element
  .id=0x20c
  .typ=linksweiche
  .drehung=1
+ .prot=MM2
  .artikel=6
 element
  .id=0x20d
  .typ=linksweiche
  .drehung=1
+ .prot=MM2
  .artikel=150
 element
  .id=0x20e
@@ -337,6 +345,7 @@ element
  .id=0x309
  .typ=linksweiche
  .drehung=2
+ .prot=MM2
  .artikel=132
 element
  .id=0x30a
@@ -352,17 +361,20 @@ element
  .id=0x30c
  .typ=signal
  .drehung=3
+ .prot=MM2
  .artikel=126
  .zustand=1
 element
  .id=0x30d
  .typ=signal
  .drehung=3
+ .prot=MM2
  .artikel=128
  .zustand=1
 element
  .id=0x30e
  .typ=rechtsweiche
+ .prot=MM2
  .artikel=82
 element
  .id=0x30f
@@ -380,11 +392,13 @@ element
  .id=0x312
  .typ=rechtsweiche
  .drehung=3
+ .prot=MM2
  .artikel=20
 element
  .id=0x313
  .typ=linksweiche
  .drehung=1
+ .prot=MM2
  .artikel=180
 element
  .id=0x314
@@ -410,6 +424,7 @@ element
  .id=0x319
  .typ=rechtsweiche
  .drehung=3
+ .prot=MM2
  .artikel=104
  .zustand=1
 element
@@ -435,12 +450,14 @@ element
 element
  .id=0x401
  .typ=rechtsweiche
+ .prot=MM2
  .artikel=136
  .zustand=1
 element
  .id=0x402
  .typ=dreiwegweiche
  .drehung=3
+ .prot=MM2
  .artikel=46
 element
  .id=0x403
@@ -470,11 +487,13 @@ element
  .id=0x408
  .typ=entkuppler
  .drehung=1
+ .prot=MM2
  .artikel=131
 element
  .id=0x409
  .typ=entkuppler
  .drehung=1
+ .prot=MM2
  .artikel=130
 element
  .id=0x40a
@@ -644,10 +663,12 @@ element
  .id=0x512
  .typ=linksweiche
  .drehung=2
+ .prot=MM2
  .artikel=208
 element
  .id=0x513
  .typ=linksweiche
+ .prot=MM2
  .artikel=206
 element
  .id=0x516
@@ -659,6 +680,7 @@ element
 element
  .id=0x517
  .typ=signal
+ .prot=MM2
  .artikel=74
  .zustand=1
 element
@@ -782,6 +804,7 @@ element
 element
  .id=0x619
  .typ=linksweiche
+ .prot=MM2
  .artikel=100
 element
  .id=0x61a
@@ -816,6 +839,7 @@ element
  .id=0x703
  .typ=signal
  .drehung=2
+ .prot=MM2
  .artikel=162
  .zustand=1
 element
@@ -873,6 +897,7 @@ element
 element
  .id=0x710
  .typ=dreiwegweiche
+ .prot=MM2
  .artikel=158
 element
  .id=0x711
@@ -910,6 +935,7 @@ element
 element
  .id=0x71b
  .typ=lampe
+ .prot=MM2
  .artikel=186
 element
  .id=0x71c
@@ -929,6 +955,7 @@ element
 element
  .id=0x801
  .typ=rechtsweiche
+ .prot=MM2
  .artikel=194
  .zustand=1
 element
@@ -939,6 +966,7 @@ element
  .id=0x803
  .typ=signal
  .drehung=2
+ .prot=MM2
  .artikel=162
 element
  .id=0x804
@@ -966,12 +994,14 @@ element
 element
  .id=0x80e
  .typ=rechtsweiche
+ .prot=MM2
  .artikel=98
  .zustand=1
 element
  .id=0x80f
  .typ=signal
  .drehung=2
+ .prot=MM2
  .artikel=178
 element
  .id=0x810
@@ -1028,6 +1058,7 @@ element
 element
  .id=0x901
  .typ=rechtsweiche
+ .prot=MM2
  .artikel=146
  .zustand=1
 element
@@ -1067,12 +1098,14 @@ element
  .id=0x912
  .typ=signal
  .drehung=3
+ .prot=MM2
  .artikel=124
  .zustand=1
 element
  .id=0x913
  .typ=linksweiche
  .drehung=2
+ .prot=MM2
  .artikel=118
 element
  .id=0x914
@@ -1097,6 +1130,7 @@ element
  .id=0x91c
  .typ=rechtsweiche
  .drehung=2
+ .prot=MM2
  .artikel=24
  .zustand=1
 element
@@ -1138,6 +1172,7 @@ element
  .id=0xa07
  .typ=signal
  .drehung=2
+ .prot=MM2
  .artikel=214
 element
  .id=0xa08
@@ -1172,11 +1207,13 @@ element
 element
  .id=0xa10
  .typ=lampe
+ .prot=MM2
  .artikel=170
 element
  .id=0xa11
  .typ=signal
  .drehung=3
+ .prot=MM2
  .artikel=162
  .zustand=1
 element
@@ -1188,6 +1225,7 @@ element
  .id=0xa13
  .typ=signal
  .drehung=3
+ .prot=MM2
  .artikel=122
 element
  .id=0xa14
@@ -1205,6 +1243,7 @@ element
 element
  .id=0xa17
  .typ=entkuppler
+ .prot=MM2
  .artikel=70
 element
  .id=0xa18
@@ -1218,6 +1257,7 @@ element
  .id=0xa1a
  .typ=linksweiche
  .drehung=3
+ .prot=MM2
  .artikel=12
  .zustand=1
 element
@@ -1232,6 +1272,7 @@ element
  .id=0xa1d
  .typ=rechtsweiche
  .drehung=2
+ .prot=MM2
  .artikel=22
  .zustand=1
 element
@@ -1267,6 +1308,7 @@ element
  .id=0xb08
  .typ=signal
  .drehung=2
+ .prot=MM2
  .artikel=216
 element
  .id=0xb09
@@ -1303,6 +1345,7 @@ element
  .id=0xb11
  .typ=rechtsweiche
  .drehung=1
+ .prot=MM2
  .artikel=196
 element
  .id=0xb12
@@ -1313,6 +1356,7 @@ element
  .id=0xb13
  .typ=rechtsweiche
  .drehung=1
+ .prot=MM2
  .artikel=116
  .zustand=1
 element
@@ -1327,6 +1371,7 @@ element
  .id=0xb16
  .typ=linksweiche
  .drehung=1
+ .prot=MM2
  .artikel=198
  .zustand=1
 element
@@ -1341,17 +1386,20 @@ element
  .id=0xb19
  .typ=linksweiche
  .drehung=3
+ .prot=MM2
  .artikel=102
  .zustand=1
 element
  .id=0xb1a
  .typ=signal
+ .prot=MM2
  .artikel=78
  .zustand=1
 element
  .id=0xb1b
  .typ=linksweiche
  .drehung=3
+ .prot=MM2
  .artikel=4
 element
  .id=0xb1c
@@ -1375,11 +1423,13 @@ element
  .id=0xc0e
  .typ=linksweiche
  .drehung=2
+ .prot=MM2
  .artikel=2
 element
  .id=0xc0f
  .typ=signal
  .drehung=2
+ .prot=MM2
  .artikel=172
  .zustand=1
 element
@@ -1394,6 +1444,7 @@ element
  .id=0xc12
  .typ=rechtsweiche
  .drehung=1
+ .prot=MM2
  .artikel=138
 element
  .id=0xc13
@@ -1411,6 +1462,7 @@ element
  .id=0xc16
  .typ=linksweiche
  .drehung=3
+ .prot=MM2
  .artikel=200
  .zustand=1
 element
@@ -1436,12 +1488,14 @@ element
 element
  .id=0xc1c
  .typ=signal
+ .prot=MM2
  .artikel=80
  .zustand=1
 element
  .id=0xc1d
  .typ=rechtsweiche
  .drehung=2
+ .prot=MM2
  .artikel=144
  .zustand=1
 element
@@ -1461,6 +1515,7 @@ element
  .id=0xd0f
  .typ=signal
  .drehung=2
+ .prot=MM2
  .artikel=174
  .zustand=1
 element
@@ -1479,6 +1534,7 @@ element
  .id=0xd13
  .typ=rechtsweiche
  .drehung=3
+ .prot=MM2
  .artikel=120
  .zustand=1
 element
@@ -1516,12 +1572,14 @@ element
 element
  .id=0xd1c
  .typ=signal
+ .prot=MM2
  .artikel=76
  .zustand=1
 element
  .id=0xd1d
  .typ=rechtsweiche
  .drehung=2
+ .prot=MM2
  .artikel=148
  .zustand=1
 element
@@ -1564,11 +1622,13 @@ element
 element
  .id=0xe1c
  .typ=signal
+ .prot=MM2
  .artikel=188
 element
  .id=0xe1d
  .typ=linksweiche
  .drehung=3
+ .prot=MM2
  .artikel=140
  .zustand=1
 element
