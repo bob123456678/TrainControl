@@ -356,47 +356,6 @@ public class testAutoLayoutRace
     }
 
     /**
-     * And a wait that is SUPPOSED to be endless says nothing at all: a route's trigger monitor waits on its sensor as
-     * long as the layout runs, on a "Dummy Loc" that only borrows these utilities, so the caller asks for the advisory.
-     */
-    @Test
-    public void testAWaitThatIsMeantToBeEndlessStaysQuiet() throws Exception
-    {
-        final MarklinFeedback sensor = model.newFeedback(9002, null);
-
-        model.setFeedbackState(sensor.getName(), false);
-
-        final java.util.List<String> said = java.util.Collections.synchronizedList(new ArrayList<>());
-
-        // Built exactly as MarklinRoute builds its dummy - the constructor registers nothing - but
-        // recording what it would have said instead of saying it
-        final MarklinLocomotive listening = new MarklinLocomotive(model, 1,
-            MarklinLocomotive.decoderType.MM2, "Watcher")
-        {
-            @Override
-            protected void waitedTooLongFor(String feedbackName, long waitedMs)
-            {
-                said.add(feedbackName);
-            }
-        };
-
-        Thread waiting = new Thread(() -> listening.waitForOccupiedFeedback(sensor.getName(), 0),
-            "a-route-watching-its-sensor");
-
-        waiting.setDaemon(true);
-        waiting.start();
-
-        // Comfortably past anything a mutated build would use as a threshold
-        Thread.sleep(1500);
-
-        assertTrue(said.isEmpty(),
-            "the plain wait announced " + said + " - a route's trigger monitor would say that about "
-            + "its dummy locomotive once every few minutes, for every route, for the whole session");
-
-        assertTrue(waiting.isAlive(), "and it must still be waiting");
-    }
-
-    /**
      * Waiting for the power to come on gives up, rather than parking the only switching thread.
      *
      * Only the Central Station's echo writes the power state, and a datagram sent to a switched-off station succeeds

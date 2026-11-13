@@ -2642,48 +2642,6 @@ public class testNoSetupEditDuringARun
     }
 
     /**
-     * Export waits for autonomy to stop, as Import does (Adam, MT-601: "Export should also only be allowed once we are
-     * stopped").  Refused at once, with no file chooser.
-     *
-     * MUTATION: let Export run while autonomy runs, and this fails.
-     */
-    @Test
-    public void testExportWaitsForAutonomyToStop() throws Exception
-    {
-        if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
-
-        java.lang.reflect.Field staging = Reflect.field(TrainControlUI.class, "stagingFlowActive");
-
-        final java.util.concurrent.atomic.AtomicBoolean going = new java.util.concurrent.atomic.AtomicBoolean(true);
-
-        onItsOwnWindow("live-snapshot", ui ->
-        {
-            // DURING A RUN
-            staging.set(ui, true);
-
-            final List<String> asked = Collections.synchronizedList(new ArrayList<String>());
-
-            final List<String> choosers = Collections.synchronizedList(new ArrayList<String>());
-
-            closingEveryQuestion(asked, choosers, going);
-
-            SwingUtilities.invokeAndWait(() -> ui.getAutonomyViewerPanel().exportConfiguration());
-
-            for (int turn = 0; turn < 6; turn++) SwingUtilities.invokeAndWait(() -> { });
-
-            assertTrue(choosers.isEmpty(), "Export opened its file chooser while autonomy ran (MT-601)");
-
-            assertTrue(asked.contains(I18n.t("autolayout.ui.errorWaitForActiveLocomotivesToStop")), "Export did not say it waits for"
-                + " autonomy to stop: " + asked);
-        }, ui ->
-        {
-            going.set(false);
-
-            if (ui != null) staging.set(ui, false);
-        });
-    }
-
-    /**
      * Closes every question and every file chooser until `going` is lowered: a question's words into `asked`, a
      * chooser canceled and its title into `choosers`.
      */

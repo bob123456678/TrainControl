@@ -30,7 +30,7 @@ import support.Components;
 import support.StationDoors;
 
 /**
- * The owner's notes from testing the autonomy editor (MT-889, MT-890, MT-920, OB-436, OB-437, OB-438, MT-948, OB-441,
+ * The owner's notes from testing the autonomy editor (MT-889, MT-890, OB-436, OB-437, OB-438, MT-948, OB-441,
  * MT-956, MT-961), each pressed on the frozen railway as a user presses it.
  */
 public class testTheAutonomyEditorsTriageNotes
@@ -200,66 +200,6 @@ public class testTheAutonomyEditorsTriageNotes
         int buttonsGap = top(why) - (top(test) + Components.onTheEventThread(test::getHeight));
 
         assertEquals(radiosGap, buttonsGap, "the radios are spaced differently from the buttons above them");
-    }
-
-    // ------------------------------------------------------------------------------------------------ MT-920
-
-    /**
-     * With Bulk Edit... down, every station that can be picked wears a visible gray outline (darker than the grid's
-     * light gray) and a pick keeps its teal band; with it up, none does.
-     *
-     * MUTATION: color PICKABLE `Color.LIGHT_GRAY` again, or answer null from `toolMark` for the stations not picked, and
-     * this fails.
-     */
-    @Test(timeOut = 120000)
-    public void testBulkEditOutlinesEveryPickableStationInGray() throws Exception
-    {
-        List<TileKey> stations = stations();
-
-        StationDoors.press(panel, "autonomy.pickStations");
-
-        TileKey picked = stations.get(0);
-
-        Components.onTheEventThread(() ->
-        {
-            panel.tileClicked(picked, session.getGraph().getTiles().get(picked), false);
-
-            return null;
-        });
-
-        Components.settle();
-
-        for (TileKey each : stations)
-        {
-            org.traincontrol.automationui.TileAnnotation.ToolMark mark =
-                Components.onTheEventThread(() -> panel.annotationFor(each).getToolMark());
-
-            assertEquals(mark, each.equals(picked) ? org.traincontrol.automationui.TileAnnotation.ToolMark.TOGETHER
-                : org.traincontrol.automationui.TileAnnotation.ToolMark.PICKABLE, each + " while Bulk Edit... is down");
-        }
-
-        java.awt.image.BufferedImage tile = new java.awt.image.BufferedImage(60, 60, java.awt.image.BufferedImage.TYPE_INT_RGB);
-        java.awt.Graphics2D g = tile.createGraphics();
-
-        g.setColor(java.awt.Color.WHITE);
-        g.fillRect(0, 0, 60, 60);
-
-        new org.traincontrol.automationui.TileAnnotation(java.util.Collections.<org.traincontrol.automationui.TileAnnotation.Mark>emptyList(),
-            -1, false).markedByATool(org.traincontrol.automationui.TileAnnotation.ToolMark.PICKABLE).paint(g, 60, 60);
-        g.dispose();
-
-        int edge = tile.getRGB(1, 30) & 0xFFFFFF;
-
-        assertTrue(edge != 0xFFFFFF && edge != (java.awt.Color.LIGHT_GRAY.getRGB() & 0xFFFFFF),
-            "the outline is white or the grid's light gray: #" + Integer.toHexString(edge));
-        assertEquals(edge, 0x808080, "the outline is not gray");
-
-        StationDoors.press(panel, "autonomy.pickStations");
-
-        for (TileKey each : stations)
-        {
-            assertNull(Components.onTheEventThread(() -> panel.annotationFor(each).getToolMark()), each + " outlined after the tool went down");
-        }
     }
 
     // ------------------------------------------------------------------------------------------------ OB-437

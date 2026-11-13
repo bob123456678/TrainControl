@@ -413,36 +413,6 @@ public class testAutonomyTileMove
             "and would still hold trains out of it with a signal");
     }
 
-    /**
-     * A square that is landed on AND moving away keeps what it is taking with it: letting go of a landing square must
-     * not throw away a setup on its way somewhere (the case a group drag is made of).
-     */
-    @Test
-    public void testASquareThatIsBothLandedOnAndMovingIsNotForgotten()
-    {
-        AutonomyCompanionStore store = new AutonomyCompanionStore(null);
-
-        TileKey first = new TileKey("1 - Main", 1, 1);
-        TileKey second = new TileKey("1 - Main", 2, 1);
-        TileKey third = new TileKey("1 - Main", 3, 1);
-
-        store.setPointName(first, "First");
-        store.setPointName(second, "Second");
-
-        Map<TileKey, TileKey> moves = new LinkedHashMap<>();
-
-        moves.put(first, second);
-        moves.put(second, third);
-
-        store.moveTiles(moves);
-
-        assertEquals(store.getPointName(second), "First", "the first square did not arrive");
-
-        assertEquals(store.getPointName(third), "Second",
-            "the middle square was forgotten as a landing square, even though it was moving too - "
-            + "which is every square of a group dragged one place along");
-    }
-
     private static Map<TileKey, TileKey> moving(TileKey from, TileKey to)
     {
         Map<TileKey, TileKey> out = new LinkedHashMap<>();

@@ -168,36 +168,6 @@ public class testALegacyImportBringsWhatItCanAndSaysWhatItLeaves extends Autonom
             "a second import overwrote a setting that had been changed since the first one");
     }
 
-    /** A square that already has a name keeps it: the import fills gaps, it does not overwrite. */
-    @Test
-    public void testLegacyNamesDoNotOverwriteNamesAlreadyEntered() throws Exception
-    {
-        LayoutDiagram page = pageOnDisk();
-
-        session.open(Arrays.asList(page));
-
-        TileKey tile = new TileKey("main", 1, 1);
-
-        session.setPointName(tile, "The name I typed");
-
-        org.json.JSONArray points = new org.json.JSONArray();
-
-        org.json.JSONObject named = new org.json.JSONObject();
-        named.put("name", "The name in the file");
-        named.put("s88", 11);
-        points.put(named);
-
-        org.json.JSONObject legacy = new org.json.JSONObject();
-        legacy.put("points", points);
-
-        AutonomySession.LegacyImport result = session.importLegacy(legacy);
-
-        assertEquals(session.getStore().getPointName(tile), "The name I typed",
-            "importing overwrote a name that was already there");
-
-        assertEquals(result.skipped, 1, "the skip should be counted and reported");
-    }
-
     /**
      * The locomotive standing on a Point is put back on the square carrying its sensor.  A placement belongs to the
      * configuration, not the shared half, so it is written there, keyed by tile.

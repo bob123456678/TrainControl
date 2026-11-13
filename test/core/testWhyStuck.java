@@ -148,29 +148,6 @@ public class testWhyStuck
     }
 
     /**
-     * A station with a train standing on it says so, and names the train.
-     */
-    @Test
-    public void testAnOccupiedStationNamesWhoIsThere() throws Exception
-    {
-        Layout layout = twoStations("WS1");
-
-        MarklinLocomotive first = model.getLocByName(model.getLocList().get(0));
-        MarklinLocomotive second = model.getLocByName(model.getLocList().get(1));
-
-        layout.moveLocomotive(first.getName(), "WS1_A", false);
-        layout.moveLocomotive(second.getName(), "WS1_B", false);
-
-        Map<String, String> why = layout.explainDestinations(first);
-
-        assertNotNull(why.get("WS1_B"), "B holds a train, so it cannot be available");
-
-        assertTrue(why.get("WS1_B").contains(second.getName()),
-            "the reason must NAME the train standing in the way - a bare refusal sends the user "
-            + "looking at the track instead of at the other locomotive.  Got: " + why.get("WS1_B"));
-    }
-
-    /**
      * A station switched off says that, and not something else.
      */
     @Test

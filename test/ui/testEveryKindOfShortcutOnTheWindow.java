@@ -24,12 +24,10 @@ import org.traincontrol.base.Locomotive;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.marklin.MarklinLocomotive;
-import org.traincontrol.marklin.udp.CS2Message;
 import support.Answering;
 import support.Components;
 import support.Keys;
 import support.Reflect;
-import support.WireRecorder;
 
 /**
  * One representative of every family of main-window shortcut, pressed as a real key on the window, asserting what the
@@ -51,7 +49,6 @@ public class testEveryKindOfShortcutOnTheWindow
     private static MarklinLocomotive one;
     private static MarklinLocomotive two;
 
-    private static WireRecorder wire;
     private static TrainControlUI ui;
     private static MarklinControlStation model;
     private static support.LayoutSandbox sandbox;
@@ -66,8 +63,6 @@ public class testEveryKindOfShortcutOnTheWindow
         sandbox = support.LayoutSandbox.open();
 
         model = support.TestStation.simulatedWithWindowInDebug();
-
-        wire = WireRecorder.open();
 
         one = model.newMFXLocomotive(ONE, 3151);
         two = model.newMFXLocomotive(TWO, 3152);
@@ -84,8 +79,6 @@ public class testEveryKindOfShortcutOnTheWindow
     {
         try
         {
-            if (wire != null) wire.close();
-
             if (ui != null)
             {
                 Components.onTheEventThread(() ->
@@ -133,43 +126,21 @@ public class testEveryKindOfShortcutOnTheWindow
     }
 
     /**
-     * Alt letters: Alt+S and Alt+U save the shown train's functions and speed, Alt+O switches its functions off, Alt+P and
-     * Alt+V bring back what was saved, and Alt+G sends the power on.
+     * Alt+O switches the shown train's functions off and leaves the other train's on.  The other Alt letters are
+     * `testMappingPagesAndLocomotiveDoors`' and `testDrivingFromTheKeyboard`'s.
      *
-     * MUTATION: in the row "functions off", `applyPreferredFunctions`, and this fails.
+     * MUTATION: in the row "functions off", `key.ui.getModel().allFunctionsOff()`, and this fails.
      */
     @Test
     public void testAltLetters() throws Exception
     {
         one.setF(3, true);
         two.setF(3, true);
-        one.setSpeed(40);
-
-        Keys.press(keyboard(), KeyEvent.VK_S, ALT);
-
-        assertTrue(waitFor(() -> one.getPreferredFunctions()[3]), "Alt+S did not save the function");
-
-        Keys.press(keyboard(), KeyEvent.VK_U, ALT);
-
-        assertTrue(waitFor(() -> one.getPreferredSpeed() == 40), "Alt+U did not save the speed");
 
         Keys.press(keyboard(), KeyEvent.VK_O, ALT);
 
         assertTrue(waitFor(() -> !one.getF(3)), "Alt+O left the shown train's function on");
         assertTrue(two.getF(3), "Alt+O reached the other train");
-
-        Keys.press(keyboard(), KeyEvent.VK_P, ALT);
-
-        assertTrue(waitFor(() -> one.getF(3)), "Alt+P did not bring back the function Alt+S saved");
-
-        one.setSpeed(0);
-
-        Keys.press(keyboard(), KeyEvent.VK_V, ALT);
-
-        assertTrue(waitFor(() -> one.getSpeed() == 40), "Alt+V did not bring back the speed Alt+U saved: "
-            + one.getSpeed());
-
-        sendsOnce(KeyEvent.VK_G, ALT, CS2Message.CMD_SYSSUB_GO);
     }
 
     /**
@@ -259,33 +230,28 @@ public class testEveryKindOfShortcutOnTheWindow
     }
 
     /**
-     * Delete clears the button and leaves the locomotive; Control+Delete asks, then deletes the locomotive itself.
+     * Delete clears the button and leaves the locomotive; Control+Delete is `testMappingPagesAndLocomotiveDoors`'.
      *
-     * MUTATION: in "delete the locomotive", `key.ui.setCopyTarget(key.ui.currentButton, true)` for the `deleteLoc`, and
-     * this fails.
+     * MUTATION: make "delete the locomotive" `Held.ANY.on(KeyEvent.VK_DELETE)`, and this fails.
      */
     @Test
     public void testDeleteWithAndWithoutControl() throws Exception
     {
         MarklinLocomotive doomed = model.newMFXLocomotive(DOOMED, 3153);
 
-        put(KeyEvent.VK_D, doomed);
-
-        Keys.press(keyboard(), KeyEvent.VK_DELETE);
-
-        assertNull(locOn(KeyEvent.VK_D), "Delete left the train on its button");
-        assertNotNull(model.getLocByName(DOOMED), "Delete deleted the locomotive");
-
-        put(KeyEvent.VK_D, doomed);
-
         try (Answering yes = Answering.start(question -> Answering.pressAt(0)))
         {
-            Keys.press(keyboard(), KeyEvent.VK_DELETE, CTRL);
+            put(KeyEvent.VK_D, doomed);
 
-            assertTrue(waitFor(() -> model.getLocByName(DOOMED) == null), "Control+Delete did not delete the locomotive");
+            Keys.press(keyboard(), KeyEvent.VK_DELETE);
+
+            assertNull(locOn(KeyEvent.VK_D), "Delete left the train on its button");
+            assertNotNull(model.getLocByName(DOOMED), "Delete deleted the locomotive");
         }
-
-        assertNull(locOn(KeyEvent.VK_D), "the deleted locomotive stayed on its button");
+        finally
+        {
+            if (model.getLocByName(DOOMED) != null) model.deleteLoc(DOOMED);
+        }
     }
 
     /**
@@ -356,40 +322,14 @@ public class testEveryKindOfShortcutOnTheWindow
     }
 
     /**
-     * Up and Down step the speed by a step, Control by one, Alt by two steps.  Left and Right turn the train, Control
-     * forces the direction, and Alt turns the locomotive page instead.
+     * A plain Left and Right turn the train, and Alt with them turns the locomotive page instead.  The speed steps and
+     * Control's forced directions are `testDrivingFromTheKeyboard`'s.
      *
-     * MUTATION: swap `altPressed` and `controlPressed` in the `Press` constructor, and this fails at Control+Up; so does
-     * `SPEED_STEP` for the `SPEED_STEP * 2` in "speed up", at Alt+Up.
+     * MUTATION: make "turn left" `Held.ANY.on(KeyEvent.VK_LEFT)`, and this fails at Alt+Left.
      */
     @Test
     public void testArrowsWithEachModifier() throws Exception
     {
-        int step = TrainControlUI.SPEED_STEP;
-
-        int[][] presses = {{KeyEvent.VK_UP, 0, step}, {KeyEvent.VK_UP, CTRL, 1}, {KeyEvent.VK_UP, ALT, 2 * step},
-            {KeyEvent.VK_DOWN, 0, -step}, {KeyEvent.VK_DOWN, CTRL, -1}, {KeyEvent.VK_DOWN, ALT, -2 * step}};
-
-        one.setSpeed(50);
-
-        for (int[] press : presses)
-        {
-            int expected = one.getSpeed() + press[2];
-
-            Keys.press(keyboard(), press[0], press[1]);
-
-            assertTrue(waitFor(() -> one.getSpeed() == expected), KeyEvent.getKeyText(press[0]) + " with " + press[1]
-                + " took the speed to " + one.getSpeed() + ", not " + expected);
-        }
-
-        Keys.press(keyboard(), KeyEvent.VK_LEFT, CTRL);
-
-        assertTrue(waitFor(() -> !one.goingForward()), "Control+Left did not send the train backward");
-
-        Keys.press(keyboard(), KeyEvent.VK_RIGHT, CTRL);
-
-        assertTrue(waitFor(one::goingForward), "Control+Right did not send the train forward");
-
         Keys.press(keyboard(), KeyEvent.VK_LEFT);
 
         assertTrue(waitFor(() -> !one.goingForward()), "a plain Left did not turn the train");
@@ -404,21 +344,14 @@ public class testEveryKindOfShortcutOnTheWindow
     }
 
     /**
-     * Space stops the shown train, and each digit sets its speed.  A digit with Alt or Control is a function, not a speed.
+     * Each digit sets its exact speed, and a digit with Alt is a function, not a speed.  Space is
+     * `testDrivingFromTheKeyboard`'s.
      *
      * MUTATION: swap two names in `SPEED_BUTTONS`, and this fails.
      */
     @Test
     public void testSpaceAndDigits() throws Exception
     {
-        one.setSpeed(30);
-        two.setSpeed(30);
-
-        Keys.press(keyboard(), KeyEvent.VK_SPACE);
-
-        assertTrue(waitFor(() -> one.getSpeed() == 0), "Space left the shown train at " + one.getSpeed());
-        assertEquals(two.getSpeed(), 30, "Space stopped the other train");
-
         int[] speeds = {100, 0, 11, 22, 33, 44, 55, 66, 77, 88};
 
         for (int digit = 9; digit >= 0; digit--)
@@ -472,20 +405,6 @@ public class testEveryKindOfShortcutOnTheWindow
     }
 
     /**
-     * Comma and period turn the locomotive page; with Alt, to the first and the last.
-     *
-     * MUTATION: in "last locomotive page", `switchLocMapping(1)`, and this fails.
-     */
-    @Test
-    public void testCommaAndPeriod() throws Exception
-    {
-        assertTrue(ui.getNumLocMappings() > 2, "precondition: too few pages to tell the last from the next");
-
-        pressUntil(ui::getLocMappingNumber, new int[][] {{KeyEvent.VK_PERIOD, 0, 2}, {KeyEvent.VK_COMMA, 0, 1},
-            {KeyEvent.VK_PERIOD, ALT, ui.getNumLocMappings()}, {KeyEvent.VK_COMMA, ALT, 1}});
-    }
-
-    /**
      * Every way to a function: the number pad, F-keys with anything held, the back quote, and digits with Alt, Control
      * or both.  Each switches its own function and no other.
      *
@@ -517,32 +436,6 @@ public class testEveryKindOfShortcutOnTheWindow
                     + " left f" + fn + " wrong");
             }
         }
-    }
-
-    /**
-     * Escape sends the power off, Shift brings the shown train to 0, and Enter stops every train.
-     *
-     * MUTATION: in "power off", `key.ui.go()`, and this fails; drop the row "speed zero", and this fails at Shift.
-     */
-    @Test
-    public void testEscapeShiftAndEnter() throws Exception
-    {
-        sendsOnce(KeyEvent.VK_ESCAPE, 0, CS2Message.CMD_SYSSUB_STOP);
-
-        one.setSpeed(40);
-        two.setSpeed(40);
-
-        Keys.press(keyboard(), KeyEvent.VK_SHIFT, SHIFT);
-
-        assertTrue(waitFor(() -> one.getSpeed() == 0), "Shift left the shown train at " + one.getSpeed());
-        assertEquals(two.getSpeed(), 40, "Shift stopped the other train");
-
-        one.setSpeed(40);
-
-        Keys.press(keyboard(), KeyEvent.VK_ENTER);
-
-        assertTrue(waitFor(() -> one.getSpeed() == 0 && two.getSpeed() == 0), "Enter left a train running: "
-            + one.getSpeed() + ", " + two.getSpeed());
     }
 
     /**
@@ -640,17 +533,6 @@ public class testEveryKindOfShortcutOnTheWindow
             assertTrue(waitFor(() -> now.getAsInt() == press[2]), KeyEvent.getKeyText(press[0]) + " with " + press[1]
                 + " left " + now.getAsInt() + ", not " + press[2]);
         }
-    }
-
-    /** The key sends this system command to the station, once. */
-    private static void sendsOnce(int key, int modifiers, int command)
-    {
-        int mark = wire.mark();
-
-        Keys.press(keyboard(), key, modifiers);
-
-        assertTrue(waitFor(() -> wire.systemCommandsSince(mark, command).size() == 1), KeyEvent.getKeyText(key)
-            + " did not send command " + command + " once: " + wire.since(mark));
     }
 
     /** All of what a stray key could have changed. */
