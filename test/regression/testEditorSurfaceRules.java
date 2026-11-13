@@ -2686,18 +2686,19 @@ public class testEditorSurfaceRules
             + "ENABLED whenever no editor is open - a bold, live menu item that does nothing");
 
         // And a heading really is created disabled, or the exemption protects nothing.
-        String heading = codeOf("private javax.swing.JMenuItem menuHeading(String text)");
+        String heading = codeOf("javax.swing.JMenuItem menuHeading(String text)");
 
         assertTrue(heading.contains("setEnabled(false)"),
             "a heading is no longer created disabled, so it is an ordinary menu item in bold that "
             + "does nothing when clicked");
 
-        // The export sits with the pop-out.
+        // The export is added at the foot, where mountLayoutHeadings gives it its own group; the pop-out it sat beside
+        // is the Layout tab's All button now (D52 of the menu review).
         String export = codeOf("void buildDiagramExportMenu()");
 
-        assertTrue(export.contains("indexOnLayoutMenu(ui.popUpAllMenuItem())"),
-            "the picture export is no longer placed beside the pop-out - it goes back to the foot of "
-            + "the menu, below the Central Station group it has nothing to do with");
+        assertTrue(export.contains("ui.layoutMenu().add(active);"),
+            "the picture export is no longer added at the foot of the menu, where it is put below the Central "
+            + "Station group");
 
         assertFalse(export.contains("layoutMenu().addSeparator()"),
             "the export still adds a separator of its own, which now cuts the pop-out group in half");
@@ -2727,35 +2728,31 @@ public class testEditorSurfaceRules
     }
 
     /**
-     * The pop-out and the picture export sit BELOW the Central Station section.  Adam: "Move pop up all... and save as
-     * picture to below the central station layout section."
+     * The picture export sits BELOW the Central Station section.  Adam: "Move pop up all... and save as picture to below
+     * the central station layout section."  Pop Up All has left the menu for the Layout tab's All button (D52 of the
+     * menu review): "remove the JMenu option."
      *
      * MUTATION: dropping the re-home block from mountLayoutHeadings.
      */
     @Test
-    public void testThePopOutAndExportSitBelowTheStationSection() throws Exception
+    public void testTheExportSitsBelowTheStationSection() throws Exception
     {
         String mount = codeOf("void mountLayoutHeadings()");
 
         int heading = mount.indexOf("layoutMenu().add(centralStationHeading");
-        int removed = mount.indexOf("layoutMenu().remove(ui.popUpAllMenuItem())");
-        int readded = mount.indexOf("layoutMenu().add(ui.popUpAllMenuItem())");
+        int popOut = mount.indexOf("layoutMenu().remove(ui.popUpAllMenuItem())");
+        int removed = mount.indexOf("layoutMenu().remove(ui.exportDiagramItem)");
         int export = mount.indexOf("layoutMenu().add(ui.exportDiagramItem)");
 
-        // Both present before either is ordered - indexOf answers -1 for something absent.
+        // Present before ordered - indexOf answers -1 for something absent.
         assertTrue(heading >= 0, "the Central Station heading is no longer mounted");
-        assertTrue(removed >= 0 && readded >= 0,
-            "the pop-out is no longer taken out from between the two sections and put below them, so "
-            + "it is back under the Local Layout heading it has nothing to do with");
-        assertTrue(export >= 0, "the picture export no longer travels with the pop-out");
+        assertTrue(popOut >= 0, "Pop Up All is back on the Layouts menu beside the Layout tab's All button");
+        assertTrue(removed >= 0 && export >= 0,
+            "the picture export is no longer taken out and put below the Central Station section");
 
-        assertTrue(heading < removed,
-            "the pop-out is re-homed before the Central Station heading is mounted, so it lands above "
+        assertTrue(heading < removed && removed < export,
+            "the export is re-homed before the Central Station heading is mounted, so it lands above "
             + "the section it is supposed to sit below");
-
-        assertTrue(readded < export,
-            "the export no longer follows the pop-out - they were put together deliberately, both "
-            + "being ways of getting the diagram into a window or a file");
 
         // And the separators are tidied by walking, not by naming generated fields.
         String tidy = codeOf("private void tidyLayoutMenuSeparators()");
