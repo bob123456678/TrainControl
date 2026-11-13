@@ -742,6 +742,39 @@ public class testStationSettingsWindow
     }
 
     /**
+     * Done pressed on the Train tab while the Settings tab holds a refused value brings the Settings tab forward, so the
+     * reason the window stays open is on screen.
+     *
+     * MUTATION: have `StationWindowBase.done` skip `showTheRefusal`, and the reason stays on the hidden tab.
+     */
+    @Test(timeOut = 120000)
+    public void testDoneOnTheTrainTabShowsTheRefusedValuesTab() throws Exception
+    {
+        StationSettingsWindow window = StationDoors.open(panel, aStation());
+
+        JTextField field = StationDoors.part(window, "station.maxLength", JTextField.class);
+        javax.swing.JTabbedPane tabs = StationDoors.part(window, "station.tabs", javax.swing.JTabbedPane.class);
+
+        Components.onTheEventThread(() -> { field.setText("-5"); tabs.setSelectedIndex(tabs.getTabCount() - 1); return null; });
+
+        Components.settle();
+
+        assertFalse(Components.onTheEventThread(() -> field.isShowing()), "precondition: the Train tab is not in front");
+
+        StationDoors.close(window);
+
+        Components.settle();
+
+        assertTrue(Components.onTheEventThread(() -> window.isShowing()), "precondition: Done closed over a refusal");
+
+        assertTrue(Components.onTheEventThread(() ->
+            Components.named(window, "station.maxLengthProblem", JComponent.class).isShowing()),
+            "Done on the Train tab left the window open with its reason on the hidden Settings tab");
+
+        pressEscapeOn(window);
+    }
+
+    /**
      * Leaving a field applies it, as Close does.  Nothing is applied per keystroke, as each change rebuilds the railway.
      *
      * MUTATION: drop the focus listener in `commitsOnLeaving`, and this fails.
