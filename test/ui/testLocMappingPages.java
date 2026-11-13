@@ -255,8 +255,8 @@ public class testLocMappingPages
         final java.util.Map<String, String> prefsWas = new java.util.LinkedHashMap<>();
 
         /**
-         * Sets a preference in the run's own node, remembering what it held.  Set, never toggled: the node starts as a copy
-         * of the operator's, so a toggle would be a coin toss.
+         * Sets a preference in the run's own node, remembering what it held.  Set, never toggled: an earlier class in the
+         * run may have left it either way.
          *
          * @param key the preference
          * @param value what to set it to; null removes it, which is its default
