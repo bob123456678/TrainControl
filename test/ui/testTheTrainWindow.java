@@ -567,61 +567,91 @@ public class testTheTrainWindow
         assertNotNull(copy, "precondition: the setup's train " + setupTrain + " stands nowhere on the railway");
         assertNotNull(other, "precondition: no free copy of " + elsewhere);
 
-        // After a run: the setup's train has gone on to another station, and another train stands on the square
-        running.moveLocomotive(null, copy.getName(), false);
-        assertTrue(running.moveLocomotive(setupTrain, other.getName(), false), "precondition: could not move " + setupTrain);
-        assertTrue(running.moveLocomotive(shown, copy.getName(), false), "precondition: could not stand " + shown);
-
-        assertEquals(session.getLocomotiveNameAt(square), setupTrain, "precondition: the setup no longer has its train here");
-
-        Mouse.choose(AskingWindows.itemOf(AskingWindows.menuOn(ui, ui, square),
-            I18n.f("autosetup.ui.menuChangeTrainAt", session.describeTile(square))));
-
-        Components.settle();
-
-        final StationSettingsWindow window = StationDoors.showing(StationSettingsWindow.class);
-
-        assertNotNull(window, "Change Train at did not open Station Settings from the track diagram");
+        final String copyName = copy.getName();
+        final org.traincontrol.automation.Point shownWas = running.getLocomotiveLocation(model.getLocByName(shown));
 
         try
         {
-            // A train the setup places elsewhere is marked so in the list
-            Object showing = Components.onTheEventThread(() ->
-                StationDoors.part(window, "train.train", javax.swing.JComboBox.class).getSelectedItem());
+            // After a run: the setup's train has gone on to another station, and another train stands on the square
+            running.moveLocomotive(null, copy.getName(), false);
+            assertTrue(running.moveLocomotive(setupTrain, other.getName(), false), "precondition: could not move " + setupTrain);
+            assertTrue(running.moveLocomotive(shown, copy.getName(), false), "precondition: could not stand " + shown);
 
-            assertTrue(String.valueOf(showing).startsWith(shown), "precondition: the Train tab shows " + showing
-                + ", not the railway's train " + shown);
+            assertEquals(session.getLocomotiveNameAt(square), setupTrain, "precondition: the setup no longer has its train here");
 
-            org.traincontrol.gui.TailCrossedPrompt.answerForTests(org.traincontrol.gui.TailCrossedPrompt.DISMISSED);
+            Mouse.choose(AskingWindows.itemOf(AskingWindows.menuOn(ui, ui, square),
+                I18n.f("autosetup.ui.menuChangeTrainAt", session.describeTile(square))));
 
-            StationDoors.pick(window, "train.train", pick != null ? pick : I18n.t("autosetup.ui.labelNone"));
-
-            Components.drain(8);
             Components.settle();
+
+            final StationSettingsWindow window = StationDoors.showing(StationSettingsWindow.class);
+
+            assertNotNull(window, "Change Train at did not open Station Settings from the track diagram");
+
+            try
+            {
+                // A train the setup places elsewhere is marked so in the list
+                Object showing = Components.onTheEventThread(() ->
+                    StationDoors.part(window, "train.train", javax.swing.JComboBox.class).getSelectedItem());
+
+                assertTrue(String.valueOf(showing).startsWith(shown), "precondition: the Train tab shows " + showing
+                    + ", not the railway's train " + shown);
+
+                org.traincontrol.gui.TailCrossedPrompt.answerForTests(org.traincontrol.gui.TailCrossedPrompt.DISMISSED);
+
+                StationDoors.pick(window, "train.train", pick != null ? pick : I18n.t("autosetup.ui.labelNone"));
+
+                Components.drain(8);
+                Components.settle();
+            }
+            finally
+            {
+                org.traincontrol.gui.TailCrossedPrompt.answerForTests(null);
+
+                Components.onTheEventThread(() -> { window.dispose(); return null; });
+            }
+
+            org.traincontrol.automation.Layout after = model.getAutoLayout();
+            org.traincontrol.automation.Point shownAt = after.getLocomotiveLocation(model.getLocByName(shown));
+
+            String chose = pick != null ? pick : "None";
+
+            assertNull(shownAt, chose + " on the Train tab, which showed " + shown + ", left it on "
+                + (shownAt == null ? null : shownAt.getName()));
+            assertNotNull(after.getLocomotiveLocation(model.getLocByName(setupTrain)), chose + " on the Train tab took "
+                + setupTrain + " off the railway at " + other.getName() + ", a train the tab did not show");
+
+            if (pick != null)
+            {
+                org.traincontrol.automation.Point pickAt = after.getLocomotiveLocation(model.getLocByName(pick));
+
+                assertTrue(pickAt != null && square.equals(session.getStationIndex().squareOf(pickAt)),
+                    pick + " chosen on the Train tab does not stand on " + square);
+            }
         }
         finally
         {
-            org.traincontrol.gui.TailCrossedPrompt.answerForTests(null);
+            // The railway as the setup has it, for the claims after this one
+            Components.onTheEventThread(() ->
+            {
+                org.traincontrol.automation.Layout now = model.getAutoLayout();
 
-            Components.onTheEventThread(() -> { window.dispose(); return null; });
-        }
+                for (String each : new String[] {shown, pick, setupTrain})
+                {
+                    org.traincontrol.automation.Point at = each == null ? null
+                        : now.getLocomotiveLocation(model.getLocByName(each));
 
-        org.traincontrol.automation.Layout after = model.getAutoLayout();
-        org.traincontrol.automation.Point shownAt = after.getLocomotiveLocation(model.getLocByName(shown));
+                    if (at != null) now.moveLocomotive(null, at.getName(), false);
+                }
 
-        String chose = pick != null ? pick : "None";
+                now.moveLocomotive(setupTrain, copyName, false);
 
-        assertNull(shownAt, chose + " on the Train tab, which showed " + shown + ", left it on "
-            + (shownAt == null ? null : shownAt.getName()));
-        assertNotNull(after.getLocomotiveLocation(model.getLocByName(setupTrain)), chose + " on the Train tab took "
-            + setupTrain + " off the railway at " + other.getName() + ", a train the tab did not show");
+                if (shownWas != null) now.moveLocomotive(shown, shownWas.getName(), false);
 
-        if (pick != null)
-        {
-            org.traincontrol.automation.Point pickAt = after.getLocomotiveLocation(model.getLocByName(pick));
+                return null;
+            });
 
-            assertTrue(pickAt != null && square.equals(session.getStationIndex().squareOf(pickAt)),
-                pick + " chosen on the Train tab does not stand on " + square);
+            Components.settle();
         }
     }
 
