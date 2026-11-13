@@ -480,7 +480,7 @@ public class testTheTrainWindow
      * After a run the track diagram's setup can still name Y on a square where the railway has X, and Y stand on another
      * station: the Train tab shows X, and None takes X off the railway and leaves Y where it stands (FR-195).
      *
-     * MUTATION: have `AutonomyEditorPanel.liftTheTrainsLeaving` name only `locomotiveAt(tile)`, and X stays, Y leaves.
+     * MUTATION: have `AutonomyEditorPanel.trainsLeaving` name only `locomotiveAt(tile)`, and X stays, Y leaves.
      */
     @Test(timeOut = 240000)
     public void testNoneAfterARunTakesOffTheTrainTheTabShows() throws Exception
@@ -518,7 +518,7 @@ public class testTheTrainWindow
      * The same where the train the run brought in is one the setup still has on the square it left: None takes it off
      * the railway, and does not stand it back there.
      *
-     * MUTATION: leave out `liftTheTrainsLeaving`'s clearing of the trains' other placements, and it goes back.
+     * MUTATION: leave out `removeLocomotive`'s clearing of `otherSquaresOf`, and it goes back.
      */
     @Test(timeOut = 240000)
     public void testNoneAfterARunDoesNotSendTheTrainShownBackToItsOldSquare() throws Exception
@@ -2989,7 +2989,7 @@ public class testTheTrainWindow
      * After a run the railway can hold X where the setup names Y: placed over them through the list, the new train
      * takes the square and both leave it, on the railway and in the setup (OB-416).
      *
-     * MUTATION: leave `trainOnTheRailway` out of `AutonomyEditorPanel.liftTheTrainsLeaving`, and the rebuild puts X
+     * MUTATION: leave `trainOnTheRailway` out of `AutonomyEditorPanel.trainsLeaving`, and the rebuild puts X
      * back over the new train and this fails.
      */
     @Test(timeOut = 180000)
