@@ -194,7 +194,7 @@ public class testEditorSurfaceRules
             + " that stopped is a placement recorded without which way, and a write somewhere new is a second copy of"
             + " the menu - how OB-039 survived being fixed - or a door writing its own facing again (REG8-B2)");
 
-        // And project-wide, as a named LIST rather than a count, following testTriggerWaitsSayNothing: a list says what
+        // And project-wide, as a named LIST rather than a count, following testStuckTrainAdvisory: a list says what
         // is wrong, and adding a writer means saying here which file it is in and why it is allowed to be a second one.
         assertEquals(filesWriting("setFacing("),
             Arrays.asList("AutonomyEditorPanel.java", "AutonomySession.java", "DiagramLocGestures.java",

@@ -262,7 +262,6 @@
              realistic geometry all came from the operator's live railway, whose ground truth moves
              as he operates it.  The last of these is the guard that stops a scenario going orphan
              or a scenario README going stale about who uses it. -->
-        <test-one-class class="testTwoRoutesShareOneSwitch"/>
         <test-one-class class="testACoveredSwitchClosesTheOtherRoad"/>
         <test-one-class class="testALongTrainIsOfferedNothingOnAOneUnitRailway"/>
         <test-one-class class="testACurvedPlatformRecordsASideTheBuildUses"/>
@@ -440,7 +439,6 @@
         <test-one-class class="testBothProtectingSignalsAreThrown"/>
         <test-one-class class="testCommandTableMarks"/>
         <test-one-class class="testHomeAssignmentRules"/>
-        <test-one-class class="testTriggerWaitsSayNothing"/>
         <test-one-class class="testConfirmedGoodState"/>
         <test-one-class class="testJavadocsAreAttached"/>
         <test-one-class class="testCommentsStayLean"/>

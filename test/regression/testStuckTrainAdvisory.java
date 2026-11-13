@@ -1,5 +1,8 @@
 package regression;
 
+import java.io.File;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.logging.Handler;
@@ -40,6 +43,12 @@ public class testStuckTrainAdvisory
 
     /** Long enough to be sure the wait has had its chance, short enough not to pad the battery. */
     private static final long QUOTA_MS = 1000;
+
+    /** The trigger waits' quota: many multiples of it still make a fast test. */
+    private static final long TRIGGER_QUOTA_MS = 120;
+
+    /** More than one trigger wait, because the leak this guards against fires once PER ROUTE. */
+    private static final int ROUTES = 5;
 
     @BeforeClass
     public static void setUpClass() throws Exception
@@ -279,6 +288,181 @@ public class testStuckTrainAdvisory
         assertFalse(waiting.isAlive(), "the wait did not end on the held sensor");
         assertEquals(watcher.debounces.get(), 2, "the flicker did not restart the wait");
         assertEquals(watcher.said.get(), 1, "the advisory was said again after a flicker");
+    }
+
+    /** Five waits, all sitting on sensors that never fire, for many times the advisory quota. */
+    @Test
+    public void testWaitingOnATriggerSensorIsSilent() throws Exception
+    {
+        // Its own quota, short, so many multiples of it still make a fast test
+        Locomotive.FEEDBACK_ADVISORY_MS = TRIGGER_QUOTA_MS;
+
+        try
+        {
+            waitOnTriggerSensors();
+        }
+        finally
+        {
+            Locomotive.FEEDBACK_ADVISORY_MS = QUOTA_MS;
+        }
+    }
+
+    private static void waitOnTriggerSensors() throws Exception
+    {
+        final String[] sensors = new String[ROUTES];
+        final Thread[] monitors = new Thread[ROUTES];
+
+        for (int i = 0; i < ROUTES; i++)
+        {
+            // Addresses of their own, well clear of anything the sample layout uses; made, so the release below lands
+            sensors[i] = model.newFeedback(920 + i, null).getName();
+
+            model.setFeedbackState(sensors[i], false);
+        }
+
+        logged.clear();
+
+        for (int i = 0; i < ROUTES; i++)
+        {
+            final String sensor = sensors[i];
+
+            // The door a route's trigger monitor comes in by: two arguments, no advisory.  A REAL locomotive rather
+            // than one called "Dummy Loc": the advisory names whichever locomotive is waiting, so looking for "dummy"
+            // looked for the one string this test cannot produce.  What matters is that this door says nothing about
+            // ANY locomotive.
+            final Locomotive dummy = model.getLocByName(model.getLocList().get(0));
+
+            monitors[i] = new Thread(() -> dummy.waitForOccupiedFeedback(sensor, 0));
+
+            monitors[i].setDaemon(true);
+            monitors[i].start();
+        }
+
+        // Long enough that an advisory quota would have come round several times over.
+        Thread.sleep(TRIGGER_QUOTA_MS * 8);
+
+        StringBuilder said = new StringBuilder();
+
+        // The advisory's own words and the sensors these waits sit on, so a differently worded notice about them is
+        // caught too.
+        for (String line : logged)
+        {
+            boolean aboutTheWait = line.contains("has not reached");
+
+            for (String sensor : sensors)
+            {
+                if (line.contains(sensor)) aboutTheWait = true;
+            }
+
+            if (aboutTheWait) said.append("\n  ").append(line);
+        }
+
+        assertEquals(said.toString(), "",
+            "a route waiting on its trigger sensor talked about it. A route monitor sits on its sensor "
+            + "for as long as the layout is switched on, and it does so through a locomotive called "
+            + "\"Dummy Loc\" - so an advisory here is said once per route, for ever, about a train that "
+            + "does not exist (MT-037):" + said);
+
+        // Let them go, so nothing is left sitting on a sensor
+        for (int i = 0; i < ROUTES; i++)
+        {
+            model.setFeedbackState(sensors[i], true);
+        }
+
+        for (Thread monitor : monitors)
+        {
+            monitor.join(2000);
+        }
+    }
+
+    /**
+     * And the advisory door has exactly one caller.  The split is easy to undo by accident: the natural way to
+     * "improve" a wait is to add the advisory to the shared one, which every route monitor comes in by.  Only the
+     * dispatch loop, which knows a train was actually sent somewhere, may say anything.  `Locomotive` itself is not
+     * counted: it declares both doors and delegates from one to the other.
+     */
+    @Test
+    public void testOnlyTheDispatchPathAsksForAnAdvisory() throws Exception
+    {
+        File src = new File("src");
+
+        assertTrue(src.isDirectory(),
+            "cannot find " + src.getAbsolutePath() + " - a test that reads the source cannot pass by not finding it. This returned quietly, so renaming or moving that file would have taken this rule with it and said nothing");
+
+        java.util.Set<String> callers = new java.util.TreeSet<>();
+
+        walk(src, callers);
+
+        assertEquals(callers, new java.util.TreeSet<>(java.util.Arrays.asList("Layout.java")),
+            "the advising waitForOccupiedFeedback - the one with a third argument - is called from "
+            + callers + ". Only the dispatch loop in Layout may ask for it, because that is the only "
+            + "caller that knows a train was actually sent somewhere. Every other wait, route triggers "
+            + "included, comes in by the silent two-argument door - and that door is shared with every "
+            + "route monitor on the layout (MT-037)");
+    }
+
+    /**
+     * Which files call the advising wait; reads whole files, because both of Layout's calls put their arguments on the
+     * following line.
+     */
+    private void walk(File where, java.util.Set<String> into) throws Exception
+    {
+        File[] children = where.listFiles();
+
+        if (children == null) return;
+
+        for (File child : children)
+        {
+            if (child.isDirectory())
+            {
+                walk(child, into);
+                continue;
+            }
+
+            if (!child.getName().endsWith(".java")) continue;
+
+            // Locomotive declares both doors and delegates from one to the other, so its calls are the implementation.
+            if (child.getName().equals("Locomotive.java")) continue;
+
+            String source = new String(Files.readAllBytes(child.toPath()), StandardCharsets.UTF_8);
+
+            int at = source.indexOf("waitForOccupiedFeedback(");
+
+            while (at >= 0)
+            {
+                if (arity(source, at + "waitForOccupiedFeedback(".length() - 1) >= 3)
+                {
+                    into.add(child.getName());
+                }
+
+                at = source.indexOf("waitForOccupiedFeedback(", at + 1);
+            }
+        }
+    }
+
+    /** How many arguments the call whose opening bracket is at {@code open} was given. */
+    private int arity(String source, int open)
+    {
+        int depth = 0;
+        int commas = 0;
+        boolean anything = false;
+
+        for (int i = open; i < source.length(); i++)
+        {
+            char c = source.charAt(i);
+
+            if (c == '(') depth++;
+            else if (c == ')')
+            {
+                depth--;
+
+                if (depth == 0) break;
+            }
+            else if (c == ',' && depth == 1) commas++;
+            else if (!Character.isWhitespace(c) && depth >= 1) anything = true;
+        }
+
+        return anything ? commas + 1 : 0;
     }
 
     /** A locomotive that writes down what the advisory hook was handed (`waitedTooLongFor` is protected, for this). */
