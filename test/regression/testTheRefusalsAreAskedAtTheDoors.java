@@ -455,7 +455,7 @@ public class testTheRefusalsAreAskedAtTheDoors
         final Object[][] places =
         {
             {"    void placeLocomotive(TileKey tile, String name)", 1},
-            {"private LayoutRightclickAutonomyMenu(TrainControlUI ui,", 1},
+            {"private void addHandDoors(", 1},
             {"static String copyToPlaceOn(", 1},
             {"private java.util.Map<String, org.traincontrol.automationui.TilePorts.Side> placeableFacings(", 1},
         };

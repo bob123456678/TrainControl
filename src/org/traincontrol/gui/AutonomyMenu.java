@@ -110,15 +110,21 @@ public class AutonomyMenu extends JMenu
             if (part instanceof JMenuItem) ((JMenuItem) part).setToolTipText(why);
         }
 
-        // Clickable, and it brings the editor forward (OB-033); first, as the only thing that can be done.
-        JMenuItem busy = new JMenuItem(I18n.t("autosetup.ui.menuGoToOpenEditor"));
-
-        busy.addActionListener(e -> ui.showOpenEditor());
-
-        insert(busy, 0);
+        // First, as the only thing that can be done.
+        insert(goToOpenEditorItem(ui), 0);
 
         // Under the item it belongs to: addSeparator appends.
         insertSeparator(1);
+    }
+
+    /** Go to the Opened Editor, which brings the open editor forward (OB-033): every menu an editor holds offers it. */
+    static JMenuItem goToOpenEditorItem(TrainControlUI ui)
+    {
+        JMenuItem item = new JMenuItem(I18n.t("autosetup.ui.menuGoToOpenEditor"));
+
+        item.addActionListener(e -> ui.showOpenEditor());
+
+        return item;
     }
 
     /**

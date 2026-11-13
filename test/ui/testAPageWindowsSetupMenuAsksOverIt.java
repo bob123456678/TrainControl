@@ -405,8 +405,7 @@ public class testAPageWindowsSetupMenuAsksOverIt
         {
             JPopupMenu menu = AskingWindows.menuOn(ui, window, station);
 
-            Mouse.choose(AskingWindows.itemOf(menu, session.getLocomotiveNameAt(station) == null
-                ? I18n.t("autosetup.ui.menuPlaceHere")
+            Mouse.choose(AskingWindows.itemOf(menu, session.getLocomotiveNameAt(station) == null ? placeHere(menu)
                 : I18n.f("autosetup.ui.menuChangeTrainAt", session.describeTile(station))));
 
             Components.settle();
@@ -665,8 +664,9 @@ public class testAPageWindowsSetupMenuAsksOverIt
         {
             for (Window window : new Window[] {ui, page})
             {
-                Mouse.choose(AskingWindows.itemOf(AskingWindows.menuOn(ui, window, station),
-                    I18n.t("autosetup.ui.menuPlaceHere")));
+                JPopupMenu menu = AskingWindows.menuOn(ui, window, station);
+
+                Mouse.choose(AskingWindows.itemOf(menu, placeHere(menu)));
 
                 Components.settle();
 
@@ -682,5 +682,12 @@ public class testAPageWindowsSetupMenuAsksOverIt
                 StationDoors.close(opened);
             }
         });
+    }
+
+    /** The empty station's row that opens the Train tab, which says Another beside Place <selected> Here. */
+    private static String placeHere(JPopupMenu menu)
+    {
+        return AskingWindows.hasItem(menu, I18n.t("autosetup.ui.menuPlaceHere")) ? I18n.t("autosetup.ui.menuPlaceHere")
+            : I18n.t("autosetup.ui.menuPlaceAnotherHere");
     }
 }
