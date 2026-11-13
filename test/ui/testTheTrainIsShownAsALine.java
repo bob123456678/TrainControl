@@ -13,7 +13,6 @@ import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 import org.traincontrol.automation.Layout;
-import org.traincontrol.automation.Point;
 import org.traincontrol.automationui.AutonomySession;
 import org.traincontrol.automationui.TileGraph.TileKey;
 import org.traincontrol.base.LayoutDiagramComponent;
@@ -104,19 +103,23 @@ public class testTheTrainIsShownAsALine
             return;
         }
 
-        SwingUtilities.invokeAndWait(() -> measureEveryTileAs(1));
+        SwingUtilities.invokeAndWait(() -> support.TileLengths.measureEveryTileAs(session, 1));
 
         model.parseAuto(session.buildConfiguration());
 
         layout = model.getAutoLayout();
 
-        oneTrainThatCoversSomething();
+        train = support.CoveredMarks.leaveOneTrainThatCovers(layout, 4);
 
         if (train == null)
         {
             unbuilt = "no standing train covers any track here";
             return;
         }
+
+        trainLengthWas = train.getTrainLength();
+
+        train.setTrainLength(4);
 
         refreshCoveredTrack();
 
@@ -335,7 +338,7 @@ public class testTheTrainIsShownAsALine
 
     private static TileKey firstCoveredSquareWithATile()
     {
-        for (TileKey square : everyTile())
+        for (TileKey square : support.TileLengths.onTheEdges(session))
         {
             if (!ui.isTrackCovered(square)) continue;
 
@@ -382,62 +385,6 @@ public class testTheTrainIsShownAsALine
         Components.drain(1);
 
         return built[0];
-    }
-
-    private static Set<TileKey> everyTile()
-    {
-        return support.TileLengths.onTheEdges(session);
-    }
-
-    /**
-     * Leaves one train standing, and only one that covers track: a train whose arrival side leads nowhere covers
-     * nothing.
-     */
-    private static void oneTrainThatCoversSomething()
-    {
-        Point keep = null;
-
-        for (Point point : layout.getPoints())
-        {
-            if (point.getCurrentLocomotive() == null || point.getArrivedFrom() == null) continue;
-
-            Locomotive candidate = point.getCurrentLocomotive();
-
-            Integer was = candidate.getTrainLength();
-
-            candidate.setTrainLength(4);
-
-            boolean covers = layout.edgesCoveredByStandingTrains().containsValue(candidate);
-
-            candidate.setTrainLength(was);
-
-            if (covers)
-            {
-                keep = point;
-
-                break;
-            }
-        }
-
-        if (keep == null) return;
-
-        for (Point point : layout.getPoints())
-        {
-            if (point == keep || point.getCurrentLocomotive() == null) continue;
-
-            layout.moveLocomotive(null, point.getName(), true);
-        }
-
-        train = keep.getCurrentLocomotive();
-
-        trainLengthWas = train.getTrainLength();
-
-        train.setTrainLength(4);
-    }
-
-    private static void measureEveryTileAs(int units)
-    {
-        support.TileLengths.measureEveryTileAs(session, units);
     }
 
     /**
@@ -757,7 +704,7 @@ public class testTheTrainIsShownAsALine
     {
         int ends = 0;
 
-        for (TileKey square : everyTile())
+        for (TileKey square : support.TileLengths.onTheEdges(session))
         {
             if (!ui.isTrackCovered(square)) continue;
 
@@ -967,8 +914,9 @@ public class testTheTrainIsShownAsALine
 
         java.util.Map<TileKey, Set<org.traincontrol.automationui.TileGraph.RouteId>> out = new java.util.LinkedHashMap<>();
 
-        // THE SENSORS' SQUARES TOO, which `everyTile` - the squares along the roads - leaves out: a train lies across them
-        Set<TileKey> squares = new LinkedHashSet<>(everyTile());
+        // THE SENSORS' SQUARES TOO, which `TileLengths.onTheEdges` - the squares along the roads - leaves out: a train
+        // lies across them
+        Set<TileKey> squares = new LinkedHashSet<>(support.TileLengths.onTheEdges(session));
 
         squares.addAll(session.getReducer().getPoints().keySet());
 

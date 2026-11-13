@@ -151,7 +151,8 @@ public class testTheShadingFollowsTheTrain
             @Override
             public void run()
             {
-                measureEveryTileAs(TILE_LENGTH);
+                // Every tile: almost nothing here carries a length, and the tail walk stops at the first without one.
+                support.TileLengths.measureEveryTileAs(session, TILE_LENGTH);
 
                 // AND NO STATION'S SIZE: the round trip was refused by BottomInner's maximum, a rule about the number
                 // typed.
@@ -547,15 +548,5 @@ public class testTheShadingFollowsTheTrain
         trainLengthWas = train.getTrainLength();
 
         train.setTrainLength(TRAIN_LENGTH);
-    }
-
-    /**
-     * Measures every tile of the reduced graph, because almost nothing on this railway carries a length and the tail
-     * walk stops at the first segment without one.  Collected first and written afterwards: `setTileLength` rebuilds
-     * the reducer under the iterator.
-     */
-    private static void measureEveryTileAs(int units)
-    {
-        support.TileLengths.measureEveryTileAs(session, units);
     }
 }

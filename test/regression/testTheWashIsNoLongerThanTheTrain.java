@@ -103,7 +103,8 @@ public class testTheWashIsNoLongerThanTheTrain
 
         watchdog = Executors.newSingleThreadExecutor();
 
-        SwingUtilities.invokeAndWait(() -> measureEveryTileAs(TILE_LENGTH));
+        // Every tile measured, because the tail walk stops at the first unmeasured segment.
+        SwingUtilities.invokeAndWait(() -> support.TileLengths.measureEveryTileAs(session, TILE_LENGTH));
 
         model.parseAuto(session.buildConfiguration());
 
@@ -749,14 +750,5 @@ public class testTheWashIsNoLongerThanTheTrain
         train = keep.getCurrentLocomotive();
 
         trainLengthWas = train.getTrainLength();
-    }
-
-    /**
-     * Measures every tile, because the tail walk stops at the first unmeasured segment; written after collecting, as
-     * setTileLength rebuilds the reducer.
-     */
-    private static void measureEveryTileAs(int units)
-    {
-        support.TileLengths.measureEveryTileAs(session, units);
     }
 }
