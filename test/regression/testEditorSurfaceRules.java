@@ -1556,7 +1556,7 @@ public class testEditorSurfaceRules
         String sync = codeOf("public void doSync(Component c)");
 
         int call = sync.indexOf("syncWithCS2()");
-        int back = sync.indexOf("syncMenuItem.setEnabled(true)");
+        int back = sync.indexOf("setLocomotiveWorkInFlight(false)");
 
         assertTrue(call >= 0 && back >= 0,
             "doSync no longer both runs the sync and re-enables the menu, so the ordering below is"
@@ -2712,7 +2712,8 @@ public class testEditorSurfaceRules
         String menu = codeOf("private void buildItems()");
 
         int choose = menu.indexOf("add(choose);");
-        int manage = menu.indexOf("add(manageMenu(");
+        // The one Manage list (D50 of the menu review), filled by addManageItems and added as `manage`.
+        int manage = menu.indexOf("addManageItems(manage,") >= 0 ? menu.indexOf("add(manage);") : -1;
         int pages = menu.indexOf("add(pages);");
 
         assertTrue(choose >= 0, "the configuration submenu is no longer added");

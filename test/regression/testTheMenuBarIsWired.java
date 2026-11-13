@@ -312,8 +312,8 @@ public class testTheMenuBarIsWired
 
     /**
      * While a run would refuse them, Sync Database w/ Central Station, Restore from Backup..., Add Locomotive..., Import
-     * from CSV... and Sync Full Function State w/ Central Station... are grayed with the refusal's own sentence, and lit
-     * again with their own tooltips after it (D45).
+     * from CSV..., Sync Full Function State w/ Central Station... and Check for Renamed Locomotives are grayed with the
+     * refusal's own sentence, and lit again with their own tooltips after it (D45).
      *
      * MUTATION: leave out `greyWhatARunRefuses` on the File and Locomotives menus.
      */
@@ -327,7 +327,8 @@ public class testTheMenuBarIsWired
         String[][] items = {{"ui.main.toolbar.file", "ui.main.toolbar.syncDBWithCS"},
             {"ui.main.toolbar.locomotives", "ui.main.toolbar.addLoc"},
             {"ui.main.toolbar.locomotives", "ui.main.toolbar.importFromCSV"},
-            {"ui.main.toolbar.locomotives", "ui.main.toolbar.syncFullFunctionState"}};
+            {"ui.main.toolbar.locomotives", "ui.main.toolbar.syncFullFunctionState"},
+            {"ui.main.toolbar.locomotives", "ui.main.toolbar.checkForRenamedLocs"}};
 
         String[] restore = {"ui.main.toolbar.file", "ui.main.toolbar.restoreData"};
 
@@ -366,6 +367,184 @@ public class testTheMenuBarIsWired
         assertTrue(itemAt(restore).isEnabled(), "Restore from Backup... stays grayed after the run");
 
         assertEquals(itemAt(restore).getToolTipText(), restoreTip, "Restore from Backup... did not get its tooltip back");
+    }
+
+    /**
+     * An item a sync or a functions command grays while it works, and a run grays too, is lit once both are over,
+     * whichever ends first: the menu works the item out from both each time, so neither gives back a state saved
+     * while the other held it.
+     *
+     * MUTATION: in `greyWhatARunRefuses`, give Sync Database w/ Central Station `LayoutMenus.greyForTheRun(...,
+     * owned=true)` again, and have `setLocomotiveWorkInFlight` set it directly; saved off at the run's first opening,
+     * it stays gray after the run.
+     */
+    @Test(timeOut = 120000)
+    public void testAnItemFreedDuringARunIsLitAfterIt() throws Exception
+    {
+        org.traincontrol.automation.Layout railway = ui.getModel().getAutoLayout();
+
+        assertNotNull(railway, "precondition: no autonomy setup to run");
+
+        java.lang.reflect.Method working = TrainControlUI.class.getDeclaredMethod("setLocomotiveWorkInFlight",
+            boolean.class);
+
+        working.setAccessible(true);
+
+        String[] sync = {"ui.main.toolbar.file", "ui.main.toolbar.syncDBWithCS"};
+
+        try
+        {
+            railway.setStagingInProgress(true);
+
+            // A sync under way as the run's first opening of the menu sees it, ending before the run does
+            Components.onTheEventThread(() -> working.invoke(ui, true));
+
+            assertFalse(itemAt(sync).isEnabled(), "precondition: Sync Database is live during a sync and a run");
+
+            Components.onTheEventThread(() -> working.invoke(ui, false));
+
+            assertFalse(itemAt(sync).isEnabled(), "Sync Database is live while a run would refuse it");
+        }
+        finally
+        {
+            railway.setStagingInProgress(false);
+
+            Components.onTheEventThread(() -> working.invoke(ui, false));
+        }
+
+        assertTrue(itemAt(sync).isEnabled(), "Sync Database stays gray after the run, kept from the sync it outlived");
+
+        for (String key : new String[] {"ui.main.toolbar.syncFullFunctionState", "ui.main.toolbar.checkForRenamedLocs",
+            "ui.main.toolbar.turnOffFunctions", "ui.main.toolbar.turnOnLights"})
+        {
+            assertTrue(itemAt(new String[] {"ui.main.toolbar.locomotives", key}).isEnabled(), key + " stays gray");
+        }
+    }
+
+    /**
+     * Control+D, the Add Locomotive... shortcut, goes through the item's own door: while a run would refuse it, the key
+     * says the refusal's sentence and opens nothing, as the grayed item would (D45).
+     *
+     * MUTATION: point the "add a locomotive" shortcut row back at `openAddLocomotive`.
+     */
+    @Test(timeOut = 120000)
+    public void testControlDWaitsForARunAsItsItemDoes() throws Exception
+    {
+        org.traincontrol.automation.Layout railway = ui.getModel().getAutoLayout();
+
+        assertNotNull(railway, "precondition: no autonomy setup to run");
+
+        // The row the window's key handler picks for Control+D, run as it runs it; a dispatched key reaches the handler
+        // only through the focus owner, which a test window may not have.
+        @SuppressWarnings("unchecked")
+        java.util.Map<Integer, ?> letters = (java.util.Map<Integer, ?>) Reflect.get(TrainControlUI.class, ui,
+            "buttonMapping");
+
+        final TrainControlUI.KeyShortcuts.Row row = TrainControlUI.KeyShortcuts.choose(KeyEvent.VK_D,
+            java.awt.event.InputEvent.CTRL_DOWN_MASK, letters);
+
+        assertEquals(row.name(), "add a locomotive", "precondition: Control+D is another shortcut");
+
+        final java.lang.reflect.Method run = TrainControlUI.KeyShortcuts.Row.class.getDeclaredMethod("run",
+            TrainControlUI.class, KeyEvent.class);
+
+        run.setAccessible(true);
+
+        final KeyEvent press = new KeyEvent(ui.getRootPane(), KeyEvent.KEY_PRESSED, System.currentTimeMillis(),
+            java.awt.event.InputEvent.CTRL_DOWN_MASK, KeyEvent.VK_D, KeyEvent.CHAR_UNDEFINED);
+
+        try (Answering answering = Answering.start(message -> null))
+        {
+            railway.setStagingInProgress(true);
+
+            SwingUtilities.invokeLater(() ->
+            {
+                try
+                {
+                    run.invoke(row, ui, press);
+                }
+                catch (ReflectiveOperationException e)
+                {
+                    throw new IllegalStateException(e);
+                }
+            });
+
+            assertTrue(answering.awaitAsked(1, 5000), "Control+D said nothing while a run would refuse it");
+
+            assertEquals(answering.asked().get(0), I18n.t("autolayout.ui.errorCannotEditLocomotivesWhileRunning"),
+                "Control+D did not say the refusal's sentence");
+
+            Components.settle();
+
+            assertFalse(Components.onTheEventThread(() ->
+            {
+                for (java.awt.Window each : java.awt.Window.getWindows())
+                {
+                    if (each instanceof org.traincontrol.gui.LocomotiveSettingsFrame && each.isShowing()) return true;
+                }
+
+                return false;
+            }), "Control+D opened Add Locomotive while a run would refuse it");
+        }
+        finally
+        {
+            railway.setStagingInProgress(false);
+        }
+    }
+
+    /**
+     * Grayed Download Central Station Layout Files... on this computer's layout says "Switch to the Central Station
+     * layout first." on one line in every language, at 100% and at 125% scaling (the tooltip font and the width a
+     * tooltip line holds both 25% larger).
+     *
+     * MUTATION: put back ", then download its files" in the English bundle, and it wraps.
+     */
+    @Test
+    public void testTheDownloadReasonIsOneLine() throws Exception
+    {
+        java.awt.Font font = javax.swing.UIManager.getFont("ToolTip.font");
+
+        int width = (Integer) Reflect.field(org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel.class,
+            "TOOLTIP_WIDTH").get(null);
+
+        java.awt.Graphics2D scratch =
+            new java.awt.image.BufferedImage(1, 1, java.awt.image.BufferedImage.TYPE_INT_ARGB).createGraphics();
+
+        List<String> tooWide = new ArrayList<>();
+
+        try
+        {
+            for (String language : new String[] {"", "_da", "_de", "_es", "_fr", "_it", "_nl", "_pl"})
+            {
+                java.util.Properties bundle = new java.util.Properties();
+
+                try (java.io.InputStream in = new java.io.FileInputStream(
+                    "src/org/traincontrol/resources/messages" + language + ".properties"))
+                {
+                    bundle.load(in);
+                }
+
+                String text = bundle.getProperty("ui.main.toolbar.tooltip.downloadNeedsCSLayout");
+
+                // At 125% the font and the width a line holds (`wrappingWidth`, by the screen's dots per inch) both grow.
+                for (float scale : new float[] {1f, 1.25f})
+                {
+                    int wide = scratch.getFontMetrics(font.deriveFont(font.getSize2D() * scale)).stringWidth(text);
+
+                    if (wide > Math.round(width * scale))
+                    {
+                        tooWide.add("\"" + text + "\" (messages" + language + ") is " + wide + " px at " + scale
+                            + "x, wider than the " + Math.round(width * scale) + " px a tooltip line holds");
+                    }
+                }
+            }
+        }
+        finally
+        {
+            scratch.dispose();
+        }
+
+        assertTrue(tooWide.isEmpty(), "the Download reason wraps: " + tooWide);
     }
 
     /**

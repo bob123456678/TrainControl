@@ -151,7 +151,7 @@ The visibility settings are remembered between openings.
 
 **Changing page or mode** with unsaved changes asks first: `Save and Continue`, `Discard and Continue`, or `Stay Here`. So does quitting TrainControl with the editor open. Clicking a finding on another page goes there without asking, and keeps what you have done so far.
 
-**Changing the track diagram later.** If you change the track diagram, autonomy re-reads it. A square you move in the track diagram editor takes its station name, length and directions with it; a square you delete loses them, and TrainControl tells you which. Look at `Things to look at` again after any diagram change. The setup is kept in the layout folder, under `config/autonomy`, beside the diagram's own pages, so back up the whole layout folder, or use File → Backup TrainControl Data.
+**Changing the track diagram later.** If you change the track diagram, autonomy re-reads it. A square you move in the track diagram editor takes its station name, length and directions with it; a square you delete loses them, and TrainControl tells you which. Look at `Things to look at` again after any diagram change. The setup is kept in the layout folder, under `config/autonomy`, beside the diagram's own pages, so back up the whole layout folder, or use `Back Up TrainControl Data...` in the File menu.
 
 ---
 

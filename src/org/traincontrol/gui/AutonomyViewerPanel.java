@@ -1625,7 +1625,7 @@ public class AutonomyViewerPanel extends JPanel
         if (names.size() > 1)
         {
             Object chosen = JOptionPane.showInputDialog(ui, I18n.t("autosetup.ui.promptWhichConfigurationToDelete"),
-                I18n.t("autosetup.ui.menuDeleteConfiguration"), JOptionPane.QUESTION_MESSAGE, null, names.toArray(),
+                I18n.t("autosetup.ui.titleDeleteConfiguration"), JOptionPane.QUESTION_MESSAGE, null, names.toArray(),
                 names.contains(name) ? name : names.get(0));
 
             if (chosen == null) return;
@@ -1643,7 +1643,7 @@ public class AutonomyViewerPanel extends JPanel
         // is not undoable.
         if (JOptionPane.showOptionDialog(ui,
             I18n.f("autosetup.ui.confirmDeleteConfiguration", name),
-            I18n.t("autosetup.ui.menuDeleteConfiguration"),
+            I18n.t("autosetup.ui.titleDeleteConfiguration"),
             JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE, null,
             TrainControlUI.YES_NO_OPTS, TrainControlUI.YES_NO_OPTS[1]) != 0) return;
 

@@ -159,6 +159,8 @@ public class testTheRefusalsAreAskedAtTheDoors
             "the same, at OK, for a dialog that was open when a run began (RSA-A1)"},
         {"private void syncFullLocStateMenuItemActionPerformed(", AUTONOMY,
             "a full sync rewrites the locomotive database under a running railway"},
+        {"private void checkForRenameMenuItemActionPerformed(", AUTONOMY,
+            "Check for Renamed Locomotives renames locomotives in the database a run is driving"},
         {"private void deleteLayoutMenuItemActionPerformed(", SETUP + "|" + EDITOR,
             "deleting a page the running railway or an open editor is using"},
         {"    private boolean refusedAsAPageEdit(", SETUP + "|" + EDITOR,

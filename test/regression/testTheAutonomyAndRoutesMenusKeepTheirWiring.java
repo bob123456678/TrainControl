@@ -164,7 +164,7 @@ public class testTheAutonomyAndRoutesMenusKeepTheirWiring
                         + "Rename... does not ask for a new name for " + loaded + ": " + doors.seen);
 
                     assertTrue(doors.click(manageItem(ui, where, "autosetup.ui.menuDeleteConfiguration")).startsWith(
-                        t("autosetup.ui.menuDeleteConfiguration") + " | "
+                        t("autosetup.ui.titleDeleteConfiguration") + " | "
                             + t("autosetup.ui.promptWhichConfigurationToDelete") + " | "),
                         said + "Delete... does not ask which configuration: " + doors.seen);
 

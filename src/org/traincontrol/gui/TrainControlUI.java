@@ -4929,33 +4929,49 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         item.setToolTipText(null);
     }
 
+    /** Whether a sync, or a functions or lights command, is working: the items it would collide with wait. */
+    private boolean locomotiveWorkInFlight;
+
+    /** Called as that work starts and ends; the items are worked out again, never restored from a saved state. */
+    private void setLocomotiveWorkInFlight(boolean working)
+    {
+        this.locomotiveWorkInFlight = working;
+
+        greyWhatARunRefuses();
+    }
+
     /**
-     * Grays the five File and Locomotives items a run would refuse, with the refusal's own sentence, asking the gates
-     * their clicks ask (D45); the refusals stay as the backstop.
+     * Grays the File and Locomotives items a run would refuse, with the refusal's own sentence, asking the gates their
+     * clicks ask (D45), and those that wait for work in flight.  The one writer of their state, asked afresh on each
+     * menu open and each change of the work, so the two reasons never undo each other; the refusals stay as the
+     * backstop.
      */
     private void greyWhatARunRefuses()
     {
         String locomotives = RunGates.whyAutonomyRunningRefuses(this);
+        boolean busy = this.locomotiveWorkInFlight;
 
-        for (javax.swing.JMenuItem item : new javax.swing.JMenuItem[] {this.syncMenuItem, this.addLocomotiveMenuItem,
-            this.importLocsFromCSVMenuItem, this.syncFullLocStateMenuItem})
-        {
-            LayoutMenus.greyForTheRun(item, locomotives != null, true, locomotives == null ? null : I18n.t(locomotives));
-        }
-
-        String setup = RunGates.whyARunHoldingTheSetupRefuses(this);
-
-        LayoutMenus.greyForTheRun(this.restoreDataMenuItem, setup != null, true, setup == null ? null : I18n.t(setup));
+        waitFor(this.syncMenuItem, locomotives, null, busy);
+        waitFor(this.addLocomotiveMenuItem, locomotives, null, false);
+        waitFor(this.importLocsFromCSVMenuItem, locomotives, null, false);
+        waitFor(this.syncFullLocStateMenuItem, locomotives, null, busy);
+        waitFor(this.checkForRenameMenuItem, locomotives, "ui.main.toolbar.tooltip.checkForRenamedLocs", busy);
+        waitFor(this.turnOffFunctionsMenuItem, null, null, busy);
+        waitFor(this.turnOnLightsMenuItem, null, "ui.main.toolbar.tooltip.turnOnLights", busy);
+        waitFor(this.restoreDataMenuItem, RunGates.whyARunHoldingTheSetupRefuses(this), "ui.main.toolbar.tooltip.restoreData",
+            false);
     }
 
-    /** The items that once sat in the Utilities submenu, grayed or lit together while one of them works. */
-    private void setFunctionItemsEnabled(boolean enabled)
+    /** Lit unless refused (`whyKey`, its tooltip then) or `busy`; otherwise its own tooltip (`tipKey`, or none). */
+    private static void waitFor(javax.swing.JMenuItem item, String whyKey, String tipKey, boolean busy)
     {
-        for (javax.swing.JMenuItem item : new javax.swing.JMenuItem[] {this.turnOffFunctionsMenuItem,
-            this.turnOnLightsMenuItem, this.syncFullLocStateMenuItem, this.checkForRenameMenuItem})
-        {
-            item.setEnabled(enabled);
-        }
+        if (item == null) return;
+
+        item.setEnabled(whyKey == null && !busy);
+
+        String tip = whyKey != null ? whyKey : tipKey;
+
+        item.setToolTipText(tip == null ? null : AutonomyEditorPanel.wrappedIfLong(I18n.t(tip)));
     }
 
     /** Help (D48): the two guides; the update check, Download Update when found, and the releases; About. */
@@ -14300,7 +14316,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             row("choose a locomotive", Held.CONTROL.on(KeyEvent.VK_A),
                 key -> key.ui.selectLocomotiveActivated(key.ui.currentButton));
             row("find a locomotive", Held.CONTROL.on(KeyEvent.VK_F), key -> key.ui.quickLocSearch());
-            row("add a locomotive", Held.CONTROL.on(KeyEvent.VK_D), key -> key.ui.openAddLocomotive());
+            // The menu item's own door, so the key asks what grays the item (D45).
+            row("add a locomotive", Held.CONTROL.on(KeyEvent.VK_D), key -> key.ui.addLocomotiveMenuItemActionPerformed(null));
             // The locomotive keys open the Locomotive Settings window, whose one rule covers them (FR-048).
             row("locomotive settings", Held.CONTROL.on(KeyEvent.VK_E), key -> key.ui.openLocomotiveSettings(
                 key.ui.getButtonLocomotive(key.ui.currentButton), LocomotiveSettingsFrame.Tab.LOCOMOTIVE, null));
@@ -14887,8 +14904,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         javax.swing.SwingUtilities.invokeLater(() -> 
         {
-            this.syncMenuItem.setEnabled(false);
-            setFunctionItemsEnabled(false);
+            setLocomotiveWorkInFlight(true);
             
             new Thread(() ->
             {
@@ -14916,8 +14932,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                     refreshRouteList();
                     this.selector.refreshLocSelectorList();
 
-                    this.syncMenuItem.setEnabled(true);
-                    setFunctionItemsEnabled(true);
+                    setLocomotiveWorkInFlight(false);
                 });
 
                 // Left OUT of the pass: both go through their own renderer first.  See singlePass.
@@ -15657,8 +15672,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     private void turnOnLightsMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_turnOnLightsMenuItemActionPerformed
         javax.swing.SwingUtilities.invokeLater(() ->
         {
-            this.syncMenuItem.setEnabled(false);
-            setFunctionItemsEnabled(false);
+            setLocomotiveWorkInFlight(true);
 
             new Thread(() ->
             {
@@ -15678,8 +15692,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 // model calls and a modal window would be worse than the wait.
                 javax.swing.SwingUtilities.invokeLater(() ->
                 {
-                    this.syncMenuItem.setEnabled(true);
-                    setFunctionItemsEnabled(true);
+                    setLocomotiveWorkInFlight(false);
                 });
 
             }).start();
@@ -15689,8 +15702,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     private void turnOffFunctionsMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_turnOffFunctionsMenuItemActionPerformed
         javax.swing.SwingUtilities.invokeLater(() -> 
         {
-            this.syncMenuItem.setEnabled(false);
-            setFunctionItemsEnabled(false);
+            setLocomotiveWorkInFlight(true);
             
             new Thread(() ->
             {
@@ -15699,8 +15711,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 // Back on the event thread, with the greyout kept, as above.
                 javax.swing.SwingUtilities.invokeLater(() ->
                 {
-                    this.syncMenuItem.setEnabled(true);
-                    setFunctionItemsEnabled(true);
+                    setLocomotiveWorkInFlight(false);
                 });
             }).start();
         });
@@ -18282,11 +18293,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 return;
             }
             
-            if (this.model.isAutonomyRunning())
-            {
-                JOptionPane.showMessageDialog(this, I18n.t("autolayout.ui.errorCannotEditLocomotivesWhileRunning"));
-                return;
-            }
+            // The gate its gray asks (D45)
+            if (refuseWhileAutonomyRunning(this)) return;
             
             List<String[]> renameList;
             try
