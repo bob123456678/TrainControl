@@ -6,6 +6,7 @@ import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.util.I18n;
 import support.Display;
 import support.Reflect;
+import static support.SandboxedWindow.build;
 
 /**
  * The timetable's column headings, before there is anything to put under them.  The form designer gives every new
@@ -52,28 +53,6 @@ public class testTimetableColumnHeadings
         assertEquals(timetable.getRowCount(), 0,
             "the designer's four blank rows are still in the table, under headings that now describe "
             + "journeys nobody has captured");
-    }
-
-    /** The window, with the layout preference pointed somewhere that is not Adam's railway (OB-111). */
-    private TrainControlUI build() throws Exception
-    {
-        support.LayoutSandbox sandbox = null;
-
-        final TrainControlUI[] built = new TrainControlUI[1];
-
-        try
-        {
-            // Inside the try, so nothing between the open and the close can leave the preference behind.
-            sandbox = support.LayoutSandbox.open();
-
-            javax.swing.SwingUtilities.invokeAndWait(() -> built[0] = new TrainControlUI());
-        }
-        finally
-        {
-            if (sandbox != null) sandbox.close();
-        }
-
-        return built[0];
     }
 
     /** The timetable table itself, which is a generated field and so has no accessor. */

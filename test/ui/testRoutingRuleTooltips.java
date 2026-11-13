@@ -7,6 +7,7 @@ import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.util.I18n;
 import support.Display;
 import support.Reflect;
+import static support.SandboxedWindow.build;
 
 /**
  * Every routing rule explains itself on the control that chooses it.
@@ -76,31 +77,6 @@ public class testRoutingRuleTooltips
             assertTrue(tip.contains(general),
                 rules[at] + " lost the general explanation of what the control is for");
         }
-    }
-
-    /**
-     * The window, with the layout preference pointed somewhere that is not Adam's railway (OB-111).
-     */
-    private TrainControlUI build() throws Exception
-    {
-        support.LayoutSandbox sandbox = null;
-
-        final TrainControlUI[] built = new TrainControlUI[1];
-
-        try
-        {
-            // Inside the try, so nothing between the open and the close can leave the
-            // preference behind.
-            sandbox = support.LayoutSandbox.open();
-
-            javax.swing.SwingUtilities.invokeAndWait(() -> built[0] = new TrainControlUI());
-        }
-        finally
-        {
-            if (sandbox != null) sandbox.close();
-        }
-
-        return built[0];
     }
 
     /**

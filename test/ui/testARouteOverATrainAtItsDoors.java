@@ -649,21 +649,21 @@ public class testARouteOverATrainAtItsDoors
 
     private static String textOf(javax.swing.JDialog dialog)
     {
-        javax.swing.JOptionPane pane = find(dialog.getContentPane(), javax.swing.JOptionPane.class);
+        javax.swing.JOptionPane pane = Components.inside(dialog.getContentPane(), javax.swing.JOptionPane.class);
 
         return pane == null ? null : String.valueOf(pane.getMessage());
     }
 
     private static Object initialValueOf(javax.swing.JDialog dialog)
     {
-        javax.swing.JOptionPane pane = find(dialog.getContentPane(), javax.swing.JOptionPane.class);
+        javax.swing.JOptionPane pane = Components.inside(dialog.getContentPane(), javax.swing.JOptionPane.class);
 
         return pane == null ? null : pane.getInitialValue();
     }
 
     private static void press(javax.swing.JDialog dialog, String button) throws Exception
     {
-        final javax.swing.JOptionPane pane = find(dialog.getContentPane(), javax.swing.JOptionPane.class);
+        final javax.swing.JOptionPane pane = Components.inside(dialog.getContentPane(), javax.swing.JOptionPane.class);
 
         assertNotNull(pane, "the question has no buttons");
 
@@ -674,22 +674,5 @@ public class testARouteOverATrainAtItsDoors
                 if (button.equals(String.valueOf(option))) pane.setValue(option);
             }
         });
-    }
-
-    private static <T> T find(java.awt.Container container, Class<T> type)
-    {
-        for (java.awt.Component child : container.getComponents())
-        {
-            if (type.isInstance(child)) return type.cast(child);
-
-            if (child instanceof java.awt.Container)
-            {
-                T found = find((java.awt.Container) child, type);
-
-                if (found != null) return found;
-            }
-        }
-
-        return null;
     }
 }

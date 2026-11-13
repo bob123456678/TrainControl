@@ -2593,7 +2593,7 @@ public class testNoSetupEditWhileARouteRuns
 
                 support.DialogWatch.until(going::get, 100, dialog ->
                 {
-                    final JOptionPane pane = find(dialog.getContentPane(), JOptionPane.class);
+                    final JOptionPane pane = Components.inside(dialog.getContentPane(), JOptionPane.class);
 
                     if (pane != null && handled.add(pane))
                     {
@@ -2607,7 +2607,7 @@ public class testNoSetupEditWhileARouteRuns
                         SwingUtilities.invokeLater(() -> pane.setValue(answer));
                     }
 
-                    final javax.swing.JFileChooser chooser = find(dialog.getContentPane(),
+                    final javax.swing.JFileChooser chooser = Components.inside(dialog.getContentPane(),
                         javax.swing.JFileChooser.class);
 
                     if (chooser != null && handled.add(chooser))
@@ -2648,10 +2648,5 @@ public class testNoSetupEditWhileARouteRuns
 
             if (thread != null) thread.join(1000);
         }
-    }
-
-    private static <T> T find(java.awt.Container container, Class<T> type)
-    {
-        return support.Components.inside(container, type);
     }
 }

@@ -10,6 +10,7 @@ import java.util.function.Predicate;
 import javax.swing.AbstractButton;
 import javax.swing.JComboBox;
 import javax.swing.JMenu;
+import javax.swing.JMenuItem;
 import javax.swing.JPopupMenu;
 import javax.swing.JTabbedPane;
 import javax.swing.MenuElement;
@@ -90,6 +91,32 @@ public final class Components
             if (child instanceof Container)
             {
                 T found = inside((Container) child, type, which);
+
+                if (found != null) return found;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * The menu item that says exactly this, through a menu's items and its submenus' (a container's children
+     * otherwise), on the calling thread; null when none.
+     */
+    public static JMenuItem itemNamed(Container menu, String text)
+    {
+        Component[] children = menu instanceof JMenu ? ((JMenu) menu).getMenuComponents() : menu.getComponents();
+
+        for (Component child : children)
+        {
+            if (child instanceof JMenuItem && text.equals(((JMenuItem) child).getText()))
+            {
+                return (JMenuItem) child;
+            }
+
+            if (child instanceof JMenu)
+            {
+                JMenuItem found = itemNamed((JMenu) child, text);
 
                 if (found != null) return found;
             }

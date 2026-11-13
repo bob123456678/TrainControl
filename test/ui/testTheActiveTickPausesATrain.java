@@ -22,6 +22,7 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
 import support.Components;
 import support.Display;
 import support.Reflect;
+import static support.Components.itemNamed;
 
 /**
  * The Is Active tick on the track diagram's right-click menu and on the autonomy editor's pauses the train standing
@@ -417,7 +418,7 @@ public class testTheActiveTickPausesATrain
                 if (!(window instanceof javax.swing.JDialog) || !window.isShowing()
                     || !leaving.equals(((javax.swing.JDialog) window).getTitle())) continue;
 
-                final javax.swing.JOptionPane pane = find(((javax.swing.JDialog) window).getContentPane(),
+                final javax.swing.JOptionPane pane = Components.inside(((javax.swing.JDialog) window).getContentPane(),
                     javax.swing.JOptionPane.class);
 
                 if (pane != null && pane.getOptions() != null && pane.getOptions().length > 0)
@@ -449,46 +450,6 @@ public class testTheActiveTickPausesATrain
 
             if (child instanceof javax.swing.JMenu) texts((javax.swing.JMenu) child, into);
         }
-    }
-
-    private static javax.swing.JMenuItem itemNamed(java.awt.Container menu, String text)
-    {
-        java.awt.Component[] children = menu instanceof javax.swing.JMenu
-            ? ((javax.swing.JMenu) menu).getMenuComponents() : menu.getComponents();
-
-        for (java.awt.Component child : children)
-        {
-            if (child instanceof javax.swing.JMenuItem && text.equals(((javax.swing.JMenuItem) child).getText()))
-            {
-                return (javax.swing.JMenuItem) child;
-            }
-
-            if (child instanceof javax.swing.JMenu)
-            {
-                javax.swing.JMenuItem found = itemNamed((javax.swing.JMenu) child, text);
-
-                if (found != null) return found;
-            }
-        }
-
-        return null;
-    }
-
-    private static <T> T find(java.awt.Container container, Class<T> type)
-    {
-        for (java.awt.Component child : container.getComponents())
-        {
-            if (type.isInstance(child)) return type.cast(child);
-
-            if (child instanceof java.awt.Container)
-            {
-                T found = find((java.awt.Container) child, type);
-
-                if (found != null) return found;
-            }
-        }
-
-        return null;
     }
 
     private static TileKey square(String name)
@@ -3165,7 +3126,7 @@ public class testTheActiveTickPausesATrain
                 {
                     if (!(window instanceof javax.swing.JDialog) || !window.isShowing()) continue;
 
-                    final javax.swing.JOptionPane pane = find(((javax.swing.JDialog) window).getContentPane(),
+                    final javax.swing.JOptionPane pane = Components.inside(((javax.swing.JDialog) window).getContentPane(),
                         javax.swing.JOptionPane.class);
 
                     if (pane == null) continue;

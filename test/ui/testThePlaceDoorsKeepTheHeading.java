@@ -31,6 +31,7 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
 import support.Components;
 import support.Display;
 import support.Reflect;
+import static support.Components.itemNamed;
 
 /**
  * The track diagram's right-click Place, and Control+X then Control+V, keep a train's heading, on the frozen copy of
@@ -147,7 +148,7 @@ public class testThePlaceDoorsKeepTheHeading
             {
                 if (!(window instanceof javax.swing.JDialog) || !window.isShowing()) continue;
 
-                final javax.swing.JOptionPane pane = find(((javax.swing.JDialog) window).getContentPane(),
+                final javax.swing.JOptionPane pane = Components.inside(((javax.swing.JDialog) window).getContentPane(),
                     javax.swing.JOptionPane.class);
 
                 if (pane == null) continue;
@@ -365,7 +366,7 @@ public class testThePlaceDoorsKeepTheHeading
             assertEquals(session.getArrivedFrom(tunnel), "N", "the placement recorded no arrival side, or the wrong one");
 
             // TUNNELPRE, CHOSEN IN IT.
-            final javax.swing.JList<?> list = find(question.getContentPane(), javax.swing.JList.class);
+            final javax.swing.JList<?> list = Components.inside(question.getContentPane(), javax.swing.JList.class);
 
             assertNotNull(list, "the tail question has no list");
 
@@ -374,7 +375,7 @@ public class testThePlaceDoorsKeepTheHeading
             assertTrue(support.Components.onTheEventThread(list::getSelectedIndex) >= 0,
                 "the tail question's list does not offer TunnelPre");
 
-            final javax.swing.JOptionPane asked = find(question.getContentPane(), javax.swing.JOptionPane.class);
+            final javax.swing.JOptionPane asked = Components.inside(question.getContentPane(), javax.swing.JOptionPane.class);
 
             SwingUtilities.invokeLater(() -> asked.setValue(I18n.t("ui.ok")));
 
@@ -527,7 +528,7 @@ public class testThePlaceDoorsKeepTheHeading
             {
                 if (!(window instanceof javax.swing.JDialog) || !window.isVisible()) continue;
 
-                final javax.swing.JOptionPane pane = find(((javax.swing.JDialog) window).getContentPane(),
+                final javax.swing.JOptionPane pane = Components.inside(((javax.swing.JDialog) window).getContentPane(),
                     javax.swing.JOptionPane.class);
 
                 if (pane != null) SwingUtilities.invokeAndWait(() -> pane.setValue(
@@ -565,7 +566,7 @@ public class testThePlaceDoorsKeepTheHeading
                 if (!(window instanceof javax.swing.JDialog) || !window.isShowing()
                     || !leaving.equals(((javax.swing.JDialog) window).getTitle())) continue;
 
-                final javax.swing.JOptionPane pane = find(((javax.swing.JDialog) window).getContentPane(),
+                final javax.swing.JOptionPane pane = Components.inside(((javax.swing.JDialog) window).getContentPane(),
                     javax.swing.JOptionPane.class);
 
                 if (pane != null && pane.getOptions() != null && pane.getOptions().length > 0)
@@ -589,7 +590,7 @@ public class testThePlaceDoorsKeepTheHeading
         {
             if (!(window instanceof javax.swing.JDialog) || !window.isShowing()) continue;
 
-            javax.swing.JOptionPane pane = find(((javax.swing.JDialog) window).getContentPane(), javax.swing.JOptionPane.class);
+            javax.swing.JOptionPane pane = Components.inside(((javax.swing.JDialog) window).getContentPane(), javax.swing.JOptionPane.class);
 
             if (pane != null) out.append('[').append(pane.getMessage()).append(']');
         }
@@ -904,46 +905,6 @@ public class testThePlaceDoorsKeepTheHeading
 
         return text[0] == null ? null : text[0].replaceAll("<[^>]*>", " ").replace("&lt;", "<").replace("&gt;", ">")
             .replace("&amp;", "&").replace("&quot;", "\"").replaceAll("\\s+", " ").trim();
-    }
-
-    private static javax.swing.JMenuItem itemNamed(java.awt.Container menu, String text)
-    {
-        java.awt.Component[] children = menu instanceof javax.swing.JMenu
-            ? ((javax.swing.JMenu) menu).getMenuComponents() : menu.getComponents();
-
-        for (java.awt.Component child : children)
-        {
-            if (child instanceof javax.swing.JMenuItem && text.equals(((javax.swing.JMenuItem) child).getText()))
-            {
-                return (javax.swing.JMenuItem) child;
-            }
-
-            if (child instanceof javax.swing.JMenu)
-            {
-                javax.swing.JMenuItem found = itemNamed((javax.swing.JMenu) child, text);
-
-                if (found != null) return found;
-            }
-        }
-
-        return null;
-    }
-
-    private static <T> T find(java.awt.Container container, Class<T> type)
-    {
-        for (java.awt.Component child : container.getComponents())
-        {
-            if (type.isInstance(child)) return type.cast(child);
-
-            if (child instanceof java.awt.Container)
-            {
-                T found = find((java.awt.Container) child, type);
-
-                if (found != null) return found;
-            }
-        }
-
-        return null;
     }
 
     /** The dialogs on screen, for a failure message. */

@@ -453,7 +453,7 @@ public class testTheOldAutonomyTabIsGone
             {
                 if (!(window instanceof javax.swing.JDialog) || !window.isShowing()) continue;
 
-                javax.swing.JOptionPane pane = componentIn(((javax.swing.JDialog) window).getContentPane(),
+                javax.swing.JOptionPane pane = Components.inside(((javax.swing.JDialog) window).getContentPane(),
                     javax.swing.JOptionPane.class);
 
                 if (pane != null) return pane;
@@ -476,30 +476,13 @@ public class testTheOldAutonomyTabIsGone
             {
                 if (!(window instanceof javax.swing.JDialog) || !window.isShowing()) continue;
 
-                javax.swing.JFileChooser found = componentIn(((javax.swing.JDialog) window).getContentPane(),
+                javax.swing.JFileChooser found = Components.inside(((javax.swing.JDialog) window).getContentPane(),
                     javax.swing.JFileChooser.class);
 
                 if (found != null) return found;
             }
 
             Thread.sleep(50);
-        }
-
-        return null;
-    }
-
-    private static <T> T componentIn(java.awt.Container container, Class<T> type)
-    {
-        for (java.awt.Component child : container.getComponents())
-        {
-            if (type.isInstance(child)) return type.cast(child);
-
-            if (child instanceof java.awt.Container)
-            {
-                T found = componentIn((java.awt.Container) child, type);
-
-                if (found != null) return found;
-            }
         }
 
         return null;

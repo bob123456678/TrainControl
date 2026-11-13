@@ -12,6 +12,7 @@ import org.traincontrol.gui.TrainControlUI;
 import support.Display;
 import support.Reflect;
 import support.SourceOf;
+import static support.SandboxedWindow.build;
 
 /**
  * A ceiling of fifty locomotive mapping pages, with an error message if exceeded.  The predicate is tested, and so is
@@ -2130,30 +2131,6 @@ public class testLocMappingPages
         }
 
         return where.toString();
-    }
-
-    private TrainControlUI build() throws Exception
-    {
-        // On the event thread, as a Swing window must be built; no layout and no model, the constructor alone gives
-        // `numLocMappings` its default.  It reads the layout preference in its constructor, so it opens Adam's railway
-        // unless a sandbox points it elsewhere (OB-111).
-        support.LayoutSandbox sandbox = null;
-
-        final TrainControlUI[] built = new TrainControlUI[1];
-
-        try
-        {
-            // Inside the try, so nothing can leave the preference behind.
-            sandbox = support.LayoutSandbox.open();
-
-            javax.swing.SwingUtilities.invokeAndWait(() -> built[0] = new TrainControlUI());
-        }
-        finally
-        {
-            if (sandbox != null) sandbox.close();
-        }
-
-        return built[0];
     }
 
     /** Puts the window on a given number of pages, by reflection: the count is private and adding is under test. */

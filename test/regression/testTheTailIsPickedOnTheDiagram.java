@@ -28,6 +28,7 @@ import support.Display;
 import support.Reflect;
 import support.Settle;
 import support.SourceOf;
+import static support.Components.itemNamed;
 
 /**
  * The tail question is put on the diagram: the sensors are lit, and a click on one answers it (FR-100).
@@ -1673,29 +1674,6 @@ public class testTheTailIsPickedOnTheDiagram
         });
 
         return menu[0];
-    }
-
-    private static javax.swing.JMenuItem itemNamed(java.awt.Container menu, String text)
-    {
-        java.awt.Component[] children = menu instanceof javax.swing.JMenu
-            ? ((javax.swing.JMenu) menu).getMenuComponents() : menu.getComponents();
-
-        for (java.awt.Component child : children)
-        {
-            if (child instanceof javax.swing.JMenuItem && text.equals(((javax.swing.JMenuItem) child).getText()))
-            {
-                return (javax.swing.JMenuItem) child;
-            }
-
-            if (child instanceof javax.swing.JMenu)
-            {
-                javax.swing.JMenuItem found = itemNamed((javax.swing.JMenu) child, text);
-
-                if (found != null) return found;
-            }
-        }
-
-        return null;
     }
 
     /** "Can Be Chosen in Full Autonomy" on the square's right-click, under its setup menu, flipped. */

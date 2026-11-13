@@ -1,6 +1,5 @@
 package regression;
 
-import java.awt.Container;
 import java.io.File;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -651,7 +650,7 @@ public class testTheRoutesImportDoorAsksByName
         {
             support.DialogWatch.until(() -> running, 150, dialog ->
             {
-                final JFileChooser chooser = find(dialog.getContentPane(), JFileChooser.class);
+                final JFileChooser chooser = support.Components.inside(dialog.getContentPane(), JFileChooser.class);
 
                 if (chooser != null)
                 {
@@ -668,7 +667,7 @@ public class testTheRoutesImportDoorAsksByName
                     return;
                 }
 
-                final JOptionPane pane = find(dialog.getContentPane(), JOptionPane.class);
+                final JOptionPane pane = support.Components.inside(dialog.getContentPane(), JOptionPane.class);
 
                 if (pane == null || !handled.add(pane)) return;
 
@@ -718,10 +717,5 @@ public class testTheRoutesImportDoorAsksByName
                 if (answer.equals(String.valueOf(option))) pane.setValue(option);
             }
         });
-    }
-
-    private static <T> T find(Container container, Class<T> type)
-    {
-        return support.Components.inside(container, type);
     }
 }

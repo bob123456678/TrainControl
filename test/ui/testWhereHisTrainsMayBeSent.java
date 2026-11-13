@@ -156,7 +156,7 @@ public class testWhereHisTrainsMayBeSent
                 {
                     if (!(window instanceof javax.swing.JDialog) || !window.isShowing()) continue;
 
-                    javax.swing.JOptionPane pane = find(((javax.swing.JDialog) window).getContentPane(),
+                    javax.swing.JOptionPane pane = Components.inside(((javax.swing.JDialog) window).getContentPane(),
                         javax.swing.JOptionPane.class);
 
                     if (pane != null && refusal.equals(String.valueOf(pane.getMessage())))
@@ -619,8 +619,8 @@ public class testWhereHisTrainsMayBeSent
 
             javax.swing.JDialog asked = awaitDialogTitled(I18n.t("autosetup.ui.menuSetLength"));
 
-            final javax.swing.JTextField field = find(asked.getContentPane(), javax.swing.JTextField.class);
-            final javax.swing.JOptionPane pane = find(asked.getContentPane(), javax.swing.JOptionPane.class);
+            final javax.swing.JTextField field = Components.inside(asked.getContentPane(), javax.swing.JTextField.class);
+            final javax.swing.JOptionPane pane = Components.inside(asked.getContentPane(), javax.swing.JOptionPane.class);
 
             SwingUtilities.invokeAndWait(() ->
             {
@@ -830,7 +830,7 @@ public class testWhereHisTrainsMayBeSent
         {
             if (!(window instanceof javax.swing.JDialog) || !window.isShowing()) continue;
 
-            javax.swing.JOptionPane pane = find(((javax.swing.JDialog) window).getContentPane(), javax.swing.JOptionPane.class);
+            javax.swing.JOptionPane pane = Components.inside(((javax.swing.JDialog) window).getContentPane(), javax.swing.JOptionPane.class);
 
             if (pane != null) return ((javax.swing.JDialog) window).getTitle() + ": " + pane.getMessage();
         }
@@ -863,7 +863,7 @@ public class testWhereHisTrainsMayBeSent
         SwingUtilities.invokeAndWait(() ->
         {
             box[0] = checkBoxIn(dialog.getContentPane(), label);
-            pane[0] = find(dialog.getContentPane(), javax.swing.JOptionPane.class);
+            pane[0] = Components.inside(dialog.getContentPane(), javax.swing.JOptionPane.class);
         });
 
         assertNotNull(box[0], "the Unavailable While Occupied window lists no " + label);
@@ -1238,11 +1238,6 @@ public class testWhereHisTrainsMayBeSent
         return support.Components.inside(container, javax.swing.JCheckBox.class, box -> text.equals(box.getText()));
     }
 
-    private static <T> T find(java.awt.Container container, Class<T> type)
-    {
-        return support.Components.inside(container, type);
-    }
-
     private static javax.swing.JDialog awaitDialogTitled(String title) throws Exception
     {
         long giveUp = System.currentTimeMillis() + 10000;
@@ -1297,7 +1292,7 @@ public class testWhereHisTrainsMayBeSent
             {
                 if (!(window instanceof javax.swing.JDialog) || !window.isShowing()) continue;
 
-                final javax.swing.JOptionPane pane = find(((javax.swing.JDialog) window).getContentPane(),
+                final javax.swing.JOptionPane pane = Components.inside(((javax.swing.JDialog) window).getContentPane(),
                     javax.swing.JOptionPane.class);
 
                 if (pane == null) continue;
