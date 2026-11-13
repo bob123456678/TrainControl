@@ -255,35 +255,34 @@ public class testTheStartUpQuestionsAreAskedOnTheEventThread
         }
     }
 
-    /** Refuses each exit and keeps its status. */
+    /** Allows everything but an exit, whose status it keeps ("exitVM.1" is exit 1). */
     private static final class NoExit extends SecurityManager
     {
-        private final List<Integer> refused = Collections.synchronizedList(new ArrayList<>());
+        private final List<String> refused = new java.util.concurrent.CopyOnWriteArrayList<>();
 
         List<Integer> exits()
         {
-            synchronized (refused)
-            {
-                return new ArrayList<>(refused);
-            }
+            List<Integer> statuses = new ArrayList<>();
+
+            for (String name : refused) statuses.add(Integer.valueOf(name.substring("exitVM.".length())));
+
+            return statuses;
         }
 
         @Override
-        public void checkExit(int status)
+        public void checkPermission(Permission asked)
         {
-            refused.add(status);
+            if (!asked.getName().startsWith("exitVM.")) return;
+
+            refused.add(asked.getName());
 
             throw new SecurityException("start-up may not exit in a test");
         }
 
         @Override
-        public void checkPermission(Permission perm)
+        public void checkPermission(Permission asked, Object context)
         {
-        }
-
-        @Override
-        public void checkPermission(Permission perm, Object context)
-        {
+            checkPermission(asked);
         }
     }
 }
