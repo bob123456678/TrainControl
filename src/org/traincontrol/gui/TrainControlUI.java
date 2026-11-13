@@ -4947,10 +4947,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * Grays the File and Locomotives items a run would refuse, with the refusal's own sentence, asking the gates their
-     * clicks ask, and those that wait for work in flight.  The one writer of their state, asked afresh on each
-     * menu open and each change of the work, so the two reasons never undo each other; the refusals stay as the
-     * backstop.
+     * Grays the File and Locomotives items a run would refuse, with the refusal's own sentence, and those that wait
+     * for work in flight.  The one writer of their state, asked afresh on each menu open and each change of the work.
      */
     private void greyWhatARunRefuses()
     {
@@ -19082,9 +19080,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
     /**
      * Puts the hover wrench on the big locomotive picture (FR-104); it opens the locomotive's Locomotive Settings on
-     * Basic Settings (OB-443), where the picture's crop and revert are.  Built here because the designer owns `locIcon`.
-     * The hover test is `getMousePosition(true)`: moving onto a CHILD fires mouseExited on its parent, so the obvious
-     * version hides the wrench as the user reaches for it.
+     * Basic Settings (OB-443), where the picture's crop and revert are.  Built here because the designer owns
+     * `locIcon`.  The hover test is `getMousePosition(true)`: moving onto a child fires mouseExited on its parent.
      */
     private void buildIconWrench()
     {
