@@ -306,7 +306,7 @@ public class testAutonomyRidesOutADroppedConnection
             java.util.concurrent.atomic.AtomicInteger triesFailed =
                 (java.util.concurrent.atomic.AtomicInteger) Reflect.get(NetworkProxy.class, proxy, "triesFailed");
 
-            assertTrue(said("network.framesMayNotHaveArrived"), "the loss did not count the commands that may not have"
+            assertTrue(until(() -> said("network.framesMayNotHaveArrived"), 5000), "the loss did not count the commands that may not have"
                 + " arrived: " + texts());
 
             // The handset's, broadcast by the station while the connection is replaced

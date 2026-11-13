@@ -193,7 +193,7 @@ public class testHomeStaging
         // AND THE RUNTIME STILL ASKS IT THE SAME WAY.  The pairing is the point: if `isPathClear` moves
         // to a different rule, this planner silently goes back to disagreeing with it.
         String layout = SourceOf.declaration(
-            "private boolean isPathClear(List<Edge> path, Locomotive loc, boolean logFailures, boolean byHand)");
+            "private boolean isPathClear(List<Edge> path, Locomotive loc, boolean logFailures, boolean byHand, boolean goingHome)");
 
         assertTrue(layout.contains("if (!sharing.getLockEdges().contains(e)) continue;"),
             "the runtime's covered-track rule has changed shape, so the planner above is now mirroring"
