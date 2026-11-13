@@ -225,7 +225,7 @@ public class testSeveralStationsAtOnce
     }
 
     /**
-     * The tool is called Bulk Edit...; while it is on every square a click can pick wears a gray outline darker than the
+     * The tool is called Mass Edit...; while it is on every square a click can pick wears a gray outline darker than the
      * editor's light gray grid line (MT-920), a pick keeps its own mark over it, squares that cannot be picked wear nothing, and nothing is outlined once
      * the tool is down.
      *
@@ -236,7 +236,7 @@ public class testSeveralStationsAtOnce
     @Test(timeOut = 120000)
     public void testBulkEditOutlinesWhatCanBePickedInGray() throws Exception
     {
-        assertEquals(StationDoors.part(panel, "autonomy.pickStations", AbstractButton.class).getText(), "Bulk Edit...");
+        assertEquals(StationDoors.part(panel, "autonomy.pickStations", AbstractButton.class).getText(), I18n.t("autosetup.ui.toolPickStations"));
 
         List<TileKey> tiles = Components.onTheEventThread(() ->
         {
