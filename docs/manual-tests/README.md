@@ -3,8 +3,7 @@
 How hands-on testing is recorded.  **`triage.db` is the single source of truth**: every test that needs the real
 railway or a display, every verdict and comment on one, every bug and feature request in the Inbox, every receipt, and
 every review finding is a row in it, and nothing else holds them (Adam: *"why aren't we storing all tests in a
-database, why have md files at all?"*).  The old markdown files (`tests.md`, `issues.md` and the four
-`tests-archive-*.md`) were imported by `triagedb.py migrate` and deleted; their history is in git.
+database, why have md files at all?"*).
 
 **Agents: ask the CLI.**  `py -3 docs\manual-tests\triagedb.py show MT-089` prints an entry in full, exactly as it
 was written, with its comments; `ledger` what is open, `issues` the Inbox, `check` any query; see "The query API"
@@ -98,15 +97,12 @@ another process writing to it.
 records added, gone and changed: by default the store the last commit holds and the one on disk, so after a triage it
 lists Adam's new verdicts and comments, and every disposition set.  `--from` and `--to` take a git revision or a `.db`
 file; `--date 2026-11-01` lists instead the tests written, comments made and items filed on or after a day.  A record is
-a `[header]` line and one field per line, every line of a text behind `| `; `triagedb.py text` prints them whole (the
+a `[header]` line and one field per line, every line of a text behind `| `; `triagedb.py text --all` prints them whole (the
 Java tests read the store this way, having no SQLite driver).  Nothing is written out beside the store.
 
 **A merge conflict in `triage.db`** is never resolved by picking a side blind.  Take one side's store, list what the
 other side wrote (`triagedb.py changes --from <the merge base> --to MERGE_HEAD`), and write those again through the
 CLI (a comment, a disposition, a filing).  Then `triagedb.py verify`.
-
-**The migration** (`triagedb.py migrate`) read the markdown once; rerun on the same markdown it changes nothing, and it
-refuses once the store has been written since or the markdown has gone.
 
 ---
 
@@ -165,45 +161,10 @@ anyway, say so in whichever is read second.
 
 ## The triage app
 
-[triage.py](triage.py) is a companion window for running down the ledger beside the running railway:
-`py -3 docs\manual-tests\triage.py`, no build step, no dependency beyond the Python standard library.
-
-**Laid out for a third of the screen, full height**, stacked: the toolbar in two rows, then the list, the entry's
-steps and the answer, with draggable dividers.  It starts in the right third; **View > Fill the right third** (or left)
-puts it back, and its size and dividers are remembered.  The list leaves out the date (it is in the entry's heading);
-steps and comments are reflowed to the window and their Markdown drawn.  **Show** is a menu in the menu bar, and the
-status line starts with what it is showing.
-
-**Reopened entries are marked.** An entry Adam has judged that has been worked on since sits at **fixed unvalidated**
-like one nobody has run; "reopened" is history, not a state.  It is computed from the Comments (the newest is
-Claude's, with an Adam verdict above it), marked in its own column, offered as the `reopened - changed since your
-verdict` filter, counted in the status line, and available as `tests --reopened`.
-
-**Three tabs over the list: Tests, Feature requests, Bugs.** The last two list the Inbox items of that kind: pending
-ones, and picked-up ones colored by their **State** as the Tests tab colors a disposition.  An item promoted to an
-`MT-###` tag hides under the `open` filters (its home is then the Tests tab, so it never shows twice) and reappears
-under `everything, validated included`, colored by its linked test's disposition, with an **Open in Tests tab**
-button.  Selecting a row shows it read-only, with **Request cancel…**, the one write from these two tabs: it files a
-new item asking that the selected one be canceled, and does not touch the target's State.  Filing goes through **New
-issue** or the Inbox; answering goes through the Tests tab or a Comment on the receipt table.
-
-On the Tests tab, pick an entry, say whether it worked, write what happened, add anything else noticed, and submit.
-**New issue** files a bug or feature request unrelated to the entry on screen.  A button starts TrainControl with the
-Simulate + Debug configuration in the language chosen beside it; **Tools > Launch TrainControl in** launches straight
-away.  The language is set on Java's command line (`-Duser.language`), is remembered, and opens the build stamp on
-every result submitted from that run.
-
-**What it writes.** A result is a comment on that entry, dated, signed and stamped with the commit it was run against,
-the same shape as `triagedb.py comment`.  Anything else noticed, and everything from **New issue**, becomes an
-`OB-###` (bug) or `FR-###` (feature request) item in the Inbox, cross-referenced to the test it came from if any.
-**It never writes the Disposition line**: rule 4 makes that Claude's, and the next round reads what Adam said.
-
-**Every entry is in it**: **Show > everything, validated included** lists them all.  An `MT-###` in an entry's text is
-a link to that entry, including old links written as `[MT-123](tests.md#mt-123)`, which stay as written.
-
-When another process writes to the store, the app shows what it holds within two seconds, keeping what has been typed.
-
-**The store is tracked, and it is a binary.**  Expect `triage.db` to change with any triage action; `triagedb.py
+[triage.py](triage.py) (`py -3 docs\manual-tests	riage.py`) is a companion window for running down the ledger beside
+the running railway; its Help menu describes the screen.  A result written there is a comment on the entry, and
+anything else noticed becomes an `OB-###` or `FR-###`.  **It never writes the Disposition line**: rule 4 makes that
+Claude's, and the next round reads what Adam said.  Expect `triage.db` to change with any triage action; `triagedb.py
 changes` reads the change.  For a merge conflict see "The store" above.
 
 ### The query API
@@ -225,8 +186,8 @@ py -3 docs\manual-tests\triagedb.py receipt OB-324 "What was done." --became MT-
 py -3 docs\manual-tests\triagedb.py update-receipt FR-131 --state "fixed unvalidated"
 py -3 docs\manual-tests\triagedb.py clear OB-324         # out of the Inbox, once it has a receipt; it is kept
 py -3 docs\manual-tests\triagedb.py changes              # what changed since the last commit (--from, --to, --date)
-py -3 docs\manual-tests\triagedb.py text comments        # every record of a kind, as text (no kind: all of them)
-py -3 docs\manual-tests\triagedb.py findings DY3-C7      # a review finding in full (no ref: the whole catalogue)
+py -3 docs\manual-tests\triagedb.py text comments        # every record of a kind, as text (no kind: counts; --all: every record)
+py -3 docs\manual-tests\triagedb.py findings DY3-C7      # a review finding in full (no ref: a count; --all: the whole catalogue)
 py -3 docs\manual-tests\triagedb.py verify               # the record holds together
 py -3 docs\manual-tests\triagedb.py selftest             # exercises the store on copies
 py -3 docs\manual-tests\triage.py stats                  # counts: tests by disposition, issues pending
@@ -281,45 +242,11 @@ say why in its Comments: a test validated against code that has since changed lo
 
 ---
 
-## The runners, and the scratch directory they need
+## The runners
 
-`docs/tools/one.sh` runs named classes; `docs/tools/battery.sh` runs the whole suite from `build.xml`.  Both point at
-`TC_SCRATCH`.
-
-**`TC_SCRATCH` is one directory per session**, under `%TEMP%/claude/<project>/<session-id>/scratchpad`, and it holds
-three things:
-
-- `cp.txt`: the classpath, on one line, as `javac -cp` wants it.
-- the TestNG output directory each runner writes into.
-- `battery.lock`: the lock that stops two batteries running at once lives INSIDE `TC_SCRATCH`, so two sessions with
-  different scratch directories each hold their own lock and neither sees the other.  The JVM probe in `battery.sh`
-  covers that: it counts test JVMs machine-wide rather than trusting the lock.
-
-**The lock is a count of test slots** (`docs/tools/slots.sh`), one per four logical processors plus two, from two to
-eight, each a lock file beside the old one (which is slot 1).  Every run has its own data folder, preference node and
-temp folder, so runs share nothing but the screen:
-
-- `one.sh` takes one slot, and so runs beside a battery's lanes or another worker's run.  Two runs from the
-  same `TC_SCRATCH` would write over each other's results, so the second refuses.
-- `battery.sh` takes every slot.  With `TC_LANES=auto` (or a number) it runs the classes in that many JVMs at once and
-  gives back the slots its lanes do not need, always leaving one for a worker; without it, it runs one class at a
-  time.  `TC_CLASSES` names a file of classes to run instead of all.
-- The classes in `docs/tools/serial-lane.txt` need the machine to themselves (the keyboard focus, the clipboard): a
-  battery runs them first, alone, and `one.sh` takes every slot to run one.
-- Every refusal says "nothing was run", which is what a worker's retry loop looks for.
-- **A run that needs every slot does not starve.**  A battery, or a `one.sh` of a serial-lane class, refused because
-  slots are held leaves a "waiting for every slot" marker (`$TEMP/traincontrol-battery.lock.waiting.<key>`, holding its
-  pid and the time, rewritten at every retry).  While a fresh marker stands, a single-slot `one.sh` refuses with "A RUN
-  IS WAITING FOR EVERY TEST SLOT ... nothing was run" even if a slot is free, and retries as for a full house.  Running
-  runs are never stopped; as they drain, the waiting run takes every slot and removes its marker (so do the exit
-  traps).  A marker older than 10 minutes (`TC_WAITING_TTL`, in seconds) with no live pid is ignored and deleted, and
-  one older than an hour is ignored whatever its pid.  A run that needs every slot ignores the markers.
-  `docs/tools/test-slot-waiting.sh` proves it with simulated holders and a lock of its own.
-
-`docs/tools/compare-batteries.py` compares two batteries' `tng-run` folders claim by claim.
-
-No `.java`, `.properties` or `build.xml` may be edited while either runner is going: both recompile the working tree,
-so an edit mid-run is a run that reports on code that never existed.
+CLAUDE.md ("Working efficiently") says how to run them; `docs/tools/slots.sh`'s header says how the scratch directory
+and the test slots work.  No `.java`, `.properties` or `build.xml` may be edited while a runner is going: both
+recompile the working tree, so an edit mid-run is a run that reports on code that never existed.
 
 ---
 

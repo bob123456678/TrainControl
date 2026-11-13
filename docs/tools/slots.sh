@@ -23,6 +23,21 @@
 # removes its marker (take_every_slot, and the runners' exit traps).  A run that itself needs every slot ignores the
 # markers: it competes as it always did.
 #
+# TC_SCRATCH is one directory per session (under %TEMP%/claude/<project>/<session-id>/scratchpad).  It holds cp.txt (the
+# classpath on one line, as javac -cp wants it), the TestNG output directory each runner writes into, and battery.lock,
+# the old lock, which is slot 1.  Two sessions with different scratch directories each hold their own and neither sees
+# the other; the JVM probe in battery.sh counts test JVMs machine-wide instead of trusting the lock.
+#
+# one.sh takes one slot, so it runs beside a battery's lanes or another worker's run; two runs from the same TC_SCRATCH
+# would write over each other's results, so the second refuses.  battery.sh takes every slot; with TC_LANES=auto (or a
+# number) it runs the classes in that many JVMs at once and gives back the slots its lanes do not need, always leaving
+# one for a worker, and without it runs one class at a time.  TC_CLASSES names a file of classes to run instead of all.
+# The classes in serial-lane.txt need the machine to themselves (keyboard focus, clipboard): a battery runs them first,
+# alone, and one.sh takes every slot to run one.  A marker older than 10 minutes (TC_WAITING_TTL, in seconds) with no
+# live pid is ignored and deleted, and one older than an hour is ignored whatever its pid.  test-slot-waiting.sh proves
+# the waiting rule with simulated holders and a lock of its own.  compare-batteries.py compares two batteries' tng-run
+# folders claim by claim.
+#
 # Every refusal prints a line with "nothing was run" in it: workers' retry loops look for exactly that, and a
 # refusal worded any other way was once read as an empty result.
 

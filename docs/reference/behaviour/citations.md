@@ -2,17 +2,6 @@
 
 Part of the behavior reference: [`../behaviour.md`](../behaviour.md) is the index.  Sections keep the numbers and headings they had in the single file, so a citation such as "behaviour.md §5c" still resolves.
 
-## Where this document came from
-
-Written at Adam's request after a run of sessions in which the same rules were re-litigated because nothing stated them
-in one place. Several were reversed during that work (the Return Home tier, the meaning of an unmeasured segment, and
-whether a compulsory turn is a question), and the rules here are the settled answers.
-
-The review documents were the working record of how these rules were arrived at, and they were deleted in this
-reference's favor (Adam: *"I don't want more reviews living in the repo."*). Their findings are in the store, below. One
-question is still Adam's to answer: whether the written evaluation of replacing the two copies by following the edges
-changes anything (§3). Nothing has been built on it.
-
 ## Looking up a citation
 
 Older comments, the tracker and these files cite review findings (`RGD-B2`, `MON-C6`; `EN57-203` is a locomotive but
@@ -22,7 +11,7 @@ All of them are in `docs/manual-tests/triage.db`, in the `finding` table - **6,1
 findings**, because a finding written up in two documents has a row for each, and reading the row count as a finding
 count is a mistake three documents have made - with the document they came from, the line in it, the severity, what it
 was about, the file and line of the evidence, the commit that fixed it where one is named, and the source files that
-cite it. `triagedb.py findings` prints the same rows as one table of text, which is how
+cite it. `triagedb.py findings --all` prints the same rows as one table of text, which is how
 `regression.testEveryCitationResolves` reads them (Java has no SQLite driver): it resolves every citation in `src/` and
 `test/` against them and fails if a new comment names a finding that does not exist. The counts above are rewritten
 from the store by `triagedb.py counts` and checked by `regression.testTheRecordsCountTheStore`.

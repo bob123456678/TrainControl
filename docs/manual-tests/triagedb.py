@@ -28,7 +28,7 @@ once, by `migrate`, and deleted; their history is in git.
             receipt); the row is never deleted.
   receipt   one row per line of the old "What has been picked up" table: Filed, Ref, Kind, What, State, Became.
   note      the prose that surrounded those, kept word for word (the conventions, and the notes under the table).
-  finding, dead_citation   the review catalogue.  `triagedb.py findings` prints it; nothing writes it out.
+  finding, dead_citation   the review catalogue.  `triagedb.py findings --all` prints it; nothing writes it out.
   meta      when the store was migrated, and from what.
 
 
@@ -2932,10 +2932,12 @@ def main(argv=None):
 
     p = sub.add_parser("text", help="the store's records as text: every kind, or these (%s)" % ", ".join(KINDS))
     p.add_argument("kinds", nargs="*", choices=[[]] + KINDS, metavar="kind")
+    p.add_argument("--all", action="store_true", help="with no kind: print every record of every kind (about 2 MB)")
 
     p = sub.add_parser("findings", help="the review-finding catalogue as one table of text; with refs, those findings"
                                         " in full")
     p.add_argument("refs", nargs="*")
+    p.add_argument("--all", action="store_true", help="with no refs: print the whole catalogue (about 1 MB)")
 
     p = sub.add_parser("verify", help="the record holds together, and every OB a finding says it is tracked as is in the"
                                       " Inbox")
@@ -3152,6 +3154,13 @@ def _command(args, conn):
 
     if args.command == "findings":
         if not args.refs:
+            if not args.all:
+                _print("%d finding rows and %d dead citations; give refs for those findings in full, or --all for the "
+                       "whole catalogue (about 1 MB).\n"
+                       % (conn.execute("SELECT COUNT(*) FROM finding").fetchone()[0],
+                          conn.execute("SELECT COUNT(*) FROM dead_citation").fetchone()[0]))
+                return 0
+
             _print(findings_text(conn))
             return 0
 
@@ -3171,6 +3180,11 @@ def _command(args, conn):
         return 1 if missing else 0
 
     if args.command == "text":
+        if not args.kinds and not args.all:
+            _print("".join("%s: %d records\n" % (kind, len(records)) for kind, records in render_records(conn, None))
+                   + "name a kind for its records, or give --all for every one (about 2 MB).\n")
+            return 0
+
         _print(records_text(conn, args.kinds or None))
         return 0
 

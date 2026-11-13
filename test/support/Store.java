@@ -25,18 +25,20 @@ public final class Store
     }
 
     /**
-     * The review-finding catalogue as `triagedb.py findings` prints it: `ref<TAB>document<TAB>status<TAB>disposition
+     * The review-finding catalogue as `triagedb.py findings --all` prints it: `ref<TAB>document<TAB>status<TAB>disposition
      * <TAB>title` per row, `#` for a comment, and below the `# DEAD` line each dead citation as its ref and four dashes.
      */
     public static synchronized String findings() throws IOException
     {
-        return ask("findings");
+        return ask("findings", "--all");
     }
 
     /** The store's records of these kinds (tests, comments, issues, receipts, ...) as `triagedb.py text` prints them. */
     public static synchronized String text(String... kinds) throws IOException
     {
         List<String> args = new ArrayList<>(Arrays.asList("text"));
+
+        if (kinds.length == 0) args.add("--all");
 
         args.addAll(Arrays.asList(kinds));
 
