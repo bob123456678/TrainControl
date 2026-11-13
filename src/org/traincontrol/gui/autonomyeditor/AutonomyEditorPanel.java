@@ -910,8 +910,7 @@ public class AutonomyEditorPanel extends JPanel
         pendingPortal = null;
         signalFor = null;
         blockingFor = null;
-        tailFor = null;
-        tailPicks.clear();
+        dropTailPick();
         highlightedSignals.clear();
         traces.clear();
         whyMarks.clear();
@@ -987,10 +986,7 @@ public class AutonomyEditorPanel extends JPanel
         signalFor = null;
         blockingFor = null;
 
-        if (tailFor != null) highlightedSignals.clear();
-
-        tailFor = null;
-        tailPicks.clear();
+        dropTailPick();
 
         dropStationPicks();
     }
@@ -2858,6 +2854,33 @@ public class AutonomyEditorPanel extends JPanel
         waitFor(I18n.f("autosetup.ui.promptClickTailCrossed", describeTile(target)));
 
         refresh();
+    }
+
+    /**
+     * Ends the tail pick waiting for a click about `station`, with its outlines: Station Settings closing, Escape there,
+     * or its Pick on the Diagram pressed again (MT-959).  A road already picked stays.
+     * @return whether a pick for that square was waiting
+     */
+    boolean endTailPick(TileKey station)
+    {
+        if (station == null || !station.equals(tailFor)) return false;
+
+        dropTailPick();
+
+        backToEditing();
+
+        refresh();
+
+        return true;
+    }
+
+    /** Lets go of the tail pick and what it outlined: every way it ends comes here. */
+    private void dropTailPick()
+    {
+        if (tailFor != null) highlightedSignals.clear();
+
+        tailFor = null;
+        tailPicks.clear();
     }
 
     private TileKey tailFor;
@@ -4827,9 +4850,7 @@ public class AutonomyEditorPanel extends JPanel
             TailCrossedPrompt.Choice chosen = here.size() == 1 ? here.get(0)
                 : TailCrossedPrompt.ask(owner(), locomotiveAt(standing), describeTile(standing), here);
 
-            tailFor = null;
-            tailPicks.clear();
-            highlightedSignals.clear();
+            dropTailPick();
 
             if (chosen != null) recordTailRoad(standing, chosen.getRoad());
 
@@ -6555,6 +6576,7 @@ public class AutonomyEditorPanel extends JPanel
 
         if (onChanged != null) onChanged.run();
 
+        stationWindows.followTheGuardPick();
         stationWindows.changed();
     }
 

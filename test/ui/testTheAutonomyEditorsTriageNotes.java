@@ -30,8 +30,8 @@ import support.Components;
 import support.StationDoors;
 
 /**
- * The owner's notes from testing the autonomy editor (MT-889, MT-890, MT-920, OB-436, OB-437, OB-438, MT-948, OB-441), each
- * pressed on the frozen railway as a user presses it.
+ * The owner's notes from testing the autonomy editor (MT-889, MT-890, MT-920, OB-436, OB-437, OB-438, MT-948, OB-441,
+ * MT-956, MT-961), each pressed on the frozen railway as a user presses it.
  */
 public class testTheAutonomyEditorsTriageNotes
 {
@@ -542,14 +542,15 @@ public class testTheAutonomyEditorsTriageNotes
 
     /**
      * A guard pick waiting for a click on the diagram ends when Station Settings closes, by any route: a click on a
-     * signal afterward neither pairs it nor brings the guard window back.
+     * signal afterward neither pairs it nor brings the guard window back.  Not by Escape there, as the window is hidden
+     * meanwhile (MT-956), whose claim takes the ways out in the editor.
      *
      * MUTATION: drop the `endGuardPick` call in `StationWindows.closed`, and this fails.
      */
     @Test(timeOut = 180000)
     public void testClosingStationSettingsEndsAGuardPickWaitingForAClick() throws Exception
     {
-        for (String route : new String[] {"close box", "Escape", "Close button", "editor closes"})
+        for (String route : new String[] {"close box", "Close button", "editor closes"})
         {
             TileKey station = stations().get(0);
             StationSettingsWindow window = StationDoors.open(panel, station);
@@ -899,6 +900,251 @@ public class testTheAutonomyEditorsTriageNotes
         }
     }
 
+    // ------------------------------------------------------------------------------------------------ MT-956
+
+    /**
+     * Station Settings is hidden while its guard signals are picked, the guard window up or its click on the diagram
+     * awaited, and comes back where it was once the guard window closes, by Done, Escape or its close box, showing the
+     * signal picked (Adam: "hide the station window while the guard signal popup is open. once the selections are
+     * submitted, restore the window").
+     *
+     * MUTATION: have `StationWindowBase.stepAside` leave the window showing (drop its `setVisible`), and this fails.
+     */
+    @Test(timeOut = 180000)
+    public void testStationSettingsStepsAsideWhileItsGuardsArePicked() throws Exception
+    {
+        TileKey station = stations().get(0);
+        TileKey signal = anUnpairedSignal(station);
+
+        for (String route : new String[] {"Done", "Escape", "close box"})
+        {
+            StationSettingsWindow window = StationDoors.open(panel, station);
+            java.awt.Point where = Components.onTheEventThread(window::getLocation);
+            String before = StationDoors.said(window, "station.exitGuard");
+
+            JDialog guard = openTheGuardWindow(StationDoors.part(window, "station.exitGuardChange", AbstractButton.class));
+
+            assertFalse(Components.onTheEventThread(window::isShowing), route + ": Station Settings shows behind the guard window");
+
+            if (route.equals("Done"))
+            {
+                pressByClick(guard);
+
+                assertFalse(Components.onTheEventThread(window::isShowing), route + ": Station Settings came back while a click"
+                    + " on a signal is awaited");
+
+                SwingUtilities.invokeLater(() -> panel.tileClicked(signal, session.getGraph().getTiles().get(signal), false));
+
+                assertTrue(Components.waitFor(() -> StationDoors.guardWindow() != null, 10000), "the guard window did not come back");
+
+                guard = StationDoors.guardWindow();
+
+                assertFalse(Components.onTheEventThread(window::isShowing), route + ": Station Settings came back with the guard window");
+            }
+
+            final JDialog shown = guard;
+
+            switch (route)
+            {
+                case "Done":
+                    Components.onTheEventThread(() ->
+                    {
+                        Components.withText(shown, I18n.t("autosetup.ui.optionSignalsDone")).doClick();
+
+                        return null;
+                    });
+                    break;
+                case "Escape":
+                    support.Keys.press(shown.getRootPane(), java.awt.event.KeyEvent.VK_ESCAPE);
+                    break;
+                default:
+                    Components.onTheEventThread(() ->
+                    {
+                        shown.dispatchEvent(new java.awt.event.WindowEvent(shown, java.awt.event.WindowEvent.WINDOW_CLOSING));
+
+                        return null;
+                    });
+            }
+
+            assertTrue(Components.waitFor(() -> Components.onTheEventThread(window::isShowing), 10000),
+                route + ": Station Settings did not come back when the guard window closed");
+            assertEquals(Components.onTheEventThread(window::getLocation), where, route + ": Station Settings came back elsewhere");
+
+            if (route.equals("Done"))
+            {
+                assertTrue(Components.onTheEventThread(() -> session.getProtectingSignals(station).contains(signal)),
+                    "precondition: the click did not pair the signal");
+                StationDoors.current(window);
+                assertFalse(StationDoors.said(window, "station.exitGuard").equals(before),
+                    "Station Settings came back without the guard picked: " + before);
+            }
+
+            StationDoors.close(window);
+        }
+    }
+
+    /**
+     * While a click on a signal is awaited, every way out of it brings Station Settings back where it was: Escape in the
+     * editor, a right-click on another station (the window follows it before the menu ends the click), and another
+     * station's settings opened from the diagram; each shows the station it was asked about.
+     *
+     * MUTATION: put back `first = !isVisible()` in `StationWindowBase.aim`, and this fails: the right-clicked station
+     * opens beside the editor rather than where the window was.
+     */
+    @Test(timeOut = 180000)
+    public void testEveryWayOutOfTheGuardClickBringsStationSettingsBack() throws Exception
+    {
+        TileKey station = stations().get(0);
+        TileKey other = stations().get(1);
+
+        for (String route : new String[] {"Escape in the editor", "right-click on another", "another station"})
+        {
+            StationSettingsWindow window = StationDoors.open(panel, station);
+
+            Components.onTheEventThread(() -> { window.setLocation(window.getX() - 37, window.getY() + 23); return null; });
+
+            java.awt.Point where = Components.onTheEventThread(window::getLocation);
+
+            pressByClick(openTheGuardWindow(StationDoors.part(window, "station.exitGuardChange", AbstractButton.class)));
+
+            assertFalse(Components.onTheEventThread(window::isShowing), route + ": precondition: Station Settings shows");
+
+            switch (route)
+            {
+                case "Escape in the editor":
+                    Components.onTheEventThread(panel::putToolsDown);
+                    break;
+                case "right-click on another":
+                    Components.onTheEventThread(() ->
+                    {
+                        panel.stationWindowsFollow(other);
+
+                        return panel.buildTileMenu(other, null);
+                    });
+                    break;
+                default:
+                    StationDoors.open(panel, other);
+            }
+
+            Components.settle();
+
+            assertTrue(Components.onTheEventThread(window::isShowing), route + ": Station Settings stayed hidden");
+            assertEquals(Components.onTheEventThread(window::getLocation), where, route + ": Station Settings came back elsewhere");
+            assertFalse(Components.onTheEventThread(panel::isFocusedOnSignals), route + ": the click is still awaited");
+
+            assertEquals(Components.onTheEventThread(window::squareForTest), route.startsWith("Escape") ? station : other,
+                route + ": Station Settings is not about the station asked about");
+
+            StationDoors.close(window);
+        }
+    }
+
+    /** Presses the guard window's Click It on the Diagram, which hands the next click to the diagram. */
+    private void pressByClick(JDialog guard)
+    {
+        Components.onTheEventThread(() ->
+        {
+            Components.withText(guard, I18n.t("autosetup.ui.optionClickSignal")).doClick();
+
+            return null;
+        });
+
+        Components.settle();
+
+        assertTrue(Components.onTheEventThread(panel::isFocusedOnSignals), "precondition: no click on a signal is awaited");
+    }
+
+    /** A signal on the page that is neither of the station's guards, so a click pairs it without a refusal. */
+    private static TileKey anUnpairedSignal(TileKey station)
+    {
+        return Components.onTheEventThread(() ->
+        {
+            for (java.util.Map.Entry<TileKey, org.traincontrol.base.LayoutDiagramComponent> each : session.getGraph().getTiles().entrySet())
+            {
+                TileKey k = each.getKey();
+
+                if (each.getValue().isSignal() && PAGE.equals(k.getPage()) && !session.getProtectingSignals(station).contains(k)
+                    && !session.getEntrySignals(station).contains(k)) return k;
+            }
+
+            throw new AssertionError("precondition: no unpaired signal on " + PAGE);
+        });
+    }
+
+    // ------------------------------------------------------------------------------------------------ MT-961
+
+    /**
+     * The notices stand under the picture, the can't-leave warning first and then what a cell cannot say (Adam: "'only
+     * trains up to 4 long are sent here' plus other notices should be below the 'on the track diagram' area"):
+     * TopR1ParkLong made a plain station that takes trains up to 4 long.
+     *
+     * MUTATION: put `also` back under the table in `StationMatrixPanel` rather than in `notices`, and this fails.
+     */
+    @Test(timeOut = 180000)
+    public void testTheNoticesStandUnderThePicture() throws Exception
+    {
+        StationSettingsWindow window = StationDoors.open(panel, named("TopR1ParkLong"));
+
+        StationDoors.press(window, "station.preset.STATION");
+        StationDoors.typeAndEnter(window, "station.maxLength", "4");
+        StationDoors.current(window);
+
+        assertTrue(StationDoors.said(window, "station.matrixAlso").contains(I18n.f("autosetup.ui.stationAlsoLength", 4)),
+            "precondition: the length is not said: " + StationDoors.said(window, "station.matrixAlso"));
+
+        Component picture = StationDoors.part(window, "station.picture", Component.class);
+        Component problem = StationDoors.part(window, "station.matrixProblem", Component.class);
+        Component also = StationDoors.part(window, "station.matrixAlso", Component.class);
+
+        assertTrue(Components.onTheEventThread(problem::isVisible), "precondition: no can't-leave warning for a station");
+
+        assertTrue(top(problem) >= top(picture) + Components.onTheEventThread(picture::getHeight),
+            "the can't-leave warning is not under the picture");
+        assertTrue(top(also) >= top(problem) + Components.onTheEventThread(problem::getHeight),
+            "the length is not under the can't-leave warning, so not under the picture");
+    }
+
+    /**
+     * Station Settings keeps its height as the notices under the picture come and go while TopR1ParkLong is edited (Adam:
+     * "that way, the height of the window doesn't change"): room is kept for them when there are none.
+     *
+     * MUTATION: drop the room kept in `StationMatrixPanel.notices`' preferred size, and this fails.
+     */
+    @Test(timeOut = 180000)
+    public void testTheWindowKeepsItsHeightAsTheNoticesComeAndGo() throws Exception
+    {
+        StationSettingsWindow window = StationDoors.open(panel, named("TopR1ParkLong"));
+        JLabel problem = StationDoors.part(window, "station.matrixProblem", JLabel.class);
+
+        StationDoors.press(window, "station.preset.TERMINUS");
+        StationDoors.current(window);
+
+        assertFalse(Components.onTheEventThread(problem::isVisible), "precondition: a warning for the terminus");
+
+        int height = Components.onTheEventThread(window::getHeight);
+
+        String[] steps = {"station.preset.STATION", "station.maxLength", "station.preset.TERMINUS"};
+
+        for (String step : steps)
+        {
+            if (step.equals("station.maxLength")) StationDoors.typeAndEnter(window, step, "4");
+            else StationDoors.press(window, step);
+
+            StationDoors.current(window);
+
+            assertEquals((int) Components.onTheEventThread(window::getHeight), height, "the window's height changed at " + step
+                + ", which shows: " + StationDoors.said(window, "station.matrixProblem") + " / "
+                + StationDoors.said(window, "station.matrixAlso"));
+
+            if (step.equals("station.preset.STATION"))
+            {
+                assertTrue(Components.onTheEventThread(problem::isVisible), "precondition: no warning came for a station");
+            }
+        }
+
+        assertFalse(Components.onTheEventThread(problem::isVisible), "precondition: the warning did not go");
+    }
+
     private static TileKey named(String name)
     {
         return Components.onTheEventThread(() ->
@@ -960,9 +1206,6 @@ public class testTheAutonomyEditorsTriageNotes
 
                     return null;
                 });
-                break;
-            case "Escape":
-                support.Keys.press(window.getRootPane(), java.awt.event.KeyEvent.VK_ESCAPE);
                 break;
             case "Close button":
                 StationDoors.close(window);

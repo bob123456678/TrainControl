@@ -170,7 +170,8 @@ public class testTheTailCanBeGivenInTheEditor
         {
             org.traincontrol.gui.autonomyeditor.StationSettingsWindow window = support.StationDoors.openTrain(f.panel, f.tile);
 
-            javax.swing.JButton pick = support.StationDoors.part(window, "train.tailPick", javax.swing.JButton.class);
+            javax.swing.AbstractButton pick = support.StationDoors.part(window, "train.tailPick",
+                javax.swing.AbstractButton.class);
 
             assertEquals(pick.getFont(), org.traincontrol.gui.widgets.UiStyle.BUTTON_FONT, "Pick is not Bold 12");
 
@@ -314,37 +315,7 @@ public class testTheTailCanBeGivenInTheEditor
         {
             f.arm();
 
-            TailCrossedPrompt.Choice target = null;
-            TileKey square = null;
-
-            for (TailCrossedPrompt.Choice choice : f.choices())
-            {
-                TileKey at = session.getStationIndex().squareOf(choice.getFarthest());
-
-                if (at == null || !f.panel.tailPickSquares().contains(at)) continue;
-
-                int onThatSquare = 0;
-
-                for (TailCrossedPrompt.Choice other : f.choices())
-                {
-                    if (at.equals(session.getStationIndex().squareOf(other.getFarthest()))) onThatSquare++;
-                }
-
-                if (onThatSquare == 1)
-                {
-                    target = choice;
-                    square = at;
-                }
-            }
-
-            assertNotNull(square, "precondition: no outlined sensor is reached by exactly one road, so a click would ask"
-                + " again. Outlined: " + f.panel.tailPickSquares());
-
-            final TileKey clicked = square;
-
-            SwingUtilities.invokeAndWait(() -> f.panel.tileClicked(clicked, null, false));
-
-            Components.drain(8);
+            TailCrossedPrompt.Choice target = f.clickOnTheOnlyRoad();
 
             assertNull(f.panel.tailPickFor(), "the click on an outlined sensor did not end the pick");
 
@@ -390,6 +361,184 @@ public class testTheTailCanBeGivenInTheEditor
         {
             f.close();
         }
+    }
+
+    /**
+     * Closing Station Settings ends the tail pick waiting about its square, by Done Editing or the close box, however
+     * the pick began (its Train tab's Pick on the Diagram, or the square's menu): nothing waits for a click and no
+     * sensor stays outlined (MT-959).
+     *
+     * MUTATION: drop the `endTailPick` call in `StationWindows.closed`, and this fails.
+     */
+    @Test
+    public void testClosingStationSettingsEndsTheTailPick() throws Exception
+    {
+        Fixture f = Fixture.open();
+
+        try
+        {
+            for (String route : new String[] {"tab, Done Editing", "tab, close box", "menu, Done Editing"})
+            {
+                final org.traincontrol.gui.autonomyeditor.StationSettingsWindow window =
+                    support.StationDoors.openTrain(f.panel, f.tile);
+
+                if (route.startsWith("menu")) f.arm();
+                else pressPick(f, window);
+
+                List<TileKey> outlined = new ArrayList<>(f.panel.tailPickSquares());
+
+                if (route.endsWith("close box"))
+                {
+                    SwingUtilities.invokeAndWait(() -> window.dispatchEvent(
+                        new java.awt.event.WindowEvent(window, java.awt.event.WindowEvent.WINDOW_CLOSING)));
+                }
+                else support.StationDoors.close(window);
+
+                Components.drain(8);
+
+                assertFalse(Components.onTheEventThread(window::isShowing), route + ": precondition: the window stayed open");
+                assertNull(f.panel.tailPickFor(), route + ": the pick still waits for a click after the window closed");
+                assertEquals(stillOutlined(f, outlined), new ArrayList<TileKey>(), route + ": sensors stay outlined");
+            }
+        }
+        finally
+        {
+            f.close();
+        }
+    }
+
+    /**
+     * Pick on the Diagram stays pressed in while the pick waits; pressing it again ends the pick and takes the outlines
+     * down, and the window stays open (MT-959).
+     *
+     * MUTATION: have the button's press arm the pick again without asking `endTailPick` first, and this fails.
+     */
+    @Test
+    public void testPickOnTheDiagramPressedAgainEndsThePick() throws Exception
+    {
+        Fixture f = Fixture.open();
+
+        try
+        {
+            org.traincontrol.gui.autonomyeditor.StationSettingsWindow window = support.StationDoors.openTrain(f.panel, f.tile);
+
+            pressPick(f, window);
+
+            assertTrue(support.StationDoors.on(window, "train.tailPick"), "Pick on the Diagram is not pressed in while it waits");
+
+            List<TileKey> outlined = new ArrayList<>(f.panel.tailPickSquares());
+
+            pressPick(f, window);
+
+            assertNull(f.panel.tailPickFor(), "pressing Pick on the Diagram again did not end the pick");
+            assertEquals(stillOutlined(f, outlined), new ArrayList<TileKey>(), "pressing it again left sensors outlined");
+            assertFalse(support.StationDoors.on(window, "train.tailPick"), "the button stayed pressed in after the pick ended");
+            assertTrue(Components.onTheEventThread(window::isShowing), "pressing it again closed the window");
+
+            support.StationDoors.close(window);
+        }
+        finally
+        {
+            f.close();
+        }
+    }
+
+    /**
+     * Escape ends the tail pick: in Station Settings, which stays open until a second Escape, and in the editor
+     * (`putToolsDown`, what its Escape runs), after which the window's button is up again (MT-959).
+     *
+     * MUTATION: bind Escape in `StationWindowBase` to `closeWindow` alone again, and this fails.
+     */
+    @Test
+    public void testEscapeEndsThePickInEitherWindow() throws Exception
+    {
+        Fixture f = Fixture.open();
+
+        try
+        {
+            org.traincontrol.gui.autonomyeditor.StationSettingsWindow window = support.StationDoors.openTrain(f.panel, f.tile);
+
+            pressPick(f, window);
+
+            List<TileKey> outlined = new ArrayList<>(f.panel.tailPickSquares());
+
+            support.Keys.press(window.getRootPane(), java.awt.event.KeyEvent.VK_ESCAPE);
+            Components.drain(8);
+
+            assertNull(f.panel.tailPickFor(), "Escape in Station Settings did not end the pick");
+            assertEquals(stillOutlined(f, outlined), new ArrayList<TileKey>(), "Escape there left sensors outlined");
+            assertTrue(Components.onTheEventThread(window::isShowing), "Escape closed Station Settings with a pick to end");
+
+            pressPick(f, window);
+
+            SwingUtilities.invokeAndWait(() -> f.panel.putToolsDown());
+            Components.drain(8);
+
+            assertNull(f.panel.tailPickFor(), "Escape in the editor did not end the pick");
+            assertFalse(support.StationDoors.on(window, "train.tailPick"), "the button stayed pressed in after Escape in the editor");
+
+            support.Keys.press(window.getRootPane(), java.awt.event.KeyEvent.VK_ESCAPE);
+            Components.drain(8);
+
+            assertFalse(Components.onTheEventThread(window::isShowing), "with no pick waiting, Escape did not close the window");
+        }
+        finally
+        {
+            f.close();
+        }
+    }
+
+    /**
+     * A road picked on the diagram from the Train tab stays when Station Settings closes afterward: ending the pick puts
+     * nothing back (MT-959).
+     *
+     * MUTATION: have `StationWindows.closed` record Not Known for its square (`recordTailRoad(square, null)`), and this
+     * fails.
+     */
+    @Test
+    public void testClosingKeepsTheRoadAlreadyPicked() throws Exception
+    {
+        Fixture f = Fixture.open();
+
+        try
+        {
+            org.traincontrol.gui.autonomyeditor.StationSettingsWindow window = support.StationDoors.openTrain(f.panel, f.tile);
+
+            pressPick(f, window);
+
+            TailCrossedPrompt.Choice target = f.clickOnTheOnlyRoad();
+
+            support.StationDoors.close(window);
+            Components.drain(8);
+
+            f.assertRecorded(target, "clicked on the diagram before Station Settings closed");
+        }
+        finally
+        {
+            f.close();
+        }
+    }
+
+    /** Presses the Train tab's Pick on the Diagram, as a click does, and waits for the window to read it back. */
+    private static void pressPick(Fixture f, java.awt.Window window) throws Exception
+    {
+        support.StationDoors.press(window, "train.tailPick");
+        Components.drain(8);
+
+        if (f.panel.tailPickFor() != null) assertFalse(f.panel.tailPickSquares().isEmpty(), "the pick outlined no sensor");
+    }
+
+    /** Which of these squares the editor still draws outlined. */
+    private static List<TileKey> stillOutlined(Fixture f, List<TileKey> squares)
+    {
+        return Components.onTheEventThread(() ->
+        {
+            List<TileKey> out = new ArrayList<>();
+
+            for (TileKey each : squares) if (f.panel.isOutlined(each)) out.add(each);
+
+            return out;
+        });
     }
 
     /**
@@ -911,6 +1060,44 @@ public class testTheTailCanBeGivenInTheEditor
             assertEquals(panel.tailPickFor(), tile, "picking on the diagram did not wait for a click about " + tile);
 
             assertFalse(panel.tailPickSquares().isEmpty(), "picking on the diagram outlined no sensor");
+        }
+
+        /** With a pick armed, clicks the outlined sensor reached by one road alone, so no list asks; its choice. */
+        TailCrossedPrompt.Choice clickOnTheOnlyRoad() throws Exception
+        {
+            TailCrossedPrompt.Choice target = null;
+            TileKey square = null;
+
+            for (TailCrossedPrompt.Choice choice : choices())
+            {
+                TileKey at = session.getStationIndex().squareOf(choice.getFarthest());
+
+                if (at == null || !panel.tailPickSquares().contains(at)) continue;
+
+                int onThatSquare = 0;
+
+                for (TailCrossedPrompt.Choice other : choices())
+                {
+                    if (at.equals(session.getStationIndex().squareOf(other.getFarthest()))) onThatSquare++;
+                }
+
+                if (onThatSquare == 1)
+                {
+                    target = choice;
+                    square = at;
+                }
+            }
+
+            assertNotNull(square, "precondition: no outlined sensor is reached by exactly one road, so a click would ask"
+                + " again. Outlined: " + panel.tailPickSquares());
+
+            final TileKey clicked = square;
+
+            SwingUtilities.invokeAndWait(() -> panel.tileClicked(clicked, null, false));
+
+            Components.drain(8);
+
+            return target;
         }
 
         void assertRecorded(TailCrossedPrompt.Choice chosen, String how) throws Exception

@@ -68,35 +68,60 @@ final class StationMatrixPanel extends JPanel
 
         problem.setName("station.matrixProblem");
         problem.setForeground(new Color(170, 0, 0));
-        problem.setFont(CELL_FONT);
-        problem.setVisible(false);
 
         also.setName("station.matrixAlso");
-        also.setFont(CELL_FONT);
-        also.setVisible(false);
+        also.setBorder(BorderFactory.createEmptyBorder(6, 0, 0, 0));
 
-        JPanel lines = new JPanel();
+        notices.setName("station.notices");
+        notices.setLayout(new BoxLayout(notices, BoxLayout.Y_AXIS));
+        notices.setOpaque(false);
 
-        lines.setLayout(new BoxLayout(lines, BoxLayout.Y_AXIS));
-        lines.setOpaque(false);
-        also.setAlignmentX(LEFT_ALIGNMENT);
-        lines.add(also);
+        for (JLabel line : new JLabel[] {problem, also})
+        {
+            line.setFont(CELL_FONT);
+            line.setVisible(false);
+            line.setAlignmentX(LEFT_ALIGNMENT);
+            notices.add(line);
+        }
 
-        JPanel below = new JPanel(new BorderLayout(0, 6));
-
-        below.setOpaque(false);
-        below.add(table, BorderLayout.NORTH);
-        below.add(lines, BorderLayout.CENTER);
-
-        add(below, BorderLayout.CENTER);
+        add(table, BorderLayout.CENTER);
 
         lineWidth = lockTheColumns();
     }
 
-    /** Why the setup stops this square, for the window to show under the picture, so it moves nothing above (MT-919). */
-    JLabel problemLine()
+    /**
+     * Why the setup stops this square, then what a cell cannot say: for the window to show under the picture, where they
+     * move nothing above (MT-919), in room kept for four lines, so the window keeps its height as they come and go
+     * (MT-961).
+     */
+    JComponent notices()
     {
-        return problem;
+        return notices;
+    }
+
+    private final JPanel notices = new JPanel()
+    {
+        private final int kept = roomFor(4);
+
+        @Override
+        public java.awt.Dimension getPreferredSize()
+        {
+            java.awt.Dimension asked = super.getPreferredSize();
+
+            asked.height = Math.max(asked.height, kept);
+
+            return asked;
+        }
+    };
+
+    /** The height of this many lines of a notice and the gap between the two. */
+    private static int roomFor(int lines)
+    {
+        JLabel sample = new JLabel("<html>" + String.join("<br>", java.util.Collections.nCopies(lines, "X")) + "</html>");
+
+        sample.setFont(CELL_FONT);
+
+        return sample.getPreferredSize().height + 6;
     }
 
     /**

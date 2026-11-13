@@ -17,6 +17,7 @@ import javax.swing.JComponent;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JRadioButton;
+import javax.swing.JToggleButton;
 import org.traincontrol.automationui.TileGraph.TileKey;
 import org.traincontrol.automationui.TilePorts;
 import org.traincontrol.base.Locomotive;
@@ -289,14 +290,19 @@ final class TrainTab extends StationWindowBase.RoomyPanel
         // Clicking is the editor's: the track diagram's panel has no grid to be clicked on
         if (editor.menuOnly) return;
 
-        JButton pick = new JButton(I18n.t("autosetup.ui.menuPickTailCrossed"), RowIcons.pencil(16));
+        // Pressed in while the pick waits; pressing it again ends the pick (MT-959)
+        JToggleButton pick = new JToggleButton(I18n.t("autosetup.ui.menuPickTailCrossed"), RowIcons.pencil(16),
+            window.tile.equals(editor.tailPickFor()));
 
         pick.setName("train.tailPick");
         pick.putClientProperty("JButton.buttonType", "toolBarButton");
         pick.setFont(org.traincontrol.gui.widgets.UiStyle.BUTTON_FONT);
         pick.setFocusable(false);
         pick.setEnabled(!readOnly);
-        pick.addActionListener(e -> window.actAlone(() -> editor.armTailPick(window.tile)));
+        pick.addActionListener(e ->
+        {
+            if (!editor.endTailPick(window.tile)) window.actAlone(() -> editor.armTailPick(window.tile));
+        });
 
         tail.add(pick);
     }

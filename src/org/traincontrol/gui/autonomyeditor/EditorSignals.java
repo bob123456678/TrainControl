@@ -238,15 +238,15 @@ final class EditorSignals
     static final int GUARD_WIDTH = 420;
 
     /**
-     * Under Station Settings on this station, which it must not cover (MT-948); without one, beside the diagram rather
-     * than over the middle of it, as its text says the signals are outlined behind it (OB-107).
+     * Under Station Settings on this station, hidden meanwhile (MT-956), where it opened before (MT-948); without one,
+     * beside the diagram rather than over the middle of it, as its text says the signals are outlined behind it (OB-107).
      */
     private void place(java.awt.Window dialog, TileKey station)
     {
         StationSettingsWindow settings = editor.stationWindows.stationWindow();
         java.awt.Window parent = editor.ownerWindow();
 
-        if (settings != null && settings.isShowing() && station.equals(settings.tile))
+        if (settings != null && settings.isDisplayable() && station.equals(settings.tile))
         {
             dialog.setLocation(AutonomyEditorPanel.under(settings.getBounds(), dialog.getSize(), AutonomyEditorPanel.screenOf(settings)));
         }
