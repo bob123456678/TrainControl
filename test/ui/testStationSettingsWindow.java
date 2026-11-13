@@ -1588,9 +1588,9 @@ public class testStationSettingsWindow
     }
 
     /**
-     * The picture's white area keeps 3 px above its squares and 3 px below, 5 fewer each than it had, for room for the
-     * Presets in the right column (Adam, FR-182); here, where the right column sets the height, it is drawn at the height
-     * it asks for, and every mark and square still lies inside it.
+     * The picture's white area keeps 3 px above its squares and 3 px below, for room for the Presets in the right
+     * column (Adam, FR-182); here, where the right column sets the height, it is drawn at the height it asks for, and
+     * every mark and square still lies inside it.
      *
      * MUTATION: put the block's 8 px padding back, and this fails.
      */

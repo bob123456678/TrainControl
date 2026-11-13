@@ -112,7 +112,7 @@ public class testAStandingTrainIsSentWhileAnotherRuns
      * During a hand send of one train, the menu over another standing train lists that train's destinations, the same
      * ones its Auto tab card offers.
      *
-     * MUTATION: have `gatherPathOptions` answer null whenever `isAutonomyBusy()`, as before FR-187, and this fails.
+     * MUTATION: have `gatherPathOptions` answer null whenever `isAutonomyBusy()`, and this fails.
      */
     @Test(timeOut = 300000)
     public void testTheMenuOverAStandingTrainListsItsDestinations() throws Exception

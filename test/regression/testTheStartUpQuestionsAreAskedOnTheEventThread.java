@@ -26,8 +26,8 @@ import support.Answering;
 import support.Display;
 
 /**
- * OB-445: start-up asked for the Central Station's address, and told the user it had no answer, on its own thread.
- * Swing belongs on the event thread.  Each claim runs `init` on a plain thread, as `main` does, with no station: the
+ * OB-445: start-up's questions to the user, the Central Station's address and the "no answer" message, are asked on
+ * the event thread, which Swing needs.  Each claim runs `init` on a plain thread, as `main` does, with no station: the
  * questions are answered as the user would, and the exit that ends the start-up is refused.
  *
  * @author Adam

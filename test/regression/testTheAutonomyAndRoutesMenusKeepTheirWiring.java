@@ -35,9 +35,9 @@ import support.Components;
 import support.Reflect;
 
 /**
- * The Autonomy and Routes menus as the owner's menu review left them: every item that
- * moved, was renamed or is new reaches the door it reached before, found in the real menu by its text and clicked, and
- * each menu offers what it offered before, changed only as the answers say.
+ * The Autonomy and Routes menus after the menu review: every item that moved, was renamed or is new reaches the door
+ * it reached before, found in the real menu by its text and clicked, and each menu offers what it offered before,
+ * changed only as the answers say.
  *
  * On a copy of the frozen railway in debug, because the doors write the setup and the debug export is part of the
  * census.
