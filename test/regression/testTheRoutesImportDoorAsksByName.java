@@ -326,10 +326,10 @@ public class testTheRoutesImportDoorAsksByName
     @Test
     public void testNoToTheReplaceQuestionLeavesEveryRoute() throws Exception
     {
-        Imported run = importHisRoutes(true, null, false, false);
+        Imported run = importHisRoutes(true, null, false, -1);
 
-        assertEquals(run.replaceAsked, Collections.singletonList(I18n.f("route.ui.confirmReplaceAllRoutes",
-            run.routesBefore.size())), "Import did not ask once whether to replace the routes, counting them (D51)");
+        assertEquals(run.replaceAsked, Collections.singletonList(replacing(run.routesBefore.size())),
+            "Import did not ask once whether to replace the routes, counting them (D51)");
 
         assertEquals(run.replaceStartsOn, NO, "the question about replacing every route does not start on No");
 
@@ -350,11 +350,44 @@ public class testTheRoutesImportDoorAsksByName
     @Test
     public void testWithNoRoutesTheReplaceQuestionIsNotAsked() throws Exception
     {
-        Imported run = importHisRoutes(true, null, true, true);
+        Imported run = importHisRoutes(true, null, true, 0);
 
         assertEquals(run.replaceAsked, Collections.emptyList(), "with no routes, Import asked whether to replace them");
 
         assertEquals(run.routesAfter, run.routesBefore, "the import did not bring back the routes it was given");
+    }
+
+    /**
+     * With one route the question says so in the singular, and with three it counts them, each in the language's own
+     * grammar; titled with the menu item's words, Import Routes.  Answered Yes, the file's routes arrive.
+     *
+     * MUTATION: ask "This replaces all 1 routes", or title the question Confirm, and this fails.
+     */
+    @Test
+    public void testTheReplaceQuestionCountsOneRouteAndThree() throws Exception
+    {
+        for (int keep : new int[] {1, 3})
+        {
+            Imported run = importHisRoutes(true, null, true, keep);
+
+            assertEquals(run.replaceAsked, Collections.singletonList(replacing(keep)), "with " + keep + " route(s),"
+                + " Import's question does not read as it should");
+
+            assertEquals(run.replaceTitle, I18n.t("route.ui.titleImportRoutes"), "the question is not titled Import"
+                + " Routes");
+
+            assertEquals(run.routesAfter, run.routesBefore, "answered Yes, the file's routes did not arrive");
+        }
+
+        assertEquals(replacing(1), I18n.t("route.ui.confirmReplaceTheOneRoute"), "precondition: one route is not the"
+            + " singular sentence");
+    }
+
+    /** The question Import asks with this many routes, as the bundle says it. */
+    private static String replacing(int routes)
+    {
+        return routes == 1 ? I18n.t("route.ui.confirmReplaceTheOneRoute")
+            : I18n.f("route.ui.confirmReplaceAllRoutes", routes);
     }
 
     /** A popup's text: its sentence, then each line of its Details list. */
@@ -386,6 +419,7 @@ public class testTheRoutesImportDoorAsksByName
         Set<String> armedAfter;
         List<String> replaceAsked;
         String replaceStartsOn;
+        String replaceTitle;
     }
 
     /** A change made to the exported file before it is imported, as a person editing it would make it. */
@@ -400,19 +434,19 @@ public class testTheRoutesImportDoorAsksByName
      */
     private static Imported importHisRoutes(boolean yes, Edit edit) throws Exception
     {
-        Imported run = importHisRoutes(yes, edit, true, false);
+        Imported run = importHisRoutes(yes, edit, true, -1);
 
-        assertEquals(run.replaceAsked, Collections.singletonList(I18n.f("route.ui.confirmReplaceAllRoutes",
-            run.routesBefore.size())), "Import did not ask once whether to replace the routes, counting them (D51)");
+        assertEquals(run.replaceAsked, Collections.singletonList(replacing(run.routesBefore.size())),
+            "Import did not ask once whether to replace the routes, counting them (D51)");
 
         return run;
     }
 
     /**
-     * The same, answering the question about replacing every route with `replace`, and with `emptyFirst` deleting every
-     * route after the export, so there is none to replace.
+     * The same, answering the question about replacing every route with `replace`, and with `keep` at 0 or more
+     * deleting all but that many routes after the export (-1 keeps them all).
      */
-    private static Imported importHisRoutes(boolean yes, Edit edit, boolean replace, boolean emptyFirst)
+    private static Imported importHisRoutes(boolean yes, Edit edit, boolean replace, int keep)
         throws Exception
     {
         if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
@@ -477,18 +511,21 @@ public class testTheRoutesImportDoorAsksByName
 
             run.savedArmed = model.routesSavedArmed(json);
 
-            if (emptyFirst)
+            if (keep >= 0)
             {
-                for (String name : new ArrayList<>(model.getRouteList())) model.deleteRoute(name);
+                List<String> names = new ArrayList<>(model.getRouteList());
 
-                for (long end = System.currentTimeMillis() + 30000; !model.getRouteList().isEmpty()
+                assertTrue(names.size() > keep, "precondition: this data has only " + names.size() + " routes");
+
+                for (String name : names.subList(keep, names.size())) model.deleteRoute(name);
+
+                for (long end = System.currentTimeMillis() + 30000; model.getRouteList().size() != keep
                     && System.currentTimeMillis() < end; ) Thread.sleep(50);
 
-                assertTrue(model.getRouteList().isEmpty(), "precondition: the routes could not all be deleted");
+                assertEquals(model.getRouteList().size(), keep, "precondition: the routes could not be deleted");
             }
 
-            answerer = new Answerer(file, yes, I18n.f("route.ui.confirmReplaceAllRoutes", model.getRouteList().size()),
-                replace);
+            answerer = new Answerer(file, yes, replacing(model.getRouteList().size()), replace);
 
             Thread answering = new Thread(answerer, "routes import answerer");
 
@@ -514,6 +551,7 @@ public class testTheRoutesImportDoorAsksByName
 
             run.replaceAsked = new ArrayList<>(answerer.replaceAsked);
             run.replaceStartsOn = answerer.replaceStartsOn;
+            run.replaceTitle = answerer.replaceTitle;
 
             if (replace)
             {
@@ -593,6 +631,7 @@ public class testTheRoutesImportDoorAsksByName
         private final boolean replace;
         private final List<String> replaceAsked = Collections.synchronizedList(new ArrayList<>());
         private volatile String replaceStartsOn;
+        private volatile String replaceTitle;
 
         Answerer(File file, boolean yes, String replaceQuestion, boolean replace)
         {
@@ -632,6 +671,7 @@ public class testTheRoutesImportDoorAsksByName
                 {
                     replaceAsked.add(replaceQuestion);
                     replaceStartsOn = String.valueOf(pane.getInitialValue());
+                    replaceTitle = dialog.getTitle();
 
                     final String answer = replace ? YES : NO;
 
