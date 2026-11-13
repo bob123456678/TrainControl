@@ -712,6 +712,7 @@
         <test-one-class class="testTheMainWindowIsBuiltOnTheEventThread"/>
         <test-one-class class="testTheMenuBarIsWired"/>
         <test-one-class class="testTheAutonomyAndRoutesMenusKeepTheirWiring"/>
+        <test-one-class class="testTheStartUpQuestionsAreAskedOnTheEventThread"/>
     </target>
     <target name="package-for-store" depends="jar">
         <property name="store.jar.name" value="TrainControl"/>

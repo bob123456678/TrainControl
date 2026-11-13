@@ -4711,18 +4711,18 @@ public class MarklinControlStation implements ViewListener, ModelListener
     }
 
     /**
-     * Builds the main window on the event thread (OB-444): the constructor packs it, so the rest of the build would race
-     * the layout a window event starts there.  A failed build throws what the constructor threw.
+     * Runs `task` on the event thread, waits for it and returns its result; what it throws is thrown here.  Start-up's
+     * Swing goes through this (OB-444, OB-445).
      */
-    private static TrainControlUI buildTheWindow() throws InterruptedException
+    private static <T> T onTheEventThread(Supplier<T> task) throws InterruptedException
     {
-        if (javax.swing.SwingUtilities.isEventDispatchThread()) return new TrainControlUI();
+        if (javax.swing.SwingUtilities.isEventDispatchThread()) return task.get();
 
-        final TrainControlUI[] built = new TrainControlUI[1];
+        final java.util.concurrent.atomic.AtomicReference<T> result = new java.util.concurrent.atomic.AtomicReference<>();
 
         try
         {
-            javax.swing.SwingUtilities.invokeAndWait(() -> built[0] = new TrainControlUI());
+            javax.swing.SwingUtilities.invokeAndWait(() -> result.set(task.get()));
         }
         catch (java.lang.reflect.InvocationTargetException failed)
         {
@@ -4733,7 +4733,95 @@ public class MarklinControlStation implements ViewListener, ModelListener
             throw cause instanceof RuntimeException ? (RuntimeException) cause : new RuntimeException(cause);
         }
 
-        return built[0];
+        return result.get();
+    }
+
+    /**
+     * Builds the main window on the event thread (OB-444): the constructor packs it, so the rest of the build would race
+     * the layout a window event starts there.
+     */
+    private static TrainControlUI buildTheWindow() throws InterruptedException
+    {
+        return onTheEventThread(TrainControlUI::new);
+    }
+
+    /** A start-up message box, waited for: what start-up does next (ask again, or exit) must follow it (OB-445). */
+    private static void tellAtStartUp(String said) throws InterruptedException
+    {
+        onTheEventThread(() ->
+        {
+            JOptionPane.showMessageDialog(null, said);
+
+            return null;
+        });
+    }
+
+    /**
+     * Asks for the Central Station's address; call it on the event thread (OB-445).  Returns the button pressed (0 OK,
+     * 1 Cancel, 2 Auto-Detect, -1 closed) with the text typed.
+     */
+    private static Map.Entry<Integer, String> askForTheAddress(String lastIP)
+    {
+        JTextField ipField = new JTextField();
+        if (lastIP != null) ipField.setText(lastIP);
+
+        Object[] options = {
+            I18n.t("ui.ok"),
+            I18n.t("ui.cancel"),
+            I18n.t("ui.autoDetect")
+        };
+
+        Object[] message = {
+            I18n.t("ui.enterCentralStationIp"),
+            ipField
+        };
+
+        JOptionPane optionPane = new JOptionPane(
+            message,
+            JOptionPane.PLAIN_MESSAGE,
+            JOptionPane.DEFAULT_OPTION,
+            null,
+            options,
+            options[0]
+        );
+
+        JDialog dialog = optionPane.createDialog(I18n.t("ui.ipAddressInputTitle"));
+
+        // The application's own icon (OB-105): with no owner window Swing would give it the coffee cup.  Quietly, since
+        // a missing icon must not stop the question (OB-124).
+        try
+        {
+            org.traincontrol.gui.TrainControlUI.applyWindowIcon(dialog);
+        }
+        catch (RuntimeException noIcon)
+        {
+            // Decoration only - see above.
+        }
+
+        // To ensure the text field is focused
+        dialog.addWindowFocusListener(new WindowAdapter()
+        {
+            @Override
+            public void windowGainedFocus(WindowEvent e)
+            {
+                ipField.requestFocusInWindow();
+            }
+        });
+
+        dialog.setVisible(true);
+
+        int selectedOption = JOptionPane.CLOSED_OPTION;
+        Object selectedValue = optionPane.getValue();
+        for (int i = 0; i < options.length; i++)
+        {
+            if (options[i].equals(selectedValue))
+            {
+                selectedOption = i;
+                break;
+            }
+        }
+
+        return new java.util.AbstractMap.SimpleImmutableEntry<>(selectedOption, ipField.getText());
     }
 
     /**
@@ -4750,8 +4838,14 @@ public class MarklinControlStation implements ViewListener, ModelListener
         TrainControlUI ui = null;
         
         // THE LOOK AND FEEL FIRST, whether or not a window is built: a caller passing showUI=false (every test) would
-        // otherwise get Metal dialogs.  Idempotent, so the constructor asking again costs nothing.
-        if (!java.awt.GraphicsEnvironment.isHeadless()) TrainControlUI.installLookAndFeel();
+        // otherwise get Metal dialogs.  Idempotent, so the constructor asking again costs nothing.  On the event thread,
+        // as all of start-up's Swing (OB-445).
+        if (!java.awt.GraphicsEnvironment.isHeadless()) onTheEventThread(() ->
+        {
+            TrainControlUI.installLookAndFeel();
+
+            return null;
+        });
 
         if (showUI) ui = buildTheWindow();
 
@@ -4786,70 +4880,14 @@ public class MarklinControlStation implements ViewListener, ModelListener
                         {
                             System.out.println(I18n.t("ui.promptIpPopup"));
 
-                            JTextField ipField = new JTextField();
-                            if (lastIP != null) ipField.setText(lastIP);
-
-                            Object[] options = {
-                                I18n.t("ui.ok"),
-                                I18n.t("ui.cancel"),
-                                I18n.t("ui.autoDetect")
-                            };
-
-                            Object[] message = {
-                                I18n.t("ui.enterCentralStationIp"),
-                                ipField
-                            };
-
-                            JOptionPane optionPane = new JOptionPane(
-                                message,
-                                JOptionPane.PLAIN_MESSAGE,
-                                JOptionPane.DEFAULT_OPTION,
-                                null,
-                                options,
-                                options[0]
-                            );
-
-                            // To ensure the text field is focused
-                            JDialog dialog = optionPane.createDialog(I18n.t("ui.ipAddressInputTitle"));
-
-                            // The application's own icon (OB-105): this dialog has no owner window (it is the FIRST
-                            // thing shown), so Swing would give it the coffee cup.  Quietly, if at all: applyWindowIcon
-                            // swallows its own failures, since a missing resource must not stop the application asking
-                            // for an IP (OB-124).
-                            try
-                            {
-                                org.traincontrol.gui.TrainControlUI.applyWindowIcon(dialog);
-                            }
-                            catch (RuntimeException noIcon)
-                            {
-                                // Decoration only - see above.
-                            }
-                            dialog.addWindowFocusListener(new WindowAdapter() 
-                            {
-                                @Override
-                                public void windowGainedFocus(WindowEvent e)
-                                {
-                                    ipField.requestFocusInWindow();
-                                }
-                            });
-
-                            dialog.setVisible(true);
-
-                            int selectedOption = JOptionPane.CLOSED_OPTION;
-                            Object selectedValue = optionPane.getValue();
-                            for (int i = 0; i < options.length; i++)
-                            {
-                                if (options[i].equals(selectedValue))
-                                {
-                                    selectedOption = i;
-                                    break;
-                                }
-                            }
+                            final String typedLastTime = lastIP;
+                            Map.Entry<Integer, String> answer = onTheEventThread(() -> askForTheAddress(typedLastTime));
+                            int selectedOption = answer.getKey();
 
                             switch (selectedOption)
                             {
                                 case 0: // OK
-                                    initIP = ipField.getText();
+                                    initIP = answer.getValue();
                                     
                                     if (initIP != null)
                                     {
@@ -4864,21 +4902,15 @@ public class MarklinControlStation implements ViewListener, ModelListener
                                     
                                     if (!CSDetect.hasLocalSubnets())
                                     {
-                                        JOptionPane.showMessageDialog(
-                                            null,
-                                            I18n.t("ui.autoDetectNotPossibleNoInterfaces")
-                                        );
+                                        tellAtStartUp(I18n.t("ui.autoDetectNotPossibleNoInterfaces"));
                                         continue;
                                     }
-                                    
+
                                     initIP = CSDetect.detectCentralStation();
 
                                     if (initIP == null)
                                     {
-                                        JOptionPane.showMessageDialog(
-                                            null,
-                                            I18n.t("ui.noCentralStationDetected")
-                                        ); 
+                                        tellAtStartUp(I18n.t("ui.noCentralStationDetected"));
                                         continue;
                                     }
                                     
@@ -4906,7 +4938,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
                             
                             if (!GraphicsEnvironment.isHeadless())
                             {
-                                JOptionPane.showMessageDialog(null, I18n.t("ui.noIpEnteredShutdown"));
+                                tellAtStartUp(I18n.t("ui.noIpEnteredShutdown"));
                             }
                             
                             // Left on purpose, from this version's own question: it started (FR-125)
@@ -4924,10 +4956,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
 
                         if (!GraphicsEnvironment.isHeadless())
                         {
-                            JOptionPane.showMessageDialog(
-                                null,
-                                I18n.f("ui.noResponseFromIp", initIP)
-                            );                        
+                            tellAtStartUp(I18n.f("ui.noResponseFromIp", initIP));
                         }
                     }
                     else
@@ -4939,7 +4968,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
 
                             if (!GraphicsEnvironment.isHeadless())
                             {
-                                JOptionPane.showMessageDialog(null, I18n.f("ui.deviceNotCentralStationOrUnreachable", initIP));
+                                tellAtStartUp(I18n.f("ui.deviceNotCentralStationOrUnreachable", initIP));
                             }
                         }
                         
