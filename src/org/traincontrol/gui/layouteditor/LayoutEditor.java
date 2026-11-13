@@ -1475,9 +1475,11 @@ public class LayoutEditor extends PositionAwareJFrame
                 }
             });
 
-            // And the finding's other squares, outlined there as here
+            // And the finding's other squares, outlined there as here; a finding or Find a Point asks first, as a link does
             autonomyPanel.setOnJumpToNotice((at, named) ->
             {
+                if (!settleUnsavedWork()) return;
+
                 layout.setEdit(false);
 
                 // Carried before the window goes: the user closed nothing

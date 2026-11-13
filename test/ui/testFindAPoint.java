@@ -294,6 +294,157 @@ public class testFindAPoint
     }
 
     /**
+     * Control+F to a point on another page, with unsaved work in the editor, asks the page switch's question first, as a
+     * link's other end does: Cancel stays on the page with the work, Discard throws it away and goes (FR-055).
+     *
+     * MUTATION: leave `settleUnsavedWork` out of the editor's `onJumpToNotice`, and the jump goes without asking.
+     */
+    @Test(timeOut = 180000)
+    public void testControlFToAnotherPageAsksAboutUnsavedWork() throws Exception
+    {
+        LayoutEditor editor = anAutonomyEditor(PAGE);
+
+        try
+        {
+            renameTwinHere(editor);
+
+            JDialog prompt = pressControlF(editor);
+
+            type(prompt, THERE.toLowerCase());
+
+            try (support.Answering answering = support.Answering.start(m -> support.Answering.press(
+                I18n.t("layout.ui.switchCancel"))))
+            {
+                support.Keys.press(boxOf(prompt), KeyEvent.VK_ENTER);
+
+                support.Components.settle();
+
+                assertEquals(answering.asked(), java.util.Arrays.asList(I18n.t("layout.ui.confirmSwitchWithUnsavedWork")),
+                    "Control+F to another page did not ask the page switch's question about the unsaved work");
+            }
+
+            assertTrue(editor.isDisplayable() && editor == support.EditorsOpen.editorOn(PAGE), "Cancel left the page");
+            assertEquals(nameOfTwinHere(), "Qx Edited", "Cancel threw the work away");
+
+            prompt = pressControlF(editor);
+
+            type(prompt, THERE.toLowerCase());
+
+            try (support.Answering answering = support.Answering.start(m -> support.Answering.press(
+                I18n.t("layout.ui.switchDiscard"))))
+            {
+                support.Keys.press(boxOf(prompt), KeyEvent.VK_ENTER);
+
+                editorAfterTheSwitch(OTHER_PAGE, there);
+            }
+
+            assertEquals(nameOfTwinHere(), TWIN, "Discard kept the work done before the jump");
+        }
+        finally
+        {
+            closeThem();
+
+            session.getStore().setPointName(twinHere, TWIN);
+        }
+    }
+
+    /**
+     * A finding clicked on another page asks the same question before the editor goes (FR-055): Discard throws the
+     * work away, where the jump used to write it out of Cancel's reach.
+     *
+     * MUTATION: leave `settleUnsavedWork` out of the editor's `onJumpToNotice`, and the rename is kept unasked.
+     */
+    @Test(timeOut = 180000)
+    public void testAFindingOnAnotherPageAsksAboutUnsavedWork() throws Exception
+    {
+        final LayoutEditor editor = anAutonomyEditor(PAGE);
+
+        try
+        {
+            renameTwinHere(editor);
+
+            final AutonomyEditorPanel panel = editor.getAutonomyPanel();
+
+            final JList<?> findings = support.Components.onTheEventThread(
+                () -> (JList<?>) panel.getFindingsPanel().getViewport().getView());
+
+            try (support.Answering answering = support.Answering.start(m -> support.Answering.press(
+                I18n.t("layout.ui.switchDiscard"))))
+            {
+                support.Components.onTheEventThread(() ->
+                {
+                    try
+                    {
+                        @SuppressWarnings("unchecked")
+                        javax.swing.DefaultListModel<String> rows = (javax.swing.DefaultListModel<String>)
+                            field(panel, "findingsModel");
+
+                        rows.clear();
+                        ((List<?>) field(panel, "findingTiles")).clear();
+                        ((List<?>) field(panel, "findingRelated")).clear();
+                        ((List<?>) field(panel, "findingSeverity")).clear();
+
+                        rows.addElement("a finding on another page");
+
+                        @SuppressWarnings("unchecked") List<TileKey> tiles = (List<TileKey>) field(panel, "findingTiles");
+                        @SuppressWarnings("unchecked") List<List<TileKey>> related =
+                            (List<List<TileKey>>) field(panel, "findingRelated");
+
+                        tiles.add(there);
+                        related.add(null);
+                        ((List<Object>) field(panel, "findingSeverity")).add(null);
+
+                        // Posted: the question it asks is modal
+                        javax.swing.SwingUtilities.invokeLater(() -> findings.setSelectedIndex(0));
+                    }
+                    catch (ReflectiveOperationException e)
+                    {
+                        throw new IllegalStateException(e);
+                    }
+
+                    return null;
+                });
+
+                editorAfterTheSwitch(OTHER_PAGE, there);
+
+                assertEquals(answering.asked(), java.util.Arrays.asList(I18n.t("layout.ui.confirmSwitchWithUnsavedWork")),
+                    "a finding on another page did not ask the page switch's question about the unsaved work");
+            }
+
+            assertEquals(nameOfTwinHere(), TWIN, "Discard kept the work done before the jump");
+        }
+        finally
+        {
+            closeThem();
+
+            session.getStore().setPointName(twinHere, TWIN);
+        }
+    }
+
+    /** Renames a point on the first page through the store, as unsaved work in this editor. */
+    private static void renameTwinHere(LayoutEditor editor) throws Exception
+    {
+        support.Components.onTheEventThread(() ->
+        {
+            session.getStore().setPointName(twinHere, "Qx Edited");
+
+            return null;
+        });
+
+        java.lang.reflect.Method unsaved = Reflect.method(LayoutEditor.class, "hasUnsavedAutonomyWork");
+
+        assertTrue(support.Components.onTheEventThread(() ->
+        {
+            try { return (Boolean) unsaved.invoke(editor); } catch (Exception e) { throw new RuntimeException(e); }
+        }), "precondition: the rename is not unsaved work in the editor");
+    }
+
+    private static String nameOfTwinHere()
+    {
+        return support.Components.onTheEventThread(() -> session.getStore().getPointName(twinHere));
+    }
+
+    /**
      * A double-click chooses too, and a point on the page being edited is outlined without the window reopening.
      *
      * MUTATION: in `FindAPointPrompt`'s mouse listener, require three clicks (`e.getClickCount() < 3`); this fails.
