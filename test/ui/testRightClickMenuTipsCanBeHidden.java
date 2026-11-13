@@ -426,7 +426,7 @@ public class testRightClickMenuTipsCanBeHidden
      * Ticked, with a key's menu open and showing no keys, Control+C still copies the key's train: only the display
      * changes, never what the keys do.
      *
-     * MUTATION: the strip binds the item's key to an action that swallows it.
+     * MUTATION: the setting turns the keys off with their hints (`row.run` skipped while it is on).
      */
     @Test
     public void testAKeyActsWhileItsHintIsHidden() throws Exception
@@ -437,13 +437,13 @@ public class testRightClickMenuTipsCanBeHidden
 
         javax.swing.JButton a = support.SettingsWindow.key(ui, java.awt.event.KeyEvent.VK_A);
 
-        hide(true);
-
         // S copied first, so that a copy of A is seen to happen
         support.Keys.press(keyboard, java.awt.event.KeyEvent.VK_S);
         support.Keys.press(keyboard, java.awt.event.KeyEvent.VK_C, java.awt.event.InputEvent.CTRL_DOWN_MASK);
 
         assertSame(field("copyTargetButton"), s, "precondition: Control+C did not copy S");
+
+        hide(true);
 
         support.Keys.press(keyboard, java.awt.event.KeyEvent.VK_A);
 
