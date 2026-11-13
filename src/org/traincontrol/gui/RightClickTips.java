@@ -1,60 +1,35 @@
 package org.traincontrol.gui;
 
 import java.awt.Component;
-import java.util.Objects;
-import java.util.regex.Pattern;
 import javax.swing.JMenu;
 import javax.swing.JMenuItem;
 import javax.swing.JPopupMenu;
+import javax.swing.KeyStroke;
 import javax.swing.MenuElement;
 import javax.swing.MenuSelectionManager;
 
 /**
- * The "Hide Hover Tooltips" setting (FR-168): when on, every enabled item of an open menu, the menu bar's and pop-ups alike,
- * shows no tooltip but its hotkey; a grayed item keeps the tip that says why.  The tips are taken off only while their
- * menu is open and put back as it closes, so code that saves and restores a tooltip never keeps a hidden one.
+ * The "Hide Hover Tooltips" setting (FR-168, FR-199): when on, every open menu, the menu bar's and pop-ups alike, shows
+ * no shortcut keys and no tooltips on its enabled items; a grayed item keeps the tip that says why.  Both are taken off
+ * only while their menu is open and put back as it closes, so code that saves a tooltip or reads a key never keeps a
+ * hidden one.  Only the display changes: the window's own key handling acts on the keys either way.
  */
 public final class RightClickTips
 {
     /** The preference that holds the setting.  Off by default; its name stays, so a saved choice carries over. */
     public static final String PREF = "HideRightClickMenuTips";
 
-    private static final String HELD = "RightClickTips.held";
+    private static final String HELD_TIP = "RightClickTips.held";
 
-    /**
-     * A key a tip names anywhere in it, in every bundle's wording: a combination such as Control+F, Strg+Umschalt+G or
-     * Alt-P (a modifier with a click or a drag is a mouse gesture, not a key), or Escape as each language spells it.
-     */
-    private static final String KEY = "(?:(?:Control|Ctrl|Strg|Alt|Shift|Umschalt|Maj|Mayús|Maiusc)[+-])+"
-        + "(?:[A-Z0-9]|F\\d{1,2}|Up|Down|Left|Right|Delete|Escape|Enter|Space|Tab|Home|End|Insert)"
-        + "|Escape|Échap|Esc";
-
-    private static final Pattern HOTKEY = Pattern.compile("(?<![\\w+-])(?:" + KEY + ")(?![\\w+-])");
-
-    /** A tip that is nothing but keys, such as "Delete" or "Control-2 / F12": words that mid-sentence are not keys. */
-    private static final Pattern ONLY_KEYS = Pattern.compile(
-        "(?:" + KEY + "|Delete|F\\d{1,2})(?: / (?:" + KEY + "|Delete|F\\d{1,2}))*");
+    private static final String HELD_KEY = "RightClickTips.key";
 
     private static boolean installed;
 
-    /** The items whose tips this setting has taken off, to put back once their menu closes. */
+    /** The items whose tips or keys this setting has taken off, to put back once their menu closes. */
     private static final java.util.Set<JMenuItem> stripped = new java.util.HashSet<>();
 
     private RightClickTips()
     {
-    }
-
-    /** What an item's tooltip was before the setting changed it, and what the setting put there. */
-    private static final class Held
-    {
-        final String original;
-        final String applied;
-
-        Held(String original, String applied)
-        {
-            this.original = original;
-            this.applied = applied;
-        }
     }
 
     /** Whether the setting is on. */
@@ -74,46 +49,22 @@ public final class RightClickTips
         MenuSelectionManager.defaultManager().addChangeListener(e -> apply());
     }
 
-    /**
-     * The hotkey an item's tooltip is cut down to, such as "Control+E": the item's own accelerator where it has one,
-     * else every key the tooltip names, wherever it names them.
-     * @param item the menu item
-     * @param tip its tooltip, or null
-     * @return the hotkey text, or null when the item has no tooltip or the tooltip names no key
-     */
-    static String hotkeyIn(JMenuItem item, String tip)
-    {
-        if (tip == null) return null;
-
-        javax.swing.KeyStroke key = item.getAccelerator();
-
-        if (key != null)
-        {
-            String held = java.awt.event.InputEvent.getModifiersExText(key.getModifiers());
-
-            return (held.isEmpty() ? "" : held + "+") + java.awt.event.KeyEvent.getKeyText(key.getKeyCode());
-        }
-
-        String text = tip.replaceAll("<[^>]*>", "").trim();
-
-        if (ONLY_KEYS.matcher(text).matches()) return text;
-
-        java.util.Set<String> named = new java.util.LinkedHashSet<>();
-
-        for (java.util.regex.Matcher found = HOTKEY.matcher(text); found.find(); ) named.add(found.group());
-
-        return named.isEmpty() ? null : String.join(" / ", named);
-    }
-
-    /** Hides the tips of the menus now open, and puts back those of every menu that has closed. */
+    /** Hides the tips and keys of the menus now open, and puts back those of every menu that has closed. */
     private static void apply()
     {
+        MenuElement[] path = MenuSelectionManager.defaultManager().getSelectedPath();
+
         java.util.Set<JMenuItem> open = new java.util.HashSet<>();
 
-        for (MenuElement each : MenuSelectionManager.defaultManager().getSelectedPath())
+        for (MenuElement each : path)
         {
+            // A menu's items before its pop-up shows, so that the pop-up is sized without the keys.
+            if (each instanceof JMenu) collect(((JMenu) each).getMenuComponents(), open);
+
             if (each instanceof JPopupMenu) collect(((JPopupMenu) each).getComponents(), open);
         }
+
+        boolean resized = false;
 
         for (JMenuItem item : stripped) if (!open.contains(item)) putBack(item);
 
@@ -123,9 +74,13 @@ public final class RightClickTips
 
         for (JMenuItem item : open)
         {
-            // A grayed item's tip says why, which is live information.
-            if (hide && item.isEnabled()) strip(item);
-            else putBack(item);
+            resized |= hide ? strip(item) : putBack(item);
+        }
+
+        // A pop-up the keyboard opened was sized before this: it is sized again to what its items now show.
+        for (MenuElement each : path)
+        {
+            if (resized && each instanceof JPopupMenu && ((JPopupMenu) each).isShowing()) ((JPopupMenu) each).pack();
         }
     }
 
@@ -141,33 +96,69 @@ public final class RightClickTips
         }
     }
 
-    private static void strip(JMenuItem item)
+    /** Takes off the item's key, and its tip unless it is grayed; whether the key changed. */
+    private static boolean strip(JMenuItem item)
     {
-        String now = item.getToolTipText();
+        // A grayed item's tip says why, which is live information.
+        if (item.isEnabled())
+        {
+            String now = item.getToolTipText();
 
-        Object held = item.getClientProperty(HELD);
+            Object held = item.getClientProperty(HELD_TIP);
 
-        // A tip set while the menu is open is the new original.
-        String original = held instanceof Held && Objects.equals(now, ((Held) held).applied)
-            ? ((Held) held).original : now;
+            // A tip set while the menu is open is the new original.
+            String original = now == null && held instanceof String ? (String) held : now;
 
-        String shown = hotkeyIn(item, original);
+            if (original != null)
+            {
+                item.putClientProperty(HELD_TIP, original);
 
-        if (!Objects.equals(now, shown)) item.setToolTipText(shown);
+                if (now != null) item.setToolTipText(null);
 
-        item.putClientProperty(HELD, new Held(original, shown));
+                stripped.add(item);
+            }
+        }
+        else putBackTip(item);
+
+        KeyStroke key = item.getAccelerator();
+
+        if (key == null) return false;
+
+        item.putClientProperty(HELD_KEY, key);
+
+        item.setAccelerator(null);
 
         stripped.add(item);
+
+        return true;
     }
 
-    private static void putBack(JMenuItem item)
+    /** Puts back what the setting took off; whether the key changed. */
+    private static boolean putBack(JMenuItem item)
     {
-        Object held = item.getClientProperty(HELD);
+        putBackTip(item);
 
-        if (!(held instanceof Held)) return;
+        Object key = item.getClientProperty(HELD_KEY);
 
-        if (Objects.equals(item.getToolTipText(), ((Held) held).applied)) item.setToolTipText(((Held) held).original);
+        if (!(key instanceof KeyStroke)) return false;
 
-        item.putClientProperty(HELD, null);
+        item.putClientProperty(HELD_KEY, null);
+
+        if (item.getAccelerator() != null) return false;
+
+        item.setAccelerator((KeyStroke) key);
+
+        return true;
+    }
+
+    private static void putBackTip(JMenuItem item)
+    {
+        Object held = item.getClientProperty(HELD_TIP);
+
+        if (!(held instanceof String)) return;
+
+        if (item.getToolTipText() == null) item.setToolTipText((String) held);
+
+        item.putClientProperty(HELD_TIP, null);
     }
 }
