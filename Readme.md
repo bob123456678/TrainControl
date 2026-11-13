@@ -439,7 +439,7 @@ Tab icons provided by Freepik.
             - `Add Locomotive` (Ctrl+D) opens the same window, though not while autonomy is running, and a warning triangle next to `Address` now shows by itself when another locomotive uses the same address, in place of `Check Duplicates`.
             - `Sync settings & functions w/ Central Station` has moved from the key menu to the `Basic Settings` tab, under the picture.
             - On a locomotive that is part of a multi-unit, the multi-unit's name in the note on the `Multi-Unit` tab is a link: click it, or press Enter on it, to close this window (asking first about changes you haven't saved) and open the multi-unit's settings.
-            - Hovering the locomotive's picture in the main window shows a wrench that opens that locomotive's `Locomotive Settings` on `Basic Settings`.  The crop and revert icons are now only over the picture in `Locomotive Settings`, which still has the wrench for choosing a picture.
+            - With the track power off, hovering the locomotive's picture in the main window shows a wrench that opens that locomotive's `Locomotive Settings` on `Basic Settings`.  The crop and revert icons are now only over the picture in `Locomotive Settings`, which still has the wrench for choosing a picture.
             - The number in the `Address` box on `Basic Settings` no longer sits against the box's left edge.
             - The `Railway Name` box on the `Notes` tab lists the names your other locomotives already use, and you can still type a new one.
             - `Import from CSV...` on the `Locomotives` menu reads a file saved by `Export to CSV`, adding new locomotives and merging the ones you have, after showing you what will change.

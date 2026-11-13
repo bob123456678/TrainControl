@@ -1176,7 +1176,7 @@ public class LocIconCropDialog extends JDialog
     /** The window a crop window opens over and belongs to, or null. */
     static Window ownerOf(Component parent)
     {
-        // A window is its own owner: the main window is what the crop mark and Set Local Locomotive Icon hand in, and
+        // A window is its own owner: the main window is what Set Local Locomotive Icon hands in, and
         // the modal crop window had no owner (MT-703).
         if (parent instanceof Window) return (Window) parent;
 

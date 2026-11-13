@@ -5457,7 +5457,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         );
         this.KeyboardTab.setTitleAt(6, "");
         
-        // FR-032's hover crop mark, which needs locIcon to exist and so cannot be in the designer.
+        // The hover wrench (FR-104), which needs locIcon to exist and so cannot be in the designer.
         buildIconWrench();
 
         // Remove the default action for the up/down arrow keys
@@ -7920,8 +7920,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                         locIcon.setIcon(null);
                         locIcon.setText("");
 
-                        // The tools and the tooltip belong to the picture that was there; with no icon there is
-                        // nothing to re-crop (FR-032) or right-click.
+                        // The wrench and the tooltip belong to the picture that was there; with no icon there is
+                        // nothing to right-click.
                         showIconWrench();
 
                         this.ActiveLocLabel.setText(
@@ -18909,8 +18909,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         iconWrench.addMouseListener(Listen.released(evt ->
         {
-            // Either button: a right-click over the wrench is a right-click over the picture.
-            if (activeLoc != null) openLocomotiveSettings(activeLoc, LocomotiveSettingsFrame.Tab.LOCOMOTIVE, null);
+            // A right-click over the wrench is a right-click over the picture: it chooses the icon, with the power off.
+            if (activeLoc == null) return;
+
+            if (SwingUtilities.isLeftMouseButton(evt)) openLocomotiveSettings(activeLoc, LocomotiveSettingsFrame.Tab.LOCOMOTIVE, null);
+            else if (SwingUtilities.isRightMouseButton(evt) && offersTheIconTools()) setLocIcon(activeLoc);
         }));
 
         // Hard in the upper left corner with no gap, as any inset spends picture rather than margin.
@@ -19117,7 +19120,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         iconWrench.setVisible(offersTheIconTools() && locIcon.getMousePosition(true) != null);
     }
 
-    /** Whether the crop mark is offered: any icon but the placeholder, local or the Central Station's (FR-104). */
+    /** Whether the crop mark is offered in Locomotive Settings: any icon but the placeholder, local or the Central Station's (FR-104). */
     static boolean offersACrop(Locomotive l)
     {
         return l != null && l.getImageURL() != null && !l.getImageURL().isEmpty();

@@ -1383,6 +1383,15 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
         {
             super(new BorderLayout(0, 6));
 
+            fill();
+        }
+
+        /** Builds the tab's content from the model as it is now. */
+        private void fill()
+        {
+            removeAll();
+            members = null;
+
             Locomotive parent = main.getModel().isLocLinkedToOthers(loc);
 
             if (parent != null)
@@ -1403,8 +1412,10 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
                     : I18n.f("loc.ui.settingsMultiUnitHint", loc.getName()));
 
                 add(members, BorderLayout.CENTER);
-
             }
+
+            revalidate();
+            repaint();
         }
 
         /**
@@ -1422,6 +1433,14 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
             final javax.swing.JTextPane note = new javax.swing.JTextPane();
             final Runnable open = () ->
             {
+                // The unit may have changed since the tab was built: then the tab is built again, not followed
+                if (main.getModel().isLocLinkedToOthers(loc) != parent || main.getModel().getLocByName(name) != parent)
+                {
+                    fill();
+
+                    return;
+                }
+
                 closeAsking();
 
                 if (!isDisplayable()) main.openLocomotiveSettings(parent, Tab.MULTI_UNIT, null);
@@ -1429,6 +1448,8 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
 
             note.setName("settings.multiUnitNote");
             note.setEditable(false);
+            note.setFocusTraversalKeys(java.awt.KeyboardFocusManager.FORWARD_TRAVERSAL_KEYS, null);
+            note.setFocusTraversalKeys(java.awt.KeyboardFocusManager.BACKWARD_TRAVERSAL_KEYS, null);
             note.setOpaque(false);
             note.setBorder(null);
             note.setFont(new JLabel().getFont());
@@ -1451,18 +1472,25 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
 
             final java.util.function.Predicate<java.awt.Point> onLink = at ->
             {
+                // Each letter of the name has its own box, so a point past the last letter is not on the link
                 try
                 {
-                    int pos = note.viewToModel(at);
-                    java.awt.Rectangle line = pos < 0 ? null : note.modelToView(Math.min(pos, note.getDocument().getLength()));
+                    for (int i = from; i < from + name.length(); i++)
+                    {
+                        java.awt.Rectangle start = note.modelToView(i);
+                        java.awt.Rectangle end = note.modelToView(i + 1);
 
-                    return line != null && pos >= from && pos < from + name.length() && at.y >= line.y
-                        && at.y < line.y + line.height;
+                        if (end.y != start.y) end.x = start.x + note.getFontMetrics(note.getFont()).charWidth(name.charAt(i - from));
+
+                        if (at.y >= start.y && at.y < start.y + start.height && at.x >= start.x && at.x < end.x) return true;
+                    }
                 }
                 catch (javax.swing.text.BadLocationException e)
                 {
-                    return false;
+                    // Not on the link
                 }
+
+                return false;
             };
 
             note.addMouseMotionListener(new java.awt.event.MouseMotionAdapter()

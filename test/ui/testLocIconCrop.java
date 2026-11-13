@@ -684,6 +684,67 @@ public class testLocIconCrop
     }
 
     /**
+     * A right-click on the wrench is a right-click on the picture: with the power off it opens the icon chooser, not
+     * Locomotive Settings (OB-443).
+     *
+     * MUTATION: open Locomotive Settings on either button in `buildIconWrench`, and this fails.
+     */
+    @Test
+    public void testARightClickOnTheWrenchChoosesTheIcon() throws Exception
+    {
+        if (java.awt.GraphicsEnvironment.isHeadless()) throw new org.testng.SkipException("the window needs a display");
+
+        support.LayoutSandbox sandbox = null;
+        org.traincontrol.marklin.MarklinControlStation model = null;
+        TrainControlUI ui = null;
+
+        try
+        {
+            // OPENED INSIDE THE TRY (OB-111)
+            sandbox = support.LayoutSandbox.open();
+
+            model = support.TestStation.simulated();
+
+            ui = windowOver(model);
+
+            java.lang.reflect.Field power =
+                Reflect.field(org.traincontrol.marklin.MarklinControlStation.class, "powerState");
+
+            power.set(model, false);
+
+            ui.updatePowerState();
+
+            Components.drain(4);
+
+            final javax.swing.JLabel wrench = field(ui, "iconWrench", javax.swing.JLabel.class);
+
+            Reflect.set(TrainControlUI.class, ui, "activeLoc", model.newDCCLocomotive("OB-443 right", 8444));
+
+            javax.swing.SwingUtilities.invokeAndWait(() -> wrench.dispatchEvent(new java.awt.event.MouseEvent(wrench,
+                java.awt.event.MouseEvent.MOUSE_RELEASED, System.currentTimeMillis(), java.awt.event.InputEvent.BUTTON3_MASK,
+                5, 5, 1, false, java.awt.event.MouseEvent.BUTTON3)));
+
+            final javax.swing.JFileChooser chooser = awaitAChooser(10000);
+
+            assertNotNull(chooser, "a right-click on the wrench did not open the icon chooser");
+
+            javax.swing.SwingUtilities.invokeAndWait(chooser::cancelSelection);
+
+            assertNull(support.SettingsWindow.showing(), "a right-click on the wrench opened Locomotive Settings");
+        }
+        finally
+        {
+            support.SettingsWindow.closeIfOpen();
+
+            closeTheWindow(ui);
+
+            if (model != null) model.stop();
+
+            if (sandbox != null) sandbox.close();
+        }
+    }
+
+    /**
      * A picture from the Central Station can be cropped here (FR-104). The crop is kept as every crop is; the station's
      * picture is kept beside it to crop again from, never as one of the crops that replacing a crop deletes.
      *

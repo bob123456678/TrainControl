@@ -872,6 +872,103 @@ public class testTheLocomotiveSettingsWindow
     }
 
     /**
+     * Tab and Shift+Tab leave the link for the next and the previous control, as they do everywhere else in the window
+     * (a text pane keeps Tab for itself unless told otherwise).
+     *
+     * MUTATION: take the two `setFocusTraversalKeys` calls out of `partOfNote`, and this fails.
+     */
+    @Test
+    public void testTabLeavesTheLink() throws Exception
+    {
+        openTheMembersNote();
+
+        javax.swing.JTextPane note = SettingsWindow.part("settings.multiUnitNote", javax.swing.JTextPane.class);
+
+        java.util.Set<java.awt.AWTKeyStroke> forward = Components.onTheEventThread(
+            () -> note.getFocusTraversalKeys(java.awt.KeyboardFocusManager.FORWARD_TRAVERSAL_KEYS));
+        java.util.Set<java.awt.AWTKeyStroke> backward = Components.onTheEventThread(
+            () -> note.getFocusTraversalKeys(java.awt.KeyboardFocusManager.BACKWARD_TRAVERSAL_KEYS));
+
+        assertTrue(forward.contains(java.awt.AWTKeyStroke.getAWTKeyStroke(java.awt.event.KeyEvent.VK_TAB, 0)),
+            "Tab does not leave the link");
+        assertTrue(backward.contains(java.awt.AWTKeyStroke.getAWTKeyStroke(java.awt.event.KeyEvent.VK_TAB,
+            java.awt.event.InputEvent.SHIFT_DOWN_MASK)), "Shift+Tab does not leave the link");
+    }
+
+    /**
+     * The link is the whole of the name and no more: the right half of its last letter and the left half of its first
+     * are on it, the space on either side is not.
+     *
+     * MUTATION: test the point with `viewToModel` alone in `partOfNote`, which rounds to the nearest letter edge, and
+     * this fails.
+     */
+    @Test
+    public void testTheLinkIsExactlyTheName() throws Exception
+    {
+        openTheMembersNote();
+
+        javax.swing.JTextPane note = SettingsWindow.part("settings.multiUnitNote", javax.swing.JTextPane.class);
+        int from = Components.onTheEventThread(() -> note.getText().lastIndexOf(NAME));
+        java.awt.Rectangle first = Components.onTheEventThread(() -> viewOf(note, from));
+        java.awt.Rectangle end = Components.onTheEventThread(() -> viewOf(note, from + NAME.length()));
+        int y = first.y + first.height / 2;
+
+        assertTrue(handAt(note, first.x - 2, y) == false, "the space before the name is on the link");
+        assertTrue(handAt(note, first.x + 1, y), "the first letter's left edge is not on the link");
+        assertTrue(handAt(note, end.x - 1, y), "the last letter's right half is not on the link");
+        assertTrue(handAt(note, end.x + 1, y) == false, "the space after the name is on the link");
+    }
+
+    private static java.awt.Rectangle viewOf(javax.swing.JTextPane note, int at)
+    {
+        try
+        {
+            return note.modelToView(at);
+        }
+        catch (javax.swing.text.BadLocationException e)
+        {
+            throw new IllegalStateException(e);
+        }
+    }
+
+    /** Whether the pointer moved to this point of the note shows the hand. */
+    private static boolean handAt(javax.swing.JTextPane note, int x, int y)
+    {
+        Components.onTheEventThread(() ->
+        {
+            note.dispatchEvent(new java.awt.event.MouseEvent(note, java.awt.event.MouseEvent.MOUSE_MOVED,
+                System.currentTimeMillis(), 0, x, y, 0, false));
+
+            return null;
+        });
+
+        return Components.onTheEventThread(() -> note.getCursor().getType()) == java.awt.Cursor.HAND_CURSOR;
+    }
+
+    /**
+     * When the unit has changed since the tab was built, the link builds the tab again instead of opening a unit this
+     * locomotive is no longer in.
+     *
+     * MUTATION: leave the check out of `partOfNote`'s action, and this fails.
+     */
+    @Test
+    public void testAStaleLinkRefreshesTheTabInsteadOfOpening() throws Exception
+    {
+        openTheMembersNote();
+
+        LocomotiveSettingsFrame member = SettingsWindow.showing();
+
+        loc.setLinkedLocomotives(new java.util.HashMap<String, Double>());
+
+        mouseOnTheNote(java.awt.event.MouseEvent.MOUSE_RELEASED, true);
+
+        assertSame(SettingsWindow.showing(), member, "the stale link opened another window");
+        assertEquals(SettingsWindow.text("settings.name"), OTHER);
+        assertTrue(Components.onTheEventThread(() -> SettingsWindow.part("settings.multiUnitNote",
+            javax.swing.JTextPane.class) == null), "the tab still shows the note of a unit this locomotive left");
+    }
+
+    /**
      * With changes unsaved, the link asks Save, Discard or Cancel as the X does: Cancel leaves the window where it was,
      * with what was typed; Discard goes on to the multi-unit (FR-196).
      *
