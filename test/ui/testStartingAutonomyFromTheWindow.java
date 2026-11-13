@@ -236,6 +236,56 @@ public class testStartingAutonomyFromTheWindow
     @Test
     public void testTheDiagramsMenuStartsAndStopsTheRun() throws Exception
     {
+        runAndStopFromTheDiagram();
+    }
+
+    /**
+     * Once Gracefully Stop Autonomy from the diagram's menu has brought every train in, a station's menu is the menu at
+     * rest in every group, not half of it (OB-449): Start live, the train's Remove and Autonomy Setup.
+     *
+     * MUTATION: leave Graceful Stop offered once pressed (drop `this.gracefulStop.setEnabled(false)` in
+     * `gracefulStopActionPerformed`), and the menu keeps Start live but loses Remove and Autonomy Setup.
+     */
+    @Test
+    public void testAfterAGracefulStopTheDiagramsMenuIsAtRest() throws Exception
+    {
+        Layout layout = runAndStopFromTheDiagram();
+
+        // Where a train stands now, on the railway: the run has moved them
+        TileKey standing = null;
+
+        for (Point each : layout.getPoints())
+        {
+            if (standing == null && each.getCurrentLocomotive() != null && each.isDestination())
+            {
+                standing = session.getStationIndex().squareOf(each);
+            }
+        }
+
+        assertNotNull(standing, "precondition: no train stands at a station after the run");
+
+        java.util.List<String> live = new ArrayList<>();
+
+        for (AbstractButton item : Components.all(diagramItem(standing, I18n.t("autosetup.ui.menuStationSettings"))
+            .getParent(), AbstractButton.class, b -> b.isEnabled())) live.add(item.getText());
+
+        String remove = I18n.f("layout.ui.menuRemoveLocomotive", "#").split("#")[0];
+
+        assertTrue(live.containsAll(java.util.Arrays.asList(I18n.t("autosetup.ui.menuAutonomySetup"),
+            I18n.t("autolayout.ui.menuStartAutonomy"))) && live.stream().anyMatch(text -> text.startsWith(remove)),
+            "after the trains came in, the menu on " + standing + " is not the menu at rest: " + live);
+    }
+
+    // ---------------------------------------------------------------- doors
+
+    private interface Pressing
+    {
+        List<String> press() throws Exception;
+    }
+
+    /** Starts the run and stops it gracefully from the diagram's menu, and waits until it rests with nothing held. */
+    private static Layout runAndStopFromTheDiagram() throws Exception
+    {
         final TileKey square = aStationWithATrain();
 
         Layout layout = startTheRun(() -> press(diagramItem(square, I18n.t("autolayout.ui.menuStartAutonomy")),
@@ -244,13 +294,8 @@ public class testStartingAutonomyFromTheWindow
         press(diagramItem(square, I18n.t("autolayout.ui.menuStopAutonomyGracefully")), message -> null);
 
         assertRestsWithNothingHeld(layout, "the diagram's Gracefully Stop Autonomy");
-    }
 
-    // ---------------------------------------------------------------- doors
-
-    private interface Pressing
-    {
-        List<String> press() throws Exception;
+        return layout;
     }
 
     /** Starts the run through a door, and waits until autonomy runs with a train under way. */
