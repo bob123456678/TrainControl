@@ -59,12 +59,11 @@ Not: `// OB-271 (2026-09-14): Adam reported ... Round 112 found ...; RSA61-B2 wi
 - Red before green: show each new claim failing without the change; a claim that never failed proves nothing.
 - Test what the user does and what comes of it, through the real door, not the record the code just wrote.
 - One `MUTATION:` note per claim.  Run mutations only when the brief asks or the claim is new.
-- A test that copies Adam's settings sets what it needs, never toggles them; one that sets a preference puts it back.
+- A run starts from default preferences: a test that depends on a setting sets it, never toggles it, and puts it back.
 - Never edit an existing guard or ratchet test to make it pass: report it (a brief may name a baseline to update).
 - Read the "Total tests run" line: a class that skipped everything is not green, and a failed compile leaves old
   reports behind.
-- Known red: `core.testMockCentralStation` (4 failures, the baseline).  A record class red over a tracker count is the
-  orchestrator's: report it, don't chase it.
+- A record class red over a tracker count is the orchestrator's: report it, don't chase it.
 
 **Working efficiently**
 - Run classes with `TC_SCRATCH=<scratch dir> bash docs/tools/one.sh pkg.ClassA pkg.ClassB`
