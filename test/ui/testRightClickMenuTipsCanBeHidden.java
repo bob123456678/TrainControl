@@ -159,7 +159,7 @@ public class testRightClickMenuTipsCanBeHidden
     /** The items the last read found grayed: they keep their tips, which say why. */
     private static final java.util.Set<String> grayed = new java.util.HashSet<>();
 
-    /** The keys the last read found shown on the items' right, by item: the setting never touches them. */
+    /** The keys the last read found shown on the items' right, by item: ticked, the setting hides them (FR-199). */
     private static final Map<String, javax.swing.KeyStroke> shownKeys = new java.util.HashMap<>();
 
     private static void collect(Component[] items, Map<String, String> into)
