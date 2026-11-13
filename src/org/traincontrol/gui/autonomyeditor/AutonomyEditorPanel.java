@@ -6652,6 +6652,9 @@ public class AutonomyEditorPanel extends JPanel
             findingRelated.add(null);
             findingSeverity.add(null);
         }
+
+        // Control+O off the diagram opens only a finding still listed
+        if (!findingTiles.contains(chosenFinding)) chosenFinding = null;
     }
 
     /** @return the filter box's text, to carry across a page change */

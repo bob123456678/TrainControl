@@ -1427,6 +1427,62 @@ public class testStationSettingsWindow
         assertEquals(again.squareForTest(), square, "the key opened another square's window");
     }
 
+    /**
+     * A finding chosen and then gone from the list (here, filtered out) leaves Control+O with the pointer off the
+     * diagram no finding to open Station Settings on (FR-072).
+     *
+     * MUTATION: leave out `showFindings`' clearing of `chosenFinding`, and the key opens the gone finding's square.
+     */
+    @Test(timeOut = 120000)
+    public void testAFindingNoLongerListedLeavesControlONothingToOpen() throws Exception
+    {
+        TileKey square = aStationWithTwoWaysIn();
+
+        Components.onTheEventThread(() ->
+        {
+            session.setPointProperty(square, org.traincontrol.automationui.AutonomyBuilder.MUST_REVERSE, Boolean.TRUE);
+            panel.refresh();
+
+            return null;
+        });
+
+        Components.settle();
+
+        @SuppressWarnings("unchecked")
+        JList<String> list = (JList<String>) Reflect.get(AutonomyEditorPanel.class, panel, "findings");
+
+        java.lang.reflect.Field tiles = Reflect.field(AutonomyEditorPanel.class, "findingTiles");
+
+        int row = Components.onTheEventThread(() -> ((List<?>) tiles.get(panel)).indexOf(square));
+
+        assertTrue(row >= 0, "precondition: no finding about " + square);
+
+        Components.onTheEventThread(() -> { list.setSelectedIndex(row); return null; });
+
+        Components.settle();
+
+        // The Filter box, typed so nothing matches: the list is rebuilt without the finding
+        Components.onTheEventThread(() -> { panel.setFindingFilter("qx no finding says this"); return null; });
+
+        Components.settle();
+
+        assertFalse(Components.onTheEventThread(() -> ((List<?>) tiles.get(panel)).contains(square)),
+            "precondition: the finding about " + square + " is still listed");
+
+        StationSettingsWindow opened = Components.onTheEventThread(() ->
+        {
+            StationSettingsWindow w = panel.openStationSettingsForTheFinding();
+
+            if (w != null) w.dispose();
+
+            return w;
+        });
+
+        Components.onTheEventThread(() -> { panel.setFindingFilter(""); return null; });
+
+        assertNull(opened, "Control+O opened Station Settings for a finding that is no longer listed");
+    }
+
     // -------------------------------------------------------------------------------------------------------------- look
 
     /**
