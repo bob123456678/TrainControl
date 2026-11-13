@@ -77,7 +77,6 @@ public final class RightClickTips
     /**
      * The hotkey an item's tooltip is cut down to, such as "Control+E": the item's own accelerator where it has one,
      * else every key the tooltip names, wherever it names them.
-     * @param item the menu item
      * @param tip its tooltip, or null
      * @return the hotkey text, or null when the item has no tooltip or the tooltip names no key
      */

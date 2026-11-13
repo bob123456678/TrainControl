@@ -4488,9 +4488,8 @@ public class AutonomyEditorPanel extends JPanel
     }
 
     /**
-     * Where Station Settings first opens over `window`: `besideTheWindow`, the column's top this panel's.  The track
-     * diagram's window has no column to spare, its right side being the throttle and Power: without room beside it,
-     * `besideOwner`.
+     * Where Station Settings first opens over `window`: `besideTheWindow`, the column's top this panel's; `besideOwner`
+     * where the track diagram's window has no room beside it (its right side is the throttle and Power).
      */
     java.awt.Point whereStationSettingsOpens(java.awt.Window window, java.awt.Dimension size)
     {

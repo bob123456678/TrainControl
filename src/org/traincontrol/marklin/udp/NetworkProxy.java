@@ -307,8 +307,8 @@ public class NetworkProxy
     }
 
     /**
-     * Waits, at most TCP_CONNECT_TIMEOUT_MS, until the UDP listener has delivered what the socket held: a datagram the
-     * socket sends itself is read after them.  So no frame from before the connect is set aside; one the station sends
+     * Waits, at most TCP_CONNECT_TIMEOUT_MS, until the UDP listener has delivered what the socket held (a datagram the
+     * socket sends itself is read after them), so no frame from before the connect is set aside; one the station sends
      * while the connect is made may still come twice, or not at all.
      */
     private void awaitTheBacklog()

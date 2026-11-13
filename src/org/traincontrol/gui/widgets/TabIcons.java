@@ -61,7 +61,7 @@ public final class TabIcons
         });
     }
 
-    /** A station: its nameboard on two legs, two lines of name on it, by the locomotive's rail (D36). */
+    /** A station: its nameboard on two legs, two lines of name on it, by the locomotive's rail. */
     public static Icon station()
     {
         return icon((g, w, h) ->
@@ -73,7 +73,7 @@ public final class TabIcons
         });
     }
 
-    /** Two switches, one on and one off: the locomotive's functions.  Same size, the knobs the same distance from their ends. */
+    /** Two switches, one on and one off: the locomotive's functions. */
     public static Icon functions()
     {
         return icon((g, w, h) ->

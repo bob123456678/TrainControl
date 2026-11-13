@@ -773,8 +773,8 @@ final class EditorTileMenus
 
     /**
      * One click to the other facing; grayed with its reason where there is none to turn to (OB-347), left off the track
-     * diagram's menu where the track allows one facing and the radios where there is no single other: the facing
-     * unknown, or more than two.  A facing has to be one the BUILD can hold.
+     * diagram's menu where the track allows one facing, and the radios where there is no single other.  A facing has
+     * to be one the BUILD can hold.
      */
     private javax.swing.JMenuItem changeDirectionItem(final TileKey target, final FacingFacts facts)
     {

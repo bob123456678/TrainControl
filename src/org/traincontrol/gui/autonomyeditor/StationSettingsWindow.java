@@ -983,8 +983,7 @@ public final class StationSettingsWindow extends StationWindowBase
 
     /**
      * A press anywhere in the window but on a text field applies what is typed, as leaving the field does: most of the
-     * window cannot take the keyboard, so a click on it would leave the field holding it (OB-436).  A refusal rebuilds
-     * nothing, so the press still lands.
+     * window cannot take the keyboard (OB-436).  A refusal rebuilds nothing, so the press still lands.
      */
     private final java.awt.event.AWTEventListener pressAway = event ->
     {

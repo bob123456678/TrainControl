@@ -221,8 +221,7 @@ public class RouteEditorFrame extends JFrame
 
     /**
      * The least height, from the layout's own minimum, at which the commands' and the conditions' viewports each show
-     * a whole row: laid out at a height, measured, and raised by what the shorter one lacks, twice over since the two
-     * sections share the extra.
+     * a whole row: laid out, measured, and raised by what the shorter one lacks, twice since the two share the extra.
      */
     private int tallEnoughForARowInEachTable(int width)
     {

@@ -4848,8 +4848,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
         TrainControlUI ui = null;
         
         // THE LOOK AND FEEL FIRST, whether or not a window is built: a caller passing showUI=false (every test) would
-        // otherwise get Metal dialogs.  Idempotent, so the constructor asking again costs nothing.  On the event thread,
-        // as all of start-up's Swing (OB-445).
+        // otherwise get Metal dialogs.  Idempotent; on the event thread, as all of start-up's Swing (OB-445).
         if (!java.awt.GraphicsEnvironment.isHeadless()) onTheEventThread(() ->
         {
             TrainControlUI.installLookAndFeel();
