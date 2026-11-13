@@ -2373,12 +2373,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         return this.routesMenu;
     }
 
-    /** Routes > New Route...: the Add Route button's own handler, so both doors ask the same things. */
-    void newRoute()
-    {
-        AddRouteButtonActionPerformed(null);
-    }
-
     javax.swing.JTabbedPane locCommandPanels()
     {
         return this.locCommandPanels;
@@ -20149,6 +20143,12 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     void findRoute()
     {
         this.routeListPanel.findRoute();
+    }
+
+    /** Routes > New Route...: the Add Route button's own handler, so both doors ask the same things. */
+    void newRoute()
+    {
+        AddRouteButtonActionPerformed(null);
     }
 
     /**

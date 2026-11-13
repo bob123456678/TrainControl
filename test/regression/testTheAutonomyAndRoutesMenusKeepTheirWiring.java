@@ -284,14 +284,7 @@ public class testTheAutonomyAndRoutesMenusKeepTheirWiring
                 expected.add(page.getName());
             }
 
-            List<String> leaves = new ArrayList<>();
-
-            leavesOf(theAutonomyMenu(ui).getMenuComponents(), leaves);
-
-            Collections.sort(expected);
-            Collections.sort(leaves);
-
-            assertEquals(leaves, expected, "the Autonomy menu offers something lost, added or doubled");
+            assertOffers(theAutonomyMenu(ui).getMenuComponents(), expected, "the Autonomy menu");
         });
     }
 
@@ -317,14 +310,7 @@ public class testTheAutonomyAndRoutesMenusKeepTheirWiring
             expected.add(t("autosetup.ui.menuUnloadAutonomy"));
             expected.add(t("autosetup.ui.menuDeleteSetup"));
 
-            List<String> leaves = new ArrayList<>();
-
-            leavesOf(theTabsManageList(ui).getComponents(), leaves);
-
-            Collections.sort(expected);
-            Collections.sort(leaves);
-
-            assertEquals(leaves, expected, "the Autonomy tab's Manage button offers something lost, added or doubled");
+            assertOffers(theTabsManageList(ui).getComponents(), expected, "the Autonomy tab's Manage button");
         });
     }
 
@@ -349,16 +335,12 @@ public class testTheAutonomyAndRoutesMenusKeepTheirWiring
                 "the Routes menu does not read as answered (D51)");
 
             // CENSUS: before (inventory), then New Route... added
-            List<String> leaves = new ArrayList<>();
-
-            leavesOf(routes.getMenuComponents(), leaves);
-
             List<String> expected = new ArrayList<>(Arrays.asList(t("route.ui.menuFindRoute"),
                 t("ui.main.toolbar.export"), t("ui.main.toolbar.tooltip.import")));
 
             expected.add(0, t("route.ui.menuNewRoute"));
 
-            assertEquals(leaves, expected, "the Routes menu offers something lost, added or doubled");
+            assertOffers(routes.getMenuComponents(), expected, "the Routes menu");
 
             // EXPORT AND IMPORT ARE THE GENERATED ITEMS, whose handlers nothing here touched
             assertTrue(itemCalled(routes, t("ui.main.toolbar.export"))
@@ -610,6 +592,21 @@ public class testTheAutonomyAndRoutesMenusKeepTheirWiring
             if (part instanceof JMenu) leavesOf(((JMenu) part).getMenuComponents(), into);
             else if (part instanceof JMenuItem) into.add(((JMenuItem) part).getText());
         }
+    }
+
+    /** Census: the items that act, in every submenu, are the expected ones, none lost, added or doubled. */
+    private static void assertOffers(Component[] parts, List<String> expected, String what)
+    {
+        List<String> leaves = new ArrayList<>();
+
+        leavesOf(parts, leaves);
+
+        List<String> wanted = new ArrayList<>(expected);
+
+        Collections.sort(wanted);
+        Collections.sort(leaves);
+
+        assertEquals(leaves, wanted, what + " offers something lost, added or doubled");
     }
 
     private static JMenuItem itemCalled(JMenu menu, String text)

@@ -635,13 +635,7 @@ public class testTheRoutesImportDoorAsksByName
 
                     final String answer = replace ? YES : NO;
 
-                    SwingUtilities.invokeLater(() ->
-                    {
-                        for (Object option : pane.getOptions())
-                        {
-                            if (answer.equals(String.valueOf(option))) pane.setValue(option);
-                        }
-                    });
+                    press(pane, answer);
 
                     return;
                 }
@@ -654,13 +648,7 @@ public class testTheRoutesImportDoorAsksByName
 
                     final String answer = yes ? YES : NO;
 
-                    SwingUtilities.invokeLater(() ->
-                    {
-                        for (Object option : pane.getOptions())
-                        {
-                            if (answer.equals(String.valueOf(option))) pane.setValue(option);
-                        }
-                    });
+                    press(pane, answer);
 
                     return;
                 }
@@ -673,6 +661,18 @@ public class testTheRoutesImportDoorAsksByName
                 SwingUtilities.invokeLater(() -> pane.setValue(Integer.valueOf(JOptionPane.OK_OPTION)));
             });
         }
+    }
+
+    /** Presses the question's button of this text. */
+    private static void press(final JOptionPane pane, final String answer)
+    {
+        SwingUtilities.invokeLater(() ->
+        {
+            for (Object option : pane.getOptions())
+            {
+                if (answer.equals(String.valueOf(option))) pane.setValue(option);
+            }
+        });
     }
 
     private static <T> T find(Container container, Class<T> type)
