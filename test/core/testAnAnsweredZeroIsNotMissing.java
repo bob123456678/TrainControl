@@ -257,7 +257,7 @@ public class testAnAnsweredZeroIsNotMissing
 
         // The wording of the message pass, and of the refusing notice's shorter one
         String stands = "stands across that switch here and may block other trains until it leaves";
-        String blocks = "longer trains block the switch";
+        String blocks = "longer trains stand across that switch";
 
         java.util.Map<String, Integer> figures = new java.util.LinkedHashMap<>();
 
