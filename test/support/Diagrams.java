@@ -50,6 +50,30 @@ public final class Diagrams
     }
 
     /**
+     * A 12 by 4 page of this name and page id: a sensor at each end of a run of plain track along row 1, (1,1) address 5
+     * and (6,1) address 6, and a text label "Yard" at (3,3).
+     */
+    public static LayoutDiagram aPageWithARunAndALabel(String name) throws IOException
+    {
+        LayoutDiagram page = new LayoutDiagram(name, 12, 4, null, null);
+
+        feedback(page, 1, 1, 5, 11);
+
+        for (int x = 2; x <= 5; x++)
+        {
+            straight(page, x, 1);
+        }
+
+        feedback(page, 6, 1, 6, 12);
+
+        page.addComponent(componentType.TEXT, 3, 3, 0, 0, 0, 0, accessoryDecoderType.MM2, "Yard");
+
+        page.setPageId(name);
+
+        return page;
+    }
+
+    /**
      * Attaches an accessory of its own to every addressed switch and signal, as syncLayouts does on loading: pages
      * parsed without a model carry addresses and no Accessory, and the reduction cannot trace through such a switch.
      */
