@@ -18,11 +18,9 @@ import org.testng.annotations.Test;
  * compared with the thing it describes, and the failure message says what to write instead.
  *
  * ROWS ARE NOT FINDINGS: a finding written up in two documents has a row for each, so both counts are checked, against
- * the catalogue's rows and its distinct refs.  The review total is not a constant of this test: the README's four
- * countable things are asked whether they agree with each other.
+ * the catalogue's rows and its distinct refs.
  *
- * MUTATION: change by one any number a claim below reads, and the matching claim names it.  For the spelled-out total,
- * edit the WORDS ("Two hundred and eight" to "Two hundred and nine"), since an earlier claim catches every digit edit.
+ * MUTATION: change by one any number a claim below reads, and the matching claim names it.
  *
  * The store also hands out the next round (FR-136): `catalog-findings.py --next PREFIX` and `--check-unused REF`; the
  * claims that run them need `python` on the path.
@@ -62,96 +60,6 @@ public class testTheRecordsCountTheStore
         assertEquals(number(both.group(2)), findings,
             "behaviour/citations.md quotes " + both.group(2) + " findings; the store holds " + count(findings)
             + " distinct refs in " + count(rows) + " rows");
-    }
-
-    /**
-     * The review-document arithmetic in `docs/reviews/README.md` agrees with itself: which files counted as reviews is
-     * a judgment no test can make, but how the four numbers relate is arithmetic.
-     */
-    @Test
-    public void testTheDeletedReviewsAddUp() throws Exception
-    {
-        String said = flowed("docs/reviews/README.md");
-
-        Matcher halves = Pattern.compile("([0-9]+) on 2026-09-08 and ([0-9]+) on 2026-09-21")
-            .matcher(said);
-
-        assertTrue(halves.find(),
-            "docs/reviews/README.md no longer says how many review documents were deleted on each date,"
-            + " so the total beside it is unchecked");
-
-        int reviews = Integer.parseInt(halves.group(1));
-        int second = Integer.parseInt(halves.group(2));
-
-        assertTrue(halves.find(),
-            "docs/reviews/README.md states the reviews per round but no longer states the FILES per"
-            + " round that git can confirm, which is the half a validation round re-derived and"
-            + " disagreed with (VD15-R2).  It should say how many files each round deleted, and what"
-            + " the difference from " + reviews + " and " + second + " is");
-
-        int files = Integer.parseInt(halves.group(1));
-
-        assertEquals(Integer.parseInt(halves.group(2)), second,
-            "the README gives two different numbers for the 2026-09-21 round - " + second + " reviews"
-            + " and " + halves.group(2) + " files - and for that round they must be equal: no for-Adam note was"
-            + " deleted that day (VD18-T9)");
-
-        // AND THE SECOND ROUND'S TWO PLACES: "(44 in `docs/reviews/` itself and 21 in three dated folders beside it)"
-        // was read by nothing, so 44 could become 43 with every claim here green
-        Matcher places = Pattern.compile("([0-9]+) in .docs/reviews/. itself and ([0-9]+) in").matcher(said);
-
-        assertTrue(places.find(), "docs/reviews/README.md no longer says where the 2026-09-21 round's files were, so the"
-            + " split beside the total is unchecked");
-
-        assertEquals(Integer.parseInt(places.group(1)) + Integer.parseInt(places.group(2)), second, "the README puts "
-            + places.group(1) + " of the 2026-09-21 round's files in docs/reviews/ and " + places.group(2) + " in the"
-            + " dated folders, which is not the " + second + " it says that round deleted");
-
-        Matcher total = Pattern.compile("[*][*]([0-9]+) files[*][*] deleted from the review folders")
-            .matcher(said);
-
-        assertTrue(total.find(),
-            "docs/reviews/README.md no longer states the file total git counts, so the two halves"
-            + " above are added up by nobody.  It should say \"**" + (files + second) + " files**"
-            + " deleted from the review folders\"");
-
-        assertEquals(Integer.parseInt(total.group(1)), files + second,
-            "the README says " + files + " files were deleted on 2026-09-08 and " + second
-            + " on 2026-09-21, which is " + (files + second) + ", and states the total as "
-            + total.group(1));
-
-        Matcher notes = Pattern.compile("between ([0-9]+) files and ([0-9]+) reviews").matcher(said);
-
-        assertTrue(notes.find(),
-            "docs/reviews/README.md no longer says what the difference between the files deleted and"
-            + " the reviews among them is.  Without it the total below cannot be checked against the"
-            + " file count at all, which is how one round got 207 and another 208");
-
-        assertEquals(Integer.parseInt(notes.group(1)), files,
-            "the README's for-Adam sentence quotes " + notes.group(1) + " files against the "
-            + files + " it states above");
-
-        assertEquals(Integer.parseInt(notes.group(2)), reviews,
-            "the README's for-Adam sentence quotes " + notes.group(2) + " reviews against the "
-            + reviews + " it states above");
-
-        // ONE NEEDLE, NOT TWO: a file named "<date>-questions-for-adam.md" also ends with "-for-adam.md", so counting
-        // both names counted that file twice.
-        assertEquals(occurrences(said, "-for-adam.md"),
-            files - reviews,
-            "the README says the difference between " + files + " files and " + reviews
-            + " reviews is " + (files - reviews) + " for-Adam notes, and names "
-            + occurrences(said, "-for-adam.md") + " of them.  Name each one: an unnamed exclusion is"
-            + " how this arithmetic"
-            + " came to be re-derived twice");
-
-        // THE SPELLED-OUT TOTAL, DERIVED, not compared with a constant that would be the document's own claim twice.
-        String words = spelled(reviews + second);
-
-        assertTrue(said.toLowerCase().contains(words + " review documents"),
-            "the README says " + reviews + " review documents were deleted on 2026-09-08 and " + second
-            + " on 2026-09-21, which is " + (reviews + second) + " - so its spelled-out total has to"
-            + " read \"" + words + " review documents\"");
     }
 
     /**
@@ -717,53 +625,6 @@ public class testTheRecordsCountTheStore
     private static int number(String said)
     {
         return Integer.parseInt(said.replace(",", ""));
-    }
-
-    /** A number up to 999 in words, the way the README spells its total. */
-    private static String spelled(int value)
-    {
-        String[] ones = {"zero", "one", "two", "three", "four", "five", "six", "seven", "eight",
-            "nine", "ten", "eleven", "twelve", "thirteen", "fourteen", "fifteen", "sixteen",
-            "seventeen", "eighteen", "nineteen"};
-
-        String[] tens = {"", "", "twenty", "thirty", "forty", "fifty", "sixty", "seventy", "eighty",
-            "ninety"};
-
-        assertTrue(value > 0 && value < 1000, "this spells 1 to 999, and was asked for " + value);
-
-        StringBuilder out = new StringBuilder();
-
-        if (value >= 100)
-        {
-            out.append(ones[value / 100]).append(" hundred");
-
-            if (value % 100 > 0) out.append(" and ");
-
-            value = value % 100;
-        }
-
-        if (value >= 20)
-        {
-            out.append(tens[value / 10]);
-
-            if (value % 10 > 0) out.append("-").append(ones[value % 10]);
-        }
-        else if (value > 0)
-        {
-            out.append(ones[value]);
-        }
-
-        return out.toString();
-    }
-
-    /** How many times one string occurs in another. */
-    private static int occurrences(String text, String needle)
-    {
-        int count = 0;
-
-        for (int at = text.indexOf(needle); at >= 0; at = text.indexOf(needle, at + 1)) count++;
-
-        return count;
     }
 
     /** A document with its line breaks turned into spaces, so a phrase the file wraps still reads. */

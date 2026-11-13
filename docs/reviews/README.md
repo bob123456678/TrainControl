@@ -2,28 +2,17 @@
 
 How a review round is run and recorded.
 
-**This folder holds no reviews, and that is deliberate.** It is the convention, not the home. Two hundred and eight
-review documents were written between 26 July and 20 September 2026 and all were deleted, 143 on 2026-09-08 and 65 on
-2026-09-21, alongside two for-Adam notes that were never reviews, once the catalog carried what they found. Later
-rounds went the same way and are counted apart from those two deletions: twenty documents in
-`docs/reviews-2026-09-23/`, fifteen in `docs/reviews-2026-09-24/`, and 101 files in `docs/reviews-2026-09-25/` (RSA 1
-to 75, RLV6 to RLV13, RLA, RLD and RLU 1 to 5 each, BCR, BPV and E2E; 1,199 findings, each compared with the store
-before the folder was deleted on 2026-10-19). **How a multi-lane review is run, closed and reported is in
-[FANOUT.md](FANOUT.md)**, with an example report in
+**This folder holds no reviews, and that is deliberate.** It is the convention, not the home: a round's documents are
+written, cataloged and deleted in the same round, once the store carries what they found.  **How a multi-lane review
+is run, closed and reported is in [FANOUT.md](FANOUT.md)**, with an example report in
 [examples/session-report-2026-09-23.html](examples/session-report-2026-09-23.html).
-
-**Where those numbers come from:** `git log --diff-filter=D` counts **210 files** deleted from the review folders,
-145 on 2026-09-08 and 65 on 2026-09-21 (44 in `docs/reviews/` itself and 21 in three dated folders beside it). The two
-for-Adam notes, `2026-08-19-for-adam.md` and `2026-09-03-questions-for-adam.md`, are the difference between 145 files
-and 143 reviews. Which of the rest counted as a review is a judgment no test can make;
-`regression.testTheRecordsCountTheStore` checks only that the halves quoted here add up to the totals quoted here.
 
 What survives a round:
 
 | | |
 |---|---|
 | every finding | the `finding` table in `docs/manual-tests/triage.db`: ref, severity, what it was about, the evidence, the commit, which source files cite it, and a `status` set deliberately |
-| one finding | `py -3 docs/manual-tests/triagedb.py findings MKR-B1` (no ref: the whole catalogue as text) |
+| one finding | `py -3 docs/manual-tests/triagedb.py findings MKR-B1` |
 | the rules it settled | [../reference/behaviour.md](../reference/behaviour.md) |
 | the questions it left | the findings whose status is "Open - Adam's decision", in the same store |
 | the work it left | the Inbox, in the same store: `py -3 docs/manual-tests/triagedb.py issues` |
@@ -85,28 +74,10 @@ Three values, and no others:
 
 **A document with no status line is open**, because forgetting the line is likelier than writing the wrong one.
 
-### What the status line is for, now that nothing is archived
-
-It is the one line a fix commit has to change, and it makes the end of a round checkable: a folder in which every
-document reads `closed` can be deleted; one in which any reads `open` is a round not finished. Keep it true; a
-document's status table left behind by its own fixes reads "open" for finished work.
-
-Nothing is renamed, ever: identifiers are cited from commits, comments and other documents, and a rename breaks those
-silently.
-
-### Three kinds of document, not one
-
-1. **Reviews**: findings with severities and dispositions. Closed when every finding is.
-2. **Plans and proposals**: a decision written down before the work. Closed when the work is done or the plan is
-   abandoned; say which in the status line.
-3. **Generated reports**: harness output for a person to read. No findings, no dispositions, regenerable; they do not
-   belong in this folder. Fold the conclusion into a review and delete the dump, or have the harness write to a
-   temporary directory, as `testRouteInventory` does.
-
-### What this is not
-
-Not a way of tidying up work nobody wants to look at. A finding is closed when it is fixed, withdrawn, or explicitly
-declined by Adam; never because it has been open a long time, and never because a later document covers the same area.
+The status line is the one line a fix commit changes: a round whose documents all read `closed` can be deleted.  A
+finding is closed when it is fixed, withdrawn, or explicitly declined by Adam; never because it has been open a long
+time, and never because a later document covers the same area.  Nothing is renamed, ever: identifiers are cited from
+commits, comments and other documents.
 
 ---
 
@@ -167,19 +138,8 @@ loop that calls it. Measure the whole function, on the data the users have.
 
 ## Fixing
 
-**One finding at a time, failing test first, confirmed failing before the fix**, and failing for the *right reason*: a
-test that fails because its own setup is wrong proves nothing.
-
 **Prove the guard actually guards.** A regression test that only sometimes catches the regression is worse than none,
 because it reads as protection. Measure how often it catches; the BFS guard repeats twenty times for that reason.
-
-**Re-read every caller before changing a signature or a semantic.**
-
-**When you fix a call site, grep for its twins before closing the finding.** The search is one command.
-
-**Prefer the smaller fix when the larger one changes behavior**, with the reason recorded at the call site.
-
-**Leave the reasoning where the next person will trip over it**: in the code, not only in the review.
 
 **Check the shape of what you changed, not just that it still parses.** Balanced braces survive deleting whole
 methods; diff the method names against HEAD.
@@ -192,45 +152,13 @@ not in the function you are changing.
 
 ---
 
-## Comments: authoritative and self-contained
+## Comments
 
 Adam, 2026-09-07: **"We should make comments in the code to strive to be authoritative and
-self-contained, with the behaviour document being the documented intended functionality."**
-
-The rules divide the work between the code and [`behaviour.md`](../reference/behaviour.md):
-
-**A comment must stand on its own.** A reader who has never seen a review document must understand from the comment
-alone what the code does and why. Write the rule out; name the case that forced it. If the comment only makes sense
-once you have found `DR-B10` and read it, it has outsourced its job.
-
-**A finding id is provenance, not the explanation.** `(DR-B10)` after a rule stated in full says where the argument was
-had; citing it *instead of* the rule makes the comment depend on a document. Every citation should be the first kind.
-`regression.testEveryCitationResolves` walks every citation in `src/` and `test/`; the count moves with every commit, so
-it is not written here.
-
-**The behavior document is the intended functionality, not the code.** A comment says why THIS code is the way it is;
-`behaviour.md` says what the railway is supposed to do. When the two disagree, one is a bug and Adam decides which.
-
-The test, applied when writing: **if this file were the only thing a reader had, would the comment be enough?** If the
-answer needs a second document that is not `behaviour.md`, write more.
-
-**Amended 2026-10-18: the current rule, not its history.** Adam approved FR-136's comment rule (*"I approve the plan
-and the change to the comment rule"*; its standing rules are in `docs/refactoring.md`):
-
-- A comment states the **current** rule and why the code meets it.  It must make sense on its own,
-  ideally in 8 lines or fewer.
-- History belongs in the finding row its id resolves to, or in git: what the code used to do, which
-  round found it, who chose which option on which date.
-- One id per claim; quote Adam only where his wording is the rule.
-- A block over 15 lines is either a javadoc contract or moves to `behaviour.md`.
-- New code follows the rule at once.  Existing comments are trimmed in comment-only commits, proven to
-  change no code by comparing the compiled classes.
+self-contained, with the behaviour document being the documented intended functionality."**  The rule today is
+`CLAUDE.md`'s "Comments stay lean".
 
 ## Testing
-
-**Simulate the code, not your model of the code.**
-
-**Run the control experiment before concluding two things differ.** Compare the thing against itself first.
 
 **Randomized tests need fixed seeds and the seed in the failure message.** A failure nobody can reproduce gets deleted
 rather than fixed.
@@ -241,11 +169,6 @@ generator-driven test in `testLayoutBfs` does ("at least 300 pairs actually had 
 **Assert only what is deterministic.** Where the code is deliberately random, assert invariants (length, existence, set
 membership over repeats), never one specific outcome; exact-route assertions only where the shortest route is unique,
 and the file header says so.
-
-**Assert the precondition that makes a test meaningful**, or it can pass for reasons unrelated to its claim.
-
-**When a root fix lands, expect tests of the old bug to fail at their preconditions: that is confirmation, not
-regression.** Inverting such a test into a guard on the new invariant is usually better than deleting it.
 
 ---
 

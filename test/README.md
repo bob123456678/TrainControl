@@ -1,18 +1,16 @@
 # How the tests are organized
 
-Four folders, by what a test is FOR rather than by what it happens to import.
+The folders, by what a test is FOR rather than by what it happens to import.
 
-| Folder | What lives there | How many |
+| Folder | What lives there | Files |
 |---|---|---|
-| `core/` | The model, the protocol, the files, the graph. What the program **is**. | 149 |
-| `ui/` | Drives a window or a Swing component. Needs a display, or tests view logic. | 54 |
-| `regression/` | Written for one named defect, to stop it coming back. | 140 |
-| `support/` | Not tests. Fixtures the others use. | 14 |
-| `examples/` | Not tests. Sample programs for the Java API, which `core/testTheApiExamplesRun` runs and AutomationAPI.md points to. | 7 files |
-| `layouts/` | Not tests either. Checked-in **railways**, one folder per shape (see below). | 5 |
+| `core/` | The model, the protocol, the files, the graph. What the program **is**. | 191 |
+| `ui/` | Drives a window or a Swing component. Needs a display, or tests view logic. | 125 |
+| `regression/` | Written for one named defect, to stop it coming back. | 155 |
+| `support/` | Not tests. Fixtures the others use. | 66 |
+| `examples/` | Not tests. Sample programs for the Java API, which `core/testTheApiExamplesRun` runs and AutomationAPI.md points to. | 7 |
+| `layouts/` | Not tests either. Checked-in **railways**, one folder per shape (see below). | 7 |
 | `fixtures/` | Not tests. Long literal data a test reads, one folder per test class, through `support.Fixtures`. | 1 |
-
-If you add a class, move its number here.
 
 ---
 
@@ -65,8 +63,7 @@ Both set `-Dtraincontrol.anyReceivePort=true`, which lets tests share a machine 
 `-D` on the fork).  What `ant test` cannot be given is `-Xmx` and the skipped-class rule; `build.xml` says why at the
 property.
 
-While iterating, `docs/tools/one.sh` runs the classes you name, each in its own JVM, and `battery.sh` with
-`TC_CLASSES` runs a chosen set in lanes; CLAUDE.md ("Working efficiently") has the commands.
+CLAUDE.md ("Working efficiently") has the commands for running classes.
 
 **A one-off probe opens `support.LayoutSandbox` before it builds a model or a window**, exactly as a test does, or it
 is run through `one.sh` where the fingerprint can see it.  There is no third safe option: the layout path is a
@@ -90,8 +87,7 @@ The fixture files stay at the root of `test/` for every folder, so every lookup 
 
 ## What the fixtures cannot see
 
-A survey of every fixture in the suite (MON-C17 to C21) asked what the tests are shaped like rather than what they
-assert.  A blind spot nobody has written down is found the expensive way, by a defect walking through it.
+A blind spot nobody has written down is found the expensive way, by a defect walking through it.
 
 ### What now exists: `test/layouts/`
 
@@ -118,22 +114,11 @@ tests inherit one author's numbers.  Every scenario README says so under its own
 `test/layouts` that no test names, and compares each README's "Used by" list against the classes that reference the
 scenario (that list changes when a *different* file changes).
 
-### The survey, and what is left of it
+### The wired railway
 
 A "real layout" test builds the wired railway: `support.LayoutSandbox.wired` runs the application's own wiring loop,
 and the railway reduces to 128 edges and builds to 149.  A second `CS2File` that never wires the accessories gives a
 five-edge skeleton; a guard in `testEveryTestIsInTheBattery` stops that recipe coming back.
-
-C20 and C17 are answered by `test/layouts/`: two hand-drawn railways between them use orientations 1, 2 and 3 on
-straights, curves, feedback curves and a switch, so the `(4 - orientation)` convention is exercised by a railway a
-test reasons about.  C18, C19 and C21 stay open only because nobody has written their scenarios; `single-switch` is
-already the metal C21's fixture would contend over.
-
-| | the gap | what would close it |
-|---|---|---|
-| **C18** | The reducer never crosses a page.  `testAutonomyDiagramReducer` passes one page in all ~28 fixtures and mentions no portal; the only place the REDUCER contracts across one is a report-not-assert class | one two-page fixture with a paired link, asserting the contracted edge's endpoints, length and lock set |
-| **C21** | Nothing hand-built runs more than two locomotives, and the concurrency cap's own fixture is two DISJOINT routes: it tests the counter, not the contention | a fixture where two trains want the same metal |
-| **C19** | Every test locomotive is non-reversible unless a test says so: the short constructors never assign `reversible` and no checked-in JSON carries the key.  The reversible-only rules (the may-reverse prompt, turning-copy selection, `flipFacing`) are the thin side | awareness, plus reversible variants where reversal is the subject |
 
 **`blockedPoints` is empty in all four `setup.json` files**, so the `blockedBy` restriction is reached only through
 hand-built fixtures, never through a loaded layout.  One entry in a checked-in setup would close that; it is

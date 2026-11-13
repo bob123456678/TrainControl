@@ -1,29 +1,28 @@
 # TrainControl: rules for anyone building here
 
 Java 8 Swing; the owner is Adam.  These rules bind every builder, human or agent; a brief may add to them, never take
-them away.  This file stays on the development branch (`docs/tools/release-tree.sh` leaves it off master).
+them away.
 
 ## Comments stay lean (Adam's rule)
 
 Agents pay to read every comment line, so the detail goes on the tracker and the source keeps a summary:
 
-- **The tracker holds the detail.**  The full account of an OB or FR (the cases, the reasoning, the choices turned
-  down, the edge cases its tests cover, the traps a later change could fall into) is a comment on its entry, written
-  at length: `py -3 docs/manual-tests/triagedb.py comment <id> "<text>"`.  A builder that does not write the tracker
-  puts that text in its report under the id, for the orchestrator to file.
+- **The tracker holds the detail.**  The full account of an OB or FR (cases, reasoning, choices turned down, traps)
+  is a comment on its entry, written at length: `py -3 docs/manual-tests/triagedb.py comment <id> "<text>"`.  A
+  builder that does not write the tracker puts that text in its report under the id, for the orchestrator to file.
 - **The source keeps a high-level summary** of what a class or method is for, plus only what everyone who edits it
   must know: a contract, a constraint that breaks something when ignored, a non-obvious why.  When in doubt, the
   detail goes on the tracker and the comment cites the id.  Never restate the code in prose.
-- **Read the id before changing the code it is on.**  When the code you change, or a comment on it, cites an OB, FR
-  or MT, run `py -3 docs/manual-tests/triagedb.py show <id>` first: the comment is the summary, and the cases, traps
-  and choices turned down are on the entry.  A change that breaks one of them is a regression, comment or not.  Private and
-  package-private javadoc is 1 to 3 lines; longer is a public contract or too long.
+- **Read the id before changing the code it is on.**  When the code you change, or its comment, cites an OB, FR or MT,
+  run `py -3 docs/manual-tests/triagedb.py show <id>` first.  A change that breaks a case on the entry is a regression,
+  comment or not.
 - **No history:** what the code used to do, which review round found it, who said what when, how a bug was found.
   That lives in the tracker row the id resolves to, and in git: write the commit message, not a comment.
 - **Only Adam's tracker ids** (OB-###, MT-###, FR-###), at most one per rule.  Review-finding ids (RSA52-B1, GST-C3,
   RC-B2 and every other prefix `triagedb.py findings` lists) never go in code comments.
 - **Quote Adam only where his words are the rule**, verbatim, without the date.
-- A block over 15 lines is a javadoc contract or too long.  Javadoc sits directly on its declaration.
+- A block over 15 lines is a javadoc contract or too long; private and package-private javadoc is 1 to 3 lines.
+  Javadoc sits directly on its declaration.
 - Do not copy the density of the comments around you: older code is still being trimmed.
 - In tests, keep what the test asserts and why it matters, the `MUTATION:` note (the production change that turns it
   red), and why a non-obvious wait or fixture was chosen.  Never edit assertion messages to shorten them.
@@ -72,8 +71,8 @@ Not: `// OB-271 (2026-09-14): Adam reported ... Round 112 found ...; RSA61-B2 wi
   (`label:pkg.Class.m1,pkg.Class.m2` for single methods); several in lanes with
   `TC_LANES=auto TC_CLASSES=<file of class names> TC_SCRATCH=<dir> bash docs/tools/battery.sh`, the whole suite
   without `TC_CLASSES`.  Run them as ONE background command and wait for its notification.  Both wait for a free
-  test slot (`docs/tools/wait-for-slot.sh`; `TC_WAIT=0` refuses at once instead): never write a retry loop, never
-  `sleep`, never poll the output file, and don't read the runners' source.
+  test slot (`TC_WAIT=0` refuses at once instead): no retry loop, no `sleep`, no polling the output file; don't read
+  the runners' source.
 - Run only the classes your change can affect, plus the bookkeeping classes it touches: a new test class,
   `testEveryTestIsInTheBattery` (and `testSwitchingToACentralStationLayout` if it builds a window); a bundle,
   `testMessageBundles` and `testEveryMessageKeyIsAskedFor`; comments or javadoc, `testCommentsStayLean` and
@@ -86,34 +85,30 @@ Not: `// OB-271 (2026-09-14): Adam reported ... Round 112 found ...; RSA61-B2 wi
   - `redgreen.sh (--base <commit> | --patch <file>) <claim>...` runs a claim red on the old code or a mutation,
     then green.
   - `env.sh <worktree>` sets up a worktree's `LocDB.data` and scratch folder and prints its `TC_SCRATCH`.
-  - `codesize.py [<ref>] [--vs <base>] [--packages]` reports files, lines (code, comment, blank), file sizes and
-    concentration, and the copy and comment guards' pins, at a revision or two side by side, in seconds.
-  - `support.DialogWatchdog` ends a test JVM stuck behind an unanswered modal dialog after 60 s (`TC_DIALOG_WATCH`)
-    and reports its class with the dialog's title and text.
-  - `regression.testNoNewCopies` fails on a new copy of 60 tokens or more, naming where; merge it, don't re-pin it.
+  - `codesize.py [<ref>] [--vs <base>] [--packages]` reports net lines and the guard pins, at a revision or between two.
 - **Find a test by its claim, then read only its lines.**  `py -3 docs/tools/claims.py <words>` (or `--id OB-123`,
   `--class <testClass>`, `--uses <ProductionClass>`) prints `test/<path>:<first>-<last>  Class.method  ids` for each
   matching @Test method; read that range (and the ranges of the helpers it calls, which `--class` lists), never a whole
-  test class to find one claim.  It reads the files each run, so it is never stale.
+  test class to find one claim.
 - Grep first, then read the range you need (about 120 lines); never read a giant file whole.  Pipe long output
   through `head`.
 - Edit with the Edit tool; a script, write with the Write tool (heredocs eat backslashes); never `sed -i` a Java file.
 - A worktree you were given is clean and on the right commit: start work, don't re-check it.
-- Answer your own questions from the repository first: this file, the brief, `docs/refactoring.md`,
-  `docs/reference/behaviour.md` (the index of the area files in `docs/reference/behaviour/`), `triagedb.py show <id>`.
+- Answer your own questions from the repository first: this file, the brief, `docs/reference/behaviour.md` (the index
+  of the area files in `docs/reference/behaviour/`), `triagedb.py show <id>`; for a refactor, `docs/refactoring.md`.
   Ask only for a decision that is Adam's.
 - Report what changed, the evidence (red, green, the Total lines), and what is left.  No screenshots unless asked.
 
 ## Working here
 
-- Java files check out CRLF; git normalizes line endings on commit (`core.autocrlf`) and Edit keeps them: don't check
-  them by hand.  Message bundles (`src/org/traincontrol/resources/messages*.properties`, eight languages) are ASCII
-  only: every other character as `\uXXXX`.
+- Java files check out CRLF; git normalizes them on commit and Edit keeps them.  Message bundles
+  (`src/org/traincontrol/resources/messages*.properties`, eight languages) are ASCII only: every other character as
+  `\uXXXX`.
 - New UI is hand-written Swing.  Never edit the NetBeans `//GEN-BEGIN`..`//GEN-END` regions or the variables block.
 - Never touch `LocDB.data`, `UIState.data`, Adam's preferences, or anything under `cs2_sample_layout/` (his live
   railway).  Never connect to a Central Station.
 - Stage files by name (never `git add -A`); never `git stash` (the stash is shared by every worktree).  Work on `dev`
   or a branch of it; moving or pushing `master` is a release and needs Adam.
-- The tracker (MT-###, OB-###, FR-###, findings) is `docs/manual-tests/triage.db`, read and written only through
-  `py -3 docs/manual-tests/triagedb.py`.  Manual-test entries are append-only.
+- The tracker (`docs/manual-tests/triage.db`) is read and written only through `triagedb.py`.  Manual-test entries
+  are append-only.
 - Docs for users (Readme.md, Automation.md) use no em dashes and no spaced hyphens as dashes.

@@ -44,8 +44,8 @@ lane).  The store owns the numbers; the folder is empty by design.
 
 ## The round
 
-Reviewers (from round 2, validators), then fixes, then records.  Up to four rounds, stopping earlier when a round finds
-nothing new above C.
+Reviewers (from round 2, validators), then fixes, then records.  Up to three rounds (RELEASE.md), stopping earlier
+when a round finds nothing new above C.
 
 1. **Launch** the five reviewers in parallel, in the background.
 2. **Triage** each report as it lands.  Settle every finding one way: fix it; Adam's decision (the question, the
@@ -81,8 +81,6 @@ nothing new above C.
    named under it.
 2. Catalogue the documents in that final state (`--add <the working folder> --check` exits 0 when the store holds
    every finding in them), then delete the working folder.
-3. Say in README.md that the round happened (the prefixes, the rounds and the date), without changing the counted
-   totals of earlier deletions.
 
 ## The report
 

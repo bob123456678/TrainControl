@@ -8,33 +8,7 @@ random movement checks. I'd recommend using these complex setups as the base for
 
 ## Where it came from
 
-**Refrozen from commit `e36df979`** (branch `autonomy-diagram-r0`, 2026-09-23) - Adam's fully measured
-layout, which he asked to have blessed: *"perhaps it's time that I finalize the layout so that we can bless
-it"*, and *"OK, my fully measured layout is now in."*  First refrozen from `2958fcf3` the same morning; `e36df979`
-is his follow-up edit of that day, which bars arrivals from the east at BottomMainA again, and only
-`setup.json` changed between the two.  Only the two autonomy files differ from the first freeze; the five pages
-are byte-identical to it.  First taken from **commit
-`e6f4649ceea0258e5fa6a378616b0158d04c6289`** (2026-09-09).  Both via `git show HEAD:cs2_sample_layout/...` —
-**not** from the working tree. That matters:
-his tree carried uncommitted operating changes to `setup.json`, `configuration-Main.json` and
-`1 - Main.cs2` when this was frozen, and a fixture taken from a working tree is a fixture nobody can
-reproduce.
-
-All ten tracked files were copied byte for byte:
-
-    config/autonomy/configuration-Main.json
-    config/autonomy/setup.json
-    config/autonomy_legacy/autonomy.json
-    config/gleisbild.cs2
-    config/gleisbilder/1 - Main.cs2
-    config/gleisbilder/2 - Bottom.cs2
-    config/gleisbilder/3 - Top Parking.cs2
-    config/gleisbilder/4 - Combined.cs2
-    config/gleisbilder/5 - Test.cs2
-    config/gleisbilder/routes.json
-
-To refresh it, re-run the same `git show HEAD:` copy from a clean commit and update the hash above —
-never copy from the working tree, and never write to `cs2_sample_layout`.
+Frozen from `e36df979` with `git show`, not the working tree.
 
 ## Why a copy rather than the original
 

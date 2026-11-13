@@ -2,17 +2,9 @@
 
 This is the intended behavior of the features that decide where trains may go and what happens when they get there.
 It is written to be **read against the code and disagreed with**: where this reference and the program differ, one of
-them is a bug, and Adam decides which.
-
-Every rule is Adam's, quoted where the wording is the rule. A rule states what is true, why, and the tracker id
-(OB-, MT-, FR-###) it resolves to; how it was argued lives in that tracker row and in git. Where a rule has a known
-limit, the limit is stated, because a limit nobody wrote down reads as a bug the day it is met.
-
-**How this relates to the comments in the code.** Adam: *"we should make comments in the
-code to strive to be authoritative and self-contained, with the behaviour document being the
-documented intended functionality."* This reference holds the intent; a comment explains why the code in front of
-you implements it the way it does, and stands on its own. The full rule is in
-[`docs/reviews/README.md`](../reviews/README.md).
+them is a bug, and Adam decides which.  Every rule is Adam's, quoted where the wording is the rule; a rule states what
+is true, why, and the tracker id (OB-, MT-, FR-###) it resolves to, and states its known limits.  The comment rule is
+`CLAUDE.md`'s "Comments stay lean".
 
 **One file per area, in `docs/reference/behaviour/`; this file is the index.** Sections keep the numbers and headings
 they had when this was one file, so a citation such as "behaviour.md §5c" or "behaviour.md section 6a" (the tracker and
@@ -46,8 +38,4 @@ the old reviews use that form) resolves through the table below; code and docs c
 | 7c | The signals a station commands: the exit guard and the entry guard | [routes.md](behaviour/routes.md) | `Layout` (`refreshProtectingSignal`, `throwEntryGuard`) | |
 | 7b | Routes that come from a file, and the pause between their commands | [routes.md](behaviour/routes.md) | `MarklinRoute` | |
 | 8 | Things that are true of the whole system | [whole-system.md](behaviour/whole-system.md) | `Layout.fromJSON`, `AutonomyBuilder`, the configuration doors | `regression.testNoSetupEditDuringARun`, `regression.testTheImportDoorReadsAnOldFile` |
-| - | Where this document came from | [citations.md](behaviour/citations.md) | | |
 | - | Looking up a citation | [citations.md](behaviour/citations.md) | `docs/manual-tests/triagedb.py` | `regression.testEveryCitationResolves`, `regression.testTheRecordsCountTheStore` |
-
-`docs/tools/behaviour-split-proof.py` checks that the split kept every tracker id, every quote of Adam and every
-section of the single file.
