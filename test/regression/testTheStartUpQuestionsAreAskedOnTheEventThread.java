@@ -41,11 +41,15 @@ public class testTheStartUpQuestionsAreAskedOnTheEventThread
     private String storedAddress;
     private NoExit noExit;
     private Watcher watcher;
+    private support.LayoutSandbox sandbox;
 
     @BeforeMethod
-    public void setUp()
+    public void setUp() throws Exception
     {
         Display.needed("start-up's questions are dialogs");
+
+        // Start-up is refused before any layout is read, but if it ever got that far it must not reach the operator's
+        sandbox = support.LayoutSandbox.open();
 
         storedAddress = prefs.get(TrainControlUI.IP_PREF, null);
         prefs.remove(TrainControlUI.IP_PREF);
@@ -65,6 +69,8 @@ public class testTheStartUpQuestionsAreAskedOnTheEventThread
 
         if (storedAddress == null) prefs.remove(TrainControlUI.IP_PREF);
         else prefs.put(TrainControlUI.IP_PREF, storedAddress);
+
+        if (sandbox != null) sandbox.close();
     }
 
     /**
