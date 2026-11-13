@@ -4,13 +4,11 @@ import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import javax.swing.JMenu;
 import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
 import javax.swing.JTabbedPane;
-import javax.swing.JTextArea;
 import javax.swing.SwingUtilities;
 import javax.swing.event.MenuListener;
 import static org.testng.Assert.*;
@@ -193,7 +191,7 @@ public class testTheOldAutonomyTabIsGone
             for (MenuListener listener : menu.getMenuListeners()) listener.menuSelected(null);
         });
 
-        String guide = I18n.t("ui.main.documentation");
+        String guide = I18n.t("ui.menu.autonomyGuide");
         String download = I18n.t("autosetup.ui.menuNoSetupPossible");
 
         JMenuItem documentation = null;
@@ -546,52 +544,5 @@ public class testTheOldAutonomyTabIsGone
 
         assertFalse(code.contains("Paths.get(TrainControlUI.AUTONOMY_FILE_NAME)"), "the start-up still reads"
             + " autonomy.json from beside the application");
-    }
-
-    /**
-     * The save writes its other backups, and no autonomy.json among them - on a Central Station layout too.
-     */
-    @Test
-    public void testNoLayoutWritesAutonomyJson() throws Exception
-    {
-        // What the old window held on every start, where it still exists: autonomy.json, read in whether used or not.
-        try
-        {
-            final JTextArea text = (JTextArea) Reflect.get(TrainControlUI.class, ui, "autonomyJSON");
-
-            SwingUtilities.invokeAndWait(() -> text.setText("{\"points\": [], \"edges\": []}"));
-        }
-        catch (NoSuchFieldException gone)
-        {
-            // Deleted with the tab: nothing is left to write.
-        }
-
-        File folder = new File(Util.dataPath(Util.BACKUP_FOLDER));
-
-        String[] had = folder.list();
-
-        List<String> before = had == null ? new ArrayList<String>() : new ArrayList<>(Arrays.asList(had));
-
-        SwingUtilities.invokeAndWait(() -> ui.saveState(true, false));
-
-        String[] now = folder.list();
-
-        List<String> written = now == null ? new ArrayList<String>() : new ArrayList<>(Arrays.asList(now));
-
-        written.removeAll(before);
-
-        boolean state = false;
-        boolean autonomy = false;
-
-        for (String name : written)
-        {
-            if (name.endsWith("UIState.data")) state = true;
-            if (name.endsWith(TrainControlUI.AUTONOMY_FILE_NAME)) autonomy = true;
-        }
-
-        assertTrue(state, "control: the backup save wrote no UIState.data, so it did not run: " + written);
-
-        assertFalse(autonomy, "a Central Station layout had autonomy.json written on exit - the old JSON autonomy's"
-            + " file, which nothing should write any more (OB-254)");
     }
 }

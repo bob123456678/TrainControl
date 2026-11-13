@@ -141,7 +141,29 @@ public final class FrozenEditor implements AutoCloseable
     /** Closes an editor a claim opened. */
     public static void dispose(LayoutEditor editor) throws Exception
     {
-        if (editor != null) SwingUtilities.invokeAndWait(editor::dispose);
+        if (editor == null) return;
+
+        // render() posts work that can make a disposed editor displayable again, which the diagram's menus then read as
+        // an open editor: dispose it again until it has stayed closed for a while
+        int[] closedFor = {0};
+
+        Components.waitFor(() ->
+        {
+            if (!editor.isDisplayable()) return ++closedFor[0] >= 8;
+
+            closedFor[0] = 0;
+
+            try
+            {
+                SwingUtilities.invokeAndWait(editor::dispose);
+            }
+            catch (Exception e)
+            {
+                throw new IllegalStateException(e);
+            }
+
+            return false;
+        }, 5000);
     }
 
     @Override

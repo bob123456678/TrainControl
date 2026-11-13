@@ -353,8 +353,7 @@ public class testFindAPoint
             JMenuItem item = findItemOf(editor);
 
             assertTrue(item.isEnabled() && item.isVisible(), "Find a Point... is not shown in the autonomy editor");
-            assertTrue(item.getToolTipText().contains("Control+F"), "the tooltip does not name the key: "
-                + item.getToolTipText());
+            assertSame(item.getAccelerator(), LayoutEditor.FIND_A_POINT_KEY, "Find a Point... does not show its key");
 
             // Opened by the menu as well as by the key
             support.Components.onTheEventThread(() ->
@@ -608,6 +607,66 @@ public class testFindAPoint
             support.Components.settle();
 
             assertTrue(findItemOf(editor).isVisible(), "not shown again after switching back");
+        }
+        finally
+        {
+            closeThem();
+        }
+    }
+
+    /**
+     * Find a Point... shows the editor's own Control+F on its right and its tooltip keeps only
+     * its sentence; the menu binds the key to nothing, so Control+F runs Find a Point once, through the editor's key
+     * handler, which still opens the prompt.
+     *
+     * MUTATION: drop the "none" binding in `TrainControlUI.showShortcut`, and the menu bar clicks the item on Control+F.
+     */
+    @Test
+    public void testTheItemShowsTheKeyAndBindsNothing() throws Exception
+    {
+        final LayoutEditor editor = anAutonomyEditor(PAGE);
+
+        try
+        {
+            final JMenuItem item = findItemOf(editor);
+
+            assertSame(item.getAccelerator(), LayoutEditor.FIND_A_POINT_KEY, "the item does not show the key the"
+                + " editor acts on");
+
+            assertEquals(item.getToolTipText(), I18n.t("layout.ui.tooltipFindAPoint"), "the tooltip is not its sentence");
+
+            // What the window's key handling asks of its menu bar for a key no component took (Swing's
+            // KeyboardManager), asked directly; the item's own handler is taken off first, so the mutation opens nothing.
+            final java.lang.reflect.Method bindings = javax.swing.JMenuBar.class.getDeclaredMethod("processKeyBinding",
+                javax.swing.KeyStroke.class, KeyEvent.class, int.class, boolean.class);
+
+            bindings.setAccessible(true);
+
+            final int[] clicked = new int[1];
+
+            support.Components.onTheEventThread(() ->
+            {
+                java.awt.event.ActionListener[] own = item.getActionListeners();
+                java.awt.event.ActionListener counting = e -> clicked[0]++;
+
+                for (java.awt.event.ActionListener each : own) item.removeActionListener(each);
+
+                item.addActionListener(counting);
+
+                bindings.invoke(editor.getJMenuBar(), LayoutEditor.FIND_A_POINT_KEY, new KeyEvent(editor.getRootPane(),
+                    KeyEvent.KEY_PRESSED, System.currentTimeMillis(), InputEvent.CTRL_DOWN_MASK, KeyEvent.VK_F,
+                    KeyEvent.CHAR_UNDEFINED), javax.swing.JComponent.WHEN_IN_FOCUSED_WINDOW, true);
+
+                item.removeActionListener(counting);
+
+                for (java.awt.event.ActionListener each : own) item.addActionListener(each);
+
+                return null;
+            });
+
+            assertEquals(clicked[0], 0, "the menu acted on Control+F itself: with the editor's handler, it acts twice");
+
+            support.Keys.press(boxOf(pressControlF(editor)), KeyEvent.VK_ESCAPE);
         }
         finally
         {

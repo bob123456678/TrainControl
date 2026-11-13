@@ -167,6 +167,9 @@ public class testRightClickMenuTipsCanBeHidden
     /** The items the last read found grayed: they keep their tips, which say why. */
     private static final java.util.Set<String> grayed = new java.util.HashSet<>();
 
+    /** The keys the last read found shown on the items' right, by item: the setting never touches them. */
+    private static final Map<String, javax.swing.KeyStroke> shownKeys = new java.util.HashMap<>();
+
     private static void collect(Component[] items, Map<String, String> into)
     {
         for (Component each : items)
@@ -178,6 +181,8 @@ public class testRightClickMenuTipsCanBeHidden
             into.put(item.getText(), item.getToolTipText());
 
             if (!item.isEnabled()) grayed.add(item.getText());
+
+            if (item.getAccelerator() != null) shownKeys.put(item.getText(), item.getAccelerator());
 
             if (item instanceof JMenu) collect(((JMenu) item).getMenuComponents(), into);
         }
@@ -213,7 +218,16 @@ public class testRightClickMenuTipsCanBeHidden
 
         String text = tip.replaceAll("<[^>]*>", "").trim();
 
-        if (text.equals(I18n.t("layout.ui.tooltipFindAPoint"))) return "Control+F";
+        // Its own shortcut, shown on the item, as RightClickTips writes an accelerator.
+        if (text.equals(I18n.t("layout.ui.tooltipFindAPoint"))) return "Ctrl+F";
+
+        if (text.equals(I18n.t("layout.ui.tooltipSelectByDragging"))) return "Ctrl+M";
+
+        if (text.equals(I18n.t("autosetup.ui.tooltipShowStationHere"))
+            || text.equals(I18n.t("autosetup.ui.tooltipTextInTheWay")))
+        {
+            return "Ctrl+N";
+        }
 
         if (text.equals(I18n.t("layout.ui.tooltipDeselect"))) return "Escape";
 
@@ -246,8 +260,8 @@ public class testRightClickMenuTipsCanBeHidden
     // ---------------------------------------------------------------------------------------------- claims
 
     /**
-     * Off, which is how it starts, every right-click menu keeps its tooltips: the locomotive button's hotkeys and the
-     * diagram menus' sentences.
+     * Off, which is how it starts, every right-click menu keeps its tooltips: the diagram menus' sentences.  The
+     * locomotive button's menu shows its keys on the items' right, so no tooltip there names one.
      *
      * MUTATION: strip the tips even when the setting is off.
      */
@@ -260,14 +274,14 @@ public class testRightClickMenuTipsCanBeHidden
 
         for (Door door : DIAGRAM_AND_BUTTON)
         {
-            Map<String, String> tips = tipsOn(door);
+            shownKeys.clear();
 
-            assertTrue(tips.values().stream().anyMatch(t -> t != null), door + ": no item has a tooltip with the"
-                + " setting off: " + tips);
+            Map<String, String> tips = tipsOn(door);
 
             if (door == Door.LOC_BUTTON)
             {
-                assertTrue(tips.values().stream().anyMatch(t -> isHotkey(t)), door + ": no hotkey tooltip: " + tips);
+                assertFalse(shownKeys.isEmpty(), door + ": no item shows its key");
+                assertFalse(tips.values().stream().anyMatch(t -> isHotkey(t)), door + ": a tooltip names a key: " + tips);
             }
             else
             {
@@ -278,7 +292,8 @@ public class testRightClickMenuTipsCanBeHidden
     }
 
     /**
-     * On, no item of any right-click menu has a tooltip but its hotkey, and an item that had a hotkey shows exactly it.
+     * On, no item of any right-click menu has a tooltip but its hotkey, and an item that had a hotkey shows exactly it;
+     * the locomotive button's items still show their keys on their right.
      *
      * MUTATION: skip the strip (the sentences stay); strip hotkeys too (the hotkeys go).
      */
@@ -289,17 +304,22 @@ public class testRightClickMenuTipsCanBeHidden
         {
             hide(false);
 
+            shownKeys.clear();
+
             Map<String, String> before = tipsOn(door);
+
+            Map<String, javax.swing.KeyStroke> keysBefore = new java.util.HashMap<>(shownKeys);
 
             java.util.Set<String> gray = new java.util.HashSet<>(grayed);
 
             hide(true);
 
+            shownKeys.clear();
+
             Map<String, String> after = tipsOn(door);
 
             assertEquals(after.keySet(), before.keySet(), door + ": the menu offers other items on the second opening");
 
-            int hotkeys = 0;
             int sentences = 0;
 
             for (Map.Entry<String, String> item : before.entrySet())
@@ -309,18 +329,24 @@ public class testRightClickMenuTipsCanBeHidden
                 assertEquals(after.get(item.getKey()), expected, door + ": \"" + item.getKey() + "\" was \""
                     + item.getValue() + "\" and now shows the wrong thing");
 
-                if (expected != null) hotkeys++;
-                else if (item.getValue() != null) sentences++;
+                if (expected == null && item.getValue() != null) sentences++;
             }
 
-            if (door == Door.LOC_BUTTON) assertTrue(hotkeys > 0, door + ": no hotkey item to prove");
-            else assertTrue(sentences > 0, door + ": no sentence tooltip to prove hidden: " + before);
+            if (door == Door.LOC_BUTTON)
+            {
+                assertFalse(keysBefore.isEmpty(), door + ": no item shows a key to prove");
+                assertEquals(shownKeys, keysBefore, door + ": hiding the tips changed the keys the items show");
+            }
+            else
+            {
+                assertTrue(sentences > 0, door + ": no sentence tooltip to prove hidden: " + before);
+            }
         }
     }
 
     /**
-     * The track editor's menu, opened once: its hotkey items keep exactly their hotkeys when the tips are hidden, and
-     * its other tooltips go; off again, all are back.
+     * The track editor's menu, opened once: its items show their keys on their right whether or not the tips are
+     * hidden, its other tooltips go, and off again, all are back.
      *
      * MUTATION: strip hotkeys too, or skip the strip, as above.
      */
@@ -331,18 +357,25 @@ public class testRightClickMenuTipsCanBeHidden
         {
             hide(false);
 
+            shownKeys.clear();
+
             Map<String, String> before = tipsOn(Door.EDITOR);
+
+            Map<String, javax.swing.KeyStroke> keysBefore = new java.util.HashMap<>(shownKeys);
 
             java.util.Set<String> gray = new java.util.HashSet<>(grayed);
 
-            assertTrue(before.values().stream().anyMatch(t -> isHotkey(t)), "the editor menu has no hotkey tooltip: "
-                + before);
+            assertFalse(keysBefore.isEmpty(), "the editor menu shows no key");
 
             hide(true);
+
+            shownKeys.clear();
 
             Map<String, String> hidden = tipsOn(Door.EDITOR);
 
             assertOnlyHotkeysLeft("the editor menu", before, gray, hidden);
+
+            assertEquals(shownKeys, keysBefore, "hiding the tips changed the keys the editor menu shows");
 
             hide(false);
 
@@ -352,23 +385,6 @@ public class testRightClickMenuTipsCanBeHidden
         {
             closeEditors();
         }
-    }
-
-    /** Turning it off again brings the tooltips back on the next opening of a menu that was opened while hidden. */
-    @Test
-    public void testTurningItOffBringsTheTipsBack() throws Exception
-    {
-        hide(false);
-
-        Map<String, String> original = tipsOn(Door.MAIN_DIAGRAM);
-
-        hide(true);
-
-        tipsOn(Door.MAIN_DIAGRAM);
-
-        hide(false);
-
-        assertEquals(tipsOn(Door.MAIN_DIAGRAM), original, "the tips did not come back");
     }
 
     /**
@@ -528,6 +544,71 @@ public class testRightClickMenuTipsCanBeHidden
 
             return Components.waitFor(title::isPopupMenuVisible, PATIENCE_MS) ? title.getPopupMenu() : null;
         });
+    }
+
+    /**
+     * Every item of the track diagram's Bulk Tools submenu follows the setting: ticked, an enabled item shows no
+     * sentence and a grayed one keeps its reason; cleared, every tip is back as it was.
+     *
+     * MUTATION: build the Bulk Tools submenu after the tips are taken off, and its items keep their sentences.
+     */
+    @Test
+    public void testEveryBulkToolsItemFollowsTheSetting() throws Exception
+    {
+        String[] keys = {"autosetup.ui.menuMassAssignLengths", "autosetup.ui.menuMassAssignMaxTrainLengths",
+            "autosetup.ui.menuMassAssignTrainLengthsCounted", "autolayout.ui.menuClearAllTrackLengths",
+            "autolayout.ui.menuClearAllMaxTrainLengths", "autolayout.ui.menuAllowEveryPath",
+            "autolayout.ui.menuHomeEveryTrainWhereItStands", "autolayout.ui.menuPlaceEveryTrainAtHome",
+            "autolayout.ui.menuClearAllHomeLocomotives", "autolayout.ui.menuClearLocomotives",
+            "autosetup.ui.menuActivateAllTrains", "autosetup.ui.menuDeactivateAllTrains"};
+
+        try
+        {
+            hide(false);
+
+            grayed.clear();
+
+            Map<String, String> off = tipsOn(Door.MAIN_DIAGRAM);
+
+            java.util.Set<String> gray = new java.util.HashSet<>(grayed);
+
+            hide(true);
+
+            Map<String, String> on = tipsOn(Door.MAIN_DIAGRAM);
+
+            int enabled = 0;
+            int grayedOnes = 0;
+
+            for (String key : keys)
+            {
+                String[] around = I18n.f(key, "@@").split("@@", -1);
+
+                for (String label : off.keySet())
+                {
+                    // The diagram's menu has no page, so the two Mass Assign lengths are not on it
+                    if (label == null || !label.startsWith(around[0]) || !label.endsWith(around[around.length - 1])) continue;
+
+                    boolean isGray = gray.contains(label);
+
+                    if (isGray) grayedOnes++;
+                    else enabled++;
+
+                    assertEquals(on.get(label), isGray ? off.get(label) : hotkeyOnly(off.get(label)),
+                        "\"" + label + "\" does not follow the setting while it is ticked");
+                }
+            }
+
+            assertTrue(enabled > 0 && grayedOnes > 0, "precondition: the diagram's Bulk Tools has " + enabled
+                + " enabled and " + grayedOnes + " grayed items");
+
+            hide(false);
+
+            assertEquals(tipsOn(Door.MAIN_DIAGRAM), off, "cleared, the Bulk Tools tips are not as they were");
+        }
+        finally
+        {
+            hide(false);
+        }
     }
 
     /**
@@ -711,9 +792,9 @@ public class testRightClickMenuTipsCanBeHidden
     }
 
     /**
-     * Ticked, an item whose tip names its key inside a sentence shows that key, hovered through its window: the
-     * autonomy editor's Find a Point... ("Shortcut: Control+F") on its Tools menu, and the track editor's Deselect All
-     * ("Escape lets go") with squares picked.
+     * Ticked, an item whose tip names its key inside a sentence shows that key, hovered through its window: the track
+     * editor's Deselect All ("Escape lets go") with squares picked; and the autonomy editor's Find a Point..., whose key
+     * is on the item now, shows that.
      *
      * MUTATION: find a key only as the whole tip or bracketed at its end (both show nothing).
      */
@@ -734,7 +815,7 @@ public class testRightClickMenuTipsCanBeHidden
 
             Map<String, String> shown = hoveredBar(Components.onTheEventThread(() -> autonomy.getJMenuBar().getMenu(0)));
 
-            assertEquals(shown.get(I18n.t("layout.ui.menuFindAPoint")), "Control+F",
+            assertEquals(shown.get(I18n.t("layout.ui.menuFindAPoint")), "Ctrl+F",
                 "Find a Point... does not show its key: " + shown);
 
             Component square = Components.find(openedEditor(Boolean.FALSE), LayoutLabel.class, Component::isShowing);
@@ -939,9 +1020,8 @@ public class testRightClickMenuTipsCanBeHidden
 
             try
             {
-                if (menu != null) hoverAll("", menu, shown);
-
-                if (menu != null && menu.isShowing()) return shown;
+                // A walk that left a submenu unopened is partial: the menu is walked again, not compared as it is
+                if (menu != null && hoverAll("", menu, shown) && menu.isShowing()) return shown;
 
                 assertTrue(attempt < 5, "the menu closed before every item was hovered, five times: " + shown);
             }
@@ -954,7 +1034,8 @@ public class testRightClickMenuTipsCanBeHidden
         }
     }
 
-    private static void hoverAll(String path, JPopupMenu menu, Map<String, String> into) throws Exception
+    /** Hovers each item; whether every submenu opened under the pointer, so that the walk is whole. */
+    private static boolean hoverAll(String path, JPopupMenu menu, Map<String, String> into) throws Exception
     {
         for (Component each : Components.onTheEventThread(menu::getComponents))
         {
@@ -970,14 +1051,16 @@ public class testRightClickMenuTipsCanBeHidden
             {
                 JMenu sub = (JMenu) item;
 
-                // Not opened is a closed menu, walked again, or a submenu missing from what the claim compares.
-                if (!Components.waitFor(sub::isPopupMenuVisible, 3000)) return;
+                // Not opened is a closed menu, or a submenu missing from what the claim compares: walked again.
+                if (!Components.waitFor(sub::isPopupMenuVisible, 3000)) return false;
 
-                hoverAll(path + item.getText() + " > ", sub.getPopupMenu(), into);
+                if (!hoverAll(path + item.getText() + " > ", sub.getPopupMenu(), into)) return false;
 
                 moveTo(item);
             }
         }
+
+        return true;
     }
 
     /** The tip on screen once the pointer rests on the item, or null when none is shown for it. */
@@ -1015,6 +1098,26 @@ public class testRightClickMenuTipsCanBeHidden
         {
             Components.waitFor(showing, PATIENCE_MS);
         }
+
+        // An item that has a tip and showed none was missed by the manager, not hidden: hover it again rather than
+        // record a null that reads as hidden (a 20 s miss once passed for a hidden tip)
+        boolean hasTip = Components.onTheEventThread(() -> item.getToolTipText() != null);
+
+        for (int again = 0; seen[0] == null && hasTip && again < 2; again++)
+        {
+            Components.onTheEventThread(() ->
+            {
+                ToolTipManager.sharedInstance().mousePressed(null);
+
+                return null;
+            });
+
+            moveTo(item);
+
+            Components.waitFor(showing, PATIENCE_MS);
+        }
+
+        if (seen[0] == null && hasTip) throw new AssertionError("the tip of " + item.getText() + " never showed");
 
         return seen[0];
     }

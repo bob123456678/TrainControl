@@ -590,6 +590,139 @@ public class testMappingPagesAndLocomotiveDoors
         assertTrue(waitFor(() -> lastSpeed(mark, one) == saved), "Alt+V did not tell the railway");
     }
 
+    // The key's menu shows the keys
+
+    /** The rows of the window's shortcut table behind the key menu's items, in the menu's order, every item offered. */
+    private static final String[] KEY_MENU_ROWS = ("choose a locomotive, locomotive settings, copy the button, paste onto"
+        + " the button, move onto the button, swap with the button, apply preferred functions, apply preferred speed, save"
+        + " preferred functions, save preferred speed, functions off, linked locomotives, cut the button, clear the button")
+        .split(", ");
+
+    /**
+     * Every item of a key's right-click menu shows on its right the key the window's shortcut table binds for it, and no
+     * tooltip that only named the key; the key is shown, not bound, so only the window's own key handling acts on it.
+     * With no speed preset, the grayed Apply item keeps the tip that says why.
+     *
+     * MUTATION: in `RightClickMenuListener.keyed`, a plain `setAccelerator` (the item binds its key); or swap two rows'
+     * names there.
+     */
+    @Test
+    public void testTheKeyMenuShowsTheKeysTheTableBinds() throws Exception
+    {
+        one.setPreferredSpeed(30);
+
+        try
+        {
+            // Two copied from S, so Paste, Move and Swap are offered on A
+            Keys.press(keyboard(), KeyEvent.VK_S);
+            Keys.press(keyboard(), KeyEvent.VK_C, InputEvent.CTRL_DOWN_MASK);
+
+            List<javax.swing.JMenuItem> items = keyMenuItems(KeyEvent.VK_A);
+
+            assertEquals(items.size(), KEY_MENU_ROWS.length, "the key's menu offers other items: " + texts(items));
+
+            for (int at = 0; at < items.size(); at++)
+            {
+                javax.swing.JMenuItem item = items.get(at);
+                javax.swing.KeyStroke key = TrainControlUI.KeyShortcuts.named(KEY_MENU_ROWS[at]).stroke();
+
+                assertEquals(item.getAccelerator(), key, "\"" + item.getText() + "\" does not show " + KEY_MENU_ROWS[at]
+                    + "'s key");
+
+                assertNull(item.getToolTipText(), "\"" + item.getText() + "\" still has a tooltip");
+
+                Object bound = item.getInputMap(javax.swing.JComponent.WHEN_IN_FOCUSED_WINDOW).get(key);
+
+                assertNull(bound == null ? null : item.getActionMap().get(bound), "\"" + item.getText() + "\" binds "
+                    + key);
+            }
+
+            closeMenus();
+
+            one.setPreferredSpeed(0);
+
+            String apply = I18n.f("loc.ui.menuApplySavedSpeedPreset", 0);
+
+            javax.swing.JMenuItem none = keyMenuItems(KeyEvent.VK_A).stream().filter(i -> i.getText().equals(apply))
+                .findFirst().orElse(null);
+
+            assertNotNull(none, "with no speed preset, the menu has no \"" + apply + "\"");
+            assertFalse(none.isEnabled(), "Apply with no speed preset is not grayed");
+            assertEquals(none.getToolTipText(), I18n.t("loc.ui.tooltip.noSpeedPreset"), "the grayed Apply lost its reason");
+        }
+        finally
+        {
+            one.setPreferredSpeed(0);
+
+            ui.clearCopyTarget();
+        }
+    }
+
+    /**
+     * After the key's menu has been open, Control+X, its Cut item's key, cuts the shown train exactly once: a second cut
+     * of the now empty key would empty the clipboard.
+     *
+     * MUTATION: in the row "cut the button", `setCopyTarget` twice, and the copied train is gone.
+     */
+    @Test
+    public void testAKeyTheMenuShowsActsOnceWithTheMenuClosed() throws Exception
+    {
+        try
+        {
+            keyMenuItems(KeyEvent.VK_A);
+
+            closeMenus();
+
+            assertTrue(waitFor(() -> Components.popupShowing() == null), "precondition: the key's menu did not close");
+
+            Keys.press(keyboard(), KeyEvent.VK_X, InputEvent.CTRL_DOWN_MASK);
+
+            assertTrue(waitFor(() -> onKey(KeyEvent.VK_A) == null), "Control+X left the train on A");
+            assertSame(Components.onTheEventThread(ui::getCopyTarget), one, "Control+X did not hold the cut train once");
+        }
+        finally
+        {
+            ui.clearCopyTarget();
+        }
+    }
+
+    private static void closeMenus()
+    {
+        Components.onTheEventThread(() ->
+        {
+            javax.swing.MenuSelectionManager.defaultManager().clearSelectedPath();
+
+            return null;
+        });
+    }
+
+    /** A letter key's right-click menu, opened as a user does: its items, dividers left out. */
+    private static List<javax.swing.JMenuItem> keyMenuItems(int key) throws Exception
+    {
+        JPopupMenu menu = rightClick(letters().get(key), null);
+
+        return Components.onTheEventThread(() ->
+        {
+            List<javax.swing.JMenuItem> items = new java.util.ArrayList<>();
+
+            for (Component each : menu.getComponents())
+            {
+                if (each instanceof javax.swing.JMenuItem) items.add((javax.swing.JMenuItem) each);
+            }
+
+            return items;
+        });
+    }
+
+    private static List<String> texts(List<javax.swing.JMenuItem> items)
+    {
+        List<String> texts = new java.util.ArrayList<>();
+
+        for (javax.swing.JMenuItem item : items) texts.add(item.getText());
+
+        return texts;
+    }
+
     /** Whether a function is on in the train's saved preset. */
     private static boolean saved(Locomotive loc, int fn)
     {

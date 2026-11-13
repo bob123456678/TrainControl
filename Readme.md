@@ -48,7 +48,7 @@ TrainControl uses your computer's language automatically.  To run it in another 
 
 As shown above, you can assign locomotives to any letter on the keyboard, then quickly switch between them.  Easy keyboard shortcuts let you control locomotives.  Thumbnails are automatically downloaded from the CS2/CS3 or can be set manually.  Drag-and-drop locomotives while the power is off.
 
-Right-click a locomotive button for its quick actions, such as function and speed presets, or choose `Locomotive Settings...` (or right-click the locomotive's name) to change its name, address, picture, functions, notes and multi-unit in one window.  A function button's right-click opens the same window on that function.  `Add Locomotive` (Ctrl+D) opens it too, ready for a new locomotive.  If another locomotive already uses the same address, a warning triangle shows next to `Address` on the `Basic Settings` tab; click it to see which.  A locomotive can't be edited while autonomy is running or while it is moving with the power on: the window then opens grayed out.  To copy locomotives between TrainControl installations, use `Export to CSV` and `Import from CSV...` on the `Locomotives` menu.
+Right-click a locomotive button for its quick actions, such as function and speed presets, or choose `Locomotive Settings...` (or right-click the locomotive's name) to change its name, address, picture, functions, notes and multi-unit in one window.  A function button's right-click opens the same window on that function.  `Add Locomotive...` (Ctrl+D) opens it too, ready for a new locomotive.  If another locomotive already uses the same address, a warning triangle shows next to `Address` on the `Basic Settings` tab; click it to see which.  A locomotive can't be edited while autonomy is running or while it is moving with the power on: the window then opens grayed out.  To copy locomotives between TrainControl installations, use `Export to CSV...` and `Import from CSV...` on the `Locomotives` menu.
 
 ![Right-click menu on a locomotive button, showing options for function presets, preferred speed, and multi-unit setup](assets/ui_right_click.png?raw=true)
 
@@ -86,11 +86,11 @@ In some cases, you may need to use a double slip switch or a Y-switch from the "
 If you have an older CS3 or don't want to use the CS3 Track Board layouts, you can import and edit layouts in TrainControl as follows:
 
 - If you have a CS2/CS3 with a layout, import your layout:
-    - From the Layouts menu in TrainControl, switch to the Central Station layout, then select "Download Central Station Layout Files".
+    - From the Layouts menu in TrainControl, switch to the Central Station layout, then select "Download Central Station Layout Files...".
     - The layout will be saved to a folder of your choosing, and TrainControl will switch to it as the local data source.  It will now be shown in the Track Diagram tab and can be edited if desired.
     - If you already have layout files on your computer, use "Open Layout..." in the Layouts menu to select the folder containing them.
 - Otherwise, to create a new layout:
-    - Start TrainControl, then from the Layouts menu, click on "Create New Layout"
+    - Start TrainControl, then from the Layouts menu, click on "Create New Layout..."
     - If no Central Station layout is detected and no static layout is manually selected, TrainControl will automatically create an editable demo layout at startup.
 
 Complete editing support is accessible via the "Edit" button within the Track Diagram tab.  In the editor, a strip of icons under `Page` adds, duplicates, renames, deletes and moves pages, and the `Tools` menu has the rest, such as `Sort Pages by Name`.  Pages are shown in the order they have in the layout's files.  This will let you fully customize your layout.
@@ -390,11 +390,11 @@ If the backup fails, the update stops and nothing is changed.  If the new versio
 
 **Backing up and restoring your data:**
 
-To make a backup, select "Backup TrainControl Data" from the File menu.  This saves a single zip file in the `tc_backup` folder with your locomotives and their icons, keyboard mappings, routes, and, for a layout stored on your computer, its track diagrams and autonomy setups.
+To make a backup, select "Back Up TrainControl Data..." from the File menu.  This saves a single zip file in the `tc_backup` folder with your locomotives and their icons, keyboard mappings, routes, and, for a layout stored on your computer, its track diagrams and autonomy setups.
 
 If your track diagram is on the Central Station, TrainControl offers to download it first so that it is included.  On a CS3, the backup also includes the Central Station's own locomotive, route and accessory data.
 
-To restore, select "Restore from Backup" from the File menu and pick the zip file.  TrainControl shows what the backup holds and what it will replace, saves your current data first as a backup whose name ends in `before-restore`, puts the backup back, and closes; start it again to use the restored data.  To undo a restore, restore the `before-restore` file.
+To restore, select "Restore from Backup..." from the File menu and pick the zip file.  TrainControl shows what the backup holds and what it will replace, saves your current data first as a backup whose name ends in `before-restore`, puts the backup back, and closes; start it again to use the restored data.  To undo a restore, restore the `before-restore` file.
 
 You can also restore by hand: close TrainControl, unzip the archive next to the JAR file, and start TrainControl again.  `LocDB.data` and `UIState.data` go next to the JAR; the layout folder can go anywhere, and you select it with "Open Layout...".
 
@@ -436,7 +436,7 @@ Tab icons provided by Freepik.
             - A locomotive can't be edited while autonomy is running or while it is moving with the power on, so the window then opens grayed out, but you can still save the speed and function presets from their hotkeys and the key menu.
             - The `Functions` tab lists every function in one table, with its behavior, icon and `Preset` tick, and a play icon that switches the function on the layout.
             - The `Autonomy` tab holds the locomotive's `Train Length`, `Reversible`, `Active`, `Departure Function` and `Arrival Function`.
-            - `Add Locomotive` (Ctrl+D) opens the same window, though not while autonomy is running, and a warning triangle next to `Address` now shows by itself when another locomotive uses the same address, in place of `Check Duplicates`.
+            - `Add Locomotive...` (Ctrl+D) opens the same window, though not while autonomy is running, and a warning triangle next to `Address` now shows by itself when another locomotive uses the same address, in place of `Check Duplicates`.
             - `Sync settings & functions w/ Central Station` has moved from the key menu to the `Basic Settings` tab, under the picture.
             - On a locomotive that is part of a multi-unit, the multi-unit's name in the note on the `Multi-Unit` tab is a link: click it, or press Enter on it, to close this window (asking first about changes you haven't saved) and open the multi-unit's settings.
             - With the track power off, hovering the locomotive's picture in the main window shows a wrench that opens that locomotive's `Locomotive Settings` on `Basic Settings`.  The crop and revert icons are now only over the picture in `Locomotive Settings`, which still has the wrench for choosing a picture.
@@ -453,10 +453,13 @@ Tab icons provided by Freepik.
             - Two boxes, `Trains can stop here` and `Trains can pass through`, replace the `Station (...)` choices, and the `Station`, `Terminus`, `Parking` and `Reversing Point` buttons set the usual combinations and light up when your settings match one.
             - A station with only `Trains can stop here` ticked can't be run through by autonomy or by a trip you send, though it doesn't make the train turn around, and `Return Home` may still run through it.
             - `Mass Edit...`, under `Path Type` in the autonomy editor, lets you click several stations and change them all in one `Station Settings` window.
-            - `Change Train at` *station* `...` opens the `Train` tab of `Station Settings` for the train standing there, with its locomotive, `Active`, `Facing`, `Arrived` and `Tail lies`, and `Locomotive Settings...` opens the `Autonomy` tab.
-            - On the track diagram, a station's right-click menu now always has `Edit` *locomotive* `...` when a train is standing there, `Place` *locomotive* when another one is selected, and `Place a Locomotive Here...`, together under their own divider.
+            - `Change Train at` *station* `...` opens the `Train Placement` tab of `Station Settings` for the train standing there, with its locomotive, `Active`, `Facing`, `Arrived` and `Tail lies`, and `Locomotive Settings...` opens the `Autonomy` tab.
+            - On the track diagram, a station's right-click menu now always has `Edit` *locomotive* `...` when a train is standing there, `Place` *locomotive* `Here` when another one is selected, and `Place a Locomotive Here...`, which reads `Place Another Locomotive Here...` beside it, together under their own divider.
+            - On the track diagram, every square's right-click menu now opens with its name in bold and `Station Settings...` under it, and ends with `Start Autonomous Operation` and `Return Locomotives Home`.  `Segment Length...`, `Bulk Tools` and `Open the Full Editor...` are under `Autonomy Setup`, as they already were on plain track.
+            - `Change Direction` and `Change Arrived From` are left off the track diagram's right-click menu where the track allows only one way, rather than grayed out.
+            - While an editor is open, the track diagram's right-click menu offers `Go to the Opened Editor`.
             - A station's right-click menu turns the train standing there around in one click with `Change Direction (now facing` *East* `)`, and changes the side it came in by with `Change Arrived From (currently` *West* `)`.
-            - While trains are running, whether sent by autonomy, a timetable, a route, you or `Return Home`, a station's right-click menu on the track diagram has `Is Active` to pause or resume the train standing there, and so does the `Train` tab of its `Station Settings`.
+            - While trains are running, whether sent by autonomy, a timetable, a route, you or `Return Home`, a station's right-click menu on the track diagram has `Is Active` to pause or resume the train standing there, and so does the `Train Placement` tab of its `Station Settings`.
             - On the track diagram, you can send a standing train from its right-click menu while another train you sent is still on its way.
             - In the autonomy editor, a station's right-click menu has `Place` *locomotive* to put the locomotive selected in the main window there.
             - If the connection to a CS3 drops, autonomy, timetables and `Return Home` start no new trips until it is back, and trains already on their way carry on.
@@ -477,7 +480,19 @@ Tab icons provided by Freepik.
             - Click an (i) to read its explanation at once, without waiting for the tooltip.
             - The usage chart, the crop window, the autonomy editor's buttons and the signal window now use the same fonts and spacing as the new windows.
             - Each line in the log now shows the time, `File` > `Export Log...` saves the log to a file, and the `File` menu is sorted into four groups.
+            - The `Locomotives` menu has no `Utilities` submenu: `Turn Off All Functions`, `Turn On All Lights`, `Sync Full Function State w/ Central Station...` and `Check for Renamed Locomotives` are in the menu itself, and `Browse Database` is now `Locomotive Database...`.
+            - Menu items show their shortcut keys on the right: Ctrl+F for `Quick Find Locomotive...`, Ctrl+A for `Locomotive Database...` and Ctrl+D for `Add Locomotive...`.  A locomotive button's right-click menu shows them too, such as Ctrl+C for copy and Alt+P for the function preset, and so do the right-click menus in the track diagram and autonomy editors.
+            - `File` > `Change Central Station IP Address...` shows the IP address in use and lets you type a new one, used from the next time TrainControl starts; `Cancel` keeps the old one.
+            - The `Layouts` menu marks the layout you are using with `(in use)` in place of the `Data Source` line, and `Show Current Layout Folder` is at the bottom of `Recent Layouts`.
+            - Grayed menu items say why when you hover over them, and `Recent Layouts` says `No other layouts yet` when there is nothing else to open.
+            - While autonomy is running, `Sync Database w/ Central Station`, `Restore from Backup...`, `Add Locomotive...`, `Import from CSV...` and `Sync Full Function State w/ Central Station...` are grayed and say why, rather than refusing after you click them.
+            - In `Preferences`, the `Startup` choices are `On`, `Off` and `Leave as It Was` under `Track Power at Startup`, the keyboard choices are under `Keyboard Layout`, `Layouts` is now `Track Diagram`, and the submenus are in the order `Locomotive Control`, `Track Diagram`, `Autonomy`, `Startup`.  Your settings are kept.
+            - The `Help` menu has `User Guide`, `Autonomy Guide`, `Check for Updates Now`, `View Releases` and `About TrainControl`.
+            - An `All` button after the Layout tab's S, M and L buttons opens every page in a window of its own, in place of `Layouts` > `Pop-up all Layout Pages`.
+            - Menu items that open a window or ask you something end in "...".
             - An unexpected error in the background now shows in the log.
+            - `Routes` > `New Route...` adds a route, and `Import Routes...` asks before replacing your routes.
+            - `Autonomy` > `Documentation` is now `Autonomy Guide`.
         - Central Station
             - TrainControl now connects to a CS3 over TCP, and falls back to UDP, saying so in the log, if that doesn't work. A CS2 still uses UDP.
             - If the connection to a CS3 drops, or the CS3 answers nothing for 3 seconds after a command, commands go over UDP at once and nothing is sent again, and the log counts the commands that may not have arrived.
@@ -496,6 +511,8 @@ Tab icons provided by Freepik.
             - Cancel in the autonomy editor now takes off a train you placed on an empty station, and puts a station back as it was after you placed a train over another one.
             - A command window that stopped showing output, for example after clicking into it, no longer holds up sensor reports, which could make trains run past their stops.
             - `Path Integrity Validation` now waits up to 30 seconds while the Central Station is still switching other accessories, instead of stopping the train.
+            - A train's destinations on the track diagram's right-click menu are in the order you read them, so ParkingTrack4 comes before ParkingTrack10.
+            - Right-clicking plain track on the track diagram shows what it is, such as `Straight Track`, rather than its grid square.
         - Locomotive Control
             - Ctrl+B now moves the copied locomotive to the active button, as the key menu's `Move` item says.
         - Track Diagram

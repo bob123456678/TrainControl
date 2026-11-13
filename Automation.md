@@ -86,7 +86,7 @@ The pictures in this guide are of a small demo layout: an oval with stations Ash
 
 ![Step 2: Autonomy, Edit Autonomy on Page, and the page to open](assets/automation/03-edit-on-page.png)
 
-Only one editor window is open at a time; any of these while it is open simply brings it forward. The editor cannot be opened while autonomy or a route is running, so stop the trains first. While it is open, the Autonomy menu is grayed except for `Documentation` and an `Open the Full Editor...` that brings it forward, and no train can be sent.
+Only one editor window is open at a time; any of these while it is open simply brings it forward. The editor cannot be opened while autonomy or a route is running, so stop the trains first. While it is open, the Layouts and Autonomy menus start with `Go to the Opened Editor`, which brings it forward. The Autonomy menu is grayed except for `Autonomy Guide`, each item the editor grays says `Close the editor to use this.`, and no train can be sent.
 
 ---
 
@@ -125,7 +125,7 @@ The window is titled "Autonomy Editor: *page* (*configuration*)", naming the pag
 5. **The line under it** says whether the setup is ready to run.
 6. **`Debugging Tools`**: `Test a path` and `Why not Moving?`; see [the tools](#the-tools-test-a-path-why-not-moving-one-way-run).
 7. **`Path Type`**: `Auto` or `Manual`: whether those two tools answer for autonomy choosing a destination, or for a train you send yourself (and Return Home).
-8. **`Page Settings`**: `Exclude Page` leaves this whole page out of autonomy: its sensors stop being stations and nothing on it is driven. Put it back from `Autonomy` → `Pages with Autonomy Enabled…`.
+8. **`Page Settings`**: `Exclude Page` leaves this whole page out of autonomy: its sensors stop being stations and nothing on it is driven. Put it back from `Autonomy` → `Pages with Autonomy Enabled`.
 9. **`Visible Elements`**: `Grid` (Control+K), `Addresses` (Control+D), `Track Lengths` (each square's recorded length, Control+G), `Unmeasured Track`, the track with no length yet, and `Show Trains`, whether the editor draws the trains standing on its diagram (the track diagram's own are not affected), and `Text Labels`, whether your own text on the diagram is drawn.
 10. **`Station Labels`** chooses what the station captions show: `Station Names`, `Standing Locs` (the train standing there), `Home Locs` (the station's home locomotive), or `Hide`. Control+L steps through them.
 11. **`Track Directions`** chooses which direction marks are drawn: `Show All`, `Restrictions only` (just the directions you have shut, the usual one), `Allowed only` (just the directions trains may run), `Hide All`, or `Station Arrivals` (which sides each station takes trains from).
@@ -151,7 +151,7 @@ The visibility settings are remembered between openings.
 
 **Changing page or mode** with unsaved changes asks first: `Save and Continue`, `Discard and Continue`, or `Stay Here`. So does quitting TrainControl with the editor open. Clicking a finding on another page goes there without asking, and keeps what you have done so far.
 
-**Changing the track diagram later.** If you change the track diagram, autonomy re-reads it. A square you move in the track diagram editor takes its station name, length and directions with it; a square you delete loses them, and TrainControl tells you which. Look at `Things to look at` again after any diagram change. The setup is kept in the layout folder, under `config/autonomy`, beside the diagram's own pages, so back up the whole layout folder, or use File → Backup TrainControl Data.
+**Changing the track diagram later.** If you change the track diagram, autonomy re-reads it. A square you move in the track diagram editor takes its station name, length and directions with it; a square you delete loses them, and TrainControl tells you which. Look at `Things to look at` again after any diagram change. The setup is kept in the layout folder, under `config/autonomy`, beside the diagram's own pages, so back up the whole layout folder, or use `Back Up TrainControl Data...` in the File menu.
 
 ---
 
@@ -171,24 +171,24 @@ With no tool armed, a left-click on track changes which way trains may run on it
 
 ## The right-click menu
 
-Right-click any square for everything else. In the autonomy editor the menu opens with the square's name or kind as a heading; on the track diagram a station's name heads the station's own items. The menu offers only what makes sense there. Settings on plain track act on the whole run. Nothing in it can be changed while trains are running (autonomy, a timetable, a route, a train you sent or Return Home), except `Is Active` on the track diagram; `Station Settings` opens then, but read only, except `Active` on its `Train` tab opened from the track diagram.
+Right-click any square for everything else. The menu opens with the square's name as a heading, or on plain track what it is, such as `Straight Track`, with `Station Settings...` right under it where the square has one. On the track diagram the items about the square come first; `Segment Length...` and the editor's other items for the square, `Bulk Tools` and `Open the Full Editor...` are under `Autonomy Setup` near the foot, and `Start Autonomous Operation` and `Return Locomotives Home` (or `Gracefully Stop Autonomy`) come last. While an editor is open, the track diagram's menu says so and offers `Go to the Opened Editor`. The menu offers only what makes sense there. Settings on plain track act on the whole run. Nothing in it can be changed while trains are running (autonomy, a timetable, a route, a train you sent or Return Home), except `Is Active` on the track diagram; `Station Settings` opens then, but read only, except `Active` on its `Train` tab opened from the track diagram.
 
 ### On a sensor or a station
 
 | Item | What it does |
 | --- | --- |
 | *train* `Is Active` | Untick it to pause the train: autonomy and Return Home then leave it where it stands. On the track diagram it is on the menu while trains are running too, and then pauses that train alone, as the pause button on the train's card on the Auto tab does |
-| `Change Direction (now facing` *East* `)` | Turns the train standing here around in one click. If you are not sure which way it faces, leave it: autonomy corrects it the first time the train runs. Grayed out, with the reason, where the track lets a train face only one way or no track leads out |
-| `Change Arrived From (currently` *West* `)` | Changes the side the train came in by, which is where its tail lies, to the other side in one click. Where there is no single other side, it opens a list of the sides |
+| `Change Direction (now facing` *East* `)` | Turns the train standing here around in one click. If you are not sure which way it faces, leave it: autonomy corrects it the first time the train runs. Where the track lets a train face only one way it is left off the track diagram's menu, and grayed out with the reason in the editor; it is grayed out on both where no track leads out |
+| `Change Arrived From (currently` *West* `)` | Changes the side the train came in by, which is where its tail lies, to the other side in one click. Where there is no single other side, it opens a list of the sides. Where track reaches the square from one side only it is left off the track diagram's menu, and grayed out in the editor |
 | *train*`'s Tail Reaches Back To...` | Only where it matters: which sensor behind the train its tail has crossed. `Pick on the diagram...` lets you click it |
 | `Station Settings...` | Opens the window with every setting of the station (Control+O): see [the Station Settings window](#the-station-settings-window) |
-| `Change Train at` *station* `...` / `Place a Locomotive Here...` | Opens `Station Settings` on its `Train` tab: which train is standing here, and the details of how it stands. On a station with no train it puts one there. See [the Train tab](#the-train-tab) |
-| `Place` *train* | On the track diagram, when a train is selected in the main window and is not the one standing here: puts it here |
+| `Change Train at` *station* `...` / `Place a Locomotive Here...` | Opens `Station Settings` on its `Train` tab: which train is standing here, and the details of how it stands. On a station with no train it puts one there, and reads `Place Another Locomotive Here...` when `Place` *train* `Here` is beside it. See [the Train tab](#the-train-tab) |
+| `Place` *train* `Here` | On the track diagram, when a train is selected in the main window and is not the one standing here: puts it here |
 | `Remove` *train* | Takes the train off this square |
 | `Edit` *train* `...` | On the track diagram only, when a train is standing here: opens that train's `Locomotive Settings` on the `Autonomy` tab. It opens grayed out while autonomy runs |
-| `Segment Length...` | How long this piece of track counts as, in your own units; see [Track lengths](#track-lengths-what-they-are-for) (Control+E) |
+| `Segment Length...` | How long this piece of track counts as, in your own units; see [Track lengths](#track-lengths-what-they-are-for) (Control+E). On the track diagram it is under `Autonomy Setup` |
 | `Show a Station Name Here...` | Puts a station's caption on this square (Control+N). A page shows a station once: if the station already has a caption on this page it moves here, and its captions on other pages stay. `Stop Showing` *station* takes off the one on this square only |
-| `Bulk Tools` | See [Bulk Tools](#bulk-tools) |
+| `Bulk Tools` | See [Bulk Tools](#bulk-tools). On the track diagram it is under `Autonomy Setup` |
 
 Everything else a station has is in its `Station Settings`: its name, whether trains stop or run through, which sides they arrive from and leave by, its guard signals, home locomotive, priority and the trains kept out. Control+S still names the square under the pointer and Control+H sets its home locomotive.
 
@@ -273,7 +273,7 @@ Names cannot sit on switches or signals.
 
 ## Bulk Tools
 
-The last item of every right-click menu: things that act on the whole setup rather than one square.
+The last item of every right-click menu in the editor, and under `Autonomy Setup` on the track diagram's: things that act on the whole setup rather than one square.
 
 | Item | What it does |
 | --- | --- |
@@ -518,7 +518,7 @@ So if a short train seems to be blocking a surprising amount of track, the answe
 
 **A signal paired with a station** (`Exit guard signal` in its `Station Settings`) goes red while a train is standing there, and green again once it leaves.
 
-**While autonomy runs, nothing that changes the setup can be used.** The Autonomy and Layouts menus gray out whatever would change the setup or the track diagram, and say why when you hover over them; the Layouts menu keeps Open CS3 Web App, the pop-up pages and the picture export. On the Auto tab, the settings, `Execute Timetable` and `Capture Locomotive Commands` are grayed until the trains have stopped, saying "Please wait for all active locomotives to stop."
+**While autonomy runs, nothing that changes the setup can be used.** The Autonomy and Layouts menus gray out whatever would change the setup or the track diagram, and say why when you hover over them; the Layouts menu keeps Open CS3 Web App, Show Current Layout Folder and the picture export. On the Auto tab, the settings, `Execute Timetable` and `Capture Locomotive Commands` are grayed until the trains have stopped, saying "Please wait for all active locomotives to stop."
 
 **The Auto tab** (the third icon on the left of the main window) is grayed until a configuration is loaded; when none is (after `Stop Using Autonomy`, or with `Load Autonomy` unticked under Preferences → Startup), the strip above the track diagram offers `Load this configuration`. Once one is loaded, the Auto tab has three tabs:
 
@@ -528,7 +528,7 @@ So if a short train seems to be blocking a surprising amount of track, the answe
 
 ![The Auto tab while autonomy runs: Graceful Stop, and a card for each train](assets/automation/13-auto-tab.png)
 
-**On the track diagram**, right-click a train to send it to one of the stations autonomy chooses from, or one under `More Destinations`, which lists the stations you have unticked `May choose this station` on, such as parking berths. A standing train's stations are offered even while another train you sent this way is still on its way, as on its card on the Auto tab, though not while autonomy, a timetable or Return Home runs. Right-click a station to place the train selected in the main window there (`Place` *train*), to take one off, or to open the train standing there: `Edit` *train* `...` opens its `Locomotive Settings` on the `Autonomy` tab, and `Change Train at` *station* `...` opens [the Train tab](#the-train-tab) of `Station Settings`. Placing a train from the diagram may ask which way it faces and which way it came in; if you are not sure, take the suggestion.
+**On the track diagram**, right-click a train to send it to one of the stations autonomy chooses from, or one under `More Destinations`, which lists the stations you have unticked `May choose this station` on, such as parking berths. A standing train's stations are offered even while another train you sent this way is still on its way, as on its card on the Auto tab, though not while autonomy, a timetable or Return Home runs. Its stations are listed by name, numbers counted as numbers, so ParkingTrack4 comes before ParkingTrack10. Right-click a station to place the train selected in the main window there (`Place` *train* `Here`), to take one off, or to open the train standing there: `Edit` *train* `...` opens its `Locomotive Settings` on the `Autonomy` tab, and `Change Train at` *station* `...` opens [the Train tab](#the-train-tab) of `Station Settings`. Placing a train from the diagram may ask which way it faces and which way it came in; if you are not sure, take the suggestion.
 
 When you send a train that can reverse to a station where trains may change direction, TrainControl first asks "Keep direction?". Yes, the default, keeps it facing the way it is; No turns it around there.
 
@@ -659,11 +659,11 @@ A few more autonomy settings are under Preferences → Autonomy, because they be
 
 A configuration is one way of running your railway. They are all under the Autonomy menu:
 
-- `Configuration (`*name*`)` lists them; pick one to load it. `Import…` brings one in from a file, including an `autonomy.json` from an older version, and `Export…` saves the one loaded. An older `autonomy.json` brings its stations, trains and settings across; its timetable, its route activations, and each connection's commands, lengths and locks (which the track diagram decides now) are left behind, and the import lists what it left. Imported into a configuration that already exists, an older file only fills its gaps: a setting at its default, a home taken off or an emptied exclusion list counts as not set and takes the file's value, while each station of a configuration that has been loaded keeps its own maximum train length, even where that is no limit.
+- `Configuration (`*name*`)` lists them; pick one to load it. `Manage Configurations` → `Import...` brings one in from a file, including an `autonomy.json` from an older version, and `Export...` saves the one loaded. An older `autonomy.json` brings its stations, trains and settings across; its timetable, its route activations, and each connection's commands, lengths and locks (which the track diagram decides now) are left behind, and the import lists what it left. Imported into a configuration that already exists, an older file only fills its gaps: a setting at its default, a home taken off or an emptied exclusion list counts as not set and takes the file's value, while each station of a configuration that has been loaded keeps its own maximum train length, even where that is no limit.
 - The first one is made with `Add a Configuration...`: no trains placed, every station rule and setting at its default, and no timetable.
-- After that, `Manage Configurations…` → `New Configuration...` copies the one you have (its station rules, settings and speeds) and asks whether where the trains stand and the timetable come too. Answer No to start the copy with no trains placed and an empty timetable. The one you have stays chosen; pick the copy from the Autonomy menu when you want it. `Rename...` and `Delete` are beside it.
-- Also under `Manage Configurations…`: `Stop Using Autonomy` unloads the configuration without deleting anything; `Delete This Layout’s Whole Autonomy Setup...` removes every configuration, with every station name, direction and caption; the track diagram itself is not touched. After `Stop Using Autonomy`, the strip above the diagram offers `Load this configuration`.
-- `Pages with Autonomy Enabled…` says which pages autonomy uses.
+- After that, `Manage Configurations` → `New Configuration...` copies the one you have (its station rules, settings and speeds) and asks whether where the trains stand and the timetable come too. Answer No to start the copy with no trains placed and an empty timetable. The one you have stays chosen; pick the copy from the Autonomy menu when you want it. `Rename...` and `Delete...` are beside it.
+- Also under `Manage Configurations`: `Stop Using Autonomy` unloads the configuration without deleting anything; `Delete This Layout’s Whole Autonomy Setup...` removes every configuration, with every station name, direction and caption; the track diagram itself is not touched. After `Stop Using Autonomy`, the strip above the diagram offers `Load this configuration`.
+- `Pages with Autonomy Enabled` says which pages autonomy uses.
 
 None of these can be done while autonomy or a route is running. The configuration you were last using is loaded when TrainControl starts, unless `Load Autonomy` is unticked under Preferences → Startup.
 
@@ -673,7 +673,7 @@ None of these can be done while autonomy or a route is running. The configuratio
 - the direction of each piece of track, and its length
 - the links between pages: which are paired, which are switched off, and their names
 - which ways into a station are open, blocking stations, and signals
-- which pages are in autonomy (`Pages with Autonomy Enabled…`)
+- which pages are in autonomy (`Pages with Autonomy Enabled`)
 
 Change any of these and every configuration sees the change.
 

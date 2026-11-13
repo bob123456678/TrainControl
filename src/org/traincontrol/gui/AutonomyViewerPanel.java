@@ -323,17 +323,17 @@ public class AutonomyViewerPanel extends JPanel
         gbc.gridy++;
     }
 
-    /** Everything that manages configurations, on one menu. */
+    /** Everything that manages configurations: the Autonomy menu's Manage list, built by the same method. */
     private javax.swing.JPopupMenu manageMenu()
     {
         javax.swing.JPopupMenu menu = new javax.swing.JPopupMenu();
 
-        menu.add(item(I18n.t("autosetup.ui.menuNewConfiguration"), () -> duplicate()));
-        menu.add(item(I18n.t("autosetup.ui.menuRenameConfiguration"), () -> rename()));
-        menu.add(item(I18n.t("autosetup.ui.menuDeleteConfiguration"), () -> delete()));
-        menu.addSeparator();
-        menu.add(item(I18n.t("autosetup.ui.btnImportConfiguration"), () -> importConfiguration()));
-        menu.add(item(I18n.t("autosetup.ui.btnExportConfiguration"), () -> exportConfiguration()));
+        AutonomyMenu.addManageItems(menu, ui, this, session());
+
+        for (java.awt.Component part : menu.getComponents())
+        {
+            if (part instanceof javax.swing.JMenuItem) styled((javax.swing.JMenuItem) part, false);
+        }
 
         // Debug builds only, last on the menu (the flag is read fresh: the menu is rebuilt on every press).  It writes
         // the derived graph as a diagnostic, so it is offered only with a setup free of blocking problems, as the
@@ -1625,7 +1625,7 @@ public class AutonomyViewerPanel extends JPanel
         if (names.size() > 1)
         {
             Object chosen = JOptionPane.showInputDialog(ui, I18n.t("autosetup.ui.promptWhichConfigurationToDelete"),
-                I18n.t("autosetup.ui.menuDeleteConfiguration"), JOptionPane.QUESTION_MESSAGE, null, names.toArray(),
+                I18n.t("autosetup.ui.titleDeleteConfiguration"), JOptionPane.QUESTION_MESSAGE, null, names.toArray(),
                 names.contains(name) ? name : names.get(0));
 
             if (chosen == null) return;
@@ -1643,7 +1643,7 @@ public class AutonomyViewerPanel extends JPanel
         // is not undoable.
         if (JOptionPane.showOptionDialog(ui,
             I18n.f("autosetup.ui.confirmDeleteConfiguration", name),
-            I18n.t("autosetup.ui.menuDeleteConfiguration"),
+            I18n.t("autosetup.ui.titleDeleteConfiguration"),
             JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE, null,
             TrainControlUI.YES_NO_OPTS, TrainControlUI.YES_NO_OPTS[1]) != 0) return;
 

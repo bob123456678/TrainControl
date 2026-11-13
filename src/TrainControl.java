@@ -51,7 +51,15 @@ public class TrainControl
                     ? org.traincontrol.util.I18n.t("error.alreadyRunning")
                     : org.traincontrol.util.I18n.f("error.startupFailed", e.getMessage());
 
-                JOptionPane.showMessageDialog(null, said);
+                // On the event thread, and waited for: the exit below must not come before it is read (OB-445).
+                try
+                {
+                    javax.swing.SwingUtilities.invokeAndWait(() -> JOptionPane.showMessageDialog(null, said));
+                }
+                catch (InterruptedException | java.lang.reflect.InvocationTargetException couldNotShow)
+                {
+                    // The console has it.
+                }
             }
 
             e.printStackTrace();

@@ -683,43 +683,130 @@ final class LocomotiveFunctionsTab extends JPanel
 
     private final java.util.Set<String> customRequested = java.util.concurrent.ConcurrentHashMap.newKeySet();
 
+    /** Images that were asked for and would not load: never offered in the dropdown. */
+    private final java.util.Set<String> customBroken = java.util.concurrent.ConcurrentHashMap.newKeySet();
+
     /** The picture for a row: its own image once it has loaded, else its standard icon. */
     private ImageIcon pictureOf(Row r)
     {
-        if (r.custom != null)
-        {
-            final String path = r.custom;
-
-            if (customRequested.add(path))
-            {
-                ui.getImageLoader().execute(() ->
-                {
-                    ImageIcon loaded = null;
-
-                    try
-                    {
-                        loaded = new ImageIcon(ui.getLocImage(path, TrainControlUI.BUTTON_ICON_WIDTH));
-                    }
-                    catch (Exception ex)
-                    {
-                        ui.getModel().logf("loc.ui.errorInvalidIconPath", path);
-                    }
-
-                    if (loaded != null) customPictures.put(path, loaded);
-
-                    SwingUtilities.invokeLater(() ->
-                    {
-                        table.repaint();
-                        iconEditor.combo.repaint();
-                    });
-                });
-            }
-
-            return customPictures.get(path);
-        }
+        if (r.custom != null) return pictureAt(r.custom);
 
         return r.icon >= 0 && r.icon < standardIcons.length ? standardIcons[r.icon] : null;
     }
+
+    /** An image of the user's own, once it has loaded. */
+    private ImageIcon pictureAt(final String path)
+    {
+        if (customRequested.add(path))
+        {
+            ui.getImageLoader().execute(() ->
+            {
+                ImageIcon loaded = null;
+
+                try
+                {
+                    loaded = new ImageIcon(ui.getLocImage(path, TrainControlUI.BUTTON_ICON_WIDTH));
+                }
+                catch (Exception ex)
+                {
+                    ui.getModel().logf("loc.ui.errorInvalidIconPath", path);
+                }
+
+                final boolean failed = loaded == null;
+
+                if (failed) customBroken.add(path);
+                else customPictures.put(path, loaded);
+
+                SwingUtilities.invokeLater(() ->
+                {
+                    if (failed) iconEditor.dropBrokenImages();
+
+                    table.repaint();
+                    iconEditor.combo.repaint();
+                    if (iconEditor.list != null) iconEditor.list.repaint();
+                });
+            });
+        }
+
+        return customPictures.get(path);
+    }
+
+    /**
+     * Every image of the user's own in use on a function of this table or of any locomotive in the database, each once,
+     * by file name: what the dropdown offers after the standard icons.  Two spellings of one file are one image, so
+     * "same" is the file's normalized path (Windows paths ignore case); contents are not compared, which would read
+     * every file.  A file that is missing or unreadable, or that failed to load, is left out; nothing here throws.
+     */
+    private List<String> customChoices()
+    {
+        Map<Object, String> found = new java.util.LinkedHashMap<>();
+
+        for (Row r : rows) offerImage(found, r.custom);
+
+        try
+        {
+            for (org.traincontrol.base.Locomotive other : ui.getModel().getLocomotives())
+            {
+                for (String url : new ArrayList<>(other.getLocalFunctionImageURLs().values())) offerImage(found, url);
+            }
+        }
+        catch (RuntimeException ex)
+        {
+            // A database edited while it is read: the images found so far are offered
+        }
+
+        List<String> out = new ArrayList<>(found.values());
+
+        out.sort(java.util.Comparator.comparing((String url) -> fileNameOf(url).toLowerCase()).thenComparing(url -> url));
+
+        return out;
+    }
+
+    private void offerImage(Map<Object, String> found, String url)
+    {
+        if (url == null || url.isEmpty() || customBroken.contains(url)) return;
+
+        Object key = imageKey(url);
+
+        if (!found.containsKey(key) && readable(key)) found.put(key, url);
+    }
+
+    /** A stored image's identity: a file by its normalized path, anything else by its normalized address. */
+    private static Object imageKey(String url)
+    {
+        try
+        {
+            java.net.URI uri = new java.net.URI(url);
+
+            return "file".equalsIgnoreCase(uri.getScheme()) ? Paths.get(uri).toAbsolutePath().normalize()
+                : uri.normalize().toString();
+        }
+        catch (Exception ex)
+        {
+            return url;
+        }
+    }
+
+    private static boolean readable(Object key)
+    {
+        return !(key instanceof java.nio.file.Path) || java.nio.file.Files.isRegularFile((java.nio.file.Path) key)
+            && java.nio.file.Files.isReadable((java.nio.file.Path) key);
+    }
+
+    private static String fileNameOf(String url)
+    {
+        Object key = imageKey(url);
+
+        if (key instanceof java.nio.file.Path)
+        {
+            java.nio.file.Path name = ((java.nio.file.Path) key).getFileName();
+
+            return name == null ? url : name.toString();
+        }
+
+        return url.substring(url.lastIndexOf('/') + 1);
+    }
+
 
     /** Asks for one of the user's own images for a row; the table shows it at once and Save writes it. */
     void chooseOwnImage(Row r)
@@ -864,17 +951,28 @@ final class LocomotiveFunctionsTab extends JPanel
         return out;
     }
 
-    /** Opens the dropdown's list six icons across, with room for the scroll bar: the dropdown is narrow, the list is not. */
+    /**
+     * Opens the dropdown's list six icons across, at every opening: the dropdown is narrow, its list is not.  The
+     * width has half an icon to spare, so a border or a scroll bar that is a pixel wider than expected costs no column.
+     */
     private static void widen(BasicComboPopup popup, JScrollPane scroll, JList<?> list)
     {
         if (!popup.isVisible()) return;
 
-        Dimension wide = new Dimension(6 * (TrainControlUI.BUTTON_ICON_WIDTH + 12) + scroll.getVerticalScrollBar().getPreferredSize().width, scroll.getPreferredSize().height);
+        int cell = TrainControlUI.BUTTON_ICON_WIDTH + 12;
+        java.awt.Insets around = scroll.getInsets();
+        int across = 6 * cell + cell / 2 + scroll.getVerticalScrollBar().getPreferredSize().width + around.left + around.right;
+        Dimension wide = new Dimension(across, scroll.getPreferredSize().height);
         java.awt.Insets in = popup.getInsets();
 
         scroll.setMaximumSize(wide);
         scroll.setPreferredSize(wide);
         popup.setPopupSize(wide.width + in.left + in.right, wide.height + in.top + in.bottom);
+
+        // Reopened, the popup is already that wide and does not lay out again by itself
+        popup.invalidate();
+        popup.validate();
+        scroll.doLayout();
 
         // The list laid its cells out for the narrow width: a changed cell width makes it do so again
         list.setFixedCellWidth(list.getFixedCellWidth() + 1);
@@ -991,6 +1089,9 @@ final class LocomotiveFunctionsTab extends JPanel
         final JPanel panel = new JPanel(new FlowLayout(FlowLayout.LEFT, 4, 0));
         private Row row;
         private boolean filling;
+        JList<?> list;
+        private Runnable widenAgain = () -> { };
+        private List<String> customs = new ArrayList<>();
 
         IconCell(boolean editing)
         {
@@ -1000,10 +1101,11 @@ final class LocomotiveFunctionsTab extends JPanel
             // The row's own picture whenever the combo shows its value, which is its image when it has one.
             combo.setRenderer((list, value, index, selected, focus) ->
             {
-                ImageIcon shown = index < 0 ? (row == null ? null : pictureOf(row)) : value == null ? null : standardIcons[value];
+                ImageIcon shown = index < 0 ? (row == null ? null : pictureOf(row)) : value == null ? null
+                    : value < standardIcons.length ? standardIcons[value] : pictureAt(customs.get(value - standardIcons.length));
 
                 String number = index < 0 ? (row == null || row.custom != null ? "" : String.valueOf(row.icon))
-                    : String.valueOf(value);
+                    : value >= standardIcons.length ? "" : String.valueOf(value);
 
                 JLabel label = new JLabel(shown == null ? number : null, shown, JLabel.CENTER);
 
@@ -1030,10 +1132,12 @@ final class LocomotiveFunctionsTab extends JPanel
                 // The dropdown's list as a grid of icons
                 BasicComboPopup popup = (BasicComboPopup) combo.getAccessibleContext().getAccessibleChild(0);
                 JScrollPane scrollPane = (JScrollPane) popup.getComponent(0);
-                JList<?> list = (JList<?>) scrollPane.getViewport().getView();
+                list = (JList<?>) scrollPane.getViewport().getView();
 
                 gridLayout(list);
                 popup.setMinimumSize(new Dimension(300, 400));
+
+                widenAgain = () -> widen(popup, scrollPane, list);
 
                 // The dropdown is narrow, its list is not: six icons across, with room for the scroll bar
                 combo.addPopupMenuListener(new javax.swing.event.PopupMenuListener()
@@ -1041,7 +1145,7 @@ final class LocomotiveFunctionsTab extends JPanel
                     @Override
                     public void popupMenuWillBecomeVisible(javax.swing.event.PopupMenuEvent e)
                     {
-                        SwingUtilities.invokeLater(() -> widen(popup, scrollPane, list));
+                        SwingUtilities.invokeLater(widenAgain);
                     }
 
                     @Override
@@ -1059,7 +1163,10 @@ final class LocomotiveFunctionsTab extends JPanel
                 {
                     if (filling || row == null || combo.getSelectedItem() == null) return;
 
-                    useStandardIcon(row.function, (Integer) combo.getSelectedItem());
+                    int picked = (Integer) combo.getSelectedItem();
+
+                    if (picked < standardIcons.length) useStandardIcon(row.function, picked);
+                    else useOwnImage(row.function, customs.get(picked - standardIcons.length));
 
                     fireEditingStopped();
                 });
@@ -1073,6 +1180,47 @@ final class LocomotiveFunctionsTab extends JPanel
                     if (editedRow != null) chooseOwnImage(editedRow);
                 });
             }
+        }
+
+        /** Puts the images of the user's own on this locomotive after the standard icons, ahead of the list opening. */
+        private void offerCustomImages()
+        {
+            javax.swing.MutableComboBoxModel<Integer> model = (javax.swing.MutableComboBoxModel<Integer>) combo.getModel();
+
+            filling = true;
+
+            while (model.getSize() > standardIcons.length) model.removeElementAt(model.getSize() - 1);
+
+            customs = customChoices();
+
+            for (int i = 0; i < customs.size(); i++) model.addElement(standardIcons.length + i);
+
+            // The row's own image is marked in the list when it is one of those offered
+            int own = row == null || row.custom == null ? -1 : indexOfImage(row.custom);
+
+            combo.setSelectedIndex(row == null ? -1 : row.custom == null ? row.icon
+                : own < 0 ? -1 : standardIcons.length + own);
+            filling = false;
+        }
+
+        private int indexOfImage(String url)
+        {
+            Object key = imageKey(url);
+
+            for (int i = 0; i < customs.size(); i++) if (imageKey(customs.get(i)).equals(key)) return i;
+
+            return -1;
+        }
+
+        /** Takes an image that would not load out of the open list. */
+        void dropBrokenImages()
+        {
+            if (!combo.isPopupVisible()) return;
+
+            offerCustomImages();
+
+            // A list that changes while open loses its width
+            SwingUtilities.invokeLater(widenAgain);
         }
 
         private void show(Row r, boolean selected, JTable t)
@@ -1097,6 +1245,9 @@ final class LocomotiveFunctionsTab extends JPanel
         public Component getTableCellEditorComponent(JTable t, Object value, boolean selected, int r, int c)
         {
             show((Row) value, true, t);
+
+            // Before the list opens: a list that changes as it opens does not take the six-column width
+            offerCustomImages();
 
             return panel;
         }

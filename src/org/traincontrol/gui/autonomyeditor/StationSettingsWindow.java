@@ -202,7 +202,7 @@ public final class StationSettingsWindow extends StationWindowBase
 
         right.add(matrix, BorderLayout.NORTH);
         right.add(picture, BorderLayout.CENTER);
-        right.add(matrix.problemLine(), BorderLayout.SOUTH);
+        right.add(matrix.notices(), BorderLayout.SOUTH);
 
         JPanel sideColumn = new JPanel(new BorderLayout());
 

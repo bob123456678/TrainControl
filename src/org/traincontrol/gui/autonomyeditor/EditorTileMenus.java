@@ -6,6 +6,7 @@ import org.traincontrol.automationui.TileGraph.Direction;
 import org.traincontrol.automationui.TileGraph.RouteId;
 import org.traincontrol.automationui.TileGraph.TileKey;
 import org.traincontrol.gui.TailCrossedPrompt;
+import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.util.I18n;
 
 /**
@@ -151,8 +152,7 @@ final class EditorTileMenus
         boolean isPoint = editor.session.getReducer() != null
             && editor.session.getReducer().getPoints().containsKey(target);
 
-        editor.title(menu, isPoint ? editor.pointTitle(target) : component == null
-            ? target.getX() + "," + target.getY() : component.getUserFriendlyTypeName());
+        editor.title(menu, editor.menuHeading(target, component));
 
         if (isPoint)
         {
@@ -163,7 +163,7 @@ final class EditorTileMenus
             // the square being in it (FR-111), which a key opens too.
             javax.swing.JMenuItem settings = settingsItem(target);
 
-            if (!editor.menuOnly) settings.setToolTipText(AutonomyEditorPanel.SHORTCUT_SETTINGS);
+            if (!editor.menuOnly) TrainControlUI.showShortcut(settings, AutonomyEditorPanel.SETTINGS_KEY);
 
             menu.add(settings);
 
@@ -202,6 +202,12 @@ final class EditorTileMenus
                 {
                     menu.add(editor.item(I18n.f("layout.ui.menuRemoveLocomotive", standing),
                         () -> editor.removeLocomotive(target)));
+                }
+
+                // Beside Place <selected> Here, it says it is for any other, as on the track diagram
+                if (train != null && placesOne && placeSelected != null)
+                {
+                    train.setText(I18n.t("autosetup.ui.menuPlaceAnotherHere"));
                 }
 
                 if (train != null && placesOne) menu.add(train);
@@ -378,8 +384,8 @@ final class EditorTileMenus
             javax.swing.JMenuItem lengthItem = editor.item(I18n.t("autosetup.ui.menuSetLength"),
                 () -> editor.applyLength(editor.squareTheLengthWouldGoOn(tile)));
 
-            // OB-214: the tooltip names Control+E, where Control+E does it
-            if (!editor.menuOnly) lengthItem.setToolTipText(AutonomyEditorPanel.SHORTCUT_LENGTH);
+            // OB-214: the item shows Control+E, where Control+E does it
+            if (!editor.menuOnly) TrainControlUI.showShortcut(lengthItem, AutonomyEditorPanel.LENGTH_KEY);
 
             menu.add(lengthItem);
         }
@@ -540,17 +546,16 @@ final class EditorTileMenus
 
             name.setEnabled(!showsItself && inTheDrawnArea);
 
-            // WHAT A CAPTION IS, on the item that makes one: nothing else on this menu says that a caption is a live
-            // readout of another square rather than a name plate.
+            // Its key (FR-086) in the editor only: the main window builds this menu with `setMenuOnly`, where Control+N
+            // is the notes key.
+            if (!editor.menuOnly) TrainControlUI.showShortcut(name, AutonomyEditorPanel.STATION_KEY);
+
+            // The only place on this menu that says a caption is a live readout of another square, not a name plate
             name.setToolTipText(!inTheDrawnArea && !showsItself ? AutonomyEditorPanel.wrapped(I18n.t("autosetup.ui.captionOutsideTheDrawnArea"))
                 : AutonomyEditorPanel.wrapped(
-                (showsItself ? I18n.t("autosetup.ui.tooltipStationShowsItself")
+                showsItself ? I18n.t("autosetup.ui.tooltipStationShowsItself")
                     : !mine ? I18n.t("autosetup.ui.tooltipTextInTheWay")
-                    : I18n.t("autosetup.ui.tooltipShowStationHere"))
-                // AND ITS KEY (FR-086), added to the sentence rather than replacing it: this tooltip is the only place that says what a
-                // caption is.  IN THE EDITOR ONLY: the main window builds this menu with `setMenuOnly`, where Control+N is the
-                // notes key.
-                + (editor.menuOnly ? "" : "  (" + AutonomyEditorPanel.SHORTCUT_STATION + ")")));
+                    : I18n.t("autosetup.ui.tooltipShowStationHere")));
 
             menu.add(name);
         }
@@ -748,7 +753,9 @@ final class EditorTileMenus
 
         if (facts == null) return false;
 
-        menu.add(changeDirectionItem(target, facts));
+        javax.swing.JMenuItem direction = changeDirectionItem(target, facts);
+
+        if (direction != null) menu.add(direction);
 
         // Where no track leads out, the grayed item's reason is all there is to say (OB-347).
         if (facts.facings.isEmpty()) return true;
@@ -765,8 +772,9 @@ final class EditorTileMenus
     }
 
     /**
-     * One click to the other facing; grayed with its reason where there is none to turn to (OB-347), and the radios where
-     * there is no single other: the facing unknown, or more than two.  A facing has to be one the BUILD can hold.
+     * One click to the other facing; grayed with its reason where there is none to turn to (OB-347), left off the track
+     * diagram's menu where the track allows one facing and the radios where there is no single other: the facing
+     * unknown, or more than two.  A facing has to be one the BUILD can hold.
      */
     private javax.swing.JMenuItem changeDirectionItem(final TileKey target, final FacingFacts facts)
     {
@@ -776,6 +784,8 @@ final class EditorTileMenus
 
         String label = now == null ? I18n.t("autosetup.ui.menuChangeDirectionUnknown")
             : I18n.f("autosetup.ui.menuChangeDirection", AutonomyEditorPanel.menuSide(now.name()));
+
+        if (facings.size() == 1 && editor.menuOnly) return null;
 
         if (facings.size() <= 1)
         {
@@ -808,7 +818,8 @@ final class EditorTileMenus
     /**
      * One click to the other side where the square has two and one is recorded; otherwise the list of sides, which also
      * states a recorded side the track has not.  A side is set, never cleared.
-     * @return the item, or null when no train stands here on the railway
+     * @return the item, or null when no train stands here on the railway, or on the track diagram's menu where the track
+     * has one side
      */
     private javax.swing.JMenuItem changeArrivedFromItem(final TileKey target)
     {
@@ -822,7 +833,7 @@ final class EditorTileMenus
         {
             String label = changeArrivedFromLabel(recorded);
 
-            if (facts.sides.size() == 1) return grayed(label, "autosetup.ui.hintArrivedFromOnlyOne");
+            if (facts.sides.size() == 1) return editor.menuOnly ? null : grayed(label, "autosetup.ui.hintArrivedFromOnlyOne");
 
             if (facts.sides.size() == 2)
             {

@@ -316,6 +316,80 @@ public class testTheRoutesImportDoorAsksByName
             + " px wide, as wide as its list of routes, and can run off the screen (RLU-C3): " + run.questionShape);
     }
 
+    /**
+     * Once the file is picked, Import asks "This replaces all N routes. Continue?" with the count of routes there are,
+     * starting on No; No leaves every route as it was, armed or not, and asks and says nothing more.
+     *
+     * MUTATION: drop the question from `importRoutesMenuItemActionPerformed`, start it on Yes, or go on after No, and this
+     * fails.
+     */
+    @Test
+    public void testNoToTheReplaceQuestionLeavesEveryRoute() throws Exception
+    {
+        Imported run = importHisRoutes(true, null, false, -1);
+
+        assertEquals(run.replaceAsked, Collections.singletonList(replacing(run.routesBefore.size())),
+            "Import did not ask once whether to replace the routes, counting them (D51)");
+
+        assertEquals(run.replaceStartsOn, NO, "the question about replacing every route does not start on No");
+
+        assertEquals(run.routesAfter, run.routesBefore, "answered No, the routes changed");
+
+        assertEquals(run.armedAfter, run.armedBefore, "answered No, which routes fire automatically changed");
+
+        assertEquals(run.question, null, "answered No, Import went on to ask about automatic firing");
+
+        assertEquals(run.said, Collections.emptyList(), "answered No, Import went on and said: " + run.said);
+    }
+
+    /**
+     * With no routes there is nothing to replace, so Import does not ask, and the file's routes arrive.
+     *
+     * MUTATION: ask whatever the count, and this fails.
+     */
+    @Test
+    public void testWithNoRoutesTheReplaceQuestionIsNotAsked() throws Exception
+    {
+        Imported run = importHisRoutes(true, null, true, 0);
+
+        assertEquals(run.replaceAsked, Collections.emptyList(), "with no routes, Import asked whether to replace them");
+
+        assertEquals(run.routesAfter, run.routesBefore, "the import did not bring back the routes it was given");
+    }
+
+    /**
+     * With one route the question says so in the singular, and with three it counts them, each in the language's own
+     * grammar; titled with the menu item's words, Import Routes.  Answered Yes, the file's routes arrive.
+     *
+     * MUTATION: ask "This replaces all 1 routes", or title the question Confirm, and this fails.
+     */
+    @Test
+    public void testTheReplaceQuestionCountsOneRouteAndThree() throws Exception
+    {
+        for (int keep : new int[] {1, 3})
+        {
+            Imported run = importHisRoutes(true, null, true, keep);
+
+            assertEquals(run.replaceAsked, Collections.singletonList(replacing(keep)), "with " + keep + " route(s),"
+                + " Import's question does not read as it should");
+
+            assertEquals(run.replaceTitle, I18n.t("route.ui.titleImportRoutes"), "the question is not titled Import"
+                + " Routes");
+
+            assertEquals(run.routesAfter, run.routesBefore, "answered Yes, the file's routes did not arrive");
+        }
+
+        assertEquals(replacing(1), I18n.t("route.ui.confirmReplaceTheOneRoute"), "precondition: one route is not the"
+            + " singular sentence");
+    }
+
+    /** The question Import asks with this many routes, as the bundle says it. */
+    private static String replacing(int routes)
+    {
+        return routes == 1 ? I18n.t("route.ui.confirmReplaceTheOneRoute")
+            : I18n.f("route.ui.confirmReplaceAllRoutes", routes);
+    }
+
     /** A popup's text: its sentence, then each line of its Details list. */
     private static String textOf(support.PopupShape shown)
     {
@@ -343,6 +417,9 @@ public class testTheRoutesImportDoorAsksByName
         List<support.PopupShape> saidShapes;
         Set<String> routesAfter;
         Set<String> armedAfter;
+        List<String> replaceAsked;
+        String replaceStartsOn;
+        String replaceTitle;
     }
 
     /** A change made to the exported file before it is imported, as a person editing it would make it. */
@@ -356,6 +433,21 @@ public class testTheRoutesImportDoorAsksByName
      * Routes > Import, answering the question.
      */
     private static Imported importHisRoutes(boolean yes, Edit edit) throws Exception
+    {
+        Imported run = importHisRoutes(yes, edit, true, -1);
+
+        assertEquals(run.replaceAsked, Collections.singletonList(replacing(run.routesBefore.size())),
+            "Import did not ask once whether to replace the routes, counting them (D51)");
+
+        return run;
+    }
+
+    /**
+     * The same, answering the question about replacing every route with `replace`, and with `keep` at 0 or more
+     * deleting all but that many routes after the export (-1 keeps them all).
+     */
+    private static Imported importHisRoutes(boolean yes, Edit edit, boolean replace, int keep)
+        throws Exception
     {
         if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
 
@@ -419,7 +511,22 @@ public class testTheRoutesImportDoorAsksByName
 
             run.savedArmed = model.routesSavedArmed(json);
 
-            answerer = new Answerer(file, yes);
+            if (keep >= 0)
+            {
+                List<String> names = new ArrayList<>(model.getRouteList());
+
+                assertTrue(names.size() > keep, "precondition: this data has only " + names.size() + " routes");
+
+                for (String name : names.subList(keep, names.size())) model.deleteRoute(name);
+
+                final int kept = keep;
+
+                support.Components.waitFor(() -> model.getRouteList().size() == kept, 30000);
+
+                assertEquals(model.getRouteList().size(), keep, "precondition: the routes could not be deleted");
+            }
+
+            answerer = new Answerer(file, yes, replacing(model.getRouteList().size()), replace);
 
             Thread answering = new Thread(answerer, "routes import answerer");
 
@@ -432,16 +539,30 @@ public class testTheRoutesImportDoorAsksByName
 
             SwingUtilities.invokeLater(importRoutes::doClick);
 
-            // DONE WHEN THE DOOR HAS SAID WHAT IT DID: the message after the busy dialog.
-            for (long end = System.currentTimeMillis() + 180000; answerer.said.isEmpty()
-                && System.currentTimeMillis() < end; ) Thread.sleep(100);
+            // DONE WHEN THE DOOR HAS SAID WHAT IT DID: the message after the busy dialog, or, answered No to replacing
+            // the routes, a moment after that answer, in which anything it went on to do would have shown.
+            final Answerer asked = answerer;
+            final boolean yesToReplace = replace;
+
+            support.Components.waitFor(() -> !asked.said.isEmpty()
+                || (!yesToReplace && !asked.replaceAsked.isEmpty()), 180000);
+
+            // Answered No: give it the moment in which a door that went on anyway would have said so
+            if (!replace) support.Components.waitFor(() -> !asked.said.isEmpty(), 2000);
 
             for (int turn = 0; turn < 6; turn++) SwingUtilities.invokeAndWait(() -> { });
 
             assertTrue(answerer.chose, "precondition: Routes > Import never showed the file chooser");
 
-            assertNotNull(answerer.question, "Routes > Import never asked about automatic firing, over a file with routes"
-                + " saved with it on");
+            run.replaceAsked = new ArrayList<>(answerer.replaceAsked);
+            run.replaceStartsOn = answerer.replaceStartsOn;
+            run.replaceTitle = answerer.replaceTitle;
+
+            if (replace)
+            {
+                assertNotNull(answerer.question, "Routes > Import never asked about automatic firing, over a file with"
+                    + " routes saved with it on");
+            }
 
             run.question = answerer.question;
             run.questionShape = answerer.questionShape;
@@ -511,11 +632,18 @@ public class testTheRoutesImportDoorAsksByName
         private volatile support.PopupShape questionShape;
         private final List<support.PopupShape> saidShapes = Collections.synchronizedList(new ArrayList<>());
         private volatile String initial;
+        private final String replaceQuestion;
+        private final boolean replace;
+        private final List<String> replaceAsked = Collections.synchronizedList(new ArrayList<>());
+        private volatile String replaceStartsOn;
+        private volatile String replaceTitle;
 
-        Answerer(File file, boolean yes)
+        Answerer(File file, boolean yes, String replaceQuestion, boolean replace)
         {
             this.file = file;
             this.yes = yes;
+            this.replaceQuestion = replaceQuestion;
+            this.replace = replace;
         }
 
         @Override
@@ -544,6 +672,19 @@ public class testTheRoutesImportDoorAsksByName
 
                 if (pane == null || !handled.add(pane)) return;
 
+                if (replaceQuestion.equals(String.valueOf(pane.getMessage())))
+                {
+                    replaceAsked.add(replaceQuestion);
+                    replaceStartsOn = String.valueOf(pane.getInitialValue());
+                    replaceTitle = dialog.getTitle();
+
+                    final String answer = replace ? YES : NO;
+
+                    press(pane, answer);
+
+                    return;
+                }
+
                 if (I18n.t("route.ui.confirmRearmImportedTitle").equals(dialog.getTitle()))
                 {
                     questionShape = support.PopupShape.of(pane);
@@ -552,13 +693,7 @@ public class testTheRoutesImportDoorAsksByName
 
                     final String answer = yes ? YES : NO;
 
-                    SwingUtilities.invokeLater(() ->
-                    {
-                        for (Object option : pane.getOptions())
-                        {
-                            if (answer.equals(String.valueOf(option))) pane.setValue(option);
-                        }
-                    });
+                    press(pane, answer);
 
                     return;
                 }
@@ -571,6 +706,18 @@ public class testTheRoutesImportDoorAsksByName
                 SwingUtilities.invokeLater(() -> pane.setValue(Integer.valueOf(JOptionPane.OK_OPTION)));
             });
         }
+    }
+
+    /** Presses the question's button of this text. */
+    private static void press(final JOptionPane pane, final String answer)
+    {
+        SwingUtilities.invokeLater(() ->
+        {
+            for (Object option : pane.getOptions())
+            {
+                if (answer.equals(String.valueOf(option))) pane.setValue(option);
+            }
+        });
     }
 
     private static <T> T find(Container container, Class<T> type)

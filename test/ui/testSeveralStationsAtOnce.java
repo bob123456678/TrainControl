@@ -225,7 +225,7 @@ public class testSeveralStationsAtOnce
     }
 
     /**
-     * The tool is called Bulk Edit...; while it is on every square a click can pick wears a gray outline darker than the
+     * The tool is called Mass Edit...; while it is on every square a click can pick wears a gray outline darker than the
      * editor's light gray grid line (MT-920), a pick keeps its own mark over it, squares that cannot be picked wear nothing, and nothing is outlined once
      * the tool is down.
      *
@@ -236,7 +236,7 @@ public class testSeveralStationsAtOnce
     @Test(timeOut = 120000)
     public void testBulkEditOutlinesWhatCanBePickedInGray() throws Exception
     {
-        assertEquals(StationDoors.part(panel, "autonomy.pickStations", AbstractButton.class).getText(), "Bulk Edit...");
+        assertEquals(StationDoors.part(panel, "autonomy.pickStations", AbstractButton.class).getText(), I18n.t("autosetup.ui.toolPickStations"));
 
         List<TileKey> tiles = Components.onTheEventThread(() ->
         {
@@ -536,38 +536,6 @@ public class testSeveralStationsAtOnce
                 + " they differ: " + tip);
             assertTrue(tip.startsWith("<html"), row + "'s (i) is one unwrapped line: " + tip);
         }
-    }
-
-    /**
-     * A change in the window reaches every station picked: a preset, a box, a typed field and a radio.
-     *
-     * MUTATION: have `actOnEach` act on the first station only, and this fails.
-     */
-    @Test(timeOut = 120000)
-    public void testAChangeReachesEveryStationPicked() throws Exception
-    {
-        List<TileKey> three = stations(3);
-
-        StationSettingsWindow window = pick(three);
-
-        StationDoors.press(window, "station.preset.TERMINUS");
-
-        for (TileKey each : three) assertTrue(on(() -> session.isMustTurnAround(each)), "Terminus missed " + each);
-
-        StationDoors.typeAndEnter(window, "station.maxLength", "25");
-
-        assertEquals(read(three, "maxTrainLength"), sameFor(three, 25), "the length typed missed a station");
-
-        StationDoors.press(window, "station.turnMay");
-
-        for (TileKey each : three)
-        {
-            assertTrue(on(() -> session.isTurnAround(each) && !session.isMustTurnAround(each)), "May turn missed " + each);
-        }
-
-        StationDoors.press(window, "station.runsThrough");
-
-        for (TileKey each : three) assertTrue(on(() -> session.isStopOnly(each)), "Running through off missed " + each);
     }
 
     /**
@@ -993,6 +961,7 @@ public class testSeveralStationsAtOnce
     private static void change(StationSettingsWindow window) throws Exception
     {
         StationDoors.press(window, "station.preset.PARKING");
+        StationDoors.press(window, "station.turnMay");
         StationDoors.press(window, "station.runsThrough");
         StationDoors.typeAndEnter(window, "station.maxLength", "33");
 

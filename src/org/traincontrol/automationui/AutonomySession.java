@@ -511,10 +511,7 @@ public class AutonomySession
         return migratedCaptions;
     }
 
-    /**
-     * Throws away every edit since the last save by re-reading the setup, since edits go straight into the live
-     * configuration; if it cannot be re-read, nothing is changed.
-     */
+    /** Throws away every edit since the last save by re-reading the setup; nothing changes if it cannot be re-read. */
     public void discardEdits() throws IOException
     {
         store.load();
@@ -1389,9 +1386,9 @@ public class AutonomySession
     }
 
     /**
-     * Shuts any page that repeats a sensor an earlier page carries (two squares, one s88, two destinations): the
-     * earliest page in layout order wins.  Run for a new configuration and for a legacy import, which may override
-     * the user's pages (OB-130); elsewhere the page checkboxes decide.
+     * Shuts any page that repeats a sensor an earlier page carries: the earliest page in layout order wins.  Run for a
+     * new configuration and for a legacy import, which may override the user's pages (OB-130); elsewhere the page
+     * checkboxes decide.
      */
     public List<String> excludeRepeatedSensorPages()
     {
@@ -1733,10 +1730,9 @@ public class AutonomySession
         return tile;
     }
     /**
-     * Turns a placed locomotive round on the graph because the railway turned it, and on the running layout, whose copy
-     * decides where the train can go.  Turning it on the graph emits no locomotive command, but a locomotive direction
-     * command updates the graph if it does not match.  Flipping is "the other choice" of `facingChoices`, not the
-     * compass opposite.  Null where the answer is not obvious.
+     * Turns a placed locomotive round on the graph and on the running layout, whose copy decides where the train can
+     * go, because the railway turned it.  Emits no locomotive command.  Flipping is "the other choice" of
+     * `facingChoices`, not the compass opposite.  Null where the answer is not obvious.
      */
     public TileKey flipFacing(String locomotive, org.traincontrol.automation.Layout running)
     {
@@ -2467,8 +2463,7 @@ public class AutonomySession
 
     /**
      * Puts an uncaptioned station's name where it is readable: plain track beside it, else an empty square beside it,
-     * else the sensor; never over somebody's caption.  With nowhere, the "not shown anywhere" warning stands.  Returns
-     * what happened, so a caller can say why nothing did.
+     * else the sensor; never over somebody's caption.  Returns what happened, so a caller can say why nothing did.
      */
     public String placeCaption(TileKey tile)
     {
@@ -2754,9 +2749,9 @@ public class AutonomySession
     private static final List<String> PLACEMENT_KEYS = java.util.Arrays.asList("loc", "arrivedFrom", "arrivedAlong");
 
     /**
-     * Squares where trains turn around whose stretch back to the last switch is not fully measured, one entry each
-     * (OB-171): `Layout.isPathClear` cannot refuse a reversal into a berth it cannot measure.  The stretch is walked as
-     * `GraphReducer.roomAfterTheLastSwitch` walks it.  Maps each square to how many squares its guard still needs.
+     * Squares where trains turn around whose stretch back to the last switch is not fully measured (OB-171):
+     * `Layout.isPathClear` cannot refuse a reversal into such a berth.  Maps each square to how many squares its guard
+     * still needs.
      */
     public java.util.Map<TileKey, Integer> reversalsWithoutLength()
     {
@@ -3524,9 +3519,6 @@ public class AutonomySession
     /**
      * Whether the arrivals menu can close these sides too: a station with more than one way in keeps one open.  The
      * menu's rule, asked by the trapped-arrival finding too, so its advice is advice the menu takes.
-     * @param tile the square
-     * @param sides the sides to close
-     * @return whether they can be
      */
     public boolean arrivalsCanBeClosed(TileKey tile, java.util.Collection<Side> sides)
     {
@@ -3637,8 +3629,8 @@ public class AutonomySession
     }
 
     /**
-     * The built graph as JSON for the copy checks, or null when the setup will not build: an unsaved session's build
-     * has no edges and on a test machine reached the real railway, and its louder problems are reported already.
+     * The built graph as JSON for the copy checks, or null when the setup will not build (its louder problems are
+     * reported already).
      */
     private org.json.JSONObject builtForInspection()
     {
@@ -4236,8 +4228,6 @@ public class AutonomySession
      * box again brings it back.  Names nothing: a square becoming a station needs its name set first by whoever asks.
      *
      * @param tile the square, a sensor where `stops` is set
-     * @param stops Trains can stop here
-     * @param runsThrough Trains can pass through
      */
     public void setStopsAndRunsThrough(TileKey tile, boolean stops, boolean runsThrough)
     {
@@ -6597,10 +6587,7 @@ public class AutonomySession
         return routesCoveredByStandingTrains(running).keySet();
     }
 
-    /**
-     * The same, saying which road of each square the train is on (MT-309): a line is drawn, not the whole tile shaded,
-     * which reads as confusing on double curve tiles.
-     */
+    /** The same, saying which road of each square the train is on (MT-309): a line is drawn, not the whole tile. */
     public Map<TileKey, Set<RouteId>> routesCoveredByStandingTrains(
         org.traincontrol.automation.Layout running)
     {
@@ -7150,7 +7137,6 @@ public class AutonomySession
      * @param locomotive the train
      * @param target the square being walked to
      * @param copies the target's copies, by name, in build order, which makes the last tie-break repeatable
-     * @return the side of the nearest copy that can be driven to, or null when none can be
      */
     private Side walkTo(org.traincontrol.automation.Layout running, String locomotive,
         TileKey target, Map<String, Side> copies)
@@ -7179,8 +7165,6 @@ public class AutonomySession
 
     /**
      * The walk itself, from a Point the caller names (OB-270), so a train Control+X took off can walk from its square.
-     * @param copies the target's copies, by name, in the order the build made them
-     * @return the side of the nearest copy that can be driven to, or null when none can be
      */
     private Side walkFrom(org.traincontrol.automation.Layout running, org.traincontrol.automation.Point from,
         Map<String, Side> copies)
@@ -7935,7 +7919,6 @@ public class AutonomySession
      * stores this value, is left alone.
      *
      * @param value the value, or null to remove the key, which a load reads as "keep the train's own"
-     * @return true when a stored record was changed
      */
     public boolean updateStoredRecord(String locomotive, String key, Object value)
     {
@@ -8464,8 +8447,7 @@ public class AutonomySession
 
     /**
      * The road a Point's badge is drawn on: its sensor's contact road (`TilePorts.contactRoad`, MT-712), else the
-     * first.
-     * @return the road, or null where the square has none in the graph
+     * first; null where the square has none in the graph.
      */
     public Route stationRoad(TileKey tile)
     {
@@ -8621,7 +8603,6 @@ public class AutonomySession
 
     /**
      * Who stands where: the railway's trains, then the setup's placements of trains it lacks on squares it leaves free.
-     * @return square to train
      */
     public Map<TileKey, String> trainsWhereTheyStand()
     {

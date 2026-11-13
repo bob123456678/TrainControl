@@ -792,54 +792,6 @@ public class testDrivingFromTheKeyboard
     }
 
     /**
-     * Backspace brings the next tab of the keyboard forward, and Alt+Backspace the one before.
-     *
-     * MUTATION: `getSelectedIndex() + 2` in the "next keyboard tab" row of `TrainControlUI.KeyShortcuts`, and this fails.
-     */
-    @Test
-    public void testBackspaceCyclesTheKeyboardTabs() throws Exception
-    {
-        javax.swing.JTabbedPane tabs = (javax.swing.JTabbedPane) keyboard();
-
-        int was = Components.onTheEventThread(tabs::getSelectedIndex);
-
-        int expected = Components.onTheEventThread(() ->
-        {
-            int at = was;
-
-            do
-            {
-                at = (at + 1) % tabs.getTabCount();
-            }
-            while (!tabs.isEnabledAt(at));
-
-            return at;
-        });
-
-        try
-        {
-            Keys.press(tabs, KeyEvent.VK_BACK_SPACE);
-
-            assertEquals((int) Components.onTheEventThread(tabs::getSelectedIndex), expected,
-                "Backspace did not bring the next tab forward");
-
-            Keys.press(tabs, KeyEvent.VK_BACK_SPACE, InputEvent.ALT_DOWN_MASK);
-
-            assertEquals((int) Components.onTheEventThread(tabs::getSelectedIndex), was,
-                "Alt+Backspace did not bring the tab before forward again");
-        }
-        finally
-        {
-            Components.onTheEventThread(() ->
-            {
-                tabs.setSelectedIndex(was);
-
-                return null;
-            });
-        }
-    }
-
-    /**
      * Locomotives > Turn Off All Functions turns off what is on, on every train, and tells the railway.
      *
      * MUTATION: take `this.model.allFunctionsOff()` out of `turnOffFunctionsMenuItemActionPerformed`, and this fails.

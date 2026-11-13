@@ -60,6 +60,15 @@ final class StationWindows
         }
     }
 
+    /**
+     * Station Settings steps aside while guard signals are picked, their window up or its click awaited, and comes back
+     * where it was when that ends, however it ends (MT-956).  Before the guard window shows, which would hide with it.
+     */
+    void followTheGuardPick()
+    {
+        if (station != null) station.stepAside(editor.isFocusedOnSignals());
+    }
+
     /** Something may have changed: read again once this gesture is over, after the rebuild it posted. */
     void changed()
     {
@@ -88,8 +97,12 @@ final class StationWindows
 
     void closed(StationWindowBase window, TileKey square)
     {
-        // A guard pick its pencil started goes with the window (MT-948)
-        if (window == station && square != null) editor.endGuardPick(square);
+        // A guard pick its pencil started goes with the window (MT-948), and a tail pick about its square (MT-959)
+        if (window == station && square != null)
+        {
+            editor.endGuardPick(square);
+            editor.endTailPick(square);
+        }
 
         if (window == station) station = null;
 

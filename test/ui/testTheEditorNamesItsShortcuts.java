@@ -29,7 +29,7 @@ import support.Teardown;
  * menu, through `buildTileMenu` - the method the right-click calls - and of the item that carries each action rather
  * than of the menu as a whole, so a hint put on the wrong item fails.
  *
- * MUTATION: delete `lengthItem.setToolTipText(SHORTCUT_LENGTH)` and the first claim fails.
+ * MUTATION: delete the `showShortcut` of `lengthItem` and the station menu's claim fails.
  *
  * @author Adam
  */
@@ -471,37 +471,16 @@ public class testTheEditorNamesItsShortcuts
 
             final org.traincontrol.base.LayoutDiagramComponent what = component;
 
-            final java.lang.reflect.Constructor<?> make = Class.forName("org.traincontrol.gui.layouteditor.LayoutEditorRightclickMenu")
-                .getConstructor(LayoutEditor.class, TrainControlUI.class, org.traincontrol.gui.LayoutLabel.class,
-                    org.traincontrol.base.LayoutDiagramComponent.class);
-
-            make.setAccessible(true);
-
-            final javax.swing.JPopupMenu[] menu = new javax.swing.JPopupMenu[1];
-
-            SwingUtilities.invokeAndWait(() ->
-            {
-                try
-                {
-                    menu[0] = (javax.swing.JPopupMenu) make.newInstance(track, ui, on, what);
-                }
-                catch (ReflectiveOperationException e)
-                {
-                    throw new IllegalStateException(e);
-                }
-            });
-
             List<javax.swing.JMenuItem> items = new java.util.ArrayList<>();
 
-            collect(menu[0].getSubElements(), items);
+            collect(theTrackMenu(track, on, what).getSubElements(), items);
 
             javax.swing.JMenuItem oneBox = byText(items, I18n.t("layout.ui.menuSelectByDragging"));
 
             assertNotNull(oneBox, "precondition: the track editor's menu has no Select by Dragging a Box");
 
-            assertTrue(oneBox.getToolTipText() != null
-                && oneBox.getToolTipText().contains(LayoutEditor.SHORTCUT_SELECT_BY_DRAGGING),
-                "Select by Dragging a Box does not name its key: " + oneBox.getToolTipText());
+            assertEquals(oneBox.getAccelerator(), LayoutEditor.SELECT_BY_DRAGGING_KEY,
+                "Select by Dragging a Box does not show its key");
 
             // WITH THE POINTER ON A SQUARE, as it is when the key is pressed: hovering gives a square its own pointer
             hoverOver(track, on);
@@ -528,8 +507,7 @@ public class testTheEditorNamesItsShortcuts
 
             java.lang.reflect.Field once = Reflect.field(LayoutEditor.class, "selectOnce");
 
-            assertTrue(once.getBoolean(track), LayoutEditor.SHORTCUT_SELECT_BY_DRAGGING + " did not start Select by"
-                + " Dragging a Box");
+            assertTrue(once.getBoolean(track), "Control+M did not start Select by Dragging a Box");
 
             // And it shows, as the pointer (MT-661): a crosshair over the
             // diagram while picking - the square already under the pointer included
@@ -616,6 +594,228 @@ public class testTheEditorNamesItsShortcuts
                 + " editor with picking still on, the pointer is not the crosshair");
 
             SwingUtilities.invokeAndWait(() -> track.setSelectMode(false));
+        }
+        finally
+        {
+            SwingUtilities.invokeAndWait(() -> track.dispose());
+        }
+    }
+
+    /** The track editor's right-click menu on a square, as the right-click builds it. */
+    private static javax.swing.JPopupMenu theTrackMenu(LayoutEditor track, org.traincontrol.gui.LayoutLabel on,
+        org.traincontrol.base.LayoutDiagramComponent what) throws Exception
+    {
+        final java.lang.reflect.Constructor<?> make = Class.forName("org.traincontrol.gui.layouteditor.LayoutEditorRightclickMenu")
+            .getConstructor(LayoutEditor.class, TrainControlUI.class, org.traincontrol.gui.LayoutLabel.class,
+                org.traincontrol.base.LayoutDiagramComponent.class);
+
+        make.setAccessible(true);
+
+        return support.Components.onTheEventThread(() -> (javax.swing.JPopupMenu) make.newInstance(track, ui, on, what));
+    }
+
+    /** A square holding a tile that turns and has an address, so its menu offers every item; its place in `at`. */
+    private static org.traincontrol.gui.LayoutLabel aSwitchSquare(LayoutEditor track, int[] at) throws Exception
+    {
+        // The grid is drawn after the window opens
+        assertTrue(support.Components.waitFor(() -> support.Components.onTheEventThread(() -> gridOf(track) != null),
+            10000), "precondition: the track editor drew no grid");
+
+        final org.traincontrol.gui.LayoutGrid grid = gridOf(track);
+
+        for (int x = page.getMinx(); x <= page.getMaxx(); x++)
+        {
+            for (int y = page.getMiny(); y <= page.getMaxy(); y++)
+            {
+                org.traincontrol.base.LayoutDiagramComponent tile = page.getComponent(x, y);
+
+                if (tile != null && grid.getValueAt(x, y) != null && !tile.isText() && tile.isClickable()
+                    && tile.getNumOrientations() > 1)
+                {
+                    at[0] = x;
+                    at[1] = y;
+
+                    return grid.getValueAt(x, y);
+                }
+            }
+        }
+
+        return null;
+    }
+
+    /** The keys the track editor's menu items show, by the item's text; Rotate in the Selection submenu has none. */
+    private static final String[] TRACK_MENU_KEYS = ("ui.paste PASTE_KEY, ui.undo UNDO_KEY, ui.redo REDO_KEY, ui.cut CUT_KEY,"
+        + " ui.copy COPY_KEY, ui.rotate ROTATE_KEY, layout.ui.editTextLabel TEXT_KEY, ui.delete DELETE_KEY,"
+        + " layout.ui.menuSelectByDragging SELECT_BY_DRAGGING_KEY").split(", ");
+
+    /**
+     * Every item of the track editor's right-click menu that has a key in the editor shows it on its right, the very
+     * stroke the editor's key handler acts on, with no tooltip that only names it and no binding of its own;
+     * every such key is shown somewhere on the menu.
+     *
+     * MUTATION: a plain `setAccelerator` in `LayoutEditorRightclickMenu.keyed` (the items bind their keys), or
+     * `LayoutEditor.REDO_KEY` on Undo.
+     */
+    @Test
+    public void testTheTrackMenuShowsTheKeysItsHandlerActsOn() throws Exception
+    {
+        final LayoutEditor track = aTrackEditor();
+
+        try
+        {
+            int[] at = new int[2];
+
+            org.traincontrol.gui.LayoutLabel on = aSwitchSquare(track, at);
+
+            assertNotNull(on, "precondition: no switch on " + PAGE);
+
+            javax.swing.JPopupMenu menu = theTrackMenu(track, on, page.getComponent(at[0], at[1]));
+
+            java.util.Set<javax.swing.KeyStroke> shown = new java.util.HashSet<>();
+
+            for (java.awt.Component each : menu.getComponents())
+            {
+                List<javax.swing.JMenuItem> items = new ArrayList<>();
+
+                if (each instanceof javax.swing.JMenu) collect(((javax.swing.JMenu) each).getSubElements(), items);
+                else if (each instanceof javax.swing.JMenuItem) items.add((javax.swing.JMenuItem) each);
+
+                boolean selection = each instanceof javax.swing.JMenu
+                    && ((javax.swing.JMenu) each).getText().equals(I18n.f("layout.ui.menuSelection", 0));
+
+                for (javax.swing.JMenuItem item : items)
+                {
+                    for (String row : TRACK_MENU_KEYS)
+                    {
+                        String[] pair = row.split(" ");
+
+                        if (!item.getText().equals(I18n.t(pair[0]))) continue;
+
+                        Object key = selection && pair[0].equals("ui.rotate") ? null
+                            : LayoutEditor.class.getField(pair[1]).get(null);
+
+                        assertEquals(item.getAccelerator(), key, "\"" + item.getText() + "\" shows the wrong key");
+                    }
+
+                    javax.swing.KeyStroke key = item.getAccelerator();
+
+                    if (key == null) continue;
+
+                    shown.add(key);
+
+                    String tip = item.getToolTipText();
+
+                    assertFalse(tip != null && tip.matches("(Control\\+\\w+|Delete)"), "\"" + item.getText()
+                        + "\" still has a tooltip that only names its key: " + tip);
+
+                    Object bound = item.getInputMap(javax.swing.JComponent.WHEN_IN_FOCUSED_WINDOW).get(key);
+
+                    assertNull(bound == null ? null : item.getActionMap().get(bound), "\"" + item.getText() + "\" binds "
+                        + key);
+                }
+            }
+
+            assertEquals(shown, new java.util.HashSet<>(java.util.Arrays.asList(LayoutEditor.PASTE_KEY,
+                LayoutEditor.UNDO_KEY, LayoutEditor.REDO_KEY, LayoutEditor.CUT_KEY, LayoutEditor.COPY_KEY,
+                LayoutEditor.ROTATE_KEY, LayoutEditor.ADDRESS_KEY, LayoutEditor.TEXT_KEY, LayoutEditor.DELETE_KEY,
+                LayoutEditor.GROW_KEY, LayoutEditor.SELECT_BY_DRAGGING_KEY)), "the menu does not show every key it has");
+        }
+        finally
+        {
+            SwingUtilities.invokeAndWait(() -> track.dispose());
+        }
+    }
+
+    /**
+     * After the track editor's menu has been open and closed, the key its Rotate item shows turns the square under the
+     * pointer exactly as the item does: once.
+     *
+     * MUTATION: in the editor's key handler, `rotate` twice for `ROTATE_KEY`; or test Control+E there.
+     */
+    @Test
+    public void testTheRotateKeyTheMenuShowsTurnsOnce() throws Exception
+    {
+        final LayoutEditor track = aTrackEditor();
+
+        try
+        {
+            int[] at = new int[2];
+
+            org.traincontrol.gui.LayoutLabel on = aSwitchSquare(track, at);
+
+            assertNotNull(on, "precondition: no switch on " + PAGE);
+
+            int before = track.getMarklinLayout().getComponent(at[0], at[1]).getOrientation();
+
+            List<javax.swing.JMenuItem> items = new ArrayList<>();
+
+            javax.swing.JPopupMenu menu = theTrackMenu(track, on, page.getComponent(at[0], at[1]));
+
+            for (java.awt.Component each : menu.getComponents())
+            {
+                if (each instanceof javax.swing.JMenuItem && !(each instanceof javax.swing.JMenu))
+                {
+                    items.add((javax.swing.JMenuItem) each);
+                }
+            }
+
+            javax.swing.JMenuItem rotate = byText(items, I18n.t("ui.rotate"));
+
+            assertNotNull(rotate, "precondition: the switch's menu has no Rotate");
+
+            // The item's own turn, then back
+            support.Components.onTheEventThread(() ->
+            {
+                rotate.doClick(0);
+
+                return null;
+            });
+
+            for (int i = 0; i < 10; i++) SwingUtilities.invokeAndWait(() -> { });
+
+            int byTheItem = track.getMarklinLayout().getComponent(at[0], at[1]).getOrientation();
+
+            assertTrue(byTheItem != before, "precondition: Rotate did not turn the switch");
+
+            turnBack(track, at, before);
+
+            assertEquals(track.getMarklinLayout().getComponent(at[0], at[1]).getOrientation(), before,
+                "precondition: the switch did not turn back");
+
+            // The menu shown and closed, as a right-click and a click elsewhere leave it
+            support.Components.onTheEventThread(() ->
+            {
+                menu.show(gridOf(track).getValueAt(at[0], at[1]), 1, 1);
+                menu.setVisible(false);
+
+                return null;
+            });
+
+            hoverOver(track, gridOf(track).getValueAt(at[0], at[1]));
+
+            javax.swing.KeyStroke key = rotate.getAccelerator();
+
+            final java.lang.reflect.Method pressed =
+                Reflect.method(LayoutEditor.class, "formKeyPressed", java.awt.event.KeyEvent.class);
+
+            SwingUtilities.invokeAndWait(() ->
+            {
+                try
+                {
+                    pressed.invoke(track, new java.awt.event.KeyEvent(track, java.awt.event.KeyEvent.KEY_PRESSED,
+                        System.currentTimeMillis(), key.getModifiers(), key.getKeyCode(),
+                        java.awt.event.KeyEvent.CHAR_UNDEFINED));
+                }
+                catch (ReflectiveOperationException e)
+                {
+                    throw new IllegalStateException(e);
+                }
+            });
+
+            for (int i = 0; i < 10; i++) SwingUtilities.invokeAndWait(() -> { });
+
+            assertEquals(track.getMarklinLayout().getComponent(at[0], at[1]).getOrientation(), byTheItem,
+                key + " did not turn the switch once, as Rotate does");
         }
         finally
         {
@@ -3287,8 +3487,8 @@ public class testTheEditorNamesItsShortcuts
     }
 
     /**
-     * A station's right-click menu names Control+E and Control+O on the items they do, and its window Control+S and
-     * Control+H on the controls they do.
+     * A station's right-click menu shows Control+E, Control+O and Control+N on the items they do, and its window
+     * names Control+S and Control+H on the controls they do.
      */
     @Test
     public void testTheStationMenuNamesItsKeys() throws Exception
@@ -3311,16 +3511,16 @@ public class testTheEditorNamesItsShortcuts
 
         assertNotNull(length, "precondition: " + station + " offers no Segment Length item");
 
-        assertEquals(length.getToolTipText(), AutonomyEditorPanel.SHORTCUT_LENGTH,
-            "Segment Length does not say Control+E. Adam, OB-214: \"Set Segment Length needs a tooltip"
+        assertEquals(length.getAccelerator(), AutonomyEditorPanel.LENGTH_KEY,
+            "Segment Length does not show Control+E. Adam, OB-214: \"Set Segment Length needs a tooltip"
             + " that says Control+E\"");
 
         javax.swing.JMenuItem settings = byText(items, I18n.t("autosetup.ui.menuStationSettings"));
 
         assertNotNull(settings, "precondition: " + station + " offers no Station Settings item");
 
-        assertEquals(settings.getToolTipText(), AutonomyEditorPanel.SHORTCUT_SETTINGS,
-            "Station Settings does not say Control+O, the key that opens it");
+        assertEquals(settings.getAccelerator(), AutonomyEditorPanel.SETTINGS_KEY,
+            "Station Settings does not show Control+O, the key that opens it");
 
         org.traincontrol.gui.autonomyeditor.StationSettingsWindow window =
             support.StationDoors.open(editor.getAutonomyPanel(), station);
@@ -3335,7 +3535,7 @@ public class testTheEditorNamesItsShortcuts
         support.StationDoors.close(window);
 
         // AND CONTROL+N, on the item that shows a station's name on a square (FR-086, Adam on MT-397: "let's add a hotkey
-        // for 'show station name here' too").  Its tooltip already says what a caption is, so the key is added to it.
+        // for 'show station name here' too").  Its tooltip says what a caption is, and keeps saying it.
         javax.swing.JMenuItem showHere = null;
 
         for (javax.swing.JMenuItem item : items)
@@ -3352,9 +3552,10 @@ public class testTheEditorNamesItsShortcuts
 
         assertNotNull(showHere, "precondition: " + station + " offers no Show a Station Name Here item");
 
-        assertTrue(showHere.getToolTipText() != null
-            && showHere.getToolTipText().contains(AutonomyEditorPanel.SHORTCUT_STATION),
-            "Show a Station Name Here does not say Control+N: " + showHere.getToolTipText());
+        assertEquals(showHere.getAccelerator(), AutonomyEditorPanel.STATION_KEY,
+            "Show a Station Name Here does not show Control+N");
+
+        assertNotNull(showHere.getToolTipText(), "Show a Station Name Here lost the sentence that says what a caption is");
     }
 
     /**

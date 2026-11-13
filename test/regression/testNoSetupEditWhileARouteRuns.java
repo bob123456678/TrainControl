@@ -93,7 +93,8 @@ public class testNoSetupEditWhileARouteRuns
 
             setupItems.put("Place", I18n.f("layout.ui.menuPlaceLocomotive", active));
             setupItems.put("Remove", I18n.f("layout.ui.menuRemoveLocomotive", train));
-            setupItems.put("Segment Length", I18n.t("autosetup.ui.menuSetLength"));
+            // Segment Length and the rest of the setup, one level down
+            setupItems.put("Autonomy Setup", I18n.t("autosetup.ui.menuAutonomySetup"));
 
             // Change Direction and the other items about the train (FR-181)
             for (int i = 0; i < facing.getComponentCount(); i++)
@@ -899,7 +900,7 @@ public class testNoSetupEditWhileARouteRuns
             final Object autonomyMenu = autonomyMenu(ui);
 
             final java.lang.reflect.Method deleteEverything = autonomyMenu.getClass()
-                .getDeclaredMethod("deleteEverything", AutonomySession.class);
+                .getDeclaredMethod("deleteEverything", TrainControlUI.class, AutonomySession.class);
 
             deleteEverything.setAccessible(true);
 
@@ -912,7 +913,7 @@ public class testNoSetupEditWhileARouteRuns
 
             doors.put("Autonomy: Import", new Object[] {noEdits, (Runnable) () -> call(panel, "importConfiguration")});
             doors.put("Autonomy: Delete Everything", new Object[] {refusal, (Runnable) () -> invoke(deleteEverything,
-                autonomyMenu, session)});
+                autonomyMenu, window, session)});
             doors.put("Autonomy: a page's tick", new Object[] {refusal, (Runnable) tick::doClick});
             // The Layouts menu's items, clicked in the menu as opened at rest: during a run it grays them.
             final javax.swing.JMenu layouts = layoutsMenu(ui);
@@ -1364,7 +1365,7 @@ public class testNoSetupEditWhileARouteRuns
             final Object panel = ui.getAutonomyViewerPanel();
             final Object autonomyMenu = autonomyMenu(ui);
             final java.lang.reflect.Method deleteEverything = autonomyMenu.getClass()
-                .getDeclaredMethod("deleteEverything", AutonomySession.class);
+                .getDeclaredMethod("deleteEverything", TrainControlUI.class, AutonomySession.class);
 
             deleteEverything.setAccessible(true);
 
@@ -1375,7 +1376,7 @@ public class testNoSetupEditWhileARouteRuns
 
             edits.put("AutonomyViewerPanel: Rename", () -> call(panel, "rename"));
             edits.put("AutonomyViewerPanel: Import", () -> call(panel, "importConfiguration"));
-            edits.put("AutonomyMenu: Delete Everything", () -> invoke(deleteEverything, autonomyMenu, session));
+            edits.put("AutonomyMenu: Delete Everything", () -> invoke(deleteEverything, autonomyMenu, window, session));
             edits.put("TimetableTab: Clear Timetable", window::clearTimetable);
             edits.put("AutonomySettingsTab: Activate Routes", () -> callUi(window, "toggleSpecifiedRoutesMouseReleased",
                 new Class<?>[] {java.awt.event.MouseEvent.class}, (Object) null));

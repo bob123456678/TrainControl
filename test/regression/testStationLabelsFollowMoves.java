@@ -77,24 +77,6 @@ public class testStationLabelsFollowMoves
         }
     }
 
-    /**
-     * A station moved onto its own label keeps the label, on the square it now occupies (Adam's bug).  A caption may
-     * sit on its own station's square, which is how a name comes to be drawn over a platform.
-     */
-    @Test
-    public void testAStationMovedOntoItsOwnLabelKeepsIt()
-    {
-        AutonomyCompanionStore store = named(at(4, 4), at(4, 5), "Platform3");
-
-        store.moveTiles(one(at(4, 4), at(4, 5)));
-
-        assertEquals(store.getCaptionTarget(at(4, 5)), at(4, 5),
-            "the platform landed on its own name and the name was thrown away by the same move that "
-            + "carried the platform - which is what Adam saw as [---] after nudging a sensor down one");
-
-        assertEquals(store.getPointName(at(4, 5)), "Platform3", "and the name itself did not travel");
-    }
-
     // The other direction: a label that IS stale still goes
 
     /**

@@ -4,6 +4,7 @@ import java.util.Arrays;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
+import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.fail;
 import org.testng.annotations.Test;
@@ -525,7 +526,7 @@ public class testControlNAsksTheMenusQuestion
     }
 
     /**
-     * The main window's menu does not name Control+N, which is the notes key there (the same menu is built for its
+     * The main window's menu does not show Control+N, which is the notes key there (the same menu is built for its
      * track diagram with `setMenuOnly`).
      */
     @Test
@@ -543,27 +544,25 @@ public class testControlNAsksTheMenusQuestion
 
             TileKey empty = new TileKey("main", 4, 2);
 
-            // The control: the editor's menu names the key.
+            // The control: the editor's menu shows the key.
             AutonomyEditorPanel editor = new AutonomyEditorPanel(session, "main", () -> { });
 
-            String inTheEditor = nameTooltip(editor.buildTileMenu(empty, null));
+            javax.swing.JMenuItem inTheEditor = nameItem(editor.buildTileMenu(empty, null));
 
-            assertTrue(inTheEditor != null && inTheEditor.contains(AutonomyEditorPanel.SHORTCUT_STATION),
-                "precondition: the editor's menu does not name " + AutonomyEditorPanel.SHORTCUT_STATION + " on " + empty
-                + ": " + inTheEditor);
+            assertTrue(inTheEditor != null && AutonomyEditorPanel.STATION_KEY.equals(inTheEditor.getAccelerator()),
+                "precondition: the editor's menu does not show Control+N on " + empty);
 
             // The main window's: the same menu, menu-only.
             AutonomyEditorPanel mainWindow = new AutonomyEditorPanel(session, "main", () -> { });
 
             mainWindow.setMenuOnly(true);
 
-            String inTheMainWindow = nameTooltip(mainWindow.buildTileMenu(empty, null));
+            javax.swing.JMenuItem inTheMainWindow = nameItem(mainWindow.buildTileMenu(empty, null));
 
             assertNotNull(inTheMainWindow, "precondition: the main window's menu offers no station name on " + empty);
 
-            assertFalse(inTheMainWindow.contains(AutonomyEditorPanel.SHORTCUT_STATION),
-                "the main window's menu names " + AutonomyEditorPanel.SHORTCUT_STATION + ", which is the notes key in that"
-                + " window: " + inTheMainWindow + " (MFX-C3)");
+            assertNull(inTheMainWindow.getAccelerator(), "the main window's menu shows "
+                + inTheMainWindow.getAccelerator() + ", and Control+N is the notes key in that window (MFX-C3)");
         }
         finally
         {
@@ -666,7 +665,7 @@ public class testControlNAsksTheMenusQuestion
     }
 
     /** The tooltip of the Show a Station Name Here item, in any of its three wordings, or null. */
-    private static String nameTooltip(javax.swing.JPopupMenu menu)
+    private static javax.swing.JMenuItem nameItem(javax.swing.JPopupMenu menu)
     {
         if (menu == null) return null;
 
@@ -677,7 +676,7 @@ public class testControlNAsksTheMenusQuestion
         {
             if (each instanceof javax.swing.JMenuItem && names.contains(((javax.swing.JMenuItem) each).getText()))
             {
-                return ((javax.swing.JMenuItem) each).getToolTipText();
+                return (javax.swing.JMenuItem) each;
             }
         }
 

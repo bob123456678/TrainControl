@@ -241,7 +241,7 @@ public final class UpdateFlow
             backup = this.ui.backupData().after(folded[0]);
 
             why = backup.isComplete() ? null
-                : backup.unsaved.isEmpty() ? I18n.t("ui.main.toolbar.backupData") : String.join(", ", backup.unsaved);
+                : backup.unsaved.isEmpty() ? I18n.t("ui.main.titleBackupData") : String.join(", ", backup.unsaved);
         }
         catch (InterruptedException | java.lang.reflect.InvocationTargetException | RuntimeException | Error e)
         {

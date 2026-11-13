@@ -27,10 +27,10 @@ import support.CopyScan;
 public class testNoNewCopies
 {
     /** The groups as they stand.  Never raise it. */
-    private static final int GROUPS_ALLOWED = 85;
+    private static final int GROUPS_ALLOWED = 84;
 
     /** The tokens standing in a second or later copy in `test/`, summed over its groups.  Never raise it. */
-    private static final long TEST_COPIED_TOKENS_ALLOWED = 221022;
+    private static final long TEST_COPIED_TOKENS_ALLOWED = 214611;
 
     /** Each group: the classes holding its copies with how many each, and the tokens of its longest copy. */
     private static final String[] GROUPS = {
@@ -45,7 +45,7 @@ public class testNoNewCopies
         "AutonomyEditorPanel:1,EditorPrompts:1 (80)",
         "AutonomyEditorPanel:2 (66)",
         "AutonomyEditorPanel:3 (108)",
-        "AutonomyEditorPanel:4 (146)",
+        "AutonomyEditorPanel:4 (136)",
         "AutonomyEditorPanel:4 (98)",
         "AutonomySession:2 (76)",
         "AutonomySession:2 (73)",
@@ -76,7 +76,6 @@ public class testNoNewCopies
         "LayoutDiagramComponent:2 (189)",
         "LayoutDiagramComponent:2 (171)",
         "LayoutEditor:2 (73)",
-        "LayoutEditorRightclickMenu:2 (65)",
         "LayoutEditorUndo:2 (82)",
         "LayoutEditorUndo:2 (67)",
         "LayoutLabel:2 (63)",

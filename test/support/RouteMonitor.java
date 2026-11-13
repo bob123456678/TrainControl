@@ -4,7 +4,7 @@ import java.util.Map;
 import org.traincontrol.marklin.MarklinRoute;
 
 /**
- * Whether an armed route is watching its sensor yet (FR-136).
+ * Whether an armed route is watching its sensor yet (FR-136), and cutting a running route's pause short.
  *
  * Arming a route starts its monitor thread, which then has to reach its wait for the sensor.  A sensor the station
  * reports before that is missed, so a claim that fires a route by its sensor first waits until this says yes.
@@ -39,5 +39,26 @@ public final class RouteMonitor
         }
 
         return false;
+    }
+
+    /**
+     * Cuts short the pause of every route running in this JVM, so a claim that held a route running with a long delay
+     * need not wait it out once it has asserted: the interrupted pause ends, and the route finishes as it would.
+     */
+    public static void endTheRunningPauses()
+    {
+        for (Map.Entry<Thread, StackTraceElement[]> t : Thread.getAllStackTraces().entrySet())
+        {
+            for (StackTraceElement frame : t.getValue())
+            {
+                if (MarklinRoute.class.getName().equals(frame.getClassName())
+                    && frame.getMethodName().startsWith("lambda$execRoute$"))
+                {
+                    t.getKey().interrupt();
+
+                    break;
+                }
+            }
+        }
     }
 }

@@ -35,10 +35,11 @@ public class testEditorSurfaceRules
         + "\n        final java.util.List<org.traincontrol.automationui.TileGraph.TileKey> outline)";
 
     /**
-     * Change Direction appears even when the square holds one facing: "no item" reads as a fault, so `addFacingItems`
-     * always adds it where a train stands.  With one facing or none it is grayed, with the reason as its tooltip, because
-     * a facing must be one the BUILD can hold (FR-181).  Checked as the gate: opening the menu needs a window and a
-     * session.
+     * In the autonomy editor Change Direction appears even when the square holds one facing: "no item" reads as a fault,
+     * so it is added wherever a train stands, grayed with the reason with one facing or none, because a facing must be
+     * one the BUILD can hold (FR-181).  Only the track diagram's menu leaves the one-facing row off, as Adam ruled for
+     * that menu; with no facing it is grayed there too (OB-347).  Checked as the gate: opening the menu needs a window
+     * and a session.
      */
     @Test
     public void testTheFacingMenuAppearsWithASingleChoice() throws Exception
@@ -50,7 +51,8 @@ public class testEditorSurfaceRules
             .replaceAll("\\s+", " ");
 
         assertTrue(SourceOf.declaration("    boolean addFacingItems(javax.swing.JPopupMenu menu, final TileKey target)")
-            .replaceAll("\\s+", " ").contains("if (facts == null) return false; menu.add(changeDirectionItem(target, facts));"),
+            .replaceAll("\\s+", " ").contains("if (facts == null) return false; javax.swing.JMenuItem direction ="
+                + " changeDirectionItem(target, facts); if (direction != null) menu.add(direction);"),
             "Change Direction is not added wherever a train stands, so a square with nothing to choose shows no item"
             + " rather than the reason (FR-181)");
 
@@ -62,7 +64,8 @@ public class testEditorSurfaceRules
         assertFalse(code.contains("if (facings.isEmpty()) return null;"),
             "the menu is hidden on a square with NO facing, where Adam asked for it greyed (OB-347)");
 
-        assertTrue(source.contains("if (facings.size() <= 1) { return grayed(label, facings.isEmpty() ? "
+        assertTrue(source.contains("if (facings.size() == 1 && editor.menuOnly) return null; if (facings.size() <= 1) {"
+                + " return grayed(label, facings.isEmpty() ? "
                 + "\"autosetup.ui.hintFacingNoWayOut\" : \"autosetup.ui.hintFacingOnlyOne\");"),
             "Change Direction on a square with one facing or NO facing is not greyed with its reason (OB-347, FR-181)");
     }
@@ -194,7 +197,7 @@ public class testEditorSurfaceRules
             + " that stopped is a placement recorded without which way, and a write somewhere new is a second copy of"
             + " the menu - how OB-039 survived being fixed - or a door writing its own facing again (REG8-B2)");
 
-        // And project-wide, as a named LIST rather than a count, following testTriggerWaitsSayNothing: a list says what
+        // And project-wide, as a named LIST rather than a count, following testStuckTrainAdvisory: a list says what
         // is wrong, and adding a writer means saying here which file it is in and why it is allowed to be a second one.
         assertEquals(filesWriting("setFacing("),
             Arrays.asList("AutonomyEditorPanel.java", "AutonomySession.java", "DiagramLocGestures.java",
@@ -310,10 +313,10 @@ public class testEditorSurfaceRules
             + "of them and off for the others looks half-dressed rather than focused");
 
         // AND NOTHING ELSE ASKS IT: counted in annotationFor alone, a de-clutter of its own in another method was not
-        // seen.
+        // seen.  `followTheGuardPick` reads the answer to hide Station Settings (MT-956), and decides nothing drawn.
         assertEquals(outside("isFocusedOnSignals()",
                 "public org.traincontrol.automationui.TileAnnotation annotationFor(TileKey tile)",
-                "public boolean isFocusedOnSignals()"), 0,
+                "public boolean isFocusedOnSignals()", "    void followTheGuardPick()"), 0,
             "the signal focus is asked somewhere besides annotationFor, so the de-clutter is decided twice - and two "
             + "decisions that have to agree are the shape that produced OB-037");
 
@@ -1556,7 +1559,7 @@ public class testEditorSurfaceRules
         String sync = codeOf("public void doSync(Component c)");
 
         int call = sync.indexOf("syncWithCS2()");
-        int back = sync.indexOf("syncMenuItem.setEnabled(true)");
+        int back = sync.indexOf("setLocomotiveWorkInFlight(false)");
 
         assertTrue(call >= 0 && back >= 0,
             "doSync no longer both runs the sync and re-enables the menu, so the ordering below is"
@@ -1655,8 +1658,9 @@ public class testEditorSurfaceRules
             + " copy is the one a dismissal cannot undo - which is the whole defect, kept");
     }
     /**
-     * Both autonomy menus head themselves with the same bold, disabled name (OB-112), from the session, AFTER the
-     * emptiness test so a menu with nothing to offer stays unshown.
+     * Both autonomy menus head themselves with the same bold, disabled name (OB-112), by the editor's one rule
+     * (`menuHeading`, plain track by its kind, OB-451), AFTER the emptiness test so a menu with nothing to offer stays
+     * unshown.
      *
      * MUTATION: inlining describeTile back into AutonomyEditorPanel; moving menu.headline() above getComponentCount.
      */
@@ -1675,7 +1679,8 @@ public class testEditorSurfaceRules
             "the sensor-address fallback is written out in the panel as well as in the session, so "
             + "there are two copies of the rule again and only one of them will get the next fix");
 
-        assertTrue(codeOf("private void headline()").contains("session.describeTile("),
+        assertTrue(codeOf("String squareHeading(").contains("autonomyTileMenus.menuHeading(tile)")
+            && codeOf("private void headline()").contains("ui.squareHeading(subject)"),
             "the diagram\u2019s menu names the clicked square some other way, so the heading OB-112 "
             + "asked for can disagree with the one in the editor");
 
@@ -2686,18 +2691,19 @@ public class testEditorSurfaceRules
             + "ENABLED whenever no editor is open - a bold, live menu item that does nothing");
 
         // And a heading really is created disabled, or the exemption protects nothing.
-        String heading = codeOf("private javax.swing.JMenuItem menuHeading(String text)");
+        String heading = codeOf("javax.swing.JMenuItem menuHeading(String text)");
 
         assertTrue(heading.contains("setEnabled(false)"),
             "a heading is no longer created disabled, so it is an ordinary menu item in bold that "
             + "does nothing when clicked");
 
-        // The export sits with the pop-out.
+        // The export is added at the foot, where mountLayoutHeadings gives it its own group; the pop-out it sat beside
+        // is the Layout tab's All button now.
         String export = codeOf("void buildDiagramExportMenu()");
 
-        assertTrue(export.contains("indexOnLayoutMenu(ui.popUpAllMenuItem())"),
-            "the picture export is no longer placed beside the pop-out - it goes back to the foot of "
-            + "the menu, below the Central Station group it has nothing to do with");
+        assertTrue(export.contains("ui.layoutMenu().add(active);"),
+            "the picture export is no longer added at the foot of the menu, where it is put below the Central "
+            + "Station group");
 
         assertFalse(export.contains("layoutMenu().addSeparator()"),
             "the export still adds a separator of its own, which now cuts the pop-out group in half");
@@ -2711,7 +2717,8 @@ public class testEditorSurfaceRules
         String menu = codeOf("private void buildItems()");
 
         int choose = menu.indexOf("add(choose);");
-        int manage = menu.indexOf("add(manageMenu(");
+        // The one Manage list, filled by addManageItems and added as `manage`.
+        int manage = menu.indexOf("addManageItems(manage,") >= 0 ? menu.indexOf("add(manage);") : -1;
         int pages = menu.indexOf("add(pages);");
 
         assertTrue(choose >= 0, "the configuration submenu is no longer added");
@@ -2727,35 +2734,31 @@ public class testEditorSurfaceRules
     }
 
     /**
-     * The pop-out and the picture export sit BELOW the Central Station section.  Adam: "Move pop up all... and save as
-     * picture to below the central station layout section."
+     * The picture export sits BELOW the Central Station section.  Adam: "Move pop up all... and save as picture to below
+     * the central station layout section."  Pop Up All has left the menu for the Layout tab's All button;
+     * Adam: "remove the JMenu option."
      *
      * MUTATION: dropping the re-home block from mountLayoutHeadings.
      */
     @Test
-    public void testThePopOutAndExportSitBelowTheStationSection() throws Exception
+    public void testTheExportSitsBelowTheStationSection() throws Exception
     {
         String mount = codeOf("void mountLayoutHeadings()");
 
         int heading = mount.indexOf("layoutMenu().add(centralStationHeading");
-        int removed = mount.indexOf("layoutMenu().remove(ui.popUpAllMenuItem())");
-        int readded = mount.indexOf("layoutMenu().add(ui.popUpAllMenuItem())");
+        int popOut = mount.indexOf("layoutMenu().remove(ui.popUpAllMenuItem())");
+        int removed = mount.indexOf("layoutMenu().remove(ui.exportDiagramItem)");
         int export = mount.indexOf("layoutMenu().add(ui.exportDiagramItem)");
 
-        // Both present before either is ordered - indexOf answers -1 for something absent.
+        // Present before ordered - indexOf answers -1 for something absent.
         assertTrue(heading >= 0, "the Central Station heading is no longer mounted");
-        assertTrue(removed >= 0 && readded >= 0,
-            "the pop-out is no longer taken out from between the two sections and put below them, so "
-            + "it is back under the Local Layout heading it has nothing to do with");
-        assertTrue(export >= 0, "the picture export no longer travels with the pop-out");
+        assertTrue(popOut >= 0, "Pop Up All is back on the Layouts menu beside the Layout tab's All button");
+        assertTrue(removed >= 0 && export >= 0,
+            "the picture export is no longer taken out and put below the Central Station section");
 
-        assertTrue(heading < removed,
-            "the pop-out is re-homed before the Central Station heading is mounted, so it lands above "
+        assertTrue(heading < removed && removed < export,
+            "the export is re-homed before the Central Station heading is mounted, so it lands above "
             + "the section it is supposed to sit below");
-
-        assertTrue(readded < export,
-            "the export no longer follows the pop-out - they were put together deliberately, both "
-            + "being ways of getting the diagram into a window or a file");
 
         // And the separators are tidied by walking, not by naming generated fields.
         String tidy = codeOf("private void tidyLayoutMenuSeparators()");

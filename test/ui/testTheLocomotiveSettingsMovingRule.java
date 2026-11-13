@@ -699,6 +699,8 @@ public class testTheLocomotiveSettingsMovingRule
         {
             SettingsWindow.closeIfOpen();
 
+            support.RouteMonitor.endTheRunningPauses();
+
             Components.waitFor(() -> model.getRoute("MR route") == null || !model.getRoute("MR route").isExecuting(), 30000);
 
             model.deleteRoute("MR route");
