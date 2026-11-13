@@ -27,11 +27,9 @@ import support.Reflect;
  *
  * The real window, opened through the method the menu item calls, on a panel with a station of its own.  Two claims:
  * the entry window is narrower than its sentence on one line; and neither window is wider than its row of buttons
- * needs, its sentence wrapping instead (MT-948: "make the 'exit guard signal' and 'entry guard signal' windows
- * narrower", which retired MT-479's two lines).
+ * needs, its sentence wrapping instead (MT-948, which retired MT-479's two lines).
  *
- * MUTATION: wrap it at no width, as it was, and the first claim fails; wrap it at half its sentence, as MT-479 did, and
- * the second does.
+ * MUTATION: wrap it at no width and the first claim fails; wrap it at half its sentence and the second does.
  *
  * @author Adam
  */

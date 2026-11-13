@@ -543,7 +543,7 @@ public class testTheAutonomyEditorsTriageNotes
      * The guard window itself closes with Station Settings, which it hangs off.
      *
      * MUTATION: have `AutonomyEditorPanel.owner` answer the editor's window instead of the asking window, and this
-     * fails; it also passes on the code before MT-948, which only left the pick waiting.
+     * fails.
      */
     @Test(timeOut = 180000)
     public void testClosingStationSettingsClosesTheOpenGuardWindow() throws Exception

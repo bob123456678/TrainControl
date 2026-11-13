@@ -147,7 +147,6 @@ public class testSwitchingToACentralStationLayout
 
         // The answer is fresh when the menu opens because the menu asks `applyLayoutEditingAvailability`, the one owner
         // of that property, rather than guardLayoutMenu writing it too; that is asserted below.
-        // Pop Up All was the other: it is the Layout tab's All button now, on a tab grayed with no layout.
         for (String item : new String[] { "exportDiagramItem" })
         {
             assertTrue(body.contains(item + ".setEnabled("),

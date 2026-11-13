@@ -31,11 +31,10 @@ import support.Mouse;
 import support.Reflect;
 
 /**
- * Preferences > Hide Hover Tooltips (FR-168): off, menus keep their tooltips; on, every enabled item of any menu, the menu
- * bar's and left-click pop-ups included (D37 on MT-910), loses its tooltip but a hotkey's, which shows exactly the
+ * Preferences > Hide Hover Tooltips (FR-168): off, menus keep their tooltips; on, every enabled item of any menu (the
+ * menu bar's and left-click pop-ups included, D37 on MT-910) loses its tooltip but a hotkey's, which shows exactly the
  * hotkey; a closed menu's items have their own tips back; the choice is stored; tooltips outside menus are untouched.
- * The menus are opened by right-clicks on the loc buttons, the diagram in the main window and in a page window, and
- * the track editor, and by clicks on the menu bar and a button.
+ * The menus are opened as a user opens them: right-clicks, clicks on the menu bar and on a button.
  *
  * MUTATIONS, each seen red: the strip skipped (the on claims); the strip made even when off (the off claim); hotkeys
  * stripped too (the hotkey claim); the choice not written to the preferences (the persistence claim); right-click
@@ -884,7 +883,7 @@ public class testRightClickMenuTipsCanBeHidden
 
     /**
      * A pop-up opened by a left-click, such as a button's drop-down, hides its tips as a right-click menu does (D37 on
-     * MT-910, which replaced the ruling that it keeps them): a grayed item keeps its reason, a hotkey item its hotkey.
+     * MT-910): a grayed item keeps its reason, a hotkey item its hotkey.
      *
      * MUTATION: hide the tips in right-click menus only.
      */
@@ -942,8 +941,8 @@ public class testRightClickMenuTipsCanBeHidden
     /**
      * As the owner tests it: the Preferences checkbox ticked, then cleared, with the track editor's right-click menu
      * hovered item by item through its window each time, its Bulk Tools submenu opened by hovering, and the tip the
-     * tooltip manager actually shows read off it.  Ticked, an enabled item shows only its hotkey or nothing, a grayed
-     * one its reason; cleared, every item shows what it showed before ticking.
+     * tooltip manager shows read off it.  Ticked, an enabled item shows only its hotkey or nothing, a grayed one its
+     * reason; cleared, every item shows what it showed before.
      *
      * MUTATION: skip the strip (the sentences show while ticked).
      *
@@ -1100,7 +1099,7 @@ public class testRightClickMenuTipsCanBeHidden
         }
 
         // An item that has a tip and showed none was missed by the manager, not hidden: hover it again rather than
-        // record a null that reads as hidden (a 20 s miss once passed for a hidden tip)
+        // record a null that reads as hidden
         boolean hasTip = Components.onTheEventThread(() -> item.getToolTipText() != null);
 
         for (int again = 0; seen[0] == null && hasTip && again < 2; again++)
