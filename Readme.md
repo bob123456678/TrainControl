@@ -448,6 +448,7 @@ Tab icons provided by Freepik.
             - `Save Current Speed as Preset` (Alt+U) also sets the speed autonomy runs the locomotive at, even during a run.
             - The `Address` box on `Basic Settings` has up and down arrows, an empty address is refused with a message before the window closes, and the `Functions` tab shows the number of functions the chosen decoder type has as soon as you pick it.
             - `Save Current Functions as Preset` is now `Save Active Functions as Preset`, and the icon dropdown on the `Functions` tab shows six columns of icons again.
+            - The icon dropdown on the `Functions` tab lists, after the standard icons, every custom image you have chosen for any locomotive's function, so you can use it again.
         - Autonomy
             - `Station Settings` puts all of a station's settings in one window, opened from a station's right-click menu or with Ctrl+O, beside a picture of the station and a table of what trains may do there.
             - Two boxes, `Trains can stop here` and `Trains can pass through`, replace the `Station (...)` choices, and the `Station`, `Terminus`, `Parking` and `Reversing Point` buttons set the usual combinations and light up when your settings match one.
@@ -468,6 +469,7 @@ Tab icons provided by Freepik.
             - `Find a Point...` on the editor's `Tools` menu (Ctrl+F) goes to a named point on any page, in the autonomy editor.
             - In the autonomy editor, you can drag a train from one station to another to move it there.
             - The autonomy editor draws signals and lamps in gray to keep the picture simple, and shows the signals you can pick in color while you choose a guard signal.
+            - The `Bulk Tools` menu is grouped with dividers, and `Hide Hover Tooltips` hides its tooltips too.
         - Track Diagram
             - The track diagram editor has a strip of icons under `Page` to add, duplicate, rename and delete a page and to move it up or down, and its `Manage Pages` menu is now `Tools`.
             - Pages are shown in the order of the layout's files rather than by name, and `Sort Pages by Name` puts them back in name order.
@@ -497,7 +499,7 @@ Tab icons provided by Freepik.
             - TrainControl now connects to a CS3 over TCP, and falls back to UDP, saying so in the log, if that doesn't work. A CS2 still uses UDP.
             - If the connection to a CS3 drops, or the CS3 answers nothing for 3 seconds after a command, commands go over UDP at once and nothing is sent again, and the log counts the commands that may not have arrived.
             - The network latency in the main window names the protocol in use, `(TCP)` or `(UDP)`, and a warning triangle shows to the left of `Power OFF` while the Central Station isn't answering.
-            - When TrainControl starts up or syncs with a CS3, it now asks the sensors for their state, including those on a Link S88, so the track diagram shows them as they really are.
+            - When TrainControl starts up or syncs with a CS3, it now asks the sensors for their state, including those on a Link S88, so the track diagram shows them as they really are.  An S88 route waiting on a sensor isn't set off by its answer.
             - When the Central Station turns the track power off after a short circuit, TrainControl now shows the power as off and a warning names the output that tripped.
             - A CS3 sync skips what it can't read, such as something a new firmware changed, and keeps the rest, so it no longer loses a page or fails because of it.
         - Documentation
