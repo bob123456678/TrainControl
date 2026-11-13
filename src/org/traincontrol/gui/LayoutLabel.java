@@ -95,9 +95,9 @@ public final class LayoutLabel extends JLabel
     private boolean edit;
 
     /**
-     * What autonomy says is happening on this square, or null.  Painted over the icon rather than baked in: the icon
-     * cache is shared by every tile of a type, and the transient highlight already owns the one slot it restores from.
-     * Volatile: written from the monitor's publish, read while painting.
+     * What autonomy says is happening on this square, or null; painted over the icon (the icon cache is shared by every
+     * tile of a type, and the highlight owns the slot it restores from).  Volatile: written by the monitor's publish,
+     * read while painting.
      */
     private volatile TileOverlay autonomyOverlay;
 
@@ -115,8 +115,8 @@ public final class LayoutLabel extends JLabel
     private volatile org.traincontrol.automationui.TileAnnotation autonomyAnnotation;
     
     /**
-     * Whether this label is one of the grid's spacers (the dummy last row and column) rather than a square.  A flag,
-     * not "has no component": blank squares in the middle of a layout have none either, and the editor draws on them.
+     * Whether this label is one of the grid's spacers (the dummy last row and column); a flag, as blank squares
+     * mid-layout have no component either and the editor draws on them.
      */
     private boolean spacer;
 
@@ -226,9 +226,9 @@ public final class LayoutLabel extends JLabel
                 gridLines != null ? gridLines : LayoutEditor.showGrid()));
         }
         
-        // Every square on the main window reports the pointer, plain track too: the shortcuts that move a locomotive
-        // from square to square need to know which is meant, and one aimed at plain track must be ignored, not acted on
-        // at the last station hovered.
+        // Every square on the main window reports the pointer, plain track too: shortcuts that move a locomotive square
+        // to square need to know which is meant, and plain track must be ignored, not acted on at the last station
+        // hovered.
         if (!edit && tcUI != null)
         {
             LayoutLabel hovering = this;
@@ -380,9 +380,9 @@ public final class LayoutLabel extends JLabel
                                                 return;
                                         }
                                     }
-                                    // Asked whether or not the power was on: "power on and proceed" must not clear
-                                    // protection at an occupied platform unmentioned.  Remembered, because the worker
-                                    // below re-asks and must not refuse a click already accepted.
+                                    // Asked whether or not the power was on, so "power on and proceed" does not clear
+                                    // protection at an occupied platform unmentioned; remembered so the worker below
+                                    // does not refuse a click already accepted.
                                     boolean askedAboutProtection = false;
 
                                     if (tcUI.getModel().hasAutoLayout() && tcUI.getModel().isAutonomyRunning())
@@ -390,12 +390,10 @@ public final class LayoutLabel extends JLabel
                                         Collection<Accessory> activeAccs = tcUI.getModel().getAutoLayout().getActiveAccs();
                                         
                                         // The protecting-signal half: a platform's protecting signal is usually driven
-                                        // by occupancy, so a route setting it green is refused and a click setting it
-                                        // green by hand must be too.  Asked of the layout so this and
-                                        // MarklinRoute.heldReason cannot drift apart.  Only the green direction: red is
-                                        // what protection itself does.  Tested on the command, since a three-way's
-                                        // `execSwitching` drives its two accessories directly, not through
-                                        // `Accessory.doSwitch()`.
+                                        // by occupancy, so a route setting it green is refused and a click must be too.
+                                        // Asked of the layout so this and MarklinRoute.heldReason cannot drift; only
+                                        // green (red is what protection does); tested on the command, as a three-way's
+                                        // `execSwitching` bypasses `Accessory.doSwitch()`.
                                         boolean protecting =
                                             aboutToClearProtection(tcUI, c.getAccessory())
                                             || aboutToClearProtection(tcUI, c.getAccessory2());
@@ -438,9 +436,9 @@ public final class LayoutLabel extends JLabel
                                         }                                
                                     }
 
-                                    // The same question for a route tile, which has no accessory of its own
-                                    // (`activeAccs.contains(null)` is false); every route this component can hold is a
-                                    // MarklinRoute, the only kind that knows the autonomy graph.
+                                    // The same for a route tile, which has no accessory of its own
+                                    // (`activeAccs.contains(null)` is false); every route here is a MarklinRoute, the
+                                    // only kind that knows the autonomy graph.
                                     final org.traincontrol.marklin.MarklinRoute onTile =
                                         c.isRoute()
                                             && c.getRoute() instanceof org.traincontrol.marklin.MarklinRoute
@@ -466,9 +464,8 @@ public final class LayoutLabel extends JLabel
                                             {
                                                 try
                                                 {
-                                                    // Bounded, and the switching goes ahead either way: a wait with no
-                                                    // deadline would park the pool's only thread, and so every tile in
-                                                    // the application.
+                                                    // Bounded, and switching goes ahead either way: a wait with no
+                                                    // deadline would park the pool's only thread, and so every tile.
                                                     if (!tcUI.getModel().waitForPowerState(true,
                                                         org.traincontrol.marklin.MarklinControlStation.POWER_STATE_TIMEOUT))
                                                     {
@@ -489,21 +486,20 @@ public final class LayoutLabel extends JLabel
                                             }
                                         }
 
-                                        // The route conflict is asked here, not before the worker: asked earlier, "turn
-                                        // the power on and proceed" would run the route into a dead track with the
-                                        // power still off, the case this feature exists for.
+                                        // The route conflict is asked here, not before the worker: asked earlier,
+                                        // "power on and proceed" would run the route into dead track with the power
+                                        // off.
                                         if (onTile != null)
                                         {
                                             // Off this worker before anything can block on a person: submitSwitching
-                                            // has one thread shared by every tile, so a dialog left standing would
-                                            // freeze them all.
+                                            // has one thread shared by every tile.
                                             new Thread(() ->
                                             {
                                                 tcUI.routesStartHereFrom(asked);
 
-                                                // One question, three answers: a conflict that cleared between the
-                                                // check and the dialog must not come back as "override", which would
-                                                // run the route with every guard off unasked.
+                                                // One question, three answers: a conflict that cleared before the
+                                                // dialog must not come back as "override", which runs the route with
+                                                // every guard off unasked.
                                                 TrainControlUI.RouteConflict answer =
                                                     tcUI.askAboutRouteConflict(onTile, tcUI.stillShowing(asked), null);
 
@@ -524,10 +520,9 @@ public final class LayoutLabel extends JLabel
 
                                         // And ask again, here, where the command goes: `Layout.refreshOneSignal` can
                                         // drive the same accessory from an occupancy change between the dialog and this
-                                        // switching thread (a train arrives, protection sets the signal red, this
-                                        // command sets it green again over an occupied platform).  Refused rather than
-                                        // re-asked, since asking here would hold the one switching thread; skipped for
-                                        // a click the operator already accepted.
+                                        // thread (a train arrives, protection sets the signal red, this sets it green
+                                        // over an occupied platform).  Refused rather than re-asked, as asking would
+                                        // hold the one switching thread; skipped for a click already accepted.
                                         if (!warnedAboutProtection
                                             && (aboutToClearProtection(tcUI, c.getAccessory())
                                                 || aboutToClearProtection(tcUI, c.getAccessory2())))
@@ -571,9 +566,8 @@ public final class LayoutLabel extends JLabel
     }
 
     /**
-     * Whether this label belongs to the same window as another: used on a grid rebuild to tell a replaced generation
-     * from a label of a different window showing the same page (the main window caches a page's grid, so its labels
-     * are legitimately detached for a while).
+     * Whether this label belongs to the same window as another, to tell a replaced grid generation from a label of
+     * another window showing the same page (the main window caches grids, so its labels are legitimately detached).
      */
     public boolean sharesWindowWith(LayoutLabel other)
     {
@@ -581,15 +575,14 @@ public final class LayoutLabel extends JLabel
     }
 
     /**
-     * Drops the labels that a newly registered one replaces.  Nothing else can: updateTiles' prune asks whether a
-     * label's parent is visible, which never fails on the main window, so every grid rebuild would leave a page of dead
-     * labels.
+     * Drops the labels that a newly registered one replaces; nothing else can (updateTiles' prune asks whether a parent
+     * is visible, which never fails on the main window, so each grid rebuild would leave dead labels).
      *
-     * A registered label is dropped only when all three hold: SAME SQUARE (one accessory is drawn on several squares of
-     * a page, and LayoutGrid registers every label before attaching the container); SAME WINDOW (the main window caches
-     * a page's grid, so its labels are detached but alive); NOT DISPLAYABLE (a replaced grid's labels have no peer).
-     * The arriving label is never judged.  Where the square cannot be established the label is kept: a missed prune is
-     * a slow leak, a wrong one a dead tile.
+     * A registered label is dropped only when all three hold: SAME SQUARE (one accessory is drawn on several squares,
+     * and LayoutGrid registers every label before attaching the container); SAME WINDOW (the main window caches grids,
+     * so labels are detached but alive); NOT DISPLAYABLE (a replaced grid's labels have no peer).  The arriving label
+     * is never judged; where the square cannot be established the label is kept (a missed prune is a slow leak, a
+     * wrong one a dead tile).
      */
     public static void forgetReplaced(java.util.Collection<LayoutLabel> registered, LayoutLabel arriving)
     {
@@ -626,8 +619,8 @@ public final class LayoutLabel extends JLabel
     private String autonomyPage;
 
     /**
-     * Where this label sits on its page.  Told to it rather than read off the component, because a label with no
-     * component still has a square - those are the squares a station's name is drawn on.
+     * Where this label sits on its page; told to it, as a label with no component still has a square (where a station's
+     * name is drawn).
      */
     public void setAutonomySquare(String page, int x, int y)
     {
@@ -641,8 +634,8 @@ public final class LayoutLabel extends JLabel
     private int squareY = -1;
     
     /**
-     * A station's own menu, from the track rather than from its caption, which may sit elsewhere or be missing.
-     * Returns true when the menu was opened and the caller should do nothing else with the click.
+     * A station's own menu, from the track rather than its caption (which may sit elsewhere); true when it opened and
+     * the click needs nothing more.
      */
     private boolean openStationMenu(MouseEvent e)
     {
@@ -679,9 +672,9 @@ public final class LayoutLabel extends JLabel
 
             if (imageCache.get(key) == null)
             {
-                // Counted before it is submitted, so a grid asking "are the tiles ready" cannot see zero between
-                // building the labels and the pool picking the work up.  Only a first draw counts: a running layout's
-                // state-keyed image misses would keep the count from ever being at rest.
+                // Counted before it is submitted, so a grid asking "are the tiles ready" cannot see zero before the
+                // pool picks the work up; only a first draw counts (state-keyed misses would keep the count from ever
+                // resting).
                 if (!update) this.tcUI.tileDecodeStarted();
 
                 // Decode/scale off the EDT, cache it, then run the (now cache-hit) Swing work on the EDT.
@@ -786,8 +779,7 @@ public final class LayoutLabel extends JLabel
                         if (!edit && (this.component.isSignal() || this.component.isSwitch()) && hadIcon && (System.currentTimeMillis() - lastClicked) > CLICK_TIMEOUT)
                         {
                             // The one before it is stopped first (OB-333): nulling the field would leave the old timer
-                            // to `setIcon(lastIcon)` over a later highlight, and a square changed twice inside the hold
-                            // would have no yellow.
+                            // to `setIcon(lastIcon)` over a later highlight.
                             endAccessoryHighlight();
 
                             // Both run on the EDT: this block does, and a Swing Timer fires there too.
@@ -863,8 +855,8 @@ public final class LayoutLabel extends JLabel
     }
     
     /**
-     * Whether this tile belongs to the diagram editor rather than an operating view: the editor draws autonomy from the
-     * panel beside it, the operating views from the setup on disk, so one must not publish over the other.
+     * Whether this tile belongs to the diagram editor rather than an operating view: the editor draws autonomy from its
+     * panel, the views from the setup on disk, so one must not publish over the other.
      */
     public boolean isEditMode()
     {
@@ -872,8 +864,8 @@ public final class LayoutLabel extends JLabel
     }
 
     /**
-     * Flashes this tile the same yellow the diagram uses when a route or the Central Station changes something: same
-     * overlay and duration, because a border would disturb the editor's grid line.
+     * Flashes this tile the yellow the diagram uses when a route or the Central Station changes something: same overlay
+     * and duration (a border would disturb the editor's grid line).
      */
     public void flashHighlight()
     {
@@ -881,18 +873,17 @@ public final class LayoutLabel extends JLabel
     }
 
     /**
-     * The same flash, in a color and for a length the caller chooses: the route editor lights what a route commands in
-     * yellow and what it merely checks in orange.
+     * The same flash in a color and length the caller chooses: the route editor lights what a route commands in yellow,
+     * what it checks in orange.
      */
     public void flashHighlight(java.awt.Color wash, int holdMs)
     {
-        // An empty square carries an EmptyIcon, not an ImageIcon, so the cast below would throw mid-action: the menu's
-        // flash sits outside its own try/catch.
+        // An empty square carries an EmptyIcon, so the cast below would throw mid-action (the menu's flash is outside
+        // its try/catch).
         if (!(this.getIcon() instanceof ImageIcon)) return;
 
-        // The plain icon is captured once and kept until the flash ends: capturing it on every call would let a second
-        // flash record the already-highlighted icon as the one to restore.  An accessory highlight that is up is ended
-        // first.
+        // The plain icon is captured once and kept until the flash ends, or a second flash would record the highlighted
+        // icon as the one to restore; an accessory highlight that is up is ended first.
         endAccessoryHighlight();
 
         if (flashTimer != null && flashTimer.isRunning())
@@ -935,11 +926,9 @@ public final class LayoutLabel extends JLabel
     private javax.swing.Timer accessoryHighlight;
 
     /**
-     * Whether a flash is outstanding on this tile - a restore that will put back the picture it captured.  For
-     * `core.testLayoutTiles.testTheFlashAndTheAccessoryHighlightDoNotUndoEachOther`: the picture is set through
-     * `invokeLater`, so which icon shows at an instant can't be pinned, and which restore is armed can.
-     *
-     * @return true while a flash will still be put back
+     * Whether a flash is outstanding (a restore that will put back the captured picture); for
+     * `core.testLayoutTiles.testTheFlashAndTheAccessoryHighlightDoNotUndoEachOther`, as the icon is set through
+     * `invokeLater` and only the armed restore can be pinned.
      */
     public boolean isFlashOutstanding()
     {
@@ -953,8 +942,8 @@ public final class LayoutLabel extends JLabel
     }
 
     /**
-     * Ends an accessory highlight at once, putting back the picture it was laid over; a no-op when none is up.  Public
-     * for the test that drives the two highlights against each other.
+     * Ends an accessory highlight at once, putting back the picture it covered; no-op when none is up.  Public for the
+     * test driving the two highlights.
      */
     public void endAccessoryHighlight()
     {
@@ -979,8 +968,8 @@ public final class LayoutLabel extends JLabel
     }
 
     /**
-     * Ends a flash now, rather than when its timer runs out: a walk from square to square (Mass Assign Lengths, Name
-     * Everything) would otherwise leave the square just left yellow for its full hold (MT-454).
+     * Ends a flash now, not when its timer runs out: a walk from square to square (Mass Assign Lengths, Name
+     * Everything) would leave the square just left yellow for its full hold (MT-454).
      */
     public void endFlash()
     {
@@ -995,8 +984,8 @@ public final class LayoutLabel extends JLabel
     }
 
     /**
-     * Sets what autonomy is showing on this square (null for nothing), repainting if it changed.  Repaints here rather
-     * than through updateImage, which returns early unless the icon name changed.
+     * Sets what autonomy shows on this square (null for nothing), repainting if changed; here, not via updateImage,
+     * which returns early unless the icon name changed.
      */
     public void setAutonomyOverlay(TileOverlay overlay)
     {
