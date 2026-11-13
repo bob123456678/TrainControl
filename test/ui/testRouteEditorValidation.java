@@ -4613,6 +4613,75 @@ public class testRouteEditorValidation
     }
 
     /**
+     * MT-869: at the window's minimum height each table's viewport shows a whole row (the layout's own minimum shows
+     * less), the minimum fits a 768-pixel screen, and the drag handle is 20% wider than its old 30 pixels in both.
+     *
+     * MUTATION: in the constructor, set the minimum height to `getMinimumSize().height` again, and the viewports show
+     * part of a row; in `HandledTable.handleColumn`, set the three widths back to 30, and the handle claim fails.
+     */
+    @Test
+    public void testTheWindowHasARowMoreInEachTableAndAWiderHandle() throws Exception
+    {
+        needsADisplay();
+
+        final org.traincontrol.gui.RouteEditorFrame frame = open();
+
+        try
+        {
+            assertTheMinimumHeightAndTheHandles(frame);
+        }
+        finally
+        {
+            close(frame);
+        }
+    }
+
+    /** The visible height of each table's viewport with the window laid out at a height and its minimum width. */
+    private static int[] viewportsAt(javax.swing.JFrame frame, int height, javax.swing.JTable[] tables)
+    {
+        frame.setSize(frame.getMinimumSize().width, height);
+        frame.validate();
+
+        int[] out = new int[tables.length];
+
+        for (int i = 0; i < out.length; i++)
+        {
+            out[i] = javax.swing.SwingUtilities.getAncestorOfClass(javax.swing.JViewport.class, tables[i]).getHeight();
+        }
+
+        return out;
+    }
+
+    private static void assertTheMinimumHeightAndTheHandles(final org.traincontrol.gui.RouteEditorFrame frame)
+    {
+        final javax.swing.JTable[] tables = {table(frame, "CommandTable"), table(frame, "ConditionTable")};
+
+        int[] seen = support.Components.onTheEventThread(() ->
+        {
+            int least = frame.getMinimumSize().height;
+            int[] atMinimum = viewportsAt(frame, least, tables);
+
+            frame.setMinimumSize(null);
+
+            int[] atLayout = viewportsAt(frame, frame.getMinimumSize().height, tables);
+
+            return new int[]{tables[0].getRowHeight(), atMinimum[0], atMinimum[1], atLayout[0], atLayout[1], least};
+        });
+
+        assertTrue(seen[1] >= seen[0] && seen[2] >= seen[0], "at the minimum height the tables show " + seen[1] + " and "
+            + seen[2] + " pixels, under a " + seen[0] + "-pixel row");
+        assertTrue(seen[3] < seen[0] || seen[4] < seen[0], "precondition: the layout's own minimum already shows a row in"
+            + " each table: " + seen[3] + " and " + seen[4]);
+        assertTrue(seen[5] <= 768, "the minimum height " + seen[5] + " does not fit a 768-pixel screen");
+
+        for (javax.swing.JTable each : tables)
+        {
+            assertEquals((int) support.Components.onTheEventThread(()
+                -> each.getColumnModel().getColumn(HANDLE).getMaxWidth()), 36, "a handle column is not 20% wider than 30");
+        }
+    }
+
+    /**
      * OB-396: Split Here cuts the selected condition's group just above it, the two parts joined by the other rule,
      * each by truth table against an expression written here.  Grayed with nothing selected, with two, and on a group's
      * first condition; the button, Ctrl+Shift+S and the right-click menu do it.

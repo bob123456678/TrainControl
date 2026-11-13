@@ -130,12 +130,7 @@ public class testTheLocomotiveSettingsFunctions
     {
         JComboBox<?> combo = SettingsWindow.inEditor(0, 1, "functions.iconCombo", JComboBox.class);
 
-        Components.onTheEventThread(() ->
-        {
-            combo.showPopup();
-
-            return null;
-        });
+        showList(combo);
 
         Components.settle();
 
@@ -159,6 +154,329 @@ public class testTheLocomotiveSettingsFunctions
         assertEquals(SettingsWindow.part("functions.useCurrent", JButton.class).getText(), "Save Active Functions as Preset");
     }
 
+
+    /**
+     * Every opening of the icon dropdown, on the first row, a middle one and the last, in a window moved to the
+     * screen's right edge and again to its bottom, shows six columns wholly on the screen (OB-446).
+     *
+     * MUTATION: take the `popup.validate()` and `scroll.doLayout()` out of `LocomotiveFunctionsTab.widen`, and the
+     * second opening shows one column.
+     */
+    @Test
+    public void testTheIconDropdownIsSixColumnsAndOnScreenEverywhere() throws Exception
+    {
+        if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("needs a display");
+
+        java.awt.Window window = SettingsWindow.showing();
+
+        java.awt.Rectangle screen = window.getGraphicsConfiguration().getBounds();
+
+        int last = loc.getNumF() - 1;
+
+        for (boolean bottom : new boolean[]{false, true})
+        {
+            for (int row : new int[]{0, last / 2, last})
+            {
+                JComboBox<?> combo = SettingsWindow.inEditor(row, 1, "functions.iconCombo", JComboBox.class);
+
+                Components.onTheEventThread(() ->
+                {
+                    java.awt.Point at = combo.getLocationOnScreen();
+
+                    window.setLocation(bottom ? window.getX() : window.getX() + screen.x + screen.width - 120 - at.x,
+                        bottom ? window.getY() + screen.y + screen.height - 60 - at.y : window.getY());
+
+                    return null;
+                });
+
+                Components.settle();
+
+                for (int opening = 0; opening < 2; opening++)
+                {
+                    showList(combo);
+
+                    Components.settle();
+
+                    int[] result = columnsAcross(combo);
+
+                    String where = "row " + row + (bottom ? " at the bottom" : " at the right") + ", opening " + opening
+                        + ": " + java.util.Arrays.toString(result) + " on " + screen;
+
+                    assertEquals(result[0], 6, "the icon dropdown does not show six columns, " + where);
+                    assertEquals(result[3], 1, "the icon dropdown runs past the screen, " + where);
+                }
+            }
+        }
+    }
+
+    /**
+     * The images of the user's own on the locomotive's other functions are offered in a row's icon dropdown after the
+     * standard icons, and picking one gives the row that image (OB-446).
+     *
+     * MUTATION: leave `offerCustomImages` out of the popup listener, and the dropdown has the standard icons only.
+     */
+    @Test
+    public void testTheIconDropdownOffersTheLocomotivesOwnImages() throws Exception
+    {
+        File picture = SettingsWindow.picture(fixture.folder, "teal.png", Color.CYAN);
+        String url = picture.toPath().toUri().toString();
+
+        loc.setLocalFunctionImageURL(F + 1, url);
+
+        open();
+
+        JComboBox<?> combo = SettingsWindow.inEditor(F, 1, "functions.iconCombo", JComboBox.class);
+        int standard = loc.getNumFnIcons() + 1;
+
+        showList(combo);
+
+        Components.settle();
+
+        assertEquals((int) Components.onTheEventThread(() -> combo.getModel().getSize()), standard + 1,
+            "the dropdown does not offer the image on another function");
+
+        Components.onTheEventThread(() ->
+        {
+            combo.setSelectedIndex(standard);
+
+            return null;
+        });
+
+        Components.settle();
+
+        SettingsWindow.press(SettingsWindow.save());
+
+        assertTrue(Components.waitFor(() -> url.equals(loc.getLocalFunctionImageURL(F)), WAIT),
+            "picking the image in the dropdown did not give it to the row");
+        assertEquals(loc.getLocalFunctionImageURL(F + 1), url, "the other function lost its image");
+    }
+
+    /**
+     * The dropdown's tail lists the images in use on any locomotive, each once and by file name: another locomotive's
+     * image appears, a second spelling of one file collapses into it, a missing file and a file that will not load are
+     * left out, and the row's own image is the one marked selected.  Picking one gives it to the row at Save and the
+     * source locomotive is left as it was; Cancel writes nothing (OB-446).
+     *
+     * MUTATION: in `LocomotiveFunctionsTab.customChoices`, leave out the loop over `getLocomotives()`, and the other
+     * locomotive's image is missing; leave out `imageKey`'s normalizing, and the duplicate stays; leave out `readable`,
+     * and the missing file is offered.
+     */
+    @Test
+    public void testTheIconDropdownListsEveryLocomotivesImagesOnceAndOnlyThoseThatLoad() throws Exception
+    {
+        File folder = new File(fixture.folder, "tail");
+
+        assertTrue(folder.isDirectory() || folder.mkdirs());
+
+        File red = SettingsWindow.picture(folder, "b-red.png", Color.RED);
+        File blue = SettingsWindow.picture(folder, "a-blue.png", Color.BLUE);
+        File broken = new File(folder, "c-broken.png");
+
+        java.nio.file.Files.write(broken.toPath(), new byte[]{1, 2, 3, 4});
+
+        String missing = new File(folder, "d-missing.png").toPath().toUri().toString();
+        String redAgain = folder.toPath().toUri().toString() + "sub/../b-red.png";
+        String redUrl = red.toPath().toUri().toString();
+
+        loc.setLocalFunctionImageURL(F + 1, blue.toPath().toUri().toString());
+
+        source.setLocalFunctionImageURL(2, redUrl);
+        source.setLocalFunctionImageURL(3, redAgain);
+        source.setLocalFunctionImageURL(4, missing);
+        source.setLocalFunctionImageURL(5, broken.toPath().toUri().toString());
+
+        String sourceKept = source.getLocalFunctionImageURLs().toString();
+
+        open();
+
+        JComboBox<?> own = SettingsWindow.inEditor(F + 1, 1, "functions.iconCombo", JComboBox.class);
+        int standard = loc.getNumFnIcons() + 1;
+
+        openTheList(own);
+
+        // The file that will not load goes when its picture fails, a moment after the list opens
+        assertTrue(Components.waitFor(() -> Components.onTheEventThread(() -> own.getModel().getSize()) - standard == 2, WAIT),
+            "the tail is not the blue and the red image once each: " + Components.onTheEventThread(
+                () -> own.getModel().getSize() - standard));
+        assertEquals((int) Components.onTheEventThread(own::getSelectedIndex), standard,
+            "the row's own image is not the one marked");
+
+        Components.onTheEventThread(() ->
+        {
+            own.hidePopup();
+
+            return null;
+        });
+
+        pickTheRedImageIn(F);
+
+        assertNull(loc.getLocalFunctionImageURL(F), "the image was written before Save");
+
+        SettingsWindow.press(SettingsWindow.cancel());
+
+        assertTrue(Components.waitFor(() -> SettingsWindow.showing() == null, WAIT));
+        assertNull(loc.getLocalFunctionImageURL(F), "Cancel wrote the image");
+
+        open();
+
+        pickTheRedImageIn(F);
+
+        SettingsWindow.press(SettingsWindow.save());
+
+        assertTrue(Components.waitFor(() -> redUrl.equals(loc.getLocalFunctionImageURL(F)), WAIT),
+            "Save did not write the other locomotive's image");
+        assertEquals(source.getLocalFunctionImageURLs().toString(), sourceKept, "the source locomotive was changed");
+    }
+
+    /** Opens a row's icon dropdown. */
+    private static void showList(JComboBox<?> combo)
+    {
+        Components.onTheEventThread(() ->
+        {
+            combo.showPopup();
+
+            return null;
+        });
+    }
+
+    /** Opens a row's icon dropdown and lets its pictures arrive. */
+    private static void openTheList(JComboBox<?> combo)
+    {
+        showList(combo);
+
+        Components.settle();
+        Components.settle();
+    }
+
+    /** Opens the row's dropdown and picks the second image of the tail, the red one. */
+    private static void pickTheRedImageIn(int function)
+    {
+        JComboBox<?> combo = SettingsWindow.inEditor(function, 1, "functions.iconCombo", JComboBox.class);
+        int standard = loc.getNumFnIcons() + 1;
+
+        openTheList(combo);
+
+        Components.onTheEventThread(() ->
+        {
+            combo.setSelectedIndex(standard + 1);
+
+            return null;
+        });
+
+        Components.settle();
+    }
+
+    /** The open list's columns across, its size, whether it scrolls, and whether it is on the screen; then closes it. */
+    private static int[] columnsAcross(JComboBox<?> combo)
+    {
+        return Components.onTheEventThread(() ->
+        {
+            javax.swing.plaf.basic.BasicComboPopup popup = (javax.swing.plaf.basic.BasicComboPopup)
+                combo.getAccessibleContext().getAccessibleChild(0);
+
+            javax.swing.JList<?> list = Components.find(popup, javax.swing.JList.class, null);
+
+            int across = 0;
+
+            while (across < list.getModel().getSize()
+                && list.getCellBounds(across, across).y == list.getCellBounds(0, 0).y) across++;
+
+            javax.swing.JScrollPane scroll = (javax.swing.JScrollPane) javax.swing.SwingUtilities.getAncestorOfClass(
+                javax.swing.JScrollPane.class, list);
+
+            java.awt.Rectangle on = new java.awt.Rectangle(popup.getLocationOnScreen(), popup.getSize());
+            java.awt.Rectangle screen = combo.getGraphicsConfiguration().getBounds();
+
+            combo.hidePopup();
+
+            return new int[]{across, list.getModel().getSize(), scroll.getVerticalScrollBar().isVisible() ? 1 : 0,
+                screen.contains(on) ? 1 : 0};
+        });
+    }
+
+    /**
+     * With many custom images the dropdown still opens six columns across at every opening and scrolls, and it opens
+     * fast on a database of hundreds of locomotives (OB-446).  The times are written to the scratch folder.
+     *
+     * MUTATION: make `customChoices` read every image's file, and the time bound fails; leave out the six-column
+     * widening, and the columns fail.
+     */
+    @Test
+    public void testTheIconDropdownWithManyImagesIsSixColumnsAndQuick() throws Exception
+    {
+        File folder = new File(fixture.folder, "many");
+
+        assertTrue(folder.isDirectory() || folder.mkdirs());
+
+        int pictures = 60;
+
+        for (int i = 0; i < pictures; i++)
+        {
+            SettingsWindow.picture(folder, String.format("p%03d.png", i), new Color(i * 4, 0, 0));
+        }
+
+        java.util.List<String> names = new java.util.ArrayList<>();
+
+        try
+        {
+            for (int n = 0; n < 300; n++)
+            {
+                String name = "LF many " + n;
+
+                names.add(name);
+
+                MarklinLocomotive extra = model.newDCCLocomotive(name, 3700 + n);
+
+                for (int f = 0; f < 8; f++)
+                {
+                    extra.setLocalFunctionImageURL(f, new File(folder, String.format("p%03d.png", (n * 8 + f) % pictures))
+                        .toPath().toUri().toString());
+                }
+            }
+
+            open();
+
+            JComboBox<?> combo = SettingsWindow.inEditor(0, 1, "functions.iconCombo", JComboBox.class);
+            int standard = loc.getNumFnIcons() + 1;
+
+            for (int opening = 0; opening < 2; opening++)
+            {
+                long[] took = new long[1];
+
+                Components.onTheEventThread(() ->
+                {
+                    long start = System.nanoTime();
+
+                    combo.showPopup();
+
+                    took[0] = (System.nanoTime() - start) / 1000000;
+
+                    return null;
+                });
+
+                Components.settle();
+                Components.settle();
+
+                int[] shape = columnsAcross(combo);
+
+                java.nio.file.Files.write(new File(System.getenv("TC_SCRATCH"), "opening-time.txt").toPath(),
+                    ("opening " + opening + ": " + took[0] + " ms, " + shape[1] + " entries\n").getBytes(),
+                    java.nio.file.StandardOpenOption.CREATE, java.nio.file.StandardOpenOption.APPEND);
+
+                assertEquals(shape[1], standard + pictures, "opening " + opening + " does not list the " + pictures
+                    + " images once each");
+                assertEquals(shape[0], 6, "opening " + opening + " is not six columns across");
+                assertEquals(shape[2], 1, "the list does not scroll");
+                assertTrue(took[0] < 1500, "opening " + opening + " took " + took[0] + " ms");
+            }
+        }
+        finally
+        {
+            SettingsWindow.closeIfOpen();
+
+            fixture.forget(names.toArray(new String[0]));
+        }
+    }
 
     /**
      * The table has a row for each function the locomotive has, with the icon, the behavior, whether it is on now and

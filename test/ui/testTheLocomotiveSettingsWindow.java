@@ -1683,7 +1683,10 @@ public class testTheLocomotiveSettingsWindow
     {
         javax.swing.JComboBox<?> combo = SettingsWindow.inEditor(row, 1, "functions.iconCombo", JComboBox.class);
 
-        return Components.onTheEventThread(combo::getSelectedIndex);
+        // A row with an image of its own has that image's entry marked, after the standard icons
+        int picked = Components.onTheEventThread(combo::getSelectedIndex);
+
+        return picked > loc.getNumFnIcons() ? -1 : picked;
     }
 
     private static int functionRows()

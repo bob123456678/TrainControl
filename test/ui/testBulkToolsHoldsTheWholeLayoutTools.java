@@ -3,6 +3,7 @@ package ui;
 import java.util.ArrayList;
 import java.util.List;
 import javax.swing.SwingUtilities;
+import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
 import org.testng.annotations.AfterClass;
@@ -116,6 +117,65 @@ public class testBulkToolsHoldsTheWholeLayoutTools
 
         assertTrue(labels.contains(I18n.t("autosetup.ui.btnNameEverything")),
             "the autonomy editor's Bulk Tools menu has no Name Everything: " + labels);
+    }
+
+    /**
+     * The Bulk Tools items stand in four groups behind dividers: the map's paths and names, the lengths (assigned, then
+     * cleared), where the trains stand, and whether they run.
+     *
+     * MUTATION: put the items back in one run of nine behind one divider, in `AutonomyEditorPanel.bulkTools`, and this
+     * fails.
+     */
+    @Test
+    public void testTheBulkToolsItemsAreGroupedBehindDividers() throws Exception
+    {
+        final List<List<String>> groups = new ArrayList<>();
+
+        SwingUtilities.invokeAndWait(() ->
+        {
+            List<String> group = new ArrayList<>();
+
+            for (java.awt.Component part : editor.getAutonomyPanel().buildBulkMenuForTest().getMenuComponents())
+            {
+                if (part instanceof javax.swing.JPopupMenu.Separator)
+                {
+                    groups.add(group);
+
+                    group = new ArrayList<>();
+                }
+                else if (part instanceof javax.swing.JMenuItem) group.add(((javax.swing.JMenuItem) part).getText());
+            }
+
+            groups.add(group);
+        });
+
+        String[][] expected = {
+            {"autosetup.ui.toolOneWay", "autosetup.ui.btnNameEverything", "autolayout.ui.menuAllowEveryPath"},
+            {"autosetup.ui.menuMassAssignLengths", "autosetup.ui.menuMassAssignMaxTrainLengths",
+                "autosetup.ui.menuMassAssignTrainLengthsCounted", "autolayout.ui.menuClearAllTrackLengths",
+                "autolayout.ui.menuClearAllMaxTrainLengths"},
+            {"autolayout.ui.menuHomeEveryTrainWhereItStands", "autolayout.ui.menuPlaceEveryTrainAtHome",
+                "autolayout.ui.menuClearAllHomeLocomotives", "autolayout.ui.menuClearLocomotives"},
+            {"autosetup.ui.menuActivateAllTrains", "autosetup.ui.menuDeactivateAllTrains"}};
+
+        assertEquals(groups.size(), expected.length, "the Bulk Tools items are not in " + expected.length + " groups: "
+            + groups);
+
+        for (int g = 0; g < expected.length; g++)
+        {
+            assertEquals(groups.get(g).size(), expected[g].length, "group " + (g + 1) + " is not " + expected[g].length
+                + " items: " + groups);
+
+            for (int i = 0; i < expected[g].length; i++)
+            {
+                // The label with its count where it has one
+                String[] around = I18n.f(expected[g][i], "@@").split("@@", -1);
+                String text = groups.get(g).get(i);
+
+                assertTrue(text.startsWith(around[0]) && text.endsWith(around[around.length - 1]), "group " + (g + 1)
+                    + " item " + (i + 1) + " is \"" + text + "\", not " + expected[g][i] + ": " + groups);
+            }
+        }
     }
 
     /** And the column no longer carries them as buttons. */

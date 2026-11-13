@@ -1419,38 +1419,39 @@ public class AutonomyEditorPanel extends JPanel
     {
         javax.swing.JMenu bulk = new javax.swing.JMenu(I18n.t("autosetup.ui.menuBulkTools"));
 
+        javax.swing.JMenuItem oneWayRun = null;
+        javax.swing.JMenuItem nameEverythingItem = null;
+        javax.swing.JMenuItem massAssign = null;
+        javax.swing.JMenuItem massAssignMaximum = null;
+        javax.swing.JMenuItem massAssignTrains = null;
+
         // One-Way Run and Name Everything in the autonomy editor only (OB-217): the track diagram's menus have no page.
         if (page != null)
         {
             if (oneWayButton != null)
             {
-                javax.swing.JMenuItem oneWay = item(I18n.t("autosetup.ui.toolOneWay"), () ->
+                oneWayRun = item(I18n.t("autosetup.ui.toolOneWay"), () ->
                 {
                     // Through the button's own action, which holds the arming rules.
                     if (!oneWayButton.isSelected()) oneWayButton.doClick();
                 });
 
-                oneWay.setToolTipText(oneWayButton.getToolTipText());
+                oneWayRun.setToolTipText(oneWayButton.getToolTipText());
 
                 // Grayed on a page left out (OB-235, MT-528).
                 if (session != null && session.getStore().getExcludedPages().contains(page))
                 {
-                    oneWay.setEnabled(false);
-                    oneWay.setToolTipText(wrapped(I18n.t("autosetup.ui.infoPageLeftOutNothingToMeasure")));
+                    oneWayRun.setEnabled(false);
+                    oneWayRun.setToolTipText(wrapped(I18n.t("autosetup.ui.infoPageLeftOutNothingToMeasure")));
                 }
-
-                bulk.add(oneWay);
             }
 
             if (nameAll != null)
             {
-                javax.swing.JMenuItem nameEverythingItem =
-                    item(I18n.t("autosetup.ui.btnNameEverything"), () -> nameEverything());
+                nameEverythingItem = item(I18n.t("autosetup.ui.btnNameEverything"), () -> nameEverything());
 
                 nameEverythingItem.setEnabled(nameAll.isEnabled());
                 nameEverythingItem.setToolTipText(nameAll.getToolTipText());
-
-                bulk.add(nameEverythingItem);
             }
 
             // Mass Assign Lengths, grayed on the walk's own count
@@ -1462,8 +1463,7 @@ public class AutonomyEditorPanel extends JPanel
 
             boolean leftOut = session != null && session.getStore().getExcludedPages().contains(page);
 
-            javax.swing.JMenuItem massAssign =
-                item(I18n.t("autosetup.ui.menuMassAssignLengths"), () -> massAssignLengths());
+            massAssign = item(I18n.t("autosetup.ui.menuMassAssignLengths"), () -> massAssignLengths());
 
             massAssign.setEnabled(piecesToMeasure + switchesToMeasure + crossingsToMeasure > 0);
 
@@ -1475,12 +1475,10 @@ public class AutonomyEditorPanel extends JPanel
                         crossingsToMeasure)
                     : I18n.t("autosetup.ui.infoNothingToMeasure")));
 
-            bulk.add(massAssign);
-
             // Mass Assign Station Max Train Lengths, grayed on the walk's own count
             int stationsToLimit = session == null ? 0 : session.stationsWithoutAMaximumOn(page).size();
 
-            javax.swing.JMenuItem massAssignMaximum =
+            massAssignMaximum =
                 item(I18n.t("autosetup.ui.menuMassAssignMaxTrainLengths"), () -> massAssignMaxTrainLengths());
 
             massAssignMaximum.setEnabled(stationsToLimit > 0);
@@ -1491,14 +1489,12 @@ public class AutonomyEditorPanel extends JPanel
                     ? I18n.f("autosetup.ui.tooltipMassAssignMaxTrainLengths", stationsToLimit)
                     : I18n.t("autosetup.ui.infoEveryStationHasAMaximum")));
 
-            bulk.add(massAssignMaximum);
-
             // Mass Assign Train Lengths (FR-094), not a page's question
             int trainsToMeasure = trainLengthDoor().trainsWithoutALength().size();
 
             // Never grayed, the count in its label (MT-533: *"This option should never be greyed out completely (show
             // the number of missing trains in parens)"*).
-            javax.swing.JMenuItem massAssignTrains = item(
+            massAssignTrains = item(
                 I18n.f("autosetup.ui.menuMassAssignTrainLengthsCounted", trainsToMeasure), () -> massAssignTrainLengths());
 
             massAssignTrains.setName("massAssignTrainLengths");
@@ -1507,10 +1503,6 @@ public class AutonomyEditorPanel extends JPanel
                 ? I18n.f("autosetup.ui.tooltipMassAssignTrainLengths", trainsToMeasure)
                 : trainLengthDoor().trainLengths().isEmpty() ? I18n.t("autosetup.ui.infoNoTrainToMeasure")
                 : I18n.t("autosetup.ui.infoEveryTrainHasALength")));
-
-            bulk.add(massAssignTrains);
-
-            bulk.addSeparator();
         }
 
         // The set the bulk home door writes
@@ -1527,8 +1519,6 @@ public class AutonomyEditorPanel extends JPanel
             ? clearLocomotivesTip()
             : I18n.t("autosetup.ui.infoNoLocomotivesToClear")));
 
-        bulk.add(clearLocs);
-
         javax.swing.JMenuItem clearHomesItem = item(
             I18n.f("autolayout.ui.menuClearAllHomeLocomotives", homed), () -> clearAllHomes());
 
@@ -1536,8 +1526,6 @@ public class AutonomyEditorPanel extends JPanel
         clearHomesItem.setToolTipText(wrapped(homed > 0
             ? I18n.t("autosetup.ui.tipClearAllHomeLocomotives")
             : I18n.t("autosetup.ui.infoNoHomesToClear")));
-
-        bulk.add(clearHomesItem);
 
         // Clear All Track Lengths (FR-069), built like the two above
         int measured = session == null ? 0 : session.tilesWithALength().size();
@@ -1551,8 +1539,6 @@ public class AutonomyEditorPanel extends JPanel
             ? bulkClearCounted("autosetup.ui.tipClearAllTrackLengths", measured)
             : I18n.t("autosetup.ui.infoNoTrackLengthsToClear")));
 
-        bulk.add(clearLengths);
-
         // Clear All Max Train Lengths, built like the clears above
         int limited = session == null ? 0 : session.tilesWithAMaxTrainLength().size();
 
@@ -1564,8 +1550,6 @@ public class AutonomyEditorPanel extends JPanel
             ? bulkClearCounted("autosetup.ui.tipClearAllMaxTrainLengths", limited)
             : I18n.t("autosetup.ui.infoNoMaxTrainLengthsToClear")));
 
-        bulk.add(clearMaxima);
-
         // Allow Every Path (FR-108), built like the clears above
         int oneWay = session == null ? 0 : session.routesNotOpenBothWays().size();
 
@@ -1575,8 +1559,6 @@ public class AutonomyEditorPanel extends JPanel
         allowAll.setToolTipText(wrapped(oneWay > 0
             ? bulkClearCounted("autosetup.ui.tipAllowEveryPath", oneWay)
             : I18n.t("autosetup.ui.infoNothingOneWay")));
-
-        bulk.add(allowAll);
 
         // Home Every Train Where It Stands (FR-075): it adds, so its confirmation says what it overwrites.  Counted off
         // `trainsWhereTheyStand`, as the door is.
@@ -1590,8 +1572,6 @@ public class AutonomyEditorPanel extends JPanel
         homeHere.setToolTipText(wrapped(standing > 0
             ? I18n.f("autosetup.ui.tipHomeEveryTrainWhereItStands", standing)
             : I18n.t("autosetup.ui.infoNoLocomotivesToHome")));
-
-        bulk.add(homeHere);
 
         // Place All at Their Homes (FR-115), counted off `homesToPlace`, as the door is.
         int homes = session == null ? 0 : session.homesToPlace().size();
@@ -1609,8 +1589,6 @@ public class AutonomyEditorPanel extends JPanel
             ? I18n.f("autosetup.ui.tipPlaceEveryTrainAtHome", homes)
             : placeRefused));
 
-        bulk.add(placeHome);
-
         // Activate and Deactivate Every Train (FR-126), counted off what each walks: every paused train; every going
         // train standing.  Nothing to confirm, as each undoes the other.
         int pausedTrains = pausedTrains().size();
@@ -1624,8 +1602,6 @@ public class AutonomyEditorPanel extends JPanel
             ? I18n.f("autosetup.ui.tipActivateAllTrains", pausedTrains)
             : I18n.t("autosetup.ui.infoNoTrainsToActivate")));
 
-        bulk.add(activateAll);
-
         javax.swing.JMenuItem deactivateAll = item(
             I18n.f("autosetup.ui.menuDeactivateAllTrains", goingTrains), () -> setEveryTrainActive(false));
 
@@ -1634,9 +1610,39 @@ public class AutonomyEditorPanel extends JPanel
             ? I18n.f("autosetup.ui.tipDeactivateAllTrains", goingTrains)
             : I18n.t("autosetup.ui.infoNoTrainsToDeactivate")));
 
-        bulk.add(deactivateAll);
+        // Grouped by what they are for: the map's paths and names, the lengths, where the trains stand, and whether they
+        // run.  A group the page leaves out has no divider of its own.
+        addGroups(bulk,
+            new javax.swing.JMenuItem[] {oneWayRun, nameEverythingItem, allowAll},
+            new javax.swing.JMenuItem[] {massAssign, massAssignMaximum, massAssignTrains, clearLengths, clearMaxima},
+            new javax.swing.JMenuItem[] {homeHere, placeHome, clearHomesItem, clearLocs},
+            new javax.swing.JMenuItem[] {activateAll, deactivateAll});
 
         return bulk;
+    }
+
+    /** Adds each group's items, with a divider between one group and the next that has any. */
+    private static void addGroups(javax.swing.JMenu menu, javax.swing.JMenuItem[]... groups)
+    {
+        boolean first = true;
+
+        for (javax.swing.JMenuItem[] group : groups)
+        {
+            boolean any = false;
+
+            for (javax.swing.JMenuItem each : group)
+            {
+                if (each == null) continue;
+
+                if (!any && !first) menu.addSeparator();
+
+                menu.add(each);
+
+                any = true;
+            }
+
+            first &= !any;
+        }
     }
 
     /** The trains standing on the layout, by name, once each (FR-126), as `trainsWhereTheyStand` has them. */

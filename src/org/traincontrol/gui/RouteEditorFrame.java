@@ -208,9 +208,47 @@ public class RouteEditorFrame extends JFrame
 
         pack();
 
-        // No narrower than the top line in full, the Trigger dropdown's longest choice included (OB-396).
-        setMinimumSize(new Dimension(narrowest(), getMinimumSize().height));
+        // No narrower than the top line in full, the Trigger dropdown's longest choice included (OB-396), and no
+        // shorter than shows a whole row in each table (MT-869).
+        Dimension packed = getSize();
+        int width = narrowest();
+        int height = tallEnoughForARowInEachTable(width);
+
+        setMinimumSize(new Dimension(width, height));
+        setSize(packed.width, Math.max(packed.height, height));
         setLocationRelativeTo(parent);
+    }
+
+    /**
+     * The least height, from the layout's own minimum, at which the commands' and the conditions' viewports each show
+     * a whole row: laid out at a height, measured, and raised by what the shorter one lacks, twice over since the two
+     * sections share the extra.
+     */
+    private int tallEnoughForARowInEachTable(int width)
+    {
+        int height = getMinimumSize().height;
+
+        for (int pass = 0; pass < 5; pass++)
+        {
+            setSize(width, height);
+            validate();
+
+            int lacks = Math.max(Math.max(0, commands.getRowHeight() - viewportHeight(commands)),
+                Math.max(0, conditions.getRowHeight() - viewportHeight(conditions)));
+
+            if (lacks == 0) break;
+
+            height += 2 * lacks;
+        }
+
+        return height;
+    }
+
+    private static int viewportHeight(javax.swing.JTable table)
+    {
+        java.awt.Container port = javax.swing.SwingUtilities.getAncestorOfClass(javax.swing.JViewport.class, table);
+
+        return port == null ? 0 : port.getHeight();
     }
 
     /**
@@ -3183,6 +3221,8 @@ public class RouteEditorFrame extends JFrame
     {
         static final int HANDLE = 0;
 
+        static final int HANDLE_WIDTH = 36;
+
         /** A row's own height, which the grip is drawn for. */
         static final int LINE = 24;
 
@@ -3361,14 +3401,14 @@ public class RouteEditorFrame extends JFrame
             repaint();
         }
 
-        /** The handle column, as narrow as its grip. */
+        /** The handle column, wide enough to grab (MT-869: 20% wider than its 30 pixels). */
         void handleColumn()
         {
             TableColumn handle = getColumnModel().getColumn(HANDLE);
 
-            handle.setPreferredWidth(30);
-            handle.setMinWidth(30);
-            handle.setMaxWidth(30);
+            handle.setPreferredWidth(HANDLE_WIDTH);
+            handle.setMinWidth(HANDLE_WIDTH);
+            handle.setMaxWidth(HANDLE_WIDTH);
 
             handle.setCellRenderer(new javax.swing.table.DefaultTableCellRenderer()
             {
