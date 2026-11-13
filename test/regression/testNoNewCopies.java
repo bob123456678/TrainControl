@@ -30,7 +30,7 @@ public class testNoNewCopies
     private static final int GROUPS_ALLOWED = 85;
 
     /** The tokens standing in a second or later copy in `test/`, summed over its groups.  Never raise it. */
-    private static final long TEST_COPIED_TOKENS_ALLOWED = 221022;
+    private static final long TEST_COPIED_TOKENS_ALLOWED = 221005;
 
     /** Each group: the classes holding its copies with how many each, and the tokens of its longest copy. */
     private static final String[] GROUPS = {
@@ -45,7 +45,7 @@ public class testNoNewCopies
         "AutonomyEditorPanel:1,EditorPrompts:1 (80)",
         "AutonomyEditorPanel:2 (66)",
         "AutonomyEditorPanel:3 (108)",
-        "AutonomyEditorPanel:4 (146)",
+        "AutonomyEditorPanel:4 (136)",
         "AutonomyEditorPanel:4 (98)",
         "AutonomySession:2 (76)",
         "AutonomySession:2 (73)",
