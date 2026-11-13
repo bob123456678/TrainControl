@@ -86,7 +86,7 @@ The pictures in this guide are of a small demo layout: an oval with stations Ash
 
 ![Step 2: Autonomy, Edit Autonomy on Page, and the page to open](assets/automation/03-edit-on-page.png)
 
-Only one editor window is open at a time; any of these while it is open simply brings it forward. The editor cannot be opened while autonomy or a route is running, so stop the trains first. While it is open, the Layouts and Autonomy menus start with `Go to the Open Editor`, which brings it forward. The Autonomy menu is grayed except for `Autonomy Guide`, each item the editor grays says `Close the editor to use this.`, and no train can be sent.
+Only one editor window is open at a time; any of these while it is open simply brings it forward. The editor cannot be opened while autonomy or a route is running, so stop the trains first. While it is open, the Layouts and Autonomy menus start with `Go to the Opened Editor`, which brings it forward. The Autonomy menu is grayed except for `Autonomy Guide`, each item the editor grays says `Close the editor to use this.`, and no train can be sent.
 
 ---
 

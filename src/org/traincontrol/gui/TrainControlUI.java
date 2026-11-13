@@ -5077,6 +5077,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         all.setFont(this.layoutNewWindow.getFont());
         all.setToolTipText(I18n.t("ui.main.allLayouts"));
         all.setFocusable(false);
+
+        // As wide as its word and the usual margins, so it differs by language: the look and feel's floor would widen it.
+        all.putClientProperty(com.formdev.flatlaf.FlatClientProperties.MINIMUM_WIDTH, 0);
         all.addActionListener(this::popUpAllMenuItemActionPerformed);
 
         javax.swing.JPanel beside = new javax.swing.JPanel(new java.awt.BorderLayout(
@@ -17529,7 +17532,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }//GEN-LAST:event_importRoutesMenuItemActionPerformed
 
     private void changeIPMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_changeIPMenuItemActionPerformed
-        // File > Change Central Station Address... (D41): Cancel changes nothing; blank forgets it, so the next start asks.
+        // File > Change Central Station IP Address... (D41): Cancel changes nothing; blank forgets it, so the next start asks.
         String was = TrainControlUI.getPrefs().get(TrainControlUI.IP_PREF, "");
 
         Object typed = JOptionPane.showInputDialog(this, I18n.t("ui.main.promptCentralStationAddress"),

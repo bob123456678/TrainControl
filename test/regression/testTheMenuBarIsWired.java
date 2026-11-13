@@ -267,7 +267,7 @@ public class testTheMenuBarIsWired
     }
 
     /**
-     * File > Change Central Station Address... asks with the stored address filled in; OK stores what was typed and
+     * File > Change Central Station IP Address... asks with the stored address filled in; OK stores what was typed and
      * says it is used from the next start; Cancel changes nothing (D41).
      *
      * MUTATION: put back the old handler body (it erases the address without asking).
@@ -514,17 +514,9 @@ public class testTheMenuBarIsWired
 
         try
         {
-            for (String language : new String[] {"", "_da", "_de", "_es", "_fr", "_it", "_nl", "_pl"})
+            for (String language : LANGUAGES)
             {
-                java.util.Properties bundle = new java.util.Properties();
-
-                try (java.io.InputStream in = new java.io.FileInputStream(
-                    "src/org/traincontrol/resources/messages" + language + ".properties"))
-                {
-                    bundle.load(in);
-                }
-
-                String text = bundle.getProperty("ui.main.toolbar.tooltip.downloadNeedsCSLayout");
+                String text = valueIn(language, "ui.main.toolbar.tooltip.downloadNeedsCSLayout");
 
                 // At 125% the font and the width a line holds (`wrappingWidth`, by the screen's dots per inch) both grow.
                 for (float scale : new float[] {1f, 1.25f})
@@ -884,7 +876,69 @@ public class testTheMenuBarIsWired
         }
     }
 
+    /**
+     * The All button is as wide as its word and the button's own margins, in every language, so it differs by language;
+     * no floor widens it.
+     *
+     * MUTATION: drop the `MINIMUM_WIDTH` in `installPopUpAllButton`, and the look and feel's floor widens it.
+     */
+    @Test(timeOut = 120000)
+    public void testTheAllButtonIsAsWideAsItsWord() throws Exception
+    {
+        JButton all = Components.named(ui, "popUpAllButton", JButton.class);
+
+        List<String> wrong = Components.onTheEventThread(() ->
+        {
+            String was = all.getText();
+            List<String> found = new ArrayList<>();
+
+            try
+            {
+                for (String language : LANGUAGES)
+                {
+                    String word = valueIn(language, "ui.main.allLayoutsButton");
+
+                    all.setText(word);
+
+                    java.awt.Insets edge = all.getInsets();
+                    int own = all.getFontMetrics(all.getFont()).stringWidth(word) + edge.left + edge.right;
+
+                    if (all.getPreferredSize().width != own)
+                    {
+                        found.add(word + " (messages" + language + ") is " + all.getPreferredSize().width + " px, not "
+                            + own);
+                    }
+                }
+            }
+            finally
+            {
+                all.setText(was);
+            }
+
+            return found;
+        });
+
+        assertTrue(wrong.isEmpty(), "All is not as wide as its word: " + wrong);
+    }
+
     // ------------------------------------------------------------------------------------------------
+
+    /** The bundles' suffixes, English first. */
+    private static final String[] LANGUAGES = {"", "_da", "_de", "_es", "_fr", "_it", "_nl", "_pl"};
+
+    /** A key's value in one language's bundle, read from the source. */
+    private static String valueIn(String language, String key) throws java.io.IOException
+    {
+        java.util.Properties bundle = new java.util.Properties();
+
+        try (java.io.InputStream in = new java.io.FileInputStream(
+            "src/org/traincontrol/resources/messages" + language + ".properties"))
+        {
+            bundle.load(in);
+        }
+
+        return bundle.getProperty(key);
+    }
 
     private static List<LayoutPopupUI> popups()
     {

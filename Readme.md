@@ -478,8 +478,8 @@ Tab icons provided by Freepik.
             - The usage chart, the crop window, the autonomy editor's buttons and the signal window now use the same fonts and spacing as the new windows.
             - Each line in the log now shows the time, `File` > `Export Log...` saves the log to a file, and the `File` menu is sorted into four groups.
             - The `Locomotives` menu has no `Utilities` submenu: `Turn Off All Functions`, `Turn On All Lights`, `Sync Full Function State w/ Central Station...` and `Check for Renamed Locomotives` are in the menu itself, and `Browse Database` is now `Locomotive Database...`.
-            - Menu items show their shortcut keys on the right: Ctrl+F for `Quick Find Locomotive...`, Ctrl+A for `Locomotive Database...` and Ctrl+D for `Add Locomotive...`.
-            - `File` > `Change Central Station Address...` shows the address in use and lets you type a new one, used from the next time TrainControl starts; `Cancel` keeps the old one.
+            - Menu items show their shortcut keys on the right: Ctrl+F for `Quick Find Locomotive...`, Ctrl+A for `Locomotive Database...` and Ctrl+D for `Add Locomotive...`.  A locomotive button's right-click menu shows them too, such as Ctrl+C for copy and Alt+P for the function preset.
+            - `File` > `Change Central Station IP Address...` shows the IP address in use and lets you type a new one, used from the next time TrainControl starts; `Cancel` keeps the old one.
             - The `Layouts` menu marks the layout you are using with `(in use)` in place of the `Data Source` line, and `Show Current Layout Folder` is at the bottom of `Recent Layouts`.
             - Grayed menu items say why when you hover over them, and `Recent Layouts` says `No other layouts yet` when there is nothing else to open.
             - While autonomy is running, `Sync Database w/ Central Station`, `Restore from Backup...`, `Add Locomotive...`, `Import from CSV...` and `Sync Full Function State w/ Central Station...` are grayed and say why, rather than refusing after you click them.

@@ -167,6 +167,9 @@ public class testRightClickMenuTipsCanBeHidden
     /** The items the last read found grayed: they keep their tips, which say why. */
     private static final java.util.Set<String> grayed = new java.util.HashSet<>();
 
+    /** The keys the last read found shown on the items' right, by item (D40): the setting never touches them. */
+    private static final Map<String, javax.swing.KeyStroke> shownKeys = new java.util.HashMap<>();
+
     private static void collect(Component[] items, Map<String, String> into)
     {
         for (Component each : items)
@@ -178,6 +181,8 @@ public class testRightClickMenuTipsCanBeHidden
             into.put(item.getText(), item.getToolTipText());
 
             if (!item.isEnabled()) grayed.add(item.getText());
+
+            if (item.getAccelerator() != null) shownKeys.put(item.getText(), item.getAccelerator());
 
             if (item instanceof JMenu) collect(((JMenu) item).getMenuComponents(), into);
         }
@@ -247,8 +252,8 @@ public class testRightClickMenuTipsCanBeHidden
     // ---------------------------------------------------------------------------------------------- claims
 
     /**
-     * Off, which is how it starts, every right-click menu keeps its tooltips: the locomotive button's hotkeys and the
-     * diagram menus' sentences.
+     * Off, which is how it starts, every right-click menu keeps its tooltips: the diagram menus' sentences.  The
+     * locomotive button's menu shows its keys on the items' right, so no tooltip there names one.
      *
      * MUTATION: strip the tips even when the setting is off.
      */
@@ -261,14 +266,14 @@ public class testRightClickMenuTipsCanBeHidden
 
         for (Door door : DIAGRAM_AND_BUTTON)
         {
-            Map<String, String> tips = tipsOn(door);
+            shownKeys.clear();
 
-            assertTrue(tips.values().stream().anyMatch(t -> t != null), door + ": no item has a tooltip with the"
-                + " setting off: " + tips);
+            Map<String, String> tips = tipsOn(door);
 
             if (door == Door.LOC_BUTTON)
             {
-                assertTrue(tips.values().stream().anyMatch(t -> isHotkey(t)), door + ": no hotkey tooltip: " + tips);
+                assertFalse(shownKeys.isEmpty(), door + ": no item shows its key");
+                assertFalse(tips.values().stream().anyMatch(t -> isHotkey(t)), door + ": a tooltip names a key: " + tips);
             }
             else
             {
@@ -279,7 +284,8 @@ public class testRightClickMenuTipsCanBeHidden
     }
 
     /**
-     * On, no item of any right-click menu has a tooltip but its hotkey, and an item that had a hotkey shows exactly it.
+     * On, no item of any right-click menu has a tooltip but its hotkey, and an item that had a hotkey shows exactly it;
+     * the locomotive button's items still show their keys on their right.
      *
      * MUTATION: skip the strip (the sentences stay); strip hotkeys too (the hotkeys go).
      */
@@ -290,17 +296,22 @@ public class testRightClickMenuTipsCanBeHidden
         {
             hide(false);
 
+            shownKeys.clear();
+
             Map<String, String> before = tipsOn(door);
+
+            Map<String, javax.swing.KeyStroke> keysBefore = new java.util.HashMap<>(shownKeys);
 
             java.util.Set<String> gray = new java.util.HashSet<>(grayed);
 
             hide(true);
 
+            shownKeys.clear();
+
             Map<String, String> after = tipsOn(door);
 
             assertEquals(after.keySet(), before.keySet(), door + ": the menu offers other items on the second opening");
 
-            int hotkeys = 0;
             int sentences = 0;
 
             for (Map.Entry<String, String> item : before.entrySet())
@@ -310,12 +321,18 @@ public class testRightClickMenuTipsCanBeHidden
                 assertEquals(after.get(item.getKey()), expected, door + ": \"" + item.getKey() + "\" was \""
                     + item.getValue() + "\" and now shows the wrong thing");
 
-                if (expected != null) hotkeys++;
-                else if (item.getValue() != null) sentences++;
+                if (expected == null && item.getValue() != null) sentences++;
             }
 
-            if (door == Door.LOC_BUTTON) assertTrue(hotkeys > 0, door + ": no hotkey item to prove");
-            else assertTrue(sentences > 0, door + ": no sentence tooltip to prove hidden: " + before);
+            if (door == Door.LOC_BUTTON)
+            {
+                assertFalse(keysBefore.isEmpty(), door + ": no item shows a key to prove");
+                assertEquals(shownKeys, keysBefore, door + ": hiding the tips changed the keys the items show");
+            }
+            else
+            {
+                assertTrue(sentences > 0, door + ": no sentence tooltip to prove hidden: " + before);
+            }
         }
     }
 

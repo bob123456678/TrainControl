@@ -31,6 +31,12 @@ public class RightClickMenuListener extends PopupListener
         menu.show(e.getComponent(), e.getX(), e.getY());
     }
     
+    /** Shows on the item the key the window's shortcut table gives this row, display only (D40). */
+    private static void keyed(JMenuItem item, String row)
+    {
+        TrainControlUI.showShortcut(item, TrainControlUI.KeyShortcuts.named(row).stroke());
+    }
+
     final class RightClickMenu extends JPopupMenu
     {
         JMenuItem menuItem;
@@ -42,14 +48,14 @@ public class RightClickMenuListener extends PopupListener
                 I18n.t("loc.ui.menuAssignLocomotive")
             );
             menuItem.addActionListener(event -> ui.selectLocomotiveActivated(source));
-            menuItem.setToolTipText("Control+A");
+            keyed(menuItem, "choose a locomotive");
             add(menuItem);
 
             if (ui.buttonHasLocomotive(source))
             {
                 menuItem = LocomotiveMenuItems.settings(ui, ui.getButtonLocomotive(source));
 
-                menuItem.setToolTipText("Control+E");
+                keyed(menuItem, "locomotive settings");
 
                 add(menuItem);
             }
@@ -63,7 +69,7 @@ public class RightClickMenuListener extends PopupListener
                     I18n.f("loc.ui.menuCopyLocomotiveNamed", ui.getButtonLocomotive(source).getName())
                 );
                 menuItem.addActionListener(event -> ui.setCopyTarget(source, false));
-                menuItem.setToolTipText("Control+C");
+                keyed(menuItem, "copy the button");
             }
             else
             {
@@ -81,14 +87,14 @@ public class RightClickMenuListener extends PopupListener
                     I18n.f("loc.ui.menuPasteLocomotiveNamed", ui.getCopyTarget().getName())
                 );
                 menuItem.addActionListener(event -> ui.doPaste(source, false, false));
-                menuItem.setToolTipText("Control+V");
+                keyed(menuItem, "paste onto the button");
                 add(menuItem);
 
                 menuItem = new JMenuItem(
                     I18n.f("loc.ui.menuMoveLocomotive", ui.getCopyTarget().getName())
                 );
                 menuItem.addActionListener(event -> ui.doPaste(source, false, true));
-                menuItem.setToolTipText("Control+B");
+                keyed(menuItem, "move onto the button");
                 add(menuItem);
 
                 if (ui.getSwapTarget() != null
@@ -99,7 +105,7 @@ public class RightClickMenuListener extends PopupListener
                         I18n.f("loc.ui.menuSwapLocomotive", ui.getCopyTarget().getName())
                     );
                     menuItem.addActionListener(event -> ui.doPaste(source, true, false));
-                    menuItem.setToolTipText("Control+S");
+                    keyed(menuItem, "swap with the button");
                     add(menuItem);
                 }
             }
@@ -121,14 +127,14 @@ public class RightClickMenuListener extends PopupListener
                     I18n.t("loc.ui.menuApplySavedFunctionPreset")
                 );
                 menuItem.addActionListener(event -> ui.applyPreferredFunctions(ui.getButtonLocomotive(source)));
-                menuItem.setToolTipText("Alt-P");
+                keyed(menuItem, "apply preferred functions");
                 add(menuItem);
 
                 menuItem = new JMenuItem(
                     I18n.f("loc.ui.menuApplySavedSpeedPreset", ui.getButtonLocomotive(source).getPreferredSpeed())
                 );
                 menuItem.addActionListener(event -> ui.applyPreferredSpeed(ui.getButtonLocomotive(source)));
-                menuItem.setToolTipText("Alt-V");
+                keyed(menuItem, "apply preferred speed");
 
                 if (!TrainControlUI.hasSpeedPreset(ui.getButtonLocomotive(source)))
                 {
@@ -144,21 +150,21 @@ public class RightClickMenuListener extends PopupListener
                     I18n.t("loc.ui.menuSaveFunctionsAsPreset")
                 );
                 menuItem.addActionListener(event -> ui.savePreferredFunctions(ui.getButtonLocomotive(source)));
-                menuItem.setToolTipText("Alt-S");
+                keyed(menuItem, "save preferred functions");
                 add(menuItem);
 
                 menuItem = new JMenuItem(
                     I18n.t("loc.ui.menuSaveSpeedAsPreset")
                 );
                 menuItem.addActionListener(event -> ui.savePreferredSpeed(ui.getButtonLocomotive(source)));
-                menuItem.setToolTipText("Alt-U");
+                keyed(menuItem, "save preferred speed");
                 add(menuItem);
 
                 menuItem = new JMenuItem(
                     I18n.t("loc.ui.menuTurnOffFunctions")
                 );
                 menuItem.addActionListener(event -> ui.locFunctionsOff(ui.getButtonLocomotive(source)));
-                menuItem.setToolTipText("Alt-O");
+                keyed(menuItem, "functions off");
                 add(menuItem);
 
                 addSeparator();
@@ -166,7 +172,7 @@ public class RightClickMenuListener extends PopupListener
                 // Shared with the locomotive database's menu; the key belongs to this menu
                 menuItem = LocomotiveMenuItems.multiUnit(ui, ui.getButtonLocomotive(source));
 
-                menuItem.setToolTipText("Control+L");
+                keyed(menuItem, "linked locomotives");
 
                 add(menuItem);
 
@@ -176,13 +182,13 @@ public class RightClickMenuListener extends PopupListener
                     I18n.t("loc.ui.menuClearButtonCut")
                 );
                 menuItem.addActionListener(event -> ui.setCopyTarget(source, true));
-                menuItem.setToolTipText("Control+X");
+                keyed(menuItem, "cut the button");
                 add(menuItem);
                 
                 menuItem = new JMenuItem(
                     I18n.t("loc.ui.menuClearButton")
                 );
-                menuItem.setToolTipText("Delete");
+                keyed(menuItem, "clear the button");
                 // Doing this twice effectively clears the clipboard
                 menuItem.addActionListener(event -> { 
                     ui.setCopyTarget(source, true); 

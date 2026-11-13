@@ -382,7 +382,7 @@ public class testTheAutonomyAndRoutesMenusKeepTheirWiring
     // ---------------------------------------------------------------- D44: an editor open
 
     /**
-     * With an editor open, Layouts and Autonomy both start with Go to the Open Editor and a divider; it brings the
+     * With an editor open, Layouts and Autonomy both start with Go to the Opened Editor and a divider; it brings the
      * editor back; every item the editor grays says "Close the editor to use this."; Autonomy Guide stays live; New
      * Route... refuses as Add Route does.  Closed, Layouts hides the two and gives each item its own tooltip back (D44).
      *
@@ -426,9 +426,9 @@ public class testTheAutonomyAndRoutesMenusKeepTheirWiring
 
                 assertTrue(shown.get(0) instanceof JMenuItem && t("autosetup.ui.menuGoToOpenEditor")
                     .equals(((JMenuItem) shown.get(0)).getText()) && shown.get(0).isEnabled(), name + " does not start"
-                    + " with Go to the Open Editor: " + shape(menu.getMenuComponents()));
+                    + " with Go to the Opened Editor: " + shape(menu.getMenuComponents()));
 
-                assertTrue(shown.get(1) instanceof JSeparator, name + " has no divider under Go to the Open Editor");
+                assertTrue(shown.get(1) instanceof JSeparator, name + " has no divider under Go to the Opened Editor");
 
                 for (Component part : shown)
                 {
@@ -443,7 +443,7 @@ public class testTheAutonomyAndRoutesMenusKeepTheirWiring
 
                 SwingUtilities.invokeLater(((JMenuItem) shown.get(0))::doClick);
 
-                assertTrue(Components.waitFor(editor::isVisible, 10000), name + "'s Go to the Open Editor did not"
+                assertTrue(Components.waitFor(editor::isVisible, 10000), name + "'s Go to the Opened Editor did not"
                     + " bring the editor back");
             }
 
@@ -477,11 +477,11 @@ public class testTheAutonomyAndRoutesMenusKeepTheirWiring
                 if (part.isVisible() && part instanceof JMenuItem) shown.add(((JMenuItem) part).getText());
             }
 
-            assertFalse(shown.contains(t("autosetup.ui.menuGoToOpenEditor")), "Go to the Open Editor stays after the"
+            assertFalse(shown.contains(t("autosetup.ui.menuGoToOpenEditor")), "Go to the Opened Editor stays after the"
                 + " editor closed");
 
             assertFalse(layouts.getMenuComponent(0).isVisible() || layouts.getMenuComponent(1).isVisible(),
-                "Go to the Open Editor or its divider stays after the editor closed");
+                "Go to the Opened Editor or its divider stays after the editor closed");
 
             for (java.util.Map.Entry<JMenuItem, String> was : tipsAtRest.entrySet())
             {
