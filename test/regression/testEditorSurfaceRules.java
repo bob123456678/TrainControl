@@ -3015,42 +3015,7 @@ public class testEditorSurfaceRules
     @Test
     public void testASilentLambdaIsNotCoveredByItsNeighboursAnnouncement() throws Exception
     {
-        String fixture = String.join("\n",
-            "public class Fixture",
-            "{",
-            "    public javax.swing.JPopupMenu buildTileMenu(TileKey target)",
-            "    {",
-            "        menu.add(item(\"Announced\", () ->",
-            "        {",
-            "            session.setHome(target, null, null);",
-            "",
-            "            setupChanged();",
-            "        }));",
-            "",
-            "        menu.add(item(\"Silent\", () ->",
-            "        {",
-            "            session.setPointName(target, \"x\");",
-            "        }));",
-            "",
-            "        menu.add(toggle(\"Announced by the helper\", \"hint\", true,",
-            "            on -> session.setAutoDestination(target, on)));",
-            "",
-            "        menu.add(item(\"Silent too\", () -> session.setLinkName(target, \"y\")));",
-            "",
-            "        return menu;",
-            "    }",
-            "",
-            "    private void promptLength(TileKey tile)",
-            "    {",
-            "        if (tile != null)",
-            "        {",
-            "            session.setTileLength(tile, 3);",
-            "        }",
-            "",
-            "        setupChanged();",
-            "    }",
-            "}",
-            "");
+        String fixture = support.Fixtures.text("testEditorSurfaceRules/menu-with-silent-and-announced-writes.java.txt");
 
         java.util.List<String> examined = new java.util.ArrayList<>();
 

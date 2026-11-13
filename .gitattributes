@@ -8,3 +8,6 @@
 # clone needing it.
 test/baseline/** text eol=lf
 docs/tools/hooks/pre-commit text eol=lf
+
+# Test data moved out of the test classes, read as the literals joined it: LF.
+test/fixtures/** text eol=lf
