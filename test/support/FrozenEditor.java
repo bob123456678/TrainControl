@@ -145,23 +145,25 @@ public final class FrozenEditor implements AutoCloseable
 
         // render() posts work that can make a disposed editor displayable again, which the diagram's menus then read as
         // an open editor: dispose it again until it has stayed closed for a while
-        long until = System.currentTimeMillis() + 5000;
+        int[] closedFor = {0};
 
-        for (int closedFor = 0; closedFor < 4 && System.currentTimeMillis() < until; )
+        Components.waitFor(() ->
         {
-            if (editor.isDisplayable())
+            if (!editor.isDisplayable()) return ++closedFor[0] >= 8;
+
+            closedFor[0] = 0;
+
+            try
             {
                 SwingUtilities.invokeAndWait(editor::dispose);
-
-                closedFor = 0;
             }
-            else
+            catch (Exception e)
             {
-                closedFor++;
+                throw new IllegalStateException(e);
             }
 
-            Thread.sleep(50);
-        }
+            return false;
+        }, 5000);
     }
 
     @Override

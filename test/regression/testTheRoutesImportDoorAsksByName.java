@@ -519,8 +519,9 @@ public class testTheRoutesImportDoorAsksByName
 
                 for (String name : names.subList(keep, names.size())) model.deleteRoute(name);
 
-                for (long end = System.currentTimeMillis() + 30000; model.getRouteList().size() != keep
-                    && System.currentTimeMillis() < end; ) Thread.sleep(50);
+                final int kept = keep;
+
+                support.Components.waitFor(() -> model.getRouteList().size() == kept, 30000);
 
                 assertEquals(model.getRouteList().size(), keep, "precondition: the routes could not be deleted");
             }
@@ -540,10 +541,14 @@ public class testTheRoutesImportDoorAsksByName
 
             // DONE WHEN THE DOOR HAS SAID WHAT IT DID: the message after the busy dialog, or, answered No to replacing
             // the routes, a moment after that answer, in which anything it went on to do would have shown.
-            for (long end = System.currentTimeMillis() + 180000; answerer.said.isEmpty()
-                && (replace || answerer.replaceAsked.isEmpty()) && System.currentTimeMillis() < end; ) Thread.sleep(100);
+            final Answerer asked = answerer;
+            final boolean yesToReplace = replace;
 
-            if (!replace) Thread.sleep(2000);
+            support.Components.waitFor(() -> !asked.said.isEmpty()
+                || (!yesToReplace && !asked.replaceAsked.isEmpty()), 180000);
+
+            // Answered No: give it the moment in which a door that went on anyway would have said so
+            if (!replace) support.Components.waitFor(() -> !asked.said.isEmpty(), 2000);
 
             for (int turn = 0; turn < 6; turn++) SwingUtilities.invokeAndWait(() -> { });
 

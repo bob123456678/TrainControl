@@ -1084,6 +1084,26 @@ public class testRightClickMenuTipsCanBeHidden
             Components.waitFor(showing, PATIENCE_MS);
         }
 
+        // An item that has a tip and showed none was missed by the manager, not hidden: hover it again rather than
+        // record a null that reads as hidden (a 20 s miss once passed for a hidden tip)
+        boolean hasTip = Components.onTheEventThread(() -> item.getToolTipText() != null);
+
+        for (int again = 0; seen[0] == null && hasTip && again < 2; again++)
+        {
+            Components.onTheEventThread(() ->
+            {
+                ToolTipManager.sharedInstance().mousePressed(null);
+
+                return null;
+            });
+
+            moveTo(item);
+
+            Components.waitFor(showing, PATIENCE_MS);
+        }
+
+        if (seen[0] == null && hasTip) throw new AssertionError("the tip of " + item.getText() + " never showed");
+
         return seen[0];
     }
 
