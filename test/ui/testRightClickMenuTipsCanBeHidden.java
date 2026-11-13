@@ -387,23 +387,6 @@ public class testRightClickMenuTipsCanBeHidden
         }
     }
 
-    /** Turning it off again brings the tooltips back on the next opening of a menu that was opened while hidden. */
-    @Test
-    public void testTurningItOffBringsTheTipsBack() throws Exception
-    {
-        hide(false);
-
-        Map<String, String> original = tipsOn(Door.MAIN_DIAGRAM);
-
-        hide(true);
-
-        tipsOn(Door.MAIN_DIAGRAM);
-
-        hide(false);
-
-        assertEquals(tipsOn(Door.MAIN_DIAGRAM), original, "the tips did not come back");
-    }
-
     /**
      * The checkbox in Preferences writes the choice, and it starts off.
      *

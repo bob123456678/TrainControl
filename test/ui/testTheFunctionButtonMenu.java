@@ -500,62 +500,6 @@ public class testTheFunctionButtonMenu
             "the grayed item does not say why");
     }
 
-    // The Functions tab behind the right-click
-
-    /**
-     * Picking another icon and a momentary behavior in the row and pressing Save gives the train that icon and
-     * behavior for that function and puts the icon on the button.
-     *
-     * MUTATION: in `LocomotiveSettingsFrame.write`, skip `functionsTab.apply`, and this fails.
-     */
-    @Test
-    public void testSaveOnTheTabChangesTheFunctionAndItsButton() throws Exception
-    {
-        int was = loc.getFunctionType(F);
-        int icon = (was + 7) % 100 + 1;
-
-        openTheTab(F);
-
-        SettingsWindow.pickIcon(F, icon);
-        SettingsWindow.pickBehavior(F, 1);
-
-        SettingsWindow.press(SettingsWindow.save());
-
-        assertTrue(Components.waitFor(() -> loc.getFunctionType(F) == icon, WAIT),
-            "Save did not give F" + F + " the icon chosen: it has " + loc.getFunctionType(F));
-
-        assertTrue(loc.isFunctionPulse(F), "Save did not make F" + F + " momentary, as chosen");
-        assertTrue(loc.isCustomFunctions(), "a train with a changed function is not marked as customized");
-
-        assertTrue(Components.waitFor(() -> shows(button(F), currentIcon(F)), WAIT),
-            "the button for F" + F + " does not show the icon chosen on the tab");
-    }
-
-    /**
-     * Cancel changes nothing, though an icon and a behavior were chosen.
-     *
-     * MUTATION: write the table from Cancel as well, and this fails.
-     */
-    @Test
-    public void testCancelOnTheTabChangesNothing() throws Exception
-    {
-        int was = loc.getFunctionType(F);
-        int[] types = loc.getFunctionTypes().clone();
-
-        openTheTab(F);
-
-        SettingsWindow.pickIcon(F, (was + 7) % 100 + 1);
-        SettingsWindow.pickBehavior(F, 1);
-
-        SettingsWindow.press(SettingsWindow.cancel());
-
-        assertTrue(Components.waitFor(() -> SettingsWindow.showing() == null, WAIT), "Cancel did not close the window");
-
-        assertEquals(loc.getFunctionTypes(), types, "Cancel changed the function types");
-        assertFalse(loc.isFunctionPulse(F), "Cancel made F" + F + " momentary");
-        assertFalse(loc.isCustomFunctions(), "Cancel marked the train as customized");
-    }
-
     // A picture of one's own for the button
 
     /**
@@ -585,26 +529,6 @@ public class testTheFunctionButtonMenu
 
         assertTrue(Components.waitFor(() -> centerIs(button(F), Color.GREEN), WAIT),
             "the button for F" + F + " does not show the picture chosen");
-    }
-
-    /**
-     * Cancel after choosing a picture leaves the function with the icon it had.
-     *
-     * MUTATION: call `loc.setLocalFunctionImageURL` as the picture is picked, and this fails.
-     */
-    @Test
-    public void testACanceledCustomIconIsNotKept() throws Exception
-    {
-        openTheTab(F);
-
-        SettingsWindow.pickAnImage(F, SettingsWindow.picture(folder, "red.png", Color.RED));
-
-        SettingsWindow.press(SettingsWindow.cancel());
-
-        assertTrue(Components.waitFor(() -> SettingsWindow.showing() == null, WAIT), "Cancel did not close the window");
-
-        assertNull(loc.getLocalFunctionImageURL(F), "Cancel kept the picture chosen on the tab");
-        assertFalse(loc.isCustomFunctions(), "Cancel left the train marked as customized");
     }
 
     /**

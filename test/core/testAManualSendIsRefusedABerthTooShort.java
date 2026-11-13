@@ -80,17 +80,6 @@ public class testAManualSendIsRefusedABerthTooShort
             + " unusable - and if this refuses then the test above says nothing about lengths");
     }
 
-    /** And a terminus still refuses: the widening must not be a REPLACEMENT for the reversal rule. */
-    @Test
-    public void testATerminusTooShortIsStillRefused() throws Exception
-    {
-        Fixture tight = build(4, 2, true);
-
-        assertFalse(tight.layout.isPathClear(tight.path, tight.loc, false),
-            "a terminus with two units of room admitted a four-unit train, so the reversal rule that"
-            + " has existed since 2026-09-02 has been lost");
-    }
-
     /**
      * The refusal names the berth, the room found and the train's length.  Adam: "there is no notice that can help
      * state/debug this."

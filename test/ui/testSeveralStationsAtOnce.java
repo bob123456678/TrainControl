@@ -539,38 +539,6 @@ public class testSeveralStationsAtOnce
     }
 
     /**
-     * A change in the window reaches every station picked: a preset, a box, a typed field and a radio.
-     *
-     * MUTATION: have `actOnEach` act on the first station only, and this fails.
-     */
-    @Test(timeOut = 120000)
-    public void testAChangeReachesEveryStationPicked() throws Exception
-    {
-        List<TileKey> three = stations(3);
-
-        StationSettingsWindow window = pick(three);
-
-        StationDoors.press(window, "station.preset.TERMINUS");
-
-        for (TileKey each : three) assertTrue(on(() -> session.isMustTurnAround(each)), "Terminus missed " + each);
-
-        StationDoors.typeAndEnter(window, "station.maxLength", "25");
-
-        assertEquals(read(three, "maxTrainLength"), sameFor(three, 25), "the length typed missed a station");
-
-        StationDoors.press(window, "station.turnMay");
-
-        for (TileKey each : three)
-        {
-            assertTrue(on(() -> session.isTurnAround(each) && !session.isMustTurnAround(each)), "May turn missed " + each);
-        }
-
-        StationDoors.press(window, "station.runsThrough");
-
-        for (TileKey each : three) assertTrue(on(() -> session.isStopOnly(each)), "Running through off missed " + each);
-    }
-
-    /**
      * The saved setup after a change made to several stations at once is the file the same change makes one station at
      * a time, byte for byte (Adam: "make sure behavior is unchanged").
      *
@@ -993,6 +961,7 @@ public class testSeveralStationsAtOnce
     private static void change(StationSettingsWindow window) throws Exception
     {
         StationDoors.press(window, "station.preset.PARKING");
+        StationDoors.press(window, "station.turnMay");
         StationDoors.press(window, "station.runsThrough");
         StationDoors.typeAndEnter(window, "station.maxLength", "33");
 

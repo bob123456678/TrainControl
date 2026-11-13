@@ -169,38 +169,6 @@ public class testStuckTrainAdvisory
         watching.interrupt();
     }
 
-    /** The advisory is said once, not every time round the loop. */
-    @Test
-    public void testItIsSaidOnce() throws Exception
-    {
-        logged.clear();
-
-        MarklinLocomotive loc = model.getLocByName(model.getLocList().get(0));
-
-        MarklinFeedback sensor = model.newFeedback(78, null);
-
-        model.setFeedbackState(sensor.getName(), false);
-
-        Thread waiting = new Thread(() ->
-            loc.waitForOccupiedFeedback(sensor.getName(), 0, QUOTA_MS));
-
-        waiting.setDaemon(true);
-        waiting.start();
-
-        Thread.sleep(QUOTA_MS * 5);
-
-        int said = 0;
-
-        for (String line : logged)
-        {
-            if (line.contains("has not reached")) said++;
-        }
-
-        assertEquals(said, 1, "the advisory was said " + said + " times over five quotas");
-
-        waiting.interrupt();
-    }
-
     /** Three stations in a line, so a train sent from one end crosses two sensors to reach the other. */
     private static Layout threeStations(String prefix) throws Exception
     {

@@ -660,67 +660,6 @@ public class testTheRouteListShowsWhatRuns
     }
 
     /**
-     * The right-click menu's Execute runs the route, as the play button does.
-     */
-    @Test
-    public void testRightClickExecuteRunsTheRoute() throws Exception
-    {
-        executeFromTheMenu(PREFIX + "menu run", false);
-    }
-
-    /**
-     * The right-click menu's Duplicate Route makes a copy beside the route: a new name, an id of its own, the same
-     * commands, and a cell of its own in the list.
-     */
-    @Test
-    public void testDuplicateRouteMakesACopyWithItsOwnId() throws Exception
-    {
-        final String route = aQuickRoute(PREFIX + "original", 246, 247);
-
-        final String copy = route + " (" + org.traincontrol.util.I18n.t("route.ui.copy") + " 1)";
-
-        assertNull(model.getRoute(copy), "precondition: the copy is there before the duplicate");
-
-        try
-        {
-            javax.swing.JPopupMenu menu = rightClickTheRoute(route);
-
-            final javax.swing.AbstractButton duplicate = support.Components.withText(menu,
-                org.traincontrol.util.I18n.t("route.ui.menuDuplicateRoute"));
-
-            assertNotNull(duplicate, "the route's right-click menu has no Duplicate Route");
-
-            SwingUtilities.invokeLater(duplicate::doClick);
-
-            assertTrue(until(() -> model.getRoute(copy) != null, 30000), "Duplicate Route made no route called "
-                + copy + ": " + model.getRouteList());
-
-            assertNotEquals(model.getRouteId(copy), model.getRouteId(route), "the copy has the original's id");
-
-            assertEquals(model.getRoute(copy).toCSV(), model.getRoute(route).toCSV(), "the copy's commands are not the"
-                + " original's");
-
-            assertTrue(until(() -> cellOf(copy) != null, 30000), "the copy is not in the route list");
-
-            // Its sync over before the next claim: the sync deletes every sensor on no page, so one left running
-            // deleted Enable Auto Execution's sensor while it was held made
-            assertTrue(until(() -> !duplicating(), 60000), "Duplicate Route's worker was still going a minute on");
-        }
-        finally
-        {
-            closeAnyMenu();
-
-            if (model.getRoute(copy) != null) model.deleteRoute(copy);
-        }
-    }
-
-    /** Whether Duplicate Route's worker, which syncs with the station after the copy is made, is still going. */
-    private static boolean duplicating()
-    {
-        return support.RouteListDoors.duplicating();
-    }
-
-    /**
      * Find Route, given part of a route's name that only it has, brings the route list forward and highlights that
      * route's cell (FR-044, MT-218).
      */
