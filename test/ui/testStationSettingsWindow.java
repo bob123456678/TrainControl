@@ -662,13 +662,7 @@ public class testStationSettingsWindow
         assertEquals(numberOf(session.getPointProperty(square, "maxTrainLength")), 42.0, "Escape changed the setup");
 
         // Escape anywhere else closes the window
-        Components.onTheEventThread(() ->
-        {
-            window.getRootPane().getActionForKeyStroke(KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_ESCAPE, 0))
-                .actionPerformed(new java.awt.event.ActionEvent(window, java.awt.event.ActionEvent.ACTION_PERFORMED, ""));
-
-            return null;
-        });
+        pressEscapeOn(window);
 
         assertFalse(window.isShowing(), "Escape did not close the window");
     }
@@ -739,13 +733,7 @@ public class testStationSettingsWindow
         assertEquals(Components.onTheEventThread(() -> session.getPointProperty(square, "maxTrainLength")), had,
             "the refused length was written");
 
-        Components.onTheEventThread(() ->
-        {
-            window.getRootPane().getActionForKeyStroke(KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_ESCAPE, 0))
-                .actionPerformed(new java.awt.event.ActionEvent(window, java.awt.event.ActionEvent.ACTION_PERFORMED, ""));
-
-            return null;
-        });
+        pressEscapeOn(window);
 
         assertFalse(Components.onTheEventThread(() -> window.isShowing()), "Escape did not close the window");
 
@@ -1411,24 +1399,10 @@ public class testStationSettingsWindow
     {
         TileKey square = aStationWithTwoWaysIn();
 
-        Components.onTheEventThread(() ->
-        {
-            session.setPointProperty(square, org.traincontrol.automationui.AutonomyBuilder.MUST_REVERSE, Boolean.TRUE);
-            panel.refresh();
-
-            return null;
-        });
-
-        Components.settle();
+        int row = aFindingAbout(square);
 
         @SuppressWarnings("unchecked")
         JList<String> list = (JList<String>) Reflect.get(AutonomyEditorPanel.class, panel, "findings");
-
-        java.lang.reflect.Field tiles = Reflect.field(AutonomyEditorPanel.class, "findingTiles");
-
-        int row = Components.onTheEventThread(() -> ((List<?>) tiles.get(panel)).indexOf(square));
-
-        assertTrue(row >= 0, "precondition: no finding about " + square);
 
         Components.onTheEventThread(() ->
         {
@@ -1480,24 +1454,9 @@ public class testStationSettingsWindow
     {
         TileKey square = aStationWithTwoWaysIn();
 
-        Components.onTheEventThread(() ->
-        {
-            session.setPointProperty(square, org.traincontrol.automationui.AutonomyBuilder.MUST_REVERSE, Boolean.TRUE);
-            panel.refresh();
+        int row = aFindingAbout(square);
 
-            return null;
-        });
-
-        Components.settle();
-
-        @SuppressWarnings("unchecked")
-        JList<String> list = (JList<String>) Reflect.get(AutonomyEditorPanel.class, panel, "findings");
-
-        java.lang.reflect.Field tiles = Reflect.field(AutonomyEditorPanel.class, "findingTiles");
-
-        int row = Components.onTheEventThread(() -> ((List<?>) tiles.get(panel)).indexOf(square));
-
-        assertTrue(row >= 0, "precondition: no finding about " + square);
+        JList<?> list = Components.onTheEventThread(() -> (JList<?>) panel.getFindingsPanel().getViewport().getView());
 
         Components.onTheEventThread(() -> { list.setSelectedIndex(row); return null; });
 
@@ -1508,7 +1467,7 @@ public class testStationSettingsWindow
 
         Components.settle();
 
-        assertFalse(Components.onTheEventThread(() -> ((List<?>) tiles.get(panel)).contains(square)),
+        assertFalse(rowOf(square) >= 0,
             "precondition: the finding about " + square + " is still listed");
 
         StationSettingsWindow opened = Components.onTheEventThread(() ->
@@ -3483,6 +3442,46 @@ public class testStationSettingsWindow
             }
 
             throw new AssertionError("precondition: only one station on " + PAGE);
+        });
+    }
+
+    /** Makes the station one that must reverse, which the findings list then names; its row there. */
+    private int aFindingAbout(TileKey square) throws Exception
+    {
+        Components.onTheEventThread(() ->
+        {
+            session.setPointProperty(square, org.traincontrol.automationui.AutonomyBuilder.MUST_REVERSE, Boolean.TRUE);
+            panel.refresh();
+
+            return null;
+        });
+
+        Components.settle();
+
+        int row = rowOf(square);
+
+        assertTrue(row >= 0, "precondition: no finding about " + square);
+
+        return row;
+    }
+
+    /** The findings list's row about this square, or -1. */
+    private int rowOf(TileKey square)
+    {
+        return Components.onTheEventThread(() ->
+            ((List<?>) Reflect.get(AutonomyEditorPanel.class, panel, "findingTiles")).indexOf(square));
+    }
+
+    /** Escape on the window, away from any field: the root pane's action. */
+    private static void pressEscapeOn(java.awt.Window window)
+    {
+        Components.onTheEventThread(() ->
+        {
+            ((javax.swing.RootPaneContainer) window).getRootPane().getActionForKeyStroke(KeyStroke.getKeyStroke(
+                java.awt.event.KeyEvent.VK_ESCAPE, 0)).actionPerformed(new java.awt.event.ActionEvent(window,
+                java.awt.event.ActionEvent.ACTION_PERFORMED, ""));
+
+            return null;
         });
     }
 

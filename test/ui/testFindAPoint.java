@@ -365,45 +365,13 @@ public class testFindAPoint
 
             final AutonomyEditorPanel panel = editor.getAutonomyPanel();
 
-            final JList<?> findings = support.Components.onTheEventThread(
-                () -> (JList<?>) panel.getFindingsPanel().getViewport().getView());
+            final JList<?> findings = oneFindingAbout(panel, null);
 
             try (support.Answering answering = support.Answering.start(m -> support.Answering.press(
                 I18n.t("layout.ui.switchDiscard"))))
             {
-                support.Components.onTheEventThread(() ->
-                {
-                    try
-                    {
-                        @SuppressWarnings("unchecked")
-                        javax.swing.DefaultListModel<String> rows = (javax.swing.DefaultListModel<String>)
-                            field(panel, "findingsModel");
-
-                        rows.clear();
-                        ((List<?>) field(panel, "findingTiles")).clear();
-                        ((List<?>) field(panel, "findingRelated")).clear();
-                        ((List<?>) field(panel, "findingSeverity")).clear();
-
-                        rows.addElement("a finding on another page");
-
-                        @SuppressWarnings("unchecked") List<TileKey> tiles = (List<TileKey>) field(panel, "findingTiles");
-                        @SuppressWarnings("unchecked") List<List<TileKey>> related =
-                            (List<List<TileKey>>) field(panel, "findingRelated");
-
-                        tiles.add(there);
-                        related.add(null);
-                        ((List<Object>) field(panel, "findingSeverity")).add(null);
-
-                        // Posted: the question it asks is modal
-                        javax.swing.SwingUtilities.invokeLater(() -> findings.setSelectedIndex(0));
-                    }
-                    catch (ReflectiveOperationException e)
-                    {
-                        throw new IllegalStateException(e);
-                    }
-
-                    return null;
-                });
+                // Posted: the question it asks is modal
+                javax.swing.SwingUtilities.invokeLater(() -> findings.setSelectedIndex(0));
 
                 editorAfterTheSwitch(OTHER_PAGE, there);
 
@@ -419,6 +387,42 @@ public class testFindAPoint
 
             session.getStore().setPointName(twinHere, TWIN);
         }
+    }
+
+    /** Makes the findings list one row about the other page's point, naming these squares beside it; the list. */
+    private static JList<?> oneFindingAbout(final AutonomyEditorPanel panel, final List<TileKey> named)
+    {
+        return support.Components.onTheEventThread(() ->
+        {
+            try
+            {
+                @SuppressWarnings("unchecked")
+                javax.swing.DefaultListModel<String> rows = (javax.swing.DefaultListModel<String>)
+                    field(panel, "findingsModel");
+
+                rows.clear();
+                ((List<?>) field(panel, "findingTiles")).clear();
+                ((List<?>) field(panel, "findingRelated")).clear();
+                ((List<?>) field(panel, "findingSeverity")).clear();
+
+                rows.addElement("a finding on another page");
+
+                @SuppressWarnings("unchecked") List<TileKey> tiles = (List<TileKey>) field(panel, "findingTiles");
+                @SuppressWarnings("unchecked") List<List<TileKey>> related =
+                    (List<List<TileKey>>) field(panel, "findingRelated");
+                @SuppressWarnings("unchecked") List<Object> severity = (List<Object>) field(panel, "findingSeverity");
+
+                tiles.add(there);
+                related.add(named);
+                severity.add(null);
+            }
+            catch (ReflectiveOperationException e)
+            {
+                throw new IllegalStateException(e);
+            }
+
+            return (JList<?>) panel.getFindingsPanel().getViewport().getView();
+        });
     }
 
     /** Renames a point on the first page through the store, as unsaved work in this editor. */
@@ -563,42 +567,9 @@ public class testFindAPoint
             final AutonomyEditorPanel panel = editor.getAutonomyPanel();
 
             // A finding row naming the other page's point and a neighbor, in the list the user clicks
-            final JList<?> findings = support.Components.onTheEventThread(
-                () -> (JList<?>) panel.getFindingsPanel().getViewport().getView());
+            JList<?> findings = oneFindingAbout(panel, java.util.Arrays.asList(twinThere));
 
-            support.Components.onTheEventThread(() ->
-            {
-                try
-                {
-                    @SuppressWarnings("unchecked")
-                    javax.swing.DefaultListModel<String> rows = (javax.swing.DefaultListModel<String>)
-                        field(panel, "findingsModel");
-
-                    rows.clear();
-                    ((List<?>) field(panel, "findingTiles")).clear();
-                    ((List<?>) field(panel, "findingRelated")).clear();
-                    ((List<?>) field(panel, "findingSeverity")).clear();
-
-                    rows.addElement("a finding on another page");
-
-                    @SuppressWarnings("unchecked") List<TileKey> tiles = (List<TileKey>) field(panel, "findingTiles");
-                    @SuppressWarnings("unchecked") List<List<TileKey>> related =
-                        (List<List<TileKey>>) field(panel, "findingRelated");
-                    @SuppressWarnings("unchecked") List<Object> severity = (List<Object>) field(panel, "findingSeverity");
-
-                    tiles.add(there);
-                    related.add(java.util.Arrays.asList(twinThere));
-                    severity.add(null);
-
-                    findings.setSelectedIndex(0);
-                }
-                catch (ReflectiveOperationException e)
-                {
-                    throw new IllegalStateException(e);
-                }
-
-                return null;
-            });
+            support.Components.onTheEventThread(() -> { findings.setSelectedIndex(0); return null; });
 
             LayoutEditor opened = editorAfterTheSwitch(OTHER_PAGE, there);
 
