@@ -1623,6 +1623,31 @@ public class testTheLocomotiveSettingsWindow
     }
 
     /**
+     * The picture in Locomotive Settings carries the revert, and it clears this computer's icon so the Central Station's
+     * picture shows again; the main window's picture no longer offers it (OB-443).
+     *
+     * MUTATION: wire the revert to nothing in `LocomotiveTab`, and this fails.
+     */
+    @Test
+    public void testTheSettingsPictureRevertsToTheStationsPicture() throws Exception
+    {
+        loc.setImageURL("http://cs/OB-443.png");
+        loc.setLocalImageURL(new java.io.File("OB-443-own.png").toURI().toString());
+
+        open(0);
+
+        Component revert = SettingsWindow.part("settings.revert", Component.class);
+
+        assertTrue(Components.waitFor(() -> Components.onTheEventThread(revert::isVisible), WAIT),
+            "no revert over a picture replaced on this computer");
+
+        Mouse.click(revert);
+
+        assertTrue(Components.waitFor(() -> loc.getLocalImageURL() == null, WAIT), "the revert did not clear the icon");
+        assertEquals(loc.getImageURL(), "http://cs/OB-443.png", "the Central Station's picture is not back");
+    }
+
+    /**
      * The picture's marks open their chooser over this window, not over the main window.
      *
      * MUTATION: call `main.setLocIcon(loc)` with no mouse event in the wrench's handler, and this fails.
