@@ -1848,7 +1848,7 @@ public class testTheTrainWindow
      * (ParkingTrack4 before ParkingTrack10), capitals not changing the order, by the rule Why not Moving? sorts by
      * (OB-450, MT-874).
      *
-     * MUTATION: sort the paths by `Edge.pathToString` again in `gatherPathOptions`, and this fails on ParkingTrack10.
+     * MUTATION: have `PathOptions.sortAsRead` sort by `Edge.pathToString` alone, and this fails on ParkingTrack10.
      */
     @Test(timeOut = 120000)
     public void testTheDestinationsSortAsRead() throws Exception
