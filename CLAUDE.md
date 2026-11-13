@@ -7,10 +7,9 @@ them away.
 
 Agents pay to read every comment line, so the detail goes on the tracker and the source keeps a summary:
 
-- **The tracker holds the detail.**  The full account of an OB or FR (cases, reasoning, choices turned down,
-  traps) is a comment on its entry, written
-  at length: `py -3 docs/manual-tests/triagedb.py comment <id> "<text>"`.  A builder that does not write the tracker
-  puts that text in its report under the id, for the orchestrator to file.
+- **The tracker holds the detail.**  The full account of an OB or FR (cases, reasoning, choices turned down, traps)
+  is a comment on its entry, written at length: `py -3 docs/manual-tests/triagedb.py comment <id> "<text>"`.  A
+  builder that does not write the tracker puts that text in its report under the id, for the orchestrator to file.
 - **The source keeps a high-level summary** of what a class or method is for, plus only what everyone who edits it
   must know: a contract, a constraint that breaks something when ignored, a non-obvious why.  When in doubt, the
   detail goes on the tracker and the comment cites the id.  Never restate the code in prose.
@@ -90,24 +89,26 @@ Not: `// OB-271 (2026-09-14): Adam reported ... Round 112 found ...; RSA61-B2 wi
 - **Find a test by its claim, then read only its lines.**  `py -3 docs/tools/claims.py <words>` (or `--id OB-123`,
   `--class <testClass>`, `--uses <ProductionClass>`) prints `test/<path>:<first>-<last>  Class.method  ids` for each
   matching @Test method; read that range (and the ranges of the helpers it calls, which `--class` lists), never a whole
-  test class to find one claim. 
+  test class to find one claim.
 - Grep first, then read the range you need (about 120 lines); never read a giant file whole.  Pipe long output
   through `head`.
 - Edit with the Edit tool; a script, write with the Write tool (heredocs eat backslashes); never `sed -i` a Java file.
 - A worktree you were given is clean and on the right commit: start work, don't re-check it.
-- Answer your own questions from the repository first: this file, the brief,
-  `docs/reference/behaviour.md` (the index of the area files in `docs/reference/behaviour/`), `triagedb.py show <id>`; for a refactor,
-  `docs/refactoring.md`.  Ask only for a decision that is Adam's.
+- Answer your own questions from the repository first: this file, the brief, `docs/reference/behaviour.md` (the index
+  of the area files in `docs/reference/behaviour/`), `triagedb.py show <id>`; for a refactor, `docs/refactoring.md`.
+  Ask only for a decision that is Adam's.
 - Report what changed, the evidence (red, green, the Total lines), and what is left.  No screenshots unless asked.
 
 ## Working here
 
-- Java files check out CRLF; git normalizes them on commit and Edit keeps them.  Message bundles (`src/org/traincontrol/resources/messages*.properties`, eight languages) are ASCII
-  only: every other character as `\uXXXX`.
+- Java files check out CRLF; git normalizes them on commit and Edit keeps them.  Message bundles
+  (`src/org/traincontrol/resources/messages*.properties`, eight languages) are ASCII only: every other character as
+  `\uXXXX`.
 - New UI is hand-written Swing.  Never edit the NetBeans `//GEN-BEGIN`..`//GEN-END` regions or the variables block.
 - Never touch `LocDB.data`, `UIState.data`, Adam's preferences, or anything under `cs2_sample_layout/` (his live
   railway).  Never connect to a Central Station.
 - Stage files by name (never `git add -A`); never `git stash` (the stash is shared by every worktree).  Work on `dev`
   or a branch of it; moving or pushing `master` is a release and needs Adam.
-- Manual-test entries on the tracker are append-only.
+- The tracker (`docs/manual-tests/triage.db`) is read and written only through `triagedb.py`.  Manual-test entries
+  are append-only.
 - Docs for users (Readme.md, Automation.md) use no em dashes and no spaced hyphens as dashes.
