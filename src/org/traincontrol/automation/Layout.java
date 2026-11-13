@@ -397,9 +397,8 @@ public class Layout
     private final Map<Locomotive, List<Edge>> activeLocomotives;
 
     /**
-     * Locomotives that have locked a path but are not yet in activeLocomotives (seconds, while accessories are
-     * thrown), so the cap counts them; claimed in the monitor that locks the path, and carrying it so getActiveAccs
-     * sees the accessories a half-configured dispatch has thrown.
+     * Locomotives that have locked a path but are not yet in activeLocomotives, so the cap counts them and
+     * getActiveAccs sees their accessories.
      */
     private final Map<Locomotive, List<Edge>> takingPath;
 
@@ -408,9 +407,8 @@ public class Layout
     private final Map<Locomotive, List<Point>> locomotiveMilestones;
 
     /**
-     * Edges of a running path the train has finished with, tail and all.  Separate from the lock, which under atomic
-     * routes holds for the whole run: this answers "is a train still on it" (Adam: "once a train passes, signals on the
-     * route, but behind the train, should still be allowed to be changed by auto routes.").
+     * Edges of a running path the train has finished with, tail and all; separate from the lock, which atomic routes
+     * hold to the end.
      */
     private final Map<Locomotive, Set<Edge>> clearedEdges;
 
@@ -422,9 +420,8 @@ public class Layout
     private final Map<Locomotive, String> locomotivePendingS88;
 
     /**
-     * The pending-s88 monitor, not the layout's: configureAndLockPath holds that for seconds, and a train blocked in
-     * updatePendingS88 could cross the sensor it was about to wait for.  waitForS88Reached/updatePendingS88 are the
-     * wait/notify pair; waitForTheRunToRecord waits here briefly, never while reading the feedback store.
+     * The pending-s88 monitor, not the layout's: a train blocked in updatePendingS88 behind configureAndLockPath
+     * could cross the sensor it was about to wait for.  waitForS88Reached/updatePendingS88 are the wait/notify pair.
      */
     private final Object pendingS88Monitor = new Object();
     
@@ -491,8 +488,7 @@ public class Layout
 
     /**
      * Where each locomotive stood when this railway last turned it at a destination, by square; dropped when it
-     * arrives without turning.  Kept here because nothing in this class may call the window, which drains it when the
-     * railway goes idle.  Concurrent: drivers write, the event thread drains.
+     * arrives without turning.  The window drains it when the railway goes idle.  Concurrent.
      */
     private final java.util.Map<String, String> reversedOnArrival =
         new java.util.concurrent.ConcurrentHashMap<>();
@@ -698,11 +694,10 @@ public class Layout
     }
     
     /**
-     * Returns all accessories along active routes, including the exit guards each path's first edge sets (OB-340).
+     * Every accessory along active routes, including the exit guards each path's first edge sets (OB-340).
      *
-     * Not synchronized: the event thread reads it while configureAndLockPath holds this monitor across its sleeps, so
-     * taking it would freeze the window, Stop included.  Safe without it, as activeLocomotives is concurrent and its
-     * lists are replaced whole; the answer may straddle one path being replaced.
+     * Not synchronized: the event thread reads it while configureAndLockPath holds this monitor across its sleeps.
+     * Safe without it, as activeLocomotives is concurrent and its lists are replaced whole.
      */
     public Set<Accessory> getActiveAccs()
     {
@@ -710,20 +705,17 @@ public class Layout
     }
 
     /**
-     * Every accessory along an active route, with the setting its route holds it at: true for TURN and RED, as
-     * RouteCommand.getSetting reads it; null where two routes underway ask different settings.  A path's first edge
-     * also holds its station's exit guards at GREEN (OB-340).  Not synchronized, as for getActiveAccs.
-     *
-     * @return each accessory held, and the setting it is held at
+     * Every accessory along an active route with the setting its route holds it at: true for TURN and RED; null where
+     * two routes ask different settings.  A path's first edge also holds its station's exit guards at GREEN (OB-340).
+     * Not synchronized, as for getActiveAccs.
      */
     public Map<Accessory, Boolean> getActiveAccSettings()
     {
         Map<Accessory, Boolean> activeAccessories = new HashMap<>();
 
-        // Every train underway, including one still being dispatched: activeLocomotives misses it until
-        // configureAndLockPath returns, its accessories already thrown.  activeLocomotives wins where both hold one.
-        // The claims are read first, as in pathHeldBy: the hand-over writes the journey before dropping the claim, so
-        // a train between the two reads is still seen.
+        // Every train underway, including one still being dispatched (its accessories already thrown);
+        // activeLocomotives wins where both hold one.  Claims are read first, as in pathHeldBy, so a train between the
+        // two reads is seen.
         Map<Locomotive, List<Edge>> underway = new LinkedHashMap<>(this.takingPath);
 
         for (Map.Entry<Locomotive, List<Edge>> journey : this.activeLocomotives.entrySet())
@@ -842,10 +834,8 @@ public class Layout
 
     /**
      * Records where a locomotive belongs, the first time it is placed on this graph.  First claim wins and a station
-     * can be claimed only once, so the map stays injective: two locomotives never want one station, which would make
-     * returning home unsatisfiable.  A locomotive placed on a claimed station gets no home and becomes a free agent,
-     * which the staging planner may move anywhere free and which supplies the spare capacity that breaks cyclic
-     * dependencies.
+     * can be claimed only once, so the map stays injective; a locomotive placed on a claimed station becomes a free
+     * agent, which the staging planner may move anywhere free.
      *
      * Called when the graph is loaded and when a locomotive is placed by hand, never on arrival at the end of a path.
      */
@@ -853,9 +843,7 @@ public class Layout
     {
         if (l == null || p == null) return;
 
-        // A split square may hold a positional home (MT-165; Adam: "unless there is an explicit home, the home should
-        // be where the train started at startup."): the copy under the wheels is known, unlike for an assignment, and
-        // HomeStaging.atHome treats every copy as home.
+        // A split square may hold a positional home (MT-165): the copy under the wheels is known.
 
         // Already has a home: keep it.  Moving a locomotive by hand does not re-home it.
         if (this.homeStations.containsKey(l)) return;
@@ -871,9 +859,8 @@ public class Layout
     }
 
     /**
-     * Recomputes every home from the assignments and the current placements: one method for loading and editing, so
-     * the two cannot derive homes differently.  Assignments win, whether or not the locomotive stands there; the rest
-     * fall back to the station a locomotive stands on.  Synchronized on this Layout.
+     * Recomputes every home from the assignments and the placements, so loading and editing derive them alike:
+     * assignments win, the rest fall back to the station a locomotive stands on.  Synchronized on this Layout.
      */
     synchronized public void rebuildHomeStations()
     {
@@ -894,10 +881,8 @@ public class Layout
                 continue;
             }
 
-            // And one home per square, as claimHome: parseAuto writes homes onto the Points, so a file can carry two
-            // locomotives on two copies of one square.  isSamePlaceAs is the block, so two squares sharing a detection
-            // section are not caught; that sensor-versus-block question is open under MT-187.  Which assignment
-            // survives follows the iteration order of points.
+            // One home per square, as claimHome.  isSamePlaceAs is the block, so two squares sharing a detection
+            // section are not caught (open under MT-187).
             Point sameSquare = null;
 
             for (Point taken : this.homeStations.values())
@@ -930,8 +915,8 @@ public class Layout
 
 
     /**
-     * Assigns a station to a locomotive by name, or clears the assignment when the name is null or blank; throws if
-     * the station or the locomotive does not exist.  Synchronized on this Layout.
+     * Assigns a station to a locomotive by name, or clears it when the name is blank; throws if either does not exist.
+     * Synchronized on this Layout.
      */
     synchronized public void setHomeLocomotive(String pointName, String locName) throws Exception
     {
@@ -948,9 +933,8 @@ public class Layout
                 p.getName()));
         }
 
-        // Nothing is refused here: a square is one logical point (Adam: "the home should just be the logical point, and
-        // the direction is wherever the locomotive was facing when it started moving."), and a refusal at this door
-        // would be walked past by parseAuto and claimHome.  An impossible assignment is warned about, not forbidden.
+        // Nothing is refused here (Adam: "the home should just be the logical point"): parseAuto and claimHome would
+        // walk past a refusal.  An impossible assignment is warned about, not forbidden.
 
         // One station per locomotive, or two stations would wait for one train.
         if (loc != null)
