@@ -14,6 +14,7 @@ import org.traincontrol.automationui.AutonomySession;
 import org.traincontrol.automationui.TileGraph.TileKey;
 import org.traincontrol.base.LayoutDiagram;
 import support.Diagrams;
+import static support.Trees.delete;
 
 /**
  * MT-074 and MT-075, which Adam could not run by hand and asked to have tested instead: both are about what is left
@@ -243,17 +244,5 @@ public class testDataSafetyRoundTrips
     private String brief(String text)
     {
         return text.length() < 300 ? text : text.substring(0, 300) + "...";
-    }
-
-    private void delete(File f)
-    {
-        if (f.isDirectory())
-        {
-            File[] kids = f.listFiles();
-
-            if (kids != null) for (File kid : kids) delete(kid);
-        }
-
-        f.delete();
     }
 }

@@ -21,6 +21,7 @@ import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.marklin.file.CS2File;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 import support.Trees;
+import static support.LayoutSandbox.pagesIn;
 
 /**
  * A whole setup, renamed and renamed back through the same call the menu makes (Adam: *"Do you have tests that try to
@@ -49,7 +50,7 @@ public class testRenameRoundTripThroughTheUIPath
     {
         File folder = aWorkingCopy();
 
-        List<LayoutDiagram> pages = pagesIn(folder);
+        List<LayoutDiagram> pages = pagesIn(model, folder);
 
         AutonomySession session = new AutonomySession(folder);
         session.open(pages);
@@ -85,7 +86,7 @@ public class testRenameRoundTripThroughTheUIPath
         // would give.
         AutonomySession after = reopened(folder);
 
-        assertEquals(settingsOn(after, renamed, pagesIn(folder), renamed), before,
+        assertEquals(settingsOn(after, renamed, pagesIn(model, folder), renamed), before,
             "the renamed page did not bring its settings with it.  This is the MT-135 loss: the "
             + "settings are keyed by square, the squares are keyed by page, and a page that changed "
             + "its name without telling the setup reads as a page that was deleted");
@@ -99,21 +100,21 @@ public class testRenameRoundTripThroughTheUIPath
             + "page that takes a new number leaves its whole setup attached to a number no page "
             + "holds any more - orphaned, and pruned by the next save (MT-135)");
 
-        assertEquals(settingsOnEveryOtherPage(after, renamed, pagesIn(folder)), othersBefore,
+        assertEquals(settingsOnEveryOtherPage(after, renamed, pagesIn(model, folder)), othersBefore,
             "renaming one page changed what another page holds.  That is OB-092, where renaming a "
             + "page to \"5\" excluded the page whose ID was 5 and took its train placements with it");
 
         // AND BACK AGAIN, the same way.
         AutonomySession back = reopened(folder);
 
-        List<LayoutDiagram> nowPages = pagesIn(folder);
+        List<LayoutDiagram> nowPages = pagesIn(model, folder);
 
         LayoutPageEdit.renameOrDuplicate(namesOf(nowPages), diagram(nowPages, renamed),
             folder.getAbsolutePath(), renamed, page, true, false, false, back, model);
 
         AutonomySession finished = reopened(folder);
 
-        assertEquals(settingsOn(finished, page, pagesIn(folder), page), before,
+        assertEquals(settingsOn(finished, page, pagesIn(model, folder), page), before,
             "the page did not come back.  Adam, MT-135: \"Renaming the page back did not restore "
             + "the stations\" - which was the symptom of the settings having already been pruned "
             + "and written on the way out, so there was nothing left to restore");
@@ -121,7 +122,7 @@ public class testRenameRoundTripThroughTheUIPath
         assertEquals(idOf(folder, page), idBefore,
             "the page has a different id than it started with after a round trip");
 
-        assertEquals(settingsOnEveryOtherPage(finished, page, pagesIn(folder)), othersBefore,
+        assertEquals(settingsOnEveryOtherPage(finished, page, pagesIn(model, folder)), othersBefore,
             "another page was left changed by the round trip");
     }
 
@@ -134,19 +135,19 @@ public class testRenameRoundTripThroughTheUIPath
     {
         File folder = aWorkingCopy();
 
-        List<LayoutDiagram> pages = pagesIn(folder);
+        List<LayoutDiagram> pages = pagesIn(model, folder);
 
         AutonomySession session = new AutonomySession(folder);
         session.open(pages);
 
         String page = aPageWithSettings(session, pages);
 
-        int filesBefore = pagesIn(folder).size();
+        int filesBefore = pagesIn(model, folder).size();
 
         LayoutPageEdit.renameOrDuplicate(namesOf(pages), diagram(pages, page),
             folder.getAbsolutePath(), page, page + " Moved", true, false, false, session, model);
 
-        List<LayoutDiagram> now = pagesIn(folder);
+        List<LayoutDiagram> now = pagesIn(model, folder);
 
         assertEquals(now.size(), filesBefore,
             "the page count changed over a RENAME, so a copy was left behind or one went missing");
@@ -172,7 +173,7 @@ public class testRenameRoundTripThroughTheUIPath
     {
         File folder = aWorkingCopy();
 
-        List<LayoutDiagram> pages = pagesIn(folder);
+        List<LayoutDiagram> pages = pagesIn(model, folder);
 
         AutonomySession session = new AutonomySession(folder);
         session.open(pages);
@@ -522,21 +523,11 @@ public class testRenameRoundTripThroughTheUIPath
 
     // fixtures
 
-    private static List<LayoutDiagram> pagesIn(File folder) throws Exception
-    {
-        String path = "file:///" + folder.getAbsolutePath().replace(File.separatorChar, '/') + "/";
-
-        CS2File parser = new CS2File(path, model);
-        parser.setLayoutDataLoc(path);
-
-        return support.LayoutSandbox.wired(model, parser);
-    }
-
     private static AutonomySession reopened(File folder) throws Exception
     {
         AutonomySession session = new AutonomySession(folder);
 
-        session.open(pagesIn(folder));
+        session.open(pagesIn(model, folder));
 
         return session;
     }

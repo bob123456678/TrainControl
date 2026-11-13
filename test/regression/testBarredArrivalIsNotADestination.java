@@ -16,6 +16,7 @@ import org.traincontrol.base.Accessory.accessoryDecoderType;
 import org.traincontrol.base.LayoutDiagram;
 import org.traincontrol.base.LayoutDiagramComponent.componentType;
 import support.Diagrams;
+import static support.Trees.delete;
 
 /**
  * A station with one arrival side barred does not offer that side as somewhere to stop (MT-078).  The rule lives in the
@@ -487,18 +488,6 @@ public class testBarredArrivalIsNotADestination
 
         delete(theirs);
         delete(mine);
-    }
-
-    private void delete(File f)
-    {
-        if (f.isDirectory())
-        {
-            File[] kids = f.listFiles();
-
-            if (kids != null) for (File kid : kids) delete(kid);
-        }
-
-        f.delete();
     }
 
     /**

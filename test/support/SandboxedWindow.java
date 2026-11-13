@@ -80,6 +80,31 @@ public final class SandboxedWindow
         if (sandbox != null) sandbox.close();
     }
 
+    /**
+     * A main window with no model, built on the event thread while a sandbox holds the layout preference (OB-111), so
+     * its constructor never reads the operator's railway; the sandbox is closed again before this returns.
+     */
+    public static TrainControlUI build() throws Exception
+    {
+        LayoutSandbox sandbox = null;
+
+        final TrainControlUI[] built = new TrainControlUI[1];
+
+        try
+        {
+            // Inside the try, so nothing between the open and the close can leave the preference behind.
+            sandbox = LayoutSandbox.open();
+
+            SwingUtilities.invokeAndWait(() -> built[0] = new TrainControlUI());
+        }
+        finally
+        {
+            if (sandbox != null) sandbox.close();
+        }
+
+        return built[0];
+    }
+
     /** The chooser remembers the folder a file was chosen in; puts the operator's back, unset included. */
     public static void putTheFolderBack(String folderWas)
     {

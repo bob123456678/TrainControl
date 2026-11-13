@@ -8,6 +8,7 @@ import org.traincontrol.automation.HomeStaging;
 import org.traincontrol.gui.TrainControlUI;
 import support.Display;
 import support.Reflect;
+import static support.SandboxedWindow.build;
 
 /**
  * Every reason a return home is refused has its own sentence.
@@ -60,30 +61,5 @@ public class testStagingOutcomeMessages
 
         assertEquals(seen.size(), HomeStaging.Outcome.values().length - 1,
             "one sentence per outcome, READY excepted");
-    }
-
-    /**
-     * The window, with the layout preference pointed somewhere that is not Adam's railway (OB-111).
-     */
-    private TrainControlUI build() throws Exception
-    {
-        support.LayoutSandbox sandbox = null;
-
-        final TrainControlUI[] built = new TrainControlUI[1];
-
-        try
-        {
-            // Inside the try, so nothing between the open and the close can leave the
-            // preference behind.
-            sandbox = support.LayoutSandbox.open();
-
-            javax.swing.SwingUtilities.invokeAndWait(() -> built[0] = new TrainControlUI());
-        }
-        finally
-        {
-            if (sandbox != null) sandbox.close();
-        }
-
-        return built[0];
     }
 }

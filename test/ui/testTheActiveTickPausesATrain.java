@@ -22,6 +22,8 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
 import support.Components;
 import support.Display;
 import support.Reflect;
+import static support.Components.itemNamed;
+import static support.StandingTrain.squareNamed;
 
 /**
  * The Is Active tick on the track diagram's right-click menu and on the autonomy editor's pauses the train standing
@@ -81,8 +83,8 @@ public class testTheActiveTickPausesATrain
 
         assertNotNull(train, "precondition: this data has no " + HIS_TRAIN);
 
-        mainA = square("BottomMainA");
-        mainB = square("BottomMainB");
+        mainA = squareNamed(session, "BottomMainA");
+        mainB = squareNamed(session, "BottomMainB");
 
         // NOTHING ELSE STANDING ABOUT, and his train on BottomMainB - on the railway, and in the setup the editor reads
         SwingUtilities.invokeAndWait(() ->
@@ -417,7 +419,7 @@ public class testTheActiveTickPausesATrain
                 if (!(window instanceof javax.swing.JDialog) || !window.isShowing()
                     || !leaving.equals(((javax.swing.JDialog) window).getTitle())) continue;
 
-                final javax.swing.JOptionPane pane = find(((javax.swing.JDialog) window).getContentPane(),
+                final javax.swing.JOptionPane pane = Components.inside(((javax.swing.JDialog) window).getContentPane(),
                     javax.swing.JOptionPane.class);
 
                 if (pane != null && pane.getOptions() != null && pane.getOptions().length > 0)
@@ -449,56 +451,6 @@ public class testTheActiveTickPausesATrain
 
             if (child instanceof javax.swing.JMenu) texts((javax.swing.JMenu) child, into);
         }
-    }
-
-    private static javax.swing.JMenuItem itemNamed(java.awt.Container menu, String text)
-    {
-        java.awt.Component[] children = menu instanceof javax.swing.JMenu
-            ? ((javax.swing.JMenu) menu).getMenuComponents() : menu.getComponents();
-
-        for (java.awt.Component child : children)
-        {
-            if (child instanceof javax.swing.JMenuItem && text.equals(((javax.swing.JMenuItem) child).getText()))
-            {
-                return (javax.swing.JMenuItem) child;
-            }
-
-            if (child instanceof javax.swing.JMenu)
-            {
-                javax.swing.JMenuItem found = itemNamed((javax.swing.JMenu) child, text);
-
-                if (found != null) return found;
-            }
-        }
-
-        return null;
-    }
-
-    private static <T> T find(java.awt.Container container, Class<T> type)
-    {
-        for (java.awt.Component child : container.getComponents())
-        {
-            if (type.isInstance(child)) return type.cast(child);
-
-            if (child instanceof java.awt.Container)
-            {
-                T found = find((java.awt.Container) child, type);
-
-                if (found != null) return found;
-            }
-        }
-
-        return null;
-    }
-
-    private static TileKey square(String name)
-    {
-        for (TileKey key : session.getStore().getNamedTiles())
-        {
-            if (name.equals(session.getStore().getPointName(key))) return key;
-        }
-
-        throw new AssertionError("this railway has no " + name);
     }
 
     /** The railway as the model has it now: the editor's door rebuilds it. */
@@ -707,7 +659,7 @@ public class testTheActiveTickPausesATrain
             // PAUSED THROUGH ITS OWN TICK on the diagram, so the setup lists it and the rebuild has built it paused
             String cardsLabel = I18n.f("autolayout.ui.menuLocomotiveActive", CARD_TRAIN);
 
-            javax.swing.JMenuItem own = diagramMenuItem(square(CARD_TRAIN_SQUARE), cardsLabel);
+            javax.swing.JMenuItem own = diagramMenuItem(squareNamed(session, CARD_TRAIN_SQUARE), cardsLabel);
 
             assertNotNull(own, "precondition: the track diagram's right-click on " + CARD_TRAIN_SQUARE + " offers no "
                 + cardsLabel);
@@ -1535,7 +1487,7 @@ public class testTheActiveTickPausesATrain
 
         final List<String> offered = new ArrayList<>();
 
-        final javax.swing.JMenuItem tick = editorsTickItem(editorsPanel(editor), square(CARD_TRAIN_SQUARE), label, offered);
+        final javax.swing.JMenuItem tick = editorsTickItem(editorsPanel(editor), squareNamed(session, CARD_TRAIN_SQUARE), label, offered);
 
         assertNotNull(tick, "precondition: the editor's right-click on " + CARD_TRAIN_SQUARE + " offers no " + label + ": "
             + offered);
@@ -1761,7 +1713,7 @@ public class testTheActiveTickPausesATrain
     {
         String label = I18n.f("autolayout.ui.menuLocomotiveActive", CARD_TRAIN);
 
-        javax.swing.JMenuItem own = diagramMenuItem(square(CARD_TRAIN_SQUARE), label);
+        javax.swing.JMenuItem own = diagramMenuItem(squareNamed(session, CARD_TRAIN_SQUARE), label);
 
         assertNotNull(own, "precondition: the track diagram's right-click on " + CARD_TRAIN_SQUARE + " offers no " + label);
 
@@ -2330,7 +2282,7 @@ public class testTheActiveTickPausesATrain
     {
         final List<TileKey> squares = new ArrayList<>();
 
-        for (String[] each : CROWD) squares.add(square(each[1]));
+        for (String[] each : CROWD) squares.add(squareNamed(session, each[1]));
 
         SwingUtilities.invokeAndWait(() ->
         {
@@ -2368,7 +2320,7 @@ public class testTheActiveTickPausesATrain
     {
         final List<TileKey> squares = new ArrayList<>();
 
-        for (String[] each : CROWD) squares.add(square(each[1]));
+        for (String[] each : CROWD) squares.add(squareNamed(session, each[1]));
 
         SwingUtilities.invokeAndWait(() ->
         {
@@ -3165,7 +3117,7 @@ public class testTheActiveTickPausesATrain
                 {
                     if (!(window instanceof javax.swing.JDialog) || !window.isShowing()) continue;
 
-                    final javax.swing.JOptionPane pane = find(((javax.swing.JDialog) window).getContentPane(),
+                    final javax.swing.JOptionPane pane = Components.inside(((javax.swing.JDialog) window).getContentPane(),
                         javax.swing.JOptionPane.class);
 
                     if (pane == null) continue;

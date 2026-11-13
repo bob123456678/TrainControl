@@ -12,6 +12,7 @@ import org.traincontrol.automationui.AutonomySession;
 import org.traincontrol.automationui.TileGraph.TileKey;
 import org.traincontrol.base.LayoutDiagram;
 import support.Diagrams;
+import static support.Trees.delete;
 
 /**
  * The name of a placed locomotive, as the diagram has to draw it: "EN57-203" in the caption in the track diagram's own
@@ -192,17 +193,5 @@ public class testAutonomyLabelShowsLocomotiveName
         page.setPageId("1");
 
         return page;
-    }
-
-    private void delete(File f)
-    {
-        if (f.isDirectory())
-        {
-            File[] kids = f.listFiles();
-
-            if (kids != null) for (File kid : kids) delete(kid);
-        }
-
-        f.delete();
     }
 }

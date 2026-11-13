@@ -15,10 +15,10 @@ import org.traincontrol.base.LayoutDiagram;
 import org.traincontrol.base.LayoutDiagramComponent.componentType;
 import org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel;
 import org.traincontrol.util.I18n;
-import support.Diagrams;
 import support.Display;
 import support.Reflect;
 import support.Trees;
+import static support.Diagrams.aPageWithARunAndALabel;
 
 /**
  * Control+N offers a station name exactly where the right-click menu does (FR-086): the key asks what the menu asks,
@@ -43,7 +43,7 @@ public class testControlNAsksTheMenusQuestion
         {
             AutonomySession session = new AutonomySession(folder);
 
-            session.open(Arrays.asList(aPageWithARun("main")));
+            session.open(Arrays.asList(aPageWithARunAndALabel("main")));
 
             AutonomyEditorPanel panel = new AutonomyEditorPanel(session, "main", () -> { });
 
@@ -111,7 +111,7 @@ public class testControlNAsksTheMenusQuestion
         {
             AutonomySession session = new AutonomySession(folder);
 
-            session.open(Arrays.asList(aPageWithARun("main")));
+            session.open(Arrays.asList(aPageWithARunAndALabel("main")));
 
             final AutonomyEditorPanel panel = new AutonomyEditorPanel(session, "main", () -> { });
 
@@ -175,7 +175,7 @@ public class testControlNAsksTheMenusQuestion
         {
             AutonomySession session = new AutonomySession(folder);
 
-            session.open(Arrays.asList(aPageWithARun("main")));
+            session.open(Arrays.asList(aPageWithARunAndALabel("main")));
 
             TileKey here = new TileKey("main", 1, 1);
             TileKey other = new TileKey("main", 6, 1);
@@ -239,7 +239,7 @@ public class testControlNAsksTheMenusQuestion
         {
             AutonomySession session = new AutonomySession(folder);
 
-            session.open(Arrays.asList(aPageWithARun("main"), aPageWithARun("second")));
+            session.open(Arrays.asList(aPageWithARunAndALabel("main"), aPageWithARunAndALabel("second")));
 
             TileKey here = new TileKey("main", 1, 1);
             TileKey other = new TileKey("main", 6, 1);
@@ -302,7 +302,7 @@ public class testControlNAsksTheMenusQuestion
         {
             AutonomySession session = new AutonomySession(folder);
 
-            session.open(Arrays.asList(aPageWithARun("main"), aPageWithARun("second")));
+            session.open(Arrays.asList(aPageWithARunAndALabel("main"), aPageWithARunAndALabel("second")));
 
             TileKey station = new TileKey("main", 1, 1);
             TileKey here = new TileKey("main", 1, 2);
@@ -356,9 +356,10 @@ public class testControlNAsksTheMenusQuestion
         {
             AutonomySession session = new AutonomySession(folder);
 
-            session.open(Arrays.asList(aPageWithARun("main")));
+            session.open(Arrays.asList(aPageWithARunAndALabel("main")));
 
             TileKey station = new TileKey("main", 1, 1);
+            // (4,2) is blank inside the drawn area, (9,2) outside it.
             TileKey inside = new TileKey("main", 4, 2);
             TileKey outside = new TileKey("main", 9, 2);
 
@@ -439,7 +440,7 @@ public class testControlNAsksTheMenusQuestion
         {
             AutonomySession session = new AutonomySession(folder);
 
-            session.open(Arrays.asList(aPageWithARun("main")));
+            session.open(Arrays.asList(aPageWithARunAndALabel("main")));
 
             TileKey station = new TileKey("main", 1, 1);
             TileKey track = new TileKey("main", 3, 1);
@@ -493,7 +494,7 @@ public class testControlNAsksTheMenusQuestion
         {
             AutonomySession session = new AutonomySession(folder);
 
-            session.open(Arrays.asList(aPageWithARun("main")));
+            session.open(Arrays.asList(aPageWithARunAndALabel("main")));
 
             AutonomyEditorPanel panel = new AutonomyEditorPanel(session, "main", () -> { });
 
@@ -540,7 +541,7 @@ public class testControlNAsksTheMenusQuestion
         {
             AutonomySession session = new AutonomySession(folder);
 
-            session.open(Arrays.asList(aPageWithARun("main")));
+            session.open(Arrays.asList(aPageWithARunAndALabel("main")));
 
             TileKey empty = new TileKey("main", 4, 2);
 
@@ -587,7 +588,7 @@ public class testControlNAsksTheMenusQuestion
         {
             AutonomySession session = new AutonomySession(folder);
 
-            LayoutDiagram page = aPageWithARun("main");
+            LayoutDiagram page = aPageWithARunAndALabel("main");
 
             // A signal, which a caption may not be put on
             page.addComponent(componentType.SIGNAL, 8, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
@@ -728,28 +729,6 @@ public class testControlNAsksTheMenusQuestion
 
         return names.contains(I18n.t("autosetup.ui.menuShowStationHere"))
             || names.contains(I18n.t("autosetup.ui.menuShowStationHereNamed"));
-    }
-
-    private static LayoutDiagram aPageWithARun(String name) throws java.io.IOException
-    {
-        LayoutDiagram page = new LayoutDiagram(name, 12, 4, null, null);
-
-        Diagrams.feedback(page, 1, 1, 5, 11);
-
-        for (int x = 2; x <= 5; x++)
-        {
-            Diagrams.straight(page, x, 1);
-        }
-
-        Diagrams.feedback(page, 6, 1, 6, 12);
-
-        // A label, the other square the menu sends to its text menu; (4,2) is blank inside the drawn area, (9,2)
-        // outside.
-        page.addComponent(componentType.TEXT, 3, 3, 0, 0, 0, 0, accessoryDecoderType.MM2, "Yard");
-
-        page.setPageId(name);
-
-        return page;
     }
 
     private static java.util.List<String> itemNames(javax.swing.JPopupMenu menu)

@@ -21,6 +21,7 @@ import support.Display;
 import support.Reflect;
 import support.SourceOf;
 import support.Trees;
+import static support.LayoutSandbox.pagesIn;
 
 /**
  * What a run did is folded into the setup BEFORE the editor snapshots it, not after (OB-144).
@@ -158,7 +159,7 @@ public class testARunSurvivesADiagramEdit
     {
         File folder = aWorkingCopy();
 
-        List<LayoutDiagram> pages = pagesIn(folder);
+        List<LayoutDiagram> pages = pagesIn(model, folder);
 
         AutonomySession session = new AutonomySession(folder);
         session.open(pages);
@@ -249,7 +250,7 @@ public class testARunSurvivesADiagramEdit
         File folder = aWorkingCopy();
 
         AutonomySession session = new AutonomySession(folder);
-        session.open(pagesIn(folder));
+        session.open(pagesIn(model, folder));
 
         String active = session.getStore().getActiveConfiguration();
 
@@ -427,16 +428,6 @@ public class testARunSurvivesADiagramEdit
     }
 
     // the fixture
-
-    private static List<LayoutDiagram> pagesIn(File folder) throws Exception
-    {
-        String path = "file:///" + folder.getAbsolutePath().replace(File.separatorChar, '/') + "/";
-
-        CS2File parser = new CS2File(path, model);
-        parser.setLayoutDataLoc(path);
-
-        return support.LayoutSandbox.wired(model, parser);
-    }
 
     private static File aWorkingCopy() throws Exception
     {

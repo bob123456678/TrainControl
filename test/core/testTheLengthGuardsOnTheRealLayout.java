@@ -21,11 +21,12 @@ import org.traincontrol.automationui.AutonomySession;
 import org.traincontrol.automationui.TileGraph.TileKey;
 import org.traincontrol.base.LayoutDiagram;
 import org.traincontrol.base.Locomotive;
-import org.traincontrol.marklin.MarklinAccessory;
 import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.marklin.MarklinLocomotive;
 import org.traincontrol.marklin.file.CS2File;
 import static org.traincontrol.marklin.MarklinControlStation.init;
+import static support.Diagrams.wireAccessories;
+import static support.Diagrams.accessory;
 
 /**
  * The length guards, on the real railway, with lengths set deliberately small.
@@ -480,52 +481,6 @@ public class testTheLengthGuardsOnTheRealLayout
         for (Edge edge : route) out.append(" ").append(edge.getName());
 
         return out.toString();
-    }
-
-    /**
-     * Attaches an accessory to every switch and signal drawn with an address.
-     *
-     * The application does this on load; a test that reads the diagram itself has to do it too, or the
-     * reducer cannot trace through a single switch.  Copied from
-     * `testTheCheckerAgreesWithTheBuild`, which has had it since it was written.
-     *
-     * @param pages the parsed diagram
-     */
-    private static void wireAccessories(List<LayoutDiagram> pages)
-    {
-        for (LayoutDiagram page : pages)
-        {
-            for (org.traincontrol.base.LayoutDiagramComponent component : page.getAll())
-            {
-                if (!component.isSwitch() && !component.isSignal()) continue;
-
-                // the application skips tiles drawn without a digital address, and so does this
-                if (component.getAddress() <= 0) continue;
-
-                org.traincontrol.base.Accessory.accessoryType type = component.isSignal()
-                    ? org.traincontrol.base.Accessory.accessoryType.SIGNAL
-                    : org.traincontrol.base.Accessory.accessoryType.SWITCH;
-
-                component.setAccessory(accessory(component.getAddress(), type,
-                    component.getProtocol()));
-
-                if (component.isThreeWay())
-                {
-                    component.setAccessory2(accessory(component.getAddress() + 1,
-                        org.traincontrol.base.Accessory.accessoryType.SWITCH,
-                        component.getProtocol()));
-                }
-            }
-        }
-    }
-
-    private static org.traincontrol.marklin.MarklinAccessory accessory(int logicalAddress,
-        org.traincontrol.base.Accessory.accessoryType type,
-        org.traincontrol.base.Accessory.accessoryDecoderType protocol)
-    {
-        return new org.traincontrol.marklin.MarklinAccessory(null, logicalAddress - 1, type, protocol,
-            org.traincontrol.marklin.MarklinAccessory.getNameWithProtocol(logicalAddress, type,
-                protocol), false, 0);
     }
 
     /**
