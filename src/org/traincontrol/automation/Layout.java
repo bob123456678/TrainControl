@@ -421,7 +421,8 @@ public class Layout
 
     /**
      * The pending-s88 monitor, not the layout's: a train blocked in updatePendingS88 behind configureAndLockPath
-     * could cross the sensor it was about to wait for.  waitForS88Reached/updatePendingS88 are the wait/notify pair.
+     * could cross the sensor it was about to wait for.  waitForS88Reached/updatePendingS88 are the wait/notify pair;
+     * waitForTheRunToRecord waits here briefly, never while reading the feedback store.
      */
     private final Object pendingS88Monitor = new Object();
     
@@ -488,7 +489,8 @@ public class Layout
 
     /**
      * Where each locomotive stood when this railway last turned it at a destination, by square; dropped when it
-     * arrives without turning.  The window drains it when the railway goes idle.  Concurrent.
+     * arrives without turning.  Kept here because nothing in this class may call the window, which drains it when the
+     * railway goes idle.  Concurrent: one locomotive's arrivals are all on its own thread, so no key races.
      */
     private final java.util.Map<String, String> reversedOnArrival =
         new java.util.concurrent.ConcurrentHashMap<>();
@@ -696,8 +698,9 @@ public class Layout
     /**
      * Every accessory along active routes, including the exit guards each path's first edge sets (OB-340).
      *
-     * Not synchronized: the event thread reads it while configureAndLockPath holds this monitor across its sleeps.
-     * Safe without it, as activeLocomotives is concurrent and its lists are replaced whole.
+     * Not synchronized: the event thread reads it while configureAndLockPath holds this monitor across its sleeps, so
+     * taking it would freeze the window, Stop included.  Safe without it, as activeLocomotives is concurrent and its
+     * lists are replaced whole.
      */
     public Set<Accessory> getActiveAccs()
     {
@@ -834,8 +837,8 @@ public class Layout
 
     /**
      * Records where a locomotive belongs, the first time it is placed on this graph.  First claim wins and a station
-     * can be claimed only once, so the map stays injective; a locomotive placed on a claimed station becomes a free
-     * agent, which the staging planner may move anywhere free.
+     * can be claimed only once, so the map stays injective (two locomotives wanting one station makes returning home
+     * unsatisfiable); a locomotive placed on a claimed station becomes a free agent, whose spare room breaks cycles.
      *
      * Called when the graph is loaded and when a locomotive is placed by hand, never on arrival at the end of a path.
      */
@@ -1442,7 +1445,8 @@ public class Layout
 
     /**
      * Per-sensor announcement epochs for simulation mode, so a stale clear-behind cannot destroy a
-     * later announcement on the same sensor: two consecutive path points can share one s88.
+     * later announcement on the same sensor: two consecutive path points can share one s88, and a stale clear landing
+     * after the next announcement would stall the waiter for good.
      */
     private final Map<String, AtomicLong> simFeedbackEpochs = new ConcurrentHashMap<>();
 
@@ -1523,7 +1527,8 @@ public class Layout
      * Stops every train where it is, now: the reload's and Unload's Yes.  Unlike the graceful stopLocomotives, it also
      * counts a stop, which every journey checks around each speed it writes (`drive`).
      *
-     * Takes only `stopLock`, never the journeys' lock or this monitor: the event thread calls it.
+     * Takes only `stopLock`, never the journeys' lock or this monitor: an arrival holds the journeys' lock while it
+     * waits for this monitor, so taking either here deadlocks.  The event thread calls it.
      */
     public void stopEveryTrainWhereItIs()
     {
@@ -3258,12 +3263,14 @@ public class Layout
             for (Edge e : path)
             {
                 // Counted before it is taken, so a throw out of setOccupied or reserve still falls inside the release
-                // of path.subList(0, edgesLocked).
+                // of path.subList(0, edgesLocked).  setOccupied increments first, so only untaken lock siblings could
+                // be over-released, and nothing throws inside the loop.
                 edgesLocked++;
 
                 e.setOccupied();
 
-                // Reserved, not placed: a locked path holds all its points for this train.
+                // Reserved, not placed: a locked path holds all its points for this train; setLocomotive would sweep
+                // the train off each point as the next is reserved.
                 e.getEnd().reserve(loc);
 
                 // isPathClear already previewed the configuration, so this should not fail - but if an
@@ -7005,8 +7012,8 @@ public class Layout
      * The track non-atomic mode could release under a train: the atomic-routes gate's question.  Non-atomic mode is
      * unsafe only where a whole path is unmeasured, so these are the unmeasured rails from whose far end an active
      * destination is reachable over unmeasured track alone.  An answered 0 is a measure (Adam: "0 lengths count as
-     * measures, so non-atomic should be allowed").  Returns the rails named by the two places each joins,
-     * alphabetically.
+     * measures, so non-atomic should be allowed").  Relies on every path ending at a destination (bfs,
+     * HomeStaging.firstClearRoute).  Returns the rails named by the two places each joins,
      */
     public java.util.List<String> unmeasuredTrackThatCouldBeReleased()
     {
@@ -7789,7 +7796,8 @@ public class Layout
     /**
      * Turns the early release of passed track off (true: a route holds all its track until it finishes) or on.  A run
      * the setting changes under is unlocked by what it did, so no edge is given back twice.  Not locked: a click must
-     * not wait behind a route being thrown.
+     * not wait behind a route being thrown.  Switching true to false mid-run can leave one edge held; the interface
+     * refuses the change while running.
      */
     public void setAtomicRoutes(boolean atomicRoutes)
     {
