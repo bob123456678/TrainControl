@@ -82,11 +82,8 @@ public class testTheMenuBarIsWired
     }
 
     /**
-     * Each menu reads as the answers arrange it, which is the menu review's inventory changed only as they say: File
-     * as it was with the address item renamed; Locomotives with no Utilities drawer; Layouts with no Data Source
-     * and no Pop-up All, its heading in use marked and the folder under Recent Layouts; Preferences
-     * with its headings, names and order; Help with the guides and the update check; "..." where an item
-     * asks.  Nothing reachable before is lost, and nothing is there twice.
+     * Each menu reads as the answers arrange it: the menu review's inventory changed only as they say, nothing
+     * reachable before is lost, and nothing is there twice.
      *
      * MUTATION: leave `arrangeMainMenus` out of the constructor (Utilities and the old Preferences order are back).
      */
@@ -311,9 +308,8 @@ public class testTheMenuBarIsWired
     }
 
     /**
-     * While a run would refuse them, Sync Database w/ Central Station, Restore from Backup..., Add Locomotive..., Import
-     * from CSV..., Sync Full Function State w/ Central Station... and Check for Renamed Locomotives are grayed with the
-     * refusal's own sentence, and lit again with their own tooltips after it.
+     * While a run would refuse them, the File and Locomotives items that touch the database or the Central Station are
+     * grayed with the refusal's own sentence, and lit again with their own tooltips after it.
      *
      * MUTATION: leave out `greyWhatARunRefuses` on the File and Locomotives menus.
      */
@@ -540,11 +536,10 @@ public class testTheMenuBarIsWired
     }
 
     /**
-     * Layouts marks the heading of the layout in use, and the grayed items say why: on this computer's layout with no
-     * Central Station, Switch and Download say what they need, Open CS3 Web App names the Central Station 3, and Recent
-     * Layouts stays live, saying there is no other layout.  On a Central Station layout the other heading is
-     * marked, Switch is already in use, Edit/Add Pages... says only local files can be edited, and there is no layout
-     * folder to show.
+     * Layouts marks the heading of the layout in use, and the grayed items say why: on this computer's layout, Switch,
+     * Download and Open CS3 Web App say what they need and Recent Layouts says there is no other layout; on a Central
+     * Station layout the other heading is marked, Switch is in use, Edit/Add Pages... says only local files can be
+     * edited, and there is no layout folder to show.
      *
      * MUTATION: leave out the `sayWhy` calls in `repaintPathLabel` and `applyLayoutEditingAvailability`.
      */
