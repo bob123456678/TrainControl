@@ -326,10 +326,8 @@ public class testStuckTrainAdvisory
         {
             final String sensor = sensors[i];
 
-            // The door a route's trigger monitor comes in by: two arguments, no advisory.  A REAL locomotive rather
-            // than one called "Dummy Loc": the advisory names whichever locomotive is waiting, so looking for "dummy"
-            // looked for the one string this test cannot produce.  What matters is that this door says nothing about
-            // ANY locomotive.
+            // The door a route's trigger monitor comes in by: two arguments, no advisory.  A real locomotive, not
+            // "Dummy Loc": the advisory names whichever locomotive waits, and this door must name none.
             final Locomotive dummy = model.getLocByName(model.getLocList().get(0));
 
             monitors[i] = new Thread(() -> dummy.waitForOccupiedFeedback(sensor, 0));
@@ -376,9 +374,8 @@ public class testStuckTrainAdvisory
     }
 
     /**
-     * And the advisory door has exactly one caller.  The split is easy to undo by accident: the natural way to
-     * "improve" a wait is to add the advisory to the shared one, which every route monitor comes in by.  Only the
-     * dispatch loop, which knows a train was actually sent somewhere, may say anything.  `Locomotive` itself is not
+     * And the advisory door has exactly one caller.  Only the dispatch loop, which knows a train was
+     * actually sent somewhere, may say anything; the shared wait every route monitor comes in by must not.  `Locomotive` itself is not
      * counted: it declares both doors and delegates from one to the other.
      */
     @Test

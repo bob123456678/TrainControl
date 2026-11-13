@@ -364,7 +364,7 @@ public class testSeveralStationsAtOnce
     }
 
     /**
-     * A blank Enter leaves a length or priority they differ on as each has it, where before it cleared them all, so the
+     * A blank Enter leaves a length or priority they differ on as each has it, so the
      * triangle and the row's (i) say how to set them all instead: 0 for any length, 0 for the default priority.
      *
      * MUTATION: give the two fields' triangles and flyovers the plain `mixedTip()`, and this fails.

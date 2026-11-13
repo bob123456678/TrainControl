@@ -816,7 +816,7 @@ public class testTheLocomotiveSettingsLooks extends support.SettingsClass
 
         try
         {
-            // The watch ticks every second, so 2.5 s holds two ticks; measuring on a tick resized the strip twice
+            // The watch ticks every second, so 2.5 s holds two ticks
             assertTrue(!Components.waitFor(() -> resized.get() > 0, 2500), "the watch resized the tab strip "
                 + resized.get() + " times");
         }
@@ -1227,7 +1227,7 @@ public class testTheLocomotiveSettingsLooks extends support.SettingsClass
 
     /**
      * The Address number stands as far in from its field's left edge as the Name does (OB-442): the spinner's editor
-     * is a text field of its own, which once drew its number against the edge.
+     * is a text field of its own.
      *
      * MUTATION: take the left inset off the address field's border in `LocomotiveSettingsFrame.LocomotiveTab`, and
      * this fails.
