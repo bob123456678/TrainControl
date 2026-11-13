@@ -4613,6 +4613,79 @@ public class testRouteEditorValidation
     }
 
     /**
+     * MT-869: the window's minimum height is the layout's own plus one row of "What This Route Does" and one row of
+     * the conditions, and still fits a 768-pixel screen.
+     *
+     * MUTATION: in the constructor, drop `+ commands.getRowHeight() + conditions.getRowHeight()`, and the difference
+     * is 0.
+     */
+    @Test
+    public void testTheWindowsMinimumHeightHasARowMoreInEachTable() throws Exception
+    {
+        needsADisplay();
+
+        final org.traincontrol.gui.RouteEditorFrame frame = open();
+
+        try
+        {
+            final javax.swing.JTable commands = table(frame, "CommandTable");
+            final javax.swing.JTable conditions = conditionTable(frame);
+
+            int[] heights = support.Components.onTheEventThread(() ->
+            {
+                int set = frame.getMinimumSize().height;
+
+                frame.setMinimumSize(null);
+
+                int layout = frame.getMinimumSize().height;
+
+                return new int[]{set, layout, commands.getRowHeight() + conditions.getRowHeight()};
+            });
+
+            assertTrue(heights[2] > 0, "precondition: the tables report no row height");
+            assertEquals(heights[0] - heights[1], heights[2], "the minimum height " + heights[0] + " is not the layout's "
+                + heights[1] + " plus one row of each table");
+            assertTrue(heights[0] <= 768, "the minimum height " + heights[0] + " does not fit a 768-pixel screen");
+        }
+        finally
+        {
+            close(frame);
+        }
+    }
+
+    /**
+     * MT-869: the drag handle is 20% wider than its old 30 pixels in both tables, so it is easier to grab.
+     *
+     * MUTATION: in `HandledTable.handleColumn`, set the three widths back to 30, and this fails.
+     */
+    @Test
+    public void testTheHandleColumnIsTwentyPercentWider() throws Exception
+    {
+        needsADisplay();
+
+        final org.traincontrol.gui.RouteEditorFrame frame = open();
+
+        try
+        {
+            for (String kind : new String[]{"CommandTable", "ConditionTable"})
+            {
+                final javax.swing.JTable table = table(frame, kind);
+
+                javax.swing.table.TableColumn handle = support.Components.onTheEventThread(()
+                    -> table.getColumnModel().getColumn(HANDLE));
+
+                assertEquals(handle.getPreferredWidth(), 36, kind + "'s handle column is not 20% wider than 30");
+                assertEquals(handle.getMinWidth(), 36, kind + "'s handle column can shrink");
+                assertEquals(handle.getMaxWidth(), 36, kind + "'s handle column can grow");
+            }
+        }
+        finally
+        {
+            close(frame);
+        }
+    }
+
+    /**
      * OB-396: Split Here cuts the selected condition's group just above it, the two parts joined by the other rule,
      * each by truth table against an expression written here.  Grayed with nothing selected, with two, and on a group's
      * first condition; the button, Ctrl+Shift+S and the right-click menu do it.

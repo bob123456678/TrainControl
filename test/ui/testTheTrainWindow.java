@@ -1315,12 +1315,12 @@ public class testTheTrainWindow
 
     /**
      * The diagram's menu over a train is grouped as Adam drew it (FR-182) and reordered it: no title row, as the
-     * station's name heads the train's own items, Is Active first, then Change Direction and Change Arrived From with
-     * Station Settings... right below; behind a divider Change Train at..., Place, Remove and Edit <name>..., and
-     * nothing else.  "Edit Locomotive doesn't exist in the same grouping as any of the autonomy options"; no divider
-     * twice.
+     * station's name heads the menu with Station Settings... first under it (MT-957), then behind a divider Is Active,
+     * Change Direction and Change Arrived From; behind another Change Train at..., Place, Remove and Edit <name>...,
+     * and nothing else.  "Edit Locomotive doesn't exist in the same grouping as any of the autonomy options"; no
+     * divider twice.
      *
-     * MUTATION: put Station Settings back behind the hand doors in `LayoutRightclickAutonomyMenu`, and this fails.
+     * MUTATION: put Station Settings back after Change Arrived From in `LayoutRightclickAutonomyMenu`, and this fails.
      */
     @Test(timeOut = 120000)
     public void testTheDiagramsMenuOverATrainIsGrouped() throws Exception
@@ -1345,24 +1345,24 @@ public class testTheTrainWindow
         assertEquals(shape.get(0), I18n.t("autolayout.ui.menuStartAutonomy"), "the menu does not start with Start: it"
             + " has a title row again: " + shape);
 
-        String name = groupWith(groups, said("autolayout.ui.menuLocomotiveActive", train)).get(0);
+        String name = shape.get(shape.indexOf(I18n.t("autosetup.ui.menuStationSettings")) - 1).substring("(heading) ".length());
 
         assertEquals(java.util.Collections.frequency(shape, "(heading) " + name), 1, "the station's name heads the menu"
             + " twice: " + shape);
 
         java.util.List<String> own = groupWith(groups, said("autolayout.ui.menuLocomotiveActive", train));
 
-        assertEquals(own.indexOf(said("autolayout.ui.menuLocomotiveActive", train)), 1, "Is Active is not right below"
-            + " the station's name: " + groups);
+        assertEquals(own.indexOf(said("autolayout.ui.menuLocomotiveActive", train)), 0, "Is Active does not start the"
+            + " train's own group: " + groups);
 
-        assertTrue(own.get(2).startsWith(said("autosetup.ui.menuChangeDirectionUnknown", null)), "Change Direction does"
+        assertTrue(own.get(1).startsWith(said("autosetup.ui.menuChangeDirectionUnknown", null)), "Change Direction does"
             + " not follow Is Active: " + groups);
 
-        int settings = own.indexOf(I18n.t("autosetup.ui.menuStationSettings"));
+        assertEquals(groups.get(groups.indexOf(own) - 1), java.util.Arrays.asList(name,
+            I18n.t("autosetup.ui.menuStationSettings")), "Station Settings... is not alone right under the name: " + groups);
 
-        assertTrue(settings == own.size() - 1 && own.get(settings - 1).startsWith(said(
-            "autosetup.ui.menuChangeArrivedFromUnknown", null)), "Station Settings... is not right below Change Arrived"
-            + " From, last of the train's own items: " + groups);
+        assertTrue(own.get(own.size() - 1).startsWith(said("autosetup.ui.menuChangeArrivedFromUnknown", null)),
+            "Change Arrived From is not last of the train's own items: " + groups);
 
         java.util.List<String> hand = groupWith(groups, said("autolayout.ui.menuEditLocomotive", train));
 
@@ -1472,6 +1472,28 @@ public class testTheTrainWindow
 
             assertEquals(before.get(before.size() - 1), I18n.t("autosetup.ui.menuStationSettings"),
                 "Station Settings does not stand just before the Place items' divider: " + groups);
+        }
+    }
+
+    /**
+     * On the track diagram Station Settings... is the first item under the station's name, with a train standing there
+     * or not, above Is Active (MT-957).
+     *
+     * MUTATION: add the Is Active item before Station Settings in `LayoutRightclickAutonomyMenu`'s station block, and
+     * the station with a train fails.
+     */
+    @Test(timeOut = 120000)
+    public void testStationSettingsIsFirstUnderTheNameOnTheDiagram() throws Exception
+    {
+        for (TileKey square : new TileKey[] {aSquareWithATrain(), anEmptyStation()})
+        {
+            java.util.List<String> shape = shape(support.StationDoors.diagramMenu(ui, square));
+
+            int settings = shape.indexOf(I18n.t("autosetup.ui.menuStationSettings"));
+
+            assertTrue(settings > 0, "precondition: no Station Settings on " + square + ": " + shape);
+            assertTrue(settings > 1 && shape.get(settings - 1).startsWith("(heading) ") && "----".equals(shape.get(settings - 2)),
+                "Station Settings is not the first item under the name on " + square + ": " + shape);
         }
     }
 

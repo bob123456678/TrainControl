@@ -208,8 +208,10 @@ public class RouteEditorFrame extends JFrame
 
         pack();
 
-        // No narrower than the top line in full, the Trigger dropdown's longest choice included (OB-396).
-        setMinimumSize(new Dimension(narrowest(), getMinimumSize().height));
+        // No narrower than the top line in full, the Trigger dropdown's longest choice included (OB-396), and a row
+        // taller in each table than the packed layout needs (MT-869).
+        setMinimumSize(new Dimension(narrowest(),
+            getMinimumSize().height + commands.getRowHeight() + conditions.getRowHeight()));
         setLocationRelativeTo(parent);
     }
 
@@ -3183,6 +3185,8 @@ public class RouteEditorFrame extends JFrame
     {
         static final int HANDLE = 0;
 
+        static final int HANDLE_WIDTH = 36;
+
         /** A row's own height, which the grip is drawn for. */
         static final int LINE = 24;
 
@@ -3361,14 +3365,14 @@ public class RouteEditorFrame extends JFrame
             repaint();
         }
 
-        /** The handle column, as narrow as its grip. */
+        /** The handle column, wide enough to grab (MT-869: 20% wider than its 30 pixels). */
         void handleColumn()
         {
             TableColumn handle = getColumnModel().getColumn(HANDLE);
 
-            handle.setPreferredWidth(30);
-            handle.setMinWidth(30);
-            handle.setMaxWidth(30);
+            handle.setPreferredWidth(HANDLE_WIDTH);
+            handle.setMinWidth(HANDLE_WIDTH);
+            handle.setMaxWidth(HANDLE_WIDTH);
 
             handle.setCellRenderer(new javax.swing.table.DefaultTableCellRenderer()
             {

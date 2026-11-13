@@ -338,16 +338,19 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
 
                 headed = true;
 
-                // The train's items and Station Settings, then the hand doors behind a divider (FR-182).
-                if (locomotive != null) addActive(locomotive);
-
-                if (!ui.aRunHoldsTheSetup()) ui.addAutonomyFacingItems(this, here);
-
+                // Station Settings first under the name, then the train's items, then the hand doors behind a divider
+                // (FR-182, OB-437).
                 JMenuItem settings = ui.stationSettingsItem(here);
 
                 settingsOffered = settings != null;
 
                 if (settingsOffered) add(settings);
+
+                if (settingsOffered && locomotive != null) addSeparator();
+
+                if (locomotive != null) addActive(locomotive);
+
+                if (!ui.aRunHoldsTheSetup()) ui.addAutonomyFacingItems(this, here);
 
                 // Station Settings' Train tab, first of the hand doors, or placing one by name on an empty station,
                 // last; while autonomy runs, only over a train (FR-111).
