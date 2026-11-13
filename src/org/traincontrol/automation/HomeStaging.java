@@ -31,11 +31,11 @@ import org.traincontrol.base.Locomotive;
  * while another sits there, and that one may need to move through the station the first is leaving.  It is pebble
  * motion on a graph: feasibility is polynomial, the shortest solution is NP-hard, and nobody counts the moves here.
  *
- * <b>Nothing here touches the live layout.</b>  snapshot() copies the occupancy and the planner works on that copy.  It
- * does NOT call Layout.isPathClear, which consults real s88 feedback, isAutoRunning() and maxActiveTrains, none of
- * which can be evaluated for a hypothetical future.  For a layout at rest a locomotive occupies exactly its own
- * station's sensor, so a point is passable iff its s88 is not one an occupied station reports.  Occupancy is keyed by
- * <b>sensor address, not by point</b>: two points may share an s88, and the sensor is what isPathClear interrogates.
+ * <b>Nothing here touches the live layout.</b>  snapshot() copies the occupancy and the planner works on that copy; it
+ * does NOT call Layout.isPathClear (live s88 feedback, isAutoRunning() and maxActiveTrains cannot be evaluated for a
+ * hypothetical future).  At rest a locomotive occupies exactly its own station's sensor, so a point is passable iff its
+ * s88 is not one an occupied station reports.  Occupancy is keyed by <b>sensor address, not by point</b>: two points
+ * may share an s88.
  *
  * Plans are sequential, one train at a time, so edge locks, activeLocomotives and maxActiveTrains stay out of the
  * model.  The runtime may overlap the moves it is given, provided it respects their order.
@@ -49,22 +49,22 @@ public final class HomeStaging
     private static final int SEARCH_LIMIT = 50000;
 
     /**
-     * How heavily the second half of the search weighs the moves still needed against the moves made (OB-230).  At 1
-     * the search finds the shortest plan but runs out of budget on a crowded railway; weighted, it may return a plan
-     * longer than the shortest, by at most this factor.  5 solves `core.testReturnHomeFindsAPlanOnAFullRailway`.
+     * How heavily the second half of the search weighs moves still needed against moves made (OB-230): at 1 it finds
+     * the shortest plan but runs out of budget on a crowded railway; weighted, the plan may be longer by at most this
+     * factor.  5 solves `core.testReturnHomeFindsAPlanOnAFullRailway`.
      */
     private static final int ANY_PLAN_WEIGHT = 5;
 
     /**
-     * Route work one plan may spend (`spent`), shared out between the passes (OB-230).  Work, not time, so a plan is
-     * the same on any machine at any load (OB-413).  A unit is 0.08 to 0.09 us on the owner's machine whatever the train
-     * count, so this is about 15 s there.  An arrangement with no solution says NO_PLAN_FOUND within it.
+     * Route work one plan may spend (`spent`), shared between the passes (OB-230).  Work, not time, so a plan is the
+     * same on any machine (OB-413); a unit is 0.08 to 0.09 us on the owner's machine, so this is about 15 s there.  No
+     * solution says NO_PLAN_FOUND within it.
      */
     private static final long SEARCH_BUDGET = 175000000L;
 
     /**
-     * What an edge a route tries costs, in units of one place its train's own-tail walk passes (OB-413): measured, the
-     * edge and its checks take as long as about eight places of the walk, which is most of a route search's time.
+     * What an edge a route tries costs, in places of the own-tail walk (OB-413): measured, the edge and its checks take
+     * about eight.
      */
     private static final int EDGE_COST = 8;
 
@@ -97,8 +97,8 @@ public final class HomeStaging
     private final Map<String, List<Point>> pointsBySensor;
 
     /**
-     * The track the trains were lying across when the snapshot was taken, and who is lying across it (OB-184);
-     * `Layout.isPathClear` consults it, so the planner must too.  Only for a train that has not moved yet.
+     * The track trains were lying across at the snapshot, and who (OB-184), as `Layout.isPathClear` consults it; only
+     * for a train not yet moved.
      */
     private final Map<Locomotive, Map<Edge, Locomotive>> coveredAtStart;
 
@@ -106,9 +106,9 @@ public final class HomeStaging
     private final Map<Locomotive, Map<String, Locomotive>> placesCoveredAtStart;
 
     /**
-     * The route each train the search has moved last took, for the arrangement being expanded (OB-228, MT-335); where
-     * `coveredAtStart` is the railway before the plan.  Set before every expansion: the greedy pass keeps it as it
-     * goes, A* rebuilds it from the chain of moves that reached the arrangement.
+     * The route each train the search has moved last took, for the arrangement being expanded (OB-228, MT-335);
+     * `coveredAtStart` is the railway before the plan.  Set before every expansion: greedy keeps it as it goes, A*
+     * rebuilds it from the chain of moves.
      */
     private Map<Locomotive, List<Edge>> movedAlong = new java.util.HashMap<>();
 
@@ -136,10 +136,9 @@ public final class HomeStaging
         this.layout = layout;
         this.start = start;
 
-        // Taken once, with the rest of the starting state: the live layout would answer for a railway that has moved
-        // on.  At both grains: the edges a standing train's tail touches, and the pieces of metal it lies on.  One
-        // train at a time: the railway's single map holds one train per place, so two tails fouling one switch from
-        // its two legs would be recorded as one.
+        // Taken once with the starting state, as the live layout would answer for a railway that has moved on; at both
+        // grains (edges a tail touches, metal it lies on), one train at a time since the railway's map holds one train
+        // per place.
         this.coveredAtStart = new LinkedHashMap<>();
         this.placesCoveredAtStart = new LinkedHashMap<>();
 
@@ -186,15 +185,13 @@ public final class HomeStaging
 
                 pointsBySensor.get(p.getS88()).add(p);
 
-                // READ, never inferred: a stationary locomotive does not necessarily hold its sensor (in simulation the
-                // feedback is pulsed), and a bypass and its platform routinely report the same sensor.
+                // READ, never inferred: a stationary locomotive need not hold its sensor (simulation pulses feedback).
                 if (layout.isFeedbackOccupied(p.getS88())) sensorsSet.add(p.getS88());
             }
         }
 
-        // Launch pads: stations with zero incoming edges.  Some layouts stage trains on one-way tracks and re-stage by
-        // hand.  The topology declares the intent: a positional home on one is not a home once left, and the search
-        // never moves a locomotive off one (both below).
+        // Launch pads: stations with zero incoming edges, where layouts stage trains by hand; a positional home on one
+        // is not a home once left, and the search never moves a locomotive off one.
         Set<String> launchPads = new HashSet<>();
 
         for (Point p : layout.getPoints())
@@ -202,10 +199,9 @@ public final class HomeStaging
             if (layout.getIncomingEdges(p).isEmpty()) launchPads.add(p.getName());
         }
 
-        // A POSITIONAL home on a launch pad stops being a home once the locomotive has LEFT it: nothing can re-enter
-        // the pad, and a plan is all-or-nothing, so keeping the entry would make Return Home refuse to move ANYTHING.
-        // Still standing there, the claim is satisfied (dropping it would turn ALREADY_HOME into NO_HOMES).  An
-        // ASSIGNED home keeps the strict contract: an unreachable one answers IMPOSSIBLE with the locomotive named.
+        // A POSITIONAL home on a launch pad stops being a home once the locomotive has LEFT (nothing can re-enter, and
+        // a plan is all-or-nothing, so Return Home would refuse to move ANYTHING); still standing there, the claim is
+        // satisfied (ALREADY_HOME, not NO_HOMES).  An ASSIGNED home keeps the strict contract: IMPOSSIBLE naming it.
         Map<Locomotive, Point> homes = new LinkedHashMap<>(layout.getHomeStations());
 
         for (Iterator<Map.Entry<Locomotive, Point>> it = homes.entrySet().iterator(); it.hasNext();)
@@ -214,16 +210,15 @@ public final class HomeStaging
 
             // Identity, not a name: a name comparison would answer false for ever and treat every home as positional.
             boolean assigned = entry.getKey().equals(entry.getValue().getHomeLoc());
-            // The SQUARE, not the Point (MT-165): `occupancy.get(home)` names one copy of a platform, so a train on the
-            // other copy of its own home would read as not standing on it.
+            // The SQUARE, not the Point (MT-165): a train on the other copy of its own home would read as not on it.
             boolean standingOnIt = atHome(entry.getValue(), locationOf(occupancy, entry.getKey()));
 
             if (!assigned && !standingOnIt && launchPads.contains(entry.getValue().getName())) it.remove();
         }
 
-        // A PAUSED TRAIN STAYS WHERE IT STANDS (FR-117): for this plan its home is where it stands, so nothing is
-        // planned for it, the check after a run counts it home, and the search never moves it out of another's way
-        // (`paused`).  One away from a home of its own is named in the log (`getPausedAwayFromHome`).
+        // A PAUSED TRAIN STAYS WHERE IT STANDS (FR-117): its home is where it stands, so nothing is planned for it, the
+        // post-run check counts it home, and the search never moves it for another (`paused`); one away from a home of
+        // its own is logged (`getPausedAwayFromHome`).
         Set<Locomotive> paused = new HashSet<>();
         List<Locomotive> pausedAway = new ArrayList<>();
 
@@ -260,8 +255,6 @@ public final class HomeStaging
 
     /**
      * The paused trains standing away from their homes, which the plan leaves where they stand (FR-117), for the log.
-     *
-     * @return the trains, in the order they stand
      */
     public List<Locomotive> getPausedAwayFromHome()
     {
@@ -283,8 +276,7 @@ public final class HomeStaging
         /** Every locomotive with a home is already on it */
         ALREADY_HOME,
         /**
-         * Every train that can be sent home is on its home, but some that are not are paused (OB-355): nothing is
-         * planned for a paused train, so this is not ALREADY_HOME - see getBlocked for those trains.
+         * Every train that can be sent home is home, but some are paused (OB-355): not ALREADY_HOME; see getBlocked.
          */
         PAUSED_AWAY,
         /** A plan exists - see getMoves */
@@ -299,9 +291,8 @@ public final class HomeStaging
         NO_PLAN_FOUND,
 
         /**
-         * A locomotive is held on more than one point, so where it is standing cannot be said - see getBlocked.  A
-         * locked path reserves every point along it for one locomotive, and one that failed part-way through unlocking
-         * leaves the reservations; nothing in the model distinguishes a reservation from a train.
+         * A locomotive is held on more than one point, so where it stands cannot be said (see getBlocked): a failed
+         * unlock leaves reservations the model cannot tell from a train.
          */
         POSITION_AMBIGUOUS,
 
@@ -386,8 +377,7 @@ public final class HomeStaging
         }
 
         /**
-         * Whether the search stopped at its limit with arrangements left untried (OB-413), so a shorter plan, or one
-         * where none was found, may exist.
+         * Whether the search stopped at its limit with arrangements untried (OB-413), so a shorter plan may exist.
          * @return true when the budget, not the railway, ended the search
          */
         public boolean ranOutOfSearch()
@@ -443,9 +433,9 @@ public final class HomeStaging
 
         if (trivial != null) return new Plan(trivial, empty(), noLocs());
 
-        // A locomotive in two places at once (a locked path that failed part-way through unlocking leaves reservations
-        // that look like trains) cannot be reasoned about, and guessing an origin could drive a train from where it is
-        // not standing: NO_PLAN_FOUND with its name and the ordinary remedy, place the train on the square it is on.
+        // A locomotive in two places at once (a failed unlock leaves reservations that look like trains) cannot be
+        // reasoned about, and guessing an origin could drive a train from where it is not: NO_PLAN_FOUND with its name
+        // and the remedy, place the train on its square.
         List<Locomotive> ambiguous = new ArrayList<>();
 
         for (Locomotive l : this.start.values())
@@ -464,9 +454,8 @@ public final class HomeStaging
 
         if (!ambiguous.isEmpty()) return new Plan(Outcome.POSITION_AMBIGUOUS, empty(), ambiguous);
 
-        // A locomotive with no route to its home at all cannot be helped by moving anything else, and is the only
-        // impossibility this class can prove.  Locomotives already home are skipped: a route from a point back to
-        // itself is a different question that would report a loop-free graph as impossible.
+        // A locomotive with no route home is the only impossibility this class can prove; ones already home are skipped
+        // (a route from a point to itself would report a loop-free graph as impossible).
         List<Locomotive> unreachable = new ArrayList<>();
 
         // One sentence per fact, per locomotive, for the log (FR-078).
@@ -496,10 +485,9 @@ public final class HomeStaging
             }
         }
 
-        // Nor one that cannot leave where it stands (OB-325): its home is connected by track and passes the scan above,
-        // yet it has no first move, and the search would run the whole fleet for fifteen seconds and name nobody.
-        // Asked with every other train taken off (`hasAFirstMove`), which makes it a proof: another train only takes
-        // moves away.
+        // Nor one that cannot leave where it stands (OB-325): its home is connected so it passes the scan above, yet it
+        // has no first move, and the search would run the whole fleet for 15 s and name nobody.  Asked with every other
+        // train taken off (`hasAFirstMove`), which makes it a proof.
         for (Locomotive l : this.start.values())
         {
             Point home = this.homes.get(l);
@@ -510,10 +498,8 @@ public final class HomeStaging
 
             if (atHome(home, from) || this.hasAFirstMove(l, from, true)) continue;
 
-            // Not where a sensor is all that holds it: a sensor reading occupied with no train on the graph to account
-            // for it (a vehicle TrainControl does not know, a dirty contact) blocks every arrangement alike, so it
-            // would pass for a proof, but it is live state and goes when somebody clears it.  Such a train is left to
-            // the search, which answers "it may still be possible, try moving something by hand".
+            // Not where a sensor is all that holds it: a sensor reading occupied with no known train (unknown vehicle,
+            // dirty contact) would pass for a proof but is live state; such a train is left to the search.
             if (this.hasAFirstMove(l, from, false)) continue;
 
             unreachable.add(l);
@@ -521,9 +507,8 @@ public final class HomeStaging
             reason(reasons, l, I18n.f("autolayout.whyHomeCannotLeave", Layout.placeNameOf(from)));
         }
 
-        // Goals that conflict with each other, which no arrangement can satisfy either.  Two homes on one detection
-        // section is the easiest wrong click on a layout that shares addresses (canBeHome is a one-station question).
-        // Provable pairwise, so the search need not spend its budget to say "maybe".
+        // Goals that conflict, which no arrangement can satisfy: two homes on one detection section (the easiest wrong
+        // click on a layout sharing addresses).  Provable pairwise, so the search spends no budget to say "maybe".
         for (Map.Entry<Locomotive, Point> a : this.homes.entrySet())
         {
             if (!this.start.containsValue(a.getKey())) continue;
@@ -534,11 +519,9 @@ public final class HomeStaging
 
                 if (!sharesSection(a.getValue(), b.getValue())) continue;
 
-                // Both already parked: nothing arrives, so nothing is checked.  Leaving the exemption out would refuse
-                // the WHOLE staging run (IMPOSSIBLE), so a third locomotive that only needed driving to the next
-                // platform never moves.  Only one of the two has to be away for the proof to hold again
-                // (testTwoActivePointsSharingASensorAreNeverBothOccupied).  Not reachable on a layout from the 3.0.0
-                // diagram, where whyNotAHome refuses such a home.
+                // Both already parked: nothing arrives, so nothing is checked; without the exemption the WHOLE run is
+                // refused (IMPOSSIBLE) though a third locomotive only needed driving on.  One of the two away restores
+                // the proof (testTwoActivePointsSharingASensorAreNeverBothOccupied).
                 if (atHome(a.getValue(), locationOf(this.start, a.getKey()))
                     && atHome(b.getValue(), locationOf(this.start, b.getKey()))) continue;
 
@@ -550,9 +533,8 @@ public final class HomeStaging
             }
         }
 
-        // No cycle scan over the occupancy restrictions (OB-085): IMPOSSIBLE names locomotives and asserts no
-        // arrangement exists, so an exhausted search answers NO_PLAN_FOUND
-        // (`testHomeStaging.testTwoHomesThatHoldEachOtherBackAreADeadlock`).
+        // No cycle scan over the occupancy restrictions (OB-085): IMPOSSIBLE asserts no arrangement exists, so an
+        // exhausted search answers NO_PLAN_FOUND (`testHomeStaging.testTwoHomesThatHoldEachOtherBackAreADeadlock`).
 
         if (!unreachable.isEmpty()) return new Plan(Outcome.IMPOSSIBLE, empty(), unreachable, reasons);
 
@@ -585,9 +567,8 @@ public final class HomeStaging
         {
             Locomotive loc = e.getValue();
 
-            // A locomotive standing on a deactivated point is the third correct divergence, the mirror of the
-            // inactive-destination one below: getPossiblePaths is asked at rest, where the runtime's inactive rule is
-            // not in force, so it offers departures the planner refuses because staging executes with autonomy running.
+            // A locomotive on a deactivated point is the third correct divergence: getPossiblePaths is asked at rest,
+            // where the runtime's inactive rule is not in force, but staging runs with autonomy on.
             if (!e.getKey().isActive()) continue;
 
             Set<Point> runtimeSays = new HashSet<>();
@@ -608,14 +589,12 @@ public final class HomeStaging
 
             for (Point p : runtimeSays)
             {
-                // Inactive points are the one divergence that is correct rather than a defect: the runtime skips its
-                // inactive-point rule unless autonomy is already running, so at rest it offers parking tracks that it
-                // would refuse once a timetable is under way.  The planner reasons about the running case.
+                // Inactive points are a correct divergence: at rest the runtime skips its inactive-point rule and
+                // offers parking tracks it would refuse under a timetable; the planner reasons about the running case.
                 if (!p.isActive()) continue;
 
-                // And the same for exclusions: the oracle here is getPossiblePaths, which filters destinations on
-                // occupancy and station-ness but not on exclusion (pickPath does that separately), so it offers
-                // stations the planner's canRest correctly refuses.
+                // And exclusions: getPossiblePaths filters on occupancy and station-ness but not exclusion (pickPath
+                // does), so it offers stations canRest correctly refuses.
                 if (p.excludes(loc)) continue;
 
                 // AND NO FR-001 EXEMPTION: both sides apply it in every tier, at rest too, so they agree; an exemption
@@ -630,10 +609,9 @@ public final class HomeStaging
 
             for (Point p : plannerSays)
             {
-                // A destination only a lap reaches belongs on THIS side: `Layout.bfs` refuses a route that doubles back
-                // through another copy of the square it starts or ends at, so the menu (this oracle) offers none.  The
-                // planner does ("menu and autonomy only" is where the copy rule applies), and the RUNTIME agrees:
-                // `isPathClear` exempts an intermediate copy of the train's own square.
+                // A destination only a lap reaches belongs on THIS side: `Layout.bfs` refuses a route doubling back
+                // through another copy of its start or end square, so the menu offers none; the planner does, and the
+                // RUNTIME agrees (`isPathClear` exempts an intermediate copy of the train's own square).
                 if (onlyALapReachesIt(e.getKey(), p)) continue;
 
                 if (!runtimeSays.contains(p))
@@ -650,9 +628,8 @@ public final class HomeStaging
     /**
      * The part of the answer that needs no planning: is there anything to do at all?
      *
-     * Separated so a caller can find out cheaply, before asking the user a question that would be rude when the answer
-     * is "nothing needed".  It reads the occupancy and nothing more; plan() delegates to it, so the two can never
-     * disagree.
+     * Separated so a caller can ask cheaply before a question that would be rude when nothing is needed; plan()
+     * delegates to it, so the two cannot disagree.
      *
      * @return the outcome, or null when planning is needed to say more
      */
@@ -671,8 +648,8 @@ public final class HomeStaging
 
         if (misplaced(this.start) == 0)
         {
-            // A paused train counts as home for the plan (FR-117), which is true of nothing else: said apart, so "every
-            // locomotive is already home" is not shown over trains standing away from theirs (OB-355)
+            // A paused train counts as home for the plan (FR-117), true of nothing else: said apart so "already home"
+            // is not shown over trains standing away (OB-355)
             return this.pausedAway.isEmpty() ? Outcome.ALREADY_HOME : Outcome.PAUSED_AWAY;
         }
 
@@ -701,16 +678,14 @@ public final class HomeStaging
 
         Map<Locomotive, List<Edge>> greedyRoutes = new java.util.HashMap<>(this.movedAlong);
 
-        // A SHARE OF THE BUDGET EACH (OB-230): the shortest plan from the railway as it stands, the shortest from where
-        // the greedy pass stopped, then any plan.  Thirds when the greedy pass moved something; halves when it moved
-        // nothing, because then the first two would search from the same arrangement.
+        // A SHARE OF THE BUDGET EACH (OB-230): shortest plan from the railway as it stands, from where greedy stopped,
+        // then any plan; thirds if greedy moved something, else halves (the first two would search the same state).
         boolean retry = !plan.isEmpty();
 
         long share = this.budget / (retry ? 3 : 2);
 
-        // From the railway as it stands first (OB-413): when it finishes it is the shortest plan there is, and it
-        // costs a fraction of the search from the greedy pass's arrangement, whose greedy moves can make the plan
-        // longer.
+        // From the railway as it stands first (OB-413): when it finishes it is the shortest plan, at a fraction of the
+        // cost of searching from greedy's arrangement.
         this.greedyMovedAlong = new java.util.HashMap<>();
 
         List<Move> fromTheStart = astar(new LinkedHashMap<>(this.start), share, 1);
@@ -740,8 +715,8 @@ public final class HomeStaging
     }
 
     /**
-     * Sends home, again and again, every train whose home is free and reachable as things stand; leaves `state` and
-     * `movedAlong` where it stopped.
+     * Sends home, again and again, every train whose home is free and reachable; leaves `state` and `movedAlong` where
+     * it stopped.
      */
     private List<Move> greedy(Map<Point, Locomotive> state)
     {
@@ -795,9 +770,8 @@ public final class HomeStaging
         Map<String, Move> arrivedBy = new HashMap<>();
         Map<String, String> cameFrom = new HashMap<>();
 
-        // The routes each arrangement's moved trains came by, kept with it: two orders reaching the same squares with
-        // different tails are different arrangements (a train parked the short way lies across the run another needs;
-        // parked the long way, it does not).
+        // The routes each arrangement's moved trains came by, kept with it: the same squares with different tails are
+        // different arrangements (parked the short way a train lies across the run another needs).
         Map<String, Map<Locomotive, List<Edge>>> routesOf = new HashMap<>();
         Map<Locomotive, List<Edge>> startRoutes = new java.util.HashMap<>(this.greedyMovedAlong);
 
@@ -808,8 +782,8 @@ public final class HomeStaging
         cost.put(startKey, 0);
         score.put(startKey, weight * movesStillNeeded(from));
 
-        // Ordered on an f-score carried by each entry, not read from the score map: re-scoring a state in the map would
-        // change a queued entry's priority in place and break the heap invariant.
+        // Ordered on an f-score carried by each entry: re-scoring a state in the map would change a queued entry's
+        // priority and break the heap.
         //
         // Ties break towards the goal (OB-230).
         PriorityQueue<Scored> open = new PriorityQueue<>((a, b) -> a.score != b.score
@@ -858,19 +832,19 @@ public final class HomeStaging
                 // NOR A PAUSED TRAIN (FR-117): it stays where it stands, in somebody's way or not
                 if (this.paused.contains(l)) continue;
 
-                // A locomotive standing on a launch pad stays there unless its assigned home lies elsewhere: a pad has
-                // no incoming edges, so a move off one can never be undone and the hand-staging it represents would be
-                // destroyed by someone else's plan.  Keyed on the pad and the home, not on homelessness (a satisfied
-                // positional pad-home stays in the homes map).  One already dispatched from its pad is a free agent.
+                // A locomotive on a launch pad stays unless its assigned home lies elsewhere: a move off a pad (no
+                // incoming edges) can never be undone and would destroy the hand-staging.  Keyed on pad and home, not
+                // homelessness (a satisfied positional pad-home stays in homes); one already dispatched is a free
+                // agent.
                 Point ownHome = this.homes.get(l);
 
-                // atHome: a train resting on the far copy of its own home square is resting at home, and pinning it to
-                // the exact copy can ask the A* for a move that no arrival side allows.
+                // atHome: a train on the far copy of its own home square is at home; pinning the exact copy can ask A*
+                // for a move no arrival side allows.
                 if (this.launchPads.contains(at.getName()) && (ownHome == null || atHome(ownHome, at))) continue;
 
                 // A train that cannot reverse is turned on the way only to go home (Adam: "This should only be allowed
-                // if the train is going to reverse into its berth on the next turn.", OB-205).  Carried by the train,
-                // not read off the square, and only of a train THIS PLAN has moved (`movedAlong` has an entry).
+                // if the train is going to reverse into its berth on the next turn.", OB-205); carried by the train,
+                // and only of one THIS PLAN has moved (`movedAlong` has an entry).
                 boolean turnedByThePlan = !l.isReversible() && !atHome(ownHome, at)
                     && this.movedAlong.containsKey(l)
                     && (turnsATrainArrivingAt(at)
@@ -888,10 +862,9 @@ public final class HomeStaging
 
                     if (path == null) continue;
 
-                    // Nor turned in the middle of the move and sent on.  A route may turn the train at a reversing
-                    // point on the way (how a non-reversing train backs into a berth, MT-245); that is allowed only
-                    // where this move ends somewhere the turn was FOR (home, a berth, or a square it comes to rest
-                    // facing out of).
+                    // Nor turned mid-move and sent on: a route may turn the train at a reversing point (a non-reversing
+                    // train backing into a berth, MT-245), allowed only where the move ends somewhere the turn was FOR
+                    // (home, a berth, or a square it rests facing out of).
                     boolean turnedOnTheWay = false;
 
                     for (int e = 0; e + 1 < path.size(); e++)
