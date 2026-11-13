@@ -2697,8 +2697,7 @@ public class testEditorSurfaceRules
             "a heading is no longer created disabled, so it is an ordinary menu item in bold that "
             + "does nothing when clicked");
 
-        // The export is added at the foot, where mountLayoutHeadings gives it its own group; the pop-out it sat beside
-        // is the Layout tab's All button now.
+        // The export is added at the foot, where mountLayoutHeadings gives it its own group.
         String export = codeOf("void buildDiagramExportMenu()");
 
         assertTrue(export.contains("ui.layoutMenu().add(active);"),
@@ -2735,8 +2734,7 @@ public class testEditorSurfaceRules
 
     /**
      * The picture export sits BELOW the Central Station section.  Adam: "Move pop up all... and save as picture to below
-     * the central station layout section."  Pop Up All has left the menu for the Layout tab's All button;
-     * Adam: "remove the JMenu option."
+     * the central station layout section."
      *
      * MUTATION: dropping the re-home block from mountLayoutHeadings.
      */
