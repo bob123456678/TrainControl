@@ -76,6 +76,8 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
 
             javax.swing.SwingUtilities.invokeLater(() ->
             {
+                if (options != null) options.sortAsRead(ui.getAutonomySession());
+
                 LayoutRightclickAutonomyMenu menu = new LayoutRightclickAutonomyMenu(ui, station, here, options);
 
                 // An empty menu is not worth showing.
@@ -125,6 +127,20 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
             this.shown = shown;
             this.other = other;
         }
+
+        /**
+         * By the name shown, as read (OB-450: ParkingTrack4 before ParkingTrack10), the rule Why not Moving? sorts by.
+         * On the event thread, which owns the setup's station index.
+         */
+        void sortAsRead(org.traincontrol.automationui.AutonomySession setup)
+        {
+            java.util.Comparator<List<Edge>> asRead = java.util.Comparator.comparing(
+                (List<Edge> path) -> stationName(setup, path.get(path.size() - 1).getEnd()),
+                org.traincontrol.util.Util::compareAsRead).thenComparing(Edge::pathToString);
+
+            shown.sort(asRead);
+            other.sort(asRead);
+        }
     }
 
     /**
@@ -166,12 +182,6 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
         if (locomotive == null || !RunGates.mayBeSentByHandNow(ui, running, locomotive)) return null;
 
         List<List<Edge>> paths = withoutGoingNowhere(ui, running.getPossiblePaths(locomotive, true));
-
-        // By the name shown, as read (OB-450: ParkingTrack4 before ParkingTrack10), the rule Why not Moving? sorts by
-        final org.traincontrol.automationui.AutonomySession setup = ui.getAutonomySession();
-
-        paths.sort(java.util.Comparator.comparing((List<Edge> path) -> stationName(setup, path.get(path.size() - 1).getEnd()),
-            org.traincontrol.util.Util::compareAsRead).thenComparing(Edge::pathToString));
 
         // Switched-off squares are only in the autonomy tab; filtered rather than grayed.
         List<List<Edge>> shownPaths = new java.util.ArrayList<>();

@@ -3815,15 +3815,33 @@ public class AutonomyEditorPanel extends JPanel
         return null;
     }
 
-    /** Takes the train off a square. */
+    /**
+     * Takes the train off a square: the one the railway has there, and the setup's unless a run has moved it to another
+     * square, where it stays (after a run they can differ, OB-416).
+     */
     void removeLocomotive(TileKey tile)
     {
-        String standing = locomotiveAt(tile);
+        org.traincontrol.automation.Layout running = layoutSource == null ? null : layoutSource.get();
+
+        String inTheSetup = locomotiveAt(tile);
+        org.traincontrol.automation.Point itsCopy = standingOn(running, inTheSetup);
+
+        final java.util.Set<String> named = new java.util.LinkedHashSet<>(java.util.Arrays.asList(
+            session.trainOnTheRailway(tile, running), itsCopy == null || session.getStationIndex() == null
+                || tile.equals(session.getStationIndex().squareOf(itsCopy)) ? inTheSetup : null));
+
+        named.remove(null);
+
+        // "Nowhere" is the setup's answer for these trains, so not the square it last had one on either
+        for (Map.Entry<TileKey, String> placed : session.placementsAutonomyWillWrite().entrySet())
+        {
+            if (named.contains(placed.getValue())) session.placeLocomotive(placed.getKey(), null);
+        }
 
         session.placeLocomotive(tile, null);
 
-        // "Nowhere" is the setup's answer for this train; unnamed, the rebuild puts it straight back.
-        placementChanged(java.util.Collections.singletonList(standing));
+        // Unnamed, the rebuild puts them straight back.
+        placementChanged(named);
     }
 
     /** The train being dragged onto a square, for the length of `dropTrain`; null otherwise. */
@@ -6634,6 +6652,9 @@ public class AutonomyEditorPanel extends JPanel
             findingRelated.add(null);
             findingSeverity.add(null);
         }
+
+        // Control+O off the diagram opens only a finding still listed
+        if (!findingTiles.contains(chosenFinding)) chosenFinding = null;
     }
 
     /** @return the filter box's text, to carry across a page change */

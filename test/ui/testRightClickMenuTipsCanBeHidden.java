@@ -159,7 +159,7 @@ public class testRightClickMenuTipsCanBeHidden
     /** The items the last read found grayed: they keep their tips, which say why. */
     private static final java.util.Set<String> grayed = new java.util.HashSet<>();
 
-    /** The keys the last read found shown on the items' right, by item: the setting never touches them. */
+    /** The keys the last read found shown on the items' right, by item: ticked, the setting hides them (FR-199). */
     private static final Map<String, javax.swing.KeyStroke> shownKeys = new java.util.HashMap<>();
 
     private static void collect(Component[] items, Map<String, String> into)
@@ -417,6 +417,74 @@ public class testRightClickMenuTipsCanBeHidden
         finally
         {
             Mouse.closeMenus();
+
+            Components.settle();
+        }
+    }
+
+    /**
+     * Ticked, a menu bar menu the keyboard opens (Right or Left arrow across an open bar sets the menu and its pop-up in
+     * one step, so the pop-up is sized with its keys first) is as wide as its items without the key column (FR-199).
+     *
+     * MUTATION: leave out `RightClickTips.apply`'s `pack()` of a showing pop-up, and it keeps the keys' width.
+     */
+    @Test(timeOut = 120000)
+    public void testAMenuTheKeyboardOpensIsSizedWithoutItsKeys() throws Exception
+    {
+        // A stand-in bar whose items are short, so the key column is most of the width
+        javax.swing.JFrame[] frame = new javax.swing.JFrame[1];
+        JMenu menu = new JMenu("Stand-in");
+        JMenuItem keyed = new JMenuItem("Go");
+
+        hide(true);
+
+        try
+        {
+            Components.onTheEventThread(() ->
+            {
+                TrainControlUI.showShortcut(keyed, javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_1,
+                    java.awt.event.InputEvent.CTRL_DOWN_MASK));
+
+                menu.add(keyed);
+
+                javax.swing.JMenuBar bar = new javax.swing.JMenuBar();
+
+                bar.add(menu);
+
+                frame[0] = new javax.swing.JFrame("stand-in");
+                frame[0].setJMenuBar(bar);
+                frame[0].setSize(300, 200);
+                frame[0].setVisible(true);
+
+                return null;
+            });
+
+            Components.settle();
+
+            Components.onTheEventThread(() ->
+            {
+                javax.swing.MenuSelectionManager.defaultManager().setSelectedPath(new javax.swing.MenuElement[] {
+                    frame[0].getJMenuBar(), menu, menu.getPopupMenu()});
+
+                return null;
+            });
+
+            assertTrue(Components.waitFor(menu::isPopupMenuVisible, PATIENCE_MS), "the menu did not open");
+
+            Components.settle();
+
+            assertNull(Components.onTheEventThread(keyed::getAccelerator), "precondition: the menu shows its key");
+
+            int width = Components.onTheEventThread(() -> menu.getPopupMenu().getWidth());
+            int wanted = Components.onTheEventThread(() -> menu.getPopupMenu().getPreferredSize().width);
+
+            assertEquals(width, wanted, "the menu the keyboard opened is as wide as its key made it");
+        }
+        finally
+        {
+            Mouse.closeMenus();
+
+            if (frame[0] != null) Components.onTheEventThread(() -> { frame[0].dispose(); return null; });
 
             Components.settle();
         }

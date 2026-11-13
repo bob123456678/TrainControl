@@ -1372,14 +1372,15 @@ public class testATrainDragsFromStationToStation
 
     /**
      * With every station able to turn trains and a train placed in the setup, a drag onto 1,10 or 7,7 records the side
-     * and road (`arrivedFrom`, `arrivedAlong`) a real paste onto the same square records (FR-160); the facing too where
-     * the paste asks nothing, as a drag takes the rule's answer where a paste asks.
+     * (`arrivedFrom`) a real paste onto the same square records (FR-160); the facing too where the paste asks nothing,
+     * as a drag takes the rule's answer where a paste asks.  Whether a placement at a may-turn square should record a
+     * road is open for Adam: on these two squares neither door records one.
      *
      * MUTATION: dropping the side a drag works out (`if (dropping) ui.tailAtTheLanding = null;` after
      * `ArrivalSidePrompt.forPlacement` in `DiagramLocGestures`) leaves the side the paste records unrecorded.
      */
     @Test(timeOut = 300000)
-    public void testADragRecordsTheRoadAPasteRecordsWhereEveryStationMayTurn() throws Exception
+    public void testADragRecordsTheSideAPasteRecordsWhereEveryStationMayTurn() throws Exception
     {
         fixture(false);
 

@@ -512,6 +512,7 @@ Tab icons provided by Freepik.
             - Cancel in the autonomy editor no longer loses a train you paused or set going from its card on the Auto tab while the editor was open.
             - Cancel in the autonomy editor no longer sends a timetable entry to the wrong station after two stations swapped names.
             - Cancel in the autonomy editor now takes off a train you placed on an empty station, and puts a station back as it was after you placed a train over another one.
+            - Clicking a finding under `Things to look at` that is on another page now asks whether to save your changes first, as switching pages does, instead of keeping them where `Cancel` can no longer undo them.
             - A command window that stopped showing output, for example after clicking into it, no longer holds up sensor reports, which could make trains run past their stops.
             - `Path Integrity Validation` now waits up to 30 seconds while the Central Station is still switching other accessories, instead of stopping the train.
             - A train's destinations on the track diagram's right-click menu are in the order you read them, so ParkingTrack4 comes before ParkingTrack10.

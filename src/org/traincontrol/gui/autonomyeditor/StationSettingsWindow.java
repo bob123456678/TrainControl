@@ -974,6 +974,14 @@ public final class StationSettingsWindow extends StationWindowBase
         commitTypedFields();
     }
 
+    @Override
+    boolean refusesAValue()
+    {
+        for (JLabel line : problems.values()) if (line.isVisible()) return true;
+
+        return false;
+    }
+
     private void commitTypedFields()
     {
         if (tile == null) return;
