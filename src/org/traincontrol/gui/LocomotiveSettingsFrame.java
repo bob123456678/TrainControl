@@ -1019,6 +1019,10 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
                     addressHint.setName("settings.addressHint");
                     addressSpinner.setEditor(address);
                     addressSpinner.setName("settings.addressSpinner");
+
+                    // The number starts as far in as the name's does (OB-442)
+                    address.setBorder(BorderFactory.createEmptyBorder(0,
+                        name.getInsets().left - addressSpinner.getInsets().left, 0, 0));
                     addressSpinner.setPreferredSize(new Dimension(name.getPreferredSize().width
                         - addressHint.getPreferredSize().width - 4, name.getPreferredSize().height));
 
