@@ -1803,7 +1803,9 @@ public class MarklinControlStation implements ViewListener, ModelListener
         if (this.isCS3 && this.NetworkInterface != null)
         {
             this.NetworkInterface.knowDevices(this.fileParser.parseS88DevicesCS3(), this.savedS88Devices);
-            this.NetworkInterface.syncSensors();
+
+            // Not while transmission is off, as exec sends nothing then
+            if (this.on) this.NetworkInterface.syncSensors();
         }
 
         this.logf("loc.syncCompleted");
@@ -2655,6 +2657,14 @@ public class MarklinControlStation implements ViewListener, ModelListener
         }
            
         return false;
+    }
+    
+    /** Whether a sensor's state was last changed by a query's answer, not an edge: no route fires on it (OB-418). */
+    public final boolean isFeedbackCorrected(String name)
+    {
+        MarklinFeedback fb = this.feedbackDB.getByName(name);
+
+        return fb != null && fb.isCorrected();
     }
     
     /**

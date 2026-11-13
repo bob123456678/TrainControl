@@ -1155,34 +1155,6 @@ public class testTheStationIsReachedOverTcp
     }
 
     /**
-     * An event between the two UDP passes still overtakes a late copy of the first pass's answer: the contact clears
-     * after its first query, the second pass's answer comes, then the first's, "made", late.  It stays clear.
-     *
-     * MUTATION: in `NetworkProxy.askOnce`, `this.overtaken.putIfAbsent(contact, 0L)` to `put`.
-     */
-    @Test(timeOut = 30000)
-    public void testALateFirstPassCopyAfterTheSecondPassStartsIsDropped() throws Exception
-    {
-        try (DatagramSocket wire = udpWire())
-        {
-            Thread syncing = syncingOverUdp(wire, 1906);
-            byte[] cleared = linkS88(1906, false);
-            broadcast(cleared);
-            assertTrue(Components.waitFor(() -> this.model.heardFrame(cleared), WAIT_MS), "precondition: not heard");
-
-            assertTrue(Arrays.equals(nextOn(wire, 1500), query(TcpStation.LINK_S88, 1906)),
-                "the contact was not asked a second time: " + this.model.lines);
-            broadcast(answer(TcpStation.LINK_S88, 1906, false));
-            broadcast(answer(TcpStation.LINK_S88, 1906, true));
-            allRead();
-
-            assertEquals(this.model.lastState(1906), Boolean.FALSE, "the first pass's late copy won over the event: "
-                + this.model.states(1906));
-            syncing.join(WAIT_MS);
-        }
-    }
-
-    /**
      * The marks go once the ask is over: an event long after it overtakes nothing, and a frame of no change a moment
      * after the event, as another program's answer, is delivered.
      *

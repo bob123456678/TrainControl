@@ -97,7 +97,7 @@ public class testWhatTheStationSendsIsHeard
     /**
      * A sensor made at the station reads made, and broken reads clear.
      *
-     * MUTATION: in `MarklinFeedback.parseMessage`, `this._setState((state == 1))` to `(state == 0)`.
+     * MUTATION: in `MarklinFeedback.parseMessage`, `this.changeTo(state == 1, ...)` to `(state == 0, ...)`.
      */
     @Test
     public void testAnS88PacketMakesAndBreaksTheSensor()

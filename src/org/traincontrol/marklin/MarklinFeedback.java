@@ -27,6 +27,9 @@ public class MarklinFeedback extends Feedback
     // threw ConcurrentModificationException there, silently killing the thread mid-refresh.
     private final Set<LayoutLabel> tiles;
         
+    // Whether the state was last changed by a frame of no change, not by an edge
+    private volatile boolean corrected;
+
     public MarklinFeedback(MarklinControlStation network, int id, CS2Message m)
     { 
         super(Integer.toString(id));
@@ -95,7 +98,8 @@ public class MarklinFeedback extends Feedback
                 {
                     boolean was = this.isSet();
 
-                    this._setState((state == 1));
+                    // A frame of no change (old state = new) answers a query: it puts the state right, but is no edge
+                    this.changeTo(state == 1, m.getData()[4] == m.getData()[5]);
                                         
                     this.updateTiles();
 
@@ -123,7 +127,7 @@ public class MarklinFeedback extends Feedback
     @Override
     synchronized public void setState(boolean val)
     {
-        this._setState(val);
+        this.changeTo(val, false);
 
         if (this.network.isDebug())
         {
@@ -143,6 +147,20 @@ public class MarklinFeedback extends Feedback
         this.updateTiles();
     }
     
+    /** Sets the state, noting whether a change of it is a correction rather than an edge, before waiters wake. */
+    private void changeTo(boolean set, boolean correction)
+    {
+        if (set != this.isSet()) this.corrected = correction;
+
+        this._setState(set);
+    }
+
+    /** Whether the state was last changed by a correction (OB-418), which no route takes for its trigger. */
+    public boolean isCorrected()
+    {
+        return this.corrected;
+    }
+
     /**
      * Returns the feedback identifier
      */

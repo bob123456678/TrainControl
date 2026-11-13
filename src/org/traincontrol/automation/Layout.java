@@ -2231,11 +2231,14 @@ public class Layout
      */
     public boolean isPathClear(List<Edge> path, Locomotive loc, boolean logFailures)
     {
-        return isPathClear(path, loc, logFailures, false);
+        return isPathClear(path, loc, logFailures, false, false);
     }
 
-    /** The same, saying whether a person would send it by hand, which the cap on trains out does not refuse. */
-    private boolean isPathClear(List<Edge> path, Locomotive loc, boolean logFailures, boolean byHand)
+    /**
+     * The same, saying whether a person would send it by hand, which the cap on trains out does not refuse, and whether
+     * it is asked as a leg of Return Home, which a stop-only station lets through (FR-111).
+     */
+    private boolean isPathClear(List<Edge> path, Locomotive loc, boolean logFailures, boolean byHand, boolean goingHome)
     {
         if (!byHand && !this.sentByHand.contains(loc)
             && this.maxActiveTrains > 0 && this.isAutoRunning() && trainsUnderway() >= this.maxActiveTrains)
@@ -2375,7 +2378,7 @@ public class Layout
         // and too short reports as switched off.
 
         // Trains must stop here (FR-111).  Past the inactive rules, so a square switched off reports as switched off.
-        Point mustStopAt = this.returningHome.contains(loc) ? null : stopOnlyStationRunThrough(path);
+        Point mustStopAt = goingHome || this.returningHome.contains(loc) ? null : stopOnlyStationRunThrough(path);
 
         if (mustStopAt != null)
         {
@@ -4707,7 +4710,7 @@ public class Layout
                 }
 
                 // lastError is static, written by every train's pickPath, so the decision comes from the return value.
-                if (this.isPathClear(path, loc, false, byHand))
+                if (this.isPathClear(path, loc, false, byHand, false))
                 {
                     if (accepted != null) accepted.add(byHand ? path : rankedFrom(path, loc, start, end, seenPaths));
 
@@ -4865,21 +4868,12 @@ public class Layout
     }
 
     /**
-     * The same, as a leg of Return Home would find them, for `HomeStaging.auditAgainstRuntime` (FR-111): marked for the
-     * question alone, under the monitor, and only if not already.
+     * The same, as a leg of Return Home would find them, for `HomeStaging.auditAgainstRuntime` (FR-111): asked as one,
+     * never by marking the train in `returningHome`, which a leg's own mark shares.
      */
     synchronized List<List<Edge>> getPossiblePathsGoingHome(Locomotive loc, boolean uniqueDest)
     {
-        boolean marked = loc != null && this.returningHome.add(loc);
-
-        try
-        {
-            return getPossiblePaths(loc, uniqueDest, true);
-        }
-        finally
-        {
-            if (marked) this.returningHome.remove(loc);
-        }
+        return getPossiblePaths(loc, uniqueDest, true);
     }
 
     private List<List<Edge>> getPossiblePaths(Locomotive loc, boolean uniqueDest, boolean goingHome)
@@ -4897,7 +4891,7 @@ public class Layout
                 {
                     // The same block rule as above - a copy of an occupied square is occupied.
                     routesFrom(start, goingHome, end -> end.getBlockLocomotive() == null,
-                        path -> this.isPathClear(path, loc, false), path ->
+                        path -> this.isPathClear(path, loc, false, false, goingHome), path ->
                         {
                             // Only return unique starts and ends
                             if (uniqueDest)

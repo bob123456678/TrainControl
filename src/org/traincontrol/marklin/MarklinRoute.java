@@ -171,6 +171,9 @@ public class MarklinRoute extends Route
                     // Exit if the state changed
                     if (!this.enabled) return;
 
+                    // A state a sync put right is no edge: wait again from it
+                    if (this.network.isFeedbackCorrected(this.getS88String())) continue;
+
                     // Anything that goes wrong here must not end the loop.  This runs on a bare thread
                     // with no handler, so an escaping exception would silently stop this route from
                     // watching its sensor for the rest of the session, while it still reports itself
