@@ -193,7 +193,7 @@ public class testTheOldAutonomyTabIsGone
             for (MenuListener listener : menu.getMenuListeners()) listener.menuSelected(null);
         });
 
-        String guide = I18n.t("ui.main.documentation");
+        String guide = I18n.t("ui.menu.autonomyGuide");
         String download = I18n.t("autosetup.ui.menuNoSetupPossible");
 
         JMenuItem documentation = null;

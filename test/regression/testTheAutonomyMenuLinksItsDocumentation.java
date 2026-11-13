@@ -173,7 +173,7 @@ public class testTheAutonomyMenuLinksItsDocumentation
 
             items.add(item.getText());
 
-            if (I18n.t("ui.main.documentation").equals(item.getText())) found = item;
+            if (I18n.t("ui.menu.autonomyGuide").equals(item.getText())) found = item;
         }
 
         return found;

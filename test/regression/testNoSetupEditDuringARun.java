@@ -2813,7 +2813,7 @@ public class testNoSetupEditDuringARun
         onItsOwnWindow("live-snapshot", ui ->
         {
             java.util.Set<String> live = new java.util.HashSet<>(java.util.Arrays.asList(
-                I18n.t("autosetup.ui.menuGlobalSettings"), I18n.t("ui.main.documentation")));
+                I18n.t("autosetup.ui.menuGlobalSettings"), I18n.t("ui.menu.autonomyGuide")));
 
             // DURING A RUN
             staging.set(ui, true);

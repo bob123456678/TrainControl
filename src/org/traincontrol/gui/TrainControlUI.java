@@ -2373,6 +2373,12 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         return this.routesMenu;
     }
 
+    /** Routes > New Route...: the Add Route button's own handler, so both doors ask the same things. */
+    void newRoute()
+    {
+        AddRouteButtonActionPerformed(null);
+    }
+
     javax.swing.JTabbedPane locCommandPanels()
     {
         return this.locCommandPanels;
@@ -17254,6 +17260,13 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         if (fc.showOpenDialog(this) != JFileChooser.APPROVE_OPTION) return;
 
         final File chosen = fc.getSelectedFile();
+
+        // Every route there is goes (`importRoutes`), so it asks first, saying how many; No is the default.
+        int existing = this.model.getRouteList().size();
+
+        if (existing > 0 && JOptionPane.showOptionDialog(this, I18n.f("route.ui.confirmReplaceAllRoutes", existing),
+            I18n.t("ui.dialogConfirm"), JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE, null, YES_NO_OPTS,
+            YES_NO_OPTS[1]) != JOptionPane.YES_OPTION) return;
 
         // Held rather than thrown: the work half must not raise a dialog.
         final Exception[] failed = new Exception[1];

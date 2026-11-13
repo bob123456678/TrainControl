@@ -34,6 +34,8 @@ final class LayoutMenus
 
         boolean busy = ui.isLayoutEditorOpen();
 
+        takeBackTheEditorsReason();
+
         for (int i = 0; i < ui.layoutMenu().getMenuComponentCount(); i++)
         {
             java.awt.Component child = ui.layoutMenu().getMenuComponent(i);
@@ -101,18 +103,71 @@ final class LayoutMenus
 
         if (goToEditorItem == null)
         {
-            goToEditorItem = new javax.swing.JMenuItem(I18n.t("autosetup.ui.menuEditorOpen"));
+            goToEditorItem = new javax.swing.JMenuItem(I18n.t("autosetup.ui.menuGoToOpenEditor"));
 
             goToEditorItem.addActionListener(e -> ui.showOpenEditor());
 
             ui.layoutMenu().add(goToEditorItem, 0);
+
+            goToEditorDivider = new javax.swing.JPopupMenu.Separator();
+
+            ui.layoutMenu().add(goToEditorDivider, 1);
         }
 
         goToEditorItem.setVisible(busy);
+        goToEditorDivider.setVisible(busy);
+
+        if (busy) sayCloseTheEditor();
     }
 
-    /** The "an editor has this diagram" item on the Layout menu. */
+    /** The "an editor has this diagram" item on the Layout menu, and the divider under it. */
     private javax.swing.JMenuItem goToEditorItem;
+    private javax.swing.JPopupMenu.Separator goToEditorDivider;
+
+    /** What a Layout menu item said before an open editor's reason replaced it, in a one-element array. */
+    private static final String SAID_BEFORE_THE_EDITOR = "saidBeforeTheEditor";
+
+    /**
+     * Puts the editor's reason on every item an open editor leaves grayed, over a run's reason too: closing the editor
+     * is the first step either way.  Applied last and taken back first, so `greyForTheRun` never keeps it.
+     */
+    private void sayCloseTheEditor()
+    {
+        String why = AutonomyEditorPanel.wrapped(I18n.t("autosetup.ui.tooltipCloseTheEditor"));
+
+        for (java.awt.Component child : ui.layoutMenu().getMenuComponents())
+        {
+            if (!(child instanceof javax.swing.JMenuItem) || child.isEnabled() || child == goToEditorItem
+                || child == localHeading || child == centralStationHeading) continue;
+
+            javax.swing.JMenuItem item = (javax.swing.JMenuItem) child;
+
+            item.putClientProperty(SAID_BEFORE_THE_EDITOR, new String[] {item.getToolTipText()});
+
+            item.setToolTipText(why);
+        }
+    }
+
+    /** Gives each item back what it said before the editor's reason, unless something has set its tooltip since. */
+    private void takeBackTheEditorsReason()
+    {
+        String why = AutonomyEditorPanel.wrapped(I18n.t("autosetup.ui.tooltipCloseTheEditor"));
+
+        for (java.awt.Component child : ui.layoutMenu().getMenuComponents())
+        {
+            if (!(child instanceof javax.swing.JMenuItem)) continue;
+
+            javax.swing.JMenuItem item = (javax.swing.JMenuItem) child;
+
+            Object kept = item.getClientProperty(SAID_BEFORE_THE_EDITOR);
+
+            if (!(kept instanceof String[])) continue;
+
+            item.putClientProperty(SAID_BEFORE_THE_EDITOR, null);
+
+            if (java.util.Objects.equals(item.getToolTipText(), why)) item.setToolTipText(((String[]) kept)[0]);
+        }
+    }
 
     /** What a Layout menu item had before a run grayed it: whether it was live, and its tooltip */
     private static final String GREYED_FOR_THE_RUN = "greyedForTheRun";
