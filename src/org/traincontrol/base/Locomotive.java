@@ -42,13 +42,9 @@ public abstract class Locomotive
     public static final int FEEDBACK_DURATION_THRESHOLD = 201;
 
     /**
-     * How long a dispatched train may be on its way to a sensor before the user is told it has not arrived: five
-     * minutes, since a long block can legitimately take a while and crying wolf is worse than silence.  Nothing acts on
-     * it and it does not end the wait: there is no safe automatic answer to "the train has not reached its sensor", and
-     * the Central Station re-reports the s88 bus on its next poll.
-     *
-     * Only the dispatch path in Layout asks for it, via the three-argument wait; a route's trigger monitor waits on its
-     * sensor for as long as the layout runs.
+     * How long a dispatched train may be on its way to a sensor before the user is told it has not arrived (five
+     * minutes: crying wolf is worse than silence).  Advisory only, it does not end the wait.  Only the dispatch path in
+     * Layout asks for it, via the three-argument wait; a route's trigger monitor waits as long as the layout runs.
      */
     public static volatile long FEEDBACK_ADVISORY_MS = 300000;
 
@@ -355,9 +351,8 @@ public abstract class Locomotive
         // historicalOperatingTime, so they must share a lock, or a power-off arriving mid speed change could lose the
         // running interval or add it twice (an emergency stop is exactly that case).
         //
-        // Reusing speedMonitor rather than adding a lock keeps the acquisition order (MarklinLocomotive.setSpeed takes
-        // the locomotive, then speedMonitor; nothing takes speedMonitor and then a locomotive) and makes the
-        // getOrDefault/put read-modify-write of historicalOperatingTime atomic.
+        // Reusing speedMonitor keeps the lock order (MarklinLocomotive.setSpeed takes the locomotive, then
+        // speedMonitor) and makes the read-modify-write of historicalOperatingTime atomic.
         synchronized (speedMonitor)
         {
             boolean wasOn = powerState;
@@ -581,9 +576,7 @@ public abstract class Locomotive
      * The same, given up once `abandon` says so - asked whenever the wait wakes, which a change of speed and a
      * retirement (`wakeEveryWait`) both do.  A turn's resume passes "a stop ordered, or my railway gone".
      *
-     * @param threshold the speed to reach
      * @param abandon when to stop waiting, or null never to
-     * @return this
      */
     public Locomotive waitForSpeedAtOrAbove(int threshold, java.util.function.BooleanSupplier abandon)
     {
@@ -599,7 +592,7 @@ public abstract class Locomotive
                 }
                 catch (InterruptedException ex)
                 {
-                    // Remembered, not re-armed (re-arming inside the loop spins at full CPU); put back on the way out.
+                    // Remembered, not re-armed, as in the other waits.
                     interrupted = true;
                 }
             }
@@ -628,7 +621,7 @@ public abstract class Locomotive
                 }
                 catch (InterruptedException ex)
                 {
-                    // Remembered, not re-armed (re-arming inside the loop spins at full CPU); put back on the way out.
+                    // Remembered, not re-armed, as in the other waits.
                     interrupted = true;
                 }
             }
@@ -656,10 +649,7 @@ public abstract class Locomotive
      * The same, and says so if the train takes an unreasonable time to get there.  Only Layout's dispatch loop passes
      * an advisory: "dispatched and on its way" is a fact only the caller has.
      *
-     * @param name the feedback to wait for
-     * @param minDuration how long the feedback must stay occupied to count
      * @param adviseAfterMs say something once after this long, or 0 to stay quiet
-     * @return this
      */
     public Locomotive waitForOccupiedFeedback(String name, int minDuration, long adviseAfterMs)
     {
@@ -671,11 +661,8 @@ public abstract class Locomotive
      * wait is woken when a railway is retired (`wakeEveryWait`): a journey passes "my railway has gone", so a train
      * stopped short of its sensor leaves no thread behind to stop it later.  A route's trigger passes nothing.
      *
-     * @param name the feedback to wait for
-     * @param minDuration how long the feedback must stay occupied to count
      * @param adviseAfterMs say something once after this long, or 0 to stay quiet
      * @param abandon when to stop waiting without the sensor, or null never to
-     * @return this
      */
     public Locomotive waitForOccupiedFeedback(String name, int minDuration, long adviseAfterMs,
         java.util.function.BooleanSupplier abandon)
@@ -718,8 +705,7 @@ public abstract class Locomotive
                     }
                     catch (InterruptedException ex)
                     {
-                        // Remembered, not re-armed (re-arming inside the loop spins at full CPU); put back on the way
-                        // out.
+                        // Remembered, not re-armed, as in the other waits.
                         interrupted = true;
                     }
                 }
@@ -808,8 +794,7 @@ public abstract class Locomotive
                     }
                     catch (InterruptedException ex)
                     {
-                        // Remembered, not re-armed (re-arming inside the loop spins at full CPU); put back on the way
-                        // out.
+                        // Remembered, not re-armed, as in the other waits.
                         interrupted = true;
                     }
                 }
@@ -823,8 +808,7 @@ public abstract class Locomotive
                 if (!this.isFeedbackSet(name) || this.getFeedbackState(name)) continue;
             }
 
-            // Put back LAST, after the debounce: delay() is Thread.sleep, which throws at once with the flag set, so an
-            // interrupted wait would skip its confirmation and take a one-millisecond blip for an arrival.
+            // Put back LAST, after the debounce (see waitForOccupiedFeedback).
             if (interrupted) Thread.currentThread().interrupt();
 
             return this;
@@ -1443,8 +1427,6 @@ public abstract class Locomotive
     /**
      * What this locomotive's customizations are right now, detached from it: copies, not the live arrays and map, which
      * a later edit would otherwise change under a Cancel.
-     *
-     * @return the snapshot
      */
     public Customizations captureCustomizations()
     {
@@ -1731,8 +1713,6 @@ public abstract class Locomotive
 
     /**
      * Whether this locomotive's functions are marked customized in their own right, whatever icons it carries (OB-245).
-     *
-     * @return the flag alone
      */
     abstract public boolean hasCustomFunctionsFlag();
     abstract public void setFunctionType(int fNo, int type, int triggerType);
