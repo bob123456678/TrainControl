@@ -191,6 +191,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     // Repo info
     public static final String GITHUB_REPO = "bob123456678/TrainControl";
     public static final String README_URL = "https://github.com/bob123456678/TrainControl/blob/master/Automation.md";
+    public static final String USER_GUIDE_URL = "https://github.com/bob123456678/TrainControl/tree/master#readme";
     public static String UPDATE_URL = "https://github.com/bob123456678/TrainControl/releases";
     public static String LATEST_VERSION = "";
     public static String LATEST_DOWNLOAD_URL = "";
@@ -863,8 +864,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         // Set internationalized options
 
-        // Set here because the generated block hard-codes "Utilities".
-        this.functionsMenu.setText(I18n.t("ui.main.menu.utilities"));
+        arrangeMainMenus();
+
+        installPopUpAllButton();
 
         // The autonomy menu's slot (OB-202): the configurations on disk cannot be read until the connect is over, so
         // this heading shows grayed until the real menu replaces it.  Not focusable: keys drive locomotives.
@@ -4816,65 +4818,270 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         arrangeFileMenu();
     }
 
-    /**
-     * Puts the File menu in its four groups, with one separator between groups and none at the ends: Sync and Change IP;
-     * Backup and Restore; Export Log; Exit.  Called after every insert, so no item lands in the wrong group; an item it
-     * does not know stays, after Export Log.
-     */
+    /** Puts the File menu in its four groups: Sync and Change Address; Backup and Restore; Export Log; Exit. */
     void arrangeFileMenu()
     {
-        java.util.List<java.awt.Component> rest = new java.util.ArrayList<>(
-            java.util.Arrays.asList(this.fileMenu.getMenuComponents()));
+        arrange(this.fileMenu, 2, new Component[] {this.syncMenuItem, this.changeIPMenuItem},
+            new Component[] {this.backupDataMenuItem, this.restoreDataMenuItem}, new Component[] {this.exportLogMenuItem},
+            new Component[] {this.exitMenuItem});
+    }
 
-        rest.removeIf(each -> each instanceof javax.swing.JPopupMenu.Separator);
+    /**
+     * Puts a menu's items in these groups, with one separator between groups and none at the ends; an item no group
+     * names joins group `rest`, so a later insert never lands in the wrong group.  Called after every insert.
+     */
+    static void arrange(javax.swing.JMenu menu, int rest, Component[]... groups)
+    {
+        List<Component> unnamed = new ArrayList<>(Arrays.asList(menu.getMenuComponents()));
 
-        java.util.List<java.util.List<java.awt.Component>> groups = new java.util.ArrayList<>();
+        unnamed.removeIf(each -> each instanceof javax.swing.JPopupMenu.Separator);
 
-        groups.add(takeFrom(rest, this.syncMenuItem, this.changeIPMenuItem));
-        groups.add(takeFrom(rest, this.backupDataMenuItem, this.restoreDataMenuItem));
+        for (Component[] group : groups) unnamed.removeAll(Arrays.asList(group));
 
-        java.util.List<java.awt.Component> exports = takeFrom(rest, this.exportLogMenuItem);
-
-        groups.add(exports);
-
-        java.util.List<java.awt.Component> exit = takeFrom(rest, this.exitMenuItem);
-
-        exports.addAll(rest);
-
-        this.fileMenu.removeAll();
+        menu.removeAll();
 
         boolean first = true;
 
-        for (java.util.List<java.awt.Component> group : groups)
+        for (int g = 0; g < groups.length; g++)
         {
+            List<Component> group = new ArrayList<>();
+
+            for (Component each : groups[g]) if (each != null) group.add(each);
+
+            if (g == rest) group.addAll(unnamed);
+
             if (group.isEmpty()) continue;
 
-            if (!first) this.fileMenu.addSeparator();
+            if (!first) menu.addSeparator();
 
-            for (java.awt.Component each : group) this.fileMenu.add(each);
+            for (Component each : group) menu.add(each);
 
             first = false;
         }
+    }
 
-        if (!exit.isEmpty())
+    /**
+     * The menu bar as the menu review's answers arrange it (D40 to D48): the generated items are moved, relabeled and
+     * headed here, never in the generated block.  Once, after the hand-built items have joined their menus.
+     */
+    private void arrangeMainMenus()
+    {
+        // Locomotives: no Utilities drawer (D42); its items are grayed one by one while they work.
+        this.locomotiveMenu.remove(this.functionsMenu);
+
+        arrange(this.locomotiveMenu, 2,
+            new Component[] {this.quickFindMenuItem, this.viewDatabaseMenuItem, this.addLocomotiveMenuItem},
+            new Component[] {this.turnOffFunctionsMenuItem, this.turnOnLightsMenuItem, this.syncFullLocStateMenuItem,
+                this.checkForRenameMenuItem},
+            new Component[] {this.exportLocsToCSVMenuItem, this.importLocsFromCSVMenuItem});
+
+        showShortcut(this.quickFindMenuItem, "find a locomotive");
+        showShortcut(this.viewDatabaseMenuItem, "choose a locomotive");
+        showShortcut(this.addLocomotiveMenuItem, "add a locomotive");
+
+        // What a run would refuse is grayed with the refusal's sentence when the menu opens (D45).
+        for (javax.swing.JMenu menu : new javax.swing.JMenu[] {this.fileMenu, this.locomotiveMenu})
         {
-            if (!first) this.fileMenu.addSeparator();
+            menu.addMenuListener(new javax.swing.event.MenuListener()
+            {
+                @Override
+                public void menuSelected(javax.swing.event.MenuEvent e)
+                {
+                    greyWhatARunRefuses();
+                }
 
-            this.fileMenu.add(exit.get(0));
+                @Override
+                public void menuDeselected(javax.swing.event.MenuEvent e) { }
+
+                @Override
+                public void menuCanceled(javax.swing.event.MenuEvent e) { }
+            });
+        }
+
+        // Preferences (D47): headings over the two choices, then the submenus most used first; Debug joins last.
+        this.locomotiveControlMenu.insert(layoutMenus.menuHeading(I18n.t("ui.main.toolbar.headingKeyboardLayout")),
+            this.locomotiveControlMenu.getPopupMenu().getComponentIndex(this.keyboardQwertyMenuItem));
+        this.startupToolbarMenu.insert(layoutMenus.menuHeading(I18n.t("ui.main.toolbar.headingTrackPowerAtStartup")),
+            0);
+        this.layoutMenuItem.setText(I18n.t("ui.main.toolbar.trackDiagramPreferences"));
+
+        this.interfaceMenu.remove(this.startupToolbarMenu);
+        this.interfaceMenu.add(this.startupToolbarMenu,
+            this.interfaceMenu.getPopupMenu().getComponentIndex(this.autonomyToolbarMenu) + 1);
+
+        arrangeHelpMenu();
+    }
+
+    /** Shows a shortcut table row's keys on a menu item without binding them: the table alone acts on keys (D40). */
+    private static void showShortcut(javax.swing.JMenuItem item, String row)
+    {
+        javax.swing.KeyStroke keys = KeyShortcuts.named(row).stroke();
+
+        item.setAccelerator(keys);
+
+        // Looked up before the binding the look and feel makes for an accelerator, which would act a second time.
+        item.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(keys, "none");
+
+        item.setToolTipText(null);
+    }
+
+    /**
+     * Grays the five File and Locomotives items a run would refuse, with the refusal's own sentence, asking the gates
+     * their clicks ask (D45); the refusals stay as the backstop.
+     */
+    private void greyWhatARunRefuses()
+    {
+        String locomotives = RunGates.whyAutonomyRunningRefuses(this);
+
+        for (javax.swing.JMenuItem item : new javax.swing.JMenuItem[] {this.syncMenuItem, this.addLocomotiveMenuItem,
+            this.importLocsFromCSVMenuItem, this.syncFullLocStateMenuItem})
+        {
+            LayoutMenus.greyForTheRun(item, locomotives != null, true, locomotives == null ? null : I18n.t(locomotives));
+        }
+
+        String setup = RunGates.whyARunHoldingTheSetupRefuses(this);
+
+        LayoutMenus.greyForTheRun(this.restoreDataMenuItem, setup != null, true, setup == null ? null : I18n.t(setup));
+    }
+
+    /** The items that once sat in the Utilities submenu, grayed or lit together while one of them works. */
+    private void setFunctionItemsEnabled(boolean enabled)
+    {
+        for (javax.swing.JMenuItem item : new javax.swing.JMenuItem[] {this.turnOffFunctionsMenuItem,
+            this.turnOnLightsMenuItem, this.syncFullLocStateMenuItem, this.checkForRenameMenuItem})
+        {
+            item.setEnabled(enabled);
         }
     }
 
-    private static java.util.List<java.awt.Component> takeFrom(java.util.List<java.awt.Component> rest,
-        java.awt.Component... wanted)
+    /** Help (D48): the two guides; the update check, Download Update when found, and the releases; About. */
+    private void arrangeHelpMenu()
     {
-        java.util.List<java.awt.Component> taken = new java.util.ArrayList<>();
+        javax.swing.JMenuItem userGuide = new javax.swing.JMenuItem(I18n.t("ui.main.userGuide"));
 
-        for (java.awt.Component each : wanted)
+        userGuide.addActionListener(e -> openInBrowser(USER_GUIDE_URL, "open the user guide"));
+
+        javax.swing.JMenuItem autonomyGuide = new javax.swing.JMenuItem(I18n.t("ui.menu.autonomyGuide"));
+
+        autonomyGuide.addActionListener(e -> openInBrowser(README_URL, "open the automation guide"));
+
+        javax.swing.JMenuItem checkNow = new javax.swing.JMenuItem(I18n.t("ui.main.checkForUpdatesNow"));
+
+        checkNow.addActionListener(e -> checkForUpdate(true));
+
+        arrange(this.helpMenu, 2, new Component[] {userGuide, autonomyGuide},
+            new Component[] {checkNow, this.downloadUpdateMenuItem, this.viewReleasesMenuItem},
+            new Component[] {this.aboutMenuItem});
+    }
+
+    /** The latest release as GitHub describes it; a test serves its own here instead.  Null asks GitHub. */
+    public static volatile java.util.concurrent.Callable<JSONObject> releaseInfoForTests;
+
+    /**
+     * Asks for the latest release and, when it is newer, shows Help's Download Update, as at start-up; `asked` (Help >
+     * Check for Updates Now, D48) also says what it found.  On a thread of its own.
+     */
+    void checkForUpdate(boolean asked)
+    {
+        new Thread(() ->
         {
-            if (each != null && rest.remove(each)) taken.add(each);
-        }
+            String said;
 
-        return taken;
+            try
+            {
+                java.util.concurrent.Callable<JSONObject> served = releaseInfoForTests;
+
+                JSONObject updateInfo = served != null ? served.call() : Util.getLatestReleaseInfo(GITHUB_REPO);
+                LATEST_VERSION = Util.parseReleaseVersion(updateInfo);
+
+                // A release name with no version is reported, not compared: the check would otherwise go quiet.
+                if (LATEST_VERSION == null) throw new IllegalStateException("no version in the release's name");
+
+                LATEST_DOWNLOAD_URL = Util.parseDownloadURL(updateInfo);
+                LATEST_DOWNLOAD_SIZE = Util.parseDownloadSize(updateInfo);
+                LATEST_DOWNLOAD_DIGEST = Util.parseDownloadDigest(updateInfo);
+
+                if (Util.parseReleaseURL(updateInfo) != null)
+                {
+                    UPDATE_URL = Util.parseReleaseURL(updateInfo);
+                }
+
+                this.model.logf("ui.infoLatestAvailableVersion", LATEST_VERSION);
+
+                final String latest = LATEST_VERSION;
+
+                if (Conversion.compareVersions(latest, RAW_VERSION) > 0)
+                {
+                    javax.swing.SwingUtilities.invokeLater(() ->
+                    {
+                        this.downloadUpdateMenuItem.setVisible(true);
+                        this.downloadUpdateMenuItem.setToolTipText(
+                            updateItemTooltip(SelfUpdate.runningJar(TrainControlUI.class) != null));
+                        this.viewReleasesMenuItem.setText("v" + latest + " Update Info");
+
+                        if (!this.helpMenu.getText().endsWith("*")) this.helpMenu.setText(this.helpMenu.getText() + "*");
+                    });
+
+                    said = I18n.f("ui.main.infoUpdateFound", latest, I18n.t("ui.main.downloadUpdate"),
+                        I18n.t("ui.main.toolbar.help"));
+                }
+                else
+                {
+                    said = I18n.f("ui.main.infoUpToDate", RAW_VERSION);
+                }
+            }
+            catch (Exception e)
+            {
+                this.model.logf("ui.errorFetchLatestUpdateInfo");
+
+                if (this.model.isDebug()) this.model.log(e);
+
+                said = I18n.t("ui.errorFetchLatestUpdateInfo");
+            }
+
+            final String answer = said;
+
+            if (asked) javax.swing.SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(this, answer));
+        }, "check for an update").start();
+    }
+
+    /**
+     * The Layout tab's All button after S, M and L (D52): what Layouts > Pop Up All did, every page at the chosen size.
+     * Swapped into the generated layout in L's place, beside it, as the generated block may not be edited.
+     */
+    private void installPopUpAllButton()
+    {
+        javax.swing.JButton all = new javax.swing.JButton(I18n.t("ui.main.allLayoutsButton"));
+
+        all.setName("popUpAllButton");
+        all.setFont(this.layoutNewWindow.getFont());
+        all.setToolTipText(I18n.t("ui.main.allLayouts"));
+        all.setFocusable(false);
+        all.addActionListener(this::popUpAllMenuItemActionPerformed);
+
+        javax.swing.JPanel beside = new javax.swing.JPanel(new java.awt.BorderLayout(
+            javax.swing.LayoutStyle.getInstance().getPreferredGap(this.layoutNewWindow, all,
+                javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.SwingConstants.EAST, this.layoutPanel),
+            0));
+
+        beside.setOpaque(false);
+
+        ((javax.swing.GroupLayout) this.layoutPanel.getLayout()).replace(this.layoutNewWindow, beside);
+
+        beside.add(this.layoutNewWindow, java.awt.BorderLayout.CENTER);
+        beside.add(all, java.awt.BorderLayout.EAST);
+    }
+
+    /** Takes the pages Help would open, in a test, so no browser opens; null opens them. */
+    public static volatile java.util.function.Consumer<String> browserForTests;
+
+    /** Opens a page on a thread of its own (MT-546): opening a browser is a call into Windows. */
+    static void openInBrowser(String url, String why)
+    {
+        java.util.function.Consumer<String> browser = browserForTests;
+
+        if (browser != null) browser.accept(url);
+        else new Thread(() -> Util.openUrl(url), why).start();
     }
 
     javax.swing.JMenuItem exportLogMenuItem;
@@ -5521,62 +5728,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // Check for updates
         this.downloadUpdateMenuItem.setVisible(false);
         
-        if (this.model != null && this.checkForUpdates.isSelected())
-        {
-            new Thread(() ->
-            { 
-                try
-                {
-                    JSONObject updateInfo = Util.getLatestReleaseInfo(GITHUB_REPO);
-                    LATEST_VERSION = Util.parseReleaseVersion(updateInfo);
-
-                    // A release name with no version is reported, not compared: the check would otherwise go quiet.
-                    if (LATEST_VERSION == null)
-                    {
-                        this.model.logf("ui.errorFetchLatestUpdateInfo");
-
-                        return;
-                    }
-
-                    LATEST_DOWNLOAD_URL = Util.parseDownloadURL(updateInfo);
-                    LATEST_DOWNLOAD_SIZE = Util.parseDownloadSize(updateInfo);
-                    LATEST_DOWNLOAD_DIGEST = Util.parseDownloadDigest(updateInfo);
-                    
-                    if (Util.parseReleaseURL(updateInfo) != null)
-                    {
-                        UPDATE_URL = Util.parseReleaseURL(updateInfo);
-                    }
-                    
-                    this.model.logf(
-                        "ui.infoLatestAvailableVersion",
-                        LATEST_VERSION
-                    );
-
-                    if (Conversion.compareVersions(LATEST_VERSION, RAW_VERSION) > 0)
-                    {
-                        javax.swing.SwingUtilities.invokeLater(() ->
-                        {
-                            this.downloadUpdateMenuItem.setVisible(true);
-                            this.downloadUpdateMenuItem.setToolTipText(
-                                updateItemTooltip(SelfUpdate.runningJar(TrainControlUI.class) != null));
-                            this.viewReleasesMenuItem.setText("v" + LATEST_VERSION + " Update Info");
-                            this.helpMenu.setText(this.helpMenu.getText() + "*");
-                        });
-                    }
-                }
-                catch (Exception e)
-                {
-                    this.model.logf(
-                        "ui.errorFetchLatestUpdateInfo"
-                    );
-
-                    if (this.model.isDebug())
-                    {
-                        this.model.log(e);
-                    }
-                }
-            }).start();   
-        }
+        if (this.model != null && this.checkForUpdates.isSelected()) checkForUpdate(false);
                 
         // Monitor latency
         if (this.model != null && model.getNetworkCommState() && PING_INTERVAL > 0)
@@ -14087,6 +14239,17 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 return name;
             }
 
+            /** Its first key with what must be held, for a menu to show; null for the keyboard layout's letters. */
+            public javax.swing.KeyStroke stroke()
+            {
+                if (keys.keyCodes == null) return null;
+
+                int held = (keys.held.alt == Boolean.TRUE ? java.awt.event.InputEvent.ALT_DOWN_MASK : 0)
+                    | (keys.held.control == Boolean.TRUE ? java.awt.event.InputEvent.CTRL_DOWN_MASK : 0);
+
+                return javax.swing.KeyStroke.getKeyStroke(keys.keyCodes[0], held);
+            }
+
             private void run(TrainControlUI ui, KeyEvent evt)
             {
                 action.accept(new Press(ui, evt));
@@ -14384,6 +14547,14 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         public static List<Row> rows()
         {
             return Collections.unmodifiableList(ROWS);
+        }
+
+        /** The row of this name; fails on a name no row has. */
+        public static Row named(String name)
+        {
+            for (Row row : ROWS) if (row.name.equals(name)) return row;
+
+            throw new IllegalArgumentException("no shortcut is called " + name);
         }
 
         /** The shortcut this press belongs to, or null if none takes it. */
@@ -14713,7 +14884,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         javax.swing.SwingUtilities.invokeLater(() -> 
         {
             this.syncMenuItem.setEnabled(false);
-            this.functionsMenu.setEnabled(false);
+            setFunctionItemsEnabled(false);
             
             new Thread(() ->
             {
@@ -14742,7 +14913,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                     this.selector.refreshLocSelectorList();
 
                     this.syncMenuItem.setEnabled(true);
-                    this.functionsMenu.setEnabled(true);
+                    setFunctionItemsEnabled(true);
                 });
 
                 // Left OUT of the pass: both go through their own renderer first.  See singlePass.
@@ -15483,7 +15654,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         javax.swing.SwingUtilities.invokeLater(() ->
         {
             this.syncMenuItem.setEnabled(false);
-            this.functionsMenu.setEnabled(false);
+            setFunctionItemsEnabled(false);
 
             new Thread(() ->
             {
@@ -15504,7 +15675,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 javax.swing.SwingUtilities.invokeLater(() ->
                 {
                     this.syncMenuItem.setEnabled(true);
-                    this.functionsMenu.setEnabled(true);
+                    setFunctionItemsEnabled(true);
                 });
 
             }).start();
@@ -15515,7 +15686,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         javax.swing.SwingUtilities.invokeLater(() -> 
         {
             this.syncMenuItem.setEnabled(false);
-            this.functionsMenu.setEnabled(false);
+            setFunctionItemsEnabled(false);
             
             new Thread(() ->
             {
@@ -15525,7 +15696,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 javax.swing.SwingUtilities.invokeLater(() ->
                 {
                     this.syncMenuItem.setEnabled(true);
-                    this.functionsMenu.setEnabled(true);
+                    setFunctionItemsEnabled(true);
                 });
             }).start();
         });
@@ -15699,30 +15870,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     private void showCurrentLayoutFolderMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_showCurrentLayoutFolderMenuItemActionPerformed
-        
-        String info = this.getLayoutPath(false);
-        
-        if (isLocalLayout())
-        {
-            int result = JOptionPane.showOptionDialog(
-                this,
-                I18n.f("layout.ui.confirmViewLayoutSourceFiles", info),
-                I18n.t("ui.dialogLayoutSourceInfo"),
-                JOptionPane.YES_NO_OPTION,
-                JOptionPane.PLAIN_MESSAGE,
-                null,
-                YES_NO_OPTS,
-                YES_NO_OPTS[1] // default selection = "No"
-            );
-            if (result == JOptionPane.YES_OPTION)
-            {
-                this.getLayoutPath(true);
-            }
-        }
-        else
-        {
-            JOptionPane.showMessageDialog(this, info); 
-        }
+        // Layouts > Recent Layouts > Show Current Layout Folder (D43), offered only for a layout on this computer.
+        if (isLocalLayout()) this.getLayoutPath(true);
     }//GEN-LAST:event_showCurrentLayoutFolderMenuItemActionPerformed
 
     private void mainMenuBarKeyPressed(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_mainMenuBarKeyPressed
@@ -17355,14 +17504,21 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }//GEN-LAST:event_importRoutesMenuItemActionPerformed
 
     private void changeIPMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_changeIPMenuItemActionPerformed
-        JOptionPane.showMessageDialog(
-            this,
-            I18n.f(
-                "ui.infoIpPreferenceResetSpecifyNewIp",
-                TrainControlUI.getPrefs().get(TrainControlUI.IP_PREF, null)
-            )
-        );
-        TrainControlUI.getPrefs().remove(TrainControlUI.IP_PREF);
+        // File > Change Central Station Address... (D41): Cancel changes nothing; blank forgets it, so the next start asks.
+        String was = TrainControlUI.getPrefs().get(TrainControlUI.IP_PREF, "");
+
+        Object typed = JOptionPane.showInputDialog(this, I18n.t("ui.main.promptCentralStationAddress"),
+            I18n.t("ui.main.titleChangeCentralStationAddress"), JOptionPane.QUESTION_MESSAGE, null, null, was);
+
+        if (typed == null || typed.toString().trim().equals(was)) return;
+
+        String address = typed.toString().trim();
+
+        if (address.isEmpty()) TrainControlUI.getPrefs().remove(TrainControlUI.IP_PREF);
+        else TrainControlUI.getPrefs().put(TrainControlUI.IP_PREF, address);
+
+        JOptionPane.showMessageDialog(this, I18n.t(address.isEmpty() ? "ui.main.infoAddressAskedAtNextStart"
+            : "ui.main.infoAddressFromNextStart"));
     }//GEN-LAST:event_changeIPMenuItemActionPerformed
 
     private void quickFindMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_quickFindMenuItemActionPerformed
@@ -21117,6 +21273,14 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
                 // All Layouts is not set here either (OB-128), for the reason above: guardLayoutMenu owns it.
             }
+
+            // Grayed, each says why (D46).
+            LayoutMenus.sayWhy(this.switchCSLayoutMenuItem, "ui.main.toolbar.tooltip.switchToCSLayout",
+                isLocalLayout() ? "ui.main.toolbar.tooltip.centralStationNotConnected"
+                    : "ui.main.toolbar.tooltip.alreadyInUse");
+            LayoutMenus.sayWhy(this.downloadCSLayoutMenuItem, "ui.main.toolbar.tooltip.downloadCSLayout",
+                isLocalLayout() ? "ui.main.toolbar.tooltip.downloadNeedsCSLayout"
+                    : "autosetup.ui.tooltipNoLayoutToDownload");
         });
     }
     

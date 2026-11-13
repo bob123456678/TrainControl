@@ -51,7 +51,7 @@ public final class RestoreAction
     /** Asks for an archive, shows what it holds, and restores it on Restore.  The event thread; run gates asked first. */
     public void restoreFromBackup()
     {
-        final String title = I18n.t("ui.main.toolbar.restoreData");
+        final String title = I18n.t("ui.main.titleRestoreData");
 
         JFileChooser fc = new QuickFileChooser(new File(Util.getBackupPath("x")).getAbsoluteFile().getParent());
 

@@ -54,11 +54,20 @@ public final class RunGates
 
     static boolean refuseWhileAutonomyRunning(TrainControlUI ui, Component source)
     {
-        if (ui.getModel() == null || !ui.getModel().isAutonomyRunning()) return false;
+        String why = whyAutonomyRunningRefuses(ui);
 
-        JOptionPane.showMessageDialog(over(ui, source), I18n.t("autolayout.ui.errorCannotEditLocomotivesWhileRunning"));
+        if (why == null) return false;
+
+        JOptionPane.showMessageDialog(over(ui, source), I18n.t(why));
 
         return true;
+    }
+
+    /** The message key `refuseWhileAutonomyRunning` would show now, or null: what grays its doors' menu items. */
+    static String whyAutonomyRunningRefuses(TrainControlUI ui)
+    {
+        return ui.getModel() != null && ui.getModel().isAutonomyRunning()
+            ? "autolayout.ui.errorCannotEditLocomotivesWhileRunning" : null;
     }
 
     /** What a door that edits the setup, the diagram, the timetable or the settings says while a run holds the setup. */
@@ -81,6 +90,12 @@ public final class RunGates
     static boolean refuseUntilTheTrainsStop(TrainControlUI ui, Component source)
     {
         return refuseWhileHeld(ui, source, null, WAIT_FOR_THE_TRAINS);
+    }
+
+    /** The message key `refuseWhileARunHoldsTheSetup` would show now, or null: what grays its doors' menu items. */
+    static String whyARunHoldingTheSetupRefuses(TrainControlUI ui)
+    {
+        return ui.aRunHoldsTheSetup() ? NO_EDITS_WHILE_RUNNING : null;
     }
 
     private static boolean refuseWhileHeld(TrainControlUI ui, Component source, Runnable putBack, String key)

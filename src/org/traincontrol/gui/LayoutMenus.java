@@ -59,24 +59,24 @@ final class LayoutMenus
 
         ui.applyLayoutEditingAvailability();
 
-        refreshDataSourceLabel();
+        refreshHeadings();
 
         // The items that need loaded pages or a Central Station 3 (OB-128); left alone while an editor is open.
         if (!busy)
         {
             refreshRecentLayouts();
 
-            // Pop-outs and the picture export need loaded pages, not a local folder (a Central Station diagram works),
-            // and the export would be handed the null page that activeLayoutPage returns when the selector is empty.
-            boolean loaded = ui.isLayoutLoaded();
-
-            if (ui.popUpAllMenuItem() != null) ui.popUpAllMenuItem().setEnabled(loaded);
-
-            if (ui.exportDiagramItem != null) ui.exportDiagramItem.setEnabled(loaded);
+            // The picture export needs loaded pages, not a local folder (a Central Station diagram works), and would be
+            // handed the null page that activeLayoutPage returns when the selector is empty.
+            if (ui.exportDiagramItem != null) ui.exportDiagramItem.setEnabled(ui.isLayoutLoaded());
 
             // Its own question: excluded from the loop above, and its only other writer never re-enables it.
-            if (ui.openCS3AppMenuItem() != null) ui.openCS3AppMenuItem().setEnabled(
-                ui.getModel() != null && ui.getModel().isCS3());
+            if (ui.openCS3AppMenuItem() != null)
+            {
+                ui.openCS3AppMenuItem().setEnabled(ui.getModel() != null && ui.getModel().isCS3());
+
+                sayWhy(ui.openCS3AppMenuItem(), null, "ui.main.toolbar.tooltip.needsCS3");
+            }
         }
 
         // While autonomy runs or a route holds the setup (`aRunHoldsTheSetup`), what changes the diagram or the folder
@@ -87,7 +87,8 @@ final class LayoutMenus
         String why = running ? I18n.t(RunGates.NO_EDITS_WHILE_RUNNING) : null;
 
         greyForTheRun(ui.chooseLocalDataFolderMenuItem(), running, false, why);
-        greyForTheRun(recentLayoutsMenu, running, false, why);
+        // The layouts Recent Layouts lists wait; the folder under them stays live, as opening it changes nothing.
+        for (javax.swing.JMenuItem each : recentItems) greyForTheRun(each, running, true, why);
         greyForTheRun(ui.modifyLocalLayoutMenu(), running, false, why);
         greyForTheRun(ui.managePagesItem, running, false, why);
         greyForTheRun(ui.initializeLocalLayoutMenuItem(), running, true, why);
@@ -121,7 +122,7 @@ final class LayoutMenus
      * Grays the item with `why` as its tooltip while a run goes and gives the tooltip back after it (the enabled state
      * too, when `owned` by something else); returns true when it was given back just now.
      */
-    private static boolean greyForTheRun(javax.swing.JMenuItem item, boolean running, boolean owned, String why)
+    static boolean greyForTheRun(javax.swing.JMenuItem item, boolean running, boolean owned, String why)
     {
         if (item == null) return false;
 
@@ -209,7 +210,7 @@ final class LayoutMenus
     }
 
     /** A disabled bold item as a label (as LayoutRightclickAutonomyMenu): a plain grayed item looks unavailable. */
-    private javax.swing.JMenuItem menuHeading(String text)
+    javax.swing.JMenuItem menuHeading(String text)
     {
         javax.swing.JMenuItem heading = new javax.swing.JMenuItem(text);
 
@@ -247,6 +248,17 @@ final class LayoutMenus
         ui.openLayoutEditor(null, null, null);
     }
 
+    /**
+     * The tooltip a menu item shows for its state (D46): its description when lit (a null key for none), and why when
+     * grayed.  Asked after whatever decides the item's state.
+     */
+    static void sayWhy(javax.swing.JMenuItem item, String descriptionKey, String whyKey)
+    {
+        String key = item.isEnabled() ? descriptionKey : whyKey;
+
+        item.setToolTipText(key == null ? null : AutonomyEditorPanel.wrappedIfLong(I18n.t(key)));
+    }
+
     /** Items are looked up, not counted, as everything above the headings moves. */
     void mountLayoutHeadings()
     {
@@ -263,18 +275,23 @@ final class LayoutMenus
 
         if (station >= 0) ui.layoutMenu().add(centralStationHeading, station);
 
-        // Below both sections: both take whatever is loaded and put it in a window or a file, so they sit under no
-        // heading, moved together and in order so the export stays beside the pop-out.
-        if (ui.popUpAllMenuItem() != null)
+        // Pop Up All is the Layout tab's All button now (D52), and the folder is under Recent Layouts (D43).
+        if (ui.popUpAllMenuItem() != null) ui.layoutMenu().remove(ui.popUpAllMenuItem());
+
+        if (ui.showCurrentLayoutFolderMenuItem() != null)
         {
-            ui.layoutMenu().remove(ui.popUpAllMenuItem());
+            ui.layoutMenu().remove(ui.showCurrentLayoutFolderMenuItem());
 
-            if (ui.exportDiagramItem != null) ui.layoutMenu().remove(ui.exportDiagramItem);
+            ui.showCurrentLayoutFolderMenuItem().setText(I18n.t("ui.main.toolbar.showCurrentLayoutFolder"));
+            ui.showCurrentLayoutFolderMenuItem().setToolTipText(null);
+        }
 
+        // Below both sections, under no heading: it takes whatever is loaded and puts it in a file.
+        if (ui.exportDiagramItem != null)
+        {
+            ui.layoutMenu().remove(ui.exportDiagramItem);
             ui.layoutMenu().addSeparator();
-            ui.layoutMenu().add(ui.popUpAllMenuItem());
-
-            if (ui.exportDiagramItem != null) ui.layoutMenu().add(ui.exportDiagramItem);
+            ui.layoutMenu().add(ui.exportDiagramItem);
         }
 
         tidyLayoutMenuSeparators();
@@ -337,32 +354,21 @@ final class LayoutMenus
         ui.innerLayoutPanel().repaint();
     }
 
-    /**
-     * Names the current data source on the menu item that opens it (FR-040), asked from `guardLayoutMenu` when somebody
-     * looks.  A local layout whose pages are not loaded is None, not Local: the folder a preference points at would
-     * describe a railway not on screen.
-     */
-    private void refreshDataSourceLabel()
+    /** Marks the heading of the layout in use "(in use)" (D43); neither, with no layout loaded. */
+    private void refreshHeadings()
     {
-        if (ui.showCurrentLayoutFolderMenuItem() == null) return;
+        if (localHeading == null) return;
 
-        String source;
+        boolean loaded = ui.getModel() != null && ui.isLayoutLoaded();
 
-        // isLayoutLoaded(), not the raw getLayoutList().isEmpty(), so this item cannot disagree with guardLayoutMenu's.
-        if (ui.getModel() == null || !ui.isLayoutLoaded())
-        {
-            source = I18n.t("ui.main.toolbar.dataSourceNone");
-        }
-        else if (ui.isLocalLayout())
-        {
-            source = I18n.t("ui.main.toolbar.dataSourceLocal");
-        }
-        else
-        {
-            source = I18n.t("ui.main.toolbar.dataSourceCentralStation");
-        }
+        localHeading.setText(heading("ui.main.toolbar.headingLocalLayout", loaded && ui.isLocalLayout()));
+        centralStationHeading.setText(heading("ui.main.toolbar.headingCentralStationLayout",
+            loaded && !ui.isLocalLayout()));
+    }
 
-        ui.showCurrentLayoutFolderMenuItem().setText(I18n.f("ui.main.toolbar.dataSource", source));
+    private static String heading(String key, boolean inUse)
+    {
+        return inUse ? I18n.f("ui.main.toolbar.headingInUse", I18n.t(key)) : I18n.t(key);
     }
 
     /**
@@ -493,11 +499,8 @@ final class LayoutMenus
 
         active.addActionListener(event -> exportDiagram(activeLayoutPage()));
 
-        // Beside the pop-out, both making a picture in a window of their own; looked up rather than counted.
-        int beside = indexOnLayoutMenu(ui.popUpAllMenuItem());
-
-        if (beside >= 0) ui.layoutMenu().add(active, beside + 1);
-        else ui.layoutMenu().add(active);
+        // At the foot; mountLayoutHeadings puts it below the Central Station section.
+        ui.layoutMenu().add(active);
 
         // Kept so guardLayoutMenu can gray it by name (OB-128).
         ui.exportDiagramItem = active;
@@ -648,6 +651,9 @@ final class LayoutMenus
     /** Layouts &gt; Recent Layouts (FR-145), rebuilt each time the Layouts menu opens. */
     private javax.swing.JMenu recentLayoutsMenu;
 
+    /** The layouts it lists now, each opening one. */
+    private final List<javax.swing.JMenuItem> recentItems = new ArrayList<>();
+
     void mountRecentLayouts()
     {
         if (ui.layoutMenu() == null || recentLayoutsMenu != null) return;
@@ -662,12 +668,17 @@ final class LayoutMenus
         refreshRecentLayouts();
     }
 
-    /** The open layout is not listed; each item reads `recentLabel`. */
+    /**
+     * The open layout is not listed; each item reads `recentLabel`.  With none, one gray line says so and the submenu
+     * stays live (D46); Show Current Layout Folder ends it for a layout on this computer, under a divider (D43).
+     */
     private void refreshRecentLayouts()
     {
         if (recentLayoutsMenu == null) return;
 
         recentLayoutsMenu.removeAll();
+
+        recentItems.clear();
 
         List<String> shown = recentLayoutsWithout(ui.localLayoutPath());
 
@@ -684,9 +695,27 @@ final class LayoutMenus
             item.addActionListener(e -> openRecentLayout(path));
 
             recentLayoutsMenu.add(item);
+
+            recentItems.add(item);
         }
 
-        recentLayoutsMenu.setEnabled(!shown.isEmpty());
+        if (shown.isEmpty())
+        {
+            javax.swing.JMenuItem none = new javax.swing.JMenuItem(I18n.t("ui.main.toolbar.noOtherLayouts"));
+
+            none.setEnabled(false);
+
+            recentLayoutsMenu.add(none);
+        }
+
+        javax.swing.JMenuItem folder = ui.showCurrentLayoutFolderMenuItem();
+
+        if (folder != null && ui.isLocalLayout() && ui.isLayoutLoaded())
+        {
+            recentLayoutsMenu.addSeparator();
+
+            recentLayoutsMenu.add(folder);
+        }
     }
 
     /** The most characters an item's label takes, unless a cut would read like another item's (OB-390). */

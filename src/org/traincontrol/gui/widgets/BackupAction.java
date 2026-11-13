@@ -188,7 +188,7 @@ public final class BackupAction
                 {
                     // Named in the incomplete-backup dialog like any other source that could not
                     // be read. The rest of the archive is still worth writing.
-                    unsaved.add(I18n.t("ui.main.toolbar.downloadCSLayout") + ": " + cs);
+                    unsaved.add(I18n.t("ui.main.toolbar.headingCentralStationLayout") + ": " + cs);
 
                     if (centralStationCopy != null)
                     {

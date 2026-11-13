@@ -85,7 +85,13 @@ final class EditorWindows
         if (ui.modifyLocalLayoutMenu() != null) ui.modifyLocalLayoutMenu().setEnabled(live);
 
         // Lit with an editor open too, as it brings that editor forward
-        if (ui.managePagesItem != null) ui.managePagesItem.setEnabled(layoutCanBeEdited());
+        if (ui.managePagesItem != null)
+        {
+            ui.managePagesItem.setEnabled(layoutCanBeEdited());
+
+            // Grayed, it says why (D46): the Edit Layout button's own reason.
+            LayoutMenus.sayWhy(ui.managePagesItem, "ui.main.toolbar.tooltip.modifyLayout", whyLayoutCannotBeEdited());
+        }
 
         // The settings panel's button goes with it: both open the same editor and ask the same guard, so it must not
         // stay lit while an editor is open (OB-057).
