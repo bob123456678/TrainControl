@@ -208,6 +208,15 @@ public final class TcpStation implements AutoCloseable
         this.changesBeforeAnswering.add(contact);
     }
 
+    // Run once when the query for their contact arrives, before it is answered
+    private final java.util.Map<Integer, Runnable> onQuery = new java.util.HashMap<>();
+
+    /** Runs `then` once, when the query for the contact arrives and before it is answered. */
+    public synchronized void onQuery(int contact, Runnable then)
+    {
+        this.onQuery.put(contact, then);
+    }
+
     /** A contact's state as this station knows it. */
     public synchronized boolean occupied(int contact)
     {
@@ -240,6 +249,10 @@ public final class TcpStation implements AutoCloseable
         int contact = ((query[7] & 0xff) << 8) | (query[8] & 0xff);
 
         if (device != LINK_S88) return;
+
+        Runnable then = this.onQuery.remove(contact);
+
+        if (then != null) then.run();
 
         boolean state = occupied(contact);
 

@@ -72,6 +72,14 @@ public class testTheStationIsReachedOverTcp
         @Override
         public void receiveMessage(CANMessage message)
         {
+            java.util.function.BooleanSupplier hold = this.holdFirst;
+
+            if (hold != null)
+            {
+                this.holdFirst = null;
+                Components.waitFor(hold, WAIT_MS);
+            }
+
             this.heard.add(((CS2Message) message).getRawMessage());
 
             if (((CS2Message) message).answersAResync()) this.resyncAnswers.incrementAndGet();
@@ -79,6 +87,9 @@ public class testTheStationIsReachedOverTcp
 
         // How many frames the proxy marked as answers to its own queries
         final java.util.concurrent.atomic.AtomicInteger resyncAnswers = new java.util.concurrent.atomic.AtomicInteger();
+
+        // The next frame handed over waits until this says yes
+        volatile java.util.function.BooleanSupplier holdFirst;
 
         @Override
         public byte[] initMessageBuffer()
@@ -1108,6 +1119,102 @@ public class testTheStationIsReachedOverTcp
             allRead();
 
             assertEquals(this.model.lastState(1904), Boolean.TRUE, "a frame long after the event was dropped");
+        }
+    }
+
+    /**
+     * Only an event after a contact's own query overtakes its answer: in a pass of 60, the last contact is made while the
+     * first is asked, then clears unseen, and its answer, "clear", is the newer and stands.
+     *
+     * MUTATION: in `NetworkProxy.askOnce`, stamp `overtaken` for every contact as the pass is built, not as its query is
+     * written.
+     */
+    @Test(timeOut = 30000)
+    public void testAnEventBeforeItsOwnQueryDoesNotOvertakeItsAnswer() throws Exception
+    {
+        connectedToASilentStation();
+        Map<Integer, Integer> listed = new HashMap<>();
+
+        for (int c = 1801; c <= 1860; c++)
+        {
+            listed.put(c, TcpStation.LINK_S88);
+            this.model.alsoKnown.add(c);
+        }
+
+        this.proxy.knowDevices(listed, new HashMap<>());
+        this.station.onQuery(1801, () ->
+        {
+            this.station.sensor(1860, true);
+            this.station.sensorUnseen(1860, false);
+        });
+
+        this.proxy.syncSensors();
+
+        assertTrue(Components.waitFor(() -> Boolean.FALSE.equals(this.model.lastState(1860)), WAIT_MS),
+            "the answer, newer than the event, was dropped: " + this.model.states(1860));
+    }
+
+    /**
+     * The marks go once the ask is over: an event long after it overtakes nothing, and a frame of no change a moment
+     * after the event, as another program's answer, is delivered.
+     *
+     * MUTATION: in `NetworkProxy.learn`, take out the `overtaken.clear()`.
+     */
+    @Test(timeOut = 30000)
+    public void testTheMarksGoOnceTheAskIsOver() throws Exception
+    {
+        try (DatagramSocket wire = udpWire())
+        {
+            syncingOverUdp(wire, 1907).join(WAIT_MS);
+
+            // Waiting is the point: the marks stay RESYNC_WAIT_NS after the ask, for its late copies
+            Components.waitFor(() -> false, 1200);
+            broadcast(linkS88(1907, false));
+            broadcast(answer(0, 1907, true));
+            allRead();
+
+            assertEquals(this.model.lastState(1907), Boolean.TRUE, "a frame after an event long after the ask was dropped: "
+                + this.model.states(1907));
+        }
+    }
+
+    /**
+     * At start-up every frame the station sent before TCP took over is delivered, once and in order, none set aside:
+     * 500 queued on the UDP socket before the model is set, the first held until the start waits or TCP connects.
+     *
+     * MUTATION: in `NetworkProxy.startTcp`, take out `awaitTheBacklog();`.
+     */
+    @Test(timeOut = 30000)
+    public void testEveryFrameBeforeTheConnectIsDeliveredOnce() throws Exception
+    {
+        this.station = new TcpStation(STATION);
+        this.proxy = new NetworkProxy(InetAddress.getByName(STATION));
+        this.proxy.connectOverTcp(this.station.port());
+        List<byte[]> sent = new ArrayList<>();
+        int port = ((DatagramSocket) field("socket")).getLocalPort();
+
+        try (DatagramSocket out = new DatagramSocket())
+        {
+            for (int c = 1; c <= 500; c++)
+            {
+                sent.add(sensor(c, c % 2 == 0));
+                out.send(new DatagramPacket(sent.get(c - 1), CS2Message.MESSAGE_LENGTH, InetAddress.getByName("127.0.0.1"),
+                    port));
+            }
+        }
+
+        Thread starting = new Thread(() -> this.proxy.setModel(this.model), "tcp-claim-start");
+        this.model.holdFirst = () -> this.station.connections() == 1 || starting.getState() == Thread.State.TIMED_WAITING;
+        starting.start();
+        starting.join(WAIT_MS);
+        assertTrue(logged("network.tcpConnected", WAIT_MS), "precondition: no connection: " + this.model.lines);
+
+        List<byte[]> heard = new ArrayList<>(this.model.heard);
+        assertEquals(heard.size(), sent.size(), "not every frame from before the connect was delivered, once");
+
+        for (int i = 0; i < sent.size(); i++)
+        {
+            assertTrue(Arrays.equals(heard.get(i), sent.get(i)), "frame " + i + " out of order");
         }
     }
 

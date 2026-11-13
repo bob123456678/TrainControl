@@ -12,8 +12,6 @@ import java.net.Socket;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.util.ArrayDeque;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -178,9 +176,17 @@ public class NetworkProxy
     private volatile Map<Integer, Integer> listedDevice = new java.util.HashMap<>();
     private volatile Map<Integer, Integer> savedDevice = new java.util.HashMap<>();
 
-    // Each contact asked, and when a real event for it came since (0 for none): an answer, or a late copy, within
-    // RESYNC_WAIT_NS of that event is older than it
+    // Each contact asked, and when a real event for it came since its query (0 for none): an answer, or a late copy,
+    // within RESYNC_WAIT_NS of that event is older than it.  Forgotten RESYNC_WAIT_NS after the last ask; guards asks
+    // and askEnded
     private final Map<Integer, Long> overtaken = new ConcurrentHashMap<>();
+
+    private int asks;
+
+    private long askEnded;
+
+    // Counted down when the UDP listener reads the datagram awaitTheBacklog sends this socket
+    private final java.util.concurrent.CountDownLatch caughtUp = new java.util.concurrent.CountDownLatch(1);
 
     // Held for a whole pass of queries, so the sync's and a resync's cannot share `awaiting`
     private final Object passLock = new Object();
@@ -278,6 +284,8 @@ public class NetworkProxy
     {
         Socket connected;
 
+        awaitTheBacklog();
+
         try
         {
             connected = connectTcp();
@@ -296,6 +304,29 @@ public class NetworkProxy
         reading.setDaemon(true);
         this.tcpReader = reading;
         reading.start();
+    }
+
+    /**
+     * Waits, at most TCP_CONNECT_TIMEOUT_MS, until the UDP listener has delivered what the socket held: a datagram the
+     * socket sends itself is read after them.  So no frame from before the connect is set aside; one the station sends
+     * while the connect is made may still come twice, or not at all.
+     */
+    private void awaitTheBacklog()
+    {
+        try
+        {
+            int port = this.socket.getLocalPort();
+            this.socket.send(new DatagramPacket(new byte[1], 1, InetAddress.getLoopbackAddress(), port));
+            this.caughtUp.await(TCP_CONNECT_TIMEOUT_MS, java.util.concurrent.TimeUnit.MILLISECONDS);
+        }
+        catch (IOException e)
+        {
+            // Connected without it
+        }
+        catch (InterruptedException e)
+        {
+            Thread.currentThread().interrupt();
+        }
     }
 
     /** A connection to the station's TCP port; keepalive is on, though Java 8 cannot shorten its 2 hours. */
@@ -703,6 +734,11 @@ public class NetworkProxy
 
         int contact = ((frame[7] & 0xFF) << 8) | (frame[8] & 0xFF);
 
+        synchronized (this.overtaken)
+        {
+            if (this.asks == 0 && System.nanoTime() - this.askEnded >= RESYNC_WAIT_NS) this.overtaken.clear();
+        }
+
         if (frame[9] != frame[10])
         {
             this.sensorDevice.put(contact, ((frame[5] & 0xFF) << 8) | (frame[6] & 0xFF));
@@ -799,14 +835,30 @@ public class NetworkProxy
     /** Asks `passes` times, each pass RESYNC_AGAIN_NS after the last one's start, until superseded. */
     private void ask(boolean overTcp, int epoch, int passes, String key)
     {
-        for (int n = 0; n < passes; n++)
+        synchronized (this.overtaken)
         {
-            long start = System.nanoTime();
-            long until = n + 1 < passes ? start + RESYNC_AGAIN_NS : 0;
+            this.asks++;
+        }
 
-            if (!askOnce(overTcp, epoch, until, key)) return;
+        try
+        {
+            for (int n = 0; n < passes; n++)
+            {
+                long start = System.nanoTime();
+                long until = n + 1 < passes ? start + RESYNC_AGAIN_NS : 0;
 
-            if (n + 1 < passes && !waitFor(start + RESYNC_AGAIN_NS, epoch, false)) return;
+                if (!askOnce(overTcp, epoch, until, key)) return;
+
+                if (n + 1 < passes && !waitFor(start + RESYNC_AGAIN_NS, epoch, false)) return;
+            }
+        }
+        finally
+        {
+            synchronized (this.overtaken)
+            {
+                this.asks--;
+                this.askEnded = System.nanoTime();
+            }
         }
     }
 
@@ -818,7 +870,7 @@ public class NetworkProxy
     {
         synchronized (this.passLock)
         {
-            List<byte[]> queries = new ArrayList<>();
+            Map<Integer, byte[]> queries = new java.util.LinkedHashMap<>();
             Set<Integer> asked = ConcurrentHashMap.newKeySet();
             int skipped = 0;
 
@@ -833,8 +885,7 @@ public class NetworkProxy
                 else
                 {
                     asked.add(contact);
-                    this.overtaken.put(contact, 0L);
-                    queries.add(new CS2Message(CS2Message.CMD_ACC_SENSOR, new byte[]
+                    queries.put(contact, new CS2Message(CS2Message.CMD_ACC_SENSOR, new byte[]
                         {(byte) (device >> 8), (byte) (int) device, (byte) (contact >> 8), (byte) (int) contact}).getRawMessage());
                 }
             }
@@ -848,7 +899,7 @@ public class NetworkProxy
             int sent = 0;
             boolean current = true;
 
-            for (byte[] query : queries)
+            for (Map.Entry<Integer, byte[]> query : queries.entrySet())
             {
                 if (this.stopRequested || this.liveEpoch.get() != epoch)
                 {
@@ -858,16 +909,11 @@ public class NetworkProxy
 
                 boolean written;
 
-                if (overTcp)
+                // Marked as it is written, so only a later event overtakes its answer
+                synchronized (this)
                 {
-                    written = sendQuery(query);
-                }
-                else
-                {
-                    synchronized (this)
-                    {
-                        written = sendUdp(query);
-                    }
+                    this.overtaken.put(query.getKey(), 0L);
+                    written = overTcp ? sendQuery(query.getValue()) : sendUdp(query.getValue());
                 }
 
                 if (written) sent++;
@@ -1050,8 +1096,8 @@ public class NetworkProxy
      */
     private void recover(Socket lost, String reason)
     {
-        // Reset, not closed in order, so the station drops what it has not read and runs no old command late.  The
-        // CS3 runs Linux, where a reset discards its unread buffer too as far as we know (unconfirmed on the station).
+        // Reset, not closed in order, so what we had not yet sent is discarded and never goes out late.  Whether the
+        // station still reads frames its kernel had already received is unconfirmed: on Linux (the CS3's) it may.
         try
         {
             lost.setSoLinger(true, 0);
@@ -1194,6 +1240,7 @@ public class NetworkProxy
                         // short datagram would be parsed as its own header followed by whatever the last message left
                         // in the tail, a stale command re-applied that the duplicate-suppression window cannot catch.
                         if (packet.getLength() == buffer.length) deliverUdp(buffer);
+                        else if (packet.getLength() == 1) caughtUp.countDown();
 
                         // Reset the length of the packet just in case
                         packet.setLength(buffer.length);

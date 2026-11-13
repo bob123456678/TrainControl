@@ -24,9 +24,16 @@ public final class RouteMonitor
      */
     public static boolean watching(MarklinRoute route)
     {
+        return waitingFor(route, true);
+    }
+
+    /** Whether the route's monitor is parked waiting for its sensor to be made (`occupied`) or to clear. */
+    public static boolean waitingFor(MarklinRoute route, boolean occupied)
+    {
         if (route == null) return false;
 
         String name = "route monitor " + route.getId() + " " + route.getName();
+        String waiting = occupied ? "waitForOccupiedFeedback" : "waitForClearFeedback";
 
         for (Map.Entry<Thread, StackTraceElement[]> t : Thread.getAllStackTraces().entrySet())
         {
@@ -34,7 +41,7 @@ public final class RouteMonitor
 
             for (StackTraceElement frame : t.getValue())
             {
-                if ("waitForOccupiedFeedback".equals(frame.getMethodName())) return true;
+                if (waiting.equals(frame.getMethodName())) return true;
             }
         }
 

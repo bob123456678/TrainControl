@@ -626,6 +626,114 @@ public class testATrainMustStopAndCannotPassThrough
     }
 
     /**
+     * A Return Home leg dispatched while the debug audit asks its train's trips keeps its pass through the station: the
+     * leg marks its train as the audit is asking (the shared set's first mark of the audit, if it makes one, waits
+     * for the leg's), and the leg still runs home through it.
+     *
+     * MUTATION: in `Layout.getPossiblePathsGoingHome`, mark the train in `returningHome` for the question again, and
+     * this fails: the leg's own mark is swallowed and it is refused at the station.
+     */
+    @Test
+    public void testAReturnHomeLegDuringTheAuditKeepsItsPass() throws Exception
+    {
+        session.setStopsAndRunsThrough(approach, true, false);
+        session.setPointProperty(new TileKey(pages.get(0).getName(), 7, 3), "home", train.getName());
+        Layout railway = trainAtWestEnd(build());
+        assertTrue(railway.loadReturnToHomeTimetable().isPossible(), "precondition: no plan home");
+        org.traincontrol.automation.TimetablePath leg = railway.getTimetable().get(0);
+        HomeStaging audit = HomeStaging.snapshot(railway);
+
+        java.util.concurrent.atomic.AtomicBoolean arrived = new java.util.concurrent.atomic.AtomicBoolean();
+        Interleaved marks = new Interleaved(railway, Thread.currentThread(),
+            () -> arrived.set(railway.executePath(leg.getPath(), leg.getLoc(), 50, leg)));
+        support.Reflect.set(Layout.class, railway, "returningHome", marks);
+
+        audit.auditAgainstRuntime();
+        marks.dispatch();
+        marks.leg.join(60000);
+
+        assertTrue(arrived.get(), "the leg dispatched during the audit was refused: " + LOGGED);
+        assertEquals(railway.getLocomotiveLocation(train).getName(), "MainPlatform", "the train did not get home");
+    }
+
+    /** Layout's set of trains on Return Home, whose first mark from the audit's thread dispatches the leg and waits. */
+    private static final class Interleaved extends java.util.AbstractSet<Locomotive>
+    {
+        private final Set<Locomotive> marks;
+        private final Thread audit;
+        private final Runnable dispatch;
+        private final java.util.concurrent.CountDownLatch legMarked = new java.util.concurrent.CountDownLatch(1);
+        volatile Thread leg;
+
+        @SuppressWarnings("unchecked")
+        Interleaved(Layout railway, Thread audit, Runnable dispatch) throws Exception
+        {
+            this.marks = (Set<Locomotive>) support.Reflect.get(Layout.class, railway, "returningHome");
+            this.audit = audit;
+            this.dispatch = dispatch;
+        }
+
+        /** Dispatches the leg on its own thread, once. */
+        synchronized void dispatch()
+        {
+            if (this.leg != null) return;
+
+            this.leg = new Thread(this.dispatch, "return home leg");
+            this.leg.start();
+        }
+
+        @Override
+        public boolean add(Locomotive loc)
+        {
+            boolean added = this.marks.add(loc);
+
+            if (Thread.currentThread() != this.audit)
+            {
+                this.legMarked.countDown();
+            }
+            else if (this.leg == null)
+            {
+                dispatch();
+
+                try
+                {
+                    assertTrue(this.legMarked.await(10, java.util.concurrent.TimeUnit.SECONDS), "the leg never marked");
+                }
+                catch (InterruptedException e)
+                {
+                    throw new AssertionError(e);
+                }
+            }
+
+            return added;
+        }
+
+        @Override
+        public boolean remove(Object loc)
+        {
+            return this.marks.remove(loc);
+        }
+
+        @Override
+        public boolean contains(Object loc)
+        {
+            return this.marks.contains(loc);
+        }
+
+        @Override
+        public java.util.Iterator<Locomotive> iterator()
+        {
+            return this.marks.iterator();
+        }
+
+        @Override
+        public int size()
+        {
+            return this.marks.size();
+        }
+    }
+
+    /**
      * The parity audit compares the planner with the runtime on the trips the planner plans.  Asked about Return Home's
      * trips the two agree, and they agree on a destination past the station, so the agreement is about something; a
      * rule added to either side alone shows as a disagreement.
