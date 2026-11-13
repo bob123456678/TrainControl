@@ -23,6 +23,7 @@ import support.Components;
 import support.Display;
 import support.Reflect;
 import static support.Components.itemNamed;
+import static support.StandingTrain.squareNamed;
 
 /**
  * The Is Active tick on the track diagram's right-click menu and on the autonomy editor's pauses the train standing
@@ -82,8 +83,8 @@ public class testTheActiveTickPausesATrain
 
         assertNotNull(train, "precondition: this data has no " + HIS_TRAIN);
 
-        mainA = square("BottomMainA");
-        mainB = square("BottomMainB");
+        mainA = squareNamed(session, "BottomMainA");
+        mainB = squareNamed(session, "BottomMainB");
 
         // NOTHING ELSE STANDING ABOUT, and his train on BottomMainB - on the railway, and in the setup the editor reads
         SwingUtilities.invokeAndWait(() ->
@@ -452,16 +453,6 @@ public class testTheActiveTickPausesATrain
         }
     }
 
-    private static TileKey square(String name)
-    {
-        for (TileKey key : session.getStore().getNamedTiles())
-        {
-            if (name.equals(session.getStore().getPointName(key))) return key;
-        }
-
-        throw new AssertionError("this railway has no " + name);
-    }
-
     /** The railway as the model has it now: the editor's door rebuilds it. */
     private static Layout railway()
     {
@@ -668,7 +659,7 @@ public class testTheActiveTickPausesATrain
             // PAUSED THROUGH ITS OWN TICK on the diagram, so the setup lists it and the rebuild has built it paused
             String cardsLabel = I18n.f("autolayout.ui.menuLocomotiveActive", CARD_TRAIN);
 
-            javax.swing.JMenuItem own = diagramMenuItem(square(CARD_TRAIN_SQUARE), cardsLabel);
+            javax.swing.JMenuItem own = diagramMenuItem(squareNamed(session, CARD_TRAIN_SQUARE), cardsLabel);
 
             assertNotNull(own, "precondition: the track diagram's right-click on " + CARD_TRAIN_SQUARE + " offers no "
                 + cardsLabel);
@@ -1496,7 +1487,7 @@ public class testTheActiveTickPausesATrain
 
         final List<String> offered = new ArrayList<>();
 
-        final javax.swing.JMenuItem tick = editorsTickItem(editorsPanel(editor), square(CARD_TRAIN_SQUARE), label, offered);
+        final javax.swing.JMenuItem tick = editorsTickItem(editorsPanel(editor), squareNamed(session, CARD_TRAIN_SQUARE), label, offered);
 
         assertNotNull(tick, "precondition: the editor's right-click on " + CARD_TRAIN_SQUARE + " offers no " + label + ": "
             + offered);
@@ -1722,7 +1713,7 @@ public class testTheActiveTickPausesATrain
     {
         String label = I18n.f("autolayout.ui.menuLocomotiveActive", CARD_TRAIN);
 
-        javax.swing.JMenuItem own = diagramMenuItem(square(CARD_TRAIN_SQUARE), label);
+        javax.swing.JMenuItem own = diagramMenuItem(squareNamed(session, CARD_TRAIN_SQUARE), label);
 
         assertNotNull(own, "precondition: the track diagram's right-click on " + CARD_TRAIN_SQUARE + " offers no " + label);
 
@@ -2291,7 +2282,7 @@ public class testTheActiveTickPausesATrain
     {
         final List<TileKey> squares = new ArrayList<>();
 
-        for (String[] each : CROWD) squares.add(square(each[1]));
+        for (String[] each : CROWD) squares.add(squareNamed(session, each[1]));
 
         SwingUtilities.invokeAndWait(() ->
         {
@@ -2329,7 +2320,7 @@ public class testTheActiveTickPausesATrain
     {
         final List<TileKey> squares = new ArrayList<>();
 
-        for (String[] each : CROWD) squares.add(square(each[1]));
+        for (String[] each : CROWD) squares.add(squareNamed(session, each[1]));
 
         SwingUtilities.invokeAndWait(() ->
         {

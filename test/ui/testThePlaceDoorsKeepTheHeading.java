@@ -32,6 +32,7 @@ import support.Components;
 import support.Display;
 import support.Reflect;
 import static support.Components.itemNamed;
+import static support.StandingTrain.squareNamed;
 
 /**
  * The track diagram's right-click Place, and Control+X then Control+V, keep a train's heading, on the frozen copy of
@@ -84,8 +85,8 @@ public class testThePlaceDoorsKeepTheHeading
 
         assertNotNull(train, "precondition: this data has no " + HIS_TRAIN + ", the train the steps use");
 
-        mainA = square("BottomMainA");
-        mainB = square("BottomMainB");
+        mainA = squareNamed(session, "BottomMainA");
+        mainB = squareNamed(session, "BottomMainB");
 
         // NOTHING ELSE STANDING ABOUT, so every square the steps use is free for his train.
         for (Point point : railway().getPoints())
@@ -281,7 +282,7 @@ public class testThePlaceDoorsKeepTheHeading
     @Test(timeOut = 180000)
     public void testFromTheEditorTheTailQuestionIsTheListInFrontOfIt() throws Exception
     {
-        TileKey tunnel = square("Tunnel");
+        TileKey tunnel = squareNamed(session, "Tunnel");
 
         Integer lengthWas = train.getTrainLength();
 
@@ -426,7 +427,7 @@ public class testThePlaceDoorsKeepTheHeading
     @Test
     public void testWithTheEditorMinimisedTheTailQuestionBelongsToTheMainWindow() throws Exception
     {
-        TileKey tunnel = square("Tunnel");
+        TileKey tunnel = squareNamed(session, "Tunnel");
 
         Integer lengthWas = train.getTrainLength();
 
@@ -867,17 +868,6 @@ public class testThePlaceDoorsKeepTheHeading
         }
 
         return out;
-    }
-
-    /** The square the setup gives this name. */
-    private static TileKey square(String name)
-    {
-        for (TileKey key : session.getStore().getNamedTiles())
-        {
-            if (name.equals(session.getStore().getPointName(key))) return key;
-        }
-
-        throw new AssertionError("this railway has no " + name);
     }
 
     private static String name(TileKey square)

@@ -27,6 +27,7 @@ import support.Display;
 import support.Reflect;
 import support.SourceOf;
 import static org.traincontrol.marklin.MarklinControlStation.init;
+import static support.StandingTrain.squareNamed;
 
 /**
  * Where a train on the frozen copy of Adam's railway may be sent, read where the steps read it: the track diagram's
@@ -118,7 +119,7 @@ public class testWhereHisTrainsMayBeSent
     @Test
     public void testARefusedSendSaysSoInFrontOfTheWindow() throws Exception
     {
-        TileKey secondary = square("BottomSecondary");
+        TileKey secondary = squareNamed(session, "BottomSecondary");
 
         standOn(train(HIS_TRAIN), secondary, null);
 
@@ -263,7 +264,7 @@ public class testWhereHisTrainsMayBeSent
     {
         assertFalse(en57.isReversible(), "precondition: " + CANNOT_REVERSE + " can reverse");
 
-        TileKey secondary = square("BottomSecondary");
+        TileKey secondary = squareNamed(session, "BottomSecondary");
 
         // STEP 1.
         standOn(en57, secondary, null);
@@ -312,9 +313,9 @@ public class testWhereHisTrainsMayBeSent
     {
         clearTheRailway();
 
-        TileKey pre = square("BottomMainAPre");
-        TileKey leftPark = square("TunnelLeftPark");
-        TileKey tunnel = square("Tunnel");
+        TileKey pre = squareNamed(session, "BottomMainAPre");
+        TileKey leftPark = squareNamed(session, "TunnelLeftPark");
+        TileKey tunnel = squareNamed(session, "Tunnel");
 
         Locomotive his = train(HIS_TRAIN);
         Locomotive other = anotherTrain(HIS_TRAIN, CANNOT_REVERSE);
@@ -389,7 +390,7 @@ public class testWhereHisTrainsMayBeSent
         Locomotive turned = anotherTrain(HIS_TRAIN, CANNOT_REVERSE);
         Locomotive parked = anotherTrain(turned.getName(), HIS_TRAIN, CANNOT_REVERSE);
 
-        TileKey tunnel = square("Tunnel");
+        TileKey tunnel = squareNamed(session, "Tunnel");
 
         final Point atTunnel = railway().getPoint("Tunnel (southbound)");
 
@@ -571,8 +572,8 @@ public class testWhereHisTrainsMayBeSent
 
         remember(his);
 
-        TileKey rampDown = square("RampDown");
-        TileKey tunnel = square("Tunnel");
+        TileKey rampDown = squareNamed(session, "RampDown");
+        TileKey tunnel = squareNamed(session, "Tunnel");
 
         Edge hop = railway().getEdge("BottomSecondary", "TunnelPre");
 
@@ -1079,7 +1080,7 @@ public class testWhereHisTrainsMayBeSent
 
         if (wayOut == null) return null;
 
-        for (String name : session.getStationIndex().pointNamesAt(square("TunnelRightPark")))
+        for (String name : session.getStationIndex().pointNamesAt(squareNamed(session, "TunnelRightPark")))
         {
             Point copy = railway().getPoint(name);
 
@@ -1168,17 +1169,6 @@ public class testWhereHisTrainsMayBeSent
     private static Layout railway()
     {
         return model.getAutoLayout();
-    }
-
-    /** The square the setup gives this name. */
-    private static TileKey square(String name)
-    {
-        for (TileKey key : session.getStore().getNamedTiles())
-        {
-            if (name.equals(session.getStore().getPointName(key))) return key;
-        }
-
-        throw new AssertionError("this railway has no " + name);
     }
 
     private static String name(TileKey square)
