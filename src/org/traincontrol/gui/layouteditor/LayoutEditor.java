@@ -4299,8 +4299,11 @@ public class LayoutEditor extends PositionAwareJFrame
         findPointItem = new javax.swing.JMenuItem(I18n.t("layout.ui.menuFindAPoint"));
 
         findPointItem.setFocusable(false);
-        findPointItem.setToolTipText(I18n.t("layout.ui.tooltipFindAPoint"));
         findPointItem.addActionListener(e -> findAPoint());
+
+        // The key the editor's key handler acts on, shown and not bound again; the tooltip keeps its sentence.
+        org.traincontrol.gui.TrainControlUI.showShortcut(findPointItem, FIND_A_POINT_KEY);
+        findPointItem.setToolTipText(I18n.t("layout.ui.tooltipFindAPoint"));
 
         menu.add(findPointItem);
 
@@ -4318,6 +4321,10 @@ public class LayoutEditor extends PositionAwareJFrame
     }
 
     private javax.swing.JMenuItem findPointItem;
+
+    /** Find a Point's key (FR-055): what the key handler acts on and what the Tools item shows. */
+    public static final javax.swing.KeyStroke FIND_A_POINT_KEY =
+        javax.swing.KeyStroke.getKeyStroke(KeyEvent.VK_F, java.awt.event.InputEvent.CTRL_DOWN_MASK);
     private java.awt.Component findPointSeparator;
 
     /** Find a Point... is the autonomy editor's: not shown at all in Track Diagram mode (FR-055). */
@@ -5057,7 +5064,7 @@ public class LayoutEditor extends PositionAwareJFrame
             }
 
             // Control+F finds a point by name, in the autonomy editor only (FR-055)
-            if (evt.isControlDown() && evt.getKeyCode() == KeyEvent.VK_F)
+            if (evt.isControlDown() && evt.getKeyCode() == FIND_A_POINT_KEY.getKeyCode())
             {
                 findAPoint();
 

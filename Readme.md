@@ -390,7 +390,7 @@ If the backup fails, the update stops and nothing is changed.  If the new versio
 
 **Backing up and restoring your data:**
 
-To make a backup, select "Backup TrainControl Data" from the File menu.  This saves a single zip file in the `tc_backup` folder with your locomotives and their icons, keyboard mappings, routes, and, for a layout stored on your computer, its track diagrams and autonomy setups.
+To make a backup, select "Back Up TrainControl Data..." from the File menu.  This saves a single zip file in the `tc_backup` folder with your locomotives and their icons, keyboard mappings, routes, and, for a layout stored on your computer, its track diagrams and autonomy setups.
 
 If your track diagram is on the Central Station, TrainControl offers to download it first so that it is included.  On a CS3, the backup also includes the Central Station's own locomotive, route and accessory data.
 

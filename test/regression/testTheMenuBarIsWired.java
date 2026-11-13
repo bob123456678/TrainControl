@@ -189,7 +189,7 @@ public class testTheMenuBarIsWired
     @DataProvider
     public static Object[][] movedItems()
     {
-        return rows("file>changeIP changeIPMenuItem; file>restoreData restoreDataMenuItem;"
+        return rows("file>changeIP changeIPMenuItem; file>backupData backupDataMenuItem; file>restoreData restoreDataMenuItem;"
             + " locomotives>quickFindLoc quickFindMenuItem; locomotives>browseDatabase viewDatabaseMenuItem;"
             + " locomotives>addLoc addLocomotiveMenuItem; locomotives>turnOffFunctions turnOffFunctionsMenuItem;"
             + " locomotives>turnOnLights turnOnLightsMenuItem; locomotives>syncFullFunctionState syncFullLocStateMenuItem;"

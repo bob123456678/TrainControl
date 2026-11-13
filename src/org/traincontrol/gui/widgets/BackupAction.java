@@ -36,7 +36,7 @@ public final class BackupAction
         final boolean[] yes = new boolean[1];
 
         Runnable ask = () -> yes[0] = JOptionPane.showConfirmDialog(this.ui, question,
-            I18n.t("ui.main.toolbar.backupData"), JOptionPane.YES_NO_OPTION) == JOptionPane.YES_OPTION;
+            I18n.t("ui.main.titleBackupData"), JOptionPane.YES_NO_OPTION) == JOptionPane.YES_OPTION;
 
         if (javax.swing.SwingUtilities.isEventDispatchThread())
         {
@@ -345,7 +345,7 @@ public final class BackupAction
                     unsaved.isEmpty()
                         ? I18n.f("ui.infoBackupCompleteSavedTo", shown)
                         : I18n.f("ui.warnBackupIncomplete", shown, String.join(", ", unsaved)),
-                    I18n.t("ui.main.toolbar.backupData"),
+                    I18n.t("ui.main.titleBackupData"),
                     JOptionPane.YES_NO_OPTION,
                     unsaved.isEmpty() ? JOptionPane.INFORMATION_MESSAGE : JOptionPane.WARNING_MESSAGE,
                     null, choices, choices[0]);

@@ -4915,8 +4915,12 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     /** Shows a shortcut table row's keys on a menu item without binding them: the table alone acts on keys (D40). */
     private static void showShortcut(javax.swing.JMenuItem item, String row)
     {
-        javax.swing.KeyStroke keys = KeyShortcuts.named(row).stroke();
+        showShortcut(item, KeyShortcuts.named(row).stroke());
+    }
 
+    /** Shows these keys on a menu item, bound to nothing: the window's own key handling acts on them (D40). */
+    public static void showShortcut(javax.swing.JMenuItem item, javax.swing.KeyStroke keys)
+    {
         item.setAccelerator(keys);
 
         // Looked up before the binding the look and feel makes for an accelerator, which would act a second time.
