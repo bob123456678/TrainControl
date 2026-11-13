@@ -199,3 +199,4 @@ not fix it. Name the square.
 - `ui.testChangeDirectionIsOneClick`
 - `regression.testTheLogIsStampedAndExports`
 - `ui.testAStandingTrainIsSentWhileAnotherRuns`
+- `regression.testTheAutonomyAndRoutesMenusKeepTheirWiring`
