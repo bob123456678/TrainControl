@@ -162,6 +162,7 @@ final class LayoutEditorRightclickMenu extends JPopupMenu
 
             JMenuItem rotateSelected = new JMenuItem(I18n.t("ui.rotate"));
             rotateSelected.addActionListener(event -> edit.rotateSelection());
+            TrainControlUI.showShortcut(rotateSelected, LayoutEditor.ROTATE_KEY);
             rotateSelected.setEnabled(anyPicked);
             selectionMenu.add(rotateSelected);
 

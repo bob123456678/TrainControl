@@ -5228,7 +5228,14 @@ public class LayoutEditor extends PositionAwareJFrame
             }
             else if (is(evt, ROTATE_KEY))
             {
-                this.rotate(getLastHoveredLabel());
+                if (!this.selection.isEmpty())
+                {
+                    this.rotateSelection();
+                }
+                else
+                {
+                    this.rotate(getLastHoveredLabel());
+                }
             }
             // No Shift+C or Shift+R: a mis-aimed one would overwrite a whole row.
             else if (is(evt, TEXT_KEY))

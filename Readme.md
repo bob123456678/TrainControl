@@ -257,7 +257,7 @@ TrainControl's key mappings are designed to allow you to send any command nearly
         * Control+C (copy hovered tile)
         * Control+X (cut hovered tile)
         * Control+V (paste tile)
-        * Control+R (rotate hovered tile)
+        * Control+R (rotate the picked squares, or the hovered tile when none are picked)
         * Control+T (edit text of hovered tile)
         * Control+A (edit address of hovered tile)
         * Delete (delete hovered tile)
@@ -474,6 +474,7 @@ Tab icons provided by Freepik.
             - The track diagram editor has a strip of icons under `Page` to add, duplicate, rename and delete a page and to move it up or down, and its `Manage Pages` menu is now `Tools`.
             - Pages are shown in the order of the layout's files rather than by name, and `Sort Pages by Name` puts them back in name order.
             - A page link keeps going to the same page when pages are renamed or moved.
+            - In the track diagram editor, Ctrl+R turns the picked squares when there are any, and `Rotate` on the `Selection` menu shows Ctrl+R.
         - Interface
             - `Layouts` > `Manage Pages...` is now `Edit/Add Pages...`, and the separate `Edit Layout Page` menu is gone.
             - `Hide Hover Tooltips` on the `Preferences` menu hides the tooltips in menus, though an item still shows its shortcut key and a grayed item still says why.
