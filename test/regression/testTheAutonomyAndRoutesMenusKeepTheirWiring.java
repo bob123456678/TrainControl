@@ -259,7 +259,7 @@ public class testTheAutonomyAndRoutesMenusKeepTheirWiring
     {
         onItsOwnWindow(ui ->
         {
-            // BEFORE, from the inventory (dev f8b77086), with the debug export a debug window shows
+            // BEFORE the change, with the debug export a debug window shows
             List<String> before = new ArrayList<>(Arrays.asList("autosetup.ui.btnImportConfiguration",
                 "autosetup.ui.btnExportConfiguration", "autosetup.ui.menuNewConfiguration",
                 "autosetup.ui.menuRenameConfiguration", "autosetup.ui.menuDeleteConfiguration",
@@ -301,7 +301,7 @@ public class testTheAutonomyAndRoutesMenusKeepTheirWiring
         {
             List<String> expected = new ArrayList<>();
 
-            // BEFORE, from the source at dev f8b77086, with the debug export
+            // BEFORE the change, with the debug export
             for (String key : new String[] {"autosetup.ui.menuNewConfiguration", "autosetup.ui.menuRenameConfiguration",
                 "autosetup.ui.menuDeleteConfiguration", "autosetup.ui.btnImportConfiguration",
                 "autosetup.ui.btnExportConfiguration", "autosetup.ui.menuExportRawGraph"}) expected.add(t(key));
