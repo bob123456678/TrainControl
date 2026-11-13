@@ -1475,9 +1475,11 @@ public class LayoutEditor extends PositionAwareJFrame
                 }
             });
 
-            // And the finding's other squares, outlined there as here
+            // And the finding's other squares, outlined there as here; a finding or Find a Point asks first, as a link does
             autonomyPanel.setOnJumpToNotice((at, named) ->
             {
+                if (!settleUnsavedWork()) return;
+
                 layout.setEdit(false);
 
                 // Carried before the window goes: the user closed nothing
@@ -5228,7 +5230,14 @@ public class LayoutEditor extends PositionAwareJFrame
             }
             else if (is(evt, ROTATE_KEY))
             {
-                this.rotate(getLastHoveredLabel());
+                if (!this.selection.isEmpty())
+                {
+                    this.rotateSelection();
+                }
+                else
+                {
+                    this.rotate(getLastHoveredLabel());
+                }
             }
             // No Shift+C or Shift+R: a mis-aimed one would overwrite a whole row.
             else if (is(evt, TEXT_KEY))

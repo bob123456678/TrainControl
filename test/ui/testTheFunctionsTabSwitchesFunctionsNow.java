@@ -245,7 +245,7 @@ public class testTheFunctionsTabSwitchesFunctionsNow extends support.SettingsCla
     /**
      * While the moving rule locks the window the play icons are grayed and do nothing.
      *
-     * MUTATION: drop `!blocked` from `isCellEditable` and this fails.
+     * MUTATION: drop `blocked ||` and the `whyNotEditable` return from `LocomotiveFunctionsTab.press`, and this fails.
      */
     @Test
     public void testALockedWindowCannotSwitchAFunction() throws Exception

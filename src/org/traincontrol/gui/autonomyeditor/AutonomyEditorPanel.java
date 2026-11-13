@@ -892,10 +892,17 @@ public class AutonomyEditorPanel extends JPanel
     /** One control on its own line, flush left and no taller than it needs to be. */
     private JPanel row(java.awt.Component component)
     {
-        JPanel holder = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 1));
+        // Capped at 30 px, unless the control needs more: a heading with air above it does (OB-342)
+        JPanel holder = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 1))
+        {
+            @Override
+            public Dimension getMaximumSize()
+            {
+                return new Dimension(Short.MAX_VALUE, Math.max(30, getPreferredSize().height));
+            }
+        };
         holder.setOpaque(false);
         holder.setAlignmentX(LEFT_ALIGNMENT);
-        holder.setMaximumSize(new Dimension(Short.MAX_VALUE, 30));
         holder.add(component);
 
         return holder;
@@ -3723,11 +3730,14 @@ public class AutonomyEditorPanel extends JPanel
         final boolean sameSquare = wasOn != null && session.getStationIndex() != null
             && tile.equals(session.getStationIndex().squareOf(wasOn));
 
-        // The trains standing here leave with this placement: the setup's, and after a run the railway's
-        final java.util.Set<String> named = new java.util.LinkedHashSet<>(
-            java.util.Arrays.asList(name, locomotiveAt(tile), tileMenus.trainStanding(tile)));
+        // The trains standing here leave with this placement, and the setup's other squares for them
+        java.util.Set<String> leaving = trainsLeaving(tile, name);
 
-        named.remove(null);
+        for (TileKey stale : otherSquaresOf(leaving, tile)) session.placeLocomotive(stale, null);
+
+        final java.util.Set<String> named = new java.util.LinkedHashSet<>(java.util.Collections.singleton(name));
+
+        named.addAll(leaving);
 
         // Cancel undoes a placement as it undoes a drag: the station, and the train where it stood (MT-914)
         putBackOnDiscard.addAll(named);
@@ -3815,15 +3825,54 @@ public class AutonomyEditorPanel extends JPanel
         return null;
     }
 
-    /** Takes the train off a square. */
+    /**
+     * The trains leaving a square, other than `arriving`: the one the railway has there, and the setup's unless a run
+     * has moved it to another square, where it stays (after a run they can differ, OB-416).
+     */
+    private java.util.Set<String> trainsLeaving(TileKey tile, String arriving)
+    {
+        org.traincontrol.automation.Layout running = layoutSource == null ? null : layoutSource.get();
+
+        String inTheSetup = locomotiveAt(tile);
+        org.traincontrol.automation.Point itsCopy = standingOn(running, inTheSetup);
+
+        java.util.Set<String> leaving = new java.util.LinkedHashSet<>(java.util.Arrays.asList(
+            session.trainOnTheRailway(tile, running), itsCopy == null || session.getStationIndex() == null
+                || tile.equals(session.getStationIndex().squareOf(itsCopy)) ? inTheSetup : null));
+
+        leaving.remove(null);
+        leaving.remove(arriving);
+
+        return leaving;
+    }
+
+    /**
+     * The squares other than `tile` the setup still places these trains on: cleared by the doors that name them, so the
+     * rebuild takes them off rather than standing them back there.
+     */
+    private List<TileKey> otherSquaresOf(java.util.Set<String> trains, TileKey tile)
+    {
+        List<TileKey> out = new java.util.ArrayList<>();
+
+        for (Map.Entry<TileKey, String> placed : session.placementsAutonomyWillWrite().entrySet())
+        {
+            if (!placed.getKey().equals(tile) && trains.contains(placed.getValue())) out.add(placed.getKey());
+        }
+
+        return out;
+    }
+
+    /** Takes the trains leaving a square off it (`trainsLeaving`). */
     void removeLocomotive(TileKey tile)
     {
-        String standing = locomotiveAt(tile);
+        java.util.Set<String> named = trainsLeaving(tile, null);
+
+        for (TileKey stale : otherSquaresOf(named, tile)) session.placeLocomotive(stale, null);
 
         session.placeLocomotive(tile, null);
 
-        // "Nowhere" is the setup's answer for this train; unnamed, the rebuild puts it straight back.
-        placementChanged(java.util.Collections.singletonList(standing));
+        // Unnamed, the rebuild puts them straight back.
+        placementChanged(named);
     }
 
     /** The train being dragged onto a square, for the length of `dropTrain`; null otherwise. */
@@ -6634,6 +6683,9 @@ public class AutonomyEditorPanel extends JPanel
             findingRelated.add(null);
             findingSeverity.add(null);
         }
+
+        // Control+O off the diagram opens only a finding still listed
+        if (!findingTiles.contains(chosenFinding)) chosenFinding = null;
     }
 
     /** @return the filter box's text, to carry across a page change */

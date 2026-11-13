@@ -25,6 +25,7 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
 import support.Components;
 import support.Display;
 import support.Reflect;
+import static support.StandingTrain.squareNamed;
 
 /**
  * A cut train is pasted facing the way it would arrive if it drove there, and stands on that copy (Adam, OB-270;
@@ -74,8 +75,8 @@ public class testACutTrainArrivesTheWayItWouldDrive
 
         if (session == null) throw new AssertionError("no autonomy setup on this railway");
 
-        mainA = square("BottomMainA");
-        secondary = square("BottomSecondary");
+        mainA = squareNamed(session, "BottomMainA");
+        secondary = squareNamed(session, "BottomSecondary");
 
         // BOTTOMMAINA WITH BOTH PLAIN COPIES PLACEABLE AGAIN - see the class comment.
         SwingUtilities.invokeAndWait(() -> session.setBarredArrivals(mainA, java.util.Collections.<Side>emptySet()));
@@ -238,16 +239,5 @@ public class testACutTrainArrivesTheWayItWouldDrive
         }
 
         return out;
-    }
-
-    /** The square the setup gives this name. */
-    private static TileKey square(String name)
-    {
-        for (TileKey key : session.getStore().getNamedTiles())
-        {
-            if (name.equals(session.getStore().getPointName(key))) return key;
-        }
-
-        throw new AssertionError("this railway has no " + name);
     }
 }

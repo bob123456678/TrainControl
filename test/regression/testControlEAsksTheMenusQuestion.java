@@ -10,12 +10,9 @@ import org.testng.SkipException;
 import org.testng.annotations.Test;
 import org.traincontrol.automationui.AutonomySession;
 import org.traincontrol.automationui.TileGraph.TileKey;
-import org.traincontrol.base.Accessory.accessoryDecoderType;
-import org.traincontrol.base.LayoutDiagram;
-import org.traincontrol.base.LayoutDiagramComponent.componentType;
 import org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel;
-import support.Diagrams;
 import support.Trees;
+import static support.Diagrams.aPageWithARunAndALabel;
 
 /**
  * Control+E has to act on the square the right-click menu would act on, and only where it offers to (FR-066): the
@@ -25,32 +22,6 @@ import support.Trees;
  */
 public class testControlEAsksTheMenusQuestion
 {
-    /**
-     * A page with a text label on it, and a run of plain track beside it.  The track is what makes the label's page one
-     * the session knows: the text branch is fenced on `pageOf(tile) != null`.
-     */
-    private static LayoutDiagram aPageWithALabelAndARun(String name) throws java.io.IOException
-    {
-        LayoutDiagram page = new LayoutDiagram(name, 12, 4, null, null);
-
-        // A sensor at each end, so what lies between them is one run of plain track.
-        Diagrams.feedback(page, 1, 1, 5, 11);
-
-        for (int x = 2; x <= 5; x++)
-        {
-            Diagrams.straight(page, x, 1);
-        }
-
-        Diagrams.feedback(page, 6, 1, 6, 12);
-
-        // And a label, the one thing on a diagram that carries no track and is still the user's to click.
-        page.addComponent(componentType.TEXT, 3, 3, 0, 0, 0, 0, accessoryDecoderType.MM2, "Yard");
-
-        page.setPageId(name);
-
-        return page;
-    }
-
     /** The key and the menu write the length to the same square. */
     @Test
     public void testTheKeyMeasuresTheSquareTheMenuWouldMeasure() throws Exception
@@ -63,7 +34,9 @@ public class testControlEAsksTheMenusQuestion
         {
             AutonomySession session = new AutonomySession(folder);
 
-            session.open(Arrays.asList(aPageWithALabelAndARun("main")));
+            // The run is what makes the label's page one the session knows: the text branch is fenced on
+            // `pageOf(tile) != null`.
+            session.open(Arrays.asList(aPageWithARunAndALabel("main")));
 
             Map<TileKey, TileKey> leaders = session.runLeaders();
 
@@ -126,7 +99,7 @@ public class testControlEAsksTheMenusQuestion
         {
             AutonomySession session = new AutonomySession(folder);
 
-            session.open(Arrays.asList(aPageWithALabelAndARun("main")));
+            session.open(Arrays.asList(aPageWithARunAndALabel("main")));
 
             AutonomyEditorPanel panel = new AutonomyEditorPanel(session, "main", () -> { });
 
@@ -198,7 +171,7 @@ public class testControlEAsksTheMenusQuestion
         {
             AutonomySession session = new AutonomySession(folder);
 
-            session.open(Arrays.asList(aPageWithALabelAndARun("main")));
+            session.open(Arrays.asList(aPageWithARunAndALabel("main")));
 
             AutonomyEditorPanel panel = new AutonomyEditorPanel(session, "main", () -> { });
 

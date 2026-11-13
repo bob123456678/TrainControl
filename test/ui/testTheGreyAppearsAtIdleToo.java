@@ -12,7 +12,6 @@ import static org.testng.Assert.*;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
-import org.traincontrol.automation.Edge;
 import org.traincontrol.automation.Layout;
 import org.traincontrol.automation.Point;
 import org.traincontrol.automationui.AutonomySession;
@@ -146,7 +145,7 @@ public class testTheGreyAppearsAtIdleToo
             return;
         }
 
-        SwingUtilities.invokeAndWait(() -> measureEveryTileAs(1));
+        SwingUtilities.invokeAndWait(() -> support.TileLengths.measureEveryTileAs(session, 1));
 
         model.parseAuto(session.buildConfiguration());
 
@@ -441,7 +440,7 @@ public class testTheGreyAppearsAtIdleToo
     {
         Layout before = model.getAutoLayout();
 
-        SwingUtilities.invokeAndWait(() -> measureEveryTileAs(0));
+        SwingUtilities.invokeAndWait(() -> support.TileLengths.measureEveryTileAs(session, 0));
 
         SwingUtilities.invokeAndWait(() -> ui.rebuildRunningLayoutFromSetup());
 
@@ -458,7 +457,7 @@ public class testTheGreyAppearsAtIdleToo
         railwayBlockedWithTilesUnmeasured = blockedSquares();
         windowBlockedWithTilesUnmeasured = whatTheWindowHoldsBlocked();
 
-        SwingUtilities.invokeAndWait(() -> measureEveryTileAs(1));
+        SwingUtilities.invokeAndWait(() -> support.TileLengths.measureEveryTileAs(session, 1));
 
         SwingUtilities.invokeAndWait(() -> ui.rebuildRunningLayoutFromSetup());
 
@@ -572,7 +571,7 @@ public class testTheGreyAppearsAtIdleToo
     private static Set<TileKey> blockedSquares()
     {
         // ASKED, NOT RE-DERIVED (OB-207): a test that re-implements the thing it measures can only catch the window
-        // drifting from the test.  The independent statement is `everyTileOfEveryCoveredEdge`, and
+        // drifting from the test.  The independent statement is `CoveredMarks.tilesOfTheCoveredEdges`, and
         // `testTheGreyIsTheWholeOfEveryCoveredEdge` compares them.
         return session.tilesBlockedByStandingTrains(layout);
     }
@@ -620,43 +619,6 @@ public class testTheGreyAppearsAtIdleToo
         return out;
     }
 
-    /** The old whole-edge answer, kept because two claims below are about the difference. */
-    private static Set<TileKey> everyTileOfEveryCoveredEdge()
-    {
-        Set<TileKey> out = new LinkedHashSet<>();
-
-        for (Edge edge : layout.edgesCoveredByStandingTrains().keySet())
-        {
-            if (edge == null || edge.getStart() == null || edge.getEnd() == null) continue;
-
-            TileKey from = session.getStationIndex().squareOf(edge.getStart().getName());
-            TileKey to = session.getStationIndex().squareOf(edge.getEnd().getName());
-
-            if (from == null || to == null) continue;
-
-            for (GraphReducer.ReducedEdge reduced : session.getReducer().getEdges())
-            {
-                boolean sameWay = from.equals(reduced.getStart()) && to.equals(reduced.getEnd());
-                boolean otherWay = to.equals(reduced.getStart()) && from.equals(reduced.getEnd());
-
-                if (!sameWay && !otherWay) continue;
-
-                for (GraphReducer.TileStep step : reduced.getPath())
-                {
-                    if (step.getTile() == null) continue;
-
-                    if (step.getTile().equals(from) || step.getTile().equals(to)) continue;
-
-                    out.add(step.getTile());
-                }
-
-                break;
-            }
-        }
-
-        return out;
-    }
-
     /**
      * Finds a train length at which the railway blocks a square the train is not drawn on: the line is as long as the
      * train and the blocked extent is whole edges, so a short train on a long edge separates the two marks.
@@ -673,12 +635,12 @@ public class testTheGreyAppearsAtIdleToo
 
             // THE WHOLE-EDGE ANSWER, to pick the tiles: `blockedSquare` must be a tile of the covered EDGE that the
             // train does not reach, a square that is neither orange nor gray.
-            Set<TileKey> blocked = everyTileOfEveryCoveredEdge();
+            Set<TileKey> blocked = support.CoveredMarks.tilesOfTheCoveredEdges(session, layout);
 
             TileKey onTheTrain = null;
             TileKey blockedOnly = null;
 
-            for (TileKey square : everyTile())
+            for (TileKey square : support.TileLengths.onTheEdges(session))
             {
                 if (ui.isTrackCovered(square))
                 {
@@ -694,7 +656,7 @@ public class testTheGreyAppearsAtIdleToo
 
             TileKey free = null;
 
-            for (TileKey square : everyTile())
+            for (TileKey square : support.TileLengths.onTheEdges(session))
             {
                 if (ui.isTrackCovered(square) || blocked.contains(square)) continue;
 
@@ -796,14 +758,10 @@ public class testTheGreyAppearsAtIdleToo
         return built[0];
     }
 
-    private static Set<TileKey> everyTile()
-    {
-        return support.TileLengths.onTheEdges(session);
-    }
-
     /**
      * Every square of the railway, the sensor squares at the ends of the edges included (OB-280).  The squares this
-     * class paints are still picked from `everyTile`: a sensor square carries the train's own icon, not the fade.
+     * class paints are still picked from `TileLengths.onTheEdges`: a sensor square carries the train's own icon, not
+     * the fade.
      */
     private static Set<TileKey> everySquare()
     {
@@ -876,11 +834,6 @@ public class testTheGreyAppearsAtIdleToo
         trainLengthWas = train.getTrainLength();
 
         train.setTrainLength(4);
-    }
-
-    private static void measureEveryTileAs(int units)
-    {
-        support.TileLengths.measureEveryTileAs(session, units);
     }
 
     // ---------------------------------------------------------------- nothing without a loaded setup (OB-307)

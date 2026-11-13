@@ -30,6 +30,7 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 import org.traincontrol.base.Locomotive;
+import org.traincontrol.gui.RightClickTips;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.marklin.MarklinLocomotive;
@@ -83,6 +84,9 @@ public class testMappingPagesAndLocomotiveDoors
     private static int pageP;
     private static int pageQ;
 
+    /** Hide Hover Tooltips as the copied preferences had it, put back after. */
+    private static String tipsWere;
+
     @BeforeClass
     public static void setUpClass() throws Exception
     {
@@ -95,6 +99,11 @@ public class testMappingPagesAndLocomotiveDoors
         ui = (TrainControlUI) model.getGUI();
 
         assertNotNull(ui, "the model has no window");
+
+        // The key menu's keys are read while it is open, where a tick of Hide Hover Tooltips (FR-199) hides them.
+        tipsWere = TrainControlUI.getPrefs().get(RightClickTips.PREF, null);
+
+        TrainControlUI.getPrefs().putBoolean(RightClickTips.PREF, false);
 
         Components.settle();
 
@@ -157,6 +166,9 @@ public class testMappingPagesAndLocomotiveDoors
         }
         finally
         {
+            if (tipsWere == null) TrainControlUI.getPrefs().remove(RightClickTips.PREF);
+            else TrainControlUI.getPrefs().put(RightClickTips.PREF, tipsWere);
+
             if (sandbox != null) sandbox.close();
         }
     }

@@ -541,23 +541,31 @@ public class testTheSyncAsksTheSensorsTheirState
 
     /**
      * A station whose device list is missing (not found) or will not read is synced as before, and nothing is said of
-     * it: devices come from events and the saved file.
+     * it: devices come from events and the saved file, and the sync logs what the same sync logs on a station whose
+     * list reads and has no Link S88.
      *
      * MUTATION: in `CS2File.parseS88DevicesCS3`, `return new HashMap<>();` to
-     * `throw new IllegalStateException(unreadable);`.
+     * `throw new IllegalStateException(unreadable);`; or log a line in its catch, and this fails.
      */
-    @Test(timeOut = 180000)
+    @Test(timeOut = 240000)
     public void testAMissingOrUnreadableListIsQuiet() throws Exception
     {
-        List<BiFunction<String, Integer, byte[]>> stations = Arrays.asList(CS3, (path, n) -> "/app/api/devs".equals(path)
-            ? "<html>busy</html>".getBytes(java.nio.charset.StandardCharsets.UTF_8) : CS3.apply(path, n));
+        // The first station's list reads and places nothing, so its sync says what a sync with no list should
+        List<BiFunction<String, Integer, byte[]>> stations = Arrays.asList(
+            (path, n) -> "/app/api/devs".equals(path) ? "[]".getBytes(java.nio.charset.StandardCharsets.UTF_8)
+                : CS3.apply(path, n),
+            CS3,
+            (path, n) -> "/app/api/devs".equals(path) ? "<html>busy</html>".getBytes(java.nio.charset.StandardCharsets.UTF_8)
+                : CS3.apply(path, n));
+
+        List<List<String>> said = new ArrayList<>();
 
         for (BiFunction<String, Integer, byte[]> answer : stations)
         {
             connected(Files.createTempDirectory("tc-sync-s88-nolist").toFile(), answer, (rig, station) ->
             {
                 assertTrue(new CS2File(rig.station.address(), rig.model).parseS88DevicesCS3().isEmpty(),
-                    "an unreadable list placed sensors");
+                    "an empty, missing or unreadable list placed sensors");
 
                 station.sensor(2601, true);
                 assertTrue(shows(rig, 2601, true), "precondition: the event did not arrive");
@@ -566,12 +574,13 @@ public class testTheSyncAsksTheSensorsTheirState
                 List<byte[]> during = synced(rig, station);
                 assertTrue(queries(during).contains("2/2601"), "the sensor was not asked: " + queries(during));
 
-                for (String line : rig.takeLog())
-                {
-                    assertFalse(line.contains("devs"), "the log spoke of the device list: " + line);
-                }
+                said.add(rig.takeLog());
             });
         }
+
+        assertFalse(said.get(0).isEmpty(), "precondition: the sync with an empty list logged nothing");
+        assertEquals(said.get(1), said.get(0), "a missing list changed what the sync logs");
+        assertEquals(said.get(2), said.get(0), "an unreadable list changed what the sync logs");
     }
 
     /**

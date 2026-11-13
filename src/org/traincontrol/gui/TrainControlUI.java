@@ -4924,7 +4924,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         showShortcut(item, KeyShortcuts.named(row).stroke());
     }
 
-    /** Shows these keys on a menu item, bound to nothing: the window's own key handling acts on them. */
+    /**
+     * Shows these keys on a menu item, bound to nothing: the window's own key handling acts on them.  Hide Hover
+     * Tooltips takes them off while the menu is open ({@link RightClickTips}).
+     */
     public static void showShortcut(javax.swing.JMenuItem item, javax.swing.KeyStroke keys)
     {
         item.setAccelerator(keys);
@@ -5075,6 +5078,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      */
     private void installPopUpAllButton()
     {
+        // Off the menu at once, as its text is the button's tooltip sentence, wider than any menu may be; mountLayoutHeadings leaves it off
+        this.layoutMenu.remove(this.popUpAllMenuItem);
+
         javax.swing.JButton all = new javax.swing.JButton(I18n.t("ui.main.allLayoutsButton"));
 
         all.setName("popUpAllButton");

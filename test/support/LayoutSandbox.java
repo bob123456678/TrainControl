@@ -219,6 +219,18 @@ public final class LayoutSandbox
         return pages;
     }
 
+    /** The pages of the layout in this folder, parsed by a parser of their own and {@link #wired} to this model. */
+    public static java.util.List<org.traincontrol.base.LayoutDiagram> pagesIn(
+        org.traincontrol.marklin.MarklinControlStation model, File folder) throws Exception
+    {
+        String path = "file:///" + folder.getAbsolutePath().replace(File.separatorChar, '/') + "/";
+
+        org.traincontrol.marklin.file.CS2File parser = new org.traincontrol.marklin.file.CS2File(path, model);
+        parser.setLayoutDataLoc(path);
+
+        return wired(model, parser);
+    }
+
     /**
      * The pages the MODEL parsed, wired to their accessories: `MarklinControlStation.syncLayouts` attaches them AFTER
      * the parse, and a second `CS2File` parser bypasses it (null accessories, `errorTileHasNoAddress`, railway in

@@ -9,12 +9,9 @@ import org.testng.SkipException;
 import org.testng.annotations.Test;
 import org.traincontrol.automationui.AutonomySession;
 import org.traincontrol.automationui.TileGraph.TileKey;
-import org.traincontrol.base.Accessory.accessoryDecoderType;
-import org.traincontrol.base.LayoutDiagram;
-import org.traincontrol.base.LayoutDiagramComponent.componentType;
 import org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel;
-import support.Diagrams;
 import support.Trees;
+import static support.Diagrams.aPageWithARunAndALabel;
 
 /**
  * Control+B acts exactly where the right-click menu offers a maximum train length, and nowhere else (MT-313).  A key
@@ -47,7 +44,8 @@ public class testControlBAsksTheMenusQuestion
         {
             AutonomySession session = new AutonomySession(folder);
 
-            session.open(Arrays.asList(aPageWithAStationAndAPlainSensor("main")));
+            // Two sensors: one becomes a station and the other does not, the pair the interesting claim needs.
+            session.open(Arrays.asList(aPageWithARunAndALabel("main")));
 
             session.initialize("CtrlB");
 
@@ -139,7 +137,7 @@ public class testControlBAsksTheMenusQuestion
         {
             AutonomySession session = new AutonomySession(folder);
 
-            session.open(Arrays.asList(aPageWithAStationAndAPlainSensor("main")));
+            session.open(Arrays.asList(aPageWithARunAndALabel("main")));
 
             session.initialize("CtrlB");
 
@@ -189,7 +187,7 @@ public class testControlBAsksTheMenusQuestion
         {
             AutonomySession session = new AutonomySession(folder);
 
-            session.open(Arrays.asList(aPageWithAStationAndAPlainSensor("main")));
+            session.open(Arrays.asList(aPageWithARunAndALabel("main")));
 
             session.initialize("CtrlB");
 
@@ -218,30 +216,6 @@ public class testControlBAsksTheMenusQuestion
         {
             Trees.delete(folder);
         }
-    }
-
-    /**
-     * A page with two sensors and a run of plain track between them, plus a text label: one sensor becomes a station
-     * and the other does not, the pair the interesting claim needs.
-     */
-    private static LayoutDiagram aPageWithAStationAndAPlainSensor(String name) throws java.io.IOException
-    {
-        LayoutDiagram page = new LayoutDiagram(name, 12, 4, null, null);
-
-        Diagrams.feedback(page, 1, 1, 5, 11);
-
-        for (int x = 2; x <= 5; x++)
-        {
-            Diagrams.straight(page, x, 1);
-        }
-
-        Diagrams.feedback(page, 6, 1, 6, 12);
-
-        page.addComponent(componentType.TEXT, 3, 3, 0, 0, 0, 0, accessoryDecoderType.MM2, "Yard");
-
-        page.setPageId(name);
-
-        return page;
     }
 
     /** `AutonomyEditorPanel` builds real Swing components, so this needs a display. */

@@ -27,11 +27,12 @@ import org.traincontrol.automationui.TileGraph;
 import org.traincontrol.automationui.TileGraph.Problem;
 import org.traincontrol.automationui.TileGraph.TileKey;
 import org.traincontrol.automationui.TilePorts.Side;
-import org.traincontrol.marklin.MarklinAccessory;
 import org.traincontrol.marklin.MarklinControlStation;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 import org.traincontrol.marklin.file.CS2File;
 import support.Reflect;
+import static support.Diagrams.wireAccessories;
+import static support.Diagrams.accessory;
 
 /**
  * The ground truth gate: reduce a real track diagram and compare what comes out against the autonomy configuration
@@ -96,7 +97,7 @@ public class testAutonomyDiagramSampleLayout
         // the accessory list is used solely to pick a decoder protocol, so an empty one is correct here.
         pages = support.LayoutSandbox.wired(model, parser);
 
-        wireAccessories();
+        wireAccessories(pages);
 
         // Three pages are outside autonomy, excluded the way a user would (only Main and Bottom are used):
         //   "4 - Combined" redraws tiles from the other pages and would mint a second Point per sensor;
@@ -232,45 +233,6 @@ public class testAutonomyDiagramSampleLayout
         }
 
         return candidate;
-    }
-
-    /**
-     * Attaches an accessory to every switch and signal, the way syncLayouts does when the application loads a layout.
-     * parseLayout does not (it only picks a decoder protocol), and names are built exactly as the application builds
-     * them, since both the model and the hand-written configuration key on the name.
-     */
-    private void wireAccessories()
-    {
-        for (LayoutDiagram page : pages)
-        {
-            for (org.traincontrol.base.LayoutDiagramComponent c : page.getAll())
-            {
-                if (!c.isSwitch() && !c.isSignal()) continue;
-
-                // the application skips tiles drawn without a digital address, and so does this
-                if (c.getAddress() <= 0) continue;
-
-                org.traincontrol.base.Accessory.accessoryType type = c.isSignal()
-                    ? org.traincontrol.base.Accessory.accessoryType.SIGNAL
-                    : org.traincontrol.base.Accessory.accessoryType.SWITCH;
-
-                c.setAccessory(accessory(c.getAddress(), type, c.getProtocol()));
-
-                if (c.isThreeWay())
-                {
-                    c.setAccessory2(accessory(c.getAddress() + 1,
-                        org.traincontrol.base.Accessory.accessoryType.SWITCH, c.getProtocol()));
-                }
-            }
-        }
-    }
-
-    private MarklinAccessory accessory(int logicalAddress,
-        org.traincontrol.base.Accessory.accessoryType type,
-        org.traincontrol.base.Accessory.accessoryDecoderType protocol)
-    {
-        return new MarklinAccessory(null, logicalAddress - 1, type, protocol,
-            MarklinAccessory.getNameWithProtocol(logicalAddress, type, protocol), false, 0);
     }
 
     /**

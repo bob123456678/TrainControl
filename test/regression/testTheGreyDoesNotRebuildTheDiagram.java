@@ -15,7 +15,6 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 import org.traincontrol.automation.Edge;
 import org.traincontrol.automation.Layout;
-import org.traincontrol.automation.Point;
 import org.traincontrol.automationui.AutonomySession;
 import org.traincontrol.automationui.GraphReducer;
 import org.traincontrol.automationui.TileGraph.TileKey;
@@ -38,7 +37,7 @@ import support.Reflect;
  * - **No rebuild.**  The page's tiles are compared by identity before and after the gesture.
  *
  * - **Only what changed is redrawn.**  A counting `RepaintManager` records which components were made dirty, and each
- *   must be a tile of a square whose state changed.  The changed squares come from the railway (`blockedSquares()`),
+ *   must be a tile of a square whose state changed.  The changed squares come from the railway
  *   not the window, which would agree with itself.
  *
  * The gesture is a TRAIN LENGTH through `TrainControlUI.applyTrainLength`, in BOTH directions.
@@ -121,13 +120,13 @@ public class testTheGreyDoesNotRebuildTheDiagram
             return;
         }
 
-        SwingUtilities.invokeAndWait(() -> measureEveryTileAs(1));
+        SwingUtilities.invokeAndWait(() -> support.TileLengths.measureEveryTileAs(session, 1));
 
         model.parseAuto(session.buildConfiguration());
 
         layout = model.getAutoLayout();
 
-        oneTrainThatCoversSomething();
+        train = support.CoveredMarks.leaveOneTrainThatCovers(layout, MEASURED);
 
         if (train == null)
         {
@@ -135,13 +134,17 @@ public class testTheGreyDoesNotRebuildTheDiagram
             return;
         }
 
+        trainLengthWas = train.getTrainLength();
+
+        train.setTrainLength(MEASURED);
+
         assertFalse(layout.isRunning(),
             "the frozen railway came up with autonomy running, and this class is about the gesture"
             + " rather than about a run");
 
         refreshCoveredTrack();
 
-        blocked = blockedSquares();
+        blocked = support.CoveredMarks.tilesOfTheCoveredEdges(session, layout);
         covered = coveredSquares();
 
         if (blocked.isEmpty())
@@ -667,7 +670,7 @@ public class testTheGreyDoesNotRebuildTheDiagram
 
     /**
      * The squares the train is DRAWN on while it is measured, worked out from the railway: the same source as
-     * `blockedSquares`, endpoints kept because a train standing at a sensor is drawn there.
+     * `CoveredMarks.tilesOfTheCoveredEdges`, endpoints kept because a train standing at a sensor is drawn there.
      */
     private static Set<TileKey> coveredSquares()
     {
@@ -737,46 +740,6 @@ public class testTheGreyDoesNotRebuildTheDiagram
 
     // ---------------------------------------------------------------- the railway's own answer
 
-    /**
-     * The squares the railway holds blocked, worked out from the covered EDGES as in
-     * `ui.testBlockedTrackIsGreyWhileAutonomyRuns`.
-     */
-    private static Set<TileKey> blockedSquares()
-    {
-        Set<TileKey> out = new LinkedHashSet<>();
-
-        for (Edge edge : layout.edgesCoveredByStandingTrains().keySet())
-        {
-            if (edge == null || edge.getStart() == null || edge.getEnd() == null) continue;
-
-            TileKey from = session.getStationIndex().squareOf(edge.getStart().getName());
-            TileKey to = session.getStationIndex().squareOf(edge.getEnd().getName());
-
-            if (from == null || to == null) continue;
-
-            for (GraphReducer.ReducedEdge reduced : session.getReducer().getEdges())
-            {
-                boolean sameWay = from.equals(reduced.getStart()) && to.equals(reduced.getEnd());
-                boolean otherWay = to.equals(reduced.getStart()) && from.equals(reduced.getEnd());
-
-                if (!sameWay && !otherWay) continue;
-
-                for (GraphReducer.TileStep step : reduced.getPath())
-                {
-                    if (step.getTile() == null) continue;
-
-                    if (step.getTile().equals(from) || step.getTile().equals(to)) continue;
-
-                    out.add(step.getTile());
-                }
-
-                break;
-            }
-        }
-
-        return out;
-    }
-
     // ---------------------------------------------------------------- the fixture
 
     /**
@@ -809,55 +772,5 @@ public class testTheGreyDoesNotRebuildTheDiagram
         settled.await(60, java.util.concurrent.TimeUnit.SECONDS);
 
         Components.drain(1);
-    }
-
-    /**
-     * Leaves one train standing, and only one that actually covers track.
-     */
-    private static void oneTrainThatCoversSomething()
-    {
-        Point keep = null;
-
-        for (Point point : layout.getPoints())
-        {
-            if (point.getCurrentLocomotive() == null || point.getArrivedFrom() == null) continue;
-
-            Locomotive candidate = point.getCurrentLocomotive();
-
-            Integer was = candidate.getTrainLength();
-
-            candidate.setTrainLength(MEASURED);
-
-            boolean covers = layout.edgesCoveredByStandingTrains().containsValue(candidate);
-
-            candidate.setTrainLength(was);
-
-            if (covers)
-            {
-                keep = point;
-
-                break;
-            }
-        }
-
-        if (keep == null) return;
-
-        for (Point point : layout.getPoints())
-        {
-            if (point == keep || point.getCurrentLocomotive() == null) continue;
-
-            layout.moveLocomotive(null, point.getName(), true);
-        }
-
-        train = keep.getCurrentLocomotive();
-
-        trainLengthWas = train.getTrainLength();
-
-        train.setTrainLength(MEASURED);
-    }
-
-    private static void measureEveryTileAs(int units)
-    {
-        support.TileLengths.measureEveryTileAs(session, units);
     }
 }

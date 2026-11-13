@@ -141,17 +141,13 @@ final class LayoutEditorRightclickMenu extends JPopupMenu
 
             boolean anyPicked = !edit.getSelection().isEmpty();
 
-            JMenuItem copySelected = new JMenuItem(I18n.t("ui.copy"));
-            copySelected.addActionListener(event -> edit.copySelection());
-            TrainControlUI.showShortcut(copySelected, LayoutEditor.COPY_KEY);
+            JMenuItem copySelected = keyed(I18n.t("ui.copy"), LayoutEditor.COPY_KEY, edit::copySelection);
             copySelected.setEnabled(anyPicked);
             selectionMenu.add(copySelected);
 
             // Cut: moving a run of track otherwise meant copying, pasting and deleting the originals, and the last step
             // is the one that gets forgotten and leaves a duplicate railway behind.
-            JMenuItem cutSelected = new JMenuItem(I18n.t("ui.cut"));
-            cutSelected.addActionListener(event -> edit.cutSelection());
-            TrainControlUI.showShortcut(cutSelected, LayoutEditor.CUT_KEY);
+            JMenuItem cutSelected = keyed(I18n.t("ui.cut"), LayoutEditor.CUT_KEY, edit::cutSelection);
             cutSelected.setEnabled(anyPicked);
             selectionMenu.add(cutSelected);
 
@@ -160,14 +156,11 @@ final class LayoutEditorRightclickMenu extends JPopupMenu
             fillSelected.setEnabled(anyPicked && edit.hasToolFlag());
             selectionMenu.add(fillSelected);
 
-            JMenuItem rotateSelected = new JMenuItem(I18n.t("ui.rotate"));
-            rotateSelected.addActionListener(event -> edit.rotateSelection());
+            JMenuItem rotateSelected = keyed(I18n.t("ui.rotate"), LayoutEditor.ROTATE_KEY, edit::rotateSelection);
             rotateSelected.setEnabled(anyPicked);
             selectionMenu.add(rotateSelected);
 
-            JMenuItem deleteSelected = new JMenuItem(I18n.t("ui.delete"));
-            deleteSelected.addActionListener(event -> edit.deleteSelection());
-            TrainControlUI.showShortcut(deleteSelected, LayoutEditor.DELETE_KEY);
+            JMenuItem deleteSelected = keyed(I18n.t("ui.delete"), LayoutEditor.DELETE_KEY, edit::deleteSelection);
             deleteSelected.setEnabled(anyPicked);
             selectionMenu.add(deleteSelected);
 

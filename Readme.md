@@ -190,7 +190,7 @@ Monitor the usage of different locomotives.
     * Hide the names of stations autonomy will never send a train to
 * Back up everything in one archive (locomotives, keyboard mappings, track diagrams, routes and
   autonomy setups) and restore it on another machine
-* Hide the tooltips in right-click menus, if you don't need them
+* Hide the tooltips and shortcut keys in menus, if you don't need them
 * Programmatic layout control via Java API (uses CAN protocol; [see documentation](AutomationAPI.md)) 
 * Monitor locomotive usage stats
 
@@ -254,13 +254,13 @@ TrainControl's key mappings are designed to allow you to send any command nearly
         * Left mouse click (cut hovered tile / paste new tile)
         * Middle-mouse click (rotate hovered tile)
         * Right mouse click (show all options)
-        * Control+C (copy hovered tile)
-        * Control+X (cut hovered tile)
+        * Control+C (copy the picked squares, or the hovered tile when none are picked)
+        * Control+X (cut the picked squares, or the hovered tile when none are picked)
         * Control+V (paste tile)
-        * Control+R (rotate hovered tile)
+        * Control+R (rotate the picked squares, or the hovered tile when none are picked)
         * Control+T (edit text of hovered tile)
         * Control+A (edit address of hovered tile)
-        * Delete (delete hovered tile)
+        * Delete (delete the picked squares, or the hovered tile when none are picked)
         * Control+Z (undo)
         * Control+Y (redo)
     * Picking squares
@@ -474,9 +474,10 @@ Tab icons provided by Freepik.
             - The track diagram editor has a strip of icons under `Page` to add, duplicate, rename and delete a page and to move it up or down, and its `Manage Pages` menu is now `Tools`.
             - Pages are shown in the order of the layout's files rather than by name, and `Sort Pages by Name` puts them back in name order.
             - A page link keeps going to the same page when pages are renamed or moved.
+            - In the track diagram editor, Ctrl+R turns the picked squares when there are any, and `Rotate` on the `Selection` menu shows Ctrl+R.
         - Interface
             - `Layouts` > `Manage Pages...` is now `Edit/Add Pages...`, and the separate `Edit Layout Page` menu is gone.
-            - `Hide Hover Tooltips` on the `Preferences` menu hides the tooltips in menus, though an item still shows its shortcut key and a grayed item still says why.
+            - `Hide Hover Tooltips` on the `Preferences` menu hides the tooltips and shortcut keys in menus, though a grayed item still says why.  The keys still work, and unticking it shows both again.
             - The accessory keyboard has 16 tabs of 128 addresses, each key has a red half and a green half, and clicking either sends that color again even if it is already lit.
             - `Export Counts` on the accessory keyboard saves every accessory's number of actuations to a CSV file.
             - Click an (i) to read its explanation at once, without waiting for the tooltip.
@@ -511,6 +512,7 @@ Tab icons provided by Freepik.
             - Cancel in the autonomy editor no longer loses a train you paused or set going from its card on the Auto tab while the editor was open.
             - Cancel in the autonomy editor no longer sends a timetable entry to the wrong station after two stations swapped names.
             - Cancel in the autonomy editor now takes off a train you placed on an empty station, and puts a station back as it was after you placed a train over another one.
+            - Clicking a finding under `Things to look at` that is on another page now asks whether to save your changes first, as switching pages does, instead of keeping them where `Cancel` can no longer undo them.
             - A command window that stopped showing output, for example after clicking into it, no longer holds up sensor reports, which could make trains run past their stops.
             - `Path Integrity Validation` now waits up to 30 seconds while the Central Station is still switching other accessories, instead of stopping the train.
             - A train's destinations on the track diagram's right-click menu are in the order you read them, so ParkingTrack4 comes before ParkingTrack10.

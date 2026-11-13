@@ -27,6 +27,7 @@ import support.Display;
 import support.Reflect;
 import support.SourceOf;
 import static org.traincontrol.marklin.MarklinControlStation.init;
+import static support.StandingTrain.squareNamed;
 
 /**
  * Where a train on the frozen copy of Adam's railway may be sent, read where the steps read it: the track diagram's
@@ -118,7 +119,7 @@ public class testWhereHisTrainsMayBeSent
     @Test
     public void testARefusedSendSaysSoInFrontOfTheWindow() throws Exception
     {
-        TileKey secondary = square("BottomSecondary");
+        TileKey secondary = squareNamed(session, "BottomSecondary");
 
         standOn(train(HIS_TRAIN), secondary, null);
 
@@ -156,7 +157,7 @@ public class testWhereHisTrainsMayBeSent
                 {
                     if (!(window instanceof javax.swing.JDialog) || !window.isShowing()) continue;
 
-                    javax.swing.JOptionPane pane = find(((javax.swing.JDialog) window).getContentPane(),
+                    javax.swing.JOptionPane pane = Components.inside(((javax.swing.JDialog) window).getContentPane(),
                         javax.swing.JOptionPane.class);
 
                     if (pane != null && refusal.equals(String.valueOf(pane.getMessage())))
@@ -263,7 +264,7 @@ public class testWhereHisTrainsMayBeSent
     {
         assertFalse(en57.isReversible(), "precondition: " + CANNOT_REVERSE + " can reverse");
 
-        TileKey secondary = square("BottomSecondary");
+        TileKey secondary = squareNamed(session, "BottomSecondary");
 
         // STEP 1.
         standOn(en57, secondary, null);
@@ -312,9 +313,9 @@ public class testWhereHisTrainsMayBeSent
     {
         clearTheRailway();
 
-        TileKey pre = square("BottomMainAPre");
-        TileKey leftPark = square("TunnelLeftPark");
-        TileKey tunnel = square("Tunnel");
+        TileKey pre = squareNamed(session, "BottomMainAPre");
+        TileKey leftPark = squareNamed(session, "TunnelLeftPark");
+        TileKey tunnel = squareNamed(session, "Tunnel");
 
         Locomotive his = train(HIS_TRAIN);
         Locomotive other = anotherTrain(HIS_TRAIN, CANNOT_REVERSE);
@@ -389,7 +390,7 @@ public class testWhereHisTrainsMayBeSent
         Locomotive turned = anotherTrain(HIS_TRAIN, CANNOT_REVERSE);
         Locomotive parked = anotherTrain(turned.getName(), HIS_TRAIN, CANNOT_REVERSE);
 
-        TileKey tunnel = square("Tunnel");
+        TileKey tunnel = squareNamed(session, "Tunnel");
 
         final Point atTunnel = railway().getPoint("Tunnel (southbound)");
 
@@ -571,8 +572,8 @@ public class testWhereHisTrainsMayBeSent
 
         remember(his);
 
-        TileKey rampDown = square("RampDown");
-        TileKey tunnel = square("Tunnel");
+        TileKey rampDown = squareNamed(session, "RampDown");
+        TileKey tunnel = squareNamed(session, "Tunnel");
 
         Edge hop = railway().getEdge("BottomSecondary", "TunnelPre");
 
@@ -619,8 +620,8 @@ public class testWhereHisTrainsMayBeSent
 
             javax.swing.JDialog asked = awaitDialogTitled(I18n.t("autosetup.ui.menuSetLength"));
 
-            final javax.swing.JTextField field = find(asked.getContentPane(), javax.swing.JTextField.class);
-            final javax.swing.JOptionPane pane = find(asked.getContentPane(), javax.swing.JOptionPane.class);
+            final javax.swing.JTextField field = Components.inside(asked.getContentPane(), javax.swing.JTextField.class);
+            final javax.swing.JOptionPane pane = Components.inside(asked.getContentPane(), javax.swing.JOptionPane.class);
 
             SwingUtilities.invokeAndWait(() ->
             {
@@ -830,7 +831,7 @@ public class testWhereHisTrainsMayBeSent
         {
             if (!(window instanceof javax.swing.JDialog) || !window.isShowing()) continue;
 
-            javax.swing.JOptionPane pane = find(((javax.swing.JDialog) window).getContentPane(), javax.swing.JOptionPane.class);
+            javax.swing.JOptionPane pane = Components.inside(((javax.swing.JDialog) window).getContentPane(), javax.swing.JOptionPane.class);
 
             if (pane != null) return ((javax.swing.JDialog) window).getTitle() + ": " + pane.getMessage();
         }
@@ -863,7 +864,7 @@ public class testWhereHisTrainsMayBeSent
         SwingUtilities.invokeAndWait(() ->
         {
             box[0] = checkBoxIn(dialog.getContentPane(), label);
-            pane[0] = find(dialog.getContentPane(), javax.swing.JOptionPane.class);
+            pane[0] = Components.inside(dialog.getContentPane(), javax.swing.JOptionPane.class);
         });
 
         assertNotNull(box[0], "the Unavailable While Occupied window lists no " + label);
@@ -1079,7 +1080,7 @@ public class testWhereHisTrainsMayBeSent
 
         if (wayOut == null) return null;
 
-        for (String name : session.getStationIndex().pointNamesAt(square("TunnelRightPark")))
+        for (String name : session.getStationIndex().pointNamesAt(squareNamed(session, "TunnelRightPark")))
         {
             Point copy = railway().getPoint(name);
 
@@ -1170,17 +1171,6 @@ public class testWhereHisTrainsMayBeSent
         return model.getAutoLayout();
     }
 
-    /** The square the setup gives this name. */
-    private static TileKey square(String name)
-    {
-        for (TileKey key : session.getStore().getNamedTiles())
-        {
-            if (name.equals(session.getStore().getPointName(key))) return key;
-        }
-
-        throw new AssertionError("this railway has no " + name);
-    }
-
     private static String name(TileKey square)
     {
         return session.getStore().getPointName(square);
@@ -1238,11 +1228,6 @@ public class testWhereHisTrainsMayBeSent
         return support.Components.inside(container, javax.swing.JCheckBox.class, box -> text.equals(box.getText()));
     }
 
-    private static <T> T find(java.awt.Container container, Class<T> type)
-    {
-        return support.Components.inside(container, type);
-    }
-
     private static javax.swing.JDialog awaitDialogTitled(String title) throws Exception
     {
         long giveUp = System.currentTimeMillis() + 10000;
@@ -1297,7 +1282,7 @@ public class testWhereHisTrainsMayBeSent
             {
                 if (!(window instanceof javax.swing.JDialog) || !window.isShowing()) continue;
 
-                final javax.swing.JOptionPane pane = find(((javax.swing.JDialog) window).getContentPane(),
+                final javax.swing.JOptionPane pane = Components.inside(((javax.swing.JDialog) window).getContentPane(),
                     javax.swing.JOptionPane.class);
 
                 if (pane == null) continue;

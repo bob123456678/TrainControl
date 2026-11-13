@@ -3,7 +3,6 @@ package ui;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.lang.reflect.Field;
-import java.util.LinkedHashSet;
 import java.util.Set;
 import javax.swing.JPanel;
 import javax.swing.SwingUtilities;
@@ -11,11 +10,8 @@ import static org.testng.Assert.*;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
-import org.traincontrol.automation.Edge;
 import org.traincontrol.automation.Layout;
-import org.traincontrol.automation.Point;
 import org.traincontrol.automationui.AutonomySession;
-import org.traincontrol.automationui.GraphReducer;
 import org.traincontrol.automationui.TileGraph.TileKey;
 import org.traincontrol.base.LayoutDiagramComponent;
 import org.traincontrol.base.Locomotive;
@@ -129,19 +125,23 @@ public class testBlockedTrackIsGreyWhileAutonomyRuns
             return;
         }
 
-        SwingUtilities.invokeAndWait(() -> measureEveryTileAs(1));
+        SwingUtilities.invokeAndWait(() -> support.TileLengths.measureEveryTileAs(session, 1));
 
         model.parseAuto(session.buildConfiguration());
 
         layout = model.getAutoLayout();
 
-        oneTrainThatCoversSomething();
+        train = support.CoveredMarks.leaveOneTrainThatCovers(layout, 4);
 
         if (train == null)
         {
             unbuilt = "no standing train covers any track here";
             return;
         }
+
+        trainLengthWas = train.getTrainLength();
+
+        train.setTrainLength(4);
 
         if (!chooseTheThreeSquares())
         {
@@ -350,47 +350,6 @@ public class testBlockedTrackIsGreyWhileAutonomyRuns
 
     // ---------------------------------------------------------------- the railway's own answer
 
-    /**
-     * The squares the railway holds blocked, worked out from the covered EDGES, not asked of the window (which would
-     * agree with itself whatever it says). This is the translation `AutonomySession` performs, with the endpoints
-     * excluded because a train at a sensor is shown standing there.
-     */
-    private static Set<TileKey> blockedSquares()
-    {
-        Set<TileKey> out = new LinkedHashSet<>();
-
-        for (Edge edge : layout.edgesCoveredByStandingTrains().keySet())
-        {
-            if (edge == null || edge.getStart() == null || edge.getEnd() == null) continue;
-
-            TileKey from = session.getStationIndex().squareOf(edge.getStart().getName());
-            TileKey to = session.getStationIndex().squareOf(edge.getEnd().getName());
-
-            if (from == null || to == null) continue;
-
-            for (GraphReducer.ReducedEdge reduced : session.getReducer().getEdges())
-            {
-                boolean sameWay = from.equals(reduced.getStart()) && to.equals(reduced.getEnd());
-                boolean otherWay = to.equals(reduced.getStart()) && from.equals(reduced.getEnd());
-
-                if (!sameWay && !otherWay) continue;
-
-                for (GraphReducer.TileStep step : reduced.getPath())
-                {
-                    if (step.getTile() == null) continue;
-
-                    if (step.getTile().equals(from) || step.getTile().equals(to)) continue;
-
-                    out.add(step.getTile());
-                }
-
-                break;
-            }
-        }
-
-        return out;
-    }
-
     /** The train length that gave the three squares, kept so the bare picture can be undone. */
     private static int trainLength;
 
@@ -407,11 +366,11 @@ public class testBlockedTrackIsGreyWhileAutonomyRuns
 
             refreshCoveredTrack();
 
-            Set<TileKey> blocked = blockedSquares();
+            Set<TileKey> blocked = support.CoveredMarks.tilesOfTheCoveredEdges(session, layout);
 
             TileKey onTheTrain = null;
 
-            for (TileKey square : everyTile())
+            for (TileKey square : support.TileLengths.onTheEdges(session))
             {
                 if (ui.isTrackCovered(square) && drawable(square))
                 {
@@ -432,7 +391,7 @@ public class testBlockedTrackIsGreyWhileAutonomyRuns
 
             TileKey free = null;
 
-            for (TileKey square : everyTile())
+            for (TileKey square : support.TileLengths.onTheEdges(session))
             {
                 if (ui.isTrackCovered(square) || blocked.contains(square)) continue;
 
@@ -552,61 +511,5 @@ public class testBlockedTrackIsGreyWhileAutonomyRuns
             "the tile never drew its image, so every picture below would be of an empty square");
 
         return built[0];
-    }
-
-    private static Set<TileKey> everyTile()
-    {
-        return support.TileLengths.onTheEdges(session);
-    }
-
-    /**
-     * Leaves one train standing, and only one that actually covers track: a train whose recorded arrival side leads
-     * nowhere covers nothing.
-     */
-    private static void oneTrainThatCoversSomething()
-    {
-        Point keep = null;
-
-        for (Point point : layout.getPoints())
-        {
-            if (point.getCurrentLocomotive() == null || point.getArrivedFrom() == null) continue;
-
-            Locomotive candidate = point.getCurrentLocomotive();
-
-            Integer was = candidate.getTrainLength();
-
-            candidate.setTrainLength(4);
-
-            boolean covers = layout.edgesCoveredByStandingTrains().containsValue(candidate);
-
-            candidate.setTrainLength(was);
-
-            if (covers)
-            {
-                keep = point;
-
-                break;
-            }
-        }
-
-        if (keep == null) return;
-
-        for (Point point : layout.getPoints())
-        {
-            if (point == keep || point.getCurrentLocomotive() == null) continue;
-
-            layout.moveLocomotive(null, point.getName(), true);
-        }
-
-        train = keep.getCurrentLocomotive();
-
-        trainLengthWas = train.getTrainLength();
-
-        train.setTrainLength(4);
-    }
-
-    private static void measureEveryTileAs(int units)
-    {
-        support.TileLengths.measureEveryTileAs(session, units);
     }
 }

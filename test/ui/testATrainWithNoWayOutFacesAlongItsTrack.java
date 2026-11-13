@@ -27,6 +27,7 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
 import support.Components;
 import support.Display;
 import support.Reflect;
+import static support.Components.itemNamed;
 
 /**
  * The locomotive on a square no track leads out of faces a way its track runs, not east (OB-348).  Run at
@@ -632,8 +633,8 @@ public class testATrainWithNoWayOutFacesAlongItsTrack
 
         final javax.swing.JDialog asked = awaitDialogStarting(I18n.t("autosetup.ui.menuAddToAutonomy"));
 
-        final javax.swing.JList<?> list = find(asked.getContentPane(), javax.swing.JList.class);
-        final javax.swing.JOptionPane pane = find(asked.getContentPane(), javax.swing.JOptionPane.class);
+        final javax.swing.JList<?> list = Components.inside(asked.getContentPane(), javax.swing.JList.class);
+        final javax.swing.JOptionPane pane = Components.inside(asked.getContentPane(), javax.swing.JOptionPane.class);
 
         assertTrue(list != null && pane != null, "precondition: the editor's Place asks no list of locomotives");
 
@@ -792,34 +793,6 @@ public class testATrainWithNoWayOutFacesAlongItsTrack
         fail("no dialog titled \"" + title + "...\" appeared");
 
         return null;
-    }
-
-    private static javax.swing.JMenuItem itemNamed(java.awt.Container menu, String text)
-    {
-        java.awt.Component[] children = menu instanceof javax.swing.JMenu
-            ? ((javax.swing.JMenu) menu).getMenuComponents() : menu.getComponents();
-
-        for (java.awt.Component child : children)
-        {
-            if (child instanceof javax.swing.JMenuItem && text.equals(((javax.swing.JMenuItem) child).getText()))
-            {
-                return (javax.swing.JMenuItem) child;
-            }
-
-            if (child instanceof javax.swing.JMenu)
-            {
-                javax.swing.JMenuItem found = itemNamed((javax.swing.JMenu) child, text);
-
-                if (found != null) return found;
-            }
-        }
-
-        return null;
-    }
-
-    private static <T> T find(java.awt.Container container, Class<T> type)
-    {
-        return support.Components.inside(container, type);
     }
 
     /**

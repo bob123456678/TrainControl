@@ -4,7 +4,6 @@ import java.awt.Component;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import javax.swing.AbstractButton;
 import javax.swing.JMenu;
@@ -31,23 +30,17 @@ import support.Mouse;
 import support.Reflect;
 
 /**
- * Preferences > Hide Hover Tooltips (FR-168): off, menus keep their tooltips; on, every enabled item of any menu (the
- * menu bar's and left-click pop-ups included, D37 on MT-910) loses its tooltip but a hotkey's, which shows exactly the
- * hotkey; a closed menu's items have their own tips back; the choice is stored; tooltips outside menus are untouched.
- * The menus are opened as a user opens them: right-clicks, clicks on the menu bar and on a button.
- *
- * MUTATIONS, each seen red: the strip skipped (the on claims); the strip made even when off (the off claim); hotkeys
- * stripped too (the hotkey claim); the choice not written to the preferences (the persistence claim); right-click
- * menus only (the menu bar and left-click claims); tips put back on the next opening only (the closed-menu claim); a
- * key found only as the whole tip or bracketed (the mid-sentence claim); the accelerator ignored (the shortcut claim).
+ * Preferences > Hide Hover Tooltips (FR-168, FR-199): off, menus keep their tooltips and keys; on, every item of any
+ * menu (the menu bar's and left-click pop-ups included, D37 on MT-910) shows no key, and every enabled one no tooltip; a
+ * closed menu's items have their own tips and keys back; the keys act either way; the choice is stored; tooltips
+ * outside menus are untouched.  The menus are opened as a user opens them: right-clicks, clicks on the menu bar and on
+ * a button.
  */
 public class testRightClickMenuTipsCanBeHidden
 {
     private static final long PATIENCE_MS = 20000;
 
     private static final Pattern HOTKEY = Pattern.compile("(?:(?:Control|Alt)[+-]\\w+|Delete)");
-
-    private static final Pattern BRACKETED = Pattern.compile("\\(((?:Control|Alt)[+-]\\w+)\\)\\s*(?:</\\w+>)*$");
 
     private static AskingWindows.Railway railway;
     private static TrainControlUI ui;
@@ -166,7 +159,7 @@ public class testRightClickMenuTipsCanBeHidden
     /** The items the last read found grayed: they keep their tips, which say why. */
     private static final java.util.Set<String> grayed = new java.util.HashSet<>();
 
-    /** The keys the last read found shown on the items' right, by item: the setting never touches them. */
+    /** The keys the last read found shown on the items' right, by item: ticked, the setting hides them (FR-199). */
     private static final Map<String, javax.swing.KeyStroke> shownKeys = new java.util.HashMap<>();
 
     private static void collect(Component[] items, Map<String, String> into)
@@ -207,47 +200,16 @@ public class testRightClickMenuTipsCanBeHidden
         return Components.find(editor, LayoutLabel.class, Component::isShowing);
     }
 
-    /**
-     * What a tooltip should come to when only a hotkey is allowed; written here, not asked of the code.  A tip naming
-     * its key inside a sentence is listed with the key it must come to.
-     */
-    private static String hotkeyOnly(String tip)
-    {
-        if (tip == null) return null;
-
-        String text = tip.replaceAll("<[^>]*>", "").trim();
-
-        // Its own shortcut, shown on the item, as RightClickTips writes an accelerator.
-        if (text.equals(I18n.t("layout.ui.tooltipFindAPoint"))) return "Ctrl+F";
-
-        if (text.equals(I18n.t("layout.ui.tooltipSelectByDragging"))) return "Ctrl+M";
-
-        if (text.equals(I18n.t("autosetup.ui.tooltipShowStationHere"))
-            || text.equals(I18n.t("autosetup.ui.tooltipTextInTheWay")))
-        {
-            return "Ctrl+N";
-        }
-
-        if (text.equals(I18n.t("layout.ui.tooltipDeselect"))) return "Escape";
-
-        if (HOTKEY.matcher(tip).matches()) return tip;
-
-        Matcher bracketed = BRACKETED.matcher(tip);
-
-        return bracketed.find() ? bracketed.group(1) : null;
-    }
-
-    /** The same items as before hiding, each showing what hiding leaves: a grayed one its reason, any other its hotkey. */
-    private static void assertOnlyHotkeysLeft(String which, Map<String, String> before, java.util.Set<String> gray,
+    /** The same items as before hiding, each showing what hiding leaves: a grayed one its reason, any other nothing. */
+    private static void assertOnlyReasonsLeft(String which, Map<String, String> before, java.util.Set<String> gray,
         Map<String, String> after)
     {
         assertEquals(after.keySet(), before.keySet(), which + " offers other items on the second opening");
 
         for (Map.Entry<String, String> item : before.entrySet())
         {
-            assertEquals(after.get(item.getKey()),
-                gray.contains(item.getKey()) ? item.getValue() : hotkeyOnly(item.getValue()), "\"" + item.getKey()
-                + "\" was \"" + item.getValue() + "\" and now shows the wrong thing");
+            assertEquals(after.get(item.getKey()), gray.contains(item.getKey()) ? item.getValue() : null, "\""
+                + item.getKey() + "\" was \"" + item.getValue() + "\" and now shows the wrong thing");
         }
     }
 
@@ -291,13 +253,13 @@ public class testRightClickMenuTipsCanBeHidden
     }
 
     /**
-     * On, no item of any right-click menu has a tooltip but its hotkey, and an item that had a hotkey shows exactly it;
-     * the locomotive button's items still show their keys on their right.
+     * On, no enabled item of any right-click menu has a tooltip, and the locomotive button's menu shows no key on its
+     * items' right (FR-199).
      *
-     * MUTATION: skip the strip (the sentences stay); strip hotkeys too (the hotkeys go).
+     * MUTATION: skip the strip of the keys (the key menu shows its keys), or of the tips (the sentences stay).
      */
     @Test
-    public void testOnlyHotkeysRemainWhenTheTipsAreHidden() throws Exception
+    public void testNoTipOrKeyRemainsWhenHidden() throws Exception
     {
         for (Door door : DIAGRAM_AND_BUTTON)
         {
@@ -323,7 +285,7 @@ public class testRightClickMenuTipsCanBeHidden
 
             for (Map.Entry<String, String> item : before.entrySet())
             {
-                String expected = gray.contains(item.getKey()) ? item.getValue() : hotkeyOnly(item.getValue());
+                String expected = gray.contains(item.getKey()) ? item.getValue() : null;
 
                 assertEquals(after.get(item.getKey()), expected, door + ": \"" + item.getKey() + "\" was \""
                     + item.getValue() + "\" and now shows the wrong thing");
@@ -334,7 +296,7 @@ public class testRightClickMenuTipsCanBeHidden
             if (door == Door.LOC_BUTTON)
             {
                 assertFalse(keysBefore.isEmpty(), door + ": no item shows a key to prove");
-                assertEquals(shownKeys, keysBefore, door + ": hiding the tips changed the keys the items show");
+                assertEquals(shownKeys, java.util.Collections.emptyMap(), door + ": the menu still shows keys");
             }
             else
             {
@@ -344,10 +306,10 @@ public class testRightClickMenuTipsCanBeHidden
     }
 
     /**
-     * The track editor's menu, opened once: its items show their keys on their right whether or not the tips are
-     * hidden, its other tooltips go, and off again, all are back.
+     * The track editor's right-click menu: hidden, its items show no key on their right and its enabled items no tip;
+     * off again, the very keys and tips are back.
      *
-     * MUTATION: strip hotkeys too, or skip the strip, as above.
+     * MUTATION: skip the strip of the keys (the keys stay while hidden).
      */
     @Test
     public void testTheTrackEditorsMenuFollowsTheSetting() throws Exception
@@ -372,18 +334,202 @@ public class testRightClickMenuTipsCanBeHidden
 
             Map<String, String> hidden = tipsOn(Door.EDITOR);
 
-            assertOnlyHotkeysLeft("the editor menu", before, gray, hidden);
+            assertOnlyReasonsLeft("the editor menu", before, gray, hidden);
 
-            assertEquals(shownKeys, keysBefore, "hiding the tips changed the keys the editor menu shows");
+            assertEquals(shownKeys, java.util.Collections.emptyMap(), "hidden, the editor menu still shows keys");
 
             hide(false);
 
+            shownKeys.clear();
+
             assertEquals(tipsOn(Door.EDITOR), before, "the editor menu's tips did not come back");
+
+            assertEquals(shownKeys, keysBefore, "the editor menu's keys did not come back");
         }
         finally
         {
             closeEditors();
         }
+    }
+
+    /**
+     * The menu bar's Locomotives menu, built at start-up and opened by a click on its title: ticked through the
+     * Preferences checkbox, its items show no key; cleared, they show the very keys the window's shortcut table acts on,
+     * without a restart (FR-199).
+     *
+     * MUTATION: skip the strip of the keys (the keys stay while ticked).
+     */
+    @Test
+    public void testTheMenuBarShowsItsKeysOnlyWhileTipsShow() throws Exception
+    {
+        AbstractButton tick = Components.withText(ui, I18n.t("ui.main.toolbar.hideRightClickTips"));
+
+        JMenu locomotives = (JMenu) field("locomotiveMenu");
+
+        Map<String, String> rows = new LinkedHashMap<>();
+
+        rows.put("quickFindMenuItem", "find a locomotive");
+        rows.put("viewDatabaseMenuItem", "choose a locomotive");
+        rows.put("addLocomotiveMenuItem", "add a locomotive");
+
+        try
+        {
+            hide(false);
+
+            if (tick.isSelected()) SwingUtilities.invokeAndWait(tick::doClick);
+
+            keysOnTheBar(locomotives, rows, true);
+
+            SwingUtilities.invokeAndWait(tick::doClick);
+
+            keysOnTheBar(locomotives, rows, false);
+
+            SwingUtilities.invokeAndWait(tick::doClick);
+
+            keysOnTheBar(locomotives, rows, true);
+        }
+        finally
+        {
+            if (tick.isSelected()) SwingUtilities.invokeAndWait(tick::doClick);
+        }
+    }
+
+    /** Opens the bar's menu by a click, checks each row's item shows its table key or none, and closes it. */
+    private static void keysOnTheBar(JMenu title, Map<String, String> rows, boolean shown) throws Exception
+    {
+        Mouse.click(title);
+
+        try
+        {
+            assertTrue(Components.waitFor(title::isPopupMenuVisible, PATIENCE_MS), "the menu did not open");
+
+            Components.settle();
+
+            for (Map.Entry<String, String> row : rows.entrySet())
+            {
+                JMenuItem item = (JMenuItem) field(row.getKey());
+
+                assertEquals(Components.onTheEventThread(item::getAccelerator),
+                    shown ? TrainControlUI.KeyShortcuts.named(row.getValue()).stroke() : null,
+                    "\"" + item.getText() + "\" shows the wrong key " + (shown ? "with tips shown" : "while ticked"));
+            }
+        }
+        finally
+        {
+            Mouse.closeMenus();
+
+            Components.settle();
+        }
+    }
+
+    /**
+     * Ticked, a menu bar menu the keyboard opens (Right or Left arrow across an open bar sets the menu and its pop-up in
+     * one step, so the pop-up is sized with its keys first) is as wide as its items without the key column (FR-199).
+     *
+     * MUTATION: leave out `RightClickTips.apply`'s `pack()` of a showing pop-up, and it keeps the keys' width.
+     */
+    @Test(timeOut = 120000)
+    public void testAMenuTheKeyboardOpensIsSizedWithoutItsKeys() throws Exception
+    {
+        // A stand-in bar whose items are short, so the key column is most of the width
+        javax.swing.JFrame[] frame = new javax.swing.JFrame[1];
+        JMenu menu = new JMenu("Stand-in");
+        JMenuItem keyed = new JMenuItem("Go");
+
+        hide(true);
+
+        try
+        {
+            Components.onTheEventThread(() ->
+            {
+                TrainControlUI.showShortcut(keyed, javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_1,
+                    java.awt.event.InputEvent.CTRL_DOWN_MASK));
+
+                menu.add(keyed);
+
+                javax.swing.JMenuBar bar = new javax.swing.JMenuBar();
+
+                bar.add(menu);
+
+                frame[0] = new javax.swing.JFrame("stand-in");
+                frame[0].setJMenuBar(bar);
+                frame[0].setSize(300, 200);
+                frame[0].setVisible(true);
+
+                return null;
+            });
+
+            Components.settle();
+
+            Components.onTheEventThread(() ->
+            {
+                javax.swing.MenuSelectionManager.defaultManager().setSelectedPath(new javax.swing.MenuElement[] {
+                    frame[0].getJMenuBar(), menu, menu.getPopupMenu()});
+
+                return null;
+            });
+
+            assertTrue(Components.waitFor(menu::isPopupMenuVisible, PATIENCE_MS), "the menu did not open");
+
+            Components.settle();
+
+            assertNull(Components.onTheEventThread(keyed::getAccelerator), "precondition: the menu shows its key");
+
+            int width = Components.onTheEventThread(() -> menu.getPopupMenu().getWidth());
+            int wanted = Components.onTheEventThread(() -> menu.getPopupMenu().getPreferredSize().width);
+
+            assertEquals(width, wanted, "the menu the keyboard opened is as wide as its key made it");
+        }
+        finally
+        {
+            Mouse.closeMenus();
+
+            if (frame[0] != null) Components.onTheEventThread(() -> { frame[0].dispose(); return null; });
+
+            Components.settle();
+        }
+    }
+
+    /**
+     * Ticked, with a key's menu open and showing no keys, Control+C still copies the key's train: only the display
+     * changes, never what the keys do.
+     *
+     * MUTATION: the setting turns the keys off with their hints (`row.run` skipped while it is on).
+     */
+    @Test
+    public void testAKeyActsWhileItsHintIsHidden() throws Exception
+    {
+        Component keyboard = (Component) field("KeyboardTab");
+
+        javax.swing.JButton s = support.SettingsWindow.key(ui, java.awt.event.KeyEvent.VK_S);
+
+        javax.swing.JButton a = support.SettingsWindow.key(ui, java.awt.event.KeyEvent.VK_A);
+
+        // S copied first, so that a copy of A is seen to happen
+        support.Keys.press(keyboard, java.awt.event.KeyEvent.VK_S);
+        support.Keys.press(keyboard, java.awt.event.KeyEvent.VK_C, java.awt.event.InputEvent.CTRL_DOWN_MASK);
+
+        assertSame(field("copyTargetButton"), s, "precondition: Control+C did not copy S");
+
+        hide(true);
+
+        support.Keys.press(keyboard, java.awt.event.KeyEvent.VK_A);
+
+        Components.select(a);
+
+        JPopupMenu menu = Mouse.rightClick(a, PATIENCE_MS);
+
+        assertNotNull(menu, "the right-click opened no menu");
+
+        shownKeys.clear();
+
+        tipsOf(menu);
+
+        assertEquals(shownKeys, java.util.Collections.emptyMap(), "precondition: the key's menu shows keys");
+
+        support.Keys.press(keyboard, java.awt.event.KeyEvent.VK_C, java.awt.event.InputEvent.CTRL_DOWN_MASK);
+
+        assertSame(field("copyTargetButton"), a, "Control+C did not copy A while its menu hid the key");
     }
 
     /**
@@ -454,7 +600,7 @@ public class testRightClickMenuTipsCanBeHidden
     /**
      * As the owner tests it (D37 on MT-910): ticked through the Preferences checkbox, the track diagram's autonomy menu
      * over a station with a train and the menu bar's Preferences menu, each hovered item by item through its window,
-     * show only hotkeys and grayed items' reasons; cleared, both show every tip they showed before, without a restart.
+     * show only grayed items' reasons; cleared, both show every tip they showed before, without a restart.
      *
      * MUTATION: hide the tips in right-click menus only (the Preferences menu keeps its sentences while ticked).
      */
@@ -491,15 +637,15 @@ public class testRightClickMenuTipsCanBeHidden
 
             for (Map<String, String> before : java.util.Arrays.asList(diagram, bar))
             {
-                assertTrue(before.values().stream().anyMatch(t -> t != null && hotkeyOnly(t) == null),
+                assertTrue(before.values().stream().anyMatch(t -> t != null && !isHotkey(t)),
                     "precondition: no item shows a sentence: " + before);
             }
 
             SwingUtilities.invokeAndWait(tick::doClick);
 
-            assertOnlyHotkeysLeft("hovered while ticked, the diagram's menu", diagram, diagramGray, hovered(station));
+            assertOnlyReasonsLeft("hovered while ticked, the diagram's menu", diagram, diagramGray, hovered(station));
 
-            assertOnlyHotkeysLeft("hovered while ticked, the Preferences menu", bar, barGray, hoveredBar(preferences));
+            assertOnlyReasonsLeft("hovered while ticked, the Preferences menu", bar, barGray, hoveredBar(preferences));
 
             SwingUtilities.invokeAndWait(tick::doClick);
 
@@ -592,7 +738,7 @@ public class testRightClickMenuTipsCanBeHidden
                     if (isGray) grayedOnes++;
                     else enabled++;
 
-                    assertEquals(on.get(label), isGray ? off.get(label) : hotkeyOnly(off.get(label)),
+                    assertEquals(on.get(label), isGray ? off.get(label) : null,
                         "\"" + label + "\" does not follow the setting while it is ticked");
                 }
             }
@@ -611,8 +757,8 @@ public class testRightClickMenuTipsCanBeHidden
     }
 
     /**
-     * Ticked, a closed menu's items have their own tips back at once, not only when it next opens: code that saves an
-     * item's tooltip, as graying a Layout menu item for a run does, must never save a hidden one.
+     * Ticked, a closed menu's items have their own tips and keys back at once, not only when it next opens: code that
+     * saves an item's tooltip, as graying a Layout menu item for a run does, must never save a hidden one.
      *
      * MUTATION: put the tips back on the next opening instead of at the close.
      */
@@ -629,6 +775,10 @@ public class testRightClickMenuTipsCanBeHidden
 
             assertNull(tipsOf(menu).get("Sentence"), "precondition: the open menu kept its sentence");
 
+            JMenuItem accelerated = AskingWindows.itemOf(menu, "Accelerated");
+
+            assertNull(accelerated.getAccelerator(), "precondition: the open menu kept its key");
+
             Mouse.closeMenus();
 
             Components.settle();
@@ -638,6 +788,7 @@ public class testRightClickMenuTipsCanBeHidden
             assertEquals(tips.get("Sentence"), "An explanation.", "closed, an item has not got its own tip back");
             assertEquals(tips.get("Grayed"), "Close the editor first.", "closed, a grayed item lost its tip");
             assertEquals(tips.get("Keyed"), "Control+Q", "closed, a hotkey item has not got its own tip back");
+            assertEquals(accelerated.getAccelerator(), CONTROL_W, "closed, an item has not got its own key back");
         }
         finally
         {
@@ -673,7 +824,10 @@ public class testRightClickMenuTipsCanBeHidden
         });
     }
 
-    /** A window with one button that opens a pop-up of three items, on a right-click or on a left-click as asked. */
+    private static final javax.swing.KeyStroke CONTROL_W = javax.swing.KeyStroke.getKeyStroke(
+        java.awt.event.KeyEvent.VK_W, java.awt.event.InputEvent.CTRL_DOWN_MASK);
+
+    /** A window with one button that opens a pop-up of four items, on a right-click or on a left-click as asked. */
     private static javax.swing.JButton standIn(boolean onRightClick, javax.swing.JFrame[] frame) throws Exception
     {
         org.traincontrol.gui.TrainControlUI.installLookAndFeel();
@@ -699,8 +853,7 @@ public class testRightClickMenuTipsCanBeHidden
 
             JMenuItem accelerated = new JMenuItem("Accelerated");
             accelerated.setToolTipText("Closes it.  Shortcut: Control+Q.");
-            accelerated.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_W,
-                java.awt.event.InputEvent.CTRL_DOWN_MASK));
+            accelerated.setAccelerator(CONTROL_W);
             menu.add(accelerated);
 
             if (onRightClick)
@@ -730,8 +883,8 @@ public class testRightClickMenuTipsCanBeHidden
     }
 
     /**
-     * A grayed item keeps its tooltip, which says why it is grayed; an enabled item beside it loses its sentence and
-     * keeps its hotkey.
+     * A grayed item keeps its tooltip, which says why it is grayed; an enabled item beside it loses its sentence, and
+     * one whose tip names a key loses that too.
      *
      * MUTATION: strip grayed items too.
      */
@@ -752,7 +905,7 @@ public class testRightClickMenuTipsCanBeHidden
 
             assertEquals(tips.get("Grayed"), "Close the editor first.", "a grayed item lost its reason");
             assertNull(tips.get("Sentence"), "an enabled item kept its sentence");
-            assertEquals(tips.get("Keyed"), "Control+Q", "a hotkey item does not show exactly its hotkey");
+            assertNull(tips.get("Keyed"), "an item kept a tip that names a key");
         }
         finally
         {
@@ -763,12 +916,12 @@ public class testRightClickMenuTipsCanBeHidden
     }
 
     /**
-     * An item with a shortcut of its own (an accelerator) shows that shortcut, not a key its tip happens to name.
+     * An item with a shortcut of its own (an accelerator) shows neither the shortcut nor its tip.
      *
-     * MUTATION: ignore the accelerator (the tip's Control+Q shows).
+     * MUTATION: skip the strip of the keys.
      */
     @Test
-    public void testAnItemsOwnShortcutIsTheHotkeyItShows() throws Exception
+    public void testAnItemsOwnShortcutGoesWithItsTip() throws Exception
     {
         javax.swing.JFrame[] frame = new javax.swing.JFrame[1];
 
@@ -780,7 +933,9 @@ public class testRightClickMenuTipsCanBeHidden
 
             assertNotNull(menu, "the right-click opened no menu");
 
-            assertEquals(tipsOf(menu).get("Accelerated"), "Ctrl+W", "the item does not show its own shortcut");
+            assertNull(tipsOf(menu).get("Accelerated"), "the item kept its tip");
+
+            assertNull(AskingWindows.itemOf(menu, "Accelerated").getAccelerator(), "the item still shows its shortcut");
         }
         finally
         {
@@ -791,14 +946,13 @@ public class testRightClickMenuTipsCanBeHidden
     }
 
     /**
-     * Ticked, an item whose tip names its key inside a sentence shows that key, hovered through its window: the track
-     * editor's Deselect All ("Escape lets go") with squares picked; and the autonomy editor's Find a Point..., whose key
-     * is on the item now, shows that.
+     * Ticked, the autonomy editor's menu bar, hovered through its window, shows Find a Point... with no key and no tip
+     * (its tip names the key).
      *
-     * MUTATION: find a key only as the whole tip or bracketed at its end (both show nothing).
+     * MUTATION: skip the strip of the keys (Ctrl+F shows).
      */
     @Test(timeOut = 300000)
-    public void testTipsThatNameAKeyMidSentenceShowIt() throws Exception
+    public void testTheEditorsMenuBarHidesItsKey() throws Exception
     {
         ToolTipManager tips = ToolTipManager.sharedInstance();
 
@@ -812,23 +966,17 @@ public class testRightClickMenuTipsCanBeHidden
 
             LayoutEditor autonomy = openedEditor(Boolean.TRUE);
 
+            shownKeys.clear();
+
             Map<String, String> shown = hoveredBar(Components.onTheEventThread(() -> autonomy.getJMenuBar().getMenu(0)));
 
-            assertEquals(shown.get(I18n.t("layout.ui.menuFindAPoint")), "Ctrl+F",
-                "Find a Point... does not show its key: " + shown);
+            String find = I18n.t("layout.ui.menuFindAPoint");
 
-            Component square = Components.find(openedEditor(Boolean.FALSE), LayoutLabel.class, Component::isShowing);
+            assertTrue(shown.containsKey(find), "precondition: no Find a Point...: " + shown);
 
-            Mouse.choose(AskingWindows.itemOf(Mouse.rightClick(square, PATIENCE_MS), I18n.t("layout.ui.menuSelectAll")));
+            assertNull(shown.get(find), "Find a Point... shows a tip");
 
-            shown = hovered(square);
-
-            String deselect = shown.keySet().stream()
-                .filter(k -> k.endsWith(" > " + I18n.t("layout.ui.menuDeselectAll"))).findFirst().orElse(null);
-
-            assertTrue(deselect != null && !grayed.contains(deselect), "precondition: no live Deselect All: " + shown);
-
-            assertEquals(shown.get(deselect), "Escape", "Deselect All does not show its key");
+            assertEquals(shownKeys, java.util.Collections.emptyMap(), "the editor's menu shows keys");
         }
         finally
         {
@@ -883,7 +1031,7 @@ public class testRightClickMenuTipsCanBeHidden
 
     /**
      * A pop-up opened by a left-click, such as a button's drop-down, hides its tips as a right-click menu does (D37 on
-     * MT-910): a grayed item keeps its reason, a hotkey item its hotkey.
+     * MT-910): a grayed item keeps its reason, and an item whose tip names a key shows nothing.
      *
      * MUTATION: hide the tips in right-click menus only.
      */
@@ -902,7 +1050,7 @@ public class testRightClickMenuTipsCanBeHidden
 
             assertNull(tips.get("Sentence"), "a left-click pop-up kept a sentence");
             assertEquals(tips.get("Grayed"), "Close the editor first.", "a left-click pop-up's grayed item lost its reason");
-            assertEquals(tips.get("Keyed"), "Control+Q", "a left-click pop-up's hotkey item does not show its hotkey");
+            assertNull(tips.get("Keyed"), "a left-click pop-up's item kept a tip that names a key");
         }
         finally
         {
@@ -941,8 +1089,8 @@ public class testRightClickMenuTipsCanBeHidden
     /**
      * As the owner tests it: the Preferences checkbox ticked, then cleared, with the track editor's right-click menu
      * hovered item by item through its window each time, its Bulk Tools submenu opened by hovering, and the tip the
-     * tooltip manager shows read off it.  Ticked, an enabled item shows only its hotkey or nothing, a grayed one its
-     * reason; cleared, every item shows what it showed before.
+     * tooltip manager shows read off it.  Ticked, an enabled item shows nothing, a grayed one its reason; cleared, every
+     * item shows what it showed before.
      *
      * MUTATION: skip the strip (the sentences show while ticked).
      *
@@ -973,7 +1121,7 @@ public class testRightClickMenuTipsCanBeHidden
             assertTrue(before.keySet().stream().anyMatch(k -> k.contains(" > ")), "precondition: no submenu was hovered: "
                 + before);
 
-            assertTrue(before.values().stream().anyMatch(t -> t != null && hotkeyOnly(t) == null),
+            assertTrue(before.values().stream().anyMatch(t -> t != null && !isHotkey(t)),
                 "precondition: no item shows a sentence: " + before);
 
             java.util.Set<String> gray = new java.util.HashSet<>(grayed);
@@ -982,7 +1130,7 @@ public class testRightClickMenuTipsCanBeHidden
 
             Map<String, String> ticked = hovered(tile);
 
-            assertOnlyHotkeysLeft("hovered while ticked, the menu", before, gray, ticked);
+            assertOnlyReasonsLeft("hovered while ticked, the menu", before, gray, ticked);
 
             SwingUtilities.invokeAndWait(tick::doClick);
 
@@ -1045,6 +1193,10 @@ public class testRightClickMenuTipsCanBeHidden
             if (!item.isEnabled()) grayed.add(path + item.getText());
 
             into.put(path + item.getText(), tipShownOver(item));
+
+            javax.swing.KeyStroke key = Components.onTheEventThread(item::getAccelerator);
+
+            if (key != null) shownKeys.put(path + item.getText(), key);
 
             if (item instanceof JMenu)
             {

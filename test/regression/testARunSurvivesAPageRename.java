@@ -20,6 +20,7 @@ import org.traincontrol.marklin.file.CS2File;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 import support.SourceOf;
 import support.Trees;
+import static support.LayoutSandbox.pagesIn;
 
 /**
  * What a run did is folded into the setup BEFORE a page is renamed, not after.
@@ -105,7 +106,7 @@ public class testARunSurvivesAPageRename
     {
         File folder = aWorkingCopy();
 
-        List<LayoutDiagram> pages = pagesIn(folder);
+        List<LayoutDiagram> pages = pagesIn(model, folder);
 
         AutonomySession session = new AutonomySession(folder);
         session.open(pages);
@@ -164,7 +165,7 @@ public class testARunSurvivesAPageRename
         // THE LOAD, as a restart would give.
         AutonomySession after = new AutonomySession(folder);
 
-        after.open(pagesIn(folder));
+        after.open(pagesIn(model, folder));
 
         // Did the train end up where the run left it?
         for (Map.Entry<String, String> placed : placements(after).entrySet())
@@ -293,16 +294,6 @@ public class testARunSurvivesAPageRename
         fail("no page called " + name);
 
         return null;
-    }
-
-    private static List<LayoutDiagram> pagesIn(File folder) throws Exception
-    {
-        String path = "file:///" + folder.getAbsolutePath().replace(File.separatorChar, '/') + "/";
-
-        CS2File parser = new CS2File(path, model);
-        parser.setLayoutDataLoc(path);
-
-        return support.LayoutSandbox.wired(model, parser);
     }
 
     private static File aWorkingCopy() throws Exception

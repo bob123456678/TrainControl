@@ -386,8 +386,9 @@ public class testTheAutonomyAndRoutesMenusKeepTheirWiring
      * editor back; every item the editor grays says "Close the editor to use this."; Autonomy Guide stays live; New
      * Route... refuses as Add Route does.  Closed, Layouts hides the two and gives each item its own tooltip back.
      *
-     * MUTATION: drop the divider, leave a grayed item without the reason, or keep the reason after the editor closes,
-     * and this fails.
+     * MUTATION: drop the divider, leave a grayed item without the reason, keep the reason after the editor closes, or
+     * leave the Autonomy menu's items live (`part.setEnabled(false)` in `AutonomyMenu.guardWhileEditing`), and this
+     * fails.
      */
     @Test
     public void testWithAnEditorOpenBothMenusLeadBackToIt() throws Exception
@@ -430,13 +431,29 @@ public class testTheAutonomyAndRoutesMenusKeepTheirWiring
 
                 assertTrue(shown.get(1) instanceof JSeparator, name + " has no divider under Go to the Opened Editor");
 
-                for (Component part : shown)
+                boolean autonomy = menu != layouts;
+                int grayed = 0;
+
+                for (Component part : shown.subList(1, shown.size()))
                 {
-                    if (!(part instanceof JMenuItem) || part.isEnabled() || part.getFont().isBold()) continue;
+                    if (!(part instanceof JMenuItem)) continue;
+
+                    // The Autonomy menu grays everything but its guide
+                    if (autonomy && !t("ui.menu.autonomyGuide").equals(((JMenuItem) part).getText()))
+                    {
+                        assertFalse(part.isEnabled(), name + "'s " + ((JMenuItem) part).getText() + " is live with an"
+                            + " editor open");
+                    }
+
+                    if (part.isEnabled() || part.getFont().isBold()) continue;
+
+                    grayed++;
 
                     assertTrue(String.valueOf(((JMenuItem) part).getToolTipText()).contains(why), name + "'s grayed "
                         + ((JMenuItem) part).getText() + " does not say why: " + ((JMenuItem) part).getToolTipText());
                 }
+
+                assertTrue(grayed > 0, name + " grays nothing with an editor open: " + shape(menu.getMenuComponents()));
 
                 // IT BRINGS THE EDITOR BACK
                 SwingUtilities.invokeAndWait(() -> editor.setVisible(false));

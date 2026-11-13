@@ -18,6 +18,7 @@ import org.traincontrol.automationui.AutonomySession;
 import org.traincontrol.automationui.TileGraph.TileKey;
 import org.traincontrol.base.LayoutDiagram;
 import support.Diagrams;
+import static support.Trees.delete;
 
 /**
  * A station can be held back while another point is occupied (FR-001), as a locomotive can be excluded from it.  The
@@ -792,18 +793,6 @@ public class testStationBlockedByAnotherPoint
     public static void tearDownModel()
     {
         if (model != null) model.stop();
-    }
-
-    private void delete(File f)
-    {
-        if (f.isDirectory())
-        {
-            File[] kids = f.listFiles();
-
-            if (kids != null) for (File kid : kids) delete(kid);
-        }
-
-        f.delete();
     }
 
     /**
