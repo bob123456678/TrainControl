@@ -732,10 +732,10 @@ final class LocomotiveFunctionsTab extends JPanel
     }
 
     /**
-     * Every image of the user's own in use on a function of this table or of any locomotive in the database, each once,
-     * by file name: what the dropdown offers after the standard icons.  Two spellings of one file are one image, so
-     * "same" is the file's normalized path (Windows paths ignore case); contents are not compared, which would read
-     * every file.  A file that is missing or unreadable, or that failed to load, is left out; nothing here throws.
+     * Every image of the user's own in use on a function of this table or of any locomotive in the database, once each:
+     * what the dropdown offers after the standard icons.  Images are the same by normalized file path (Windows ignores
+     * case); contents are not compared.  A file that is missing, unreadable or failed to load is left out; nothing here
+     * throws.
      */
     private List<String> customChoices()
     {
@@ -952,8 +952,8 @@ final class LocomotiveFunctionsTab extends JPanel
     }
 
     /**
-     * Opens the dropdown's list six icons across, at every opening: the dropdown is narrow, its list is not.  The
-     * width has half an icon to spare, so a border or a scroll bar that is a pixel wider than expected costs no column.
+     * Opens the dropdown's list six icons across at every opening (the dropdown is narrow, its list is not), with half
+     * an icon to spare so a wider border or scroll bar costs no column.
      */
     private static void widen(BasicComboPopup popup, JScrollPane scroll, JList<?> list)
     {
