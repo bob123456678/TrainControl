@@ -1,9 +1,13 @@
 package support;
 
 import java.io.IOException;
+import java.util.List;
+import org.traincontrol.base.Accessory;
 import org.traincontrol.base.Accessory.accessoryDecoderType;
 import org.traincontrol.base.LayoutDiagram;
+import org.traincontrol.base.LayoutDiagramComponent;
 import org.traincontrol.base.LayoutDiagramComponent.componentType;
+import org.traincontrol.marklin.MarklinAccessory;
 
 /** The plain squares a test draws a page of track with: MM2, no text, state 0. */
 public final class Diagrams
@@ -43,5 +47,42 @@ public final class Diagrams
     public static void feedback(LayoutDiagram page, int x, int y, int address, int raw) throws IOException
     {
         page.addComponent(componentType.FEEDBACK, x, y, 0, 0, address, raw, accessoryDecoderType.MM2, null);
+    }
+
+    /**
+     * Attaches an accessory of its own to every addressed switch and signal, as syncLayouts does on loading: pages
+     * parsed without a model carry addresses and no Accessory, and the reduction cannot trace through such a switch.
+     */
+    public static void wireAccessories(List<LayoutDiagram> pages)
+    {
+        for (LayoutDiagram page : pages)
+        {
+            for (LayoutDiagramComponent component : page.getAll())
+            {
+                if (!component.isSwitch() && !component.isSignal()) continue;
+
+                // the application skips tiles drawn without a digital address, and so does this
+                if (component.getAddress() <= 0) continue;
+
+                Accessory.accessoryType type = component.isSignal()
+                    ? Accessory.accessoryType.SIGNAL : Accessory.accessoryType.SWITCH;
+
+                component.setAccessory(accessory(component.getAddress(), type, component.getProtocol()));
+
+                if (component.isThreeWay())
+                {
+                    component.setAccessory2(accessory(component.getAddress() + 1,
+                        Accessory.accessoryType.SWITCH, component.getProtocol()));
+                }
+            }
+        }
+    }
+
+    /** An accessory at this logical address, named exactly as the application names it. */
+    public static MarklinAccessory accessory(int logicalAddress, Accessory.accessoryType type,
+        accessoryDecoderType protocol)
+    {
+        return new MarklinAccessory(null, logicalAddress - 1, type, protocol,
+            MarklinAccessory.getNameWithProtocol(logicalAddress, type, protocol), false, 0);
     }
 }

@@ -29,12 +29,12 @@ import org.traincontrol.automationui.TilePorts.Side;
 import org.traincontrol.base.Accessory;
 import org.traincontrol.base.Locomotive;
 import org.traincontrol.base.LayoutDiagram;
-import org.traincontrol.base.LayoutDiagramComponent;
-import org.traincontrol.marklin.MarklinAccessory;
 import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.marklin.MarklinLocomotive;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 import org.traincontrol.marklin.file.CS2File;
+import static support.Diagrams.wireAccessories;
+import static support.Diagrams.accessory;
 
 /**
  * What the checker tells the user, against the railway the build actually emits.  The checker walks the REDUCED graph
@@ -766,45 +766,6 @@ public class testTheCheckerAgreesWithTheBuild
         if (index == null) index = session.getStationIndex();
 
         return index;
-    }
-
-    /**
-     * Attaches an accessory to every switch and signal, the way syncLayouts does when the application loads a layout.
-     * A diagram parsed alone has addresses on its tiles but no Accessory objects, and a switch with no accessory has no
-     * position (the same helper `testAutonomyDiagramSampleLayout` needs).
-     */
-    private static void wireAccessories(List<LayoutDiagram> pages)
-    {
-        for (LayoutDiagram page : pages)
-        {
-            for (LayoutDiagramComponent component : page.getAll())
-            {
-                if (!component.isSwitch() && !component.isSignal()) continue;
-
-                // the application skips tiles drawn without a digital address, and so does this
-                if (component.getAddress() <= 0) continue;
-
-                Accessory.accessoryType type = component.isSignal()
-                    ? Accessory.accessoryType.SIGNAL : Accessory.accessoryType.SWITCH;
-
-                component.setAccessory(accessory(component.getAddress(), type,
-                    component.getProtocol()));
-
-                if (component.isThreeWay())
-                {
-                    component.setAccessory2(accessory(component.getAddress() + 1,
-                        Accessory.accessoryType.SWITCH, component.getProtocol()));
-                }
-            }
-        }
-    }
-
-    /** An accessory named exactly as the application would name it. */
-    private static MarklinAccessory accessory(int logicalAddress, Accessory.accessoryType type,
-        Accessory.accessoryDecoderType protocol)
-    {
-        return new MarklinAccessory(null, logicalAddress - 1, type, protocol,
-            MarklinAccessory.getNameWithProtocol(logicalAddress, type, protocol), false, 0);
     }
 
     /** Squares sorted by printed key, so a failure reads as a diff of two lists. */

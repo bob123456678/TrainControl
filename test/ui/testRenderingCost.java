@@ -16,6 +16,8 @@ import org.traincontrol.marklin.file.CS2File;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 import support.Display;
 import support.Reflect;
+import static support.Diagrams.wireAccessories;
+import static support.Diagrams.accessory;
 
 /**
  * What drawing the track diagram actually costs, measured rather than guessed.
@@ -98,43 +100,6 @@ public class testRenderingCost
         // the first version of this class timed the constructor and reported 0.00ms for a reduction
         // that had not happened, which is the benchmark failure mode that looks like good news.
         reducer.reduce();
-    }
-
-    /**
-     * Gives every switch and signal tile an accessory, the way the application does when it parses a
-     * layout against a real database.  Without it the reduction has nothing to reduce.
-     */
-    private static void wireAccessories(List<LayoutDiagram> pages)
-    {
-        for (LayoutDiagram page : pages)
-        {
-            for (org.traincontrol.base.LayoutDiagramComponent c : page.getAll())
-            {
-                if (!c.isSwitch() && !c.isSignal()) continue;
-
-                if (c.getAddress() <= 0) continue;
-
-                org.traincontrol.base.Accessory.accessoryType type = c.isSignal()
-                    ? org.traincontrol.base.Accessory.accessoryType.SIGNAL
-                    : org.traincontrol.base.Accessory.accessoryType.SWITCH;
-
-                c.setAccessory(accessory(c.getAddress(), type, c.getProtocol()));
-
-                if (c.isThreeWay())
-                {
-                    c.setAccessory2(accessory(c.getAddress() + 1,
-                        org.traincontrol.base.Accessory.accessoryType.SWITCH, c.getProtocol()));
-                }
-            }
-        }
-    }
-
-    private static MarklinAccessory accessory(int logicalAddress,
-        org.traincontrol.base.Accessory.accessoryType type,
-        org.traincontrol.base.Accessory.accessoryDecoderType protocol)
-    {
-        return new MarklinAccessory(null, logicalAddress - 1, type, protocol,
-            MarklinAccessory.getNameWithProtocol(logicalAddress, type, protocol), false, 0);
     }
 
     /**
