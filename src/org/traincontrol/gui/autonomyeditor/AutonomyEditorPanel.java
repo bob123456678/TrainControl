@@ -4964,14 +4964,15 @@ public class AutonomyEditorPanel extends JPanel
                 return;
             }
 
-            signalFor = null;
-
             Guard guard = signalForGuard;
 
+            // Still awaited while it is answered, so Station Settings stays away until the list's own end (MT-956)
             String refused = addGuardSignal(guard, station, tile, true);
 
             // Said before the list comes back over it (MT-505).
             if (refused != null) refuseGuard(refused);
+
+            signalFor = null;
 
             // And back to the list, where the signal now appears.
             pairGuardSignals(guard, station);

@@ -1039,6 +1039,72 @@ public class testTheAutonomyEditorsTriageNotes
         }
     }
 
+    /**
+     * Across a whole pick by a click on the diagram, Station Settings is never shown until the guard window's Done: of
+     * every change in its visibility there are two, away as the guard window opens and back at the end.  The click's
+     * own redraw must not bring it back for a moment.
+     *
+     * MUTATION: clear `signalFor` before `addGuardSignal` in `AutonomyEditorPanel.tileClicked` again, and this fails.
+     */
+    @Test(timeOut = 180000)
+    public void testStationSettingsStaysAwayThroughTheWholeClickPick() throws Exception
+    {
+        TileKey station = stations().get(0);
+        TileKey signal = anUnpairedSignal(station);
+        StationSettingsWindow window = StationDoors.open(panel, station);
+
+        final List<String> seen = java.util.Collections.synchronizedList(new ArrayList<>());
+
+        final java.awt.event.ComponentAdapter watch = new java.awt.event.ComponentAdapter()
+        {
+            @Override
+            public void componentShown(java.awt.event.ComponentEvent e)
+            {
+                seen.add("shown");
+            }
+
+            @Override
+            public void componentHidden(java.awt.event.ComponentEvent e)
+            {
+                seen.add("hidden");
+            }
+        };
+
+        Components.onTheEventThread(() -> { window.addComponentListener(watch); return null; });
+
+        try
+        {
+            pressByClick(openTheGuardWindow(StationDoors.part(window, "station.exitGuardChange", AbstractButton.class)));
+
+            SwingUtilities.invokeLater(() -> panel.tileClicked(signal, session.getGraph().getTiles().get(signal), false));
+
+            assertTrue(Components.waitFor(() -> StationDoors.guardWindow() != null, 10000), "the guard window did not come back");
+
+            final JDialog guard = StationDoors.guardWindow();
+
+            Components.onTheEventThread(() ->
+            {
+                Components.withText(guard, I18n.t("autosetup.ui.optionSignalsDone")).doClick();
+
+                return null;
+            });
+
+            assertTrue(Components.waitFor(() -> Components.onTheEventThread(window::isShowing), 10000),
+                "Station Settings did not come back at Done");
+
+            Components.settle();
+
+            assertTrue(Components.onTheEventThread(() -> session.getProtectingSignals(station).contains(signal)),
+                "precondition: the click did not pair the signal");
+            assertEquals(new ArrayList<>(seen), java.util.Arrays.asList("hidden", "shown"),
+                "Station Settings was shown during the pick");
+        }
+        finally
+        {
+            Components.onTheEventThread(() -> { window.removeComponentListener(watch); return null; });
+        }
+    }
+
     /** Presses the guard window's Click It on the Diagram, which hands the next click to the diagram. */
     private void pressByClick(JDialog guard)
     {
