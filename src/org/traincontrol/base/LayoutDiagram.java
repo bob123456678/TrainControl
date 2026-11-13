@@ -1001,12 +1001,8 @@ public class LayoutDiagram
     }
     
     /**
-     * Moves the elements this build could not model with a shift, as it moves the tiles.  Such an element is written
-     * back verbatim and its id IS its square (x + (y shifted left 8)).  One ON a removed row or column is KEPT where it
-     * is.
-     *
-     * @param columns true for a shift along x, false for one along y
-     * @param inserted true for a shift that inserts (right, down), false for one that removes (left, up)
+     * Moves the elements this build could not model with a shift.  Each is written back verbatim and its id IS its
+     * square (x + (y shifted left 8)); one ON a removed row or column is KEPT where it is.
      */
     private void shiftUnmodelledElements(boolean columns, int start, boolean inserted)
     {
