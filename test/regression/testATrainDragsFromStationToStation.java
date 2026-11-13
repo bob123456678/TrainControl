@@ -1371,14 +1371,15 @@ public class testATrainDragsFromStationToStation
     }
 
     /**
-     * With every station able to turn trains and a train that stands in the setup only, a drag records the road the
-     * paste records (`arrivedAlong`), on both of two squares.
+     * With every station able to turn trains and a train placed in the setup, a drag onto 1,10 or 7,7 records the side
+     * and road (`arrivedFrom`, `arrivedAlong`) a real paste onto the same square records (FR-160); the facing too where
+     * the paste asks nothing, as a drag takes the rule's answer where a paste asks.
      *
-     * MUTATION: quieting the question even for one road (`if (quiet) return Answer.NOT_ASKED;` in
-     * `TailCrossedPrompt.askAfterPlacement`) leaves it null.
+     * MUTATION: dropping the side a drag works out (`if (dropping) ui.tailAtTheLanding = null;` after
+     * `ArrivalSidePrompt.forPlacement` in `DiagramLocGestures`) leaves the side the paste records unrecorded.
      */
     @Test(timeOut = 300000)
-    public void testADragRecordsTheRoadWhereEveryStationMayTurn() throws Exception
+    public void testADragRecordsTheRoadAPasteRecordsWhereEveryStationMayTurn() throws Exception
     {
         fixture(false);
 
@@ -1393,51 +1394,87 @@ public class testATrainDragsFromStationToStation
         assertTrue(model.getLocList().contains(lone) && !session.placementsAutonomyWillWrite().containsValue(lone),
             "precondition: " + lone + " is not a train that stands in the roster only");
 
-        int landed = 0;
-
         try
         {
             for (TileKey to : new TileKey[] {new TileKey(PAGE, 1, 10), new TileKey(PAGE, 7, 7)})
             {
-                putBack(asFound);
+                standOnATurningPage(asFound, where, lone);
 
-                for (TileKey station : session.getReducer().getPoints().keySet())
+                SwingUtilities.invokeAndWait(() -> editor.dispose());
+
+                boolean pasteAsked;
+
+                TailCrossedPrompt.answerForTests(TailCrossedPrompt.DISMISSED);
+
+                try (Answering answering = Answering.start(message -> null))
                 {
-                    if (PAGE.equals(station.getPage()) && session.getStore().isStation(station))
-                    {
-                        session.setPointProperty(station, AutonomyBuilder.CAN_REVERSE, true);
-                    }
+                    realPaste(where, to);
+
+                    pasteAsked = !answering.asked().isEmpty();
+                }
+                finally
+                {
+                    TailCrossedPrompt.answerForTests(null);
                 }
 
-                final java.util.Set<String> all = new java.util.HashSet<>(session.placementsAutonomyWillWrite().values());
+                assertEquals(session.getLocomotiveNameAt(to), lone, "precondition: the paste did not land on " + to);
 
-                onTheEventThread(() -> ui.rebuildRunningLayoutFromSetup(false, all));
-                Components.drain(8);
+                String pasted = pasteAsked ? sideAndRoad(to) : outcome(to);
 
-                session.setPointProperty(where, "loc", settings(lone, 5, false, 40));
+                editor = openEditor();
+
+                standOnATurningPage(asFound, where, lone);
 
                 fixture(false);
 
-                if (!editor.getAutonomyPanel().canDropTrain(where, to)) continue;
+                assertTrue(editor.getAutonomyPanel().canDropTrain(where, to), "precondition: " + to + " does not take the drag");
 
                 dragTrain(where, to);
 
-                if (!lone.equals(session.getLocomotiveNameAt(to))) continue;
+                assertEquals(session.getLocomotiveNameAt(to), lone, "precondition: the train did not land on " + to);
 
-                landed++;
-
-                // 7,7 has no fork behind it, so a paste records no road there either; 1,10 is the square that has one
-                if (to.getX() == 1) assertNotNull(session.getPointProperty(to, "arrivedAlong"),
-                    "the drag onto " + to + " recorded no road, where a paste records one: " + outcome(to)
-                    + " length " + model.getLocByName(lone).getTrainLength() + " mayTurn " + session.mayTurnTiles().contains(to));
+                assertEquals(pasteAsked ? sideAndRoad(to) : outcome(to), pasted,
+                    "the drag onto " + to + " records what a real paste does not (paste asked: " + pasteAsked + ")");
             }
         }
         finally
         {
             putBack(asFound);
         }
+    }
 
-        assertTrue(landed > 0, "precondition: the train landed on neither square, so the road is not compared");
+    /** The setup as found, every station on the page able to turn trains, and the train placed on one of them. */
+    private static void standOnATurningPage(org.json.JSONObject asFound, TileKey where, String train) throws Exception
+    {
+        putBack(asFound);
+
+        for (TileKey station : session.getReducer().getPoints().keySet())
+        {
+            if (PAGE.equals(station.getPage()) && session.getStore().isStation(station))
+            {
+                session.setPointProperty(station, AutonomyBuilder.CAN_REVERSE, true);
+            }
+        }
+
+        final java.util.Set<String> all = new java.util.HashSet<>(session.placementsAutonomyWillWrite().values());
+
+        onTheEventThread(() -> ui.rebuildRunningLayoutFromSetup(false, all));
+        Components.drain(8);
+
+        session.setPointProperty(where, "loc", settings(train, 5, false, 40));
+
+        // A placement door's redraw, which writing the setup directly skips: without it the train is not drawn
+        final Object panel = editor.getAutonomyPanel();
+        final java.lang.reflect.Method placed = Reflect.method(panel.getClass(), "placementChanged", java.util.Collection.class);
+
+        onTheEventThread(() -> placed.invoke(panel, java.util.Collections.singletonList(train)));
+        Components.drain(8);
+    }
+
+    /** The side a placement records the train came in by, and the road. */
+    private static String sideAndRoad(TileKey to)
+    {
+        return "arrivedFrom=" + session.getPointProperty(to, "arrivedFrom") + " arrivedAlong=" + session.getPointProperty(to, "arrivedAlong");
     }
 
     /** The editor ready, and the setup as it stands. */
@@ -1917,7 +1954,8 @@ public class testATrainDragsFromStationToStation
     {
         LayoutLabel start = labelOf(from);
 
-        support.Components.waitFor(() -> support.Components.onTheEventThread(() -> start.trainDrawnAt(center(start))), 10000);
+        assertTrue(support.Components.waitFor(() -> support.Components.onTheEventThread(() -> start.trainDrawnAt(center(start))), 10000),
+            "precondition: no train is drawn on " + from + "; is Show Trains off?");
 
         Mouse.drag(start, labelOf(to));
         Components.drain(8);
