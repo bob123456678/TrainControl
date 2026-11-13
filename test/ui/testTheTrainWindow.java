@@ -357,7 +357,7 @@ public class testTheTrainWindow
      * row is and that no train stands here; beside Tail lies, where the tail is not known, it says what Tail lies means
      * and why it is not known here.
      *
-     * MUTATION: give the tail mark no tooltip where `tailFacts` finds no question, as before, and this fails.
+     * MUTATION: give the tail mark no tooltip where `tailFacts` finds no question, and this fails.
      */
     @Test(timeOut = 120000)
     public void testEveryMarkExplainsItsRowWithNoAnswer() throws Exception
@@ -1083,7 +1083,7 @@ public class testTheTrainWindow
     /**
      * Locomotive Settings opens that train's window on its Autonomy tab (FR-048), over the window that asked.
      *
-     * MUTATION: have `pressSettings` open the Locomotive tab, as it did, and this fails.
+     * MUTATION: have `pressSettings` open the Locomotive tab, and this fails.
      */
     @Test(timeOut = 120000)
     public void testLocomotiveSettingsOpensThatTrain() throws Exception
