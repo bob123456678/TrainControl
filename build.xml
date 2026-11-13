@@ -710,6 +710,7 @@
         <test-one-class class="testTheKeyboardHeadingSitsWhereTheRoutesDoes"/>
         <test-one-class class="testTheAutonomyEditorsTriageNotes"/>
         <test-one-class class="testTheMainWindowIsBuiltOnTheEventThread"/>
+        <test-one-class class="testTheStartUpQuestionsAreAskedOnTheEventThread"/>
     </target>
     <target name="package-for-store" depends="jar">
         <property name="store.jar.name" value="TrainControl"/>
