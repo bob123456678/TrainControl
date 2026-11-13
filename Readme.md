@@ -95,7 +95,7 @@ If you have an older CS3 or don't want to use the CS3 Track Board layouts, you c
 
 Complete editing support is accessible via the "Edit" button within the Track Diagram tab.  In the editor, a strip of icons under `Page` adds, duplicates, renames, deletes and moves pages, and the `Tools` menu has the rest, such as `Sort Pages by Name`.  Pages are shown in the order they have in the layout's files.  This will let you fully customize your layout.
 
-If you change the local files, clicking on "Sync Database w/ Central Station" from the Locomotives menu will update the layouts.  This effectively lets you customize the layout even without a CS2/CS3.  Some users might find this easier than inputting data into the Central Station UI.
+If you change the local files, clicking on "Sync Database w/ Central Station" from the File menu will update the layouts.  This effectively lets you customize the layout even without a CS2/CS3.  Some users might find this easier than inputting data into the Central Station UI.
 
 Some sample files are included in the `cs2_sample_layout` folder.
 
