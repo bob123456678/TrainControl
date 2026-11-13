@@ -531,6 +531,71 @@ public class testRightClickMenuTipsCanBeHidden
     }
 
     /**
+     * Every item of the track diagram's Bulk Tools submenu follows the setting: ticked, an enabled item shows no
+     * sentence and a grayed one keeps its reason; cleared, every tip is back as it was.
+     *
+     * MUTATION: build the Bulk Tools submenu after the tips are taken off, and its items keep their sentences.
+     */
+    @Test
+    public void testEveryBulkToolsItemFollowsTheSetting() throws Exception
+    {
+        String[] keys = {"autosetup.ui.menuMassAssignLengths", "autosetup.ui.menuMassAssignMaxTrainLengths",
+            "autosetup.ui.menuMassAssignTrainLengthsCounted", "autolayout.ui.menuClearAllTrackLengths",
+            "autolayout.ui.menuClearAllMaxTrainLengths", "autolayout.ui.menuAllowEveryPath",
+            "autolayout.ui.menuHomeEveryTrainWhereItStands", "autolayout.ui.menuPlaceEveryTrainAtHome",
+            "autolayout.ui.menuClearAllHomeLocomotives", "autolayout.ui.menuClearLocomotives",
+            "autosetup.ui.menuActivateAllTrains", "autosetup.ui.menuDeactivateAllTrains"};
+
+        try
+        {
+            hide(false);
+
+            grayed.clear();
+
+            Map<String, String> off = tipsOn(Door.MAIN_DIAGRAM);
+
+            java.util.Set<String> gray = new java.util.HashSet<>(grayed);
+
+            hide(true);
+
+            Map<String, String> on = tipsOn(Door.MAIN_DIAGRAM);
+
+            int enabled = 0;
+            int grayedOnes = 0;
+
+            for (String key : keys)
+            {
+                String[] around = I18n.f(key, "@@").split("@@", -1);
+
+                for (String label : off.keySet())
+                {
+                    // The diagram's menu has no page, so the two Mass Assign lengths are not on it
+                    if (label == null || !label.startsWith(around[0]) || !label.endsWith(around[around.length - 1])) continue;
+
+                    boolean isGray = gray.contains(label);
+
+                    if (isGray) grayedOnes++;
+                    else enabled++;
+
+                    assertEquals(on.get(label), isGray ? off.get(label) : hotkeyOnly(off.get(label)),
+                        "\"" + label + "\" does not follow the setting while it is ticked");
+                }
+            }
+
+            assertTrue(enabled > 0 && grayedOnes > 0, "precondition: the diagram's Bulk Tools has " + enabled
+                + " enabled and " + grayedOnes + " grayed items");
+
+            hide(false);
+
+            assertEquals(tipsOn(Door.MAIN_DIAGRAM), off, "cleared, the Bulk Tools tips are not as they were");
+        }
+        finally
+        {
+            hide(false);
+        }
+    }
+
+    /**
      * Ticked, a closed menu's items have their own tips back at once, not only when it next opens: code that saves an
      * item's tooltip, as graying a Layout menu item for a run does, must never save a hidden one.
      *
@@ -939,9 +1004,8 @@ public class testRightClickMenuTipsCanBeHidden
 
             try
             {
-                if (menu != null) hoverAll("", menu, shown);
-
-                if (menu != null && menu.isShowing()) return shown;
+                // A walk that left a submenu unopened is partial: the menu is walked again, not compared as it is
+                if (menu != null && hoverAll("", menu, shown) && menu.isShowing()) return shown;
 
                 assertTrue(attempt < 5, "the menu closed before every item was hovered, five times: " + shown);
             }
@@ -954,7 +1018,8 @@ public class testRightClickMenuTipsCanBeHidden
         }
     }
 
-    private static void hoverAll(String path, JPopupMenu menu, Map<String, String> into) throws Exception
+    /** Hovers each item; whether every submenu opened under the pointer, so that the walk is whole. */
+    private static boolean hoverAll(String path, JPopupMenu menu, Map<String, String> into) throws Exception
     {
         for (Component each : Components.onTheEventThread(menu::getComponents))
         {
@@ -970,14 +1035,16 @@ public class testRightClickMenuTipsCanBeHidden
             {
                 JMenu sub = (JMenu) item;
 
-                // Not opened is a closed menu, walked again, or a submenu missing from what the claim compares.
-                if (!Components.waitFor(sub::isPopupMenuVisible, 3000)) return;
+                // Not opened is a closed menu, or a submenu missing from what the claim compares: walked again.
+                if (!Components.waitFor(sub::isPopupMenuVisible, 3000)) return false;
 
-                hoverAll(path + item.getText() + " > ", sub.getPopupMenu(), into);
+                if (!hoverAll(path + item.getText() + " > ", sub.getPopupMenu(), into)) return false;
 
                 moveTo(item);
             }
         }
+
+        return true;
     }
 
     /** The tip on screen once the pointer rests on the item, or null when none is shown for it. */
