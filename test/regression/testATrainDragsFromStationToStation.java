@@ -1610,7 +1610,7 @@ public class testATrainDragsFromStationToStation
     }
 
     /**
-     * Show Trains is a remembered view setting, which may be off on the machine running this; the box is ticked
+     * Show Trains is a remembered view setting, which an earlier class in the run may have left off; the box is ticked
      * without the click, so the setting itself is left as it was.
      */
     private static void showTheTrains() throws Exception

@@ -53,7 +53,7 @@ public class testTheMenuBarIsWired
 
         recentWas = prefs().get(TrainControlUI.RECENT_LAYOUTS_PREF, null);
 
-        // No other layout recorded: the run's node starts as a copy of the owner's, whose list would be listed.
+        // No other layout recorded: an earlier class in the run may have recorded one, which would be listed.
         prefs().put(TrainControlUI.RECENT_LAYOUTS_PREF, "");
 
         sandboxed = new support.SandboxedWindow();
@@ -651,6 +651,58 @@ public class testTheMenuBarIsWired
         {
             putBack(preference, before);
         }
+    }
+
+    /**
+     * Show Keyboard Control Hints shows the keyboard's key hints ticked and hides them unticked; Show Menu Bar does the
+     * same for the menu bar.  Each is set both ways, never toggled, and put back.
+     *
+     * MUTATION: have `displayKeyboardHints` ignore its argument and show the hints, and this fails.
+     */
+    @Test(timeOut = 60000)
+    public void testTheHintsAndMenuBarSwitchesShowAndHideThem() throws Exception
+    {
+        final javax.swing.AbstractButton hints = (javax.swing.AbstractButton) Reflect.get(TrainControlUI.class, ui, "showKeyboardHintsMenuItem");
+        final javax.swing.AbstractButton bar = (javax.swing.AbstractButton) Reflect.get(TrainControlUI.class, ui, "toggleMenuBar");
+        final Component keys = (Component) Reflect.get(TrainControlUI.class, ui, "PrimaryControls");
+        final Component menus = (Component) Reflect.get(TrainControlUI.class, ui, "mainMenuBar");
+
+        String hintsWere = prefs().get(TrainControlUI.SHOW_KEYBOARD_HINTS_PREF, null);
+        String barWas = prefs().get(TrainControlUI.MENUBAR_SETTING_PREF, null);
+
+        try
+        {
+            for (boolean on : new boolean[] {false, true})
+            {
+                tick(hints, on);
+                tick(bar, on);
+
+                assertEquals(Components.onTheEventThread(keys::isVisible), (Boolean) on, "Show Keyboard Control Hints, "
+                    + (on ? "ticked, hides" : "unticked, shows") + " the keyboard's key hints");
+                assertEquals(Components.onTheEventThread(menus::isVisible), (Boolean) on, "Show Menu Bar, "
+                    + (on ? "ticked, hides" : "unticked, shows") + " the menu bar");
+            }
+        }
+        finally
+        {
+            tick(hints, true);
+            tick(bar, true);
+
+            putBack(TrainControlUI.SHOW_KEYBOARD_HINTS_PREF, hintsWere);
+            putBack(TrainControlUI.MENUBAR_SETTING_PREF, barWas);
+        }
+    }
+
+    /** Ticks or unticks a checkbox as a click does, whatever it showed before. */
+    private static void tick(final javax.swing.AbstractButton item, final boolean on) throws Exception
+    {
+        Components.onTheEventThread(() ->
+        {
+            item.setSelected(!on);
+            item.doClick(0);
+
+            return null;
+        });
     }
 
     /**

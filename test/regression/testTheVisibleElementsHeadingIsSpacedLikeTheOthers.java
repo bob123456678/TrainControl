@@ -49,8 +49,8 @@ public class testTheVisibleElementsHeadingIsSpacedLikeTheOthers
 
         sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("single-switch"));
 
-        // THE EDITOR AT ITS OWN SIZE, NOT THE OPERATOR'S: the run copies his settings for this folder, and with "remember window
-        // location" on, the editor opens at his saved bounds, where nothing may lie under the band.  Set, never toggled.
+        // THE EDITOR AT ITS OWN SIZE: with "remember window location" on, the editor opens at saved bounds, where nothing
+        // may lie under the band.  Set, never toggled.
         rememberedWas = TrainControlUI.getPrefs().get(org.traincontrol.gui.widgets.PositionAwareJFrame.REMEMBER_WINDOW_LOCATION, null);
 
         TrainControlUI.getPrefs().putBoolean(org.traincontrol.gui.widgets.PositionAwareJFrame.REMEMBER_WINDOW_LOCATION, false);
