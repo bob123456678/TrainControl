@@ -480,29 +480,45 @@ public class testTheTrainWindow
      * After a run the track diagram's setup can still name Y on a square where the railway has X, and Y stand on another
      * station: the Train tab shows X, and None takes X off the railway and leaves Y where it stands (FR-195).
      *
-     * MUTATION: have `AutonomyEditorPanel.removeLocomotive` name only `locomotiveAt(tile)`, and X stays while Y leaves.
+     * MUTATION: have `AutonomyEditorPanel.liftTheTrainsLeaving` name only `locomotiveAt(tile)`, and X stays, Y leaves.
      */
     @Test(timeOut = 240000)
     public void testNoneAfterARunTakesOffTheTrainTheTabShows() throws Exception
     {
-        String free = null;
+        chooseAfterARun(aTrainPlacedNowhere(null), null);
+    }
 
+    /**
+     * The same with another train chosen in place of None: it takes the square, the train the tab showed leaves the
+     * railway, and the setup's train stays where the run left it (FR-195).
+     *
+     * MUTATION: have `AutonomyEditorPanel.placeLocomotive` name `locomotiveAt(tile)` too, and the setup's train leaves.
+     */
+    @Test(timeOut = 240000)
+    public void testAnotherTrainChosenAfterARunLeavesTheSetupsTrainWhereItStands() throws Exception
+    {
+        String shown = aTrainPlacedNowhere(null);
+
+        chooseAfterARun(shown, aTrainPlacedNowhere(shown));
+    }
+
+    /** A train neither the setup nor the railway has anywhere, other than `except`. */
+    private static String aTrainPlacedNowhere(String except)
+    {
         for (String name : model.getLocList())
         {
-            if (!session.placementsAutonomyWillWrite().containsValue(name)
-                && model.getAutoLayout().getLocomotiveLocation(model.getLocByName(name)) == null) free = name;
+            if (!name.equals(except) && !session.placementsAutonomyWillWrite().containsValue(name)
+                && model.getAutoLayout().getLocomotiveLocation(model.getLocByName(name)) == null) return name;
         }
 
-        assertNotNull(free, "precondition: no train placed nowhere");
-
-        noneAfterARun(free);
+        throw new AssertionError("precondition: no train placed nowhere");
     }
 
     /**
      * The same where the train the run brought in is one the setup still has on the square it left: None takes it off
      * the railway, and does not stand it back there.
      *
-     * MUTATION: leave out `removeLocomotive`'s clearing of the named trains' other placements, and it goes back.
+     * MUTATION: leave out `liftTheTrainsLeaving`'s clearing of the trains' other placements, and it goes back.
      */
     @Test(timeOut = 240000)
     public void testNoneAfterARunDoesNotSendTheTrainShownBackToItsOldSquare() throws Exception
@@ -521,14 +537,15 @@ public class testTheTrainWindow
 
         assertNotNull(brought, "precondition: no other placed train stands on the railway");
 
-        noneAfterARun(brought);
+        chooseAfterARun(brought, null);
     }
 
     /**
      * Moves the setup's train of a square on to an empty station and stands `shown` on the square, as a run would, then
-     * chooses None on the diagram's Train tab: `shown` must leave the railway, the setup's train stay on it.
+     * chooses `pick` (null: None) on the diagram's Train tab: `shown` must leave the railway, the setup's train stay on
+     * it, and `pick` stand on the square.
      */
-    private void noneAfterARun(final String shown) throws Exception
+    private void chooseAfterARun(final String shown, final String pick) throws Exception
     {
         final TileKey square = aSquareWithATrain();
         final String setupTrain = session.getLocomotiveNameAt(square);
@@ -575,23 +592,37 @@ public class testTheTrainWindow
             assertTrue(String.valueOf(showing).startsWith(shown), "precondition: the Train tab shows " + showing
                 + ", not the railway's train " + shown);
 
-            StationDoors.pick(window, "train.train", I18n.t("autosetup.ui.labelNone"));
+            org.traincontrol.gui.TailCrossedPrompt.answerForTests(org.traincontrol.gui.TailCrossedPrompt.DISMISSED);
+
+            StationDoors.pick(window, "train.train", pick != null ? pick : I18n.t("autosetup.ui.labelNone"));
 
             Components.drain(8);
             Components.settle();
         }
         finally
         {
+            org.traincontrol.gui.TailCrossedPrompt.answerForTests(null);
+
             Components.onTheEventThread(() -> { window.dispose(); return null; });
         }
 
         org.traincontrol.automation.Layout after = model.getAutoLayout();
         org.traincontrol.automation.Point shownAt = after.getLocomotiveLocation(model.getLocByName(shown));
 
-        assertNull(shownAt, "None on the Train tab, which showed " + shown + ", left it on "
+        String chose = pick != null ? pick : "None";
+
+        assertNull(shownAt, chose + " on the Train tab, which showed " + shown + ", left it on "
             + (shownAt == null ? null : shownAt.getName()));
-        assertNotNull(after.getLocomotiveLocation(model.getLocByName(setupTrain)), "None on the Train tab took "
+        assertNotNull(after.getLocomotiveLocation(model.getLocByName(setupTrain)), chose + " on the Train tab took "
             + setupTrain + " off the railway at " + other.getName() + ", a train the tab did not show");
+
+        if (pick != null)
+        {
+            org.traincontrol.automation.Point pickAt = after.getLocomotiveLocation(model.getLocByName(pick));
+
+            assertTrue(pickAt != null && square.equals(session.getStationIndex().squareOf(pickAt)),
+                pick + " chosen on the Train tab does not stand on " + square);
+        }
     }
 
     /**
@@ -2928,8 +2959,8 @@ public class testTheTrainWindow
      * After a run the railway can hold X where the setup names Y: placed over them through the list, the new train
      * takes the square and both leave it, on the railway and in the setup (OB-416).
      *
-     * MUTATION: leave `tileMenus.trainStanding(tile)` out of the names `AutonomyEditorPanel.placeLocomotive` gives
-     * `placementChanged`, and the rebuild puts X back over the new train and this fails.
+     * MUTATION: leave `trainOnTheRailway` out of `AutonomyEditorPanel.liftTheTrainsLeaving`, and the rebuild puts X
+     * back over the new train and this fails.
      */
     @Test(timeOut = 180000)
     public void testTheListOverARailwaysOtherTrainTakesItsPlace() throws Exception
