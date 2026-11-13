@@ -91,6 +91,10 @@ Not: `// OB-271 (2026-09-14): Adam reported ... Round 112 found ...; RSA61-B2 wi
   - `support.DialogWatchdog` ends a test JVM stuck behind an unanswered modal dialog after 60 s (`TC_DIALOG_WATCH`)
     and reports its class with the dialog's title and text.
   - `regression.testNoNewCopies` fails on a new copy of 60 tokens or more, naming where; merge it, don't re-pin it.
+- **Find a test by its claim, then read only its lines.**  `py -3 docs/tools/claims.py <words>` (or `--id OB-123`,
+  `--class <testClass>`, `--uses <ProductionClass>`) prints `test/<path>:<first>-<last>  Class.method  ids` for each
+  matching @Test method; read that range (and the ranges of the helpers it calls, which `--class` lists), never a whole
+  test class to find one claim.  It reads the files each run, so it is never stale.
 - Grep first, then read the range you need (about 120 lines); never read a giant file whole.  Pipe long output
   through `head`.
 - Edit with the Edit tool; a script, write with the Write tool (heredocs eat backslashes); never `sed -i` a Java file.
