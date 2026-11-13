@@ -6,6 +6,7 @@ import org.traincontrol.automationui.TileGraph.Direction;
 import org.traincontrol.automationui.TileGraph.RouteId;
 import org.traincontrol.automationui.TileGraph.TileKey;
 import org.traincontrol.gui.TailCrossedPrompt;
+import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.util.I18n;
 
 /**
@@ -163,7 +164,7 @@ final class EditorTileMenus
             // the square being in it (FR-111), which a key opens too.
             javax.swing.JMenuItem settings = settingsItem(target);
 
-            if (!editor.menuOnly) settings.setToolTipText(AutonomyEditorPanel.SHORTCUT_SETTINGS);
+            if (!editor.menuOnly) TrainControlUI.showShortcut(settings, AutonomyEditorPanel.SETTINGS_KEY);
 
             menu.add(settings);
 
@@ -378,8 +379,8 @@ final class EditorTileMenus
             javax.swing.JMenuItem lengthItem = editor.item(I18n.t("autosetup.ui.menuSetLength"),
                 () -> editor.applyLength(editor.squareTheLengthWouldGoOn(tile)));
 
-            // OB-214: the tooltip names Control+E, where Control+E does it
-            if (!editor.menuOnly) lengthItem.setToolTipText(AutonomyEditorPanel.SHORTCUT_LENGTH);
+            // OB-214: the item shows Control+E, where Control+E does it
+            if (!editor.menuOnly) TrainControlUI.showShortcut(lengthItem, AutonomyEditorPanel.LENGTH_KEY);
 
             menu.add(lengthItem);
         }
@@ -542,15 +543,15 @@ final class EditorTileMenus
 
             // WHAT A CAPTION IS, on the item that makes one: nothing else on this menu says that a caption is a live
             // readout of another square rather than a name plate.
+            // ITS KEY (FR-086), on the item, beside the sentence that is the only place saying what a caption is.  IN THE
+            // EDITOR ONLY: the main window builds this menu with `setMenuOnly`, where Control+N is the notes key.
+            if (!editor.menuOnly) TrainControlUI.showShortcut(name, AutonomyEditorPanel.STATION_KEY);
+
             name.setToolTipText(!inTheDrawnArea && !showsItself ? AutonomyEditorPanel.wrapped(I18n.t("autosetup.ui.captionOutsideTheDrawnArea"))
                 : AutonomyEditorPanel.wrapped(
-                (showsItself ? I18n.t("autosetup.ui.tooltipStationShowsItself")
+                showsItself ? I18n.t("autosetup.ui.tooltipStationShowsItself")
                     : !mine ? I18n.t("autosetup.ui.tooltipTextInTheWay")
-                    : I18n.t("autosetup.ui.tooltipShowStationHere"))
-                // AND ITS KEY (FR-086), added to the sentence rather than replacing it: this tooltip is the only place that says what a
-                // caption is.  IN THE EDITOR ONLY: the main window builds this menu with `setMenuOnly`, where Control+N is the
-                // notes key.
-                + (editor.menuOnly ? "" : "  (" + AutonomyEditorPanel.SHORTCUT_STATION + ")")));
+                    : I18n.t("autosetup.ui.tooltipShowStationHere")));
 
             menu.add(name);
         }

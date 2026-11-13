@@ -308,13 +308,18 @@ public class AutonomyEditorPanel extends JPanel
 
     public static final String SHORTCUT_NAME = "Control+S";
 
-    /** The key that opens Station Settings, over a square or for the chosen finding (FR-111, FR-072). */
-    public static final String SHORTCUT_SETTINGS = "Control+O";
+    /**
+     * The keys of the square's menu items, which the editor's key handler acts on and the items show (D40): Station
+     * Settings, over a square or for the chosen finding (FR-111, FR-072); the length; a station's name on the square
+     * under the pointer (FR-086).
+     */
+    public static final javax.swing.KeyStroke SETTINGS_KEY = control(java.awt.event.KeyEvent.VK_O),
+        LENGTH_KEY = control(java.awt.event.KeyEvent.VK_E), STATION_KEY = control(java.awt.event.KeyEvent.VK_N);
 
-    public static final String SHORTCUT_LENGTH = "Control+E";
-
-    /** Shows a station's name on the square under the pointer (FR-086). */
-    public static final String SHORTCUT_STATION = "Control+N";
+    private static javax.swing.KeyStroke control(int key)
+    {
+        return javax.swing.KeyStroke.getKeyStroke(key, java.awt.event.InputEvent.CTRL_DOWN_MASK);
+    }
 
     public static final String SHORTCUT_LENGTHS = "Control+G";
 

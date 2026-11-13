@@ -736,7 +736,7 @@ public class LayoutEditor extends PositionAwareJFrame
         // A key listener wired here later would paste tiles in autonomy mode unnoticed.
         if (isAutonomyMode()) return;
         
-        if (e.isControlDown() && e.getKeyCode() == KeyEvent.VK_V)
+        if (is(e, PASTE_KEY))
         {
             if (this.hasToolFlag())
             {
@@ -2264,7 +2264,25 @@ public class LayoutEditor extends PositionAwareJFrame
     private LayoutLabel handleLabel;
 
     /** The key for Select by Dragging a Box (FR-107): M for marquee; the main window's Control+M never reaches it. */
-    public static final String SHORTCUT_SELECT_BY_DRAGGING = "Control+M";
+    public static final javax.swing.KeyStroke SELECT_BY_DRAGGING_KEY = control(KeyEvent.VK_M);
+
+    /** The keys the track editor's key handler acts on, which its right-click menu shows (D40). */
+    public static final javax.swing.KeyStroke PASTE_KEY = control(KeyEvent.VK_V), CUT_KEY = control(KeyEvent.VK_X),
+        COPY_KEY = control(KeyEvent.VK_C), ROTATE_KEY = control(KeyEvent.VK_R), TEXT_KEY = control(KeyEvent.VK_T),
+        ADDRESS_KEY = control(KeyEvent.VK_A), GROW_KEY = control(KeyEvent.VK_I), UNDO_KEY = control(KeyEvent.VK_Z),
+        REDO_KEY = control(KeyEvent.VK_Y), DELETE_KEY = javax.swing.KeyStroke.getKeyStroke(KeyEvent.VK_DELETE, 0);
+
+    private static javax.swing.KeyStroke control(int key)
+    {
+        return javax.swing.KeyStroke.getKeyStroke(key, java.awt.event.InputEvent.CTRL_DOWN_MASK);
+    }
+
+    /** Whether a press is this key: its key, and Control when the key has it; other keys held do not matter. */
+    static boolean is(KeyEvent evt, javax.swing.KeyStroke key)
+    {
+        return evt.getKeyCode() == key.getKeyCode()
+            && (evt.isControlDown() || (key.getModifiers() & java.awt.event.InputEvent.CTRL_DOWN_MASK) == 0);
+    }
 
     /**
      * Turns picking on for one box, then off, for the right-click menu: a drag on track must move it, so picking by
@@ -5064,7 +5082,7 @@ public class LayoutEditor extends PositionAwareJFrame
             }
 
             // Control+F finds a point by name, in the autonomy editor only (FR-055)
-            if (evt.isControlDown() && evt.getKeyCode() == FIND_A_POINT_KEY.getKeyCode())
+            if (is(evt, FIND_A_POINT_KEY))
             {
                 findAPoint();
 
@@ -5100,7 +5118,7 @@ public class LayoutEditor extends PositionAwareJFrame
 
             // Control+E measures the square under the pointer (FR-066); the main window's key chain filters Control
             // (OB-197, `regression.testNoTwoShortcutsShareAKey`).
-            if (evt.isControlDown() && evt.getKeyCode() == KeyEvent.VK_E)
+            if (is(evt, AutonomyEditorPanel.LENGTH_KEY))
             {
                 onTheHoveredSquare(over -> autonomyPanel.promptLengthFor(over));
 
@@ -5108,7 +5126,7 @@ public class LayoutEditor extends PositionAwareJFrame
             }
 
             // Control+N shows a station's name on the square under the pointer (FR-086, MT-397).
-            if (evt.isControlDown() && evt.getKeyCode() == KeyEvent.VK_N)
+            if (is(evt, AutonomyEditorPanel.STATION_KEY))
             {
                 onTheHoveredSquare(over -> autonomyPanel.showStationNameFor(over));
 
@@ -5117,7 +5135,7 @@ public class LayoutEditor extends PositionAwareJFrame
 
             // Control+O opens Station Settings on the square under the pointer (FR-111), or, with the pointer off the
             // diagram, on the finding chosen in the list (FR-072).
-            if (evt.isControlDown() && evt.getKeyCode() == KeyEvent.VK_O)
+            if (is(evt, AutonomyEditorPanel.SETTINGS_KEY))
             {
                 org.traincontrol.automationui.TileGraph.TileKey over = hoveredSquare();
 
@@ -5174,7 +5192,7 @@ public class LayoutEditor extends PositionAwareJFrame
 
             // Selection shortcuts live here: key bindings are dead in this window, as the unfocusable controls leave
             // the frame the focus owner.  Selection first, then the single tile.
-            if (evt.isControlDown() && evt.getKeyCode() == KeyEvent.VK_V)
+            if (is(evt, PASTE_KEY))
             {
                 if (this.hasGroupClipboard() && getLastHoveredLabel() != null)
                 {
@@ -5185,7 +5203,7 @@ public class LayoutEditor extends PositionAwareJFrame
                     this.executeTool(getLastHoveredLabel());
                 }
             }
-            else if (evt.isControlDown() && evt.getKeyCode() == KeyEvent.VK_X)
+            else if (is(evt, CUT_KEY))
             {
                 // Cut, so a group can move to another page.
                 if (!this.selection.isEmpty())
@@ -5197,7 +5215,7 @@ public class LayoutEditor extends PositionAwareJFrame
                     this.initCopy(getLastHoveredLabel(), null, true);
                 }
             }
-            else if (evt.isControlDown() && evt.getKeyCode() == KeyEvent.VK_C)
+            else if (is(evt, COPY_KEY))
             {
                 if (!this.selection.isEmpty())
                 {
@@ -5208,38 +5226,38 @@ public class LayoutEditor extends PositionAwareJFrame
                     this.initCopy(getLastHoveredLabel(), null, false);
                 }
             }
-            else if (evt.isControlDown() && evt.getKeyCode() == KeyEvent.VK_R)
+            else if (is(evt, ROTATE_KEY))
             {
                 this.rotate(getLastHoveredLabel());
             }
             // No Shift+C or Shift+R: a mis-aimed one would overwrite a whole row.
-            else if (evt.isControlDown() && evt.getKeyCode() == KeyEvent.VK_T)
+            else if (is(evt, TEXT_KEY))
             {
                 this.editText(getLastHoveredLabel());
             }
-            else if (evt.isControlDown() && evt.getKeyCode() == KeyEvent.VK_A)
+            else if (is(evt, ADDRESS_KEY))
             {
                 this.editAddress(getLastHoveredLabel());
             }
-            else if (evt.isControlDown() && evt.getKeyCode() == KeyEvent.VK_I)
+            else if (is(evt, GROW_KEY))
             {
                 // growEdges, as the menu does.
                 this.growEdges();
             }
-            else if (evt.isControlDown() && evt.getKeyCode() == KeyEvent.VK_Z)
+            else if (is(evt, UNDO_KEY))
             {
                 this.undo();
             }
-            else if (evt.isControlDown() && evt.getKeyCode() == KeyEvent.VK_Y)
+            else if (is(evt, REDO_KEY))
             {
                 this.redo();
             }
             // Select by Dragging a Box (FR-107)
-            else if (evt.isControlDown() && evt.getKeyCode() == KeyEvent.VK_M)
+            else if (is(evt, SELECT_BY_DRAGGING_KEY))
             {
                 this.selectOnce();
             }
-            else if (evt.getKeyCode() == KeyEvent.VK_DELETE)
+            else if (is(evt, DELETE_KEY))
             {
                 if (!this.selection.isEmpty())
                 {

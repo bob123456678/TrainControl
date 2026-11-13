@@ -221,6 +221,14 @@ public class testRightClickMenuTipsCanBeHidden
         // Its own shortcut, shown on the item (D40 of the menu review), as RightClickTips writes an accelerator.
         if (text.equals(I18n.t("layout.ui.tooltipFindAPoint"))) return "Ctrl+F";
 
+        if (text.equals(I18n.t("layout.ui.tooltipSelectByDragging"))) return "Ctrl+M";
+
+        if (text.equals(I18n.t("autosetup.ui.tooltipShowStationHere"))
+            || text.equals(I18n.t("autosetup.ui.tooltipTextInTheWay")))
+        {
+            return "Ctrl+N";
+        }
+
         if (text.equals(I18n.t("layout.ui.tooltipDeselect"))) return "Escape";
 
         if (HOTKEY.matcher(tip).matches()) return tip;
@@ -337,8 +345,8 @@ public class testRightClickMenuTipsCanBeHidden
     }
 
     /**
-     * The track editor's menu, opened once: its hotkey items keep exactly their hotkeys when the tips are hidden, and
-     * its other tooltips go; off again, all are back.
+     * The track editor's menu, opened once: its items show their keys on their right (D40) whether or not the tips are
+     * hidden, its other tooltips go, and off again, all are back.
      *
      * MUTATION: strip hotkeys too, or skip the strip, as above.
      */
@@ -349,18 +357,25 @@ public class testRightClickMenuTipsCanBeHidden
         {
             hide(false);
 
+            shownKeys.clear();
+
             Map<String, String> before = tipsOn(Door.EDITOR);
+
+            Map<String, javax.swing.KeyStroke> keysBefore = new java.util.HashMap<>(shownKeys);
 
             java.util.Set<String> gray = new java.util.HashSet<>(grayed);
 
-            assertTrue(before.values().stream().anyMatch(t -> isHotkey(t)), "the editor menu has no hotkey tooltip: "
-                + before);
+            assertFalse(keysBefore.isEmpty(), "the editor menu shows no key");
 
             hide(true);
+
+            shownKeys.clear();
 
             Map<String, String> hidden = tipsOn(Door.EDITOR);
 
             assertOnlyHotkeysLeft("the editor menu", before, gray, hidden);
+
+            assertEquals(shownKeys, keysBefore, "hiding the tips changed the keys the editor menu shows");
 
             hide(false);
 
