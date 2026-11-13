@@ -13,11 +13,15 @@ import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
 import org.testng.annotations.Test;
+import org.traincontrol.base.Accessory;
+import org.traincontrol.base.RouteCommand;
+import org.traincontrol.marklin.MarklinRoute;
 import org.traincontrol.marklin.MarklinSimpleComponent;
 import org.traincontrol.marklin.file.CS2File;
 import org.traincontrol.marklin.udp.CS2Message;
 import org.traincontrol.util.I18n;
 import support.Components;
+import support.RouteMonitor;
 import support.StandInStation;
 import support.StationRig;
 import support.TcpStation;
@@ -216,6 +220,113 @@ public class testTheSyncAsksTheSensorsTheirState
             station.sensor(2399, true);
             assertTrue(shows(rig, 2399, true), "precondition: the later event did not arrive");
             assertTrue(shows(rig, 2301, false), "the answer from before the event won over the event");
+        });
+    }
+
+    /**
+     * A sensor the sync puts right is no edge: an armed route watching for it to clear, then be made, does not fire on
+     * the answer that says it is made, and waits from there; the next real clear, then made, fires it once.
+     *
+     * MUTATION: in `MarklinRoute.executeAutoRoute`, take out the `continue` after `isFeedbackCorrected`.
+     */
+    @Test(timeOut = 120000)
+    public void testASensorTheSyncPutsRightFiresNoRoute() throws Exception
+    {
+        connected((rig, station) -> aCorrectionFiresNoRoute(rig, station, 2801, MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED,
+            () -> synced(rig, station)));
+    }
+
+    /**
+     * The same after a reconnect: a route watching for its sensor to be made, then clear, does not fire on the new
+     * connection's answer that says it is clear; the next real made, then clear, fires it once.
+     *
+     * MUTATION: as testASensorTheSyncPutsRightFiresNoRoute.
+     */
+    @Test(timeOut = 120000)
+    public void testASensorAReconnectPutsRightFiresNoRoute() throws Exception
+    {
+        connected((rig, station) -> aCorrectionFiresNoRoute(rig, station, 2802, MarklinRoute.s88Triggers.OCCUPIED_THEN_CLEAR,
+            station::drop));
+    }
+
+    private interface Correction
+    {
+        void run() throws Exception;
+    }
+
+    /**
+     * A route of one turnout command armed on the contact; the station then changes the contact unseen to the state the
+     * route waits for, and `correct` puts TrainControl right.  The route must not fire, then must fire on real events.
+     */
+    private static void aCorrectionFiresNoRoute(StationRig rig, TcpStation station, int contact,
+        MarklinRoute.s88Triggers trigger, Correction correct) throws Exception
+    {
+        boolean first = trigger == MarklinRoute.s88Triggers.OCCUPIED_THEN_CLEAR;
+        String name = "Sync claim " + contact;
+        List<String> log = new ArrayList<>();
+        station.sensor(contact, first);
+        assertTrue(shows(rig, contact, first), "precondition: the event did not arrive");
+        int turnout = 10 + contact % 100;
+        rig.model.newSwitch(turnout, Accessory.accessoryDecoderType.MM2, false);
+        List<RouteCommand> commands = new ArrayList<>();
+        commands.add(RouteCommand.RouteCommandAccessory(turnout, Accessory.accessoryDecoderType.MM2, true));
+        assertTrue(rig.model.newRoute(name, commands, contact, trigger, true, null), "precondition: no route");
+        MarklinRoute route = rig.model.getRoute(name);
+        assertTrue(Components.waitFor(() -> RouteMonitor.waitingFor(route, !first), WAIT_MS),
+            "precondition: the route is not waiting for its trigger");
+
+        station.sensorUnseen(contact, !first);
+        correct.run();
+        assertTrue(shows(rig, contact, !first), "precondition: the sensor was not put right");
+
+        // Settled: the monitor waits again for the state it began from, whether or not it fired
+        boolean settled = Components.waitFor(() -> RouteMonitor.waitingFor(route, first), WAIT_MS);
+        assertEquals(fired(rig, log, name), 0, "the route fired on a state the station was asked for: " + log);
+        assertTrue(settled, "the route's monitor did not go back to waiting: " + log);
+
+        station.sensor(contact, first);
+        assertTrue(Components.waitFor(() -> RouteMonitor.waitingFor(route, !first), WAIT_MS),
+            "the route does not wait from the state the sync set: " + log);
+        station.sensor(contact, !first);
+        assertTrue(Components.waitFor(() -> fired(rig, log, name) == 1, WAIT_MS), "real events did not fire the route: "
+            + log);
+    }
+
+    /** How many times the route has fired by the log, `log` keeping what was taken before. */
+    private static int fired(StationRig rig, List<String> log, String route)
+    {
+        log.addAll(rig.takeLog());
+
+        return java.util.Collections.frequency(log, I18n.f("route.s88Triggered", route));
+    }
+
+    /**
+     * A sync while transmission is off sends no query, as `exec` sends nothing then; once on, the next sync asks.
+     *
+     * MUTATION: in `MarklinControlStation.syncWithCS2`, take out `if (this.on)` before `syncSensors()`.
+     */
+    @Test(timeOut = 120000)
+    public void testASyncWhileTransmissionIsOffAsksNothing() throws Exception
+    {
+        connected((rig, station) ->
+        {
+            station.sensor(2701, true);
+            assertTrue(shows(rig, 2701, true), "precondition: the event did not arrive");
+            rig.model.setNetworkCommState(false);
+
+            try
+            {
+                synced(rig, station);
+            }
+            finally
+            {
+                rig.model.setNetworkCommState(true);
+            }
+
+            // Answered, so in order over TCP every earlier query has arrived too
+            synced(rig, station);
+            long asked = station.queries().stream().filter(q -> q[1] == 2701).count();
+            assertEquals(asked, 1L, "a sync asked the sensor while transmission was off");
         });
     }
 
