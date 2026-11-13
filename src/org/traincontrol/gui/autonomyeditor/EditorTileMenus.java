@@ -546,12 +546,11 @@ final class EditorTileMenus
 
             name.setEnabled(!showsItself && inTheDrawnArea);
 
-            // WHAT A CAPTION IS, on the item that makes one: nothing else on this menu says that a caption is a live
-            // readout of another square rather than a name plate.
-            // ITS KEY (FR-086), on the item, beside the sentence that is the only place saying what a caption is.  IN THE
-            // EDITOR ONLY: the main window builds this menu with `setMenuOnly`, where Control+N is the notes key.
+            // Its key (FR-086) in the editor only: the main window builds this menu with `setMenuOnly`, where Control+N
+            // is the notes key.
             if (!editor.menuOnly) TrainControlUI.showShortcut(name, AutonomyEditorPanel.STATION_KEY);
 
+            // The only place on this menu that says a caption is a live readout of another square, not a name plate
             name.setToolTipText(!inTheDrawnArea && !showsItself ? AutonomyEditorPanel.wrapped(I18n.t("autosetup.ui.captionOutsideTheDrawnArea"))
                 : AutonomyEditorPanel.wrapped(
                 showsItself ? I18n.t("autosetup.ui.tooltipStationShowsItself")
