@@ -731,9 +731,170 @@ public class testTheLocomotiveSettingsWindow
 
         SettingsWindow.open(ui, other, LocomotiveSettingsFrame.Tab.MULTI_UNIT, null);
 
-        assertTrue(Components.all(SettingsWindow.showing().getContentPane(), JLabel.class,
-            l -> l.getText() != null && l.getText().equals(I18n.f("loc.ui.settingsPartOfMultiUnit", OTHER, NAME))).size() == 1,
+        assertEquals(noteText(), I18n.f("loc.ui.settingsPartOfMultiUnit", OTHER, NAME, NAME),
             "a member's Multi-Unit tab does not say it is part of " + NAME);
+    }
+
+    /** The Multi-Unit tab's note for a member, as it reads. */
+    private static String noteText()
+    {
+        return Components.onTheEventThread(() -> SettingsWindow.part("settings.multiUnitNote", javax.swing.JTextPane.class).getText());
+    }
+
+    /** Makes OTHER a member of NAME and opens OTHER's Multi-Unit tab, which carries the note. */
+    private static void openTheMembersNote() throws Exception
+    {
+        SettingsWindow.open(ui, loc, LocomotiveSettingsFrame.Tab.MULTI_UNIT, null);
+        assertNotNull(SettingsWindow.awaited(), "the window is not on screen");
+        SettingsWindow.tickMember(OTHER);
+        SettingsWindow.press(SettingsWindow.save());
+
+        assertTrue(Components.waitFor(() -> loc.getLinkedLocomotiveNames().containsKey(OTHER), WAIT),
+            "precondition: Save did not make " + OTHER + " a member");
+
+        assertTrue(SettingsWindow.open(ui, other, LocomotiveSettingsFrame.Tab.MULTI_UNIT, null), "the window did not open");
+        assertNotNull(SettingsWindow.awaited(), "the window is not on screen");
+    }
+
+    /** A mouse event on the note at the first letter of the multi-unit's name (the link), or off it. */
+    private static void mouseOnTheNote(int id, boolean onTheLink)
+    {
+        boolean moved = id == java.awt.event.MouseEvent.MOUSE_MOVED;
+
+        Components.onTheEventThread(() ->
+        {
+            javax.swing.JTextPane note = SettingsWindow.part("settings.multiUnitNote", javax.swing.JTextPane.class);
+
+            try
+            {
+                java.awt.Rectangle r = note.modelToView(onTheLink ? note.getText().lastIndexOf(NAME) + 1 : 0);
+
+                note.dispatchEvent(new java.awt.event.MouseEvent(note, id, System.currentTimeMillis(),
+                    moved ? 0 : java.awt.event.InputEvent.BUTTON1_MASK, r.x + 1, r.y + r.height / 2, 1, false,
+                    moved ? java.awt.event.MouseEvent.NOBUTTON : java.awt.event.MouseEvent.BUTTON1));
+            }
+            catch (javax.swing.text.BadLocationException e)
+            {
+                throw new IllegalStateException(e);
+            }
+
+            return null;
+        });
+
+        Components.settle();
+    }
+
+    /**
+     * In every language the multi-unit's name in the member's note is the underlined run, and only it, with a hand over
+     * it and a keyboard way in (FR-196).
+     *
+     * MUTATION: leave the underline off the run in `partOfNote`, or the hand off the link, and this fails.
+     */
+    @Test
+    public void testTheMultiUnitNameInTheNoteIsALinkInEveryLanguage() throws Exception
+    {
+        try
+        {
+            for (String lang : new String[] {"en", "de", "da", "es", "fr", "it", "nl", "pl"})
+            {
+                I18n.setLocale(new java.util.Locale(lang));
+                lay();
+                openTheMembersNote();
+
+                javax.swing.JTextPane note = SettingsWindow.part("settings.multiUnitNote", javax.swing.JTextPane.class);
+                StringBuilder underlined = new StringBuilder();
+
+                Components.onTheEventThread(() ->
+                {
+                    javax.swing.text.StyledDocument doc = note.getStyledDocument();
+
+                    for (int i = 0; i < doc.getLength(); i++)
+                    {
+                        if (javax.swing.text.StyleConstants.isUnderline(doc.getCharacterElement(i).getAttributes()))
+                        {
+                            underlined.append(note.getText().charAt(i));
+                        }
+                    }
+
+                    return null;
+                });
+
+                assertEquals(underlined.toString(), NAME, lang + ": the link is not exactly the multi-unit's name");
+                assertTrue(Components.onTheEventThread(note::isFocusable), lang + ": the link cannot be reached by keyboard");
+
+                mouseOnTheNote(java.awt.event.MouseEvent.MOUSE_MOVED, true);
+                assertEquals((int) Components.onTheEventThread(() -> note.getCursor().getType()), java.awt.Cursor.HAND_CURSOR,
+                    lang + ": no hand over the link");
+
+                mouseOnTheNote(java.awt.event.MouseEvent.MOUSE_MOVED, false);
+                assertEquals((int) Components.onTheEventThread(() -> note.getCursor().getType()), java.awt.Cursor.TEXT_CURSOR,
+                    lang + ": the hand stays off the link");
+            }
+        }
+        finally
+        {
+            I18n.setLocale(java.util.Locale.ENGLISH);
+        }
+    }
+
+    /**
+     * Clicking the multi-unit's name in a member's note closes this window and opens the multi-unit's settings on its
+     * Multi-Unit tab (FR-196); Enter on the link does the same.
+     *
+     * MUTATION: leave the open out of `partOfNote`'s action, and this fails.
+     */
+    @Test
+    public void testTheLinkOpensTheMultiUnitsSettings() throws Exception
+    {
+        openTheMembersNote();
+
+        LocomotiveSettingsFrame member = SettingsWindow.showing();
+
+        assertEquals(SettingsWindow.text("settings.name"), OTHER);
+
+        mouseOnTheNote(java.awt.event.MouseEvent.MOUSE_RELEASED, true);
+
+        assertTrue(Components.waitFor(() -> NAME.equals(SettingsWindow.text("settings.name")), WAIT),
+            "the click did not open the multi-unit's settings");
+        assertFalse(Components.onTheEventThread(member::isDisplayable), "the member's window was not closed");
+        assertEquals(SettingsWindow.tabShowing(), 3, "the multi-unit's settings did not open on the Multi-Unit tab");
+
+        // The keyboard
+        SettingsWindow.open(ui, other, LocomotiveSettingsFrame.Tab.MULTI_UNIT, null);
+        assertNotNull(SettingsWindow.awaited());
+        assertEquals(SettingsWindow.text("settings.name"), OTHER);
+
+        support.Keys.press(SettingsWindow.part("settings.multiUnitNote", javax.swing.JTextPane.class),
+            java.awt.event.KeyEvent.VK_ENTER);
+
+        assertTrue(Components.waitFor(() -> NAME.equals(SettingsWindow.text("settings.name")), WAIT),
+            "Enter on the link did not open the multi-unit");
+    }
+
+    /**
+     * With changes unsaved, the link asks Save, Discard or Cancel as the X does: Cancel leaves the window where it was,
+     * with what was typed; Discard goes on to the multi-unit (FR-196).
+     *
+     * MUTATION: have the link dispose the window without asking, and this fails.
+     */
+    @Test
+    public void testTheLinkAsksAboutUnsavedChangesFirst() throws Exception
+    {
+        openTheMembersNote();
+        SettingsWindow.type("settings.name", "LS renamed");
+
+        LocomotiveSettingsFrame.unsavedAnswerForTest = 2;
+        mouseOnTheNote(java.awt.event.MouseEvent.MOUSE_RELEASED, true);
+
+        assertTrue(SettingsWindow.showing() != null, "Cancel closed the window");
+        assertEquals(SettingsWindow.text("settings.name"), "LS renamed", "Cancel did not leave the window as it was");
+
+        LocomotiveSettingsFrame.unsavedAnswerForTest = 1;
+        mouseOnTheNote(java.awt.event.MouseEvent.MOUSE_RELEASED, true);
+
+        assertTrue(Components.waitFor(() -> NAME.equals(SettingsWindow.text("settings.name")), WAIT),
+            "Discard did not go on to the multi-unit");
+        assertEquals(other.getName(), OTHER, "Discard saved the typed name");
     }
 
     // The window that is reused
