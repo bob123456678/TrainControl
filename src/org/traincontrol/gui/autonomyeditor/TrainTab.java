@@ -38,6 +38,9 @@ final class TrainTab extends StationWindowBase.RoomyPanel
 {
     private static final Font REGULAR = new Font("Segoe UI", Font.PLAIN, 14);
 
+    /** The widest the train list grows for a long name. */
+    static final int TRAIN_WIDTH = 240;
+
     private final StationWindowBase window;
     private final AutonomyEditorPanel editor;
 
@@ -71,7 +74,19 @@ final class TrainTab extends StationWindowBase.RoomyPanel
         this.window = window;
         this.editor = window.editor;
 
-        train = window.new Choice(at -> pressTrain());
+        // As wide as its names up to TRAIN_WIDTH; FlatLaf's open list widens to show a longer one whole (OB-447)
+        train = window.new Choice(at -> pressTrain())
+        {
+            @Override
+            public java.awt.Dimension getPreferredSize()
+            {
+                java.awt.Dimension asked = super.getPreferredSize();
+
+                asked.width = Math.min(asked.width, TRAIN_WIDTH);
+
+                return asked;
+            }
+        };
 
         JPanel form = new JPanel(new GridBagLayout());
 
@@ -110,6 +125,16 @@ final class TrainTab extends StationWindowBase.RoomyPanel
             c.insets.top += 4;
 
             layout.setConstraints(top, c);
+        }
+
+        // The list and Active at their own width, left in their rows, not stretched across the window (OB-447)
+        for (JComponent own : new JComponent[] {train, active})
+        {
+            GridBagConstraints c = layout.getConstraints(own);
+
+            c.fill = GridBagConstraints.NONE;
+
+            layout.setConstraints(own, c);
         }
 
         setBorder(BorderFactory.createEmptyBorder(StationWindowBase.PAD, 0, 0, 0));

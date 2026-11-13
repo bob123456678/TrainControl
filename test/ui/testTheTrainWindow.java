@@ -1166,6 +1166,98 @@ public class testTheTrainWindow
     }
 
     /**
+     * The train list is as wide as the names it holds, and Active as its words, each at its row's left rather than
+     * stretched across the window (OB-447: "The train name dropdown on the train tab of the station editor seems very
+     * wide").
+     *
+     * MUTATION: drop the `fill = NONE` loop in `TrainTab`'s constructor, and this fails.
+     */
+    @Test(timeOut = 120000)
+    public void testTheTrainListAndActiveAreNotStretched() throws Exception
+    {
+        StationSettingsWindow window = StationDoors.openTrain(theEditorsPanel(), aSquareWithATrain());
+
+        try
+        {
+            Components.onTheEventThread(() ->
+            {
+                javax.swing.JComponent list = Components.named(window, "train.train", javax.swing.JComponent.class);
+                javax.swing.JComponent active = Components.named(window, "train.active", javax.swing.JComponent.class);
+
+                for (javax.swing.JComponent each : new javax.swing.JComponent[] {list, active})
+                {
+                    assertEquals(each.getWidth(), each.getPreferredSize().width, each.getName() + " is stretched to "
+                        + each.getWidth() + " px for " + each.getPreferredSize().width + " px of content");
+                }
+
+                assertEquals(list.getX(), active.getX(), "the train list and Active do not start at one left edge");
+
+                return null;
+            });
+        }
+        finally
+        {
+            SwingUtilities.invokeAndWait(window::dispose);
+        }
+    }
+
+    /**
+     * A train named at great length leaves the train list narrower than the name, and the open list still shows the name
+     * whole (OB-447).
+     *
+     * MUTATION: drop the cap from the train list's `getPreferredSize` in `TrainTab`, and this fails.
+     */
+    @Test(timeOut = 120000)
+    public void testALongTrainNameIsCappedInTheBoxAndWholeInTheList() throws Exception
+    {
+        StationSettingsWindow window = StationDoors.openTrain(theEditorsPanel(), aSquareWithATrain());
+
+        final String longName = "Upper Ballymacarrett Junction Carriage Sidings Shunter (Northbound Loop) No. 2";
+
+        try
+        {
+            final javax.swing.JComboBox<?> list = StationDoors.part(window, "train.train", javax.swing.JComboBox.class);
+
+            int named = Components.onTheEventThread(() ->
+            {
+                // Added at the end, which changes no choice, so nothing is placed
+                @SuppressWarnings("unchecked")
+                javax.swing.DefaultComboBoxModel<String> names = (javax.swing.DefaultComboBoxModel<String>) list.getModel();
+
+                names.addElement(longName);
+
+                window.getContentPane().revalidate();
+                window.validate();
+
+                return list.getFontMetrics(list.getFont()).stringWidth(longName);
+            });
+
+            Components.settle();
+
+            assertTrue(Components.onTheEventThread(list::getWidth) < named, "the train list grew to the long name's "
+                + named + " px: " + Components.onTheEventThread(list::getWidth));
+
+            Components.onTheEventThread(() -> { list.showPopup(); return null; });
+            Components.settle();
+
+            int open = Components.onTheEventThread(() ->
+            {
+                Object popup = list.getAccessibleContext().getAccessibleChild(0);
+
+                return ((javax.swing.plaf.basic.ComboPopup) popup).getList().getWidth();
+            });
+
+            Components.onTheEventThread(() -> { list.hidePopup(); return null; });
+
+            assertTrue(open >= named, "the open list is " + open + " px, too narrow for the long name's " + named + " px");
+        }
+        finally
+        {
+            SwingUtilities.invokeAndWait(window::dispose);
+        }
+    }
+
+    /**
      * A click on an (i) shows its tooltip at once, without the hover delay (Adam: "click on any i should immediately
      * show the tooltip, so you don't have to wait for the hover timeout"), and leaves every other component's delay as
      * it was.  The hover delay is set to a minute, so a tooltip within the wait came from the click.
