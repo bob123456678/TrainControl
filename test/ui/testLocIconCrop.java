@@ -593,10 +593,12 @@ public class testLocIconCrop
 
     /**
      * The picture's wrench, in its upper left, opens the locomotive's Locomotive Settings on Basic Settings and says so;
-     * the main window's picture offers no crop or revert, and the pointer over it is the plain one (FR-104, OB-443).
+     * the main window's picture offers no crop or revert, and the pointer over it is the plain one; a right-click on it
+     * chooses the icon like one on the picture (FR-104, OB-443).
      *
-     * MUTATION: wire the wrench to the icon chooser again, or put a crop or revert mark back on the picture, or leave
-     * the hand on the picture, and this fails.
+     * MUTATION: wire the wrench to the icon chooser again, open Locomotive Settings on either button in
+     * `buildIconWrench`, or put a crop or revert mark back on the picture, or leave the hand on the picture, and this
+     * fails.
      */
     @Test
     public void testTheWrenchOpensTheLocomotivesSettingsAndThePointerIsPlain() throws Exception
@@ -670,55 +672,15 @@ public class testLocIconCrop
             assertEquals(support.SettingsWindow.text("settings.name"), loc.getName(), "the window is not the locomotive's");
             assertEquals(support.SettingsWindow.tabShowing(), 0, "the window did not open on Basic Settings");
             assertNull(awaitAChooser(500), "the wrench still opened the icon chooser");
-        }
-        finally
-        {
+
+            // A RIGHT-CLICK ON IT IS A RIGHT-CLICK ON THE PICTURE: with the power off it chooses the icon, and opens no window
             support.SettingsWindow.closeIfOpen();
 
-            closeTheWindow(ui);
-
-            if (model != null) model.stop();
-
-            if (sandbox != null) sandbox.close();
-        }
-    }
-
-    /**
-     * A right-click on the wrench is a right-click on the picture: with the power off it opens the icon chooser, not
-     * Locomotive Settings (OB-443).
-     *
-     * MUTATION: open Locomotive Settings on either button in `buildIconWrench`, and this fails.
-     */
-    @Test
-    public void testARightClickOnTheWrenchChoosesTheIcon() throws Exception
-    {
-        if (java.awt.GraphicsEnvironment.isHeadless()) throw new org.testng.SkipException("the window needs a display");
-
-        support.LayoutSandbox sandbox = null;
-        org.traincontrol.marklin.MarklinControlStation model = null;
-        TrainControlUI ui = null;
-
-        try
-        {
-            // OPENED INSIDE THE TRY (OB-111)
-            sandbox = support.LayoutSandbox.open();
-
-            model = support.TestStation.simulated();
-
-            ui = windowOver(model);
-
-            java.lang.reflect.Field power =
-                Reflect.field(org.traincontrol.marklin.MarklinControlStation.class, "powerState");
-
-            power.set(model, false);
+            Reflect.field(org.traincontrol.marklin.MarklinControlStation.class, "powerState").set(model, false);
 
             ui.updatePowerState();
 
             Components.drain(4);
-
-            final javax.swing.JLabel wrench = field(ui, "iconWrench", javax.swing.JLabel.class);
-
-            Reflect.set(TrainControlUI.class, ui, "activeLoc", model.newDCCLocomotive("OB-443 right", 8444));
 
             javax.swing.SwingUtilities.invokeAndWait(() -> wrench.dispatchEvent(new java.awt.event.MouseEvent(wrench,
                 java.awt.event.MouseEvent.MOUSE_RELEASED, System.currentTimeMillis(), java.awt.event.InputEvent.BUTTON3_MASK,
