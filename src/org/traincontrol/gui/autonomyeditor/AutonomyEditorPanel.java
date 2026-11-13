@@ -3723,11 +3723,10 @@ public class AutonomyEditorPanel extends JPanel
         final boolean sameSquare = wasOn != null && session.getStationIndex() != null
             && tile.equals(session.getStationIndex().squareOf(wasOn));
 
-        // The trains standing here leave with this placement: the setup's, and after a run the railway's
-        final java.util.Set<String> named = new java.util.LinkedHashSet<>(
-            java.util.Arrays.asList(name, locomotiveAt(tile), tileMenus.trainStanding(tile)));
+        // The trains standing here leave with this placement
+        final java.util.Set<String> named = new java.util.LinkedHashSet<>(java.util.Collections.singleton(name));
 
-        named.remove(null);
+        named.addAll(liftTheTrainsLeaving(tile, name));
 
         // Cancel undoes a placement as it undoes a drag: the station, and the train where it stood (MT-914)
         putBackOnDiscard.addAll(named);
@@ -3816,27 +3815,39 @@ public class AutonomyEditorPanel extends JPanel
     }
 
     /**
-     * Takes the train off a square: the one the railway has there, and the setup's unless a run has moved it to another
-     * square, where it stays (after a run they can differ, OB-416).
+     * The trains leaving a square, other than `arriving`: the one the railway has there, and the setup's unless a run
+     * has moved it to another square, where it stays (after a run they can differ, OB-416).  Their placements on other
+     * squares are cleared, so the rebuild, told their names, takes them off; the square itself is the caller's.
      */
-    void removeLocomotive(TileKey tile)
+    private java.util.Set<String> liftTheTrainsLeaving(TileKey tile, String arriving)
     {
         org.traincontrol.automation.Layout running = layoutSource == null ? null : layoutSource.get();
 
         String inTheSetup = locomotiveAt(tile);
         org.traincontrol.automation.Point itsCopy = standingOn(running, inTheSetup);
 
-        final java.util.Set<String> named = new java.util.LinkedHashSet<>(java.util.Arrays.asList(
+        java.util.Set<String> leaving = new java.util.LinkedHashSet<>(java.util.Arrays.asList(
             session.trainOnTheRailway(tile, running), itsCopy == null || session.getStationIndex() == null
                 || tile.equals(session.getStationIndex().squareOf(itsCopy)) ? inTheSetup : null));
 
-        named.remove(null);
+        leaving.remove(null);
+        leaving.remove(arriving);
 
-        // "Nowhere" is the setup's answer for these trains, so not the square it last had one on either
         for (Map.Entry<TileKey, String> placed : session.placementsAutonomyWillWrite().entrySet())
         {
-            if (named.contains(placed.getValue())) session.placeLocomotive(placed.getKey(), null);
+            if (!placed.getKey().equals(tile) && leaving.contains(placed.getValue()))
+            {
+                session.placeLocomotive(placed.getKey(), null);
+            }
         }
+
+        return leaving;
+    }
+
+    /** Takes the trains leaving a square off it (`liftTheTrainsLeaving`). */
+    void removeLocomotive(TileKey tile)
+    {
+        java.util.Set<String> named = liftTheTrainsLeaving(tile, null);
 
         session.placeLocomotive(tile, null);
 
