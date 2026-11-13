@@ -310,10 +310,10 @@ public class testEditorSurfaceRules
             + "of them and off for the others looks half-dressed rather than focused");
 
         // AND NOTHING ELSE ASKS IT: counted in annotationFor alone, a de-clutter of its own in another method was not
-        // seen.
+        // seen.  `followTheGuardPick` reads the answer to hide Station Settings (MT-956), and decides nothing drawn.
         assertEquals(outside("isFocusedOnSignals()",
                 "public org.traincontrol.automationui.TileAnnotation annotationFor(TileKey tile)",
-                "public boolean isFocusedOnSignals()"), 0,
+                "public boolean isFocusedOnSignals()", "    void followTheGuardPick()"), 0,
             "the signal focus is asked somewhere besides annotationFor, so the de-clutter is decided twice - and two "
             + "decisions that have to agree are the shape that produced OB-037");
 

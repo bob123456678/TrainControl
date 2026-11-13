@@ -17,6 +17,7 @@ import javax.swing.JComponent;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JRadioButton;
+import javax.swing.JToggleButton;
 import org.traincontrol.automationui.TileGraph.TileKey;
 import org.traincontrol.automationui.TilePorts;
 import org.traincontrol.base.Locomotive;
@@ -36,6 +37,9 @@ import org.traincontrol.util.I18n;
 final class TrainTab extends StationWindowBase.RoomyPanel
 {
     private static final Font REGULAR = new Font("Segoe UI", Font.PLAIN, 14);
+
+    /** The widest the train list grows for a long name. */
+    static final int TRAIN_WIDTH = 240;
 
     private final StationWindowBase window;
     private final AutonomyEditorPanel editor;
@@ -70,7 +74,19 @@ final class TrainTab extends StationWindowBase.RoomyPanel
         this.window = window;
         this.editor = window.editor;
 
-        train = window.new Choice(at -> pressTrain());
+        // As wide as its names up to TRAIN_WIDTH; FlatLaf's open list widens to show a longer one whole (OB-447)
+        train = window.new Choice(at -> pressTrain())
+        {
+            @Override
+            public java.awt.Dimension getPreferredSize()
+            {
+                java.awt.Dimension asked = super.getPreferredSize();
+
+                asked.width = Math.min(asked.width, TRAIN_WIDTH);
+
+                return asked;
+            }
+        };
 
         JPanel form = new JPanel(new GridBagLayout());
 
@@ -109,6 +125,16 @@ final class TrainTab extends StationWindowBase.RoomyPanel
             c.insets.top += 4;
 
             layout.setConstraints(top, c);
+        }
+
+        // The list and Active at their own width, left in their rows, not stretched across the window (OB-447)
+        for (JComponent own : new JComponent[] {train, active})
+        {
+            GridBagConstraints c = layout.getConstraints(own);
+
+            c.fill = GridBagConstraints.NONE;
+
+            layout.setConstraints(own, c);
         }
 
         setBorder(BorderFactory.createEmptyBorder(StationWindowBase.PAD, 0, 0, 0));
@@ -289,14 +315,19 @@ final class TrainTab extends StationWindowBase.RoomyPanel
         // Clicking is the editor's: the track diagram's panel has no grid to be clicked on
         if (editor.menuOnly) return;
 
-        JButton pick = new JButton(I18n.t("autosetup.ui.menuPickTailCrossed"), RowIcons.pencil(16));
+        // Pressed in while the pick waits; pressing it again ends the pick (MT-959)
+        JToggleButton pick = new JToggleButton(I18n.t("autosetup.ui.menuPickTailCrossed"), RowIcons.pencil(16),
+            window.tile.equals(editor.tailPickFor()));
 
         pick.setName("train.tailPick");
         pick.putClientProperty("JButton.buttonType", "toolBarButton");
         pick.setFont(org.traincontrol.gui.widgets.UiStyle.BUTTON_FONT);
         pick.setFocusable(false);
         pick.setEnabled(!readOnly);
-        pick.addActionListener(e -> window.actAlone(() -> editor.armTailPick(window.tile)));
+        pick.addActionListener(e ->
+        {
+            if (!editor.endTailPick(window.tile)) window.actAlone(() -> editor.armTailPick(window.tile));
+        });
 
         tail.add(pick);
     }

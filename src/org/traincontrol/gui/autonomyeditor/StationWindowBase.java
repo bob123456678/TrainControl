@@ -144,9 +144,9 @@ abstract class StationWindowBase extends JDialog
         banners.add(picked, BorderLayout.NORTH);
         banners.add(strip, BorderLayout.CENTER);
 
-        // Escape closes; a field's own Escape is tried first, and puts back what it held
-        getRootPane().registerKeyboardAction(e -> closeWindow(), KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0),
-            JComponent.WHEN_IN_FOCUSED_WINDOW);
+        // Escape ends a tail pick waiting first, else closes; a field's own Escape is tried before either
+        getRootPane().registerKeyboardAction(e -> { if (!editor.endTailPick(tile)) closeWindow(); },
+            KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0), JComponent.WHEN_IN_FOCUSED_WINDOW);
     }
 
     /**
@@ -190,7 +190,7 @@ abstract class StationWindowBase extends JDialog
     {
         commitFields();
 
-        boolean first = !isVisible();
+        boolean first = !isVisible() && !steppedAside;
 
         this.tile = square;
 
@@ -209,6 +209,19 @@ abstract class StationWindowBase extends JDialog
         }
 
         toFront();
+    }
+
+    /** Hidden while guard signals are picked, as it cannot be minimized behind their window (MT-956). */
+    private boolean steppedAside;
+
+    /** Hides the window, state kept, or brings it back where it was. */
+    final void stepAside(boolean aside)
+    {
+        if (aside == steppedAside || tile == null) return;
+
+        steppedAside = aside;
+
+        setVisible(!aside);
     }
 
     /** Reads everything again; writes nothing. */
@@ -274,6 +287,9 @@ abstract class StationWindowBase extends JDialog
 
             return;
         }
+
+        // Back if a way out of the guard pick forgot to say so
+        editor.stationWindows.followTheGuardPick();
 
         String was = held;
 
