@@ -4924,7 +4924,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         showShortcut(item, KeyShortcuts.named(row).stroke());
     }
 
-    /** Shows these keys on a menu item, bound to nothing: the window's own key handling acts on them. */
+    /**
+     * Shows these keys on a menu item, bound to nothing: the window's own key handling acts on them.  Hide Hover
+     * Tooltips takes them off while the menu is open ({@link RightClickTips}).
+     */
     public static void showShortcut(javax.swing.JMenuItem item, javax.swing.KeyStroke keys)
     {
         item.setAccelerator(keys);

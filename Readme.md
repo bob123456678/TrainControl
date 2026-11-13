@@ -190,7 +190,7 @@ Monitor the usage of different locomotives.
     * Hide the names of stations autonomy will never send a train to
 * Back up everything in one archive (locomotives, keyboard mappings, track diagrams, routes and
   autonomy setups) and restore it on another machine
-* Hide the tooltips in right-click menus, if you don't need them
+* Hide the tooltips and shortcut keys in menus, if you don't need them
 * Programmatic layout control via Java API (uses CAN protocol; [see documentation](AutomationAPI.md)) 
 * Monitor locomotive usage stats
 
@@ -477,7 +477,7 @@ Tab icons provided by Freepik.
             - In the track diagram editor, Ctrl+R turns the picked squares when there are any, and `Rotate` on the `Selection` menu shows Ctrl+R.
         - Interface
             - `Layouts` > `Manage Pages...` is now `Edit/Add Pages...`, and the separate `Edit Layout Page` menu is gone.
-            - `Hide Hover Tooltips` on the `Preferences` menu hides the tooltips in menus, though an item still shows its shortcut key and a grayed item still says why.
+            - `Hide Hover Tooltips` on the `Preferences` menu hides the tooltips and shortcut keys in menus, though a grayed item still says why.  The keys still work, and unticking it shows both again.
             - The accessory keyboard has 16 tabs of 128 addresses, each key has a red half and a green half, and clicking either sends that color again even if it is already lit.
             - `Export Counts` on the accessory keyboard saves every accessory's number of actuations to a CSV file.
             - Click an (i) to read its explanation at once, without waiting for the tooltip.
