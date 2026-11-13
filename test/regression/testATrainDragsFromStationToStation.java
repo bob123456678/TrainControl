@@ -548,8 +548,7 @@ public class testATrainDragsFromStationToStation
      * What the train brings stays with it (FR-160): a timetable entry of the train is not lost and a paused train stays
      * paused.  Losing a timetable is grade B.
      *
-     * MUTATION: none of its own: the drag is a paste, which these ride on; they fail if a drop ever folds a timetable
-     * or the pause away.
+     * MUTATION: clear the timetable in `AutonomyEditorPanel.dropTrain` once the train has landed, and this fails.
      */
     @Test(timeOut = 240000)
     public void testATrainKeepsItsTimetableAndItsPause() throws Exception
@@ -564,7 +563,17 @@ public class testATrainDragsFromStationToStation
         {
             session.setLocomotivePaused(train, true);
 
+            // The snapshot's one entry is another train's: the dragged train is given a copy of it
+            org.json.JSONArray all = new org.json.JSONArray(String.valueOf(session.getGlobal("timetable")));
+
+            assertTrue(all.length() > 0, "precondition: the snapshot has no timetable entry to copy");
+
+            all.put(new org.json.JSONObject(all.getJSONObject(0).toString()).put("loc", train));
+            session.setGlobal("timetable", all);
+
             org.json.JSONArray timetable = timetableOf(train);
+
+            assertTrue(timetable.length() > 0, "precondition: the train has no timetable entry");
 
             Mouse.drag(f.fromLabel, f.toLabel);
             Components.drain(8);
@@ -1077,7 +1086,8 @@ public class testATrainDragsFromStationToStation
      * turn at, a green mark means the train lands; and a drag handed a square that is no station meets no dialog.
      *
      * MUTATION: removing `!dropping` from the tail-side check in `DiagramLocGestures` stops a paste there with the
-     * mark green; removing `if (dropping) return true;` before `errorTrainOnlyAtStation` shows that dialog.
+     * mark green; removing `if (dropping) return true;` before `errorTrainOnlyAtStation` shows that dialog; refusing
+     * every may-turn square in `canDropTrain` grays the mark.
      */
     @Test(timeOut = 240000)
     public void testAStationTrainsMayTurnAtTakesTheDragAndNoDialogIsMet() throws Exception
@@ -1099,12 +1109,11 @@ public class testATrainDragsFromStationToStation
 
             boolean green = editor.getAutonomyPanel().canDropTrain(again.from, again.to);
 
+            assertTrue(green, "the mark is not green on a station trains may turn at");
+
             dragTrain(again.from, again.to);
 
-            if (green)
-            {
-                assertEquals(session.getLocomotiveNameAt(again.to), train, "the mark was green and the train did not land");
-            }
+            assertEquals(session.getLocomotiveNameAt(again.to), train, "the mark was green and the train did not land");
 
             // A square the railway has a Point for that is no station
             TileKey notAStation = null;

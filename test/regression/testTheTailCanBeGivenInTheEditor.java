@@ -368,7 +368,8 @@ public class testTheTailCanBeGivenInTheEditor
      * the pick began (its Train tab's Pick on the Diagram, or the square's menu): nothing waits for a click and no
      * sensor stays outlined (MT-959).
      *
-     * MUTATION: drop the `endTailPick` call in `StationWindows.closed`, and this fails.
+     * MUTATION: drop the `endTailPick` call in `StationWindows.closed`, or have the Train tab's Pick on the Diagram
+     * arm nothing, and this fails.
      */
     @Test
     public void testClosingStationSettingsEndsTheTailPick() throws Exception
@@ -385,7 +386,11 @@ public class testTheTailCanBeGivenInTheEditor
                 if (route.startsWith("menu")) f.arm();
                 else pressPick(f, window);
 
+                assertNotNull(f.panel.tailPickFor(), route + ": precondition: the pick did not begin");
+
                 List<TileKey> outlined = new ArrayList<>(f.panel.tailPickSquares());
+
+                assertFalse(outlined.isEmpty(), route + ": precondition: the pick outlined no sensor");
 
                 if (route.endsWith("close box"))
                 {
