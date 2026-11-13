@@ -2985,6 +2985,12 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         return autonomyTileMenus.trainWindowItem(tile);
     }
 
+    /** The track diagram menu's heading for a square, as the editor's menu heads it. */
+    String squareHeading(org.traincontrol.automationui.TileGraph.TileKey tile)
+    {
+        return liveSetupPanel() == null ? getAutonomySession().describeTile(tile) : autonomyTileMenus.menuHeading(tile);
+    }
+
     /** A right-click on another square moves a window already open there (FR-111). */
     void stationWindowsFollow(org.traincontrol.automationui.TileGraph.TileKey tile)
     {

@@ -104,9 +104,7 @@ final class LayoutMenus
 
         if (goToEditorItem == null)
         {
-            goToEditorItem = new javax.swing.JMenuItem(I18n.t("autosetup.ui.menuGoToOpenEditor"));
-
-            goToEditorItem.addActionListener(e -> ui.showOpenEditor());
+            goToEditorItem = AutonomyMenu.goToOpenEditorItem(ui);
 
             ui.layoutMenu().add(goToEditorItem, 0);
 

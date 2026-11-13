@@ -454,7 +454,10 @@ Tab icons provided by Freepik.
             - A station with only `Trains can stop here` ticked can't be run through by autonomy or by a trip you send, though it doesn't make the train turn around, and `Return Home` may still run through it.
             - `Mass Edit...`, under `Path Type` in the autonomy editor, lets you click several stations and change them all in one `Station Settings` window.
             - `Change Train at` *station* `...` opens the `Train Placement` tab of `Station Settings` for the train standing there, with its locomotive, `Active`, `Facing`, `Arrived` and `Tail lies`, and `Locomotive Settings...` opens the `Autonomy` tab.
-            - On the track diagram, a station's right-click menu now always has `Edit` *locomotive* `...` when a train is standing there, `Place` *locomotive* when another one is selected, and `Place a Locomotive Here...`, together under their own divider.
+            - On the track diagram, a station's right-click menu now always has `Edit` *locomotive* `...` when a train is standing there, `Place` *locomotive* `Here` when another one is selected, and `Place a Locomotive Here...`, which reads `Place Another Locomotive Here...` beside it, together under their own divider.
+            - On the track diagram, every square's right-click menu now opens with its name in bold and `Station Settings...` under it, and ends with `Start Autonomous Operation` and `Return Locomotives Home`.  `Segment Length...`, `Bulk Tools` and `Open the Full Editor...` are under `Autonomy Setup`, as they already were on plain track.
+            - `Change Direction` and `Change Arrived From` are left off the track diagram's right-click menu where the track allows only one way, rather than grayed out.
+            - While an editor is open, the track diagram's right-click menu offers `Go to the Opened Editor`.
             - A station's right-click menu turns the train standing there around in one click with `Change Direction (now facing` *East* `)`, and changes the side it came in by with `Change Arrived From (currently` *West* `)`.
             - While trains are running, whether sent by autonomy, a timetable, a route, you or `Return Home`, a station's right-click menu on the track diagram has `Is Active` to pause or resume the train standing there, and so does the `Train Placement` tab of its `Station Settings`.
             - On the track diagram, you can send a standing train from its right-click menu while another train you sent is still on its way.
@@ -508,6 +511,8 @@ Tab icons provided by Freepik.
             - Cancel in the autonomy editor now takes off a train you placed on an empty station, and puts a station back as it was after you placed a train over another one.
             - A command window that stopped showing output, for example after clicking into it, no longer holds up sensor reports, which could make trains run past their stops.
             - `Path Integrity Validation` now waits up to 30 seconds while the Central Station is still switching other accessories, instead of stopping the train.
+            - A train's destinations on the track diagram's right-click menu are in the order you read them, so ParkingTrack4 comes before ParkingTrack10.
+            - Right-clicking plain track on the track diagram shows what it is, such as `Straight Track`, rather than its grid square.
         - Locomotive Control
             - Ctrl+B now moves the copied locomotive to the active button, as the key menu's `Move` item says.
         - Track Diagram

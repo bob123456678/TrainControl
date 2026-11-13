@@ -93,7 +93,8 @@ public class testNoSetupEditWhileARouteRuns
 
             setupItems.put("Place", I18n.f("layout.ui.menuPlaceLocomotive", active));
             setupItems.put("Remove", I18n.f("layout.ui.menuRemoveLocomotive", train));
-            setupItems.put("Segment Length", I18n.t("autosetup.ui.menuSetLength"));
+            // Segment Length and the rest of the setup, one level down
+            setupItems.put("Autonomy Setup", I18n.t("autosetup.ui.menuAutonomySetup"));
 
             // Change Direction and the other items about the train (FR-181)
             for (int i = 0; i < facing.getComponentCount(); i++)

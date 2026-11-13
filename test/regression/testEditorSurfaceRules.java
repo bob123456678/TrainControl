@@ -35,10 +35,11 @@ public class testEditorSurfaceRules
         + "\n        final java.util.List<org.traincontrol.automationui.TileGraph.TileKey> outline)";
 
     /**
-     * Change Direction appears even when the square holds one facing: "no item" reads as a fault, so `addFacingItems`
-     * always adds it where a train stands.  With one facing or none it is grayed, with the reason as its tooltip, because
-     * a facing must be one the BUILD can hold (FR-181).  Checked as the gate: opening the menu needs a window and a
-     * session.
+     * In the autonomy editor Change Direction appears even when the square holds one facing: "no item" reads as a fault,
+     * so it is added wherever a train stands, grayed with the reason with one facing or none, because a facing must be
+     * one the BUILD can hold (FR-181).  Only the track diagram's menu leaves the one-facing row off, as Adam ruled for
+     * that menu; with no facing it is grayed there too (OB-347).  Checked as the gate: opening the menu needs a window
+     * and a session.
      */
     @Test
     public void testTheFacingMenuAppearsWithASingleChoice() throws Exception
@@ -50,7 +51,8 @@ public class testEditorSurfaceRules
             .replaceAll("\\s+", " ");
 
         assertTrue(SourceOf.declaration("    boolean addFacingItems(javax.swing.JPopupMenu menu, final TileKey target)")
-            .replaceAll("\\s+", " ").contains("if (facts == null) return false; menu.add(changeDirectionItem(target, facts));"),
+            .replaceAll("\\s+", " ").contains("if (facts == null) return false; javax.swing.JMenuItem direction ="
+                + " changeDirectionItem(target, facts); if (direction != null) menu.add(direction);"),
             "Change Direction is not added wherever a train stands, so a square with nothing to choose shows no item"
             + " rather than the reason (FR-181)");
 
@@ -62,7 +64,8 @@ public class testEditorSurfaceRules
         assertFalse(code.contains("if (facings.isEmpty()) return null;"),
             "the menu is hidden on a square with NO facing, where Adam asked for it greyed (OB-347)");
 
-        assertTrue(source.contains("if (facings.size() <= 1) { return grayed(label, facings.isEmpty() ? "
+        assertTrue(source.contains("if (facings.size() == 1 && editor.menuOnly) return null; if (facings.size() <= 1) {"
+                + " return grayed(label, facings.isEmpty() ? "
                 + "\"autosetup.ui.hintFacingNoWayOut\" : \"autosetup.ui.hintFacingOnlyOne\");"),
             "Change Direction on a square with one facing or NO facing is not greyed with its reason (OB-347, FR-181)");
     }
@@ -1655,8 +1658,9 @@ public class testEditorSurfaceRules
             + " copy is the one a dismissal cannot undo - which is the whole defect, kept");
     }
     /**
-     * Both autonomy menus head themselves with the same bold, disabled name (OB-112), from the session, AFTER the
-     * emptiness test so a menu with nothing to offer stays unshown.
+     * Both autonomy menus head themselves with the same bold, disabled name (OB-112), by the editor's one rule
+     * (`menuHeading`, plain track by its kind, OB-451), AFTER the emptiness test so a menu with nothing to offer stays
+     * unshown.
      *
      * MUTATION: inlining describeTile back into AutonomyEditorPanel; moving menu.headline() above getComponentCount.
      */
@@ -1675,7 +1679,8 @@ public class testEditorSurfaceRules
             "the sensor-address fallback is written out in the panel as well as in the session, so "
             + "there are two copies of the rule again and only one of them will get the next fix");
 
-        assertTrue(codeOf("private void headline()").contains("session.describeTile("),
+        assertTrue(codeOf("String squareHeading(").contains("autonomyTileMenus.menuHeading(tile)")
+            && codeOf("private void headline()").contains("ui.squareHeading(subject)"),
             "the diagram\u2019s menu names the clicked square some other way, so the heading OB-112 "
             + "asked for can disagree with the one in the editor");
 

@@ -1922,6 +1922,20 @@ public class AutonomyEditorPanel extends JPanel
         return name == null || name.trim().isEmpty() ? describeTile(tile) : name.trim();
     }
 
+    /** A square's menu heading on either surface: a Point's name, else what is drawn there (OB-451). */
+    public String menuHeading(TileKey target)
+    {
+        return menuHeading(target, componentAt(target));
+    }
+
+    String menuHeading(TileKey target, LayoutDiagramComponent component)
+    {
+        boolean isPoint = session.getReducer() != null && session.getReducer().getPoints().containsKey(target);
+
+        return isPoint ? pointTitle(target) : component == null ? target.getX() + "," + target.getY()
+            : component.getUserFriendlyTypeName();
+    }
+
     /** A bold, disabled heading at the top of a menu. */
     void title(javax.swing.JMenu menu, String text)
     {

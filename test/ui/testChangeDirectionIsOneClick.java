@@ -173,8 +173,8 @@ public class testChangeDirectionIsOneClick
     }
 
     /**
-     * Where the track allows one facing, Change Direction is shown with the same words, grayed, with the reason as its
-     * tooltip, on both menus.
+     * Where the track allows one facing, Change Direction is grayed, with the reason as its tooltip, in the autonomy
+     * editor, and left off the track diagram's menu, as Adam ruled for that menu.
      */
     @Test
     public void testOneWayIsGrayedWithItsReason() throws Exception
@@ -203,16 +203,16 @@ public class testChangeDirectionIsOneClick
 
         String reason = I18n.t("autosetup.ui.hintFacingOnlyOne");
 
-        for (JPopupMenu menu : new JPopupMenu[] {support.StationDoors.diagramMenu(ui, square), editorMenu(square)})
-        {
-            JMenuItem change = topLevel(menu, changeDirection(only));
+        JMenuItem change = topLevel(editorMenu(square), changeDirection(only));
 
-            assertFalse(change.isEnabled(), "Change Direction at " + square + ", which allows only " + only
-                + ", is not grayed");
+        assertFalse(change.isEnabled(), "Change Direction at " + square + ", which allows only " + only
+            + ", is not grayed in the editor");
 
-            assertTrue(String.valueOf(change.getToolTipText()).contains(reason), "the grayed Change Direction at "
-                + square + " does not say why: " + change.getToolTipText());
-        }
+        assertTrue(String.valueOf(change.getToolTipText()).contains(reason), "the grayed Change Direction at "
+            + square + " does not say why: " + change.getToolTipText());
+
+        assertNull(support.Components.withText(support.StationDoors.diagramMenu(ui, square), changeDirection(only)),
+            "Change Direction at " + square + ", which allows only " + only + ", is still on the track diagram's menu");
     }
 
     /**
