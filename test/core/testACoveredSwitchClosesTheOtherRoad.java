@@ -22,20 +22,18 @@ import org.traincontrol.base.Locomotive;
  * two platforms the switch divides; the approach splits into two Points): the two routes lock each other, and a tail
  * lying across one road of the switch closes the other road, which is a different Edge.
  *
- * `Layout.isPathClear` refuses a path over an edge a standing train's tail covers, then over any edge that SHARES
- * METAL with a covered one.  Adam: EN57-203 *"is allowed to traverse a blocked/shaded switch (60) to get from
- * TunnelLeftPark to BottomMainC, even though it should not be possible."*  Coverage is recorded per EDGE, so the other
- * pair of a switch's arms was never in the covered set.  `testATrainCoversTheTrackBehindIt` exercises only the DIRECT
- * hit and the lock claims here a route HOLD; nothing went red when the shared-metal branch was removed.
+ * `Layout.isPathClear` refuses a path over an edge a standing train's tail covers, then over any edge that shares
+ * metal with a covered one.  Coverage is recorded per edge, so the other pair of a switch's arms is not in the covered
+ * set itself.  `testATrainCoversTheTrackBehindIt` exercises only the direct hit.
  *
- * The fixture is `single-switch`, the only railway with a turnout (`GraphReducer` derives the relation from SHARED
- * TILES).  The controls are the point, since the railway refuses paths for a dozen reasons: the branch road is NOT
- * itself covered, the covered edge really is the main road, the two are lock partners both ways, and the identical
- * path is CLEARED the moment the tail is taken away.
+ * `single-switch` is the only railway with a turnout (`GraphReducer` derives the relation from shared tiles).  The
+ * controls are the point, since the railway refuses paths for a dozen reasons: the branch road is not itself
+ * covered, the covered edge really is the main road, the two are lock partners both ways, and the identical path is
+ * cleared the moment the tail is taken away.
  *
- * MUTATION: in `Layout.isPathClear`, change `if (lyingAcross == null)` above the `for (Edge sharing :
- * e.getLockEdges())` loop to `if (lyingAcross == null && Boolean.parseBoolean("false"))`.
- * `testTheOtherRoadThroughTheSwitchIsRefused` then fails and every other test in this class stays green.
+ * MUTATION: in `Layout.isPathClear`, make `if (lyingAcross == null)` above the `for (Edge sharing :
+ * e.getLockEdges())` loop `if (lyingAcross == null && Boolean.parseBoolean("false"))`; only
+ * `testTheOtherRoadThroughTheSwitchIsRefused` fails.
  *
  * @author Adam
  */

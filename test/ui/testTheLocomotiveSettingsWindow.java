@@ -511,7 +511,7 @@ public class testTheLocomotiveSettingsWindow
     }
 
     /**
-     * A year typed in another script's digits is saved as its value, as before the fields took digits only: full-width
+     * A year typed in another script's digits is saved as its value: full-width
      * 1950 in Start Year and Arabic-Indic 1950 in End Year are both saved as 1950.
      *
      * MUTATION: read the years in `LocomotiveNotesPanel.year` with `[^0-9]` stripped, and this fails.
