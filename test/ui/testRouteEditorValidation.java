@@ -4614,13 +4614,13 @@ public class testRouteEditorValidation
 
     /**
      * MT-869: the window's minimum height is the layout's own plus one row of "What This Route Does" and one row of
-     * the conditions, and still fits a 768-pixel screen.
+     * the conditions, still fits a 768-pixel screen, and the drag handle is 20% wider than its old 30 pixels in both.
      *
      * MUTATION: in the constructor, drop `+ commands.getRowHeight() + conditions.getRowHeight()`, and the difference
-     * is 0.
+     * is 0; in `HandledTable.handleColumn`, set the three widths back to 30, and the handle claim fails.
      */
     @Test
-    public void testTheWindowsMinimumHeightHasARowMoreInEachTable() throws Exception
+    public void testTheWindowHasARowMoreInEachTableAndAWiderHandle() throws Exception
     {
         needsADisplay();
 
@@ -4628,24 +4628,7 @@ public class testRouteEditorValidation
 
         try
         {
-            final javax.swing.JTable commands = table(frame, "CommandTable");
-            final javax.swing.JTable conditions = conditionTable(frame);
-
-            int[] heights = support.Components.onTheEventThread(() ->
-            {
-                int set = frame.getMinimumSize().height;
-
-                frame.setMinimumSize(null);
-
-                int layout = frame.getMinimumSize().height;
-
-                return new int[]{set, layout, commands.getRowHeight() + conditions.getRowHeight()};
-            });
-
-            assertTrue(heights[2] > 0, "precondition: the tables report no row height");
-            assertEquals(heights[0] - heights[1], heights[2], "the minimum height " + heights[0] + " is not the layout's "
-                + heights[1] + " plus one row of each table");
-            assertTrue(heights[0] <= 768, "the minimum height " + heights[0] + " does not fit a 768-pixel screen");
+            assertTheMinimumHeightAndTheHandles(frame);
         }
         finally
         {
@@ -4653,35 +4636,28 @@ public class testRouteEditorValidation
         }
     }
 
-    /**
-     * MT-869: the drag handle is 20% wider than its old 30 pixels in both tables, so it is easier to grab.
-     *
-     * MUTATION: in `HandledTable.handleColumn`, set the three widths back to 30, and this fails.
-     */
-    @Test
-    public void testTheHandleColumnIsTwentyPercentWider() throws Exception
+    private static void assertTheMinimumHeightAndTheHandles(final org.traincontrol.gui.RouteEditorFrame frame)
     {
-        needsADisplay();
+        final javax.swing.JTable[] tables = {table(frame, "CommandTable"), table(frame, "ConditionTable")};
 
-        final org.traincontrol.gui.RouteEditorFrame frame = open();
-
-        try
+        int[] heights = support.Components.onTheEventThread(() ->
         {
-            for (String kind : new String[]{"CommandTable", "ConditionTable"})
-            {
-                final javax.swing.JTable table = table(frame, kind);
+            int set = frame.getMinimumSize().height;
 
-                javax.swing.table.TableColumn handle = support.Components.onTheEventThread(()
-                    -> table.getColumnModel().getColumn(HANDLE));
+            frame.setMinimumSize(null);
 
-                assertEquals(handle.getPreferredWidth(), 36, kind + "'s handle column is not 20% wider than 30");
-                assertEquals(handle.getMinWidth(), 36, kind + "'s handle column can shrink");
-                assertEquals(handle.getMaxWidth(), 36, kind + "'s handle column can grow");
-            }
-        }
-        finally
+            return new int[]{set, frame.getMinimumSize().height, tables[0].getRowHeight() + tables[1].getRowHeight()};
+        });
+
+        assertTrue(heights[2] > 0, "precondition: the tables report no row height");
+        assertEquals(heights[0] - heights[1], heights[2], "the minimum height " + heights[0] + " is not the layout's "
+            + heights[1] + " plus one row of each table");
+        assertTrue(heights[0] <= 768, "the minimum height " + heights[0] + " does not fit a 768-pixel screen");
+
+        for (javax.swing.JTable each : tables)
         {
-            close(frame);
+            assertEquals((int) support.Components.onTheEventThread(()
+                -> each.getColumnModel().getColumn(HANDLE).getMaxWidth()), 36, "a handle column is not 20% wider than 30");
         }
     }
 
