@@ -3872,9 +3872,8 @@ public class AutonomyCompanionStore
     }
 
     /**
-     * Refuses a name that would be saved in another configuration's file, naming that configuration.  Its own refusal
-     * rather than `ERROR_NAME_IN_USE`, which would say "already exists" about a name that is exactly the one that does
-     * not.
+     * Refuses a name that would be saved in another configuration's file, naming it (not `ERROR_NAME_IN_USE`, which
+     * would mislead).
      *
      * @throws IOException a `NameSharesAFile`, naming the configuration that already owns that file
      */
@@ -3900,20 +3899,18 @@ public class AutonomyCompanionStore
     }
 
     /**
-     * A key as it is stored: the page id where one is known, the page name otherwise, so a page added since the index
-     * was read still round trips.  A page whose NAME equals another's ID misroutes this and pageOf (OB-067); FR-013
-     * replaces these keys with TileKey.
+     * A key as it is stored: the page id where known, else the name, so a page added since the index was read still
+     * round trips.  A page NAME equal to another's ID misroutes this and pageOf (OB-067); FR-013 replaces these keys.
      */
     private String toStored(String key)
     {
         // The LAST colon, as parseTileKey, isOnPage and rekeyOne do (OB-071): a page name may contain one ("Yard:
-        // Upper"), and splitting on the first would store its squares under another page's id.
+        // Upper").
         int colon = key.lastIndexOf(':');
 
         if (colon < 0) return key;
 
-        // Every key in memory belongs to a loaded page: anything else was held back at read time (OB-067, see
-        // heldForAbsentPages), so this map is the right one to ask.
+        // Every in-memory key belongs to a loaded page (the rest was held back at read time, OB-067).
         String id = pageNameToId.get(key.substring(0, colon));
 
         return id == null ? key : id + key.substring(colon);
@@ -3930,8 +3927,8 @@ public class AutonomyCompanionStore
     }
 
     /**
-     * The page a stored key's page part (an id, or a name on a file old enough) names, or null when the index does not
-     * know it.  The ONE place that answers "which page is this", so the two methods below cannot drift.
+     * The page a stored key's page part (an id, or an old file's name) names, or null; the ONE place that answers
+     * "which page is this".
      */
     private String resolvePage(String stored)
     {
@@ -3940,16 +3937,14 @@ public class AutonomyCompanionStore
         // RENUMBERED: the name the file recorded is still in the index, under whatever number.
         if (whenWritten != null && pageNameToId.containsKey(whenWritten)) return whenWritten;
 
-        // RENAMED, or simply unmoved: the index knows this id (the case page ids exist for; leaving it out would hold
-        // back a renamed page, MT-135).
+        // RENAMED, or simply unmoved: the index knows this id (leaving it out would hold back a renamed page, MT-135).
         return pageIdToName.get(stored);
     }
 
     /**
-     * What page a stored id means, which is not always the page that holds that id now.  If the name this id used to
-     * carry still exists somewhere (the question pageIdConflicts asks) the page was RENUMBERED and the NAME is
-     * followed; otherwise it was renamed and the current index is right.  Reading through the index regardless would
-     * reattach the setup to the wrong page.  Answers the id itself when nothing is known about it.
+     * What page a stored id means: if the name this id used to carry still exists (see pageIdConflicts) the page was
+     * RENUMBERED and the NAME is followed; otherwise renamed and the index is right.  Returns the id when nothing is
+     * known.
      */
     private String pageOf(String id)
     {
@@ -3960,8 +3955,8 @@ public class AutonomyCompanionStore
     }
 
     /**
-     * Whether a stored page part names a page that is actually here, which `pageOf` cannot answer by its return value:
-     * it hands back the id when it fails, and an id is a legal page name.
+     * Whether a stored page part names a page that is here, which `pageOf` cannot say by return value (an id is a legal
+     * page name).
      */
     private boolean pageIsHere(String stored)
     {
@@ -3970,15 +3965,13 @@ public class AutonomyCompanionStore
         // The file names this id and neither question found it: the page is genuinely not loaded.
         if (pageNamesWhenWritten.get(stored) != null) return false;
 
-        // Otherwise it is a NAME, and unambiguous: files written before keys were stored by id hold names, and a page
-        // added since the index was read has no id yet (testAnExcludedPageWithNoIdKeepsItsName).
+        // Otherwise it is an unambiguous NAME: older files, or a page added since the index was read, have no id.
         return true;
     }
 
     /**
-     * Whether every square a stored entry names (`parts`: its key, and any square it names) belongs to a page that is
-     * here.  The VALUE side matters as much as the key: half-translating an entry anchored on a loaded page that names
-     * an absent one would leave the id-as-name this mechanism exists to prevent.
+     * Whether every square a stored entry names (`parts`) is on a page that is here; the VALUE side matters as much as
+     * the key.
      */
     private boolean allHere(String... parts)
     {
@@ -3994,10 +3987,7 @@ public class AutonomyCompanionStore
         return true;
     }
 
-    /**
-     * A collection's keys in the form they go on disk - page ID rather than page name.  Generic over
-     * {@link SquareKeyed} (FR-013), so one method serves a square and a square plus a route.
-     */
+    /** A collection's keys as they go on disk (page ID, not name); generic over {@link SquareKeyed} (FR-013). */
     private <K extends SquareKeyed<K>> Map<String, String> translateKeys(Map<K, String> map)
     {
         Map<String, String> out = new LinkedHashMap<>();
@@ -4011,9 +4001,9 @@ public class AutonomyCompanionStore
     }
 
     /**
-     * Reads the directions in, translating each key as it is read: the counterpart of readSquareMap for the one
-     * collection keyed by a square AND a route.  One pass is the point: `Map.get` and `Set.contains` take Object, so a
-     * stored key left in a memory-keyed field silently answers false.  A key that will not parse is dropped.
+     * Reads the directions in, translating each key as it is read: the one collection keyed by a square AND a route.
+     * One pass, since `Map.get` takes Object and a stored key in a memory-keyed field silently misses; a key that will
+     * not parse is dropped.
      */
     private void readDirectionMap(JSONObject root, String field, Map<DirectionKey, String> into)
     {
@@ -4060,8 +4050,7 @@ public class AutonomyCompanionStore
 
             for (TileKey value : entry.getValue()) values.add(toStored(value.toString()));
 
-            // One is written as a bare string, as every earlier version wrote; an array only where a second signal is
-            // paired.
+            // A bare string, as every earlier version wrote; an array only where a second signal is paired.
             out.put(toStored(entry.getKey().toString()), values.size() == 1 ? values.get(0) : new JSONArray(values));
         }
 
@@ -4081,8 +4070,7 @@ public class AutonomyCompanionStore
     }
 
     /**
-     * The same for a set of whole PAGES.  toStored and fromStored leave anything without a colon alone, so a bare page
-     * name passes unchanged; a page the index has never heard of keeps its name.
+     * The same for a set of whole PAGES; a bare page name passes unchanged, as does a page the index has not heard of.
      */
     private Set<String> translatePages(Set<String> pages)
     {
@@ -4104,10 +4092,8 @@ public class AutonomyCompanionStore
 
         for (String stored : pages)
         {
-            // The same question as fromStored: an excluded page is named by id like everything else, and getting it
-            // wrong silently re-includes a page in autonomy.  But ONLY when the file itself recorded that id (OB-092):
-            // `translatePages` falls back to a bare page NAME, and a name that looks like a number would be read back
-            // as somebody else's id.  The file's own `pages` record is the discriminator.
+            // As fromStored: excluded pages are named by id, but ONLY when the file recorded that id (OB-092), as
+            // `translatePages` falls back to a bare NAME that may look like a number.
             out.add(pageNamesWhenWritten.containsKey(stored) ? pageOf(stored) : stored);
         }
 
@@ -4125,8 +4111,8 @@ public class AutonomyCompanionStore
     }
 
     /**
-     * Takes the map rather than reaching for the field: a helper that works for one entry breaks the registry's
-     * promise that one entry is enough, as a second int-valued collection would be written under the first one's name.
+     * Takes the map rather than reaching for the field, so a second int-valued collection is not written under the
+     * first one's name.
      */
     private Map<String, Integer> translateLengths(Map<TileKey, Integer> lengths)
     {
@@ -4151,9 +4137,8 @@ public class AutonomyCompanionStore
     }
 
     /**
-     * Draws a station's caption on a square (a null stationTile clears).  One caption per square, while several squares
-     * may name one station as far as this store goes: the session takes the old ones off when a new one is chosen
-     * (OB-256), and the setup check reports a station drawn twice on one page (OB-341).
+     * Draws a station's caption on a square (null stationTile clears).  One caption per square; the session removes old
+     * ones when a new one is chosen (OB-256), and the setup check reports a station drawn twice on a page (OB-341).
      */
     public void setCaption(TileKey captionTile, TileKey stationTile)
     {
@@ -4175,8 +4160,8 @@ public class AutonomyCompanionStore
 
         if (stationTile == null) return out;
 
-        // Compared as SQUARES (FR-013): comparing the printed form, `wanted.equals(entry.getValue())` compiles, as
-        // String.equals takes Object, and is false for every entry once the values are squares.
+        // Compared as SQUARES (FR-013): `wanted.equals(entry.getValue())` on printed forms compiles and is always
+        // false.
         for (Map.Entry<TileKey, TileKey> entry : captions.entrySet())
         {
             if (stationTile.equals(entry.getValue()))
@@ -4207,9 +4192,8 @@ public class AutonomyCompanionStore
     }
 
     /**
-     * Forgets every caption whose station, or whose page, is no longer on the diagram, and answers which were dropped.
-     * A caption goes when the STATION is gone, not before: the square the text sits on is deliberately not required to
-     * hold anything (placeCaption prefers blank space), or the next save would delete the captions just placed.
+     * Forgets every caption whose station or page is gone, returning which; the square the text sits on is NOT required
+     * to hold anything.
      */
     private List<String> reconcileCaptions(Set<TileKey> existing)
     {
@@ -4246,8 +4230,8 @@ public class AutonomyCompanionStore
     }
 
     /**
-     * Two keys in the file in the order of their squares: by page id, as text, so "10" comes before "2", then row, then
-     * column.  A key that is no square comes after those, as text, so the order is total.
+     * Two file keys in square order: page id as text ("10" before "2"), then row, then column; a non-square key comes
+     * after.
      */
     private static int bySquare(String a, String b)
     {
@@ -4398,8 +4382,8 @@ public class AutonomyCompanionStore
     }
 
     /**
-     * Drops the pointers at squares that are gone from each list of a square-to-squares collection, and the entries left
-     * with none, telling `dropped` each; true if anything went.  A NEW list each time, never an edit of the one held.
+     * Drops pointers at gone squares from each list of a square-to-squares collection, and entries left empty, telling
+     * `dropped` each; true if anything went.  A NEW list each time.
      */
     private static boolean dropPointers(Map<TileKey, List<TileKey>> map,
         java.util.function.Predicate<TileKey> gone, java.util.function.Consumer<TileKey> dropped)
@@ -4435,8 +4419,8 @@ public class AutonomyCompanionStore
     }
 
     /**
-     * Reads a square-keyed field, translating each key as it arrives (FR-013): stored keys in a field the rest of the
-     * class reads as memory keys never match (OB-067).  A key that will not parse is dropped.
+     * Reads a square-keyed field, translating each key as it arrives (FR-013, OB-067); a key that will not parse is
+     * dropped.
      */
     private void readSquareMap(JSONObject root, String field, Map<TileKey, String> into)
     {
@@ -4465,10 +4449,7 @@ public class AutonomyCompanionStore
         }
     }
 
-    /**
-     * The same, where the VALUE is a square as well - a portal's partner, a caption's station.  An entry whose value
-     * will not parse is dropped whole: half a pairing is worse than none.
-     */
+    /** The same where the VALUE is a square too; an entry whose value will not parse is dropped whole. */
     private void readSquarePairMap(JSONObject root, String field, Map<TileKey, TileKey> into)
     {
         JSONObject object = root.optJSONObject(field);
@@ -4484,10 +4465,7 @@ public class AutonomyCompanionStore
         }
     }
 
-    /**
-     * The same, where the value is one square or an array of them.  A member that will not parse is dropped and the
-     * rest kept, so one bad name does not cost a station its whole set of protecting signals.
-     */
+    /** The same where the value is one square or an array; a bad member is dropped and the rest kept. */
     private void readSquareListMap(JSONObject root, String field, Map<TileKey, List<TileKey>> into)
     {
         JSONObject object = root.optJSONObject(field);
@@ -4522,8 +4500,8 @@ public class AutonomyCompanionStore
                 if (only != null) values.add(only);
             }
 
-            // An entry whose members ALL failed to parse is dropped, not stored empty: `"key": []` is the array form
-            // this file only gained at version 2, which the version gate exists to keep from an older TrainControl.
+            // An entry whose members ALL failed is dropped, not stored empty: `"key": []` is the array form gained at
+            // version 2.
             if (!values.isEmpty()) into.put(tile, values);
         }
     }
@@ -4562,9 +4540,8 @@ public class AutonomyCompanionStore
     }
 
     /**
-     * Folds the timetable entries an earlier build set aside for pages out of autonomy back into the configuration's
-     * timetable, each after the entry it followed (first where it followed none, last where that entry is gone), and
-     * forgets the list.
+     * Folds the timetable entries an earlier build set aside back into the timetable, each after the entry it followed
+     * (first if none, last if that is gone), and forgets the list.
      */
     static void bringBackTheEntriesSetAside(JSONObject configuration)
     {
