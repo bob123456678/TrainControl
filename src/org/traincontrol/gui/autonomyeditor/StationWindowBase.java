@@ -159,7 +159,7 @@ abstract class StationWindowBase extends JDialog
 
         close.setName("station.close");
         close.setFont(BUTTON_FONT);
-        close.addActionListener(e -> closeWindow());
+        close.addActionListener(e -> done());
 
         JPanel buttons = new JPanel(new FlowLayout(FlowLayout.RIGHT, 4, 0));
 
@@ -445,6 +445,20 @@ abstract class StationWindowBase extends JDialog
         commitFields();
 
         goAway();
+    }
+
+    /** Done Editing: closes as the user does, but stays open while a typed value is refused, saying why. */
+    private void done()
+    {
+        commitFields();
+
+        if (!refusesAValue()) goAway();
+    }
+
+    /** Whether a typed value is refused, its reason showing; the base types nothing. */
+    boolean refusesAValue()
+    {
+        return false;
     }
 
     /** Closed because its surface or square has gone. */

@@ -712,6 +712,48 @@ public class testStationSettingsWindow
     }
 
     /**
+     * Done with a refused value typed stays open, showing why, so the user knows nothing was stored; Escape still closes
+     * the window, storing nothing.
+     *
+     * MUTATION: have Done close whatever `commitFields` refused, and the window goes with nothing said.
+     */
+    @Test(timeOut = 120000)
+    public void testDoneWithARefusedValueStaysOpenAndSaysWhy() throws Exception
+    {
+        TileKey square = aStation();
+
+        Object had = Components.onTheEventThread(() -> session.getPointProperty(square, "maxTrainLength"));
+
+        StationSettingsWindow window = StationDoors.open(panel, square);
+
+        JTextField field = StationDoors.part(window, "station.maxLength", JTextField.class);
+
+        Components.onTheEventThread(() -> { field.setText("-5"); return null; });
+
+        StationDoors.close(window);
+
+        assertTrue(Components.onTheEventThread(() -> window.isShowing()), "Done closed the window over a refused length");
+
+        assertTrue(visible(window, "station.maxLengthProblem"), "Done did not say why the length was refused");
+
+        assertEquals(Components.onTheEventThread(() -> session.getPointProperty(square, "maxTrainLength")), had,
+            "the refused length was written");
+
+        Components.onTheEventThread(() ->
+        {
+            window.getRootPane().getActionForKeyStroke(KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_ESCAPE, 0))
+                .actionPerformed(new java.awt.event.ActionEvent(window, java.awt.event.ActionEvent.ACTION_PERFORMED, ""));
+
+            return null;
+        });
+
+        assertFalse(Components.onTheEventThread(() -> window.isShowing()), "Escape did not close the window");
+
+        assertEquals(Components.onTheEventThread(() -> session.getPointProperty(square, "maxTrainLength")), had,
+            "Escape wrote the refused length");
+    }
+
+    /**
      * Leaving a field applies it, as Close does.  Nothing is applied per keystroke, as each change rebuilds the railway.
      *
      * MUTATION: drop the focus listener in `commitsOnLeaving`, and this fails.
