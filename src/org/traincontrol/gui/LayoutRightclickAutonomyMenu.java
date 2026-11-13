@@ -203,8 +203,8 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
 
     /**
      * Puts the clicked square's name on top of every square's menu, grayed and bold like the editor's (OB-112), with
-     * Station Settings... right under it where offered (MT-957); plain track is headed with its kind (OB-451).  Inserted
-     * rather than added, because the menu is already built when this runs.
+     * Station Settings... right under it where offered (MT-957); plain track is headed with its kind (OB-451).
+     * Inserted, as the menu is already built.
      */
     private void headline()
     {
