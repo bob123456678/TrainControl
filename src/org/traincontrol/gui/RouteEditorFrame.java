@@ -208,11 +208,47 @@ public class RouteEditorFrame extends JFrame
 
         pack();
 
-        // No narrower than the top line in full, the Trigger dropdown's longest choice included (OB-396), and a row
-        // taller in each table than the packed layout needs (MT-869).
-        setMinimumSize(new Dimension(narrowest(),
-            getMinimumSize().height + commands.getRowHeight() + conditions.getRowHeight()));
+        // No narrower than the top line in full, the Trigger dropdown's longest choice included (OB-396), and no
+        // shorter than shows a whole row in each table (MT-869).
+        Dimension packed = getSize();
+        int width = narrowest();
+        int height = tallEnoughForARowInEachTable(width);
+
+        setMinimumSize(new Dimension(width, height));
+        setSize(packed.width, Math.max(packed.height, height));
         setLocationRelativeTo(parent);
+    }
+
+    /**
+     * The least height, from the layout's own minimum, at which the commands' and the conditions' viewports each show
+     * a whole row: laid out at a height, measured, and raised by what the shorter one lacks, twice over since the two
+     * sections share the extra.
+     */
+    private int tallEnoughForARowInEachTable(int width)
+    {
+        int height = getMinimumSize().height;
+
+        for (int pass = 0; pass < 5; pass++)
+        {
+            setSize(width, height);
+            validate();
+
+            int lacks = Math.max(Math.max(0, commands.getRowHeight() - viewportHeight(commands)),
+                Math.max(0, conditions.getRowHeight() - viewportHeight(conditions)));
+
+            if (lacks == 0) break;
+
+            height += 2 * lacks;
+        }
+
+        return height;
+    }
+
+    private static int viewportHeight(javax.swing.JTable table)
+    {
+        java.awt.Container port = javax.swing.SwingUtilities.getAncestorOfClass(javax.swing.JViewport.class, table);
+
+        return port == null ? 0 : port.getHeight();
     }
 
     /**

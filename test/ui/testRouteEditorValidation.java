@@ -4613,11 +4613,11 @@ public class testRouteEditorValidation
     }
 
     /**
-     * MT-869: the window's minimum height is the layout's own plus one row of "What This Route Does" and one row of
-     * the conditions, still fits a 768-pixel screen, and the drag handle is 20% wider than its old 30 pixels in both.
+     * MT-869: at the window's minimum height each table's viewport shows a whole row (the layout's own minimum shows
+     * less), the minimum fits a 768-pixel screen, and the drag handle is 20% wider than its old 30 pixels in both.
      *
-     * MUTATION: in the constructor, drop `+ commands.getRowHeight() + conditions.getRowHeight()`, and the difference
-     * is 0; in `HandledTable.handleColumn`, set the three widths back to 30, and the handle claim fails.
+     * MUTATION: in the constructor, set the minimum height to `getMinimumSize().height` again, and the viewports show
+     * part of a row; in `HandledTable.handleColumn`, set the three widths back to 30, and the handle claim fails.
      */
     @Test
     public void testTheWindowHasARowMoreInEachTableAndAWiderHandle() throws Exception
@@ -4636,23 +4636,43 @@ public class testRouteEditorValidation
         }
     }
 
+    /** The visible height of each table's viewport with the window laid out at a height and its minimum width. */
+    private static int[] viewportsAt(javax.swing.JFrame frame, int height, javax.swing.JTable[] tables)
+    {
+        frame.setSize(frame.getMinimumSize().width, height);
+        frame.validate();
+
+        int[] out = new int[tables.length];
+
+        for (int i = 0; i < out.length; i++)
+        {
+            out[i] = javax.swing.SwingUtilities.getAncestorOfClass(javax.swing.JViewport.class, tables[i]).getHeight();
+        }
+
+        return out;
+    }
+
     private static void assertTheMinimumHeightAndTheHandles(final org.traincontrol.gui.RouteEditorFrame frame)
     {
         final javax.swing.JTable[] tables = {table(frame, "CommandTable"), table(frame, "ConditionTable")};
 
-        int[] heights = support.Components.onTheEventThread(() ->
+        int[] seen = support.Components.onTheEventThread(() ->
         {
-            int set = frame.getMinimumSize().height;
+            int least = frame.getMinimumSize().height;
+            int[] atMinimum = viewportsAt(frame, least, tables);
 
             frame.setMinimumSize(null);
 
-            return new int[]{set, frame.getMinimumSize().height, tables[0].getRowHeight() + tables[1].getRowHeight()};
+            int[] atLayout = viewportsAt(frame, frame.getMinimumSize().height, tables);
+
+            return new int[]{tables[0].getRowHeight(), atMinimum[0], atMinimum[1], atLayout[0], atLayout[1], least};
         });
 
-        assertTrue(heights[2] > 0, "precondition: the tables report no row height");
-        assertEquals(heights[0] - heights[1], heights[2], "the minimum height " + heights[0] + " is not the layout's "
-            + heights[1] + " plus one row of each table");
-        assertTrue(heights[0] <= 768, "the minimum height " + heights[0] + " does not fit a 768-pixel screen");
+        assertTrue(seen[1] >= seen[0] && seen[2] >= seen[0], "at the minimum height the tables show " + seen[1] + " and "
+            + seen[2] + " pixels, under a " + seen[0] + "-pixel row");
+        assertTrue(seen[3] < seen[0] || seen[4] < seen[0], "precondition: the layout's own minimum already shows a row in"
+            + " each table: " + seen[3] + " and " + seen[4]);
+        assertTrue(seen[5] <= 768, "the minimum height " + seen[5] + " does not fit a 768-pixel screen");
 
         for (javax.swing.JTable each : tables)
         {
