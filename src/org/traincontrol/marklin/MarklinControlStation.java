@@ -4711,6 +4711,32 @@ public class MarklinControlStation implements ViewListener, ModelListener
     }
 
     /**
+     * Builds the main window on the event thread (OB-444): the constructor packs it, so the rest of the build would race
+     * the layout a window event starts there.  A failed build throws what the constructor threw.
+     */
+    private static TrainControlUI buildTheWindow() throws InterruptedException
+    {
+        if (javax.swing.SwingUtilities.isEventDispatchThread()) return new TrainControlUI();
+
+        final TrainControlUI[] built = new TrainControlUI[1];
+
+        try
+        {
+            javax.swing.SwingUtilities.invokeAndWait(() -> built[0] = new TrainControlUI());
+        }
+        catch (java.lang.reflect.InvocationTargetException failed)
+        {
+            Throwable cause = failed.getCause();
+
+            if (cause instanceof Error) throw (Error) cause;
+
+            throw cause instanceof RuntimeException ? (RuntimeException) cause : new RuntimeException(cause);
+        }
+
+        return built[0];
+    }
+
+    /**
      * Main initialization method
      * @throws UnknownHostException
      * @throws IOException 
@@ -4727,8 +4753,8 @@ public class MarklinControlStation implements ViewListener, ModelListener
         // otherwise get Metal dialogs.  Idempotent, so the constructor asking again costs nothing.
         if (!java.awt.GraphicsEnvironment.isHeadless()) TrainControlUI.installLookAndFeel();
 
-        if (showUI) ui = new TrainControlUI();
-        
+        if (showUI) ui = buildTheWindow();
+
         if (initIP == null)
         {
             try
