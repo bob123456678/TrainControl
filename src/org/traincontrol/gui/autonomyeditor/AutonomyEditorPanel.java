@@ -892,13 +892,13 @@ public class AutonomyEditorPanel extends JPanel
     /** One control on its own line, flush left and no taller than it needs to be. */
     private JPanel row(java.awt.Component component)
     {
-        // No taller than it needs: a heading with air around it is taller than any fixed cap (OB-342)
+        // Capped at 30 px, unless the control needs more: a heading with air above it does (OB-342)
         JPanel holder = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 1))
         {
             @Override
             public Dimension getMaximumSize()
             {
-                return new Dimension(Short.MAX_VALUE, getPreferredSize().height);
+                return new Dimension(Short.MAX_VALUE, Math.max(30, getPreferredSize().height));
             }
         };
         holder.setOpaque(false);
