@@ -882,8 +882,8 @@ public class testRightClickMenuTipsCanBeHidden
     }
 
     /**
-      * A pop-up opened by a left-click, such as a button's drop-down, hides its tips as a right-click menu does (D37 on
-      * MT-910): a grayed item keeps its reason, a hotkey item its hotkey.
+     * A pop-up opened by a left-click, such as a button's drop-down, hides its tips as a right-click menu does (D37 on
+     * MT-910): a grayed item keeps its reason, a hotkey item its hotkey.
      *
      * MUTATION: hide the tips in right-click menus only.
      */
@@ -939,10 +939,10 @@ public class testRightClickMenuTipsCanBeHidden
     }
 
     /**
-      * As the owner tests it: the Preferences checkbox ticked, then cleared, with the track editor's right-click menu
-      * hovered item by item through its window each time, its Bulk Tools submenu opened by hovering, and the tip the
-      * tooltip manager shows read off it.  Ticked, an enabled item shows only its hotkey or nothing, a grayed one its
-      * reason; cleared, every item shows what it showed before.
+     * As the owner tests it: the Preferences checkbox ticked, then cleared, with the track editor's right-click menu
+     * hovered item by item through its window each time, its Bulk Tools submenu opened by hovering, and the tip the
+     * tooltip manager shows read off it.  Ticked, an enabled item shows only its hotkey or nothing, a grayed one its
+     * reason; cleared, every item shows what it showed before.
      *
      * MUTATION: skip the strip (the sentences show while ticked).
      *
