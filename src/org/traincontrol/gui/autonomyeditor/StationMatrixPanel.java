@@ -90,9 +90,8 @@ final class StationMatrixPanel extends JPanel
     }
 
     /**
-     * Why the setup stops this square, then what a cell cannot say: for the window to show under the picture, where they
-     * move nothing above (MT-919), in room kept for four lines, so the window keeps its height as they come and go
-     * (MT-961).
+     * Why the setup stops this square, then what a cell cannot say: for the window to show under the picture, in room
+     * kept for four lines so the window keeps its height as they come and go (MT-919, MT-961).
      */
     JComponent notices()
     {

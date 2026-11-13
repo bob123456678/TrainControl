@@ -1419,10 +1419,9 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
         }
 
         /**
-         * The note that this locomotive is a member, with the multi-unit's name a link to its settings (FR-196).  The
-         * bundle's sentence marks the link with {2}, so it works in every language.  Clicking, or Enter or Space on
-         * it, closes this window as its X does (asking about unsaved changes; Cancel stays) and opens the multi-unit's
-         * Multi-Unit tab, where its members are changed.
+         * The note that this locomotive is a member, with the multi-unit's name a link to its settings (FR-196); the
+         * bundle's sentence marks the link with {2}, so it works in every language.  Clicking it, or Enter or Space,
+         * closes this window as its X does (asking about unsaved changes) and opens the multi-unit's Multi-Unit tab.
          */
         private javax.swing.JTextPane partOfNote(Locomotive parent)
         {

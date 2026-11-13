@@ -480,10 +480,9 @@ final class LayoutStandingRules
     }
 
     /**
-     * A Yes says Some trains while a limit keeps trains out, the reason naming it (OB-440), and an empty whitelist, which
-     * keeps every train out (`Point.excludes`), says No.  A trip ending at `at` meets its maximum length and its list; one
-     * running through, turning on or starting from it meets only the list of a square that is no station, as the path
-     * search refuses a listed train there, while a station's list and length let any train through.
+     * A Yes says Some trains while a limit keeps trains out, the reason naming it (OB-440); an empty whitelist, which
+     * keeps every train out (`Point.excludes`), says No.  A trip ending at `at` meets its maximum length and its list;
+     * one running through, turning on or starting from it meets only the list of a square that is no station.
      */
     private Cell limited(Cell yes, Point at, boolean ending)
     {
