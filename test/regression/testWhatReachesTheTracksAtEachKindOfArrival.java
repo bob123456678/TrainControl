@@ -27,8 +27,7 @@ import org.traincontrol.marklin.MarklinFeedback;
  *
  * Adam: "in your tests for arrival, make sure you check for an emitted reversal command to the tracks."
  *
- * `testTheReversalReachesTheTracks` watches the wire on ONE square kind and makes a COMPARATIVE claim, and
- * `testAReversalCommandIsEmitted` reads `goingForward()`, not the cable; neither covers a terminus.  An absolute claim
+ * `testAReversalCommandIsEmitted` reads `goingForward()`, not the cable, and covers no terminus.  An absolute claim
  * needs the window: dispatch sets a locomotive's direction as it departs, and `Layout.CB_PRE_ARRIVAL` fires exactly
  * once, on the last leg, so a mark taken there and a count taken after the run is the arrival and nothing else.
  *
@@ -62,8 +61,8 @@ public class testWhatReachesTheTracksAtEachKindOfArrival
     private static final int ADDRESS = 65;
 
     /**
-     * Where this class's feedback addresses start, clear of `testTheReversalReachesTheTracks` (8440 and 8444) so a
-     * stray fixture left by a crash is identifiable.
+     * Where this class's feedback addresses start, clear of the other reversal classes' so a stray fixture left by a
+     * crash is identifiable.
      */
     private static final int FIRST_SENSOR = 8460;
 
@@ -189,8 +188,7 @@ public class testWhatReachesTheTracksAtEachKindOfArrival
     }
 
     /**
-     * And answered NO, it does not: the absolute form of `testTheReversalReachesTheTracks`, which says the turned
-     * journey sends MORE where this says this arrival sends NONE.
+     * And answered NO, it does not.
      *
      * MUTATION: making `shouldReverseAt` ignore the policy and answer `at.isReversing()` fails this and
      * leaves the answered-yes claim green, which is the pair that says the answer is what decides.

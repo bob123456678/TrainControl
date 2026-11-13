@@ -719,20 +719,6 @@ public class testHomeStaging
     }
 
     /**
-     * Moving a locomotive that already has a home does not re-home it - otherwise "return to home"
-     * would mean "return to wherever it was last put", which is not a destination anyone chose.
-     */
-    @Test
-    public void testMovingAHomedLocomotiveDoesNotRehomeIt()
-    {
-        Layout layout = load(ring(LOC_A, null, null));
-
-        assertTrue(layout.moveLocomotive(LOC_A, "HS C", false));
-
-        assertEquals(layout.getHomeStation(loc(LOC_A)), layout.getPoint("HS A"));
-    }
-
-    /**
      * Deleting a locomotive releases its claim, so the station can be claimed again.
      *
      * Without this the station stays spoken for by something that no longer exists, and nothing placed

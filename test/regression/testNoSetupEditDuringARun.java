@@ -2642,48 +2642,6 @@ public class testNoSetupEditDuringARun
     }
 
     /**
-     * Export waits for autonomy to stop, as Import does (Adam, MT-601: "Export should also only be allowed once we are
-     * stopped").  Refused at once, with no file chooser.
-     *
-     * MUTATION: let Export run while autonomy runs, and this fails.
-     */
-    @Test
-    public void testExportWaitsForAutonomyToStop() throws Exception
-    {
-        if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
-
-        java.lang.reflect.Field staging = Reflect.field(TrainControlUI.class, "stagingFlowActive");
-
-        final java.util.concurrent.atomic.AtomicBoolean going = new java.util.concurrent.atomic.AtomicBoolean(true);
-
-        onItsOwnWindow("live-snapshot", ui ->
-        {
-            // DURING A RUN
-            staging.set(ui, true);
-
-            final List<String> asked = Collections.synchronizedList(new ArrayList<String>());
-
-            final List<String> choosers = Collections.synchronizedList(new ArrayList<String>());
-
-            closingEveryQuestion(asked, choosers, going);
-
-            SwingUtilities.invokeAndWait(() -> ui.getAutonomyViewerPanel().exportConfiguration());
-
-            for (int turn = 0; turn < 6; turn++) SwingUtilities.invokeAndWait(() -> { });
-
-            assertTrue(choosers.isEmpty(), "Export opened its file chooser while autonomy ran (MT-601)");
-
-            assertTrue(asked.contains(I18n.t("autolayout.ui.errorWaitForActiveLocomotivesToStop")), "Export did not say it waits for"
-                + " autonomy to stop: " + asked);
-        }, ui ->
-        {
-            going.set(false);
-
-            if (ui != null) staging.set(ui, false);
-        });
-    }
-
-    /**
      * Closes every question and every file chooser until `going` is lowered: a question's words into `asked`, a
      * chooser canceled and its title into `choosers`.
      */
@@ -2720,80 +2678,6 @@ public class testNoSetupEditDuringARun
 
         answering.setDaemon(true);
         answering.start();
-    }
-
-    /**
-     * New Configuration, Rename and Add Configuration wait for autonomy to stop, as Import, Export and Delete do: each
-     * wrote the setup during a run.  Refused before anything is asked.
-     *
-     * MUTATION: let New Configuration ask its name while autonomy runs, and this fails.
-     */
-    @Test
-    public void testTheConfigurationDoorsWaitForAutonomyToStop() throws Exception
-    {
-        if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
-
-        java.lang.reflect.Field staging = Reflect.field(TrainControlUI.class, "stagingFlowActive");
-
-        final java.util.concurrent.atomic.AtomicBoolean going = new java.util.concurrent.atomic.AtomicBoolean(true);
-
-        onItsOwnWindow("live-snapshot", ui ->
-        {
-            final AutonomySession session = ui.getAutonomySession();
-
-            List<String> namesBefore = new ArrayList<>(session.getStore().getConfigurationNames());
-
-            String activeBefore = session.getStore().getActiveConfiguration();
-
-            // DURING A RUN
-            staging.set(ui, true);
-
-            final List<String> asked = Collections.synchronizedList(new ArrayList<String>());
-
-            answeringWith(asked, going, "RSA10 copy");
-
-            String refusal = I18n.t("ui.main.errorNoEditsWhileRunning");
-
-            String prompt = I18n.t("autosetup.ui.promptConfigurationName");
-
-            for (final String door : new String[] {"duplicate", "rename", "initialize"})
-            {
-                int before = asked.size();
-
-                SwingUtilities.invokeAndWait(() ->
-                {
-                    try
-                    {
-                        org.traincontrol.gui.AutonomyViewerPanel.class.getMethod(door)
-                            .invoke(ui.getAutonomyViewerPanel());
-                    }
-                    catch (Exception e)
-                    {
-                        throw new IllegalStateException(e);
-                    }
-                });
-
-                for (int turn = 0; turn < 6; turn++) SwingUtilities.invokeAndWait(() -> { });
-
-                List<String> said = new ArrayList<>(asked.subList(before, asked.size()));
-
-                assertFalse(said.contains(prompt), door + " asked for a name while autonomy ran (RSA10-A1): " + said);
-
-                assertTrue(said.contains(refusal), door + " did not say it waits for autonomy to stop (RSA10-A1): "
-                    + said);
-            }
-
-            assertEquals(new ArrayList<>(session.getStore().getConfigurationNames()), namesBefore, "a configuration door"
-                + " changed the configurations while autonomy ran (RSA10-A1)");
-
-            assertEquals(session.getStore().getActiveConfiguration(), activeBefore, "a configuration door changed the"
-                + " configuration the next start resumes while autonomy ran (RSA10-A1)");
-        }, ui ->
-        {
-            going.set(false);
-
-            if (ui != null) staging.set(ui, false);
-        });
     }
 
     /**

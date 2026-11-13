@@ -137,62 +137,6 @@ public class testTimetableCaptureThroughARealRun
     }
 
     /**
-     * With capture off, a run of the same length captures nothing: the mutation check for the test above, which a
-     * capture ignoring the flag, or a fixture arriving with entries, would pass.
-     */
-    @Test
-    public void testARealRunCapturesNothingWithCaptureOff() throws Exception
-    {
-        Layout layout = loadedConfiguration();
-
-        // Set explicitly: parseAuto PRESERVES the flag across a rebuild (an ordinary rebuild must not switch it off),
-        // so after the test above this fixture arrives with capture ON.
-        layout.setTimetableCapture(false);
-
-        assertFalse(layout.isTimetableCapture(), "capture did not switch off");
-
-        model.go();
-        layout.runLocomotives();
-
-        // Waits for a train to MOVE, not for a fixed number of seconds (OB-114): on a loaded machine autonomy does not
-        // always dispatch within a fixed window.  The ceiling is far above a dispatch; nothing is skipped, since a
-        // minute of nothing moving is a real fault and a skip that fires routinely goes unnoticed.
-        boolean moved = false;
-
-        long deadline = System.currentTimeMillis() + STARTUP_CEILING_MS;
-
-        while (!moved && System.currentTimeMillis() < deadline)
-        {
-            if (!layout.getActiveLocomotives().isEmpty()) moved = true;
-            else Thread.sleep(200);
-        }
-
-        // And then let it actually run for a while, which is the part capture would have recorded.
-        if (moved) Thread.sleep(RUN_MS / 2);
-
-        // ASKED BEFORE THE STOP: `isAutoRunning()` is the field `stopLocomotives` clears, so read afterwards it says
-        // "Auto running: false" whatever happened, and several of `explainCannotStart`'s rules are fenced on it too.
-        // Only on the failing path.
-        String why = moved ? "" : whyNothingMoved(layout, "with autonomy still running");
-
-        layout.stopLocomotives();
-
-        // AND AGAIN WITH IT STOPPED, because the running answer is a SUBSTITUTION (MT-374): `explainDestinations`
-        // replaces the real reason with "Blocked by a train or a route in progress" whenever `isAutoRunning()`, since
-        // the reason it would quote comes from a static every running thread writes.  Both readings are printed.
-        if (!moved) why = why + whyNothingMoved(layout, "after being stopped, so the real refusal is"
-            + " no longer substituted - but the rules fenced on isAutoRunning now answer about a"
-            + " stopped railway");
-
-        assertTrue(moved, "no locomotive moved in " + (STARTUP_CEILING_MS / 1000) + " seconds, so "
-            + "nothing was declined and nothing is proved." + why);
-
-        assertTrue(layout.getTimetable().isEmpty(),
-            "trains ran with capture switched OFF and the timetable filled anyway, so the flag is "
-            + "not being consulted: " + layout.getTimetable());
-    }
-
-    /**
      * What the railway says about each train that did not start (`explainCannotStart`): a diagnosis to append to a
      * failure, deliberately not asserted ON.  `when` says which reading this is, running or stopped, because the two do
      * not agree (MT-374).

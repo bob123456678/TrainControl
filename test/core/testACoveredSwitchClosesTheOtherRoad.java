@@ -5,6 +5,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertTrue;
@@ -17,12 +18,15 @@ import org.traincontrol.automation.Point;
 import org.traincontrol.base.Locomotive;
 
 /**
- * A tail lying across one road of a switch closes the other road, which is a different Edge.
+ * A turnout and the two routes that share its metal, on `test/layouts/single-switch` (a west end, an approach, and the
+ * two platforms the switch divides; the approach splits into two Points): the two routes lock each other, and a tail
+ * lying across one road of the switch closes the other road, which is a different Edge.
+ *
  * `Layout.isPathClear` refuses a path over an edge a standing train's tail covers, then over any edge that SHARES
  * METAL with a covered one.  Adam: EN57-203 *"is allowed to traverse a blocked/shaded switch (60) to get from
  * TunnelLeftPark to BottomMainC, even though it should not be possible."*  Coverage is recorded per EDGE, so the other
  * pair of a switch's arms was never in the covered set.  `testATrainCoversTheTrackBehindIt` exercises only the DIRECT
- * hit and `testTwoRoutesShareOneSwitch` a route HOLD; nothing went red when the shared-metal branch was removed.
+ * hit and the lock claims here a route HOLD; nothing went red when the shared-metal branch was removed.
  *
  * The fixture is `single-switch`, the only railway with a turnout (`GraphReducer` derives the relation from SHARED
  * TILES).  The controls are the point, since the railway refuses paths for a dozen reasons: the branch road is NOT
@@ -84,6 +88,10 @@ public class testACoveredSwitchClosesTheOtherRoad
 
     /** The lead in, which is on the path and shares metal with nothing. */
     private static final String LEAD_IN = "WestEnd -> Approach (eastbound)";
+
+    private static final String MAIN = MAIN_ROAD[0];
+    private static final String MAIN_BACK = MAIN_ROAD[1];
+    private static final String BRANCH_BACK = BRANCH_ROAD[1];
 
     @BeforeClass
     public static void setUpClass() throws Exception
@@ -226,6 +234,122 @@ public class testACoveredSwitchClosesTheOtherRoad
             + " refused it for: " + Layout.getLastError());
     }
 
+    // ---------------------------------------------------------------- the two routes through the switch
+
+    /**
+     * The railway the fixture says it is: four stations, five Points, six edges, pinned exactly so a drifting fixture
+     * or reduction is noticed.
+     */
+    @Test
+    public void testTheJunctionBuildsToTheShapeItIsDrawnAs() throws Exception
+    {
+        Layout built = scenario.build();
+
+        assertEquals(scenario.getSession().getReducer().getPoints().size(), 4,
+            "the fixture is drawn with four feedback sensors and reduced to "
+            + scenario.getSession().getReducer().getPoints().size());
+
+        assertEquals(built.getPoints().size(), 5,
+            "four sensors, one of which - the approach - is arrived at from both sides and so becomes"
+            + " two Points. Built: " + pointNames(built));
+
+        assertEquals(built.getEdges().size(), 6,
+            "three pieces of track, each running both ways. Built: " + edgeNames(built));
+
+        // AND THE SPLIT IS A REAL SPLIT: two Points that are one piece of metal.
+        Point east = built.getPoint("Approach (eastbound)");
+        Point west = built.getPoint("Approach (westbound)");
+
+        assertNotNull(east, "the approach did not split - " + pointNames(built));
+        assertNotNull(west, "the approach did not split - " + pointNames(built));
+
+        assertEquals(east.getBlock(), west.getBlock(),
+            "the two copies of the approach do not share a block, so the model would let two trains"
+            + " stand on one square");
+
+        assertNotNull(east.getBlock(), "the copies share no block at all");
+    }
+
+    /**
+     * The two routes through the switch lock each other, in both directions of travel: every one of the four edges
+     * names the two that use the other blade position.
+     */
+    @Test
+    public void testTheTwoRoutesThroughTheSwitchLockEachOther() throws Exception
+    {
+        Layout built = scenario.build();
+
+        assertEquals(lockNames(built, MAIN), asSet(BRANCH, BRANCH_BACK),
+            "the main route over the switch should hold both directions of the branch route, and holds "
+            + lockNames(built, MAIN));
+
+        assertEquals(lockNames(built, BRANCH), asSet(MAIN, MAIN_BACK),
+            "the branch route over the switch should hold both directions of the main route, and holds "
+            + lockNames(built, BRANCH));
+
+        // AND THE TRAILING DIRECTION TOO: a tail lies across a rail whichever way traffic runs, and the fixture opens
+        // the switch's trailing direction since a switch defaults to base-to-forks, which gives a one-way railway.
+        assertEquals(lockNames(built, MAIN_BACK), asSet(BRANCH, BRANCH_BACK),
+            "the main route read the other way should hold the branch route, and holds "
+            + lockNames(built, MAIN_BACK));
+
+        assertEquals(lockNames(built, BRANCH_BACK), asSet(MAIN, MAIN_BACK),
+            "the branch route read the other way should hold the main route, and holds "
+            + lockNames(built, BRANCH_BACK));
+    }
+
+    /**
+     * And the lock does something: claiming one arm makes the other read as occupied, which `isPathClear` asks before
+     * letting a train onto a switch.
+     */
+    @Test
+    public void testClaimingOneArmHoldsTheOther() throws Exception
+    {
+        Layout built = scenario.build();
+
+        Edge main = edge(built, MAIN);
+        Edge branch = edge(built, BRANCH);
+
+        assertFalse(branch.isOccupied(null),
+            "the branch arm reads as occupied before anything has claimed anything");
+
+        main.setOccupied();
+
+        assertTrue(branch.isOccupied(null),
+            "a route was granted over the main arm of the switch and the branch arm still reads clear,"
+            + " so a second train could be cleared onto the same blades");
+
+        main.setUnoccupied();
+
+        assertFalse(branch.isOccupied(null),
+            "the main arm was released and the branch arm is still held, so the switch would stay"
+            + " blocked for good");
+    }
+
+    /**
+     * The switch really is switchable, and its two positions are the two routes: the parser turns a `linksweiche` with
+     * no usable address into a CUSTOM_PERM_LEFT, a defective turnout that can only be trailed through, invisibly in the
+     * file.
+     */
+    @Test
+    public void testTheSwitchIsCommandedByEachRoute() throws Exception
+    {
+        Layout built = scenario.build();
+
+        assertFalse(edge(built, MAIN).getConfigCommands().isEmpty(),
+            "the main route over the switch commands nothing, so the blades are never thrown for it -"
+            + " which is what a defective turnout with no address looks like, not a switch");
+
+        assertFalse(edge(built, BRANCH).getConfigCommands().isEmpty(),
+            "the branch route over the switch commands nothing");
+
+        assertFalse(edge(built, MAIN).getConfigCommands().toString()
+            .equals(edge(built, BRANCH).getConfigCommands().toString()),
+            "the two routes over the switch command the SAME thing, so one of them is not throwing the"
+            + " blades and a train sent that way would take whichever road the switch was already"
+            + " lying for: " + edge(built, MAIN).getConfigCommands());
+    }
+
     // ---------------------------------------------------------------- the staging
 
     /**
@@ -287,6 +411,15 @@ public class testACoveredSwitchClosesTheOtherRoad
         Set<String> out = new LinkedHashSet<>();
 
         for (Edge locked : edge(built, name).getLockEdges()) out.add(locked.getName());
+
+        return out;
+    }
+
+    private static Set<String> asSet(String... names)
+    {
+        Set<String> out = new LinkedHashSet<>();
+
+        for (String name : names) out.add(name);
 
         return out;
     }

@@ -202,8 +202,8 @@ public class testAReversalCommandIsEmitted
     /**
      * The whole of OB-189: the answer was no, so the train is facing the other way at the end.
      *
-     * MUTATION: delete the `switchDirection()` from the arrival block in `executePathInternal` and this fails, while
-     * every other reversal test stays green.
+     * MUTATION: delete the `switchDirection()` from the arrival block in `executePathInternal`, and this fails, as do
+     * `testTwoLegsStillTurnTheTrainExactlyOnce` and `testWhatReachesTheTracksAtEachKindOfArrival`'s answered-yes claim.
      */
     @Test
     public void testAnsweringNoTurnsTheTrainRound() throws Exception

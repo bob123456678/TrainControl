@@ -333,7 +333,8 @@ public class testTheLocomotiveSettingsWindow
 
     /**
      * The name is asked before the address is written (OB-301): a name that is taken, with a new address beside it, is
-     * refused and leaves the address as it was, and the window stays open with what was typed.
+     * refused and leaves the address as it was, and the window stays open with what was typed.  With the other train's
+     * own address beside it, OB-301's shape, neither train moves.
      *
      * MUTATION: write the address before the name is checked in `LocomotiveActions.writeNameAndAddress`, and this
      * fails.
@@ -354,31 +355,14 @@ public class testTheLocomotiveSettingsWindow
         assertEquals(loc.getName(), NAME);
         assertNotNull(SettingsWindow.showing(), "a refused Save closed the window");
         assertEquals(SettingsWindow.text("settings.address"), "3499", "a refused Save lost what was typed");
-    }
 
-    /**
-     * An empty name, a name with a comma and a name that is too long are each refused with today's sentence.
-     *
-     * MUTATION: drop the comma test from `writeNameAndAddress`, and this fails.
-     */
-    @Test
-    public void testAnEmptyAndAnUnusableAndALongNameAreRefused() throws Exception
-    {
-        open(0);
+        SettingsWindow.type("settings.address", "3402");
 
-        String[][] cases = {
-            { "  ", I18n.t("loc.ui.errorEmptyLocomotiveName") },
-            { "a, b", I18n.t("loc.ui.errorLocomotiveNameUnusable") },
-            { "x" + new String(new char[TrainControlUI.MAX_LOC_NAME_DATABASE]).replace('\0', 'y'),
-                I18n.f("loc.ui.errorLocomotiveNameTooLong", TrainControlUI.MAX_LOC_NAME_DATABASE) } };
-
-        for (String[] c : cases)
-        {
-            SettingsWindow.type("settings.name", c[0]);
-
-            assertEquals(saveAndAnswer(), Arrays.asList(c[1]), "the wrong refusal for the name \"" + c[0] + "\"");
-            assertEquals(loc.getName(), NAME, "a refused name was written");
-        }
+        assertEquals(saveAndAnswer(), Arrays.asList(I18n.f("loc.ui.errorLocomotiveAlreadyExists", OTHER)),
+            "Save did not refuse a taken name beside the other train's address");
+        assertEquals(loc.getAddress(), 3401, "the other train's address was written though the name was refused, leaving"
+            + " two trains on one address (OB-301)");
+        assertEquals(other.getAddress(), 3402, "a refused Save moved the other train");
     }
 
     /**

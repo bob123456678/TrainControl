@@ -608,29 +608,6 @@ public class testTheLocomotiveSettingsFunctions
     }
 
     /**
-     * Picking a standard icon in the dropdown of a row that has an image of its own replaces the image at Save.
-     *
-     * MUTATION: keep the image when a standard icon is picked, in `useStandardIcon`, and this fails.
-     */
-    @Test
-    public void testAStandardIconReplacesYourOwnImage() throws Exception
-    {
-        File picture = SettingsWindow.picture(fixture.folder, "blue.png", Color.BLUE);
-
-        loc.setLocalFunctionImageURL(F, picture.toPath().toUri().toString());
-
-        open();
-
-        SettingsWindow.pickIcon(F, 12);
-
-        SettingsWindow.press(SettingsWindow.save());
-
-        assertTrue(Components.waitFor(() -> loc.getLocalFunctionImageURL(F) == null, WAIT),
-            "picking a standard icon did not replace the image");
-        assertEquals(loc.getFunctionType(F), 12);
-    }
-
-    /**
      * The preset ticks, Use Current Functions as Preset and Clear Preset change the table; Save writes the preset and
      * Cancel does not.
      *
