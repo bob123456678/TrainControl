@@ -518,7 +518,7 @@ So if a short train seems to be blocking a surprising amount of track, the answe
 
 **A signal paired with a station** (`Exit guard signal` in its `Station Settings`) goes red while a train is standing there, and green again once it leaves.
 
-**While autonomy runs, nothing that changes the setup can be used.** The Autonomy and Layouts menus gray out whatever would change the setup or the track diagram, and say why when you hover over them; the Layouts menu keeps Open CS3 Web App, the pop-up pages and the picture export. On the Auto tab, the settings, `Execute Timetable` and `Capture Locomotive Commands` are grayed until the trains have stopped, saying "Please wait for all active locomotives to stop."
+**While autonomy runs, nothing that changes the setup can be used.** The Autonomy and Layouts menus gray out whatever would change the setup or the track diagram, and say why when you hover over them; the Layouts menu keeps Open CS3 Web App, Show Current Layout Folder and the picture export. On the Auto tab, the settings, `Execute Timetable` and `Capture Locomotive Commands` are grayed until the trains have stopped, saying "Please wait for all active locomotives to stop."
 
 **The Auto tab** (the third icon on the left of the main window) is grayed until a configuration is loaded; when none is (after `Stop Using Autonomy`, or with `Load Autonomy` unticked under Preferences → Startup), the strip above the track diagram offers `Load this configuration`. Once one is loaded, the Auto tab has three tabs:
 
