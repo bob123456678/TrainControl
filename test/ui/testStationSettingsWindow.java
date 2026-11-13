@@ -229,7 +229,9 @@ public class testStationSettingsWindow
 
         javax.swing.JComboBox<?> stepped = StationDoors.part(window, "station.depart.0", javax.swing.JComboBox.class);
 
-        StationDoors.step(stepped);
+        Object was = StationDoors.step(stepped);
+
+        assertNotEquals(Components.onTheEventThread(stepped::getSelectedItem), was, "precondition: the arrow did not step May depart");
 
         String before = setup();
 
@@ -258,7 +260,11 @@ public class testStationSettingsWindow
     /** Steps May depart's first list; what it showed before. */
     private static Object stepMayDepart(StationSettingsWindow window)
     {
-        return StationDoors.step(StationDoors.part(window, "station.depart.0", javax.swing.JComboBox.class));
+        Object was = StationDoors.step(StationDoors.part(window, "station.depart.0", javax.swing.JComboBox.class));
+
+        assertNotEquals(mayDepartShows(window), was, "precondition: the arrow did not step May depart");
+
+        return was;
     }
 
     /** What May depart's first list shows now (the list is built again after a change). */

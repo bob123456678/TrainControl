@@ -497,14 +497,15 @@ public class testAPageWindowsMenuAsksOverIt
     }
 
     /**
-     * Return to Home with autonomy busy since the menu opened says so over the window.
+     * Return to Home with autonomy busy since the menu opened says the trains are moving, over the window.
      *
-     * MUTATION: `this.ui` for `asked` at that message in `requestReturnToHome`, and it hangs off the main window.
+     * MUTATION: `this.ui` for `asked` at that message in `requestReturnToHome`, and it hangs off the main window; or
+     * describe `NO_HOMES` there instead of `LOCOMOTIVES_RUNNING`, and the message is wrong.
      */
     @Test
     public void testReturnHomeWhileBusySaysSoOverTheWindow() throws Exception
     {
-        String said = null;
+        String said = I18n.f("autolayout.ui.errorReturnHomeTrainsMoving", I18n.t("ui.main.gracefulStop"));
 
         for (Window window : bothWindows())
         {
@@ -518,23 +519,21 @@ public class testAPageWindowsMenuAsksOverIt
 
             takenUp(false);
 
-            said = said == null ? question.message : said;
-
             AskingWindows.assertSaid(question, window, said);
         }
     }
 
     /**
-     * Return to Home with no plan to offer, the trains gone since the menu opened, says why over the window, from the
-     * worker, and moves nothing.
+     * Return to Home with no plan to offer, the trains gone since the menu opened, says no train is placed over the
+     * window, from the worker, and moves nothing.
      *
      * MUTATION: `this.ui` for `this.ui.stillShowing(asked)` at that message in `requestReturnToHome`, and it hangs off
-     * the main window.
+     * the main window; or describe `NO_HOMES` there instead of the plan's outcome, and the message is wrong.
      */
     @Test
     public void testReturnHomeWithNoPlanSaysWhyOverTheWindow() throws Exception
     {
-        String said = null;
+        String said = I18n.t("autolayout.ui.errorNoLocomotivesOnGraph");
 
         for (Window window : bothWindows())
         {
@@ -553,8 +552,6 @@ public class testAPageWindowsMenuAsksOverIt
             });
 
             Answering.Question question = choose(home, message -> null, 1).get(0);
-
-            said = said == null ? question.message : said;
 
             AskingWindows.assertSaid(question, window, said);
 
@@ -586,15 +583,15 @@ public class testAPageWindowsMenuAsksOverIt
     }
 
     /**
-     * A path the train is too long for, grown since the menu opened, is refused over the window, and nothing is sent.
+     * A path the train is too long for, grown since the menu opened, is refused over the window with the reason it is
+     * too long, and nothing is sent.
      *
-     * MUTATION: `this` for `asked` at that message in `sendATrainByHand`, and it hangs off the main window.
+     * MUTATION: `this` for `asked` at that message in `sendATrainByHand`, and it hangs off the main window; or show
+     * `RunGates.WAIT_FOR_THE_TRAINS` there in place of the path's reason, and the message is wrong.
      */
     @Test
     public void testAPathThatCannotBeTakenIsSaidOverTheWindow() throws Exception
     {
-        String said = null;
-
         for (Window window : bothWindows())
         {
             train.setTrainLength(0);
@@ -603,11 +600,22 @@ public class testAPageWindowsMenuAsksOverIt
 
             JMenuItem destination = aDestination(menuOn(window, mainB), end -> !turnsThere(end));
 
+            List<Edge> path = null;
+
+            for (List<Edge> each : railway().getPossiblePaths(train, true))
+            {
+                Point end = each.get(each.size() - 1).getEnd();
+
+                if (path == null && ("-> " + session.getStationIndex().describe(end)).equals(destination.getText())) path = each;
+            }
+
             train.setTrainLength(9999);
 
-            Answering.Question question = choose(destination, message -> null, 1).get(0);
+            String said = Layout.whyTooLongForThisRoute(path, train);
 
-            said = said == null ? question.message : said;
+            assertNotNull(said, "precondition: a train 9999 long fits the path to " + destination.getText());
+
+            Answering.Question question = choose(destination, message -> null, 1).get(0);
 
             AskingWindows.assertSaid(question, window, said);
 
@@ -828,9 +836,11 @@ public class testAPageWindowsMenuAsksOverIt
     }
 
     /**
-     * Place asks which side the train arrived from over the window it was chosen in; closing the question places nothing.
+     * Place asks which side the train arrived from, naming the square, over the window it was chosen in; closing the
+     * question places nothing.
      *
-     * MUTATION: `ui` for `ui.dialogParent()` at `forPlacement` in `placeFacing`, and it hangs off the main window.
+     * MUTATION: `ui` for `ui.dialogParent()` at `forPlacement` in `placeFacing`, and it hangs off the main window; or
+     * ask with the title's words in `ArrivalSidePrompt.ask`, and the question is wrong.
      */
     @Test
     public void testPlaceAsksTheSideOverTheWindow() throws Exception
@@ -838,6 +848,9 @@ public class testAPageWindowsMenuAsksOverIt
         TileKey square = aStationThatAsksTheSide();
 
         List<String> sides = sidesOffered(square);
+
+        String question = I18n.f("autolayout.ui.askArrivalSide", org.traincontrol.automationui.StationIndex
+            .withoutArrivalSuffix(ui.getAutonomyPointForTile(square).getName()));
 
         for (Window window : bothWindows())
         {
@@ -848,7 +861,7 @@ public class testAPageWindowsMenuAsksOverIt
                 assertTrue(answering.awaitAsked(1, PATIENCE_MS), "Place asked nothing");
 
                 AskingWindows.assertAsked(answering.questions().get(0), window, I18n.t("autolayout.ui.askArrivalSideTitle"),
-                    answering.questions().get(0).message, JOptionPane.QUESTION_MESSAGE, sides.get(0), asArray(sides));
+                    question, JOptionPane.QUESTION_MESSAGE, sides.get(0), asArray(sides));
             }
 
             assertTrue(Components.waitFor(() -> railway().getLocomotiveLocation(train) != null, PATIENCE_MS),

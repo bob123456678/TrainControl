@@ -264,9 +264,10 @@ public class testTheLocomotiveSettingsMovingRule
     }
 
     /**
-     * The rule needs both halves: a train moving with the power off, or the power on and the train at rest, opens.
+     * The rule needs both halves: a train moving with the power off, or the power on and the train at rest, opens
+     * free, without the strip.
      *
-     * MUTATION: test only the speed, or only the power, in `LocomotiveSettings.isMoving`, and this fails.
+     * MUTATION: test only the speed (drop `ui.powerIsOn()`) in `LocomotiveSettings.isMoving`, and this fails.
      */
     @Test
     public void testPowerOffOrAtRestOpens() throws Exception
@@ -275,13 +276,23 @@ public class testTheLocomotiveSettingsMovingRule
         loc.setSpeed(40);
 
         assertTrue(SettingsWindow.open(ui, loc, LocomotiveSettingsFrame.Tab.LOCOMOTIVE, null), "the power is off and it did not open");
-
-        SettingsWindow.closeIfOpen();
+        assertOpenedFree("the power is off");
 
         loc.setSpeed(0);
         SettingsWindow.power(ui, model, true);
 
         assertTrue(SettingsWindow.open(ui, loc, LocomotiveSettingsFrame.Tab.LOCOMOTIVE, null), "the train is at rest and it did not open");
+        assertOpenedFree("the train is at rest");
+    }
+
+    /** The window is on screen without the strip, then closed again. */
+    private static void assertOpenedFree(String where) throws Exception
+    {
+        assertNotNull(SettingsWindow.awaited(), where + " and no window is on screen");
+        assertFalse(Components.onTheEventThread(SettingsWindow.part("settings.strip", JLabel.class)::isVisible),
+            where + " and the window opened locked");
+
+        SettingsWindow.closeIfOpen();
     }
 
     /**

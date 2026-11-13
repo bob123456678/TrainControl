@@ -732,13 +732,19 @@ public class testPageLinksGoByPageId extends support.PageWindowTest
 
         assertEquals(model.getPageIdOf("6 - New"), 5, "precondition: the new page did not take the deleted page's ID");
 
+        int checked = 0;
+
         for (Map.Entry<String, String> link : sent.entrySet())
         {
             if (link.getValue().equals("1 - Main") && !link.getKey().startsWith("1 - Main|"))
             {
+                checked++;
+
                 assertEquals(targets().get(link.getKey()), "none", "a link to the deleted page goes to the new page");
             }
         }
+
+        assertTrue(checked > 0, "precondition: no other page links to 1 - Main");
     }
 
     /**

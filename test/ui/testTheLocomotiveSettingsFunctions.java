@@ -954,21 +954,102 @@ public class testTheLocomotiveSettingsFunctions
     }
 
     /**
-     * The icons and the picture are fetched off the event thread.
+     * The icons and the picture are fetched off the event thread: with neither in the image cache, opening the window
+     * reads them all, and no image is read on the event thread.
      *
-     * MUTATION: load the standard icons in one `invokeLater` again, and this fails.
+     * MUTATION: load the standard icons in one `invokeLater` on `ICON_LOADER` (every `getLocImage` on the event
+     * thread), and this fails.
      */
     @Test
     public void testTheImagesAreFetchedOffTheEventThread() throws Exception
     {
-        String icons = support.SourceOf.declaration("private void loadStandardIcons()");
+        File shown = SettingsWindow.picture(fixture.folder, "fetched.png", Color.ORANGE);
 
-        assertTrue(icons.contains("ICON_LOADER.submit"), "the standard icons are not fetched on their own thread");
-        assertFalse(icons.contains("invokeLater(() ->\n        {\n            for"), "the icons are loaded in one pass on the event thread");
+        loc.setImageURL(shown.toPath().toUri().toString());
 
-        String picture = support.SourceOf.declaration("void refreshPicture()");
+        boolean active = model.isCS3() || !model.getNetworkCommState();
 
-        assertTrue(picture.contains("getImageLoader().execute"), "the picture is not fetched by the image loader");
+        List<String> icons = new java.util.ArrayList<>();
+
+        for (int i = 0; i <= loc.getNumFnIcons(); i++) icons.add(loc.getFunctionIconUrl(i, active, true) + TrainControlUI.BUTTON_ICON_WIDTH);
+
+        java.util.Set<String> cached = TrainControlUI.getImageCache().keySet();
+
+        cached.removeIf(key -> key.contains("FktIcon") || key.contains(shown.getName()));
+
+        ReadWatch watch = new ReadWatch();
+
+        try
+        {
+            open();
+
+            assertTrue(Components.waitFor(() -> cached.containsAll(icons) && cached.stream().anyMatch(key -> key.contains(shown.getName())), WAIT),
+                "precondition: the icons and the picture did not load");
+        }
+        finally
+        {
+            watch.close();
+        }
+
+        assertFalse(watch.reads.isEmpty(), "precondition: the watch saw no image read");
+        assertFalse(watch.reads.contains(true), "an image was read on the event thread");
+    }
+
+    /**
+     * Notes, for each image `ImageIO` reads while it is open, whether the read is on the event thread: it is asked first
+     * whether it can decode every image, and answers no.
+     */
+    private static final class ReadWatch extends javax.imageio.spi.ImageReaderSpi implements AutoCloseable
+    {
+        final List<Boolean> reads = java.util.Collections.synchronizedList(new java.util.ArrayList<>());
+
+        private final javax.imageio.spi.IIORegistry registry = javax.imageio.spi.IIORegistry.getDefaultInstance();
+
+        ReadWatch()
+        {
+            vendorName = "test";
+            version = "1";
+            names = new String[] {"read watch"};
+            inputTypes = STANDARD_INPUT_TYPE;
+
+            registry.registerServiceProvider(this, javax.imageio.spi.ImageReaderSpi.class);
+
+            java.util.Iterator<javax.imageio.spi.ImageReaderSpi> others =
+                registry.getServiceProviders(javax.imageio.spi.ImageReaderSpi.class, false);
+
+            while (others.hasNext())
+            {
+                javax.imageio.spi.ImageReaderSpi other = others.next();
+
+                if (other != this) registry.setOrdering(javax.imageio.spi.ImageReaderSpi.class, this, other);
+            }
+        }
+
+        @Override
+        public boolean canDecodeInput(Object source)
+        {
+            reads.add(SwingUtilities.isEventDispatchThread());
+
+            return false;
+        }
+
+        @Override
+        public javax.imageio.ImageReader createReaderInstance(Object extension)
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public String getDescription(java.util.Locale locale)
+        {
+            return "read watch";
+        }
+
+        @Override
+        public void close()
+        {
+            registry.deregisterServiceProvider(this, javax.imageio.spi.ImageReaderSpi.class);
+        }
     }
 
     // Helpers

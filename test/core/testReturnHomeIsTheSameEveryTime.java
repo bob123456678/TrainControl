@@ -3,7 +3,6 @@ package core;
 import java.io.File;
 import java.lang.reflect.Field;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.List;
 import static org.testng.Assert.*;
@@ -101,18 +100,52 @@ public class testReturnHomeIsTheSameEveryTime
      * The clock has no say: the planner reads none, so a slow or busy machine gets the plan a fast one finds, never
      * NO_PLAN_FOUND where a fast one finds a plan.
      *
-     * MUTATION: put back a fifteen-second deadline read from `System.currentTimeMillis`, and this fails.
+     * The compiled planner, its nested and anonymous classes and lambdas included, names no clock: read from the class
+     * files, so no spelling of the source hides one.
+     *
+     * MUTATION: put back a fifteen-second deadline read from `new java.util.Date().getTime()`, and this fails.
      */
     @Test(timeOut = 300000)
     public void testTheSamePlanWhateverTheClockSays() throws Exception
     {
-        String source = new String(Files.readAllBytes(new File("src/org/traincontrol/automation/HomeStaging.java").toPath()),
-            StandardCharsets.UTF_8);
+        List<Class<?>> planner = new ArrayList<>();
 
-        for (String clock : new String[] {"currentTimeMillis", "nanoTime", "LongSupplier", "Instant.now"})
+        planner.add(HomeStaging.class);
+
+        for (int i = 0; i < planner.size(); i++)
         {
-            assertFalse(source.contains(clock), "the planner reads the time (" + clock + "), so a slower machine can get a"
-                + " different plan");
+            Class<?> c = planner.get(i);
+
+            planner.addAll(java.util.Arrays.asList(c.getDeclaredClasses()));
+
+            for (int n = 1; HomeStaging.class.getResource("/" + c.getName().replace('.', '/') + "$" + n + ".class") != null; n++)
+            {
+                planner.add(Class.forName(c.getName() + "$" + n));
+            }
+        }
+
+        for (Class<?> c : planner)
+        {
+            java.io.ByteArrayOutputStream bytes = new java.io.ByteArrayOutputStream();
+
+            try (java.io.InputStream in = HomeStaging.class.getResourceAsStream("/" + c.getName().replace('.', '/') + ".class"))
+            {
+                assertNotNull(in, "precondition: no class file for " + c.getName());
+
+                byte[] chunk = new byte[8192];
+
+                for (int got; (got = in.read(chunk)) > 0; ) bytes.write(chunk, 0, got);
+            }
+
+            // The constant pool names every class and method the code calls, in plain ASCII
+            String names = new String(bytes.toByteArray(), StandardCharsets.ISO_8859_1);
+
+            for (String clock : new String[] {"currentTimeMillis", "nanoTime", "java/util/Date", "java/util/Calendar",
+                "java/time/", "LongSupplier"})
+            {
+                assertFalse(names.contains(clock), c.getName() + " reads the time (" + clock + "), so a slower machine can"
+                    + " get a different plan");
+            }
         }
     }
 
