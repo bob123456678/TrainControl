@@ -2257,15 +2257,14 @@ public class AutonomyCompanionStore
             if (!byKey.containsKey(over)) landing.add(over);
         }
 
-        // Sparing the labels of the tiles that are arriving (see forgetSquares): a platform nudged down one lands ON
-        // its own label.  The answer is WHETHER IT FOUND ANYTHING, which the caller's "did this change something" uses.
+        // Sparing the labels of arriving tiles (see forgetSquares): a platform nudged down lands ON its own label.
+        // The answer is WHETHER ANYTHING WAS FOUND, for the caller's "did this change something".
         boolean changed = forgetSquares(landing, byKey);
 
         if (byKey.isEmpty()) return changed;
 
-        // Where both halves name a square, both follow, the value REPOINTED rather than moved: a caption on a square
-        // that stayed put, naming a station that moved, still names that station.  A direction belongs to a square AND
-        // a route, so moveKeys asks a key which square it is on (FR-013).
+        // Both halves follow, the value REPOINTED (a caption on a square that stayed still names the station that
+        // moved); moveKeys asks a key which square it is on (FR-013).
         for (Kept k : kept()) k.move(byKey);
 
         // The configurations key by tile as well (see renamePage).
@@ -2276,9 +2275,8 @@ public class AutonomyCompanionStore
             JSONObject points = configuration.getJSONObject("points");
             JSONObject moved = new JSONObject();
 
-            // The ones staying put first, so a tile arriving on a square that is not moving replaces what was there.
-            // The configuration's keys are the PRINTED form (JSON), so each is parsed before being asked about
-            // (FR-013): `byKey.containsKey(aString)` compiles, because containsKey takes Object, and is always false.
+            // The ones staying put first, so an arriving tile replaces what was there.  Keys are the PRINTED form, so
+            // each is parsed before asking `byKey` (FR-013): containsKey(aString) compiles but is always false.
             for (String key : points.keySet())
             {
                 TileKey tile = parseTileKey(key);
@@ -2296,8 +2294,8 @@ public class AutonomyCompanionStore
             configuration.put("points", moved);
         }
 
-        // AND THE NAMES MADE FROM WHERE A MOVED SQUARE WAS, where a timetable leg or a train's road stores them:
-        // a square with no name of its own is named "page x,y", so a move renamed its Points
+        // AND the names made from where a moved square was (timetable legs, a train's road): an unnamed square is "page
+        // x,y"
         for (JSONObject configuration : configurations.values())
         {
             renameStoredPoints(configuration, name ->
@@ -2320,18 +2318,15 @@ public class AutonomyCompanionStore
         return true;
     }
 
-    /**
-     * Everything this store holds about one page, as something that can be put back for the diagram editor's undo; the
-     * shape goes straight back into restorePage and nowhere else.
-     */
+    /** Everything held about one page, as something restorePage (only) can put back for the editor's undo. */
     public Map<String, Object> snapshotPage(String page)
     {
         Map<String, Object> out = new LinkedHashMap<>();
 
         if (page == null) return out;
 
-        // Keyed by the collection's file name, which restorePage asks for.  A collection with nothing to snapshot
-        // (`excludedPages`) puts null.  The lists are COPIED: edited in place they would change the snapshot too.
+        // Keyed by the collections' file names; a collection with nothing to snapshot (`excludedPages`) puts null.
+        // Lists are COPIED, or editing them would change the snapshot.
         for (Kept k : kept()) out.put(k.json, k.snapshotOf(page));
 
         // The configurations key by tile too: a snapshot without them restores half a station.
@@ -2346,8 +2341,7 @@ public class AutonomyCompanionStore
 
             for (String key : from.keySet())
             {
-                // Deep: setPointProperty writes the facings, placements, homes and maximum lengths with
-                // points.getJSONObject(id).put(...), straight into the object a shared snapshot would be holding.
+                // Deep: setPointProperty writes straight into the object a shared snapshot would hold.
                 if (!isOnPage(key, page)) continue;
 
                 Object value = from.get(key);
@@ -2364,17 +2358,13 @@ public class AutonomyCompanionStore
         return out;
     }
 
-    /**
-     * Puts a page back as snapshotPage found it: everything keyed to that page is dropped first, so a square that has
-     * GAINED something since loses it again.  Other pages are not touched; a null snapshot does nothing.
-     */
+    /** Puts a page back as snapshotPage found it: everything keyed to that page is dropped first; null does nothing. */
     @SuppressWarnings("unchecked")
     public void restorePage(String page, Map<String, Object> snapshot)
     {
         if (page == null || snapshot == null) return;
 
-        // By the same names snapshotPage wrote, which are the collections' file names.  A snapshot taken by an older build
-        // has no entry for a collection added since, and each kind's put-back treats absent as "this page had none".
+        // By the names snapshotPage wrote; an older build's snapshot lacks collections added since, read as "none".
         for (Kept k : kept()) k.restoreTo(page, snapshot.get(k.json));
 
         Map<String, JSONObject> points = (Map<String, JSONObject>) snapshot.get("configurations");
@@ -2397,8 +2387,7 @@ public class AutonomyCompanionStore
 
             if (was != null)
             {
-                // Copied on the way back as well: the snapshot is held as long as the editor might undo, and the next
-                // edit would write through it.
+                // Copied on the way back too: the editor may undo again, and the next edit would write through it.
                 for (String key : was.keySet())
                 {
                     Object value = was.get(key);
@@ -2425,8 +2414,8 @@ public class AutonomyCompanionStore
     }
 
     /**
-     * Whether a stored key belongs to this page, by what the key PARSES to, not what it starts with: a page may be
-     * called "Yard: Upper", and "Yard: Upper:2,3" starts with "Yard:".  parseTileKey splits on the LAST colon.
+     * Whether a stored key belongs to this page by what it PARSES to: a page may be called "Yard: Upper"; parseTileKey
+     * splits on the LAST colon.
      */
     private static boolean isOnPage(String key, String page)
     {
@@ -2458,8 +2447,8 @@ public class AutonomyCompanionStore
     }
 
     /**
-     * The entries of one collection that live on one page.  Generic over {@link SquareKeyed} (FR-013) because erasure
-     * makes {@code Map<String, T>} and {@code Map<TileKey, T>} the same signature, so they could not be overloaded.
+     * The entries of one collection on one page; generic over {@link SquareKeyed} (FR-013) because erasure makes the
+     * Map signatures equal.
      */
     private static <K extends SquareKeyed<K>, T> Map<K, T> onPage(Map<K, T> from, String page)
     {
@@ -2474,9 +2463,8 @@ public class AutonomyCompanionStore
     }
 
     /**
-     * One page's entries from a map whose VALUES are squares too: `onPage` asks only about the key, but portals,
-     * protecting signals and blocked points cross pages, so snapshot and restore must capture every entry that MENTIONS
-     * this page.
+     * One page's entries from a map whose VALUES are squares too: portals, signals and blocked points cross pages, so
+     * every entry that MENTIONS the page is captured.
      */
     private static Map<TileKey, TileKey> onPageEitherEnd(Map<TileKey, TileKey> from, String page)
     {
@@ -2519,8 +2507,8 @@ public class AutonomyCompanionStore
     }
 
     /**
-     * Puts back a page's entries in a collection whose values are squares too: everything MENTIONING the page goes,
-     * then the snapshot goes back, so an entry on another page that pointed here is restored, not left dangling.
+     * Puts back a page's entries where values are squares too: everything MENTIONING the page goes, then the snapshot
+     * returns, so no entry dangles.
      */
     private static void putBackEitherEnd(Map<TileKey, TileKey> into, String page,
         Map<TileKey, TileKey> was)
@@ -2590,8 +2578,7 @@ public class AutonomyCompanionStore
     }
 
     /**
-     * The same, for a set whose members are PAIRED ACROSS PAGES (`disabledPortals`: `setPortalDisabled` writes both
-     * ends).  Capturing at either end is required, or undo removes one half of the pair and puts nothing back.
+     * The same for a set PAIRED ACROSS PAGES (`disabledPortals`): capture at either end, or undo restores half a pair.
      */
     private Set<TileKey> membersOnPageEitherEnd(Set<TileKey> from, String page)
     {
@@ -2606,8 +2593,8 @@ public class AutonomyCompanionStore
     }
 
     /**
-     * Puts a paired set's page back, both ends of every pair with it.  The pairing is read as it stands NOW, which is
-     * correct: `portals` is restored before `disabledLinks` in the registry order, so it is already the snapshot's.
+     * Puts a paired set's page back, both ends of every pair; the pairing is read as it stands NOW, as `portals` is
+     * restored first.
      */
     private void putPairedMembersBack(Set<TileKey> into, String page, Set<TileKey> was)
     {
@@ -2622,8 +2609,8 @@ public class AutonomyCompanionStore
     }
 
     /**
-     * Lets go of everything the setup holds about a set of squares: what is written ABOUT the square, and what
-     * elsewhere POINTS AT it (a caption naming a station built over, a pairing to a signal that is gone).
+     * Lets go of everything held ABOUT a set of squares and what POINTS AT them (a caption naming a station built
+     * over).
      */
     private boolean forgetSquares(Set<TileKey> squares)
     {
@@ -2631,21 +2618,18 @@ public class AutonomyCompanionStore
     }
 
     /**
-     * As above, with `arriving` (each MOVING square and where it is going) telling a label about to be built over by
-     * the very thing it names from one that is merely stale: nudging a platform down one lands it on its own label,
-     * which must survive.  The test is that the station arrives on THIS square, not that it is moving at all.
+     * As above; `arriving` (each MOVING square and its destination) spares a label about to be built over by what it
+     * names.
      */
     private boolean forgetSquares(Set<TileKey> squares, Map<TileKey, TileKey> arriving)
     {
         if (squares == null || squares.isEmpty()) return false;
 
-        // WHETHER ANYTHING WAS ACTUALLY REMOVED (see `Kept.forget`): four callers write the whole setup to disk on
-        // true.
+        // WHETHER ANYTHING WAS REMOVED (see `Kept.forget`): four callers write the whole setup to disk on true.
         boolean any = false;
 
-        // Each collection drops what it knows about these squares AND anything POINTING at them: a pointer at gone
-        // track is one nothing can satisfy or clear.  Captions are the exception via `arriving`, for the KEY half only;
-        // a vacated square is never in this set, because moveTiles builds it by excluding them.
+        // Each collection drops what it knows about these squares AND anything POINTING at them.  Captions are the
+        // exception via `arriving`, KEY half only; a vacated square is never in this set.
         for (Kept k : kept()) any |= k.forget(squares, arriving);
 
         // The configurations key by square as well - facings, placements, homes, lengths
@@ -2662,9 +2646,8 @@ public class AutonomyCompanionStore
     }
 
     /**
-     * Follows squares dragged to new coordinates, moved keys winning over ones that merely stayed.  For a key that is a
-     * square plus something else, that something travels unchanged (FR-013).  Two passes: an entry moving ONTO a
-     * square another is moving off must not be overwritten by the one leaving.
+     * Follows squares dragged to new coordinates, moved keys winning over ones that stayed; the rest of a key travels
+     * unchanged (FR-013).  Two passes, so an entry moving ONTO a square being vacated is not overwritten.
      */
     private static <K extends SquareKeyed<K>, T> void moveKeys(Map<K, T> map,
         Map<TileKey, TileKey> moves)
@@ -2746,8 +2729,8 @@ public class AutonomyCompanionStore
         private final List<String> declinedBecauseAbsent = new ArrayList<>();
 
         /**
-         * A reconciliation that did not happen, and the pages that stopped it: a refusal to tidy is the one moment
-         * somebody could put the missing page back before its id is retired.
+         * A reconciliation that did not happen, with the pages that stopped it, so the missing page can be put back
+         * before its id is retired.
          *
          * @param absent the pages the setup knows about that are not loaded; empty when a suspect numbering refused
          */
@@ -2761,8 +2744,8 @@ public class AutonomyCompanionStore
         }
 
         /**
-         * Pages that were not loaded when a save declined to reconcile; empty when nothing was declined, or when the
-         * refusal was a suspect numbering rather than a missing page.
+         * Pages not loaded when a save declined to reconcile; empty when nothing was declined or a suspect numbering
+         * refused.
          */
         public List<String> getDeclinedBecauseAbsent()
         {
@@ -2788,8 +2771,8 @@ public class AutonomyCompanionStore
         }
 
         /**
-         * Names whose tile is gone but which are still referenced (by a timetable, a home or a placement), name to what
-         * refers to it.  Kept AND named for a person to resolve: dropping one would break its referrer unexplained.
+         * Names whose tile is gone but still referenced (timetable, home, placement), name to referrers; kept for a
+         * person to resolve.
          */
         public Map<String, List<String>> getNamesStillReferenced()
         {
@@ -2804,9 +2787,8 @@ public class AutonomyCompanionStore
     }
 
     /**
-     * Brings the setup back into line with a diagram that has changed underneath it.  A length or a direction belongs
-     * to a tile and goes with it, but a NAME is referred to from timetables, homes and placements, so it is kept only
-     * if something still refers to it.  Either way it is reported.
+     * Brings the setup into line with a changed diagram: lengths and directions go with their tile; a NAME is kept only
+     * if something refers to it.  All is reported.
      */
     public Reconciliation reconcile(Set<TileKey> existing)
     {
@@ -2819,28 +2801,26 @@ public class AutonomyCompanionStore
         report.droppedTileProperties.addAll(asStrings(dropMissing(tileLengths, keys)));
         report.droppedTileProperties.addAll(asStrings(dropMissing(tileDirections, keys)));
         report.droppedTileProperties.addAll(asStrings(dropMissing(barredArrivals, keys)));
-        // dropMissing tests the KEY, the station's square; the VALUES are squares too.  forgetSquares covers a signal
-        // that is BUILT OVER, but a plain deletion would leave the pairing in the file to be INHERITED by whatever is
-        // drawn there next, and autonomy would throw an accessory nobody paired.
+        // dropMissing tests the KEY; the VALUES are squares too, or a plain deletion leaves a pairing for whatever is
+        // drawn there next to INHERIT.
         report.droppedTileProperties.addAll(asStrings(dropMissing(stationSignals, keys)));
         report.droppedTileProperties.addAll(asStrings(dropMissing(blockedPoints, keys)));
         report.droppedTileProperties.addAll(asStrings(dropMissing(entrySignals, keys)));
 
-        // THE ENTRY GUARD'S SIGNAL SQUARES TOO (FR-096), on the protecting list's rule: a pairing to a gone square
-        // would be inherited by whatever is drawn there next, and this list commands real hardware as well.
+        // THE ENTRY GUARD'S SIGNAL SQUARES TOO (FR-096), on the same rule; this list commands real hardware.
         dropPointers(entrySignals, signal -> !keys.contains(signal),
             signal -> report.droppedTileProperties.add("entry guard signal at " + signal));
 
         dropPointers(stationSignals, signal -> !keys.contains(signal),
             signal -> report.droppedTileProperties.add("protecting signal at " + signal));
 
-        // And the squares a station is held back by, for the same reason: a restriction watching a square that no
-        // longer exists cannot be satisfied and would be INHERITED by whatever is drawn there next.
+        // And the squares a station is held back by: a restriction on a gone square cannot be satisfied and would be
+        // INHERITED.
         dropPointers(blockedPoints, blocker -> !keys.contains(blocker),
             blocker -> report.droppedTileProperties.add("restriction watching " + blocker));
 
-        // linkNames and disabledPortals, both remembered BY SQUARE: a name and a switched-off flag for gone track would
-        // be INHERITED by the next link drawn there.  Reported, so a lost link name is visible.
+        // linkNames and disabledPortals, remembered BY SQUARE, would be INHERITED by the next link drawn there;
+        // reported.
         report.droppedTileProperties.addAll(asStrings(dropMissing(linkNames, keys)));
 
         for (TileKey key : dropMissingMembers(disabledPortals, keys))
@@ -2858,8 +2838,8 @@ public class AutonomyCompanionStore
             if (!keys.contains(key)) goneTiles.add(key);
         }
 
-        // Squares, not their printed form (FR-013): `pointNames.get(aString)` and `stations.remove(aString)` compile,
-        // as Map.get and Set.remove take Object, and do nothing.  The report is printed where it is written.
+        // Squares, not their printed form (FR-013): `pointNames.get(aString)` compiles (it takes Object) and does
+        // nothing.
         for (TileKey key : goneTiles)
         {
             String name = pointNames.get(key);
@@ -2878,10 +2858,9 @@ public class AutonomyCompanionStore
             }
         }
 
-        // A station that was never NAMED is not covered by the loop above (it walks names whose square has gone).  An
-        // unnamed station is an ordinary state (setStation asks for no name); left behind, a sensor drawn there later
-        // is silently a station again and checkNames raises a blocking UNNAMED_STATION about a square nobody can see.
-        // Only the unnamed ones: a named station is kept above when a configuration still refers to it.
+        // A station never NAMED is not covered by the loop above (it walks names).  Left behind, a sensor drawn there
+        // later is silently a station and checkNames raises a blocking UNNAMED_STATION.  Only unnamed ones: a named
+        // station is kept above while referenced.
         List<TileKey> orphanStations = new ArrayList<>();
 
         for (TileKey key : stations)
@@ -2917,8 +2896,8 @@ public class AutonomyCompanionStore
     }
 
     /**
-     * Everything in the configurations that names this Point.  Deliberately textual: a configuration is stored as it
-     * was written, and parsing each shape would mean knowing the schema of things this class only stores.
+     * Everything in the configurations that names this Point; deliberately textual, as this class does not know those
+     * schemas.
      */
     private List<String> whatReferences(String pointName)
     {
