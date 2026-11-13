@@ -317,6 +317,9 @@ public class testATrainDragsFromStationToStation
 
         editor = openEditor();
 
+        // A new editor reads the remembered Show Trains, and a train not drawn cannot be pressed to drag
+        showTheTrains();
+
         int compared = 0;
         int tailed = 0;
 
