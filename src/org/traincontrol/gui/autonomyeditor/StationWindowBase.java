@@ -453,12 +453,18 @@ abstract class StationWindowBase extends JDialog
         commitFields();
 
         if (!refusesAValue()) goAway();
+        else showTheRefusal();
     }
 
     /** Whether a typed value is refused, its reason showing; the base types nothing. */
     boolean refusesAValue()
     {
         return false;
+    }
+
+    /** Brings the refused value's reason into view; the base has none. */
+    void showTheRefusal()
+    {
     }
 
     /** Closed because its surface or square has gone. */

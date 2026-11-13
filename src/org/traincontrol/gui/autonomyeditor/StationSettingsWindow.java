@@ -982,6 +982,13 @@ public final class StationSettingsWindow extends StationWindowBase
         return false;
     }
 
+    /** Every typed field is on the Settings tab. */
+    @Override
+    void showTheRefusal()
+    {
+        showTab(false);
+    }
+
     private void commitTypedFields()
     {
         if (tile == null) return;
