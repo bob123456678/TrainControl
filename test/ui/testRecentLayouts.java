@@ -190,10 +190,18 @@ public class testRecentLayouts
 
         record(a);
 
-        shown();
+        assertEquals(shown(), new ArrayList<String>(), "Recent Layouts lists the open layout");
 
-        assertFalse(Components.onTheEventThread(recentMenu()::isEnabled), "Recent Layouts is not grayed with nothing to"
+        // Live, with one gray line saying why there is nothing to open (D46 of the menu review).
+        assertTrue(Components.onTheEventThread(recentMenu()::isEnabled), "Recent Layouts is grayed with nothing to"
             + " list");
+
+        JMenuItem first = Components.onTheEventThread(() -> recentMenu().getItem(0));
+
+        assertEquals(first.getText(), I18n.t("ui.main.toolbar.noOtherLayouts"), "Recent Layouts does not say it has"
+            + " no other layout");
+
+        assertFalse(first.isEnabled(), "the line saying there is no other layout can be chosen");
     }
 
     /**
@@ -357,8 +365,8 @@ public class testRecentLayouts
     }
 
     /**
-     * While a route runs Recent Layouts is grayed with the run's reason, and a recent layout refuses as Open Layout
-     * does.
+     * While a route runs each listed layout is grayed with the run's reason, the folder under them staying live, and a
+     * recent layout refuses as Open Layout does.
      *
      * MUTATION: take `refuseWhileARunHoldsTheSetup` out of `openRecentLayout`.
      */
@@ -379,14 +387,28 @@ public class testRecentLayouts
 
         try
         {
-            assertTrue(model.getRoute(PROBE).setExecuting(), "precondition: the probe route would not run");
-
             assertEquals(shown(), Collections.singletonList(b), "precondition: Recent Layouts does not list B");
 
-            assertFalse(Components.onTheEventThread(recentMenu()::isEnabled), "Recent Layouts is not grayed while a"
-                + " route runs");
+            assertTrue(model.getRoute(PROBE).setExecuting(), "precondition: the probe route would not run");
 
-            List<String> said = click(b);
+            // The run's reason replaces the tip that names the folder, so B is the one item listed.
+            assertEquals(listed(item -> item.isEnabled() + " " + item.getToolTipText().replaceAll("<[^>]*>", " ")
+                .replaceAll("\\s+", " ").trim()), Collections.singletonList("false " + I18n.t("ui.main.errorNoEditsWhileRunning")),
+                "a recent layout is not grayed with the run's reason while a route runs");
+
+            JMenuItem folder = Components.onTheEventThread(() ->
+                recentMenu().getItem(recentMenu().getItemCount() - 1));
+
+            assertEquals(folder.getText(), I18n.t("ui.main.toolbar.showCurrentLayoutFolder"));
+
+            assertTrue(folder.isEnabled(), "Show Current Layout Folder is grayed while a route runs");
+
+            // The click's own refusal is the backstop behind the gray.
+            JMenuItem waiting = Components.onTheEventThread(() -> recentMenu().getItem(0));
+
+            Components.onTheEventThread(() -> { waiting.setEnabled(true); return null; });
+
+            List<String> said = click(waiting);
 
             assertEquals(said, Collections.singletonList(I18n.t("ui.main.errorNoEditsWhileRunning")), "a recent layout"
                 + " did not refuse, before anything else, while a route runs");
@@ -439,7 +461,7 @@ public class testRecentLayouts
 
             List<String> read = new ArrayList<>();
 
-            for (int i = 0; i < recentMenu().getItemCount(); i++) read.add(reading.apply(recentMenu().getItem(i)));
+            for (JMenuItem item : layoutItems()) read.add(reading.apply(item));
 
             return read;
         });
@@ -450,9 +472,9 @@ public class testRecentLayouts
     {
         JMenuItem item = Components.onTheEventThread(() ->
         {
-            for (int i = 0; i < recentMenu().getItemCount(); i++)
+            for (JMenuItem each : layoutItems())
             {
-                if (folder.equals(pathOf(recentMenu().getItem(i)))) return recentMenu().getItem(i);
+                if (folder.equals(pathOf(each))) return each;
             }
 
             return null;
@@ -463,10 +485,30 @@ public class testRecentLayouts
         return item;
     }
 
+    /** The items that each open a listed layout, numbered; not the line for none, nor the folder under them. */
+    private static List<JMenuItem> layoutItems()
+    {
+        List<JMenuItem> items = new ArrayList<>();
+
+        for (int i = 0; i < recentMenu().getItemCount(); i++)
+        {
+            JMenuItem item = recentMenu().getItem(i);
+
+            if (item != null && item.getText().matches("\\d+\\. .*")) items.add(item);
+        }
+
+        return items;
+    }
+
     /** Clicks the listed folder, and gives back what was asked. */
     private static List<String> click(String folder) throws Exception
     {
-        JMenuItem item = listedItem(folder);
+        return click(listedItem(folder));
+    }
+
+    /** Clicks the item, and gives back what was asked. */
+    private static List<String> click(JMenuItem item) throws Exception
+    {
 
         try (Answering answering = Answering.start(message -> Answering.pressAt(0)))
         {

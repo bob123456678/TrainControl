@@ -213,7 +213,8 @@ public class testRightClickMenuTipsCanBeHidden
 
         String text = tip.replaceAll("<[^>]*>", "").trim();
 
-        if (text.equals(I18n.t("layout.ui.tooltipFindAPoint"))) return "Control+F";
+        // Its own shortcut, shown on the item (D40 of the menu review), as RightClickTips writes an accelerator.
+        if (text.equals(I18n.t("layout.ui.tooltipFindAPoint"))) return "Ctrl+F";
 
         if (text.equals(I18n.t("layout.ui.tooltipDeselect"))) return "Escape";
 
@@ -776,9 +777,9 @@ public class testRightClickMenuTipsCanBeHidden
     }
 
     /**
-     * Ticked, an item whose tip names its key inside a sentence shows that key, hovered through its window: the
-     * autonomy editor's Find a Point... ("Shortcut: Control+F") on its Tools menu, and the track editor's Deselect All
-     * ("Escape lets go") with squares picked.
+     * Ticked, an item whose tip names its key inside a sentence shows that key, hovered through its window: the track
+     * editor's Deselect All ("Escape lets go") with squares picked; and the autonomy editor's Find a Point..., whose key
+     * is on the item now, shows that.
      *
      * MUTATION: find a key only as the whole tip or bracketed at its end (both show nothing).
      */
@@ -799,7 +800,7 @@ public class testRightClickMenuTipsCanBeHidden
 
             Map<String, String> shown = hoveredBar(Components.onTheEventThread(() -> autonomy.getJMenuBar().getMenu(0)));
 
-            assertEquals(shown.get(I18n.t("layout.ui.menuFindAPoint")), "Control+F",
+            assertEquals(shown.get(I18n.t("layout.ui.menuFindAPoint")), "Ctrl+F",
                 "Find a Point... does not show its key: " + shown);
 
             Component square = Components.find(openedEditor(Boolean.FALSE), LayoutLabel.class, Component::isShowing);

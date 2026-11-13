@@ -147,7 +147,8 @@ public class testSwitchingToACentralStationLayout
 
         // The answer is fresh when the menu opens because the menu asks `applyLayoutEditingAvailability`, the one owner
         // of that property, rather than guardLayoutMenu writing it too; that is asserted below.
-        for (String item : new String[] { "popUpAllMenuItem()" })
+        // Pop Up All was the other: it is the Layout tab's All button now (D52), on a tab grayed with no layout.
+        for (String item : new String[] { "exportDiagramItem" })
         {
             assertTrue(body.contains(item + ".setEnabled("),
                 "guardLayoutMenu no longer decides whether " + item + " is available, so it stays "
@@ -355,9 +356,8 @@ public class testSwitchingToACentralStationLayout
             + "not refreshed where the truth moves is staler than the inference it replaced");
 
         // And each of those properties has a single writer, by the field or through the window's accessor.
-        assertEquals(SourceOf.occurrences("popUpAllMenuItem.setEnabled(")
-            + SourceOf.occurrences("popUpAllMenuItem().setEnabled("), 1,
-            "All Layouts is set from more than one place again. repaintPathLabel used to set it TRUE "
+        assertEquals(SourceOf.occurrences("exportDiagramItem.setEnabled("), 1,
+            "The picture export is set from more than one place, as All Layouts once was: repaintPathLabel set it TRUE "
             + "unconditionally for a local layout and re-enable it moments after the menu guard had "
             + "greyed it - the same two-writers fault a reviewer already fixed for Manage Pages");
     }
