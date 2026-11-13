@@ -284,6 +284,8 @@ public class testARouteDrivenLocomotiveIsNotEdited
 
             if (model != null)
             {
+                support.RouteMonitor.endTheRunningPauses();
+
                 long giveUp = System.currentTimeMillis() + 30000;
 
                 while (model.getRoute(ROUTE) != null && model.getRoute(ROUTE).isExecuting()
@@ -395,6 +397,8 @@ public class testARouteDrivenLocomotiveIsNotEdited
         {
             if (model != null)
             {
+                support.RouteMonitor.endTheRunningPauses();
+
                 long giveUp = System.currentTimeMillis() + 30000;
 
                 while (model.getRoute(SYNCED_ROUTE) != null && model.getRoute(SYNCED_ROUTE).isExecuting()

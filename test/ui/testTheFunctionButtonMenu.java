@@ -177,7 +177,7 @@ public class testTheFunctionButtonMenu
     @Test
     public void testARightClickOpensTheFunctionsTabOnThatFunction() throws Exception
     {
-        assertNull(rightClick(button(F)), "a right click on F" + F + " opened a menu: the old menu is meant to be gone");
+        assertNull(rightClick(button(F), 1500), "a right click on F" + F + " opened a menu: the old menu is meant to be gone");
 
         assertNotNull(SettingsWindow.awaited(), "a right click on F" + F + " opened no window");
         assertEquals(SettingsWindow.tabShowing(), 1, "the window did not open on the Functions tab");
@@ -761,11 +761,15 @@ public class testTheFunctionButtonMenu
         }
     }
 
-    private static JPopupMenu rightClick(JToggleButton button)
+    /** A right click that is to open the Settings window: waits for the window, not for a menu. */
+    private static void rightClick(JToggleButton button)
     {
-        return rightClick(button, WAIT);
+        rightClick(button, 0);
+
+        Components.waitFor(() -> SettingsWindow.showing() != null, WAIT);
     }
 
+    /** A right click, and the menu it opened within `millis`, or null. */
     private static JPopupMenu rightClick(JToggleButton button, long millis)
     {
         Components.select(button);
