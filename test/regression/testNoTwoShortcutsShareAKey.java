@@ -67,11 +67,36 @@ public class testNoTwoShortcutsShareAKey
     /**
      * `evt.isControlDown() && evt.getKeyCode() == KeyEvent.VK_X`, and the same with `e.`: the Control half first, the
      * only order either file writes (the floor catches a spelling going unmatched).  Both names, because
-     * `formKeyPressed` calls its argument `evt` and `receiveKeyEvent` calls it `e`.
+     * `formKeyPressed` calls its argument `evt` and `receiveKeyEvent` calls it `e`.  Or `is(evt, CUT_KEY)`, a named key
+     * the editor's right-click menus show too (D40), in `LayoutEditor` or `AutonomyEditorPanel`: read as its letter.
      */
     private static final Pattern IN_THE_EDITOR = Pattern.compile(
         "\\be(?:vt)?\\.isControlDown\\(\\)\\s*&&\\s*e(?:vt)?\\.getKeyCode\\(\\)"
-        + "\\s*==\\s*KeyEvent\\.VK_([A-Z0-9_]+)");
+        + "\\s*==\\s*KeyEvent\\.VK_([A-Z0-9_]+)"
+        + "|\\bis\\(\\s*e(?:vt)?\\s*,\\s*((?:AutonomyEditorPanel\\.)?[A-Z_]+_KEY)\\s*\\)");
+
+    /** A named key's letter, as `VK_X` gives `X`; null for one without Control, which no claim here is about. */
+    private static String controlKeyOf(String constant) throws ReflectiveOperationException
+    {
+        Class<?> holder = constant.startsWith("AutonomyEditorPanel.")
+            ? org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel.class
+            : org.traincontrol.gui.layouteditor.LayoutEditor.class;
+
+        javax.swing.KeyStroke key = (javax.swing.KeyStroke) holder.getField(
+            constant.substring(constant.indexOf('.') + 1)).get(null);
+
+        if ((key.getModifiers() & InputEvent.CTRL_DOWN_MASK) == 0) return null;
+
+        for (Field each : KeyEvent.class.getFields())
+        {
+            if (each.getName().startsWith("VK_") && each.getInt(null) == key.getKeyCode())
+            {
+                return each.getName().substring(3);
+            }
+        }
+
+        throw new IllegalStateException(constant + " is no key KeyEvent names");
+    }
 
     /** `Held.CONTROL.on(KeyEvent.VK_X)` in the table, `controlPressed && keyCode == KeyEvent.VK_X` in the gesture. */
     private static final Pattern IN_THE_MAIN_WINDOW = Pattern.compile(
@@ -92,10 +117,10 @@ public class testNoTwoShortcutsShareAKey
 
     /**
      * How many Control shortcuts each file is known to bind: a floor rather than a count, so adding one is ordinary
-     * while a regex that stopped matching fails.  Measured (20 in the editor, 15 in the main window) and set a little
+     * while a regex that stopped matching fails.  Measured (22 in the editor, 15 in the main window) and set a little
      * below.
      */
-    private static final int EDITOR_FLOOR = 17;
+    private static final int EDITOR_FLOOR = 20;
 
     private static final int MAIN_FLOOR = 14;
 
@@ -231,7 +256,21 @@ public class testNoTwoShortcutsShareAKey
 
             Matcher found = how.matcher(SourceOf.withoutComments(text));
 
-            while (found.find()) out.add(found.group(1));
+            while (found.find())
+            {
+                String key;
+
+                try
+                {
+                    key = found.group(1) != null ? found.group(1) : controlKeyOf(found.group(2));
+                }
+                catch (ReflectiveOperationException e)
+                {
+                    throw new IllegalStateException("the editor names a key it does not have: " + found.group(2), e);
+                }
+
+                if (key != null) out.add(key);
+            }
         }
 
         return out;
