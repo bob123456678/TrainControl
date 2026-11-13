@@ -471,7 +471,7 @@ Tab icons provided by Freepik.
             - A page link keeps going to the same page when pages are renamed or moved.
         - Interface
             - `Layouts` > `Manage Pages...` is now `Edit/Add Pages...`, and the separate `Edit Layout Page` menu is gone.
-            - `Hide Menu Tips` on the `Preferences` menu hides the tooltips in menus, though an item still shows its shortcut key and a grayed item still says why.
+            - `Hide Hover Tooltips` on the `Preferences` menu hides the tooltips in menus, though an item still shows its shortcut key and a grayed item still says why.
             - The accessory keyboard has 16 tabs of 128 addresses, each key has a red half and a green half, and clicking either sends that color again even if it is already lit.
             - `Export Counts` on the accessory keyboard saves every accessory's number of actuations to a CSV file.
             - Click an (i) to read its explanation at once, without waiting for the tooltip.

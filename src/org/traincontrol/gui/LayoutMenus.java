@@ -457,7 +457,7 @@ final class LayoutMenus
         autonomyToolbarMenu.add(this.allowedDirectionsMenuItem);
     }
 
-    /** Preferences > Hide Menu Tips (FR-168); read when a menu opens, so it needs no refresh. */
+    /** Preferences > Hide Hover Tooltips (FR-168); read when a menu opens, so it needs no refresh. */
     void mountRightClickTipsMenu()
     {
         RightClickTips.install();

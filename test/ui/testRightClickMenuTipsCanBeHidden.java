@@ -31,7 +31,7 @@ import support.Mouse;
 import support.Reflect;
 
 /**
- * Preferences > Hide Menu Tips (FR-168): off, menus keep their tooltips; on, every enabled item of any menu, the menu
+ * Preferences > Hide Hover Tooltips (FR-168): off, menus keep their tooltips; on, every enabled item of any menu, the menu
  * bar's and left-click pop-ups included (D37 on MT-910), loses its tooltip but a hotkey's, which shows exactly the
  * hotkey; a closed menu's items have their own tips back; the choice is stored; tooltips outside menus are untouched.
  * The menus are opened by right-clicks on the loc buttons, the diagram in the main window and in a page window, and

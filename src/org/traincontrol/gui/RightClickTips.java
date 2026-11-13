@@ -10,7 +10,7 @@ import javax.swing.MenuElement;
 import javax.swing.MenuSelectionManager;
 
 /**
- * The "Hide Menu Tips" setting (FR-168): when on, every enabled item of an open menu, the menu bar's and pop-ups alike,
+ * The "Hide Hover Tooltips" setting (FR-168): when on, every enabled item of an open menu, the menu bar's and pop-ups alike,
  * shows no tooltip but its hotkey; a grayed item keeps the tip that says why.  The tips are taken off only while their
  * menu is open and put back as it closes, so code that saves and restores a tooltip never keeps a hidden one.
  */
