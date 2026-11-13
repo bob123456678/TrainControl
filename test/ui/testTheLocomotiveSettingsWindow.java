@@ -873,9 +873,9 @@ public class testTheLocomotiveSettingsWindow
 
     /**
      * Tab and Shift+Tab leave the link for the next and the previous control, as they do everywhere else in the window
-     * (a text pane keeps Tab for itself unless told otherwise).
+     * (an editable text pane keeps Tab for itself).
      *
-     * MUTATION: take the two `setFocusTraversalKeys` calls out of `partOfNote`, and this fails.
+     * MUTATION: take `setEditable(false)` out of `partOfNote`, and this fails.
      */
     @Test
     public void testTabLeavesTheLink() throws Exception
@@ -899,8 +899,7 @@ public class testTheLocomotiveSettingsWindow
      * The link is the whole of the name and no more: the right half of its last letter and the left half of its first
      * are on it, the space on either side is not.
      *
-     * MUTATION: test the point with `viewToModel` alone in `partOfNote`, which rounds to the nearest letter edge, and
-     * this fails.
+     * MUTATION: let the hit test in `partOfNote` take one more letter (`pos <= from + name.length()`), and this fails.
      */
     @Test
     public void testTheLinkIsExactlyTheName() throws Exception
