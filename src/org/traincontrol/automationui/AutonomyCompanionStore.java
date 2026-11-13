@@ -650,10 +650,7 @@ public class AutonomyCompanionStore
         }
     }
 
-    /**
-     * Writes the setup and every configuration through Util.writeAtomically: a half-written file would read as a
-     * layout nobody had set up.
-     */
+    /** Writes the setup and every configuration through Util.writeAtomically, so no half-written file is left. */
     public void save() throws IOException
     {
         if (!isUsable()) throw new IOException(ERROR_NOT_LOCAL);
@@ -684,8 +681,7 @@ public class AutonomyCompanionStore
     }
 
     /**
-     * Every square that has been given a name, in the order they were named, for pickers of POINTS: an unnamed
-     * square cannot be recognized in a list.
+     * Every named square, in naming order, for pickers of POINTS (an unnamed square cannot be recognized in a list).
      */
     public List<TileKey> getNamedTiles()
     {
@@ -701,10 +697,7 @@ public class AutonomyCompanionStore
         return out;
     }
 
-    /**
-     * Every square that has been given a name, printed.  Kept in the PRINTED form (FR-013): callers key their own maps
-     * by these strings, and converting would ripple into callers that have no reason to change.
-     */
+    /** Every named square, in the PRINTED form (FR-013): callers key their own maps by these strings. */
     public Map<String, String> getPointNames()
     {
         Map<String, String> out = new LinkedHashMap<>();
@@ -746,10 +739,7 @@ public class AutonomyCompanionStore
         }
     }
 
-    /**
-     * Whether this layout records any track length at all.  Asked of what was RECORDED, not of the graph's points: a
-     * length belongs to a square and most squares carry no point.
-     */
+    /** Whether this layout records any track length; asked of what was RECORDED, as most squares carry no point. */
     public boolean measuresAnyTrack()
     {
         for (Integer length : tileLengths.values())
@@ -792,9 +782,8 @@ public class AutonomyCompanionStore
     }
 
     /**
-     * Records that a square's length was answered 0 on purpose (OB-274), for adjacent tracks.  Unlike `setTileLength`
-     * the 0 is KEPT: `isTileLengthAnswered` tells it from "never answered", and the reducer reads it as measured
-     * track of no length (`Edge.isMeasured`, OB-300).
+     * Records that a square's length was answered 0 on purpose (OB-274): unlike `setTileLength` the 0 is KEPT, and the
+     * reducer reads it as measured track of no length (OB-300).
      */
     public void answerTileLengthZero(TileKey tile)
     {
@@ -813,10 +802,7 @@ public class AutonomyCompanionStore
         return tile != null && tileLengths.containsKey(tile);
     }
 
-    /**
-     * Lengths of 0 are not stored: 0 is what an unassigned tile means, so writing 0 here CLEARS a square, a deliberate
-     * 0 included.  The one way a 0 is kept is `answerTileLengthZero` (OB-274).
-     */
+    /** 0 means unassigned and is not stored: writing 0 CLEARS a square; `answerTileLengthZero` keeps one (OB-274). */
     public void setTileLength(TileKey tile, int length)
     {
         if (length <= 0)
@@ -851,10 +837,7 @@ public class AutonomyCompanionStore
         }
     }
 
-    /**
-     * Records a direction.  Null clears it, returning the route to the graph's default, which is not always BOTH, so a
-     * default is never written as if it were a choice.
-     */
+    /** Records a direction; null clears it back to the graph's default (not always BOTH), which is never written. */
     public void setTileDirection(TileKey tile, RouteId routeId, Direction direction)
     {
         if (direction == null)
@@ -893,17 +876,13 @@ public class AutonomyCompanionStore
 
         if (disabledPortals.contains(tile)) return true;
 
-        // The PARTNER too, as TileGraph.portalClosed asks: a setup with one end off and the other on would draw the far
-        // end as a live door over track no train can pass.
+        // The PARTNER too, as TileGraph.portalClosed asks: one end off, one on, would draw a live door over dead track.
         TileKey partner = getPortalPartner(tile);
 
         return partner != null && disabledPortals.contains(partner);
     }
 
-    /**
-     * Switches a link in or out of the railway, and its partner with it (OB-041): shut at one end only, a pair would
-     * be a route that exists one way.  Here because this is where the partner is known.
-     */
+    /** Switches a link and its partner in or out of the railway (OB-041); a pair shut at one end is a one-way route. */
     public void setPortalDisabled(TileKey tile, boolean disabled)
     {
         set(tile, disabled);
@@ -949,9 +928,8 @@ public class AutonomyCompanionStore
     }
 
     /**
-     * Repairs a setup that nothing has open, in place on disk, so a locomotive rename reaches the placement, home and
-     * exclusions (OB-062).  A bare store, not a session: a session would fabricate a setup.json on a layout never set
-     * up.
+     * Repairs a setup nothing has open, on disk, so a locomotive rename reaches the placement, home and exclusions
+     * (OB-062).  A bare store, not a session, which would fabricate a setup.json.
      *
      * @param to the new name, or null when the locomotive is being deleted
      * @return true when a setup was found and rewritten, false when there was nothing to repair
@@ -1004,8 +982,7 @@ public class AutonomyCompanionStore
 
         store.load();
 
-        // Give it back the numbering the FILE was written under: nobody calls setPageIds on a bare store, and saving
-        // would replace the file's record of what each id was called with {}, disarming the renumber detection.
+        // Restore the numbering the FILE was written under, or saving replaces its id-to-name record with {}.
         Map<String, String> nameToId = new LinkedHashMap<>();
 
         for (Map.Entry<String, String> page : store.pageNamesWhenWritten.entrySet())
@@ -1015,8 +992,7 @@ public class AutonomyCompanionStore
 
         store.setPageIds(nameToId);
 
-        // Read AGAIN, now that the pages have names: the first read had no numbering and returned id-form keys, which
-        // renamePage and deletePage (working on NAMES) would silently ignore.
+        // Read AGAIN now that pages have names: the first read returned id-form keys that name-based edits ignore.
         store.load();
 
         what.apply(store);
@@ -1027,9 +1003,8 @@ public class AutonomyCompanionStore
     }
 
     /**
-     * Follows a locomotive's new name into every configuration, inactive ones included (captureFromLayout launders
-     * only the active one).  The placement, the home assignment and the exclusion list hold it by NAME, and a stale
-     * name invalidates the whole layout in parseAuto.
+     * Follows a locomotive's new name into every configuration, inactive ones too; a stale name voids the layout in
+     * parseAuto.
      */
     public void locomotiveRenamed(String from, String to)
     {
@@ -1039,8 +1014,7 @@ public class AutonomyCompanionStore
     }
 
     /**
-     * Takes a deleted locomotive out of every configuration: the placement and the home go and the exclusion is
-     * dropped, since any of them would name a locomotive that resolves to nothing.
+     * Takes a deleted locomotive out of every configuration (placement, home, exclusion), as each would name nothing.
      */
     public void locomotiveDeleted(String name)
     {
@@ -1058,8 +1032,8 @@ public class AutonomyCompanionStore
     }
 
     /**
-     * Whether the last rename or deletion failed to reach the pre-edit note: not fatal, but the revert on the next
-     * start would put back a name the database no longer has.  Recorded rather than logged: this class has no logger.
+     * Whether the last rename or deletion missed the pre-edit note, so a later revert would restore a stale name; no
+     * logger here.
      */
     private boolean noteRepairFailed;
 
@@ -1067,10 +1041,7 @@ public class AutonomyCompanionStore
     {
         return noteRepairFailed;
     }
-    /**
-     * Follows a locomotive's new name into `config/autonomy/setup-before-edit.json`, which outlives the editor window:
-     * after a rename and a crash, `revertUnfinishedEdit` would write the old name back.  An unreadable note is left.
-     */
+    /** Follows a locomotive's new name into `config/autonomy/setup-before-edit.json`, so a crash revert keeps it. */
     private void repairTheUnfinishedEditNote(String from, String to)
     {
         if (from == null || from.equals(to)) return;
@@ -1078,10 +1049,7 @@ public class AutonomyCompanionStore
         rewriteTheUnfinishedEditNote(note -> { repairLocomotiveInSetup(note, from, to); return true; });
     }
 
-    /**
-     * Puts a value saved for a locomotive over its stored copies in the pre-edit note, as `updateRecordInSetup` does:
-     * a preset saved with the editor open is the train's, so the revert after a crash keeps it.
-     */
+    /** Puts a value saved for a locomotive over its copies in the pre-edit note, so a revert after a crash keeps it. */
     public void updateRecordInTheUnfinishedEditNote(String locomotive, String key, Object value)
     {
         rewriteTheUnfinishedEditNote(note -> updateRecordInSetup(note, locomotive, key, value));
@@ -1096,9 +1064,8 @@ public class AutonomyCompanionStore
 
         if (note == null || !change.test(note)) return;
 
-        // In place, not through rememberBeforeEdit: its atomic Files.move(REPLACE_EXISTING) needs DELETE access, which
-        // a OneDrive lock withholds, and it swallows the failure.  Serialized BEFORE the stream is opened, since
-        // `new FileOutputStream` truncates and `toString(2)` can throw, which would leave a zero-byte note.
+        // In place, not through rememberBeforeEdit (its atomic move needs DELETE access, which a OneDrive lock
+        // withholds); serialized BEFORE opening the stream, which truncates.
         byte[] bytes;
 
         try
@@ -1126,10 +1093,10 @@ public class AutonomyCompanionStore
     }
 
     /**
-     * The same repair over the diagram editor's snapshot (what Cancel puts back), in the shape snapshotSetup returns;
-     * public and static because the holder is in another package.
+     * The same repair over the editor's Cancel snapshot (snapshotSetup's shape); public and static because the holder
+     * is in another package.
      *
-     * @param setup what snapshotSetup returned; changed in place
+     * @param setup changed in place
      */
     public static void repairLocomotiveInSetup(JSONObject setup, String from, String to)
     {
@@ -1148,10 +1115,7 @@ public class AutonomyCompanionStore
     }
 
     /**
-     * `AutonomySession.updateStoredRecord`'s write over a snapshot in snapshotSetup's shape (the editor's Cancel
-     * snapshot, the pre-edit note), changed in place.
-     *
-     * @return true when a record was changed
+     * `AutonomySession.updateStoredRecord`'s write over a snapshot in snapshotSetup's shape, in place; true if changed.
      */
     public static boolean updateRecordInSetup(JSONObject setup, String locomotive, String key, Object value)
     {
@@ -1189,10 +1153,8 @@ public class AutonomyCompanionStore
     }
 
     /**
-     * Puts `value` under `key` in each standing-train record of `points` that names `locomotive` and already stores
-     * that key with another value; null removes the key.
-     *
-     * @return true when a record was changed
+     * Puts `value` under `key` in each standing-train record of `points` naming `locomotive` that already stores that
+     * key; null removes it.
      */
     public static boolean updateRecordInPoints(JSONObject points, String locomotive, String key, Object value)
     {
@@ -1237,8 +1199,8 @@ public class AutonomyCompanionStore
     }
 
     /**
-     * The fifth holder of a locomotive's name: the paused trains in "globals" (FR-117).  A rename carries across it, a
-     * deletion takes the train off.  Written back sorted, and not at all once empty, as the railway writes it.
+     * The fifth holder of a locomotive's name: paused trains in "globals" (FR-117); rename carries across, delete
+     * removes.
      */
     private static void repairLocomotiveInPausedTrains(JSONObject configuration, String from, String to)
     {
@@ -1246,8 +1208,7 @@ public class AutonomyCompanionStore
     }
 
     /**
-     * The same for any settings that hold the list: a configuration's "globals", or the window's record of the settings
-     * its railway was built with (OB-343).  Modified in place; null is allowed.
+     * The same for any settings holding the list: a configuration's "globals" or the window's record of them (OB-343).
      */
     public static void repairLocomotiveInPausedList(JSONObject globals, String from, String to)
     {
@@ -1281,9 +1242,8 @@ public class AutonomyCompanionStore
     }
 
     /**
-     * The fourth holder of a locomotive's name: the captured timetable in "globals".  A rename is carried across every
-     * entry (OB-069), a delete removes the entry.  Entries also name POINTS, which a station rename breaks the same
-     * way; that half is not repaired here (the loader drops the one entry, not the list).
+     * The fourth holder: the captured timetable in "globals".  A rename is carried across every entry (OB-069), a
+     * delete removes it; POINT names in entries are not repaired here.
      */
     private static void repairLocomotiveInTimetable(JSONObject configuration, String from, String to)
     {
@@ -1319,8 +1279,8 @@ public class AutonomyCompanionStore
     }
 
     /**
-     * Follows a rename into one page snapshot (what snapshotPage returns and the editor's undo holds): the holder that
-     * reaches DISK, since Ctrl+Z puts a snapshot back and saves.
+     * Follows a rename into one page snapshot (the editor's undo holds it): the holder that reaches DISK, as Ctrl+Z
+     * saves.
      */
     @SuppressWarnings("unchecked")
     public static void repairLocomotiveInPageSnapshot(Map<String, Object> snapshot, String from,
@@ -1448,8 +1408,8 @@ public class AutonomyCompanionStore
     }
 
     /**
-     * Everything this setup holds that is not one configuration: the decisions about the TRACK.  Named apart from
-     * save() because exporting needs exactly this set too.
+     * Everything this setup holds that is not one configuration: the decisions about the TRACK; exporting needs the
+     * same set.
      */
     private JSONObject sharedFields()
     {
@@ -1462,8 +1422,8 @@ public class AutonomyCompanionStore
 
         for (Map.Entry<String, String> entry : pageIdToName.entrySet()) pages.put(entry.getKey(), entry.getValue());
 
-        // And what the file already knew about ids NOT in the index right now (heldForAbsentPages): one save during a
-        // page's absence would otherwise drop the record that tells a renumber from a rename.  Never over a live id.
+        // Also what the file knew about ids NOT in the index now, never over a live id, or a renumber looks like a
+        // rename.
         for (Map.Entry<String, String> entry : pageNamesWhenWritten.entrySet())
         {
             if (!pages.containsKey(entry.getKey())) pages.put(entry.getKey(), entry.getValue());
@@ -1471,12 +1431,10 @@ public class AutonomyCompanionStore
 
         root.put("pages", new JSONObject(pages));
 
-        // Each collection writes itself under its FILE name (`disabledPortals` goes out as `disabledLinks`), stated
-        // once in the registry, and keyed by page ID so a rename cannot orphan it.
+        // Each collection writes under its FILE name (stated once in the registry), keyed by page ID.
         for (Kept k : kept()) k.write(root);
 
-        // Whatever was held back because its page is not loaded goes back in exactly as it came (OB-067): one save while
-        // a page's file is missing would otherwise delete that page's whole setup.
+        // Held-back entries for unloaded pages go back as they came (OB-067), or one save deletes that page's setup.
         for (String field : HELD_FIELDS.keySet()) mergeHeld(root, field);
 
         // written back last, so a field this build does not model survives a round trip
@@ -1494,10 +1452,7 @@ public class AutonomyCompanionStore
     /** The key an exported file carries the track decisions under. */
     public static final String EXPORT_SHARED = "shared";
 
-    /**
-     * A configuration together with the track decisions it refers to, ready to be written to a file: a configuration
-     * alone would refer to squares the receiving setup had never heard of.  Null when there is no such configuration.
-     */
+    /** A configuration with the track decisions it refers to, ready to write to a file; null when there is none. */
     public JSONObject exportBundle(String name)
     {
         JSONObject configuration = configurations.get(name);
