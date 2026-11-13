@@ -53,9 +53,14 @@ public class testMockCentralStation
     /** A path suffix to serve rubbish for, leaving every other file intact: a real fault is ONE config file broken. */
     private static volatile String garbledPath;
 
+    /** The diagrams are read from a copy of the fixture, as from a user's own folder: the mock serves no pages. */
+    private static support.LayoutSandbox sandbox;
+
     @BeforeClass
     public static void setUpClass() throws Exception
     {
+        sandbox = support.LayoutSandbox.open();
+
         server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
 
         server.createContext("/", exchange -> serve(exchange));
@@ -72,6 +77,8 @@ public class testMockCentralStation
     public static void tearDownClass()
     {
         if (server != null) server.stop(0);
+
+        if (sandbox != null) sandbox.close();
     }
 
     /** Serves the fixture that matches the path, as a real station would. */

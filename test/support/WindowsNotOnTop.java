@@ -33,7 +33,7 @@ public class WindowsNotOnTop implements ISuiteListener
 
         if (run == null || run.trim().isEmpty()) return;
 
-        // a class literal, which does not start the window class; the node is copied from Adam's here if it is new
+        // a class literal, which does not start the window class
         java.util.prefs.Preferences node = Util.preferencesFor(TrainControlUI.class);
 
         node.putBoolean(ON_TOP_KEY, false);

@@ -122,48 +122,20 @@ public class Util
 
     /**
      * The preference node for a class's package: the user node, unless a test run named a node of its own in
-     * `traincontrol.preferences`.  That node starts as a copy of the real one, which is only ever read, and a run that
-     * cannot build it does not fall back to the real one.
+     * `traincontrol.preferences`.  That node starts empty, every setting at its default, so a run is the same on any
+     * machine and the user's settings never reach it; the real node is neither read nor written.
      *
      * @param owner a class in the package
      * @return the node
      */
     public static java.util.prefs.Preferences preferencesFor(Class<?> owner)
     {
-        java.util.prefs.Preferences real = java.util.prefs.Preferences.userNodeForPackage(owner);
-
         String run = System.getProperty(PREFERENCES_PROPERTY);
 
-        if (run == null || run.trim().isEmpty()) return real;
+        if (run == null || run.trim().isEmpty()) return java.util.prefs.Preferences.userNodeForPackage(owner);
 
-        String path = ISOLATED_PREFERENCES_ROOT + "/" + run.trim() + real.absolutePath();
-
-        try
-        {
-            java.util.prefs.Preferences root = java.util.prefs.Preferences.userRoot();
-
-            boolean fresh = !root.nodeExists(path);
-
-            java.util.prefs.Preferences isolated = root.node(path);
-
-            if (fresh)
-            {
-                for (String key : real.keys())
-                {
-                    String value = real.get(key, null);
-
-                    if (value != null) isolated.put(key, value);
-                }
-
-                isolated.flush();
-            }
-
-            return isolated;
-        }
-        catch (java.util.prefs.BackingStoreException | IllegalArgumentException | IllegalStateException cannot)
-        {
-            throw new IllegalStateException("could not build this run's own preference node " + path, cannot);
-        }
+        return java.util.prefs.Preferences.userRoot().node(ISOLATED_PREFERENCES_ROOT + "/" + run.trim() + "/"
+            + owner.getPackage().getName().replace('.', '/'));
     }
 
     /**
