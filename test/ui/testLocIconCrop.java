@@ -592,13 +592,16 @@ public class testLocIconCrop
     }
 
     /**
-     * The picture's tool is a wrench in its upper left that chooses the icon, and the pointer over it is the plain one
-     * (FR-104); with the power off the right-click still opens the same chooser.
+     * The picture's wrench, in its upper left, opens the locomotive's Locomotive Settings on Basic Settings and says so;
+     * the main window's picture offers no crop or revert, and the pointer over it is the plain one; a right-click on it
+     * chooses the icon like one on the picture (FR-104, OB-443).
      *
-     * MUTATION: leave the hand on the picture, or wire the wrench to nothing, and this fails.
+     * MUTATION: wire the wrench to the icon chooser again, open Locomotive Settings on either button in
+     * `buildIconWrench`, or put a crop or revert mark back on the picture, or leave the hand on the picture, and this
+     * fails.
      */
     @Test
-    public void testTheWrenchChoosesTheIconAndThePointerIsPlain() throws Exception
+    public void testTheWrenchOpensTheLocomotivesSettingsAndThePointerIsPlain() throws Exception
     {
         if (java.awt.GraphicsEnvironment.isHeadless()) throw new org.testng.SkipException("the window needs a display");
 
@@ -622,24 +625,21 @@ public class testLocIconCrop
                 + " regular\"");
 
             final javax.swing.JLabel wrench = field(ui, "iconWrench", javax.swing.JLabel.class);
-            final javax.swing.JLabel crop = field(ui, "cropOverlay", javax.swing.JLabel.class);
 
-            assertTrue(wrench.getToolTipText() != null && !wrench.getToolTipText().trim().isEmpty(), "the wrench says"
-                + " nothing about what it does");
+            assertEquals(wrench.getToolTipText(), org.traincontrol.util.I18n.t("loc.ui.tooltip.openSettingsFromPicture"),
+                "the wrench does not say that it opens the locomotive's settings");
 
-            // THE UPPER LEFT, with the crop mark in the upper right: both shown, as a hover shows them, and laid out
-            final java.awt.Point[] at = new java.awt.Point[2];
+            // THE UPPER LEFT, shown as a hover shows it, and laid out
+            final java.awt.Point[] at = new java.awt.Point[1];
 
             javax.swing.SwingUtilities.invokeAndWait(() ->
             {
                 wrench.setVisible(true);
-                crop.setVisible(true);
                 picture.setSize(296, 116);
                 picture.invalidate();
                 picture.validate();
 
                 at[0] = javax.swing.SwingUtilities.convertPoint(wrench, 0, 0, picture);
-                at[1] = javax.swing.SwingUtilities.convertPoint(crop, 0, 0, picture);
             });
 
             assertTrue(javax.swing.SwingUtilities.isDescendingFrom(wrench, picture), "the wrench is not on the picture");
@@ -647,11 +647,17 @@ public class testLocIconCrop
             assertTrue(at[0].x < picture.getWidth() / 4 && at[0].y < picture.getHeight() / 4, "the wrench is not in the"
                 + " picture's upper left - it is at " + at[0] + " (FR-104)");
 
-            assertTrue(at[0].x < at[1].x, "the wrench is not left of the crop mark: " + at[0] + " against " + at[1]);
+            // NO CROP OR REVERT ON THIS PICTURE: they are on the picture in Locomotive Settings (OB-443)
+            for (javax.swing.JLabel mark : Components.all(picture, javax.swing.JLabel.class, l -> l.getIcon() != null))
+            {
+                String drawn = mark.getIcon().getClass().getSimpleName();
 
-            // A LEFT CLICK ON IT OPENS THE ICON CHOOSER, for the locomotive on show
-            final org.traincontrol.marklin.MarklinLocomotive loc = new org.traincontrol.marklin.MarklinLocomotive(model,
-                84, org.traincontrol.marklin.MarklinLocomotive.decoderType.MM2, "FR-104 wrench");
+                assertFalse(drawn.contains("Crop") || drawn.contains("Revert"), "the main window's picture carries a "
+                    + drawn + " (OB-443)");
+            }
+
+            // A CLICK ON IT OPENS THE LOCOMOTIVE'S SETTINGS ON BASIC SETTINGS, not the icon chooser
+            final org.traincontrol.marklin.MarklinLocomotive loc = model.newDCCLocomotive("OB-443 wrench", 8443);
 
             Reflect.set(TrainControlUI.class, ui, "activeLoc", loc);
 
@@ -659,14 +665,39 @@ public class testLocIconCrop
                 java.awt.event.MouseEvent.MOUSE_RELEASED, System.currentTimeMillis(), java.awt.event.InputEvent.BUTTON1_MASK,
                 5, 5, 1, false, java.awt.event.MouseEvent.BUTTON1)));
 
+            assertTrue(Components.waitFor(() -> support.SettingsWindow.showing() != null, 10000),
+                "a click on the wrench opened no Locomotive Settings window (OB-443)");
+
+            assertNotNull(support.SettingsWindow.awaited());
+            assertEquals(support.SettingsWindow.text("settings.name"), loc.getName(), "the window is not the locomotive's");
+            assertEquals(support.SettingsWindow.tabShowing(), 0, "the window did not open on Basic Settings");
+            assertNull(awaitAChooser(500), "the wrench still opened the icon chooser");
+
+            // A RIGHT-CLICK ON IT IS A RIGHT-CLICK ON THE PICTURE: with the power off it chooses the icon, and opens no window
+            support.SettingsWindow.closeIfOpen();
+
+            Reflect.field(org.traincontrol.marklin.MarklinControlStation.class, "powerState").set(model, false);
+
+            ui.updatePowerState();
+
+            Components.drain(4);
+
+            javax.swing.SwingUtilities.invokeAndWait(() -> wrench.dispatchEvent(new java.awt.event.MouseEvent(wrench,
+                java.awt.event.MouseEvent.MOUSE_RELEASED, System.currentTimeMillis(), java.awt.event.InputEvent.BUTTON3_MASK,
+                5, 5, 1, false, java.awt.event.MouseEvent.BUTTON3)));
+
             final javax.swing.JFileChooser chooser = awaitAChooser(10000);
 
-            assertNotNull(chooser, "a left click on the wrench opened no icon chooser (FR-104)");
+            assertNotNull(chooser, "a right-click on the wrench did not open the icon chooser");
 
             javax.swing.SwingUtilities.invokeAndWait(chooser::cancelSelection);
+
+            assertNull(support.SettingsWindow.showing(), "a right-click on the wrench opened Locomotive Settings");
         }
         finally
         {
+            support.SettingsWindow.closeIfOpen();
+
             closeTheWindow(ui);
 
             if (model != null) model.stop();
@@ -864,15 +895,11 @@ public class testLocIconCrop
             // CROP UNTICKED, as the chooser opens
             prefs.putBoolean(TrainControlUI.CROP_LOC_ICON_PREF, false);
 
-            final javax.swing.JLabel wrench = field(ui, "iconWrench", javax.swing.JLabel.class);
-
             java.util.List<String> said;
 
             try (support.Answering answering = support.Answering.start(message -> null).choosing(unreadable))
             {
-                javax.swing.SwingUtilities.invokeAndWait(() -> wrench.dispatchEvent(new java.awt.event.MouseEvent(wrench,
-                    java.awt.event.MouseEvent.MOUSE_RELEASED, System.currentTimeMillis(),
-                    java.awt.event.InputEvent.BUTTON1_MASK, 5, 5, 1, false, java.awt.event.MouseEvent.BUTTON1)));
+                ui.setLocIcon(loc);
 
                 assertTrue(answering.awaitAsked(1, 10000), "an unreadable picture was taken without a word");
 
@@ -1302,123 +1329,7 @@ public class testLocIconCrop
     }
 
     /**
-     * Over a Central Station picture replaced or cropped, a revert stands beside the wrench and clears the icon of this
-     * computer's; the wrench stays and still chooses a new one, saving a click (MT-591). Over a locomotive with no
-     * Central Station picture there is nothing to go back to.
-     *
-     * MUTATION: put the revert in the wrench's place again, or wire it to the chooser, and this fails.
-     */
-    @Test
-    public void testARevertStandsBesideTheWrenchOverAReplacedStationPicture() throws Exception
-    {
-        if (java.awt.GraphicsEnvironment.isHeadless()) throw new org.testng.SkipException("the window needs a display");
-
-        support.LayoutSandbox sandbox = null;
-        org.traincontrol.marklin.MarklinControlStation model = null;
-        TrainControlUI ui = null;
-
-        try
-        {
-            // OPENED INSIDE THE TRY (OB-111)
-            sandbox = support.LayoutSandbox.open();
-
-            model = support.TestStation.simulated();
-
-            ui = windowOver(model);
-
-            Components.drain(4);
-
-            final javax.swing.JLabel wrench = field(ui, "iconWrench", javax.swing.JLabel.class);
-            final javax.swing.JLabel revert = field(ui, "iconRevert", javax.swing.JLabel.class);
-
-            java.lang.reflect.Field active = Reflect.field(TrainControlUI.class, "activeLoc");
-
-            java.lang.reflect.Method fit = Reflect.method(TrainControlUI.class, "fitTheIconTools");
-
-            java.lang.reflect.Method reverts =
-                Reflect.method(TrainControlUI.class, "revertsInstead", org.traincontrol.base.Locomotive.class);
-
-            final TrainControlUI window = ui;
-
-            // A LOCAL ICON AND NO STATION PICTURE: nothing to go back to
-            final org.traincontrol.marklin.MarklinLocomotive own = new org.traincontrol.marklin.MarklinLocomotive(model,
-                88, org.traincontrol.marklin.MarklinLocomotive.decoderType.MM2, "MT-591 own picture");
-
-            own.setLocalImageURL(new File("MT-591-own.png").toURI().toString());
-
-            assertFalse((Boolean) reverts.invoke(null, own), "a revert is offered over a locomotive with no Central"
-                + " Station picture to go back to");
-
-            // A STATION PICTURE, REPLACED: the revert beside the wrench
-            final org.traincontrol.marklin.MarklinLocomotive replaced = new org.traincontrol.marklin.MarklinLocomotive(model,
-                89, org.traincontrol.marklin.MarklinLocomotive.decoderType.MM2, "MT-591 station picture");
-
-            replaced.setImageURL("http://cs/MT-591.png");
-            replaced.setLocalImageURL(new File("MT-591-replaced.png").toURI().toString());
-
-            assertTrue((Boolean) reverts.invoke(null, replaced), "no revert is offered over a Central Station picture"
-                + " replaced by one of this computer's (MT-591)");
-
-            active.set(ui, replaced);
-
-            javax.swing.SwingUtilities.invokeAndWait(() -> invoke(fit, window));
-
-            assertEquals(wrench.getToolTipText(), org.traincontrol.util.I18n.t("loc.ui.menuSetLocalLocomotiveIcon"),
-                "the wrench is replaced by the revert - Adam: \"don't hide the wrench, since that will save a click\"");
-
-            assertTrue(wrench.getIcon() != null && wrench.getIcon().getClass().getSimpleName().contains("Wrench"),
-                "the wrench is not drawn as one beside the revert: " + wrench.getIcon());
-
-            assertEquals(revert.getToolTipText(), org.traincontrol.util.I18n.t("loc.ui.menuClearLocalLocomotiveIcon"),
-                "the revert does not say what it does (MT-591)");
-
-            assertTrue(revert.getIcon() != null && revert.getIcon().getClass().getSimpleName().contains("Revert"),
-                "the revert is not drawn as one: " + revert.getIcon());
-
-            // THE WRENCH, beside it, still chooses a new icon - the locomotive on show set again just before, as the
-            // window's own start-up may still be choosing one
-            active.set(ui, replaced);
-
-            javax.swing.SwingUtilities.invokeAndWait(() -> wrench.dispatchEvent(new java.awt.event.MouseEvent(wrench,
-                java.awt.event.MouseEvent.MOUSE_RELEASED, System.currentTimeMillis(), java.awt.event.InputEvent.BUTTON1_MASK,
-                5, 5, 1, false, java.awt.event.MouseEvent.BUTTON1)));
-
-            final javax.swing.JFileChooser chooser = awaitAChooser(10000);
-
-            assertNotNull(chooser, "the wrench beside the revert opened no icon chooser");
-
-            javax.swing.SwingUtilities.invokeAndWait(chooser::cancelSelection);
-
-            assertNotNull(replaced.getLocalImageURL(), "the wrench cleared the icon of this computer's");
-
-            // AND THE REVERT CLEARS THE ICON OF THIS COMPUTER'S, as Clear Local Locomotive Icon does
-            active.set(ui, replaced);
-
-            javax.swing.SwingUtilities.invokeAndWait(() -> revert.dispatchEvent(new java.awt.event.MouseEvent(revert,
-                java.awt.event.MouseEvent.MOUSE_RELEASED, System.currentTimeMillis(), java.awt.event.InputEvent.BUTTON1_MASK,
-                5, 5, 1, false, java.awt.event.MouseEvent.BUTTON1)));
-
-            Settle.until(() -> !(replaced.getLocalImageURL() != null), 10000);
-
-            assertNull(replaced.getLocalImageURL(), "a click on the revert did not clear the icon of this computer's"
-                + " (MT-591)");
-
-            assertEquals(replaced.getImageURL(), "http://cs/MT-591.png", "the Central Station's picture is not back");
-
-            assertNull(awaitAChooser(500), "the revert opened the icon chooser as the wrench does");
-        }
-        finally
-        {
-            closeTheWindow(ui);
-
-            if (model != null) model.stop();
-
-            if (sandbox != null) sandbox.close();
-        }
-    }
-
-    /**
-     * The icon chooser the wrench opens has a Clear Icon button that clears the locomotive's icon as Clear Local
+     * The icon chooser Locomotive Settings' wrench opens has a Clear Icon button that clears the locomotive's icon as Clear Local
      * Locomotive Icon does and closes the chooser, and it is disabled over a locomotive with no icon (FR-142).
      *
      * MUTATION: wire the button to nothing (or to `cancelSelection` alone), or leave it enabled over a locomotive with
@@ -1445,10 +1356,6 @@ public class testLocIconCrop
 
             Components.drain(4);
 
-            final javax.swing.JLabel wrench = field(ui, "iconWrench", javax.swing.JLabel.class);
-
-            java.lang.reflect.Field active = Reflect.field(TrainControlUI.class, "activeLoc");
-
             // A name of its own in the icon folder, which is the real one (see the first claim of this class)
             ours = org.traincontrol.util.Util.getLocIconFile("fr142_test_" + java.util.UUID.randomUUID() + ".png");
 
@@ -1464,15 +1371,11 @@ public class testLocIconCrop
 
             iconed.setLocalImageURL(ours.toPath().toUri().toString());
 
-            active.set(ui, iconed);
-
-            javax.swing.SwingUtilities.invokeAndWait(() -> wrench.dispatchEvent(new java.awt.event.MouseEvent(wrench,
-                java.awt.event.MouseEvent.MOUSE_RELEASED, System.currentTimeMillis(), java.awt.event.InputEvent.BUTTON1_MASK,
-                5, 5, 1, false, java.awt.event.MouseEvent.BUTTON1)));
+            ui.setLocIcon(iconed);
 
             javax.swing.JFileChooser chooser = awaitAChooser(10000);
 
-            assertNotNull(chooser, "the wrench opened no icon chooser");
+            assertNotNull(chooser, "Set Local Locomotive Icon opened no icon chooser");
 
             javax.swing.AbstractButton clear = support.Components.withText(chooser, label);
 
@@ -1500,15 +1403,11 @@ public class testLocIconCrop
             final org.traincontrol.marklin.MarklinLocomotive bare = new org.traincontrol.marklin.MarklinLocomotive(model,
                 86, org.traincontrol.marklin.MarklinLocomotive.decoderType.MM2, "FR-142 without an icon");
 
-            active.set(ui, bare);
-
-            javax.swing.SwingUtilities.invokeAndWait(() -> wrench.dispatchEvent(new java.awt.event.MouseEvent(wrench,
-                java.awt.event.MouseEvent.MOUSE_RELEASED, System.currentTimeMillis(), java.awt.event.InputEvent.BUTTON1_MASK,
-                5, 5, 1, false, java.awt.event.MouseEvent.BUTTON1)));
+            ui.setLocIcon(bare);
 
             chooser = awaitAChooser(10000);
 
-            assertNotNull(chooser, "the wrench opened no icon chooser over the locomotive with no icon");
+            assertNotNull(chooser, "Set Local Locomotive Icon opened no chooser over the locomotive with no icon");
 
             clear = support.Components.withText(chooser, label);
 

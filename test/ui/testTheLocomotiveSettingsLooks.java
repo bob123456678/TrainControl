@@ -1206,4 +1206,48 @@ public class testTheLocomotiveSettingsLooks extends support.SettingsClass
         assertTrue(white > 5, "the i is not white: " + white + " pixels");
         assertEquals(image.getRGB(0, 0) >>> 24, 0, "the corner is not clear");
     }
+
+    /** Where the text starts in a field, from the left edge of the box it sits in (the field itself, or its spinner). */
+    private static int textStart(javax.swing.text.JTextComponent field, java.awt.Component box)
+    {
+        return Components.onTheEventThread(() ->
+        {
+            field.setCaretPosition(0);
+
+            try
+            {
+                return javax.swing.SwingUtilities.convertPoint(field, field.modelToView(0).x, 0, box).x;
+            }
+            catch (javax.swing.text.BadLocationException e)
+            {
+                throw new IllegalStateException(e);
+            }
+        });
+    }
+
+    /**
+     * The Address number stands as far in from its field's left edge as the Name does (OB-442): the spinner's editor
+     * is a text field of its own, which once drew its number against the edge.
+     *
+     * MUTATION: take the left inset off the address field's border in `LocomotiveSettingsFrame.LocomotiveTab`, and
+     * this fails.
+     */
+    @Test
+    public void testTheAddressNumberHasTheNamesLeftInset() throws Exception
+    {
+        opened();
+
+        javax.swing.JTextField name = SettingsWindow.part("settings.name", javax.swing.JTextField.class);
+        javax.swing.JTextField address = SettingsWindow.part("settings.address", javax.swing.JTextField.class);
+        javax.swing.JSpinner spinner = SettingsWindow.part("settings.addressSpinner", javax.swing.JSpinner.class);
+
+        assertTrue(!address.getText().isEmpty(), "precondition: the address field is empty");
+
+        int nameStart = textStart(name, name);
+        int addressStart = textStart(address, spinner);
+
+        assertTrue(nameStart > 0, "precondition: the name's text starts at " + nameStart);
+        assertEquals(addressStart, nameStart, "the address number starts " + addressStart + " px in from its field's edge,"
+            + " the name " + nameStart + " px");
+    }
 }

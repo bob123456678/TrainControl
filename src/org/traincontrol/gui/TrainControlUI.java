@@ -5457,8 +5457,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         );
         this.KeyboardTab.setTitleAt(6, "");
         
-        // FR-032's hover crop mark, which needs locIcon to exist and so cannot be in the designer.
-        buildCropOverlay();
+        // The hover wrench (FR-104), which needs locIcon to exist and so cannot be in the designer.
+        buildIconWrench();
 
         // Remove the default action for the up/down arrow keys
         InputMap inputMap = this.KeyboardTab.getInputMap(JComponent.WHEN_FOCUSED);
@@ -6792,7 +6792,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             }
 
             // AND THE PICTURE'S TOOLS, which wait for the power off (MT-591)
-            showCropOverlay();
+            showIconWrench();
 
             // The route list's buttons are play or wrench by the power (FR-164)
             this.RouteList.repaint();
@@ -7765,7 +7765,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                                                 // getMousePosition takes the AWT tree lock and can throw
                                                 // HeadlessException, which would kill this pool task.
                                                 javax.swing.SwingUtilities.invokeLater(
-                                                    () -> showCropOverlay());
+                                                    () -> showIconWrench());
                                             }
                                         }
                                         catch (IOException e)
@@ -7920,9 +7920,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                         locIcon.setIcon(null);
                         locIcon.setText("");
 
-                        // The tools and the tooltip belong to the picture that was there; with no icon there is
-                        // nothing to re-crop (FR-032) or right-click.
-                        showCropOverlay();
+                        // The wrench and the tooltip belong to the picture that was there; with no icon there is
+                        // nothing to right-click.
+                        showIconWrench();
 
                         this.ActiveLocLabel.setText(
                             I18n.t("loc.ui.labelNoLocomotiveClickHere")
@@ -18889,99 +18889,38 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         return out;
     }
 
-    /**
-     * The hover crop mark over locIcon (FR-032); null until built. Not a form component, so declared outside the
-     * generated block.
-     */
-    private javax.swing.JLabel cropOverlay;
-
-    /** The hover wrench over locIcon's upper left (FR-104); null until the window is built. */
+    /** The hover wrench over locIcon's upper left (FR-104, OB-443); null until the window is built. */
     private javax.swing.JLabel iconWrench;
 
     /**
-     * The hover revert (MT-591) beside the wrench, over a replaced or cropped Central Station picture; null until
-     * built.
-     */
-    private javax.swing.JLabel iconRevert;
-
-    /**
-     * Puts the hover crop mark on the big locomotive picture (FR-032); built here because the designer owns `locIcon`.
+     * Puts the hover wrench on the big locomotive picture (FR-104); it opens the locomotive's Locomotive Settings on
+     * Basic Settings (OB-443), where the picture's crop and revert are.  Built here because the designer owns `locIcon`.
      * The hover test is `getMousePosition(true)`: moving onto a CHILD fires mouseExited on its parent, so the obvious
-     * version hides the mark as the user reaches for it.
+     * version hides the wrench as the user reaches for it.
      */
-    private void buildCropOverlay()
+    private void buildIconWrench()
     {
-        cropOverlay = new JLabel(new LocIconActions.CropMark());
-
-        cropOverlay.setToolTipText(I18n.t("loc.ui.tooltip.recrop"));
-        cropOverlay.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
-        cropOverlay.setVisible(false);
-        cropOverlay.setOpaque(false);
-
-        cropOverlay.addMouseListener(new java.awt.event.MouseAdapter()
-        {
-            @Override
-            public void mouseReleased(java.awt.event.MouseEvent evt)
-            {
-                if (activeLoc == null) return;
-
-                // LEFT re-crops; RIGHT does what the picture does: the mark has its own listener, so Swing never passes
-                // the event on to locIcon, and a guard returning on a right click would leave a dead patch over the
-                // picture.
-                if (SwingUtilities.isLeftMouseButton(evt))
-                {
-                    recropLocIcon(activeLoc, TrainControlUI.this);
-                }
-                else if (SwingUtilities.isRightMouseButton(evt))
-                {
-                    setLocIcon(activeLoc);
-                }
-            }
-        });
-
-        // The wrench, upper left (FR-104): it opens the chooser a right-click on the picture opens, and shows on hover
-        // with the crop mark, over every locomotive.
         iconWrench = new JLabel(new LocIconActions.WrenchMark());
 
-        iconWrench.setToolTipText(I18n.t("loc.ui.menuSetLocalLocomotiveIcon"));
+        iconWrench.setToolTipText(I18n.t("loc.ui.tooltip.openSettingsFromPicture"));
         iconWrench.setVisible(false);
         iconWrench.setOpaque(false);
+        iconWrench.setCursor(java.awt.Cursor.getPredefinedCursor(java.awt.Cursor.HAND_CURSOR));
 
         iconWrench.addMouseListener(Listen.released(evt ->
         {
-            // Either button: a right-click over the wrench is a right-click over the picture.
-            if (activeLoc != null) setLocIcon(activeLoc);
+            // A right-click over the wrench is a right-click over the picture: it chooses the icon, with the power off.
+            if (activeLoc == null) return;
+
+            if (SwingUtilities.isLeftMouseButton(evt)) openLocomotiveSettings(activeLoc, LocomotiveSettingsFrame.Tab.LOCOMOTIVE, null);
+            else if (SwingUtilities.isRightMouseButton(evt) && offersTheIconTools()) setLocIcon(activeLoc);
         }));
 
-        // The revert, beside the wrench (MT-591): over a Central Station picture replaced or cropped it does what Clear
-        // Local Locomotive Icon does, and the wrench stays for choosing another.
-        iconRevert = new JLabel(REVERT);
-
-        iconRevert.setToolTipText(I18n.t("loc.ui.menuClearLocalLocomotiveIcon"));
-        iconRevert.setVisible(false);
-        iconRevert.setOpaque(false);
-
-        iconRevert.addMouseListener(Listen.released(evt ->
-        {
-            if (activeLoc != null && revertsInstead(activeLoc)) clearLocIcon(activeLoc);
-        }));
-
-        // Upper right: it overlaps the picture, since a cropped icon fills the label's width, but a corner takes less
-        // than the middle. Hard in the corner with no gap, as any inset spends picture rather than margin. The wrench
-        // takes the other corner (FR-104).
-        JPanel corner = new JPanel(new java.awt.BorderLayout());
+        // Hard in the upper left corner with no gap, as any inset spends picture rather than margin.
+        JPanel corner = new JPanel(new java.awt.FlowLayout(java.awt.FlowLayout.LEFT, 0, 0));
 
         corner.setOpaque(false);
-
-        JPanel left = new JPanel(new java.awt.FlowLayout(java.awt.FlowLayout.LEFT, 0, 0));
-
-        left.setOpaque(false);
-        left.add(iconWrench);
-        left.add(javax.swing.Box.createHorizontalStrut(3));
-        left.add(iconRevert);
-
-        corner.add(left, java.awt.BorderLayout.WEST);
-        corner.add(cropOverlay, java.awt.BorderLayout.EAST);
+        corner.add(iconWrench);
 
         locIcon.setLayout(new java.awt.BorderLayout());
         locIcon.add(corner, java.awt.BorderLayout.NORTH);
@@ -18991,41 +18930,27 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             @Override
             public void mouseEntered(java.awt.event.MouseEvent evt)
             {
-                showCropOverlay();
+                showIconWrench();
             }
 
             @Override
             public void mouseExited(java.awt.event.MouseEvent evt)
             {
-                // Still inside, counting children: entering the mark itself is an exit from the label.
-                if (locIcon.getMousePosition(true) == null)
-                {
-                    cropOverlay.setVisible(false);
-                    iconWrench.setVisible(false);
-                    iconRevert.setVisible(false);
-                }
+                // Still inside, counting children: entering the wrench itself is an exit from the label.
+                if (locIcon.getMousePosition(true) == null) iconWrench.setVisible(false);
             }
         };
 
         locIcon.addMouseListener(hover);
-        cropOverlay.addMouseListener(hover);
         iconWrench.addMouseListener(hover);
-        iconRevert.addMouseListener(hover);
 
-        // The plain pointer over the picture (FR-104): the wrench and crop mark are what can be pressed, and keep the
-        // hand. Set here because the form's block is regenerated.
+        // The plain pointer over the picture (FR-104): the wrench is what can be pressed, and keeps the hand. Set here
+        // because the form's block is regenerated.
         locIcon.setCursor(java.awt.Cursor.getDefaultCursor());
         locIcon.setToolTipText(null);
-        cropOverlay.setCursor(java.awt.Cursor.getPredefinedCursor(java.awt.Cursor.HAND_CURSOR));
-        iconWrench.setCursor(java.awt.Cursor.getPredefinedCursor(java.awt.Cursor.HAND_CURSOR));
-        iconRevert.setCursor(java.awt.Cursor.getPredefinedCursor(java.awt.Cursor.HAND_CURSOR));
 
         fitTheIconTools();
     }
-
-    /** The two things the picture's upper-left corner offers (FR-104, MT-591). */
-    private static final javax.swing.Icon WRENCH = new LocIconActions.WrenchMark();
-    private static final javax.swing.Icon REVERT = new LocIconActions.RevertMark();
 
     /** Choosing, cropping and deleting locomotive icons (FR-022). */
     private final LocIconActions locIconActions = new LocIconActions(this);
@@ -19151,7 +19076,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         return settleAbsentPages(layoutList, renamedFromTo, deliberatelyRemoved, over);
     }
 
-    /** Whether the picture's tools (wrench, crop mark) are offered: over a locomotive, power off (MT-591). */
+    /** Whether the picture's wrench and right-click are offered: over a locomotive, power off (MT-591). */
     private boolean offersTheIconTools()
     {
         return activeLoc != null && !powerIsOn();
@@ -19172,16 +19097,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     /** Whether start-up sent Power On, by Preferences > Startup as it stood then. */
     private volatile boolean poweredOnAtStartUp = false;
 
-    /** Whether a revert stands beside the wrench (MT-591): a Central Station picture with a local one over it. */
-    private static boolean revertsInstead(Locomotive l)
-    {
-        return l != null && l.getLocalImageURL() != null && l.getCentralStationImageURL() != null
-            && !l.getCentralStationImageURL().isEmpty();
-    }
-
     /**
-     * Fits the tools to the power (MT-591), before the pointer arrives: over a locomotive, the picture says to turn the
-     * power off while it is on, and that a right-click changes the icon once it is off.
+     * Fits the picture's tooltip to the power (MT-591), before the pointer arrives: over a locomotive, it says to turn
+     * the power off while it is on, and that a right-click changes the icon once it is off.
      */
     private void fitTheIconTools()
     {
@@ -19189,32 +19107,20 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         locIcon.setToolTipText(activeLoc == null ? null : powerIsOn() ? I18n.t("loc.ui.tooltip.powerOffToManageIcon")
             : I18n.t("ui.main.tooltip.locIcon"));
-
-        iconWrench.setIcon(WRENCH);
-        iconWrench.setToolTipText(I18n.t("loc.ui.menuSetLocalLocomotiveIcon"));
-
-        iconRevert.setIcon(REVERT);
-        iconRevert.setToolTipText(I18n.t("loc.ui.menuClearLocalLocomotiveIcon"));
     }
 
-    private void showCropOverlay()
+    private void showIconWrench()
     {
-        if (cropOverlay == null) return;
+        if (iconWrench == null) return;
 
         // Called from the repaint path as well as from hover, so it cannot assume the pointer just arrived.
         fitTheIconTools();
 
         // Not while the power is on (MT-591).
-        boolean over = offersTheIconTools() && locIcon.getMousePosition(true) != null;
-
-        cropOverlay.setVisible(over && offersACrop(activeLoc));
-
-        if (iconWrench != null) iconWrench.setVisible(over);
-
-        if (iconRevert != null) iconRevert.setVisible(over && revertsInstead(activeLoc));
+        iconWrench.setVisible(offersTheIconTools() && locIcon.getMousePosition(true) != null);
     }
 
-    /** Whether the crop mark is offered: any icon but the placeholder, local or the Central Station's (FR-104). */
+    /** Whether the crop mark is offered in Locomotive Settings: any icon but the placeholder, local or the Central Station's (FR-104). */
     static boolean offersACrop(Locomotive l)
     {
         return l != null && l.getImageURL() != null && !l.getImageURL().isEmpty();

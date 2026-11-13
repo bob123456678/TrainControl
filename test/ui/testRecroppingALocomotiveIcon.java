@@ -448,17 +448,19 @@ public class testRecroppingALocomotiveIcon
 
     // The window
 
-    /** Left-clicks the crop mark over the picture, and the crop window that opens. */
+    /** Left-clicks the crop mark over the picture in Locomotive Settings, and the crop window that opens. */
     private static JDialog openTheCrop() throws Exception
     {
-        final JLabel overlay = (JLabel) Reflect.get(TrainControlUI.class, ui, "cropOverlay");
+        support.SettingsWindow.closeIfOpen();
 
-        Components.onTheEventThread(() ->
-        {
-            overlay.setVisible(true);
+        assertTrue(support.SettingsWindow.open(ui, loc, org.traincontrol.gui.LocomotiveSettingsFrame.Tab.LOCOMOTIVE, null),
+            "the settings window did not open");
+        assertNotNull(support.SettingsWindow.awaited(), "the settings window is not on screen");
 
-            return null;
-        });
+        final JLabel overlay = support.SettingsWindow.part("settings.crop", JLabel.class);
+
+        assertTrue(Components.waitFor(() -> Components.onTheEventThread(overlay::isVisible), WAIT),
+            "the crop mark is not shown over the picture");
 
         Mouse.click(overlay);
 
@@ -631,6 +633,7 @@ public class testRecroppingALocomotiveIcon
     private static void closeEverythingOpen()
     {
         Mouse.closeMenus();
+        support.SettingsWindow.closeIfOpen();
 
         Components.onTheEventThread(() ->
         {

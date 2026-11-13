@@ -418,7 +418,7 @@ public class testTheLocomotiveDoorsAskOverTheirWindow
 
         one.setLinkedLocomotives(linked);
 
-        String sentence = I18n.f("loc.ui.settingsPartOfMultiUnit", TWO, ONE);
+        String sentence = I18n.f("loc.ui.settingsPartOfMultiUnit", TWO, ONE, ONE);
 
         chooseMultiUnit(database, TWO);
 
@@ -519,7 +519,9 @@ public class testTheLocomotiveDoorsAskOverTheirWindow
     private static void assertTheTabSays(LocomotiveSettingsFrame window, String sentence, String message)
     {
         assertEquals(Components.all(window.getContentPane(), javax.swing.JLabel.class,
-            label -> sentence.equals(label.getText())).size(), 1, message);
+            label -> sentence.equals(label.getText())).size()
+            + Components.all(window.getContentPane(), javax.swing.JTextPane.class,
+            note -> "settings.multiUnitNote".equals(note.getName()) && sentence.equals(note.getText())).size(), 1, message);
     }
 
     /** Presses Save and checks that the one thing said is this, over the Locomotive Settings window itself. */

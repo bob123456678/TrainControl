@@ -1019,6 +1019,10 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
                     addressHint.setName("settings.addressHint");
                     addressSpinner.setEditor(address);
                     addressSpinner.setName("settings.addressSpinner");
+
+                    // The number starts as far in as the name's does (OB-442)
+                    address.setBorder(BorderFactory.createEmptyBorder(0,
+                        name.getInsets().left - addressSpinner.getInsets().left, 0, 0));
                     addressSpinner.setPreferredSize(new Dimension(name.getPreferredSize().width
                         - addressHint.getPreferredSize().width - 4, name.getPreferredSize().height));
 
@@ -1379,11 +1383,20 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
         {
             super(new BorderLayout(0, 6));
 
+            fill();
+        }
+
+        /** Builds the tab's content from the model as it is now. */
+        private void fill()
+        {
+            removeAll();
+            members = null;
+
             Locomotive parent = main.getModel().isLocLinkedToOthers(loc);
 
             if (parent != null)
             {
-                add(new JLabel(I18n.f("loc.ui.settingsPartOfMultiUnit", loc.getName(), parent.getName())), BorderLayout.NORTH);
+                add(partOfNote(parent), BorderLayout.NORTH);
             }
             else if (main.getModel().getLocomotives().size() < 2)
             {
@@ -1399,8 +1412,121 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
                     : I18n.f("loc.ui.settingsMultiUnitHint", loc.getName()));
 
                 add(members, BorderLayout.CENTER);
-
             }
+
+            revalidate();
+            repaint();
+        }
+
+        /**
+         * The note that this locomotive is a member, with the multi-unit's name a link to its settings (FR-196).  The
+         * bundle's sentence marks the link with {2}, so it works in every language.  Clicking, or Enter or Space on
+         * it, closes this window as its X does (asking about unsaved changes; Cancel stays) and opens the multi-unit's
+         * Multi-Unit tab, where its members are changed.
+         */
+        private javax.swing.JTextPane partOfNote(Locomotive parent)
+        {
+            final String mark = String.valueOf((char) 0xE000);
+            final String name = parent.getName();
+            final String said = I18n.f("loc.ui.settingsPartOfMultiUnit", loc.getName(), name, mark);
+            final int from = said.indexOf(mark);
+            final javax.swing.JTextPane note = new javax.swing.JTextPane();
+            final Runnable open = () ->
+            {
+                // The unit may have changed since the tab was built: then the tab is built again, not followed
+                if (main.getModel().isLocLinkedToOthers(loc) != parent || main.getModel().getLocByName(name) != parent)
+                {
+                    fill();
+
+                    return;
+                }
+
+                closeAsking();
+
+                if (!isDisplayable()) main.openLocomotiveSettings(parent, Tab.MULTI_UNIT, null);
+            };
+
+            note.setName("settings.multiUnitNote");
+            note.setEditable(false);
+            note.setOpaque(false);
+            note.setBorder(null);
+            note.setFont(new JLabel().getFont());
+            note.setText(said.replace(mark, name));
+
+            final java.util.function.Consumer<Boolean> style = focused ->
+            {
+                javax.swing.text.SimpleAttributeSet link = new javax.swing.text.SimpleAttributeSet();
+                Color blue = javax.swing.UIManager.getColor("Component.linkColor");
+
+                javax.swing.text.StyleConstants.setForeground(link, blue != null ? blue : new Color(0, 102, 204));
+                javax.swing.text.StyleConstants.setUnderline(link, true);
+
+                if (focused) javax.swing.text.StyleConstants.setBackground(link, new Color(220, 232, 247));
+
+                note.getStyledDocument().setCharacterAttributes(from, name.length(), link, true);
+            };
+
+            style.accept(false);
+
+            final java.util.function.Predicate<java.awt.Point> onLink = at ->
+            {
+                try
+                {
+                    int pos = note.viewToModel(at);
+                    java.awt.Rectangle line = pos < 0 ? null : note.modelToView(Math.min(pos, note.getDocument().getLength()));
+
+                    return line != null && pos >= from && pos < from + name.length() && at.y >= line.y
+                        && at.y < line.y + line.height;
+                }
+                catch (javax.swing.text.BadLocationException e)
+                {
+                    return false;
+                }
+            };
+
+            note.addMouseMotionListener(new java.awt.event.MouseMotionAdapter()
+            {
+                @Override
+                public void mouseMoved(MouseEvent e)
+                {
+                    note.setCursor(java.awt.Cursor.getPredefinedCursor(onLink.test(e.getPoint())
+                        ? java.awt.Cursor.HAND_CURSOR : java.awt.Cursor.TEXT_CURSOR));
+                }
+            });
+            note.addMouseListener(Listen.released(e ->
+            {
+                if (SwingUtilities.isLeftMouseButton(e) && onLink.test(e.getPoint())) open.run();
+            }));
+            note.addFocusListener(new java.awt.event.FocusAdapter()
+            {
+                @Override
+                public void focusGained(java.awt.event.FocusEvent e)
+                {
+                    style.accept(true);
+                }
+
+                @Override
+                public void focusLost(java.awt.event.FocusEvent e)
+                {
+                    style.accept(false);
+                }
+            });
+
+            for (String key : new String[] { "ENTER", "SPACE" })
+            {
+                note.getInputMap().put(javax.swing.KeyStroke.getKeyStroke(key), "openTheMultiUnit");
+            }
+
+            note.getActionMap().put("openTheMultiUnit", new javax.swing.AbstractAction()
+            {
+                @Override
+                public void actionPerformed(java.awt.event.ActionEvent e)
+                {
+                    open.run();
+                }
+            });
+
+            return note;
         }
 
         boolean isDirty()
