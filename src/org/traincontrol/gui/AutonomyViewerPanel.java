@@ -323,17 +323,17 @@ public class AutonomyViewerPanel extends JPanel
         gbc.gridy++;
     }
 
-    /** Everything that manages configurations, on one menu. */
+    /** Everything that manages configurations: the Autonomy menu's Manage list, built by the same method. */
     private javax.swing.JPopupMenu manageMenu()
     {
         javax.swing.JPopupMenu menu = new javax.swing.JPopupMenu();
 
-        menu.add(item(I18n.t("autosetup.ui.menuNewConfiguration"), () -> duplicate()));
-        menu.add(item(I18n.t("autosetup.ui.menuRenameConfiguration"), () -> rename()));
-        menu.add(item(I18n.t("autosetup.ui.menuDeleteConfiguration"), () -> delete()));
-        menu.addSeparator();
-        menu.add(item(I18n.t("autosetup.ui.btnImportConfiguration"), () -> importConfiguration()));
-        menu.add(item(I18n.t("autosetup.ui.btnExportConfiguration"), () -> exportConfiguration()));
+        AutonomyMenu.addManageItems(menu, ui, this, session());
+
+        for (java.awt.Component part : menu.getComponents())
+        {
+            if (part instanceof javax.swing.JMenuItem) styled((javax.swing.JMenuItem) part, false);
+        }
 
         // Debug builds only, last on the menu (the flag is read fresh: the menu is rebuilt on every press).  It writes
         // the derived graph as a diagnostic, so it is offered only with a setup free of blocking problems, as the

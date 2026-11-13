@@ -17408,6 +17408,16 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         final File chosen = fc.getSelectedFile();
 
+        // Every route there is goes (`importRoutes`), so it asks first, saying how many; No is the default.
+        int existing = this.model.getRouteList().size();
+
+        String replaces = existing == 1 ? I18n.t("route.ui.confirmReplaceTheOneRoute")
+            : I18n.f("route.ui.confirmReplaceAllRoutes", existing);
+
+        if (existing > 0 && JOptionPane.showOptionDialog(this, replaces, I18n.t("route.ui.titleImportRoutes"),
+            JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE, null, YES_NO_OPTS, YES_NO_OPTS[1])
+            != JOptionPane.YES_OPTION) return;
+
         // Held rather than thrown: the work half must not raise a dialog.
         final Exception[] failed = new Exception[1];
         final int[] added = new int[1];
@@ -20296,6 +20306,12 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     void findRoute()
     {
         this.routeListPanel.findRoute();
+    }
+
+    /** Routes > New Route...: the Add Route button's own handler, so both doors ask the same things. */
+    void newRoute()
+    {
+        AddRouteButtonActionPerformed(null);
     }
 
     /**

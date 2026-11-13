@@ -86,7 +86,7 @@ The pictures in this guide are of a small demo layout: an oval with stations Ash
 
 ![Step 2: Autonomy, Edit Autonomy on Page, and the page to open](assets/automation/03-edit-on-page.png)
 
-Only one editor window is open at a time; any of these while it is open simply brings it forward. The editor cannot be opened while autonomy or a route is running, so stop the trains first. While it is open, the Autonomy menu is grayed except for `Documentation` and an `Open the Full Editor...` that brings it forward, and no train can be sent.
+Only one editor window is open at a time; any of these while it is open simply brings it forward. The editor cannot be opened while autonomy or a route is running, so stop the trains first. While it is open, the Layouts and Autonomy menus start with `Go to the Open Editor`, which brings it forward. The Autonomy menu is grayed except for `Autonomy Guide`, each item the editor grays says `Close the editor to use this.`, and no train can be sent.
 
 ---
 
@@ -125,7 +125,7 @@ The window is titled "Autonomy Editor: *page* (*configuration*)", naming the pag
 5. **The line under it** says whether the setup is ready to run.
 6. **`Debugging Tools`**: `Test a path` and `Why not Moving?`; see [the tools](#the-tools-test-a-path-why-not-moving-one-way-run).
 7. **`Path Type`**: `Auto` or `Manual`: whether those two tools answer for autonomy choosing a destination, or for a train you send yourself (and Return Home).
-8. **`Page Settings`**: `Exclude Page` leaves this whole page out of autonomy: its sensors stop being stations and nothing on it is driven. Put it back from `Autonomy` → `Pages with Autonomy Enabled…`.
+8. **`Page Settings`**: `Exclude Page` leaves this whole page out of autonomy: its sensors stop being stations and nothing on it is driven. Put it back from `Autonomy` → `Pages with Autonomy Enabled`.
 9. **`Visible Elements`**: `Grid` (Control+K), `Addresses` (Control+D), `Track Lengths` (each square's recorded length, Control+G), `Unmeasured Track`, the track with no length yet, and `Show Trains`, whether the editor draws the trains standing on its diagram (the track diagram's own are not affected), and `Text Labels`, whether your own text on the diagram is drawn.
 10. **`Station Labels`** chooses what the station captions show: `Station Names`, `Standing Locs` (the train standing there), `Home Locs` (the station's home locomotive), or `Hide`. Control+L steps through them.
 11. **`Track Directions`** chooses which direction marks are drawn: `Show All`, `Restrictions only` (just the directions you have shut, the usual one), `Allowed only` (just the directions trains may run), `Hide All`, or `Station Arrivals` (which sides each station takes trains from).
@@ -659,11 +659,11 @@ A few more autonomy settings are under Preferences → Autonomy, because they be
 
 A configuration is one way of running your railway. They are all under the Autonomy menu:
 
-- `Configuration (`*name*`)` lists them; pick one to load it. `Import…` brings one in from a file, including an `autonomy.json` from an older version, and `Export…` saves the one loaded. An older `autonomy.json` brings its stations, trains and settings across; its timetable, its route activations, and each connection's commands, lengths and locks (which the track diagram decides now) are left behind, and the import lists what it left. Imported into a configuration that already exists, an older file only fills its gaps: a setting at its default, a home taken off or an emptied exclusion list counts as not set and takes the file's value, while each station of a configuration that has been loaded keeps its own maximum train length, even where that is no limit.
+- `Configuration (`*name*`)` lists them; pick one to load it. `Manage Configurations` → `Import...` brings one in from a file, including an `autonomy.json` from an older version, and `Export...` saves the one loaded. An older `autonomy.json` brings its stations, trains and settings across; its timetable, its route activations, and each connection's commands, lengths and locks (which the track diagram decides now) are left behind, and the import lists what it left. Imported into a configuration that already exists, an older file only fills its gaps: a setting at its default, a home taken off or an emptied exclusion list counts as not set and takes the file's value, while each station of a configuration that has been loaded keeps its own maximum train length, even where that is no limit.
 - The first one is made with `Add a Configuration...`: no trains placed, every station rule and setting at its default, and no timetable.
-- After that, `Manage Configurations…` → `New Configuration...` copies the one you have (its station rules, settings and speeds) and asks whether where the trains stand and the timetable come too. Answer No to start the copy with no trains placed and an empty timetable. The one you have stays chosen; pick the copy from the Autonomy menu when you want it. `Rename...` and `Delete` are beside it.
-- Also under `Manage Configurations…`: `Stop Using Autonomy` unloads the configuration without deleting anything; `Delete This Layout’s Whole Autonomy Setup...` removes every configuration, with every station name, direction and caption; the track diagram itself is not touched. After `Stop Using Autonomy`, the strip above the diagram offers `Load this configuration`.
-- `Pages with Autonomy Enabled…` says which pages autonomy uses.
+- After that, `Manage Configurations` → `New Configuration...` copies the one you have (its station rules, settings and speeds) and asks whether where the trains stand and the timetable come too. Answer No to start the copy with no trains placed and an empty timetable. The one you have stays chosen; pick the copy from the Autonomy menu when you want it. `Rename...` and `Delete...` are beside it.
+- Also under `Manage Configurations`: `Stop Using Autonomy` unloads the configuration without deleting anything; `Delete This Layout’s Whole Autonomy Setup...` removes every configuration, with every station name, direction and caption; the track diagram itself is not touched. After `Stop Using Autonomy`, the strip above the diagram offers `Load this configuration`.
+- `Pages with Autonomy Enabled` says which pages autonomy uses.
 
 None of these can be done while autonomy or a route is running. The configuration you were last using is loaded when TrainControl starts, unless `Load Autonomy` is unticked under Preferences → Startup.
 
@@ -673,7 +673,7 @@ None of these can be done while autonomy or a route is running. The configuratio
 - the direction of each piece of track, and its length
 - the links between pages: which are paired, which are switched off, and their names
 - which ways into a station are open, blocking stations, and signals
-- which pages are in autonomy (`Pages with Autonomy Enabled…`)
+- which pages are in autonomy (`Pages with Autonomy Enabled`)
 
 Change any of these and every configuration sees the change.
 

@@ -200,3 +200,4 @@ not fix it. Name the square.
 - `regression.testTheLogIsStampedAndExports`
 - `ui.testAStandingTrainIsSentWhileAnotherRuns`
 - `regression.testTheMenuBarIsWired`
+- `regression.testTheAutonomyAndRoutesMenusKeepTheirWiring`

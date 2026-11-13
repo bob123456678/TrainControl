@@ -488,6 +488,8 @@ Tab icons provided by Freepik.
             - An `All` button after the Layout tab's S, M and L buttons opens every page in a window of its own, in place of `Layouts` > `Pop-up all Layout Pages`.
             - Menu items that open a window or ask you something end in "...".
             - An unexpected error in the background now shows in the log.
+            - `Routes` > `New Route...` adds a route, and `Import Routes...` asks before replacing your routes.
+            - `Autonomy` > `Documentation` is now `Autonomy Guide`.
         - Central Station
             - TrainControl now connects to a CS3 over TCP, and falls back to UDP, saying so in the log, if that doesn't work. A CS2 still uses UDP.
             - If the connection to a CS3 drops, or the CS3 answers nothing for 3 seconds after a command, commands go over UDP at once and nothing is sent again, and the log counts the commands that may not have arrived.

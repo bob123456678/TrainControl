@@ -726,20 +726,25 @@ final class AutonomyLifecycle
     }
 
     /**
-     * Adds Find Route to the routes menu.  Hand-mounted: anything declared inside a GEN-BEGIN block is deleted when the
-     * form is regenerated.  Safe to call twice.
+     * Adds New Route and Find Route to the routes menu.  Hand-mounted: anything declared inside a GEN-BEGIN block is
+     * deleted when the form is regenerated.  Safe to call twice.
      */
     private void mountFindRoute()
     {
         if (ui.routesMenu() == null || ui.findRouteMenuItem != null) return;
+
+        javax.swing.JMenuItem newRoute = new javax.swing.JMenuItem(I18n.t("route.ui.menuNewRoute"));
+
+        newRoute.addActionListener(e -> ui.newRoute());
 
         ui.findRouteMenuItem = new javax.swing.JMenuItem(I18n.t("route.ui.menuFindRoute"));
 
         ui.findRouteMenuItem.addActionListener(e -> ui.findRoute());
 
         // At the top, above Export and Import, which are about the route list as a file.
-        ui.routesMenu().add(ui.findRouteMenuItem, 0);
-        ui.routesMenu().add(new javax.swing.JPopupMenu.Separator(), 1);
+        ui.routesMenu().add(newRoute, 0);
+        ui.routesMenu().add(ui.findRouteMenuItem, 1);
+        ui.routesMenu().add(new javax.swing.JPopupMenu.Separator(), 2);
     }
 
     /** A setup refused as written by a newer TrainControl arrives as a message KEY plus versions; translated here. */
