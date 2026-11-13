@@ -654,7 +654,7 @@ public class testTheEditorNamesItsShortcuts
      * every such key is shown somewhere on the menu.
      *
      * MUTATION: a plain `setAccelerator` in `LayoutEditorRightclickMenu.keyed` (the items bind their keys), or
-     * `LayoutEditor.REDO_KEY` on Undo.
+     * `LayoutEditor.REDO_KEY` on Undo, or no `showShortcut` on the Selection submenu's Rotate.
      */
     @Test
     public void testTheTrackMenuShowsTheKeysItsHandlerActsOn() throws Exception
@@ -680,9 +680,6 @@ public class testTheEditorNamesItsShortcuts
                 if (each instanceof javax.swing.JMenu) collect(((javax.swing.JMenu) each).getSubElements(), items);
                 else if (each instanceof javax.swing.JMenuItem) items.add((javax.swing.JMenuItem) each);
 
-                boolean selection = each instanceof javax.swing.JMenu
-                    && ((javax.swing.JMenu) each).getText().equals(I18n.f("layout.ui.menuSelection", 0));
-
                 for (javax.swing.JMenuItem item : items)
                 {
                     for (String row : TRACK_MENU_KEYS)
@@ -691,10 +688,8 @@ public class testTheEditorNamesItsShortcuts
 
                         if (!item.getText().equals(I18n.t(pair[0]))) continue;
 
-                        Object key = selection && pair[0].equals("ui.rotate") ? null
-                            : LayoutEditor.class.getField(pair[1]).get(null);
-
-                        assertEquals(item.getAccelerator(), key, "\"" + item.getText() + "\" shows the wrong key");
+                        assertEquals(item.getAccelerator(), LayoutEditor.class.getField(pair[1]).get(null),
+                            "\"" + item.getText() + "\" shows the wrong key");
                     }
 
                     javax.swing.KeyStroke key = item.getAccelerator();

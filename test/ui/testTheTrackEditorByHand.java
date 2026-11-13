@@ -265,6 +265,63 @@ public class testTheTrackEditorByHand
     }
 
     /**
+     * With two squares picked, Control+R turns both and leaves the one under the pointer; one Control+Z turns both back,
+     * as Copy, Cut and Delete act on the selection when there is one.
+     *
+     * MUTATION: make the Control+R key skip its selection branch, and the hovered turnout turns while the picked stay.
+     */
+    @Test
+    public void testControlRTurnsThePickedSquaresNotTheOneUnderThePointer() throws Exception
+    {
+        LayoutEditor editor = open();
+
+        LayoutDiagram page = editor.getMarklinLayout();
+
+        List<LayoutDiagramComponent> picked = new java.util.ArrayList<>();
+
+        for (LayoutDiagramComponent c : page.getAll())
+        {
+            if (c.getNumOrientations() > 1 && !(c.getX() == SWITCH_X && c.getY() == SWITCH_Y) && picked.size() < 2)
+            {
+                picked.add(c);
+            }
+        }
+
+        assertEquals(picked.size(), 2, "precondition: " + PAGE + " has no two other squares that turn");
+
+        java.util.Map<String, Integer> was = headings(page);
+
+        for (LayoutDiagramComponent c : picked)
+        {
+            Mouse.click(square(editor, c.getX(), c.getY()), MouseEvent.BUTTON1, 1, InputEvent.SHIFT_DOWN_MASK);
+        }
+
+        assertEquals(editor.getSelection().size(), 2, "shift-clicking two squares did not pick them");
+
+        Mouse.enter(square(editor, SWITCH_X, SWITCH_Y));
+
+        key(editor, KeyEvent.VK_R, true);
+
+        for (LayoutDiagramComponent c : picked)
+        {
+            LayoutDiagramComponent now = editor.getMarklinLayout().getComponent(c.getX(), c.getY());
+
+            assertEquals(now.getOrientation(), (was.get(c.getX() + "," + c.getY()) + 1) % now.getNumOrientations(),
+                "Control+R did not turn the picked square at " + c.getX() + "," + c.getY());
+        }
+
+        assertEquals(editor.getMarklinLayout().getComponent(SWITCH_X, SWITCH_Y).getOrientation(),
+            (int) was.get(SWITCH_X + "," + SWITCH_Y),
+            "Control+R turned the square under the pointer although squares were picked");
+
+        key(editor, KeyEvent.VK_Z, true);
+
+        assertEquals(headings(editor.getMarklinLayout()), was, "one Control+Z did not turn both picked squares back");
+
+        discard(editor);
+    }
+
+    /**
      * Control+T asks for the square's text, and the text typed is written to the file.
      *
      * MUTATION: drop `lc.setLabel(newText)` and nothing is written.
