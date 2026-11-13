@@ -477,6 +477,124 @@ public class testTheTrainWindow
     }
 
     /**
+     * After a run the track diagram's setup can still name Y on a square where the railway has X, and Y stand on another
+     * station: the Train tab shows X, and None takes X off the railway and leaves Y where it stands (FR-195).
+     *
+     * MUTATION: have `AutonomyEditorPanel.removeLocomotive` name only `locomotiveAt(tile)`, and X stays while Y leaves.
+     */
+    @Test(timeOut = 240000)
+    public void testNoneAfterARunTakesOffTheTrainTheTabShows() throws Exception
+    {
+        String free = null;
+
+        for (String name : model.getLocList())
+        {
+            if (!session.placementsAutonomyWillWrite().containsValue(name)
+                && model.getAutoLayout().getLocomotiveLocation(model.getLocByName(name)) == null) free = name;
+        }
+
+        assertNotNull(free, "precondition: no train placed nowhere");
+
+        noneAfterARun(free);
+    }
+
+    /**
+     * The same where the train the run brought in is one the setup still has on the square it left: None takes it off
+     * the railway, and does not stand it back there.
+     *
+     * MUTATION: leave out `removeLocomotive`'s clearing of the named trains' other placements, and it goes back.
+     */
+    @Test(timeOut = 240000)
+    public void testNoneAfterARunDoesNotSendTheTrainShownBackToItsOldSquare() throws Exception
+    {
+        TileKey square = aSquareWithATrain();
+        String brought = null;
+
+        for (Map.Entry<TileKey, String> each : session.placementsAutonomyWillWrite().entrySet())
+        {
+            if (!each.getKey().equals(square)
+                && model.getAutoLayout().getLocomotiveLocation(model.getLocByName(each.getValue())) != null)
+            {
+                brought = each.getValue();
+            }
+        }
+
+        assertNotNull(brought, "precondition: no other placed train stands on the railway");
+
+        noneAfterARun(brought);
+    }
+
+    /**
+     * Moves the setup's train of a square on to an empty station and stands `shown` on the square, as a run would, then
+     * chooses None on the diagram's Train tab: `shown` must leave the railway, the setup's train stay on it.
+     */
+    private void noneAfterARun(final String shown) throws Exception
+    {
+        final TileKey square = aSquareWithATrain();
+        final String setupTrain = session.getLocomotiveNameAt(square);
+        final TileKey elsewhere = anEmptyStation();
+
+        org.traincontrol.automation.Layout running = model.getAutoLayout();
+        org.traincontrol.automation.Point copy = running.getLocomotiveLocation(model.getLocByName(setupTrain));
+        org.traincontrol.automation.Point other = null;
+
+        for (org.traincontrol.automation.Point p : running.getPoints())
+        {
+            if (elsewhere.equals(session.getStationIndex().squareOf(p)) && p.isDestination() && p.getCurrentLocomotive() == null)
+            {
+                other = p;
+                break;
+            }
+        }
+
+        assertNotNull(copy, "precondition: the setup's train " + setupTrain + " stands nowhere on the railway");
+        assertNotNull(other, "precondition: no free copy of " + elsewhere);
+
+        // After a run: the setup's train has gone on to another station, and another train stands on the square
+        running.moveLocomotive(null, copy.getName(), false);
+        assertTrue(running.moveLocomotive(setupTrain, other.getName(), false), "precondition: could not move " + setupTrain);
+        assertTrue(running.moveLocomotive(shown, copy.getName(), false), "precondition: could not stand " + shown);
+
+        assertEquals(session.getLocomotiveNameAt(square), setupTrain, "precondition: the setup no longer has its train here");
+
+        Mouse.choose(AskingWindows.itemOf(AskingWindows.menuOn(ui, ui, square),
+            I18n.f("autosetup.ui.menuChangeTrainAt", session.describeTile(square))));
+
+        Components.settle();
+
+        final StationSettingsWindow window = StationDoors.showing(StationSettingsWindow.class);
+
+        assertNotNull(window, "Change Train at did not open Station Settings from the track diagram");
+
+        try
+        {
+            // A train the setup places elsewhere is marked so in the list
+            Object showing = Components.onTheEventThread(() ->
+                StationDoors.part(window, "train.train", javax.swing.JComboBox.class).getSelectedItem());
+
+            assertTrue(String.valueOf(showing).startsWith(shown), "precondition: the Train tab shows " + showing
+                + ", not the railway's train " + shown);
+
+            StationDoors.pick(window, "train.train", I18n.t("autosetup.ui.labelNone"));
+
+            Components.drain(8);
+            Components.settle();
+        }
+        finally
+        {
+            Components.onTheEventThread(() -> { window.dispose(); return null; });
+        }
+
+        org.traincontrol.automation.Layout after = model.getAutoLayout();
+        org.traincontrol.automation.Point shownAt = after.getLocomotiveLocation(model.getLocByName(shown));
+
+        assertNull(shownAt, "None on the Train tab, which showed " + shown + ", left it on "
+            + (shownAt == null ? null : shownAt.getName()));
+        assertNotNull(after.getLocomotiveLocation(model.getLocByName(setupTrain)), "None on the Train tab took "
+            + setupTrain + " off the railway at " + other.getName() + ", a train the tab did not show");
+    }
+
+    /**
      * A key step in the Train list only shows a train: Down, or a typed letter, places nothing, Escape puts the list
      * back and leaves the window open, and Enter places the train shown.  A pick from the open list acts as the list
      * closes; a list closed by canceling puts the choice back.
