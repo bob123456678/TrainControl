@@ -43,11 +43,7 @@ import org.traincontrol.util.Util;
  */
 public class AutonomyCompanionStore
 {
-    /**
-     * The highest schema this class can read.  A newer file is refused rather than read partially, since dropping
-     * fields it does not recognize would lose the user's work on the next save.  2 is "a station may carry several
-     * protecting signals" (an array in stationSignals).
-     */
+    /** The highest schema readable; a newer file is refused, as a partial read would drop fields on the next save. */
     public static final int VERSION = 2;
 
     public static final String ERROR_VERSION = "autosetup.ui.errorCompanionVersion";
@@ -97,10 +93,7 @@ public class AutonomyCompanionStore
     private final Map<TileKey, Integer> tileLengths = new LinkedHashMap<>();
     private final Map<DirectionKey, String> tileDirections = new LinkedHashMap<>();
 
-    /**
-     * Which sides a station refuses to let trains ARRIVE by, keyed by square: the barred sides rather than the allowed
-     * ones, so a station nobody restricted stores nothing and a side added later is open.  Comma-separated side names.
-     */
+    /** The sides a station refuses ARRIVALS by (comma-separated names); an unrestricted station stores nothing. */
     private final Map<TileKey, String> barredArrivals = new LinkedHashMap<>();
 
     /** Which sides trains may not arrive by; empty when the station takes trains from anywhere. */
@@ -171,9 +164,8 @@ public class AutonomyCompanionStore
     private final Map<TileKey, TileKey> portals = new LinkedHashMap<>();
 
     /**
-     * The signals that protect each station, square to squares, so it survives a page rename and is reconciled away
-     * with the station.  Paired by hand: the nearest signal on the approach is not always the protecting one, and a
-     * wrong guess throws a real signal.  Several per station (one per approach); a bare string is still read as one.
+     * The signals protecting each station, square to squares.  Paired by hand (the nearest signal is not always the
+     * protecting one); several per station; a bare string is still read as one.
      */
     private final Map<TileKey, List<TileKey>> stationSignals = new LinkedHashMap<>();
 
@@ -181,8 +173,7 @@ public class AutonomyCompanionStore
     private final Map<TileKey, List<TileKey>> blockedPoints = new LinkedHashMap<>();
 
     /**
-     * The signals thrown red when a train ARRIVES at a station as the end of its journey (FR-096); nothing turns one
-     * green again but the next route.  Apart from `stationSignals`, an aspect derived from the platform being claimed.
+     * Signals thrown red when a train ARRIVES at a station ending its journey (FR-096); only the next route clears one.
      */
     private final Map<TileKey, List<TileKey>> entrySignals = new LinkedHashMap<>();
 
@@ -321,8 +312,8 @@ public class AutonomyCompanionStore
     }
 
     /**
-     * Where each station caption is drawn and which square it is about: caption square to sensor square.  Kept here
-     * because a label bound to a Point BY NAME broke on every rename or station split.
+     * Caption square to the sensor square it is about; kept here because a label bound to a Point BY NAME broke on
+     * rename.
      */
     private final Map<TileKey, TileKey> captions = new LinkedHashMap<>();
     private final Map<TileKey, String> linkNames = new LinkedHashMap<>();
@@ -358,9 +349,7 @@ public class AutonomyCompanionStore
     private final Map<String, String> pageIdConflicts = new LinkedHashMap<>();
 
     /**
-     * Entries for pages the index cannot resolve, written back verbatim (OB-067).  Ids and names can collide (a page
-     * may be called "2"), so such an entry waits here as the JSON it arrived as, merged back on save; field name to
-     * the JSONObject or JSONArray held for it.
+     * Entries for pages the index cannot resolve, held as the JSON they arrived as and merged back on save (OB-067).
      */
     private final Map<String, Object> heldForAbsentPages = new LinkedHashMap<>();
 
@@ -371,11 +360,8 @@ public class AutonomyCompanionStore
     }
 
     /**
-     * Tells the store which page id belongs to which page name.  Entries are stored against the id so a rename does
-     * not orphan a page of settings; the id alone is not trusted (a reorder could reattach settings to the wrong page),
-     * so the name each id had is recorded and a mismatch is reported at load.
-     *
-     * @param nameToId from the parsed layouts, LayoutDiagram.getPageId()
+     * Tells the store which page id belongs to which page name.  Entries are stored against the id, which alone is not
+     * trusted (a reorder could reattach settings), so the name each id had is recorded and a mismatch reported at load.
      */
     public void setPageIds(Map<String, String> nameToId)
     {
@@ -394,9 +380,7 @@ public class AutonomyCompanionStore
     }
 
     /**
-     * The highest page id this setup has ever recorded, live or absent: `writeLayoutIndex` numbers a new page above
-     * the highest id in the index FILE, which would reuse a retired id whose settings are still held here (OB-067).
-     * A non-numeric id is skipped; 0 when nothing is known.
+     * The highest page id ever recorded, live or absent, so a new page never reuses a retired one (OB-067); 0 if none.
      */
     public int highestPageIdSeen()
     {
@@ -421,11 +405,7 @@ public class AutonomyCompanionStore
         return highest;
     }
 
-    /**
-     * The known page names not in `loaded`, empty when the picture is complete.  A caller with an incomplete picture
-     * (CS2File skips a page that will not parse) must not prune on "this square does not exist" (OB-068): save, but do
-     * not prune.
-     */
+    /** The known page names not in `loaded`.  A caller with an incomplete picture must save but not prune (OB-068). */
     public java.util.List<String> pagesNotLoaded(java.util.Collection<String> loaded)
     {
         java.util.List<String> missing = new ArrayList<>();
@@ -438,9 +418,7 @@ public class AutonomyCompanionStore
 
             if (name == null || loaded.contains(name)) continue;
 
-            // A page renamed outside TrainControl is still loaded: the Central Station keeps the id and changes the
-            // name, so ask by id too, by the rule `resolvePage` uses.  Not `pageIsHere`: the index holds a stand-in for
-            // a page that would not read (MT-135).
+            // Ask by id too, as `resolvePage` does: a page renamed outside TrainControl keeps its id (MT-135).
             String nowCalled = resolvePage(written.getKey());
 
             if (nowCalled != null && loaded.contains(nowCalled)) continue;
@@ -452,15 +430,14 @@ public class AutonomyCompanionStore
     }
 
     /**
-     * Drops everything held for pages the operator has said are gone for good (FR-018); called only with that answer,
-     * never inferred, since a page absent from disk is held (OB-067).  Answers how many held entries were dropped.
+     * Drops everything held for pages the operator said are gone for good (FR-018), never inferred (OB-067); returns
+     * the count.
      */
     public int forgetHeldPages(java.util.Collection<String> goneByName)
     {
         if (goneByName == null || goneByName.isEmpty()) return 0;
 
-        // The IDS the file recorded these pages under, not the names: a page may legally be called "5" (OB-092), and
-        // declaring that name gone would delete the entries held for the page with ID 5.
+        // The ids, not the names: a page may legally be called "5" (OB-092).
         Set<String> parts = new LinkedHashSet<>();
 
         for (Map.Entry<String, String> was : pageNamesWhenWritten.entrySet())
@@ -542,9 +519,8 @@ public class AutonomyCompanionStore
     }
 
     /**
-     * Whether this setup's keys can be trusted to mean the pages they name.  After a renumber entries still land by
-     * recorded name (`resolvePage`) but nothing may delete on "this square does not exist".  True while a renumber is
-     * outstanding.
+     * Whether keys can be trusted to mean the pages they name; false while a renumber is outstanding: nothing may
+     * delete.
      */
     public boolean isPageNumberingSuspect()
     {
@@ -561,8 +537,7 @@ public class AutonomyCompanionStore
     }
 
     /**
-     * Whether this layout can hold an autonomy setup at all: the files live beside the diagram, so a layout read from
-     * the Central Station has none until it is downloaded.
+     * Whether this layout can hold a setup: the files live beside the diagram, so a layout read from the CS has none.
      */
     public boolean isUsable()
     {
@@ -590,8 +565,7 @@ public class AutonomyCompanionStore
             return;
         }
 
-        // Read and parse BEFORE anything is thrown away: a failed load (sync lock, truncated write, setup from a newer
-        // TrainControl) must leave the setup exactly as it was.
+        // Read and parse BEFORE anything is thrown away: a failed load must leave the setup as it was.
         String contents = new String(
             Files.readAllBytes(setupFile().toPath()), StandardCharsets.UTF_8);
 
@@ -610,8 +584,8 @@ public class AutonomyCompanionStore
 
         if (version > VERSION) throw new IOException(ERROR_VERSION + " (" + version + " > " + VERSION + ")");
 
-        // Parsed before anything is thrown away too.  A bare JSONException is unchecked and would walk out through the
-        // IOException catches that expect a failed load to change nothing.
+        // Parsed before anything is thrown away too; a bare JSONException is unchecked and would escape the IOException
+        // catches.
         Map<String, JSONObject> loaded = new LinkedHashMap<>();
 
         File[] files = folder().listFiles();
@@ -633,8 +607,7 @@ public class AutonomyCompanionStore
                 }
                 catch (org.json.JSONException e)
                 {
-                    // Named, as an IOException: which file is unreadable tells the user what to do, and callers already
-                    // survive that form.
+                    // Named, as an IOException, so the user learns which file is unreadable.
                     throw new IOException(
                         I18n.f("autosetup.ui.errorConfigurationUnreadable", name,
                             String.valueOf(e.getMessage())), e);
@@ -649,8 +622,7 @@ public class AutonomyCompanionStore
             }
         }
 
-        // What is here now, so a failure in the READ can put it back: readShared runs after clear() and its strict
-        // accessors throw part way for a setup.json this build did not write.
+        // What is here now, so a failure in the READ can put it back.
         JSONObject wasThere = snapshotSetup();
 
         clear();
