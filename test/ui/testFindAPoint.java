@@ -615,7 +615,7 @@ public class testFindAPoint
     }
 
     /**
-     * Find a Point... shows the editor's own Control+F on its right (D40 of the menu review) and its tooltip keeps only
+     * Find a Point... shows the editor's own Control+F on its right and its tooltip keeps only
      * its sentence; the menu binds the key to nothing, so Control+F runs Find a Point once, through the editor's key
      * handler, which still opens the prompt.
      *

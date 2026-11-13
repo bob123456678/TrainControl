@@ -89,7 +89,7 @@ final class EditorWindows
         {
             ui.managePagesItem.setEnabled(layoutCanBeEdited());
 
-            // Grayed, it says why (D46): the Edit Layout button's own reason.
+            // Grayed, it says why: the Edit Layout button's own reason.
             LayoutMenus.sayWhy(ui.managePagesItem, "ui.main.toolbar.tooltip.modifyLayout", whyLayoutCannotBeEdited());
         }
 

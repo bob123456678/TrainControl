@@ -302,7 +302,7 @@ final class LayoutMenus
     }
 
     /**
-     * The tooltip a menu item shows for its state (D46): its description when lit (a null key for none), and why when
+     * The tooltip a menu item shows for its state: its description when lit (a null key for none), and why when
      * grayed.  Asked after whatever decides the item's state.
      */
     static void sayWhy(javax.swing.JMenuItem item, String descriptionKey, String whyKey)
@@ -328,7 +328,7 @@ final class LayoutMenus
 
         if (station >= 0) ui.layoutMenu().add(centralStationHeading, station);
 
-        // Pop Up All is the Layout tab's All button now (D52), and the folder is under Recent Layouts (D43).
+        // Pop Up All is the Layout tab's All button now, and the folder is under Recent Layouts.
         if (ui.popUpAllMenuItem() != null) ui.layoutMenu().remove(ui.popUpAllMenuItem());
 
         if (ui.showCurrentLayoutFolderMenuItem() != null)
@@ -407,7 +407,7 @@ final class LayoutMenus
         ui.innerLayoutPanel().repaint();
     }
 
-    /** Marks the heading of the layout in use "(in use)" (D43); neither, with no layout loaded. */
+    /** Marks the heading of the layout in use "(in use)"; neither, with no layout loaded. */
     private void refreshHeadings()
     {
         if (localHeading == null) return;
@@ -723,7 +723,7 @@ final class LayoutMenus
 
     /**
      * The open layout is not listed; each item reads `recentLabel`.  With none, one gray line says so and the submenu
-     * stays live (D46); Show Current Layout Folder ends it for a layout on this computer, under a divider (D43).
+     * stays live; Show Current Layout Folder ends it for a layout on this computer, under a divider.
      */
     private void refreshRecentLayouts()
     {

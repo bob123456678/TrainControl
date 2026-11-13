@@ -4867,12 +4867,12 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * The menu bar as the menu review's answers arrange it (D40 to D48): the generated items are moved, relabeled and
+     * The menu bar as the menu review's answers arrange it: the generated items are moved, relabeled and
      * headed here, never in the generated block.  Once, after the hand-built items have joined their menus.
      */
     private void arrangeMainMenus()
     {
-        // Locomotives: no Utilities drawer (D42); its items are grayed one by one while they work.
+        // Locomotives: no Utilities drawer; its items are grayed one by one while they work.
         this.locomotiveMenu.remove(this.functionsMenu);
 
         arrange(this.locomotiveMenu, 2,
@@ -4885,7 +4885,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         showShortcut(this.viewDatabaseMenuItem, "choose a locomotive");
         showShortcut(this.addLocomotiveMenuItem, "add a locomotive");
 
-        // What a run would refuse is grayed with the refusal's sentence when the menu opens (D45).
+        // What a run would refuse is grayed with the refusal's sentence when the menu opens.
         for (javax.swing.JMenu menu : new javax.swing.JMenu[] {this.fileMenu, this.locomotiveMenu})
         {
             menu.addMenuListener(new javax.swing.event.MenuListener()
@@ -4904,7 +4904,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             });
         }
 
-        // Preferences (D47): headings over the two choices, then the submenus most used first; Debug joins last.
+        // Preferences: headings over the two choices, then the submenus most used first; Debug joins last.
         this.locomotiveControlMenu.insert(layoutMenus.menuHeading(I18n.t("ui.main.toolbar.headingKeyboardLayout")),
             this.locomotiveControlMenu.getPopupMenu().getComponentIndex(this.keyboardQwertyMenuItem));
         this.startupToolbarMenu.insert(layoutMenus.menuHeading(I18n.t("ui.main.toolbar.headingTrackPowerAtStartup")),
@@ -4918,13 +4918,13 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         arrangeHelpMenu();
     }
 
-    /** Shows a shortcut table row's keys on a menu item without binding them: the table alone acts on keys (D40). */
+    /** Shows a shortcut table row's keys on a menu item without binding them: the table alone acts on keys. */
     private static void showShortcut(javax.swing.JMenuItem item, String row)
     {
         showShortcut(item, KeyShortcuts.named(row).stroke());
     }
 
-    /** Shows these keys on a menu item, bound to nothing: the window's own key handling acts on them (D40). */
+    /** Shows these keys on a menu item, bound to nothing: the window's own key handling acts on them. */
     public static void showShortcut(javax.swing.JMenuItem item, javax.swing.KeyStroke keys)
     {
         item.setAccelerator(keys);
@@ -4948,7 +4948,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
     /**
      * Grays the File and Locomotives items a run would refuse, with the refusal's own sentence, asking the gates their
-     * clicks ask (D45), and those that wait for work in flight.  The one writer of their state, asked afresh on each
+     * clicks ask, and those that wait for work in flight.  The one writer of their state, asked afresh on each
      * menu open and each change of the work, so the two reasons never undo each other; the refusals stay as the
      * backstop.
      */
@@ -4980,7 +4980,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         item.setToolTipText(tip == null ? null : AutonomyEditorPanel.wrappedIfLong(I18n.t(tip)));
     }
 
-    /** Help (D48): the two guides; the update check, Download Update when found, and the releases; About. */
+    /** Help: the two guides; the update check, Download Update when found, and the releases; About. */
     private void arrangeHelpMenu()
     {
         javax.swing.JMenuItem userGuide = new javax.swing.JMenuItem(I18n.t("ui.main.userGuide"));
@@ -5005,7 +5005,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
     /**
      * Asks for the latest release and, when it is newer, shows Help's Download Update, as at start-up; `asked` (Help >
-     * Check for Updates Now, D48) also says what it found.  On a thread of its own.
+     * Check for Updates Now) also says what it found.  On a thread of its own.
      */
     void checkForUpdate(boolean asked)
     {
@@ -5072,7 +5072,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * The Layout tab's All button after S, M and L (D52): what Layouts > Pop Up All did, every page at the chosen size.
+     * The Layout tab's All button after S, M and L: what Layouts > Pop Up All did, every page at the chosen size.
      * Swapped into the generated layout in L's place, beside it, as the generated block may not be edited.
      */
     private void installPopUpAllButton()
@@ -14325,7 +14325,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             row("choose a locomotive", Held.CONTROL.on(KeyEvent.VK_A),
                 key -> key.ui.selectLocomotiveActivated(key.ui.currentButton));
             row("find a locomotive", Held.CONTROL.on(KeyEvent.VK_F), key -> key.ui.quickLocSearch());
-            // The menu item's own door, so the key asks what grays the item (D45).
+            // The menu item's own door, so the key asks what grays the item.
             row("add a locomotive", Held.CONTROL.on(KeyEvent.VK_D), key -> key.ui.addLocomotiveMenuItemActionPerformed(null));
             // The locomotive keys open the Locomotive Settings window, whose one rule covers them (FR-048).
             row("locomotive settings", Held.CONTROL.on(KeyEvent.VK_E), key -> key.ui.openLocomotiveSettings(
@@ -15894,7 +15894,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     private void showCurrentLayoutFolderMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_showCurrentLayoutFolderMenuItemActionPerformed
-        // Layouts > Recent Layouts > Show Current Layout Folder (D43), offered only for a layout on this computer.
+        // Layouts > Recent Layouts > Show Current Layout Folder, offered only for a layout on this computer.
         if (isLocalLayout()) this.getLayoutPath(true);
     }//GEN-LAST:event_showCurrentLayoutFolderMenuItemActionPerformed
 
@@ -17538,7 +17538,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }//GEN-LAST:event_importRoutesMenuItemActionPerformed
 
     private void changeIPMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_changeIPMenuItemActionPerformed
-        // File > Change Central Station IP Address... (D41): Cancel changes nothing; blank forgets it, so the next start asks.
+        // File > Change Central Station IP Address...: Cancel changes nothing; blank forgets it, so the next start
+        // asks.
         String was = TrainControlUI.getPrefs().get(TrainControlUI.IP_PREF, "");
 
         Object typed = JOptionPane.showInputDialog(this, I18n.t("ui.main.promptCentralStationAddress"),
@@ -18302,7 +18303,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 return;
             }
             
-            // The gate its gray asks (D45)
+            // The gate its gray asks
             if (refuseWhileAutonomyRunning(this)) return;
             
             List<String[]> renameList;
@@ -21311,7 +21312,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 // All Layouts is not set here either (OB-128), for the reason above: guardLayoutMenu owns it.
             }
 
-            // Grayed, each says why (D46).
+            // Grayed, each says why.
             LayoutMenus.sayWhy(this.switchCSLayoutMenuItem, "ui.main.toolbar.tooltip.switchToCSLayout",
                 isLocalLayout() ? "ui.main.toolbar.tooltip.centralStationNotConnected"
                     : "ui.main.toolbar.tooltip.alreadyInUse");

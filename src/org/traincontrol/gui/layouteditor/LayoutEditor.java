@@ -2266,7 +2266,7 @@ public class LayoutEditor extends PositionAwareJFrame
     /** The key for Select by Dragging a Box (FR-107): M for marquee; the main window's Control+M never reaches it. */
     public static final javax.swing.KeyStroke SELECT_BY_DRAGGING_KEY = control(KeyEvent.VK_M);
 
-    /** The keys the track editor's key handler acts on, which its right-click menu shows (D40). */
+    /** The keys the track editor's key handler acts on, which its right-click menu shows. */
     public static final javax.swing.KeyStroke PASTE_KEY = control(KeyEvent.VK_V), CUT_KEY = control(KeyEvent.VK_X),
         COPY_KEY = control(KeyEvent.VK_C), ROTATE_KEY = control(KeyEvent.VK_R), TEXT_KEY = control(KeyEvent.VK_T),
         ADDRESS_KEY = control(KeyEvent.VK_A), GROW_KEY = control(KeyEvent.VK_I), UNDO_KEY = control(KeyEvent.VK_Z),

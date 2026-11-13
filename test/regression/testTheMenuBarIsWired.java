@@ -32,7 +32,7 @@ import support.Display;
 import support.Reflect;
 
 /**
- * The main window's menu bar as the owner's answers to the menu review arrange it (D40 to D52 on the Decisions page,
+ * The main window's menu bar as the owner's answers to the menu review arrange it (
  * FR-198 for the Central Station menu not built): every item that moved, was renamed or is new does what it did before,
  * or what the answer says it does now, found by its text in the real menu bar and clicked.
  *
@@ -83,10 +83,10 @@ public class testTheMenuBarIsWired
 
     /**
      * Each menu reads as the answers arrange it, which is the menu review's inventory changed only as they say: File
-     * as it was with the address item renamed; Locomotives with no Utilities drawer (D42); Layouts with no Data Source
-     * and no Pop-up All, its heading in use marked and the folder under Recent Layouts (D43, D46, D52); Preferences
-     * with its headings, names and order (D47); Help with the guides and the update check (D48); "..." where an item
-     * asks (D49).  Nothing reachable before is lost, and nothing is there twice.
+     * as it was with the address item renamed; Locomotives with no Utilities drawer; Layouts with no Data Source
+     * and no Pop-up All, its heading in use marked and the folder under Recent Layouts; Preferences
+     * with its headings, names and order; Help with the guides and the update check; "..." where an item
+     * asks.  Nothing reachable before is lost, and nothing is there twice.
      *
      * MUTATION: leave `arrangeMainMenus` out of the constructor (Utilities and the old Preferences order are back).
      */
@@ -169,7 +169,7 @@ public class testTheMenuBarIsWired
 
     /**
      * The items that moved or were renamed are the same items, so each reaches the handler it reached before: the
-     * generated block's listener, or the hand-built one, travels with the item (D41, D42, D43, D47, D48, D49).
+     * generated block's listener, or the hand-built one, travels with the item.
      *
      * MUTATION: build Locomotive Database... as a new item in `arrangeMainMenus` (with the same text) instead of
      * moving `viewDatabaseMenuItem`, and its row fails.
@@ -209,7 +209,7 @@ public class testTheMenuBarIsWired
     /**
      * Quick Find Locomotive..., Locomotive Database... and Add Locomotive... show their keys on the right, taken from
      * the window's shortcut table, and have no tooltip that only named the key; the menu does not act on the key a
-     * second time, as the table already does (D40).
+     * second time, as the table already does.
      *
      * MUTATION: drop the "none" binding in `showShortcut`, and a Control+D the window's bindings see clicks the item.
      */
@@ -268,7 +268,7 @@ public class testTheMenuBarIsWired
 
     /**
      * File > Change Central Station IP Address... asks with the stored address filled in; OK stores what was typed and
-     * says it is used from the next start; Cancel changes nothing (D41).
+     * says it is used from the next start; Cancel changes nothing.
      *
      * MUTATION: put back the old handler body (it erases the address without asking).
      */
@@ -313,7 +313,7 @@ public class testTheMenuBarIsWired
     /**
      * While a run would refuse them, Sync Database w/ Central Station, Restore from Backup..., Add Locomotive..., Import
      * from CSV..., Sync Full Function State w/ Central Station... and Check for Renamed Locomotives are grayed with the
-     * refusal's own sentence, and lit again with their own tooltips after it (D45).
+     * refusal's own sentence, and lit again with their own tooltips after it.
      *
      * MUTATION: leave out `greyWhatARunRefuses` on the File and Locomotives menus.
      */
@@ -423,7 +423,7 @@ public class testTheMenuBarIsWired
 
     /**
      * Control+D, the Add Locomotive... shortcut, goes through the item's own door: while a run would refuse it, the key
-     * says the refusal's sentence and opens nothing, as the grayed item would (D45).
+     * says the refusal's sentence and opens nothing, as the grayed item would.
      *
      * MUTATION: point the "add a locomotive" shortcut row back at `openAddLocomotive`.
      */
@@ -542,7 +542,7 @@ public class testTheMenuBarIsWired
     /**
      * Layouts marks the heading of the layout in use, and the grayed items say why: on this computer's layout with no
      * Central Station, Switch and Download say what they need, Open CS3 Web App names the Central Station 3, and Recent
-     * Layouts stays live, saying there is no other layout (D43, D46).  On a Central Station layout the other heading is
+     * Layouts stays live, saying there is no other layout.  On a Central Station layout the other heading is
      * marked, Switch is already in use, Edit/Add Pages... says only local files can be edited, and there is no layout
      * folder to show.
      *
@@ -604,7 +604,7 @@ public class testTheMenuBarIsWired
 
     /**
      * Every Preferences checkbox and radio shows the stored choice and, ticked, stores it under the same preference as
-     * before; ticked back, the choice is back (D47: headings, names and order changed, the stored preferences did
+     * before; ticked back, the choice is back (headings, names and order changed, the stored preferences did
      * not).  Echo Sent Commands is left out: an unattended run never stores it.
      *
      * MUTATION: point Startup's Off at `AUTO_POWER_ON` 2 (Leave as It Was's value), and its row fails.
@@ -736,7 +736,7 @@ public class testTheMenuBarIsWired
 
     /**
      * Help > User Guide opens the Readme, the page About's link opens, and Help > Autonomy Guide the guide the Autonomy
-     * menu opens (D48).
+     * menu opens.
      *
      * MUTATION: swap the two URLs in `arrangeHelpMenu`.
      */
@@ -768,7 +768,7 @@ public class testTheMenuBarIsWired
 
     /**
      * Help > Check for Updates Now runs the start-up check: a newer release shows Download Update and says how to get
-     * it; the release in use says TrainControl is up to date (D48).
+     * it; the release in use says TrainControl is up to date.
      *
      * MUTATION: drop the message in `checkForUpdate` (`asked` ignored), and nothing is said.
      */
@@ -821,7 +821,7 @@ public class testTheMenuBarIsWired
     }
 
     /**
-     * Help > About TrainControl opens the About box, as About / Readme did (D48).
+     * Help > About TrainControl opens the About box, as About / Readme did.
      *
      * MUTATION: empty `aboutMenuItemActionPerformed`.
      */
@@ -841,8 +841,8 @@ public class testTheMenuBarIsWired
     }
 
     /**
-     * The Layout tab's All button, after S, M and L, pops up every page, as Layouts > Pop-up all Layout Pages did
-     * (D52); the menu item is gone (the census claim).
+     * The Layout tab's All button, after S, M and L, pops up every page, as Layouts > Pop-up all Layout Pages did;
+     * the menu item is gone (the census claim).
      *
      * MUTATION: wire the button to `layoutNewWindowActionPerformed` (one page) instead.
      */

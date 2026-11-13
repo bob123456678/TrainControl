@@ -650,7 +650,7 @@ public class testTheEditorNamesItsShortcuts
 
     /**
      * Every item of the track editor's right-click menu that has a key in the editor shows it on its right, the very
-     * stroke the editor's key handler acts on (D40), with no tooltip that only names it and no binding of its own;
+     * stroke the editor's key handler acts on, with no tooltip that only names it and no binding of its own;
      * every such key is shown somewhere on the menu.
      *
      * MUTATION: a plain `setAccelerator` in `LayoutEditorRightclickMenu.keyed` (the items bind their keys), or
@@ -3487,7 +3487,7 @@ public class testTheEditorNamesItsShortcuts
     }
 
     /**
-     * A station's right-click menu shows Control+E, Control+O and Control+N on the items they do (D40), and its window
+     * A station's right-click menu shows Control+E, Control+O and Control+N on the items they do, and its window
      * names Control+S and Control+H on the controls they do.
      */
     @Test

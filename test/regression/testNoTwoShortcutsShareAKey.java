@@ -68,7 +68,7 @@ public class testNoTwoShortcutsShareAKey
      * `evt.isControlDown() && evt.getKeyCode() == KeyEvent.VK_X`, and the same with `e.`: the Control half first, the
      * only order either file writes (the floor catches a spelling going unmatched).  Both names, because
      * `formKeyPressed` calls its argument `evt` and `receiveKeyEvent` calls it `e`.  Or `is(evt, CUT_KEY)`, a named key
-     * the editor's right-click menus show too (D40), in `LayoutEditor` or `AutonomyEditorPanel`: read as its letter.
+     * the editor's right-click menus show too, in `LayoutEditor` or `AutonomyEditorPanel`: read as its letter.
      */
     private static final Pattern IN_THE_EDITOR = Pattern.compile(
         "\\be(?:vt)?\\.isControlDown\\(\\)\\s*&&\\s*e(?:vt)?\\.getKeyCode\\(\\)"

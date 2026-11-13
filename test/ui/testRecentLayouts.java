@@ -192,7 +192,7 @@ public class testRecentLayouts
 
         assertEquals(shown(), new ArrayList<String>(), "Recent Layouts lists the open layout");
 
-        // Live, with one gray line saying why there is nothing to open (D46 of the menu review).
+        // Live, with one gray line saying why there is nothing to open.
         assertTrue(Components.onTheEventThread(recentMenu()::isEnabled), "Recent Layouts is grayed with nothing to"
             + " list");
 

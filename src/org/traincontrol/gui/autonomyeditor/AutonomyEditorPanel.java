@@ -309,7 +309,7 @@ public class AutonomyEditorPanel extends JPanel
     public static final String SHORTCUT_NAME = "Control+S";
 
     /**
-     * The keys of the square's menu items, which the editor's key handler acts on and the items show (D40): Station
+     * The keys of the square's menu items, which the editor's key handler acts on and the items show: Station
      * Settings, over a square or for the chosen finding (FR-111, FR-072); the length; a station's name on the square
      * under the pointer (FR-086).
      */

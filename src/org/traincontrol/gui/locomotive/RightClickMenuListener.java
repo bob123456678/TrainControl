@@ -31,7 +31,7 @@ public class RightClickMenuListener extends PopupListener
         menu.show(e.getComponent(), e.getX(), e.getY());
     }
     
-    /** Shows on the item the key the window's shortcut table gives this row, display only (D40). */
+    /** Shows on the item the key the window's shortcut table gives this row, display only. */
     private static void keyed(JMenuItem item, String row)
     {
         TrainControlUI.showShortcut(item, TrainControlUI.KeyShortcuts.named(row).stroke());

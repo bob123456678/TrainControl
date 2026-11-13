@@ -590,7 +590,7 @@ public class testMappingPagesAndLocomotiveDoors
         assertTrue(waitFor(() -> lastSpeed(mark, one) == saved), "Alt+V did not tell the railway");
     }
 
-    // The key's menu shows the keys (D40)
+    // The key's menu shows the keys
 
     /** The rows of the window's shortcut table behind the key menu's items, in the menu's order, every item offered. */
     private static final String[] KEY_MENU_ROWS = ("choose a locomotive, locomotive settings, copy the button, paste onto"

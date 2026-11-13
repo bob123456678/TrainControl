@@ -35,7 +35,7 @@ import support.Components;
 import support.Reflect;
 
 /**
- * The Autonomy and Routes menus as the owner's menu review left them (Decisions D44, D48, D50, D51): every item that
+ * The Autonomy and Routes menus as the owner's menu review left them: every item that
  * moved, was renamed or is new reaches the door it reached before, found in the real menu by its text and clicked, and
  * each menu offers what it offered before, changed only as the answers say.
  *
@@ -98,11 +98,11 @@ public class testTheAutonomyAndRoutesMenusKeepTheirWiring
         }
     }
 
-    // ---------------------------------------------------------------- D50: one Manage list
+    // ---------------------------------------------------------------- one Manage list
 
     /**
      * The Autonomy menu's Manage Configurations and the Autonomy tab's Manage button hold one list, in the answer's
-     * order, and the tab's debug-only Export Raw Graph stays after it (D50).
+     * order, and the tab's debug-only Export Raw Graph stays after it.
      *
      * MUTATION: put Import... and Export... back in the Configuration submenu, or build the tab's list by hand again,
      * and this fails.
@@ -132,7 +132,7 @@ public class testTheAutonomyAndRoutesMenusKeepTheirWiring
     /**
      * Each item of both Manage lists, clicked, reaches its door: New Configuration... asks for the copy's name,
      * Rename... for the configuration's new one, Delete... which to delete, Import... for a file to open, Export... for
-     * one to save, deleting the whole setup asks first, and Stop Using Autonomy unloads (D50).
+     * one to save, deleting the whole setup asks first, and Stop Using Autonomy unloads.
      *
      * MUTATION: wire an item of the shared list to another item's action, and this fails.
      */
@@ -200,7 +200,7 @@ public class testTheAutonomyAndRoutesMenusKeepTheirWiring
     }
 
     /**
-     * The Configuration submenu lists only the configurations, one choice each, and choosing each loads it (D50).
+     * The Configuration submenu lists only the configurations, one choice each, and choosing each loads it.
      *
      * MUTATION: leave Import... in the submenu, or load another configuration than the one chosen, and this fails.
      */
@@ -249,7 +249,7 @@ public class testTheAutonomyAndRoutesMenusKeepTheirWiring
 
     /**
      * Census: the Autonomy menu offers what it offered before, changed only as the answers say: Documentation is called
-     * Autonomy Guide (D48), and Import... and Export... are in Manage Configurations, once each (D50).  Besides those,
+     * Autonomy Guide, and Import... and Export... are in Manage Configurations, once each.  Besides those,
      * the configurations, the pages to edit and the pages to tick, each once.
      *
      * MUTATION: offer Import... in both submenus, or drop Stop Using Autonomy, and this fails.
@@ -266,7 +266,7 @@ public class testTheAutonomyAndRoutesMenusKeepTheirWiring
                 "autosetup.ui.menuUnloadAutonomy", "autosetup.ui.menuDeleteSetup", "autosetup.ui.menuGlobalSettings",
                 "autosetup.ui.menuExportRawGraph", "ui.main.documentation"));
 
-            // D48: renamed
+            // renamed
             before.set(before.indexOf("ui.main.documentation"), "ui.menu.autonomyGuide");
 
             List<String> expected = new ArrayList<>();
@@ -290,7 +290,7 @@ public class testTheAutonomyAndRoutesMenusKeepTheirWiring
 
     /**
      * Census: the Autonomy tab's Manage button offers what it did, plus Stop Using Autonomy and deleting the whole setup,
-     * which the one list brings from the menu (D50).
+     * which the one list brings from the menu.
      *
      * MUTATION: build the tab's list by hand again, and this fails.
      */
@@ -306,7 +306,7 @@ public class testTheAutonomyAndRoutesMenusKeepTheirWiring
                 "autosetup.ui.menuDeleteConfiguration", "autosetup.ui.btnImportConfiguration",
                 "autosetup.ui.btnExportConfiguration", "autosetup.ui.menuExportRawGraph"}) expected.add(t(key));
 
-            // D50: the menu's two
+            // the menu's two
             expected.add(t("autosetup.ui.menuUnloadAutonomy"));
             expected.add(t("autosetup.ui.menuDeleteSetup"));
 
@@ -314,10 +314,10 @@ public class testTheAutonomyAndRoutesMenusKeepTheirWiring
         });
     }
 
-    // ---------------------------------------------------------------- D51: Routes
+    // ---------------------------------------------------------------- Routes
 
     /**
-     * Routes reads New Route... / Find Route... / divider / Export Routes... / Import Routes... (D51).  New Route...
+     * Routes reads New Route... / Find Route... / divider / Export Routes... / Import Routes....  New Route...
      * opens the route editor for a new route, as the Add Route button does; Find Route... asks for a name; Export and
      * Import are the items they were, with their handlers.  Census: what it offered before, plus New Route....
      *
@@ -379,12 +379,12 @@ public class testTheAutonomyAndRoutesMenusKeepTheirWiring
         });
     }
 
-    // ---------------------------------------------------------------- D44: an editor open
+    // ---------------------------------------------------------------- an editor open
 
     /**
      * With an editor open, Layouts and Autonomy both start with Go to the Opened Editor and a divider; it brings the
      * editor back; every item the editor grays says "Close the editor to use this."; Autonomy Guide stays live; New
-     * Route... refuses as Add Route does.  Closed, Layouts hides the two and gives each item its own tooltip back (D44).
+     * Route... refuses as Add Route does.  Closed, Layouts hides the two and gives each item its own tooltip back.
      *
      * MUTATION: drop the divider, leave a grayed item without the reason, or keep the reason after the editor closes,
      * and this fails.

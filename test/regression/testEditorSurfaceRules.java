@@ -2698,7 +2698,7 @@ public class testEditorSurfaceRules
             + "does nothing when clicked");
 
         // The export is added at the foot, where mountLayoutHeadings gives it its own group; the pop-out it sat beside
-        // is the Layout tab's All button now (D52 of the menu review).
+        // is the Layout tab's All button now.
         String export = codeOf("void buildDiagramExportMenu()");
 
         assertTrue(export.contains("ui.layoutMenu().add(active);"),
@@ -2717,7 +2717,7 @@ public class testEditorSurfaceRules
         String menu = codeOf("private void buildItems()");
 
         int choose = menu.indexOf("add(choose);");
-        // The one Manage list (D50 of the menu review), filled by addManageItems and added as `manage`.
+        // The one Manage list, filled by addManageItems and added as `manage`.
         int manage = menu.indexOf("addManageItems(manage,") >= 0 ? menu.indexOf("add(manage);") : -1;
         int pages = menu.indexOf("add(pages);");
 
@@ -2735,8 +2735,8 @@ public class testEditorSurfaceRules
 
     /**
      * The picture export sits BELOW the Central Station section.  Adam: "Move pop up all... and save as picture to below
-     * the central station layout section."  Pop Up All has left the menu for the Layout tab's All button (D52 of the
-     * menu review): "remove the JMenu option."
+     * the central station layout section."  Pop Up All has left the menu for the Layout tab's All button;
+     * Adam: "remove the JMenu option."
      *
      * MUTATION: dropping the re-home block from mountLayoutHeadings.
      */

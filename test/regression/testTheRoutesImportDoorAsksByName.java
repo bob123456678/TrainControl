@@ -318,7 +318,7 @@ public class testTheRoutesImportDoorAsksByName
 
     /**
      * Once the file is picked, Import asks "This replaces all N routes. Continue?" with the count of routes there are,
-     * starting on No (D51); No leaves every route as it was, armed or not, and asks and says nothing more.
+     * starting on No; No leaves every route as it was, armed or not, and asks and says nothing more.
      *
      * MUTATION: drop the question from `importRoutesMenuItemActionPerformed`, start it on Yes, or go on after No, and this
      * fails.

@@ -167,7 +167,7 @@ public class testRightClickMenuTipsCanBeHidden
     /** The items the last read found grayed: they keep their tips, which say why. */
     private static final java.util.Set<String> grayed = new java.util.HashSet<>();
 
-    /** The keys the last read found shown on the items' right, by item (D40): the setting never touches them. */
+    /** The keys the last read found shown on the items' right, by item: the setting never touches them. */
     private static final Map<String, javax.swing.KeyStroke> shownKeys = new java.util.HashMap<>();
 
     private static void collect(Component[] items, Map<String, String> into)
@@ -218,7 +218,7 @@ public class testRightClickMenuTipsCanBeHidden
 
         String text = tip.replaceAll("<[^>]*>", "").trim();
 
-        // Its own shortcut, shown on the item (D40 of the menu review), as RightClickTips writes an accelerator.
+        // Its own shortcut, shown on the item, as RightClickTips writes an accelerator.
         if (text.equals(I18n.t("layout.ui.tooltipFindAPoint"))) return "Ctrl+F";
 
         if (text.equals(I18n.t("layout.ui.tooltipSelectByDragging"))) return "Ctrl+M";
@@ -345,7 +345,7 @@ public class testRightClickMenuTipsCanBeHidden
     }
 
     /**
-     * The track editor's menu, opened once: its items show their keys on their right (D40) whether or not the tips are
+     * The track editor's menu, opened once: its items show their keys on their right whether or not the tips are
      * hidden, its other tooltips go, and off again, all are back.
      *
      * MUTATION: strip hotkeys too, or skip the strip, as above.

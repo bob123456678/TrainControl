@@ -30,7 +30,7 @@ final class LayoutEditorRightclickMenu extends JPopupMenu
         void run() throws Exception;
     }
 
-    /** An item doing `action`, showing the key the editor's key handler acts on for it, display only (D40). */
+    /** An item doing `action`, showing the key the editor's key handler acts on for it, display only. */
     private JMenuItem keyed(String text, javax.swing.KeyStroke key, Action action)
     {
         JMenuItem item = new JMenuItem(text);
