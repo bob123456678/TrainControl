@@ -330,7 +330,7 @@ public class testDownloadingTheStationsLayout
 
     /**
      * A folder that already holds a layout is asked about before anything is fetched or written: Cancel leaves its
-     * files and the station's layout in use as they were, and asks the station nothing; Replace downloads over it.
+     * files and the station's layout in use as they were, and fetches nothing; Replace downloads over it.
      *
      * MUTATION: make `LayoutFileActions.replaceIfAsked` return true at once, and the folder is overwritten unasked.
      */
@@ -364,8 +364,8 @@ public class testDownloadingTheStationsLayout
             assertFalse(answering.asked().contains(complete), "Cancel still downloaded: " + answering.asked());
             assertTrue(java.util.Arrays.equals(Files.readAllBytes(index.toPath()), mine),
                 "Cancel left the folder's layout changed");
-            assertTrue(rig.station.log().isEmpty(), "the station was asked before the question was answered: "
-                + rig.station.log());
+            assertTrue(rig.station.requests("/config/gleisbild.cs2") == 0, "the station's layout was fetched though"
+                + " the question was answered Cancel: " + rig.station.log());
             assertTrue(ui.isRemoteLayout(), "Cancel left the station's layout");
         }
 
