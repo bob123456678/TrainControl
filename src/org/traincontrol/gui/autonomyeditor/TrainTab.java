@@ -139,7 +139,7 @@ final class TrainTab extends StationWindowBase.RoomyPanel
             layout.setConstraints(own, c);
         }
 
-        setBorder(BorderFactory.createEmptyBorder(StationWindowBase.PAD, 0, 0, 0));
+        setBorder(StationWindowBase.CONTENT_MARGIN);
 
         add(form, BorderLayout.NORTH);
     }

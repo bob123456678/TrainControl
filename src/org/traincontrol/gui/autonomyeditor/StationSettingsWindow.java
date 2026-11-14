@@ -223,7 +223,7 @@ public final class StationSettingsWindow extends StationWindowBase
 
         columns.add(rightColumn, BorderLayout.EAST);
 
-        settingsTab.setBorder(BorderFactory.createEmptyBorder(PAD, 0, 0, 0));
+        settingsTab.setBorder(CONTENT_MARGIN);
 
         tabs.setName("station.tabs");
         tabs.putClientProperty("JTabbedPane.tabWidthMode", "preferred");
@@ -1226,6 +1226,8 @@ public final class StationSettingsWindow extends StationWindowBase
     {
         severalLine.setVisible(many);
         rightColumn.setVisible(!many);
+
+        middle.setBorder(many ? CONTENT_MARGIN : BorderFactory.createEmptyBorder());
 
         if (many && columns.getParent() != middle)
         {

@@ -54,6 +54,9 @@ abstract class StationWindowBase extends JDialog
     /** The margin round the content: the route editor's. */
     static final int PAD = 10;
 
+    /** The margin round a window's content; Station Settings' tabs go without it and pad each tab instead (OB-461). */
+    static final javax.swing.border.Border CONTENT_MARGIN = BorderFactory.createEmptyBorder(PAD, PAD, 0, PAD);
+
     static final Font BUTTON_FONT = new Font("Segoe UI", Font.BOLD, 12);
 
     final transient AutonomyEditorPanel editor;
@@ -175,7 +178,7 @@ abstract class StationWindowBase extends JDialog
         footer.setBorder(BorderFactory.createEmptyBorder(6, PAD, PAD, PAD));
         footer.add(buttons, BorderLayout.EAST);
 
-        content.setBorder(BorderFactory.createEmptyBorder(PAD, PAD, 0, PAD));
+        content.setBorder(CONTENT_MARGIN);
 
         JPanel root = new JPanel(new BorderLayout());
 
