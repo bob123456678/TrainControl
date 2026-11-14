@@ -2247,6 +2247,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             if (this.model != null) this.model.clearAutoLayout();
 
             this.forgetTheRailway();
+
+            closeThePageWindows();
         }
 
         this.railwaySource = source;
@@ -2493,10 +2495,37 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     /** Redraws the page windows whose page was read again (OB-462), each keeping its size and place. */
     private void refreshPopupsWhosePagesWereReadAgain()
     {
+        // Not while the pages are being read again, when one not read yet looks gone
+        if (refreshesUnderWay.get() == 0 && !syncInFlight.get()) closePopupsWhosePagesAreGone();
+
         for (LayoutPopupUI popup : new ArrayList<>(this.popups))
         {
             if (popup.isVisible() && popup.showsAPageReadAgain()) popup.refreshCaptions();
         }
+    }
+
+    /** Closes the page windows whose page the layout no longer has (OB-466). */
+    private void closePopupsWhosePagesAreGone()
+    {
+        for (LayoutPopupUI popup : new ArrayList<>(this.popups))
+        {
+            if (popup.isVisible() && popup.showsAPageThatIsGone()) closePopup(popup);
+        }
+    }
+
+    /** Closes every page window and forgets those remembered for the next start: they show the layout left (OB-466). */
+    private void closeThePageWindows()
+    {
+        for (LayoutPopupUI popup : new ArrayList<>(this.popups)) closePopup(popup);
+
+        for (Integer size : layoutSizes.values()) prefs.remove(LAYOUT_TITLES_PREF + "_" + size);
+    }
+
+    private void closePopup(LayoutPopupUI popup)
+    {
+        popup.close();
+
+        this.popups.remove(popup);
     }
 
     /**
@@ -16460,8 +16489,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         this.repaintLayout();
 
+        // Before the redraw, which would put a gone page's window on whichever page took its place
+        closePopupsWhosePagesAreGone();
+
         this.updatePopups(true);
-        
+
         setEditLayoutEnabled(true);
         
         // Revert preference

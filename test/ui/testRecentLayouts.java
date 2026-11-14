@@ -20,6 +20,7 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 import org.traincontrol.base.Accessory;
 import org.traincontrol.base.RouteCommand;
+import org.traincontrol.gui.LayoutPopupUI;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.marklin.MarklinRoute;
@@ -131,6 +132,84 @@ public class testRecentLayouts
         assertEquals(shown(), Collections.singletonList(b), "after opening A again, Recent Layouts does not list B alone");
 
         assertEquals(recorded(), Arrays.asList(a, b), "the record is not the folders opened, most recent first, once each");
+    }
+
+    /**
+     * Opening another layout closes the page windows of the one left and forgets them, so a start restores none of them
+     * on the layout opened (OB-466), though B's pages have A's names.
+     *
+     * MUTATION: leave out `closeThePageWindows()` in `TrainControlUI.sourceIsNow`, and A's page window stays open.
+     */
+    @Test
+    public void testOpeningAnotherLayoutClosesThePageWindowsOfTheOneLeft() throws Exception
+    {
+        String a = sandbox.getFolder().getAbsolutePath();
+        String b = second.toFile().getAbsolutePath();
+        boolean rememberWas = TrainControlUI.getPrefs().getBoolean(TrainControlUI.REMEMBER_WINDOW_LOCATION, false);
+
+        assertEquals(new File(String.valueOf(ui.localLayoutPath())).getAbsolutePath(), a, "precondition: A is not open");
+
+        TrainControlUI.getPrefs().putBoolean(TrainControlUI.REMEMBER_WINDOW_LOCATION, true);
+
+        try
+        {
+            record(b);
+
+            LayoutPopupUI window = support.AskingWindows.openThePage(ui);
+
+            // Remembered as the application's exit remembers it
+            SwingUtilities.invokeAndWait(() -> invoke("saveLayoutTitles"));
+
+            open(b);
+
+            assertEquals(pageWindows(), new ArrayList<String>(), "a page window of the layout left is still open");
+            assertFalse(window.isShowing(), "the page window of the layout left is still open");
+
+            // What a start does with the page windows remembered
+            SwingUtilities.invokeAndWait(ui::restoreLayoutTitles);
+            Components.settle();
+
+            assertEquals(pageWindows(), new ArrayList<String>(), "a start reopens the page windows of the layout left");
+        }
+        finally
+        {
+            TrainControlUI.getPrefs().putBoolean(TrainControlUI.REMEMBER_WINDOW_LOCATION, rememberWas);
+
+            SwingUtilities.invokeAndWait(() ->
+            {
+                for (java.awt.Window w : java.awt.Window.getWindows()) if (w instanceof LayoutPopupUI) w.dispose();
+            });
+
+            if (!a.equals(new File(String.valueOf(ui.localLayoutPath())).getAbsolutePath())) open(a);
+        }
+    }
+
+    /** The pages of the page windows showing. */
+    private static List<String> pageWindows()
+    {
+        return Components.onTheEventThread(() ->
+        {
+            List<String> pages = new ArrayList<>();
+
+            for (java.awt.Window w : java.awt.Window.getWindows())
+            {
+                if (w instanceof LayoutPopupUI && w.isShowing()) pages.add(((LayoutPopupUI) w).getLayoutTitle());
+            }
+
+            return pages;
+        });
+    }
+
+    private static void invoke(String method)
+    {
+        try
+        {
+            support.Reflect.method(TrainControlUI.class, method).invoke(ui);
+        }
+        catch (ReflectiveOperationException e)
+        {
+            throw new IllegalStateException(e);
+        }
     }
 
     /**

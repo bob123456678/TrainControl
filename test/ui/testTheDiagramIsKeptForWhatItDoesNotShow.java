@@ -485,6 +485,62 @@ public class testTheDiagramIsKeptForWhatItDoesNotShow
         }
     }
 
+    /**
+     * A page window closes once a sync finds its page gone from the layout (OB-466), rather than going on showing a
+     * page that is no longer there.  The page taken out is one autonomy leaves out, so the setup is not at stake.
+     *
+     * MUTATION: leave out `closePopupsWhosePagesAreGone()` in `TrainControlUI.refreshPopupsWhosePagesWereReadAgain`,
+     * and the window stays open.
+     */
+    @Test(timeOut = 180000)
+    public void testAPageWindowClosesWhenASyncFindsItsPageGone() throws Exception
+    {
+        final String gone = "5 - Test";
+        final Path index = sandbox.getFolder().toPath().resolve("config/gleisbild.cs2");
+        final Path page = sandbox.getFolder().toPath().resolve("config/gleisbilder/" + gone + ".cs2");
+        final byte[] indexWas = Files.readAllBytes(index);
+        final byte[] pageWas = Files.readAllBytes(page);
+        final String text = new String(indexWas, StandardCharsets.UTF_8);
+        final String eol = text.contains("\r\n") ? "\r\n" : "\n";
+        final String entry = ("seite\r\n .id=4\r\n .name=" + gone + "\r\n").replace("\r\n", eol);
+
+        assertTrue(text.contains(entry), "precondition: the index has no entry for " + gone);
+
+        Components.select((JComboBox<?>) WindowField.of(ui, "LayoutList"), gone);
+        Settle.theDiagram(ui);
+
+        final LayoutPopupUI window = AskingWindows.openThePage(ui);
+
+        assertEquals(window.getLayoutTitle(), gone, "precondition: the page window does not show " + gone);
+
+        // The main window on a page that stays, so only the page window is about the page taken out
+        showTheMainPage();
+
+        final Locomotive train = model.getLocByName(model.getLocList().get(0));
+
+        try
+        {
+            Files.write(index, text.replace(entry, "").getBytes(StandardCharsets.UTF_8));
+            Files.delete(page);
+
+            syncTheLocomotive(train);
+
+            assertFalse(model.getLayoutList().contains(gone), "precondition: the sync did not read the pages again");
+
+            assertTrue(Components.waitFor(() -> !window.isShowing(), 20000), "the page window of " + gone + " is still"
+                + " open after a sync found the page gone");
+        }
+        finally
+        {
+            Files.write(index, indexWas);
+            Files.write(page, pageWas);
+
+            syncTheLocomotive(train);
+
+            SwingUtilities.invokeAndWait(window::dispose);
+        }
+    }
+
     // ---------------------------------------------------------------- the fixture
 
     /** The diagram on screen and the cached pages, to say afterwards that a door kept them. */

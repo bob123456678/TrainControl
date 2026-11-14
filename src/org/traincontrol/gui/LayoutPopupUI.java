@@ -117,6 +117,30 @@ public class LayoutPopupUI extends PositionAwareJFrame
         return now != null && now != this.layout;
     }
 
+    /** Whether the model has this window's page no longer, under its name or its page ID (a rename keeps the ID). */
+    boolean showsAPageThatIsGone()
+    {
+        if (this.parent.getModel().getLayout(this.layout.getName()) != null) return false;
+
+        for (String name : this.parent.getModel().getLayoutList())
+        {
+            LayoutDiagram page = this.parent.getModel().getLayout(name);
+
+            if (page != null && page.getPageId() != null && page.getPageId().equals(this.layout.getPageId())) return false;
+        }
+
+        return true;
+    }
+
+    /** Closes the window for good, its grid stopped first. */
+    void close()
+    {
+        if (this.grid != null) this.grid.discard();
+
+        setVisible(false);
+        dispose();
+    }
+
     public String getLayoutTitle()
     {
         return this.layout.getName();
