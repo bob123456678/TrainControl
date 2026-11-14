@@ -15033,16 +15033,19 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     {
         // The DATABASE sync adds locomotives and re-adds routes, more invasive than the guarded state sync next door.
         // The model defers only the address update; everything else in it proceeds.
-        // With no window to tell (c null), the owed sync of a door's own edit: it waits for an open editor, quietly
-        if (refuseWhileAutonomyRunning(c))
+        // With no window to tell (c null), the owed sync of a door's own edit: it waits for an open editor, quietly,
+        // and a run drops it, said in the log alone since nobody pressed Sync
+        if (c == null && RunGates.whyAutonomyRunningRefuses(this) != null)
         {
-            // A debt a run refuses is dropped, not left to fire at a later editor close
-            if (c == null) syncOwed.set(false);
+            // Dropped, not left to fire at a later editor close
+            syncOwed.set(false);
+
+            this.log(I18n.t("ui.infoOwedSyncLeftWhileRunning"));
 
             return;
         }
 
-        if (c != null && RunGates.refuseALinkOrSyncWhileEditorOpen(this, c)) return;
+        if (c != null && (refuseWhileAutonomyRunning(c) || RunGates.refuseALinkOrSyncWhileEditorOpen(this, c))) return;
 
         javax.swing.SwingUtilities.invokeLater(() ->
         {

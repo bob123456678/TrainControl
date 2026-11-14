@@ -441,8 +441,7 @@ public class testASyncOwedWaitsForTheEditor
 
             SwingUtilities.invokeLater(() -> ui.doSync(null));
 
-            assertTrue(answering.awaitAsked(1, 20000), "the run's refusal was not said");
-
+            Components.waitFor(() -> !owed.get(), 20000);
             Components.settle();
 
             running.setBoolean(model.getAutoLayout(), false);
@@ -460,6 +459,49 @@ public class testASyncOwedWaitsForTheEditor
         {
             running.setBoolean(model.getAutoLayout(), false);
         }
+    }
+
+    /**
+     * A sync owed that a run refuses shows no dialog, since nobody pressed Sync and no locomotive is being edited, and
+     * the log says it was left for the next Sync.
+     *
+     * MUTATION: in `doSync`, refuse the owed sync through `refuseWhileAutonomyRunning(c)` as a pressed Sync is, and the
+     * "cannot edit locomotives" message shows.
+     */
+    @Test(timeOut = 120000)
+    public void testAnOwedSyncARunRefusesIsLoggedNotShown() throws Exception
+    {
+        final java.util.concurrent.atomic.AtomicBoolean owed = (java.util.concurrent.atomic.AtomicBoolean)
+            Reflect.get(TrainControlUI.class, ui, "syncOwed");
+        final java.lang.reflect.Field running = Reflect.field(org.traincontrol.automation.Layout.class, "running");
+        final String left = I18n.t("ui.infoOwedSyncLeftWhileRunning");
+
+        running.setBoolean(model.getAutoLayout(), true);
+
+        try (Answering answering = Answering.start(message -> Answering.pressAt(0)))
+        {
+            owed.set(true);
+
+            SwingUtilities.invokeLater(() -> ui.doSync(null));
+
+            assertTrue(Components.waitFor(() -> logText().contains(left), 20000), "the log does not say the owed sync was"
+                + " left for the next Sync; said " + answering.asked());
+
+            Components.settle();
+
+            assertEquals(answering.asked(), new ArrayList<String>(), "the run's refusal of an owed sync showed a dialog");
+            assertEquals(syncs(), 0, "the refused sync ran: " + station.log());
+        }
+        finally
+        {
+            running.setBoolean(model.getAutoLayout(), false);
+        }
+    }
+
+    /** The main window's log as it shows. */
+    private static String logText()
+    {
+        return Components.onTheEventThread(() -> (String) Reflect.method(TrainControlUI.class, "logText").invoke(ui));
     }
 
     /**
