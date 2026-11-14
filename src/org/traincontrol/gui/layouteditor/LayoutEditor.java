@@ -1847,8 +1847,8 @@ public class LayoutEditor extends PositionAwareJFrame
             // The remembered caption mode, now the panel has a window (MT-292), before the grid is drawn.
             autonomyPanel.applyRememberedCaptionMode();
 
-            // Drawn again only over a grid drawn before this mode was known (a page switch).  On opening, render()'s
-            // queued drawing runs after this and builds the grid once, in this mode.
+            // Drawn again only over a grid drawn before this mode was known.  On opening and on a page switch the grid
+            // is built after this, once, in this mode.
             if (grid != null)
             {
                 SwingUtilities.invokeLater(() ->
@@ -3609,6 +3609,23 @@ public class LayoutEditor extends PositionAwareJFrame
         this.ExtLayoutPanel.revalidate();
     }
 
+    /** `drawGrid` for a window's arrival: a page it grows to the floor is drawn by that call, not again by the growing. */
+    private void drawGridOnce()
+    {
+        boolean was = pauseRepaint;
+
+        pauseRepaint = true;
+
+        try
+        {
+            drawGrid();
+        }
+        finally
+        {
+            pauseRepaint = was;
+        }
+    }
+
     /**
      * Refreshes the layout
      */
@@ -3823,19 +3840,7 @@ public class LayoutEditor extends PositionAwareJFrame
 
             mountSidebar();
 
-            // One build: a page drawGrid grows to the floor is drawn by that call, so the redraw growing asks is not.
-            boolean was = pauseRepaint;
-
-            pauseRepaint = true;
-
-            try
-            {
-                drawGrid();
-            }
-            finally
-            {
-                pauseRepaint = was;
-            }
+            drawGridOnce();
 
             // The mode's own title (MT-669)
             setTitle(titleFor(isAutonomyMode()));
@@ -4266,17 +4271,19 @@ public class LayoutEditor extends PositionAwareJFrame
             // The parts of render() about which diagram this is, not about being a window.
             layout.setEdit();
 
-            // Drawn next, before the mode is entered
-            if (session != null) takeTheSetupsTextLabels(arriving);
+            // The old page's diagram let go, so the mode is entered over none and the new page is built once, in it.
+            if (grid != null) grid.discard();
+
+            grid = null;
+
+            if (session != null) setAutonomyMode(session);
 
             mountSidebar();
 
-            drawGrid();
+            drawGridOnce();
 
             // The arriving mode's title from the start (MT-669), or the old mode's shows for a moment.
             setTitle(titleFor(session != null));
-
-            if (session != null) setAutonomyMode(session);
 
             // Remembered only when arrived at as asked: a fallback is no choice.
             if (autonomy == (session != null)) parent.rememberEditorChoice(session != null);
