@@ -331,14 +331,17 @@ public class testLocomotiveCsvImportDoor
     public void testASkippedRowNamesTheCellsThatMadeItUnreadable() throws Exception
     {
         List<String> lines = detailsOfImporting("FR049 door year,,MFX,50,0,0:00:00,c. 1950,0,,,\n"
-            + "FR049 door two,,MFX,51,150,0:00:00,0,19x0,,,\n" + "FR049 door fine,,MFX,52,0,0:00:00,0,0,,,\n");
+            + "FR049 door two,,MFX,51,150,0:00:00,0,19x0,,,\n" + "FR049 door fine,,MFX,52,0,0:00:00,0,0,,,\n"
+            + "FR049 door kept,,DCC,21,101,0:00:00,0,0,,,\n");
 
         assertEquals(lines, java.util.Arrays.asList(
             I18n.f("loc.ui.importCsvSkippedLine", 2) + ": " + I18n.f("loc.ui.importCsvReasonCells",
                 I18n.f("loc.ui.importCsvBadCell", "Start Year", "c. 1950")),
             I18n.f("loc.ui.importCsvSkippedLine", 3) + ": " + I18n.f("loc.ui.importCsvReasonCells",
                 I18n.f("loc.ui.importCsvBadCell", "PreferredSpeed", "150") + ", "
-                + I18n.f("loc.ui.importCsvBadCell", "End Year", "19x0"))), "the skipped rows do not name their cells");
+                + I18n.f("loc.ui.importCsvBadCell", "End Year", "19x0")),
+            I18n.f("loc.ui.importCsvSkippedLine", 5) + ": " + I18n.f("loc.ui.importCsvReasonCells",
+                I18n.f("loc.ui.importCsvBadCell", "PreferredSpeed", "101"))), "the skipped rows do not name their cells");
     }
 
     /**
@@ -363,14 +366,23 @@ public class testLocomotiveCsvImportDoor
         {
             File file = write(HEADER11 + rows);
 
+            model.newMFXLocomotive("FR049 door kept", 20);
+
             try
             {
                 details.addAll(press(ui, file, IMPORT, s -> !s.said.isEmpty()).saidShapes.get(0).details);
+
+                for (String name : new String[] {"FR049 door year", "FR049 door two", "FR049 door only"})
+                {
+                    assertNull(model.getLocByName(name), "a skipped row made " + name);
+                }
+
+                assertEquals(model.getLocByName("FR049 door kept").getAddress(), 20, "a skipped row changed an existing locomotive");
             }
             finally
             {
                 file.delete();
-                for (String name : new String[] {"FR049 door year", "FR049 door two", "FR049 door fine", "FR049 door only"})
+                for (String name : new String[] {"FR049 door year", "FR049 door two", "FR049 door fine", "FR049 door only", "FR049 door kept"})
                 {
                     model.deleteLoc(name);
                 }
