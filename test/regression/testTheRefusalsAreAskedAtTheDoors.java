@@ -138,8 +138,10 @@ public class testTheRefusalsAreAskedAtTheDoors
             "a recent layout swaps the layout folder, as Open Layout does (FR-145)"},
         {"private void mountRestoreFromBackup(", SETUP + "|" + EDITOR,
             "Restore from Backup replaces the layout folder and the data, then closes TrainControl (FR-124)"},
-        {"    void initializeLocalLayoutMenuItemActionPerformed(", SETUP,
-            "Create New Layout switches the layout folder, syncs with the Central Station and resets autonomy (RSA13-B2)"},
+        {"    void initializeLocalLayoutMenuItemActionPerformed(", SETUP + "|" + EDITOR,
+            "Create New Layout switches the layout folder, syncs with the Central Station and resets autonomy (RSA13-B2); under an open editor it switched first and was refused at the sync"},
+        {"    void downloadCSLayoutMenuItemActionPerformed(", EDITOR,
+            "Download Central Station Layout switches the layout to the downloaded folder, under an open editor as well"},
 
         // And the rest.
         {"private void startAutonomyActionPerformed(", GATE,

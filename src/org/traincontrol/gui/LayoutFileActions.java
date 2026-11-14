@@ -202,7 +202,10 @@ final class LayoutFileActions
         // the session under moving trains.
         if (this.ui.refuseWhileARunHoldsTheSetup(this.ui)) return;
 
-        SwingUtilities.invokeLater(() -> 
+        // Nor under an open editor, whose Cancel would put trains back on a railway that is gone.
+        if (this.ui.refuseWhileEditorOpen()) return;
+
+        SwingUtilities.invokeLater(() ->
         {
             JOptionPane.showMessageDialog(
                 this.ui,
@@ -645,6 +648,8 @@ final class LayoutFileActions
      */
     void downloadCSLayoutMenuItemActionPerformed()
     {
+        // The download switches the layout, which an open editor must not see.
+        if (this.ui.refuseWhileEditorOpen()) return;
 
         if (!this.ui.isLocalLayout() && !this.ui.getModel().getLayoutList().isEmpty())
         {
