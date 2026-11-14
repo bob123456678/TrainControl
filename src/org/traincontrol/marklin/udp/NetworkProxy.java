@@ -70,12 +70,18 @@ public class NetworkProxy
     private static final int RECEIVE_BUFFER_BYTES = 1024 * 1024;
     
     /** Short, because a station that will not take TCP holds the start-up up by this much. */
-    private static volatile int tcpConnectTimeoutMs = 2000;
+    private static final int TCP_CONNECT_TIMEOUT_MS = 2000;
 
-    private static volatile int tcpReconnectTries = 3;
+    private static volatile int tcpConnectTimeoutMs = TCP_CONNECT_TIMEOUT_MS;
+
+    private static final int TCP_RECONNECT_TRIES = 3;
+
+    private static volatile int tcpReconnectTries = TCP_RECONNECT_TRIES;
 
     /** The pause before each reconnect, times the try's number. */
-    private static volatile long tcpReconnectBackoffMs = 1000;
+    private static final long TCP_RECONNECT_BACKOFF_MS = 1000;
+
+    private static volatile long tcpReconnectBackoffMs = TCP_RECONNECT_BACKOFF_MS;
 
     /**
      * For tests only: the connect timeout, reconnect tries and backoff, shortened so a claim about giving up on TCP does
@@ -91,7 +97,7 @@ public class NetworkProxy
     /** For tests only: the real connect timeout, tries and backoff again. */
     public static void restoreTcpTimeoutsAfterATest()
     {
-        setTcpTimeoutsForATest(2000, 3, 1000);
+        setTcpTimeoutsForATest(TCP_CONNECT_TIMEOUT_MS, TCP_RECONNECT_TRIES, TCP_RECONNECT_BACKOFF_MS);
     }
 
     /**
