@@ -175,3 +175,4 @@ not fix it. Name the square.
 - `ui.testAStandingTrainIsSentWhileAnotherRuns`
 - `regression.testTheMenuBarIsWired`
 - `regression.testTheAutonomyAndRoutesMenusKeepTheirWiring`
+- `core.testReversalIsAboutTheTrainAndTheStation`

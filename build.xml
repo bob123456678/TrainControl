@@ -712,6 +712,7 @@
         <test-one-class class="testTheAutonomyAndRoutesMenusKeepTheirWiring"/>
         <test-one-class class="testTheStartUpQuestionsAreAskedOnTheEventThread"/>
         <test-one-class class="testThreeTrainsWantTheSameTrack"/>
+        <test-one-class class="testReversalIsAboutTheTrainAndTheStation"/>
     </target>
     <target name="package-for-store" depends="jar">
         <property name="store.jar.name" value="TrainControl"/>
