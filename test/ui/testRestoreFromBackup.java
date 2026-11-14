@@ -1013,7 +1013,10 @@ public class testRestoreFromBackup
     @Test(timeOut = 120000)
     public void testAnExitThatCannotSaveAsksUntilTheSaveWorks() throws Exception
     {
-        byte[] before = databaseBytes();
+        // A mark no save writes: a class's earlier test can leave the file holding what this exit would save
+        byte[] before = {1};
+
+        Files.write(new File(Util.dataPath(MarklinControlStation.DATA_FILE_NAME)).toPath(), before);
 
         List<Answering.Question> asked = closeWithTheDatabaseHeld(I18n.t("ui.exitSaveRetry"));
 
