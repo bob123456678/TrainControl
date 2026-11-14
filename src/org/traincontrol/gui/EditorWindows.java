@@ -336,8 +336,8 @@ final class EditorWindows
                 // Runs after render()'s own posted task shows the editor
                 SwingUtilities.invokeLater(() -> ui.editorOnItsWay = false);
 
-                // Posted twice: render() and setAutonomyMode only QUEUE the work that builds the grid, so reveal must
-                // wait for it.
+                // Posted twice: render() only QUEUES the work that builds the grid (and what that work posts), so
+                // reveal must wait for it.
                 if (reveal != null)
                 {
                     SwingUtilities.invokeLater(() ->
