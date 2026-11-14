@@ -466,8 +466,9 @@ public class testTheLengthPromptHasTheKeyboard
      * (MT-454, MT-520).  The railway's lengths and maxima are cleared so there is something to ask, and the setup is put
      * back after.
      *
-     * MUTATION: in `askInWalkPrompt` give the option pane `answers[0]` as its initial value instead of null, and the
-     * keyboard goes to the OK button; make the field's Enter answer `answers[2]`, and no second prompt comes.
+     * MUTATION: in `askInWalkPrompt` give the option pane `answers[0]` as its initial value instead of null and drop the
+     * two `field.requestFocusInWindow()` calls, and the keyboard goes to the OK button; make the field's Enter answer
+     * `answers[2]`, and no second prompt comes.
      */
     @Test
     public void testTheLengthsAndMaximaWalksTakeEnterAndEscapeInTheFocusedField() throws Exception
