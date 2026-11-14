@@ -953,6 +953,18 @@ public class LayoutDiagramComponent
         "_type", "id", "typ", "drehung", "prot", "artikel", "zielseite", "zielartikel", "zustand", "text");
 
     /**
+     * The protocol saving this square writes as `.prot`, or null for none: every addressed accessory's, MM2 included,
+     * so the square keeps the protocol it was saved with (OB-402); any other square's only when not MM2.
+     */
+    public Accessory.accessoryDecoderType savedProtocol()
+    {
+        boolean written = this.protocol != Accessory.accessoryDecoderType.MM2
+            || (this.address > 0 && this.isAccessory());
+
+        return written ? this.protocol : null;
+    }
+
+    /**
      * Exports this component in the CS2 file format
      * Limited to the component types supported in TrainControl
      * @throws Exception
@@ -1002,17 +1014,11 @@ public class LayoutDiagramComponent
             builder.append(" .drehung=").append(fileRotation).append("\n");
         }
         
-        // Custom state
-        if (this.protocol != null && this.protocol != Accessory.accessoryDecoderType.MM2)
+        if (savedProtocol() != null)
         {
-            builder.append(" .prot=").append(this.protocol.toString()).append("\n");
+            builder.append(" .prot=").append(savedProtocol().toString()).append("\n");
         }
-        else if (this.protocol != null && this.address > 0 && this.isAccessory())
-        {
-            // MM2 too on every addressed accessory tile, so the tile keeps the protocol it was saved with (OB-402)
-            builder.append(" .prot=").append(this.protocol.toString()).append("\n");
-        }
-        
+
         // Add .artikel (raw address)  
         if (this.type != componentType.TEXT)
         {

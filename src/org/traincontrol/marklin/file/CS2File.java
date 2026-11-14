@@ -2148,6 +2148,12 @@ public final class CS2File
                     LayoutDiagramComponent.stationLinkPageId(LayoutDiagramComponent.pageIdFromText(keys.get("zielseite")),
                         LayoutDiagramComponent.artikelNumber(keys.get("artikel"))));
 
+                // Each accessory square with the protocol it has in the diagram as read from the station, an address's
+                // two protocols told apart by the CS3's plan, as a save writes it (OB-465)
+                LayoutDiagram asRead = this.control != null ? this.control.getLayout(layoutName) : null;
+
+                if (asRead != null) withIds = asRead.withSavedProtocols(withIds);
+
                 copyAtomically(new BufferedReader(new java.io.StringReader(withIds)), layoutFile);
             }
         }

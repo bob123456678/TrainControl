@@ -22,7 +22,7 @@ import support.StandInStation;
  * and W 1R (MM2) both address 1, and the pages name only the address, so every tile at 25 and 1 reads as DCC.  The
  * editor's remedy is the tile's protocol, saved as `.prot`, MM2 included.
  *
- * MUTATION: write `.prot` only for a protocol other than MM2 (LayoutDiagramComponent.exportToCS2TextFormat), and
+ * MUTATION: write `.prot` only for a protocol other than MM2 (LayoutDiagramComponent.savedProtocol), and
  * every MM2 tile at an address with two protocols reads back as DCC.
  *
  * @author Adam
@@ -179,7 +179,8 @@ public class testAnMM2TileBesideADCCArticleKeepsItsProtocol
      * uncoupler tile writes `.prot`, MM2 included; every other tile writes `.prot` only for a protocol other
      * than MM2, so track writes none; and the saved pages read back with every tile's protocol as before.
      *
-     * MUTATION: write `.prot=MM2` on every tile (drop the accessory test from the `else if`), and a track tile writes it.
+     * MUTATION: write `.prot=MM2` on every tile (drop the accessory test from `savedProtocol`), and a track tile
+     * writes it.
      */
     @Test
     public void testACS2SaveWritesEveryAccessorysProtocol() throws Exception
