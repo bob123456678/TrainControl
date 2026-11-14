@@ -91,6 +91,7 @@ Not: `// OB-271 (2026-09-14): Adam reported ... Round 112 found ...; RSA61-B2 wi
   test class to find one claim.
 - Grep first, then read the range you need (about 120 lines); never read a giant file whole.  Pipe long output
   through `head`.
+- Send every grep and range you can already name in one step (several tool calls, or one command), not one per step.
 - Edit with the Edit tool; a script, write with the Write tool (heredocs eat backslashes); never `sed -i` a Java file.
 - A worktree you were given is clean and on the right commit: start work, don't re-check it.
 - Answer your own questions from the repository first: this file, the brief, `docs/reference/behaviour.md` (the index
@@ -104,6 +105,7 @@ Not: `// OB-271 (2026-09-14): Adam reported ... Round 112 found ...; RSA61-B2 wi
   (`src/org/traincontrol/resources/messages*.properties`, eight languages) are ASCII only: every other character as
   `\uXXXX`.
 - New UI is hand-written Swing.  Never edit the NetBeans `//GEN-BEGIN`..`//GEN-END` regions or the variables block.
+- New code groups statements into short paragraphs, with no blank line after every statement.  Existing code stays.
 - Never touch `LocDB.data`, `UIState.data`, Adam's preferences, or anything under `cs2_sample_layout/` (his live
   railway).  Never connect to a Central Station.
 - Stage files by name (never `git add -A`); never `git stash` (the stash is shared by every worktree).  Work on `dev`
