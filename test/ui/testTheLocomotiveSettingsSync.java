@@ -375,6 +375,59 @@ public class testTheLocomotiveSettingsSync extends support.SettingsClass
     }
 
     /**
+     * The pre-arrival speed slider opens at the percent the reduction was saved at, for figures whose double times 100
+     * falls just short (0.57 is 56.99...), and a click on it writes the same figure back.
+     *
+     * MUTATION: in `AutonomySettingsTab.loadAutoLayoutSettings`, cast the reduction times 100 to int again instead of
+     * rounding, and 0.57 opens as 56 and a click saves 0.56.
+     */
+    @Test(timeOut = 120000)
+    public void testThePreArrivalSliderOpensAndSavesAsItWasSet() throws Exception
+    {
+        boolean hadOne = fixture.model.hasAutoLayout();
+        org.traincontrol.automation.Layout auto = fixture.model.getAutoLayout();
+        double was = auto.getPreArrivalSpeedReduction();
+        Object tab = Reflect.get(org.traincontrol.gui.TrainControlUI.class, ui, "autonomySettingsTab");
+        javax.swing.JSlider slider = (javax.swing.JSlider) Reflect.get(org.traincontrol.gui.TrainControlUI.class, ui,
+            "preArrivalSpeedReduction");
+        java.lang.reflect.Method load = Reflect.method(tab.getClass(), "loadAutoLayoutSettings");
+        java.lang.reflect.Method release = Reflect.method(tab.getClass(), "preArrivalSpeedReductionMouseReleased",
+            java.awt.event.MouseEvent.class);
+
+        try
+        {
+            for (double set : new double[] { 0.29, 0.57, 0.58 })
+            {
+                auto.setPreArrivalSpeedReduction(set);
+
+                int shown = Components.onTheEventThread(() ->
+                {
+                    load.invoke(tab);
+
+                    return slider.getValue();
+                });
+
+                assertEquals(shown, (int) Math.round(set * 100), "a reduction saved at " + set + " opened as " + shown + "%");
+
+                Components.onTheEventThread(() ->
+                {
+                    release.invoke(tab, (Object) null);
+
+                    return null;
+                });
+
+                assertEquals(auto.getPreArrivalSpeedReduction(), set, 1e-9, "a click on the slider changed " + set);
+            }
+        }
+        finally
+        {
+            auto.setPreArrivalSpeedReduction(was);
+
+            if (!hadOne) fixture.model.clearAutoLayout();
+        }
+    }
+
+    /**
      * A sync reloads the whole window from the locomotive and overwrites what was typed, when Discard is the answer to
      * the question: the typed name and the edited Functions table are replaced by the synced values, Save goes gray,
      * and the tab selected and the window's place stay.
