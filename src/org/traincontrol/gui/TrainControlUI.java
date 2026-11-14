@@ -4065,7 +4065,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         this.runningLayoutSync.rebuildRunningLayoutFromSetup(sayIfDeclined, placementsJustEdited, null);
     }
 
-    /** The same for a Cancel: `standingBefore` is where the railway had each train the edit moved (`whereTheTrainsAre`). */
+    /** The same for a Cancel: `standingBefore` is where the railway had each train when the editor opened. */
     public void rebuildRunningLayoutFromSetup(java.util.Map<String, String[]> standingBefore)
     {
         this.runningLayoutSync.rebuildRunningLayoutFromSetup(false, null, standingBefore);

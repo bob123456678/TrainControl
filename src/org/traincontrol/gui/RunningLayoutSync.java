@@ -560,7 +560,7 @@ final class RunningLayoutSync
      * starting inside the coalesced rebuild's event finds the gate shut and the edit is thrown away, correctly; a
      * deferred rebuild would put each train back where it started (OB-144).  The remedy: stop the run and make the edit
      * again.  `placementsJustEdited` is the locomotives whose placement this gesture wrote into the setup, or null.
-     * `standingBefore`, from a Cancel, is where the railway had each train the edit moved, or null.
+     * `standingBefore`, from a Cancel, is where the railway had each train when the editor opened, or null.
      */
     void rebuildRunningLayoutFromSetup(boolean sayIfDeclined,
         java.util.Set<String> placementsJustEdited, java.util.Map<String, String[]> standingBefore)
@@ -592,8 +592,8 @@ final class RunningLayoutSync
             // (`placementsJustEdited`, MT-337).
             java.util.Map<String, String[]> standing = this.ui.whereTheTrainsAre();
 
-            // A Cancel puts each train the edit moved back where the railway had it, not on the setup's square for it,
-            // which a run may have left behind (OB-416); one the railway did not have follows the restored setup
+            // A Cancel stands each train back where the railway had it when the editor opened; one it did not have then
+            // follows the restored setup
             if (standingBefore != null)
             {
                 placementsJustEdited = new java.util.HashSet<>();

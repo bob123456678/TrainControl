@@ -312,6 +312,16 @@ public class LayoutEditor extends PositionAwareJFrame
     private org.json.JSONObject autonomyAsOpened;
 
     /**
+     * Where each train stood on the railway when this window opened or last saved (`TrainControlUI.whereTheTrainsAre`),
+     * by locomotive so a rename keeps it: Cancel and every Discard stand the trains back so.
+     */
+    private final java.util.Map<org.traincontrol.base.Locomotive, String[]> railwayAsOpened =
+        new java.util.IdentityHashMap<>();
+
+    /** How many trains the discard question names before "and N more". */
+    private static final int TRAINS_NAMED = 5;
+
+    /**
      * Whether the last `settleUnsavedWork` ended in Discard; its true answer also means nothing to settle, and undoing
      * on that would rewind work autonomy did since.
      */
@@ -377,6 +387,89 @@ public class LayoutEditor extends PositionAwareJFrame
         this.autonomySessionForTheNote = live;
 
         if (live != null) live.beginEditSession();
+
+        pictureTheRailway();
+    }
+
+    /** Takes `railwayAsOpened` again. */
+    private void pictureTheRailway()
+    {
+        this.railwayAsOpened.clear();
+
+        for (java.util.Map.Entry<String, String[]> each : railwayNow().entrySet())
+        {
+            org.traincontrol.base.Locomotive loc = parent.getModel().getLocByName(each.getKey());
+
+            if (loc != null) this.railwayAsOpened.put(loc, each.getValue());
+        }
+    }
+
+    /** Where the railway has each train now, by name (`TrainControlUI.whereTheTrainsAre`). */
+    private java.util.Map<String, String[]> railwayNow()
+    {
+        return TrainControlUI.whereTheTrainsAre(parent == null || parent.getModel() == null
+            ? null : parent.getModel().getAutoLayoutIfLoaded());
+    }
+
+    /**
+     * The picture by each train's name now, a deleted one left out, and null for a train the railway has now and had
+     * not then, which the restored setup then places.
+     */
+    private java.util.Map<String, String[]> railwayAsPictured()
+    {
+        java.util.Map<String, String[]> back = new java.util.TreeMap<>();
+
+        for (String now : railwayNow().keySet()) back.put(now, null);
+
+        for (java.util.Map.Entry<org.traincontrol.base.Locomotive, String[]> each : this.railwayAsOpened.entrySet())
+        {
+            String name = each.getKey().getName();
+
+            if (parent.getModel().getLocByName(name) == each.getKey()) back.put(name, each.getValue());
+        }
+
+        return back;
+    }
+
+    /** The question, with a sentence naming the trains a discard moves; word for word where there are none. */
+    private String withTheTrainsMovingBack(String question)
+    {
+        java.util.Map<String, String[]> now = railwayNow();
+        java.util.List<String> moving = new java.util.ArrayList<>();
+
+        for (java.util.Map.Entry<String, String[]> was : railwayAsPictured().entrySet())
+        {
+            // Not a train deleted meanwhile, which only stands on the railway until the rebuild
+            if (parent.getModel().getLocByName(was.getKey()) != null
+                && !java.util.Objects.equals(placeOf(was.getValue()), placeOf(now.get(was.getKey()))))
+            {
+                moving.add(was.getKey());
+            }
+        }
+
+        if (moving.isEmpty()) return question;
+
+        String names = String.join(", ", moving.subList(0, Math.min(TRAINS_NAMED, moving.size())));
+
+        if (moving.size() > TRAINS_NAMED)
+        {
+            names = I18n.f("autolayout.ui.routeNamesAndMore", names, moving.size() - TRAINS_NAMED);
+        }
+
+        return question + "\n\n" + I18n.f("autosetup.ui.trainsGoBackOnDiscard", names);
+    }
+
+    /** A place `whereTheTrainsAre` read, by squares rather than Point names, which a station's rename changes. */
+    private static java.util.List<Object> placeOf(String[] at)
+    {
+        if (at == null) return null;
+
+        java.util.Set<String> road = new java.util.TreeSet<>();
+        org.json.JSONObject squares = at[5] == null ? new org.json.JSONObject() : new org.json.JSONObject(at[5]);
+
+        for (String point : squares.keySet()) road.add(String.valueOf(squares.get(point)));
+
+        return java.util.Arrays.asList(at[3] == null ? at[0] : at[3], at[4], at[1], road);
     }
 
     /**
@@ -433,7 +526,7 @@ public class LayoutEditor extends PositionAwareJFrame
 
     /**
      * Throws away this window's autonomy edits, putting the opening setup back in memory and on disk (MT-406), as the
-     * per-gesture save already wrote them.  Lifted, dragged and placed trains go back where the railway had them.
+     * per-gesture save already wrote them, and every train back where `railwayAsOpened` has it.
      * @return null when it worked, or the reason it did not
      */
     private String discardAutonomyWork()
@@ -442,8 +535,8 @@ public class LayoutEditor extends PositionAwareJFrame
 
         String failed;
 
-        // Asked of the edit, before it is thrown away
-        java.util.Map<String, String[]> standingBefore = autonomyPanel.railwayBeforeTheEdit();
+        // By the names now, read before the setup is restored
+        java.util.Map<String, String[]> standingBefore = railwayAsPictured();
 
         if (this.autonomyAsOpened == null || autonomy == null) failed = autonomyPanel.discardEdits();
         else if (!autonomy.restoreSetup(this.autonomyAsOpened)) failed = I18n.t("autosetup.log.restoreFailedAfterCancel");
@@ -3779,7 +3872,7 @@ public class LayoutEditor extends PositionAwareJFrame
 
             int result = JOptionPane.showOptionDialog(
                 this,
-                I18n.t("autosetup.ui.confirmExitWithoutSaving"),
+                withTheTrainsMovingBack(I18n.t("autosetup.ui.confirmExitWithoutSaving")),
                 I18n.t("layout.ui.dialogExitConfirmation"),
                 JOptionPane.YES_NO_OPTION,
                 JOptionPane.PLAIN_MESSAGE,
@@ -3881,7 +3974,7 @@ public class LayoutEditor extends PositionAwareJFrame
 
             int answer = JOptionPane.showOptionDialog(
                 this,
-                I18n.t(question),
+                isAutonomyMode() ? withTheTrainsMovingBack(I18n.t(question)) : I18n.t(question),
                 I18n.t("layout.ui.dialogSwitchConfirmation"),
                 JOptionPane.YES_NO_CANCEL_OPTION,
                 JOptionPane.QUESTION_MESSAGE,
@@ -4190,6 +4283,8 @@ public class LayoutEditor extends PositionAwareJFrame
                 org.traincontrol.automationui.AutonomySession saved = parent.getAutonomySession();
 
                 this.autonomyAsOpened = saved == null ? null : saved.snapshotSetup();
+
+                pictureTheRailway();
 
                 return true;
             }
