@@ -523,6 +523,64 @@ public class testMockCentralStation
         }
     }
 
+    /**
+     * A sync does not re-address a locomotive that has a speed, as Locomotive Settings will not: the train would run on
+     * at the old address while Stop here commands the new one.  Once it stands, the next sync takes the address.
+     * Served BR 85 006 Gl. is at address 5; the database has it at 70.
+     *
+     * MUTATION: drop the `LocomotiveSettings.hasSpeed` clause from `adoptCentralStationAddress`'s deferral.
+     */
+    @Test
+    public void testASyncDoesNotReAddressALocomotiveWithASpeed() throws Exception
+    {
+        String was = TestStationAddress.get();
+
+        final String served = "BR 85 006 Gl.";
+
+        MarklinLocomotive loc = model.getLocByName(served);
+
+        final boolean made = loc == null;
+        final int addressWas = made ? -1 : loc.getAddress();
+        final MarklinLocomotive.decoderType typeWas = made ? null : loc.getDecoderType();
+
+        if (made) model.newMM2Locomotive(served, 70);
+        else model.changeLocAddress(served, 70, MarklinLocomotive.decoderType.MM2);
+
+        try
+        {
+            TestStationAddress.set(address);
+
+            model.getLocByName(served).setSpeed(40);
+
+            assertTrue(model.syncWithCS2() >= 0, "precondition: the sync against the mock station failed");
+
+            assertEquals(model.getLocByName(served).getAddress(), 70, "a sync moved a locomotive with a speed to the"
+                + " address the station serves: the train runs on at the old address, and Stop commands the new one");
+
+            model.getLocByName(served).setSpeed(0);
+
+            assertTrue(model.syncWithCS2() >= 0, "precondition: the second sync against the mock station failed");
+
+            assertEquals(model.getLocByName(served).getAddress(), 5, "the sync after the train stopped did not take the"
+                + " address the station serves");
+        }
+        finally
+        {
+            TestStationAddress.set(was);
+
+            try { model.getLocByName(served).setSpeed(0); } catch (Exception ignored) { }
+
+            if (made)
+            {
+                try { model.deleteLoc(served); } catch (Exception ignored) { }
+            }
+            else
+            {
+                try { model.changeLocAddress(served, addressWas, typeWas); } catch (Exception ignored) { }
+            }
+        }
+    }
+
     /** The Central Station multi-unit `test/lokomotive.cs2` serves, with two members (OB-303). */
     private static final String SERVED_MULTI_UNIT = "OBB 1043";
 

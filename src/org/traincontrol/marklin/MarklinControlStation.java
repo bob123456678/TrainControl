@@ -58,6 +58,7 @@ import org.traincontrol.base.RemoteDeviceCollection;
 import org.traincontrol.base.RenameProposals;
 import org.traincontrol.base.Route;
 import org.traincontrol.base.RouteCommand;
+import org.traincontrol.gui.LocomotiveSettings;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.file.CS2File;
 import org.traincontrol.marklin.file.UnreadableAnswerException;
@@ -2016,8 +2017,10 @@ public class MarklinControlStation implements ViewListener, ModelListener
             // Deferred while anything is running (OB-287): setAddress changes which decoder this locomotive commands,
             // so applying it mid-run sends every later command to a different engine while the graph tracks this one;
             // a sync is triggered from a dozen places, so the check belongs here.  AND WHILE A ROUTE DRIVES IT: a route
-            // sends commands by name with delays between, so an adopted address would send the rest elsewhere.
-            if (this.isAutonomyRunning() || this.runningRouteDriving(l.getName()) != null)
+            // sends commands by name with delays between, so an adopted address would send the rest elsewhere.  And
+            // while it has a speed, as at Locomotive Settings: Stop would command the new address, the train the old.
+            if (this.isAutonomyRunning() || this.runningRouteDriving(l.getName()) != null
+                || LocomotiveSettings.hasSpeed(this, this.locDB.getByName(l.getName())))
             {
                 this.logf("loc.addressUpdateDeferredWhileRunning", l.getName());
             }
