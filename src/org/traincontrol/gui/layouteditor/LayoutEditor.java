@@ -358,6 +358,12 @@ public class LayoutEditor extends PositionAwareJFrame
      */
     private final Map<Locomotive, String[]> railwayAsOpened = new java.util.IdentityHashMap<>();
 
+    /**
+     * The session's `turnsSoFar` as the picture was taken: a discard keeps the turns made since, as Cancel never
+     * changes which way a train faces.
+     */
+    private Map<String, Integer> turnsAsOpened;
+
     /** How many trains the discard question names before "and N more". */
     private static final int TRAINS_NAMED = 5;
 
@@ -411,40 +417,6 @@ public class LayoutEditor extends PositionAwareJFrame
     }
 
     /**
-     * Puts a turn the railway followed (a throttle's direction change) into the snapshots Cancel and Ctrl+Z put back and
-     * into the picture, as `autonomyRecordUpdated` does: the train's, not this window's work, and its decoder runs so.
-     */
-    public void autonomyTurnFollowed(String configuration, TileGraph.TileKey square, String locomotive, String facing)
-    {
-        AutonomyCompanionStore.updateFacingInSetup(this.autonomyAsOpened, configuration, square, locomotive, facing);
-
-        List<Map<String, Object>> held = new ArrayList<>(this.previousCaptions);
-
-        held.addAll(this.previousCaptionsRedo);
-
-        for (Map<String, Object> was : held)
-        {
-            Object copies = was.get("configurations");
-            Object points = copies instanceof Map ? ((Map<?, ?>) copies).get(configuration) : null;
-
-            if (points instanceof JSONObject)
-            {
-                AutonomySession.updateFacingInPoints((JSONObject) points, square, locomotive, facing);
-            }
-        }
-
-        // On the copy it stands on now, unless this window moved it off the square it was pictured on
-        Locomotive loc = parent.getModel().getLocByName(locomotive);
-        String[] pictured = loc == null ? null : this.railwayAsOpened.get(loc);
-        String[] now = railwayNow().get(locomotive);
-
-        if (pictured != null && now != null && java.util.Objects.equals(pictured[3], now[3]))
-        {
-            this.railwayAsOpened.put(loc, now);
-        }
-    }
-
-    /**
      * Takes the undo point, in memory (for Cancel) and on disk (OB-108, for a restart after the process dies with an
      * editor open), always together: a page or mode switch moves both.
      * @param live the session to snapshot, or null when there is none
@@ -457,12 +429,14 @@ public class LayoutEditor extends PositionAwareJFrame
 
         if (live != null) live.beginEditSession();
 
-        pictureTheRailway();
+        pictureTheRailway(live);
     }
 
-    /** Takes `railwayAsOpened` again. */
-    private void pictureTheRailway()
+    /** Takes `railwayAsOpened` and `turnsAsOpened` again. */
+    private void pictureTheRailway(AutonomySession live)
     {
+        this.turnsAsOpened = live == null ? null : live.turnsSoFar();
+
         this.railwayAsOpened.clear();
 
         for (Map.Entry<String, String[]> each : railwayNow().entrySet())
@@ -482,11 +456,13 @@ public class LayoutEditor extends PositionAwareJFrame
 
     /**
      * The picture by each train's name now, a deleted one left out, and null for a train the railway has now and had
-     * not then, which the restored setup then places.
+     * not then, which the restored setup then places.  A train turned since faces the other way there.
      */
     private Map<String, String[]> railwayAsPictured()
     {
         Map<String, String[]> back = new java.util.TreeMap<>();
+        AutonomySession autonomy = parent.getAutonomySession();
+        Set<String> turned = trainsTurnedSince(autonomy);
 
         for (String now : railwayNow().keySet()) back.put(now, null);
 
@@ -494,10 +470,46 @@ public class LayoutEditor extends PositionAwareJFrame
         {
             String name = each.getKey().getName();
 
-            if (parent.getModel().getLocByName(name) == each.getKey()) back.put(name, each.getValue());
+            if (parent.getModel().getLocByName(name) != each.getKey()) continue;
+
+            back.put(name, turned.contains(name) ? turnedRound(each.getValue(), autonomy) : each.getValue());
         }
 
         return back;
+    }
+
+    /** The trains turned an odd number of times since the picture, by name (`AutonomySession.turnedSince`). */
+    private Set<String> trainsTurnedSince(AutonomySession autonomy)
+    {
+        return autonomy == null ? java.util.Collections.<String>emptySet() : autonomy.turnedSince(this.turnsAsOpened);
+    }
+
+    /** A pictured place on the copy of its square facing the other way, or as pictured where the square has none. */
+    private String[] turnedRound(String[] was, AutonomySession autonomy)
+    {
+        TilePorts.Side facing = null;
+
+        for (TilePorts.Side side : TilePorts.Side.values()) if (side.name().equals(was[4])) facing = side;
+
+        TileGraph.TileKey square = was[3] == null ? null : AutonomyCompanionStore.parseTileKey(was[3]);
+        TilePorts.Side other = autonomy.theOtherFacing(square, facing);
+        Point copy = other == null ? null
+            : autonomy.copyFacing(square, other, parent.getModel().getAutoLayoutIfLoaded());
+
+        if (copy == null) return was;
+
+        String[] turned = was.clone();
+
+        turned[0] = copy.getName();
+        turned[4] = other.name();
+
+        return turned;
+    }
+
+    /** The setup as this window opened it, each train turned since turned there too. */
+    private JSONObject asOpenedKeepingTheTurns(AutonomySession autonomy)
+    {
+        return autonomy.withTheseTrainsTurned(this.autonomyAsOpened, trainsTurnedSince(autonomy));
     }
 
     /** The question, with a sentence naming the trains a discard moves; word for word where there are none. */
@@ -590,12 +602,13 @@ public class LayoutEditor extends PositionAwareJFrame
         AutonomySession autonomy = parent.getAutonomySession();
 
         return this.autonomyAsOpened != null && autonomy != null
-            && (autonomy.aGestureOvertookTheRailwaysPause() || !this.autonomyAsOpened.similar(autonomy.snapshotSetup()));
+            && (autonomy.aGestureOvertookTheRailwaysPause()
+                || !asOpenedKeepingTheTurns(autonomy).similar(autonomy.snapshotSetup()));
     }
 
     /**
      * Throws away this window's autonomy edits, putting the opening setup back in memory and on disk (MT-406), as the
-     * per-gesture save already wrote them, and every train back where `railwayAsOpened` has it.
+     * per-gesture save already wrote them, and every train back where `railwayAsOpened` has it, keeping its turns.
      * @return null when it worked, or the reason it did not
      */
     private String discardAutonomyWork()
@@ -608,7 +621,10 @@ public class LayoutEditor extends PositionAwareJFrame
         Map<String, String[]> standingBefore = railwayAsPictured();
 
         if (this.autonomyAsOpened == null || autonomy == null) failed = autonomyPanel.discardEdits();
-        else if (!autonomy.restoreSetup(this.autonomyAsOpened)) failed = I18n.t("autosetup.log.restoreFailedAfterCancel");
+        else if (!autonomy.restoreSetup(asOpenedKeepingTheTurns(autonomy)))
+        {
+            failed = I18n.t("autosetup.log.restoreFailedAfterCancel");
+        }
         else failed = null;
 
         // The railway follows at once, before the window goes, or a fold in between would write the discarded edit
@@ -625,7 +641,7 @@ public class LayoutEditor extends PositionAwareJFrame
 
         AutonomySession autonomy = parent.getAutonomySession();
 
-        if (autonomy != null && !autonomy.restoreSetup(this.autonomyAsOpened)
+        if (autonomy != null && !autonomy.restoreSetup(asOpenedKeepingTheTurns(autonomy))
             && parent.getModel() != null)
         {
             parent.getModel().logf("autosetup.log.restoreFailedAfterCancel");
@@ -4355,7 +4371,7 @@ public class LayoutEditor extends PositionAwareJFrame
 
                 this.autonomyAsOpened = saved == null ? null : saved.snapshotSetup();
 
-                pictureTheRailway();
+                pictureTheRailway(saved);
 
                 return true;
             }
