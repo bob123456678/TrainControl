@@ -203,6 +203,56 @@ public class testTheSyncSaysWhenPartOfTheDataWasNotRead
     }
 
     /**
+     * A locomotive's own Sync (Locomotive Settings) over a station whose route list cannot be read says on that window
+     * what the main Sync says: part was left as it was.
+     *
+     * MUTATION: leave out the `saidTheSyncWasPartial` call of `TrainControlUI.syncLocomotiveFrom`, and it says nothing.
+     */
+    @Test
+    public void testALocomotiveSyncSaysWhenPartWasNotRead() throws Exception
+    {
+        Map<String, byte[]> replaced = new ConcurrentHashMap<>();
+        BiFunction<String, Integer, byte[]> base = StandInStation.cs3("260", INFO);
+
+        try (StationRig rig = new StationRig(Files.createTempDirectory("tc-sync-loc").toFile(),
+            (path, n) -> replaced.containsKey(path) ? replaced.get(path) : base.apply(path, n), true))
+        {
+            TrainControlUI ui = (TrainControlUI) rig.model.getGUI();
+
+            try
+            {
+                startUpSyncDone(ui);
+                assertTrue(rig.model.syncWithCS2() >= 0, "the sync that imports the fixtures failed");
+
+                org.traincontrol.marklin.MarklinLocomotive loc = rig.model.newDCCLocomotive("PS train", 1931);
+                javax.swing.JFrame window = new javax.swing.JFrame();
+
+                try (Answering answering = Answering.start(message -> Answering.pressAt(0)))
+                {
+                    // Everything read: nothing to say
+                    ui.syncLocomotiveFrom(loc, window, null);
+                    SwingUtilities.invokeAndWait(() -> { });
+                    assertFalse(answering.awaitAsked(1, 3000), "a sync that read everything said: " + answering.asked());
+
+                    replaced.put("/app/api/automatics", "<html>not json</html>".getBytes(StandardCharsets.UTF_8));
+                    ui.syncLocomotiveFrom(loc, window, null);
+                    assertTrue(answering.awaitAsked(1, 60000), "a sync that read part said nothing on the window");
+                    assertEquals(answering.asked().get(0), I18n.f("ui.infoSyncCompletePartial", "0"));
+                    assertSame(answering.questions().get(0).owner, window, "not on the window that asked");
+                }
+                finally
+                {
+                    SwingUtilities.invokeAndWait(window::dispose);
+                }
+            }
+            finally
+            {
+                SwingUtilities.invokeAndWait(ui::dispose);
+            }
+        }
+    }
+
+    /**
      * A Sync pressed in the locomotive selector that fails says so on the selector, the window that asked, not on the
      * main window behind it.
      *

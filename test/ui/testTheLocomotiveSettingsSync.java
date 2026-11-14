@@ -345,6 +345,36 @@ public class testTheLocomotiveSettingsSync extends support.SettingsClass
     }
 
     /**
+     * A Sync pressed while another sync is still writing says so and leaves the window alone: reloading it then would
+     * show half of the other sync's data as the answer.
+     *
+     * MUTATION: in `TrainControlUI.syncLocomotiveFrom`, run `after` whatever `synced` is, and the window reloads.
+     */
+    @Test(timeOut = 120000)
+    public void testASyncWhileAnotherRunsDoesNotReloadTheWindow() throws Exception
+    {
+        connected(true);
+
+        java.util.concurrent.atomic.AtomicBoolean inFlight = (java.util.concurrent.atomic.AtomicBoolean)
+            Reflect.field(org.traincontrol.gui.TrainControlUI.class, "syncInFlight").get(ui);
+        java.util.concurrent.atomic.AtomicInteger reloads = new java.util.concurrent.atomic.AtomicInteger();
+
+        try (support.Answering answering = support.Answering.start(message -> support.Answering.pressAt(0)))
+        {
+            inFlight.set(true);
+            ui.syncLocomotiveFrom(loc, SettingsWindow.showing(), reloads::incrementAndGet);
+
+            assertTrue(answering.awaitAsked(1, 30000), "a Sync while another runs said nothing");
+            assertEquals(answering.asked().get(0), I18n.t("ui.infoSyncAlreadyRunning"));
+            assertEquals(reloads.get(), 0, "the window reloaded while the other sync was still writing");
+        }
+        finally
+        {
+            inFlight.set(false);
+        }
+    }
+
+    /**
      * A sync reloads the whole window from the locomotive and overwrites what was typed, when Discard is the answer to
      * the question: the typed name and the edited Functions table are replaced by the synced values, Save goes gray,
      * and the tab selected and the window's place stay.

@@ -6834,9 +6834,14 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 redrawRouteSquaresOrRebuild(before);
                 this.repaintMappings(Collections.singletonList(l), true);
 
-                if (after != null) after.run();
+                // Not while the other sync is still writing: the window would show half of it as the answer
+                if (after != null && synced != SYNC_ALREADY_RUNNING) after.run();
 
-                if (asked != null) saidTheSyncDidNotRun(asked, synced, () -> syncLocomotiveFrom(l, asked, after));
+                if (asked != null)
+                {
+                    if (!saidTheSyncDidNotRun(asked, synced, () -> syncLocomotiveFrom(l, asked, after)))
+                        saidTheSyncWasPartial(asked, synced);
+                }
             });
         }   
     }
@@ -15032,6 +15037,14 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         else if (synced == -1) offerSyncRetry(c, null, retry);
 
         return synced < 0;
+    }
+
+    /** Says on c that part of the station's data could not be read, when the sync that just ran left part as it was. */
+    private void saidTheSyncWasPartial(Component c, int synced)
+    {
+        if (this.model.wasLastSyncPartial())
+            javax.swing.SwingUtilities.invokeLater(() ->
+                JOptionPane.showMessageDialog(c, I18n.f("ui.infoSyncCompletePartial", Integer.toString(synced))));
     }
 
     public void doSync(Component c)
