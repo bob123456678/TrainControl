@@ -343,12 +343,11 @@ public class testReturnHomeOnRealLayout
     }
 
     /**
-     * The watch the run above leans on does see a clash: two trains handed one edge, and two handed edges that lock each
-     * other, are each named, and so is one headed for the square the other stands on; two handed edges that share nothing
-     * pass.  Without this the run's claim cannot be told from a watch that never fires.
+     * The watch the run above leans on does see a clash: two trains handed one edge, or edges that lock each other, or
+     * one headed for the square the other stands on, are each named; edges that share nothing pass.
      *
-     * MUTATION: drop the `t.getLockEdges().contains(e)` test from `TrackWatch.sharing` and the lock-edge case fails; delete
-     * the two `getCurrentLocomotive()` tests from `TrackWatch.clash` and the standing-train case fails.
+     * MUTATION: drop the `t.getLockEdges().contains(e)` test from `TrackWatch.sharing` and the lock-edge case fails;
+     * delete the two `getCurrentLocomotive()` tests from `TrackWatch.clash` and the standing-train case fails.
      */
     @Test
     public void testTheTrackWatchSeesTwoTrainsOnOneTrack() throws Exception

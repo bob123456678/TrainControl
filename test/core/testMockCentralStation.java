@@ -398,9 +398,8 @@ public class testMockCentralStation
     }
 
     /**
-     * A station that has been switched off is given up on rather than waited for: the operating system would retry its
-     * SYNs for 21 seconds (measured) with the interface waiting.  192.0.2.1 (RFC 5737) black-holes rather than
-     * refusing; a machine whose routing table rejects it outright would fail fast for the wrong reason, so that SKIPS.
+     * A switched-off station is given up on, not waited for (the OS would retry SYNs for 21 seconds).  192.0.2.1
+     * (RFC 5737) black-holes; a machine whose routing table rejects it fails fast for the wrong reason, so that SKIPS.
      *
      * MUTATION: delete `connection.setConnectTimeout(CONNECT_TIMEOUT_MS)` from `CS2File.fetchURL`.
      */
@@ -442,9 +441,8 @@ public class testMockCentralStation
 
     /**
      * A sync that gives a member of a standing multi-unit the address of another standing train takes that train off
-     * the graph, as the Locomotive Settings window's Save does (the sync is the only door a Central Station
-     * multi-unit's members come in by).  Served BR 85 006 Gl. is at address 5; the database has it at 70 in a consist
-     * on one station, and another train at 5 stands on the other.
+     * the graph, as the Locomotive Settings window's Save does (OB-303).  Served BR 85 006 Gl. is at address 5; the
+     * database has it at 70 in a consist on one station, and another train at 5 stands on the other.
      *
      * MUTATION: sweep nothing after the sync's locomotive pass, and this fails.
      */
@@ -537,11 +535,7 @@ public class testMockCentralStation
     }
 
     /**
-     * Stands the Central Station's OBB 1043 on one point and the member its database copy does not have on another
-     * (OB-303).
-     *
-     * @param made filled with the names of the locomotives this makes, for the caller to delete
-     * @return the multi-unit, the member, and the railway they stand on
+     * Stands the Central Station's OBB 1043 on one point and the member its database copy lacks on another (OB-303).
      */
     private static StandingMultiUnit aMultiUnitAndAMemberStanding(List<String> made) throws Exception
     {
@@ -1314,9 +1308,7 @@ public class testMockCentralStation
      * A route file that arrives as rubbish leaves the routes alone: the database the sync really does delete from.
      * Only the route file is garbled; every file broken at once would not reach the route-deletion code.
      *
-     * MUTATION: make the route half of `syncWithCS2` act on an empty fetch as though the station had said the routes
-     * were gone - `for (MarklinRoute r : this.getRoutes()) if (!named(parsedRoutes, r.getName()))
-     * this.deleteRoute(r.getName());` after the parse.
+     * MUTATION: make the route half of `syncWithCS2` delete every route absent from an empty parse.
      */
     @Test
     public void testAGarbledRouteFileDoesNotDeleteTheRoutes() throws Exception
@@ -1380,8 +1372,7 @@ public class testMockCentralStation
 
     /**
      * A sync against a station that is not there leaves the locomotive database alone.  A ratchet: `syncWithCS2` has no
-     * path that deletes a locomotive, but the day it learns to, a failed fetch will look like a station that lists
-     * nothing, and this fails.
+     * path that deletes a locomotive yet.
      */
     @Test
     public void testASyncAgainstNothingDoesNotEmptyTheDatabase() throws Exception
@@ -1417,9 +1408,7 @@ public class testMockCentralStation
         }
     }
 
-    /**
-     * Each locomotive as name, address and decoder type: the three fields a command needs to reach the right engine.
-     */
+    /** Each locomotive as name, address and decoder type: what a command needs to reach the right engine. */
     private static List<String> describe(List<MarklinLocomotive> locomotives)
     {
         List<String> out = new LinkedList<>();

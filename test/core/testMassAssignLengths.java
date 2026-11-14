@@ -483,11 +483,7 @@ public class testMassAssignLengths
         assertNotEquals(freshAt[0], movedTo, "a new round from the menu opened where the last round left its prompt");
     }
 
-    /**
-     * A number typed and answered with OK is the first piece's length, and the walk moves on to the next (MT-454).  It
-     * presses OK rather than Enter, which needs a focused text component that a battery machine does not always give;
-     * Enter, Escape and where the field has the keyboard are `ui.testTheLengthPromptHasTheKeyboard`'s.
-     */
+    /** A number typed and answered with OK is the first piece's length, and the walk moves on (MT-454). */
     @Test
     public void testTheNumberTypedInTheLengthsWalkIsWritten() throws Exception
     {
@@ -573,9 +569,8 @@ public class testMassAssignLengths
     }
 
     /**
-     * The walk itself: a maximum typed and answered is written to the station asked about, and the walk moves on.  It
-     * presses OK rather than Enter, which needs a focused text component that a battery machine does not always give;
-     * `ui.testTheLengthPromptHasTheKeyboard` is where Enter is pinned.
+     * The walk itself: a maximum typed and answered with OK is written to the station asked about, and the walk moves
+     * on.
      */
     @Test
     public void testTheMaximumWalkWritesWhatIsTypedAndMovesOn() throws Exception
@@ -825,8 +820,7 @@ public class testMassAssignLengths
     /**
      * On the frozen railway with every maximum cleared (MT-519), Mass Assign Station Max Train Lengths on 1 - Main asks
      * about each station in turn, naming and outlining it, refuses 0, takes a number answered with OK, and ends on
-     * Cancel (MT-520, MT-521).  Enter, Escape and where the field has the keyboard are
-     * `ui.testTheLengthPromptHasTheKeyboard`'s.
+     * Cancel (MT-520, MT-521).
      *
      * MUTATION: write the refused 0, stop outlining the station, or name another in the prompt, and this fails.
      */

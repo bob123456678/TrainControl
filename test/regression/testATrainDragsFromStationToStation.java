@@ -1258,8 +1258,7 @@ public class testATrainDragsFromStationToStation
 
     /**
      * A shut station edited in the same session comes back with the trains; a train the railway moved alone goes back
-     * where it stood when the editor opened, as every train does (D114: no real door moves one while the editor is
-     * open, so this only simulates it); and a Save makes the drags the new starting point, which a later Cancel keeps.
+     * where the editor opened it (D114); and a Save makes the drags the new starting point, which a later Cancel keeps.
      *
      * MUTATION: drop `pictureTheRailway()` from `LayoutEditor.saveBeforeLeaving`, and Cancel undoes the saved drag.
      */

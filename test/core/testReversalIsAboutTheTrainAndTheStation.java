@@ -31,8 +31,7 @@ import support.Reflect;
  *
  * MUTATION: ignore `isReversible` in `Layout.autonomyMayEndAt` and the offering claim fails; take the turn rule's
  * `!loc.isReversible()` out of `turnsOnArrival` and the non-reversible claim fails; swap the two ranks in
- * `copyAfterTheTurn` and the copy claim fails; make `flipFacing` decline the probe and the flip claim
- * fails (it has no reversible gate to mutate: the claim pins the ruling).
+ * `copyAfterTheTurn` and the copy claim fails; make `flipFacing` decline the probe and the flip claim fails.
  */
 public class testReversalIsAboutTheTrainAndTheStation
 {
@@ -274,8 +273,7 @@ public class testReversalIsAboutTheTrainAndTheStation
 
     /**
      * `flipFacing` turns the train in the setup and on the railway whether or not it can reverse: the throttle's
-     * direction change is a fact about the decoder, and only terminus behavior is the reversible flag's (the owner's
-     * ruling; the brief's "a non-reversible one isn't turned" yields to it).
+     * direction change is a decoder fact, and only terminus behavior is the reversible flag's (the owner's ruling).
      *
      * MUTATION: have `flipFacing` return early for a locomotive that is not reversible.
      */

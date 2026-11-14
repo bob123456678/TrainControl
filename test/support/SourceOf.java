@@ -214,9 +214,8 @@ public final class SourceOf
     }
 
     /**
-     * The text without the packages of its class names (`java.util.List` reads `List`): for a claim that matches
-     * literals against text it already holds, so an import added or removed later does not break it.  Write the
-     * literal without the package too.
+     * The text without the packages of its class names (`java.util.List` reads `List`), for a claim matching literals
+     * written without them.
      */
     public static String plain(String text)
     {

@@ -804,11 +804,8 @@ public class testCancelUndoesAutonomyEdits
             java.nio.file.Files.deleteIfExists(note.toPath());
         }
     }
-
     /**
-     * The crash note puts each train back where the editor opened it, turned as often as it was turned since: the
-     * editor moves a train and it is reversed there, and after a restart it stands on its old square turned round, as
-     * its decoder runs.
+     * The crash note puts each train back where the editor opened it, turned as often as it was turned since.
      *
      * MUTATION: leave the note out of `AutonomySession.turned`, and the train comes back facing as at opening.
      */
