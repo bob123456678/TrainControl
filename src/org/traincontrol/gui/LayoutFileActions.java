@@ -683,17 +683,12 @@ final class LayoutFileActions
 
                         this.ui.getModel().downloadLayout(path);
 
-                        // Load the layout - the source a later switch of source compares with, too
+                        // The source a later switch of source compares with, then opened as Open Layout opens a
+                        // folder, which rebuilds the page list, the autonomy session and the Autonomy menu
                         this.ui.useTheDownloadedLayout(path);
+                        this.ui.openLayoutFolder(path.getAbsoluteFile());
 
-                        // The editing controls answer differently now (OB-126): this is what decides whether
-                        // there is a layout of his own to edit.
-                        this.ui.applyLayoutEditingAvailability();
-                        this.ui.syncWithCS2();
-                        this.ui.repaintLayout();
-                        this.ui.showLayoutTab();
-
-                        JOptionPane.showMessageDialog(
+                        if (!this.ui.getModel().getLayoutList().isEmpty()) JOptionPane.showMessageDialog(
                             this.ui,
                             I18n.f("layout.ui.infoDownloadCompleteLayoutSavedIn", path.getAbsolutePath())
                         );

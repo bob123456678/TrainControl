@@ -719,6 +719,7 @@
         <test-one-class class="testTheEditorOpensInOneDrawing"/>
         <test-one-class class="testTheDiagramIsKeptForWhatItDoesNotShow"/>
         <test-one-class class="testADownloadedCS3LayoutKeepsEachSquaresProtocol"/>
+        <test-one-class class="testDownloadingTheStationsLayout"/>
     </target>
     <target name="package-for-store" depends="jar">
         <property name="store.jar.name" value="TrainControl"/>
