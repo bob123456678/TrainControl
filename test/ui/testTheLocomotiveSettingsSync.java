@@ -294,7 +294,7 @@ public class testTheLocomotiveSettingsSync extends support.SettingsClass
      * A Sync that fails (the station is nowhere) says so on this window and offers Retry, which syncs again; one pressed
      * while another sync runs says that one is running, on this window too.
      *
-     * MUTATION: in `TrainControlUI.syncLocomotive`, leave out the `saidTheSyncDidNotRun` call, and the button says
+     * MUTATION: in `TrainControlUI.syncLocomotiveFrom`, leave out the `saidTheSyncDidNotRun` call, and the button says
      * nothing.
      */
     @Test(timeOut = 120000)

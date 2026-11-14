@@ -6812,7 +6812,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      */
     public void syncLocomotive(Locomotive l)
     {
-        syncLocomotive(l, null, null);
+        syncLocomotiveFrom(l, null, null);
     }
 
     /**
@@ -6821,7 +6821,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * @param asked the window whose Sync was pressed, or null to say nothing
      * @param after what to do afterwards, or null
      */
-    public void syncLocomotive(Locomotive l, Component asked, Runnable after)
+    public void syncLocomotiveFrom(Locomotive l, Component asked, Runnable after)
     {
         if (l != null)
         {
@@ -6836,7 +6836,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
                 if (after != null) after.run();
 
-                if (asked != null) saidTheSyncDidNotRun(asked, synced, () -> syncLocomotive(l, asked, after));
+                if (asked != null) saidTheSyncDidNotRun(asked, synced, () -> syncLocomotiveFrom(l, asked, after));
             });
         }   
     }
