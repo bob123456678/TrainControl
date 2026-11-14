@@ -471,8 +471,14 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     /** What syncWithCS2 answers when an open editor refused it, having said so. */
     public static final int SYNC_REFUSED = -3;
 
+    /** What syncAfterAnEdit answers when the sync is owed until the editor closes, or another caller took it. */
+    public static final int SYNC_OWED = -4;
+
     /** True while a Central Station sync is running, so a second one is turned away rather than run. */
     private final AtomicBoolean syncInFlight = new AtomicBoolean(false);
+
+    /** A sync a door owed for its own edit while an editor was open or on its way; several make one. */
+    private final AtomicBoolean syncOwed = new AtomicBoolean(false);
 
     // A panel refresh is on its way (a burst repaints once); cleared in a finally, so a failure cannot freeze them.
     private final AtomicBoolean autoRefreshInFlight = new AtomicBoolean(false);
@@ -7555,6 +7561,43 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     {
         if (RunGates.refuseALinkOrSyncWhileEditorOpen(this, null)) return SYNC_REFUSED;
 
+        return syncNow();
+    }
+
+    /**
+     * The sync a door runs after its own edit: at once, or, while an editor is open or on its way, quietly once it
+     * closes (`editorGone`).  A sync the user presses goes through `syncWithCS2`, which refuses aloud.
+     *
+     * @return as syncWithCS2, or SYNC_OWED
+     */
+    public int syncAfterAnEdit()
+    {
+        // Owed before the question, so an editor closing in between still finds it
+        syncOwed.set(true);
+
+        return runTheOwedSync();
+    }
+
+    /** The owed sync, run now unless an editor is open or on its way; SYNC_OWED when it stays owed or another took it. */
+    private int runTheOwedSync()
+    {
+        if (anEditorIsOpenOrOnItsWay() || !syncOwed.compareAndSet(true, false)) return SYNC_OWED;
+
+        return syncNow();
+    }
+
+    /** An editor has closed or will not come: the sync owed meanwhile runs, refreshing after it as Sync does. */
+    void editorGone()
+    {
+        // Posted, so the closing editor's own posted work runs first
+        SwingUtilities.invokeLater(() ->
+        {
+            if (syncOwed.get() && !anEditorIsOpenOrOnItsWay()) syncThenRefresh(null, this::runTheOwedSync);
+        });
+    }
+
+    private int syncNow()
+    {
         if (!syncInFlight.compareAndSet(false, true))
         {
             this.log(I18n.t("ui.infoSyncAlreadyRunning"));
@@ -14759,7 +14802,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
                 // Only when the station could have known the route: one with no lock never came from the station, so a
                 // sync (the whole database, behind a modal spinner) can bring back nothing about it.
-                if (!wasLocal) this.syncWithCS2();
+                if (!wasLocal) this.syncAfterAnEdit();
 
                 // Again after the sync, as `duplicateRoute` does: the sync re-adds routes, so the table would point at
                 // replaced instances.
@@ -14929,7 +14972,13 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // The model defers only the address update; everything else in it proceeds.
         if (refuseWhileAutonomyRunning(c) || RunGates.refuseALinkOrSyncWhileEditorOpen(this, c)) return;
 
-        javax.swing.SwingUtilities.invokeLater(() -> 
+        syncThenRefresh(c, this::syncWithCS2);
+    }
+
+    /** Sync's work past its refusals; `c` is told the outcome, null for none. */
+    private void syncThenRefresh(Component c, java.util.function.IntSupplier sync)
+    {
+        javax.swing.SwingUtilities.invokeLater(() ->
         {
             setLocomotiveWorkInFlight(true);
             
@@ -14942,7 +14991,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
                 try
                 {
-                    syncResult = this.syncWithCS2();
+                    syncResult = sync.getAsInt();
                 }
                 catch (RuntimeException e)
                 {
@@ -15148,7 +15197,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                         if (!org.traincontrol.marklin.MarklinControlStation.isLocalRouteId(newId)
                             || currentRoute.isLocked())
                         {
-                            this.syncWithCS2();
+                            this.syncAfterAnEdit();
                         }
 
                         this.repaintLayout();
@@ -15410,7 +15459,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 }
             }
 
-            if (anyOnTheStation) this.syncWithCS2();
+            if (anyOnTheStation) this.syncAfterAnEdit();
 
             this.repaintLayout();
 
@@ -15442,7 +15491,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
                 writeRouteEnabledState(r, enable);
 
-                if (stationCarriedIt) this.syncWithCS2();
+                if (stationCarriedIt) this.syncAfterAnEdit();
 
                 this.repaintLayout();
 
@@ -17512,7 +17561,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
                     prefs.put(LAST_USED_FOLDER, chosen.getParent());
 
-                    this.syncWithCS2();
+                    this.syncAfterAnEdit();
                 }
                 catch (Exception e)
                 {
@@ -18421,7 +18470,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                         }
                     }
                     
-                    doSync(null);
+                    if (!refuseWhileAutonomyRunning(null)) syncThenRefresh(null, this::syncAfterAnEdit);
                 }
             }
             catch (Exception ex)
@@ -19418,7 +19467,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
             if (Util.isLocIconFile(superseded)) deleteLocIconFile(superseded);
 
-            this.syncWithCS2();
+            this.syncAfterAnEdit();
             this.repaintLoc(true, null);
             this.repaintMappings(Collections.singletonList(l), true);
             this.selector.refreshLocSelectorList();

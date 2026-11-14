@@ -309,6 +309,8 @@ final class EditorWindows
                         ui.editorOnItsWay = false;
 
                         setEditLayoutEnabled(true);
+
+                        ui.editorGone();
                     }))
                 {
                     return;
@@ -359,6 +361,8 @@ final class EditorWindows
 
                 ui.editorOnItsWay = false;
 
+                ui.editorGone();
+
                 // Rethrow an Error after giving the button back, or Edit would stay grayed for the session with no
                 // editor anywhere
                 if (e instanceof Error) throw (Error) e;
@@ -404,9 +408,14 @@ final class EditorWindows
         return null;
     }
 
-    /** An editor window has gone: Edit and the doors beside it ask again.  Called from `LayoutEditor.dispose`. */
+    /**
+     * An editor window has gone: Edit and the doors beside it ask again, and a sync owed meanwhile runs.  Called from
+     * `LayoutEditor.dispose`, which every way of closing passes through.
+     */
     void editorWindowClosed()
     {
+        ui.editorGone();
+
         if (SwingUtilities.isEventDispatchThread())
         {
             applyLayoutEditingAvailability();
