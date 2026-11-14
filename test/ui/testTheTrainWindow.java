@@ -3200,17 +3200,7 @@ public class testTheTrainWindow
 
         try
         {
-            makeActive(name);
-
-            JMenuItem place = placeItemOn(panel, empty, name);
-
-            assertNotNull(place, "precondition: no Place " + name);
-
-            Components.onTheEventThread(() -> { place.doClick(); return null; });
-
-            assertTrue(Components.waitFor(() -> Components.onTheEventThread(() -> empty.equals(session.getStationIndex()
-                .squareOf(model.getAutoLayout().getLocomotiveLocation(model.getLocByName(name))))), 20000),
-                "precondition: Place did not move " + name + " on the railway");
+            placeFromTheMenu(panel, empty, name);
 
             final org.traincontrol.automation.Point third = aFreeCopyOf(anEmptyStationBut(square));
 
@@ -3286,6 +3276,40 @@ public class testTheTrainWindow
         cancelTheEditor();
 
         assertEquals(standingNow(), before, "Cancel after Place All at Home left trains moved on the railway");
+    }
+
+    /** The editor's Place of this train on the square, from its menu, waited on until the railway has it there. */
+    private static void placeFromTheMenu(AutonomyEditorPanel panel, TileKey square, String name) throws Exception
+    {
+        makeActive(name);
+
+        JMenuItem place = placeItemOn(panel, square, name);
+
+        assertNotNull(place, "precondition: no Place " + name);
+
+        Components.onTheEventThread(() -> { place.doClick(); return null; });
+
+        assertTrue(Components.waitFor(() -> Components.onTheEventThread(() -> square.equals(session.getStationIndex()
+            .squareOf(model.getAutoLayout().getLocomotiveLocation(model.getLocByName(name))))), 20000),
+            "precondition: Place did not move " + name + " on the railway");
+    }
+
+    /** Takes these trains off the railway alone, so none a claim stood there outlives it. */
+    private static void offTheRailway(java.util.Collection<String> trains)
+    {
+        Components.onTheEventThread(() ->
+        {
+            for (String each : trains)
+            {
+                org.traincontrol.automation.Point at = model.getAutoLayout().getLocomotiveLocation(model.getLocByName(each));
+
+                if (at != null) model.getAutoLayout().moveLocomotive(null, at.getName(), false);
+            }
+
+            return null;
+        });
+
+        Components.settle();
     }
 
     /** The three ways an edit is thrown away: Cancel, a page switch's Discard, the exit's Discard. */
@@ -3434,44 +3458,54 @@ public class testTheTrainWindow
         final String name = aTrainNotPlaced();
         final java.util.List<org.traincontrol.automationui.TilePorts.Side> sides = session.unbarredArrivalSides(square);
 
-        Components.onTheEventThread(() ->
+        try
         {
-            session.placeLocomotive(square, name);
-            session.setArrivedFrom(square, sides.get(0).name());
-            ui.rebuildRunningLayoutFromSetup();
+            Components.onTheEventThread(() ->
+            {
+                session.placeLocomotive(square, name);
+                session.setArrivedFrom(square, sides.get(0).name());
+                ui.rebuildRunningLayoutFromSetup();
 
-            return null;
-        });
+                return null;
+            });
 
-        Components.settle();
+            Components.settle();
 
-        org.traincontrol.automation.Point on = model.getAutoLayout().getLocomotiveLocation(model.getLocByName(name));
+            org.traincontrol.automation.Point on = model.getAutoLayout().getLocomotiveLocation(model.getLocByName(name));
 
-        assertNotNull(on, "precondition: " + name + " was not put on " + square);
+            assertNotNull(on, "precondition: " + name + " was not put on " + square);
 
-        final String before = "railway " + on.getArrivedFrom() + ", setup " + session.getArrivedFrom(square);
-        String other = null;
+            final String before = "railway " + on.getArrivedFrom() + ", setup " + session.getArrivedFrom(square);
+            String other = null;
 
-        for (org.traincontrol.automationui.TilePorts.Side side : sides) if (!side.name().equals(on.getArrivedFrom())) other = side.name();
+            for (org.traincontrol.automationui.TilePorts.Side each : sides)
+            {
+                if (!each.name().equals(on.getArrivedFrom())) other = each.name();
+            }
 
-        final String side = other;
-        final AutonomyEditorPanel panel = theEditorsPanel();
-        final Object menus = Reflect.get(AutonomyEditorPanel.class, panel, "tileMenus");
-        final java.lang.reflect.Method set = Reflect.method(menus.getClass(), "setArrivedFrom", TileKey.class, String.class);
+            final String side = other;
+            final AutonomyEditorPanel panel = theEditorsPanel();
+            final Object menus = Reflect.get(AutonomyEditorPanel.class, panel, "tileMenus");
+            final java.lang.reflect.Method set = Reflect.method(menus.getClass(), "setArrivedFrom", TileKey.class, String.class);
 
-        Components.onTheEventThread(() -> { set.invoke(menus, square, side); return null; });
+            Components.onTheEventThread(() -> { set.invoke(menus, square, side); return null; });
 
-        Components.settle();
+            Components.settle();
 
-        assertEquals(model.getAutoLayout().getLocomotiveLocation(model.getLocByName(name)).getArrivedFrom(), side,
-            "precondition: the side door did not reach the railway");
+            assertEquals(model.getAutoLayout().getLocomotiveLocation(model.getLocByName(name)).getArrivedFrom(), side,
+                "precondition: the side door did not reach the railway");
 
-        cancelTheEditor();
+            cancelTheEditor();
 
-        org.traincontrol.automation.Point now = model.getAutoLayout().getLocomotiveLocation(model.getLocByName(name));
+            org.traincontrol.automation.Point now = model.getAutoLayout().getLocomotiveLocation(model.getLocByName(name));
 
-        assertEquals("railway " + (now == null ? null : now.getArrivedFrom()) + ", setup " + session.getArrivedFrom(square),
-            before, "Cancel after setting " + name + "'s side on " + square + " to " + side + " did not put it back");
+            assertEquals("railway " + (now == null ? null : now.getArrivedFrom()) + ", setup " + session.getArrivedFrom(square),
+                before, "Cancel after setting " + name + "'s side on " + square + " to " + side + " did not put it back");
+        }
+        finally
+        {
+            offTheRailway(java.util.Collections.singleton(name));
+        }
     }
 
     /**
@@ -3505,17 +3539,7 @@ public class testTheTrainWindow
 
             try
             {
-                makeActive(name);
-
-                JMenuItem place = placeItemOn(panel, empty, name);
-
-                assertNotNull(place, "precondition: no Place " + name);
-
-                Components.onTheEventThread(() -> { place.doClick(); return null; });
-
-                assertTrue(Components.waitFor(() -> Components.onTheEventThread(() -> empty.equals(session.getStationIndex()
-                    .squareOf(model.getAutoLayout().getLocomotiveLocation(model.getLocByName(name))))), 20000),
-                    "precondition: Place did not move " + name + " on the railway");
+                placeFromTheMenu(panel, empty, name);
 
                 Components.settle();
 
@@ -3593,17 +3617,7 @@ public class testTheTrainWindow
             // The main window's editor, as Edit opens it, so the delete reaches its Cancel snapshot
             Reflect.set(TrainControlUI.class, ui, "openEditor", editor);
 
-            makeActive(name);
-
-            JMenuItem place = placeItemOn(panel, second, name);
-
-            assertNotNull(place, "precondition: no Place " + name);
-
-            Components.onTheEventThread(() -> { place.doClick(); return null; });
-
-            assertTrue(Components.waitFor(() -> Components.onTheEventThread(() -> second.equals(session.getStationIndex()
-                .squareOf(model.getAutoLayout().getLocomotiveLocation(model.getLocByName(name))))), 20000),
-                "precondition: Place did not move " + name + " on the railway");
+            placeFromTheMenu(panel, second, name);
 
             Components.settle();
 
@@ -3641,18 +3655,34 @@ public class testTheTrainWindow
     @Test(timeOut = 240000)
     public void testTheDiscardQuestionsNameTheTrainsThatGoBack() throws Exception
     {
-        // More than five trains standing, placed as the editor would
-        for (TileKey empty = anEmptyStation(); standingNow().size() < 7; empty = anEmptyStation())
+        // More than five trains placed, as the editor would
+        final java.util.List<String> extras = new java.util.ArrayList<>();
+
+        try
         {
-            final TileKey square = empty;
-            final String extra = aTrainOffTheRailway();
+            for (TileKey empty = anEmptyStation(); session.placementsAutonomyWillWrite().size() < 7; empty = anEmptyStation())
+            {
+                final TileKey square = empty;
+                final String extra = aTrainOffTheRailway();
 
-            Components.onTheEventThread(() -> { session.placeLocomotive(square, extra); ui.rebuildRunningLayoutFromSetup();
-                return null; });
+                extras.add(extra);
 
-            Components.settle();
+                Components.onTheEventThread(() -> { session.placeLocomotive(square, extra); ui.rebuildRunningLayoutFromSetup();
+                    return null; });
+
+                Components.settle();
+            }
+
+            discardQuestionsNameTheTrainsThatGoBack();
         }
+        finally
+        {
+            offTheRailway(extras);
+        }
+    }
 
+    private void discardQuestionsNameTheTrainsThatGoBack() throws Exception
+    {
         AutonomyEditorPanel panel = theEditorsPanel();
 
         final Map<String, String> before = standingNow();
