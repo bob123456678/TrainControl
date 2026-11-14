@@ -251,6 +251,7 @@
         <test-one-class class="testAStationNamedInTwoPlacesIsOneFinding"/>
         <test-one-class class="testThePlatformNoticeKnowsWhatATrainIsRefusedAt"/>
         <test-one-class class="testASignalGuardsItsStationAndTheNoticeNamesIt"/>
+        <test-one-class class="testClickingANoticeCopiesItsText"/>
         <test-one-class class="testMassAssignLengths"/>
         <test-one-class class="testAutonomyDiagramMonitor"/>
         <test-one-class class="testAutonomyDiagramReversal"/>

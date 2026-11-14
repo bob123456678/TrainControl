@@ -460,6 +460,61 @@ public class testTheLengthPromptHasTheKeyboard
         }
     }
 
+    /**
+     * Mass Assign Lengths and Mass Assign Station Max Train Lengths ask in the same prompt, and the number field has the
+     * keyboard in each (MT-454, MT-520).  The railway's lengths and maxima are cleared so there is something to ask, and
+     * the setup is put back after.
+     *
+     * MUTATION: in `askInWalkPrompt` give the option pane `answers[0]` as its initial value instead of null, and the
+     * keyboard goes to the OK button.
+     */
+    @Test
+    public void testTheLengthsAndMaximaWalksHaveTheFieldFocused() throws Exception
+    {
+        awaitTheEditorFocused();
+
+        final org.json.JSONObject was = session.snapshotSetup();
+
+        try
+        {
+            SwingUtilities.invokeAndWait(() ->
+            {
+                session.clearEveryTileLength();
+                session.clearEveryMaxTrainLength();
+            });
+
+            for (String key : new String[] {"autosetup.ui.menuMassAssignLengths", "autosetup.ui.menuMassAssignMaxTrainLengths"})
+            {
+                javax.swing.JDialog prompt = startedFrom(bulkItem(key), key);
+
+                focusedField(prompt, "the first prompt of " + I18n.t(key));
+
+                answer(prompt, I18n.t("ui.cancel"));
+            }
+        }
+        finally
+        {
+            closeEveryPrompt();
+
+            SwingUtilities.invokeAndWait(() ->
+            {
+                session.restoreSetup(was);
+                editor.getAutonomyPanel().refresh();
+            });
+        }
+    }
+
+    /** Clicks the Bulk Tools item and waits for the walk's first prompt, titled by the item's key. */
+    private static javax.swing.JDialog startedFrom(javax.swing.JMenuItem item, String key) throws Exception
+    {
+        assertNotNull(item, "precondition: Bulk Tools has no " + I18n.t(key) + " item");
+        assertTrue(item.isEnabled(), "precondition: " + I18n.t(key) + " is grayed with everything cleared");
+
+        SwingUtilities.invokeLater(item::doClick);
+
+        return awaitPrompt(null, I18n.t(key));
+    }
+
     private static javax.swing.JTextField fieldIn(javax.swing.JDialog prompt) throws Exception
     {
         return focusedField(prompt, "the prompt that is typed into");

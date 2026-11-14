@@ -10,13 +10,11 @@ import java.util.List;
 import static org.testng.Assert.*;
 import org.testng.annotations.Test;
 import org.traincontrol.base.Accessory.accessoryDecoderType;
-import org.traincontrol.automationui.AutonomyBuilder;
 import org.traincontrol.automationui.AutonomySession;
 import org.traincontrol.base.LayoutDiagram;
 import org.traincontrol.base.LayoutDiagramComponent.componentType;
 import org.traincontrol.automationui.TileGraph.TileKey;
 import support.Diagrams;
-import support.Display;
 import support.Reflect;
 
 /**
@@ -716,126 +714,6 @@ public class testASignalGuardsItsStationAndTheNoticeNamesIt extends AutonomySess
             + " there to be outlined (OB-352); the plain page jump had " + plain);
     }
 
-    /**
-     * Clicking a notice copies its text to the clipboard as plain text (MT-767).  Read back after a sentinel is put
-     * there, so a copy that never happens fails.  Windows opens the clipboard to one program at a time, so each use
-     * waits and a dropped copy is made again; skipped only when another program holds it for the whole wait.
-     *
-     * MUTATION: take the copy out of the list's selection listener.
-     */
-    @Test
-    public void testClickingANoticeCopiesItsTextToTheClipboard() throws Exception
-    {
-        Display.needed("there is no clipboard on a headless machine");
-
-        openTheGuardedLine(pageWithAGuardOffTheLine());
-
-        TileKey station = new TileKey("main", 1, 1);
-        TileKey signal = new TileKey("main", 2, 3);
-
-        session.setEntrySignals(station, Arrays.asList(signal));
-
-        final org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel panel =
-            new org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel(session, "main", () -> { });
-
-        java.lang.reflect.Field field =
-            Reflect.field(org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel.class, "findings");
-
-        final javax.swing.JList<?> list = (javax.swing.JList<?>) field.get(panel);
-
-        String expected = null;
-
-        for (int i = 0; i < list.getModel().getSize(); i++)
-        {
-            String shown = String.valueOf(list.getModel().getElementAt(i));
-
-            if (shown.contains("but no way into")) expected = shown.trim();
-        }
-
-        assertNotNull(expected, "precondition: the editor's list has no guard notice");
-
-        final java.awt.datatransfer.Clipboard clipboard = java.awt.Toolkit.getDefaultToolkit().getSystemClipboard();
-
-        final java.awt.datatransfer.StringSelection sentinel =
-            new java.awt.datatransfer.StringSelection("nothing copied yet");
-
-        String copied = "nothing copied yet";
-
-        // A click the program could not copy is made again: it leaves a busy clipboard alone by design.
-        for (int click = 0; click < CLIPBOARD_CLICKS && "nothing copied yet".equals(copied); click++)
-        {
-            onTheClipboard(() -> { clipboard.setContents(sentinel, sentinel); return null; });
-
-            javax.swing.SwingUtilities.invokeAndWait(list::clearSelection);
-
-            clickTheGuardNotice(panel);
-
-            copied = onTheClipboard(() -> (String) clipboard.getData(java.awt.datatransfer.DataFlavor.stringFlavor));
-        }
-
-        assertEquals(copied, expected, "a click on a notice did not copy its text to the clipboard (MT-767)");
-
-        assertFalse(copied.contains("<"), "the copied notice carries markup, which is not plain text: " + copied);
-
-        // And a heading is not a notice: clicking "Warnings" or a page's name leaves the clipboard alone
-        java.lang.reflect.Field severities =
-            Reflect.field(org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel.class, "findingSeverity");
-
-        final java.util.List<?> severity = (java.util.List<?>) severities.get(panel);
-
-        int heading = -1;
-
-        for (int i = 0; i < severity.size() && heading < 0; i++) if (severity.get(i) == null) heading = i;
-
-        assertTrue(heading >= 0, "precondition: the editor's list has no heading row");
-
-        final java.awt.datatransfer.StringSelection untouched = new java.awt.datatransfer.StringSelection("left alone");
-
-        onTheClipboard(() -> { clipboard.setContents(untouched, untouched); return null; });
-
-        final int row = heading;
-
-        javax.swing.SwingUtilities.invokeAndWait(() -> list.setSelectedIndex(row));
-
-        javax.swing.SwingUtilities.invokeAndWait(() -> { });
-
-        assertEquals(onTheClipboard(() -> clipboard.getData(java.awt.datatransfer.DataFlavor.stringFlavor)), "left alone",
-            "a click on the heading " + list.getModel().getElementAt(row) + " was copied over the clipboard");
-    }
-
-    /** How long a use of the clipboard waits for another program to let go of it. */
-    private static final long CLIPBOARD_PATIENCE_MS = 10_000;
-
-    /** How many times a notice is clicked while its copy keeps finding the clipboard busy. */
-    private static final int CLIPBOARD_CLICKS = 5;
-
-    /**
-     * One use of the system clipboard, made again while another program has it open, and skipped when that lasts the
-     * whole wait - the desktop, not the program, decides that.
-     */
-    private static <T> T onTheClipboard(java.util.concurrent.Callable<T> use) throws Exception
-    {
-        long until = System.currentTimeMillis() + CLIPBOARD_PATIENCE_MS;
-
-        while (true)
-        {
-            try
-            {
-                return use.call();
-            }
-            catch (IllegalStateException busy)
-            {
-                if (System.currentTimeMillis() > until)
-                {
-                    throw new org.testng.SkipException("another program held the system clipboard open for "
-                        + CLIPBOARD_PATIENCE_MS / 1000 + " s: " + busy);
-                }
-
-                Thread.sleep(20);
-            }
-        }
-    }
-
     /** Selects the first row of the editor's list that says this and is about this square, as a click on it does. */
     private static void clickTheFinding(org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel panel, String says, TileKey at)
         throws Exception
@@ -862,53 +740,6 @@ public class testASignalGuardsItsStationAndTheNoticeNamesIt extends AutonomySess
         assertTrue(row[0] >= 0, "precondition: the editor's list has no \"" + says + "\" about " + at);
 
         javax.swing.SwingUtilities.invokeAndWait(() -> { });
-    }
-
-    /** Selects the guard notice in the editor's list, as a click on it does. */
-    private static void clickTheGuardNotice(org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel panel) throws Exception
-    {
-        java.lang.reflect.Field field =
-            Reflect.field(org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel.class, "findings");
-
-        final javax.swing.JList<?> list = (javax.swing.JList<?>) field.get(panel);
-
-        final int[] row = {-1};
-
-        javax.swing.SwingUtilities.invokeAndWait(() ->
-        {
-            for (int i = 0; i < list.getModel().getSize(); i++)
-            {
-                if (String.valueOf(list.getModel().getElementAt(i)).contains("but no way into")) row[0] = i;
-            }
-
-            if (row[0] >= 0) list.setSelectedIndex(row[0]);
-        });
-
-        assertTrue(row[0] >= 0, "precondition: the editor's list has no guard notice");
-
-        javax.swing.SwingUtilities.invokeAndWait(() -> { });
-    }
-
-    /**
-     * The guard line's pages opened as a railway: a station at each end of the two-signal line, and trains free to turn
-     * at both, so it has routes (a station whose only approach is a sensor nothing reaches has none).
-     */
-    private void openTheGuardedLine(LayoutDiagram... pages) throws IOException
-    {
-        session.open(Arrays.asList(pages));
-
-        TileKey station = new TileKey("main", 1, 1);
-        TileKey far = new TileKey("main", 4, 1);
-
-        session.setStation(station, true);
-        session.setStation(far, true);
-        session.initialize("Guards");
-        session.setPointFlag(station, AutonomyBuilder.CAN_REVERSE, true);
-        session.setPointFlag(far, AutonomyBuilder.CAN_REVERSE, true);
-        session.rebuild();
-
-        assertFalse(session.check().stream().anyMatch(f -> "autosetup.ui.checkStationAtTheEndOfALine".equals(f.getMessageKey())),
-            "precondition: trains still may not turn at the line's ends, so the built railway has no route to read");
     }
 
     /** A second page, "far", with one sensor on it. */
@@ -974,49 +805,5 @@ public class testASignalGuardsItsStationAndTheNoticeNamesIt extends AutonomySess
         }
 
         return false;
-    }
-
-    /** The two-signal line, and a second line beside it carrying a signal of its own. */
-    private LayoutDiagram pageWithAGuardOffTheLine() throws IOException
-    {
-        LayoutDiagram page = pageWithTwoSignals();
-
-        Diagrams.feedback(page, 1, 3, 7, 13);
-        page.addComponent(componentType.SIGNAL, 2, 3, 0, 0, 23, 0, accessoryDecoderType.MM2, null);
-        Diagrams.feedback(page, 3, 3, 8, 14);
-
-        wire(page, 2, 3, 23);
-
-        return page;
-    }
-
-    private LayoutDiagram pageWithTwoSignals() throws IOException
-    {
-        File pages = new File(layout, "config/gleisbilder");
-
-        assertTrue(pages.mkdirs() || pages.isDirectory(), "could not create " + pages);
-
-        pageFile = new File(pages, "main.cs2");
-
-        Files.write(pageFile.toPath(),
-            "[gleisbildseite]\nversion\n .major=1\n".getBytes(StandardCharsets.UTF_8));
-
-        String url = "file:///" + pageFile.getAbsolutePath().replace('\\', '/');
-
-        LayoutDiagram page = new LayoutDiagram("main", 8, 4, url, null);
-
-        Diagrams.feedback(page, 1, 1, 5, 11);
-        page.addComponent(componentType.SIGNAL, 2, 1, 0, 0, 21, 0, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.SIGNAL, 3, 1, 0, 0, 22, 0, accessoryDecoderType.MM2, null);
-        Diagrams.feedback(page, 4, 1, 6, 12);
-
-        // Wired as parsing a real layout does; without an accessory the pairing is dropped on the way to the built
-        // configuration.
-        wire(page, 2, 1, 21);
-        wire(page, 3, 1, 22);
-
-        page.setPageId("1");
-
-        return page;
     }
 }
