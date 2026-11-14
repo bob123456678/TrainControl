@@ -3,6 +3,8 @@ package ui;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.TreeMap;
 import java.util.TreeSet;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
@@ -22,6 +24,7 @@ import org.traincontrol.marklin.MarklinAccessory;
 import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.marklin.MarklinLocomotive;
 import org.traincontrol.marklin.MarklinRoute;
+import org.traincontrol.marklin.MarklinSimpleComponent;
 import support.Components;
 import support.Packets;
 import support.Restart;
@@ -54,6 +57,36 @@ public class testARestartKeepsTheRailway
     private static final int TRAIN_LENGTH = 4;
 
     private static final long PATIENCE_MS = 10000;
+
+    private static final String PLAIN = PREFIX + "plain train";
+    private static final String MEMBER_A = PREFIX + "member a";
+    private static final String MEMBER_B = PREFIX + "member b";
+    private static final String FULL = PREFIX + "full train";
+    private static final String MULTI = PREFIX + "multi unit";
+
+    /**
+     * The saved fields `testEveryLocomotiveFieldComesBackAfterTheRestart` does not compare, and where each is checked.
+     * Every other declared field of `MarklinSimpleComponent` is compared.
+     */
+    private static final Map<String, String> CHECKED_ELSEWHERE = new TreeMap<>();
+
+    static
+    {
+        String switches = "switches only: testATurnoutThrownBeforeTheCloseIsThrownAfterTheStart";
+        String routes = "routes only: testARouteArmedBeforeTheCloseIsFiredByItsSensorAfterTheStart";
+
+        CHECKED_ELSEWHERE.put("numActuations", switches);
+        CHECKED_ELSEWHERE.put("accessoryDecoderType", switches);
+        CHECKED_ELSEWHERE.put("s88", routes);
+        CHECKED_ELSEWHERE.put("s88TriggerType", routes);
+        CHECKED_ELSEWHERE.put("routeEnabled", routes);
+        CHECKED_ELSEWHERE.put("conditions", routes);
+        CHECKED_ELSEWHERE.put("route", routes);
+        CHECKED_ELSEWHERE.put("historicalOperatingTimeNew", "testTheRunningTimeCountedBeforeTheCloseIsKept");
+    }
+
+    /** The saved form of each locomotive `addTheFullLocomotives` made, taken just before the close. */
+    private static final Map<String, MarklinSimpleComponent> SAVED_BEFORE = new TreeMap<>();
 
     private static Restart restart;
     private static MarklinControlStation first;
@@ -147,6 +180,12 @@ public class testARestartKeepsTheRailway
         covered = coveredBy(railway, TRAIN);
 
         assertFalse(covered.isEmpty(), "precondition: the train's tail covers nothing, so there is nothing to keep");
+
+        // One locomotive with every saved field off its default, beside an ordinary one
+        for (MarklinLocomotive loc : addTheFullLocomotives(first))
+        {
+            SAVED_BEFORE.put(loc.getName(), new MarklinSimpleComponent(loc));
+        }
 
         // And the program closes and starts again
         second = restart.again();
@@ -282,7 +321,119 @@ public class testARestartKeepsTheRailway
             + " changed across the restart");
     }
 
+    /**
+     * Every saved field of a locomotive that is not checked elsewhere comes back the way it was saved, and was saved off
+     * its default (reversible, preferred functions, function and trigger types, departure and arrival functions, icons,
+     * notes, multi-unit links).  A field added to `MarklinSimpleComponent` without a comparison here, or set to nothing
+     * but its default, turns this red.
+     *
+     * MUTATION: in `MarklinControlStation.newLocomotive(MarklinSimpleComponent)`, remove `newLoc.setNotes(...)`; or declare
+     * `private int extra;` in `MarklinSimpleComponent`.
+     */
+    @Test
+    public void testEveryLocomotiveFieldComesBackAfterTheRestart() throws Exception
+    {
+        MarklinSimpleComponent plain = SAVED_BEFORE.get(PLAIN);
+
+        TreeSet<String> declared = new TreeSet<>();
+
+        for (java.lang.reflect.Field field : MarklinSimpleComponent.class.getDeclaredFields())
+        {
+            if (java.lang.reflect.Modifier.isStatic(field.getModifiers())) continue;
+
+            declared.add(field.getName());
+
+            if (CHECKED_ELSEWHERE.containsKey(field.getName())) continue;
+
+            field.setAccessible(true);
+
+            boolean offDefault = false;
+
+            for (String name : new String[] {FULL, MULTI})
+            {
+                Object before = field.get(SAVED_BEFORE.get(name));
+                Object after = field.get(new MarklinSimpleComponent(second.getLocByName(name)));
+
+                assertTrue(Objects.deepEquals(before, after), name + ": the saved field \"" + field.getName() + "\" was "
+                    + describe(before) + " before the close and is " + describe(after) + " after the start");
+
+                offDefault |= !Objects.deepEquals(before, field.get(plain));
+            }
+
+            assertTrue(offDefault, "the saved field \"" + field.getName() + "\" is at its default on both test locomotives,"
+                + " so a restart that loses it would not show: set it in addTheFullLocomotives, or name where it is"
+                + " checked in CHECKED_ELSEWHERE");
+        }
+
+        assertTrue(declared.containsAll(CHECKED_ELSEWHERE.keySet()), "CHECKED_ELSEWHERE names a field that is no longer"
+            + " declared: " + CHECKED_ELSEWHERE.keySet());
+    }
+
+    private static String describe(Object value)
+    {
+        return value instanceof boolean[] ? java.util.Arrays.toString((boolean[]) value)
+            : value instanceof int[] ? java.util.Arrays.toString((int[]) value) : String.valueOf(value);
+    }
+
     // ---------------------------------------------------------------- the fixture
+
+    /**
+     * Adds an ordinary locomotive, two plain ones to link to, a locomotive with every saved field set off its default and
+     * a multi-unit with a Central Station consist; returns all five.  `LocDB3_1_0.data` was saved from these.
+     */
+    public static List<MarklinLocomotive> addTheFullLocomotives(MarklinControlStation model) throws Exception
+    {
+        MarklinLocomotive plain = model.newMM2Locomotive(PLAIN, 60);
+        MarklinLocomotive a = model.newMM2Locomotive(MEMBER_A, 61);
+        MarklinLocomotive b = model.newMM2Locomotive(MEMBER_B, 62);
+        MarklinLocomotive full = model.newMFXLocomotive(FULL, 70);
+        MarklinLocomotive multi = model.newMFXLocomotive(MULTI, 71);
+
+        full.setFunctionType(3, 7, 1);
+        full.setFunctionType(9, 11, 2);
+
+        boolean[] on = new boolean[full.getNumF()];
+        boolean[] preferred = new boolean[full.getNumF()];
+
+        on[2] = on[5] = true;
+        preferred[1] = preferred[4] = true;
+
+        full.setFunctionState(on);
+        full.setPreferredFunctions(preferred);
+        full.setPreferredSpeed(42);
+        full.setDepartureFunc(3);
+        full.setArrivalFunc(4);
+        full.setReversible(true);
+        full.setTrainLength(7);
+        full.setLocalImageURL("rs-full-train.png");
+        full.setLocalFunctionImageURL(3, "rs-bell.png");
+        full.setLocalFunctionImageURL(9, "rs-horn.png");
+        full.setNotes("Bought at the spring fair; the left headlight is loose.");
+
+        Map<String, Double> members = new java.util.LinkedHashMap<>();
+
+        members.put(MEMBER_A, 0.5);
+        members.put(MEMBER_B, -1.5);
+
+        full.setLinkedLocomotives(members);
+
+        model.receiveMessage(Packets.directionEcho(full, false));
+
+        assertTrue(Components.waitFor(() -> !full.goingForward(), PATIENCE_MS), "precondition: the train did not turn");
+
+        model.changeLocAddress(MULTI, 9, MarklinLocomotive.decoderType.MULTI_UNIT);
+
+        Map<String, Double> consist = new java.util.HashMap<>();
+
+        consist.put(MEMBER_A, 1.0);
+
+        multi.setModelMultiUnitLocomotives(consist);
+
+        // A locomotive never given notes saves them as "" and loads them as the notes' JSON form; this one starts there
+        multi.setNotes("");
+
+        return java.util.Arrays.asList(plain, a, b, full, multi);
+    }
 
     /** Puts the train on the named copy of a platform, as the diagram's placement does, and says where. */
     private static String placeOnAPlatform(Layout railway, String train, String platform)
