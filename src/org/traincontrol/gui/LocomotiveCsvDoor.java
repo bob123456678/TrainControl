@@ -56,11 +56,21 @@ final class LocomotiveCsvDoor
 
         List<String> existing = csv.existingNames(model);
         int added = csv.countNew(model);
-        int skipped = csv.skipped(model).size();
+        Map<Integer, MarklinLocomotiveCsv.Why> skippedLines = csv.skipped(model);
+        int skipped = skippedLines.size();
 
         if (added == 0 && existing.isEmpty())
         {
-            JOptionPane.showMessageDialog(ui, I18n.f("loc.ui.infoImportCsvNothing", skipped));
+            List<String> lines = new ArrayList<>();
+
+            for (Map.Entry<Integer, MarklinLocomotiveCsv.Why> e : skippedLines.entrySet())
+            {
+                lines.add(skippedLine(e.getKey(), e.getValue(), csv.badCells(e.getKey())));
+            }
+
+            String said = I18n.f("loc.ui.infoImportCsvNothing", skipped);
+
+            JOptionPane.showMessageDialog(ui, lines.isEmpty() ? said : DetailsArea.message(said, lines));
             return;
         }
 
@@ -148,7 +158,7 @@ final class LocomotiveCsvDoor
 
         for (Map.Entry<Integer, MarklinLocomotiveCsv.Why> e : result.skipped.entrySet())
         {
-            lines.add(I18n.f("loc.ui.importCsvSkippedLine", e.getKey()) + ": " + reason(e.getValue(), result.badCells.get(e.getKey())));
+            lines.add(skippedLine(e.getKey(), e.getValue(), result.badCells.get(e.getKey())));
         }
 
         if (!result.skipped.isEmpty()) said += "\n\n" + I18n.f("loc.ui.infoImportCsvSkipped", result.skipped.size());
@@ -164,6 +174,11 @@ final class LocomotiveCsvDoor
             : kept.why == MarklinLocomotiveCsv.Keep.HELD ? "loc.ui.importCsvKeptHeld" : "loc.ui.importCsvKeptMoving";
 
         return I18n.f("loc.ui.importCsvKeptLine", kept.name, I18n.t(why));
+    }
+
+    private static String skippedLine(int line, MarklinLocomotiveCsv.Why why, List<String[]> cells)
+    {
+        return I18n.f("loc.ui.importCsvSkippedLine", line) + ": " + reason(why, cells);
     }
 
     /** Why a line was skipped; an unreadable one names the cells that were wrong. */

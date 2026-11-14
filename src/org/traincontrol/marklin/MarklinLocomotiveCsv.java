@@ -219,6 +219,12 @@ public final class MarklinLocomotiveCsv
         return names;
     }
 
+    /** The cells that made a skipped line unreadable ({heading, value} each), or null. */
+    public List<String[]> badCells(int line)
+    {
+        return this.badCells.get(line);
+    }
+
     /** The lines that will be skipped against the model as it is now, with why. */
     public Map<Integer, Why> skipped(ViewListener model)
     {

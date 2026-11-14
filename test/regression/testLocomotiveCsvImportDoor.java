@@ -330,33 +330,54 @@ public class testLocomotiveCsvImportDoor
     @Test
     public void testASkippedRowNamesTheCellsThatMadeItUnreadable() throws Exception
     {
+        List<String> lines = detailsOfImporting("FR049 door year,,MFX,50,0,0:00:00,c. 1950,0,,,\n"
+            + "FR049 door two,,MFX,51,150,0:00:00,0,19x0,,,\n" + "FR049 door fine,,MFX,52,0,0:00:00,0,0,,,\n");
+
+        assertEquals(lines, java.util.Arrays.asList(
+            I18n.f("loc.ui.importCsvSkippedLine", 2) + ": " + I18n.f("loc.ui.importCsvReasonCells",
+                I18n.f("loc.ui.importCsvBadCell", "Start Year", "c. 1950")),
+            I18n.f("loc.ui.importCsvSkippedLine", 3) + ": " + I18n.f("loc.ui.importCsvReasonCells",
+                I18n.f("loc.ui.importCsvBadCell", "PreferredSpeed", "150") + ", "
+                + I18n.f("loc.ui.importCsvBadCell", "End Year", "19x0"))), "the skipped rows do not name their cells");
+    }
+
+    /**
+     * A file whose only row cannot be used still gets the skipped line and its wrong cell in the "nothing to import" message.
+     *
+     * MUTATION: leave the list out of the nothing-to-import message, or leave the cell out of it, and this fails.
+     */
+    @Test
+    public void testNothingToImportNamesTheSkippedCell() throws Exception
+    {
+        assertEquals(detailsOfImporting("FR049 door only,,MFX,50,0,0:00:00,c. 1950,0,,,\n"), Collections.singletonList(
+            I18n.f("loc.ui.importCsvSkippedLine", 2) + ": " + I18n.f("loc.ui.importCsvReasonCells",
+                I18n.f("loc.ui.importCsvBadCell", "Start Year", "c. 1950"))), "the nothing-to-import message does not name the cell");
+    }
+
+    /** The list under the message the door says after importing a file of these rows; the locomotives made are deleted. */
+    private static List<String> detailsOfImporting(String rows) throws Exception
+    {
+        List<String> details = new ArrayList<>();
+
         inAWindow((ui, model) ->
         {
-            File file = write(HEADER11 + "FR049 door year,,MFX,50,0,0:00:00,c. 1950,0,,,\n"
-                + "FR049 door two,,MFX,51,150,0:00:00,0,19x0,,,\n" + "FR049 door fine,,MFX,52,0,0:00:00,0,0,,,\n");
+            File file = write(HEADER11 + rows);
 
             try
             {
-                Seen seen = press(ui, file, IMPORT, s -> !s.said.isEmpty());
-                List<String> lines = seen.saidShapes.get(0).details;
-
-                assertEquals(lines, java.util.Arrays.asList(
-                    I18n.f("loc.ui.importCsvSkippedLine", 2) + ": " + I18n.f("loc.ui.importCsvReasonCells",
-                        I18n.f("loc.ui.importCsvBadCell", "Start Year", "c. 1950")),
-                    I18n.f("loc.ui.importCsvSkippedLine", 3) + ": " + I18n.f("loc.ui.importCsvReasonCells",
-                        I18n.f("loc.ui.importCsvBadCell", "PreferredSpeed", "150") + ", "
-                        + I18n.f("loc.ui.importCsvBadCell", "End Year", "19x0"))), "the skipped rows do not name their cells");
-                assertTrue(lines.get(0).contains("Start Year") && lines.get(0).contains("c. 1950"), lines.get(0));
-                assertNull(model.getLocByName("FR049 door year"));
-                assertNull(model.getLocByName("FR049 door two"));
-                assertNotNull(model.getLocByName("FR049 door fine"));
-                model.deleteLoc("FR049 door fine");
+                details.addAll(press(ui, file, IMPORT, s -> !s.said.isEmpty()).saidShapes.get(0).details);
             }
             finally
             {
                 file.delete();
+                for (String name : new String[] {"FR049 door year", "FR049 door two", "FR049 door fine", "FR049 door only"})
+                {
+                    model.deleteLoc(name);
+                }
             }
         });
+
+        return details;
     }
 
     /**
