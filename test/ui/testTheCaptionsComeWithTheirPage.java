@@ -25,7 +25,6 @@ import org.traincontrol.gui.widgets.StationCaption;
 import org.traincontrol.marklin.MarklinControlStation;
 import support.Answering;
 import support.Components;
-import support.Display;
 import support.Reflect;
 
 /**
@@ -37,7 +36,7 @@ import support.Reflect;
  */
 public class testTheCaptionsComeWithTheirPage
 {
-    private static support.LayoutSandbox sandbox;
+    private static support.FrozenEditor rig;
     private static MarklinControlStation model;
     private static TrainControlUI ui;
     private static AutonomySession session;
@@ -45,50 +44,20 @@ public class testTheCaptionsComeWithTheirPage
     @BeforeClass
     public static void setUpClass() throws Exception
     {
-        Display.needed("the captions are labels in the window");
+        // The frozen copy in its hidden window, never the operator's own railway (OB-111).
+        rig = support.FrozenEditor.open();
 
-        // The frozen copy, never the operator's own railway (OB-111).
-        sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
-
-        model = support.TestStation.simulatedWithWindowInDebug();
-        model.setNetworkCommState(false);
-
-        ui = (TrainControlUI) model.getGUI();
-
-        assertNotNull(ui, "there is no window");
-
-        Components.drain(1);
-        Components.drain(1);
-
-        session = ui.getAutonomySession();
-
-        assertNotNull(session, "the snapshot holds no autonomy setup, so no station has a caption");
-
-        model.parseAuto(session.buildConfiguration());
-
-        assertNotNull(model.getAutoLayout(), "the snapshot did not build to a layout");
-
-        // The captions are written only with a configuration active.
-        if (ui.getActiveDiagramConfiguration() == null)
-        {
-            Reflect.set(TrainControlUI.class, ui, "activeDiagramConfiguration",
-                session.getStore().getActiveConfiguration());
-        }
+        model = rig.model;
+        ui = rig.ui;
+        session = rig.session;
 
         rebuildThePage();
     }
 
     @AfterClass(alwaysRun = true)
-    public static void tearDownClass()
+    public static void tearDownClass() throws Exception
     {
-        try
-        {
-            if (model != null && model.hasAutoLayout()) model.getAutoLayout().stopLocomotives();
-        }
-        finally
-        {
-            if (sandbox != null) sandbox.close();
-        }
+        if (rig != null) rig.close();
     }
 
     /**
@@ -202,22 +171,8 @@ public class testTheCaptionsComeWithTheirPage
     {
         Layout railway = model.getAutoLayout();
 
-        TileKey from = null;
-        Locomotive train = null;
-
-        for (TileKey square : captionedSquaresShown())
-        {
-            List<Point> standing = ui.getAutonomyOccupantsForTile(square);
-
-            if (standing.size() == 1)
-            {
-                from = square;
-                train = standing.get(0).getCurrentLocomotive();
-                break;
-            }
-        }
-
-        assertNotNull(train, "precondition: no train stands alone at a captioned station on the page shown");
+        final TileKey from = aTrainStandingAlone();
+        final Locomotive train = ui.getAutonomyOccupantsForTile(from).get(0).getCurrentLocomotive();
 
         final String fromPoint = ui.getAutonomyPointForTile(from).getName();
         final String saidFrom = captionText(from);
@@ -280,22 +235,8 @@ public class testTheCaptionsComeWithTheirPage
     @Test(timeOut = 120000)
     public void testARenamedLocomotiveIsRenamedOnItsCaption() throws Exception
     {
-        TileKey at = null;
-        Locomotive train = null;
-
-        for (TileKey square : captionedSquaresShown())
-        {
-            List<Point> standing = ui.getAutonomyOccupantsForTile(square);
-
-            if (standing.size() == 1)
-            {
-                at = square;
-                train = standing.get(0).getCurrentLocomotive();
-                break;
-            }
-        }
-
-        assertNotNull(train, "precondition: no train stands alone at a captioned station on the page shown");
+        final TileKey at = aTrainStandingAlone();
+        final Locomotive train = ui.getAutonomyOccupantsForTile(at).get(0).getCurrentLocomotive();
 
         final String name = train.getName();
         final String said = captionText(at);
@@ -330,18 +271,7 @@ public class testTheCaptionsComeWithTheirPage
     @Test(timeOut = 120000)
     public void testARenamedStationKeepsItsTrainOnItsCaption() throws Exception
     {
-        TileKey at = null;
-
-        for (TileKey square : captionedSquaresShown())
-        {
-            if (ui.getAutonomyOccupantsForTile(square).size() == 1 && session.getStore().getPointName(square) != null)
-            {
-                at = square;
-                break;
-            }
-        }
-
-        assertNotNull(at, "precondition: no train stands alone at a named, captioned station on the page shown");
+        final TileKey at = aTrainStandingAlone();
 
         final String said = captionText(at);
         final String name = session.getStore().getPointName(at);
@@ -361,12 +291,11 @@ public class testTheCaptionsComeWithTheirPage
                 + " after the station was renamed " + name + " Renamed");
 
             // And its name, which the caption gives on hover
-            final TileKey square = at;
             final Component page = shownPage();
 
             String tip = onTheEventThread(() ->
             {
-                for (JLabel label : ui.getLayoutStations(square))
+                for (JLabel label : ui.getLayoutStations(at))
                 {
                     if (SwingUtilities.isDescendingFrom(label, (Container) page)) return label.getToolTipText();
                 }
@@ -476,6 +405,20 @@ public class testTheCaptionsComeWithTheirPage
 
             super.addInvalidComponent(c);
         }
+    }
+
+    /** A named, captioned station of the page shown with one train standing at it. */
+    private static TileKey aTrainStandingAlone() throws Exception
+    {
+        for (TileKey square : captionedSquaresShown())
+        {
+            if (ui.getAutonomyOccupantsForTile(square).size() == 1 && session.getStore().getPointName(square) != null)
+            {
+                return square;
+            }
+        }
+
+        throw new AssertionError("precondition: no train stands alone at a named, captioned station on the page shown");
     }
 
     /** Renames through the Locomotive Settings window's Save door. */
