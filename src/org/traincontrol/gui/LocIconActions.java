@@ -1,7 +1,6 @@
 package org.traincontrol.gui;
 
 import java.awt.BasicStroke;
-import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.FlowLayout;
@@ -14,7 +13,6 @@ import java.awt.geom.Path2D;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
-import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
@@ -23,7 +21,6 @@ import java.nio.file.Paths;
 import java.util.Collections;
 import javax.imageio.ImageIO;
 import javax.swing.BorderFactory;
-import javax.swing.Icon;
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
 import javax.swing.JFileChooser;
@@ -56,7 +53,7 @@ final class LocIconActions
      * A mark drawn over the picture: each subclass draws it twice, a white underlay (pass 0) then the dark ink (pass 1),
      * so it reads on any photograph.
      */
-    abstract static class Mark implements Icon
+    abstract static class Mark implements javax.swing.Icon
     {
         static final int SIZE = 15;
 
@@ -280,7 +277,7 @@ final class LocIconActions
             row.add(javax.swing.Box.createHorizontalStrut(16));
             row.add(clear);
 
-            fc.add(row, BorderLayout.SOUTH);
+            fc.add(row, java.awt.BorderLayout.SOUTH);
 
             int i = fc.showOpenDialog(source);
 
@@ -769,7 +766,7 @@ final class LocIconActions
     {
         try
         {
-            File file = new File(new URI(url));
+            File file = new File(new java.net.URI(url));
 
             // The note about where it came from goes with it (FR-032), or nothing would ever remove it.
             new File(file.getAbsolutePath() + TrainControlUI.CROP_SOURCE_SUFFIX).delete();

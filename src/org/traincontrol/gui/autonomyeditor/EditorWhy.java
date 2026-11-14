@@ -5,7 +5,6 @@ import org.traincontrol.automation.Layout;
 import org.traincontrol.automation.Point;
 import org.traincontrol.automationui.AutonomyChecks;
 import org.traincontrol.automationui.GraphReducer;
-import org.traincontrol.automationui.StationIndex;
 import org.traincontrol.automationui.TileAnnotation;
 import org.traincontrol.automationui.TileAnnotation.ToolMark;
 import org.traincontrol.automationui.TileGraph.TileKey;
@@ -46,7 +45,7 @@ final class EditorWhy extends SettledQuestion
      * @return what to say and what to draw
      */
     AutonomyEditorPanel.WhyAnswer composeWhy(Layout layout,
-        StationIndex index, AutonomyEditorPanel.WhySetup setup, TileKey tile, boolean byHand)
+        org.traincontrol.automationui.StationIndex index, AutonomyEditorPanel.WhySetup setup, TileKey tile, boolean byHand)
     {
         // Which train is standing here, asked of the layout rather than the setup, whose opinion of where trains are
         // decides what runs.

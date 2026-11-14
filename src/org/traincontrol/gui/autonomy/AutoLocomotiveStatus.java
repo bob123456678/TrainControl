@@ -8,38 +8,27 @@ import org.traincontrol.base.Locomotive;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.Cursor;
-import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Insets;
 import java.awt.RenderingHints;
 import java.awt.event.ActionEvent;
-import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.geom.Path2D;
-import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.IdentityHashMap;
-import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.TreeMap;
 import javax.swing.DefaultListModel;
 import javax.swing.Icon;
-import javax.swing.JLabel;
 import javax.swing.JList;
 import javax.swing.JOptionPane;
 import javax.swing.JScrollPane;
 import javax.swing.JTextPane;
 import javax.swing.SwingUtilities;
-import javax.swing.UIManager;
-import javax.swing.text.BadLocationException;
 import javax.swing.text.SimpleAttributeSet;
-import javax.swing.text.StyleConstants;
-import javax.swing.text.StyledDocument;
 import org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel;
 import org.traincontrol.gui.AutonomyViewerPanel;
 import org.traincontrol.gui.TrainControlUI;
@@ -631,15 +620,15 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
         // smaller than the 14 that most Segoe UI components in the gui package are built with, so taking it whole made
         // this window smaller than its neighbors (MT-160, MT-163).  The family still comes from the look and feel, so a
         // theme's typography is followed.
-        Font standard = UIManager.getFont("Label.font");
+        Font standard = javax.swing.UIManager.getFont("Label.font");
 
-        if (standard == null) standard = new JLabel().getFont();
+        if (standard == null) standard = new javax.swing.JLabel().getFont();
 
         area.setFont(standard.deriveFont(14f));
 
         JScrollPane scroll = new JScrollPane(area);
 
-        scroll.setPreferredSize(new Dimension(580, 380));
+        scroll.setPreferredSize(new java.awt.Dimension(580, 380));
         scroll.getVerticalScrollBar().setUnitIncrement(16);
 
         new Thread(() ->
@@ -667,11 +656,11 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
      */
     private void write(JTextPane pane, String report)
     {
-        StyledDocument doc = pane.getStyledDocument();
+        javax.swing.text.StyledDocument doc = pane.getStyledDocument();
 
         SimpleAttributeSet bold = new SimpleAttributeSet();
 
-        StyleConstants.setBold(bold, true);
+        javax.swing.text.StyleConstants.setBold(bold, true);
 
         pane.setText("");
 
@@ -684,7 +673,7 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
                 doc.insertString(doc.getLength(), line + "\n", heading ? bold : null);
             }
         }
-        catch (BadLocationException impossible)
+        catch (javax.swing.text.BadLocationException impossible)
         {
             // Inserting at getLength() cannot be out of bounds. Falling back to the plain text costs
             // the bold and nothing else, which is better than an empty window.
@@ -776,7 +765,7 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
      */
     private void explainOnHover()
     {
-        this.locDest.addMouseListener(new MouseAdapter()
+        this.locDest.addMouseListener(new java.awt.event.MouseAdapter()
         {
             /**
              * FR-017: the whole list, in a window that stays put and can be scrolled; a tooltip cannot be scrolled and
@@ -839,7 +828,7 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
     private void fileByStation(Layout.Destinations destinations, Map<String, String> choosable,
         Map<String, String> barred)
     {
-        Set<String> canGo = new HashSet<>();
+        java.util.Set<String> canGo = new java.util.HashSet<>();
 
         for (String point : destinations.getReasons().keySet())
         {
@@ -871,7 +860,7 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
 
             fileByStation(layout.explainDestinationsGrouped(locomotive, byHand), choosable, barred);
 
-            Map<String, String> byStation = new LinkedHashMap<>(choosable);
+            Map<String, String> byStation = new java.util.LinkedHashMap<>(choosable);
             byStation.putAll(barred);
 
             if (byStation.isEmpty()) return null;
@@ -950,7 +939,7 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
     {
         if (paths == null || layout == null) return paths;
 
-        List<List<Edge>> allowed = new ArrayList<>();
+        List<List<Edge>> allowed = new java.util.ArrayList<>();
 
         for (List<Edge> path : paths)
         {
@@ -966,7 +955,7 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
         return allowed;
     }
 
-    private void locAvailPathsMouseClicked(MouseEvent evt) {//GEN-FIRST:event_locAvailPathsMouseClicked
+    private void locAvailPathsMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_locAvailPathsMouseClicked
         
         SwingUtilities.invokeLater(() ->
         {
@@ -1004,16 +993,16 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
         });
     }//GEN-LAST:event_locAvailPathsMouseClicked
 
-    private void locAvailPathsMouseEntered(MouseEvent evt) {//GEN-FIRST:event_locAvailPathsMouseEntered
+    private void locAvailPathsMouseEntered(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_locAvailPathsMouseEntered
          
        
     }//GEN-LAST:event_locAvailPathsMouseEntered
 
-    private void locAvailPathsMouseMoved(MouseEvent evt) {//GEN-FIRST:event_locAvailPathsMouseMoved
+    private void locAvailPathsMouseMoved(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_locAvailPathsMouseMoved
         
     }//GEN-LAST:event_locAvailPathsMouseMoved
 
-    private void pauseButtonActionPerformed(ActionEvent evt) {//GEN-FIRST:event_pauseButtonActionPerformed
+    private void pauseButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_pauseButtonActionPerformed
         locomotive.setAutonomyPaused(pauseButton.isSelected());
 
         // AND ITS ICON ON THE DIAGRAM (FR-117), gray while paused.  The train alone: this button is pressed while
@@ -1022,7 +1011,7 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
         parent.trainsPausedChanged();
     }//GEN-LAST:event_pauseButtonActionPerformed
 
-    private void locNameMouseClicked(MouseEvent evt) {//GEN-FIRST:event_locNameMouseClicked
+    private void locNameMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_locNameMouseClicked
         
         if (parent.getActiveLoc() != locomotive)
         {

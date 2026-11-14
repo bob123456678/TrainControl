@@ -8,7 +8,6 @@ import java.util.Set;
 import org.traincontrol.automation.Edge;
 import org.traincontrol.automation.Layout;
 import org.traincontrol.automation.Point;
-import org.traincontrol.automationui.StationIndex;
 import org.traincontrol.automationui.TilePorts;
 import org.traincontrol.util.I18n;
 
@@ -79,7 +78,7 @@ public class ArrivalSidePrompt
      */
     static String squareNameFor(Point at)
     {
-        return StationIndex.withoutArrivalSuffix(at.getName());
+        return org.traincontrol.automationui.StationIndex.withoutArrivalSuffix(at.getName());
     }
 
     /**

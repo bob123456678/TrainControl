@@ -1,7 +1,6 @@
 package org.traincontrol.gui;
 
 import java.util.Set;
-import org.traincontrol.automation.Layout;
 import org.traincontrol.automationui.TileGraph;
 
 /**
@@ -32,7 +31,7 @@ final class CaptionVisibility
     {
         // Captured here, on the caller's thread, for the reason `refreshCoveredTrack` gives: both getters BUILD when there is nothing yet.
         // The session comes off the FIELD rather than the lazy getter, which parses every page and can raise a dialog.
-        Layout railway =
+        org.traincontrol.automation.Layout railway =
             this.ui.getModel() != null && this.ui.getModel().hasAutoLayout() ? this.ui.getModel().getAutoLayout() : null;
 
         this.ui.captionVisibilitySubject = new TrainControlUI.CoveredTrackAsk(railway, this.ui.autonomySession());
