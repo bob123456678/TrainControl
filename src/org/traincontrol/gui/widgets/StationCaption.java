@@ -1,10 +1,32 @@
 package org.traincontrol.gui.widgets;
 
+import java.awt.BasicStroke;
 import java.awt.Color;
+import java.awt.Dimension;
+import java.awt.Font;
+import java.awt.FontMetrics;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
+import java.awt.GraphicsEnvironment;
+import java.awt.Insets;
+import java.awt.Rectangle;
 import java.awt.RenderingHints;
+import java.awt.Shape;
+import java.awt.font.FontRenderContext;
+import java.awt.font.TextLayout;
+import java.awt.geom.AffineTransform;
+import java.awt.geom.Path2D;
+import java.awt.geom.Rectangle2D;
+import java.awt.geom.RoundRectangle2D;
 import javax.swing.JLabel;
+import javax.swing.BorderFactory;
+import javax.swing.SwingUtilities;
+import javax.swing.plaf.basic.BasicHTML;
+import javax.swing.text.BadLocationException;
+import javax.swing.text.Document;
+import javax.swing.text.Position;
+import javax.swing.text.View;
+import org.traincontrol.automationui.DiagramColours;
 import org.traincontrol.gui.LayoutGrid;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.util.ImageUtil;
@@ -25,7 +47,7 @@ public class StationCaption extends JLabel
      * The blue of the station badge on an autonomy locomotive panel, and of the diagram's own station badges and route:
      * one value, so the three cannot drift apart.
      */
-    public static final Color PILL = org.traincontrol.automationui.DiagramColours.STATION;
+    public static final Color PILL = DiagramColours.STATION;
 
     /**
      * The resting fill, with the diagram's own translucency, so a row of captions does not read as holes in the
@@ -45,9 +67,9 @@ public class StationCaption extends JLabel
      * A running train's destination: `DiagramColours.DESTINATION`, solid rather than translucent; its pill draws a
      * ring.
      */
-    public static final Color DESTINATION_FILL = new Color(org.traincontrol.automationui.DiagramColours.DESTINATION.getRed(),
-        org.traincontrol.automationui.DiagramColours.DESTINATION.getGreen(),
-        org.traincontrol.automationui.DiagramColours.DESTINATION.getBlue());
+    public static final Color DESTINATION_FILL = new Color(DiagramColours.DESTINATION.getRed(),
+        DiagramColours.DESTINATION.getGreen(),
+        DiagramColours.DESTINATION.getBlue());
 
     /** Whether this fill is the destination's, by color and not by alpha (a ring belongs round it). */
     public static boolean isDestination(Color fill)
@@ -58,7 +80,7 @@ public class StationCaption extends JLabel
     /** The ring round a destination, in a dark orange (`DiagramColours.DESTINATION_RING`). */
     private static void ring(Graphics2D g, int x, int y, int w, int h)
     {
-        g.setColor(org.traincontrol.automationui.DiagramColours.DESTINATION_RING);
+        g.setColor(DiagramColours.DESTINATION_RING);
         outline(g, x, y, w, h, Math.max(1.4f, h / 12f));
     }
 
@@ -70,18 +92,18 @@ public class StationCaption extends JLabel
     private static void outline(Graphics2D g, int x, int y, int w, int h, float width)
     {
         g.setRenderingHint(RenderingHints.KEY_STROKE_CONTROL, RenderingHints.VALUE_STROKE_PURE);
-        g.setStroke(new java.awt.BasicStroke(width));
+        g.setStroke(new BasicStroke(width));
 
         double in = width / 2.0, arc = h - width;
 
-        g.draw(new java.awt.geom.RoundRectangle2D.Double(x + in, y + in, w - width, h - width, arc, arc));
+        g.draw(new RoundRectangle2D.Double(x + in, y + in, w - width, h - width, arc, arc));
     }
 
     /** A pill's fill, as the exact shape - see `outline`. */
     private static void fillPill(Graphics2D g, int x, int y, int w, int h)
     {
         g.setRenderingHint(RenderingHints.KEY_STROKE_CONTROL, RenderingHints.VALUE_STROKE_PURE);
-        g.fill(new java.awt.geom.RoundRectangle2D.Double(x, y, w, h, h, h));
+        g.fill(new RoundRectangle2D.Double(x, y, w, h, h, h));
     }
 
     /**
@@ -186,7 +208,7 @@ public class StationCaption extends JLabel
         if (text == null || text.isEmpty() || getFont() == null) return;
 
         // Writing set as HTML too (MT-716): `<html><br>` and the words, which the plain-text path below would skip.
-        if (javax.swing.plaf.basic.BasicHTML.isHTMLString(text))
+        if (BasicHTML.isHTMLString(text))
         {
             paintHtmlHalo(g, text);
 
@@ -199,16 +221,16 @@ public class StationCaption extends JLabel
         {
             ImageUtil.smooth(g2);
 
-            java.awt.FontMetrics fm = g2.getFontMetrics(getFont());
+            FontMetrics fm = g2.getFontMetrics(getFont());
 
-            java.awt.Rectangle place = new java.awt.Rectangle();
+            Rectangle place = new Rectangle();
 
             String shown = layOut(fm, text, place);
 
             if (shown == null || shown.isEmpty()) return;
 
-            drawHalo(g2, new java.awt.font.TextLayout(shown, getFont(), g2.getFontRenderContext())
-                .getOutline(java.awt.geom.AffineTransform.getTranslateInstance(place.x, place.y + fm.getAscent())));
+            drawHalo(g2, new TextLayout(shown, getFont(), g2.getFontRenderContext())
+                .getOutline(AffineTransform.getTranslateInstance(place.x, place.y + fm.getAscent())));
         }
         finally
         {
@@ -217,35 +239,34 @@ public class StationCaption extends JLabel
     }
 
     /** Where JLabel's own painter puts the text, into `place`, and what of the text fits. */
-    private String layOut(java.awt.FontMetrics fm, String text, java.awt.Rectangle place)
+    private String layOut(FontMetrics fm, String text, Rectangle place)
     {
-        java.awt.Insets in = getInsets();
+        Insets in = getInsets();
 
-        java.awt.Rectangle view = new java.awt.Rectangle(in.left, in.top, getWidth() - in.left - in.right,
+        Rectangle view = new Rectangle(in.left, in.top, getWidth() - in.left - in.right,
             getHeight() - in.top - in.bottom);
 
-        return javax.swing.SwingUtilities.layoutCompoundLabel(this, fm, text, getIcon(), getVerticalAlignment(),
+        return SwingUtilities.layoutCompoundLabel(this, fm, text, getIcon(), getVerticalAlignment(),
             getHorizontalAlignment(), getVerticalTextPosition(), getHorizontalTextPosition(), view,
-            new java.awt.Rectangle(), place, getIconTextGap());
+            new Rectangle(), place, getIconTextGap());
     }
 
     /** The halo itself: the letters' outline, stroked wide in the halo's color. */
-    private void drawHalo(Graphics2D g2, java.awt.Shape letters)
+    private void drawHalo(Graphics2D g2, Shape letters)
     {
         g2.setColor(AddressLabel.HALO);
-        g2.setStroke(new java.awt.BasicStroke(haloWidth(), java.awt.BasicStroke.CAP_ROUND,
-            java.awt.BasicStroke.JOIN_ROUND));
+        g2.setStroke(new BasicStroke(haloWidth(), BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
         g2.draw(letters);
     }
 
     /** The halo round writing set as HTML: each line outlined where the HTML view draws it. */
     private void paintHtmlHalo(Graphics g, String text)
     {
-        Object property = getClientProperty(javax.swing.plaf.basic.BasicHTML.propertyKey);
+        Object property = getClientProperty(BasicHTML.propertyKey);
 
-        if (!(property instanceof javax.swing.text.View)) return;
+        if (!(property instanceof View)) return;
 
-        javax.swing.text.View view = (javax.swing.text.View) property;
+        View view = (View) property;
 
         Graphics2D g2 = (Graphics2D) g.create();
 
@@ -253,18 +274,18 @@ public class StationCaption extends JLabel
         {
             ImageUtil.smooth(g2);
 
-            java.awt.FontMetrics fm = g2.getFontMetrics(getFont());
+            FontMetrics fm = g2.getFontMetrics(getFont());
 
-            java.awt.Rectangle place = new java.awt.Rectangle();
+            Rectangle place = new Rectangle();
 
             // where JLabel's own painter puts the view
             layOut(fm, text, place);
 
-            javax.swing.text.Document document = view.getDocument();
+            Document document = view.getDocument();
 
             String words = document.getText(0, document.getLength());
 
-            java.awt.geom.Path2D letters = new java.awt.geom.Path2D.Double();
+            Path2D letters = new Path2D.Double();
 
             int start = 0;
 
@@ -283,14 +304,14 @@ public class StationCaption extends JLabel
 
                 if (!line.trim().isEmpty())
                 {
-                    java.awt.Shape where = view.modelToView(first, place, javax.swing.text.Position.Bias.Forward);
+                    Shape where = view.modelToView(first, place, Position.Bias.Forward);
 
                     if (where != null)
                     {
-                        java.awt.Rectangle at = where.getBounds();
+                        Rectangle at = where.getBounds();
 
-                        letters.append(new java.awt.font.TextLayout(line, getFont(), g2.getFontRenderContext())
-                            .getOutline(java.awt.geom.AffineTransform.getTranslateInstance(at.x, at.y + fm.getAscent())),
+                        letters.append(new TextLayout(line, getFont(), g2.getFontRenderContext())
+                            .getOutline(AffineTransform.getTranslateInstance(at.x, at.y + fm.getAscent())),
                             false);
                     }
                 }
@@ -300,7 +321,7 @@ public class StationCaption extends JLabel
 
             drawHalo(g2, letters);
         }
-        catch (javax.swing.text.BadLocationException e)
+        catch (BadLocationException e)
         {
             // no halo, as before: the words are drawn regardless
         }
@@ -394,21 +415,20 @@ public class StationCaption extends JLabel
             int top = Math.max(0, upShift + (tile - wide) / 2);
 
             // Across: centered on the line between its square and the next (OB-327).
-            setBorder(javax.swing.BorderFactory.createEmptyBorder(top, Math.max(0, backShift + tile - thickness() / 2),
-                0, 0));
+            setBorder(BorderFactory.createEmptyBorder(top, Math.max(0, backShift + tile - thickness() / 2), 0, 0));
 
             return;
         }
 
         int left = Math.max(0, backShift + (tile - wide) / 2);
 
-        setBorder(javax.swing.BorderFactory.createEmptyBorder(offset, left, 0, 0));
+        setBorder(BorderFactory.createEmptyBorder(offset, left, 0, 0));
     }
 
     /** How wide the pill needs to be for what this caption currently says. */
     private int width()
     {
-        java.awt.Font font = getFont();
+        Font font = getFont();
 
         if (font == null) return 0;
 
@@ -502,13 +522,13 @@ public class StationCaption extends JLabel
     {
         // Installed, and then able, in that order: `new Font("no such family", ...)` resolves to Dialog, and
         // `canDisplay` then answers for Dialog.  The family list is the only thing that answers "is it installed".
-        java.awt.Font symbol = new java.awt.Font(SYMBOL_FONT, java.awt.Font.PLAIN, 12);
+        Font symbol = new Font(SYMBOL_FONT, Font.PLAIN, 12);
 
         boolean installed = false;
 
         try
         {
-            for (String family : java.awt.GraphicsEnvironment.getLocalGraphicsEnvironment()
+            for (String family : GraphicsEnvironment.getLocalGraphicsEnvironment()
                 .getAvailableFontFamilyNames())
             {
                 if (SYMBOL_FONT.equalsIgnoreCase(family))
@@ -635,11 +655,11 @@ public class StationCaption extends JLabel
      * Where the pill is actually drawn, in this component's own coordinates: the single answer that painting,
      * hit-testing and sizing all ask; null when nothing is drawn.  Stood on end, width and height swap.
      */
-    private java.awt.Rectangle pillBounds()
+    private Rectangle pillBounds()
     {
         if (!pill) return null;
 
-        java.awt.Insets pad = getInsets();
+        Insets pad = getInsets();
 
         int top = pad == null ? 0 : pad.top;
         int left = pad == null ? 0 : pad.left;
@@ -651,7 +671,7 @@ public class StationCaption extends JLabel
 
             if (len <= 0 || thick <= 0) return null;
 
-            return new java.awt.Rectangle(left, top, thick, len);
+            return new Rectangle(left, top, thick, len);
         }
 
         int high = getHeight() - top - (pad == null ? 0 : pad.bottom);
@@ -659,7 +679,7 @@ public class StationCaption extends JLabel
 
         if (high <= 0 || wide <= 0) return null;
 
-        return new java.awt.Rectangle(left, top, wide, high);
+        return new Rectangle(left, top, wide, high);
     }
 
     /**
@@ -668,15 +688,15 @@ public class StationCaption extends JLabel
      *
      * @return the drawn rectangle, or null when nothing is drawn
      */
-    public java.awt.Rectangle drawnBounds()
+    public Rectangle drawnBounds()
     {
         return pillBounds();
     }
 
     @Override
-    public java.awt.Dimension getPreferredSize()
+    public Dimension getPreferredSize()
     {
-        java.awt.Dimension was = super.getPreferredSize();
+        Dimension was = super.getPreferredSize();
 
         if (!pill) return was;
 
@@ -684,9 +704,9 @@ public class StationCaption extends JLabel
         {
             // Asked of the pill rather than of the text: super.getPreferredSize measures along the text, so a rotated
             // caption would be drawn out of its box.
-            java.awt.Insets pad = getInsets();
+            Insets pad = getInsets();
 
-            return new java.awt.Dimension(
+            return new Dimension(
                 thickness() + (pad == null ? 0 : pad.left + pad.right),
                 width() + (pad == null ? 0 : pad.top + pad.bottom));
         }
@@ -704,7 +724,7 @@ public class StationCaption extends JLabel
      */
     public int lineHeight()
     {
-        java.awt.Font font = getFont();
+        Font font = getFont();
 
         if (font == null) return 12;
 
@@ -718,7 +738,7 @@ public class StationCaption extends JLabel
      *
      * @return the font
      */
-    private java.awt.Font drawnFont()
+    private Font drawnFont()
     {
         return getFont();
     }
@@ -730,11 +750,11 @@ public class StationCaption extends JLabel
     {
         if (!rotated) return lineHeight();
 
-        java.awt.Font font = drawnFont();
+        Font font = drawnFont();
 
         if (font == null) return lineHeight();
 
-        java.awt.font.FontRenderContext frc = getFontMetrics(font).getFontRenderContext();
+        FontRenderContext frc = getFontMetrics(font).getFontRenderContext();
 
         double letters = font.createGlyphVector(frc, "Hgjy").getVisualBounds().getHeight();
 
@@ -755,7 +775,7 @@ public class StationCaption extends JLabel
     {
         if (!pill) return super.contains(x, y);
 
-        java.awt.Rectangle drawn = pillBounds();
+        Rectangle drawn = pillBounds();
 
         return drawn != null && drawn.contains(x, y);
     }
@@ -765,7 +785,7 @@ public class StationCaption extends JLabel
      * A quarter turn anticlockwise (`rotate(-PI/2)`) sends local +x to screen up so the text reads from the bottom of
      * the pill; translating to the bottom first puts the start of the text there.
      */
-    private void paintOnEnd(Graphics g, java.awt.Rectangle drawn)
+    private void paintOnEnd(Graphics g, Rectangle drawn)
     {
         Graphics2D g2 = (Graphics2D) g.create();
 
@@ -805,7 +825,7 @@ public class StationCaption extends JLabel
     {
         if (pill && rotated)
         {
-            java.awt.Rectangle drawn = pillBounds();
+            Rectangle drawn = pillBounds();
 
             // And NOT super.paintComponent: JLabel would draw the text a second time, flat, across the top of the
             // rotated pill.
@@ -827,7 +847,7 @@ public class StationCaption extends JLabel
                 // Inside the insets, which lets the caption be moved without being stretched: its place on the square
                 // is set with a top border, so a pill painted over the whole component would grow downwards from the
                 // top.
-                java.awt.Rectangle drawn = pillBounds();
+                Rectangle drawn = pillBounds();
 
                 if (drawn == null) return;
 
@@ -847,7 +867,7 @@ public class StationCaption extends JLabel
         // for layout, and at a larger display scale the glyphs come out wider.
         if (pill)
         {
-            java.awt.Rectangle drawn = pillBounds();
+            Rectangle drawn = pillBounds();
 
             if (drawn != null) paintText(g, drawn.x, drawn.y, drawn.width, drawn.height);
 
@@ -881,8 +901,8 @@ public class StationCaption extends JLabel
 
             // Measured as drawn, in this graphics, which carries its scale.  Across by the ink, not the advance; up and
             // down by the capitals, since the ascent includes room above them that no letter fills.
-            java.awt.font.FontRenderContext frc = g2.getFontRenderContext();
-            java.awt.geom.Rectangle2D ink = drawnFont().createGlyphVector(frc, text).getVisualBounds();
+            FontRenderContext frc = g2.getFontRenderContext();
+            Rectangle2D ink = drawnFont().createGlyphVector(frc, text).getVisualBounds();
             double capitals = drawnFont().createGlyphVector(frc, "H").getVisualBounds().getHeight();
 
             float left = (float) (x + (len - ink.getWidth()) / 2.0 - ink.getX());

@@ -2,8 +2,13 @@ package org.traincontrol.gui.widgets;
 
 import java.awt.Component;
 import java.io.File;
+import java.lang.reflect.InvocationTargetException;
 import java.nio.file.Files;
+import java.util.function.BiFunction;
+import java.util.function.BooleanSupplier;
 import javax.swing.JOptionPane;
+import javax.swing.SwingUtilities;
+import javax.swing.Timer;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.gui.TrainControlUI.UpdateChoice;
 import static org.traincontrol.marklin.MarklinControlStation.RAW_VERSION;
@@ -42,7 +47,7 @@ public final class UpdateFlow
         // Download, never Download & Update: the default is what a reflex Enter does
         final Object initial = download;
 
-        final java.util.function.BiFunction<Object[], Object, Integer> hook = TrainControlUI.updateQuestionForTests;
+        final BiFunction<Object[], Object, Integer> hook = TrainControlUI.updateQuestionForTests;
 
         final int chose = hook != null ? hook.apply(choices.clone(), initial) : JOptionPane.showOptionDialog(parent,
             I18n.f("ui.update.available", latest, running)
@@ -129,7 +134,7 @@ public final class UpdateFlow
                     {
                         Util.downloadFile(TrainControlUI.LATEST_DOWNLOAD_URL, f, percent ->
                         {
-                            javax.swing.SwingUtilities.invokeLater(() ->
+                            SwingUtilities.invokeLater(() ->
                             {
                                 this.ui.downloadUpdateMenuItem().setText(percent < 0
                                     ? I18n.t("ui.infoDownloadingUpdate")
@@ -141,7 +146,7 @@ public final class UpdateFlow
                 }
                 catch (Exception e)
                 {
-                    javax.swing.SwingUtilities.invokeLater(() ->
+                    SwingUtilities.invokeLater(() ->
                     {
                         JOptionPane.showMessageDialog(
                             this.ui,
@@ -163,7 +168,7 @@ public final class UpdateFlow
                     return;
                 }
 
-                javax.swing.SwingUtilities.invokeLater(() ->
+                SwingUtilities.invokeLater(() ->
                 {
                     // Wrapped: the path is one long word and would make the popup wider than the screen
                     JOptionPane.showMessageDialog(this.ui, DetailsArea.wrapped(
@@ -181,14 +186,14 @@ public final class UpdateFlow
 
                 this.ui.getModel().logf("ui.update.errorFailed", why);
 
-                javax.swing.SwingUtilities.invokeLater(() ->
+                SwingUtilities.invokeLater(() ->
                     JOptionPane.showMessageDialog(this.ui, I18n.f("ui.update.errorFailed", why)));
             }
             finally
             {
                 if (install && !handedOver) this.ui.updateHandOver.end();
 
-                javax.swing.SwingUtilities.invokeLater(() ->
+                SwingUtilities.invokeLater(() ->
                 {
                     this.ui.downloadUpdateMenuItem().setText(I18n.t("ui.main.downloadUpdate"));
                     this.ui.downloadUpdateMenuItem().setEnabled(true);
@@ -215,15 +220,14 @@ public final class UpdateFlow
         {
             this.ui.getModel().logf("ui.update.errorNotWhole", broken);
 
-            javax.swing.SwingUtilities.invokeLater(() ->
+            SwingUtilities.invokeLater(() ->
                 JOptionPane.showMessageDialog(this.ui, I18n.f("ui.update.errorNotWhole", broken)));
 
             return false;
         }
 
         // What it is doing now: the backup takes a while, and the item would otherwise still read "Downloading 100%"
-        javax.swing.SwingUtilities.invokeLater(() ->
-            this.ui.downloadUpdateMenuItem().setText(I18n.t("ui.update.backingUp")));
+        SwingUtilities.invokeLater(() -> this.ui.downloadUpdateMenuItem().setText(I18n.t("ui.update.backingUp")));
 
         // The application's own data backup, and the update goes no further without it.  Incomplete counts as failed: a
         // part of a backup is not what makes an update safe to try.  An Error out of it is a failed backup too.
@@ -236,19 +240,18 @@ public final class UpdateFlow
             // Just before the backup, so a run stopped during the download is in it too
             final String[] folded = new String[1];
 
-            javax.swing.SwingUtilities.invokeAndWait(() -> folded[0] = BackupAction.foldTheStoppedRun(this.ui));
+            SwingUtilities.invokeAndWait(() -> folded[0] = BackupAction.foldTheStoppedRun(this.ui));
 
             backup = this.ui.backupData().after(folded[0]);
 
             why = backup.isComplete() ? null
                 : backup.unsaved.isEmpty() ? I18n.t("ui.main.titleBackupData") : String.join(", ", backup.unsaved);
         }
-        catch (InterruptedException | java.lang.reflect.InvocationTargetException | RuntimeException | Error e)
+        catch (InterruptedException | InvocationTargetException | RuntimeException | Error e)
         {
             backup = null;
 
-            why = String.valueOf(e instanceof java.lang.reflect.InvocationTargetException && e.getCause() != null
-                ? e.getCause() : e);
+            why = String.valueOf(e instanceof InvocationTargetException && e.getCause() != null ? e.getCause() : e);
         }
 
         if (why != null)
@@ -257,7 +260,7 @@ public final class UpdateFlow
 
             this.ui.getModel().logf("ui.update.errorBackup", said);
 
-            javax.swing.SwingUtilities.invokeLater(() ->
+            SwingUtilities.invokeLater(() ->
                 JOptionPane.showMessageDialog(this.ui, I18n.f("ui.update.errorBackup", said)));
 
             return false;
@@ -265,7 +268,7 @@ public final class UpdateFlow
 
         this.ui.getModel().logf("ui.infoBackupCompleteSavedTo", backup.archive.getAbsolutePath());
 
-        javax.swing.SwingUtilities.invokeLater(() -> closeForTheUpdate(jar, download));
+        SwingUtilities.invokeLater(() -> closeForTheUpdate(jar, download));
 
         return true;
     }
@@ -273,7 +276,7 @@ public final class UpdateFlow
     /**
      * `TrainControlUI.whenNoModalDialog`'s body.
      */
-    public static boolean whenNoModalDialog(final Runnable then, final java.util.function.BooleanSupplier dialogShowing,
+    public static boolean whenNoModalDialog(final Runnable then, final BooleanSupplier dialogShowing,
         int pollMs)
     {
         if (!dialogShowing.getAsBoolean())
@@ -283,7 +286,7 @@ public final class UpdateFlow
             return true;
         }
 
-        final javax.swing.Timer later = new javax.swing.Timer(pollMs, null);
+        final Timer later = new Timer(pollMs, null);
 
         later.addActionListener(e ->
         {

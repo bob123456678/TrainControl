@@ -1,10 +1,17 @@
 package org.traincontrol.gui.widgets;
 
 import java.io.File;
+import java.lang.reflect.InvocationTargetException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import javax.swing.JOptionPane;
+import javax.swing.SwingUtilities;
 import org.traincontrol.gui.TrainControlUI;
+import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.util.Conversion;
 import org.traincontrol.util.I18n;
 import org.traincontrol.util.Util;
@@ -38,7 +45,7 @@ public final class BackupAction
         Runnable ask = () -> yes[0] = JOptionPane.showConfirmDialog(this.ui, question,
             I18n.t("ui.main.titleBackupData"), JOptionPane.YES_NO_OPTION) == JOptionPane.YES_OPTION;
 
-        if (javax.swing.SwingUtilities.isEventDispatchThread())
+        if (SwingUtilities.isEventDispatchThread())
         {
             ask.run();
 
@@ -47,13 +54,13 @@ public final class BackupAction
 
         try
         {
-            javax.swing.SwingUtilities.invokeAndWait(ask);
+            SwingUtilities.invokeAndWait(ask);
         }
         catch (InterruptedException e)
         {
             Thread.currentThread().interrupt();
         }
-        catch (java.lang.reflect.InvocationTargetException e)
+        catch (InvocationTargetException e)
         {
             // A question nobody could be asked is a no: the caller is about to do something optional
             // and expensive, and doing it unasked is the worse of the two mistakes.
@@ -97,7 +104,7 @@ public final class BackupAction
     {
         // The track diagram and the autonomy setup beside it: for a locally stored layout, config/ holds the pages AND config/autonomy holds
         // every station name, direction, caption and configuration, and that folder is the only copy of them anywhere.
-        List<String> unsaved = new java.util.ArrayList<>();
+        List<String> unsaved = new ArrayList<>();
 
         File backupArchive = null;
 
@@ -128,11 +135,11 @@ public final class BackupAction
             // One archive, holding all of it (FR-015): the autonomy setup is keyed by PAGE ID and those ids are defined
             // by config/gleisbild.cs2, so setup.json alone means nothing and a gleisbild.cs2 from a different day
             // silently reattaches every station to the wrong page.  These files are only a backup together.
-            java.util.Map<String, File> state = new java.util.LinkedHashMap<>();
+            Map<String, File> state = new LinkedHashMap<>();
 
             state.put(TrainControlUI.DATA_FILE_NAME, new File(Util.dataPath(TrainControlUI.DATA_FILE_NAME)));
-            state.put(org.traincontrol.marklin.MarklinControlStation.DATA_FILE_NAME,
-                new File(Util.dataPath(org.traincontrol.marklin.MarklinControlStation.DATA_FILE_NAME)));
+            state.put(MarklinControlStation.DATA_FILE_NAME,
+                new File(Util.dataPath(MarklinControlStation.DATA_FILE_NAME)));
 
             // TrainControl's OWN routes, exported as JSON (FR-021): the `fahrstrassen.cs2` in the config folder is the
             // CENTRAL STATION's copy, and this application's route database is what runs.  Written through the door the
@@ -142,8 +149,7 @@ public final class BackupAction
             {
                 routesExport = java.io.File.createTempFile("tc-routes", ".json");
 
-                java.nio.file.Files.write(routesExport.toPath(),
-                    this.ui.getModel().exportRoutes().getBytes(StandardCharsets.UTF_8));
+                Files.write(routesExport.toPath(), this.ui.getModel().exportRoutes().getBytes(StandardCharsets.UTF_8));
 
                 state.put("routes.json", routesExport);
             }
@@ -177,8 +183,7 @@ public final class BackupAction
             {
                 try
                 {
-                    centralStationCopy = java.nio.file.Files
-                        .createTempDirectory("tc-cs-backup").toFile();
+                    centralStationCopy = Files.createTempDirectory("tc-cs-backup").toFile();
 
                     this.ui.getModel().downloadLayout(centralStationCopy);
 
@@ -329,7 +334,7 @@ public final class BackupAction
 
             if (this.ui.getModel() != null) this.ui.getModel().logf("ui.infoBackupCompleteSavedTo", fullPath);
 
-            javax.swing.SwingUtilities.invokeLater(() ->
+            SwingUtilities.invokeLater(() ->
             {
                 // The file's NAME in the dialog, its folder behind the button.
                 final String shown = made[0] != null && made[0].isFile()

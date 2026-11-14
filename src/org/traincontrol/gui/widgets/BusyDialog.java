@@ -1,8 +1,11 @@
 package org.traincontrol.gui.widgets;
 
 import java.awt.BorderLayout;
+import java.awt.Color;
 import java.awt.Dialog;
+import java.awt.Dimension;
 import java.awt.Font;
+import java.awt.GraphicsEnvironment;
 import java.awt.Window;
 import javax.swing.BorderFactory;
 import javax.swing.JDialog;
@@ -28,7 +31,7 @@ public final class BusyDialog extends JDialog
     // the process.
     static
     {
-        if (!java.awt.GraphicsEnvironment.isHeadless()) TrainControlUI.installLookAndFeel();
+        if (!GraphicsEnvironment.isHeadless()) TrainControlUI.installLookAndFeel();
     }
 
     private BusyDialog(Window parent, String message)
@@ -44,11 +47,11 @@ public final class BusyDialog extends JDialog
 
         JPanel content = new JPanel(new BorderLayout(0, 8));
         content.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createLineBorder(java.awt.Color.GRAY),
+            BorderFactory.createLineBorder(Color.GRAY),
             BorderFactory.createEmptyBorder(18, 28, 18, 28)));
 
         LoadingSpinner spinner = new LoadingSpinner();
-        spinner.setPreferredSize(new java.awt.Dimension(64, 64));
+        spinner.setPreferredSize(new Dimension(64, 64));
 
         JLabel says = new JLabel(message, SwingConstants.CENTER);
         says.setFont(new Font("Segoe UI", Font.PLAIN, 14));

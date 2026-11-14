@@ -5,6 +5,7 @@ import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
+import java.awt.Rectangle;
 import java.awt.RenderingHints;
 import java.awt.geom.Area;
 import java.awt.geom.Line2D;
@@ -154,9 +155,9 @@ public class LoadingSpinner extends JPanel
             // Centered on the VISIBLE part of this component: it is sized to the whole diagram page, so on a page
             // bigger than the viewport the glass's true center is off whatever screenful the operator is scrolled to
             // (OB-129).  getVisibleRect() degrades to the full bounds outside a JScrollPane.
-            java.awt.Rectangle visible = getVisibleRect();
+            Rectangle visible = getVisibleRect();
 
-            if (visible.isEmpty()) visible = new java.awt.Rectangle(0, 0, getWidth(), getHeight());
+            if (visible.isEmpty()) visible = new Rectangle(0, 0, getWidth(), getHeight());
 
             // Sized off whichever way round the visible space is tighter, so it never overhangs.
             double glassH = Math.max(18.0,

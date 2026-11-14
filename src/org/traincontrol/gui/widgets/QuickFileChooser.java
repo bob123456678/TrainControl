@@ -2,12 +2,20 @@ package org.traincontrol.gui.widgets;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.TreeSet;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.FutureTask;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.swing.Icon;
+import javax.swing.JFileChooser;
 import javax.swing.filechooser.FileNameExtensionFilter;
 import javax.swing.filechooser.FileSystemView;
 import org.traincontrol.util.I18n;
@@ -21,7 +29,7 @@ import org.traincontrol.util.I18n;
  *
  * @author Adam
  */
-public class QuickFileChooser extends javax.swing.JFileChooser
+public class QuickFileChooser extends JFileChooser
 {
     /** The shell's own view of the files, which every chooser used. */
     private static final FileSystemView SHELL = FileSystemView.getFileSystemView();
@@ -30,10 +38,10 @@ public class QuickFileChooser extends javax.swing.JFileChooser
     private static volatile File[] places = null;
 
     /** What said the shell's answer could change - `landmarks` - when the shell was asked for `places`. */
-    private static volatile java.util.List<Object> landmarksThen = null;
+    private static volatile List<Object> landmarksThen = null;
 
     /** The Desktop folders, whose own children are most of the list - found by the first ask. */
-    private static volatile java.util.List<File> desktops = java.util.Collections.emptyList();
+    private static volatile List<File> desktops = Collections.emptyList();
 
     /** The ask under way, or the last one; asked at most once at a time. */
     private static FutureTask<File[]> asking = null;
@@ -142,7 +150,7 @@ public class QuickFileChooser extends javax.swing.JFileChooser
             {
                 if (desktops.isEmpty()) desktops = theDesktops();
 
-                java.util.List<Object> now = landmarks();
+                List<Object> now = landmarks();
 
                 File[] found = theShellsPlaces();
 
@@ -190,7 +198,7 @@ public class QuickFileChooser extends javax.swing.JFileChooser
 
             return known;
         }
-        catch (java.util.concurrent.ExecutionException e)
+        catch (ExecutionException e)
         {
             return known;
         }
@@ -203,9 +211,9 @@ public class QuickFileChooser extends javax.swing.JFileChooser
      *
      * @return the drives, then the names of each Desktop's folders
      */
-    private static java.util.List<Object> landmarks()
+    private static List<Object> landmarks()
     {
-        java.util.List<Object> out = new java.util.ArrayList<>();
+        List<Object> out = new ArrayList<>();
 
         out.add(drives());
 
@@ -213,7 +221,7 @@ public class QuickFileChooser extends javax.swing.JFileChooser
         {
             File[] folders = desktop.listFiles(File::isDirectory);
 
-            java.util.Set<String> names = new java.util.TreeSet<>();
+            Set<String> names = new TreeSet<>();
 
             if (folders != null) for (File folder : folders) names.add(folder.getName());
 
@@ -228,9 +236,9 @@ public class QuickFileChooser extends javax.swing.JFileChooser
      *
      * @return those there are
      */
-    private static java.util.List<File> theDesktops()
+    private static List<File> theDesktops()
     {
-        java.util.List<File> out = new java.util.ArrayList<>();
+        List<File> out = new ArrayList<>();
 
         try
         {
@@ -385,11 +393,11 @@ public class QuickFileChooser extends javax.swing.JFileChooser
         }
 
         /** The icons the shell has given, by path - the most recently used few thousand. */
-        private static final java.util.Map<String, Icon> ICONS = java.util.Collections.synchronizedMap(
-            new java.util.LinkedHashMap<String, Icon>(512, 0.75f, true)
+        private static final Map<String, Icon> ICONS = Collections.synchronizedMap(
+            new LinkedHashMap<String, Icon>(512, 0.75f, true)
             {
                 @Override
-                protected boolean removeEldestEntry(java.util.Map.Entry<String, Icon> eldest)
+                protected boolean removeEldestEntry(Map.Entry<String, Icon> eldest)
                 {
                     return size() > 4000;
                 }

@@ -7,6 +7,7 @@ import java.awt.FontMetrics;
 import java.awt.Graphics;
 import java.awt.Insets;
 import java.awt.Rectangle;
+import java.util.List;
 import java.util.function.IntFunction;
 import javax.swing.border.Border;
 
@@ -81,7 +82,7 @@ public class AxisRuler implements Border
      * @param index the column or row being asked about
      * @return the first rectangle with a real size, or null when none of them has one
      */
-    public static Rectangle firstUsable(java.util.List<IntFunction<Rectangle>> at, int index)
+    public static Rectangle firstUsable(List<IntFunction<Rectangle>> at, int index)
     {
         if (at == null) return null;
 
@@ -116,8 +117,8 @@ public class AxisRuler implements Border
      * missing square can silence it.
      */
     public static AxisRuler overRows(int offsetX, int offsetY, int columns, int rows,
-        final java.util.List<IntFunction<Rectangle>> columnSources,
-        final java.util.List<IntFunction<Rectangle>> rowSources)
+        final List<IntFunction<Rectangle>> columnSources,
+        final List<IntFunction<Rectangle>> rowSources)
     {
         return new AxisRuler(offsetX, offsetY, columns, rows,
             column -> firstUsable(columnSources, column),
