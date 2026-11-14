@@ -505,6 +505,113 @@ public class testASyncOwedWaitsForTheEditor
     }
 
     /**
+     * Presses a layout-switch door and, in the same event, puts an editor on its way, as an Edit queued behind the
+     * click does; lets the door's posted work run, and gives what was said.
+     */
+    private List<String> pressedWithAnEditorOnItsWay(String door) throws Exception
+    {
+        final javax.swing.JMenuItem item = (javax.swing.JMenuItem) Reflect.get(TrainControlUI.class, ui, door);
+        final boolean enabled = Components.onTheEventThread(item::isEnabled);
+        final java.lang.reflect.Field onItsWay = Reflect.field(TrainControlUI.class, "editorOnItsWay");
+
+        try (Answering answering = Answering.start(message -> Answering.pressAt(0)))
+        {
+            Components.onTheEventThread(() ->
+            {
+                item.setEnabled(true);
+                item.doClick();
+
+                onItsWay.setBoolean(ui, true);
+
+                return null;
+            });
+
+            answering.awaitAsked(1, 20000);
+            answering.awaitAsked(2, 2000);
+            Components.settle();
+
+            return answering.asked();
+        }
+        finally
+        {
+            Reflect.set(TrainControlUI.class, ui, "editorOnItsWay", false);
+
+            SwingUtilities.invokeAndWait(() -> item.setEnabled(enabled));
+        }
+    }
+
+    /**
+     * Switch to Central Station Layout with an editor on its way by the time its posted work runs is refused there,
+     * with the editor's message alone: the folder and the pages are kept.
+     *
+     * MUTATION: leave the `refuseWhileEditorOpen()` out of the task `switchCSLayoutMenuItemActionPerformed` posts, and
+     * the folder is cleared and the sync refused.
+     */
+    @Test(timeOut = 120000)
+    public void testTheSwitchToTheStationsLayoutAsksAgainInItsPostedWork() throws Exception
+    {
+        final String folder = TrainControlUI.getPrefs().get(TrainControlUI.LAYOUT_OVERRIDE_PATH_PREF, "");
+        final int pages = model.getLayoutList().size();
+
+        assertFalse(folder.isEmpty() || pages == 0, "precondition: no local layout is loaded");
+
+        try
+        {
+            List<String> said = pressedWithAnEditorOnItsWay("switchCSLayoutMenuItem");
+
+            assertEquals(said, java.util.Collections.singletonList(I18n.t("autosetup.ui.menuEditorOpen")),
+                "the switch's posted work went on under an editor on its way");
+            assertEquals(model.getLayoutList().size(), pages, "the switch cleared the pages");
+            assertEquals(TrainControlUI.getPrefs().get(TrainControlUI.LAYOUT_OVERRIDE_PATH_PREF, ""), folder,
+                "the switch cleared the layout folder");
+        }
+        finally
+        {
+            TrainControlUI.getPrefs().put(TrainControlUI.LAYOUT_OVERRIDE_PATH_PREF, folder);
+        }
+    }
+
+    /**
+     * Create New Layout: the same, before its message and folder chooser.
+     *
+     * MUTATION: leave the `refuseWhileEditorOpen()` out of the task
+     * `LayoutFileActions.initializeLocalLayoutMenuItemActionPerformed` posts, and its message shows.
+     */
+    @Test(timeOut = 120000)
+    public void testCreateNewLayoutAsksAgainInItsPostedWork() throws Exception
+    {
+        assertEquals(pressedWithAnEditorOnItsWay("initializeLocalLayoutMenuItem"),
+            java.util.Collections.singletonList(I18n.t("autosetup.ui.menuEditorOpen")),
+            "Create New Layout's posted work went on under an editor on its way");
+    }
+
+    /**
+     * Download Central Station Layout, from a station's layout (no folder): the same, before its message and chooser.
+     *
+     * MUTATION: leave the `refuseWhileEditorOpen()` out of the task `LayoutFileActions.downloadCSLayoutMenuItemActionPerformed`
+     * posts, and its message shows.
+     */
+    @Test(timeOut = 120000)
+    public void testDownloadAsksAgainInItsPostedWork() throws Exception
+    {
+        final String folder = TrainControlUI.getPrefs().get(TrainControlUI.LAYOUT_OVERRIDE_PATH_PREF, "");
+
+        // The door downloads only from a station's layout: no folder, pages held
+        TrainControlUI.getPrefs().put(TrainControlUI.LAYOUT_OVERRIDE_PATH_PREF, "");
+
+        try
+        {
+            assertEquals(pressedWithAnEditorOnItsWay("downloadCSLayoutMenuItem"),
+                java.util.Collections.singletonList(I18n.t("autosetup.ui.menuEditorOpen")),
+                "Download's posted work went on under an editor on its way");
+        }
+        finally
+        {
+            TrainControlUI.getPrefs().put(TrainControlUI.LAYOUT_OVERRIDE_PATH_PREF, folder);
+        }
+    }
+
+    /**
      * The locomotive CSV import that would change an address is refused with an editor open, with the editor's message,
      * and nothing is written.
      *

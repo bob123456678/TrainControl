@@ -207,6 +207,9 @@ final class LayoutFileActions
 
         SwingUtilities.invokeLater(() ->
         {
+            // Asked again: an Edit queued behind the click puts an editor on its way before this runs
+            if (this.ui.refuseWhileEditorOpen()) return;
+
             JOptionPane.showMessageDialog(
                 this.ui,
                 I18n.t("layout.ui.infoSelectFolderForNewLayout")
@@ -655,6 +658,9 @@ final class LayoutFileActions
         {
             SwingUtilities.invokeLater(() ->
             {
+                // Asked again, as Create New Layout does
+                if (this.ui.refuseWhileEditorOpen()) return;
+
                 JOptionPane.showMessageDialog(
                     this.ui,
                     I18n.t("layout.ui.infoChooseFolderForCentralStationDownload")

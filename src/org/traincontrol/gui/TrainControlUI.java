@@ -15925,6 +15925,14 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         javax.swing.SwingUtilities.invokeLater(() -> 
         {
+            // Asked again: an Edit queued behind the click puts an editor on its way before this runs
+            if (refuseWhileEditorOpen())
+            {
+                this.switchCSLayoutMenuItem.setEnabled(true);
+
+                return;
+            }
+
             try
             {
                 //this.KeyboardTab.remove(this.layoutPanel);
