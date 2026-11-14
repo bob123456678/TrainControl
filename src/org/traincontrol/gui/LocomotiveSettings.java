@@ -35,11 +35,17 @@ public final class LocomotiveSettings
      */
     public static boolean hasSpeed(TrainControlUI ui, Locomotive l)
     {
-        if (ui == null || l == null || ui.getModel() == null) return false;
+        return ui != null && hasSpeed(ui.getModel(), l);
+    }
+
+    /** {@link #hasSpeed(TrainControlUI, Locomotive)} against a model: the CSV import asks it too. */
+    public static boolean hasSpeed(org.traincontrol.model.ViewListener model, Locomotive l)
+    {
+        if (model == null || l == null) return false;
 
         if (l.getSpeed() > 0) return true;
 
-        for (Locomotive other : ui.getModel().getLocomotives())
+        for (Locomotive other : model.getLocomotives())
         {
             if (other == l || other.getSpeed() <= 0) continue;
 
