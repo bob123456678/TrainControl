@@ -5,9 +5,8 @@
     py -3 docs/tools/outline.py --selftest
 
 Output: `first-last  size  signature  - first sentence of the javadoc`, nested and anonymous types indented under
-their parent; a type line shows `class Name  first-last`.  The range covers the member's attached javadoc or comment,
-its annotations and its body, so a ranged read of those lines is the whole member (the source-side twin of
-docs/tools/claims.py, which does the same for tests).  Fields are left out, except one holding an anonymous class.
+their parent; a type line shows `class Name  first-last`.  The range runs from the declaration line to the closing
+brace; the member's javadoc and annotations sit just above it (the source-side twin of docs/tools/claims.py).  Fields are left out, except one holding an anonymous class.
 A NetBeans generated region is one line, `generated code, lines a-b`.  With a word, only members whose name,
 signature or javadoc contains it (case-insensitive) show, under the types that hold them.
 
@@ -86,7 +85,7 @@ def outline(src):
         return bisect.bisect_right(starts, pos)
 
     def attached(first):
-        """(first line with its attached comments, the javadoc text)"""
+        """The javadoc text attached above this line."""
         edge, doc = first, ""
         for cs, ce, text in reversed(comments[:bisect.bisect_left(ends, first)]):
             if ce < edge - 1 or codelines[cs - 1].strip():
@@ -94,7 +93,7 @@ def outline(src):
             edge = cs
             if not doc and text.startswith("/**"):
                 doc = doc_text(text)
-        return edge, doc
+        return doc
 
     def anons(a, b):
         out, i = [], a
@@ -119,19 +118,19 @@ def outline(src):
         head = claims.ANNOTATION.sub(" ", code[a:brace if brace is not None else b])
         before = head.split("=")[0]
         first, last = line_of(a + len(text) - len(text.lstrip())), line_of(b - 1)
-        edge, doc = attached(first)
+        doc = attached(first)
         t = TYPE.search(before.split("(")[0])
         if t:
-            return {"kind": "type", "name": t.group(2), "sig": squash(before.split("{")[0]), "first": edge, "last": last,
+            return {"kind": "type", "name": t.group(2), "sig": squash(before.split("{")[0]), "first": first, "last": last,
                     "doc": doc, "kids": body(brace + 1, match[brace], t.group(1) == "enum") if brace is not None else []}
         if "(" in before and not in_enum:
             nm = re.search(r"(\w+)\s*\(", before)
-            return {"kind": "method", "name": nm.group(1), "sig": squash(head.rstrip("{ \n;")), "first": edge, "last": last,
+            return {"kind": "method", "name": nm.group(1), "sig": squash(head.rstrip("{ \n;")), "first": first, "last": last,
                     "doc": doc, "kids": anons(brace, b) if brace is not None else []}
         kids = anons(a, b)
         if kids and not in_enum:
             nm = re.findall(r"\w+", before)
-            return {"kind": "field", "name": nm[-1] if nm else "?", "sig": squash(before) + " = ...", "first": edge,
+            return {"kind": "field", "name": nm[-1] if nm else "?", "sig": squash(before) + " = ...", "first": first,
                     "last": last, "doc": doc, "kids": kids}
         return None
 
@@ -234,7 +233,7 @@ def selftest():
         "}",                                                                    # 18
     ])
     got = [(n["kind"], n["name"], n["first"], n["last"]) for n in outline(sample)[0]["kids"]]
-    want = [("method", "open", 4, 11), ("method", "X", 12, 13), ("generated", "generated code", 14, 16),
+    want = [("method", "open", 5, 11), ("method", "X", 13, 13), ("generated", "generated code", 14, 16),
             ("type", "In", 17, 17)]
     assert got == want, got
     kids = outline(sample)[0]["kids"]
