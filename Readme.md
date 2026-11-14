@@ -520,7 +520,7 @@ Tab icons provided by Freepik.
             - A train's destinations on the track diagram's right-click menu are in the order you read them, so ParkingTrack4 comes before ParkingTrack10.
             - Right-clicking plain track on the track diagram shows what it is, such as `Straight Track`, rather than its grid square.
             - Cancel in the autonomy editor now puts every train back where it stood when the editor opened, and its question names the trains that will move.  Cancel never turns a train around: each keeps the way it faces now, however it got there, and a train whose only change is its facing is not named.
-            - While an editor is open, linking a multi-unit, changing an address or decoder, pressing `Sync`, switching, creating or downloading a layout, and a locomotive CSV import that changes addresses are refused with a message, and the `Autonomy` menu's configuration items are grayed, since Cancel could not undo them.  A sync that a route edit or a function reset runs afterward waits and runs once when the editor closes.
+            - While an editor is open, linking a multi-unit, changing an address or decoder, pressing `Sync`, and a locomotive CSV import that changes addresses are refused with a message, and switching, creating or downloading a layout and the `Autonomy` menu's configuration items are grayed, since Cancel could not undo them.  A sync that a route edit or a function reset runs afterward waits and runs once when the editor closes.
             - The tabs in `Station Settings` now run to the window's edges.
         - Locomotive Control
             - Ctrl+B now moves the copied locomotive to the active button, as the key menu's `Move` item says.
