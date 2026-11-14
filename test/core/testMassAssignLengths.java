@@ -2735,6 +2735,60 @@ public class testMassAssignLengths
     }
 
     /**
+     * A length typed for a selection is written to every square in one re-derivation of the setup, not one per square:
+     * each re-derivation rebuilds the whole graph, so ten squares took ten.
+     *
+     * MUTATION: write the selection's squares through `setTileLength` one by one again, and this fails.
+     */
+    @Test
+    public void testALengthForASelectionRebuildsTheSetupOnce() throws Exception
+    {
+        final Set<Object> graphs = java.util.Collections.newSetFromMap(new java.util.IdentityHashMap<>());
+
+        // Each door re-derives once, so the graphs it leaves behind count the re-derivations.
+        session = new AutonomySession(folder)
+        {
+            @Override
+            public void setTileLength(TileKey tile, int length)
+            {
+                super.setTileLength(tile, length);
+                graphs.add(getGraph());
+            }
+
+            @Override
+            public void setTileLengths(java.util.Map<TileKey, Integer> lengths)
+            {
+                super.setTileLengths(lengths);
+                graphs.add(getGraph());
+            }
+        };
+
+        openARunOfTwoPlainSquares();
+
+        AutonomyEditorPanel panel = new AutonomyEditorPanel(session, "main", () -> { });
+
+        TileKey[] picked = { key(2, 1), key(3, 1) };
+
+        // Picked out with a shift-click, as a length for several squares is
+        javax.swing.SwingUtilities.invokeAndWait(() ->
+        {
+            for (TileKey square : picked) panel.tileClicked(square, null, true);
+        });
+
+        assertEquals(panel.getSelection().size(), 2, "precondition: the two squares were not picked out");
+
+        javax.swing.SwingUtilities.invokeAndWait(() -> panel.applyLengthAnswer(key(3, 1), 5));
+
+        for (TileKey square : picked)
+        {
+            assertEquals(session.getStore().getTileLength(square), 5, square + " did not get the length typed");
+        }
+
+        assertEquals(graphs.size(), 1, "a length for two selected squares re-derived the setup " + graphs.size()
+            + " times: once per square, where one re-derivation writes them all");
+    }
+
+    /**
      * An answered 0 is not reported as a berth's missing length (*"stop listing answered zeros as missing"*): a square
      * answered 0 has been given one on purpose.  CONTROL first: unanswered, it is reported.
      */
