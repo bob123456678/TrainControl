@@ -4265,8 +4265,8 @@ public class MarklinControlStation implements ViewListener, ModelListener
 
     /**
      * Writes each arrow's page ID, as just resolved, into its page's file and marks the layout, so that from now on the
-     * ID decides; every arrow goes where it went.  Not marked if a page could not be written, so the next open tries
-     * again with the old reading.
+     * ID decides; every arrow goes where it went.  Not marked if a page could not be read or written, so the next open
+     * tries again with the old reading.
      */
     private void convertLinksToPageIds(String folder)
     {
