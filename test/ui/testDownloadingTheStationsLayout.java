@@ -120,11 +120,41 @@ public class testDownloadingTheStationsLayout
     {
         Answering answering = Answering.start(rule).choosing(into);
 
-        final JMenuItem door = (JMenuItem) Reflect.get(TrainControlUI.class, ui, "downloadCSLayoutMenuItem");
-
-        SwingUtilities.invokeLater(door::doClick);
+        SwingUtilities.invokeLater(this::pressTheDoor);
 
         return answering;
+    }
+
+    /** The menu item's own handler: the item is grayed in simulation, which no station on the wire means. */
+    private void pressTheDoor()
+    {
+        try
+        {
+            JMenuItem door = (JMenuItem) Reflect.get(TrainControlUI.class, ui, "downloadCSLayoutMenuItem");
+
+            for (java.awt.event.ActionListener listener : door.getActionListeners())
+            {
+                listener.actionPerformed(new java.awt.event.ActionEvent(door, java.awt.event.ActionEvent.ACTION_PERFORMED,
+                    door.getActionCommand()));
+            }
+        }
+        catch (Exception e)
+        {
+            throw new IllegalStateException(e);
+        }
+    }
+
+    /** What the door asked, less the stand-in's warning that no CAN messages arrive, which simulation raises. */
+    private static List<String> theDoorsQuestions(Answering answering)
+    {
+        List<String> out = new ArrayList<>();
+
+        for (String message : answering.asked())
+        {
+            if (!message.startsWith(I18n.t("ui.warningNoCanMessages").split("\\{")[0])) out.add(message);
+        }
+
+        return out;
     }
 
     /** The Autonomy menu's items as the user opens it. */
@@ -186,7 +216,7 @@ public class testDownloadingTheStationsLayout
             assertFalse(autonomyMenu().contains(needsALocalLayout),
                 "after the download the Autonomy menu still says autonomy needs a layout on this computer: "
                 + autonomyMenu());
-            assertTrue(answering.asked().size() == 2, "the download asked more than its two notices: "
+            assertTrue(theDoorsQuestions(answering).size() == 2, "the download asked more than its two notices: "
                 + answering.asked());
         }
     }
@@ -298,9 +328,7 @@ public class testDownloadingTheStationsLayout
                 assertTrue(pageAsked.await(30, TimeUnit.SECONDS), "the download never asked the station for a page: "
                     + answering.asked());
 
-                final JMenuItem door = (JMenuItem) Reflect.get(TrainControlUI.class, ui, "downloadCSLayoutMenuItem");
-
-                SwingUtilities.invokeLater(door::doClick);
+                SwingUtilities.invokeLater(this::pressTheDoor);
 
                 Components.waitFor(() -> answering.asked().contains(already), 5000);
             }
