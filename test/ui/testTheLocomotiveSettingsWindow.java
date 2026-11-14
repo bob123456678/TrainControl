@@ -1375,6 +1375,43 @@ public class testTheLocomotiveSettingsWindow
     }
 
     /**
+     * An address-only Save keeps the decoder type another door changed meanwhile; changing both writes both.
+     *
+     * MUTATION: give `writeNameAndAddress` the chosen decoder whenever the identity changed, in
+     * `LocomotiveTab.decoderToWrite`, and this fails.
+     */
+    @Test
+    public void testAnAddressOnlySaveKeepsADecoderASyncChanged() throws Exception
+    {
+        open(0);
+
+        model.changeLocAddress(NAME, 40, Locomotive.decoderType.DCC);
+
+        saveTyped(null, "50");
+
+        assertEquals(loc.getAddress(), 50, "the typed address was not written");
+        assertEquals(loc.getDecoderType(), Locomotive.decoderType.DCC, "the address-only Save put the old decoder type back");
+
+        open(0);
+
+        saveTyped(Locomotive.decoderType.MFX, "3421");
+
+        assertEquals(loc.getAddress(), 3421);
+        assertEquals(loc.getDecoderType(), Locomotive.decoderType.MFX, "a changed decoder type was not written");
+    }
+
+    /** Picks the decoder type when given one, types the address, and Saves. */
+    private static void saveTyped(Locomotive.decoderType type, String address) throws Exception
+    {
+        if (type != null) decoder(type);
+
+        SettingsWindow.type("settings.address", address);
+        SettingsWindow.press(SettingsWindow.save());
+
+        assertTrue(Components.waitFor(() -> SettingsWindow.showing() == null, WAIT), "the Save did not go through");
+    }
+
+    /**
      * With the power off and a stored speed, a change of address or decoder is refused at Save, as the old door would
      * refuse it, while a name saves; at speed zero the address saves.
      *
