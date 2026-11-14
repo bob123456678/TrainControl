@@ -407,7 +407,36 @@ public final class RestoreAction
 
             if (!left.isEmpty()) said.append('\n').append(I18n.f("ui.restoreNotRestored", String.join(", ", left)));
 
+            List<String> kept = new ArrayList<>();
+
+            for (Map.Entry<String, byte[]> file : layout.entrySet())
+            {
+                if (layoutTo != null && keepsWhatIsThere(new File(new File(layoutTo, CONFIG), file.getKey()), file.getValue()))
+                {
+                    kept.add(file.getKey());
+                }
+            }
+
+            for (Map.Entry<String, byte[]> icon : icons.entrySet())
+            {
+                if (keepsWhatIsThere(new File(Util.locIconFolder().getAbsoluteFile(), icon.getKey()), icon.getValue()))
+                {
+                    kept.add(icon.getKey());
+                }
+            }
+
+            if (!kept.isEmpty()) said.append('\n').append(I18n.f("ui.restoreKeptAsNow", String.join(", ", kept)));
+
             return said.toString().trim();
+        }
+
+        /**
+         * An empty entry is a file an older backup could not read (it began the entry before reading): it never empties
+         * a file that has content.
+         */
+        private static boolean keepsWhatIsThere(File file, byte[] content)
+        {
+            return content.length == 0 && file.length() > 0;
         }
 
         /**
@@ -419,6 +448,15 @@ public final class RestoreAction
             if (layoutName == null) return;
 
             File config = new File(to, CONFIG);
+
+            Map<String, byte[]> writing = new TreeMap<>(layout);
+
+            for (Map.Entry<String, byte[]> file : writing.entrySet())
+            {
+                File now = new File(config, file.getKey());
+
+                if (keepsWhatIsThere(now, file.getValue())) file.setValue(Files.readAllBytes(now.toPath()));
+            }
 
             if (config.isDirectory() && Util.isLink(config))
             {
@@ -433,7 +471,7 @@ public final class RestoreAction
             }
             else if (config.exists() && !Util.deleteTree(config, 0)) throw new IOException(config.getPath());
 
-            for (Map.Entry<String, byte[]> file : layout.entrySet()) write(new File(config, file.getKey()), file.getValue());
+            for (Map.Entry<String, byte[]> file : writing.entrySet()) write(new File(config, file.getKey()), file.getValue());
         }
 
         /** Where `BackupAction` took each from; icons are added to the folder, as other locomotives may use the rest. */
@@ -445,7 +483,12 @@ public final class RestoreAction
 
             File iconFolder = Util.locIconFolder().getAbsoluteFile();
 
-            for (Map.Entry<String, byte[]> icon : icons.entrySet()) write(new File(iconFolder, icon.getKey()), icon.getValue());
+            for (Map.Entry<String, byte[]> icon : icons.entrySet())
+            {
+                File file = new File(iconFolder, icon.getKey());
+
+                if (!keepsWhatIsThere(file, icon.getValue())) write(file, icon.getValue());
+            }
         }
 
         private static void atomically(String path, byte[] content) throws IOException

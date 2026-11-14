@@ -2179,9 +2179,11 @@ public class MarklinControlStation implements ViewListener, ModelListener
 
     /**
      * Saves initialized component database to a file
+     *
+     * @return why it could not be written, or null when it was
      */
     @Override
-    public void saveState(boolean backup)
+    public String saveState(boolean backup)
     {
         String prefix = backup ? ("backup" + Conversion.convertSecondsToDatetime(System.currentTimeMillis()).replace(':', '-').replace(' ', '_')) : "";
         
@@ -2227,7 +2229,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
 
                 this.logf("log.databaseSaveFailed", keepFailed.toString());
 
-                return;
+                return keepFailed.toString();
             }
         }
 
@@ -2252,10 +2254,14 @@ public class MarklinControlStation implements ViewListener, ModelListener
             });
 
             this.logf("log.savingDatabaseState", new File(path).getAbsolutePath());
+
+            return null;
         }
         catch (IOException iOException)
         {
             this.logf("log.databaseSaveFailed", iOException.getMessage());
+
+            return String.valueOf(iOException.getMessage());
         }
     }
     
@@ -4322,8 +4328,8 @@ public class MarklinControlStation implements ViewListener, ModelListener
 
     /**
      * Writes each arrow's page ID, as just resolved, into its page's file and marks the layout, so that from now on the
-     * ID decides; every arrow goes where it went.  Not marked if a page could not be written, so the next open tries
-     * again with the old reading.
+     * ID decides; every arrow goes where it went.  Not marked if a page could not be read or written, so the next open
+     * tries again with the old reading.
      */
     private void convertLinksToPageIds(String folder)
     {

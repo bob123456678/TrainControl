@@ -1450,11 +1450,11 @@ public class LayoutDiagram
 
     /**
      * Writes into this page's file the page ID each arrow holds in memory (FR-175's one-time conversion); returns how
-     * many.
+     * many.  Throws for a page that was not read, so the layout is not marked as converted without it.
      */
     public int writeLinkPageIdsIntoFile() throws Exception
     {
-        if (this.unreadable) return 0;
+        if (this.unreadable) throw new Exception(I18n.f("layout.errorPageWasNotReadSoNotSaved", this.getName()));
 
         Path file = getFilePath();
 

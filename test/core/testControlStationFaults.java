@@ -551,6 +551,121 @@ public class testControlStationFaults
     }
 
     /**
+     * A locomotive database another program holds open is not saved, and the save says why, for the exit and the
+     * backup to tell the user; once it is free, the save goes ahead and says nothing.
+     *
+     * MUTATION: in `MarklinControlStation.saveState`, return null from the catch around the write, and this fails.
+     */
+    @Test
+    public void testAHeldDatabaseSaysWhyItWasNotSaved() throws Exception
+    {
+        java.io.File live = runsOwnFile(MarklinControlStation.DATA_FILE_NAME);
+
+        byte[] was = live.exists() ? java.nio.file.Files.readAllBytes(live.toPath()) : null;
+
+        try
+        {
+            if (was == null) java.nio.file.Files.write(live.toPath(), new byte[]{ 1 });
+
+            byte[] before = java.nio.file.Files.readAllBytes(live.toPath());
+
+            String why;
+
+            try (java.io.FileInputStream holding = new java.io.FileInputStream(live))
+            {
+                why = model.saveState(false);
+            }
+
+            assertEquals(java.nio.file.Files.readAllBytes(live.toPath()), before, "precondition: the held file was"
+                + " written after all");
+
+            assertNotNull(why, "the save of a held locomotive database said nothing, so the exit closes and the"
+                + " session's locomotive changes are lost unseen");
+
+            assertNull(model.saveState(false), "the save of a free locomotive database said it failed");
+        }
+        finally
+        {
+            putBack(live, was);
+        }
+    }
+
+    /**
+     * A backup taken while the locomotive database will not save does not call itself complete: it names the file and
+     * says the archive holds it as last saved.  An update and a restore stop on an incomplete backup, so neither goes
+     * ahead on an archive missing this session's database.
+     *
+     * MUTATION: in `BackupAction.writeTheBackup`, ignore what `getModel().saveState(false)` answers, and the backup
+     * reports itself complete.
+     */
+    @Test
+    @SuppressWarnings("unchecked")
+    public void testABackupAfterAFailedSaveSaysItHoldsTheFileAsLastSaved() throws Exception
+    {
+        java.io.File live = runsOwnFile(MarklinControlStation.DATA_FILE_NAME);
+        java.io.File windowState = runsOwnFile("UIState.data");
+
+        // The UI state's save writes the diagram windows' titles into the preferences: a run's own node only
+        if (System.getProperty(org.traincontrol.util.Util.PREFERENCES_PROPERTY) == null)
+        {
+            throw new org.testng.SkipException("Not run here: saving the UI state can write the preferences, so this runs"
+                + " only where the run has its own (one.sh, battery.sh)");
+        }
+
+        org.traincontrol.gui.TrainControlUI ui = windowless();
+
+        set(ui, "model", model);
+        set(ui, "buttonMapping", new java.util.HashMap<Integer, javax.swing.JButton>());
+        set(ui, "pageNames", new java.util.HashMap<Integer, String>());
+        set(ui, "locMapping", new java.util.ArrayList<>(java.util.Collections.singletonList(
+            new java.util.HashMap<javax.swing.JButton, org.traincontrol.base.Locomotive>())));
+        set(ui, "popups", new java.util.ArrayList<>());
+        set(ui, "backupDataMenuItem", new javax.swing.JMenuItem());
+
+        byte[] was = live.exists() ? java.nio.file.Files.readAllBytes(live.toPath()) : null;
+        byte[] windowStateWas = windowState.exists() ? java.nio.file.Files.readAllBytes(windowState.toPath()) : null;
+
+        java.io.File backups = new java.io.File(org.traincontrol.util.Util.dataPath(org.traincontrol.util.Util.BACKUP_FOLDER));
+        boolean hadBackups = backups.isDirectory();
+        java.util.Set<String> before = names(backups);
+
+        try
+        {
+            if (was == null) java.nio.file.Files.write(live.toPath(), new byte[]{ 1 });
+
+            Object outcome;
+
+            try (java.io.FileInputStream holding = new java.io.FileInputStream(live))
+            {
+                outcome = new org.traincontrol.gui.widgets.BackupAction(ui).writeTheBackup(false);
+            }
+
+            Class<?> outcomes = org.traincontrol.gui.widgets.BackupAction.BackupOutcome.class;
+
+            java.util.List<String> unsaved = (java.util.List<String>) Reflect.get(outcomes, outcome, "unsaved");
+
+            assertFalse((Boolean) Reflect.method(outcomes, "isComplete").invoke(outcome), "a backup taken while the"
+                + " locomotive database could not be saved called itself complete, and holds the database from the last"
+                + " exit: " + unsaved);
+
+            String said = org.traincontrol.util.I18n.f("ui.backupHasItAsLastSaved", MarklinControlStation.DATA_FILE_NAME,
+                "\n");
+
+            String lead = said.substring(0, said.indexOf('\n'));
+
+            assertTrue(unsaved.stream().anyMatch(part -> part.startsWith(lead)), "the backup does not say it holds the"
+                + " locomotive database as last saved: " + unsaved);
+        }
+        finally
+        {
+            putBack(live, was);
+            putBack(windowState, windowStateWas);
+
+            forgetNew(backups, before, hadBackups);
+        }
+    }
+
+    /**
      * A first sync that fails is asked about until it works (OB-338): staged with a sync that fails twice, two
      * questions each carrying its own reason, three syncs, no exit, and a connection result.
      *

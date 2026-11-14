@@ -365,15 +365,22 @@ public class Util
 
         if (parent != null) parent.mkdirs();
 
-        try (java.util.zip.ZipOutputStream out = new java.util.zip.ZipOutputStream(
-            new java.io.BufferedOutputStream(new java.io.FileOutputStream(zip))))
+        // Staged, so a backup cut off part way (the program closed under it) leaves nothing under the archive's name
+        try
         {
-            for (java.util.Map.Entry<String, File> source : sources.entrySet())
+            writeAtomically(zip, staged ->
             {
-                if (source.getValue() == null || !source.getValue().exists()) continue;
+                try (java.util.zip.ZipOutputStream out = new java.util.zip.ZipOutputStream(
+                    new java.io.BufferedOutputStream(staged)))
+                {
+                    for (java.util.Map.Entry<String, File> source : sources.entrySet())
+                    {
+                        if (source.getValue() == null || !source.getValue().exists()) continue;
 
-                addToZip(out, source.getValue(), source.getKey(), failed, 0);
-            }
+                        addToZip(out, source.getValue(), source.getKey(), failed, 0);
+                    }
+                }
+            });
         }
         catch (IOException | RuntimeException e)
         {
@@ -402,10 +409,11 @@ public class Util
                 return;
             }
 
+            // Read before the entry is begun, so a file that will not read leaves no empty entry to be restored
+            byte[] content = java.nio.file.Files.readAllBytes(source.toPath());
+
             out.putNextEntry(new java.util.zip.ZipEntry(name));
-
-            java.nio.file.Files.copy(source.toPath(), out);
-
+            out.write(content);
             out.closeEntry();
         }
         catch (IOException | RuntimeException e)
@@ -554,6 +562,14 @@ public class Util
                 body.write(out);
 
                 out.flush();
+            }
+
+            // On disk before the move, or a power cut just after it can leave the target empty.  A handle of its own,
+            // as the body may close the stream.
+            try (java.nio.channels.FileChannel written = java.nio.channels.FileChannel.open(staging.toPath(),
+                java.nio.file.StandardOpenOption.WRITE))
+            {
+                written.force(true);
             }
         }
         catch (IOException | RuntimeException e)

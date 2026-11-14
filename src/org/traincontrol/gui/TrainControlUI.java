@@ -1848,11 +1848,13 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
     /**
      * Saves initialized component database to a file
+     *
+     * @return why UIState.data could not be written, or null when it was
      */
-    public void saveState(boolean backup)
+    public String saveState(boolean backup)
     {
         // A live save captures the session, a backup does not.
-        saveState(backup, !backup);
+        return saveState(backup, !backup);
     }
 
     /**
@@ -1861,9 +1863,12 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      *
      * @param backup true to write timestamped copies into the backup folder rather than over the live files
      * @param captureSession whether to lift the running layout into the active configuration first; false for a COPY
+     * @return why UIState.data could not be written, or null when it was
      */
-    public void saveState(boolean backup, boolean captureSession)
+    public String saveState(boolean backup, boolean captureSession)
     {
+        String failed = null;
+
         String prefix = backup ? ("backup" + Conversion.convertSecondsToDatetime(System.currentTimeMillis()).replace(':', '-').replace(' ', '_')) : "";
         
         List<Map<Integer,String>> l = new ArrayList<>();
@@ -1910,6 +1915,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 this.model.log(keepFailed);
 
                 this.model.logf("ui.errorSavingUiState", keepFailed.toString());
+
+                failed = keepFailed.toString();
             }
         }
 
@@ -1944,6 +1951,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                     "ui.errorSavingUiState",
                     iOException.getMessage()
                 );
+
+                failed = String.valueOf(iOException.getMessage());
             }
         }
 
@@ -1990,6 +1999,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // autonomy.json is not written on any layout (OB-254).
 
         saveLayoutTitles();
+
+        return failed;
     }
     
     /**
@@ -14797,9 +14808,22 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             }
         }
         
-        model.saveState(false);
-        this.saveState(false);
-        //model.stop();
+        // The only save of the session's locomotive and key page changes: one that fails is asked about until it works
+        // or the user lets it go.
+        Object[] retryOrExit = {I18n.t("ui.exitSaveRetry"), I18n.t("ui.exitWithoutSaving")};
+
+        while (true)
+        {
+            List<String> failed = new ArrayList<>();
+            String why = model.saveState(false);
+
+            if (why != null) failed.add(MarklinControlStation.DATA_FILE_NAME + ": " + why);
+            if ((why = this.saveState(false)) != null) failed.add(DATA_FILE_NAME + ": " + why);
+
+            if (failed.isEmpty() || JOptionPane.showOptionDialog(this, I18n.f("ui.errorExitSaveFailed",
+                String.join("\n", failed)), I18n.t("autolayout.ui.dialogConfirmExit"), JOptionPane.DEFAULT_OPTION,
+                JOptionPane.ERROR_MESSAGE, null, retryOrExit, retryOrExit[0]) == 1) break;
+        }
 
         // The update starts here, or not at all (FR-125), after everything above that can still refuse the exit, or an
         // updater would wait for an exit that never came.  If it cannot start or does not say it is running
@@ -14829,18 +14853,29 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // editor is an unowned frame that disposing this window leaves open, so the next start would believe the
         // process died mid-edit and revert the setup.  After maySettleBeforeExit (its Cancel aborts the exit), before
         // System.exit, which never returns.
-        if (openEditor != null && openEditor.isDisplayable())
+        try
         {
-            // Both halves of a Discard, only now: the setup half cannot go earlier (everything above can still refuse
-            // to exit) nor later (dispose deletes the pre-edit note that is the only other way the discard gets
-            // finished).
-            openEditor.completeExitDiscard();
+            if (openEditor != null && openEditor.isDisplayable())
+            {
+                // Both halves of a Discard, only now: the setup half cannot go earlier (everything above can still
+                // refuse to exit) nor later (dispose deletes the pre-edit note that is the only other way the discard
+                // gets finished).
+                openEditor.completeExitDiscard();
 
-            openEditor.dispose();
+                openEditor.dispose();
+            }
         }
-
-        this.dispose();
-        System.exit(0);
+        catch (RuntimeException e)
+        {
+            this.model.log(e);
+        }
+        finally
+        {
+            // Exits whatever the editor threw: an updater started above holds the update lock until this process ends.
+            // A pre-edit note left behind is put back at the next start, finishing the discard.
+            this.dispose();
+            System.exit(0);
+        }
     }//GEN-LAST:event_WindowClosed
 
     /** Brings the track diagram to the front; does nothing when there is no layout tab or it is disabled (OB-128). */

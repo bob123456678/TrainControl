@@ -30,7 +30,8 @@ public interface ViewListener
     public List<String> getRouteList();
     public Locomotive getLocByName(String name);
     public Accessory getAccessoryByName(String name);
-    public void saveState(boolean backup);
+    /** @return why the database could not be written, or null when it was */
+    public String saveState(boolean backup);
     public Locomotive newMM2Locomotive(String name, int address);
     public Locomotive newMFXLocomotive(String name, int address);
     public Locomotive newDCCLocomotive(String name, int address);
