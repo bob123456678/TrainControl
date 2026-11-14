@@ -361,48 +361,6 @@ public class testLayoutFolderRobustness
         }
     }
 
-    /**
-     * A layout from before FR-175 opened while one page will not read is not marked as going by page ID, so the
-     * conversion runs again once the page reads: marked, that page's arrows would be read by an ID never written for
-     * them.
-     *
-     * MUTATION: in `LayoutDiagram.writeLinkPageIdsIntoFile`, return 0 for an unreadable page instead of throwing, and
-     * the layout is marked with the page unread.
-     */
-    @Test
-    public void testTheLinkConversionWaitsForEveryPageToRead() throws Exception
-    {
-        File folder = brokenSecondPage();
-
-        try
-        {
-            MarklinControlStation model = support.TestStation.simulated();
-
-            try
-            {
-                syncFrom(model, folder);
-
-                assertFalse(LayoutDiagram.linksGoByPageId(folder.getPath()), "the layout was marked as converted to page"
-                    + " IDs while a page could not be read, so that page is never converted");
-
-                write(new File(folder, "config/gleisbilder/Broken.cs2"), page(6));
-
-                syncFrom(model, folder);
-
-                assertTrue(LayoutDiagram.linksGoByPageId(folder.getPath()), "the layout was not converted once every"
-                    + " page read");
-            }
-            finally
-            {
-                model.stop();
-            }
-        }
-        finally
-        {
-            Trees.delete(folder);
-        }
-    }
-
     /** Two pages, the second one truncated mid-element so that reading it throws. */
     private static File brokenSecondPage() throws Exception
     {
@@ -550,5 +508,47 @@ public class testLayoutFolderRobustness
     private static void write(File file, String text) throws IOException
     {
         Files.write(file.toPath(), text.getBytes(StandardCharsets.UTF_8));
+    }
+
+    /**
+     * A layout from before FR-175 opened while one page will not read is not marked as going by page ID, so the
+     * conversion runs again once the page reads: marked, that page's arrows would be read by an ID never written for
+     * them.
+     *
+     * MUTATION: in `LayoutDiagram.writeLinkPageIdsIntoFile`, return 0 for an unreadable page instead of throwing, and
+     * the layout is marked with the page unread.
+     */
+    @Test
+    public void testTheLinkConversionWaitsForEveryPageToRead() throws Exception
+    {
+        File folder = brokenSecondPage();
+
+        try
+        {
+            MarklinControlStation model = support.TestStation.simulated();
+
+            try
+            {
+                syncFrom(model, folder);
+
+                assertFalse(LayoutDiagram.linksGoByPageId(folder.getPath()), "the layout was marked as converted to page"
+                    + " IDs while a page could not be read, so that page is never converted");
+
+                write(new File(folder, "config/gleisbilder/Broken.cs2"), page(6));
+
+                syncFrom(model, folder);
+
+                assertTrue(LayoutDiagram.linksGoByPageId(folder.getPath()), "the layout was not converted once every"
+                    + " page read");
+            }
+            finally
+            {
+                model.stop();
+            }
+        }
+        finally
+        {
+            Trees.delete(folder);
+        }
     }
 }

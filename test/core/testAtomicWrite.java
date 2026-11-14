@@ -481,15 +481,9 @@ public class testAtomicWrite
     /** The entry names of a zip, in order. */
     private static List<String> entriesOf(File zip) throws Exception
     {
-        List<String> names = new java.util.ArrayList<>();
-
         try (java.util.zip.ZipFile read = new java.util.zip.ZipFile(zip))
         {
-            java.util.Enumeration<? extends java.util.zip.ZipEntry> all = read.entries();
-
-            while (all.hasMoreElements()) names.add(all.nextElement().getName());
+            return read.stream().map(java.util.zip.ZipEntry::getName).collect(java.util.stream.Collectors.toList());
         }
-
-        return names;
     }
 }
