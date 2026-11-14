@@ -3,7 +3,9 @@ package org.traincontrol.automationui;
 import org.traincontrol.base.LayoutDiagramComponent;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -13,6 +15,7 @@ import java.util.Set;
 import org.traincontrol.automationui.GraphReducer.ReducedEdge;
 import org.traincontrol.automationui.GraphReducer.ReducedPoint;
 import org.traincontrol.automationui.TileGraph.TileKey;
+import org.traincontrol.util.I18n;
 
 /**
  * Checks a user can run against a configuration before trusting trains to it: questions that are obvious once asked and
@@ -470,7 +473,7 @@ public class AutonomyChecks
     /** The findings in order of severity, the worst first; sorted in place. */
     static void bySeverity(List<Finding> findings)
     {
-        Collections.sort(findings, new java.util.Comparator<Finding>()
+        Collections.sort(findings, new Comparator<Finding>()
         {
             @Override
             public int compare(Finding a, Finding b)
@@ -864,11 +867,11 @@ public class AutonomyChecks
     }
 
     /** Sides in words, as the arrivals menu names them: "west", "west and north", "west, north and east". */
-    static String sidesInWords(java.util.Collection<TilePorts.Side> sides)
+    static String sidesInWords(Collection<TilePorts.Side> sides)
     {
         List<String> words = new ArrayList<>();
 
-        for (TilePorts.Side side : sides) words.add(org.traincontrol.util.I18n.t("autosetup.ui.side" + side.name()));
+        for (TilePorts.Side side : sides) words.add(I18n.t("autosetup.ui.side" + side.name()));
 
         return andJoined(words);
     }
@@ -879,7 +882,7 @@ public class AutonomyChecks
         if (words.size() < 2) return words.isEmpty() ? "" : words.get(0);
 
         return String.join(", ", words.subList(0, words.size() - 1)) + " "
-            + org.traincontrol.util.I18n.t("route.ui.joinAnd") + " " + words.get(words.size() - 1);
+            + I18n.t("route.ui.joinAnd") + " " + words.get(words.size() - 1);
     }
 
     /**

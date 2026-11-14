@@ -1,8 +1,24 @@
 package org.traincontrol.automationui;
 
+import java.awt.AlphaComposite;
+import java.awt.BasicStroke;
 import java.awt.Color;
+import java.awt.Composite;
 import java.awt.Graphics2D;
+import java.awt.Rectangle;
 import java.awt.RenderingHints;
+import java.awt.Shape;
+import java.awt.Stroke;
+import java.awt.geom.AffineTransform;
+import java.awt.geom.Area;
+import java.awt.geom.Ellipse2D;
+import java.awt.image.BufferedImage;
+import java.io.IOException;
+import java.net.URL;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import javax.imageio.ImageIO;
 
 /**
  * What a tile is doing, and how that is painted over it: a wash, not a recolored tile icon, because the yellow
@@ -40,24 +56,24 @@ public class TileOverlay
      */
     public static class Segment
     {
-        private final org.traincontrol.automationui.TilePorts.Side from;
-        private final org.traincontrol.automationui.TilePorts.Side to;
+        private final TilePorts.Side from;
+        private final TilePorts.Side to;
         private final State state;
 
-        public Segment(org.traincontrol.automationui.TilePorts.Side from,
-            org.traincontrol.automationui.TilePorts.Side to, State state)
+        public Segment(TilePorts.Side from,
+            TilePorts.Side to, State state)
         {
             this.from = from;
             this.to = to;
             this.state = state == null ? State.IDLE : state;
         }
 
-        public org.traincontrol.automationui.TilePorts.Side getFrom()
+        public TilePorts.Side getFrom()
         {
             return from;
         }
 
-        public org.traincontrol.automationui.TilePorts.Side getTo()
+        public TilePorts.Side getTo()
         {
             return to;
         }
@@ -132,7 +148,7 @@ public class TileOverlay
     /**
      * The icon, read once.  Null means there is none (absent or undecodable) and is remembered, so it is not re-read.
      */
-    private static java.awt.image.BufferedImage icon;
+    private static BufferedImage icon;
 
     private static boolean iconRead = false;
 
@@ -140,8 +156,8 @@ public class TileOverlay
     private final boolean train;
     private final boolean moving;
     private final boolean parked;
-    private final org.traincontrol.automationui.TilePorts.Side facing;
-    private final java.util.List<Segment> segments;
+    private final TilePorts.Side facing;
+    private final List<Segment> segments;
 
     /** Whether the train here is paused, which draws its icon gray (FR-117). */
     private final boolean paused;
@@ -156,7 +172,7 @@ public class TileOverlay
      * @param train whether the train itself is standing here
      * @param segments which way the path runs through this square; empty when unknown (a claim arriving through a link)
      */
-    public TileOverlay(State state, boolean train, java.util.List<Segment> segments)
+    public TileOverlay(State state, boolean train, List<Segment> segments)
     {
         this(state, train, false, segments);
     }
@@ -165,7 +181,7 @@ public class TileOverlay
      * @param train whether the train itself is standing here
      * @param moving whether it is running rather than standing still (FR-027)
      */
-    public TileOverlay(State state, boolean train, boolean moving, java.util.List<Segment> segments)
+    public TileOverlay(State state, boolean train, boolean moving, List<Segment> segments)
     {
         this(state, train, moving, segments, false, null);
     }
@@ -177,19 +193,19 @@ public class TileOverlay
      * @param facing the side its front faces, or null where the railway records none
      * @return the mark
      */
-    public static TileOverlay parked(org.traincontrol.automationui.TilePorts.Side facing)
+    public static TileOverlay parked(TilePorts.Side facing)
     {
         return new TileOverlay(State.IDLE, true, false, null, true, facing);
     }
 
-    private TileOverlay(State state, boolean train, boolean moving, java.util.List<Segment> segments, boolean parked,
-        org.traincontrol.automationui.TilePorts.Side facing)
+    private TileOverlay(State state, boolean train, boolean moving, List<Segment> segments, boolean parked,
+        TilePorts.Side facing)
     {
         this(state, train, moving, segments, parked, facing, false);
     }
 
-    private TileOverlay(State state, boolean train, boolean moving, java.util.List<Segment> segments, boolean parked,
-        org.traincontrol.automationui.TilePorts.Side facing, boolean paused)
+    private TileOverlay(State state, boolean train, boolean moving, List<Segment> segments, boolean parked,
+        TilePorts.Side facing, boolean paused)
     {
         this.state = state == null ? State.IDLE : state;
 
@@ -206,12 +222,12 @@ public class TileOverlay
         this.facing = this.parked ? facing : null;
 
         this.segments = segments == null || segments.isEmpty()
-            ? java.util.Collections.<Segment>emptyList()
-            : java.util.Collections.unmodifiableList(new java.util.ArrayList<>(segments));
+            ? Collections.<Segment>emptyList()
+            : Collections.unmodifiableList(new ArrayList<>(segments));
     }
 
     /** @return the passes of a path through this square, in the order they were claimed */
-    public java.util.List<Segment> getSegments()
+    public List<Segment> getSegments()
     {
         return segments;
     }
@@ -251,7 +267,7 @@ public class TileOverlay
     }
 
     /** @return the side a parked train's front faces, or null */
-    public org.traincontrol.automationui.TilePorts.Side getFacing()
+    public TilePorts.Side getFacing()
     {
         return facing;
     }
@@ -273,7 +289,7 @@ public class TileOverlay
 
         // Both sets of geometry, not just the winner's: a square a path crosses twice is two passes, and drawing one
         // shows a route that stops mid-switch.  Identical passes are dropped.
-        java.util.List<Segment> both = new java.util.ArrayList<>(segments);
+        List<Segment> both = new ArrayList<>(segments);
 
         for (Segment segment : other.segments)
         {
@@ -294,7 +310,7 @@ public class TileOverlay
     {
         if (!ICON_FOLLOWS_TRAVEL) return;
 
-        org.traincontrol.automationui.TilePorts.Side heading = headingOf();
+        TilePorts.Side heading = headingOf();
 
         if (heading == null) return;
 
@@ -321,8 +337,8 @@ public class TileOverlay
 
         // the side ahead - the way a parked train faces, or the side a run leaves by - or else the side a run that ends
         // here came in by: the segment `headingOf` reads
-        org.traincontrol.automationui.TilePorts.Side ahead = parked ? facing : null;
-        org.traincontrol.automationui.TilePorts.Side behind = null;
+        TilePorts.Side ahead = parked ? facing : null;
+        TilePorts.Side behind = null;
 
         for (Segment segment : segments)
         {
@@ -391,9 +407,9 @@ public class TileOverlay
      *
      * @return the sides, possibly empty, never null
      */
-    public java.util.List<org.traincontrol.automationui.TilePorts.Side> trainSides()
+    public List<TilePorts.Side> trainSides()
     {
-        java.util.List<org.traincontrol.automationui.TilePorts.Side> sides = new java.util.ArrayList<>();
+        List<TilePorts.Side> sides = new ArrayList<>();
 
         if (parked)
         {
@@ -422,7 +438,7 @@ public class TileOverlay
      * run the opposite of the side it came IN by.  The first segment that can answer wins (a square a path crosses
      * twice carries two).
      */
-    private org.traincontrol.automationui.TilePorts.Side headingOf()
+    private TilePorts.Side headingOf()
     {
         // A PARKED TRAIN faces the way it stands: a line through its square is another train's path.
         if (parked) return facing;
@@ -438,7 +454,7 @@ public class TileOverlay
     }
 
     /** The white halo round the train's icon, worked out once from it. */
-    private static java.awt.image.BufferedImage halo;
+    private static BufferedImage halo;
 
     /** How far the halo reaches past the icon, as a share of the icon's width. */
     private static final double HALO_REACH = 1.0 / 14;
@@ -450,7 +466,7 @@ public class TileOverlay
      * How far the halo reaches past the icon as drawn: `HALO_REACH` of it, at most `HALO_MOST`, never under 2 pixels
      * (OB-329).
      */
-    private static int haloOut(java.awt.image.BufferedImage picture, int side)
+    private static int haloOut(BufferedImage picture, int side)
     {
         int share = (int) Math.round(haloReach(picture) * side / (double) picture.getWidth());
 
@@ -461,15 +477,14 @@ public class TileOverlay
      * The icon's silhouette in white, grown by `HALO_REACH` on every side and drawn under the icon so it reads on top
      * of the caption and badge it stands over.  The icon's size is unchanged.
      */
-    private static synchronized java.awt.image.BufferedImage haloOf(java.awt.image.BufferedImage icon)
+    private static synchronized BufferedImage haloOf(BufferedImage icon)
     {
         if (halo != null) return halo;
 
         int reach = haloReach(icon);
         int w = icon.getWidth(), h = icon.getHeight();
 
-        java.awt.image.BufferedImage grown = new java.awt.image.BufferedImage(w + 2 * reach, h + 2 * reach,
-            java.awt.image.BufferedImage.TYPE_INT_ARGB);
+        BufferedImage grown = new BufferedImage(w + 2 * reach, h + 2 * reach, BufferedImage.TYPE_INT_ARGB);
 
         for (int y = 0; y < grown.getHeight(); y++)
         {
@@ -501,7 +516,7 @@ public class TileOverlay
     }
 
     /** A paused train's icon, worked out once from the train's (FR-117). */
-    private static java.awt.image.BufferedImage pausedIcon;
+    private static BufferedImage pausedIcon;
 
     /** The gray a paused train's black is drawn in - the gray of the empty dash and the barred chevron's family. */
     private static final int PAUSED_GREY = 150;
@@ -510,14 +525,13 @@ public class TileOverlay
      * The train's icon with its black taken to mid gray and its white left white (FR-117), so windows and wheels still
      * read.
      */
-    private static synchronized java.awt.image.BufferedImage pausedIconOf(java.awt.image.BufferedImage icon)
+    private static synchronized BufferedImage pausedIconOf(BufferedImage icon)
     {
         if (pausedIcon != null) return pausedIcon;
 
         int w = icon.getWidth(), h = icon.getHeight();
 
-        java.awt.image.BufferedImage grey = new java.awt.image.BufferedImage(w, h,
-            java.awt.image.BufferedImage.TYPE_INT_ARGB);
+        BufferedImage grey = new BufferedImage(w, h, BufferedImage.TYPE_INT_ARGB);
 
         for (int y = 0; y < h; y++)
         {
@@ -540,7 +554,7 @@ public class TileOverlay
         return pausedIcon;
     }
 
-    private static int haloReach(java.awt.image.BufferedImage icon)
+    private static int haloReach(BufferedImage icon)
     {
         return Math.max(1, (int) Math.round(icon.getWidth() * HALO_REACH));
     }
@@ -549,7 +563,7 @@ public class TileOverlay
      * The locomotive picture (FR-027), read from the resources folder the first time it is wanted and remembered,
      * INCLUDING "there is none"; nothing is logged on failure.
      */
-    private static java.awt.image.BufferedImage trainIcon()
+    private static BufferedImage trainIcon()
     {
         if (!iconRead)
         {
@@ -557,11 +571,11 @@ public class TileOverlay
 
             try
             {
-                java.net.URL url = TileOverlay.class.getResource(TRAIN_ICON);
+                URL url = TileOverlay.class.getResource(TRAIN_ICON);
 
-                if (url != null) icon = javax.imageio.ImageIO.read(url);
+                if (url != null) icon = ImageIO.read(url);
             }
-            catch (java.io.IOException | RuntimeException e)
+            catch (IOException | RuntimeException e)
             {
                 icon = null;
             }
@@ -590,30 +604,30 @@ public class TileOverlay
      * @param trackCentre where the track's center is, or null for the square's
      * @return the area, or null where there is no run line
      */
-    public java.awt.Shape runArea(int width, int height, int[] trackCentre)
+    public Shape runArea(int width, int height, int[] trackCentre)
     {
         int cx = trackCentre != null ? trackCentre[0] : width / 2;
         int cy = trackCentre != null ? trackCentre[1] : height / 2;
 
-        java.awt.geom.Area area = new java.awt.geom.Area();
+        Area area = new Area();
 
         for (Segment segment : segments)
         {
             if (segment.getState() != State.ACTIVE && segment.getState() != State.REACHED) continue;
 
-            if (segment.getFrom() != null && segment.getTo() != null) return new java.awt.Rectangle(0, 0, width, height);
+            if (segment.getFrom() != null && segment.getTo() != null) return new Rectangle(0, 0, width, height);
 
-            for (org.traincontrol.automationui.TilePorts.Side side
-                : new org.traincontrol.automationui.TilePorts.Side[] {segment.getFrom(), segment.getTo()})
+            for (TilePorts.Side side
+                : new TilePorts.Side[] {segment.getFrom(), segment.getTo()})
             {
                 if (side == null) continue;
 
                 switch (side)
                 {
-                    case N: area.add(new java.awt.geom.Area(new java.awt.Rectangle(0, 0, width, cy))); break;
-                    case S: area.add(new java.awt.geom.Area(new java.awt.Rectangle(0, cy, width, height - cy))); break;
-                    case E: area.add(new java.awt.geom.Area(new java.awt.Rectangle(cx, 0, width - cx, height))); break;
-                    case W: area.add(new java.awt.geom.Area(new java.awt.Rectangle(0, 0, cx, height))); break;
+                    case N: area.add(new Area(new Rectangle(0, 0, width, cy))); break;
+                    case S: area.add(new Area(new Rectangle(0, cy, width, height - cy))); break;
+                    case E: area.add(new Area(new Rectangle(cx, 0, width - cx, height))); break;
+                    case W: area.add(new Area(new Rectangle(0, 0, cx, height))); break;
                     default: break;
                 }
             }
@@ -642,8 +656,7 @@ public class TileOverlay
      */
     public void paint(Graphics2D g, int width, int height, int[] trackCentre, boolean alreadyFaded)
     {
-        paint(g, width, height, trackCentre,
-            alreadyFaded ? new java.awt.Rectangle(0, 0, width, height) : null);
+        paint(g, width, height, trackCentre, alreadyFaded ? new Rectangle(0, 0, width, height) : null);
     }
 
     /**
@@ -653,16 +666,16 @@ public class TileOverlay
      * @param alreadyFaint the region already drawn faint, or null when none of it is
      */
     public void paint(Graphics2D g, int width, int height, int[] trackCentre,
-        java.awt.Shape alreadyFaint)
+        Shape alreadyFaint)
     {
         if (isBlank()) return;
 
         Object oldHint = g.getRenderingHint(RenderingHints.KEY_ANTIALIASING);
-        java.awt.Composite oldComposite = g.getComposite();
+        Composite oldComposite = g.getComposite();
         Color oldColor = g.getColor();
 
         // Restored with the rest: a caller that hands over a shared Graphics would find every later line at this width.
-        java.awt.Stroke oldStroke = g.getStroke();
+        Stroke oldStroke = g.getStroke();
 
         try
         {
@@ -678,7 +691,7 @@ public class TileOverlay
             {
                 boolean locked = state == State.LOCKED;
 
-                g.setComposite(java.awt.AlphaComposite.getInstance(java.awt.AlphaComposite.SRC_OVER,
+                g.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER,
                     locked ? LOCKED_ALPHA : OUTLINE_ALPHA));
 
                 g.setColor(outline);
@@ -687,8 +700,7 @@ public class TileOverlay
                 // neighboring square, and whichever painted last would win.
                 float weight = locked ? 1.6f : 2.6f;
 
-                g.setStroke(new java.awt.BasicStroke(weight, java.awt.BasicStroke.CAP_BUTT,
-                    java.awt.BasicStroke.JOIN_MITER));
+                g.setStroke(new BasicStroke(weight, BasicStroke.CAP_BUTT, BasicStroke.JOIN_MITER));
 
                 int inset = Math.round(weight / 2f);
 
@@ -719,7 +731,7 @@ public class TileOverlay
         if (!train) return;
 
         Object oldHint = g.getRenderingHint(RenderingHints.KEY_ANTIALIASING);
-        java.awt.Composite oldComposite = g.getComposite();
+        Composite oldComposite = g.getComposite();
         Color oldColor = g.getColor();
 
         try
@@ -729,7 +741,7 @@ public class TileOverlay
             int[] on = middle(trackCentre, width, height);
 
             // A locomotive where one is running or standing (FR-027, OB-317), the dot everywhere else.
-            java.awt.image.BufferedImage picture = drawsTheIcon() ? trainIcon() : null;
+            BufferedImage picture = drawsTheIcon() ? trainIcon() : null;
 
             // Gray for a paused train (FR-117).
             if (picture != null && paused) picture = pausedIconOf(picture);
@@ -738,11 +750,11 @@ public class TileOverlay
             {
                 // Reset because the outline above leaves a partial alpha on the Graphics, and an icon drawn through
                 // that is a gray smudge.
-                g.setComposite(java.awt.AlphaComposite.SrcOver);
+                g.setComposite(AlphaComposite.SrcOver);
 
                 int side = iconSide(width, height);
 
-                java.awt.geom.AffineTransform wasAt = g.getTransform();
+                AffineTransform wasAt = g.getTransform();
 
                 // On a curve the icon is turned along the rail and drawn at full size, reaching past the tile onto the
                 // track beyond, unclipped (MT-642).
@@ -761,15 +773,14 @@ public class TileOverlay
                     // HALO AND ICON AS ONE PICTURE, AT 90 PER CENT (FR-130): drawn separately through the alpha, the
                     // icon would lie over the halo's white.  Made in the screen's own pixels, already turned: turned
                     // afterwards it is scaled twice and comes out ragged (MT-642).
-                    java.awt.geom.AffineTransform turned = g.getTransform();
+                    AffineTransform turned = g.getTransform();
 
-                    java.awt.Rectangle box = turned.createTransformedShape(
-                        new java.awt.Rectangle(-side / 2 - out, -side / 2 - out, whole, whole)).getBounds();
+                    Rectangle box = turned.createTransformedShape(
+                        new Rectangle(-side / 2 - out, -side / 2 - out, whole, whole)).getBounds();
 
-                    java.awt.image.BufferedImage locomotive = new java.awt.image.BufferedImage(box.width, box.height,
-                        java.awt.image.BufferedImage.TYPE_INT_ARGB);
+                    BufferedImage locomotive = new BufferedImage(box.width, box.height, BufferedImage.TYPE_INT_ARGB);
 
-                    java.awt.Graphics2D lg = locomotive.createGraphics();
+                    Graphics2D lg = locomotive.createGraphics();
 
                     try
                     {
@@ -784,15 +795,15 @@ public class TileOverlay
                         lg.dispose();
                     }
 
-                    g.setTransform(new java.awt.geom.AffineTransform());
-                    g.setComposite(java.awt.AlphaComposite.getInstance(java.awt.AlphaComposite.SRC_OVER, ICON_ALPHA));
+                    g.setTransform(new AffineTransform());
+                    g.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, ICON_ALPHA));
                     g.drawImage(locomotive, box.x, box.y, null);
                 }
                 finally
                 {
                     // Restored rather than undone step by step: the caller goes on using this Graphics.
                     g.setTransform(wasAt);
-                    g.setComposite(java.awt.AlphaComposite.SrcOver);
+                    g.setComposite(AlphaComposite.SrcOver);
                 }
             }
             else
@@ -801,8 +812,7 @@ public class TileOverlay
                 // train.  The dot is the diagram's equivalent of the graph labeling its node.
                 int diameter = dotDiameter(width, height);
 
-                g.setComposite(java.awt.AlphaComposite.getInstance(
-                    java.awt.AlphaComposite.SRC_OVER, DOT_ALPHA));
+                g.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, DOT_ALPHA));
                 g.setColor(DiagramColours.TRAIN_DOT);
                 g.fillOval(on[0] - diameter / 2, on[1] - diameter / 2, diameter, diameter);
 
@@ -846,7 +856,7 @@ public class TileOverlay
      *
      * @return the area, or null when no train is drawn here
      */
-    public java.awt.Shape trainArea(int width, int height, int[] trackCentre)
+    public Shape trainArea(int width, int height, int[] trackCentre)
     {
         if (!train) return null;
 
@@ -854,7 +864,7 @@ public class TileOverlay
 
         int side = drawsTheIcon() ? iconSide(width, height) : dotDiameter(width, height);
 
-        return new java.awt.geom.Ellipse2D.Double(on[0] - side / 2.0, on[1] - side / 2.0, side, side);
+        return new Ellipse2D.Double(on[0] - side / 2.0, on[1] - side / 2.0, side, side);
     }
 
     /**
@@ -870,21 +880,21 @@ public class TileOverlay
     /**
      * Washes what is left of the tile once `alreadyFaint` is taken out (MT-375); false when nothing was left to wash.
      */
-    static boolean washWhatIsLeft(Graphics2D g, int width, int height, java.awt.Shape alreadyFaint, float alpha,
+    static boolean washWhatIsLeft(Graphics2D g, int width, int height, Shape alreadyFaint, float alpha,
         Color color)
     {
-        java.awt.geom.Area rest = new java.awt.geom.Area(new java.awt.Rectangle(0, 0, width, height));
+        Area rest = new Area(new Rectangle(0, 0, width, height));
 
-        if (alreadyFaint != null) rest.subtract(new java.awt.geom.Area(alreadyFaint));
+        if (alreadyFaint != null) rest.subtract(new Area(alreadyFaint));
 
         if (rest.isEmpty()) return false;
 
-        java.awt.Composite before = g.getComposite();
-        java.awt.Shape beforeClip = g.getClip();
+        Composite before = g.getComposite();
+        Shape beforeClip = g.getClip();
 
         g.clip(rest);
 
-        g.setComposite(java.awt.AlphaComposite.getInstance(java.awt.AlphaComposite.SRC_OVER, alpha));
+        g.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, alpha));
         g.setColor(color);
         g.fillRect(0, 0, width, height);
 
@@ -899,7 +909,7 @@ public class TileOverlay
      * behind it, and a white arrowhead pointing the way it is going (FR-106; `DiagramColours`).
      */
     private void paintRun(Graphics2D g, int width, int height, int[] trackCentre,
-        java.awt.Shape alreadyFaint)
+        Shape alreadyFaint)
     {
         int span = Math.min(width, height);
         // Where a line stops when it has no side to leave by - the END of a run (OB-026).  The caller supplies the
@@ -923,8 +933,7 @@ public class TileOverlay
             if (!washWhatIsLeft(g, width, height, alreadyFaint, LOCKED_WASH_ALPHA, LOCKED_WASH)) return;
         }
 
-        g.setStroke(new java.awt.BasicStroke(Math.max(3f, span / 7f),
-            java.awt.BasicStroke.CAP_ROUND, java.awt.BasicStroke.JOIN_ROUND));
+        g.setStroke(new BasicStroke(Math.max(3f, span / 7f), BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
 
         for (Segment segment : segments)
         {
@@ -944,8 +953,7 @@ public class TileOverlay
 
             if (a == null || b == null) continue;
 
-            g.setComposite(java.awt.AlphaComposite.getInstance(java.awt.AlphaComposite.SRC_OVER,
-                locked ? LOCKED_ALPHA : OUTLINE_ALPHA));
+            g.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, locked ? LOCKED_ALPHA : OUTLINE_ALPHA));
 
             g.setColor(colour);
 
@@ -958,9 +966,9 @@ public class TileOverlay
         // where two arrowheads would overlap.  Only where there is a direction: locked track is not somewhere to go.
         float arrowStroke = Math.max(2f, span / 14f);
 
-        g.setComposite(java.awt.AlphaComposite.getInstance(java.awt.AlphaComposite.SRC_OVER, 1f));
+        g.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 1f));
 
-        java.util.List<int[][]> arrows = new java.util.ArrayList<>();
+        List<int[][]> arrows = new ArrayList<>();
 
         for (Segment segment : segments)
         {
@@ -980,14 +988,12 @@ public class TileOverlay
         }
 
         // THE EDGE FIRST, a little wider, and the white over it: so it reads on a sensor's white contact as on the line
-        g.setStroke(new java.awt.BasicStroke(arrowStroke + 2f,
-            java.awt.BasicStroke.CAP_ROUND, java.awt.BasicStroke.JOIN_ROUND));
+        g.setStroke(new BasicStroke(arrowStroke + 2f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
         g.setColor(DiagramColours.PATH_ARROW_EDGE);
 
         for (int[][] arrow : arrows) TileAnnotation.chevron(g, arrow[0], arrow[1], span);
 
-        g.setStroke(new java.awt.BasicStroke(arrowStroke,
-            java.awt.BasicStroke.CAP_ROUND, java.awt.BasicStroke.JOIN_ROUND));
+        g.setStroke(new BasicStroke(arrowStroke, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
         g.setColor(DiagramColours.PATH_ARROW);
 
         for (int[][] arrow : arrows) TileAnnotation.chevron(g, arrow[0], arrow[1], span);

@@ -13,6 +13,7 @@ import java.util.Map;
 import java.util.Set;
 import org.json.JSONArray;
 import org.json.JSONObject;
+import org.traincontrol.automation.Point;
 import org.traincontrol.automationui.TileGraph.TileKey;
 
 /**
@@ -49,7 +50,7 @@ public final class BuiltReach
             // As parseAuto reads it: only a boolean false switches a Point off
             if (Boolean.FALSE.equals(point.opt("active"))) inactive.add(name);
 
-            if (Boolean.FALSE.equals(point.opt(org.traincontrol.automation.Point.RUN_THROUGH))) stopOnly.add(name);
+            if (Boolean.FALSE.equals(point.opt(Point.RUN_THROUGH))) stopOnly.add(name);
 
             TileKey square = squareOf.get(name);
 

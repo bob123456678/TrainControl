@@ -4,16 +4,22 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.SortedSet;
+import java.util.TreeSet;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.traincontrol.base.Accessory.accessorySetting;
 import org.traincontrol.automationui.GraphReducer.ReducedEdge;
 import org.traincontrol.automationui.GraphReducer.ReducedPoint;
 import org.traincontrol.automationui.TileGraph.TileKey;
+import org.traincontrol.automation.Point;
+import org.traincontrol.base.LayoutDiagramComponent;
 
 /**
  * The compile step: turns a reduced diagram into the autonomy JSON the existing model already reads.
@@ -345,7 +351,7 @@ public class AutonomyBuilder
      */
     private List<TilePorts.Side> splitSides(TileKey tile)
     {
-        Set<TilePorts.Side> sides = new java.util.TreeSet<>();
+        Set<TilePorts.Side> sides = new TreeSet<>();
 
         for (ReducedEdge edge : reducer.getEdges())
         {
@@ -370,17 +376,16 @@ public class AutonomyBuilder
      */
     private String blockFor(TileKey tile, Node node, List<Node> nodes)
     {
-        org.traincontrol.base.LayoutDiagramComponent component = reducer.getGraph() == null
-            ? null : reducer.getGraph().getTiles().get(tile);
+        LayoutDiagramComponent component = reducer.getGraph() == null ? null : reducer.getGraph().getTiles().get(tile);
 
         boolean neverMeet = node.getArrival() != null && component != null
-            && (component.getType() == org.traincontrol.base.LayoutDiagramComponent.componentType.DOUBLE_CURVE
-            || component.getType() == org.traincontrol.base.LayoutDiagramComponent.componentType.FEEDBACK_DOUBLE_CURVE
-            || component.getType() == org.traincontrol.base.LayoutDiagramComponent.componentType.OVERPASS);
+            && (component.getType() == LayoutDiagramComponent.componentType.DOUBLE_CURVE
+            || component.getType() == LayoutDiagramComponent.componentType.FEEDBACK_DOUBLE_CURVE
+            || component.getType() == LayoutDiagramComponent.componentType.OVERPASS);
 
         if (!neverMeet) return nodes.size() > 1 ? tile.toString() : null;
 
-        java.util.SortedSet<TilePorts.Side> road = new java.util.TreeSet<>();
+        SortedSet<TilePorts.Side> road = new TreeSet<>();
 
         road.add(node.getArrival());
         road.addAll(onwardFrom(tile, node.getArrival()));
@@ -401,7 +406,7 @@ public class AutonomyBuilder
      */
     private Set<TilePorts.Side> onwardFrom(TileKey tile, TilePorts.Side arrival)
     {
-        Set<TilePorts.Side> out = new java.util.LinkedHashSet<>();
+        Set<TilePorts.Side> out = new LinkedHashSet<>();
 
         if (arrival == null || reducer.getGraph() == null) return out;
 
@@ -416,7 +421,7 @@ public class AutonomyBuilder
     /** The sides trains leave this tile by. */
     private Set<TilePorts.Side> departureSides(TileKey tile)
     {
-        Set<TilePorts.Side> sides = new java.util.TreeSet<>();
+        Set<TilePorts.Side> sides = new TreeSet<>();
 
         for (ReducedEdge edge : reducer.getEdges())
         {
@@ -746,7 +751,7 @@ public class AutonomyBuilder
     /** Every square's name, for nodeName, worked out once by each caller from its own uniqueNames(). */
     private static Set<String> namesTaken(Map<TileKey, String> names)
     {
-        return new java.util.HashSet<>(names.values());
+        return new HashSet<>(names.values());
     }
 
     /**
@@ -926,7 +931,7 @@ public class AutonomyBuilder
 
                         // Stop-only means a station (FR-111), on every copy including a barred side's: a square that
                         // is no station lets trains through, whatever it remembers from when it was one.
-                        if (org.traincontrol.automation.Point.RUN_THROUGH.equals(key) && !point.isStation()) continue;
+                        if (Point.RUN_THROUGH.equals(key) && !point.isStation()) continue;
 
                         // Active is carried on every square, not only a station: the usage menu writes `active` alone
                         // for Out of service on any square, and `Layout.isPathClear` refuses a path through an inactive
@@ -1171,9 +1176,9 @@ public class AutonomyBuilder
      *
      * @return the facings, empty on a square that is not split
      */
-    public java.util.Set<TilePorts.Side> homeFacingsAt(TileKey tile)
+    public Set<TilePorts.Side> homeFacingsAt(TileKey tile)
     {
-        java.util.Set<TilePorts.Side> out = new java.util.LinkedHashSet<>();
+        Set<TilePorts.Side> out = new LinkedHashSet<>();
 
         for (Node node : nodesFor(tile))
         {
@@ -1232,7 +1237,7 @@ public class AutonomyBuilder
     /** Every emitted name of a turning copy: a train that came in and turned around there. */
     public Set<String> turningNames()
     {
-        Set<String> out = new java.util.LinkedHashSet<>();
+        Set<String> out = new LinkedHashSet<>();
 
         forEachEmittedName((name, square, base, node) ->
         {

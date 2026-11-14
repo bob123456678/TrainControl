@@ -1,13 +1,35 @@
 package org.traincontrol.automationui;
 
+import java.awt.AlphaComposite;
 import java.awt.BasicStroke;
 import java.awt.Color;
+import java.awt.Composite;
+import java.awt.Font;
+import java.awt.FontMetrics;
 import java.awt.Graphics2D;
+import java.awt.Polygon;
+import java.awt.Rectangle;
 import java.awt.RenderingHints;
+import java.awt.Shape;
 import java.awt.Stroke;
+import java.awt.geom.AffineTransform;
+import java.awt.geom.Area;
+import java.awt.geom.Ellipse2D;
+import java.awt.geom.Line2D;
+import java.awt.geom.Path2D;
+import java.awt.geom.Rectangle2D;
+import java.awt.geom.RoundRectangle2D;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.EnumSet;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import org.traincontrol.automationui.TileGraph.Direction;
 import org.traincontrol.automationui.TilePorts.Side;
 import org.traincontrol.util.ImageUtil;
@@ -610,9 +632,9 @@ public class TileAnnotation
     {
         if (toolMark == ToolMark.NOT_NOW || toolMark == ToolMark.CLICKABLE || toolMark == ToolMark.PICKABLE) return;
 
-        java.awt.Composite before = g.getComposite();
+        Composite before = g.getComposite();
 
-        g.setComposite(java.awt.AlphaComposite.getInstance(java.awt.AlphaComposite.SRC_OVER, MARK_FILL_ALPHA));
+        g.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, MARK_FILL_ALPHA));
         g.setColor(markColour());
         g.fillRoundRect(1, 1, width - 2, height - 2, width / 4, height / 4);
 
@@ -641,7 +663,7 @@ public class TileAnnotation
 
             g.setStroke(new BasicStroke(thick));
             g.setColor(markColour());
-            g.draw(new java.awt.geom.Rectangle2D.Float(thick / 2, thick / 2, width - thick, height - thick));
+            g.draw(new Rectangle2D.Float(thick / 2, thick / 2, width - thick, height - thick));
 
             return;
         }
@@ -702,9 +724,9 @@ public class TileAnnotation
 
     private void paintUnmeasured(Graphics2D g, int width, int height)
     {
-        java.awt.Composite before = g.getComposite();
+        Composite before = g.getComposite();
 
-        g.setComposite(java.awt.AlphaComposite.getInstance(java.awt.AlphaComposite.SRC_OVER, UNMEASURED_ALPHA));
+        g.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, UNMEASURED_ALPHA));
         g.setColor(UNMEASURED_COLOUR);
         g.fillRect(0, 0, width, height);
 
@@ -725,13 +747,11 @@ public class TileAnnotation
     /** The look of a square autonomy takes no notice of: washed out and hatched; leaves g's composite changed. */
     private static void paintGreyedOut(Graphics2D g, int width, int height)
     {
-        g.setComposite(java.awt.AlphaComposite.getInstance(
-            java.awt.AlphaComposite.SRC_OVER, IGNORED_ALPHA));
+        g.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, IGNORED_ALPHA));
         g.setColor(IGNORED);
         g.fillRect(0, 0, width, height);
 
-        g.setComposite(java.awt.AlphaComposite.getInstance(
-            java.awt.AlphaComposite.SRC_OVER, 0.55f));
+        g.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 0.55f));
         g.setColor(HATCH);
         g.setStroke(new BasicStroke(1f));
 
@@ -790,24 +810,23 @@ public class TileAnnotation
     /** The same, told whether the tile underneath is already drawn faint (OB-212), so this wash gives way. */
     public void paint(Graphics2D g, int width, int height, boolean alreadyFaded)
     {
-        paint(g, width, height, alreadyFaded
-            ? new java.awt.Rectangle(0, 0, width, height) : null);
+        paint(g, width, height, alreadyFaded ? new Rectangle(0, 0, width, height) : null);
     }
 
     /**
      * The same, told exactly WHICH part of the tile is faint (null if none): a double curve is two roads in one tile
      * and a train covers one, so the road with no train keeps its wash.
      */
-    public void paint(Graphics2D g, int width, int height, java.awt.Shape alreadyFaint)
+    public void paint(Graphics2D g, int width, int height, Shape alreadyFaint)
     {
         if (isBlank()) return;
 
         Object oldHint = g.getRenderingHint(RenderingHints.KEY_ANTIALIASING);
         Stroke oldStroke = g.getStroke();
         Color oldColor = g.getColor();
-        java.awt.Font oldFont = g.getFont();
+        Font oldFont = g.getFont();
 
-        java.awt.Composite oldComposite = g.getComposite();
+        Composite oldComposite = g.getComposite();
 
         try
         {
@@ -822,8 +841,7 @@ public class TileAnnotation
                 // The tested route still shows over the graying: it answers the user's question.
                 if (!traces.isEmpty())
                 {
-                    g.setComposite(java.awt.AlphaComposite.getInstance(
-                        java.awt.AlphaComposite.SRC_OVER, 1f));
+                    g.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 1f));
 
                     paintTraces(g, width, height);
                 }
@@ -881,7 +899,7 @@ public class TileAnnotation
     }
 
     /** The two sides meeting at the corner an arrival chevron on `side` is pushed to by `paintArrivals`, or null. */
-    private java.util.Set<Side> cornerOf(Side side, int width, int height)
+    private Set<Side> cornerOf(Side side, int width, int height)
     {
         int[] at = midpoint(side, width, height);
 
@@ -904,7 +922,7 @@ public class TileAnnotation
 
         Side toward = Math.abs(px) > Math.abs(py) ? (px > 0 ? Side.E : Side.W) : (py > 0 ? Side.S : Side.N);
 
-        return java.util.EnumSet.of(side, toward);
+        return EnumSet.of(side, toward);
     }
 
     /** Whether this square is out of service (nothing may pass or stop), so it carries no arrows. */
@@ -978,11 +996,11 @@ public class TileAnnotation
         double offset = span / 4.0;
 
         // Nearer the middle where two share a corner (MT-714), so chevrons on a double curve do not touch.
-        java.util.Map<java.util.Set<Side>, Integer> corners = new java.util.HashMap<>();
+        Map<Set<Side>, Integer> corners = new HashMap<>();
 
         for (Arrival arrival : arrivals)
         {
-            java.util.Set<Side> corner = cornerOf(arrival.getSide(), width, height);
+            Set<Side> corner = cornerOf(arrival.getSide(), width, height);
 
             if (corner != null) corners.put(corner, corners.containsKey(corner) ? corners.get(corner) + 1 : 1);
         }
@@ -996,7 +1014,7 @@ public class TileAnnotation
 
             if (at == null) continue;
 
-            java.util.Set<Side> corner = cornerOf(arrival.getSide(), width, height);
+            Set<Side> corner = cornerOf(arrival.getSide(), width, height);
 
             double along = corner != null && corners.get(corner) > 1 ? span / 5.0 : offset;
 
@@ -1026,10 +1044,10 @@ public class TileAnnotation
         }
     }
 
-    private static java.awt.geom.Path2D head(double baseX, double baseY, double dx, double dy, double px, double py,
+    private static Path2D head(double baseX, double baseY, double dx, double dy, double px, double py,
         double wing, double depth)
     {
-        java.awt.geom.Path2D head = new java.awt.geom.Path2D.Double();
+        Path2D head = new Path2D.Double();
 
         head.moveTo(baseX + px * wing, baseY + py * wing);
         head.lineTo(baseX + dx * depth, baseY + dy * depth);
@@ -1042,16 +1060,16 @@ public class TileAnnotation
      * The arrival chevron's shape for a square of this size, its base at the given point, pointing along `heading` (a
      * unit vector), for a picture that draws one off the diagram's place (FR-111).
      */
-    public static java.awt.geom.Path2D arrivalShape(double baseX, double baseY, double[] heading, int span)
+    public static Path2D arrivalShape(double baseX, double baseY, double[] heading, int span)
     {
         return head(baseX, baseY, heading[0], heading[1], -heading[1], heading[0], Math.max(2.5, span / 7.0),
             Math.max(3.0, span / 5.0));
     }
 
     /** Draws an arrival chevron: filled where trains may stop coming that way, a gray open chevron where not. */
-    public static void paintArrival(Graphics2D g, java.awt.geom.Path2D head, boolean allowed, int span)
+    public static void paintArrival(Graphics2D g, Path2D head, boolean allowed, int span)
     {
-        java.awt.Stroke was = g.getStroke();
+        Stroke was = g.getStroke();
 
         if (allowed)
         {
@@ -1086,7 +1104,7 @@ public class TileAnnotation
         // NONE ON A SQUARE OUT OF SERVICE: nothing can pass it, so a way through says nothing; the X says it all.
         if (outOfService()) return;
 
-        java.util.Map<Side, Boolean> out = new java.util.LinkedHashMap<>();
+        Map<Side, Boolean> out = new LinkedHashMap<>();
 
         for (Mark mark : marks)
         {
@@ -1097,7 +1115,7 @@ public class TileAnnotation
         }
 
         // Full strength whatever the state: pale arrows on open track read as track gone wrong.
-        for (java.util.Map.Entry<Side, Boolean> entry : out.entrySet())
+        for (Map.Entry<Side, Boolean> entry : out.entrySet())
         {
             int[] target = midpoint(entry.getKey(), width, height);
 
@@ -1166,7 +1184,7 @@ public class TileAnnotation
         double centreX = on[0];
         double centreY = on[1];
 
-        java.awt.geom.Path2D star = new java.awt.geom.Path2D.Double();
+        Path2D star = new Path2D.Double();
 
         // Six arms rather than four: four reads as a plus, which on a track diagram is a crossing
         for (int point = 0; point < 6; point++)
@@ -1177,7 +1195,7 @@ public class TileAnnotation
             star.lineTo(centreX + Math.cos(angle) * arm, centreY + Math.sin(angle) * arm);
         }
 
-        g.setComposite(java.awt.AlphaComposite.getInstance(java.awt.AlphaComposite.SRC_OVER, 1f));
+        g.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 1f));
 
         g.setStroke(new BasicStroke((float) Math.max(1.8, arm / 1.6),
             BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
@@ -1208,7 +1226,7 @@ public class TileAnnotation
             BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
 
         // Legs sharing track are drawn once; a square only one leg uses is drawn in that leg's shade.
-        java.util.Map<String, Boolean> shared = new java.util.LinkedHashMap<>();
+        Map<String, Boolean> shared = new LinkedHashMap<>();
 
         for (Trace trace : traces)
         {
@@ -1224,9 +1242,9 @@ public class TileAnnotation
             }
         }
 
-        java.util.Set<String> drawn = new java.util.LinkedHashSet<>();
+        Set<String> drawn = new LinkedHashSet<>();
 
-        java.util.Set<String> rails = new java.util.HashSet<>();
+        Set<String> rails = new HashSet<>();
 
         for (Trace trace : traces)
         {
@@ -1377,7 +1395,7 @@ public class TileAnnotation
     }
 
     /** Records what a route says about one side, without letting a "no" overrule a "yes" from another route. */
-    private static void allow(java.util.Map<Side, Boolean> out, Side side, boolean allowed)
+    private static void allow(Map<Side, Boolean> out, Side side, boolean allowed)
     {
         if (side == null) return;
 
@@ -1391,7 +1409,7 @@ public class TileAnnotation
      */
     private static void arrow(Graphics2D g, int[] target, double[] heading, boolean allowed, int span)
     {
-        java.awt.Polygon shape = arrowShape(target, heading, allowed, span);
+        Polygon shape = arrowShape(target, heading, allowed, span);
 
         if (shape == null) return;
 
@@ -1428,7 +1446,7 @@ public class TileAnnotation
     }
 
     /** The arrowhead `arrow` draws (FR-111), or null for a heading under a pixel; `target` is its tip. */
-    public static java.awt.Polygon arrowShape(int[] target, double[] heading, boolean allowed, int span)
+    public static Polygon arrowShape(int[] target, double[] heading, boolean allowed, int span)
     {
         double dx = heading[0];
         double dy = heading[1];
@@ -1463,7 +1481,7 @@ public class TileAnnotation
             ys[i + 1] = (int) Math.round(tipY + Math.sin(angle + barb) * size);
         }
 
-        return new java.awt.Polygon(xs, ys, 3);
+        return new Polygon(xs, ys, 3);
     }
 
     /** Draws `arrowShape`'s arrowhead as the diagram does: green where trains may go that way, a red outline where not. */
@@ -1512,13 +1530,13 @@ public class TileAnnotation
         Object oldHint = g.getRenderingHint(RenderingHints.KEY_ANTIALIASING);
         Stroke oldStroke = g.getStroke();
         Color oldColor = g.getColor();
-        java.awt.Composite oldComposite = g.getComposite();
+        Composite oldComposite = g.getComposite();
 
         try
         {
             ImageUtil.antialias(g);
 
-            g.setComposite(java.awt.AlphaComposite.getInstance(java.awt.AlphaComposite.SRC_OVER, 1f));
+            g.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 1f));
 
             if (badge != null)
             {
@@ -1779,15 +1797,14 @@ public class TileAnnotation
 
         int turning = Math.round(h * ICON_LENGTH_RATIO) - (large ? 2 : 1), terminus = Math.round(h * ICON_LENGTH_RATIO) - 1;
 
-        java.awt.Shape outline = !turns && deadEnd == null ? blockShape(h)
+        Shape outline = !turns && deadEnd == null ? blockShape(h)
             : deadEnd != null ? hexagon(terminus, h, true, large ? h / 2.0 : h * TERMINUS_POINT_SMALL)
             : badge.isOptional() ? hexagon(turning, h, false, h / 2.0)
             : mustTurnShape(h, turning, large);
 
-        java.awt.Shape stroked = new BasicStroke(stroke).createStrokedShape(outline);
+        Shape stroked = new BasicStroke(stroke).createStrokedShape(outline);
 
-        java.awt.geom.Rectangle2D needs =
-            java.awt.geom.AffineTransform.getRotateInstance(angle).createTransformedShape(stroked).getBounds2D();
+        Rectangle2D needs = AffineTransform.getRotateInstance(angle).createTransformedShape(stroked).getBounds2D();
 
         double scale = 1;
 
@@ -1805,17 +1822,17 @@ public class TileAnnotation
         // What it covers, for the diagram's redraw of what lies over a spill; built once per size (a stall otherwise).
         if (spills && (spillFor == null || spillFor[0] != width || spillFor[1] != height))
         {
-            java.awt.geom.AffineTransform placed = java.awt.geom.AffineTransform.getTranslateInstance(at[0], at[1]);
+            AffineTransform placed = AffineTransform.getTranslateInstance(at[0], at[1]);
 
             placed.rotate(angle);
             placed.scale(scale, scale);
 
-            java.awt.Shape body = placed.createTransformedShape(outline);
+            Shape body = placed.createTransformedShape(outline);
 
-            java.awt.geom.Area region = new java.awt.geom.Area(body);
+            Area region = new Area(body);
 
-            region.add(new java.awt.geom.Area(new BasicStroke((float) (stroke * scale) + 2f).createStrokedShape(body)));
-            region.subtract(new java.awt.geom.Area(new java.awt.Rectangle(0, 0, width, height)));
+            region.add(new Area(new BasicStroke((float) (stroke * scale) + 2f).createStrokedShape(body)));
+            region.subtract(new Area(new Rectangle(0, 0, width, height)));
 
             spillRegion = region;
             spillFor = new int[] {width, height};
@@ -1846,7 +1863,7 @@ public class TileAnnotation
         try
         {
             // A spill is cut at the square's edges so no pixel is drawn twice.
-            if (spills) s.clip(spilling ? outside(width, height) : new java.awt.Rectangle(0, 0, width, height));
+            if (spills) s.clip(spilling ? outside(width, height) : new Rectangle(0, 0, width, height));
 
             // Pure, as the page drew them: stroke control would let the must-turn's outlines meet across the gap.
             ImageUtil.smooth(s);
@@ -1918,13 +1935,13 @@ public class TileAnnotation
     private boolean spilling;
 
     /** What the station's icon covers outside its square, as `paintStation` built it for the size in `spillFor`. */
-    private java.awt.Shape spillRegion;
+    private Shape spillRegion;
 
     /** The width and height `spillRegion` was built for, or null before the icon is first drawn. */
     private int[] spillFor;
 
     /** The spill's cover, in this square's coordinates, or null; the diagram redraws what lies over it. */
-    public java.awt.Shape spillShape(int width, int height)
+    public Shape spillShape(int width, int height)
     {
         int[] built = spillFor;
 
@@ -1943,7 +1960,7 @@ public class TileAnnotation
         try
         {
             ImageUtil.antialias(a);
-            a.setComposite(java.awt.AlphaComposite.getInstance(java.awt.AlphaComposite.SRC_OVER, 1f));
+            a.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 1f));
 
             paintArrows(a, width, height);
 
@@ -1966,10 +1983,10 @@ public class TileAnnotation
         int m = Math.round(tile * 0.2f + 2);
 
         g.setColor(Color.WHITE);
-        g.fill(new java.awt.geom.Rectangle2D.Double(-m, -m, 2 * m, 2 * m));
+        g.fill(new Rectangle2D.Double(-m, -m, 2 * m, 2 * m));
 
         g.setColor(Color.BLACK);
-        g.fill(new java.awt.geom.Rectangle2D.Double(-m, -tile * 4 / 30.0, 2 * m, tile * 8 / 30.0));
+        g.fill(new Rectangle2D.Double(-m, -tile * 4 / 30.0, 2 * m, tile * 8 / 30.0));
     }
 
     /** A station's block: half as long again as it is tall, its corners rounded (D's, on the station icon page). */
@@ -1979,21 +1996,21 @@ public class TileAnnotation
     }
 
     /** The block's shape, about the origin along x. */
-    private static java.awt.Shape blockShape(int h)
+    private static Shape blockShape(int h)
     {
         int w = Math.round(h * 1.5f);
 
         double r = Math.max(2, h * 0.22);
 
-        return new java.awt.geom.RoundRectangle2D.Double(-w / 2.0, -h / 2.0, w, h, 2 * r, 2 * r);
+        return new RoundRectangle2D.Double(-w / 2.0, -h / 2.0, w, h, 2 * r, 2 * r);
     }
 
     /** Around a square to a square's depth, but not the square: where its spill is drawn. */
-    private static java.awt.Shape outside(int width, int height)
+    private static Shape outside(int width, int height)
     {
-        java.awt.geom.Area around = new java.awt.geom.Area(new java.awt.Rectangle(-width, -height, 3 * width, 3 * height));
+        Area around = new Area(new Rectangle(-width, -height, 3 * width, 3 * height));
 
-        around.subtract(new java.awt.geom.Area(new java.awt.Rectangle(0, 0, width, height)));
+        around.subtract(new Area(new Rectangle(0, 0, width, height)));
 
         return around;
     }
@@ -2001,7 +2018,7 @@ public class TileAnnotation
     /**
      * Where an icon goes to be wholly inside its square (MT-710): the asked place, else the first fit, else smaller.
      */
-    private static double[] fitInside(java.awt.geom.Rectangle2D needs, double scale, double x, double y, int width,
+    private static double[] fitInside(Rectangle2D needs, double scale, double x, double y, int width,
         int height)
     {
         double mx = width / 2.0, my = height / 2.0;
@@ -2023,15 +2040,15 @@ public class TileAnnotation
     }
 
     /** The must-turn pair's outline about the origin along x: two terminus shapes back to back across a 4-pixel gap. */
-    private static java.awt.Shape mustTurnShape(int h, int total, boolean large)
+    private static Shape mustTurnShape(int h, int total, boolean large)
     {
         int gap = 4, half = (total - gap) / 2;
 
-        java.awt.geom.Path2D.Double out = new java.awt.geom.Path2D.Double();
+        Path2D.Double out = new Path2D.Double();
 
         for (int dir : new int[] {-1, 1})
         {
-            java.awt.geom.AffineTransform t = java.awt.geom.AffineTransform.getTranslateInstance(dir * (gap / 2.0 + half / 2.0), 0);
+            AffineTransform t = AffineTransform.getTranslateInstance(dir * (gap / 2.0 + half / 2.0), 0);
 
             if (dir < 0) t.scale(-1, 1);
 
@@ -2075,15 +2092,15 @@ public class TileAnnotation
                 int at = gap / 2 + Math.round(tile / 15f), tall = Math.round(tile * 8 / 30f);
 
                 g.setColor(line);
-                g.fill(new java.awt.geom.Rectangle2D.Double(dir > 0 ? at : -at - 1, -tall / 2.0, 1, tall));
+                g.fill(new Rectangle2D.Double(dir > 0 ? at : -at - 1, -tall / 2.0, 1, tall));
             }
         }
     }
 
     /** A hexagon about the origin along x: pointed at both ends, or flat at the left (a terminus's buffer end). */
-    private static java.awt.geom.Path2D hexagon(double w, double h, boolean flatLeft, double point)
+    private static Path2D hexagon(double w, double h, boolean flatLeft, double point)
     {
-        java.awt.geom.Path2D.Double p = new java.awt.geom.Path2D.Double();
+        Path2D.Double p = new Path2D.Double();
 
         if (flatLeft)
         {
@@ -2109,7 +2126,7 @@ public class TileAnnotation
     }
 
     /** A shape filled, then outlined in the stroke already set. */
-    private static void body(Graphics2D g, java.awt.Shape shape, Color fill, Color line)
+    private static void body(Graphics2D g, Shape shape, Color fill, Color line)
     {
         g.setColor(fill);
         g.fill(shape);
@@ -2121,7 +2138,7 @@ public class TileAnnotation
     private static void bar(Graphics2D g, double x, double tall, int wide, Color colour)
     {
         g.setColor(colour);
-        g.fill(new java.awt.geom.Rectangle2D.Double(Math.round(x - wide / 2.0), -tall / 2, wide, tall));
+        g.fill(new Rectangle2D.Double(Math.round(x - wide / 2.0), -tall / 2, wide, tall));
     }
 
     /**
@@ -2160,19 +2177,19 @@ public class TileAnnotation
             c.translate(on[0], on[1]);
 
             c.setColor(filled ? colour : Color.WHITE);
-            c.fill(new java.awt.geom.Ellipse2D.Double(-across / 2.0, -across / 2.0, across, across));
+            c.fill(new Ellipse2D.Double(-across / 2.0, -across / 2.0, across, across));
 
             if (!filled)
             {
                 c.setColor(colour);
                 c.setStroke(new BasicStroke(ring));
-                c.draw(new java.awt.geom.Ellipse2D.Double(-r, -r, 2 * r, 2 * r));
+                c.draw(new Ellipse2D.Double(-r, -r, 2 * r, 2 * r));
             }
 
             c.setColor(filled ? Color.WHITE : colour);
             c.setStroke(new BasicStroke(Math.max(least, (float) across / 8f), BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
-            c.draw(new java.awt.geom.Line2D.Double(-arm, -arm, arm, arm));
-            c.draw(new java.awt.geom.Line2D.Double(-arm, arm, arm, -arm));
+            c.draw(new Line2D.Double(-arm, -arm, arm, arm));
+            c.draw(new Line2D.Double(-arm, arm, arm, -arm));
         }
         finally
         {
@@ -2222,7 +2239,7 @@ public class TileAnnotation
     {
         if (sides == null || sides.isEmpty()) return trackCentre(width, height);
 
-        java.util.Set<java.util.Set<Side>> roads = new java.util.LinkedHashSet<>();
+        Set<Set<Side>> roads = new LinkedHashSet<>();
 
         if (badge != null && badge.getA() != null && badge.getB() != null) roads.add(roadOf(badge.getA(), badge.getB()));
 
@@ -2241,7 +2258,7 @@ public class TileAnnotation
     {
         if (routes == null || sides == null || sides.isEmpty()) return null;
 
-        java.util.Set<java.util.Set<Side>> roads = new java.util.LinkedHashSet<>();
+        Set<Set<Side>> roads = new LinkedHashSet<>();
 
         for (TilePorts.Route route : routes)
         {
@@ -2252,16 +2269,16 @@ public class TileAnnotation
     }
 
     /** The middle of the one road that ends at every one of the sides, where every road is a curve, or null. */
-    private static int[] centreOf(java.util.Set<java.util.Set<Side>> roads, List<Side> sides, int width, int height)
+    private static int[] centreOf(Set<Set<Side>> roads, List<Side> sides, int width, int height)
     {
-        java.util.Set<Side> found = null;
+        Set<Side> found = null;
 
-        for (java.util.Set<Side> road : roads)
+        for (Set<Side> road : roads)
         {
             // CURVES ONLY: two neighboring sides, on every road of the tile
             if (road.size() != 2) return null;
 
-            java.util.Iterator<Side> ends = road.iterator();
+            Iterator<Side> ends = road.iterator();
 
             if (Math.abs(ends.next().ordinal() - ends.next().ordinal()) == 2) return null;
 
@@ -2275,7 +2292,7 @@ public class TileAnnotation
 
         if (found == null) return null;
 
-        java.util.Iterator<Side> ends = found.iterator();
+        Iterator<Side> ends = found.iterator();
 
         int[] a = midpoint(ends.next(), width, height);
         int[] b = midpoint(ends.next(), width, height);
@@ -2286,9 +2303,9 @@ public class TileAnnotation
     }
 
     /** A road as its two ends, whichever way round they were given. */
-    private static java.util.Set<Side> roadOf(Side a, Side b)
+    private static Set<Side> roadOf(Side a, Side b)
     {
-        return java.util.EnumSet.of(a, b);
+        return EnumSet.of(a, b);
     }
 
     private void diamond(Graphics2D g, int x, int y, int size, Color fill, Color line)
@@ -2311,9 +2328,9 @@ public class TileAnnotation
         // A third of the tile, as LayoutGrid sizes an address label (OB-019).
         int size = Math.max(8, Math.min(width, height) / 3);
 
-        g.setFont(g.getFont().deriveFont(java.awt.Font.BOLD, (float) size));
+        g.setFont(g.getFont().deriveFont(Font.BOLD, (float) size));
 
-        java.awt.FontMetrics metrics = g.getFontMetrics();
+        FontMetrics metrics = g.getFontMetrics();
 
         int textWidth = metrics.stringWidth(text);
 

@@ -4,6 +4,7 @@ import java.util.List;
 import org.traincontrol.automation.Edge;
 import org.traincontrol.automation.Layout;
 import org.traincontrol.base.Locomotive;
+import javax.swing.SwingUtilities;
 
 /**
  * Telling the window that a train has set off or arrived, so the panels that describe it redraw: the timetable and the
@@ -45,7 +46,7 @@ public final class AutonomyRefreshCallback
             @Override
             public Void apply(List<Edge> edges, Locomotive locomotive, Boolean locked)
             {
-                javax.swing.SwingUtilities.invokeLater(onPathEvent);
+                SwingUtilities.invokeLater(onPathEvent);
 
                 return null;
             }
