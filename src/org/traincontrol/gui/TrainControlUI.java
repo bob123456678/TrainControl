@@ -167,6 +167,7 @@ import org.traincontrol.gui.widgets.BackupAction;
 import org.traincontrol.gui.widgets.BusyDialog;
 import org.traincontrol.gui.widgets.DetailsArea;
 import org.traincontrol.gui.widgets.HandScrollListener;
+import org.traincontrol.gui.widgets.LoadingSpinner;
 import org.traincontrol.gui.widgets.RowIcons;
 import org.traincontrol.gui.widgets.PositionAwareJFrame;
 import org.traincontrol.gui.widgets.QuickFileChooser;
@@ -2247,6 +2248,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             if (this.model != null) this.model.clearAutoLayout();
 
             this.forgetTheRailway();
+
+            closeThePageWindows();
         }
 
         this.railwaySource = source;
@@ -2493,10 +2496,37 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     /** Redraws the page windows whose page was read again (OB-462), each keeping its size and place. */
     private void refreshPopupsWhosePagesWereReadAgain()
     {
+        // Not while the pages are being read again, when one not read yet looks gone
+        if (refreshesUnderWay.get() == 0 && !syncInFlight.get()) closePopupsWhosePagesAreGone();
+
         for (LayoutPopupUI popup : new ArrayList<>(this.popups))
         {
             if (popup.isVisible() && popup.showsAPageReadAgain()) popup.refreshCaptions();
         }
+    }
+
+    /** Closes the page windows whose page the layout no longer has (OB-466). */
+    private void closePopupsWhosePagesAreGone()
+    {
+        for (LayoutPopupUI popup : new ArrayList<>(this.popups))
+        {
+            if (popup.isVisible() && popup.showsAPageThatIsGone()) closePopup(popup);
+        }
+    }
+
+    /** Closes every page window and forgets those remembered for the next start: they show the layout left (OB-466). */
+    private void closeThePageWindows()
+    {
+        for (LayoutPopupUI popup : new ArrayList<>(this.popups)) closePopup(popup);
+
+        for (Integer size : layoutSizes.values()) prefs.remove(LAYOUT_TITLES_PREF + "_" + size);
+    }
+
+    private void closePopup(LayoutPopupUI popup)
+    {
+        popup.close();
+
+        this.popups.remove(popup);
     }
 
     /**
@@ -5668,7 +5698,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         Integer tiles = this.layoutSizes.get(String.valueOf(this.SizeList.getSelectedItem()));
 
         if (tiles != null) LayoutLabel.warmUp(this, tiles);
-        
+
         // Render layout now that the UI is visible
         repaintLayout();
         
@@ -5931,6 +5961,32 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         takeTheKeyboard();
 
         letTheWholeWindowDriveTrains();
+    }
+
+    /**
+     * The hourglass in an empty diagram's place, sized to the page shown, while the build waits for its pictures; the
+     * drawing replaces it (OB-467).  Event thread only.
+     */
+    private void showTheDiagramIsLoadingIfBlank()
+    {
+        if (InnerLayoutPanel.getComponentCount() > 0 || this.model == null || this.model.getLayoutList().isEmpty())
+        {
+            return;
+        }
+
+        LoadingSpinner spinner = new LoadingSpinner();
+        LayoutDiagram page = shownDiagram();
+        Integer tiles = this.layoutSizes.get(String.valueOf(this.SizeList.getSelectedItem()));
+
+        if (page != null && tiles != null)
+        {
+            spinner.setPreferredSize(new Dimension(Math.max(200, page.getSx() * tiles),
+                Math.max(200, page.getSy() * tiles)));
+        }
+
+        InnerLayoutPanel.removeAll();
+        InnerLayoutPanel.setLayout(new FlowLayout(FlowLayout.LEFT));
+        InnerLayoutPanel.add(spinner);
     }
 
     private KeyEvent theKeyTheMapAlreadySaw;
@@ -16460,8 +16516,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         this.repaintLayout();
 
+        // Before the redraw, which would put a gone page's window on whichever page took its place
+        closePopupsWhosePagesAreGone();
+
         this.updatePopups(true);
-        
+
         setEditLayoutEnabled(true);
         
         // Revert preference
@@ -16528,12 +16587,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     {
         javax.swing.SwingUtilities.invokeLater(() ->
         {
-            LayoutPopupUI popup = new LayoutPopupUI(
-                this.model.getLayout(layoutName),
-                size,
-                this,
-                this.LayoutList.getSelectedIndex()
-            );
+            LayoutPopupUI popup = new LayoutPopupUI(this.model.getLayout(layoutName), size, this);
 
             popup.render();
             popups.add(popup);
@@ -21601,6 +21655,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // repaintPathLabel must not run from inside the submission below: it would queue behind LayoutGridRenderer (one
         // thread), whose rebuild is the slow part of a CS sync, leaving the menu item enabled that long (OB-094).
         repaintPathLabel();
+
+        // Posted before the build, which waits for the pictures first
+        if (SwingUtilities.isEventDispatchThread()) showTheDiagramIsLoadingIfBlank();
+        else SwingUtilities.invokeLater(this::showTheDiagramIsLoadingIfBlank);
 
         this.LayoutGridRenderer.submit(() ->
         {
