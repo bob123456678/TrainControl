@@ -1,5 +1,6 @@
 package org.traincontrol.automation;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.EnumMap;
 import java.util.LinkedHashMap;
@@ -93,7 +94,7 @@ public final class StandingRules
 
         for (Row row : new Row[] {Row.SENT_HERE, Row.TURNED_ROUND})
         {
-            for (Map<Row, Map<String, Cell>> tier : java.util.Arrays.asList(automatically, manually))
+            for (Map<Row, Map<String, Cell>> tier : Arrays.asList(automatically, manually))
             {
                 for (Map.Entry<String, Cell> each : tier.get(row).entrySet())
                 {

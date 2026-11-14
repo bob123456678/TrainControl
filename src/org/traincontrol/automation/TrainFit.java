@@ -2,9 +2,11 @@ package org.traincontrol.automation;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.RandomAccess;
 import java.util.Set;
 import org.traincontrol.base.Locomotive;
 import org.traincontrol.util.I18n;
@@ -119,7 +121,7 @@ final class TrainFit
         int length = loc.getTrainLength();
 
         // Indexed below, and the planner hands in linked lists.
-        if (!(path instanceof java.util.RandomAccess)) path = new ArrayList<>(path);
+        if (!(path instanceof RandomAccess)) path = new ArrayList<>(path);
 
         // Where the tail must have reached, along the journey, before each place is free of the train again.
         Map<String, Integer> freeOnceTheTailPasses = new HashMap<>();
@@ -323,7 +325,7 @@ final class TrainFit
      */
     static int askedForOnTheWayRound(List<String> askedAlong, int left, int back)
     {
-        java.util.Set<String> keys = new java.util.HashSet<>();
+        Set<String> keys = new HashSet<>();
 
         for (int g = Math.max(0, left + 1); g < back && g < askedAlong.size(); g++)
         {
@@ -355,7 +357,7 @@ final class TrainFit
         // is copied into an ArrayList because callers hand in linked lists and `subList` is asked path.size() times.
         if (loc.getTrainLength() == null || loc.getTrainLength() <= 0) return null;
 
-        List<Edge> ordered = new java.util.ArrayList<>(path);
+        List<Edge> ordered = new ArrayList<>(path);
 
         for (int i = 0; i < ordered.size(); i++)
         {

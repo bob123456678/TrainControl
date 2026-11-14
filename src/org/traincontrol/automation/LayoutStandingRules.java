@@ -1,6 +1,7 @@
 package org.traincontrol.automation;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -9,6 +10,7 @@ import java.util.Set;
 import org.traincontrol.automation.StandingRules.Answer;
 import org.traincontrol.automation.StandingRules.Cell;
 import org.traincontrol.automation.StandingRules.Row;
+import org.traincontrol.base.Locomotive;
 import org.traincontrol.util.I18n;
 
 /**
@@ -501,9 +503,9 @@ final class LayoutStandingRules
         {
             List<String> names = new ArrayList<>();
 
-            for (org.traincontrol.base.Locomotive each : at.getExcludedLocs()) names.add(each.getName());
+            for (Locomotive each : at.getExcludedLocs()) names.add(each.getName());
 
-            java.util.Collections.sort(names);
+            Collections.sort(names);
 
             limits.add(I18n.f(at.isAllowOnlyListed() ? "autolayout.rules.limitWhitelist" : "autolayout.rules.limitBlacklist",
                 String.join(", ", names)));
