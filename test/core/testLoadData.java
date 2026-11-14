@@ -19,7 +19,7 @@ import org.testng.annotations.Test;
 /**
  * Test TrainControl save file loading - against a written-down statement of what each file holds.
  *
- * These seven files are the only genuine old-build fixtures in the repository: each was written by the
+ * These eight files are the only genuine old-build fixtures in the repository: each was written by the
  * TrainControl version it is named after, one of them taken straight from a working install.  They are
  * the only evidence that a database somebody has been adding to since 2.3.3 still opens, and they
  * cannot be regenerated - a file written by today's build only proves that this build's writer and
@@ -157,6 +157,15 @@ public class testLoadData
     {
     }
 
+    /**
+     * A few locomotives saved by the 3.1.0 build, one of them with every saved field set (D90); the writer is
+     * `ui.testARestartKeepsTheRailway.addTheFullLocomotives`.  A later build must still read what this one wrote.
+     */
+    private static final Manifest DB3_1_0 = new Manifest("/LocDB3_1_0.data", 5,
+        counts(1, 3, 0, 1, 0, 0, 0, 0),
+        named(loco("RS plain train", MM2, 60, 5), loco("RS member a", MM2, 61, 5),
+            loco("RS full train", MFX, 70, 32), loco("RS multi unit", MULTI, 9, 32)));
+
     @Test
     public void testLoad2_4_12() throws Exception
     {
@@ -211,7 +220,7 @@ public class testLoadData
     public void testEveryRouteInEveryFixtureStillHasItsCommands() throws Exception
     {
         for (Manifest manifest : Arrays.asList(DB2_3_3, DB2_4_12, DB2_5_16, DB2_6_5, DB2_7_0,
-            DB2_8_0, DB3_0_0))
+            DB2_8_0, DB3_0_0, DB3_1_0))
         {
             List<MarklinSimpleComponent> restored = model.restoreState(pathOf(manifest));
 
@@ -251,7 +260,7 @@ public class testLoadData
         int found = 0;
 
         for (Manifest manifest : Arrays.asList(DB2_3_3, DB2_4_12, DB2_5_16, DB2_6_5, DB2_7_0,
-            DB2_8_0, DB3_0_0))
+            DB2_8_0, DB3_0_0, DB3_1_0))
         {
             for (MarklinSimpleComponent component : model.restoreState(pathOf(manifest)))
             {
@@ -272,6 +281,13 @@ public class testLoadData
 
         // Assert the variable: fixtures with none would prove nothing
         assertTrue(found > 0, "no fixture held a train-at-a-sensor condition, so this proved nothing");
+    }
+
+    /** The locomotives the 3.1.0 build saved, with the one that has every field set, still come back. */
+    @Test
+    public void testLoad3_1_0() throws Exception
+    {
+        assertRestores(DB3_1_0);
     }
 
     /**
@@ -377,6 +393,11 @@ public class testLoadData
         map.put(FEEDBACK, feedback);
 
         return map;
+    }
+
+    private static Object[] loco(String name, MarklinSimpleComponent.Type type, int address, int functions)
+    {
+        return new Object[]{name, type, address, functions};
     }
 
     private static List<Object[]> named(Object[]... entries)
