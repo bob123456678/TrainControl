@@ -1752,8 +1752,8 @@ public class AutonomySession
     }
     /**
      * Turns a placed locomotive round on the graph and on the running layout, whose copy decides where the train can
-     * go, because the railway turned it.  Emits no locomotive command.  Flipping is "the other choice" of
-     * `facingChoices`, not the compass opposite.  Null where the answer is not obvious.  Counts nothing (`turned`).
+     * go, because the railway turned it.  Emits no locomotive command; counts nothing (`turned`).  Flipping is "the
+     * other choice" of `facingChoices`; null where the answer is not obvious.
      */
     public TileKey flipFacing(String locomotive, Layout running)
     {
@@ -1807,8 +1807,8 @@ public class AutonomySession
     }
 
     /**
-     * The other way a train on this square can face, from `was`: "the other choice" of `facingChoices`.  Null where the
-     * square has not two, or cannot hold `was` (OB-177: reported by `facingsThatCannotBeHeld`, not turned).
+     * The other way a train on this square can face, from `was`; null where the square has not two, or cannot hold
+     * `was` (OB-177).
      */
     public Side theOtherFacing(TileKey square, Side was)
     {
@@ -1824,8 +1824,8 @@ public class AutonomySession
     }
 
     /**
-     * Each placed train's square with its facing choices now: what turning a snapshot of this setup asks later, when the
-     * build may have been edited since (`withTheseTrainsTurned`).
+     * Each placed train's square with its facing choices now, for `withTheseTrainsTurned` after the build may have been
+     * edited.
      */
     public Map<TileKey, List<Side>> choicesWhereTrainsStand()
     {
@@ -1843,8 +1843,8 @@ public class AutonomySession
     private final Map<Object, Object[]> lifted = new HashMap<>();
 
     /**
-     * Which way a train no square holds faces, from where it was lifted: its heading there, turned where it was turned an
-     * odd number of times since; null where unknown, or where it was turned on a square with no other way.
+     * Which way a train no square holds faces, from where it was lifted (turned if turned an odd number of times
+     * since); null where unknown.
      */
     public Side headingOfALiftedTrain(String locomotive)
     {
@@ -1874,8 +1874,8 @@ public class AutonomySession
     }
 
     /**
-     * How many times each train was turned this session, by the railway or the editor's Facing: by locomotive (identity),
-     * so a rename keeps its count; by name only where no locomotive answers to it.
+     * Turns made this session, by locomotive (identity) so a rename keeps its count; by name where no locomotive
+     * answers.
      */
     private final Map<Object, Integer> turnsMade = new HashMap<>();
 
@@ -1895,18 +1895,15 @@ public class AutonomySession
         return loc != null ? loc : name;
     }
 
-    /**
-     * Each train's turns so far, for `turnedSince`: a discard keeps the turns made since the editor opened, as Cancel
-     * never changes which way a train faces.
-     */
+    /** Each train's turns so far, for `turnedSince`: a discard keeps the turns made since the editor opened. */
     public Map<Object, Integer> turnsSoFar()
     {
         return new HashMap<>(turnsMade);
     }
 
     /**
-     * The trains turned an odd number of times since `then` (a `turnsSoFar`; none for anything else), by their names
-     * now; a deleted one left out.
+     * The trains turned an odd number of times since `then` (a `turnsSoFar`), by their names now; a deleted one left
+     * out.
      */
     public Set<String> turnedSince(Object then)
     {
@@ -1927,10 +1924,7 @@ public class AutonomySession
         return out;
     }
 
-    /**
-     * Counts a turn of a train, written or not (the editor may have lifted it, or stood it where it cannot turn), and
-     * turns it in the crash note too, wherever the note places it, by the build as the edit began.
-     */
+    /** Counts a turn of a train, written or not, and turns it in the crash note too, by the build as the edit began. */
     public void turned(String locomotive)
     {
         turnsMade.merge(turnKey(locomotive), 1, Integer::sum);
@@ -1938,10 +1932,7 @@ public class AutonomySession
         store.rewriteTheUnfinishedEditNote(note -> turnInSetup(note, locomotive, choicesAsTheEditBegan));
     }
 
-    /**
-     * A setup snapshot with each of these trains turned where it places them, by `choices` (`choicesWhereTrainsStand`
-     * as the snapshot was taken); a copy if any.
-     */
+    /** A setup snapshot with each of these trains turned where it places them, by `choices`; a copy if any. */
     public JSONObject withTheseTrainsTurned(JSONObject setup, Collection<String> trains,
         Map<TileKey, List<Side>> choices)
     {
