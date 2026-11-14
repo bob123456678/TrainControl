@@ -557,7 +557,9 @@ public class Util
      */
     public static void writeAtomically(File target, StreamWriter body) throws IOException
     {
-        File staging = new File(target.getAbsolutePath() + PARTIAL_DOWNLOAD_SUFFIX);
+        // A name of its own, so two writes of one file at once (the exit and a backup's first save) cannot share it
+        File staging = File.createTempFile(target.getName() + ".tmp", PARTIAL_DOWNLOAD_SUFFIX,
+            target.getAbsoluteFile().getParentFile());
 
         try
         {
