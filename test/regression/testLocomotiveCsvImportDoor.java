@@ -295,7 +295,8 @@ public class testLocomotiveCsvImportDoor
                 assertTrue(said.startsWith(words(I18n.f("loc.ui.infoImportCsvDone", 1, 1))), said);
                 assertTrue(said.contains(words(I18n.f("loc.ui.infoImportCsvReaddressed", 1))), said);
                 assertEquals(seen.saidShapes.get(0).details, Collections.singletonList(I18n.f("loc.ui.importCsvSkippedLine", 4) + ": "
-                    + I18n.t("loc.ui.importCsvReasonUnreadable")), "the skipped row's line and reason are not named");
+                    + I18n.f("loc.ui.importCsvReasonCells", I18n.f("loc.ui.importCsvBadCell", "Address", "xx"))),
+                    "the skipped row's line and reason are not named");
 
                 Locomotive added = model.getLocByName("FR049 door new");
 
@@ -316,6 +317,44 @@ public class testLocomotiveCsvImportDoor
             {
                 file.delete();
                 model.deleteLoc(there);
+            }
+        });
+    }
+
+    /**
+     * A row with an unusable address, speed or year is skipped whole, and its line names each wrong cell by the heading the
+     * file has and the value in it.
+     *
+     * MUTATION: name no cell, name only the first wrong one, or give the heading in lower case, and this fails.
+     */
+    @Test
+    public void testASkippedRowNamesTheCellsThatMadeItUnreadable() throws Exception
+    {
+        inAWindow((ui, model) ->
+        {
+            File file = write(HEADER11 + "FR049 door year,,MFX,50,0,0:00:00,c. 1950,0,,,\n"
+                + "FR049 door two,,MFX,51,150,0:00:00,0,19x0,,,\n" + "FR049 door fine,,MFX,52,0,0:00:00,0,0,,,\n");
+
+            try
+            {
+                Seen seen = press(ui, file, IMPORT, s -> !s.said.isEmpty());
+                List<String> lines = seen.saidShapes.get(0).details;
+
+                assertEquals(lines, java.util.Arrays.asList(
+                    I18n.f("loc.ui.importCsvSkippedLine", 2) + ": " + I18n.f("loc.ui.importCsvReasonCells",
+                        I18n.f("loc.ui.importCsvBadCell", "Start Year", "c. 1950")),
+                    I18n.f("loc.ui.importCsvSkippedLine", 3) + ": " + I18n.f("loc.ui.importCsvReasonCells",
+                        I18n.f("loc.ui.importCsvBadCell", "PreferredSpeed", "150") + ", "
+                        + I18n.f("loc.ui.importCsvBadCell", "End Year", "19x0"))), "the skipped rows do not name their cells");
+                assertTrue(lines.get(0).contains("Start Year") && lines.get(0).contains("c. 1950"), lines.get(0));
+                assertNull(model.getLocByName("FR049 door year"));
+                assertNull(model.getLocByName("FR049 door two"));
+                assertNotNull(model.getLocByName("FR049 door fine"));
+                model.deleteLoc("FR049 door fine");
+            }
+            finally
+            {
+                file.delete();
             }
         });
     }
