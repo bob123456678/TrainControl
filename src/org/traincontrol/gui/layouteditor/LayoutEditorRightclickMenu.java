@@ -5,6 +5,8 @@ import javax.swing.JMenu;
 import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
 import javax.swing.JPopupMenu;
+import javax.swing.KeyStroke;
+import javax.swing.SwingUtilities;
 import org.traincontrol.base.Accessory;
 import org.traincontrol.base.LayoutDiagramComponent;
 import org.traincontrol.base.Route;
@@ -31,7 +33,7 @@ final class LayoutEditorRightclickMenu extends JPopupMenu
     }
 
     /** An item doing `action`, showing the key the editor's key handler acts on for it, display only. */
-    private JMenuItem keyed(String text, javax.swing.KeyStroke key, Action action)
+    private JMenuItem keyed(String text, KeyStroke key, Action action)
     {
         JMenuItem item = new JMenuItem(text);
 
@@ -244,7 +246,7 @@ final class LayoutEditorRightclickMenu extends JPopupMenu
                         {
                             try
                             {
-                                javax.swing.SwingUtilities.invokeLater(() -> 
+                                SwingUtilities.invokeLater(() -> 
                                 {
                                     ui.pressFromWindow(edit, () -> ui.editRoute(route.getName()));
                                 });
@@ -383,7 +385,7 @@ final class LayoutEditorRightclickMenu extends JPopupMenu
     }
 
     /** What the Edit Linked Page item shows: the page's name, or why there is none. */
-    private static String linkLabel(org.traincontrol.base.LayoutDiagramComponent link)
+    private static String linkLabel(LayoutDiagramComponent link)
     {
         if (link.getLinkPageName() != null) return link.getLinkPageName();
 

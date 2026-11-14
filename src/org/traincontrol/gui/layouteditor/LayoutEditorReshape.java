@@ -2,6 +2,11 @@ package org.traincontrol.gui.layouteditor;
 
 import javax.swing.JOptionPane;
 import org.traincontrol.util.I18n;
+import org.traincontrol.automationui.AutonomySession;
+import org.traincontrol.automationui.TileGraph;
+import java.io.IOException;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 /**
  * What the track editor does to the whole page at once: shifting everything past the hovered square up, down, left or
@@ -129,7 +134,7 @@ final class LayoutEditorReshape
     /** One of the four LayoutDiagram shifts, given the hovered row or column. */
     private interface Shift
     {
-        void at(int line) throws java.io.IOException;
+        void at(int line) throws IOException;
     }
 
     /**
@@ -147,8 +152,8 @@ final class LayoutEditorReshape
             {
                 // Worked out BEFORE the shift: shifting down or right grows the page, so afterwards the dimensions
                 // describe a diagram this map is not about.
-                java.util.Map<org.traincontrol.automationui.TileGraph.TileKey,
-                    org.traincontrol.automationui.TileGraph.TileKey> moving =
+                Map<TileGraph.TileKey,
+                    TileGraph.TileKey> moving =
                     setupShift(across, step < 0 ? hovered + 1 : hovered,
                         (across ? this.editor.layout.getSx() : this.editor.layout.getSy()) - 1,
                         across ? step : 0, across ? 0 : step);
@@ -156,7 +161,7 @@ final class LayoutEditorReshape
                 shift.at(hovered);
 
                 // And applied after, so the graph is rebuilt from a diagram that has already moved.
-                org.traincontrol.automationui.AutonomySession autonomy = this.editor.parent.getAutonomySession();
+                AutonomySession autonomy = this.editor.parent.getAutonomySession();
 
                 if (autonomy != null)
                 {
@@ -180,12 +185,11 @@ final class LayoutEditorReshape
      * `dy`).  A square not in the range is left out rather than mapped to itself, so moveTiles can tell a square that
      * moved from one something arrived on.
      */
-    private java.util.Map<org.traincontrol.automationui.TileGraph.TileKey,
-        org.traincontrol.automationui.TileGraph.TileKey> setupShift(boolean across, int from, int to,
+    private Map<TileGraph.TileKey,
+        TileGraph.TileKey> setupShift(boolean across, int from, int to,
         int dx, int dy)
     {
-        java.util.Map<org.traincontrol.automationui.TileGraph.TileKey,
-            org.traincontrol.automationui.TileGraph.TileKey> moving = new java.util.LinkedHashMap<>();
+        Map<TileGraph.TileKey, TileGraph.TileKey> moving = new LinkedHashMap<>();
 
         int otherEnd = across ? this.editor.layout.getSy() - 1 : this.editor.layout.getSx() - 1;
 
@@ -197,8 +201,8 @@ final class LayoutEditorReshape
                 int y = across ? other : line;
 
                 moving.put(
-                    new org.traincontrol.automationui.TileGraph.TileKey(this.editor.layout.getName(), x, y),
-                    new org.traincontrol.automationui.TileGraph.TileKey(
+                    new TileGraph.TileKey(this.editor.layout.getName(), x, y),
+                    new TileGraph.TileKey(
                         this.editor.layout.getName(), x + dx, y + dy));
             }
         }
@@ -249,7 +253,7 @@ final class LayoutEditorReshape
      */
     private void forgetCaptionsOnTrimmedEdge()
     {
-        org.traincontrol.automationui.AutonomySession autonomy = this.editor.parent.getAutonomySession();
+        AutonomySession autonomy = this.editor.parent.getAutonomySession();
 
         if (autonomy == null) return;
 
@@ -257,13 +261,13 @@ final class LayoutEditorReshape
 
         for (int y = 0; y < this.editor.layout.getSy(); y++)
         {
-            changed |= autonomy.forgetCaptionsAt(new org.traincontrol.automationui.TileGraph.TileKey(
+            changed |= autonomy.forgetCaptionsAt(new TileGraph.TileKey(
                 this.editor.layout.getName(), this.editor.layout.getSx() - 1, y));
         }
 
         for (int x = 0; x < this.editor.layout.getSx(); x++)
         {
-            changed |= autonomy.forgetCaptionsAt(new org.traincontrol.automationui.TileGraph.TileKey(
+            changed |= autonomy.forgetCaptionsAt(new TileGraph.TileKey(
                 this.editor.layout.getName(), x, this.editor.layout.getSy() - 1));
         }
 

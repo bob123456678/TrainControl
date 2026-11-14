@@ -1,11 +1,15 @@
 package org.traincontrol.gui.layouteditor;
 
 import java.awt.BorderLayout;
+import java.awt.Frame;
+import java.awt.GraphicsEnvironment;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 import javax.swing.BorderFactory;
 import javax.swing.DefaultListModel;
 import javax.swing.JDialog;
@@ -15,8 +19,12 @@ import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTextField;
 import javax.swing.ListSelectionModel;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
 import org.traincontrol.automationui.TileGraph.TileKey;
 import org.traincontrol.gui.Listen;
+import org.traincontrol.gui.TrainControlUI;
+import org.traincontrol.gui.widgets.UiStyle;
 import org.traincontrol.util.I18n;
 import org.traincontrol.util.Util;
 
@@ -30,7 +38,7 @@ final class FindAPointPrompt extends JDialog
     // The look is installed before the first window of this class is built, as every window's is
     static
     {
-        if (!java.awt.GraphicsEnvironment.isHeadless()) org.traincontrol.gui.TrainControlUI.installLookAndFeel();
+        if (!GraphicsEnvironment.isHeadless()) TrainControlUI.installLookAndFeel();
     }
 
     /** One named point: where it is and what it is called. */
@@ -58,14 +66,14 @@ final class FindAPointPrompt extends JDialog
         }
     }
 
-    private final java.util.function.Supplier<List<Entry>> points;
+    private final Supplier<List<Entry>> points;
     private final Consumer<TileKey> chosen;
     private final JTextField box = new JTextField(24);
     private final DefaultListModel<Entry> shown = new DefaultListModel<>();
     private final JList<Entry> list = new JList<>(shown);
     private final JLabel status = new JLabel(" ");
 
-    FindAPointPrompt(java.awt.Frame owner, java.util.function.Supplier<List<Entry>> points, Consumer<TileKey> chosen)
+    FindAPointPrompt(Frame owner, Supplier<List<Entry>> points, Consumer<TileKey> chosen)
     {
         super(owner, I18n.t("layout.ui.findPointTitle"), false);
 
@@ -73,7 +81,7 @@ final class FindAPointPrompt extends JDialog
         this.chosen = chosen;
 
         setDefaultCloseOperation(DISPOSE_ON_CLOSE);
-        org.traincontrol.gui.TrainControlUI.applyWindowIcon(this);
+        TrainControlUI.applyWindowIcon(this);
 
         JPanel content = new JPanel(new BorderLayout(6, 6));
 
@@ -81,8 +89,7 @@ final class FindAPointPrompt extends JDialog
 
         JPanel top = new JPanel(new BorderLayout(6, 0));
 
-        top.add(org.traincontrol.gui.widgets.UiStyle.label(org.traincontrol.gui.widgets.UiStyle.withoutColon(
-            I18n.t("layout.ui.findPointLabel"))), BorderLayout.WEST);
+        top.add(UiStyle.label(UiStyle.withoutColon(I18n.t("layout.ui.findPointLabel"))), BorderLayout.WEST);
         top.add(box, BorderLayout.CENTER);
 
         list.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
@@ -97,22 +104,22 @@ final class FindAPointPrompt extends JDialog
 
         setContentPane(content);
 
-        box.getDocument().addDocumentListener(new javax.swing.event.DocumentListener()
+        box.getDocument().addDocumentListener(new DocumentListener()
         {
             @Override
-            public void insertUpdate(javax.swing.event.DocumentEvent e)
+            public void insertUpdate(DocumentEvent e)
             {
                 narrow();
             }
 
             @Override
-            public void removeUpdate(javax.swing.event.DocumentEvent e)
+            public void removeUpdate(DocumentEvent e)
             {
                 narrow();
             }
 
             @Override
-            public void changedUpdate(javax.swing.event.DocumentEvent e)
+            public void changedUpdate(DocumentEvent e)
             {
                 narrow();
             }
@@ -162,7 +169,7 @@ final class FindAPointPrompt extends JDialog
     /** The points whose name contains the text, capitals ignored; every point when the box is empty. */
     private void narrow()
     {
-        String wanted = box.getText().trim().toLowerCase(java.util.Locale.ROOT);
+        String wanted = box.getText().trim().toLowerCase(Locale.ROOT);
 
         List<Entry> all = new ArrayList<>(points.get());
 
@@ -177,7 +184,7 @@ final class FindAPointPrompt extends JDialog
 
         for (Entry entry : all)
         {
-            if (wanted.isEmpty() || entry.name.toLowerCase(java.util.Locale.ROOT).contains(wanted)) shown.addElement(entry);
+            if (wanted.isEmpty() || entry.name.toLowerCase(Locale.ROOT).contains(wanted)) shown.addElement(entry);
         }
 
         if (!shown.isEmpty()) list.setSelectedIndex(0);
