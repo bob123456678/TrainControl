@@ -118,9 +118,9 @@ public class testStartingAutonomyFromTheWindow
     {
         if (model.hasAutoLayout()) Settle.gracefully(model.getAutoLayout(), Settle.PATIENCE_MS);
 
+        // Not waited for Start here: a run stopped by `Settle.gracefully` does not give the button back, and the next
+        // test's `atRest` rebuilds and asserts it
         if (model.getRoute(ARMED) != null) model.deleteRoute(ARMED);
-
-        Settle.until(() -> start().isEnabled(), 30000);
     }
 
     /**
