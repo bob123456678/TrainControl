@@ -7,7 +7,7 @@ Part of the behavior reference: [`../behaviour.md`](../behaviour.md) is the inde
 Older comments, the tracker and these files cite review findings (`RGD-B2`, `MON-C6`; `EN57-203` is a locomotive but
 `DY3-C7` is a finding). The documents those ids came from are gone. **The findings are not.**
 
-All of them are in `docs/manual-tests/triage.db`, in the `finding` table - **6,125 rows for 5,768
+All of them are in `docs/manual-tests/triage.db`, in the `finding` table - **6,172 rows for 5,815
 findings**, because a finding written up in two documents has a row for each, and reading the row count as a finding
 count is a mistake three documents have made - with the document they came from, the line in it, the severity, what it
 was about, the file and line of the evidence, the commit that fixed it where one is named, and the source files that
