@@ -9,6 +9,7 @@ import java.util.stream.Collectors;
 import javax.swing.JOptionPane;
 import javax.swing.SwingUtilities;
 import javax.swing.table.DefaultTableModel;
+import org.traincontrol.base.LayoutDiagram;
 import org.traincontrol.base.Route;
 import org.traincontrol.marklin.MarklinRoute;
 import org.traincontrol.util.I18n;
@@ -216,6 +217,8 @@ final class RouteListPanel
 
                     while (this.ui.getModel().getRoute(String.format(proposedName, i)) != null) i++;
 
+                    final LayoutDiagram before = this.ui.shownDiagram();
+
                     this.ui.getModel().newRoute(String.format(proposedName, i), currentRoute.getRoute(), 
                             currentRoute.getS88(), currentRoute.getTriggerType(), false, currentRoute.getConditions()); 
 
@@ -232,7 +235,7 @@ final class RouteListPanel
                     finally
                     {
                         // Whatever the station said, the copy is real and the list has to show it
-                        this.ui.repaintLayout();
+                        this.ui.redrawRouteSquaresOrRebuild(before);
 
                         refreshRouteList();
                     }

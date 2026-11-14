@@ -6795,10 +6795,12 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         if (l != null)
         {
             SwingUtilities.invokeLater(() -> {
+                LayoutDiagram before = shownDiagram();
+
                 this.syncWithCS2();
                 this.model.syncLocomotive(l.getName());
                 repaintLoc(true, null);
-                this.repaintLayout();
+                redrawRouteSquaresOrRebuild(before);
                 this.repaintMappings(Collections.singletonList(l), true);
 
                 if (after != null) after.run();
@@ -14800,6 +14802,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 // the station carried the route; see enableOrDisableRoute.
                 boolean wasLocal = !route.isLocked();
 
+                LayoutDiagram before = shownDiagram();
+
                 // Not the model's `deleteRoute`, which `editRoute` uses to delete and re-add and which keeps callers:
                 // this takes the route out of every route that runs it.
                 this.model.deleteRouteAndItsCalls(route.getName());
@@ -14813,7 +14817,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 // replaced instances.
                 if (!wasLocal) refreshRouteList();
 
-                this.repaintLayout();
+                redrawRouteSquaresOrRebuild(before);
                 this.repaintLoc();
             }
         }
@@ -14847,9 +14851,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         {
             if (page.equals(String.valueOf(this.LayoutList.getModel().getElementAt(i))))
             {
+                // The selection draws the page, from the cache where it is there
                 this.model.logf("layout.ui.infoJumpingToLayoutPage", page);
                 this.LayoutList.setSelectedIndex(i);
-                this.repaintLayout();
 
                 return;
             }
@@ -15184,6 +15188,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
                     if (newId != currentRoute.getId())
                     {
+                        LayoutDiagram before = shownDiagram();
+
                         if (!this.model.changeRouteId(routeName, newId))
                         {
                             JOptionPane.showMessageDialog(
@@ -15200,7 +15206,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                             this.syncAfterAnEdit();
                         }
 
-                        this.repaintLayout();
+                        redrawRouteSquaresOrRebuild(before);
                         this.refreshRouteList();
                     }
                 }
@@ -15436,6 +15442,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             // allocated here.
             boolean anyOnTheStation = false;
 
+            LayoutDiagram before = shownDiagram();
+
             for (String routeName : this.model.getRouteList())
             {
                 Route r = this.model.getRoute(routeName);
@@ -15461,7 +15469,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
             if (anyOnTheStation) this.syncAfterAnEdit();
 
-            this.repaintLayout();
+            redrawRouteSquaresOrRebuild(before);
 
             refreshRouteList();
         }).start();
@@ -15488,12 +15496,13 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 // import sets it), the id does not: most of Adam's own routes predate `isLocalRouteId`'s cutover.  Read
                 // before the write, which replaces the route object.
                 final boolean stationCarriedIt = r.isLocked();
+                final LayoutDiagram before = shownDiagram();
 
                 writeRouteEnabledState(r, enable);
 
                 if (stationCarriedIt) this.syncAfterAnEdit();
 
-                this.repaintLayout();
+                redrawRouteSquaresOrRebuild(before);
 
                 refreshRouteList();
             }
@@ -17539,6 +17548,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE, null, YES_NO_OPTS, YES_NO_OPTS[1])
             == JOptionPane.YES_OPTION;
 
+        final LayoutDiagram before = shownDiagram();
+
         this.importRoutesMenuItem.setEnabled(false);
 
         BusyDialog.run(this, I18n.t("ui.busySyncingWithCS"),
@@ -17584,7 +17595,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                     return;
                 }
 
-                this.repaintLayout();
+                redrawRouteSquaresOrRebuild(before);
                 this.repaintLoc();
 
                 resetRouteSpinners();
@@ -21403,7 +21414,53 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     public synchronized void repaintLayout()
     {
         repaintLayout(false, false);
-    }  
+    }
+
+    /** The page shown, as the model holds it now: a sync from a local folder reads every page again, as new objects. */
+    LayoutDiagram shownDiagram()
+    {
+        Object page = this.LayoutList.getSelectedItem();
+
+        return page == null ? null : this.model.getLayout(page.toString());
+    }
+
+    /**
+     * After a route write or a sync, given `shownDiagram` from before it: rebuilt where the pages were read again (a
+     * sync from a local folder brings in edits made elsewhere), else only the route squares bound again, cache kept.
+     */
+    void redrawRouteSquaresOrRebuild(LayoutDiagram before)
+    {
+        if (before == null || before != shownDiagram())
+        {
+            repaintLayout();
+
+            return;
+        }
+
+        if (!SwingUtilities.isEventDispatchThread())
+        {
+            SwingUtilities.invokeLater(() -> redrawRouteSquaresOrRebuild(before));
+
+            return;
+        }
+
+        Set<LayoutGrid> grids = new HashSet<>();
+
+        if (this.trainGrid != null) grids.add(this.trainGrid);
+
+        for (JPanel page : this.layoutCache.values()) grids.add(LayoutGrid.of(page));
+
+        if (InnerLayoutPanel.getComponentCount() == 1) grids.add(LayoutGrid.of(InnerLayoutPanel.getComponent(0)));
+
+        for (LayoutGrid grid : grids)
+        {
+            if (grid != null) grid.rebindRouteSquares();
+        }
+
+        // What the rebuild's end does too
+        updateVisiblePoints();
+        refreshAutonomyFindings();
+    }
 
     /**
      * Waits, off the event thread and for a few seconds at most, for the pictures of the page about to be built: the

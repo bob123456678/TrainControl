@@ -717,6 +717,7 @@
         <test-one-class class="testTilePicturesArriveTogether"/>
         <test-one-class class="testASyncOwedWaitsForTheEditor"/>
         <test-one-class class="testTheEditorOpensInOneDrawing"/>
+        <test-one-class class="testTheDiagramIsKeptForWhatItDoesNotShow"/>
     </target>
     <target name="package-for-store" depends="jar">
         <property name="store.jar.name" value="TrainControl"/>
