@@ -16018,6 +16018,14 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     /** Open Layout after its chooser, which Recent Layouts runs too (FR-145): the folder becomes the layout and loads. */
     void openLayoutFolder(File folder)
     {
+        // Refused before anything changes: a folder that will not read sends the sync back to the station's layout
+        if (!new File(folder, "config/gleisbild.cs2").isFile())
+        {
+            JOptionPane.showMessageDialog(this, I18n.t("layout.ui.errorInvalidPathOrCorruptData"));
+
+            return;
+        }
+
         layoutFolderIs(folder.getPath());
 
         applyLayoutEditingAvailability();

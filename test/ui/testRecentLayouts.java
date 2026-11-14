@@ -422,6 +422,41 @@ public class testRecentLayouts
         }
     }
 
+    /**
+     * A folder that holds no layout is refused with the message before anything changes: the layout in use and its
+     * pages stay; going ahead, the failed read would send the sync to the Central Station's layout.
+     *
+     * MUTATION: drop the `config/gleisbild.cs2` check at the top of `TrainControlUI.openLayoutFolder`.
+     */
+    @Test
+    public void testAFolderWithNoLayoutIsRefusedAndNothingChanges() throws Exception
+    {
+        String a = sandbox.getFolder().getAbsolutePath();
+        File empty = Files.createTempDirectory("tc-not-a-layout").toFile();
+
+        try
+        {
+            String none = empty.getAbsolutePath();
+
+            record(none, a);
+
+            List<String> pagesWere = new ArrayList<>(model.getLayoutList());
+
+            assertEquals(click(none), Collections.singletonList(I18n.t("layout.ui.errorInvalidPathOrCorruptData")),
+                "a folder with no layout was not refused with the message");
+
+            assertEquals(new File(String.valueOf(ui.localLayoutPath())).getAbsolutePath(), a,
+                "opening a folder with no layout changed the layout in use");
+
+            assertEquals(new ArrayList<>(model.getLayoutList()), pagesWere,
+                "opening a folder with no layout changed the pages");
+        }
+        finally
+        {
+            Util.deleteTree(empty, 0);
+        }
+    }
+
     private static void record(String... folders)
     {
         TrainControlUI.getPrefs().put(TrainControlUI.RECENT_LAYOUTS_PREF, String.join("\n", folders));
