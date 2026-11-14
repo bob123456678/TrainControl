@@ -555,6 +555,14 @@ public class Util
 
                 out.flush();
             }
+
+            // On disk before the move, or a power cut just after it can leave the target empty.  A handle of its own,
+            // as the body may close the stream.
+            try (java.nio.channels.FileChannel written = java.nio.channels.FileChannel.open(staging.toPath(),
+                java.nio.file.StandardOpenOption.WRITE))
+            {
+                written.force(true);
+            }
         }
         catch (IOException | RuntimeException e)
         {

@@ -322,4 +322,22 @@ public class testAtomicWrite
         assertFalse(entries.contains("NotThere.data"),
             "a source that does not exist was added as an empty entry rather than skipped");
     }
+
+    /**
+     * The staged write forces its bytes to disk before it moves them over the target: renamed first, a power cut can
+     * leave the target empty with the old file already gone.  Read, not run: a power cut cannot be staged.
+     *
+     * MUTATION: drop the `force(true)` from `Util.writeAtomically`, and this fails.
+     */
+    @Test
+    public void testTheStagedWriteReachesTheDiskBeforeTheMove() throws Exception
+    {
+        String body = support.SourceOf.withoutComments(support.SourceOf.body(
+            "public static void writeAtomically(File target, StreamWriter body)"));
+
+        int forced = Math.max(body.indexOf("getFD().sync()"), body.indexOf(".force(true)"));
+
+        assertTrue(forced >= 0 && forced < body.indexOf("Files.move("), "the staged file is moved over the target"
+            + " without first being forced to disk");
+    }
 }
