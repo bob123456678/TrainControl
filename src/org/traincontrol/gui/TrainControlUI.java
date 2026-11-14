@@ -6518,6 +6518,12 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      */
     synchronized public void initializeTrackDiagram(boolean showTab)
     {
+        initializeTrackDiagram(showTab, true);
+    }
+
+    /** As {@link #initializeTrackDiagram(boolean)}; `sayIfEmpty` false leaves out the "no layout" message. */
+    private synchronized void initializeTrackDiagram(boolean showTab, boolean sayIfEmpty)
+    {
         SwingUtilities.invokeLater(()->
         {
             this.LayoutList.setModel(new DefaultComboBoxModel(this.model.getLayoutList().toArray()));
@@ -6546,8 +6552,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 );
 
                 // On screen, not only in the log (OB-103): this switch or download appeared to do nothing.
-                JOptionPane.showMessageDialog(this,
-                    I18n.t("layout.ui.errorNoLayoutFromCentralStation"));
+                if (sayIfEmpty) JOptionPane.showMessageDialog(this, I18n.t("layout.ui.errorNoLayoutFromCentralStation"));
             }
         });
     }
@@ -15940,16 +15945,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
                 updateLayoutLoaded();
 
-                int synced = this.syncWithCS2();
-
-                if (synced == SYNC_ALREADY_RUNNING)
-                {
-                    JOptionPane.showMessageDialog(this, I18n.t("ui.infoSyncAlreadyRunning"));
-                }
-                else if (synced == -1) offerSyncRetry(this, null, () -> doSync(this));
-                
-                // Set the updated list of layout pages
-                initializeTrackDiagram(true);
+                fetchTheStationsPages();
             }
             catch (Exception e)
             {
@@ -15961,6 +15957,24 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             
         });
     }//GEN-LAST:event_switchCSLayoutMenuItemActionPerformed
+
+    /**
+     * Switch to Central Station Layout's tail, once the pages are cleared: the sync, then the page list.  A failed or
+     * refused sync offers Retry, which runs this again, since a plain Sync never fills the page list.
+     */
+    private void fetchTheStationsPages()
+    {
+        // Asked quietly, so that the Retry popup alone says why
+        final boolean refused = anEditorIsOpenOrOnItsWay();
+        final int synced = refused ? SYNC_REFUSED : this.syncNow();
+        final Runnable retry = () -> { if (!refuseWhileARunHoldsTheSetup(this)) fetchTheStationsPages(); };
+
+        if (refused) offerSyncRetry(this, I18n.t("loc.ui.errorEditorOpenNoLinkOrSync"), retry);
+        else saidTheSyncDidNotRun(this, synced, retry);
+
+        // No "no layout" message over the Retry popup
+        initializeTrackDiagram(true, !refused && synced != -1);
+    }
 
     private void initializeLocalLayoutMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_initializeLocalLayoutMenuItemActionPerformed
         this.layoutFileActions.initializeLocalLayoutMenuItemActionPerformed();
