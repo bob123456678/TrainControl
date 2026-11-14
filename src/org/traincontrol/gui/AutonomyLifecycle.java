@@ -688,7 +688,7 @@ final class AutonomyLifecycle
      */
     boolean unloadAutonomy()
     {
-        if (ui.getModel() == null) return false;
+        if (ui.getModel() == null || ui.refuseWhileEditorOpen()) return false;
 
         // Not while a route or another run holds the setup; autonomy's own run is asked about below.
         if (ui.refusedWhileSomethingElseRuns()) return false;

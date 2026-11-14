@@ -573,16 +573,16 @@ public class AutonomyViewerPanel extends JPanel
     }
 
     /**
-     * Says why, and answers true, where something other than autonomy holds the setup
-     * (`TrainControlUI.refusedWhileSomethingElseRuns`): the question every door a user loads a configuration through
-     * asks first.  While autonomy itself is busy the load keeps its own offer to stop the trains
+     * Says why, and answers true, where an editor is open or on its way, or something other than autonomy holds the
+     * setup (`TrainControlUI.refusedWhileSomethingElseRuns`): the question every door a user loads a configuration
+     * through asks first.  While autonomy itself is busy the load keeps its own offer to stop the trains
      * (`prepareAutonomyReload`).
      *
      * @return true when the load is refused
      */
     public boolean refusedWhileRunning()
     {
-        return ui.refusedWhileSomethingElseRuns();
+        return ui.refuseWhileEditorOpen() || ui.refusedWhileSomethingElseRuns();
     }
 
     /**
@@ -821,6 +821,8 @@ public class AutonomyViewerPanel extends JPanel
      */
     public void initialize()
     {
+        if (ui.refuseWhileEditorOpen()) return;
+
         // NOT WHILE AUTONOMY RUNS: it writes a configuration, and may tick pages out, under the railway
         if (ui.refuseWhileARunHoldsTheSetup(ui)) return;
 
@@ -916,6 +918,8 @@ public class AutonomyViewerPanel extends JPanel
      */
     public void importConfiguration()
     {
+        if (ui.refuseWhileEditorOpen()) return;
+
         // NOT WHILE AUTONOMY RUNS, as Delete beside it is refused, and before anything is asked: an import writes the
         // setup's shared half (a station's name among it) into any configuration, and the fold after a declined reload
         // read the running railway through names it had changed.
@@ -1476,6 +1480,8 @@ public class AutonomyViewerPanel extends JPanel
      */
     public void exportConfiguration()
     {
+        if (ui.refuseWhileEditorOpen()) return;
+
         // NOT WHILE A RUN HOLDS THE SETUP, as Import is not (MT-601), and before anything is asked: the export folds
         // the running railway into the setup first
         if (ui.refuseUntilTheTrainsStop(ui)) return;
@@ -1511,6 +1517,8 @@ public class AutonomyViewerPanel extends JPanel
 
     public void duplicate()
     {
+        if (ui.refuseWhileEditorOpen()) return;
+
         // NOT WHILE AUTONOMY RUNS, as Import, Export and Delete are not - before anything is asked
         if (ui.refuseWhileARunHoldsTheSetup(ui)) return;
 
@@ -1595,6 +1603,8 @@ public class AutonomyViewerPanel extends JPanel
 
     public void rename()
     {
+        if (ui.refuseWhileEditorOpen()) return;
+
         // NOT WHILE AUTONOMY RUNS: it renames the running configuration's file under the railway
         if (ui.refuseWhileARunHoldsTheSetup(ui)) return;
 
@@ -1626,6 +1636,8 @@ public class AutonomyViewerPanel extends JPanel
 
     public void delete()
     {
+        if (ui.refuseWhileEditorOpen()) return;
+
         String name = selected();
 
         // Refused while trains are moving, as deleting the whole setup is.

@@ -98,7 +98,7 @@ public class AutonomyMenu extends JMenu
      */
     private void guardWhileEditing(JMenuItem guide)
     {
-        if (!ui.isLayoutEditorOpen()) return;
+        if (!ui.anEditorIsOpenOrOnItsWay()) return;
 
         String why = AutonomyEditorPanel.wrapped(I18n.t("autosetup.ui.tooltipCloseTheEditor"));
 
@@ -514,6 +514,8 @@ public class AutonomyMenu extends JMenu
      */
     private static void deleteEverything(TrainControlUI ui, AutonomySession session)
     {
+        if (ui.refuseWhileEditorOpen()) return;
+
         if (ui.refuseWhileARunHoldsTheSetup(ui)) return;
 
         int names = session.getStore().getConfigurationNames().size();

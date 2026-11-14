@@ -145,8 +145,7 @@ public class testTheAutonomyAndRoutesMenusKeepTheirWiring
 
             String loaded = ui.getActiveDiagramConfiguration();
 
-            session.getStore().createConfiguration(SPARE, loaded);
-            session.getStore().save();
+            aSpare(session, loaded);
 
             try (Doors doors = new Doors())
             {
@@ -213,10 +212,7 @@ public class testTheAutonomyAndRoutesMenusKeepTheirWiring
 
             String loaded = ui.getActiveDiagramConfiguration();
 
-            session.getStore().createConfiguration(SPARE, loaded);
-            session.getStore().save();
-
-            List<String> names = new ArrayList<>(session.getStore().getConfigurationNames());
+            List<String> names = aSpare(session, loaded);
 
             assertEquals(shape(theConfigurationSubmenu(ui).getMenuComponents()), names,
                 "the Configuration submenu holds more than the configurations (D50)");
@@ -406,10 +402,7 @@ public class testTheAutonomyAndRoutesMenusKeepTheirWiring
                 if (part instanceof JMenuItem) tipsAtRest.put((JMenuItem) part, ((JMenuItem) part).getToolTipText());
             }
 
-            SwingUtilities.invokeAndWait(() -> ui.openLayoutEditor(PAGE, false, null));
-
-            assertTrue(Components.waitFor(() -> support.EditorsOpen.editorOn(PAGE) != null, 20000),
-                "precondition: the editor did not open on " + PAGE);
+            openTheEditor(ui);
 
             final LayoutEditor editor = support.EditorsOpen.editorOn(PAGE);
 
@@ -508,6 +501,46 @@ public class testTheAutonomyAndRoutesMenusKeepTheirWiring
         });
     }
 
+    /**
+     * With an editor open, every door of the Autonomy tab's Manage button that changes the configurations refuses with
+     * "Close the editor first", before any question, and nothing changes: no configuration renamed or deleted, the
+     * running one still loaded.  The menu bar grays the same doors; this list is not grayed.
+     *
+     * MUTATION: drop `ui.refuseWhileEditorOpen()` from `AutonomyViewerPanel.rename` or `delete`, and this fails.
+     */
+    @Test
+    public void testManageRefusesWhileAnEditorIsOpen() throws Exception
+    {
+        onItsOwnWindow(ui ->
+        {
+            AutonomySession session = ui.getAutonomySession();
+
+            String loaded = ui.getActiveDiagramConfiguration();
+
+            List<String> names = aSpare(session, loaded);
+
+            openTheEditor(ui);
+
+            try (Doors doors = new Doors())
+            {
+                for (String key : new String[] {"autosetup.ui.menuNewConfiguration",
+                    "autosetup.ui.menuRenameConfiguration", "autosetup.ui.menuDeleteConfiguration",
+                    "autosetup.ui.btnImportConfiguration", "autosetup.ui.btnExportConfiguration",
+                    "autosetup.ui.menuUnloadAutonomy", "autosetup.ui.menuDeleteSetup"})
+                {
+                    assertEquals(doors.click(manageItem(ui, "tab", key)), t("autosetup.ui.menuEditorOpen"),
+                        "with an editor open, " + t(key) + " did not refuse before asking anything: " + doors.seen);
+                }
+            }
+
+            assertEquals(new ArrayList<>(session.getStore().getConfigurationNames()), names,
+                "a door changed the configurations with an editor open");
+
+            assertEquals(ui.getActiveDiagramConfiguration(), loaded,
+                "a door unloaded or changed the running configuration with an editor open");
+        });
+    }
+
     // ---------------------------------------------------------------- the doors
 
     /**
@@ -581,6 +614,23 @@ public class testTheAutonomyAndRoutesMenusKeepTheirWiring
     }
 
     // ---------------------------------------------------------------- the menus
+
+    /** A second configuration, saved; the names then. */
+    private static List<String> aSpare(AutonomySession session, String from) throws Exception
+    {
+        session.getStore().createConfiguration(SPARE, from);
+        session.getStore().save();
+
+        return new ArrayList<>(session.getStore().getConfigurationNames());
+    }
+
+    private static void openTheEditor(TrainControlUI ui) throws Exception
+    {
+        SwingUtilities.invokeAndWait(() -> ui.openLayoutEditor(PAGE, false, null));
+
+        assertTrue(Components.waitFor(() -> support.EditorsOpen.editorOn(PAGE) != null, 20000),
+            "precondition: the editor did not open on " + PAGE);
+    }
 
     private static String t(String key)
     {
