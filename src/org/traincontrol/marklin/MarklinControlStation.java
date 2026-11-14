@@ -1356,6 +1356,10 @@ public class MarklinControlStation implements ViewListener, ModelListener
 
         for (MarklinLocomotive l : parsedLocs) parsedCountByAddress.merge(l.getIntUID(), 1, Integer::sum);
 
+        Set<String> stationNames = new HashSet<>();
+
+        for (MarklinLocomotive l : parsedLocs) stationNames.add(l.getName());
+
         for (MarklinLocomotive l : parsedLocs)
         {
             List<MarklinLocomotive> matches = byAddress.get(l.getIntUID());
@@ -1376,6 +1380,16 @@ public class MarklinControlStation implements ViewListener, ModelListener
             // the locomotive the first had just renamed.
             if (matches.size() > 1)
             {
+                // Except a pair whose other name the station no longer has: renamed at the station, or renamed here
+                // and given back its station name by the sync.  The station's name wins; the other is renamed onto it.
+                MarklinLocomotive dropped = renamedAwayFrom(l.getName(), matches, stationNames);
+
+                if (dropped != null)
+                {
+                    renameCandidates.add(new String[] {dropped.getName(), l.getName()});
+                    continue;
+                }
+
                 this.logf("loc.renameAmbiguousDuplicateAddress", l.getName(), matches.size());
                 refused++;
                 continue;
@@ -1396,6 +1410,23 @@ public class MarklinControlStation implements ViewListener, ModelListener
         refused += renameCandidates.size() - ordered.size();
 
         return new RenameProposals(ordered, refused);
+    }
+
+    /** Of two locomotives at one address, one named `stationName`: the other, when the station has no such name. */
+    private static MarklinLocomotive renamedAwayFrom(String stationName, List<MarklinLocomotive> pair,
+        Set<String> stationNames)
+    {
+        if (pair.size() != 2) return null;
+
+        for (int i = 0; i < 2; i++)
+        {
+            if (pair.get(i).getName().equals(stationName) && !stationNames.contains(pair.get(1 - i).getName()))
+            {
+                return pair.get(1 - i);
+            }
+        }
+
+        return null;
     }
 
     /**

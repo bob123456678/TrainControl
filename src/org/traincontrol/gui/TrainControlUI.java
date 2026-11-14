@@ -18514,10 +18514,12 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                         String currentName = pair[0];
                         String newName = pair[1];
 
+                        // One question when another locomotive holds the name: it goes, and this one takes it
                         int response = JOptionPane.showOptionDialog(
                             this,
                             I18n.f(
-                                "loc.ui.confirmRenameLocomotive",
+                                model.getLocByName(newName) != null ? "loc.ui.confirmRenameOntoLocomotive"
+                                    : "loc.ui.confirmRenameLocomotive",
                                 currentName,
                                 newName
                             ),
@@ -18553,7 +18555,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                             // Check if the target loc already exists
                             Locomotive l2 = model.getLocByName(newName);
                             
-                            if (l2 != null) deleteLoc(newName);
+                            if (l2 != null) this.locomotiveActions.deleteLocAlreadyAsked(newName, this);
                             
                             l2 = model.getLocByName(newName);
                             

@@ -68,7 +68,7 @@ public class testImportRename
     /** Everything these tests create.  Cleared before each one - see clearTestLocomotives. */
     private static final String[] TEST_LOCS = {
         "IR mismatch", CS_NAME, "IR head", "IR member", "IR dupe one", "IR dupe two",
-        "IR cs dupe", "IR chain tail", CS_TEN, CS_TWENTYONE, "IR unknown" };
+        "IR cs dupe", "IR chain tail", CS_TEN, CS_TWENTYONE, "IR unknown", "IR old" };
 
     @BeforeClass
     public static void setUpClass() throws Exception
@@ -465,6 +465,31 @@ public class testImportRename
             assertNotEquals(pair[1], CS_NAME,
                 "nothing may be proposed for the ambiguous address at all");
         }
+    }
+
+    /**
+     * Two locomotives at one address, one under the Central Station's name and one under a name the station no longer
+     * has: the station renamed it (and the sync added the new name beside it), or it was renamed here (and the sync
+     * gave back the station's name).  The station's name wins: the other is proposed for renaming onto it, the tool's
+     * rename deleting the holder.  Where both names are the station's, the pair stays ambiguous.
+     *
+     * MUTATION: drop the `renamedAwayFrom` branch from `getRenameProposals`, and the pair is refused as ambiguous.
+     */
+    @Test
+    public void testAPairWhoseOtherNameTheStationDroppedIsProposed() throws Exception
+    {
+        installAtReferenceAddress("IR old");
+        installAtReferenceAddress(CS_NAME);
+
+        assertEquals(renameTargetsFor("IR old"), java.util.Collections.singletonList(CS_NAME),
+            "the locomotive whose name the Central Station no longer has was not proposed for its station name");
+
+        assertTrue(renameTargetsFor(CS_NAME).isEmpty(), "the locomotive already under the station's name was proposed");
+
+        model.deleteLoc("IR old");
+        installAtReferenceAddress(CS_TEN);
+
+        assertTrue(renameTargetsFor(CS_TEN).isEmpty(), "a pair whose two names are both the station's was proposed");
     }
 
     /**

@@ -579,6 +579,24 @@ final class LocomotiveActions
         deleteLoc(value, evt != null ? (Component) evt.getSource() : this.ui.dialogParent());
     }
 
+    /** As {@link #deleteLoc(String, Component)}, for a door whose own question already covered the deletion. */
+    boolean deleteLocAlreadyAsked(String value, Component source)
+    {
+        this.alreadyAsked = true;
+
+        try
+        {
+            return deleteLoc(value, source);
+        }
+        finally
+        {
+            this.alreadyAsked = false;
+        }
+    }
+
+    /** Set, on the event thread, only for the length of `deleteLocAlreadyAsked`. */
+    private boolean alreadyAsked = false;
+
     /** Deletes a locomotive from the database after the question, from any door; true when it was deleted. */
     boolean deleteLoc(String value, Component source)
     {
@@ -612,7 +630,7 @@ final class LocomotiveActions
             ? I18n.f("ui.confirmDeleteFromDatabaseWithRoutes" + I18n.countForm(drivenBy), value, drivenBy)
             : I18n.f("ui.confirmDeleteFromDatabase", value);
 
-        if (JOptionPane.YES_OPTION == JOptionPane.showOptionDialog(
+        if (this.alreadyAsked || JOptionPane.YES_OPTION == JOptionPane.showOptionDialog(
                 source,
                 question,
                 I18n.t("layout.ui.dialogPleaseConfirm"),
