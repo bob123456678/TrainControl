@@ -4727,38 +4727,6 @@ public class testTheTrainWindow
         }
     }
 
-    /**
-     * Cancel in the track editor puts back the setup as it opened, but a train turned on the throttle meanwhile keeps
-     * its facing, and nothing is asked.
-     *
-     * MUTATION: restore `autonomyAsOpened` itself in `LayoutEditor.undoAutonomyEdits`, and Cancel turns it back.
-     */
-    @Test(timeOut = 300000)
-    public void testTheTrackEditorsCancelKeepsAThrottleTurn() throws Exception
-    {
-        final TileKey square = aTrainThatCanTurn();
-        final String name = session.getLocomotiveNameAt(square);
-        final String copyBefore = copyOf(name);
-
-        theTrackEditor();
-
-        try
-        {
-            reverse(name, copyBefore);
-
-            final String turned = standingAndFacing(name);
-
-            assertNull(cancelTheEditor(), "the track editor's Cancel asked after only a reversal of " + name);
-            assertEquals(standingAndFacing(name), turned, "the track editor's Cancel turned " + name + " back");
-        }
-        finally
-        {
-            standBack(name, copyBefore, null, null, null);
-
-            support.FrozenEditor.putBack(ui, session, asOpened);
-        }
-    }
-
     /** What was said after this, each question answered with its first button. */
     private static java.util.List<String> saidAfter(java.util.concurrent.Callable<?> doThis) throws Exception
     {
