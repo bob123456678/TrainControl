@@ -475,6 +475,8 @@ Tab icons provided by Freepik.
             - Pages are shown in the order of the layout's files rather than by name, and `Sort Pages by Name` puts them back in name order.
             - A page link keeps going to the same page when pages are renamed or moved.
             - In the track diagram editor, Ctrl+R turns the picked squares when there are any, and `Rotate` on the `Selection` menu shows Ctrl+R.
+            - Track diagrams draw faster and flash less: station names appear with their page, squares keep their size while their pictures load, each picture is decoded once, and the autonomy editor opens and switches pages with one drawing.
+            - A length set for a selection applies at once, and following a page link or editing routes no longer redraws the whole diagram.
         - Interface
             - `Layouts` > `Manage Pages...` is now `Edit/Add Pages...`, and the separate `Edit Layout Page` menu is gone.
             - `Hide Hover Tooltips` on the `Preferences` menu hides the tooltips and shortcut keys in menus, though a grayed item still says why.  The keys still work, and unticking it shows both again.
@@ -503,6 +505,7 @@ Tab icons provided by Freepik.
             - When TrainControl starts up or syncs with a CS3, it now asks the sensors for their state, including those on a Link S88, so the track diagram shows them as they really are.  An S88 route waiting on a sensor isn't set off by its answer.
             - When the Central Station turns the track power off after a short circuit, TrainControl now shows the power as off and a warning names the output that tripped.
             - A CS3 sync skips what it can't read, such as something a new firmware changed, and keeps the rest, so it no longer loses a page or fails because of it.
+            - A failed `Sync` now says in one plain sentence what went wrong, with `Retry`, and keeps the details in the log.
         - Documentation
             - The Readme and the autonomy guide now describe `Locomotive Settings`, `Station Settings` and the other new windows and shortcuts.
     - Bug Fixes
@@ -517,11 +520,21 @@ Tab icons provided by Freepik.
             - `Path Integrity Validation` now waits up to 30 seconds while the Central Station is still switching other accessories, instead of stopping the train.
             - A train's destinations on the track diagram's right-click menu are in the order you read them, so ParkingTrack4 comes before ParkingTrack10.
             - Right-clicking plain track on the track diagram shows what it is, such as `Straight Track`, rather than its grid square.
+            - Cancel in the autonomy editor now puts every train back where it stood when the editor opened, and its question names the trains that will move.  Cancel never turns a train around: each keeps the way it faces now, however it got there, and a train whose only change is its facing is not named.
+            - While an editor is open, linking a multi-unit, changing an address or decoder, pressing `Sync`, switching layouts, changing a configuration from the `Autonomy` menu and importing addresses from a CSV file are refused with a message, since they could move a train that Cancel would then put back.  A sync that a route or icon edit runs afterward waits and runs once when the editor closes.
+            - The tabs in `Station Settings` now run to the window's edges.
         - Locomotive Control
             - Ctrl+B now moves the copied locomotive to the active button, as the key menu's `Move` item says.
+            - Saving a typed address in `Locomotive Settings` changes the decoder type only if you changed it.
         - Track Diagram
             - An s88 square with no sensor attached now shows its tooltip like the others.
             - An active sensor's red arrows stop just short of the square's edge, so the arrows of two sensors side by side no longer touch.
+            - A page window that is open now redraws after a sync that read its page again.
+        - Central Station
+            - A file that arrives from the Central Station cut off now fails the sync and changes nothing, instead of leaving a partly loaded layout.
+            - A file sent in the Latin-1 character set is now read correctly.
+            - A Central Station that always sends the same short file is now read, and the log says so.
+            - The track diagram now waits until TrainControl knows the Central Station's type, so a CS3's squares get the right protocol.
         - Interface
             - Questions and messages now open over the window you were working in, such as a track diagram page in its own window, instead of over the main window.
             - `Restore from Backup` no longer asks about the Central Station's layout when it saves your current data first.
