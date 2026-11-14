@@ -98,8 +98,8 @@ public class MarklinFeedback extends Feedback
                 {
                     boolean was = this.isSet();
 
-                    // A frame of no change (old state = new) answers a query: it puts the state right, but is no edge
-                    this.changeTo(state == 1, m.getData()[4] == m.getData()[5]);
+                    // The proxy's mark on the answer to our own query: it puts the state right, but is no edge
+                    this.changeTo(state == 1, m.answersAResync());
                                         
                     this.updateTiles();
 
