@@ -720,13 +720,7 @@ public class testStationSettingsWindow
 
         StationSettingsWindow window = StationDoors.open(panel, square);
 
-        JTextField field = StationDoors.part(window, "station.maxLength", JTextField.class);
-
-        Components.onTheEventThread(() -> { field.setText("-5"); return null; });
-
-        StationDoors.close(window);
-
-        assertTrue(Components.onTheEventThread(() -> window.isShowing()), "Done closed the window over a refused length");
+        refuseALength(window);
 
         assertTrue(visible(window, "station.maxLengthProblem"), "Done did not say why the length was refused");
 
@@ -752,17 +746,11 @@ public class testStationSettingsWindow
     {
         StationSettingsWindow window = StationDoors.open(panel, aStation());
 
-        JTextField field = StationDoors.part(window, "station.maxLength", JTextField.class);
+        JTextField field = refuseALength(window);
         AbstractButton stops = StationDoors.part(window, "station.stops", AbstractButton.class);
 
         assertTrue(Components.onTheEventThread(() -> stops.isSelected() && field.isEnabled()),
             "precondition: the station does not stop, or Max Length is grayed");
-
-        Components.onTheEventThread(() -> { field.setText("-5"); return null; });
-
-        StationDoors.close(window);
-
-        assertTrue(Components.onTheEventThread(() -> window.isShowing()), "precondition: Done closed over a refused length");
 
         Components.onTheEventThread(() -> { stops.doClick(); return null; });
 
@@ -779,6 +767,20 @@ public class testStationSettingsWindow
         if (stillOpen) pressEscapeOn(window);
 
         assertFalse(stillOpen, "Done did nothing: a refusal on a grayed field it cannot commit holds the window open");
+    }
+
+    /** Types a negative Max Length and presses Done, which must stay open over it; returns the field. */
+    private static JTextField refuseALength(StationSettingsWindow window) throws Exception
+    {
+        JTextField field = StationDoors.part(window, "station.maxLength", JTextField.class);
+
+        Components.onTheEventThread(() -> { field.setText("-5"); return null; });
+
+        StationDoors.close(window);
+
+        assertTrue(Components.onTheEventThread(() -> window.isShowing()), "Done closed the window over a refused length");
+
+        return field;
     }
 
     /**
