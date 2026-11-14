@@ -83,9 +83,10 @@ public class testLocomotiveAddressRules
 
     /**
      * Add Locomotive asks the rule above rather than restating it: the original defect was in its dialog's own copy,
-     * which no other test here calls.  Its Add is `LocomotiveActions.addLocomotive` now (FR-179).
+     * which no other test here calls.  Its Add is `LocomotiveActions.addLocomotive` now (FR-179), which asks through
+     * `addressProblem`, shared with Locomotive Settings.
      *
-     * MUTATION: replace the call this checks for with the three-`if` copy the class javadoc describes; address 0 is
+     * MUTATION: replace the call in `addressProblem` with the three-`if` copy the class javadoc describes; address 0 is
      * accepted again for every decoder type this dialog offers.
      */
     @Test
@@ -94,12 +95,15 @@ public class testLocomotiveAddressRules
         String body = SourceOf.withoutComments(SourceOf.declaration(
             "    Locomotive addLocomotive(Component source, String locName, String typedAddress, decoderType type)"));
 
-        int validated = body.indexOf("validateNewAddress(");
+        assertTrue(SourceOf.withoutComments(SourceOf.declaration(
+            "    String addressProblem(String typedAddress, decoderType type)")).contains("validateNewAddress("),
+            "addressProblem no longer calls validateNewAddress - either the shared rule has gone and each decoder's "
+            + "range is being restated again, or it has been renamed and this scan needs updating either way");
 
-        assertTrue(validated >= 0,
-            "Add Locomotive no longer calls validateNewAddress at all - either the shared rule has gone "
-            + "and each decoder's range is being restated here again, or it has been renamed and this "
-            + "scan needs updating either way");
+        int validated = body.indexOf("addressProblem(");
+
+        assertTrue(validated >= 0, "Add Locomotive no longer asks addressProblem, so nothing checks the address "
+            + "against the shared rule before a locomotive is made");
 
         int mfx = body.indexOf("newMFXLocomotive(");
         int dcc = body.indexOf("newDCCLocomotive(");
@@ -112,7 +116,7 @@ public class testLocomotiveAddressRules
         // All three, not just the branch this run happened to take: validation has to gate creation whichever decoder
         // was selected.
         assertTrue(validated < mfx && validated < dcc && validated < mm2,
-            "validateNewAddress is called AFTER a locomotive can already be created, which is no "
+            "the address is checked AFTER a locomotive can already be created, which is no "
             + "refusal at all - a rejected address would be asked about only after the locomotive it "
             + "was supposed to stop already exists");
     }
