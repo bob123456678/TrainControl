@@ -15124,6 +15124,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         javax.swing.SwingUtilities.invokeLater(() ->
         {
             setLocomotiveWorkInFlight(true);
+
+            final LayoutDiagram before = shownDiagram();
             
             new Thread(() ->
             {
@@ -15153,6 +15155,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
                     setLocomotiveWorkInFlight(false);
                 });
+
+                followIfReadAgain(before);
 
                 // Left OUT of the pass: both go through their own renderer first.  See singlePass.
                 this.repaintLoc(true, null);
@@ -16074,6 +16078,14 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     /** Open Layout after its chooser, which Recent Layouts runs too (FR-145): the folder becomes the layout and loads. */
     void openLayoutFolder(File folder)
     {
+        // Refused before anything changes: a folder that will not read sends the sync back to the station's layout
+        if (!new File(folder, "config/gleisbild.cs2").isFile())
+        {
+            JOptionPane.showMessageDialog(this, I18n.t("layout.ui.errorInvalidPathOrCorruptData"));
+
+            return;
+        }
+
         layoutFolderIs(folder.getPath());
 
         applyLayoutEditingAvailability();
@@ -16486,6 +16498,26 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
     private void layoutRefreshCompleteInternal()
     {
+        followThePagesReadAgain();
+
+        this.repaintLayout();
+
+        // Before the redraw, which would put a gone page's window on whichever page took its place
+        closePopupsWhosePagesAreGone();
+
+        this.updatePopups(true);
+
+        setEditLayoutEnabled(true);
+
+        // Revert preference
+        windowAlwaysOnTopMenuItemActionPerformed(null);
+
+        // Revert preference for graph UI
+    }
+
+    /** The page list and the autonomy setup follow pages read again as new objects, as after a page edit. */
+    private void followThePagesReadAgain()
+    {
         int oldIndex = this.LayoutList.getSelectedIndex();
 
         // Update list of pages
@@ -16513,20 +16545,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             // Quietly: a modal here would be about a configuration the user never asked to reload.
             getAutonomyViewerPanel().load(wasRunning, false);
         }
-
-        this.repaintLayout();
-
-        // Before the redraw, which would put a gone page's window on whichever page took its place
-        closePopupsWhosePagesAreGone();
-
-        this.updatePopups(true);
-
-        setEditLayoutEnabled(true);
-        
-        // Revert preference
-        windowAlwaysOnTopMenuItemActionPerformed(null);
-        
-        // Revert preference for graph UI
     }
 
     /**
@@ -18550,10 +18568,12 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                         String currentName = pair[0];
                         String newName = pair[1];
 
+                        // One question when another locomotive holds the name: it goes, and this one takes it
                         int response = JOptionPane.showOptionDialog(
                             this,
                             I18n.f(
-                                "loc.ui.confirmRenameLocomotive",
+                                model.getLocByName(newName) != null ? "loc.ui.confirmRenameOntoLocomotive"
+                                    : "loc.ui.confirmRenameLocomotive",
                                 currentName,
                                 newName
                             ),
@@ -18589,7 +18609,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                             // Check if the target loc already exists
                             Locomotive l2 = model.getLocByName(newName);
                             
-                            if (l2 != null) deleteLoc(newName);
+                            if (l2 != null) this.locomotiveActions.deleteLocAlreadyAsked(newName, this);
                             
                             l2 = model.getLocByName(newName);
                             
@@ -21568,6 +21588,13 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         return page == null ? null : this.model.getLayout(page.toString());
     }
 
+    /** After a sync: where the model holds `before`'s page as a new object, the list and the setup follow, posted. */
+    private void followIfReadAgain(LayoutDiagram before)
+    {
+        if (before != null && before != this.model.getLayout(before.getName()))
+            SwingUtilities.invokeLater(this::followThePagesReadAgain);
+    }
+
     /**
      * After a route write or a sync: rebuilt where the pages were read again (a local folder's edits), else only the
      * route squares bound again.
@@ -21576,6 +21603,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     {
         if (before == null || before != shownDiagram())
         {
+            followIfReadAgain(before);
+
             repaintLayout();
 
             return;
