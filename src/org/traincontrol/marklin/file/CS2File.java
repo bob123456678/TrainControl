@@ -416,10 +416,9 @@ public final class CS2File
     
     /**
      * Opens a URL and returns its whole body as a string stream.  A body that ends short of its Content-Length is an
-     * error, not a smaller file: every file the sync reads comes through here, and a half file would be taken as the
-     * station's whole list.  It is asked for again, twice at most, after a pause: a body that then comes whole is used,
-     * and the same short bytes every time are the station's wrong length, read as sent and logged.  Bytes that differ,
-     * or none at all every time, are a failure.
+     * error, not a smaller file: it is asked for again, twice at most, after a pause.  A body that then comes whole is
+     * used; the same short bytes every time are the station's wrong length, read as sent and logged; anything else
+     * fails.
      */
     public static BufferedReader fetchURL(String url) throws Exception
     {

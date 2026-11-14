@@ -353,21 +353,15 @@ public class LayoutEditor extends PositionAwareJFrame
     private JSONObject autonomyAsOpened;
 
     /**
-     * Where each train stood on the railway when this window opened or last saved (`TrainControlUI.whereTheTrainsAre`),
-     * by locomotive so a rename keeps it: Cancel and every Discard stand the trains back so.
+     * Where each train stood on the railway when this window opened or last saved, by locomotive so a rename keeps it;
+     * Cancel and Discard stand them back so.
      */
     private final Map<Locomotive, String[]> railwayAsOpened = new java.util.IdentityHashMap<>();
 
-    /**
-     * The session's `turnsSoFar` as the picture was taken: a discard keeps the turns made since, as Cancel never
-     * changes which way a train faces.
-     */
+    /** The session's `turnsSoFar` as the picture was taken: a discard keeps the turns made since. */
     private Map<Object, Integer> turnsAsOpened;
 
-    /**
-     * The facing choices where each train stood as the picture was taken (`choicesWhereTrainsStand`): the build a
-     * discard restores, which an edit since may have changed.
-     */
+    /** The facing choices where each train stood as the picture was taken: the build a discard restores. */
     private Map<TileGraph.TileKey, List<TilePorts.Side>> choicesAsOpened = java.util.Collections.emptyMap();
 
     /** Each pictured place turned round, by that build (`turnedRound`). */
@@ -470,8 +464,7 @@ public class LayoutEditor extends PositionAwareJFrame
 
     /**
      * The picture by each train's name now, a deleted one left out, and null for a train the railway has now and had
-     * not then, which the restored setup then places.  With `keepingTheTurns`, a train turned since faces the other way
-     * there, by the build as pictured.
+     * not then.  With `keepingTheTurns`, a train turned since faces the other way there, by the build as pictured.
      */
     private Map<String, String[]> railwayAsPictured(boolean keepingTheTurns)
     {
@@ -623,8 +616,8 @@ public class LayoutEditor extends PositionAwareJFrame
     }
 
     /**
-     * Throws away this window's autonomy edits, putting the opening setup back in memory and on disk (MT-406), as the
-     * per-gesture save already wrote them, and every train back where `railwayAsOpened` has it, keeping its turns.
+     * Throws away this window's autonomy edits, putting the opening setup back in memory and on disk (MT-406), and
+     * every train back where `railwayAsOpened` has it, keeping its turns.
      * @return null when it worked, or the reason it did not
      */
     private String discardAutonomyWork()
@@ -641,8 +634,8 @@ public class LayoutEditor extends PositionAwareJFrame
         else if (!autonomy.restoreSetup(this.autonomyAsOpened)) failed = I18n.t("autosetup.log.restoreFailedAfterCancel");
         else failed = null;
 
-        // The railway follows at once, before the window goes, or a fold in between would write the discarded edit
-        // back.  Declines while autonomy runs.
+        // The railway follows at once, before the window goes, or a fold would write the discarded edit back.  Declines
+        // while autonomy runs.
         if (failed == null && autonomy != null)
         {
             Object before = parent.getModel().getAutoLayoutIfLoaded();
@@ -658,9 +651,8 @@ public class LayoutEditor extends PositionAwareJFrame
     }
 
     /**
-     * Puts the setup back as the window opened it, with the page re-read beside it, as both halves undo together; each
-     * train turned since turned by the build as pictured, which the pages read again restore (the edited one may lack
-     * the train's square), and stood so on the railway, whose facing the reset's fold writes over the setup's.
+     * Puts the setup back as the window opened it, with the page re-read beside it; each train turned since is turned
+     * by the build as pictured and stood so on the railway, whose facing the reset's fold writes over the setup's.
      */
     private void undoAutonomyEdits()
     {
@@ -682,8 +674,8 @@ public class LayoutEditor extends PositionAwareJFrame
     }
 
     /**
-     * Turns each train turned since the picture where the restored setup, and the railway if given (one stood back as
-     * pictured), now has it, by the restored build, and saves: a discard keeps every turn, written or not.
+     * Turns each train turned since the picture where the restored setup (and the railway if given) now has it, and
+     * saves.
      */
     private void turnAgain(AutonomySession autonomy, Set<String> trains,
         org.traincontrol.automation.Layout railway)
