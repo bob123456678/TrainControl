@@ -113,8 +113,8 @@ public class testTheGreyAppearsAtIdleToo
     {
         Display.needed("painting a tile needs a display");
 
-        // NO ARROWS AT ALL, set rather than left to the default: an arrow
-        // drawn over a square is neither the fade nor the orange line measured here.  Put back by the teardown.
+        // NO ARROWS AT ALL, set rather than left to the default: an arrow drawn over a square is neither the fade nor the
+        // orange line measured here.  Put back by the teardown.
         java.util.prefs.Preferences prefs = TrainControlUI.getPrefs();
 
         restrictionsWere = prefs.get(TrainControlUI.DIAGRAM_RESTRICTION_ARROWS, null);

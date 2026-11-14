@@ -46,6 +46,9 @@ public class testTheMenuBarIsWired
     private static TrainControlUI ui;
     private static String recentWas;
 
+    /** Each Preferences row's setting as it was before the class stored a value away from its default. */
+    private static final java.util.Map<String, String> settingsWere = new java.util.LinkedHashMap<>();
+
     @BeforeClass(timeOut = 180000)
     public static void setUpClass() throws Exception
     {
@@ -55,6 +58,18 @@ public class testTheMenuBarIsWired
 
         // No other layout recorded: an earlier class in the run may have recorded one, which would be listed.
         prefs().put(TrainControlUI.RECENT_LAYOUTS_PREF, "");
+
+        // Every Preferences row stored away from its default before the window reads it, so an item that shows its
+        // default whatever is stored fails: a checkbox the opposite of its default, a radio group its last row's value.
+        for (Object[] row : preferences())
+        {
+            String preference = (String) row[1];
+
+            if (!settingsWere.containsKey(preference)) settingsWere.put(preference, prefs().get(preference, null));
+
+            if (row[2] instanceof Boolean) prefs().putBoolean(preference, !(Boolean) row[2]);
+            else prefs().putInt(preference, (Integer) row[2]);
+        }
 
         sandboxed = new support.SandboxedWindow();
 
@@ -78,6 +93,8 @@ public class testTheMenuBarIsWired
         finally
         {
             putBack(TrainControlUI.RECENT_LAYOUTS_PREF, recentWas);
+
+            settingsWere.forEach(testTheMenuBarIsWired::putBack);
         }
     }
 
@@ -598,11 +615,13 @@ public class testTheMenuBarIsWired
     }
 
     /**
-     * Every Preferences checkbox and radio shows the stored choice and, ticked, stores it under the same preference as
-     * before; ticked back, the choice is back (headings, names and order changed, the stored preferences did
-     * not).  Echo Sent Commands is left out: an unattended run never stores it.
+     * Every Preferences checkbox and radio shows the choice stored before the window was built, never its default (see
+     * `setUpClass`), and, ticked, stores it under the same preference as before; ticked back, the choice is back
+     * (headings, names and order changed, the stored preferences did not).  Echo Sent Commands is left out: an
+     * unattended run never stores it.
      *
-     * MUTATION: point Startup's Off at `AUTO_POWER_ON` 2 (Leave as It Was's value), and its row fails.
+     * MUTATION: point Startup's Off at `AUTO_POWER_ON` 2 (Leave as It Was's value), or have Remember Window Location
+     * start unticked whatever is stored, and that row fails.
      */
     @Test(dataProvider = "preferences", timeOut = 60000)
     public void testAPreferenceStoresWhatItShows(String[] path, String preference, Object onValue) throws Exception
@@ -619,7 +638,7 @@ public class testTheMenuBarIsWired
             {
                 JMenuItem chosen = selectedIn((javax.swing.JRadioButtonMenuItem) item);
 
-                // Shows what is stored: the radio of the stored value is the chosen one, the first for none.
+                // Shows what is stored: the radio of the stored value is the chosen one.
                 assertEquals(item.isSelected(), prefs().getInt(preference, 0) == (Integer) onValue, name
                     + " does not show the stored choice");
 
@@ -670,6 +689,9 @@ public class testTheMenuBarIsWired
         String hintsWere = prefs().get(TrainControlUI.SHOW_KEYBOARD_HINTS_PREF, null);
         String barWas = prefs().get(TrainControlUI.MENUBAR_SETTING_PREF, null);
 
+        final boolean hintsShown = Components.onTheEventThread(hints::isSelected);
+        final boolean barShown = Components.onTheEventThread(bar::isSelected);
+
         try
         {
             for (boolean on : new boolean[] {false, true})
@@ -685,8 +707,9 @@ public class testTheMenuBarIsWired
         }
         finally
         {
-            tick(hints, true);
-            tick(bar, true);
+            // Each ticked as it was, so the window and the store agree for later claims
+            tick(hints, hintsShown);
+            tick(bar, barShown);
 
             putBack(TrainControlUI.SHOW_KEYBOARD_HINTS_PREF, hintsWere);
             putBack(TrainControlUI.MENUBAR_SETTING_PREF, barWas);

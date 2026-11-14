@@ -9,8 +9,8 @@ import org.traincontrol.util.Util;
  * Turns off the window's check for a new release in a test run's own preference node, before any test runs.
  *
  * A window asks api.github.com for the latest release at start-up when Check for Updates is ticked, as it is by
- * default.  GitHub refuses past 60 requests an hour, and no test is about that check
- * (the update tests serve their own release).
+ * default.  GitHub refuses past 60 requests an hour, and no test is about that check (the update tests serve their own
+ * release).
  *
  * The runners name it with TestNG's `-listener` (docs/tools/one.sh, battery.sh).  It does nothing without
  * `traincontrol.preferences`: the node would then be Adam's own.

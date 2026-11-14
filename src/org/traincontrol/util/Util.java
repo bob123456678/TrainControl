@@ -130,8 +130,12 @@ public class Util
      */
     public static java.util.prefs.Preferences preferencesFor(Class<?> owner)
     {
-        String run = System.getProperty(PREFERENCES_PROPERTY);
+        return preferencesFor(owner, System.getProperty(PREFERENCES_PROPERTY));
+    }
 
+    /** {@link #preferencesFor(Class)} for a run of this name, null or blank for none. */
+    public static java.util.prefs.Preferences preferencesFor(Class<?> owner, String run)
+    {
         if (run == null || run.trim().isEmpty()) return java.util.prefs.Preferences.userNodeForPackage(owner);
 
         return java.util.prefs.Preferences.userRoot().node(ISOLATED_PREFERENCES_ROOT + "/" + run.trim() + "/"

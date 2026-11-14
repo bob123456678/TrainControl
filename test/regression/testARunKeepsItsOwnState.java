@@ -60,28 +60,26 @@ public class testARunKeepsItsOwnState
 
     /**
      * A run's node starts empty, every setting at its default, so the user's own settings never decide a claim.  Built
-     * here under a name of its own, so it needs no runner; green by luck only where the real node is empty.
+     * here for a run of its own name, so it needs no runner and leaves the run's property alone; under a runner it sits
+     * inside the run's node, which the runner deletes even after a killed JVM.  Green by luck only where the real node
+     * is empty.
      */
     @Test
     public void testARunStartsFromTheDefaults() throws Exception
     {
-        String was = System.getProperty(Util.PREFERENCES_PROPERTY);
-        String probe = "defaults-probe-" + System.nanoTime();
-
-        System.setProperty(Util.PREFERENCES_PROPERTY, probe);
+        String run = System.getProperty(Util.PREFERENCES_PROPERTY);
+        String probe = (run == null || run.trim().isEmpty() ? "" : run.trim() + "/") + "defaults-probe-"
+            + System.nanoTime();
 
         try
         {
-            String[] keys = Util.preferencesFor(TrainControlUI.class).keys();
+            String[] keys = Util.preferencesFor(TrainControlUI.class, probe).keys();
 
             assertEquals(keys.length, 0, "a new run's preference node starts with " + java.util.Arrays.toString(keys)
                 + ", copied from the user's own settings, so a claim's result depends on what the user last set");
         }
         finally
         {
-            if (was == null) System.clearProperty(Util.PREFERENCES_PROPERTY);
-            else System.setProperty(Util.PREFERENCES_PROPERTY, was);
-
             Preferences.userRoot().node(Util.ISOLATED_PREFERENCES_ROOT + "/" + probe).removeNode();
         }
     }

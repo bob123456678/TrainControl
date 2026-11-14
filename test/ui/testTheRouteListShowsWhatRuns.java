@@ -1561,12 +1561,19 @@ public class testTheRouteListShowsWhatRuns
 
         String was = TrainControlUI.getPrefs().get(TrainControlUI.ROUTE_SORT_PREF, null);
 
+        final javax.swing.AbstractButton sortByName = (javax.swing.AbstractButton) Reflect.get(TrainControlUI.class, ui,
+            "sortByName");
+        final javax.swing.AbstractButton sortByID = (javax.swing.AbstractButton) Reflect.get(TrainControlUI.class, ui,
+            "sortByID");
+
+        final javax.swing.AbstractButton shown = Components.onTheEventThread(sortByName::isSelected) ? sortByName
+            : sortByID;
+
         try
         {
             for (boolean byName : new boolean[] {true, false})
             {
-                final javax.swing.AbstractButton sort = (javax.swing.AbstractButton) Reflect.get(TrainControlUI.class, ui,
-                    byName ? "sortByName" : "sortByID");
+                final javax.swing.AbstractButton sort = byName ? sortByName : sortByID;
 
                 SwingUtilities.invokeAndWait(sort::doClick);
 
@@ -1584,6 +1591,9 @@ public class testTheRouteListShowsWhatRuns
         }
         finally
         {
+            // The choice shown before, pressed again, so the window and the store agree for later claims
+            SwingUtilities.invokeAndWait(shown::doClick);
+
             if (was == null) TrainControlUI.getPrefs().remove(TrainControlUI.ROUTE_SORT_PREF);
             else TrainControlUI.getPrefs().put(TrainControlUI.ROUTE_SORT_PREF, was);
 
