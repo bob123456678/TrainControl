@@ -183,7 +183,7 @@ public class testSwitchingToACentralStationLayout
      * How many test classes build a model without a sandbox today; MODELS_WITHOUT_A_SANDBOX_NAMES pins which.  Lower
      * it when one is repaired.
      */
-    private static final int MODELS_WITHOUT_A_SANDBOX = 53;
+    private static final int MODELS_WITHOUT_A_SANDBOX = 52;
 
     /** WHICH classes, so a repair and a new violation in the same round cannot cancel out. */
     private static final String[] MODELS_WITHOUT_A_SANDBOX_NAMES = {
@@ -218,7 +218,6 @@ public class testSwitchingToACentralStationLayout
         "testLocomotive.java",
         "testLocomotiveIdentityPropagates.java",
         "testMaxActiveTrains.java",
-        "testMockCentralStation.java",
         "testMultiUnitMembership.java",
         "testNetworkProxy.java",
         "testNonReversibleTrains.java",
