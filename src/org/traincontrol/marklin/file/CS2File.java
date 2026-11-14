@@ -2121,17 +2121,9 @@ public final class CS2File
 
         List<Map<String, String>> index = parseLayoutIndex();
 
-        // The diagram as the station's is read, one page per index entry, so each square is written with the protocol
-        // it has there, an address's two protocols told apart by the CS3's plan, as a save writes it (OB-465).  Its
-        // own parser, as a sync may be using this one's.
-        CS2File asRead = fromStation ? new CS2File(this.IP, this.control) : null;
-        List<LayoutDiagram> pages = fromStation ? asRead.parseLayout(asRead.getMagList(true)) : null;
-        int at = -1;
-
         for (Map<String, String> page : index)
         {
             String layoutName = page.get("name");
-            at++;
 
             // Sanitized, and matching what getLayoutURL will look for when this folder is read back.
             // The remote fetch above is unaffected: it goes through sanitizeURL on the http branch.
@@ -2156,10 +2148,11 @@ public final class CS2File
                     LayoutDiagramComponent.stationLinkPageId(LayoutDiagramComponent.pageIdFromText(keys.get("zielseite")),
                         LayoutDiagramComponent.artikelNumber(keys.get("artikel"))));
 
-                if (at < pages.size() && pages.get(at).getName().equals(layoutName))
-                {
-                    withIds = pages.get(at).withSavedProtocols(withIds);
-                }
+                // Each accessory square with the protocol it has in the diagram as read from the station, an address's
+                // two protocols told apart by the CS3's plan, as a save writes it (OB-465)
+                LayoutDiagram asRead = this.control != null ? this.control.getLayout(layoutName) : null;
+
+                if (asRead != null) withIds = asRead.withSavedProtocols(withIds);
 
                 copyAtomically(new BufferedReader(new java.io.StringReader(withIds)), layoutFile);
             }

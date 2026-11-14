@@ -1323,8 +1323,8 @@ public class LayoutDiagram
     }
 
     /**
-     * A page file's text with `.prot` on each square where a save of this page would write it, with this page's
-     * protocol for the square (OB-465).  Other lines stay as they were.
+     * A page file's text with each accessory square's `.prot` as a save of this page writes it (OB-465).  Other lines
+     * stay as they were.
      */
     public String withSavedProtocols(String text)
     {
@@ -1343,7 +1343,7 @@ public class LayoutDiagram
 
             boolean element = block.get(0).replace("\r", "").equalsIgnoreCase("element");
             LayoutDiagramComponent tile = element ? tileAt(keys) : null;
-            Accessory.accessoryDecoderType saved = tile == null ? null : tile.savedProtocol();
+            Accessory.accessoryDecoderType saved = tile == null || !tile.isAccessory() ? null : tile.savedProtocol();
 
             if (saved == null) return block;
 
