@@ -219,29 +219,29 @@ public class testTheEditorNamesItsShortcuts
 
         assertNotNull(first, "precondition: the start-up resume loaded no configuration, so there is none to name");
 
+        // The class's own editor closed too: Stop Using Autonomy refuses while any editor is open, and the unload
+        // rebuilds the session it was built on.  Run last, nothing after this uses it.
+        SwingUtilities.invokeAndWait(() -> editor.dispose());
+
         // [0] the track editor, [1] the autonomy editor
         final LayoutEditor[] open = new LayoutEditor[2];
 
-        SwingUtilities.invokeAndWait(() ->
-        {
-            open[0] = new LayoutEditor(page, 30, ui, 0);
-            open[0].render();
-            open[1] = new LayoutEditor(page, 30, ui, 0);
-            open[1].render();
-            open[1].setAutonomyMode(ui.getAutonomySession());
-        });
+        openBoth(open);
 
         try
         {
-            settleTheEditor();
-
             assertTrue(open[1].isAutonomyMode(), "precondition: the second editor is not the autonomy editor");
 
             // OPENED WITH IT LOADED: named from the start
             assertTitles(open, first, first, "of editors opened with " + first + " loaded");
 
-            // UNLOADED: the track editor's title is today's, and the autonomy editor still names what it edits
+            // UNLOADED, with the editors closed first as Stop Using Autonomy requires: the track editor's title is
+            // today's, and the autonomy editor names what it edits
+            closeBoth(open);
+
             unloadAutonomy();
+
+            openBoth(open);
 
             assertEquals(ui.getAutonomySession().getStore().getActiveConfiguration(), first, "precondition: unloading"
                 + " left a different configuration chosen than " + first);
@@ -304,8 +304,13 @@ public class testTheEditorNamesItsShortcuts
 
             assertTitles(open, renamed, renamed, "after " + other + " was renamed");
 
-            // UNLOADED again: the track editor's title is today's, the autonomy editor's names what it edits
+            // UNLOADED again, editors closed first: the track editor's title is today's, the autonomy editor's names
+            // what it edits
+            closeBoth(open);
+
             unloadAutonomy();
+
+            openBoth(open);
 
             assertEquals(ui.getAutonomySession().getStore().getActiveConfiguration(), renamed, "precondition: unloading"
                 + " left a different configuration chosen than " + renamed);
@@ -325,6 +330,41 @@ public class testTheEditorNamesItsShortcuts
 
             session = ui.getAutonomySession();
         }
+    }
+
+    /**
+     * Opens the track editor and the autonomy editor on the page and lets them settle.
+     *
+     * @param open [0] receives the track editor, [1] the autonomy editor
+     */
+    private static void openBoth(LayoutEditor[] open) throws Exception
+    {
+        // The session an unload rebuilt, not the one the class started with
+        session = ui.getAutonomySession();
+
+        open[1] = anAutonomyEditor();
+
+        SwingUtilities.invokeAndWait(() ->
+        {
+            open[0] = new LayoutEditor(page, 30, ui, 0);
+            open[0].render();
+        });
+
+        settleTheEditor();
+    }
+
+    /**
+     * Closes both editors, as a user does before Stop Using Autonomy.
+     *
+     * @param open the editors
+     */
+    private static void closeBoth(LayoutEditor[] open) throws Exception
+    {
+        SwingUtilities.invokeAndWait(() ->
+        {
+            open[0].dispose();
+            open[1].dispose();
+        });
     }
 
     /**
