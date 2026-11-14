@@ -5420,6 +5420,90 @@ public class testTheTrainWindow
         }
     }
 
+    /**
+     * A right click handled just before a page switch begins posts its menu; the menu then opens on no page being
+     * left: the latch is raised in the same turn of the event queue as the click, as `leaveFor` raises it.
+     *
+     * MUTATION: take the `switching || changingPage` guard out of the task `LayoutEditor.receiveClickEvent` posts for a
+     * right click, and the menu opens.
+     */
+    @Test(timeOut = 300000)
+    public void testARightClickPostedBeforeAPageSwitchOpensNoMenu() throws Exception
+    {
+        final LayoutEditor open = theTrackEditor();
+        final GapSquares at = gapSquares(open);
+
+        try
+        {
+            Reflect.set(LayoutEditor.class, open, "popup", null);
+
+            Components.onTheEventThread(() ->
+            {
+                open.receiveClickEvent(click(at.track, java.awt.event.MouseEvent.BUTTON3), at.track);
+
+                Reflect.set(LayoutEditor.class, open, "changingPage", true);
+
+                return null;
+            });
+
+            Components.settle();
+
+            assertNull(Reflect.get(LayoutEditor.class, open, "popup"), "a right click posted before a page switch began"
+                + " opened its menu, with its Undo, Paste and Delete, on the page being left");
+        }
+        finally
+        {
+            leaveTheGap(open, at);
+        }
+    }
+
+    /**
+     * A page switch closes the square menu left open on the page being left, as it asks nothing first.
+     *
+     * MUTATION: drop `if (popup != null) popup.setVisible(false)` from `LayoutEditor.leaveFor`, and the menu stays.
+     */
+    @Test(timeOut = 300000)
+    public void testAPageSwitchClosesTheOpenSquareMenu() throws Exception
+    {
+        final LayoutEditor open = theTrackEditor();
+        final GapSquares at = gapSquares(open);
+
+        try
+        {
+            Components.onTheEventThread(() ->
+            {
+                open.receiveClickEvent(click(at.track, java.awt.event.MouseEvent.BUTTON3), at.track);
+
+                return null;
+            });
+
+            Components.settle();
+
+            final JPopupMenu menu = (JPopupMenu) Reflect.get(LayoutEditor.class, open, "popup");
+
+            assertNotNull(menu, "precondition: the right click opened no menu");
+            assertTrue(Components.onTheEventThread(menu::isVisible), "precondition: the menu is not showing");
+
+            final java.lang.reflect.Method leave = Reflect.method(LayoutEditor.class, "leaveFor", String.class,
+                boolean.class);
+
+            boolean stillOpen = Components.onTheEventThread(() ->
+            {
+                leave.invoke(open, PAGE, false);
+
+                return menu.isVisible();
+            });
+
+            assertFalse(stillOpen, "a page switch left the square menu open on the page being left");
+
+            Components.settle();
+        }
+        finally
+        {
+            leaveTheGap(open, at);
+        }
+    }
+
     private static GapSquares gapSquares(LayoutEditor open) throws Exception
     {
         final org.traincontrol.gui.LayoutGrid grid = (org.traincontrol.gui.LayoutGrid) Reflect.get(LayoutEditor.class,
