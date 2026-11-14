@@ -537,6 +537,107 @@ public class testTheLocomotiveDoorsAskOverTheirWindow
         }
     }
 
+    /**
+     * Check for Renamed Locomotives, renaming onto a name another locomotive holds, asks once, in the delete door's own
+     * question led by the rename it is for: it counts the routes that lose their commands and starts on No, and No
+     * keeps both locomotives and the route's command.  The CS3 fixture names MM2 76 as the held name.
+     *
+     * MUTATION: in `checkForRenameMenuItemActionPerformed`, put back the rename's own question for a held name and the
+     * deletion without a question of its own (`deleteLocAlreadyAsked`), and this fails.
+     */
+    @Test(timeOut = 180000)
+    public void testARenameOntoAHeldNameAsksTheDeleteQuestionOnce() throws Exception
+    {
+        final String held = "SBB RE 4_4 II";
+        final String old = "D137 old";
+        final String route = "D137 route";
+        final String no = String.valueOf(TrainControlUI.YES_NO_OPTS[1]);
+
+        final support.CS3TestServer server = new support.CS3TestServer(
+            getClass().getResource("/CS3_loks.json").toURI().toString(),
+            getClass().getResource("/CS3_loks_v260.json").toURI().toString(),
+            getClass().getResource("/CS3_mags.json").toURI().toString(),
+            getClass().getResource("/CS3_automatics.json").toURI().toString(),
+            getClass().getResource("/CS3_automatics_v260.json").toURI().toString());
+
+        final Object parserWas = Reflect.get(MarklinControlStation.class, model, "fileParser");
+        final Object cs3Was = Reflect.get(MarklinControlStation.class, model, "isCS3");
+
+        server.startServer(260);
+
+        try
+        {
+            model.newMM2Locomotive(old, 76);
+            model.newMM2Locomotive(held, 76);
+
+            List<RouteCommand> commands = new ArrayList<>(Collections.singletonList(
+                RouteCommand.RouteCommandFunction(held, 1, true)));
+
+            model.newRoute(route, commands, 0, MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED, false, null);
+
+            Reflect.set(MarklinControlStation.class, model, "fileParser",
+                new org.traincontrol.marklin.file.CS2File("localhost:" + server.getPort(), model));
+            Reflect.set(MarklinControlStation.class, model, "isCS3", true);
+
+            try (Answering answering = Answering.start(message -> Answering.press(no)))
+            {
+                JMenuItem check = (JMenuItem) Components.withText(ui, I18n.t("ui.main.toolbar.checkForRenamedLocs"));
+
+                assertNotNull(check, "the window has no Check for Renamed Locomotives");
+
+                javax.swing.SwingUtilities.invokeAndWait(check::doClick);
+
+                assertTrue(Components.waitFor(() -> about(answering, old).size() == 1, PATIENCE_MS),
+                    "renaming " + old + " onto " + held + " was not asked about: " + answering.asked());
+
+                Components.settle();
+
+                List<Answering.Question> asked = about(answering, old);
+
+                assertEquals(asked.size(), 1, "renaming onto a held name asked more than once: " + answering.asked());
+
+                assertTrue(asked.get(0).message.contains(I18n.f("ui.confirmDeleteFromDatabaseWithRoutesOne", held, 1)),
+                    "the question does not count the route that loses its command: " + asked.get(0).message);
+
+                assertTrue(asked.get(0).message.contains(I18n.f("loc.ui.confirmRenameOntoLocomotive", old, held)),
+                    "the question does not say the rename it deletes for: " + asked.get(0).message);
+
+                assertEquals(asked.get(0).startsOn, no, "the question does not start on No");
+
+                AskingWindows.awaitAnswered();
+            }
+
+            assertNotNull(model.getLocByName(old), "No took away " + old);
+            assertNotNull(model.getLocByName(held), "No deleted " + held);
+
+            assertTrue(model.getRoute(route).commandsDrive(held), "No took the route's command for " + held);
+        }
+        finally
+        {
+            Reflect.set(MarklinControlStation.class, model, "fileParser", parserWas);
+            Reflect.set(MarklinControlStation.class, model, "isCS3", cs3Was);
+
+            server.stopServer();
+
+            model.deleteRoute(route);
+            model.deleteLoc(old);
+            model.deleteLoc(held);
+        }
+    }
+
+    /** The questions asked so far that name this locomotive. */
+    private static List<Answering.Question> about(Answering answering, String name)
+    {
+        List<Answering.Question> named = new ArrayList<>();
+
+        for (Answering.Question question : answering.questions())
+        {
+            if (question.message != null && question.message.contains(name)) named.add(question);
+        }
+
+        return named;
+    }
+
     /** A route that drives the first locomotive, running long enough for every door to be tried. */
     private static void aRouteDrivesIt() throws Exception
     {
