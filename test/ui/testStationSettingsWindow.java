@@ -742,6 +742,46 @@ public class testStationSettingsWindow
     }
 
     /**
+     * A refusal on a field grayed since (Max Length, once Stops Here is unticked) no longer holds Done shut: nothing can
+     * fix or store it there, so Done would do nothing at all.
+     *
+     * MUTATION: have `refusesAValue` count every visible refusal line, grayed field or not, and this fails.
+     */
+    @Test(timeOut = 120000)
+    public void testDoneClosesOverARefusalOnAFieldGrayedSince() throws Exception
+    {
+        StationSettingsWindow window = StationDoors.open(panel, aStation());
+
+        JTextField field = StationDoors.part(window, "station.maxLength", JTextField.class);
+        AbstractButton stops = StationDoors.part(window, "station.stops", AbstractButton.class);
+
+        assertTrue(Components.onTheEventThread(() -> stops.isSelected() && field.isEnabled()),
+            "precondition: the station does not stop, or Max Length is grayed");
+
+        Components.onTheEventThread(() -> { field.setText("-5"); return null; });
+
+        StationDoors.close(window);
+
+        assertTrue(Components.onTheEventThread(() -> window.isShowing()), "precondition: Done closed over a refused length");
+
+        Components.onTheEventThread(() -> { stops.doClick(); return null; });
+
+        Components.settle();
+
+        assertFalse(Components.onTheEventThread(() -> field.isEnabled()), "precondition: unticking Stops did not gray Max Length");
+
+        StationDoors.close(window);
+
+        Components.settle();
+
+        boolean stillOpen = Components.onTheEventThread(() -> window.isShowing());
+
+        if (stillOpen) pressEscapeOn(window);
+
+        assertFalse(stillOpen, "Done did nothing: a refusal on a grayed field it cannot commit holds the window open");
+    }
+
+    /**
      * Done pressed on the Train tab while the Settings tab holds a refused value brings the Settings tab forward, so the
      * reason the window stays open is on screen.
      *
