@@ -176,5 +176,4 @@ not fix it. Name the square.
 - `regression.testTheMenuBarIsWired`
 - `regression.testTheAutonomyAndRoutesMenusKeepTheirWiring`
 - `core.testReversalIsAboutTheTrainAndTheStation`
-- `ui.testTheCaptionsComeWithTheirPage`
 - `ui.testASyncOwedWaitsForTheEditor`
