@@ -4260,7 +4260,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
             }
         }
 
-        if (!byId && folder != null && new File(folder, "config/gleisbild.cs2").isFile()) convertLinksToPageIds(folder);
+        if (!byId && folder != null && CS2File.holdsALayout(new File(folder))) convertLinksToPageIds(folder);
     }
 
     /**

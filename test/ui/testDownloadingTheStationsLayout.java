@@ -327,4 +327,57 @@ public class testDownloadingTheStationsLayout
             release();
         }
     }
+
+    /**
+     * A folder that already holds a layout is asked about before anything is fetched or written: Cancel leaves its
+     * files and the station's layout in use as they were, and asks the station nothing; Replace downloads over it.
+     *
+     * MUTATION: make `LayoutFileActions.replaceIfAsked` return true at once, and the folder is overwritten unasked.
+     */
+    @Test(timeOut = 120000)
+    public void testAFolderHoldingALayoutIsAskedAboutFirst() throws Exception
+    {
+        final File into = new File(root, "mine");
+        final File index = new File(into, "config/gleisbild.cs2");
+
+        assertTrue(index.getParentFile().mkdirs(), "precondition: no folder to download into");
+
+        final byte[] mine = "[gleisbild]\nversion\n .major=1\n".getBytes(java.nio.charset.StandardCharsets.UTF_8);
+
+        Files.write(index.toPath(), mine);
+
+        final String question = I18n.f("layout.ui.confirmReplaceLayoutInFolder", into.getAbsolutePath());
+        final String complete = I18n.f("layout.ui.infoDownloadCompleteLayoutSavedIn", into.getAbsolutePath());
+
+        rig.station.forget();
+
+        try (Answering answering = press(into, message -> question.equals(message)
+            ? Answering.press(I18n.t("ui.cancel")) : Answering.pressAt(0)))
+        {
+            Components.waitFor(() -> answering.asked().contains(question) || answering.asked().contains(complete),
+                60000);
+            Components.waitFor(() -> answering.asked().contains(complete), 2000);
+            Components.settle();
+
+            assertTrue(answering.asked().contains(question), "a folder holding a layout was not asked about: "
+                + answering.asked());
+            assertFalse(answering.asked().contains(complete), "Cancel still downloaded: " + answering.asked());
+            assertTrue(java.util.Arrays.equals(Files.readAllBytes(index.toPath()), mine),
+                "Cancel left the folder's layout changed");
+            assertTrue(rig.station.log().isEmpty(), "the station was asked before the question was answered: "
+                + rig.station.log());
+            assertTrue(ui.isRemoteLayout(), "Cancel left the station's layout");
+        }
+
+        try (Answering answering = press(into, message -> question.equals(message)
+            ? Answering.press(I18n.t("layout.ui.replace")) : Answering.pressAt(0)))
+        {
+            assertTrue(Components.waitFor(() -> answering.asked().contains(complete), 60000),
+                "Replace did not download: " + answering.asked());
+
+            assertFalse(java.util.Arrays.equals(Files.readAllBytes(index.toPath()), mine),
+                "Replace left the folder's old layout");
+            assertTrue(!ui.isRemoteLayout(), "the copy is not the layout in use after Replace");
+        }
+    }
 }

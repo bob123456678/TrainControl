@@ -31,6 +31,7 @@ import org.traincontrol.base.LayoutDiagramComponent;
 import org.traincontrol.gui.layouteditor.LayoutEditor;
 import org.traincontrol.gui.widgets.BusyDialog;
 import org.traincontrol.gui.widgets.QuickFileChooser;
+import org.traincontrol.marklin.file.CS2File;
 import org.traincontrol.util.I18n;
 import org.traincontrol.util.Util;
 
@@ -684,7 +685,10 @@ final class LayoutFileActions
 
                     fc.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
 
-                    if (fc.showOpenDialog(this.ui) == JFileChooser.APPROVE_OPTION) downloadAndOpen(fc.getSelectedFile());
+                    if (fc.showOpenDialog(this.ui) == JFileChooser.APPROVE_OPTION && replaceIfAsked(fc.getSelectedFile()))
+                    {
+                        downloadAndOpen(fc.getSelectedFile());
+                    }
                 }
                 finally
                 {
@@ -704,6 +708,19 @@ final class LayoutFileActions
 
     /** Whether a download from the station is under way, from its folder chooser to the copy opened. */
     private final AtomicBoolean downloading = new AtomicBoolean();
+
+    /** False when `folder` holds a layout and the user would not replace it; asked before anything is fetched. */
+    private boolean replaceIfAsked(File folder)
+    {
+        if (!CS2File.holdsALayout(folder)) return true;
+
+        Object[] options = {I18n.t("layout.ui.replace"), I18n.t("ui.cancel")};
+
+        return JOptionPane.showOptionDialog(this.ui,
+            I18n.f("layout.ui.confirmReplaceLayoutInFolder", folder.getAbsolutePath()),
+            I18n.t("layout.ui.titleReplaceLayout"), JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE, null,
+            options, options[1]) == 0;
+    }
 
     /** Fetches the station's layout into `path` off the event thread, behind a spinner, then opens the copy. */
     private void downloadAndOpen(File path)
