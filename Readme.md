@@ -476,7 +476,7 @@ Tab icons provided by Freepik.
             - A page link keeps going to the same page when pages are renamed or moved.
             - In the track diagram editor, Ctrl+R turns the picked squares when there are any, and `Rotate` on the `Selection` menu shows Ctrl+R.
             - Track diagrams draw faster and flash less: station names appear with their page, squares keep their size while their pictures load, and the autonomy editor opens and switches pages with one drawing.
-            - A length set for a selection applies at once, and following a page link or editing routes no longer redraws the whole diagram.
+            - Setting a length for many squares at once is faster, and following a page link or editing routes no longer redraws the whole diagram.
         - Interface
             - `Layouts` > `Manage Pages...` is now `Edit/Add Pages...`, and the separate `Edit Layout Page` menu is gone.
             - `Hide Hover Tooltips` on the `Preferences` menu hides the tooltips and shortcut keys in menus, though a grayed item still says why.  The keys still work, and unticking it shows both again.
@@ -514,24 +514,23 @@ Tab icons provided by Freepik.
             - The setup check no longer says you can send a train by hand to a station that is closed on every side: it says the station can't be chosen as a destination, and that you can still drive a train there.
             - Cancel in the autonomy editor no longer loses a train you paused or set going from its card on the Auto tab while the editor was open.
             - Cancel in the autonomy editor no longer sends a timetable entry to the wrong station after two stations swapped names.
-            - Cancel in the autonomy editor now takes off a train you placed on an empty station, and puts a station back as it was after you placed a train over another one.
             - Clicking a finding under `Things to look at` that is on another page now asks whether to save your changes first, as switching pages does, instead of keeping them where `Cancel` can no longer undo them.
             - A command window that stopped showing output, for example after clicking into it, no longer holds up sensor reports, which could make trains run past their stops.
             - `Path Integrity Validation` now waits up to 30 seconds while the Central Station is still switching other accessories, instead of stopping the train.
             - A train's destinations on the track diagram's right-click menu are in the order you read them, so ParkingTrack4 comes before ParkingTrack10.
             - Right-clicking plain track on the track diagram shows what it is, such as `Straight Track`, rather than its grid square.
             - Cancel in the autonomy editor now puts every train back where it stood when the editor opened, and its question names the trains that will move.  Cancel never turns a train around: each keeps the way it faces now, however it got there, and a train whose only change is its facing is not named.
-            - While an editor is open, linking a multi-unit, changing an address or decoder, pressing `Sync`, switching layouts, changing a configuration from the `Autonomy` menu and importing addresses from a CSV file are refused with a message, since they could move a train that Cancel would then put back.  A sync that a route or icon edit runs afterward waits and runs once when the editor closes.
+            - While an editor is open, linking a multi-unit, changing an address or decoder, pressing `Sync`, switching, creating or downloading a layout, and a locomotive CSV import that changes addresses are refused with a message, and the `Autonomy` menu's configuration items are grayed, since Cancel could not undo them.  A sync that a route edit or a function reset runs afterward waits and runs once when the editor closes.
             - The tabs in `Station Settings` now run to the window's edges.
         - Locomotive Control
             - Ctrl+B now moves the copied locomotive to the active button, as the key menu's `Move` item says.
-            - Saving a typed address in `Locomotive Settings` changes the decoder type only if you changed it.
+            - Saving a typed address in `Locomotive Settings` changes the decoder type only if you changed it, and the address is checked against the decoder type that will be saved, there and when adding a locomotive.
         - Track Diagram
             - An s88 square with no sensor attached now shows its tooltip like the others.
             - An active sensor's red arrows stop just short of the square's edge, so the arrows of two sensors side by side no longer touch.
             - A page window that is open now redraws after a sync that read its page again.
         - Central Station
-            - A file that arrives from the Central Station cut off now fails the sync and changes nothing, instead of leaving a partly loaded layout.
+            - A file that arrives from the Central Station cut off is asked for again, and the sync fails, changing nothing, only if it stays cut off, instead of leaving a partly loaded layout.
             - Names with umlauts or accents now come through correctly from a Central Station that sends them in an older format.
             - A Central Station that always sends the same short file is now read, and the log says so.
             - The track diagram now waits until TrainControl knows the Central Station's type, so a CS3's squares get the right protocol.
