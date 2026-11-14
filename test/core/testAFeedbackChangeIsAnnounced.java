@@ -158,7 +158,7 @@ public class testAFeedbackChangeIsAnnounced
      * During a CS3's state confirmation, an answer that confirms the state, as every sensor's does, is no change: not
      * announced, so the route editor's capture does not take it, and not logged.
      *
-     * MUTATION: in `MarklinFeedback.parseMessage`, take out `if (confirming && was == (state == 1)) return;`.
+     * MUTATION: in `MarklinFeedback.parseMessage`, take out `if (asking && was == (state == 1)) return;`.
      */
     @Test
     public void testAnAnswerThatConfirmsTheStateIsNotAnnounced() throws Exception
@@ -211,8 +211,8 @@ public class testAFeedbackChangeIsAnnounced
      * a CS2, which is never asked, even with a pass counted (a CS2's resync asks no one), and no state it changes is a
      * correction, which `isFeedbackCorrected` says no route may take.
      *
-     * MUTATION: in `MarklinFeedback.parseMessage`, `confirming && ` to `m.getData()[4] == m.getData()[5] && `.  And: in
-     * `NetworkProxy.isConfirming`, take out `this.learnsDevices && `.
+     * MUTATION: in `MarklinFeedback.parseMessage`, `asking && was` to `answer && was`.  And: in `NetworkProxy.isAsking`,
+     * take out `this.learnsDevices && `.
      */
     @Test
     public void testOverUdpOnlyAFrameOfNoChangeIsAnnouncedAsBefore() throws Exception

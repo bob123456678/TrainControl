@@ -542,6 +542,10 @@ public class Util
         return name.replaceAll("[\\\\/:*?\"<>|\\x00-\\x1F]", "_");
     }
 
+    /** Whether a drive's refusal to force a staged file to disk was logged; once a session is enough. */
+    private static final java.util.concurrent.atomic.AtomicBoolean forceRefusalLogged =
+        new java.util.concurrent.atomic.AtomicBoolean();
+
     /**
      * Writes a file without ever leaving the target truncated: a crash or failed write mid-way would silently lose the
      * operator's work.  The content is staged in a sibling file and moved into place only once complete, as
@@ -553,7 +557,9 @@ public class Util
      */
     public static void writeAtomically(File target, StreamWriter body) throws IOException
     {
-        File staging = new File(target.getAbsolutePath() + PARTIAL_DOWNLOAD_SUFFIX);
+        // A name of its own, so two writes of one file at once (the exit and a backup's first save) cannot share it
+        File staging = File.createTempFile(target.getName() + ".tmp", PARTIAL_DOWNLOAD_SUFFIX,
+            target.getAbsoluteFile().getParentFile());
 
         try
         {
@@ -565,11 +571,20 @@ public class Util
             }
 
             // On disk before the move, or a power cut just after it can leave the target empty.  A handle of its own,
-            // as the body may close the stream.
+            // as the body may close the stream.  A drive that refuses (a network share, a OneDrive placeholder) still
+            // gets the file: the force guards against a power cut, and must not stop every save.
             try (java.nio.channels.FileChannel written = java.nio.channels.FileChannel.open(staging.toPath(),
                 java.nio.file.StandardOpenOption.WRITE))
             {
                 written.force(true);
+            }
+            catch (IOException refused)
+            {
+                if (!forceRefusalLogged.getAndSet(true))
+                {
+                    java.util.logging.Logger.getLogger(Util.class.getName()).log(java.util.logging.Level.WARNING,
+                        "Saved files cannot be forced to disk here; saving without", refused);
+                }
             }
         }
         catch (IOException | RuntimeException e)

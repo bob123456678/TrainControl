@@ -206,6 +206,12 @@ public class NetworkProxy
 
     private int asks;
 
+    // The passes among `asks` that hold routes: a connect's and a reconnect's (D133, D139); guarded as `asks` is
+    private int holds;
+
+    // Whether the connect's pass, the first sync's with a model, has been asked
+    private boolean connectAsked;
+
     private long askEnded;
 
     // Counted down when the UDP listener reads the datagram awaitTheBacklog sends this socket
@@ -795,8 +801,16 @@ public class NetworkProxy
             epoch = this.liveEpoch.get();
         }
 
-        beginAsk();
-        ask(overTcp, epoch, overTcp ? 1 : 2, "network.sensorsSynced");
+        boolean holding;
+
+        synchronized (this.overtaken)
+        {
+            holding = !this.connectAsked;
+            this.connectAsked = true;
+        }
+
+        beginAsk(holding);
+        ask(overTcp, epoch, overTcp ? 1 : 2, "network.sensorsSynced", holding);
     }
 
     /**
@@ -813,10 +827,20 @@ public class NetworkProxy
     }
 
     /**
-     * Whether a CS3's state confirmation is under way: from a connect, reconnect or sync's pass until its wait ends.
-     * A sensor change then updates the state but fires no route (D133).  Never for a CS2, which is never asked.
+     * Whether a CS3's state confirmation after a connect or reconnect is under way, until its wait ends: a sensor
+     * change then updates the state but fires no route (D133).  A later sync's pass holds nothing (D139).  Never for a
+     * CS2, which is never asked.
      */
     public boolean isConfirming()
+    {
+        synchronized (this.overtaken)
+        {
+            return this.learnsDevices && this.holds > 0;
+        }
+    }
+
+    /** Whether any pass of queries to a CS3, a sync's included, is under way: its answers are then no events. */
+    public boolean isAsking()
     {
         synchronized (this.overtaken)
         {
@@ -849,25 +873,28 @@ public class NetworkProxy
         int epoch = this.liveEpoch.get();
 
         // Counted here, not on the thread, so no frame between this call and the thread's start fires a route (D133)
-        beginAsk();
+        beginAsk(true);
 
-        Thread asking = new Thread(() -> ask(overTcp, epoch, passes, "network.sensorsResynced"), "cs2-s88-resync");
+        Thread asking = new Thread(() -> ask(overTcp, epoch, passes, "network.sensorsResynced", true),
+            "cs2-s88-resync");
 
         asking.setDaemon(true);
         asking.start();
     }
 
-    /** Counts a confirmation pass that ask will end. */
-    private void beginAsk()
+    /** Counts a confirmation pass that ask will end, and whether it holds routes. */
+    private void beginAsk(boolean holding)
     {
         synchronized (this.overtaken)
         {
             this.asks++;
+
+            if (holding) this.holds++;
         }
     }
 
     /** Asks `passes` times, each pass RESYNC_AGAIN_NS after the last one's start, until superseded; after beginAsk. */
-    private void ask(boolean overTcp, int epoch, int passes, String key)
+    private void ask(boolean overTcp, int epoch, int passes, String key, boolean holding)
     {
         try
         {
@@ -887,6 +914,8 @@ public class NetworkProxy
             {
                 this.asks--;
                 this.askEnded = System.nanoTime();
+
+                if (holding) this.holds--;
             }
         }
     }
