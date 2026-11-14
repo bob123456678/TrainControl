@@ -372,7 +372,7 @@ public class testAutonomyStoreSettingsMatrix
     }
 
     /** A non-default value for every key of a station's setup, by key; facing and homeFacing live outside the constant. */
-    private static final Map<String, Object> STATION_KEY_VALUES = new LinkedHashMap<>();
+    public static final Map<String, Object> STATION_KEY_VALUES = new LinkedHashMap<>();
 
     static
     {
@@ -386,8 +386,24 @@ public class testAutonomyStoreSettingsMatrix
         STATION_KEY_VALUES.put("excludedLocsMode", "only");
         STATION_KEY_VALUES.put("arrivedFrom", "N");
         STATION_KEY_VALUES.put("arrivedAlong", new org.json.JSONArray().put(new org.json.JSONArray().put("a rail")));
-        STATION_KEY_VALUES.put(AutonomyBuilder.FACING, "E");
+        STATION_KEY_VALUES.put(AutonomyBuilder.FACING, "W");
         STATION_KEY_VALUES.put(AutonomyBuilder.HOME_FACING, "W");
+    }
+
+    /** Every per-station key the session captures, plus facing and homeFacing, read off the session's own list. */
+    @SuppressWarnings("unchecked")
+    public static Set<String> stationKeys() throws Exception
+    {
+        Field constant = AutonomySession.class.getDeclaredField("POINT_OPERATIONAL_KEYS");
+
+        constant.setAccessible(true);
+
+        Set<String> keys = new LinkedHashSet<>((List<String>) constant.get(null));
+
+        keys.add(AutonomyBuilder.FACING);
+        keys.add(AutonomyBuilder.HOME_FACING);
+
+        return keys;
     }
 
     /**
@@ -398,17 +414,9 @@ public class testAutonomyStoreSettingsMatrix
      * `AutonomySession.POINT_OPERATIONAL_KEYS`, fails this.
      */
     @Test
-    @SuppressWarnings("unchecked")
     public void testEveryStationKeySurvivesASaveAndLoad() throws Exception
     {
-        Field constant = AutonomySession.class.getDeclaredField("POINT_OPERATIONAL_KEYS");
-
-        constant.setAccessible(true);
-
-        Set<String> keys = new LinkedHashSet<>((List<String>) constant.get(null));
-
-        keys.add(AutonomyBuilder.FACING);
-        keys.add(AutonomyBuilder.HOME_FACING);
+        Set<String> keys = stationKeys();
 
         for (String key : keys)
         {
