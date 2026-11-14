@@ -318,6 +318,71 @@ public class testTilePicturesArriveTogether
     }
 
     /**
+     * A sensor that changes while its square is built, after the square put up its cached picture and before the build
+     * registered it with the sensor, is shown changed once the build is done: neither the picture nor the sensor's news
+     * carried it, and the square showed the old state until the sensor changed again.
+     *
+     * MUTATION: leave out the `readAgainOnceRegistered()` call in `LayoutGrid`'s build, and the square shows the sensor
+     * clear.
+     */
+    @Test(timeOut = 60000)
+    public void testASensorChangedWhileItsSquareIsBuiltIsShown() throws Exception
+    {
+        final HeldSensor sensor = new HeldSensor();
+        final LayoutDiagramComponent square = new LayoutDiagramComponent(LayoutDiagramComponent.componentType.FEEDBACK,
+            0, 0, 0, 0, 0, 0, Accessory.accessoryDecoderType.MM2)
+        {
+            // The build asks for the sensor to register the square with it, after the square's picture is up: the
+            // sensor changes then
+            @Override
+            public Feedback getFeedback()
+            {
+                if (LayoutGrid.class.getName().equals(Thread.currentThread().getStackTrace()[2].getClassName()))
+                {
+                    sensor.setState(true);
+                }
+
+                return super.getFeedback();
+            }
+        };
+        final LayoutDiagram page = new LayoutDiagram("changed while built", 2, 2, null, null);
+        final Map<String, Image> cache = TrainControlUI.getImageCache();
+
+        // A size no other claim draws; both pictures cached, so the square puts its picture up as it is made
+        final int size = 37;
+
+        square.setFeedback(sensor);
+        page.addComponent(square, 0, 0);
+
+        sensor.setState(true);
+
+        final String occupiedKey = square.getImageKey(size, false);
+        final Image occupied = square.getImage(size, false);
+
+        sensor.setState(false);
+
+        final String clearKey = square.getImageKey(size, false);
+
+        cache.put(occupiedKey, occupied);
+        cache.put(clearKey, square.getImage(size, false));
+
+        try
+        {
+            LayoutLabel shown = ((LayoutLabel[][]) Reflect.get(LayoutGrid.class, buildAndSettle(page, size), "grid"))[0][0];
+
+            assertTrue(sensor.isSet(), "precondition: the sensor was not set during the build");
+            assertSame(((javax.swing.ImageIcon) shown.getIcon()).getImage(), occupied, "a sensor set while its square"
+                + " was built, after its picture went up and before it was registered for the sensor's changes, is"
+                + " shown clear: the square shows the wrong state until the sensor changes again");
+        }
+        finally
+        {
+            cache.remove(occupiedKey);
+            cache.remove(clearKey);
+        }
+    }
+
+    /**
      * Changing the main window's diagram size to one not drawn yet: the first paint of the new diagram has every square
      * with its picture and none zero wide.  The old one stays up while the pictures are decoded.
      *

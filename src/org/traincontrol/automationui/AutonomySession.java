@@ -1753,7 +1753,7 @@ public class AutonomySession
     /**
      * Turns a placed locomotive round on the graph and on the running layout, whose copy decides where the train can
      * go, because the railway turned it.  Emits no locomotive command.  Flipping is "the other choice" of
-     * `facingChoices`, not the compass opposite.  Null where the answer is not obvious.
+     * `facingChoices`, not the compass opposite.  Null where the answer is not obvious.  Counts nothing (`turned`).
      */
     public TileKey flipFacing(String locomotive, Layout running)
     {
@@ -1800,8 +1800,6 @@ public class AutonomySession
 
             moveOntoFacingCopy(running, locomotive, tile, now);
 
-            turned(locomotive);
-
             return tile;
         }
 
@@ -1821,38 +1819,67 @@ public class AutonomySession
         return choices.get(0) == was ? choices.get(1) : choices.get(0);
     }
 
-    /** How many times each train was turned where it stood this session, by the railway or the editor's Facing. */
-    private final Map<String, Integer> turnsMade = new HashMap<>();
+    /**
+     * How many times each train was turned this session, by the railway or the editor's Facing: by locomotive (identity),
+     * so a rename keeps its count; by name only where no locomotive answers to it.
+     */
+    private final Map<Object, Integer> turnsMade = new HashMap<>();
+
+    /** The locomotives by name, for the turn counts; null in headless use. */
+    private Function<String, Locomotive> locomotives;
+
+    /** @param source a function from locomotive name to locomotive, or null */
+    public void setLocomotiveSource(Function<String, Locomotive> source)
+    {
+        this.locomotives = source;
+    }
+
+    private Object turnKey(String name)
+    {
+        Locomotive loc = locomotives == null ? null : locomotives.apply(name);
+
+        return loc != null ? loc : name;
+    }
 
     /**
-     * Each train's turns so far, by name, for `turnedSince`: a discard keeps the turns made since the editor opened, as
-     * Cancel never changes which way a train faces.
+     * Each train's turns so far, for `turnedSince`: a discard keeps the turns made since the editor opened, as Cancel
+     * never changes which way a train faces.
      */
-    public Map<String, Integer> turnsSoFar()
+    public Map<Object, Integer> turnsSoFar()
     {
         return new HashMap<>(turnsMade);
     }
 
-    /** The trains turned an odd number of times since `then` (a `turnsSoFar`; none for anything else). */
+    /**
+     * The trains turned an odd number of times since `then` (a `turnsSoFar`; none for anything else), by their names
+     * now; a deleted one left out.
+     */
     public Set<String> turnedSince(Object then)
     {
         Set<String> out = new TreeSet<>();
 
-        for (Map.Entry<String, Integer> now : then instanceof Map ? turnsMade.entrySet()
-            : Collections.<Map.Entry<String, Integer>>emptySet())
+        for (Map.Entry<Object, Integer> now : then instanceof Map ? turnsMade.entrySet()
+            : Collections.<Map.Entry<Object, Integer>>emptySet())
         {
             Object was = ((Map<?, ?>) then).get(now.getKey());
+            Object key = now.getKey();
+            String name = key instanceof Locomotive ? ((Locomotive) key).getName() : (String) key;
 
-            if ((now.getValue() - (was instanceof Integer ? (Integer) was : 0)) % 2 != 0) out.add(now.getKey());
+            if (key instanceof Locomotive && locomotives.apply(name) != key) continue;
+
+            if ((now.getValue() - (was instanceof Integer ? (Integer) was : 0)) % 2 != 0) out.add(name);
         }
 
         return out;
     }
 
-    /** Counts a turn, and turns the train in the crash note too, wherever the note places it. */
-    private void turned(String locomotive)
+    /**
+     * Counts a turn of a train, written or not (the editor may have lifted it, or stood it where it cannot turn), and
+     * turns it in the crash note too, wherever the note places it.
+     */
+    public void turned(String locomotive)
     {
-        turnsMade.merge(locomotive, 1, Integer::sum);
+        turnsMade.merge(turnKey(locomotive), 1, Integer::sum);
 
         store.rewriteTheUnfinishedEditNote(note -> turnInSetup(note, locomotive));
     }

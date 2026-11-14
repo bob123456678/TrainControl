@@ -1921,6 +1921,15 @@ public final class LayoutLabel extends JLabel
     }
 
 
+    /**
+     * Reads the state again once the grid has registered this square for its device's changes, where the picture went
+     * up in the constructor: a change in between reached neither.
+     */
+    void readAgainOnceRegistered()
+    {
+        if (this.imageName != null) updateImage(false);
+    }
+
     /** Refreshes the tile's image. */
     public void updateImage(boolean highlight)
     {

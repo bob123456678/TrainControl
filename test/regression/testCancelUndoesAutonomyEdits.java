@@ -852,6 +852,10 @@ public class testCancelUndoesAutonomyEdits
 
             assertEquals(session.flipFacing(name, null), empty, "precondition: " + name + " was not turned on "
                 + empty);
+
+            // And counted, as `TrainControlUI.followTheTurn` counts every reversal it follows
+            session.turned(name);
+
             assertTrue(session.saveQuietly(), "precondition: the setup was not written");
 
             AutonomySession restarted = fromDisk();

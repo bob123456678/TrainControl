@@ -1326,6 +1326,8 @@ public class LayoutGrid
                     {
                         c.getRoute().addTile(grid[x][y]);
                     }
+
+                    grid[x][y].readAgainOnceRegistered();
                 }
             }
         }     
