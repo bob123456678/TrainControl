@@ -209,6 +209,12 @@ public final class CS2File
     {
         return dataPath + "/config/gleisbild.cs2";
     }
+
+    /** Whether a folder holds a layout: its page index, which a download overwrites. */
+    public static boolean holdsALayout(File folder)
+    {
+        return new File(folder, "config/gleisbild.cs2").isFile();
+    }
     
     public String getLayoutURL(String layoutName)
     {
