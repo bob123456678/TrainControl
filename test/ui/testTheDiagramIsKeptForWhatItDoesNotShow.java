@@ -245,12 +245,7 @@ public class testTheDiagramIsKeptForWhatItDoesNotShow
             final Kept kept = keptNow();
             final LayoutLabel label = labelOf(square);
 
-            ui.enableOrDisableRoute(route.getName(), false);
-
-            assertTrue(Components.waitFor(() -> model.getRoute(route.getName()) != route, 20000),
-                "precondition: disarming did not write the route anew");
-
-            Settle.theDiagram(ui);
+            disarm(route);
 
             kept.assertKept("disarming " + route.getName());
 
@@ -292,12 +287,7 @@ public class testTheDiagramIsKeptForWhatItDoesNotShow
 
             assertNotNull(inWindow, "precondition: the page window does not draw the route square of " + PAGE);
 
-            ui.enableOrDisableRoute(route.getName(), false);
-
-            assertTrue(Components.waitFor(() -> model.getRoute(route.getName()) != route, 20000),
-                "precondition: disarming did not write the route anew");
-
-            Settle.theDiagram(ui);
+            disarm(route);
 
             Route written = model.getRoute(route.getName());
 
@@ -457,38 +447,13 @@ public class testTheDiagramIsKeptForWhatItDoesNotShow
     @Test(timeOut = 180000)
     public void testAPageEditedElsewhereIsRedrawnAfterASync() throws Exception
     {
-        final Path file = sandbox.getFolder().toPath().resolve("config/gleisbilder/" + PAGE + ".cs2");
-        final byte[] asItWas = Files.readAllBytes(file);
-        final String text = new String(asItWas, StandardCharsets.UTF_8);
-
-        // A plain track square, taken out
-        final String square = "element\r\n .id=0x104\r\n .typ=gerade\r\n .artikel=-1\r\n";
-        final String eol = text.contains("\r\n") ? "\r\n" : "\n";
-        final String asWritten = square.replace("\r\n", eol);
-
-        assertTrue(text.contains(asWritten), "precondition: " + PAGE + " has no plain track at 0x104");
-
-        final Locomotive train = model.getLocByName(model.getLocList().get(0));
-
         assertTrue(drawsTheSquare(4, 1), "precondition: the diagram does not draw the square at 4,1");
 
-        try
-        {
-            Files.write(file, text.replace(asWritten, "").getBytes(StandardCharsets.UTF_8));
-
-            syncTheLocomotive(train);
-
-            assertFalse(drawsTheSquare(4, 1), "the square taken out of " + PAGE + " elsewhere is still drawn after"
-                + " Sync of " + train.getName());
-        }
-        finally
-        {
-            Files.write(file, asItWas);
-
-            syncTheLocomotive(train);
-        }
-
-        assertTrue(drawsTheSquare(4, 1), "the square put back into " + PAGE + " is not drawn after another Sync");
+        outAndBackElsewhere(
+            train -> assertFalse(drawsTheSquare(4, 1), "the square taken out of " + PAGE + " elsewhere is still drawn"
+                + " after Sync of " + train.getName()),
+            train -> assertTrue(drawsTheSquare(4, 1), "the square put back into " + PAGE + " is not drawn after"
+                + " another Sync"));
     }
 
     /**
@@ -500,45 +465,23 @@ public class testTheDiagramIsKeptForWhatItDoesNotShow
     @Test(timeOut = 180000)
     public void testAPageWindowIsRedrawnAfterASync() throws Exception
     {
-        final Path file = sandbox.getFolder().toPath().resolve("config/gleisbilder/" + PAGE + ".cs2");
-        final byte[] asItWas = Files.readAllBytes(file);
-        final String text = new String(asItWas, StandardCharsets.UTF_8);
-        final String eol = text.contains("\r\n") ? "\r\n" : "\n";
-        final String square = "element\r\n .id=0x104\r\n .typ=gerade\r\n .artikel=-1\r\n".replace("\r\n", eol);
-
-        assertTrue(text.contains(square), "precondition: " + PAGE + " has no plain track at 0x104");
-
-        final Locomotive train = model.getLocByName(model.getLocList().get(0));
         final LayoutPopupUI window = AskingWindows.openThePage(ui);
 
         try
         {
             assertTrue(drawsTheSquare(window, 4, 1), "precondition: the page window does not draw the square at 4,1");
 
-            Files.write(file, text.replace(square, "").getBytes(StandardCharsets.UTF_8));
-
-            syncTheLocomotive(train);
-
-            assertTrue(Components.waitFor(() -> !drawsTheSquare(window, 4, 1), 20000), "the square taken out of "
-                + PAGE + " elsewhere is still drawn in the page's window after Sync of " + train.getName());
-
-            Files.write(file, asItWas);
-
-            syncTheLocomotive(train);
-
-            assertTrue(Components.waitFor(() -> drawsTheSquare(window, 4, 1), 20000), "the square put back into "
-                + PAGE + " is not drawn in the page's window after another Sync");
+            // The window's redraw is posted after the main window's
+            outAndBackElsewhere(
+                train -> assertTrue(Components.waitFor(() -> !drawsTheSquare(window, 4, 1), 20000), "the square taken"
+                    + " out of " + PAGE + " elsewhere is still drawn in the page's window after Sync of "
+                    + train.getName()),
+                train -> assertTrue(Components.waitFor(() -> drawsTheSquare(window, 4, 1), 20000), "the square put"
+                    + " back into " + PAGE + " is not drawn in the page's window after another Sync"));
         }
         finally
         {
             SwingUtilities.invokeAndWait(window::dispose);
-
-            if (!java.util.Arrays.equals(Files.readAllBytes(file), asItWas))
-            {
-                Files.write(file, asItWas);
-
-                syncTheLocomotive(train);
-            }
         }
     }
 
@@ -631,6 +574,46 @@ public class testTheDiagramIsKeptForWhatItDoesNotShow
         return Components.onTheEventThread(() -> label.getToolTipText());
     }
 
+    /** What a claim asks of the diagram, given the locomotive synced. */
+    private interface Check
+    {
+        void check(Locomotive train) throws Exception;
+    }
+
+    /**
+     * Takes the plain track square at 4,1 (id 0x104) out of the page's file, as an edit elsewhere, and syncs a
+     * locomotive, which reads the pages again; asks `out`, then puts the square back, syncs again and asks `back`.
+     */
+    private static void outAndBackElsewhere(Check out, Check back) throws Exception
+    {
+        final Path file = sandbox.getFolder().toPath().resolve("config/gleisbilder/" + PAGE + ".cs2");
+        final byte[] asItWas = Files.readAllBytes(file);
+        final String text = new String(asItWas, StandardCharsets.UTF_8);
+        final String eol = text.contains("\r\n") ? "\r\n" : "\n";
+        final String square = "element\r\n .id=0x104\r\n .typ=gerade\r\n .artikel=-1\r\n".replace("\r\n", eol);
+
+        assertTrue(text.contains(square), "precondition: " + PAGE + " has no plain track at 0x104");
+
+        final Locomotive train = model.getLocByName(model.getLocList().get(0));
+
+        try
+        {
+            Files.write(file, text.replace(square, "").getBytes(StandardCharsets.UTF_8));
+
+            syncTheLocomotive(train);
+
+            out.check(train);
+        }
+        finally
+        {
+            Files.write(file, asItWas);
+
+            syncTheLocomotive(train);
+        }
+
+        back.check(train);
+    }
+
     /** Whether the page shown draws something on this square. */
     private static boolean drawsTheSquare(int x, int y) throws Exception
     {
@@ -650,6 +633,17 @@ public class testTheDiagramIsKeptForWhatItDoesNotShow
         {
             throw new IllegalStateException(e);
         }
+    }
+
+    /** Disarms a route made here, which writes it anew, and waits for the diagram it draws. */
+    private static void disarm(MarklinRoute route) throws Exception
+    {
+        ui.enableOrDisableRoute(route.getName(), false);
+
+        assertTrue(Components.waitFor(() -> model.getRoute(route.getName()) != route, 20000),
+            "precondition: disarming did not write the route anew");
+
+        Settle.theDiagram(ui);
     }
 
     /** Puts a route back as it was, locked or not and armed or not, and draws the page afresh. */
