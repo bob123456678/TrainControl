@@ -535,8 +535,17 @@ public class testSwitchingToACentralStationLayout
             // closing quote of `"file:///" + x`.
             String scan = withoutStringsAndComments(body);
 
+            // A call to a support helper builds a window behind a sandbox it opens first (checked below), so it counts
+            // as both a window and a sandbox at the same place.
+            java.util.List<Integer> helpers = indicesOf(scan, WINDOW_HELPER_CALLED);
+
             java.util.List<Integer> windows = indicesOf(scan, WINDOW_BUILT);
             java.util.List<Integer> sandboxes = indicesOf(scan, SANDBOX_OPENED);
+
+            windows.addAll(helpers);
+            sandboxes.addAll(helpers);
+            java.util.Collections.sort(windows);
+            java.util.Collections.sort(sandboxes);
 
             if (windows.isEmpty()) continue;
 
@@ -571,6 +580,28 @@ public class testSwitchingToACentralStationLayout
                     + sandboxes.size() + " sandbox opens, and has no setup method opening one for "
                     + "the whole class - so at least one window reads the operator's own layout");
             }
+        }
+
+        // Each helper a class may call to get a window opens its sandbox before the call that builds the window.
+        for (String[] helper : WINDOW_HELPERS)
+        {
+            String source = withoutStringsAndComments(new String(java.nio.file.Files.readAllBytes(
+                new java.io.File("test/support/" + helper[0]).toPath()), java.nio.charset.StandardCharsets.UTF_8));
+
+            int start = source.indexOf(helper[1]);
+
+            assertTrue(start >= 0, helper[0] + " no longer declares `" + helper[1] + "`, so the guard cannot check it");
+
+            int end = source.indexOf(System.lineSeparator() + "    public ", start + 1);
+            String method = source.substring(start, end < 0 ? source.length() : end);
+
+            int open = method.indexOf("LayoutSandbox.open(");
+            int builds = method.indexOf(helper[2]);
+
+            assertTrue(builds >= 0, helper[0] + " `" + helper[1] + "` no longer builds a window with `" + helper[2] + "`");
+
+            assertTrue(open >= 0 && open < builds, helper[0] + " `" + helper[1] + "` builds a window without a sandbox "
+                + "opened before it, so every class that calls it reads the operator's own railway");
         }
 
         // A scan that matched nothing would pass while proving nothing, so the number is exact, not a floor: each new
@@ -650,8 +681,8 @@ public class testSwitchingToACentralStationLayout
         // placed before a safety check hides it.  Every SAFETY assertion comes first and the numbers that merely record
         // where we are come after.  Raise the count when a class that builds a window and opens its sandbox first is
         // added.
-        assertEquals(checked, 70,
-            checked + " test classes were found to build a window, not the 70 there were when this "
+        assertEquals(checked, 90,
+            checked + " test classes were found to build a window, not the 90 there were when this "
             + "was pinned. Fewer means the pattern has gone stale and is checking less than it "
             + "thinks; more means a new class builds a window and this line wants updating - and "
             + "nothing else in this method is hidden by that any more, because the checks that "
@@ -665,6 +696,19 @@ public class testSwitchingToACentralStationLayout
     /** Where a window is built, qualified or not. */
     private static final java.util.regex.Pattern WINDOW_BUILT =
         java.util.regex.Pattern.compile("new\\s+(?:org\\.traincontrol\\.gui\\.)?TrainControlUI\\s*\\(");
+
+    /** Calls to the support helpers that build a window behind their own sandbox. */
+    private static final java.util.regex.Pattern WINDOW_HELPER_CALLED = java.util.regex.Pattern.compile(
+        "FrozenEditor\\s*\\.\\s*(?:window|open)\\s*\\(|SandboxedWindow\\s*\\.\\s*build\\s*\\(|"
+        + "AskingWindows\\s*\\.\\s*openRailway\\s*\\(");
+
+    /** Each helper: its file, its declaration, and the call in it that builds the window. */
+    private static final String[][] WINDOW_HELPERS =
+    {
+        {"FrozenEditor.java", "public static FrozenEditor window(", "new TrainControlUI("},
+        {"SandboxedWindow.java", "public static TrainControlUI build(", "new TrainControlUI("},
+        {"AskingWindows.java", "public static Railway openRailway(", "TestStation.simulatedWithWindowInDebug("}
+    };
 
     /** Where a sandbox is opened, with or without arguments (LayoutSandbox.open(folder) is an overload). */
     private static final java.util.regex.Pattern SANDBOX_OPENED =
