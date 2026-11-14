@@ -18598,12 +18598,13 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                         String currentName = pair[0];
                         String newName = pair[1];
 
-                        // One question when another locomotive holds the name: it goes, and this one takes it
-                        int response = JOptionPane.showOptionDialog(
+                        // A name another locomotive holds is asked about once, below, in the delete door's question,
+                        // which counts the routes that lose commands and starts on No
+                        int response = model.getLocByName(newName) != null ? JOptionPane.YES_OPTION
+                            : JOptionPane.showOptionDialog(
                             this,
                             I18n.f(
-                                model.getLocByName(newName) != null ? "loc.ui.confirmRenameOntoLocomotive"
-                                    : "loc.ui.confirmRenameLocomotive",
+                                "loc.ui.confirmRenameLocomotive",
                                 currentName,
                                 newName
                             ),
@@ -18639,7 +18640,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                             // Check if the target loc already exists
                             Locomotive l2 = model.getLocByName(newName);
                             
-                            if (l2 != null) this.locomotiveActions.deleteLocAlreadyAsked(newName, this);
+                            if (l2 != null) this.locomotiveActions.deleteLocBecause(
+                                I18n.f("loc.ui.confirmRenameOntoLocomotive", currentName, newName), newName, this);
                             
                             l2 = model.getLocByName(newName);
                             
@@ -19872,6 +19874,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      */
     synchronized public void updateVisiblePoints()
     {
+        // A follow a run held back, asked again on the event thread now that the railway may be idle
+        if (this.pagesToFollow) SwingUtilities.invokeLater(this::followThePagesIfChanged);
+
         // With nothing loaded the covered track is emptied, and the wash with it.
         if (!this.model.hasAutoLayout())
         {
@@ -21618,11 +21623,69 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         return page == null ? null : this.model.getLayout(page.toString());
     }
 
-    /** After a sync: where the model holds `before`'s page as a new object, the list and the setup follow, posted. */
+    /** After a sync: where the model holds `before`'s page as a new object, the pages are compared, posted. */
     private void followIfReadAgain(LayoutDiagram before)
     {
         if (before != null && before != this.model.getLayout(before.getName()))
-            SwingUtilities.invokeLater(this::followThePagesReadAgain);
+            SwingUtilities.invokeLater(this::followThePagesIfChanged);
+    }
+
+    /** Pages read again that changed while a run held the setup, followed once it no longer does. */
+    private volatile boolean pagesToFollow = false;
+
+    /**
+     * The page list and the setup follow pages read again that differ from the ones they hold, but never under a run:
+     * there the follow is owed until the run ends (`updateVisiblePoints`), as a page edit waits.  Unchanged pages are
+     * left alone, as following resets the session and reloads the configuration.
+     */
+    void followThePagesIfChanged()
+    {
+        if (!this.pagesToFollow && !thePagesChanged()) return;
+
+        this.pagesToFollow = aRunHoldsTheSetup();
+
+        if (!this.pagesToFollow) followThePagesReadAgain();
+    }
+
+    /** Whether the model's pages differ from the page list's names or, by their text, from the setup's pages. */
+    private boolean thePagesChanged()
+    {
+        List<String> names = this.model.getLayoutList();
+
+        javax.swing.ListModel<?> listed = this.LayoutList.getModel();
+
+        if (listed.getSize() != names.size()) return true;
+
+        for (int i = 0; i < names.size(); i++)
+        {
+            if (!names.get(i).equals(String.valueOf(listed.getElementAt(i)))) return true;
+        }
+
+        if (this.autonomySession == null) return false;
+
+        if (this.autonomySession.getPages().size() != names.size()) return true;
+
+        for (LayoutDiagram page : this.autonomySession.getPages())
+        {
+            LayoutDiagram now = this.model.getLayout(page.getName());
+
+            if (now == null || (now != page && !sameText(page, now))) return true;
+        }
+
+        return false;
+    }
+
+    /** Whether two pages save to the same text; false where either will not export. */
+    private static boolean sameText(LayoutDiagram a, LayoutDiagram b)
+    {
+        try
+        {
+            return a.exportToCS2TextFormat().equals(b.exportToCS2TextFormat());
+        }
+        catch (Exception e)
+        {
+            return false;
+        }
     }
 
     /**

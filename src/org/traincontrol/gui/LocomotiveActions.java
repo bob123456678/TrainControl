@@ -579,10 +579,10 @@ final class LocomotiveActions
         deleteLoc(value, evt != null ? (Component) evt.getSource() : this.ui.dialogParent());
     }
 
-    /** As {@link #deleteLoc(String, Component)}, for a door whose own question already covered the deletion. */
-    boolean deleteLocAlreadyAsked(String value, Component source)
+    /** As {@link #deleteLoc(String, Component)}, its one question led by `why`, the step the deletion is for. */
+    boolean deleteLocBecause(String why, String value, Component source)
     {
-        this.alreadyAsked = true;
+        this.because = why;
 
         try
         {
@@ -590,12 +590,12 @@ final class LocomotiveActions
         }
         finally
         {
-            this.alreadyAsked = false;
+            this.because = null;
         }
     }
 
-    /** Set, on the event thread, only for the length of `deleteLocAlreadyAsked`. */
-    private boolean alreadyAsked = false;
+    /** Set, on the event thread, only for the length of `deleteLocBecause`. */
+    private String because = null;
 
     /** Deletes a locomotive from the database after the question, from any door; true when it was deleted. */
     boolean deleteLoc(String value, Component source)
@@ -630,9 +630,9 @@ final class LocomotiveActions
             ? I18n.f("ui.confirmDeleteFromDatabaseWithRoutes" + I18n.countForm(drivenBy), value, drivenBy)
             : I18n.f("ui.confirmDeleteFromDatabase", value);
 
-        if (this.alreadyAsked || JOptionPane.YES_OPTION == JOptionPane.showOptionDialog(
+        if (JOptionPane.YES_OPTION == JOptionPane.showOptionDialog(
                 source,
-                question,
+                this.because == null ? question : this.because + "\n\n" + question,
                 I18n.t("layout.ui.dialogPleaseConfirm"),
                 JOptionPane.YES_NO_OPTION,
                 JOptionPane.PLAIN_MESSAGE,
