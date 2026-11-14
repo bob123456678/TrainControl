@@ -624,13 +624,13 @@ public class RouteEditorFrame extends JFrame
            .append(String.valueOf(route.getTriggerType())).append('\u0001')
            .append(route.isEnabled()).append('\u0002');
 
-        for (org.traincontrol.base.RouteCommand command : route.getRoute())
+        for (RouteCommand command : route.getRoute())
         {
             out.append(String.valueOf(command)).append('\u0003');
         }
 
         // Conditions by content: NodeExpression has no toString, and Route.locomotiveRenamed rewrites them in place.
-        for (org.traincontrol.base.RouteCommand condition
+        for (RouteCommand condition
             : NodeExpression.toList(route.getConditions()))
         {
             out.append(String.valueOf(condition)).append('\u0004');
@@ -2076,7 +2076,7 @@ public class RouteEditorFrame extends JFrame
     /** Files an accessory command under its address and the protocol it is sent in. */
     private static void byDecoder(
         Map<Integer, Set<Accessory.accessoryDecoderType>> into,
-        org.traincontrol.base.RouteCommand command)
+        RouteCommand command)
     {
         into.computeIfAbsent(command.getAddress(), address -> new LinkedHashSet<>()).add(command.getProtocol());
     }
@@ -2771,7 +2771,7 @@ public class RouteEditorFrame extends JFrame
 
         for (Entry entry : commands.rows)
         {
-            org.traincontrol.base.RouteCommand command = entry.toCommand();
+            RouteCommand command = entry.toCommand();
 
             // Asked whether it has an address first: getAddress() throws for command types without one.
             if (command == null || !command.hasAddress() || command.getAddress() <= 0) continue;

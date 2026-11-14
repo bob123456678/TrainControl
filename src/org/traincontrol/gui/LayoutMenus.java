@@ -626,18 +626,18 @@ final class LayoutMenus
         chooser.setDialogTitle(I18n.t("layout.ui.menuExportDiagram"));
 
         // A sensible name that is also a legal one, since a page may be called anything at all
-        chooser.setSelectedFile(new java.io.File(page.replaceAll("[^a-zA-Z0-9 _-]", "_") + ".png"));
+        chooser.setSelectedFile(new File(page.replaceAll("[^a-zA-Z0-9 _-]", "_") + ".png"));
 
         if (chooser.showSaveDialog(ui) != JFileChooser.APPROVE_OPTION) return;
 
-        java.io.File destination = chooser.getSelectedFile();
+        File destination = chooser.getSelectedFile();
 
         if (!destination.getName().toLowerCase().endsWith(".png"))
         {
-            destination = new java.io.File(destination.getParentFile(), destination.getName() + ".png");
+            destination = new File(destination.getParentFile(), destination.getName() + ".png");
         }
 
-        final java.io.File writeTo = destination;
+        final File writeTo = destination;
         final int pixels = tileSize;
         final String chosen = page;
         final Exception[] failed = new Exception[1];

@@ -2,6 +2,7 @@ package org.traincontrol.gui;
 
 import java.awt.BorderLayout;
 import java.awt.Color;
+import java.awt.Component;
 import java.awt.Container;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
@@ -33,6 +34,7 @@ import javax.swing.DefaultListCellRenderer;
 import javax.swing.DefaultListModel;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
+import javax.swing.JComponent;
 import javax.swing.JFileChooser;
 import javax.swing.JLabel;
 import javax.swing.JList;
@@ -173,20 +175,20 @@ public class AutonomyViewerPanel extends JPanel
      *
      * @param component the root to sweep, usually a panel
      */
-    public static <T extends java.awt.Component> T unfocusable(T component)
+    public static <T extends Component> T unfocusable(T component)
     {
         component.setFocusable(false);
 
         if (component instanceof Container)
         {
-            for (java.awt.Component child : ((Container) component).getComponents()) unfocusable(child);
+            for (Component child : ((Container) component).getComponents()) unfocusable(child);
         }
 
         return component;
     }
 
     /** Applies the application's control font to a component, and returns it; bold for a button. */
-    static <T extends javax.swing.JComponent> T styled(T component, boolean bold)
+    static <T extends JComponent> T styled(T component, boolean bold)
     {
         component.setFont(bold ? FONT_BOLD : FONT);
         return component;
@@ -342,7 +344,7 @@ public class AutonomyViewerPanel extends JPanel
     }
 
     /** Adds one full-width row to a GridBagLayout, with a gap above it. */
-    private void add(JPanel panel, GridBagConstraints gbc, java.awt.Component component,
+    private void add(JPanel panel, GridBagConstraints gbc, Component component,
         int gapAbove)
     {
         gbc.insets = new Insets(gapAbove, 0, 2, 0);
@@ -357,7 +359,7 @@ public class AutonomyViewerPanel extends JPanel
 
         AutonomyMenu.addManageItems(menu, ui, this, session());
 
-        for (java.awt.Component part : menu.getComponents())
+        for (Component part : menu.getComponents())
         {
             if (part instanceof JMenuItem) styled((JMenuItem) part, false);
         }
@@ -494,7 +496,7 @@ public class AutonomyViewerPanel extends JPanel
         }
 
         @Override
-        public java.awt.Component getListCellRendererComponent(JList<?> list, Object value,
+        public Component getListCellRendererComponent(JList<?> list, Object value,
             int index, boolean isSelected, boolean cellHasFocus)
         {
             super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);

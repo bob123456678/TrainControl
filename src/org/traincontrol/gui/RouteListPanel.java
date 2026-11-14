@@ -60,7 +60,7 @@ final class RouteListPanel
                 // so the answer is about the route the operator picked.  Every route the station holds is a
                 // MarklinRoute, the only kind that knows the autonomy graph (the model is held as a ViewListener typed
                 // to the base Route).
-                org.traincontrol.base.Route found = this.ui.getModel().getRoute(route);
+                Route found = this.ui.getModel().getRoute(route);
 
                 MarklinRoute picked = found instanceof MarklinRoute ? (MarklinRoute) found : null;
 
