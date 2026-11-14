@@ -451,18 +451,9 @@ public class testMockCentralStation
     {
         String was = TestStationAddress.get();
 
-        final String served = "BR 85 006 Gl.";
+        final String served = SERVED;
 
-        MarklinLocomotive member = model.getLocByName(served);
-
-        final boolean made = member == null;
-        final int addressWas = made ? -1 : member.getAddress();
-        final MarklinLocomotive.decoderType typeWas = made ? null : member.getDecoderType();
-
-        if (made) member = model.newMM2Locomotive(served, 70);
-        else model.changeLocAddress(served, 70, MarklinLocomotive.decoderType.MM2);
-
-        member = model.getLocByName(served);
+        final Runnable putBack = theServedLocomotiveAt70();
 
         MarklinLocomotive head = model.newMM2Locomotive("SYNC head", 71);
         MarklinLocomotive other = model.newMM2Locomotive("SYNC other", 5);
@@ -512,14 +503,7 @@ public class testMockCentralStation
             try { model.deleteLoc("SYNC other"); } catch (Exception ignored) { }
             try { model.deleteLoc("SYNC head"); } catch (Exception ignored) { }
 
-            if (made)
-            {
-                try { model.deleteLoc(served); } catch (Exception ignored) { }
-            }
-            else
-            {
-                try { model.changeLocAddress(served, addressWas, typeWas); } catch (Exception ignored) { }
-            }
+            putBack.run();
         }
     }
 
@@ -535,16 +519,9 @@ public class testMockCentralStation
     {
         String was = TestStationAddress.get();
 
-        final String served = "BR 85 006 Gl.";
+        final String served = SERVED;
 
-        MarklinLocomotive loc = model.getLocByName(served);
-
-        final boolean made = loc == null;
-        final int addressWas = made ? -1 : loc.getAddress();
-        final MarklinLocomotive.decoderType typeWas = made ? null : loc.getDecoderType();
-
-        if (made) model.newMM2Locomotive(served, 70);
-        else model.changeLocAddress(served, 70, MarklinLocomotive.decoderType.MM2);
+        final Runnable putBack = theServedLocomotiveAt70();
 
         try
         {
@@ -570,15 +547,34 @@ public class testMockCentralStation
 
             try { model.getLocByName(served).setSpeed(0); } catch (Exception ignored) { }
 
-            if (made)
-            {
-                try { model.deleteLoc(served); } catch (Exception ignored) { }
-            }
-            else
-            {
-                try { model.changeLocAddress(served, addressWas, typeWas); } catch (Exception ignored) { }
-            }
+            putBack.run();
         }
+    }
+
+    /** A locomotive `test/lokomotive.cs2` serves at address 5. */
+    private static final String SERVED = "BR 85 006 Gl.";
+
+    /** Puts {@link #SERVED} at address 70, made if missing, and gives back what puts it as it was. */
+    private static Runnable theServedLocomotiveAt70() throws Exception
+    {
+        MarklinLocomotive loc = model.getLocByName(SERVED);
+
+        final boolean made = loc == null;
+        final int addressWas = made ? -1 : loc.getAddress();
+        final MarklinLocomotive.decoderType typeWas = made ? null : loc.getDecoderType();
+
+        if (made) model.newMM2Locomotive(SERVED, 70);
+        else model.changeLocAddress(SERVED, 70, MarklinLocomotive.decoderType.MM2);
+
+        return () ->
+        {
+            try
+            {
+                if (made) model.deleteLoc(SERVED);
+                else model.changeLocAddress(SERVED, addressWas, typeWas);
+            }
+            catch (Exception ignored) { }
+        };
     }
 
     /** The Central Station multi-unit `test/lokomotive.cs2` serves, with two members (OB-303). */
