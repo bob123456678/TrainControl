@@ -1833,14 +1833,15 @@ public class AutonomySession
         return new HashMap<>(turnsMade);
     }
 
-    /** The trains turned an odd number of times since `then` (a `turnsSoFar`), so facing the other way now. */
+    /** The trains turned an odd number of times since `then` (a `turnsSoFar`; none for anything else). */
     public Set<String> turnedSince(Object then)
     {
         Set<String> out = new TreeSet<>();
 
-        for (Map.Entry<String, Integer> now : turnsMade.entrySet())
+        for (Map.Entry<String, Integer> now : then instanceof Map ? turnsMade.entrySet()
+            : Collections.<Map.Entry<String, Integer>>emptySet())
         {
-            Object was = then instanceof Map ? ((Map<?, ?>) then).get(now.getKey()) : null;
+            Object was = ((Map<?, ?>) then).get(now.getKey());
 
             if ((now.getValue() - (was instanceof Integer ? (Integer) was : 0)) % 2 != 0) out.add(now.getKey());
         }
@@ -1898,6 +1899,7 @@ public class AutonomySession
 
         return false;
     }
+
     /** The locomotive on a stored point, or null: the one spelling of what a blank name means. */
     private static String namedLocomotiveOn(JSONObject point)
     {
