@@ -1,5 +1,6 @@
 package org.traincontrol.gui.locomotive;
 
+import java.awt.AlphaComposite;
 import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Graphics2D;
@@ -150,7 +151,7 @@ public class LocomotivePlaceholder
 
         try
         {
-            g.setComposite(java.awt.AlphaComposite.getInstance(java.awt.AlphaComposite.SRC_OVER, FADE));
+            g.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, FADE));
             g.drawImage(drawn, 0, 0, null);
         }
         finally

@@ -13,6 +13,7 @@ import java.awt.RenderingHints;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.geom.Area;
+import java.awt.geom.Line2D;
 import java.awt.geom.RoundRectangle2D;
 import java.text.NumberFormat;
 import java.time.LocalDate;
@@ -355,7 +356,7 @@ public class UsageChartPanel extends JComponent
             int y = plot.y + plot.height - Math.round(plot.height * (float) (k * tickStep() / axisMax));
 
             g2.setColor(gridColor);
-            g2.draw(new java.awt.geom.Line2D.Float(plot.x, y + 0.5f, plot.x + plot.width, y + 0.5f));
+            g2.draw(new Line2D.Float(plot.x, y + 0.5f, plot.x + plot.width, y + 0.5f));
 
             String tick = labels.get(k);
 

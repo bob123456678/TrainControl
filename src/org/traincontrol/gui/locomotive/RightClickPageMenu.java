@@ -1,6 +1,7 @@
 package org.traincontrol.gui.locomotive;
 
 import java.awt.event.MouseEvent;
+import java.awt.Component;
 import javax.swing.JMenuItem;
 import javax.swing.JPopupMenu;
 import org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel;
@@ -38,7 +39,7 @@ public class RightClickPageMenu extends PopupListener
          * @param y where it is shown
          */
         @Override
-        public void show(java.awt.Component invoker, int x, int y)
+        public void show(Component invoker, int x, int y)
         {
             AutonomyEditorPanel.wrapTheTooltips(this);
 

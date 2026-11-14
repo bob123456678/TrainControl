@@ -10,6 +10,7 @@ import java.awt.Shape;
 import java.awt.geom.AffineTransform;
 import java.awt.geom.Line2D;
 import java.awt.geom.RoundRectangle2D;
+import javax.swing.AbstractButton;
 import javax.swing.ButtonGroup;
 import javax.swing.JButton;
 import javax.swing.JPanel;
@@ -17,6 +18,7 @@ import javax.swing.JToggleButton;
 import javax.swing.UIManager;
 import javax.swing.plaf.basic.BasicGraphicsUtils;
 import org.traincontrol.util.ImageUtil;
+import org.traincontrol.gui.widgets.UiStyle;
 
 /**
  * Toggle buttons drawn as one rounded outline with a thin divider between segments, the chosen segment filled with the
@@ -132,7 +134,7 @@ public class SegmentedControl extends JPanel
         {
             super.updateUI();
 
-            setFont(org.traincontrol.gui.widgets.UiStyle.BUTTON_FONT);
+            setFont(UiStyle.BUTTON_FONT);
             setBorder(null);
             setContentAreaFilled(false);
             setOpaque(false);
@@ -144,7 +146,7 @@ public class SegmentedControl extends JPanel
         {
             FontMetrics fm = getFontMetrics(getFont());
 
-            return new Dimension(fm.stringWidth(getText()) + 32, org.traincontrol.gui.widgets.UiStyle.button(new JButton(getText())).getPreferredSize().height);
+            return new Dimension(fm.stringWidth(getText()) + 32, UiStyle.button(new JButton(getText())).getPreferredSize().height);
         }
 
         @Override
@@ -177,7 +179,7 @@ public class SegmentedControl extends JPanel
     }
 
     /** Draws a button's text in this color, centered in the button, in the button's font. */
-    public static void drawCentered(Graphics2D g2, javax.swing.AbstractButton button, Color ink)
+    public static void drawCentered(Graphics2D g2, AbstractButton button, Color ink)
     {
         g2.setColor(ink);
         g2.setFont(button.getFont());
