@@ -43,6 +43,9 @@ public class testDownloadingTheStationsLayout
     private volatile CountDownLatch pagesHeld;
     private volatile CountDownLatch pageAsked;
 
+    /** How many page requests from now get a page with a square no parser can place, so the copy will not open. */
+    private final java.util.concurrent.atomic.AtomicInteger unreadablePages = new java.util.concurrent.atomic.AtomicInteger();
+
     @BeforeMethod
     public void openOnTheStation() throws Exception
     {
@@ -72,7 +75,15 @@ public class testDownloadingTheStationsLayout
                 }
             }
 
-            return cs3.apply(path, n);
+            byte[] page = cs3.apply(path, n);
+
+            if (page != null && path.startsWith("/config/gleisbilder/") && unreadablePages.getAndDecrement() > 0)
+            {
+                return (new String(page, java.nio.charset.StandardCharsets.UTF_8) + "element\n .id=0xZZ\n .typ=gerade\n")
+                    .getBytes(java.nio.charset.StandardCharsets.UTF_8);
+            }
+
+            return page;
         }, true, true);
         ui = (TrainControlUI) rig.model.getGUI();
 
@@ -113,6 +124,29 @@ public class testDownloadingTheStationsLayout
     {
         if (was == null) TrainControlUI.getPrefs().remove(key);
         else TrainControlUI.getPrefs().put(key, was);
+    }
+
+    /** A new folder under the test's own, to download into. */
+    private File aFolder(String name)
+    {
+        File into = new File(root, name);
+
+        assertTrue(into.mkdirs(), "precondition: no folder to download into");
+
+        return into;
+    }
+
+    private static String completeFor(File into)
+    {
+        return I18n.f("layout.ui.infoDownloadCompleteLayoutSavedIn", into.getAbsolutePath());
+    }
+
+    /** Waits until `said` or "Download complete" is asked, then a moment more for "Download complete" to follow. */
+    private static void settledOn(Answering answering, String said, String complete)
+    {
+        Components.waitFor(() -> answering.asked().contains(said) || answering.asked().contains(complete), 60000);
+        Components.waitFor(() -> answering.asked().contains(complete), 2000);
+        Components.settle();
     }
 
     /** Presses the door, choosing `into` in its folder chooser and answering each question by `rule`. */
@@ -258,11 +292,8 @@ public class testDownloadingTheStationsLayout
     @Test(timeOut = 120000)
     public void testTheWindowAnswersWhileTheStationIsSlow() throws Exception
     {
-        final File into = new File(root, "slow");
-
-        assertTrue(into.mkdirs(), "precondition: no folder to download into");
-
-        final String complete = I18n.f("layout.ui.infoDownloadCompleteLayoutSavedIn", into.getAbsolutePath());
+        final File into = aFolder("slow");
+        final String complete = completeFor(into);
 
         holdThePages();
 
@@ -311,11 +342,8 @@ public class testDownloadingTheStationsLayout
     @Test(timeOut = 120000)
     public void testASecondPressWhileOneRunsIsRefused() throws Exception
     {
-        final File into = new File(root, "twice");
-
-        assertTrue(into.mkdirs(), "precondition: no folder to download into");
-
-        final String complete = I18n.f("layout.ui.infoDownloadCompleteLayoutSavedIn", into.getAbsolutePath());
+        final File into = aFolder("twice");
+        final String complete = completeFor(into);
         final String already = I18n.t("layout.ui.infoDownloadAlreadyRunning");
         final String choose = I18n.t("layout.ui.infoChooseFolderForCentralStationDownload");
 
@@ -382,10 +410,7 @@ public class testDownloadingTheStationsLayout
         try (Answering answering = press(into, message -> question.equals(message)
             ? Answering.press(I18n.t("ui.cancel")) : Answering.pressAt(0)))
         {
-            Components.waitFor(() -> answering.asked().contains(question) || answering.asked().contains(complete),
-                60000);
-            Components.waitFor(() -> answering.asked().contains(complete), 2000);
-            Components.settle();
+            settledOn(answering, question, complete);
 
             assertTrue(answering.asked().contains(question), "a folder holding a layout was not asked about: "
                 + answering.asked());
@@ -406,6 +431,42 @@ public class testDownloadingTheStationsLayout
             assertFalse(java.util.Arrays.equals(Files.readAllBytes(index.toPath()), mine),
                 "Replace left the folder's old layout");
             assertTrue(!ui.isRemoteLayout(), "the copy is not the layout in use after Replace");
+        }
+    }
+
+    /**
+     * A copy that downloads but will not open says why and not "Download complete", and leaves the window as it was:
+     * on the station's layout, with the source a later switch compares with unchanged.
+     *
+     * MUTATION: show "Download complete" in `LayoutFileActions.downloadAndOpen` whatever `openLayoutFolder` answers, and
+     * it is said after the failure.
+     */
+    @Test(timeOut = 120000)
+    public void testACopyThatWillNotOpenIsNotCalledComplete() throws Exception
+    {
+        final File into = aFolder("unreadable");
+        final String complete = completeFor(into);
+        final String wontOpen = I18n.t("layout.ui.errorInvalidPathOrCorruptData");
+        final Object sourceWas = Reflect.get(TrainControlUI.class, ui, "railwaySource");
+
+        // Every page of the download; the station's own pages read well again after it
+        unreadablePages.set(rig.model.getLayoutList().size());
+
+        try (Answering answering = press(into, message -> Answering.pressAt(0)))
+        {
+            settledOn(answering, wontOpen, complete);
+
+            assertTrue(answering.asked().contains(wontOpen), "a copy that would not open was not said to: "
+                + answering.asked());
+            assertFalse(answering.asked().contains(complete), "a copy that would not open was called complete: "
+                + answering.asked());
+            assertTrue(ui.isRemoteLayout(), "the window left the station's layout for a copy that would not open");
+            assertTrue(java.util.Objects.equals(Reflect.get(TrainControlUI.class, ui, "railwaySource"), sourceWas),
+                "a copy that would not open became the source a later switch compares with");
+        }
+        finally
+        {
+            unreadablePages.set(0);
         }
     }
 }
