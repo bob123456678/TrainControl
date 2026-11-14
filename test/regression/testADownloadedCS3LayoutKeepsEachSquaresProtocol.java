@@ -37,7 +37,7 @@ public class testADownloadedCS3LayoutKeepsEachSquaresProtocol
     public static void setUpClass() throws Exception
     {
         // A copy, so nothing reads or writes the snapshot itself
-        sandbox = support.LayoutSandbox.open(new File("test/layouts/cs3-main-layout"));
+        sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("cs3-main-layout"));
         model = support.TestStation.simulated();
 
         String snapshot = sandbox.getFolder().getAbsolutePath();

@@ -33,3 +33,7 @@ Station Layout Files must keep the same protocol on every square (OB-465).
 ## How tests use it
 
 Serve it from a stand-in CS3, or copy it to a sandbox first. Never write to this folder.
+
+## Used by
+
+- `regression.testADownloadedCS3LayoutKeepsEachSquaresProtocol`
