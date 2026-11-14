@@ -5486,6 +5486,7 @@ public class testTheTrainWindow
 
             final java.lang.reflect.Method leave = Reflect.method(LayoutEditor.class, "leaveFor", String.class,
                 boolean.class);
+            final AutonomySession was = session;
 
             boolean stillOpen = Components.onTheEventThread(() ->
             {
@@ -5496,7 +5497,8 @@ public class testTheTrainWindow
 
             assertFalse(stillOpen, "a page switch left the square menu open on the page being left");
 
-            Components.settle();
+            // The switch reads the pages again, which replaces the setup the other claims hold
+            reloaded(was);
         }
         finally
         {
