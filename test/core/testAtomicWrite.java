@@ -324,6 +324,51 @@ public class testAtomicWrite
     }
 
     /**
+     * An archive is written under another name and moved to its own once whole, so a backup cut off part way (the
+     * program closed under it) leaves no file that looks like a backup.  Watched from inside the write: the source's
+     * `exists()` asks whether anything is under the archive's name yet.
+     *
+     * MUTATION: in `Util.zipInto`, write the zip straight to its name, and the name exists while it is written.
+     */
+    @Test
+    public void testAnArchiveHasItsNameOnlyOnceWhole() throws Exception
+    {
+        File zip = new File(dir.toFile(), "backup.zip");
+
+        boolean[] namedWhileWriting = {false};
+
+        File watched = new File(target.getPath())
+        {
+            @Override
+            public boolean isFile()
+            {
+                namedWhileWriting[0] |= zip.exists();
+
+                return super.isFile();
+            }
+
+            @Override
+            public boolean isDirectory()
+            {
+                namedWhileWriting[0] |= zip.exists();
+
+                return super.isDirectory();
+            }
+        };
+
+        java.util.Map<String, File> state = new java.util.LinkedHashMap<>();
+
+        state.put("state.dat", watched);
+
+        assertEquals(Util.zipInto(zip, state), new java.util.ArrayList<String>(), "the archive reported failures");
+
+        assertFalse(namedWhileWriting[0], "the archive was under its own name while it was still being written, so a"
+            + " backup cut off part way looks like a whole one");
+
+        assertEquals(entriesOf(zip), Arrays.asList("state.dat"), "the archive is not whole once written");
+    }
+
+    /**
      * The staged write forces its bytes to disk before it moves them over the target: renamed first, a power cut can
      * leave the target empty with the old file already gone.  Read, not run: a power cut cannot be staged.
      *
@@ -339,5 +384,20 @@ public class testAtomicWrite
 
         assertTrue(forced >= 0 && forced < body.indexOf("Files.move("), "the staged file is moved over the target"
             + " without first being forced to disk");
+    }
+
+    /** The entry names of a zip, in order. */
+    private static List<String> entriesOf(File zip) throws Exception
+    {
+        List<String> names = new java.util.ArrayList<>();
+
+        try (java.util.zip.ZipFile read = new java.util.zip.ZipFile(zip))
+        {
+            java.util.Enumeration<? extends java.util.zip.ZipEntry> all = read.entries();
+
+            while (all.hasMoreElements()) names.add(all.nextElement().getName());
+        }
+
+        return names;
     }
 }

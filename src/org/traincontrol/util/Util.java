@@ -365,15 +365,22 @@ public class Util
 
         if (parent != null) parent.mkdirs();
 
-        try (java.util.zip.ZipOutputStream out = new java.util.zip.ZipOutputStream(
-            new java.io.BufferedOutputStream(new java.io.FileOutputStream(zip))))
+        // Staged, so a backup cut off part way (the program closed under it) leaves nothing under the archive's name
+        try
         {
-            for (java.util.Map.Entry<String, File> source : sources.entrySet())
+            writeAtomically(zip, staged ->
             {
-                if (source.getValue() == null || !source.getValue().exists()) continue;
+                try (java.util.zip.ZipOutputStream out = new java.util.zip.ZipOutputStream(
+                    new java.io.BufferedOutputStream(staged)))
+                {
+                    for (java.util.Map.Entry<String, File> source : sources.entrySet())
+                    {
+                        if (source.getValue() == null || !source.getValue().exists()) continue;
 
-                addToZip(out, source.getValue(), source.getKey(), failed, 0);
-            }
+                        addToZip(out, source.getValue(), source.getKey(), failed, 0);
+                    }
+                }
+            });
         }
         catch (IOException | RuntimeException e)
         {
