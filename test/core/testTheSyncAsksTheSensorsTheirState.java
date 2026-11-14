@@ -249,9 +249,53 @@ public class testTheSyncAsksTheSensorsTheirState
             station::drop));
     }
 
+    /**
+     * A real event whose old state equals its new, as a station's own s88 bus may report one, is an edge when no query
+     * of ours is under way: a route armed clear then occupied fires on it.
+     *
+     * MUTATION: in `MarklinFeedback.parseMessage`, `m.answersAResync()` to `m.getData()[4] == m.getData()[5]` in the
+     * `changeTo` call.
+     */
+    @Test(timeOut = 120000)
+    public void testAnEventOfNoChangeFiresARouteWhenNoQueryIsUnderWay() throws Exception
+    {
+        connected((rig, station) ->
+        {
+            int contact = 2901;
+            String name = "Sync claim " + contact;
+            List<String> log = new ArrayList<>();
+            armedRoute(rig, station, contact, MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED);
+
+            station.send(TcpStation.answer(2, contact, true));
+
+            assertTrue(Components.waitFor(() -> fired(rig, log, name) == 1, WAIT_MS),
+                "a real event of old state = new state fired no route: " + log);
+        });
+    }
+
     private interface Correction
     {
         void run() throws Exception;
+    }
+
+    /** A route of one turnout command armed on the contact, which the station set to the state the route starts from. */
+    private static MarklinRoute armedRoute(StationRig rig, TcpStation station, int contact,
+        MarklinRoute.s88Triggers trigger) throws Exception
+    {
+        boolean first = trigger == MarklinRoute.s88Triggers.OCCUPIED_THEN_CLEAR;
+        String name = "Sync claim " + contact;
+        station.sensor(contact, first);
+        assertTrue(shows(rig, contact, first), "precondition: the event did not arrive");
+        int turnout = 10 + contact % 100;
+        rig.model.newSwitch(turnout, Accessory.accessoryDecoderType.MM2, false);
+        List<RouteCommand> commands = new ArrayList<>();
+        commands.add(RouteCommand.RouteCommandAccessory(turnout, Accessory.accessoryDecoderType.MM2, true));
+        assertTrue(rig.model.newRoute(name, commands, contact, trigger, true, null), "precondition: no route");
+        MarklinRoute route = rig.model.getRoute(name);
+        assertTrue(Components.waitFor(() -> RouteMonitor.waitingFor(route, !first), WAIT_MS),
+            "precondition: the route is not waiting for its trigger");
+
+        return route;
     }
 
     /**
@@ -264,16 +308,7 @@ public class testTheSyncAsksTheSensorsTheirState
         boolean first = trigger == MarklinRoute.s88Triggers.OCCUPIED_THEN_CLEAR;
         String name = "Sync claim " + contact;
         List<String> log = new ArrayList<>();
-        station.sensor(contact, first);
-        assertTrue(shows(rig, contact, first), "precondition: the event did not arrive");
-        int turnout = 10 + contact % 100;
-        rig.model.newSwitch(turnout, Accessory.accessoryDecoderType.MM2, false);
-        List<RouteCommand> commands = new ArrayList<>();
-        commands.add(RouteCommand.RouteCommandAccessory(turnout, Accessory.accessoryDecoderType.MM2, true));
-        assertTrue(rig.model.newRoute(name, commands, contact, trigger, true, null), "precondition: no route");
-        MarklinRoute route = rig.model.getRoute(name);
-        assertTrue(Components.waitFor(() -> RouteMonitor.waitingFor(route, !first), WAIT_MS),
-            "precondition: the route is not waiting for its trigger");
+        MarklinRoute route = armedRoute(rig, station, contact, trigger);
 
         station.sensorUnseen(contact, !first);
         correct.run();
