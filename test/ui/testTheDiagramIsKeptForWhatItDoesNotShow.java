@@ -43,8 +43,8 @@ import support.WindowField;
  * The doors that change what the track diagram does not draw keep the diagram and every cached page: following a link,
  * and a route renumbered, disarmed or deleted, while the route squares follow in place; a locomotive renamed is renamed
  * on every caption, a page window's too; and a sync that reads the pages again, as Sync of one locomotive does from a
- * local folder, still redraws an edit made elsewhere (Adam: "just make sure locomotive renames or remote track diagram
- * changes are properly updated").  On a copy of the frozen railway, syncing with a stand-in station.
+ * local folder, still redraws an edit made elsewhere (the owner's rule: renames and remote diagram changes must still
+ * update).  On a copy of the frozen railway, syncing with a stand-in station.
  */
 public class testTheDiagramIsKeptForWhatItDoesNotShow
 {
@@ -100,8 +100,8 @@ public class testTheDiagramIsKeptForWhatItDoesNotShow
     }
 
     /**
-     * A link square shows its page from the cache, as picking the page does, and the page it left stays cached: it
-     * drew the page twice, the second time afresh, emptying the cache of every other page.
+     * A link square shows its page from the cache, as picking the page does, and the page it left stays cached (no
+     * second, fresh drawing that empties the cache of every other page).
      *
      * MUTATION: put back `this.repaintLayout()` after the selection in `TrainControlUI.followLink`, and this fails.
      */
