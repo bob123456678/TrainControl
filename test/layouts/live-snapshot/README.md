@@ -178,3 +178,6 @@ not fix it. Name the square.
 - `core.testReversalIsAboutTheTrainAndTheStation`
 - `ui.testASyncOwedWaitsForTheEditor`
 - `ui.testTheDiagramIsKeptForWhatItDoesNotShow`
+- `ui.testEveryLanguageFitsTheSettingsWindows`
+- `ui.testEveryLanguageFitsTheEditors`
+- `ui.testEveryLanguageFitsThePopups`

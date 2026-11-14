@@ -1,24 +1,19 @@
 package ui;
 
-import java.awt.Component;
-import java.awt.Container;
 import java.awt.Dimension;
-import java.awt.image.BufferedImage;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import javax.swing.AbstractButton;
-import javax.swing.JComponent;
 import javax.swing.JLabel;
-import javax.swing.JTabbedPane;
 import static org.testng.Assert.*;
 import org.testng.annotations.Test;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.util.I18n;
 import support.Display;
+import support.LanguageFit;
 
 /**
  * Every language fits in the window it was translated for: `testMessageBundles` checks that strings are CORRECT,
@@ -28,45 +23,27 @@ import support.Display;
  * ONE sandbox around the whole class, fingerprinting `cs2_sample_layout` and failing on a single moved byte: a sandbox
  * per window let a disposed window's scheduled work write to Adam's real railway.
  *
- * Cannot see: panels filled from a railway, containers that overflow (scroll panes legitimately hold wider content),
+ * Cannot see: panels filled from a railway (its siblings `testEveryLanguageFitsThe*` open those), containers that overflow (scroll panes legitimately hold wider content),
  * and the tab titles (IMAGES).  `LOCALISED_FLOOR` keeps the count of locale-changed components from becoming none.
  *
  * @author Adam
  */
 public class testEveryLanguageFits
 {
-    /** The eight the bundles carry. */
-    private static final String[] LANGUAGES = {"en", "de", "fr", "es", "it", "nl", "da", "pl"};
+    private static final String[] LANGUAGES = LanguageFit.LANGUAGES;
 
-    private static final File OUT = new File(System.getProperty("java.io.tmpdir"), "tc-language-shots");
+    private static final File OUT = LanguageFit.OUT;
 
-    /** Adam's real railway, which nothing here may touch. */
-    private static final File LIVE = new File("cs2_sample_layout");
+    private static final File LIVE = LanguageFit.LIVE;
 
-    /**
-     * How much wider than its space a component may ask to be before it counts as clipped: a border rounding or font
-     * hint costs a pixel or two without losing a character.
-     */
-    private static final int SLACK = 3;
+    /** Every component the main window showed, for the comparison with English (`window-ratio.txt`). */
+    private static final LanguageFit.Ledger LEDGER = new LanguageFit.Ledger();
 
     /**
      * How many text-bearing components a non-English run is expected to change: a FLOOR, to catch the locale failing to
      * reach the window, which would make every clean run a statement about English.
      */
     private static final int LOCALISED_FLOOR = 30;
-
-    /**
-     * How wide a menu may be before it is a problem: half the window's width, where a menu stops being a menu and
-     * starts being a page. The window is its minimum size, the size an operator gets on first run.
-     */
-    private static int menuCeiling(javax.swing.JMenuBar bar)
-    {
-        java.awt.Window window = javax.swing.SwingUtilities.getWindowAncestor(bar);
-
-        assertNotNull(window, "the menu bar is not in a window, so there is no width to hold its menus to");
-
-        return window.getMinimumSize().width / 2;
-    }
 
     /**
      * The rule can fail: the eight-language walk cannot carry its own control, so the RULE is controlled on a component
@@ -86,13 +63,13 @@ public class testEveryLanguageFits
         label.setPreferredSize(new Dimension(80, 20));
         label.setSize(80, 20);
 
-        assertFalse(clips(label),
+        assertFalse(LanguageFit.clips(label),
             "\"OK\" was called too wide for 80 pixels, so the rule refuses text that fits and every "
             + "finding below is suspect");
 
         label.setText("Eine Konfigurationseinstellungsmoeglichkeit die viel zu lang ist");
 
-        assertTrue(clips(label),
+        assertTrue(LanguageFit.clips(label),
             "a 64-character string was called a fit in 80 pixels, so this test cannot see a clipped "
             + "label at all - which is what it was doing until 2026-09-11. The rule has to measure the "
             + "TEXT, because `setPreferredSize` has already decided what the component will ask for");
@@ -105,7 +82,7 @@ public class testEveryLanguageFits
 
         OUT.mkdirs();
 
-        String railwayBefore = fingerprint(LIVE);
+        String railwayBefore = LanguageFit.fingerprint(LIVE);
 
         Locale was = Locale.getDefault();
 
@@ -156,27 +133,14 @@ public class testEveryLanguageFits
             if (sandbox != null) sandbox.close();
 
             // And in the finally, because the run most likely to have written is the one that threw.
-            assertEquals(fingerprint(LIVE), railwayBefore,
+            assertEquals(LanguageFit.fingerprint(LIVE), railwayBefore,
                 "this test wrote to " + LIVE + ", which is the operator's real railway and is not "
                 + "recoverable.  Whatever it found is beside the point until that is understood");
         }
 
-        StringBuilder report = new StringBuilder();
+        StringBuilder report = LanguageFit.report(clipped);
 
-        int total = 0;
-
-        for (Map.Entry<String, List<String>> e : clipped.entrySet())
-        {
-            report.append("== ").append(e.getKey()).append("  (")
-                .append(e.getValue().size()).append(")").append(System.lineSeparator());
-
-            for (String line : e.getValue())
-            {
-                report.append("   ").append(line).append(System.lineSeparator());
-            }
-
-            total += e.getValue().size();
-        }
+        int total = LanguageFit.total(clipped);
 
         report.append(System.lineSeparator()).append("components with text inspected:")
             .append(System.lineSeparator());
@@ -225,6 +189,8 @@ public class testEveryLanguageFits
         java.nio.file.Files.write(new File(OUT, "clipped.txt").toPath(),
             report.toString().getBytes("UTF-8"));
 
+        LEDGER.write("window");
+
         // What was looked at, before what was found: a window that is not displayable lays nothing out, so every
         // component has a width of zero and every one is skipped. Both guards below fail on that.
         for (Map.Entry<String, Integer> e : inspected.entrySet())
@@ -241,7 +207,7 @@ public class testEveryLanguageFits
             "the screenshots this control compares were never written, so it would pass having "
             + "compared nothing.  Looked in " + OUT);
 
-        assertFalse(sameBytes(new File(OUT, "window-en.png"), new File(OUT, "window-de.png")),
+        assertFalse(LanguageFit.sameBytes(new File(OUT, "window-en.png"), new File(OUT, "window-de.png")),
             "the English and German windows are byte-identical, so the locale is not reaching the "
             + "text and all eight measurements are of the same language");
 
@@ -269,10 +235,7 @@ public class testEveryLanguageFits
     private List<String> measure(String language, int[] inspected,
         Map<String, Map<String, String>> localised) throws Exception
     {
-        Locale locale = new Locale(language);
-
-        Locale.setDefault(locale);
-        I18n.setLocale(locale);
+        LanguageFit.speak(language);
 
         final TrainControlUI[] ui = new TrainControlUI[1];
 
@@ -295,51 +258,13 @@ public class testEveryLanguageFits
 
             final List<String> found = new ArrayList<>();
 
-            // EVERY COMPONENT ONCE, however many tabs it is walked under.
-            final java.util.Set<Component> already =
-                java.util.Collections.newSetFromMap(new java.util.IdentityHashMap<Component, Boolean>());
-
             javax.swing.SwingUtilities.invokeAndWait(() ->
             {
-                shoot((JComponent) ui[0].getContentPane(),
-                    new File(OUT, "window-" + language + ".png"));
-
-                // EVERY TAB, not just the one showing: only the selected one has been through a layout with real text.
-                for (JTabbedPane tabs : tabbedPanes(ui[0].getContentPane()))
-                {
-                    int wasAt = tabs.getSelectedIndex();
-
-                    for (int at = 0; at < tabs.getTabCount(); at++)
-                    {
-                        tabs.setSelectedIndex(at);
-                        ui[0].validate();
-
-                        inspected[0] += walk(tabs, found, already);
-                    }
-
-                    if (wasAt >= 0 && wasAt < tabs.getTabCount()) tabs.setSelectedIndex(wasAt);
-                }
-
-                ui[0].validate();
-
-                inspected[0] += walk(ui[0].getContentPane(), found, already);
-
-                // THE MENU BAR, which is not in the content pane and holds the longest single-line strings this
-                // application has.
-                if (ui[0].getJMenuBar() != null)
-                {
-                    inspected[0] += walk(ui[0].getJMenuBar(), found, already);
-
-                    inspected[0] += menus(ui[0].getJMenuBar(), found);
-                }
-
-                titles(ui[0].getContentPane(), found);
-
                 // No container-level checks: the per-component rule catches a component whose width is FIXED, since a
-                // free layout grants the wider preferred size and the overflow lands elsewhere.  Container rules
-                // measure this form's own geometry, not translation length, and a check that reports findings every run
-                // is one nobody reads.
-                localised.put(language, textByPath(ui[0]));
+                // free layout grants the wider preferred size and the overflow lands elsewhere.
+                found.addAll(LanguageFit.measure(LEDGER, "window", language, ui[0], inspected));
+
+                localised.put(language, LanguageFit.textByPath(ui[0]));
             });
 
             return found;
@@ -353,313 +278,5 @@ public class testEveryLanguageFits
                 javax.swing.SwingUtilities.invokeAndWait(() -> closing.dispose());
             }
         }
-    }
-
-    /** Every component that is narrower than the text it holds; `already` makes each component count once. */
-    private int walk(Container parent, List<String> found, java.util.Set<Component> already)
-    {
-        int seen = 0;
-
-        for (Component child : parent.getComponents())
-        {
-            String text = textOf(child);
-
-            if (text != null && !text.trim().isEmpty() && child.getWidth() > 0)
-            {
-                // ONE LINE PER COMPONENT, not one per tab selection: the caller walks the tree again for every tab, so
-                // a component outside the tabs is visited once per tab.
-                if (already.add(child))
-                {
-                    seen++;
-
-                    int wants = requiredWidth(child, text);
-
-                    if (wants > child.getWidth() + SLACK)
-                    {
-                        found.add(name(child) + "  text needs " + wants + "px, has " + child.getWidth()
-                            + "px  -  \"" + oneLine(text) + "\"");
-                    }
-                }
-            }
-
-            if (child instanceof Container) seen += walk((Container) child, found, already);
-        }
-
-        return seen;
-    }
-
-    /**
-     * How wide this component's TEXT actually is, not how wide it asked to be: `getPreferredSize().width` cannot see a
-     * component whose preferred size was SET (`TrainControlUI` does on 100 labels and buttons).  HTML text keeps the
-     * old rule (a markup label wraps in a view hierarchy).  Returns the width the text needs, with insets, icon and
-     * gap.
-     */
-    private static int requiredWidth(Component c, String text)
-    {
-        if (text.trim().toLowerCase(Locale.ENGLISH).startsWith("<html"))
-        {
-            return c.getPreferredSize().width;
-        }
-
-        java.awt.Font font = c.getFont();
-
-        if (font == null) return c.getPreferredSize().width;
-
-        int width = c.getFontMetrics(font).stringWidth(text);
-
-        if (c instanceof JComponent)
-        {
-            java.awt.Insets insets = ((JComponent) c).getInsets();
-
-            if (insets != null) width += insets.left + insets.right;
-        }
-
-        javax.swing.Icon icon = null;
-
-        int gap = 0;
-
-        if (c instanceof AbstractButton)
-        {
-            icon = ((AbstractButton) c).getIcon();
-
-            gap = ((AbstractButton) c).getIconTextGap();
-        }
-        else if (c instanceof JLabel)
-        {
-            icon = ((JLabel) c).getIcon();
-
-            gap = ((JLabel) c).getIconTextGap();
-        }
-
-        if (icon != null) width += icon.getIconWidth() + gap;
-
-        return width;
-    }
-
-    /**
-     * Whether this component's text is wider than the room it has; the rule in one place, so the control can ask what
-     * the walk asks.
-     */
-    private static boolean clips(Component c)
-    {
-        String text = textOf(c);
-
-        if (text == null || text.trim().isEmpty() || c.getWidth() <= 0) return false;
-
-        return requiredWidth(c, text) > c.getWidth() + SLACK;
-    }
-
-    /**
-     * Every text-bearing component's text, keyed by its index path in the tree: the same form in every language, so the
-     * path names "this label" across eight windows.
-     */
-    private static Map<String, String> textByPath(java.awt.Window window)
-    {
-        Map<String, String> out = new LinkedHashMap<>();
-
-        collect(window, "", out);
-
-        return out;
-    }
-
-    private static void collect(Container parent, String path, Map<String, String> into)
-    {
-        Component[] children = parent.getComponents();
-
-        for (int at = 0; at < children.length; at++)
-        {
-            Component child = children[at];
-
-            String here = path + "." + at;
-
-            String text = textOf(child);
-
-            if (text != null && !text.trim().isEmpty()) into.put(here, text);
-
-            if (child instanceof Container) collect((Container) child, here, into);
-        }
-
-        if (parent instanceof javax.swing.JFrame)
-        {
-            javax.swing.JMenuBar bar = ((javax.swing.JFrame) parent).getJMenuBar();
-
-            if (bar != null) collect(bar, path + ".menubar", into);
-        }
-    }
-
-    /** Tab titles, which are drawn by the pane rather than by a component of their own. */
-    private void titles(Container parent, List<String> found)
-    {
-        for (Component child : parent.getComponents())
-        {
-            if (child instanceof JTabbedPane)
-            {
-                JTabbedPane tabs = (JTabbedPane) child;
-
-                int room = tabs.getWidth();
-                int wants = 0;
-
-                for (int at = 0; at < tabs.getTabCount(); at++)
-                {
-                    java.awt.Rectangle bounds = tabs.getBoundsAt(at);
-
-                    if (bounds != null) wants = Math.max(wants, bounds.x + bounds.width);
-                }
-
-                if (room > 0 && wants > room + SLACK)
-                {
-                    found.add("tab strip of " + name(tabs) + "  wants " + wants + "px, has "
-                        + room + "px");
-                }
-            }
-
-            if (child instanceof Container) titles((Container) child, found);
-        }
-    }
-
-    /** Every tabbed pane under a container, so each of their tabs can be laid out and measured. */
-    private static List<JTabbedPane> tabbedPanes(Container parent)
-    {
-        List<JTabbedPane> out = new ArrayList<>();
-
-        for (Component child : parent.getComponents())
-        {
-            if (child instanceof JTabbedPane) out.add((JTabbedPane) child);
-
-            if (child instanceof Container) out.addAll(tabbedPanes((Container) child));
-        }
-
-        return out;
-    }
-
-    /**
-     * Menu items, which get no width until their menu is opened, so they are measured against what the popup will be:
-     * the widest item in that menu.
-     */
-    private int menus(javax.swing.JMenuBar bar, List<String> found)
-    {
-        int seen = 0;
-
-        for (int at = 0; at < bar.getMenuCount(); at++)
-        {
-            javax.swing.JMenu menu = bar.getMenu(at);
-
-            if (menu == null) continue;
-
-            int widest = 0;
-
-            for (Component item : menu.getMenuComponents())
-            {
-                if (item instanceof JComponent)
-                {
-                    widest = Math.max(widest, ((JComponent) item).getPreferredSize().width);
-                }
-
-                seen++;
-            }
-
-            int ceiling = menuCeiling(bar);
-
-            if (widest > ceiling)
-            {
-                found.add("menu \"" + oneLine(menu.getText()) + "\" is " + widest
-                    + "px wide, over the " + ceiling + "px this window can show");
-            }
-        }
-
-        return seen;
-    }
-
-    /** The text a component draws, or null if it draws none. */
-    private static String textOf(Component c)
-    {
-        if (c instanceof JLabel) return ((JLabel) c).getText();
-
-        if (c instanceof AbstractButton) return ((AbstractButton) c).getText();
-
-        return null;
-    }
-
-    /** Something a person can find the component by. */
-    private static String name(Component c)
-    {
-        String simple = c.getClass().getSimpleName();
-
-        return (c.getName() == null ? simple : simple + " " + c.getName());
-    }
-
-    private static String oneLine(String text)
-    {
-        String flat = text.replaceAll("<[^>]*>", " ").replaceAll("\\s+", " ").trim();
-
-        return flat.length() > 60 ? flat.substring(0, 57) + "..." : flat;
-    }
-
-    /**
-     * Paints a component into a file. The CONTENT PANE is printed, not the Window painted: a JFrame never shown paints
-     * an empty rectangle, while JComponent.printAll works offscreen.
-     */
-    private static void shoot(JComponent pane, File file)
-    {
-        BufferedImage shot = new BufferedImage(Math.max(1, pane.getWidth()),
-            Math.max(1, pane.getHeight()), BufferedImage.TYPE_INT_RGB);
-
-        java.awt.Graphics2D g = shot.createGraphics();
-
-        try
-        {
-            pane.printAll(g);
-        }
-        finally
-        {
-            g.dispose();
-        }
-
-        try
-        {
-            javax.imageio.ImageIO.write(shot, "png", file);
-        }
-        catch (java.io.IOException ignored)
-        {
-            // A missing picture is not a reason to fail the measurement it illustrates
-        }
-    }
-
-    /** Whether two files hold the same bytes, for the "did the language change anything" guard. */
-    private static boolean sameBytes(File a, File b) throws Exception
-    {
-        if (!a.exists() || !b.exists()) return false;
-
-        return java.util.Arrays.equals(java.nio.file.Files.readAllBytes(a.toPath()),
-            java.nio.file.Files.readAllBytes(b.toPath()));
-    }
-
-    /**
-     * Every file under a folder with its size and modification time, as one string: enough to ask "did anything here
-     * move".
-     */
-    private static String fingerprint(File folder) throws Exception
-    {
-        if (!folder.isDirectory()) return "";
-
-        final StringBuilder out = new StringBuilder();
-
-        java.nio.file.Files.walk(folder.toPath())
-            .filter(java.nio.file.Files::isRegularFile)
-            .sorted()
-            .forEach(p ->
-            {
-                try
-                {
-                    out.append(p).append(':').append(java.nio.file.Files.size(p)).append(':')
-                        .append(java.nio.file.Files.getLastModifiedTime(p)).append('\n');
-                }
-                catch (java.io.IOException e)
-                {
-                    out.append(p).append(":unreadable\n");
-                }
-            });
-
-        return out.toString();
     }
 }

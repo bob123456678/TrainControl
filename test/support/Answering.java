@@ -146,6 +146,7 @@ public final class Answering implements AutoCloseable
     private final AtomicBoolean going = new AtomicBoolean(true);
     private volatile Thread watching;
     private volatile File toChoose;
+    private volatile java.util.function.Consumer<JDialog> look;
 
     private Answering()
     {
@@ -181,6 +182,8 @@ public final class Answering implements AutoCloseable
                         answering.shapes.add(PopupShape.of(pane));
                         answering.asked.add(message);
 
+                        if (answering.look != null) lookAt(answering.look, (JDialog) window);
+
                         answer(pane, rule.apply(message), answering.asked);
                     }
 
@@ -215,6 +218,29 @@ public final class Answering implements AutoCloseable
         this.toChoose = file;
 
         return this;
+    }
+
+    /**
+     * Hands every question's dialog to `look` on the event thread, before it is answered; a look that throws is printed
+     * and the question still answered, so the watcher never leaves a modal dialog standing.
+     */
+    public Answering looking(java.util.function.Consumer<JDialog> look)
+    {
+        this.look = look;
+
+        return this;
+    }
+
+    private static void lookAt(java.util.function.Consumer<JDialog> look, JDialog dialog)
+    {
+        try
+        {
+            javax.swing.SwingUtilities.invokeAndWait(() -> look.accept(dialog));
+        }
+        catch (Exception e)
+        {
+            e.printStackTrace();
+        }
     }
 
     /**
