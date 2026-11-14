@@ -378,8 +378,13 @@ public class LayoutDiagramComponent
     private static final Map<String, BufferedImage> SOURCES = new java.util.concurrent.ConcurrentHashMap<>();
 
     public Image getImage(int size, boolean ignoreState) throws IOException
-    {  
-         String imageName = getImageName(size, ignoreState);
+    {
+        return getImage(getImageName(size, ignoreState), size);
+    }
+
+    /** The picture `getImageName` named, at `size` and turned to this square, so key and picture share one state. */
+    public Image getImage(String imageName, int size) throws IOException
+    {
          Image img = SOURCES.get(imageName);
 
          if (img == null)
@@ -861,7 +866,13 @@ public class LayoutDiagramComponent
     public String getImageKey(int size, boolean ignoreState)
     {
         // and the size it is drawn at: two sizes drawn from one icon set are two pictures (FR-122)
-        return this.getImageName(size, ignoreState) + "_" + Integer.toString(orientation) + "_" + Integer.toString(size);
+        return getImageKey(this.getImageName(size, ignoreState), size);
+    }
+
+    /** The cache key of the picture `getImageName` named, at `size` on this square. */
+    public String getImageKey(String imageName, int size)
+    {
+        return imageName + "_" + Integer.toString(orientation) + "_" + Integer.toString(size);
     }
 
     /**

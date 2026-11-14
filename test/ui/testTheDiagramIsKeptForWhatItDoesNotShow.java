@@ -245,12 +245,7 @@ public class testTheDiagramIsKeptForWhatItDoesNotShow
             final Kept kept = keptNow();
             final LayoutLabel label = labelOf(square);
 
-            ui.enableOrDisableRoute(route.getName(), false);
-
-            assertTrue(Components.waitFor(() -> model.getRoute(route.getName()) != route, 20000),
-                "precondition: disarming did not write the route anew");
-
-            Settle.theDiagram(ui);
+            disarm(route);
 
             kept.assertKept("disarming " + route.getName());
 
@@ -263,18 +258,82 @@ public class testTheDiagramIsKeptForWhatItDoesNotShow
         }
         finally
         {
-            MarklinRoute now = (MarklinRoute) model.getRoute(route.getName());
-
-            if (now != null)
-            {
-                now.setLocked(wasLocked);
-
-                if (now.isEnabled() != wasEnabled) model.editRoute(now.getName(), now.getName(), now.getRoute(),
-                    now.getS88(), now.getTriggerType(), wasEnabled, now.getConditions());
-            }
-
-            rebuildThePage();
+            putBack(route.getName(), wasLocked, wasEnabled);
         }
+    }
+
+    /**
+     * A page window's route square follows a route written anew as the main window's does: disarming a route made here,
+     * the window's square shows the new route running, without a redraw of the window.
+     *
+     * MUTATION: leave the page windows out of the grids `TrainControlUI.redrawRouteSquaresOrRebuild` binds again, and
+     * this fails.
+     */
+    @Test(timeOut = 120000)
+    public void testAPageWindowsRouteSquareFollowsARouteWrittenAnew() throws Exception
+    {
+        final LayoutDiagramComponent square = aBoundRouteSquare();
+        final MarklinRoute route = (MarklinRoute) square.getRoute();
+        final boolean wasLocked = route.isLocked();
+        final boolean wasEnabled = route.isEnabled();
+        final LayoutPopupUI window = AskingWindows.openThePage(ui);
+
+        route.setLocked(false);
+
+        try
+        {
+            final LayoutLabel inWindow = Components.onTheEventThread(() ->
+                Components.find(window, LayoutLabel.class, each -> each.getComponent() == square));
+
+            assertNotNull(inWindow, "precondition: the page window does not draw the route square of " + PAGE);
+
+            disarm(route);
+
+            Route written = model.getRoute(route.getName());
+
+            assertTrue(Components.onTheEventThread(() -> SwingUtilities.isDescendingFrom(inWindow, window)),
+                "precondition: disarming " + route.getName() + " redrew the page window");
+
+            assertTrue(tilesOf((MarklinRoute) written).contains(inWindow), "the page window's square of "
+                + route.getName() + " does not show the route written anew running");
+        }
+        finally
+        {
+            SwingUtilities.invokeAndWait(window::dispose);
+
+            putBack(route.getName(), wasLocked, wasEnabled);
+        }
+    }
+
+    /**
+     * A route square on a page kept in the cache stays its route's while another page is shown and the route runs, so
+     * shown again from the cache it shows the route's state (OB-463).
+     *
+     * MUTATION: in `MarklinRoute.updateTiles`, also drop a label that is not displayable, as a cached page's are, and
+     * this fails.
+     */
+    @Test(timeOut = 120000)
+    public void testACachedPagesRouteSquareStaysItsRoutesThroughARun() throws Exception
+    {
+        final LayoutDiagramComponent square = aBoundRouteSquare();
+        final MarklinRoute route = (MarklinRoute) square.getRoute();
+        final LayoutLabel label = labelOf(square);
+
+        Components.select((JComboBox<?>) WindowField.of(ui, "LayoutList"), "2 - Bottom");
+        Settle.theDiagram(ui);
+
+        assertFalse(Components.onTheEventThread(label::isDisplayable), "precondition: " + PAGE + " is still on screen");
+
+        // What a run does as it starts and as it ends
+        route.updateTiles();
+
+        Components.select((JComboBox<?>) WindowField.of(ui, "LayoutList"), PAGE);
+        Settle.theDiagram(ui);
+
+        assertSame(labelOf(square), label, "precondition: " + PAGE + " was not shown from the cache");
+
+        assertTrue(tilesOf(route).contains(label), "the route square of " + route.getName() + " on " + PAGE
+            + ", kept in the cache while another page was shown, no longer shows the route running after it ran");
     }
 
     /**
@@ -388,38 +447,42 @@ public class testTheDiagramIsKeptForWhatItDoesNotShow
     @Test(timeOut = 180000)
     public void testAPageEditedElsewhereIsRedrawnAfterASync() throws Exception
     {
-        final Path file = sandbox.getFolder().toPath().resolve("config/gleisbilder/" + PAGE + ".cs2");
-        final byte[] asItWas = Files.readAllBytes(file);
-        final String text = new String(asItWas, StandardCharsets.UTF_8);
-
-        // A plain track square, taken out
-        final String square = "element\r\n .id=0x104\r\n .typ=gerade\r\n .artikel=-1\r\n";
-        final String eol = text.contains("\r\n") ? "\r\n" : "\n";
-        final String asWritten = square.replace("\r\n", eol);
-
-        assertTrue(text.contains(asWritten), "precondition: " + PAGE + " has no plain track at 0x104");
-
-        final Locomotive train = model.getLocByName(model.getLocList().get(0));
-
         assertTrue(drawsTheSquare(4, 1), "precondition: the diagram does not draw the square at 4,1");
+
+        outAndBackElsewhere(
+            train -> assertFalse(drawsTheSquare(4, 1), "the square taken out of " + PAGE + " elsewhere is still drawn"
+                + " after Sync of " + train.getName()),
+            train -> assertTrue(drawsTheSquare(4, 1), "the square put back into " + PAGE + " is not drawn after"
+                + " another Sync"));
+    }
+
+    /**
+     * A page window is redrawn too when a sync reads the pages again (OB-462): the square taken out of its page
+     * elsewhere is gone from the window after Sync of one locomotive, and back after the next.
+     *
+     * MUTATION: leave out `refreshPopupsWhosePagesWereReadAgain()` in `TrainControlUI.repaintLayout`, and this fails.
+     */
+    @Test(timeOut = 180000)
+    public void testAPageWindowIsRedrawnAfterASync() throws Exception
+    {
+        final LayoutPopupUI window = AskingWindows.openThePage(ui);
 
         try
         {
-            Files.write(file, text.replace(asWritten, "").getBytes(StandardCharsets.UTF_8));
+            assertTrue(drawsTheSquare(window, 4, 1), "precondition: the page window does not draw the square at 4,1");
 
-            syncTheLocomotive(train);
-
-            assertFalse(drawsTheSquare(4, 1), "the square taken out of " + PAGE + " elsewhere is still drawn after"
-                + " Sync of " + train.getName());
+            // The window's redraw is posted after the main window's
+            outAndBackElsewhere(
+                train -> assertTrue(Components.waitFor(() -> !drawsTheSquare(window, 4, 1), 20000), "the square taken"
+                    + " out of " + PAGE + " elsewhere is still drawn in the page's window after Sync of "
+                    + train.getName()),
+                train -> assertTrue(Components.waitFor(() -> drawsTheSquare(window, 4, 1), 20000), "the square put"
+                    + " back into " + PAGE + " is not drawn in the page's window after another Sync"));
         }
         finally
         {
-            Files.write(file, asItWas);
-
-            syncTheLocomotive(train);
+            SwingUtilities.invokeAndWait(window::dispose);
         }
-
-        assertTrue(drawsTheSquare(4, 1), "the square put back into " + PAGE + " is not drawn after another Sync");
     }
 
     // ---------------------------------------------------------------- the fixture
@@ -511,12 +574,92 @@ public class testTheDiagramIsKeptForWhatItDoesNotShow
         return Components.onTheEventThread(() -> label.getToolTipText());
     }
 
+    /** What a claim asks of the diagram, given the locomotive synced. */
+    private interface Check
+    {
+        void check(Locomotive train) throws Exception;
+    }
+
+    /**
+     * Takes the plain track square at 4,1 (id 0x104) out of the page's file, as an edit elsewhere, and syncs a
+     * locomotive, which reads the pages again; asks `out`, then puts the square back, syncs again and asks `back`.
+     */
+    private static void outAndBackElsewhere(Check out, Check back) throws Exception
+    {
+        final Path file = sandbox.getFolder().toPath().resolve("config/gleisbilder/" + PAGE + ".cs2");
+        final byte[] asItWas = Files.readAllBytes(file);
+        final String text = new String(asItWas, StandardCharsets.UTF_8);
+        final String eol = text.contains("\r\n") ? "\r\n" : "\n";
+        final String square = "element\r\n .id=0x104\r\n .typ=gerade\r\n .artikel=-1\r\n".replace("\r\n", eol);
+
+        assertTrue(text.contains(square), "precondition: " + PAGE + " has no plain track at 0x104");
+
+        final Locomotive train = model.getLocByName(model.getLocList().get(0));
+
+        try
+        {
+            Files.write(file, text.replace(square, "").getBytes(StandardCharsets.UTF_8));
+
+            syncTheLocomotive(train);
+
+            out.check(train);
+        }
+        finally
+        {
+            Files.write(file, asItWas);
+
+            syncTheLocomotive(train);
+        }
+
+        back.check(train);
+    }
+
     /** Whether the page shown draws something on this square. */
     private static boolean drawsTheSquare(int x, int y) throws Exception
     {
-        return Components.onTheEventThread(() ->
-            Components.find(shownPage(), LayoutLabel.class, each -> each.getComponent() != null
-            && each.getComponent().getX() == x && each.getComponent().getY() == y) != null);
+        return drawsTheSquare(shownPage(), x, y);
+    }
+
+    /** Whether a panel or window draws something on this square of its page. */
+    private static boolean drawsTheSquare(Container in, int x, int y)
+    {
+        try
+        {
+            return Components.onTheEventThread(() ->
+                Components.find(in, LayoutLabel.class, each -> each.getComponent() != null
+                && each.getComponent().getX() == x && each.getComponent().getY() == y) != null);
+        }
+        catch (Exception e)
+        {
+            throw new IllegalStateException(e);
+        }
+    }
+
+    /** Disarms a route made here, which writes it anew, and waits for the diagram it draws. */
+    private static void disarm(MarklinRoute route) throws Exception
+    {
+        ui.enableOrDisableRoute(route.getName(), false);
+
+        assertTrue(Components.waitFor(() -> model.getRoute(route.getName()) != route, 20000),
+            "precondition: disarming did not write the route anew");
+
+        Settle.theDiagram(ui);
+    }
+
+    /** Puts a route back as it was, locked or not and armed or not, and draws the page afresh. */
+    private static void putBack(String name, boolean wasLocked, boolean wasEnabled) throws Exception
+    {
+        MarklinRoute now = (MarklinRoute) model.getRoute(name);
+
+        if (now != null)
+        {
+            now.setLocked(wasLocked);
+
+            if (now.isEnabled() != wasEnabled) model.editRoute(now.getName(), now.getName(), now.getRoute(),
+                now.getS88(), now.getTriggerType(), wasEnabled, now.getConditions());
+        }
+
+        rebuildThePage();
     }
 
     /** The labels a route redraws when it runs. */

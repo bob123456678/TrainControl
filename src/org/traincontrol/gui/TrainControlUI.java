@@ -2490,6 +2490,15 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         }
     }
 
+    /** Redraws the page windows whose page was read again (OB-462), each keeping its size and place. */
+    private void refreshPopupsWhosePagesWereReadAgain()
+    {
+        for (LayoutPopupUI popup : new ArrayList<>(this.popups))
+        {
+            if (popup.isVisible() && popup.showsAPageReadAgain()) popup.refreshCaptions();
+        }
+    }
+
     /**
      * Whether the track diagram on screen is the grid of the page and size chosen, and the setup still gives its
      * squares the captions it was built with (MT-670); false wherever it cannot tell.
@@ -21461,6 +21470,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         for (JPanel page : this.layoutCache.values()) grids.add(LayoutGrid.of(page));
 
+        for (LayoutPopupUI popup : this.popups) if (popup.isVisible()) grids.add(popup.grid());
+
         if (InnerLayoutPanel.getComponentCount() == 1) grids.add(LayoutGrid.of(InnerLayoutPanel.getComponent(0)));
 
         for (LayoutGrid grid : grids)
@@ -21527,6 +21538,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
             SwingUtilities.invokeLater(() ->
             {
+                refreshPopupsWhosePagesWereReadAgain();
+
                 updateLayoutLoaded();
 
                 if (!isLayoutLoaded())
