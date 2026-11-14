@@ -780,6 +780,56 @@ public class testATrainDragsFromStationToStation
     }
 
     /**
+     * After a refused drag, the next click on the train that reaches it through its station's caption (a press there
+     * passes no `beginDrag`) is taken: it cycles the station's arrows, as any click on the square does.
+     *
+     * MUTATION: drop the `ignoreTheClickOf(null)` from `LayoutEditorTrainDrag.press`, and the click is swallowed.
+     */
+    @Test(timeOut = 120000)
+    public void testAClickAfterARefusedDragIsTakenThroughTheCaption() throws Exception
+    {
+        Fixture f = fixture(false);
+        org.json.JSONObject before = session.snapshotSetup();
+
+        try
+        {
+            // Plain track takes no train
+            Mouse.drag(f.fromLabel, f.trackLabel);
+            Components.drain(8);
+
+            clickThroughTheCaption(f.fromLabel);
+
+            assertFalse(session.snapshotSetup().similar(before), "the first click on " + f.from + "'s train after a"
+                + " refused drag, through its caption, was swallowed: the station's arrows did not cycle");
+        }
+        finally
+        {
+            putBack(before);
+        }
+    }
+
+    /** A press, a release and a click on the train over a square, as its station's caption hands them on. */
+    private static void clickThroughTheCaption(LayoutLabel square) throws Exception
+    {
+        final Point at = center(square);
+        final int[] ids = {MouseEvent.MOUSE_PRESSED, MouseEvent.MOUSE_RELEASED, MouseEvent.MOUSE_CLICKED};
+        final MouseEvent[] e = new MouseEvent[ids.length];
+
+        for (int i = 0; i < ids.length; i++)
+        {
+            e[i] = new MouseEvent(square, ids[i], System.currentTimeMillis(), i == 0 ? InputEvent.BUTTON1_DOWN_MASK : 0,
+                at.x, at.y, 1, false, MouseEvent.BUTTON1);
+        }
+
+        onTheEventThread(() ->
+        {
+            editor.pressTrain(e[0]);
+            editor.releaseTrain(e[1]);
+            editor.receiveClickEvent(e[2], square);
+        });
+    }
+
+    /**
      * Escape while carrying puts the train back: the release that follows moves nothing, and the editor stays open.
      *
      * MUTATION: having `LayoutEditorTrainDrag.cancel` answer false leaves the drag standing, so the release lands.
