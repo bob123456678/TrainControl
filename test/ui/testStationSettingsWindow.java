@@ -720,13 +720,7 @@ public class testStationSettingsWindow
 
         StationSettingsWindow window = StationDoors.open(panel, square);
 
-        JTextField field = StationDoors.part(window, "station.maxLength", JTextField.class);
-
-        Components.onTheEventThread(() -> { field.setText("-5"); return null; });
-
-        StationDoors.close(window);
-
-        assertTrue(Components.onTheEventThread(() -> window.isShowing()), "Done closed the window over a refused length");
+        refuseALength(window);
 
         assertTrue(visible(window, "station.maxLengthProblem"), "Done did not say why the length was refused");
 
@@ -739,6 +733,54 @@ public class testStationSettingsWindow
 
         assertEquals(Components.onTheEventThread(() -> session.getPointProperty(square, "maxTrainLength")), had,
             "Escape wrote the refused length");
+    }
+
+    /**
+     * A refusal on a field grayed since (Max Length, once Stops Here is unticked) no longer holds Done shut: nothing can
+     * fix or store it there, so Done would do nothing at all.
+     *
+     * MUTATION: have `refusesAValue` count every visible refusal line, grayed field or not, and this fails.
+     */
+    @Test(timeOut = 120000)
+    public void testDoneClosesOverARefusalOnAFieldGrayedSince() throws Exception
+    {
+        StationSettingsWindow window = StationDoors.open(panel, aStation());
+
+        JTextField field = refuseALength(window);
+        AbstractButton stops = StationDoors.part(window, "station.stops", AbstractButton.class);
+
+        assertTrue(Components.onTheEventThread(() -> stops.isSelected() && field.isEnabled()),
+            "precondition: the station does not stop, or Max Length is grayed");
+
+        Components.onTheEventThread(() -> { stops.doClick(); return null; });
+
+        Components.settle();
+
+        assertFalse(Components.onTheEventThread(() -> field.isEnabled()), "precondition: unticking Stops did not gray Max Length");
+
+        StationDoors.close(window);
+
+        Components.settle();
+
+        boolean stillOpen = Components.onTheEventThread(() -> window.isShowing());
+
+        if (stillOpen) pressEscapeOn(window);
+
+        assertFalse(stillOpen, "Done did nothing: a refusal on a grayed field it cannot commit holds the window open");
+    }
+
+    /** Types a negative Max Length and presses Done, which must stay open over it; returns the field. */
+    private static JTextField refuseALength(StationSettingsWindow window) throws Exception
+    {
+        JTextField field = StationDoors.part(window, "station.maxLength", JTextField.class);
+
+        Components.onTheEventThread(() -> { field.setText("-5"); return null; });
+
+        StationDoors.close(window);
+
+        assertTrue(Components.onTheEventThread(() -> window.isShowing()), "Done closed the window over a refused length");
+
+        return field;
     }
 
     /**

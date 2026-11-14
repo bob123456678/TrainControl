@@ -977,7 +977,11 @@ public final class StationSettingsWindow extends StationWindowBase
     @Override
     boolean refusesAValue()
     {
-        for (JLabel line : problems.values()) if (line.isVisible()) return true;
+        // Only where `commit` can still reach: a refusal on a field grayed since cannot be fixed or written
+        for (Map.Entry<JTextField, JLabel> each : problems.entrySet())
+        {
+            if (each.getValue().isVisible() && each.getKey().isEditable() && each.getKey().isEnabled()) return true;
+        }
 
         return false;
     }
