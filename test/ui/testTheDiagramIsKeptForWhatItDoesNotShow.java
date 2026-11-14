@@ -142,10 +142,12 @@ public class testTheDiagramIsKeptForWhatItDoesNotShow
         assertEquals(Components.onTheEventThread(() -> String.valueOf(((JComboBox<?>) WindowField.of(ui, "LayoutList"))
             .getSelectedItem())), target, "the link did not go to " + target);
 
-        assertSame(Components.onTheEventThread(() -> shownPage()), cachedTarget, "the link drew " + target + " afresh instead"
+        assertSame(Components.onTheEventThread(() -> shownPage()), cachedTarget,
+            "the link drew " + target + " afresh instead"
             + " of showing it from the cache");
 
-        assertSame(Components.onTheEventThread(() -> ui.layoutCache.get(cacheKey(PAGE))), left, "following the link threw away"
+        assertSame(Components.onTheEventThread(() -> ui.layoutCache.get(cacheKey(PAGE))), left,
+            "following the link threw away"
             + " the cached " + PAGE);
     }
 
@@ -203,7 +205,8 @@ public class testTheDiagramIsKeptForWhatItDoesNotShow
 
             assertEquals(route.getId(), id, "precondition: the route was not renumbered back");
 
-            assertNotSame(Components.onTheEventThread(() -> shownPage()), kept.shown, "a sync that read the pages again did"
+            assertNotSame(Components.onTheEventThread(() -> shownPage()), kept.shown,
+                "a sync that read the pages again did"
                 + " not draw the diagram afresh");
 
             LayoutLabel now = labelOf(squareNow(square));
@@ -360,7 +363,8 @@ public class testTheDiagramIsKeptForWhatItDoesNotShow
 
             syncTheLocomotive(train);
 
-            assertNotSame(Components.onTheEventThread(() -> shownPage()), before, "Sync of " + renamed + " read the pages again"
+            assertNotSame(Components.onTheEventThread(() -> shownPage()), before,
+                "Sync of " + renamed + " read the pages again"
                 + " and did not draw the diagram afresh");
 
             assertTrue(captionIn(ui, at).contains("Zq"), "after Sync of " + renamed + " the caption at " + at
@@ -482,7 +486,8 @@ public class testTheDiagramIsKeptForWhatItDoesNotShow
     /** The label drawing this component on the page shown, or null. */
     private static LayoutLabel labelOf(LayoutDiagramComponent c) throws Exception
     {
-        return Components.onTheEventThread(() -> Components.find(shownPage(), LayoutLabel.class, each -> each.getComponent() == c));
+        return Components.onTheEventThread(() ->
+            Components.find(shownPage(), LayoutLabel.class, each -> each.getComponent() == c));
     }
 
     /** The component drawn now where this one was. */
@@ -509,7 +514,8 @@ public class testTheDiagramIsKeptForWhatItDoesNotShow
     /** Whether the page shown draws something on this square. */
     private static boolean drawsTheSquare(int x, int y) throws Exception
     {
-        return Components.onTheEventThread(() -> Components.find(shownPage(), LayoutLabel.class, each -> each.getComponent() != null
+        return Components.onTheEventThread(() ->
+            Components.find(shownPage(), LayoutLabel.class, each -> each.getComponent() != null
             && each.getComponent().getX() == x && each.getComponent().getY() == y) != null);
     }
 

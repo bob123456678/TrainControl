@@ -21425,11 +21425,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * The track diagram after a route write or a sync, which it shows only on its route squares: rebuilt where the pages
-     * were read again meanwhile (a sync from a local folder, which brings in an edit made elsewhere), else its route
-     * squares bound again in place, so every other page's cached grid stays.
-     *
-     * @param before what `shownDiagram` said before the write
+     * After a route write or a sync, given `shownDiagram` from before it: rebuilt where the pages were read again (a
+     * sync from a local folder brings in edits made elsewhere), else only the route squares bound again, cache kept.
      */
     void redrawRouteSquaresOrRebuild(LayoutDiagram before)
     {
