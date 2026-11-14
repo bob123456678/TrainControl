@@ -1078,4 +1078,42 @@ public class testASetupIsBuiltSavedAndReopenedWhole extends AutonomySessionFixtu
         assertFalse(body.contains("getAutoLayout()"), "the diagram's path gather asks the model for the railway again on"
             + " its worker, where Unload can leave it building an empty one (RSA2-C5)");
     }
+
+    /**
+     * Every per-station key survives the session's own round trip: set on a station, built into the railway, captured
+     * back from it, saved and reopened as a fresh session.  The table is the matrix's, one row per key.
+     *
+     * MUTATION: skip one key in `AutonomySession.capture`'s copy loops, or in `AutonomyBuilder`'s point output, and this
+     * fails on that key.
+     */
+    @Test
+    public void testEveryStationKeySurvivesBuildCaptureSaveAndReopen() throws Exception
+    {
+        session.open(Arrays.asList(runOfTrack(), secondPage()));
+        session.initialize("Evening");
+
+        TileKey station = new TileKey("main", 1, 1);
+
+        session.setStation(station, true);
+        session.setPointName(station, "Platform 1");
+
+        for (java.util.Map.Entry<String, Object> row : regression.testAutonomyStoreSettingsMatrix.STATION_KEY_VALUES.entrySet())
+        {
+            session.setPointProperty(station, row.getKey(), row.getValue());
+        }
+
+        session.captureFromLayout(session.buildConfiguration());
+        session.save();
+
+        AutonomySession reopened = new AutonomySession(layout);
+
+        reopened.open(Arrays.asList(runOfTrack(), secondPage()));
+
+        for (String key : regression.testAutonomyStoreSettingsMatrix.stationKeys())
+        {
+            assertEquals(String.valueOf(reopened.getPointProperty(station, key)),
+                String.valueOf(regression.testAutonomyStoreSettingsMatrix.STATION_KEY_VALUES.get(key)),
+                "the station key '" + key + "' did not survive being built, captured, saved and reopened");
+        }
+    }
 }
