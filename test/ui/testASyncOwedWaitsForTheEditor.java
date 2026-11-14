@@ -68,14 +68,6 @@ public class testASyncOwedWaitsForTheEditor
         model = opened.model;
         ui = opened.ui;
 
-        Components.settle();
-
-        session = ui.getAutonomySession();
-
-        assertNotNull(session, "no autonomy setup on this railway");
-
-        asOpened = Components.onTheEventThread(() -> session.snapshotSetup());
-
         // A Central Station 2 with no routes file: every sync asks for the device file, then fails before importing
         station = new StandInStation((path, n) -> DEVICE.equals(path)
             ? "[geraet]\ngeraet\n .produkt=Central Station 2\n".getBytes(StandardCharsets.UTF_8) : null);
@@ -83,15 +75,23 @@ public class testASyncOwedWaitsForTheEditor
         addressWas = TestStationAddress.get();
 
         TestStationAddress.set(station.address());
+
+        Components.settle();
+
+        session = ui.getAutonomySession();
+
+        assertNotNull(session, "no autonomy setup on this railway");
+
+        asOpened = Components.onTheEventThread(session::snapshotSetup);
     }
 
     @AfterClass(alwaysRun = true)
     public static void tearDownClass() throws Exception
     {
+        TestStationAddress.set(addressWas);
+
         try
         {
-            TestStationAddress.set(addressWas);
-
             if (station != null) station.close();
         }
         finally
