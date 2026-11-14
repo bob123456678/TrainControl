@@ -546,11 +546,23 @@ public class testTheActiveTickPausesATrain
     /** The rebuild a tick or a tool asks for has been done, and the Auto tab's cards built again. */
     private static void settleTheRebuild() throws Exception
     {
-        for (int turn = 0; turn < 10; turn++)
-        {
-            Thread.sleep(50);
+        settleTheRenderer();
+    }
 
-            Components.drain(1);
+    /**
+     * What the status panels' worker and the event thread have queued for each other has run: the worker searches, the
+     * event thread draws and may queue the next search, so each is waited for in turn until a round finds both idle.
+     */
+    private static void settleTheRenderer() throws Exception
+    {
+        java.util.concurrent.ExecutorService worker = (java.util.concurrent.ExecutorService) Reflect.get(
+            TrainControlUI.class, ui, "AutonomyRenderer");
+
+        for (int round = 0; round < 3; round++)
+        {
+            worker.submit(() -> { }).get(20, java.util.concurrent.TimeUnit.SECONDS);
+
+            Components.drain(2);
         }
     }
 
@@ -2465,12 +2477,7 @@ public class testTheActiveTickPausesATrain
             Components.drain(1);
         }
 
-        for (int turn = 0; turn < 8; turn++)
-        {
-            Thread.sleep(100);
-
-            Components.drain(1);
-        }
+        settleTheRenderer();
     }
 
     /** The whole tab built again, as a placement builds it. */
