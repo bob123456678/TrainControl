@@ -711,7 +711,7 @@ public final class AutoLocomotiveStatus extends JPanel
         {
             StringBuilder out = new StringBuilder();
 
-            org.traincontrol.automation.Point at = layout.getLocomotiveLocation(locomotive);
+            Point at = layout.getLocomotiveLocation(locomotive);
 
             if (at != null)
             {
@@ -922,7 +922,7 @@ public final class AutoLocomotiveStatus extends JPanel
      * What to call a Point when a person is reading it: the station name, not the model's copy name such as "Tunnel
      * (northbound)", since the user created a station and not two.
      */
-    private String stationName(org.traincontrol.automation.Point point)
+    private String stationName(Point point)
     {
         AutonomySession session = parent.getAutonomySession();
 

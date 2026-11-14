@@ -147,7 +147,7 @@ public final class BackupAction
             // the archive still written.
             try
             {
-                routesExport = java.io.File.createTempFile("tc-routes", ".json");
+                routesExport = File.createTempFile("tc-routes", ".json");
 
                 Files.write(routesExport.toPath(), this.ui.getModel().exportRoutes().getBytes(StandardCharsets.UTF_8));
 
